@@ -1,53 +1,8 @@
 import { XMLParser } from 'fast-xml-parser';
 import { readFileSync } from 'fs';
+import { Section, Chapter, Book, FullText } from './texts'
 
-const REPO_ROOT = '/home/nkprasad/morcus/morcus-net'
 const LATIN_ROOT = 'texts/latin'
-const DBG_ROOT = 'data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml'
-
-class Section {
-  constructor(readonly passage: string, readonly num: number) { }
-
-  toString(): string {
-    return `${this.num}: ${this.passage}`;
-  }
-}
-
-class Chapter {
-  constructor(readonly sections: Section[], readonly num: number) { }
-
-  toString(): string {
-    const results = []
-    results.push(`Chapter ${this.num}`);
-    for (const section of this.sections) {
-      results.push(`  ${section}`);
-    }
-    return results.join('\n');
-  }
-}
-
-class Book {
-  constructor(readonly chapters: Chapter[], readonly num: number) { }
-
-  toString(): string {
-    const results = []
-    results.push('======')
-    results.push(`Book ${this.num}`);
-    results.push('======')
-    for (const chapter of this.chapters) {
-      results.push(`${chapter}\n`);
-    }
-    return results.join('\n');
-  }
-}
-
-class FullText {
-  constructor(readonly books: Book[]) { }
-
-  toString(): string {
-    return this.books.map((book) => book.toString()).join('\n\n');
-  }
-}
 
 function getAttr(element: any, name: string): any {
   return element[`@_${name}`]
@@ -122,8 +77,8 @@ function parseFullText(root: any): FullText {
   return new FullText(books);
 }
 
-function readLatinFile(relativePath: string): FullText {
-  const xmlFile = readFileSync(`${REPO_ROOT}/${LATIN_ROOT}/${relativePath}`)
+export function readLatinFile(relativePath: string): FullText {
+  const xmlFile = readFileSync(`${LATIN_ROOT}/${relativePath}`)
   const options = {
     ignoreAttributes: false
   }
@@ -131,5 +86,3 @@ function readLatinFile(relativePath: string): FullText {
   const contentRoot = contents.TEI.text.body.div;
   return parseFullText(contentRoot);
 }
-
-console.log(readLatinFile(DBG_ROOT).toString());
