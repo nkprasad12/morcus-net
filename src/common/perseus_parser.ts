@@ -1,6 +1,6 @@
 import { XMLParser } from 'fast-xml-parser';
 import { readFileSync } from 'fs';
-import { Section, Chapter, Book, FullText } from './texts'
+import { Section, Chapter, Book, FullText } from '@/common/texts'
 
 const LATIN_ROOT = 'texts/latin'
 
