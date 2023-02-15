@@ -1,0 +1,5 @@
+build
+node_modules
+testdata
+texts
+tsconfig.json

@@ -1,58 +1,58 @@
-import { XMLParser } from 'fast-xml-parser';
-import { readFileSync } from 'fs';
-import { Section, Chapter, Book, FullText } from '@/common/texts'
+import { XMLParser } from "fast-xml-parser";
+import { readFileSync } from "fs";
+import { Section, Chapter, Book, FullText } from "@/common/texts";
 
 function getAttr(element: any, name: string): any {
-  return element[`@_${name}`]
+  return element[`@_${name}`];
 }
 
 function isTextPart(element: any): boolean {
-  const elementType = getAttr(element, 'type');
+  const elementType = getAttr(element, "type");
   if (!elementType) {
     return false;
   }
-  return elementType === 'textpart';
+  return elementType === "textpart";
 }
 
 function assertTextType(textPart: any, textType: string): void {
-  const subtype = getAttr(textPart, 'subtype');
+  const subtype = getAttr(textPart, "subtype");
   if (subtype !== textType) {
-    throw new Error(`Expected ${textType}, but got ${textPart}`)
+    throw new Error(`Expected ${textType}, but got ${textPart}`);
   }
 }
 
 function assertHasDiv(textPart: any) {
   if (!textPart.div) {
     console.log(textPart);
-    throw new Error(`Expected to have div element: ${textPart}`)
+    throw new Error(`Expected to have div element: ${textPart}`);
   }
 }
 
 function getChildren(textPart: any) {
   assertHasDiv(textPart);
-  if (typeof textPart.div[Symbol.iterator] !== 'function') {
+  if (typeof textPart.div[Symbol.iterator] !== "function") {
     return [textPart.div];
   }
   return textPart.div;
 }
 
 function parseSection(textPart: any): Section {
-  assertTextType(textPart, 'section');
-  const n = getAttr(textPart, 'n');
-  const text = textPart.p['#text'] || textPart.p;
+  assertTextType(textPart, "section");
+  const n = getAttr(textPart, "n");
+  const text = textPart.p["#text"] || textPart.p;
   return new Section(text, n);
 }
 
 function parseChapter(textPart: any): Chapter {
-  assertTextType(textPart, 'chapter');
-  const n = getAttr(textPart, 'n');
+  assertTextType(textPart, "chapter");
+  const n = getAttr(textPart, "n");
   const children = getChildren(textPart);
   return new Chapter(children.map(parseSection), n);
 }
 
 function parseBook(textPart: any): Book {
-  assertTextType(textPart, 'book');
-  const n = getAttr(textPart, 'n');
+  assertTextType(textPart, "book");
+  const n = getAttr(textPart, "n");
   const children = getChildren(textPart);
   return new Book(children.map(parseChapter), n);
 }
@@ -65,8 +65,8 @@ function parseFullText(root: any): FullText {
       console.log(`Expected textpart, but got ${part}`);
       continue;
     }
-    const subtype = getAttr(part, 'subtype');
-    if (subtype !== 'book') {
+    const subtype = getAttr(part, "subtype");
+    if (subtype !== "book") {
       console.log(`Expected textpart book, but got ${part}`);
       continue;
     }
@@ -76,10 +76,10 @@ function parseFullText(root: any): FullText {
 }
 
 export function readFile(relativePath: string): FullText {
-  const xmlFile = readFileSync(relativePath)
+  const xmlFile = readFileSync(relativePath);
   const options = {
-    ignoreAttributes: false
-  }
+    ignoreAttributes: false,
+  };
   const contents = new XMLParser(options).parse(xmlFile);
   const contentRoot = contents.TEI.text.body.div;
   return parseFullText(contentRoot);
