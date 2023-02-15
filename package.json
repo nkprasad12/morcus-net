@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "ts-jest",
+    "test": "npx jest",
     "ts-node": "ts-node -r tsconfig-paths/register",
     "driver": "npm run ts-node src/driver.ts"
   },

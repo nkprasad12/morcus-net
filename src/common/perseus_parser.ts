@@ -2,8 +2,6 @@ import { XMLParser } from 'fast-xml-parser';
 import { readFileSync } from 'fs';
 import { Section, Chapter, Book, FullText } from '@/common/texts'
 
-const LATIN_ROOT = 'texts/latin'
-
 function getAttr(element: any, name: string): any {
   return element[`@_${name}`]
 }
@@ -77,8 +75,8 @@ function parseFullText(root: any): FullText {
   return new FullText(books);
 }
 
-export function readLatinFile(relativePath: string): FullText {
-  const xmlFile = readFileSync(`${LATIN_ROOT}/${relativePath}`)
+export function readFile(relativePath: string): FullText {
+  const xmlFile = readFileSync(relativePath)
   const options = {
     ignoreAttributes: false
   }

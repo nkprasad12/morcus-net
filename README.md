@@ -1,7 +1,9 @@
 # morcus-net
 
-To run the current XML parser:
+**Common commands (see package.json)**
 
-num install
-
-num run driver
+Command | Effect
+------- | ------
+`npm install ` | Sets up the environment.
+`npm run driver` | Starts the manual testing driver.
+`npm run test` | Runs all tests.

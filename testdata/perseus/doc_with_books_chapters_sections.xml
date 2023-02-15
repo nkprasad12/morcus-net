@@ -1,0 +1,32 @@
+<TEI>
+<text>
+<body>
+<div type="edition"  xml:lang="lat" n="urn:cts:latinLit:phi0448.phi001.perseus-lat2">
+    <div n="1" type="textpart" subtype="book">
+        <head>COMMENTARIUS PRIMUS</head>
+        <div  type="textpart" subtype="chapter" n="1">
+            <div  type="textpart" subtype="section" n="1"><p>Book1Chapter1Section1</p></div>
+            <div  type="textpart" subtype="section" n="2"><p>Book1Chapter1Section2</p></div>
+        </div>
+
+        <div  type="textpart" subtype="chapter" n="2">
+            <div  type="textpart" subtype="section" n="1"><p>Book1Chapter2Section1</p></div>
+            <div  type="textpart" subtype="section" n="2"><p>Book1Chapter2Section2</p></div>
+            <div  type="textpart" subtype="section" n="3"><p>Book1Chapter2Section3</p></div>
+        </div>
+    </div>
+    <div n="2" type="textpart" subtype="book">
+        <head>COMMENTARIUS SECUNDUS</head>
+        <div  type="textpart" subtype="chapter" n="1">
+            <div  type="textpart" subtype="section" n="1"><p>Book2Chapter1Section1</p></div>
+        </div>
+
+        <div  type="textpart" subtype="chapter" n="2">
+            <div  type="textpart" subtype="section" n="1"><p>Book2Chapter2Section1</p></div>
+            <div  type="textpart" subtype="section" n="2"><p>Book2Chapter2Section2<gap reason="lost"/></p></div>
+        </div>
+    </div>
+</div>
+</body>
+</text>
+</TEI>
