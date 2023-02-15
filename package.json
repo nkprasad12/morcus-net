@@ -4,6 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
+    "format": "npx prettier --write .",
     "test": "npx jest",
     "ts-node": "ts-node -r tsconfig-paths/register",
     "driver": "npm run ts-node src/driver.ts"
