@@ -1,0 +1,14 @@
+name: morcus.net CI
+
+on: [push]
+
+jobs:
+  ci-workflow:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+      - name: Installing dependencies
+        run: npm ci
+      - name: Running tests
+        run: npm run test
