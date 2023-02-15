@@ -4,7 +4,7 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "ts-jest",
     "ts-node": "ts-node -r tsconfig-paths/register",
     "driver": "npm run ts-node src/driver.ts"
   },
@@ -25,7 +25,11 @@
     "ts-node": "^10.9.1"
   },
   "devDependencies": {
+    "@jest/globals": "^29.4.2",
+    "@types/jest": "^29.4.0",
     "@types/node": "^18.13.0",
+    "jest": "^29.4.2",
+    "ts-jest": "^29.0.5",
     "tsconfig-paths": "^4.1.2",
     "typescript": "^4.9.5"
   }
