@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "format": "npx prettier --write .",
+    "setup-alatius": "python scripts/alatius.py",
     "test": "npx jest",
     "coverage": "npx jest --coverage",
     "ts-node": "ts-node -r tsconfig-paths/register",
