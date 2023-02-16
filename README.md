@@ -25,3 +25,9 @@
 4. Run `npm run test` to verify that all tests still pass
 5. Run `npm run format` to run formatting
 6. Send a Pull Request to merge to `main`
+
+---
+
+**License Details**
+
+Work in this repository is provided under the terms of the `LICENSE` file in the root directory. Work in the `texts` and `libs` directories are provided under their original licenses. 
