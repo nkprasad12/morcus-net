@@ -110,4 +110,6 @@ def setup_macronizer() -> None:
     initialize_macronizer()
     rename_imports()
 
-setup_macronizer()
+
+if __name__ == '__main__':
+    setup_macronizer()

@@ -16,7 +16,6 @@ def print_element(element: ElementTree.Element) -> None:
 
 def get_text(element: ElementTree.Element) -> str:
   """Returns text from the given <p> element, including from sub-elements."""
-  assert element.tag == '{http://www.tei-c.org/ns/1.0}p'
   text = element.text or ''
   for child in element:
     assert len(child) == 0
