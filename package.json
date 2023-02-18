@@ -6,9 +6,9 @@
   "scripts": {
     "format": "npx prettier --write . && python -m black src/",
     "setup-alatius": "python src/scripts/alatius.py",
-    "test": "npm run ts-test && npm run py-test",
-    "ts-test": "npx jest",
-    "py-test": "python -m unittest discover",
+    "test": "npm run ts-tests && npm run py-tests",
+    "ts-tests": "npx jest",
+    "py-tests": "python -m unittest discover",
     "coverage": "npx jest --coverage",
     "ts-node": "ts-node -r tsconfig-paths/register",
     "driver": "npm run ts-node src/driver.ts",
