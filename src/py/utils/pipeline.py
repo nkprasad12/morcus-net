@@ -7,7 +7,7 @@ from src.py.utils import perseus_parser
 
 def run(file_path: str) -> None:
     """Runs the processing pipeline on the input XML file."""
-    text_data = perseus_parser.parse_perseus_xml(file_path)
+    text_data = perseus_parser.parse_perseus_xml(file_path)  # type: ignore
     macronizer = Macronizer()
     start_time = time.time()
     for i, part in enumerate(text_data):

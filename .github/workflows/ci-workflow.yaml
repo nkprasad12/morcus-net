@@ -24,6 +24,8 @@ jobs:
         run: npx prettier --check .
       - name: Checking formatting for Python
         run: python -m black src/ --check
+      - name: Checking Pytype
+        run: npm run pytype
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
