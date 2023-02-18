@@ -18,9 +18,10 @@ jobs:
         run: pip install -r requirements.txt
       - name: Running tests
         run: npm run coverage
-      - name: Checking formatting
-        ts: npx prettier --check .
-        py: python -m black src/ --check
+      - name: Checking formatting for Typescript
+        run: npx prettier --check .
+      - name: Checking formatting for Python
+        run: python -m black src/ --check
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
