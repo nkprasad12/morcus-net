@@ -1,6 +1,8 @@
 import time
 
-from src.libs.latin_macronizer.macronizer_modified import Macronizer  # pytype: disable=attribute-error
+from src.libs.latin_macronizer.macronizer_modified import (
+    Macronizer,
+)  # pytype: disable=attribute-error
 
 from src.py.utils import perseus_parser
 
