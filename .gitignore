@@ -107,4 +107,6 @@ dist
 build/
 
 libs/
-scripts/__pycache__
+
+venv/
+**/__pycache__

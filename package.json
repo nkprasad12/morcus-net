@@ -4,12 +4,15 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "format": "npx prettier --write .",
-    "setup-alatius": "python scripts/alatius.py",
-    "test": "npx jest",
+    "format": "npx prettier --write . && python -m black src/",
+    "setup-alatius": "python src/scripts/alatius.py",
+    "test": "npm run ts-tests && npm run py-tests",
+    "ts-tests": "npx jest",
+    "py-tests": "python -m unittest discover",
     "coverage": "npx jest --coverage",
     "ts-node": "ts-node -r tsconfig-paths/register",
-    "driver": "npm run ts-node src/driver.ts"
+    "driver": "npm run ts-node src/driver.ts",
+    "py-driver": "python -c \"import src.py.driver\""
   },
   "repository": {
     "type": "git",
