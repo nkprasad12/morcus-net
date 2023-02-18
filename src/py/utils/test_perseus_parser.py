@@ -35,7 +35,6 @@ class TestStringMethods(unittest.TestCase):
 
         self.assertEqual(result[6].text, "Book2Chapter2Section1")
         self.assertEqual(result[7].text, "Book2Chapter2Section2")
-        assert False
 
 
 if __name__ == "__main__":
