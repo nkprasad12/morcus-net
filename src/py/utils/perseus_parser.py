@@ -3,17 +3,19 @@ from xml.etree import ElementTree
 from src.py.utils.data import TextPart
 
 
-def print_elem(root) -> None:
-  print(root)
-  print(root.tag)
-  print(root.attrib)
-  print(root.text)
-  print(root.tail)
-  for x in root:
-    print_elem(x)
+def print_element(element: ElementTree.Element) -> None:
+  """Prints the element and all its children."""
+  print(element)
+  print(element.tag)
+  print(element.attrib)
+  print(element.text)
+  print(element.tail)
+  for child in element:
+    print_element(child)
 
 
 def get_text(element: ElementTree.Element) -> str:
+  """Returns text from the given <p> element, including from sub-elements."""
   assert element.tag == '{http://www.tei-c.org/ns/1.0}p'
   text = element.text or ''
   for child in element:
@@ -25,6 +27,7 @@ def get_text(element: ElementTree.Element) -> str:
 
 
 def parse_perseus_xml(file_path: str) -> 'list[TextPart]':
+  """Parses a Perseus XML file."""
   text: list[TextPart] = []
 
   stack = [ElementTree.parse(file_path).getroot()]
