@@ -1,6 +1,9 @@
 import time
 
+# pytype: disable=import-error
 from src.libs.latin_macronizer.macronizer_modified import Macronizer
+
+# pytype: enable=import-error
 
 from src.py.utils import perseus_parser
 
