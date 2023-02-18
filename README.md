@@ -8,13 +8,14 @@
 
 **Common commands (see package.json)**
 
-| Command                 | Effect                                      |
-| ----------------------- | ------------------------------------------- |
-| `npm install `          | Sets up the environment.                    |
-| `npm run setup-alatius` | Sets up the macronizer for local use        |
-| `npm run driver`        | Starts the manual testing driver.           |
-| `npm run test`          | Runs all tests.                             |
-| `npm run format`        | Runs the formatter. Required before merging |
+| Command                 | Effect                                                |
+| ----------------------- | ----------------------------------------------------- |
+| `npm install `          | Sets up the environment.                              |
+| `npm run setup-alatius` | Sets up the macronizer for local use                  |
+| `npm run driver`        | Starts the manual testing driver for Typescript code. |
+| `npm run py-driver`     | Starts the manual testing driver for Python code.     |
+| `npm run test`          | Runs all tests.                                       |
+| `npm run format`        | Runs the formatter. Required before merging           |
 
 ---
 
@@ -22,6 +23,7 @@
 
 1. Run `npm install` to set up your environment for `Typescript` code.
 2. Run `npm run setup-alatius` to set up the macronizer for local use.
+3. Set up a Python `venv` and install the `requirements.txt`.
 
 ---
 
