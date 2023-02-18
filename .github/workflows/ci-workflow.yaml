@@ -7,13 +7,20 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v2
-      - name: Installing dependencies
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.8'
+      - name: Installing npm dependencies
         run: npm ci
+      - name: Installing Python dependencies
+        run: pip install -r requirements.txt
       - name: Running tests
         run: npm run coverage
       - name: Checking formatting
-        run: npx prettier --check .
+        ts: npx prettier --check .
+        py: python -m black src/ --check
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
