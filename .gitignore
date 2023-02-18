@@ -106,6 +106,7 @@ dist
 # Typescript
 build/
 
+.coverage
 libs/
 
 venv/

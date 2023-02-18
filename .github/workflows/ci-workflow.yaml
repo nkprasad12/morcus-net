@@ -16,10 +16,8 @@ jobs:
         run: npm ci
       - name: Installing Python dependencies
         run: pip install -r requirements.txt
-      - name: Running Typscript tests
+      - name: Running unit tests
         run: npm run coverage
-      - name: Running Python tests
-        run: npm run py-tests
       - name: Checking formatting for Typescript
         run: npx prettier --check .
       - name: Checking formatting for Python
