@@ -5,11 +5,12 @@
   "main": "index.js",
   "scripts": {
     "format": "npx prettier --write .",
-    "setup-alatius": "python scripts/alatius.py",
+    "setup-alatius": "python src/scripts/alatius.py",
     "test": "npx jest",
     "coverage": "npx jest --coverage",
     "ts-node": "ts-node -r tsconfig-paths/register",
-    "driver": "npm run ts-node src/driver.ts"
+    "driver": "npm run ts-node src/driver.ts",
+    "py-driver": "python -c \"import src.py.driver\""
   },
   "repository": {
     "type": "git",

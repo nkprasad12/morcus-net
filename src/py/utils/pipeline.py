@@ -1,0 +1,19 @@
+import time
+
+from src.libs.latin_macronizer.macronizer_modified import Macronizer
+    
+from src.py.utils import perseus_parser
+from src.py.utils.data import TextPart
+
+
+def run(file_path: str) -> None:
+  text_data = perseus_parser.parse_perseus_xml(file_path)
+  macronizer = Macronizer()
+  start_time = time.time()
+  for i, part in enumerate(text_data):
+    print(part)
+    print(macronizer.macronize(part.text))
+    print(f'Part {i + 1} of {len(text_data)} completed.')
+    elapsed = time.time() - start_time
+    print(f'Elapsed time: {elapsed} seconds.')
+    print(f'Expected time: {elapsed * len(text_data) / (i + 1)} seconds')

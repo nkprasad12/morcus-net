@@ -23,16 +23,17 @@ def install_deps() -> None:
 
 def setup_macronizer_repo() -> None:
     check_root()
-    os.chdir('libs')
+    os.chdir('src/libs')
     subprocess.run(['git', 'clone', 'https://github.com/Alatius/latin-macronizer.git'])
-    os.chdir('latin-macronizer')
-    os.chdir('../..')
+    os.rename('latin-macronizer', 'latin_macronizer')
+    os.chdir('latin_macronizer')
+    os.chdir('../../..')
     check_root()
 
 
 def setup_morpheus() -> None:
     check_root()
-    os.chdir('libs/latin-macronizer')
+    os.chdir('src/libs/latin_macronizer')
     subprocess.run(['git', 'clone', 'https://github.com/Alatius/morpheus.git'])
     os.chdir('morpheus/src')
     subprocess.run('make', shell=True)
@@ -42,13 +43,13 @@ def setup_morpheus() -> None:
     subprocess.run('./update.sh', shell=True)
     print('Verifying that `salve` is parsed correctly:')
     subprocess.run('echo "salve" | MORPHLIB=stemlib bin/cruncher -L', shell=True)
-    os.chdir('../../..')
+    os.chdir('../../../..')
     check_root()
 
 
 def setup_rftagger() -> None:
     check_root()
-    os.chdir('libs/latin-macronizer')
+    os.chdir('src/libs/latin_macronizer')
     subprocess.run(['git', 'clone', 'https://github.com/Alatius/treebank_data.git'])
     if not os.path.isfile('RFTagger.zip'):
         subprocess.run('wget https://www.cis.uni-muenchen.de/~schmid/tools/RFTagger/data/RFTagger.zip', shell=True)
@@ -58,13 +59,13 @@ def setup_rftagger() -> None:
     subprocess.run('sudo make install', shell=True)
     os.chdir('../..')
     subprocess.run('./train-rftagger.sh', shell=True)
-    os.chdir('../..')
+    os.chdir('../../..')
     check_root()
 
 
 def setup_postgres() -> None:
     check_root()
-    os.chdir('libs/latin-macronizer')
+    os.chdir('src/libs/latin_macronizer')
     create_user_command = 'create user theusername password \'thepassword\';'
     try:
         subprocess.run(f'sudo -u postgres psql -c \"{create_user_command}\"', shell=True)
@@ -75,17 +76,28 @@ def setup_postgres() -> None:
         subprocess.run(f'sudo -u postgres psql -c \'{create_db_command}\'', shell=True)
     except:
         print('Skipping')
-    os.chdir('../..')
+    os.chdir('../../..')
     check_root()
 
 
 def initialize_macronizer() -> None:
     check_root()
-    os.chdir('libs/latin-macronizer')
+    os.chdir('src/libs/latin_macronizer')
     subprocess.run('python macronize.py --initialize', shell=True)
     subprocess.run('python macronize.py --test', shell=True)
-    os.chdir('../..')
+    os.chdir('../../..')
     check_root()
+
+
+def rename_imports() -> None:
+    check_root()
+    with open('src/libs/latin_macronizer/macronizer.py', 'r') as file :
+        filedata = file.read()
+    filedata = filedata.replace('from lemmas import', 'from .lemmas import')
+    filedata = filedata.replace('from macronized_endings import', 'from .macronized_endings import')
+    filedata = filedata.replace('import postags', 'from . import postags')
+    with open('src/libs/latin_macronizer/macronizer_modified.py', 'w') as file:
+        file.write(filedata)
 
 
 def setup_macronizer() -> None:
@@ -96,5 +108,6 @@ def setup_macronizer() -> None:
     setup_rftagger()
     setup_postgres()
     initialize_macronizer()
+    rename_imports()
 
 setup_macronizer()
