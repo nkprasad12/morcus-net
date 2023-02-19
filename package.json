@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "format": "npx prettier --write . && python -m black src/",
+    "format": "npx prettier --write . && npm run pyformat",
+    "pyformat": "python -m black src/",
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests": "npx jest",
