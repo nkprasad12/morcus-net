@@ -108,6 +108,7 @@ build/
 
 .coverage
 libs/
+processed_texts/
 
 venv/
 **/__pycache__

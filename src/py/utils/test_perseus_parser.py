@@ -1,7 +1,5 @@
 import unittest
 
-from xml.etree import ElementTree
-
 from src.py.utils import perseus_parser
 
 
