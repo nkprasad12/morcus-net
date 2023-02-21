@@ -18,17 +18,18 @@ class Pipeline(abc.ABC):
         source_root: str = _SOURCE_ROOT,
         source_filter: str = r"lat\d\.xml",
         version_tag: Optional[str] = None,
+        max_segments: Optional[int] = None,
         debug: bool = False,
     ):
         self._source_root = source_root
         self._source_filter = source_filter
         self._version_tag = version_tag
-        self._max_segments: Optional[int] = None
+        self._max_segments = max_segments
         self._debug = True
         if debug:
             self._source_filter = "phi0448.phi001.perseus-lat2.xml"
             self._version_tag = "debug"
-            self._max_segments = 1
+            self._max_segments = 1 if max_segments is None else max_segments
 
     def initialize(self) -> None:
         """Initialize shared state, for example for the processer."""
@@ -79,7 +80,7 @@ class Pipeline(abc.ABC):
         pattern = re.compile(self._source_filter)
         for root, _, files in os.walk(self._source_root):
             for file in files:
-                if not re.match(pattern, file):
+                if not re.search(pattern, file):
                     continue
                 full_path = os.path.join(root, file)
                 self._process_document(full_path)
