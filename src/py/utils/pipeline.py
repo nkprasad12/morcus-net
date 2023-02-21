@@ -99,6 +99,26 @@ class Alatius(Pipeline):
         return data.ProcessedPart(text_part, result)
 
 
+def find_starts(tokens: "list[str]", text: str) -> "list[int]":
+    text_chars = enumerate(iter(text))
+    starts = []
+    for token in tokens:
+        length = len(token)
+        matched = 0
+        candidate = -1
+        while matched < length:
+            i, current = next(text_chars)
+            if current != token[matched]:
+                matched = 0
+                continue
+            if matched == 0:
+                candidate = i
+            matched += 1
+        starts.append(candidate)
+    assert len(starts) == len(tokens)
+    return starts
+
+
 class CltkDefault(Pipeline):
     def initialize(self) -> None:
         import cltk  # pytype: disable=import-error
@@ -107,6 +127,16 @@ class CltkDefault(Pipeline):
         self._nlp.analyze("ego")
 
     def process_text(self, text_part: data.TextPart) -> data.ProcessedPart:
-        print("TODO: actually do something here.")
-        self._nlp.analyze(text_part.text)
-        return data.ProcessedPart(text_part, "")
+        doc = self._nlp.analyze(text_part.text)
+        starts = find_starts(doc.tokens, text_part.text)
+        tags = []
+        for i, start in enumerate(starts):
+            tags.append(
+                data.PosTag(
+                    token=doc.tokens[i],
+                    tag=str(doc.morphosyntactic_features[i]),
+                    index=start,
+                )
+            )
+
+        return data.ProcessedPart(text_part, pos_tags=tags)

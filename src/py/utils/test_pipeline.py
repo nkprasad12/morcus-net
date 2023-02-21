@@ -18,7 +18,7 @@ class TestPipeline(pipeline.Pipeline):
         return data.ProcessedPart(text_part, "TestPipeline")
 
 
-class TestStringMethods(unittest.TestCase):
+class TestBasePipeline(unittest.TestCase):
     def _cleanup(self) -> None:
         try:
             shutil.rmtree("processed_texts/unittest", ignore_errors=True)
@@ -56,6 +56,21 @@ class TestStringMethods(unittest.TestCase):
         )
         test_pipeline.run()
         self.assertEqual(test_pipeline.process_calls, 2)
+
+
+class TestStringUtility(unittest.TestCase):
+    def test_find_starts_returns_correct_outputs(self):
+        starts = pipeline.find_starts(
+            ["Gallia", ".", "est", "omnis"], "Gallia. est omnis"
+        )
+
+        self.assertListEqual(starts, [0, 6, 8, 12])
+
+    def test_find_starts_raises_on_invalid_input(self):
+      with self.assertRaises(Exception):
+        pipeline.find_starts(
+            ["Gallia", ".", "est", "omnis"], "Gallia est omnis"
+        )
 
 
 if __name__ == "__main__":
