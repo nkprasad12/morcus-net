@@ -67,10 +67,8 @@ class TestStringUtility(unittest.TestCase):
         self.assertListEqual(starts, [0, 6, 8, 12])
 
     def test_find_starts_raises_on_invalid_input(self):
-      with self.assertRaises(Exception):
-        pipeline.find_starts(
-            ["Gallia", ".", "est", "omnis"], "Gallia est omnis"
-        )
+        with self.assertRaises(Exception):
+            pipeline.find_starts(["Gallia", ".", "est", "omnis"], "Gallia est omnis")
 
 
 if __name__ == "__main__":

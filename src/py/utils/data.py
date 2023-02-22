@@ -20,8 +20,8 @@ class TextPart:
 @dataclasses.dataclass
 class ProcessedPart:
     original: TextPart
-    output: str = ''
-    pos_tags: 'list[PosTag]' = dataclasses.field(default_factory=list)
+    output: str = ""
+    pos_tags: "list[PosTag]" = dataclasses.field(default_factory=list)
 
 
 class JSONEncoder(json.JSONEncoder):

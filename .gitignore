@@ -112,3 +112,6 @@ processed_texts/
 
 venv/
 **/__pycache__
+
+py_driver_log.txt
+testdata/llpsi/
