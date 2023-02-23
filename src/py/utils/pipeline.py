@@ -365,7 +365,7 @@ def _remove_macrons(input: str) -> str:
     return output
 
 
-def _tokenize(input: str) -> 'list[str]':
+def _tokenize(input: str) -> "list[str]":
     tokens = []
     token = ""
     for c in input:
