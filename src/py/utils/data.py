@@ -2,6 +2,13 @@ import dataclasses
 import json
 
 
+@dataclasses.dataclass
+class PosTag:
+    token: str
+    tag: str
+    index: int = -1
+
+
 @dataclasses.dataclass(order=True)
 class TextPart:
     book: int
@@ -13,7 +20,8 @@ class TextPart:
 @dataclasses.dataclass
 class ProcessedPart:
     original: TextPart
-    output: str
+    output: str = ""
+    pos_tags: "list[PosTag]" = dataclasses.field(default_factory=list)
 
 
 class JSONEncoder(json.JSONEncoder):
