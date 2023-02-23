@@ -135,6 +135,7 @@ class Pipeline(abc.ABC):
         print(f"====================")
 
     def run(self) -> None:
+        start = time.time()
         print("Running pipeline initialization")
         self.initialize()
 
@@ -146,6 +147,7 @@ class Pipeline(abc.ABC):
                     continue
                 full_path = os.path.join(root, file)
                 self._process_document(full_path)
+        print(f"Total runtime: {time.time() - start} seconds")
 
 
 class Alatius(Pipeline):
@@ -251,15 +253,22 @@ def cltk_pos_to_alatius(
 
 class CltkDefault(Pipeline):
     def initialize(self) -> None:
-        import cltk  # pytype: disable=import-error
-
-        self._nlp = cltk.NLP(language="lat")
-        self._nlp.analyze("ego")
-
         # pytype: disable=import-error
+        import cltk
+        from cltk.core.data_types import Pipeline
+        from cltk.dependency.processes import LatinStanzaProcess
+        from cltk.languages.utils import get_lang
         from src.libs.latin_macronizer.macronizer_modified import Macronizer
 
         # pytype: enable=import-error
+
+        custom_pipeline = Pipeline(
+            description="Custom Latin pipeline",
+            processes=[LatinStanzaProcess],
+            language=get_lang("lat"),
+        )
+        self._nlp = cltk.NLP(language="lat", custom_pipeline=custom_pipeline)
+        self._nlp.analyze("ego")
         self._macronizer = Macronizer()
 
     def process_text(self, text_part: data.TextPart) -> data.ProcessedPart:
