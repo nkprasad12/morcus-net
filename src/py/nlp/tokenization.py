@@ -3,12 +3,14 @@
 import dataclasses
 import enum
 
+# pytype: disable=import-error
 try:
     from src.libs.latin_macronizer import macronizer_modified
 except:
     print(
         "Failed to load `macronizer_modified`. Use `npm run setup-alatius` to load it."
     )
+# pytype: enable=import-error
 
 _PUNCTUATION = ".!?‘’”“—,'\"-;:[]()"
 _SENTENCE_ENDS = ".;:?!"
