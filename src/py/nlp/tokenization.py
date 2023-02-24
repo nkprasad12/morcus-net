@@ -3,8 +3,15 @@
 import dataclasses
 import enum
 
-# TODO: Should we have a separate category for sentence enders?
+try:
+    from src.libs.latin_macronizer import macronizer_modified
+except:
+    print(
+        "Failed to load `macronizer_modified`. Use `npm run setup-alatius` to load it."
+    )
+
 _PUNCTUATION = ".!?‘’”“—,'\"-;:[]()"
+_SENTENCE_ENDS = ".;:?!"
 
 
 class TokenType(enum.Enum):
@@ -65,3 +72,22 @@ def tokenize(input: str) -> "list[Token]":
     tokens.append(token)
 
     return tokens
+
+
+def to_alatius(tokens: "list[Token]") -> "macronizer_modified.Tokenization":
+    alatius_tokens = [
+        macronizer_modified.Token(token.text, start=token.start) for token in tokens
+    ]
+    last_punctuation = None
+    for token, alatius_token in zip(tokens, alatius_tokens):
+        if token.kind == TokenType.OTHER:
+            alatius_token.isspace = True
+        elif token.text in _SENTENCE_ENDS:
+            last_punctuation = alatius_token
+        elif token.kind == TokenType.WORD and last_punctuation is not None:
+            last_punctuation.endssentence = True
+            last_punctuation = None
+            alatius_token.startssentence = True
+    result = macronizer_modified.Tokenization("")
+    result.tokens = alatius_tokens
+    return result

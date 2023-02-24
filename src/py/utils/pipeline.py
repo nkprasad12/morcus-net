@@ -6,6 +6,7 @@ from typing import Optional
 
 import json
 
+from src.py.nlp import tokenization
 from src.py.utils import data
 from src.py.utils import perseus_parser
 
@@ -160,6 +161,32 @@ class Alatius(Pipeline):
 
     def process_text(self, text_part: data.TextPart) -> data.ProcessedPart:
         result = self._macronizer.macronize(text_part.text)
+        return data.ProcessedPart(text_part, result)
+
+
+class AlatiusCustomTokenization(Pipeline):
+    def initialize(self) -> None:
+        # pytype: disable=import-error
+        from src.libs.latin_macronizer.macronizer_modified import Macronizer
+
+        # pytype: enable=import-error
+        self._macronizer = Macronizer()
+
+    def process_text(self, text_part: data.TextPart) -> data.ProcessedPart:
+        tokens = tokenization.tokenize(text_part.text)
+        self._macronizer.tokenization = tokenization.to_alatius(tokens)
+        self._macronizer.wordlist.loadwords(
+            self._macronizer.tokenization.allwordforms()
+        )
+        newwordforms = self._macronizer.tokenization.splittokens(
+            self._macronizer.wordlist
+        )
+        self._macronizer.wordlist.loadwords(newwordforms)
+        self._macronizer.tokenization.addtags()
+        self._macronizer.tokenization.addlemmas(self._macronizer.wordlist)
+        self._macronizer.tokenization.getaccents(self._macronizer.wordlist)
+        self._macronizer.tokenization.macronize(True, False, False, False)
+        result = self._macronizer.tokenization.detokenize(False)
         return data.ProcessedPart(text_part, result)
 
 
