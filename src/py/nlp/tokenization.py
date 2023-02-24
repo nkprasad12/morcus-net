@@ -91,3 +91,18 @@ def to_alatius(tokens: "list[Token]") -> "macronizer_modified.Tokenization":
     result = macronizer_modified.Tokenization("")
     result.tokens = alatius_tokens
     return result
+
+
+def to_stanza(tokens: "list[Token]") -> "list[list[str]]":
+    sentences: list[list[str]] = []
+    current_sentence: list[str] = []
+    for token in tokens:
+        if token.kind == TokenType.OTHER:
+            continue
+        current_sentence.append(token.text)
+        if token.text in _SENTENCE_ENDS:
+            sentences.append(current_sentence)
+            current_sentence = []
+    if current_sentence:
+        sentences.append(current_sentence)
+    return sentences
