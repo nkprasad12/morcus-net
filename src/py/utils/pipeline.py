@@ -2,10 +2,11 @@ import abc
 import os
 import re
 import time
-from typing import Optional
+from typing import Any, Optional
 
 import json
 
+from src.py.nlp import tokenization
 from src.py.utils import data
 from src.py.utils import perseus_parser
 
@@ -135,6 +136,7 @@ class Pipeline(abc.ABC):
         print(f"====================")
 
     def run(self) -> None:
+        start = time.time()
         print("Running pipeline initialization")
         self.initialize()
 
@@ -146,6 +148,7 @@ class Pipeline(abc.ABC):
                     continue
                 full_path = os.path.join(root, file)
                 self._process_document(full_path)
+        print(f"Total runtime: {time.time() - start} seconds")
 
 
 class Alatius(Pipeline):
@@ -158,6 +161,32 @@ class Alatius(Pipeline):
 
     def process_text(self, text_part: data.TextPart) -> data.ProcessedPart:
         result = self._macronizer.macronize(text_part.text)
+        return data.ProcessedPart(text_part, result)
+
+
+class AlatiusCustomTokenization(Pipeline):
+    def initialize(self) -> None:
+        # pytype: disable=import-error
+        from src.libs.latin_macronizer.macronizer_modified import Macronizer
+
+        # pytype: enable=import-error
+        self._macronizer = Macronizer()
+
+    def process_text(self, text_part: data.TextPart) -> data.ProcessedPart:
+        tokens = tokenization.tokenize(text_part.text)
+        self._macronizer.tokenization = tokenization.to_alatius(tokens)
+        self._macronizer.wordlist.loadwords(
+            self._macronizer.tokenization.allwordforms()
+        )
+        newwordforms = self._macronizer.tokenization.splittokens(
+            self._macronizer.wordlist
+        )
+        self._macronizer.wordlist.loadwords(newwordforms)
+        self._macronizer.tokenization.addtags()
+        self._macronizer.tokenization.addlemmas(self._macronizer.wordlist)
+        self._macronizer.tokenization.getaccents(self._macronizer.wordlist)
+        self._macronizer.tokenization.macronize(True, False, False, False)
+        result = self._macronizer.tokenization.detokenize(False)
         return data.ProcessedPart(text_part, result)
 
 
@@ -191,7 +220,7 @@ def cltk_pos_to_alatius(
 
     if cltk_pos_type in ["CCONJ", "SCONJ"]:
         result[0] = "c"
-    if cltk_pos_type == "ADV":
+    if cltk_pos_type in ["ADV", "PART"]:
         result[0] = "d"
 
     has_number = "Number" in cltk_pos
@@ -217,7 +246,7 @@ def cltk_pos_to_alatius(
 
     if "VerbForm" in cltk_pos:
         verb_form = cltk_pos["VerbForm"][0]
-        if verb_form == "infinitive":
+        if verb_form in ["infinitive", "participle"]:
             result[4] = _MOOD_DICT[verb_form]
         if verb_form == "gerund":
             result[0] = "v"
@@ -249,59 +278,102 @@ def cltk_pos_to_alatius(
     return "".join(result)
 
 
-class CltkDefault(Pipeline):
+class Timer:
+    def __init__(self):
+        self.times: list[float] = [time.time()]
+        self.tags: list[str] = []
+
+    def record(self, tag: str):
+        self.times.append(time.time())
+        self.tags.append(tag)
+
+    def print(self):
+        elapsed_times: list[float] = []
+        for i in range(len(self.times) - 1):
+            elapsed_times.append(self.times[i + 1] - self.times[i])
+        self.tags.append("Total")
+        elapsed_times.append(self.times[-1] - self.times[0])
+
+        time_strings = [str(round(elapsed * 1000, 2)) for elapsed in elapsed_times]
+        max_tag_len = max([len(tag) for tag in self.tags])
+        max_time_len = max([len(elapsed) for elapsed in time_strings])
+        for tag, elapsed in zip(self.tags, time_strings):
+            tag_pad = " " * (max_tag_len - len(tag))
+            time_pad = " " * (max_time_len - len(elapsed))
+            print(f"{tag}{tag_pad} : {time_pad}{elapsed} ms")
+
+
+class StanzaCustomTokenization(Pipeline):
+    # pytype: disable=name-error
+    _nlp: "stanza.Pipeline"
+    _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"
+    # pytype: enable=name-error
+
     def initialize(self) -> None:
-        import cltk  # pytype: disable=import-error
-
-        self._nlp = cltk.NLP(language="lat")
-        self._nlp.analyze("ego")
-
         # pytype: disable=import-error
+        import stanza
         from src.libs.latin_macronizer.macronizer_modified import Macronizer
 
         # pytype: enable=import-error
+
+        self._nlp = stanza.Pipeline(
+            "la", tokenize_pretokenized=True, processors="tokenize,pos"
+        )
+        self._run_stanza_pos(self._tokenize("ego"))
         self._macronizer = Macronizer()
 
+    def _tokenize(self, text: str) -> "list[tokenization.Token]":
+        # pytype: disable=import-error
+        from cltk.alphabet.text_normalization import cltk_normalize
+        from cltk.alphabet.text_normalization import remove_odd_punct
+
+        # pytype: enable=import-error
+        sanitized = remove_odd_punct(cltk_normalize(text))
+        return tokenization.tokenize(sanitized)
+
+    def _run_stanza_pos(self, tokens: "list[tokenization.Token]"):
+        # pytype: disable=import-error
+        from cltk.core.data_types import Doc
+        from cltk.dependency.processes import StanzaProcess
+
+        # pytype: enable=import-error
+        sentences = tokenization.to_stanza(tokens)
+        doc = Doc()
+        stanza_doc = self._nlp.process(sentences)
+        doc.words = StanzaProcess.stanza_to_cltk_word_type(stanza_doc)
+        return doc
+
+    def _run_alatius_pos(self, tokens: "list[tokenization.Token]"):
+        self._macronizer.tokenization = tokenization.to_alatius(tokens)
+        self._macronizer.wordlist.loadwords(
+            self._macronizer.tokenization.allwordforms()
+        )
+        newwordforms = self._macronizer.tokenization.splittokens(
+            self._macronizer.wordlist
+        )
+        self._macronizer.wordlist.loadwords(newwordforms)
+        # Real Alatius adds tags here, but we don't need it.
+        # TODO: Add evaluation mode where we compare with Alatius tags.
+        self._macronizer.tokenization.addlemmas(self._macronizer.wordlist)
+
     def process_text(self, text_part: data.TextPart) -> data.ProcessedPart:
-        doc = self._nlp.analyze(text_part.text)
-        starts = find_starts(doc.tokens, text_part.text)
-        tags = []
-        for i, start in enumerate(starts):
-            tags.append(
-                data.PosTag(
-                    token=doc.tokens[i],
-                    tag=str(doc.morphosyntactic_features[i]),
-                    index=start,
-                )
-            )
-        alatius = self._macronizer.get_nitin(text_part.text)
-        cltk_tokens = enumerate(iter(doc.tokens))
-        prev_state = None
-        for i, alatius_token in enumerate(alatius.tokens):
+        print(f"Characters: {len(text_part.text)}")
+        tokens = self._tokenize(text_part.text)
+        stanza_doc = self._run_stanza_pos(tokens)
+        self._run_alatius_pos(tokens)
+
+        alatius = self._macronizer.tokenization
+        cltk_tokens = enumerate(iter(stanza_doc.tokens))
+        for alatius_token in alatius.tokens:
             if alatius_token.isspace:
-                continue
-            if alatius_token.text in [":", "“", "”", "‘", "’", "–"]:
                 continue
             if alatius_token.isenclitic:
                 continue
 
-            if prev_state is None:
-                alatius_text = alatius_token.text
-                j, cltk_token = next(cltk_tokens)
-            else:
-                prev_text, j, cltk_token = prev_state
-                alatius_text = prev_text + alatius_token.text
-                prev_state = None
-            if alatius_text in ["["] and cltk_token.startswith(alatius_text):
-                prev_state = alatius_text, j, cltk_token
-                continue
-            alatius_text = alatius_text.replace("”", "")
-
-            cltk_pos = doc.morphosyntactic_features[j]
-            print(f"\nCLTK: `{cltk_token}`, `{doc.pos[j]}`")
-            print(f"Alatius: `{alatius_text}`")
-            print(f"CLTK: `{cltk_pos}`")
-            print(f"Alatius: `{alatius_token.tag}`")
+            alatius_text = alatius_token.text
+            j, cltk_token = next(cltk_tokens)
+            cltk_pos = stanza_doc.morphosyntactic_features[j]
+            cltk_new = cltk_pos_to_alatius(cltk_pos, stanza_doc.pos[j])
 
             if cltk_token.lower() in ["nec"] and alatius_text.lower() in ["ne"]:
                 # Alatius analyzes nec as ne + que, for whatever reason.
@@ -315,31 +387,12 @@ class CltkDefault(Pipeline):
                 assert cltk_token[length:].lower() in ["ne", "que", "ve"]
             else:
                 assert alatius_text == cltk_token
-
-            cltk_new = cltk_pos_to_alatius(cltk_pos, doc.pos[j])
-
-            # Defer to Alatius on Gender:
-            alatius_start = alatius_token.tag[:6]
-            alatius_end = alatius_token.tag[7:]
-            cltk_start = cltk_new[:6]
-            cltk_end = cltk_new[7:]
-            if (alatius_start == cltk_start) and (alatius_end == cltk_end):
-                cltk_new = alatius_token.tag
-
-            if alatius_token.tag != cltk_new:
-                # print(f'\nCLTK: `{cltk_token}`, `{doc.pos[j]}`')
-                # print(f'Alatius: `{alatius_text}`')
-                # print(f'CLTK: `{cltk_pos}`')
-                # print(f'Alatius: `{alatius_token.tag}`')
-                print(f"CLTKnew: `{cltk_new}`")
             alatius_token.tag = cltk_new
 
         alatius.getaccents(self._macronizer.wordlist)
         alatius.macronize(True, False, False, False)
 
-        return data.ProcessedPart(
-            text_part, pos_tags=tags, output=alatius.detokenize(False)
-        )
+        return data.ProcessedPart(text_part, output=alatius.detokenize(False))
 
 
 _MACRONS = {
@@ -405,9 +458,12 @@ class TestHarness:
         with open(out_file, "w+") as f:
             json.dump(results, f, cls=data.JSONEncoder, ensure_ascii=False, indent=2)
 
+        error_totals = {pipeline.__class__.__name__: 0 for pipeline in self._pipelines}
+        total_words = 0
         for section_name, section_result in results:
             golden_tokens = _tokenize(section_result["Golden"])
             expected_num = len(golden_tokens)
+            total_words += expected_num
             # print(f'Golden: {expected_num} tokens')
             versions = []
             for version, output in section_result.items():
@@ -440,7 +496,25 @@ class TestHarness:
 
             print("\nSummary:\n")
             for version, num_errors in errors.items():
+                if version == "Golden":
+                    continue
+                error_totals[version] += num_errors
                 accuracy = str(100 * (1 - (num_errors / expected_num)))[:4]
                 print(
                     f"{version}: {num_errors} / {expected_num} incorrect, {accuracy}% accurate."
                 )
+        print("\n=======\nTotals:\n=======")
+        ref_version, ref_errors = None, None
+        for version, num_errors in error_totals.items():
+            accuracy = str(100 * (1 - (num_errors / total_words)))[:4]
+            print(
+                f"{version}: {num_errors} / {total_words} incorrect, {accuracy}% accurate."
+            )
+            if ref_version is None:
+                ref_version = version
+                ref_errors = num_errors
+            else:
+                delta = 100 * (num_errors - ref_errors) / ref_errors
+                comparator = "FEWER" if delta < 0 else "MORE"
+                delta = str(abs(delta))[:4]
+                print(f"{version} has {delta}% {comparator} errors than {ref_version}")
