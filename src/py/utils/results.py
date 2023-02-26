@@ -1,7 +1,7 @@
 from src.py.utils import data
 
 import dataclasses
-from typing import Generic, Iterator, Optional, Sequence, TypeVar
+from typing import Generic, Iterable, Iterator, Optional, Sequence, TypeVar, Union
 
 O = TypeVar("O")
 
@@ -25,7 +25,7 @@ class StorableDocument:
     outputs_dir: Optional[str] = None
 
 
-DocumentStream = Iterator[StorableDocument]
+DocumentStream = Union[Iterator[StorableDocument], Iterable[StorableDocument]]
 
 
 @dataclasses.dataclass(frozen=True)

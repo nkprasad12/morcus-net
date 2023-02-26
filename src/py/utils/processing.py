@@ -142,7 +142,7 @@ def _print_accuracy(errors: int, total: int, tag: str) -> None:
 @dataclasses.dataclass
 class ErrorReport:
     total_words: int
-    errors: "dict[str, str]"
+    errors: "list[dict[str, str]]"
 
 
 @dataclasses.dataclass
@@ -243,4 +243,6 @@ def evaluate_macronization(
                 delta = 100 * (doc_count - ref_errors) / ref_errors
                 comparator = "FEWER" if delta < 0 else "MORE"
                 delta = str(abs(delta))[:4]
-                print(f"- {process.name()} has {delta}% {comparator} errors than {ref_version}")
+                print(
+                    f"- {process.name()} has {delta}% {comparator} errors than {ref_version}"
+                )
