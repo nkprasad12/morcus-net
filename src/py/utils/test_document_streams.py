@@ -58,6 +58,13 @@ class TestStreamFromDirectory(unittest.TestCase):
         self.assertEqual(len(document.document), 1)
         self.assertEqual(document.document[0].text, "aaa")
 
+    def test_raises_on_unknown_type(self):
+        self._make_file(self._root.name, "z.yml", "aaa")
+        stream = document_streams.from_directory(self._root.name, filter=".yml")
+
+        with self.assertRaises(RuntimeError):
+            list(stream)
+
     def test_uses_expected_tag(self):
         document = next(
             document_streams.from_directory(
