@@ -5,6 +5,7 @@ import unittest
 from unittest import mock
 
 from src.py.utils import data
+from src.py.utils import document_streams
 from src.py.utils import results
 from src.py.utils import processing
 
@@ -174,6 +175,23 @@ class TestSectionEvaluation(unittest.TestCase):
         self.assertEqual(omnis["Golden"], "omnis")
         self.assertEqual(omnis["Antony"], "omnīs")
         self.assertEqual(omnis["Crassus"], "ōmnis")
+
+
+class TestEvaluate(unittest.TestCase):
+    def setUp(self) -> None:
+        super().setUp()
+        self._root = tempfile.TemporaryDirectory()
+
+    def tearDown(self) -> None:
+        super().tearDown()
+        self._root.cleanup()
+
+    def test_evaluate_runs_as_expected(self):
+        documents = document_streams.from_directory("testdata", "fr.xml")
+        processes = [processing.Process.from_callable(lambda x: x)]
+        reports = processing.evaluate_macronization(documents, processes)
+
+        self.assertEqual(len(reports), 1)
 
 
 if __name__ == "__main__":

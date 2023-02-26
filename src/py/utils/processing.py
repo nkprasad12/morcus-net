@@ -181,12 +181,15 @@ class DocumentReport:
 def evaluate_macronization(
     macronized_documents: results.DocumentStream,
     processes: Sequence[Process[str, str]],
-) -> None:
+) -> "list[DocumentReport]":
     """Evaluates accuracy on macronization processes.
 
     Args:
       macronized_documents: A stream of pre-macronized documents.
       processes: The processes to evaluate. These must output macronized text.
+
+    Returns:
+      The error reports for each document.
     """
     macronized = list(macronized_documents)
     unmacronizer = Process.from_callable(strings.remove_macrons)
@@ -246,3 +249,4 @@ def evaluate_macronization(
                 print(
                     f"- {process.name()} has {delta}% {comparator} errors than {ref_version}"
                 )
+    return reports
