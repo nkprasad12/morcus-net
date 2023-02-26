@@ -2,7 +2,7 @@ import abc
 import json
 import os
 import time
-from typing import Generic, Sequence, TypeVar
+from typing import Callable, Generic, Sequence, TypeVar
 
 from src.py.utils import data
 from src.py.utils import results
@@ -10,6 +10,9 @@ from src.py.utils import strings
 
 I = TypeVar("I")
 O = TypeVar("O")
+
+U = TypeVar("U")
+V = TypeVar("V")
 
 
 class Process(Generic[I, O], abc.ABC):
@@ -24,6 +27,16 @@ class Process(Generic[I, O], abc.ABC):
     @abc.abstractmethod
     def process(self, input: I) -> O:
         """Processes the input."""
+
+    @classmethod
+    def from_callable(cls, callable: Callable[[I], O]) -> "Process[I, O]":
+        class ProcessFromCallable(Process[U, V]):
+            def process(self, input: U) -> V:
+                return callable(input)
+
+        process = ProcessFromCallable()
+        process.initialize()
+        return process
 
 
 def _print_with_banners(message: str, banner_char="=") -> None:

@@ -2,6 +2,7 @@ import os
 import tempfile
 from typing import Iterator
 import unittest
+from unittest import mock
 
 from src.py.utils import data
 from src.py.utils import results
@@ -22,12 +23,24 @@ class TestProcess(processing.Process[str, str]):
 
 
 class TestBaseProcess(unittest.TestCase):
-    def test_sets_initialized(self) -> None:
+    def test_sets_initialized(self):
         process = TestProcess()
         self.assertFalse(process.initialized)
 
         process.initialize()
         self.assertTrue(process.initialized)
+
+    def test_from_callable_is_initialized(self):
+        process = processing.Process.from_callable(mock.MagicMock())
+        self.assertTrue(process.initialized)
+
+    def test_from_callable_defers_to_callable(self):
+        callable = mock.MagicMock()
+        process = processing.Process.from_callable(callable)
+
+        process.process("Ovidius")
+
+        callable.assert_called_once_with("Ovidius")
 
 
 class TestProcessDocuments(unittest.TestCase):
