@@ -187,7 +187,7 @@ class TestEvaluate(unittest.TestCase):
         self._root.cleanup()
 
     def test_evaluate_runs_as_expected(self):
-        documents = document_streams.from_directory("testdata", "fr.xml")
+        documents = document_streams.for_text("Gallia est omnis", "dbg")
         processes = [processing.Process.from_callable(lambda x: x)]
         reports = processing.evaluate_macronization(documents, processes)
 
