@@ -1,35 +1,15 @@
-import dataclasses
 import math
 import os
 import re
-from typing import Iterator, Optional, Sequence, Union
+from typing import Iterator, Union
 
 from src.py.utils import data
 from src.py.utils import perseus_parser
+from src.py.utils import results
 
 _OUTPUT_ROOT = "processed_texts"
 
 Number = Union[float, int]
-Document = Sequence[data.TextPart]
-
-
-@dataclasses.dataclass
-class StorableDocument:
-    """A document which can be processed.
-
-    Attributes:
-      document: The document to process.
-      name: The name of the document.
-      outputs_dir: If set, the directory to which processing outputs
-        will be written.
-    """
-
-    document: Document
-    name: str
-    outputs_dir: Optional[str] = None
-
-
-DocumentStream = Iterator[StorableDocument]
 
 
 def _search_root(
@@ -57,7 +37,7 @@ def _search_root(
             yield os.path.join(root, file)
 
 
-def _parse_file(file_path: str, part_limit: Number = float("inf")) -> Document:
+def _parse_file(file_path: str, part_limit: Number = float("inf")) -> results.Document:
     """Parses the given input file based on extension."""
     if file_path.endswith(".txt"):
         with open(file_path, "r") as f:
@@ -75,7 +55,7 @@ def from_directory(
     doc_limit: Number = float("inf"),
     part_limit: Number = float("inf"),
     tag: str = "debug",
-) -> DocumentStream:
+) -> results.DocumentStream:
     """A stream of documents from a directory.
 
     Args:
@@ -93,21 +73,21 @@ def from_directory(
         if dir_for_file.startswith("/"):
             dir_for_file = dir_for_file[1:]
         out_dir = os.path.join(_OUTPUT_ROOT, tag, dir_for_file)
-        yield StorableDocument(
+        yield results.StorableDocument(
             document=_parse_file(file_path, part_limit),
             name=file_path.split(os.path.sep)[-1],
             outputs_dir=out_dir,
         )
 
 
-def for_text(text: str, tag: str) -> DocumentStream:
+def for_text(text: str, tag: str) -> results.DocumentStream:
     """A simple stream wrapping wrap input text.
 
     Args:
       text: The raw input text to process.
       title: A tag for the text that will be used for storage.
     """
-    yield StorableDocument(
+    yield results.StorableDocument(
         document=[data.TextPart(0, 0, 0, text)],
         name=tag,
         outputs_dir=os.path.join(_OUTPUT_ROOT, "raw_text", tag),

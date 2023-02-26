@@ -32,6 +32,13 @@ class TestDocumentResult(unittest.TestCase):
         with self.assertRaises(AssertionError):
             document_result.add(_RESULT_C)
 
+    def test_from_factory_pipes_arguments(self):
+        document = results.StorableDocument([], name="Aeneid", outputs_dir="/foo")
+        output = results.DocumentResult.for_document(document)
+
+        self.assertEqual(document.name, output.name)
+        self.assertEqual(document.outputs_dir, output.outputs_dir)
+
 
 if __name__ == "__main__":
     unittest.main()

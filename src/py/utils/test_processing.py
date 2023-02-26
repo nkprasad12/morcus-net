@@ -1,11 +1,10 @@
 import os
-import shutil
 import tempfile
 from typing import Iterator
 import unittest
 
 from src.py.utils import data
-from src.py.utils import document_streams
+from src.py.utils import results
 from src.py.utils import processing
 
 
@@ -42,16 +41,25 @@ class TestProcessDocuments(unittest.TestCase):
 
     def _get_stream(
         self, documents: int, sections: int = 1
-    ) -> Iterator[document_streams.StorableDocument]:
+    ) -> Iterator[results.StorableDocument]:
         for i in range(documents):
             text_parts = []
             for j in range(sections):
                 text_parts.append(data.TextPart(0, 0, j, f"Octavianus{i}_{j}"))
-            yield document_streams.StorableDocument(
+            yield results.StorableDocument(
                 document=text_parts,
                 name=f"Augustus{i}",
                 outputs_dir=self._root.name,
             )
+
+    def test_skips_initialization_if_not_needed(self):
+        test_process = TestProcess()
+        test_process.initialized = True
+
+        processing.process_documents(self._get_stream(1, 1), test_process)
+
+        self.assertEqual(test_process.initialize_calls, 0)
+        self.assertEqual(test_process.process_calls, 1)
 
     def test_calls_pipeline_correctly(self):
         test_process = TestProcess()
@@ -85,6 +93,40 @@ class TestProcessDocuments(unittest.TestCase):
         self.assertEqual(len(results), 2)
         self.assertEqual(len(results[0].section_results), 2)
         self.assertEqual(len(results[1].section_results), 2)
+
+
+class TestAsInput(unittest.TestCase):
+    def _get_results(
+        self, documents: int, sections: int
+    ) -> Iterator[results.DocumentResult]:
+        for i in range(documents):
+            section_results = []
+            for j in range(sections):
+                section_results.append(
+                    results.SectionResult(
+                        input=f"Octavianus{i}_{j}",
+                        output=f"Augustus{i}_{j}",
+                        section_id=data.SectionId(0, 0, j),
+                        runtime=1,
+                        processor="Unittest",
+                    )
+                )
+            yield results.DocumentResult(
+                name=f"Augustus{i}",
+                outputs_dir=f"/foo{i}",
+                section_results=section_results,
+            )
+
+    def test_moves_outputs_to_inputs(self):
+        result_docs = list(self._get_results(2, 2))
+
+        as_input = list(processing.as_input(result_docs))
+
+        self.assertEqual(len(as_input), len(result_docs))
+        self.assertEqual(len(as_input[0].document), len(result_docs[0].section_results))
+        self.assertEqual(
+            as_input[0].document[0].text, result_docs[0].section_results[0].output
+        )
 
 
 if __name__ == "__main__":

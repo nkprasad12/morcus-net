@@ -2,11 +2,11 @@ import abc
 import json
 import os
 import time
-from typing import Generic, TypeVar
+from typing import Generic, Sequence, TypeVar
 
 from src.py.utils import data
-from src.py.utils import document_streams
 from src.py.utils import results
+from src.py.utils import strings
 
 I = TypeVar("I")
 O = TypeVar("O")
@@ -32,13 +32,13 @@ def _print_with_banners(message: str, banner_char="=") -> None:
 
 
 def _process_document(
-    document: document_streams.StorableDocument, process: Process[str, O]
+    document: results.StorableDocument, process: Process[str, O]
 ) -> results.DocumentResult[O]:
     """Process a single document using an initialized processor."""
     assert process.initialized
     _print_with_banners(f"Processing document: {document.name}", banner_char="-")
     # TODO: Add batch mode.
-    document_result = results.DocumentResult(document.name)
+    document_result = results.DocumentResult.for_document(document)
     for section in document.document:
         section_id = data.SectionId(section.book, section.chapter, section.section)
         _print_with_banners(f"Processing section: {section_id}", banner_char="-")
@@ -57,13 +57,15 @@ def _process_document(
 
 
 def process_documents(
-    documents: document_streams.DocumentStream, process: Process[str, O]
+    documents: results.DocumentStream, process: Process[str, O]
 ) -> "list[results.DocumentResult[O]]":
+    """Processes a stream of documents with the given process."""
     processor = process.__class__.__name__
     _print_with_banners(f"Processing with {processor}")
-    start = time.time()
-    process.initialize()
-    print(f"{processor} initialize took {time.time() - start:.3f} seconds.")
+    if not process.initialized:
+        start = time.time()
+        process.initialize()
+        print(f"{processor} initialize took {time.time() - start:.3f} seconds.")
 
     document_results = []
     for document in documents:
@@ -82,3 +84,25 @@ def process_documents(
         document_results.append(document_result)
 
     return document_results
+
+
+def as_input(
+    processed_documents: Sequence[results.DocumentResult[str]],
+) -> results.DocumentStream:
+    """Converts a sequence of processed documents into inputs."""
+    for processed_document in processed_documents:
+        sections = []
+        for section in processed_document.section_results:
+            sections.append(
+                data.TextPart(
+                    book=section.section_id.book,
+                    chapter=section.section_id.chapter,
+                    section=section.section_id.section,
+                    text=section.output,
+                )
+            )
+        yield results.StorableDocument(
+            document=sections,
+            name=processed_document.name,
+            outputs_dir=processed_document.outputs_dir,
+        )
