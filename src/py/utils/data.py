@@ -17,6 +17,13 @@ class TextPart:
     text: str
 
 
+@dataclasses.dataclass(order=True)
+class SectionId:
+    book: int
+    chapter: int
+    section: int
+
+
 @dataclasses.dataclass
 class ProcessedPart:
     original: TextPart
