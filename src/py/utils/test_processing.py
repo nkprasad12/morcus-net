@@ -22,6 +22,10 @@ class TestProcess(processing.Process[str, str]):
         return f"Test {input}"
 
 
+def silly_function(_: str) -> str:
+    return "silly"
+
+
 class TestBaseProcess(unittest.TestCase):
     def test_sets_initialized(self):
         process = TestProcess()
@@ -41,6 +45,10 @@ class TestBaseProcess(unittest.TestCase):
         process.process("Ovidius")
 
         callable.assert_called_once_with("Ovidius")
+
+    def test_from_callable_has_expected_name(self):
+        process = processing.Process.from_callable(silly_function)
+        self.assertEqual(process.name(), "silly_function")
 
 
 class TestProcessDocuments(unittest.TestCase):
@@ -140,6 +148,32 @@ class TestAsInput(unittest.TestCase):
         self.assertEqual(
             as_input[0].document[0].text, result_docs[0].section_results[0].output
         )
+
+
+class TestSectionEvaluation(unittest.TestCase):
+    def test_reports_total_words(self):
+        report = processing.SectionEvaluation("Gallia est omnis", []).errors()
+        self.assertEqual(report.total_words, 3)
+
+    def test_reports_correct_errors(self):
+        id = data.SectionId(0, 0, 0)
+        antony = results.SectionResult("", "Galliā est omnīs", id, 0, "Antony")
+        crassus = results.SectionResult("", "Gallia est ōmnis", id, 0, "Crassus")
+
+        report = processing.SectionEvaluation("Gallia est omnis", [antony, crassus])
+        errors = report.errors().errors
+        print(errors)
+
+        self.assertEqual(len(errors), 2)
+        gallia = errors[0]
+        self.assertEqual(len(gallia), 2)
+        self.assertEqual(gallia["Golden"], "Gallia")
+        self.assertEqual(gallia["Antony"], "Galliā")
+        omnis = errors[1]
+        self.assertEqual(len(omnis), 3)
+        self.assertEqual(omnis["Golden"], "omnis")
+        self.assertEqual(omnis["Antony"], "omnīs")
+        self.assertEqual(omnis["Crassus"], "ōmnis")
 
 
 if __name__ == "__main__":
