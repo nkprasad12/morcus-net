@@ -32,7 +32,7 @@ class TestStreamFromDirectory(unittest.TestCase):
         dir_e = self._make_dir("e")
         self._make_file(dir_e, "f.txt", "fff")
 
-    def _make_dir(self, path: str) -> None:
+    def _make_dir(self, path: str) -> str:
         full_path = os.path.join(self._root.name, path)
         os.mkdir(full_path)
         return full_path
@@ -69,11 +69,10 @@ class TestStreamFromDirectory(unittest.TestCase):
         documents = list(
             document_streams.from_directory(self._root.name, filter=".txt$")
         )
+        contents = [d.document[0].text for d in documents]
+        contents = sorted(contents)
 
-        self.assertEqual(len(documents), 3)
-        self.assertEqual(documents[0].document[0].text, "aaa")
-        self.assertEqual(documents[1].document[0].text, "ccc")
-        self.assertEqual(documents[2].document[0].text, "fff")
+        self.assertEqual(contents, ["aaa", "ccc", "fff"])
 
     def test_obeys_doc_limit(self):
         documents = list(

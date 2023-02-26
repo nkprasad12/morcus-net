@@ -2,7 +2,7 @@ import dataclasses
 import math
 import os
 import re
-from typing import Iterable, Optional, Sequence, Union
+from typing import Iterator, Optional, Sequence, Union
 
 from src.py.utils import data
 from src.py.utils import perseus_parser
@@ -29,7 +29,7 @@ class StorableDocument:
 
 def _search_root(
     root: str, filter: str = ".*", limit: Number = float("inf")
-) -> Iterable[str]:
+) -> Iterator[str]:
     """Finds files in a directory with the given pattern.
 
     Args:
@@ -70,7 +70,7 @@ def from_directory(
     doc_limit: Number = float("inf"),
     part_limit: Number = float("inf"),
     tag: str = "debug",
-) -> Iterable[StorableDocument]:
+) -> Iterator[StorableDocument]:
     """A stream of documents from a directory.
 
     Args:
@@ -91,7 +91,7 @@ def from_directory(
         yield StorableDocument(_parse_file(file_path, part_limit), out_dir)
 
 
-def for_text(text: str, tag: str) -> Iterable[StorableDocument]:
+def for_text(text: str, tag: str) -> Iterator[StorableDocument]:
     """A simple stream wrapping wrap input text.
 
     Args:
