@@ -19,12 +19,17 @@ class StorableDocument:
 
     Attributes:
       document: The document to process.
+      name: The name of the document.
       outputs_dir: If set, the directory to which processing outputs
         will be written.
     """
 
     document: Document
+    name: str
     outputs_dir: Optional[str] = None
+
+
+DocumentStream = Iterator[StorableDocument]
 
 
 def _search_root(
@@ -70,7 +75,7 @@ def from_directory(
     doc_limit: Number = float("inf"),
     part_limit: Number = float("inf"),
     tag: str = "debug",
-) -> Iterator[StorableDocument]:
+) -> DocumentStream:
     """A stream of documents from a directory.
 
     Args:
@@ -88,10 +93,14 @@ def from_directory(
         if dir_for_file.startswith("/"):
             dir_for_file = dir_for_file[1:]
         out_dir = os.path.join(_OUTPUT_ROOT, tag, dir_for_file)
-        yield StorableDocument(_parse_file(file_path, part_limit), out_dir)
+        yield StorableDocument(
+            document=_parse_file(file_path, part_limit),
+            name=file_path.split(os.path.sep)[-1],
+            outputs_dir=out_dir,
+        )
 
 
-def for_text(text: str, tag: str) -> Iterator[StorableDocument]:
+def for_text(text: str, tag: str) -> DocumentStream:
     """A simple stream wrapping wrap input text.
 
     Args:
@@ -100,5 +109,6 @@ def for_text(text: str, tag: str) -> Iterator[StorableDocument]:
     """
     yield StorableDocument(
         document=[data.TextPart(0, 0, 0, text)],
+        name=tag,
         outputs_dir=os.path.join(_OUTPUT_ROOT, "raw_text", tag),
     )

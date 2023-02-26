@@ -13,12 +13,17 @@ class TestStreamForText(unittest.TestCase):
         self.assertEqual(len(list(documents)), 1)
 
     def test_has_all_in_one_part(self):
-        documents = document_streams.for_text("foo", "bar")
-        self.assertEqual(len(next(documents).document), 1)
+        document = next(document_streams.for_text("foo", "bar"))
+        self.assertEqual(len(document.document), 1)
+        self.assertEqual(document.document[0].text, "foo")
 
     def test_has_expected_output_dir(self):
         documents = document_streams.for_text("foo", "bar")
         self.assertEqual(next(documents).outputs_dir, "processed_texts/raw_text/bar")
+
+    def test_has_expected_name(self):
+        document = next(document_streams.for_text("foo", "bar"))
+        self.assertEqual(document.name, "bar")
 
 
 class TestStreamFromDirectory(unittest.TestCase):
@@ -64,6 +69,14 @@ class TestStreamFromDirectory(unittest.TestCase):
         )
 
         self.assertEqual(document.outputs_dir, expected_path)
+
+    def test_has_expected_name(self):
+        document = next(
+            document_streams.from_directory(
+                self._root.name, filter="a.txt$", tag="gallia"
+            )
+        )
+        self.assertEqual(document.name, "a.txt")
 
     def test_finds_all_files_with_filter(self):
         documents = list(
