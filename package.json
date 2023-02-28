@@ -4,8 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "format": "npx prettier --write . && npm run pyformat",
-    "pyformat": "python -m black src/",
+    "format": "npx prettier . --write && python -m black .",
+    "format-check": "npx prettier . --check && python -m black . --check",
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests": "npx jest",
@@ -16,7 +16,8 @@
     "ts-node": "ts-node -r tsconfig-paths/register",
     "pytype": "python -m pytype src/py src/scripts",
     "driver": "npm run ts-node src/driver.ts",
-    "py-driver": "python -c \"import src.py.driver\""
+    "py-driver": "python -c \"import src.py.driver\"",
+    "nlp-server": "python -c \"import src.py.nlp.server\""
   },
   "repository": {
     "type": "git",

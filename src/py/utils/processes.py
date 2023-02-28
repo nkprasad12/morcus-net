@@ -233,7 +233,10 @@ class StanzaCustomTokenization(processing.Process[str, str]):
         # pytype: enable=import-error
 
         self._nlp = stanza.Pipeline(
-            "la", tokenize_pretokenized=True, processors="tokenize,pos"
+            "la",
+            tokenize_pretokenized=True,
+            processors="tokenize,pos",
+            download_method=None,
         )
         self._run_stanza_pos(self._tokenize("ego"))
         self._macronizer = Macronizer()
