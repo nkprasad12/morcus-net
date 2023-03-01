@@ -16,8 +16,7 @@
     "ts-node": "ts-node -r tsconfig-paths/register",
     "pytype": "python -m pytype src/py src/scripts",
     "driver": "npm run ts-node src/driver.ts",
-    "py-driver": "python -c \"import src.py.driver\"",
-    "nlp-server": "python -c \"import src.py.nlp.server\""
+    "py-driver": "python -c \"import src.py.driver\""
   },
   "repository": {
     "type": "git",
