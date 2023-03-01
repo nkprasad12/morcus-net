@@ -63,6 +63,7 @@ def _process_document(
     for section in document.document:
         section_id = data.SectionId(section.book, section.chapter, section.section)
         print(f"Processing section: {section_id}")
+        print(f"Characters: {len(section.text)}")
         start = time.time()
         output = process.process(section.text)
         document_result.add(
@@ -89,8 +90,10 @@ def process_documents(
         print(f"{processor} initialize took {time.time() - start:.3f} seconds.")
 
     document_results = []
+    total_time = 0
     for document in documents:
         document_result = _process_document(document, process)
+        total_time += document_result.runtime
         _print_with_banners(f"{processor} took {document_result.runtime:.3f} seconds.")
         safe_doc_name = "".join(c for c in document.name if c.isalnum())
         outfile = os.path.join(document.outputs_dir, f"{safe_doc_name}.{processor}.txt")
@@ -103,7 +106,7 @@ def process_documents(
                 section_results, f, cls=data.JSONEncoder, ensure_ascii=False, indent=2
             )
         document_results.append(document_result)
-
+    _print_with_banners(f"{processor} took {total_time:.3f} seconds on all documents.")
     return document_results
 
 
