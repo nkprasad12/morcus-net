@@ -92,3 +92,18 @@ def for_text(text: str, tag: str) -> results.DocumentStream:
         name=tag,
         outputs_dir=os.path.join(_OUTPUT_ROOT, "raw_text", tag),
     )
+
+
+def for_list(text_list: "list[str]", tag: str) -> results.DocumentStream:
+    """A simple stream wrapping wrap input text.
+
+    Args:
+      text: The raw input text to process.
+      title: A tag for the text that will be used for storage.
+    """
+    for i, text in enumerate(text_list):
+        yield results.StorableDocument(
+            document=[data.TextPart(0, 0, i, text)],
+            name=tag,
+            outputs_dir=os.path.join(_OUTPUT_ROOT, "raw_text", tag, f"part{i}"),
+        )
