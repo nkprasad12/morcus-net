@@ -9,4 +9,5 @@ module.exports = {
   moduleNameMapper: pathsToModuleNameMapper({
     "@/*": ["*"],
   }),
+  collectCoverageFrom: ["src/**/*.ts", "src/**/*.tsx"],
 };

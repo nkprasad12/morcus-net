@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+export const ERROR_MESSAGE = "Processing failed, please try again later.";
+
 interface TextInputFieldProps {
   label: string;
   labelColor?: string;
@@ -30,9 +32,8 @@ function TextInputField(props: TextInputFieldProps) {
 async function process(input: string): Promise<string> {
   const response = await fetch(`${location.origin}/api/macronize/${input}`);
   if (!response.ok) {
-    return "Processing failed, please try again later.";
+    return ERROR_MESSAGE;
   }
-  console.log(response);
   return await response.text();
 }
 
@@ -44,9 +45,7 @@ export function Macronizer() {
     if (rawInput === undefined) {
       return;
     }
-    const start = performance.now();
     setProcessed(await process(rawInput));
-    console.log(`${performance.now() - start} ms`);
   }
 
   return (
