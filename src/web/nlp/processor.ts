@@ -5,14 +5,18 @@ const PORT = 65432;
 const ON_LISTEN = "NLP_SERVER:LISTEN";
 const SERVER_ARGS = ["main.py", "--server", `${PORT}`, ON_LISTEN];
 
+function log(message: string) {
+  console.log(`[NLP Processor] ${message}`)
+}
+
 async function startNlpServer(): Promise<net.Socket> {
   const process = cp.spawn("python", SERVER_ARGS);
   const serverReady = new Promise<void>((resolve) => {
-    console.log("Waiting for NLP Server to start.");
+    log("Waiting for Python NLP Server to start.");
     const readyCallback = (data: string) => {
-      console.log(data.toString().trimEnd());
+      log(data.toString().trimEnd());
       if (data.includes(ON_LISTEN)) {
-        console.log("NLP Server listening.");
+        log("Python NLP Server listening.");
         resolve();
       }
     };
@@ -21,9 +25,9 @@ async function startNlpServer(): Promise<net.Socket> {
   await serverReady;
   const client = new net.Socket();
   return new Promise((resolve) => {
-    console.log("Trying to connect to NLP server.");
+    log("Trying to connect to Python NLP server.");
     client.connect(PORT, "127.0.0.1", () => {
-      console.log(`Connected to NLP server.`);
+      log(`Connected to Python NLP server.`);
       resolve(client);
     });
   });
@@ -35,14 +39,15 @@ class NlpProcesser {
 
   constructor(private readonly client: net.Socket) {
     const callback = (data: string) => {
-      console.log(`Received data`);
+      log(`Received data from Python`);
       if (this.currentResolver !== undefined) {
         this.currentResolver(data.toString());
       } else {
-        console.log(`ERROR: No resolver for response.`);
+        log(`ERROR: No resolver for response.`);
       }
       const next = this.queue.shift();
       if (next === undefined) {
+        this.currentResolver = undefined;
         return;
       }
       this.currentResolver = next[1];
@@ -53,9 +58,9 @@ class NlpProcesser {
 
   close(): Promise<void> {
     return new Promise((resolve) => {
-      console.log("Closing connected to NLP server");
+      log("Closing connection to Python NLP server");
       this.client.on("close", () => {
-        console.log("Connection to NLP server closed");
+        log("Connection to Python NLP server closed");
         resolve();
       });
       this.client.destroy();
@@ -64,10 +69,12 @@ class NlpProcesser {
 
   async process(input: string): Promise<string> {
     return new Promise((resolve) => {
+      log('Recieved processing request')
       if (this.currentResolver === undefined) {
         this.currentResolver = resolve;
         this.client.write(input);
       } else {
+        log('Adding to queue')
         this.queue.push([input, resolve]);
       }
     });
@@ -78,22 +85,3 @@ export async function nlpProcessor(): Promise<NlpProcesser> {
   const client = await startNlpServer();
   return new NlpProcesser(client);
 }
-
-// async function test() {
-
-//   const message = "Dixit, 'me optimum esse'.";
-//   const responses = [];
-//   for (let i = 0; i < 10; i++) {
-//     responses.push(processor.process(`${i} ${message}`));
-//   }
-
-//   try {
-//     for (const response of responses) {
-//       console.log(await response);
-//     }
-//   } finally {
-//     await processor.close();
-//   }
-// }
-
-// test();

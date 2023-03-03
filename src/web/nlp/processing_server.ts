@@ -1,3 +1,4 @@
+import * as dotenv from 'dotenv'
 import { io } from "socket.io-client";
 import {
   PROCESSED_OUTPUT_CHANNEL,
@@ -6,26 +7,30 @@ import {
 } from "@/web/nlp/types";
 import { nlpProcessor } from "./processor";
 
+function log(message: string) {
+  console.log(`[Processing Server] ${message}`)
+}
+
 async function start() {
   const processor = await nlpProcessor()
   const socket = io("http://localhost:8000", {
     auth: {
-      token: "abc"
+      token: process.env.PROCESSING_SERVER_TOKEN
     }
   });
 
   socket.on("connection", () => {
-    console.log("Connected to web server.");
+    log("Connected to web server.");
   });
   
   socket.on("disconnect", () => {
-    console.log("Disconnected from web server.");
+    log("Disconnected from web server.");
     processor.close()
     socket.close()
   });
   
   socket.on(RAW_INPUT_CHANNEL, async (message: ProcessingMessage) => {
-    console.log('Received request %d', message.id);
+    log(`Received request ${message.id}`);
     const output: ProcessingMessage = {
       id: message.id,
       content: await processor.process(message.content),
@@ -34,4 +39,5 @@ async function start() {
   });
 }
 
+dotenv.config()
 start()

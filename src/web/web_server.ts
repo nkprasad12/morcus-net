@@ -12,6 +12,10 @@ import {
 const host = "localhost";
 const port = 8000;
 
+function log(message: string) {
+  console.log(`[Web Server] ${message}`)
+}
+
 class ProcessingConnection {
   private readonly pendingRequests: Map<string, (output: string) => any> =
     new Map();
@@ -21,17 +25,17 @@ class ProcessingConnection {
 
   constructor(server: Server) {
     server.on("connection", (socket: Socket) => {
-      console.log("Connected to processing server.");
+      log("Connected to processing server.");
       this.socket = socket;
       socket.on("disconnect", () => {
-        console.log("Disconnected from processing server.");
+        log("Disconnected from processing server.");
         this.socket = undefined;
       });
       socket.on(PROCESSED_OUTPUT_CHANNEL, (message: ProcessingMessage) => {
-        console.log("Got results for request: %s", message.id);
+        log(`Got results for request: ${message.id}`);
         const resolver = this.pendingRequests.get(message.id);
         if (resolver === undefined) {
-          console.log("No resolver for result.");
+          log("No resolver for result.");
           return;
         }
         resolver(message.content);
@@ -51,7 +55,7 @@ class ProcessingConnection {
         content: input,
       };
       this.availableId += 1;
-      console.log("Sending request %s", message.id);
+      log(`Sending request ${message.id}`);
       this.socket.emit(RAW_INPUT_CHANNEL, message);
     });
   }
@@ -67,11 +71,12 @@ export function startServer(): void {
   const io = new Server(server)
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
-    // if (isValid(socket.request)) {
+    if (token !== process.env.PROCESSING_SERVER_TOKEN) {
+      next(new Error("Unrecognized processing backend."));
+    } else {
+      log('Authenticated processing backend.')
       next();
-    // } else {
-    //   next(new Error("Unrecognized processing backend."));
-    // }
+    }
   });
   const processingConnection = new ProcessingConnection(io);
 
@@ -84,6 +89,6 @@ export function startServer(): void {
   );
 
   server.listen(port, host, () => {
-    console.log(`Server is running on http://${host}:${port}`);
+    log(`Server is running on http://${host}:${port}`);
   });
 }
