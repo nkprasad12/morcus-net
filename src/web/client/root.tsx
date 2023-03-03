@@ -1,5 +1,6 @@
 import React from "react";
-import ReactDOM from "react-dom";
+import ReactDOM from "react-dom/client";
 import { Macronizer } from "./macron";
 
-ReactDOM.render(<Macronizer />, document.querySelector("#placeholder"));
+const root = ReactDOM.createRoot(document.querySelector("#placeholder") as HTMLElement);
+root.render(<Macronizer />);
