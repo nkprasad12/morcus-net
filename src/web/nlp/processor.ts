@@ -6,7 +6,7 @@ const ON_LISTEN = "NLP_SERVER:LISTEN";
 const SERVER_ARGS = ["main.py", "--server", `${PORT}`, ON_LISTEN];
 
 function log(message: string) {
-  console.log(`[NLP Processor] ${message}`)
+  console.log(`[NLP Processor] ${message}`);
 }
 
 async function startNlpServer(): Promise<net.Socket> {
@@ -69,12 +69,12 @@ class NlpProcesser {
 
   async process(input: string): Promise<string> {
     return new Promise((resolve) => {
-      log('Recieved processing request')
+      log("Recieved processing request");
       if (this.currentResolver === undefined) {
         this.currentResolver = resolve;
         this.client.write(input);
       } else {
-        log('Adding to queue')
+        log("Adding to queue");
         this.queue.push([input, resolve]);
       }
     });

@@ -44,9 +44,9 @@ export function Macronizer() {
     if (rawInput === undefined) {
       return;
     }
-    const start = performance.now()
+    const start = performance.now();
     setProcessed(await process(rawInput));
-    console.log(`${performance.now() - start} ms`)
+    console.log(`${performance.now() - start} ms`);
   }
 
   return (

@@ -13,7 +13,7 @@ const host = "localhost";
 const port = 8000;
 
 function log(message: string) {
-  console.log(`[Web Server] ${message}`)
+  console.log(`[Web Server] ${message}`);
 }
 
 class ProcessingConnection {
@@ -46,8 +46,8 @@ class ProcessingConnection {
   async process(input: string): Promise<string> {
     return new Promise((resolve) => {
       if (this.socket === undefined) {
-        resolve("Processing backend is not available. Please try again later.")
-        return
+        resolve("Processing backend is not available. Please try again later.");
+        return;
       }
       this.pendingRequests.set(`${this.availableId}`, resolve);
       const message: ProcessingMessage = {
@@ -68,13 +68,13 @@ export function startServer(): void {
   contentRouter.use(expressStaticGzip("genfiles_static", { index: false }));
   app.use(express.static("genfiles_static"));
 
-  const io = new Server(server)
+  const io = new Server(server);
   io.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (token !== process.env.PROCESSING_SERVER_TOKEN) {
       next(new Error("Unrecognized processing backend."));
     } else {
-      log('Authenticated processing backend.')
+      log("Authenticated processing backend.");
       next();
     }
   });

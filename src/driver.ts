@@ -1,6 +1,6 @@
-import * as dotenv from 'dotenv'
+import * as dotenv from "dotenv";
 
 import { startServer } from "@/web/web_server";
 
-dotenv.config()
+dotenv.config();
 startServer();
