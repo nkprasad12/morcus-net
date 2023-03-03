@@ -1,3 +1,3 @@
-import { startServer } from "@/web/server";
+import { startServer } from "@/web/web_server";
 
 startServer();

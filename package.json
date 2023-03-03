@@ -16,7 +16,8 @@
     "ts-node": "ts-node -r tsconfig-paths/register",
     "pytype": "python -m pytype src/py src/scripts",
     "build-client": "npx webpack",
-    "webserver": "npm run build-client && npm run ts-node src/driver.ts",
+    "server-w": "npm run build-client && npm run ts-node src/driver.ts",
+    "server-p": "npm run ts-node src/web/nlp/processing_server.ts",
     "driver": "npm run ts-node src/driver.ts",
     "py-driver": "python -c \"import src.py.driver\""
   },
@@ -35,6 +36,7 @@
     "express": "^4.18.2",
     "express-static-gzip": "^2.1.7",
     "fast-xml-parser": "^4.1.2",
+    "socket.io": "^4.6.1",
     "ts-lib": "^0.0.5",
     "ts-node": "^10.9.1"
   },
@@ -52,6 +54,7 @@
     "prettier": "2.8.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "socket.io-client": "^4.6.1",
     "terser-webpack-plugin": "^5.3.6",
     "ts-jest": "^29.0.5",
     "ts-loader": "^9.4.2",

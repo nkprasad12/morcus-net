@@ -74,22 +74,26 @@ class NlpProcesser {
   }
 }
 
-async function test() {
+export async function nlpProcessor(): Promise<NlpProcesser> {
   const client = await startNlpServer();
-  const processor = new NlpProcesser(client);
-  const message = "Dixit, 'me optimum esse'.";
-  const responses = [];
-  for (let i = 0; i < 10; i++) {
-    responses.push(processor.process(`${i} ${message}`));
-  }
-
-  try {
-    for (const response of responses) {
-      console.log(await response);
-    }
-  } finally {
-    await processor.close();
-  }
+  return new NlpProcesser(client);
 }
 
-test();
+// async function test() {
+
+//   const message = "Dixit, 'me optimum esse'.";
+//   const responses = [];
+//   for (let i = 0; i < 10; i++) {
+//     responses.push(processor.process(`${i} ${message}`));
+//   }
+
+//   try {
+//     for (const response of responses) {
+//       console.log(await response);
+//     }
+//   } finally {
+//     await processor.close();
+//   }
+// }
+
+// test();
