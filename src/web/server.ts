@@ -1,4 +1,4 @@
-import express from "express";
+import express, { Request } from "express";
 import expressStaticGzip from "express-static-gzip";
 import http from "http";
 
@@ -11,6 +11,10 @@ export function startServer(): void {
   const contentRouter = express.Router();
   contentRouter.use(expressStaticGzip("genfiles_static", { index: false }));
   app.use(express.static("genfiles_static"));
+
+  app.get("/api/macronize/:input", (req: Request<{ input: string }>, res) => {
+    res.send(req.params.input + " NITIN");
+  });
 
   server.listen(port, host, () => {
     console.log(`Server is running on http://${host}:${port}`);
