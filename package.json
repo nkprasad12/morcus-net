@@ -16,7 +16,7 @@
     "ts-node": "ts-node -r tsconfig-paths/register",
     "pytype": "python -m pytype src/py src/scripts",
     "build-client": "npx webpack",
-    "webserver": "npm run build-client && npm run ts-node src/driver.ts", 
+    "webserver": "npm run build-client && npm run ts-node src/driver.ts",
     "driver": "npm run ts-node src/driver.ts",
     "py-driver": "python -c \"import src.py.driver\""
   },

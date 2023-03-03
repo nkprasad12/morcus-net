@@ -4,41 +4,13 @@ const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 
-const shouldMinimize = true;
+module.exports = (env) => {
+  console.log(env);
 
-module.exports = {
-  mode: "production",
-  entry: {
-    Root: "./src/web/client/root.tsx",
-  },
-  watchOptions: {
-    ignored: /node_modules/,
-    aggregateTimeout: 500,
-    poll: 1500,
-  },
-  module: {
-    rules: [
-      {
-        test: /\.tsx?$/,
-        use: [
-          {
-            loader: "ts-loader",
-            options: {
-              configFile: "tsconfig.json",
-            },
-          },
-        ],
-        exclude: /node_modules/,
-      },
-    ],
-  },
-  resolve: {
-    extensions: [".tsx", ".ts", ".js"],
-    alias: {
-      "@": path.resolve(__dirname, "src/"),
-    },
-  },
-  plugins: [
+  const isProduction = env.production === true;
+  const shouldMinimize = isProduction;
+
+  const plugins = [
     new CleanWebpackPlugin(),
     new HtmlWebpackPlugin({
       chunks: ["Root"],
@@ -46,9 +18,11 @@ module.exports = {
       template: "./src/web/client/root.html",
       minify: shouldMinimize,
     }),
-    new CompressionPlugin(),
-  ],
-  optimization: {
+  ];
+  if (isProduction) {
+    plugins.push(new CompressionPlugin());
+  }
+  const productionOptimization = {
     minimize: shouldMinimize,
     minimizer: [
       new TerserPlugin({
@@ -74,16 +48,52 @@ module.exports = {
         },
       },
     },
-  },
-  performance: {
-    maxEntrypointSize: 600000,
-  },
-  output: {
-    filename: "[name].[contenthash].client-bundle.js",
-    path: path.resolve(__dirname, "genfiles_static"),
-  },
-  stats: {
-    builtAt: true,
-    entrypoints: true,
-  },
+  };
+
+  return {
+    mode: isProduction ? "production" : "development",
+    entry: {
+      Root: "./src/web/client/root.tsx",
+    },
+    watchOptions: {
+      ignored: /node_modules/,
+      aggregateTimeout: 500,
+      poll: 1500,
+    },
+    module: {
+      rules: [
+        {
+          test: /\.tsx?$/,
+          use: [
+            {
+              loader: "ts-loader",
+              options: {
+                configFile: "tsconfig.json",
+              },
+            },
+          ],
+          exclude: /node_modules/,
+        },
+      ],
+    },
+    resolve: {
+      extensions: [".tsx", ".ts", ".js"],
+      alias: {
+        "@": path.resolve(__dirname, "src/"),
+      },
+    },
+    plugins: plugins,
+    optimization: isProduction ? productionOptimization : {},
+    performance: {
+      maxEntrypointSize: 600000,
+    },
+    output: {
+      filename: "[name].[contenthash].client-bundle.js",
+      path: path.resolve(__dirname, "genfiles_static"),
+    },
+    stats: {
+      builtAt: true,
+      entrypoints: true,
+    },
+  };
 };
