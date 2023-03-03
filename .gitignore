@@ -115,3 +115,5 @@ venv/
 
 py_driver_log.txt
 testdata/llpsi/
+
+genfiles_static/

@@ -18,6 +18,8 @@ jobs:
         run: pip install -r requirements.txt
       - name: Running unit tests
         run: npm run coverage
+      - name: Building the client bundle
+        run: npm run build-client
       - name: Checking formatting
         run: npm run format-check
       - name: Checking Pytype
