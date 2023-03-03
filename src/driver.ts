@@ -6,9 +6,16 @@ import http from "http";
 import * as dotenv from "dotenv";
 
 import { createProcessorConnection } from "@/web/processor_connection";
-import { startServer, WebServerParams } from "@/web/web_server";
+import { setupServer, WebServerParams } from "@/web/web_server";
 
 dotenv.config();
+
+function log(message: string) {
+  console.log(`[Driver] ${message}`);
+}
+
+const host = "localhost";
+const port = 8000;
 
 const app = express();
 const server = http.createServer(app);
@@ -16,8 +23,11 @@ const processorConnection = createProcessorConnection(server);
 
 const params: WebServerParams = {
   app: app,
-  server: server,
   macronizer: processorConnection.process,
 };
 
-startServer(params);
+setupServer(params);
+
+server.listen(port, host, () => {
+  log(`Server is running on http://${host}:${port}`);
+});
