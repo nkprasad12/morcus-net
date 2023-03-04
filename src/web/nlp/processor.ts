@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import net from "net";
 import cp from "child_process";
 

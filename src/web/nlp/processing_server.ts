@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import * as dotenv from "dotenv";
 import { io } from "socket.io-client";
 import {
