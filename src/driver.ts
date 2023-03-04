@@ -1,8 +1,34 @@
-import { readFile } from "@/common/perseus_parser";
-import { startServer } from "@/server/main";
+/* istanbul ignore file */
 
-const DBG_ROOT =
-  "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml";
+import * as dotenv from "dotenv";
+import express from "express";
+import http from "http";
+import { Server, Socket } from "socket.io";
 
-const content = readFile(DBG_ROOT).toString();
-startServer(content);
+import { createProcessorConnection } from "@/web/processor_connection";
+import { setupServer, WebServerParams } from "@/web/web_server";
+
+dotenv.config();
+
+function log(message: string) {
+  console.log(`[Driver] ${message}`);
+}
+
+const host = "localhost";
+const port = 8000;
+
+const app = express();
+const server = http.createServer(app);
+const socketIo = new Server(server);
+const processorConnection = createProcessorConnection(socketIo);
+
+const params: WebServerParams = {
+  app: app,
+  macronizer: processorConnection.process,
+};
+
+setupServer(params);
+
+server.listen(port, host, () => {
+  log(`Server is running on http://${host}:${port}`);
+});

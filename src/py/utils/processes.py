@@ -233,7 +233,10 @@ class StanzaCustomTokenization(processing.Process[str, str]):
         # pytype: enable=import-error
 
         self._nlp = stanza.Pipeline(
-            "la", tokenize_pretokenized=True, processors="tokenize,pos"
+            "la",
+            tokenize_pretokenized=True,
+            processors="tokenize,pos",
+            download_method=None,
         )
         self._run_stanza_pos(self._tokenize("ego"))
         self._macronizer = Macronizer()
@@ -273,7 +276,6 @@ class StanzaCustomTokenization(processing.Process[str, str]):
         self._macronizer.tokenization.addlemmas(self._macronizer.wordlist)
 
     def process(self, input: str) -> str:
-        print(f"Characters: {len(input)}")
         tokens = self._tokenize(input)
         stanza_doc = self._run_stanza_pos(tokens)
         self._run_alatius_pos(tokens)
@@ -294,9 +296,6 @@ class StanzaCustomTokenization(processing.Process[str, str]):
             if cltk_token.lower() in ["nec"] and alatius_text.lower() in ["ne"]:
                 # Alatius analyzes nec as ne + que, for whatever reason.
                 pass
-            elif "'" in cltk_token:
-                modified = cltk_token.replace("'", "")
-                assert modified == alatius_text
             elif alatius_token.hasenclitic:
                 length = len(alatius_text)
                 assert alatius_text == cltk_token[:length]

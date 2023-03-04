@@ -26,6 +26,18 @@ class TestStreamForText(unittest.TestCase):
         self.assertEqual(document.name, "bar")
 
 
+class TestStreamForList(unittest.TestCase):
+    def test_returns_expected_number_of_documents(self):
+        documents = document_streams.for_list(["foo", "bar"], "tag")
+        self.assertEqual(len(list(documents)), 2)
+
+    def test_returns_expected_contents(self):
+        documents = document_streams.for_list(["foo", "bar"], "tag")
+
+        self.assertEqual(next(documents).document[0].text, "foo")
+        self.assertEqual(next(documents).document[0].text, "bar")
+
+
 class TestStreamFromDirectory(unittest.TestCase):
     def setUp(self) -> None:
         super().setUp()
