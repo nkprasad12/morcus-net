@@ -1,4 +1,3 @@
-import http from "http";
 import { Server, Socket } from "socket.io";
 
 import {
@@ -11,7 +10,7 @@ function log(message: string) {
   console.log(`[Processor Connection] ${message}`);
 }
 
-class ProcessorConnection {
+export class ProcessorConnection {
   private readonly pendingRequests: Map<string, (output: string) => any> =
     new Map();
 
@@ -30,7 +29,7 @@ class ProcessorConnection {
         log(`Got results for request: ${message.id}`);
         const resolver = this.pendingRequests.get(message.id);
         if (resolver === undefined) {
-          log("No resolver for result.");
+          log("ERROR: No resolver for result.");
           return;
         }
         resolver(message.content);
@@ -57,10 +56,9 @@ class ProcessorConnection {
 }
 
 export function createProcessorConnection(
-  server: http.Server
+  socketIo: Server
 ): ProcessorConnection {
-  const io = new Server(server);
-  io.use((socket, next) => {
+  socketIo.use((socket, next) => {
     const token = socket.handshake.auth.token;
     if (token !== process.env.PROCESSING_SERVER_TOKEN) {
       next(new Error("Unrecognized processing backend."));
@@ -69,5 +67,5 @@ export function createProcessorConnection(
       next();
     }
   });
-  return new ProcessorConnection(io);
+  return new ProcessorConnection(socketIo);
 }
