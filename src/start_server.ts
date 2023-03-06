@@ -3,7 +3,7 @@
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
-import { Server, Socket } from "socket.io";
+import { Server } from "socket.io";
 
 import { createProcessorConnection } from "@/web/processor_connection";
 import { setupServer, WebServerParams } from "@/web/web_server";
