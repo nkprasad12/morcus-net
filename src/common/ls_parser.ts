@@ -1,9 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
-import { readFileSync } from "fs";
+import { readFile, readFileSync } from "fs";
 import { assert } from "./assert";
-
-// TODO: Get this from an env variable.
-const PATH = "/home/nitin/Documents/Latin/lat.ls.perseus-eng2.xml";
 
 const ENTRY_OPEN = "<entryFree ";
 const ENTRY_CLOSE = "</entryFree>";
@@ -159,7 +156,7 @@ export function extractEntries(xmlContents: string): string[] {
   return entries;
 }
 
-export function parse(path: string = PATH) {
+export function parse(path: string): XmlNode[] {
   const xmlContents = readFileSync(path, "utf8");
   const rawEntries = extractEntries(xmlContents);
   return parseEntries(rawEntries);
