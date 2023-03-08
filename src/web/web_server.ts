@@ -11,6 +11,7 @@ export interface WebServerParams {
 export function setupServer(params: WebServerParams): void {
   const app = params.app;
 
+  app.use("/public", express.static("public"));
   app.use(express.static("genfiles_static"));
   // TODO: Make the route a constant so that we can access it from the client.
   app.get(
