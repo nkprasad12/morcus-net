@@ -1,6 +1,7 @@
+import compression from "compression";
 import express, { Request } from "express";
-
 import { lsCall, macronizeCall } from "@/web/api_routes";
+import path from "path";
 
 export interface WebServerParams {
   app: express.Express;
@@ -11,9 +12,17 @@ export interface WebServerParams {
 export function setupServer(params: WebServerParams): void {
   const app = params.app;
 
+  app.use(compression());
   app.use("/public", express.static("public"));
   app.use(express.static("genfiles_static"));
-  // TODO: Make the route a constant so that we can access it from the client.
+
+  app.use("/*", (req, res, next) => {
+    if (req.baseUrl.startsWith("/api/")) {
+      next();
+    }
+    res.sendFile(path.join(__dirname, "../../genfiles_static", "index.html"));
+  });
+
   app.get(
     macronizeCall(":input"),
     async (req: Request<{ input: string }>, res) => {

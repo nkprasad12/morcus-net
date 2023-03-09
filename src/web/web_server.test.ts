@@ -34,4 +34,11 @@ describe("WebServer", () => {
     expect(response.status).toBe(200);
     expect(response.text).toBe(`Caesar def`);
   });
+
+  test("sends out requests to index", async () => {
+    const response = await request(app).get("/notEvenRemotelyReal");
+
+    expect(response.status).toBe(200);
+    expect(response.type).toBe("text/html");
+  });
 });
