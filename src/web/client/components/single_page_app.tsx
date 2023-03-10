@@ -23,9 +23,6 @@ export function SinglePageApp(props: SinglePageApp.Props) {
 
   React.useEffect(() => {
     window.addEventListener("popstate", () => {
-      if (window.location.pathname === currentPage) {
-        return;
-      }
       setCurrentPage(window.location.pathname);
     });
   }, []);
