@@ -12,7 +12,7 @@ export class LewisAndShort {
     });
   }
 
-  entryByKey(key: string): string | undefined {
+  private entryByKey(key: string): string | undefined {
     const index = this.byKey.get(key);
     if (index === undefined) {
       return undefined;
