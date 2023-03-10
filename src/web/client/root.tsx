@@ -9,7 +9,7 @@ import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
-import { Macronizer } from "@/web/client/macron";
+import { Macronizer } from "@/web/client/pages/macron";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 
 const pages: SinglePageApp.Page[] = [
