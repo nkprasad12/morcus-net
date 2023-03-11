@@ -19,6 +19,7 @@ export function setupServer(params: WebServerParams): void {
   app.use("/*", (req, res, next) => {
     if (!req.baseUrl.startsWith("/api/")) {
       res.sendFile(path.join(__dirname, "../../genfiles_static", "index.html"));
+      return;
     }
     next();
   });
