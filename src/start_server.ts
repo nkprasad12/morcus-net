@@ -26,7 +26,7 @@ const socketIo = new Server(server);
 const processorConnection = createProcessorConnection(socketIo);
 
 // Lewis and Short
-const lewisAndShort = LewisAndShort.create("testdata/ls/subset.xml");
+const lewisAndShort = LewisAndShort.create(process.env.LS_PATH);
 
 const params: WebServerParams = {
   app: app,
