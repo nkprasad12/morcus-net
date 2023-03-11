@@ -17,10 +17,10 @@ export function setupServer(params: WebServerParams): void {
   app.use(express.static("genfiles_static"));
 
   app.use("/*", (req, res, next) => {
-    if (req.baseUrl.startsWith("/api/")) {
-      next();
+    if (!req.baseUrl.startsWith("/api/")) {
+      res.sendFile(path.join(__dirname, "../../genfiles_static", "index.html"));
     }
-    res.sendFile(path.join(__dirname, "../../genfiles_static", "index.html"));
+    next();
   });
 
   app.get(

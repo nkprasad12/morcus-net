@@ -32,7 +32,7 @@ function TextInputField(props: TextInputFieldProps) {
 }
 
 async function process(input: string): Promise<string> {
-  const response = await fetch(`${location.origin}/${macronizeCall(input)}`);
+  const response = await fetch(`${location.origin}${macronizeCall(input)}`);
   if (!response.ok) {
     return ERROR_MESSAGE;
   }
