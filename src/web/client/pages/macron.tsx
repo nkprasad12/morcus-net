@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+import { macronizeCall } from "@/web/api_routes";
+
 export const ERROR_MESSAGE = "Processing failed, please try again later.";
 
 interface TextInputFieldProps {
@@ -30,7 +32,7 @@ function TextInputField(props: TextInputFieldProps) {
 }
 
 async function process(input: string): Promise<string> {
-  const response = await fetch(`${location.origin}/api/macronize/${input}`);
+  const response = await fetch(`${location.origin}${macronizeCall(input)}`);
   if (!response.ok) {
     return ERROR_MESSAGE;
   }
