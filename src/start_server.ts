@@ -36,6 +36,6 @@ const params: WebServerParams = {
 
 setupServer(params);
 
-server.listen(port, host, () => {
-  log(`Server is running on http://${host}:${port}`);
+server.listen(port, () => {
+  log(`Local server: http://${host}:${port}`);
 });
