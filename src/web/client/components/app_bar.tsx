@@ -9,6 +9,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
+import { Solarized } from "../colors";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -122,7 +123,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               <Button
                 key={page.name}
                 onClick={handlePageClick(page.path)}
-                sx={{ my: 2, color: "white", display: "block" }}
+                sx={{ my: 2, color: Solarized.base0, display: "block" }}
               >
                 {page.name}
               </Button>

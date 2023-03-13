@@ -55,7 +55,18 @@ export function Dictionary() {
         )}
       />
       {entry && (
-        <Box sx={{ padding: 1, ml: 5, mr: 5, mt: 1, mb: 3 }}>
+        <Box
+          sx={{
+            padding: 1,
+            ml: 4,
+            mr: 4,
+            mt: 1,
+            mb: 3,
+            border: 2,
+            borderRadius: 1,
+            borderColor: Solarized.base2,
+          }}
+        >
           <pre>{entry}</pre>
         </Box>
       )}
