@@ -15,7 +15,9 @@ function log(message: string) {
 
 async function start() {
   const processor = await nlpProcessor();
-  const socket = io("http://localhost:8000", {
+  const address = process.env.SOCKET_ADDRESS!;
+  log(`Attempting to connect to ${address}`);
+  const socket = io(address, {
     auth: {
       token: process.env.PROCESSING_SERVER_TOKEN,
     },
