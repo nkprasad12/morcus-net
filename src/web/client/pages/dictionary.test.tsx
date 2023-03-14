@@ -30,13 +30,13 @@ function replaceFetch(ok: boolean = true, text: string = "") {
 
 describe("Dictionary View", () => {
   test("shows expected components", () => {
-    render(<Dictionary />);
+    render(<Dictionary input="" />);
     expect(screen.getByRole("combobox")).toBeDefined();
   });
 
   test("does not call server on empty submit", async () => {
     const mockFetch = replaceFetch(false);
-    render(<Dictionary />);
+    render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -47,7 +47,7 @@ describe("Dictionary View", () => {
 
   test("calls server on submit", async () => {
     const mockFetch = replaceFetch(false);
-    render(<Dictionary />);
+    render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -59,7 +59,7 @@ describe("Dictionary View", () => {
 
   test("calls shows error on failure", async () => {
     replaceFetch(false);
-    render(<Dictionary />);
+    render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -74,11 +74,21 @@ describe("Dictionary View", () => {
 
   test("shows result on success", async () => {
     replaceFetch(true, "France or whatever idk lol");
-    render(<Dictionary />);
+    render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
     await user.type(searchBar, "Gallia{enter}");
+
+    await waitFor(() => {
+      expect(screen.getByText("France or whatever idk lol")).toBeDefined();
+    });
+  });
+
+  test("fetches result from props input", async () => {
+    replaceFetch(true, "France or whatever idk lol");
+
+    render(<Dictionary input="Gallia" />);
 
     await waitFor(() => {
       expect(screen.getByText("France or whatever idk lol")).toBeDefined();

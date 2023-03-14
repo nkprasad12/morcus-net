@@ -14,9 +14,9 @@ async function fetchEntry(input: string): Promise<string> {
   return await response.text();
 }
 
-export function Dictionary() {
+export function Dictionary(props: Dictionary.Props) {
   const [entry, setEntry] = React.useState<string>("");
-  const [inputState, setInputState] = React.useState<string>("");
+  const [inputState, setInputState] = React.useState<string>(props.input);
 
   async function onEnter() {
     if (inputState.length === 0) {
@@ -24,6 +24,13 @@ export function Dictionary() {
     }
     setEntry(await fetchEntry(inputState));
   }
+
+  React.useEffect(() => {
+    if (props.input.length === 0) {
+      return;
+    }
+    fetchEntry(props.input).then(setEntry);
+  }, [props.input]);
 
   return (
     <>
@@ -72,4 +79,10 @@ export function Dictionary() {
       )}
     </>
   );
+}
+
+export namespace Dictionary {
+  export interface Props {
+    input: string;
+  }
 }
