@@ -2,8 +2,8 @@
  * @jest-environment jsdom
  */
 
-import { describe, expect, test } from "@jest/globals";
-import { render, screen, waitFor } from "@testing-library/react";
+import { describe, expect, it } from "@jest/globals";
+import { act, render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
@@ -29,12 +29,12 @@ function replaceFetch(ok: boolean = true, text: string = "") {
 }
 
 describe("Dictionary View", () => {
-  test("shows expected components", () => {
+  it("shows expected components", () => {
     render(<Dictionary input="" />);
     expect(screen.getByRole("combobox")).toBeDefined();
   });
 
-  test("does not call server on empty submit", async () => {
+  it("does not call server on empty submit", async () => {
     const mockFetch = replaceFetch(false);
     render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
@@ -45,7 +45,7 @@ describe("Dictionary View", () => {
     expect(mockFetch.mock.calls).toHaveLength(0);
   });
 
-  test("calls server on submit", async () => {
+  it("calls server on submit", async () => {
     const mockFetch = replaceFetch(false);
     render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
@@ -57,7 +57,7 @@ describe("Dictionary View", () => {
     expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/ls/Gallia");
   });
 
-  test("calls shows error on failure", async () => {
+  it("calls shows error on failure", async () => {
     replaceFetch(false);
     render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
@@ -72,7 +72,7 @@ describe("Dictionary View", () => {
     });
   });
 
-  test("shows result on success", async () => {
+  it("shows result on success", async () => {
     replaceFetch(true, "France or whatever idk lol");
     render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
@@ -85,11 +85,30 @@ describe("Dictionary View", () => {
     });
   });
 
-  test("fetches result from props input", async () => {
+  it("fetches result from props input", async () => {
     replaceFetch(true, "France or whatever idk lol");
 
     render(<Dictionary input="Gallia" />);
 
+    await waitFor(() => {
+      expect(screen.getByText("France or whatever idk lol")).toBeDefined();
+    });
+  });
+
+  it("handles hash update", async () => {
+    const mockAddEventListener = jest.fn();
+    window.addEventListener = mockAddEventListener;
+    render(<Dictionary input="" />);
+
+    replaceFetch(true, "France or whatever idk lol");
+    act(() => {
+      mockAddEventListener.mock.lastCall![1]();
+    });
+
+    const hashchangeCalls = mockAddEventListener.mock.calls.filter(
+      (call) => call[0] === "hashchange"
+    );
+    expect(hashchangeCalls).toHaveLength(1);
     await waitFor(() => {
       expect(screen.getByText("France or whatever idk lol")).toBeDefined();
     });

@@ -4,6 +4,7 @@ import TextField from "@mui/material/TextField";
 import { Box } from "@mui/system";
 import React from "react";
 
+import { getHash } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
 
 async function fetchEntry(input: string): Promise<string> {
@@ -26,10 +27,16 @@ export function Dictionary(props: Dictionary.Props) {
   }
 
   React.useEffect(() => {
-    if (props.input.length === 0) {
-      return;
+    const hashListener = () => {
+      fetchEntry(getHash()).then(setEntry);
+    };
+    window.addEventListener("hashchange", hashListener, false);
+    if (props.input.length > 0) {
+      fetchEntry(props.input).then(setEntry);
     }
-    fetchEntry(props.input).then(setEntry);
+    return () => {
+      window.removeEventListener("hashchange", hashListener);
+    };
   }, [props.input]);
 
   return (
