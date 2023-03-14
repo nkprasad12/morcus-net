@@ -30,7 +30,7 @@ const lewisAndShort = LewisAndShort.create(process.env.LS_PATH);
 
 const params: WebServerParams = {
   app: app,
-  macronizer: processorConnection.process,
+  macronizer: (input) => processorConnection.process(input),
   lsDict: (input) => lewisAndShort.getEntry(input),
 };
 

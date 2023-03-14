@@ -21,7 +21,7 @@ async function start() {
     },
   });
 
-  socket.on("connection", () => {
+  socket.on("connect", () => {
     log("Connected to web server.");
   });
 
