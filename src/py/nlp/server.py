@@ -8,14 +8,14 @@ from src.py.utils import processes
 _HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
 
 
-def start(port: int, on_listen: str) -> None:
+def start(on_listen: str) -> None:
     model = processes.StanzaCustomTokenization()
     model.initialize()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-        s.bind((_HOST, port))
+        s.bind((_HOST, 0))
         s.listen()
-        logging.warning(f"{on_listen} {port}")
+        logging.warning(f"{on_listen} {s.getsockname()[1]}")
         conn, addr = s.accept()
         with conn:
             logging.warning(f"NLP_SERVER:CONNECTED {addr}")
