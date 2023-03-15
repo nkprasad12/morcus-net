@@ -57,6 +57,18 @@ describe("Dictionary View", () => {
     expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/ls/Gallia");
   });
 
+  test("updates history state on submit", async () => {
+    replaceFetch(false);
+    render(<Dictionary input="" />);
+    const searchBar = screen.getByRole("combobox");
+    history.pushState("", "", "");
+
+    await user.click(searchBar);
+    await user.type(searchBar, "Gallia{enter}");
+
+    expect(history.state).toBe("#Gallia");
+  });
+
   it("calls shows error on failure", async () => {
     replaceFetch(false);
     render(<Dictionary input="" />);

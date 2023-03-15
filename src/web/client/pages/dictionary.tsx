@@ -24,11 +24,17 @@ export function Dictionary(props: Dictionary.Props) {
       return;
     }
     setEntry(await fetchEntry(inputState));
+    history.pushState(`#${inputState}`, "", `#${inputState}`);
   }
 
   React.useEffect(() => {
     const hashListener = () => {
-      fetchEntry(getHash()).then(setEntry);
+      const input = getHash();
+      if (input.length === 0) {
+        setEntry("");
+        return;
+      }
+      fetchEntry(input).then(setEntry);
     };
     window.addEventListener("hashchange", hashListener, false);
     if (props.input.length > 0) {
