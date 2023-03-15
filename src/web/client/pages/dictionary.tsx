@@ -4,6 +4,7 @@ import TextField from "@mui/material/TextField";
 import { Box } from "@mui/system";
 import React from "react";
 
+import { getHash } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
 
 async function fetchEntry(input: string): Promise<string> {
@@ -14,16 +15,35 @@ async function fetchEntry(input: string): Promise<string> {
   return await response.text();
 }
 
-export function Dictionary() {
+export function Dictionary(props: Dictionary.Props) {
   const [entry, setEntry] = React.useState<string>("");
-  const [inputState, setInputState] = React.useState<string>("");
+  const [inputState, setInputState] = React.useState<string>(props.input);
 
   async function onEnter() {
     if (inputState.length === 0) {
       return;
     }
     setEntry(await fetchEntry(inputState));
+    history.pushState(`#${inputState}`, "", `#${inputState}`);
   }
+
+  React.useEffect(() => {
+    const hashListener = () => {
+      const input = getHash();
+      if (input.length === 0) {
+        setEntry("");
+        return;
+      }
+      fetchEntry(input).then(setEntry);
+    };
+    window.addEventListener("hashchange", hashListener, false);
+    if (props.input.length > 0) {
+      fetchEntry(props.input).then(setEntry);
+    }
+    return () => {
+      window.removeEventListener("hashchange", hashListener);
+    };
+  }, [props.input]);
 
   return (
     <>
@@ -55,10 +75,27 @@ export function Dictionary() {
         )}
       />
       {entry && (
-        <Box sx={{ padding: 1, ml: 5, mr: 5, mt: 1, mb: 3 }}>
+        <Box
+          sx={{
+            padding: 1,
+            ml: 4,
+            mr: 4,
+            mt: 1,
+            mb: 3,
+            border: 2,
+            borderRadius: 1,
+            borderColor: Solarized.base2,
+          }}
+        >
           <pre>{entry}</pre>
         </Box>
       )}
     </>
   );
+}
+
+export namespace Dictionary {
+  export interface Props {
+    input: string;
+  }
 }

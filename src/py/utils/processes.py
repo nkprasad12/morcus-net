@@ -282,6 +282,8 @@ class StanzaCustomTokenization(processing.Process[str, str]):
 
         alatius = self._macronizer.tokenization
         cltk_tokens = enumerate(iter(stanza_doc.tokens))
+        cltk_features_list = stanza_doc.morphosyntactic_features
+        stanza_pos = stanza_doc.pos
         for alatius_token in alatius.tokens:
             if alatius_token.isspace:
                 continue
@@ -290,8 +292,8 @@ class StanzaCustomTokenization(processing.Process[str, str]):
 
             alatius_text = alatius_token.text
             j, cltk_token = next(cltk_tokens)
-            cltk_pos = stanza_doc.morphosyntactic_features[j]
-            cltk_new = cltk_pos_to_alatius(cltk_pos, stanza_doc.pos[j])
+            cltk_features = cltk_features_list[j]
+            cltk_new = cltk_pos_to_alatius(cltk_features, stanza_pos[j])
 
             if cltk_token.lower() in ["nec"] and alatius_text.lower() in ["ne"]:
                 # Alatius analyzes nec as ne + que, for whatever reason.

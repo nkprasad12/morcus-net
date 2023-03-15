@@ -13,48 +13,52 @@ describe("Single Page App View", () => {
     {
       name: "Gallia",
       path: "/gallia",
-      content: <div>GalliaPage</div>,
     },
     {
       name: "Omnis",
       path: "/omnis",
-      content: <div>OmnisPage</div>,
     },
   ];
-  const errorPage = <div>ErrorPage</div>;
+  const wirings: SinglePageApp.Wiring[] = [
+    {
+      paths: [/\/gallia/, /^\/$/],
+      content: (_) => <div>GalliaPage</div>,
+    },
+    {
+      paths: [/\/omnis/],
+      content: (_) => <div>OmnisPage</div>,
+    },
+    {
+      paths: [/\/(.*)/],
+      content: (groups) => <div>ErrorPage{groups[0]}</div>,
+    },
+  ];
 
   test("shows correct initial content", () => {
     render(
-      <SinglePageApp
-        pages={pages}
-        initialPage={"/gallia"}
-        errorPage={errorPage}
-      />
+      <SinglePageApp pages={pages} initialPage={"/gallia"} wirings={wirings} />
     );
 
     expect(screen.queryByText("GalliaPage")).not.toBeNull();
     expect(screen.queryByText("OmnisPage")).toBeNull();
-    expect(screen.queryByText("ErrorPage")).toBeNull();
   });
 
-  test("shows error message on unknown pages", () => {
+  test("checks all matches and pipes groups", () => {
     render(
       <SinglePageApp
         pages={pages}
         initialPage={"/notyetknown"}
-        errorPage={errorPage}
+        wirings={wirings}
       />
     );
 
     expect(screen.queryByText("GalliaPage")).toBeNull();
     expect(screen.queryByText("OmnisPage")).toBeNull();
-    expect(screen.queryByText("ErrorPage")).not.toBeNull();
+    expect(screen.queryByText("ErrorPagenotyetknown")).not.toBeNull();
   });
 
-  test("shows first content page on root", () => {
-    render(
-      <SinglePageApp pages={pages} initialPage={"/"} errorPage={errorPage} />
-    );
+  test("handles multiple paths per page", () => {
+    render(<SinglePageApp pages={pages} initialPage={"/"} wirings={wirings} />);
 
     expect(screen.queryByText("GalliaPage")).not.toBeNull();
     expect(screen.queryByText("OmnisPage")).toBeNull();
@@ -63,11 +67,7 @@ describe("Single Page App View", () => {
 
   test("updates content on navigation", async () => {
     render(
-      <SinglePageApp
-        pages={pages}
-        initialPage={"/gallia"}
-        errorPage={errorPage}
-      />
+      <SinglePageApp pages={pages} initialPage={"/gallia"} wirings={wirings} />
     );
     expect(screen.queryByText("OmnisPage")).toBeNull();
 
@@ -79,11 +79,7 @@ describe("Single Page App View", () => {
 
   test("updates history state on navigation", async () => {
     render(
-      <SinglePageApp
-        pages={pages}
-        initialPage={"/gallia"}
-        errorPage={errorPage}
-      />
+      <SinglePageApp pages={pages} initialPage={"/gallia"} wirings={wirings} />
     );
     history.pushState("", "", "");
 
@@ -97,11 +93,7 @@ describe("Single Page App View", () => {
     window.addEventListener = mockAddEventListener;
 
     render(
-      <SinglePageApp
-        pages={pages}
-        initialPage={"/gallia"}
-        errorPage={errorPage}
-      />
+      <SinglePageApp pages={pages} initialPage={"/gallia"} wirings={wirings} />
     );
 
     const popstateCalls = mockAddEventListener.mock.calls.filter(
@@ -114,11 +106,7 @@ describe("Single Page App View", () => {
     const mockAddEventListener = jest.fn();
     window.addEventListener = mockAddEventListener;
     render(
-      <SinglePageApp
-        pages={pages}
-        initialPage={"/gallia"}
-        errorPage={errorPage}
-      />
+      <SinglePageApp pages={pages} initialPage={"/gallia"} wirings={wirings} />
     );
     await user.click(screen.getAllByText("Gallia")[0]);
 
@@ -132,11 +120,7 @@ describe("Single Page App View", () => {
     const mockAddEventListener = jest.fn();
     window.addEventListener = mockAddEventListener;
     render(
-      <SinglePageApp
-        pages={pages}
-        initialPage={"/omnis"}
-        errorPage={errorPage}
-      />
+      <SinglePageApp pages={pages} initialPage={"/omnis"} wirings={wirings} />
     );
     expect(screen.queryByText("OmnisPage")).not.toBeNull();
 

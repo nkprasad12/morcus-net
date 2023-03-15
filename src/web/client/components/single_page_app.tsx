@@ -3,16 +3,17 @@ import React from "react";
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 
 export namespace SinglePageApp {
-  export interface Page {
-    name: string;
-    path: string;
-    content: JSX.Element;
+  export type Page = ResponsiveAppBar.Page;
+
+  export interface Wiring {
+    paths: RegExp[];
+    content: (groups: string[]) => JSX.Element;
   }
 
   export interface Props {
     initialPage: string;
     pages: Page[];
-    errorPage: JSX.Element;
+    wirings: Wiring[];
   }
 }
 
@@ -28,14 +29,15 @@ export function SinglePageApp(props: SinglePageApp.Props) {
   }, []);
 
   function chooseContent(): JSX.Element {
-    const content = props.pages.filter((page) => page.path === currentPage);
-    if (content.length === 0) {
-      if (currentPage === "/") {
-        return props.pages[0].content;
+    for (const wiring of props.wirings) {
+      for (const path of wiring.paths) {
+        const matches = currentPage.match(path);
+        if (matches !== null) {
+          return wiring.content(matches.slice(1));
+        }
       }
-      return props.errorPage;
     }
-    return content[0].content;
+    return <></>;
   }
 
   return (

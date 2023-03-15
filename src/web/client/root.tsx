@@ -15,8 +15,10 @@ import "@fontsource/roboto/700.css";
 
 import { Macronizer } from "@/web/client/pages/macron";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
-import { Dictionary } from "./pages/dictionary";
-import { Solarized } from "./colors";
+import { Dictionary } from "@/web/client/pages/dictionary";
+import { Solarized } from "@/web/client/colors";
+import GlobalStyles from "@mui/material/GlobalStyles";
+import { getHash } from "@/web/client/browser_utils";
 
 const theme = createTheme({
   palette: {
@@ -40,19 +42,26 @@ const pages: SinglePageApp.Page[] = [
   {
     name: "Dictionary",
     path: "/dicts",
-    content: <Dictionary />,
   },
   {
     name: "Macronizer",
     path: "/macronizer",
-    content: <Macronizer />,
   },
 ];
-const errorPage = <div>Error: Not found</div>;
+
+const wirings: SinglePageApp.Wiring[] = [
+  {
+    paths: [/^\/$/, /^\/dicts$/],
+    content: (_) => <Dictionary input={getHash()} />,
+  },
+  { paths: [/^\/macronizer$/], content: (_) => <Macronizer /> },
+  { paths: [/.*/], content: (_) => <div>Error: Not found</div> },
+];
+
 const props: SinglePageApp.Props = {
-  pages: pages,
-  errorPage: errorPage,
   initialPage: window.location.pathname,
+  pages: pages,
+  wirings: wirings,
 };
 
 const root = ReactDOM.createRoot(
@@ -62,6 +71,7 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
+      <GlobalStyles styles={{ pre: { margin: "0" } }} />
       <StyledEngineProvider injectFirst>
         <SinglePageApp {...props} />
       </StyledEngineProvider>
