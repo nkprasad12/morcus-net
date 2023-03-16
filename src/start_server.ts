@@ -7,7 +7,7 @@ import { Server } from "socket.io";
 
 import { LewisAndShort } from "@/web/dicts/ls";
 import { setupServer, WebServerParams } from "@/web/web_server";
-import { SocketWorkServer } from "@/web/sockets/socket_workers";
+import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "./web/workers/requests";
 import { Workers } from "./web/workers/worker_types";
 import { randomInt } from "crypto";
