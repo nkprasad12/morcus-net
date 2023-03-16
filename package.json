@@ -25,7 +25,9 @@
     "server-p": "npm run ts-node src/web/nlp/processing_server.ts",
     "ts-driver": "npm run ts-node src/ts_driver.ts",
     "py-driver": "python -c \"import src.py.driver\"",
-    "pre-commit": "npm run format && npm run test && npm run build-client && npm run pytype"
+    "pre-commit": "npm run format && npm run test && npm run build-client && npm run pytype",
+    "scale": "heroku ps:scale web=1 -a morcus-net",
+    "unscale": "heroku ps:scale web=0 -a morcus-net"
   },
   "repository": {
     "type": "git",

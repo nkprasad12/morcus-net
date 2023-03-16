@@ -57,7 +57,7 @@ elif args.command in WORKER:
     my_env = os.environ.copy()
     socket_address = f"http://localhost:{my_env['PORT']}"
     if args.prod:
-        socket_address = f"http://www.morcus.net"
+        socket_address = f"https://www.morcus.net"
         my_env["NODE_ENV"] = "production"
     my_env["SOCKET_ADDRESS"] = socket_address
     worker_file = ""
