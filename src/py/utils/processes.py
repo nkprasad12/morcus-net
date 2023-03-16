@@ -224,6 +224,10 @@ class StanzaCustomTokenization(processing.Process[str, str]):
     _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"
     # pytype: enable=name-error
 
+    def __init__(self, use_gpu: bool = True) -> None:
+        super().__init__()
+        self._use_gpu = use_gpu
+
     def initialize(self) -> None:
         super().initialize()
         # pytype: disable=import-error
@@ -237,6 +241,7 @@ class StanzaCustomTokenization(processing.Process[str, str]):
             tokenize_pretokenized=True,
             processors="tokenize,pos",
             download_method=None,
+            use_gpu=self._use_gpu,
         )
         self._run_stanza_pos(self._tokenize("ego"))
         self._macronizer = Macronizer()

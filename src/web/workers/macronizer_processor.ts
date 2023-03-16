@@ -15,7 +15,11 @@ function log(message: string) {
 }
 
 async function startNlpServer(): Promise<net.Socket> {
-  const process = cp.spawn("python", SERVER_ARGS);
+  const serverArgs = SERVER_ARGS.map((x) => x);
+  if (process.env.ALLOW_WORKERS_GPU === "true") {
+    serverArgs.push("--gpu");
+  }
+  const tcpProcess = cp.spawn("python", serverArgs);
   const serverListening = new Promise<number>((resolve) => {
     log("Waiting for Python NLP Server to start.");
     const readyCallback = (data: string) => {
@@ -26,7 +30,7 @@ async function startNlpServer(): Promise<net.Socket> {
         resolve(+matches[1]);
       }
     };
-    process.stderr.on("data", readyCallback);
+    tcpProcess.stderr.on("data", readyCallback);
   });
   const port = await serverListening;
   const client = new net.Socket();

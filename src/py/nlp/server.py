@@ -7,8 +7,8 @@ from src.py.utils import processes
 _HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
 
 
-def start(on_listen: str) -> None:
-    model = processes.StanzaCustomTokenization()
+def start(on_listen: str, use_gpu: bool = False) -> None:
+    model = processes.StanzaCustomTokenization(use_gpu=use_gpu)
     model.initialize()
 
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:

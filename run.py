@@ -32,6 +32,11 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    "--gpu",
+    help="If set, allows GPU acceleration.",
+    action="store_true",
+)
+parser.add_argument(
     "-wt", "--worker_type", help="The worker type to start.", choices=["mac"]
 )
 args = parser.parse_args()
@@ -63,7 +68,8 @@ elif args.command in WORKER:
     worker_file = ""
     if args.worker_type == "mac":
         worker_file = "src/web/workers/macronizer_processor.ts"
-
+    if args.gpu:
+        my_env["ALLOW_WORKERS_GPU"] = "true"
     subprocess.run(
         " ".join(["npm", "run", "ts-node", worker_file]),
         shell=True,
