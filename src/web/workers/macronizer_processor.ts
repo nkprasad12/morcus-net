@@ -1,34 +1,38 @@
 /* istanbul ignore file */
 
-import net from "net";
+import * as dotenv from "dotenv";
 import cp from "child_process";
+import net from "net";
+import { Message, WorkProcessor } from "@/web/workers/requests";
+import { Workers } from "@/web/workers/worker_types";
+import { startRemoteWorker } from "@/web/sockets/socket_workers";
 
-const PORT = 65432;
 const ON_LISTEN = "NLP_SERVER:LISTEN";
-const SERVER_ARGS = ["main.py", "--server", `${PORT}`, ON_LISTEN];
+const SERVER_ARGS = ["main.py", "--server", ON_LISTEN];
 
 function log(message: string) {
-  console.log(`[NLP Processor] ${message}`);
+  console.log(`[macronizer_processor] ${message}`);
 }
 
 async function startNlpServer(): Promise<net.Socket> {
   const process = cp.spawn("python", SERVER_ARGS);
-  const serverReady = new Promise<void>((resolve) => {
+  const serverListening = new Promise<number>((resolve) => {
     log("Waiting for Python NLP Server to start.");
     const readyCallback = (data: string) => {
       log(data.toString().trimEnd());
-      if (data.includes(ON_LISTEN)) {
+      const matches = data.toString().match(`${ON_LISTEN} (\\d+)`);
+      if (matches !== null) {
         log("Python NLP Server listening.");
-        resolve();
+        resolve(+matches[1]);
       }
     };
     process.stderr.on("data", readyCallback);
   });
-  await serverReady;
+  const port = await serverListening;
   const client = new net.Socket();
   return new Promise((resolve) => {
     log("Trying to connect to Python NLP server.");
-    client.connect(PORT, "127.0.0.1", () => {
+    client.connect(port, "127.0.0.1", () => {
       log(`Connected to Python NLP server.`);
       resolve(client);
     });
@@ -83,7 +87,27 @@ class NlpProcesser {
   }
 }
 
-export async function nlpProcessor(): Promise<NlpProcesser> {
+async function nlpProcessor(): Promise<NlpProcesser> {
   const client = await startNlpServer();
   return new NlpProcesser(client);
 }
+
+class MacronizerProcessor implements WorkProcessor<string, string> {
+  readonly category = Workers.MACRONIZER;
+  private processor: NlpProcesser | undefined = undefined;
+
+  async setup(): Promise<void> {
+    this.processor = await nlpProcessor();
+  }
+
+  process(input: Message<string>): Promise<string> {
+    return this.processor!.process(input.content);
+  }
+
+  teardown(): void {
+    this.processor!.close();
+  }
+}
+
+dotenv.config();
+startRemoteWorker(new MacronizerProcessor());
