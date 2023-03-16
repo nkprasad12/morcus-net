@@ -156,8 +156,11 @@ export function extractEntries(xmlContents: string): string[] {
   return entries;
 }
 
-export function parse(path: string): XmlNode[] {
+export function getRaw(path: string): string[] {
   const xmlContents = readFileSync(path, "utf8");
-  const rawEntries = extractEntries(xmlContents);
-  return parseEntries(rawEntries);
+  return extractEntries(xmlContents);
+}
+
+export function parse(path: string): XmlNode[] {
+  return parseEntries(getRaw(path));
 }

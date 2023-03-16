@@ -26,7 +26,6 @@ export function authenticate(
   }
 
   const workerType = socket.handshake.auth.workerType;
-  log("authenticate", `New connection from worker ${workerType}`);
   if (!Workers.isValid(workerType)) {
     next(new Error(`Unknown worker type ${workerType}`));
     return;
@@ -44,6 +43,7 @@ export function authenticate(
     return;
   }
 
+  log("authenticate", `New connection ${inputChannel}`);
   next();
 }
 
@@ -54,9 +54,10 @@ interface Resolvable<T> {
 
 export class SocketWorkHandler<I, O> implements QueuedWorkHandler<I, O> {
   private readonly pending: Map<string, Resolvable<Message<O>>> = new Map();
-  private readonly tag = "SocketWorkHandler";
+  readonly tag: string;
 
   constructor(private readonly socket: Socket) {
+    this.tag = `SocketWorkHandler.${this.socket.handshake.auth.inputChannel}`;
     this.socket.on(
       this.socket.handshake.auth.outputChannel,
       (message: Message<O>) => {
@@ -69,7 +70,10 @@ export class SocketWorkHandler<I, O> implements QueuedWorkHandler<I, O> {
 
         this.pending.delete(message.id);
         const elapsedTime = performance.now() - resolvable.startTime;
-        log(this.tag, `Request ${message.id} processing time: ${elapsedTime}`);
+        log(
+          this.tag,
+          `Request ${message.id} processing time: ${elapsedTime.toFixed(2)} ms`
+        );
         resolvable.resolver(message);
       }
     );
@@ -82,8 +86,9 @@ export class SocketWorkHandler<I, O> implements QueuedWorkHandler<I, O> {
         startTime: performance.now(),
       };
       this.pending.set(input.id, resolvable);
-      log(this.tag, `Sending request ${input.id}`);
-      this.socket.emit(this.socket.handshake.auth.inputChannel, {
+      const inputChannel = this.socket.handshake.auth.inputChannel;
+      log(this.tag, `Sending request ${input.id} to ${inputChannel}`);
+      this.socket.emit(inputChannel, {
         id: input.id,
         content: input.content,
       });
@@ -97,7 +102,7 @@ export class SocketWorkHandler<I, O> implements QueuedWorkHandler<I, O> {
 
 export async function startRemoteWorker(
   processor: WorkProcessor<string, string>,
-  uuid: number = crypto.randomInt(1000000000)
+  uuid: number = crypto.randomInt(1000000)
 ): Promise<void> {
   await processor.setup();
   const address = process.env.SOCKET_ADDRESS!;
@@ -123,10 +128,16 @@ export async function startRemoteWorker(
 
   socket.on(inputChannel, async (message: Message<string>) => {
     log(tag, `Received request ${message.id}`);
+    const startTime = performance.now();
     const output: Message<string> = {
       id: message.id,
       content: await processor.process(message),
     };
+    const elapsedTime = performance.now() - startTime;
+    log(
+      tag,
+      `Request ${message.id} processing took ${elapsedTime.toFixed(2)} ms`
+    );
     socket.emit(outputChannel, output);
   });
 
@@ -166,6 +177,7 @@ export class SocketWorkHandlerManager {
     socket.on("disconnect", () => {
       log(this.tag, `${workerType} worker disconnected`);
       this.workers.get(workerType)!.delete(worker);
+      this.reportWorkers();
     });
   }
 
@@ -177,6 +189,7 @@ export class SocketWorkHandlerManager {
 
     let leastBusy: SocketStringWorkHandler | undefined = undefined;
     for (const option of options.values()) {
+      console.log(`${option.tag}: ${option.numPending()} pending`);
       if (
         leastBusy !== undefined &&
         leastBusy.numPending() < option.numPending()

@@ -6,8 +6,11 @@ import http from "http";
 import { Server } from "socket.io";
 
 import { LewisAndShort } from "@/web/dicts/ls";
-import { createProcessorConnection } from "@/web/processor_connection";
 import { setupServer, WebServerParams } from "@/web/web_server";
+import { SocketWorkServer } from "@/web/sockets/socket_workers";
+import { WorkRequest } from "./web/workers/requests";
+import { Workers } from "./web/workers/worker_types";
+import { randomInt } from "crypto";
 
 dotenv.config();
 
@@ -22,15 +25,22 @@ const app = express();
 const server = http.createServer(app);
 
 // Macronizer
-const socketIo = new Server(server);
-const processorConnection = createProcessorConnection(socketIo);
+const workServer = new SocketWorkServer(new Server(server));
 
 // Lewis and Short
 const lewisAndShort = LewisAndShort.create(process.env.LS_PATH);
 
 const params: WebServerParams = {
   app: app,
-  macronizer: (input) => processorConnection.process(input),
+  macronizer: async (input: string) => {
+    const request: WorkRequest<string> = {
+      category: Workers.MACRONIZER,
+      id: `${randomInt(1000000)}`,
+      content: input,
+    };
+    const result = await workServer.process(request);
+    return result.content;
+  },
   lsDict: (input) => lewisAndShort.getEntry(input),
 };
 
