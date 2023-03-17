@@ -1,7 +1,7 @@
 import { lsCall } from "@/web/api_routes";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
-import { Box } from "@mui/system";
+import Box from "@mui/system/Box";
 import React from "react";
 
 import { getHash } from "@/web/client/browser_utils";
