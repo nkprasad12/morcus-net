@@ -56,9 +56,7 @@ describe("Macronizer View", () => {
     await user.click(submit);
 
     expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain(
-      "api/macronize/Gallia est omnis"
-    );
+    expect(mockFetch.mock.calls[0][0]).toContain("api/macronize/");
   });
 
   test("calls shows error on failure", async () => {

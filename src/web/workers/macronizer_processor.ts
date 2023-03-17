@@ -3,6 +3,8 @@
 import * as dotenv from "dotenv";
 import cp from "child_process";
 import net from "net";
+import nodeCleanup from "node-cleanup";
+
 import { Message, WorkProcessor } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { startRemoteWorker } from "@/web/sockets/socket_workers";
@@ -15,7 +17,16 @@ function log(message: string) {
 }
 
 async function startNlpServer(): Promise<net.Socket> {
-  const process = cp.spawn("python", SERVER_ARGS);
+  const serverArgs = SERVER_ARGS.map((x) => x);
+  if (process.env.ALLOW_WORKERS_GPU === "true") {
+    serverArgs.push("--gpu");
+  }
+  const tcpProcess = cp.spawn("python", serverArgs);
+  nodeCleanup((_exitCode, _signal) => {
+    log("Cleaning up Python TCP server");
+    tcpProcess.kill();
+  });
+
   const serverListening = new Promise<number>((resolve) => {
     log("Waiting for Python NLP Server to start.");
     const readyCallback = (data: string) => {
@@ -26,7 +37,7 @@ async function startNlpServer(): Promise<net.Socket> {
         resolve(+matches[1]);
       }
     };
-    process.stderr.on("data", readyCallback);
+    tcpProcess.stderr.on("data", readyCallback);
   });
   const port = await serverListening;
   const client = new net.Socket();
@@ -44,10 +55,10 @@ class NlpProcesser {
   private queue: [string, (data: string) => any][] = [];
 
   constructor(private readonly client: net.Socket) {
-    const callback = (data: string) => {
+    const callback = (data: Buffer) => {
       log(`Received data from Python`);
       if (this.currentResolver !== undefined) {
-        this.currentResolver(data.toString());
+        this.currentResolver(data.toString("utf8"));
       } else {
         log(`ERROR: No resolver for response.`);
       }
@@ -78,7 +89,13 @@ class NlpProcesser {
       log("Recieved processing request");
       if (this.currentResolver === undefined) {
         this.currentResolver = resolve;
-        this.client.write(input);
+        const inputBuffer = Buffer.from(input, "utf8");
+        const size = inputBuffer.length;
+        log(`Sending ${size}`);
+        const sizeBuffer = Buffer.alloc(4);
+        sizeBuffer.writeUint32BE(size);
+        this.client.write(sizeBuffer);
+        this.client.write(inputBuffer);
       } else {
         log("Adding to queue");
         this.queue.push([input, resolve]);
