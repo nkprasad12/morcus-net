@@ -2,6 +2,7 @@ import compression from "compression";
 import express, { Request } from "express";
 import { lsCall, macronizeCall } from "@/web/api_routes";
 import path from "path";
+import bodyParser from "body-parser";
 
 function log(message: string) {
   console.log(`[web_server] [${Date.now() / 1000}] ${message}`);
@@ -15,7 +16,7 @@ export interface WebServerParams {
 
 export function setupServer(params: WebServerParams): void {
   const app = params.app;
-
+  app.use(bodyParser.text());
   app.use(compression());
   app.use("/public", express.static("public"));
   app.use(express.static("genfiles_static"));
@@ -28,14 +29,15 @@ export function setupServer(params: WebServerParams): void {
     next();
   });
 
-  app.get(
-    macronizeCall(":input"),
-    async (req: Request<{ input: string }>, res) => {
-      log(`Got macronize request`);
-      const result = await params.macronizer(req.params.input);
-      res.send(result);
+  app.post(macronizeCall(), async (req, res) => {
+    log(`Got macronize request`);
+    if (typeof req.body !== "string") {
+      res.send("Invalid request");
+      return;
     }
-  );
+    const result = await params.macronizer(req.body);
+    res.send(result);
+  });
 
   app.get(lsCall(":entry"), async (req: Request<{ entry: string }>, res) => {
     log(`Got LS request`);

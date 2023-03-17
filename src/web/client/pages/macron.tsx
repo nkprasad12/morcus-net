@@ -32,7 +32,15 @@ function TextInputField(props: TextInputFieldProps) {
 }
 
 async function process(input: string): Promise<string> {
-  const response = await fetch(`${location.origin}${macronizeCall(input)}`);
+  const address = `${location.origin}${macronizeCall()}`;
+  const options = {
+    method: "POST",
+    headers: {
+      "Content-Type": "text/plain; charset=utf-8",
+    },
+    body: input,
+  };
+  const response = await fetch(address, options);
   if (!response.ok) {
     return ERROR_MESSAGE;
   }
@@ -57,7 +65,7 @@ export function Macronizer() {
         inputCallback={setRawInput}
       ></TextInputField>
       <button onClick={handleClick}>Macronize</button>
-      <p>{processed || ""}</p>
+      <pre>{processed || ""}</pre>
     </div>
   );
 }

@@ -1,5 +1,5 @@
-export function macronizeCall(input: string): string {
-  return `/api/macronize/${input}`;
+export function macronizeCall(): string {
+  return `/api/macronize/`;
 }
 
 export function lsCall(entry: string): string {

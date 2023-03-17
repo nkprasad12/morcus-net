@@ -20,12 +20,23 @@ describe("WebServer", () => {
   const app = getServer();
 
   test("handles macronize route", async () => {
-    const response = await request(app).get(
-      macronizeCall("testPostPleaseIgnore")
-    );
+    const response = await request(app)
+      .post(macronizeCall())
+      .send("testPostPleaseIgnore")
+      .set("Content-Type", "text/plain; charset=utf-8");
 
     expect(response.status).toBe(200);
     expect(response.text).toBe(`testPostPleaseIgnore2`);
+  });
+
+  test("handles macronize route with bad data", async () => {
+    const response = await request(app)
+      .post(macronizeCall())
+      .send({ data: "testPostPleaseIgnore" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(200);
+    expect(response.text).toBe(`Invalid request`);
   });
 
   test("handles LS dict route", async () => {
