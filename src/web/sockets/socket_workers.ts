@@ -50,6 +50,9 @@ export async function startRemoteWorker(
 
   socket.on("disconnect", () => {
     log(tag, `${tag} disconnected from web server.`);
+    if (process.env.KEEP_WORKERS_ON_DISCONNECT === "true") {
+      return;
+    }
     processor.teardown();
     socket.close();
   });

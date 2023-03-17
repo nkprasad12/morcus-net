@@ -5,7 +5,6 @@ import express from "express";
 import http from "http";
 import { Server } from "socket.io";
 
-import { LewisAndShort } from "@/web/dicts/ls";
 import { setupServer, WebServerParams } from "@/web/web_server";
 import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "./web/workers/requests";
@@ -24,24 +23,25 @@ const port = parseInt(process.env.PORT!);
 const app = express();
 const server = http.createServer(app);
 
-// Macronizer
 const workServer = new SocketWorkServer(new Server(server));
 
-// Lewis and Short
-const lewisAndShort = LewisAndShort.create(process.env.LS_PATH);
+async function callWorker(
+  category: Workers.Category,
+  input: string
+): Promise<string> {
+  const request: WorkRequest<string> = {
+    category: category,
+    id: `${randomInt(1000000)}`,
+    content: input,
+  };
+  const result = await workServer.process(request);
+  return result.content;
+}
 
 const params: WebServerParams = {
   app: app,
-  macronizer: async (input: string) => {
-    const request: WorkRequest<string> = {
-      category: Workers.MACRONIZER,
-      id: `${randomInt(1000000)}`,
-      content: input,
-    };
-    const result = await workServer.process(request);
-    return result.content;
-  },
-  lsDict: (input) => lewisAndShort.getEntry(input),
+  macronizer: (input) => callWorker(Workers.MACRONIZER, input),
+  lsDict: (input) => callWorker(Workers.LS_DICT, input),
 };
 
 setupServer(params);
