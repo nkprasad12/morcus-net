@@ -78,7 +78,7 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
-    "-wt", "--worker_type", help="The worker type to start.", choices=["mac"]
+    "-wt", "--worker_type", help="The worker type to start.", choices=["mac", "ls"]
 )
 args = parser.parse_args()
 
