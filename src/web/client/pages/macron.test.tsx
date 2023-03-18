@@ -7,7 +7,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { ERROR_MESSAGE, Macronizer } from "./macron";
+import { Macronizer } from "./macron";
 
 const realFetch = global.fetch;
 
@@ -69,7 +69,7 @@ describe("Macronizer View", () => {
     await user.click(submit);
 
     await waitFor(() => {
-      expect(screen.getByText(ERROR_MESSAGE)).toBeDefined();
+      expect(screen.getByText("Error: please try again later.")).toBeDefined();
     });
   });
 

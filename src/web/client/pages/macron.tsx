@@ -5,11 +5,9 @@ import TextField from "@mui/material/TextField";
 
 import { macronizeCall } from "@/web/api_routes";
 import { Solarized } from "../colors";
-
-export const ERROR_MESSAGE = "Processing failed, please try again later.";
+import { backendCall } from "../browser_utils";
 
 async function process(input: string): Promise<string> {
-  const address = `${location.origin}${macronizeCall()}`;
   const options = {
     method: "POST",
     headers: {
@@ -17,11 +15,7 @@ async function process(input: string): Promise<string> {
     },
     body: input,
   };
-  const response = await fetch(address, options);
-  if (!response.ok) {
-    return ERROR_MESSAGE;
-  }
-  return await response.text();
+  return backendCall(macronizeCall(), options);
 }
 
 export function Macronizer() {
@@ -55,6 +49,7 @@ export function Macronizer() {
           fullWidth
           minRows={10}
           variant="filled"
+          inputProps={{ spellCheck: "false" }}
           InputLabelProps={{
             style: { color: Solarized.base1 },
           }}
@@ -84,7 +79,7 @@ export function Macronizer() {
             borderColor: Solarized.base2,
           }}
         >
-          <pre>{processed}</pre>
+          <div style={{ whiteSpace: "pre-wrap" }}>{processed}</div>
         </Box>
       )}
     </>
