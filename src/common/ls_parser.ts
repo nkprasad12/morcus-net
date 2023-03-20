@@ -1,5 +1,5 @@
 import { XMLParser } from "fast-xml-parser";
-import { readFile, readFileSync } from "fs";
+import { readFileSync } from "fs";
 import { assert } from "./assert";
 
 const ENTRY_OPEN = "<entryFree ";

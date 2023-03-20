@@ -3,3 +3,9 @@ export function assert(condition: boolean, message: string = "") {
     throw new Error(message);
   }
 }
+
+export function assertEqual(expected: any, actual: any) {
+  if (expected !== actual) {
+    throw new Error(`Expected ${expected}, but got ${actual}.`);
+  }
+}
