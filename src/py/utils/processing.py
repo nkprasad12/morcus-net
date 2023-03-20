@@ -170,6 +170,12 @@ class SectionEvaluation:
                 if candidate_token != token:
                     error[processor] = candidate_token
             if len(error) > 1:
+                lb = i - 4 if i - 4 >= 0 else 0
+                ub = i + 4 if i + 4 <= len(golden_tokens) else len(golden_tokens)
+                prelude = golden_tokens[lb:i]
+                postlude = golden_tokens[i:ub]
+                postlude[0] = f"*{postlude[0]}*"
+                error["Context"] = " ".join(prelude + postlude)
                 errors.append(error)
 
         return ErrorReport(total_words=expected_num, errors=errors)
@@ -224,6 +230,7 @@ def evaluate_macronization(
             total_words += section_errors.total_words
             for error in section_errors.errors:
                 message = f"Expected `{error['Golden']}`\n"
+                message += f"Context: `{error['Context']}`\n"
                 for process in processes:
                     processor = process.name()
                     if processor not in error:

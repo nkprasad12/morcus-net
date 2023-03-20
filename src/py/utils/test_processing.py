@@ -156,6 +156,23 @@ class TestSectionEvaluation(unittest.TestCase):
         report = processing.SectionEvaluation("Gallia est omnis", []).errors()
         self.assertEqual(report.total_words, 3)
 
+    def test_reports_correct_context(self):
+        id = data.SectionId(0, 0, 0)
+        errors = (
+            processing.SectionEvaluation(
+                "a b c d e f g h ī j k l m n o p q r",
+                [
+                    results.SectionResult(
+                        "", "a b c d e f g h i j k l m n o p q r", id, 0, "Goo"
+                    )
+                ],
+            )
+            .errors()
+            .errors[0]
+        )
+
+        self.assertEqual(errors["Context"], "e f g h *ī* j k l")
+
     def test_reports_correct_errors(self):
         id = data.SectionId(0, 0, 0)
         antony = results.SectionResult("", "Galliā est omnīs", id, 0, "Antony")
@@ -163,15 +180,14 @@ class TestSectionEvaluation(unittest.TestCase):
 
         report = processing.SectionEvaluation("Gallia est omnis", [antony, crassus])
         errors = report.errors().errors
-        print(errors)
 
         self.assertEqual(len(errors), 2)
         gallia = errors[0]
-        self.assertEqual(len(gallia), 2)
+        self.assertEqual(len(gallia), 3)
         self.assertEqual(gallia["Golden"], "Gallia")
         self.assertEqual(gallia["Antony"], "Galliā")
         omnis = errors[1]
-        self.assertEqual(len(omnis), 3)
+        self.assertEqual(len(omnis), 4)
         self.assertEqual(omnis["Golden"], "omnis")
         self.assertEqual(omnis["Antony"], "omnīs")
         self.assertEqual(omnis["Crassus"], "ōmnis")
