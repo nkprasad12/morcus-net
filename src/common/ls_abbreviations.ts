@@ -46,7 +46,7 @@ export interface LsAuthorAbbreviation {
 }
 
 export function parseAbbreviations(
-  path: string = "src/common/ls_abbreviations.html"
+  path: string = "texts/latin/lewisAndShort/ls_abbreviations.html"
 ): LsAuthorAbbreviation[] {
   const xmlContents = readFileSync(path, "utf8");
   const result = parseEntries([xmlContents])[0];

@@ -47,30 +47,324 @@ const GEN_ABBREVIATIONS = new Map<string, string>([
   ["n.", "neuter"],
 ]);
 
-// Schema
-// ======
-// entryFree:
-// - orth
-// - text
-// - itype
-// - gen
-// - sense
-// - pos
-// - bibl
-// - foreign
-// - case
-// - etym
-// - mood
-// - lbl
-// - usg
-// - cb
-// - pb
-// - quote
-// - number
-// - q
-// - note
-// - hi
-// - figure
+/**
+ * Expands a `sense` element.
+ *
+sense:
+- hi
+- text
+- foreign
+- cit
+- xr
+- cb
+- bibl
+- pb
+- usg
+- case
+- pos
+- orth
+- itype
+- gen
+- etym
+- number
+- mood
+- quote
+- figure
+- lbl
+- trans
+- tr
+ *
+ * Decision: TODO
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displaySense(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "sense");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `hi` element.
+ *
+hi:
+- text
+- q
+- cb
+- pb
+- usg
+- orth
+- hi
+ *
+ * Note: Highlighted text in a quote means it was filled in by L/S
+ *
+ * Decision: TODO
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayHi(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "hi");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `foreign` element.
+ *
+foreign:
+- text
+- cb
+- reg
+ *
+ * Decision: TODO
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayForeign(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "foreign");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `cit` element.
+ *
+cit:
+- quote
+- text
+- bibl
+- trans
+ *
+ * Decision: TODO
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayCit(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "cit");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `quote` element.
+ *
+quote:
+- text
+- q
+- bibl
+- hi
+- foreign
+- quote
+ *
+ * Decision: TODO
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayQuote(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "quote");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `bibl` element.
+ *
+bibl:
+- author
+- text
+- hi
+- cb
+- note
+
+ * Purpose: Usually contains an author and some text for the part of the work
+         where that comes from. Sometimes it doesn't contain an author, but it's
+         unclear what to do with these.
+
+ * Decision: Expand the abbreviations, and in the future when we have the library
+          available, link to the appropriate section of the library.
+          Flag instances where we have <hi> or <note> inside and figure out what to do with these.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayBibl(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "bibl");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `author` element.
+ *
+author:
+- text
+
+ * Decision: Expand the containing text as needed, show orig on hover.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayAuthor(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "author");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `xr` element.
+ *
+xr:
+- lbl
+- text
+- ref
+
+ * Purpose: Seems to be a cross-reference to another LS entry.
+         Seems to always contain <lbl> and <ref>.
+
+ * Decision: Expand the containing tags with the text it contains.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayXr(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "xr");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `ref` element.
+ *
+ref:
+- text
+
+ * Purpose: Only used in <xr>. Shows which other entry should be linked to.
+
+Notes: Every instance has this attribute targOrder="U". Most have type="sym"
+       but the rest just have no type, instead.
+
+ * Decision: For `ref`s containing just a single word, link to that entry.
+          For `ref`s containing `the foll.` or `the preced.`, substitute for the name of
+          the following or preceding entry, with `original: foll.` or `preced.`
+          showing on hover.
+          Note: occaisonally we have `in the foll.` and in these cases we need to make sure
+                to handle this appropriately.
+          Note: sometimes we have "these nouns" or "these words", flag these and manually figure out
+                wtf we should do here.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayRef(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "ref");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `usg` element.
+ *
+usg:
+- text
+- hi
+
+ * Purpose: Usage note for the word. Note that it has a "type" attribute.
+
+ * Decision: Extract contained text, expanding abbreviations as needed.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayUsg(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "usg");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `trans` element.
+ *
+trans:
+- tr
+- text
+ *
+ * Purpose: Seems to be a translation of a <quote>
+ *
+ * Decision: Flag instances where we have a <trans> not immediately after a <quote>
+          Note: Usually there's a text node with a single space between the <trans> and the <quote>
+          Otherwise flatten out and just display the containing text, or possible add a "translation:" label.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayTrans(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "trans");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `tr` element.
+ *
+ * tr:
+ * - text
+ *
+ * Purpose: Seems to be a sub-part of <trans>
+ *
+ * Decision: Flag instances where we have <tr> outside of <trans> and not after <quote>
+          Otherwise, flatten out and just display the containing text.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayTr(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "tr");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `etym` element.
+ *
+etym:
+- text
+- foreign
+- hi
+- pb
+- cb
+- pos
+- q
+- quote
+- bibl
+- lbl
+- mood
+- case
+- number
+- usg
+- cit
+- itype
+- xr
+- orth
+- gen
+ *
+ * Decision: TODO
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayEtym(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "etym");
+  throw new Error("Not yet implemented.");
+}
+
+/**
+ * Expands a `pos` element.
+ *
+ * pos:
+ * - text
+ *
+ * Decision: Extract contained text and expand the abbreviation.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayPos(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "pos");
+  throw new Error("Not yet implemented.");
+}
 
 /**
  * Expands a `orth` element.
@@ -127,83 +421,6 @@ function displayGen(root: XmlNode, _parent?: XmlNode): string {
   return abbreviationText(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
 }
 
-// sense:
-// - hi
-// - text
-// - foreign
-// - cit
-// - xr
-// - cb
-// - bibl
-// - pb
-// - usg
-// - case
-// - pos
-// - orth
-// - itype
-// - gen
-// - etym
-// - number
-// - mood
-// - quote
-// - figure
-// - lbl
-// - trans
-// - tr
-
-// hi:
-// - text
-// - q
-// - cb
-// - pb
-// - usg
-// - orth
-// - hi
-
-// foreign:
-// - text
-// - cb
-// - reg
-
-// cit:
-// - quote
-// - text
-// - bibl
-// - trans
-
-// quote:
-// - text
-// - q
-// - bibl
-// - hi
-// - foreign
-// - quote
-
-// bibl:
-// - author
-// - text
-// - hi
-// - cb
-// - note
-// Purpose: Usually contains an author and some text for the part of the work
-//          where that comes from. Sometimes it doesn't contain an author, but it's
-//          unclear what to do with these.
-// Decision: Expand the abbreviations, and in the future when we have the library
-//           available, link to the appropriate section of the library.
-//           Flag instances where we have <hi> or <note> inside and figure out what to do with these.
-
-// author:
-// - text
-// Decision: Expand the containing text as needed, show orig on hover.
-
-// xr:
-// - lbl
-// - text
-// - ref
-// Purpose: Seems to be a cross-reference to another LS entry.
-//          Seems to always contain <lbl> and <ref>.
-// Decision: Expand the containing tags with the text it contains.
-
 /**
  * Expands a `lbl` element.
  *
@@ -228,20 +445,6 @@ function displayLbl(root: XmlNode, _parent?: XmlNode): string {
     LBL_ABBREVIATIONS.get(parent.name)!
   );
 }
-
-// ref:
-// - text
-// Purpose: Only used in <xr>. Shows which other entry should be linked to.
-// Notes: Every instance has this attribute targOrder="U". Most have type="sym"
-//        but the rest just have no type, instead.
-// Decision: For `ref`s containing just a single word, link to that entry.
-//           For `ref`s containing `the foll.` or `the preced.`, substitute for the name of
-//           the following or preceding entry, with `original: foll.` or `preced.`
-//           showing on hover.
-//           Note: occaisonally we have `in the foll.` and in these cases we need to make sure
-//                 to handle this appropriately.
-//           Note: sometimes we have "these nouns" or "these words", flag these and manually figure out
-//                 wtf we should do here.
 
 /**
  * Expands a `cb` element.
@@ -273,10 +476,6 @@ function displayPb(root: XmlNode, _parent?: XmlNode): string {
   return "";
 }
 
-// pos:
-// - text
-// Decision: Extract contained text and expand the abbreviation.
-
 /**
  * Expands a `case` element.
  *
@@ -292,47 +491,6 @@ function displayCase(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "case");
   return abbreviationText(XmlNode.getSoleText(root), CASE_ABBREVIATIONS);
 }
-
-// usg:
-// - text
-// - hi
-// Purpose: Usage note for the word. Note that it has a "type" attribute.
-// Decision: Extract contained text, expanding abbreviations as needed.
-
-// trans:
-// - tr
-// - text
-// Purpose: Seems to be a translation of a <quote>
-// Decision: Flag instances where we have a <trans> not immediately after a <quote>
-//           Note: Usually there's a text node with a single space between the <trans> and the <quote>
-//           Otherwise flatten out and just display the containing text, or possible add a "translation:" label.
-
-// tr:
-// - text
-// Purpose: Seems to be a sub-part of <trans>
-// Decision: Flag instances where we have <tr> outside of <trans> and not after <quote>
-//           Otherwise, flatten out and just display the containing text.
-
-// etym:
-// - text
-// - foreign
-// - hi
-// - pb
-// - cb
-// - pos
-// - q
-// - quote
-// - bibl
-// - lbl
-// - mood
-// - case
-// - number
-// - usg
-// - cit
-// - itype
-// - xr
-// - orth
-// - gen
 
 /**
  * Expands a `mood` element.
@@ -457,10 +615,24 @@ function displayReg(root: XmlNode, _parent?: XmlNode): string {
 }
 
 // Table for easy access to the display handler functions
-export const DISPLAY_HANDLER_LOOKUP = new Map<
+const DISPLAY_HANDLER_LOOKUP = new Map<
   string,
   (root: XmlNode, parent?: XmlNode) => string
 >([
+  ["sense", displaySense],
+  ["hi", displayHi],
+  ["foreign", displayForeign],
+  ["cit", displayCit],
+  ["quote", displayQuote],
+  ["bibl", displayBibl],
+  ["author", displayAuthor],
+  ["xr", displayXr],
+  ["ref", displayRef],
+  ["usg", displayUsg],
+  ["trans", displayTrans],
+  ["tr", displayTr],
+  ["etym", displayEtym],
+  ["pos", displayPos],
   ["gen", displayGen],
   ["itype", displayItype],
   ["orth", displayOrth],
@@ -475,3 +647,39 @@ export const DISPLAY_HANDLER_LOOKUP = new Map<
   ["note", displayNote],
   ["reg", displayReg],
 ]);
+
+/**
+ * Expands an `entryFree` element.
+ *
+entryFree:
+- orth
+- text
+- itype
+- gen
+- sense
+- pos
+- bibl
+- foreign
+- case
+- etym
+- mood
+- lbl
+- usg
+- cb
+- pb
+- quote
+- number
+- q
+- note
+- hi
+- figure
+ *
+ * Decision: TODO
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+export function displayEntryFree(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "entryFree");
+  throw new Error("Not yet implemented.");
+}
