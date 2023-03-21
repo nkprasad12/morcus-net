@@ -1,4 +1,4 @@
-import { assert, assertEqual } from "@/common/assert";
+import { assert } from "@/common/assert";
 import { XmlNode } from "@/common/ls_parser";
 
 //
@@ -15,28 +15,6 @@ function abbreviationText(
 function attachHoverText(displayText: string, hoverText: string): string {
   const style = `style="display: inline; border-bottom: 1px dashed blue;"`;
   return `<div ${style} title="${hoverText}">${displayText}</div>`;
-}
-
-function getSoleText(node: XmlNode): string {
-  assert(node.children.length === 1);
-  return assertIsString(node.children[0]);
-}
-
-function assertIsString(node: string | XmlNode): string {
-  if (typeof node === "string") {
-    return node;
-  }
-  throw new Error(`Expected "string", but got ${node.formatAsString()}`);
-}
-
-function assertIsNode(node: string | XmlNode, name?: string): XmlNode {
-  if (typeof node === "string") {
-    throw new Error(`Expected XmlNode, but got string.`);
-  }
-  if (name !== undefined) {
-    assertEqual(name, node.name);
-  }
-  return node;
 }
 
 //
@@ -61,6 +39,12 @@ const CASE_ABBREVIATIONS = new Map<string, string>([
 const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
   ["entryFree", new Map<string, string>([["dim.", "diminutive"]])],
   ["xr", new Map<string, string>([["v.", "look [at entry]"]])],
+]);
+
+const GEN_ABBREVIATIONS = new Map<string, string>([
+  ["f.", "feminine"],
+  ["m.", "masculine"],
+  ["n.", "neuter"],
 ]);
 
 // Schema
@@ -88,14 +72,60 @@ const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
 // - hi
 // - figure
 
-// orth:
-// - text
+/**
+ * Expands a `orth` element.
+ *
+ * orth:
+ * - text
+ *
+ * Purpose: Versions of the word. Has vowel length markings.
+ *
+ * Decision: can flatten to the contained text.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayOrth(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "orth");
+  return XmlNode.getSoleText(root);
+}
 
-// itype:
-// - text
+/**
+ * Expands a `itype` element.
+ *
+ * itype:
+ * - text
+ *
+ * Purpose: Contains the inflection type of the element.
+ *
+ * Decision: can flatten to the contained text. In the long
+ *           term we'll use this for inflection tables.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayItype(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "itype");
+  return XmlNode.getSoleText(root);
+}
 
-// gen:
-// - text
+/**
+ * Expands a `gen` element.
+ *
+ * gen:
+ * - text
+ *
+ * Purpose: Contains the gender of the element.
+ *
+ * Decision: can flatten to the contained text.
+ *
+ * @param root The root node for this element.
+ * @param _parent The parent node for the root.
+ */
+function displayGen(root: XmlNode, _parent?: XmlNode): string {
+  assert(root.name === "itype");
+  return abbreviationText(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
+}
 
 // sense:
 // - hi
@@ -194,7 +224,7 @@ function displayLbl(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "lbl");
   assert(parent !== undefined, "<lbl> should have a parent.");
   return abbreviationText(
-    getSoleText(root),
+    XmlNode.getSoleText(root),
     LBL_ABBREVIATIONS.get(parent.name)!
   );
 }
@@ -260,7 +290,7 @@ function displayPb(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayCase(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "case");
-  return abbreviationText(getSoleText(root), CASE_ABBREVIATIONS);
+  return abbreviationText(XmlNode.getSoleText(root), CASE_ABBREVIATIONS);
 }
 
 // usg:
@@ -319,7 +349,7 @@ function displayCase(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayMood(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "mood");
-  return abbreviationText(getSoleText(root), MOOD_ABBREVIATIONS);
+  return abbreviationText(XmlNode.getSoleText(root), MOOD_ABBREVIATIONS);
 }
 
 /**
@@ -337,7 +367,7 @@ function displayMood(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayNumber(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "number");
-  return abbreviationText(getSoleText(root), NUMBER_ABBREVIATIONS);
+  return abbreviationText(XmlNode.getSoleText(root), NUMBER_ABBREVIATIONS);
 }
 
 /**
@@ -355,7 +385,7 @@ function displayNumber(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayQ(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "q");
-  return getSoleText(root);
+  return XmlNode.getSoleText(root);
 }
 
 /**
@@ -418,11 +448,11 @@ function displayNote(root: XmlNode, _parent?: XmlNode): string {
 function displayReg(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "reg");
   assert(root.children.length === 2);
-  const sic = assertIsNode(root.children[0], "sic");
-  const corr = assertIsNode(root.children[1], "corr");
+  const sic = XmlNode.assertIsNode(root.children[0], "sic");
+  const corr = XmlNode.assertIsNode(root.children[1], "corr");
   return attachHoverText(
-    getSoleText(corr),
-    `Corrected from original: ${getSoleText(sic)}`
+    XmlNode.getSoleText(corr),
+    `Corrected from original: ${XmlNode.getSoleText(sic)}`
   );
 }
 
@@ -431,6 +461,9 @@ export const DISPLAY_HANDLER_LOOKUP = new Map<
   string,
   (root: XmlNode, parent?: XmlNode) => string
 >([
+  ["gen", displayGen],
+  ["itype", displayItype],
+  ["orth", displayOrth],
   ["case", displayCase],
   ["lbl", displayLbl],
   ["cb", displayCb],
