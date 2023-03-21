@@ -1,7 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import { readFileSync } from "fs";
 
-import { extractEntries, parse, parseEntries } from "./ls_parser";
+import { extractEntries, parse, parseEntries, XmlNode } from "./ls_parser";
 
 const LS_SUBSET = "testdata/ls/subset.xml";
 
@@ -90,5 +90,55 @@ describe("parseEntries", () => {
 describe("parse", () => {
   test("parses all entries in file", () => {
     expect(parse(LS_SUBSET)).toHaveLength(4);
+  });
+});
+
+describe("getSoleText", () => {
+  it("returns text in happy path", () => {
+    const result = XmlNode.getSoleText(new XmlNode("", [], ["Caesar"]));
+    expect(result).toBe("Caesar");
+  });
+
+  it("raises on multiple children", () => {
+    expect(() =>
+      XmlNode.getSoleText(new XmlNode("", [], ["Caesar", "Gallia"]))
+    ).toThrow();
+  });
+
+  it("raises on node child", () => {
+    expect(() =>
+      XmlNode.getSoleText(new XmlNode("", [], [new XmlNode("", [], [])]))
+    ).toThrow();
+  });
+});
+
+describe("assertIsString", () => {
+  it("no-ops on string", () => {
+    expect(XmlNode.assertIsString("Gallia")).toBe("Gallia");
+  });
+
+  it("throws on XmlNode", () => {
+    expect(() => XmlNode.assertIsString(new XmlNode("", [], []))).toThrow();
+  });
+});
+
+describe("assertIsNode", () => {
+  it("no-ops on node", () => {
+    const node = new XmlNode("", [], []);
+    expect(XmlNode.assertIsNode(node)).toBe(node);
+  });
+
+  it("raises on incorrect tag name", () => {
+    const node = new XmlNode("caesar", [], []);
+    expect(() => XmlNode.assertIsNode(node, "caesa")).toThrow();
+  });
+
+  it("allows correct tag name", () => {
+    const node = new XmlNode("caesar", [], []);
+    expect(XmlNode.assertIsNode(node)).toBe(node);
+  });
+
+  it("throws on string", () => {
+    expect(() => XmlNode.assertIsNode("Gallia")).toThrow();
   });
 });
