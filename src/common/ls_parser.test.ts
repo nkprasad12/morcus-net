@@ -142,3 +142,20 @@ describe("assertIsNode", () => {
     expect(() => XmlNode.assertIsNode("Gallia")).toThrow();
   });
 });
+
+describe("XmlNode.findDescendants", () => {
+  it("finds all descendants", () => {
+    const child1 = new XmlNode("caesar", [["child", "1"]], []);
+    const child2 = new XmlNode("caesar", [["child", "2"]], [child1]);
+    const child3 = new XmlNode("augustus", [["child", "3"]], []);
+    const child4 = new XmlNode("caesar", [["child", "4"]], []);
+    const parent = new XmlNode("caesar", [], [child2, child3, child4]);
+
+    const result = parent.findDescendants("caesar");
+
+    expect(result).toHaveLength(3);
+    expect(result).toContain(child1);
+    expect(result).toContain(child2);
+    expect(result).toContain(child4);
+  });
+});

@@ -1,9 +1,6 @@
-import { assert } from "@/common/assert";
+import { assert, assertEqual } from "@/common/assert";
 import { XmlNode } from "@/common/ls_parser";
-import {
-  LsAuthorAbbreviations,
-  parseAuthorAbbreviations,
-} from "./ls_abbreviations";
+import { LsAuthorAbbreviations } from "./ls_abbreviations";
 
 //
 // Helper functions
@@ -50,6 +47,78 @@ const GEN_ABBREVIATIONS = new Map<string, string>([
   ["m.", "masculine"],
   ["n.", "neuter"],
 ]);
+
+const POS_ABBREVIATIONS = new Map<string, string>([
+  ["prep.", "preposition"],
+  ["interj.", "interjection"],
+  ["adj.", "adjective"],
+  ["v. n.", "verb [intransitive]"],
+  ["v. a.", "verb [transitive]"],
+  [
+    "v. freq. a.",
+    `verb [${attachHoverText(
+      "freq.",
+      "frequentative or frequently"
+    )} transitive]`,
+  ],
+  ["adv.", "adverb"],
+  ["P. a.", "participal adjective"],
+  ["v. dep.", "verb [deponent]"],
+  ["Adj.", "Adjective"],
+  ["Subst.", "Substantive"],
+  ["adv. num.", "adverb [numeral]"],
+  ["num. adj.", "adjective [numeral]"],
+  ["pron. adj.", "adjective [pronoun]"],
+]);
+
+// Table for easy access to the display handler functions
+const DISPLAY_HANDLER_LOOKUP = new Map<
+  string,
+  (root: XmlNode, parent?: XmlNode) => string
+>([
+  ["sense", displaySense],
+  ["hi", displayHi],
+  ["foreign", displayForeign],
+  ["cit", displayCit],
+  ["quote", displayQuote],
+  ["bibl", displayBibl],
+  ["author", displayAuthor],
+  ["xr", displayXr],
+  ["ref", displayRef],
+  ["usg", displayUsg],
+  ["trans", displayTrans],
+  ["tr", displayTr],
+  ["etym", displayEtym],
+  ["pos", displayPos],
+  ["gen", displayGen],
+  ["itype", displayItype],
+  ["orth", displayOrth],
+  ["case", displayCase],
+  ["lbl", displayLbl],
+  ["cb", displayCb],
+  ["pb", displayPb],
+  ["mood", displayMood],
+  ["number", displayNumber],
+  ["q", displayQ],
+  ["figure", displayFigure],
+  ["note", displayNote],
+  ["reg", displayReg],
+]);
+
+function defaultDisplay(root: XmlNode, expectedNodes: string[] = []): string {
+  let result = "";
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      result += "string";
+    } else {
+      if (!expectedNodes.includes(child.name)) {
+        throw new Error("Unexpected node.");
+      }
+      result += DISPLAY_HANDLER_LOOKUP.get(child.name)!(child);
+    }
+  }
+  return result;
+}
 
 /**
  * Expands a `sense` element.
@@ -102,14 +171,21 @@ hi:
  *
  * Note: Highlighted text in a quote means it was filled in by L/S
  *
- * Decision: TODO
+ * Decision: Just enclose in the appropriate style.
  *
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
 function displayHi(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "hi");
-  throw new Error("Not yet implemented.");
+  assertEqual(root.attrs[0][0], "rend");
+  const rendAttr = root.attrs[0][1];
+  // The only options are "ital" and "sup"
+  const styleType = rendAttr === "sup" ? "sup" : "i";
+  const result = [`<${styleType}>`];
+  result.push(defaultDisplay(root, ["q", "cb", "pb", "usg", "orth", "hi"]));
+  result.push(`</${styleType}>`);
+  return result.join("");
 }
 
 /**
@@ -120,14 +196,22 @@ foreign:
 - cb
 - reg
  *
- * Decision: TODO
+ * Decision: Almost all of these are Greek, with only a few dozen exceptions
+ *           which are mostly empty because they required a difficult scripts.
+ *           Just display the text or a note explaining the omission.
  *
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
 function displayForeign(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "foreign");
-  throw new Error("Not yet implemented.");
+  if (root.attrs.length === 0) {
+    return attachHoverText(
+      "[omitted from digitization]",
+      "Expanded from empty, usually for Hebrew or Etruscan."
+    );
+  }
+  return defaultDisplay(root, ["cb", "reg"]);
 }
 
 /**
@@ -160,14 +244,23 @@ quote:
 - foreign
 - quote
  *
- * Decision: TODO
- *
+ * Note: `quote` inside quote is extremely rare (5 times total)
+ *       `hi` inside quote only happens 7 times total
+ *       `q` inside quote only happens 5 times, for nested quotes.
+ *       `foreign` inside quote only happens once, and it's for a citation
+ *       `bibl` inside quote happens only three times, and it
+ * *
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
 function displayQuote(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "quote");
-  throw new Error("Not yet implemented.");
+  const result = [];
+  result.push("“");
+  // TODO: Is the nested quote intentional here? Maybe we should fix the markup.
+  result.push(defaultDisplay(root, ["q", "bibl", "hi", "foreign", "quote"]));
+  result.push("”");
+  return result.join("");
 }
 
 /**
@@ -306,15 +399,7 @@ trans:
  */
 function displayTrans(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "trans");
-  let displayText = "";
-  for (const child of root.children) {
-    if (typeof child === "string") {
-      displayText += child;
-    } else {
-      displayText += displayTr(root, _parent);
-    }
-  }
-  return attachHoverText(displayText, "translation");
+  return attachHoverText(defaultDisplay(root, ["tr"]), "translation");
 }
 
 /**
@@ -383,7 +468,7 @@ function displayEtym(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayPos(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "pos");
-  throw new Error("Not yet implemented.");
+  return abbreviationText(XmlNode.getSoleText(root), POS_ABBREVIATIONS);
 }
 
 /**
@@ -563,7 +648,7 @@ function displayNumber(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayQ(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "q");
-  return XmlNode.getSoleText(root);
+  return `$‘${XmlNode.getSoleText(root)}’`;
 }
 
 /**
@@ -633,40 +718,6 @@ function displayReg(root: XmlNode, _parent?: XmlNode): string {
     `Corrected from original: ${XmlNode.getSoleText(sic)}`
   );
 }
-
-// Table for easy access to the display handler functions
-const DISPLAY_HANDLER_LOOKUP = new Map<
-  string,
-  (root: XmlNode, parent?: XmlNode) => string
->([
-  ["sense", displaySense],
-  ["hi", displayHi],
-  ["foreign", displayForeign],
-  ["cit", displayCit],
-  ["quote", displayQuote],
-  ["bibl", displayBibl],
-  ["author", displayAuthor],
-  ["xr", displayXr],
-  ["ref", displayRef],
-  ["usg", displayUsg],
-  ["trans", displayTrans],
-  ["tr", displayTr],
-  ["etym", displayEtym],
-  ["pos", displayPos],
-  ["gen", displayGen],
-  ["itype", displayItype],
-  ["orth", displayOrth],
-  ["case", displayCase],
-  ["lbl", displayLbl],
-  ["cb", displayCb],
-  ["pb", displayPb],
-  ["mood", displayMood],
-  ["number", displayNumber],
-  ["q", displayQ],
-  ["figure", displayFigure],
-  ["note", displayNote],
-  ["reg", displayReg],
-]);
 
 /**
  * Expands an `entryFree` element.

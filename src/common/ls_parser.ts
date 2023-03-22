@@ -34,6 +34,23 @@ export class XmlNode {
     return lines.join(indent ? "\n" : "");
   }
 
+  /** Returns all descendants with the given `name`. */
+  findDescendants(name: string): XmlNode[] {
+    const result: XmlNode[] = [];
+    for (const child of this.children) {
+      if (typeof child === "string") {
+        continue;
+      }
+      if (child.name === name) {
+        result.push(child);
+      }
+      child.findDescendants(name).forEach((element) => {
+        result.push(element);
+      });
+    }
+    return result;
+  }
+
   toString(): string {
     return this.formatAsString(false);
   }
