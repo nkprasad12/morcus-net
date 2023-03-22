@@ -1,5 +1,9 @@
 import { assert } from "@/common/assert";
 import { XmlNode } from "@/common/ls_parser";
+import {
+  LsAuthorAbbreviations,
+  parseAuthorAbbreviations,
+} from "./ls_abbreviations";
 
 //
 // Helper functions
@@ -205,7 +209,15 @@ author:
  */
 function displayAuthor(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "author");
-  throw new Error("Not yet implemented.");
+  const abbreviated = XmlNode.getSoleText(root);
+  if (abbreviated === "id.") {
+    // TODO: Support this properly.
+    return attachHoverText("id.", "idem (same as above)");
+  }
+  return attachHoverText(
+    abbreviated,
+    LsAuthorAbbreviations.authors().get(abbreviated)!
+  );
 }
 
 /**
@@ -294,7 +306,15 @@ trans:
  */
 function displayTrans(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "trans");
-  throw new Error("Not yet implemented.");
+  let displayText = "";
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      displayText += child;
+    } else {
+      displayText += displayTr(root, _parent);
+    }
+  }
+  return attachHoverText(displayText, "translation");
 }
 
 /**
@@ -313,7 +333,7 @@ function displayTrans(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayTr(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "tr");
-  throw new Error("Not yet implemented.");
+  return XmlNode.getSoleText(root);
 }
 
 /**

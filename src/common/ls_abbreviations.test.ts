@@ -1,5 +1,5 @@
 import fs from "fs";
-import { parseAbbreviations } from "./ls_abbreviations";
+import { parseAuthorAbbreviations } from "./ls_abbreviations";
 
 const TEMP_FILE = "ls_abbreviations.tmp.html";
 
@@ -41,7 +41,7 @@ describe("parseAbbreviations", () => {
   it("processes all elements", () => {
     writeFile(BASIC);
 
-    const result = parseAbbreviations(TEMP_FILE);
+    const result = parseAuthorAbbreviations(TEMP_FILE);
 
     expect(result).toHaveLength(2);
     expect(result[0].key).toBe("Aem. Mac.");
@@ -57,7 +57,7 @@ describe("parseAbbreviations", () => {
   it("handles multiple keys", () => {
     writeFile(OR_IN_AUTHORS);
 
-    const result = parseAbbreviations(TEMP_FILE);
+    const result = parseAuthorAbbreviations(TEMP_FILE);
 
     expect(result).toHaveLength(3);
     expect(result[0].key).toBe("Aem. Mac.");
@@ -74,7 +74,7 @@ describe("parseAbbreviations", () => {
   it("handles works", () => {
     writeFile(OR_IN_WORKS);
 
-    const result = parseAbbreviations(TEMP_FILE);
+    const result = parseAuthorAbbreviations(TEMP_FILE);
 
     expect(result).toHaveLength(1);
     expect(result[0].key).toBe("Aldh.");

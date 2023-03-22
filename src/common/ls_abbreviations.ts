@@ -45,7 +45,7 @@ export interface LsAuthorAbbreviation {
   works: Map<string, string>;
 }
 
-export function parseAbbreviations(
+export function parseAuthorAbbreviations(
   path: string = "texts/latin/lewisAndShort/ls_abbreviations.html"
 ): LsAuthorAbbreviation[] {
   const xmlContents = readFileSync(path, "utf8");
@@ -80,4 +80,29 @@ export function parseAbbreviations(
     });
   }
   return entries;
+}
+
+export namespace LsAuthorAbbreviations {
+  const authorMap = new Map<string, string>();
+  const worksMap = new Map<string, Map<string, string>>();
+
+  function populateMaps() {
+    if (authorMap.size === 0) {
+      const data = parseAuthorAbbreviations();
+      for (const datum of data) {
+        authorMap.set(datum.key, datum.expanded);
+        worksMap.set(datum.key, datum.works);
+      }
+    }
+  }
+
+  export function authors(): Map<string, string> {
+    populateMaps();
+    return authorMap;
+  }
+
+  export function works(): Map<string, Map<string, string>> {
+    populateMaps();
+    return worksMap;
+  }
 }
