@@ -1,9 +1,51 @@
-export function abbreviationText(
-  original: string,
-  lookup: Map<string, string>
-): string {
-  const expanded = lookup.get(original)!;
-  return attachHoverText(expanded, `Expanded from: ${original}`);
+export interface TrieValue {
+  value: string;
+  tags?: string[];
+}
+
+export class TrieNode {
+  private readonly children: Map<string, TrieNode> = new Map();
+  private readonly values: TrieValue[] = [];
+
+  add(word: string, value: string, tags?: string[]): void {
+    let lastNode: TrieNode = this;
+    for (const character of word) {
+      if (!lastNode.children.has(character)) {
+        lastNode.children.set(character, new TrieNode());
+      }
+      lastNode = lastNode.children.get(character)!;
+    }
+    lastNode.values.push({ value: value, tags: tags });
+  }
+
+  isFullWord(): boolean {
+    return this.values.length > 0;
+  }
+
+  next(character: string): TrieNode | undefined {
+    return this.children.get(character);
+  }
+
+  nodeValues(filters?: string[]): TrieValue[] {
+    const goodValues: TrieValue[] = [];
+    for (const trieValue of this.values) {
+      if (filters === undefined || filters.length === 0) {
+        goodValues.push(trieValue);
+        continue;
+      }
+      if (trieValue.tags === undefined || trieValue.tags.length === 0) {
+        continue;
+      }
+      const hasAllFilters = filters
+        .map((filter) => trieValue.tags!.includes(filter))
+        .reduce((previous, current) => previous && current);
+      if (!hasAllFilters) {
+        continue;
+      }
+      goodValues.push(trieValue);
+    }
+    return goodValues;
+  }
 }
 
 // Edge cases to watch out for:
@@ -14,45 +56,10 @@ export function abbreviationText(
 //
 // And also we can have multi-word keys like `de Or.` where we need to
 // make sure we are handling `de` as connected to `Or.`.
-
-// function attachAbbreviations(
+// export function attachAbbreviations(
 //   message: string,
 //   lookup: Map<string, string>
-// ): string {
-//   const words = message.split(" ");
-//   const abbrevIdxs: number[] = [];
-//   words.forEach((word, i) => {
-//     if (word.slice(-1) === ".") {
-//       abbrevIdxs.push(i);
-//     }
-//   });
-//   if (abbrevIdxs.length === 0) {
-//     return message;
-//   }
-//   abbrevIdxs.push(-1);
-
-//   // A run a series of continuous abbreviation tokens.
-//   // The first element is the start index, the second is the length.
-//   const runs: [number, number][] = [];
-//   let currentRun: [number, number] = [abbrevIdxs[0], 1];
-//   for (const i of abbrevIdxs.slice(1)) {
-//     const [currentRunStart, currentRunLength] = currentRun;
-//     if (i - currentRunStart === currentRunLength) {
-//       currentRun = [currentRunStart, currentRunLength + 1];
-//     } else {
-//       runs.push(currentRun);
-//       currentRun = [i, 1];
-//     }
-//   }
-
-//   const expansions = runs.forEach(([startIdx, length]) => {
-//     for (let l = length; l > 0; l--) {
-//       for (let i = 0; i <= length - l; i++) {
-
-//       }
-//     }
-//   });
-// }
+// ): string {}
 
 export function attachHoverText(
   displayText: string,
@@ -60,4 +67,12 @@ export function attachHoverText(
 ): string {
   const style = `style="display: inline; border-bottom: 1px dashed blue;"`;
   return `<div ${style} title="${hoverText}">${displayText}</div>`;
+}
+
+export function substituteAbbreviation(
+  original: string,
+  lookup: Map<string, string>
+): string {
+  const expanded = lookup.get(original)!;
+  return attachHoverText(expanded, `Expanded from: ${original}`);
 }

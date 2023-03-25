@@ -10,7 +10,7 @@ import {
   POS_ABBREVIATIONS,
 } from "@/common/lewis_and_short/ls_abbreviations";
 import {
-  abbreviationText,
+  substituteAbbreviation,
   attachHoverText,
 } from "@/common/lewis_and_short/ls_styling";
 
@@ -439,7 +439,7 @@ function displayEtym(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayPos(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "pos");
-  return abbreviationText(XmlNode.getSoleText(root), POS_ABBREVIATIONS);
+  return substituteAbbreviation(XmlNode.getSoleText(root), POS_ABBREVIATIONS);
 }
 
 /**
@@ -494,7 +494,7 @@ function displayItype(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayGen(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "gen");
-  return abbreviationText(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
+  return substituteAbbreviation(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
 }
 
 /**
@@ -516,7 +516,7 @@ function displayGen(root: XmlNode, _parent?: XmlNode): string {
 function displayLbl(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "lbl");
   assert(parent !== undefined, "<lbl> should have a parent.");
-  return abbreviationText(
+  return substituteAbbreviation(
     XmlNode.getSoleText(root),
     LBL_ABBREVIATIONS.get(parent.name)!
   );
@@ -565,7 +565,7 @@ function displayPb(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayCase(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "case");
-  return abbreviationText(XmlNode.getSoleText(root), CASE_ABBREVIATIONS);
+  return substituteAbbreviation(XmlNode.getSoleText(root), CASE_ABBREVIATIONS);
 }
 
 /**
@@ -583,7 +583,7 @@ function displayCase(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayMood(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "mood");
-  return abbreviationText(XmlNode.getSoleText(root), MOOD_ABBREVIATIONS);
+  return substituteAbbreviation(XmlNode.getSoleText(root), MOOD_ABBREVIATIONS);
 }
 
 /**
@@ -601,7 +601,10 @@ function displayMood(root: XmlNode, _parent?: XmlNode): string {
  */
 function displayNumber(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "number");
-  return abbreviationText(XmlNode.getSoleText(root), NUMBER_ABBREVIATIONS);
+  return substituteAbbreviation(
+    XmlNode.getSoleText(root),
+    NUMBER_ABBREVIATIONS
+  );
 }
 
 /**

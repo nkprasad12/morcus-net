@@ -1,5 +1,8 @@
 import fs from "fs";
-import { parseAuthorAbbreviations } from "./ls_abbreviations";
+import {
+  LsAuthorAbbreviations,
+  parseAuthorAbbreviations,
+} from "./ls_abbreviations";
 
 const TEMP_FILE = "ls_abbreviations.tmp.html";
 
@@ -85,5 +88,17 @@ describe("parseAbbreviations", () => {
     expect(result[0].works.get("Laud. Virg.")).toBe(
       "De Laudibus Virginitatis."
     );
+  });
+});
+
+describe("LsAuthorAbbreviations", () => {
+  it("uses singleton authors map", () => {
+    const first = LsAuthorAbbreviations.authors();
+    expect(LsAuthorAbbreviations.authors()).toBe(first);
+  });
+
+  it("uses singleton works map", () => {
+    const first = LsAuthorAbbreviations.works();
+    expect(LsAuthorAbbreviations.works()).toBe(first);
   });
 });
