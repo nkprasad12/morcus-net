@@ -12,6 +12,7 @@ import {
 import {
   substituteAbbreviation,
   attachHoverText,
+  attachAbbreviations,
 } from "@/common/lewis_and_short/ls_styling";
 
 // Table for easy access to the display handler functions
@@ -227,7 +228,7 @@ bibl:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayBibl(root: XmlNode, _parent?: XmlNode): string {
+export function displayBibl(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "bibl");
   const author = root.findDescendants("author");
   if (author.length === 0) {
@@ -236,24 +237,11 @@ function displayBibl(root: XmlNode, _parent?: XmlNode): string {
   assertEqual(author.length, 1);
   const authorKey = XmlNode.getSoleText(author[0]);
   const base = defaultDisplay(root);
-  const works = LsAuthorAbbreviations.works().get(authorKey);
+  const works = LsAuthorAbbreviations.worksTrie().get(authorKey);
   if (works === undefined) {
     return base;
   }
-  return base;
-  // TODO: This does not handle split abbreviations, like t. t.
-  // .split(" ")
-  // .map((chunk) => {
-  //   if (chunk === authorKey) {
-  //     return chunk;
-  //   }
-  //   const expandedWork = works.get(chunk);
-  //   if (expandedWork === undefined) {
-  //     return chunk;
-  //   }
-  //   return attachHoverText(chunk, expandedWork);
-  // })
-  // .join(" ");
+  return attachAbbreviations(base, works);
 }
 
 /**
@@ -653,7 +641,7 @@ function displayFigure(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayNote(root: XmlNode, _parent?: XmlNode): string {
+export function displayNote(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "note");
   return "";
 }

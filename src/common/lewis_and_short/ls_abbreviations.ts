@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/ls_parser";
-import { attachHoverText } from "./ls_styling";
+import { attachHoverText, TrieNode } from "./ls_styling";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
@@ -152,6 +152,7 @@ export const USG_ABBREVIATIONS = new Map<string, string>([
 export namespace LsAuthorAbbreviations {
   const authorMap = new Map<string, string>();
   const worksMap = new Map<string, Map<string, string>>();
+  const worksTrieMap = new Map<string, TrieNode>();
 
   function populateMaps() {
     if (authorMap.size === 0) {
@@ -159,6 +160,11 @@ export namespace LsAuthorAbbreviations {
       for (const datum of data) {
         authorMap.set(datum.key, datum.expanded);
         worksMap.set(datum.key, datum.works);
+        const root = new TrieNode();
+        for (const [key, value] of datum.works.entries()) {
+          root.add(key, value);
+        }
+        worksTrieMap.set(datum.key, root);
       }
     }
   }
@@ -171,5 +177,10 @@ export namespace LsAuthorAbbreviations {
   export function works(): Map<string, Map<string, string>> {
     populateMaps();
     return worksMap;
+  }
+
+  export function worksTrie(): Map<string, TrieNode> {
+    populateMaps();
+    return worksTrieMap;
   }
 }
