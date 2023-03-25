@@ -1,75 +1,18 @@
 import { assert, assertEqual } from "@/common/assert";
-import { XmlNode } from "@/common/ls_parser";
-import { LsAuthorAbbreviations } from "./ls_abbreviations";
-
-//
-// Helper functions
-//
-function abbreviationText(
-  original: string,
-  lookup: Map<string, string>
-): string {
-  const expanded = lookup.get(original)!;
-  return attachHoverText(expanded, `Expanded from: ${original}`);
-}
-
-function attachHoverText(displayText: string, hoverText: string): string {
-  const style = `style="display: inline; border-bottom: 1px dashed blue;"`;
-  return `<div ${style} title="${hoverText}">${displayText}</div>`;
-}
-
-//
-// Abbreviation maps
-//
-const NUMBER_ABBREVIATIONS = new Map<string, string>([
-  ["sing.", "singular"],
-  ["plur.", "plural"],
-]);
-
-const MOOD_ABBREVIATIONS = new Map<string, string>([["Part.", "Participle"]]);
-
-const CASE_ABBREVIATIONS = new Map<string, string>([
-  ["nom.", "nominative"],
-  ["acc.", "accusative"],
-  ["dat.", "dative"],
-  ["gen.", "genitive"],
-  ["abl.", "ablative"],
-  ["voc.", "vocative"],
-]);
-
-const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
-  ["entryFree", new Map<string, string>([["dim.", "diminutive"]])],
-  ["xr", new Map<string, string>([["v.", "look [at entry]"]])],
-]);
-
-const GEN_ABBREVIATIONS = new Map<string, string>([
-  ["f.", "feminine"],
-  ["m.", "masculine"],
-  ["n.", "neuter"],
-]);
-
-const POS_ABBREVIATIONS = new Map<string, string>([
-  ["prep.", "preposition"],
-  ["interj.", "interjection"],
-  ["adj.", "adjective"],
-  ["v. n.", "verb [intransitive]"],
-  ["v. a.", "verb [transitive]"],
-  [
-    "v. freq. a.",
-    `verb [${attachHoverText(
-      "freq.",
-      "frequentative or frequently"
-    )} transitive]`,
-  ],
-  ["adv.", "adverb"],
-  ["P. a.", "participal adjective"],
-  ["v. dep.", "verb [deponent]"],
-  ["Adj.", "Adjective"],
-  ["Subst.", "Substantive"],
-  ["adv. num.", "adverb [numeral]"],
-  ["num. adj.", "adjective [numeral]"],
-  ["pron. adj.", "adjective [pronoun]"],
-]);
+import { XmlNode } from "@/common/lewis_and_short/ls_parser";
+import {
+  CASE_ABBREVIATIONS,
+  GEN_ABBREVIATIONS,
+  LBL_ABBREVIATIONS,
+  LsAuthorAbbreviations,
+  MOOD_ABBREVIATIONS,
+  NUMBER_ABBREVIATIONS,
+  POS_ABBREVIATIONS,
+} from "@/common/lewis_and_short/ls_abbreviations";
+import {
+  abbreviationText,
+  attachHoverText,
+} from "@/common/lewis_and_short/ls_styling";
 
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
@@ -105,13 +48,13 @@ const DISPLAY_HANDLER_LOOKUP = new Map<
   ["reg", displayReg],
 ]);
 
-function defaultDisplay(root: XmlNode, expectedNodes: string[] = []): string {
+function defaultDisplay(root: XmlNode, expectedNodes?: string[]): string {
   let result = "";
   for (const child of root.children) {
     if (typeof child === "string") {
-      result += "string";
+      result += child;
     } else {
-      if (!expectedNodes.includes(child.name)) {
+      if (expectedNodes !== undefined && !expectedNodes.includes(child.name)) {
         throw new Error("Unexpected node.");
       }
       result += DISPLAY_HANDLER_LOOKUP.get(child.name)!(child);
@@ -223,14 +166,14 @@ cit:
 - bibl
 - trans
  *
- * Decision: TODO
+ * Decision: No special handling.
  *
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
 function displayCit(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "cit");
-  throw new Error("Not yet implemented.");
+  return defaultDisplay(root);
 }
 
 /**
@@ -274,8 +217,8 @@ bibl:
 - note
 
  * Purpose: Usually contains an author and some text for the part of the work
-         where that comes from. Sometimes it doesn't contain an author, but it's
-         unclear what to do with these.
+         where that comes from. Sometimes it doesn't contain an author, and in
+         these cases it is referring to the previous `bibl`.
 
  * Decision: Expand the abbreviations, and in the future when we have the library
           available, link to the appropriate section of the library.
@@ -286,7 +229,31 @@ bibl:
  */
 function displayBibl(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "bibl");
-  throw new Error("Not yet implemented.");
+  const author = root.findDescendants("author");
+  if (author.length === 0) {
+    return defaultDisplay(root);
+  }
+  assertEqual(author.length, 1);
+  const authorKey = XmlNode.getSoleText(author[0]);
+  const base = defaultDisplay(root);
+  const works = LsAuthorAbbreviations.works().get(authorKey);
+  if (works === undefined) {
+    return base;
+  }
+  return base;
+  // TODO: This does not handle split abbreviations, like t. t.
+  // .split(" ")
+  // .map((chunk) => {
+  //   if (chunk === authorKey) {
+  //     return chunk;
+  //   }
+  //   const expandedWork = works.get(chunk);
+  //   if (expandedWork === undefined) {
+  //     return chunk;
+  //   }
+  //   return attachHoverText(chunk, expandedWork);
+  // })
+  // .join(" ");
 }
 
 /**
@@ -306,6 +273,10 @@ function displayAuthor(root: XmlNode, _parent?: XmlNode): string {
   if (abbreviated === "id.") {
     // TODO: Support this properly.
     return attachHoverText("id.", "idem (same as above)");
+  }
+  if (abbreviated === "ib.") {
+    // TODO: Support this properly.
+    return attachHoverText("ib.", "ibidem (in the same place)");
   }
   return attachHoverText(
     abbreviated,
@@ -452,7 +423,7 @@ etym:
  */
 function displayEtym(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "etym");
-  throw new Error("Not yet implemented.");
+  return defaultDisplay(root);
 }
 
 /**
@@ -522,7 +493,7 @@ function displayItype(root: XmlNode, _parent?: XmlNode): string {
  * @param _parent The parent node for the root.
  */
 function displayGen(root: XmlNode, _parent?: XmlNode): string {
-  assert(root.name === "itype");
+  assert(root.name === "gen");
   return abbreviationText(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
 }
 

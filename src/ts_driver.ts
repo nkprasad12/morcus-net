@@ -3,8 +3,6 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { parse } from "@/common/ls_parser";
+import { printUniqueElementsMatching } from "@/common/lewis_and_short/ls_scripts";
 
-for (const entry of parse(process.env.LS_PATH!)) {
-  console.log(entry.formatAsString(true));
-}
+printUniqueElementsMatching((node) => node.name === "usg");

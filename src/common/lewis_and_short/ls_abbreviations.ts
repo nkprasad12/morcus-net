@@ -1,7 +1,8 @@
 import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
-import { parseEntries, XmlNode } from "@/common/ls_parser";
+import { parseEntries, XmlNode } from "@/common/lewis_and_short/ls_parser";
+import { attachHoverText } from "./ls_styling";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
@@ -81,6 +82,72 @@ export function parseAuthorAbbreviations(
   }
   return entries;
 }
+
+export const NUMBER_ABBREVIATIONS = new Map<string, string>([
+  ["sing.", "singular"],
+  ["plur.", "plural"],
+]);
+
+export const MOOD_ABBREVIATIONS = new Map<string, string>([
+  ["Part.", "Participle"],
+]);
+
+export const CASE_ABBREVIATIONS = new Map<string, string>([
+  ["nom.", "nominative"],
+  ["acc.", "accusative"],
+  ["dat.", "dative"],
+  ["gen.", "genitive"],
+  ["abl.", "ablative"],
+  ["voc.", "vocative"],
+]);
+
+export const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
+  ["entryFree", new Map<string, string>([["dim.", "diminutive"]])],
+  ["xr", new Map<string, string>([["v.", "look [at entry]"]])],
+]);
+
+export const GEN_ABBREVIATIONS = new Map<string, string>([
+  ["f.", "feminine"],
+  ["m.", "masculine"],
+  ["n.", "neuter"],
+]);
+
+export const POS_ABBREVIATIONS = new Map<string, string>([
+  ["prep.", "preposition"],
+  ["interj.", "interjection"],
+  ["adj.", "adjective"],
+  ["v. n.", "verb [intransitive]"],
+  ["v. a.", "verb [transitive]"],
+  [
+    "v. freq. a.",
+    `verb [${attachHoverText(
+      "freq.",
+      "frequentative or frequently"
+    )} transitive]`,
+  ],
+  ["adv.", "adverb"],
+  ["P. a.", "participal adjective"],
+  ["v. dep.", "verb [deponent]"],
+  ["Adj.", "Adjective"],
+  ["Subst.", "Substantive"],
+  ["adv. num.", "adverb [numeral]"],
+  ["num. adj.", "adjective [numeral]"],
+  ["pron. adj.", "adjective [pronoun]"],
+]);
+
+export const USG_ABBREVIATIONS = new Map<string, string>([
+  ["poet.", "poetical(ly)"],
+  ["Transf.", "Transferred"],
+  ["Lit.", "Literal [in a literal sense]"],
+  ["Absol.", "Absolute(ly) [without case or adjunct]"],
+  ["Trop.", "Figurative [tropical or figurative sense]"],
+  ["Polit. t. t.", "Political [technical term]"],
+  ["Meton.", "By Metonymy"],
+  ["Poet.", "Poetical(ly)"],
+  ["Medic. t. t.", "Medical [technical term]"],
+  ["Milit. t. t.", "Military [technical term]"],
+  ["Mercant. t. t.", "Mercantile [technical term]"],
+]);
 
 export namespace LsAuthorAbbreviations {
   const authorMap = new Map<string, string>();
