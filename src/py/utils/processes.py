@@ -79,6 +79,19 @@ class Alatius(processing.Process[str, str]):
         return self._macronizer.macronize(input)
 
 
+class AlatiusManualWeb(processing.Process[str, str]):
+    def process(self, inputStr: str) -> str:
+        print("Enter text into Alatius")
+        print(inputStr)
+        inputs = []
+        while True:
+            read = input()
+            if read == "DONE!":
+                break
+            inputs.append(read)
+        return "\n".join(inputs)
+
+
 class AlatiusCustomTokenization(processing.Process[str, str]):
     def initialize(self) -> None:
         super().initialize()
@@ -224,9 +237,10 @@ class StanzaCustomTokenization(processing.Process[str, str]):
     _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"
     # pytype: enable=name-error
 
-    def __init__(self, use_gpu: bool = True) -> None:
+    def __init__(self, use_gpu: bool = True, comparison_mode=False) -> None:
         super().__init__()
         self._use_gpu = use_gpu
+        self._comparison_mode = comparison_mode
 
     def initialize(self) -> None:
         super().initialize()
@@ -277,7 +291,8 @@ class StanzaCustomTokenization(processing.Process[str, str]):
         )
         self._macronizer.wordlist.loadwords(newwordforms)
         # Real Alatius adds tags here, but we don't need it.
-        # TODO: Add evaluation mode where we compare with Alatius tags.
+        if self._comparison_mode:
+            self._macronizer.tokenization.addtags()
         self._macronizer.tokenization.addlemmas(self._macronizer.wordlist)
 
     def process(self, input: str) -> str:
@@ -309,6 +324,13 @@ class StanzaCustomTokenization(processing.Process[str, str]):
                 assert cltk_token[length:].lower() in ["ne", "que", "ve"]
             else:
                 assert alatius_text == cltk_token
+            if alatius_token.text != "." and alatius_token.possible_lemmata > 1:
+                if self._comparison_mode:
+                    print(f"=====\nNITIN: {alatius_token.text}")
+                    print(f"Corpus Lemmata: {alatius_token.corpus_lemmata}")
+                    print(f"Lex Lemmata: {alatius_token.lex_lemmata}")
+                    print(f"Stanza Tag: {cltk_new}")
+                    print(f"Alatiu Tag: {alatius_token.tag}")
             alatius_token.tag = cltk_new
 
         alatius.getaccents(self._macronizer.wordlist)
