@@ -1,4 +1,4 @@
-import { parse, XmlNode } from "@/common/ls_parser";
+import { parse, XmlNode } from "@/common/lewis_and_short/ls_parser";
 import { assert } from "console";
 
 export class LewisAndShort {
