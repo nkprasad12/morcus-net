@@ -6,6 +6,8 @@ import {
 } from "./ls_display";
 import { XmlNode } from "./ls_parser";
 
+const OL_OPEN = '<ol style="list-style-type:none">';
+
 describe("displayNote", () => {
   it("is collapsed entirely", () => {
     const result = displayNote(new XmlNode("note", [], []));
@@ -84,7 +86,7 @@ describe("displaySenseList", () => {
     const result = formatSenseList(nodes);
 
     const parts = [
-      "<ol>",
+      OL_OPEN,
       "<li><b>I.</b> 1I</li>",
       "<li><b>II.</b> 1II</li>",
       "</ol>",
@@ -98,9 +100,9 @@ describe("displaySenseList", () => {
     const result = formatSenseList(nodes);
 
     const parts = [
-      "<ol>",
+      OL_OPEN,
       "<li><b>I.</b> 1I</li>",
-      "<ol>",
+      OL_OPEN,
       "<li><b>A.</b> 2A</li>",
       "</ol>",
       "</ol>",
@@ -120,12 +122,12 @@ describe("displaySenseList", () => {
     const result = formatSenseList(nodes);
 
     const parts = [
-      "<ol>",
+      OL_OPEN,
       "<li><b>I.</b> 1I</li>",
       "<li><b>II.</b> 1II</li>",
-      "<ol>",
+      OL_OPEN,
       "<li><b>A.</b> 2A</li>",
-      "<ol>",
+      OL_OPEN,
       "<li><b>a.</b> 3a</li>",
       "</ol>",
       "<li><b>B.</b> 2B</li>",
