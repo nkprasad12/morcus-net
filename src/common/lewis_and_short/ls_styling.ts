@@ -1,3 +1,5 @@
+import { XmlNode } from "./ls_parser";
+
 export interface TrieValue {
   value: string;
   tags?: string[];
@@ -68,8 +70,9 @@ export namespace AbbreviationTrie {
 // make sure we are handling `de` as connected to `Or.`.
 export function attachAbbreviations(
   message: string,
-  trieRoot: TrieNode
-): string {
+  trieRoot: TrieNode,
+  expandedTextClass?: string
+): (XmlNode | string)[] {
   // [startIndex, length, expandedString]
   const expansions: [number, number, string[]][] = [];
   let triePosition: TrieNode = trieRoot;
@@ -103,7 +106,7 @@ export function attachAbbreviations(
     }
   }
 
-  const chunks: string[] = [];
+  const chunks: (XmlNode | string)[] = [];
   let lastChunkEnd = 0;
   for (const [startIndex, length, expandedString] of expansions) {
     chunks.push(message.slice(lastChunkEnd, startIndex));
@@ -111,30 +114,67 @@ export function attachAbbreviations(
     lastChunkEnd = startIndex + length;
     if (expandedString.length === 1) {
       chunks.push(
-        attachHoverText(expandedString[0], `Expanded from: ${original}`)
+        attachHoverText(
+          expandedString[0],
+          `Expanded from: ${original}`,
+          expandedTextClass
+        )
       );
     } else {
       chunks.push(
-        attachHoverText(original, `Ambiguous: ${expandedString.join(" OR ")}`)
+        attachHoverText(
+          original,
+          `Ambiguous: ${expandedString.join(" OR ")}`,
+          expandedTextClass
+        )
       );
     }
   }
   chunks.push(message.slice(lastChunkEnd));
-  return chunks.join("");
+  return chunks;
+}
+
+export function attachAbbreviationsRecursive(
+  contentRoot: XmlNode,
+  defaultTrie: TrieNode,
+  expandedTextClass?: string
+): XmlNode {
+  const children: (XmlNode | string)[] = [];
+  for (const child of contentRoot.children) {
+    if (typeof child === "string") {
+      attachAbbreviations(child, defaultTrie, expandedTextClass).forEach((x) =>
+        children.push(x)
+      );
+      continue;
+    }
+    children.push(
+      attachAbbreviationsRecursive(child, defaultTrie, expandedTextClass)
+    );
+  }
+  return new XmlNode(contentRoot.name, [], children);
 }
 
 export function attachHoverText(
-  displayText: string,
-  hoverText: string
-): string {
-  const style = `style="display: inline; border-bottom: 1px dashed blue;"`;
-  return `<div ${style} title="${hoverText}">${displayText}</div>`;
+  displayText: XmlNode | string,
+  hoverText: string,
+  expandedTextClass?: string
+): XmlNode {
+  const attrs: [string, string][] = [["title", hoverText]];
+  if (expandedTextClass !== undefined) {
+    attrs.push(["class", expandedTextClass]);
+  }
+  return new XmlNode("span", attrs, [displayText]);
 }
 
 export function substituteAbbreviation(
   original: string,
-  lookup: Map<string, string>
-): string {
+  lookup: Map<string, string>,
+  expandedTextClass: string = "lsAbbrReplaced"
+): XmlNode {
   const expanded = lookup.get(original)!;
-  return attachHoverText(expanded, `Expanded from: ${original}`);
+  return attachHoverText(
+    expanded,
+    `Expanded from: ${original}`,
+    expandedTextClass
+  );
 }

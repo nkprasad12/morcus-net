@@ -18,7 +18,7 @@ export class LewisAndShort {
     if (index === undefined) {
       return undefined;
     }
-    return displayEntryFree(this.entries[index]);
+    return displayEntryFree(this.entries[index]).toString();
   }
 
   async getEntry(input: string): Promise<string> {

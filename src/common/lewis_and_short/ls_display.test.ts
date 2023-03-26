@@ -1,4 +1,5 @@
 import {
+  defaultDisplay,
   displayBibl,
   displayNote,
   displayUsg,
@@ -6,12 +7,13 @@ import {
 } from "./ls_display";
 import { XmlNode } from "./ls_parser";
 
-const OL_OPEN = '<ol style="list-style-type:none">';
+const OL_OPEN = '<ol class="lsSenseList">';
 
 describe("displayNote", () => {
   it("is collapsed entirely", () => {
     const result = displayNote(new XmlNode("note", [], []));
-    expect(result).toBe("");
+    expect(result.name).toBe("span");
+    expect(result.children).toHaveLength(0);
   });
 });
 
@@ -23,15 +25,17 @@ describe("displayBibl", () => {
     const result = displayBibl(bibl);
 
     const parts = [
-      '<div style="display: inline; border-bottom: 1px dashed blue;" title="T. Maccius Plautus, writer of comedy. ob. B.C. 184">',
+      "<span>",
+      '<span title="T. Maccius Plautus, writer of comedy. ob. B.C. 184" class="lsAuthor">',
       "Plaut.",
-      "</div>",
-      '<div style="display: inline; border-bottom: 1px dashed blue;" title="Expanded from: Mil.">',
+      "</span>",
+      '<span title="Expanded from: Mil." class="lsWork">',
       "Miles Gloriosus.",
-      "</div>",
+      "</span>",
       " 4, 4, 36",
+      "</span>",
     ];
-    expect(result).toBe(parts.join(""));
+    expect(result.toString()).toBe(parts.join(""));
   });
 
   it("shows expected result for edge case", () => {
@@ -41,15 +45,17 @@ describe("displayBibl", () => {
     const result = displayBibl(bibl);
 
     const parts = [
-      '<div style="display: inline; border-bottom: 1px dashed blue;" title="Q. Horatius Flaccus, poet, obiit B.C. 8">',
+      "<span>",
+      '<span title="Q. Horatius Flaccus, poet, obiit B.C. 8" class="lsAuthor">',
       "Hor.",
-      "</div>",
-      '<div style="display: inline; border-bottom: 1px dashed blue;" title="Expanded from: C.">',
+      "</span>",
+      '<span title="Expanded from: C." class="lsWork">',
       "Carmina, or Odae.",
-      "</div>",
+      "</span>",
       " 1, 12, 32",
+      "</span>",
     ];
-    expect(result).toBe(parts.join(""));
+    expect(result.toString()).toBe(parts.join(""));
   });
 });
 
@@ -60,11 +66,13 @@ describe("displayUsg", () => {
     const result = displayUsg(usg);
 
     const parts = [
-      '<div style="display: inline; border-bottom: 1px dashed blue;" title="Expanded from: Medic. t. t.">',
+      "<span>",
+      '<span title="Expanded from: Medic. t. t.">',
       "Medical [technical term]",
-      "</div>",
+      "</span>",
+      "</span>",
     ];
-    expect(result).toBe(parts.join(""));
+    expect(result.toString()).toBe(parts.join(""));
   });
 });
 
@@ -87,11 +95,11 @@ describe("displaySenseList", () => {
 
     const parts = [
       OL_OPEN,
-      "<li><b>I.</b> 1I</li>",
-      "<li><b>II.</b> 1II</li>",
+      "<li><b>I. </b><span>1I</span></li>",
+      "<li><b>II. </b><span>1II</span></li>",
       "</ol>",
     ];
-    expect(result).toBe(parts.join(""));
+    expect(result.toString()).toBe(parts.join(""));
   });
 
   it("handles higher level final sense", () => {
@@ -101,13 +109,13 @@ describe("displaySenseList", () => {
 
     const parts = [
       OL_OPEN,
-      "<li><b>I.</b> 1I</li>",
+      "<li><b>I. </b><span>1I</span></li>",
       OL_OPEN,
-      "<li><b>A.</b> 2A</li>",
+      "<li><b>A. </b><span>2A</span></li>",
       "</ol>",
       "</ol>",
     ];
-    expect(result).toBe(parts.join(""));
+    expect(result.toString()).toBe(parts.join(""));
   });
 
   it("handles sense level nesting", () => {
@@ -123,17 +131,37 @@ describe("displaySenseList", () => {
 
     const parts = [
       OL_OPEN,
-      "<li><b>I.</b> 1I</li>",
-      "<li><b>II.</b> 1II</li>",
+      "<li><b>I. </b><span>1I</span></li>",
+      "<li><b>II. </b><span>1II</span></li>",
       OL_OPEN,
-      "<li><b>A.</b> 2A</li>",
+      "<li><b>A. </b><span>2A</span></li>",
       OL_OPEN,
-      "<li><b>a.</b> 3a</li>",
+      "<li><b>a. </b><span>3a</span></li>",
       "</ol>",
-      "<li><b>B.</b> 2B</li>",
+      "<li><b>B. </b><span>2B</span></li>",
       "</ol>",
       "</ol>",
     ];
-    expect(result).toBe(parts.join(""));
+    expect(result.toString()).toBe(parts.join(""));
+  });
+});
+
+describe("defaultDisplay", () => {
+  it("has same nesting as original", () => {
+    const input = new XmlNode(
+      "entryFree",
+      [],
+      ["foo", new XmlNode("tr", [], ["bar"])]
+    );
+
+    const output = defaultDisplay(input);
+
+    expect(output.name).toBe("span");
+    expect(output.children).toHaveLength(2);
+    expect(output.children[0]).toBe("foo");
+    const child = XmlNode.assertIsNode(output.children[1]);
+    expect(child.name).toBe("span");
+    expect(child.children).toHaveLength(1);
+    expect(child.children[0]).toBe("bar");
   });
 });

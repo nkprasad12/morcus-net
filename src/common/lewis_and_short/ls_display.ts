@@ -13,14 +13,14 @@ import {
 import {
   substituteAbbreviation,
   attachHoverText,
+  attachAbbreviationsRecursive,
   attachAbbreviations,
-  TrieNode,
 } from "@/common/lewis_and_short/ls_styling";
 
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
   string,
-  (root: XmlNode, parent?: XmlNode) => string
+  (root: XmlNode, parent?: XmlNode) => XmlNode
 >([
   ["sense", displaySense],
   ["hi", displayHi],
@@ -51,19 +51,22 @@ const DISPLAY_HANDLER_LOOKUP = new Map<
   ["reg", displayReg],
 ]);
 
-function defaultDisplay(root: XmlNode, expectedNodes?: string[]): string {
-  let result = "";
+export function defaultDisplay(
+  root: XmlNode,
+  expectedNodes?: string[]
+): XmlNode {
+  const result: (XmlNode | string)[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
-      result += child;
+      result.push(child);
     } else {
       if (expectedNodes !== undefined && !expectedNodes.includes(child.name)) {
         throw new Error("Unexpected node.");
       }
-      result += DISPLAY_HANDLER_LOOKUP.get(child.name)!(child);
+      result.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child, root));
     }
   }
-  return result;
+  return new XmlNode("span", [], result);
 }
 
 /**
@@ -98,7 +101,7 @@ sense:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displaySense(root: XmlNode, _parent?: XmlNode): string {
+function displaySense(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "sense");
   return defaultDisplay(root);
 }
@@ -122,16 +125,17 @@ hi:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayHi(root: XmlNode, _parent?: XmlNode): string {
+function displayHi(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "hi");
   assertEqual(root.attrs[0][0], "rend");
   const rendAttr = root.attrs[0][1];
   // The only options are "ital" and "sup"
   const styleType = rendAttr === "sup" ? "sup" : "i";
-  const result = [`<${styleType}>`];
-  result.push(defaultDisplay(root, ["q", "cb", "pb", "usg", "orth", "hi"]));
-  result.push(`</${styleType}>`);
-  return result.join("");
+  return new XmlNode(
+    styleType,
+    [],
+    [defaultDisplay(root, ["q", "cb", "pb", "usg", "orth", "hi"])]
+  );
 }
 
 /**
@@ -149,7 +153,7 @@ foreign:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayForeign(root: XmlNode, _parent?: XmlNode): string {
+function displayForeign(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "foreign");
   if (root.attrs.length === 0) {
     return attachHoverText(
@@ -174,7 +178,7 @@ cit:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayCit(root: XmlNode, _parent?: XmlNode): string {
+function displayCit(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "cit");
   return defaultDisplay(root);
 }
@@ -199,14 +203,11 @@ quote:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayQuote(root: XmlNode, _parent?: XmlNode): string {
+function displayQuote(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "quote");
-  const result = [];
-  result.push("“");
-  // TODO: Is the nested quote intentional here? Maybe we should fix the markup.
-  result.push(defaultDisplay(root, ["q", "bibl", "hi", "foreign", "quote"]));
-  result.push("”");
-  return result.join("");
+  const result = defaultDisplay(root, ["q", "bibl", "hi", "foreign", "quote"]);
+  result.attrs.push(["class", "lsQuote"]);
+  return result;
 }
 
 /**
@@ -230,7 +231,7 @@ bibl:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-export function displayBibl(root: XmlNode, _parent?: XmlNode): string {
+export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "bibl");
   const author = root.findDescendants("author");
   if (author.length === 0) {
@@ -240,26 +241,27 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): string {
 
   const authorKey = XmlNode.getSoleText(author[0]);
   const works = LsAuthorAbbreviations.worksTrie().get(authorKey);
-
-  const result: string[] = [];
+  const result = new XmlNode("span", [], []);
   for (const child of root.children) {
     if (typeof child === "string") {
-      result.push(
-        works === undefined ? child : attachAbbreviations(child, works)
-      );
-    } else if (child.name === "hi") {
-      const childString = displayHi(child, root);
-      result.push(
-        works === undefined
-          ? childString
-          : attachAbbreviations(childString, works)
-      );
+      if (works === undefined) {
+        result.children.push(child);
+      } else {
+        attachAbbreviations(child, works, "lsWork").forEach((x) =>
+          result.children.push(x)
+        );
+      }
+    } else if (child.name === "author") {
+      result.children.push(displayAuthor(child, root));
     } else {
-      result.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child));
+      let display = defaultDisplay(child);
+      if (works !== undefined) {
+        display = attachAbbreviationsRecursive(display, works, "lsWork");
+      }
+      result.children.push(display);
     }
   }
-
-  return result.join("");
+  return result;
 }
 
 /**
@@ -273,7 +275,7 @@ author:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayAuthor(root: XmlNode, _parent?: XmlNode): string {
+function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "author");
   const abbreviated = XmlNode.getSoleText(root);
   if (abbreviated === "id.") {
@@ -284,10 +286,12 @@ function displayAuthor(root: XmlNode, _parent?: XmlNode): string {
     // TODO: Support this properly.
     return attachHoverText("ib.", "ibidem (in the same place)");
   }
-  return attachHoverText(
+  const result = attachHoverText(
     abbreviated,
     LsAuthorAbbreviations.authors().get(abbreviated)!
   );
+  result.attrs.push(["class", "lsAuthor"]);
+  return result;
 }
 
 /**
@@ -306,7 +310,7 @@ xr:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayXr(root: XmlNode, _parent?: XmlNode): string {
+function displayXr(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "xr");
   return defaultDisplay(root);
 }
@@ -334,7 +338,7 @@ Notes: Every instance has this attribute targOrder="U". Most have type="sym"
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayRef(root: XmlNode, _parent?: XmlNode): string {
+function displayRef(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "ref");
   const word = XmlNode.getSoleText(root);
   if (
@@ -345,10 +349,12 @@ function displayRef(root: XmlNode, _parent?: XmlNode): string {
     // TODO: Calculate what the preceding and following entries are.
     // This also captures the "these words" case, for example like in "habeo". We need to
     // figure out how to handle these as well.
-    return word;
   }
-  const link = `${process.env.SOCKET_ADDRESS}/dicts#${word}`;
-  return `<a href="${link}">${word}</a>`;
+  // TODO: Most of the links are `infra`, etc... referring to below in the same entry,
+  // not to `infra` itself.
+  // const link = `${process.env.SOCKET_ADDRESS}/dicts#${word}`;
+  // return `<a href="${link}">${word}</a>`;
+  return new XmlNode("span", [], [word]);
 }
 
 /**
@@ -365,9 +371,9 @@ usg:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-export function displayUsg(root: XmlNode, _parent?: XmlNode): string {
+export function displayUsg(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "usg");
-  return attachAbbreviations(defaultDisplay(root), USG_TRIE);
+  return attachAbbreviationsRecursive(defaultDisplay(root), USG_TRIE);
 }
 
 /**
@@ -386,9 +392,11 @@ trans:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayTrans(root: XmlNode, _parent?: XmlNode): string {
+function displayTrans(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "trans");
-  return attachHoverText(defaultDisplay(root, ["tr"]), "translation");
+  const result = attachHoverText(defaultDisplay(root, ["tr"]), "translation");
+  result.attrs.push(["class", "lsTrans"]);
+  return result;
 }
 
 /**
@@ -405,9 +413,9 @@ function displayTrans(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayTr(root: XmlNode, _parent?: XmlNode): string {
+function displayTr(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "tr");
-  return XmlNode.getSoleText(root);
+  return new XmlNode("span", [["class", "lsTr"]], [XmlNode.getSoleText(root)]);
 }
 
 /**
@@ -439,7 +447,7 @@ etym:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayEtym(root: XmlNode, _parent?: XmlNode): string {
+function displayEtym(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "etym");
   return defaultDisplay(root);
 }
@@ -455,7 +463,7 @@ function displayEtym(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayPos(root: XmlNode, _parent?: XmlNode): string {
+function displayPos(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "pos");
   return substituteAbbreviation(XmlNode.getSoleText(root), POS_ABBREVIATIONS);
 }
@@ -473,9 +481,13 @@ function displayPos(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayOrth(root: XmlNode, _parent?: XmlNode): string {
+function displayOrth(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "orth");
-  return XmlNode.getSoleText(root);
+  return new XmlNode(
+    "span",
+    [["class", "lsOrth"]],
+    [XmlNode.getSoleText(root)]
+  );
 }
 
 /**
@@ -492,9 +504,9 @@ function displayOrth(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayItype(root: XmlNode, _parent?: XmlNode): string {
+function displayItype(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "itype");
-  return XmlNode.getSoleText(root);
+  return new XmlNode("span", [], [XmlNode.getSoleText(root)]);
 }
 
 /**
@@ -510,7 +522,7 @@ function displayItype(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayGen(root: XmlNode, _parent?: XmlNode): string {
+function displayGen(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "gen");
   return substituteAbbreviation(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
 }
@@ -531,12 +543,12 @@ function displayGen(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayLbl(root: XmlNode, _parent?: XmlNode): string {
+function displayLbl(root: XmlNode, parent?: XmlNode): XmlNode {
   assert(root.name === "lbl");
   assert(parent !== undefined, "<lbl> should have a parent.");
   return substituteAbbreviation(
     XmlNode.getSoleText(root),
-    LBL_ABBREVIATIONS.get(parent.name)!
+    LBL_ABBREVIATIONS.get(parent!.name)!
   );
 }
 
@@ -550,9 +562,9 @@ function displayLbl(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayCb(root: XmlNode, _parent?: XmlNode): string {
+function displayCb(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "cb");
-  return "";
+  return new XmlNode("span");
 }
 
 /**
@@ -565,9 +577,9 @@ function displayCb(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayPb(root: XmlNode, _parent?: XmlNode): string {
+function displayPb(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "pb");
-  return "";
+  return new XmlNode("span");
 }
 
 /**
@@ -581,7 +593,7 @@ function displayPb(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayCase(root: XmlNode, _parent?: XmlNode): string {
+function displayCase(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "case");
   return substituteAbbreviation(XmlNode.getSoleText(root), CASE_ABBREVIATIONS);
 }
@@ -599,7 +611,7 @@ function displayCase(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayMood(root: XmlNode, _parent?: XmlNode): string {
+function displayMood(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "mood");
   return substituteAbbreviation(XmlNode.getSoleText(root), MOOD_ABBREVIATIONS);
 }
@@ -617,7 +629,7 @@ function displayMood(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayNumber(root: XmlNode, _parent?: XmlNode): string {
+function displayNumber(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "number");
   return substituteAbbreviation(
     XmlNode.getSoleText(root),
@@ -638,9 +650,9 @@ function displayNumber(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayQ(root: XmlNode, _parent?: XmlNode): string {
+function displayQ(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "q");
-  return `$‘${XmlNode.getSoleText(root)}’`;
+  return new XmlNode("span", [["class", "lsQ"]], [XmlNode.getSoleText(root)]);
 }
 
 /**
@@ -655,9 +667,9 @@ function displayQ(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayFigure(root: XmlNode, _parent?: XmlNode): string {
+function displayFigure(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "figure");
-  return "";
+  return new XmlNode("span");
 }
 
 /**
@@ -671,9 +683,9 @@ function displayFigure(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-export function displayNote(root: XmlNode, _parent?: XmlNode): string {
+export function displayNote(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "note");
-  return "";
+  return new XmlNode("span");
 }
 
 /**
@@ -700,7 +712,7 @@ export function displayNote(root: XmlNode, _parent?: XmlNode): string {
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayReg(root: XmlNode, _parent?: XmlNode): string {
+export function displayReg(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "reg");
   assert(root.children.length === 2);
   const sic = XmlNode.assertIsNode(root.children[0], "sic");
@@ -711,26 +723,32 @@ function displayReg(root: XmlNode, _parent?: XmlNode): string {
   );
 }
 
-export function formatSenseList(senseNodes: XmlNode[]): string {
-  const result: string[] = [];
-  let lastSenseLevel = 0;
+export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
+  const stack: XmlNode[] = [];
   for (const senseNode of senseNodes) {
     const attrsMap = new Map(senseNode.attrs);
     const level = +attrsMap.get("level")!;
     const n = attrsMap.get("n")!;
-    for (let i = level; i < lastSenseLevel; i++) {
-      result.push("</ol>");
+
+    while (stack.length < level) {
+      const newList = new XmlNode("ol", [["class", "lsSenseList"]], []);
+      if (stack.length > 0) {
+        stack[stack.length - 1].children.push(newList);
+      }
+      stack.push(newList);
     }
-    for (let i = level; i > lastSenseLevel; i--) {
-      result.push('<ol style="list-style-type:none">');
+    while (stack.length > level) {
+      stack.pop();
     }
-    result.push(`<li><b>${n}.</b> ${defaultDisplay(senseNode)}</li>`);
-    lastSenseLevel = level;
+    stack[stack.length - 1].children.push(
+      new XmlNode(
+        "li",
+        [],
+        [new XmlNode("b", [], [`${n}. `]), defaultDisplay(senseNode)]
+      )
+    );
   }
-  for (let i = lastSenseLevel; i > 0; i--) {
-    result.push("</ol>");
-  }
-  return result.join("");
+  return stack[0];
 }
 
 /**
@@ -764,15 +782,15 @@ entryFree:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-export function displayEntryFree(root: XmlNode, _parent?: XmlNode): string {
+export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "entryFree");
 
   const senseNodes: XmlNode[] = [];
   let level1Icount = 0;
-  const result: string[] = [];
+  const children: (XmlNode | string)[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
-      result.push(child);
+      children.push(child);
     } else if (child.name === "sense") {
       // Sense nodes are always the last nodes, so we can process them after.
       senseNodes.push(child);
@@ -783,13 +801,13 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): string {
         level1Icount += 1;
       }
     } else {
-      result.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child));
+      children.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child, root));
     }
   }
 
   if (level1Icount > 1) {
-    result.push(defaultDisplay(senseNodes[0]));
+    children.push(defaultDisplay(senseNodes[0]));
   }
-  result.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
-  return result.join("");
+  children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
+  return new XmlNode("div", [["class", "lsEntryFree"]], children);
 }

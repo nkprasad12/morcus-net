@@ -71,7 +71,23 @@ const root = ReactDOM.createRoot(
 root.render(
   <React.StrictMode>
     <ThemeProvider theme={theme}>
-      <GlobalStyles styles={{ pre: { margin: "0" } }} />
+      <GlobalStyles
+        styles={{
+          pre: { margin: "0" },
+          ".lsAbbrReplaced": { borderBottom: `1px dashed ${Solarized.base03}` },
+          ".lsSenseList": { li: { listStyleType: "none" } },
+          ".lsAuthor": {
+            backgroundColor: Solarized.green + "40",
+            borderBottom: `1px dashed ${Solarized.base03}`,
+          },
+          ".lsWork": {
+            backgroundColor: Solarized.violet + "40",
+            borderBottom: `1px dashed ${Solarized.base03}`,
+          },
+          ".lsQuote": { backgroundColor: Solarized.orange + "40" },
+          ".lsOrth": { backgroundColor: Solarized.red + "40" },
+        }}
+      />
       <StyledEngineProvider injectFirst>
         <SinglePageApp {...props} />
       </StyledEngineProvider>

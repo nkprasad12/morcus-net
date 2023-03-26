@@ -12,8 +12,8 @@ const INDENT = "-   ";
 export class XmlNode {
   constructor(
     readonly name: string,
-    readonly attrs: [string, string][],
-    readonly children: (XmlNode | string)[]
+    readonly attrs: [string, string][] = [],
+    readonly children: (XmlNode | string)[] = []
   ) {}
 
   formatAsString(indent: boolean = true, level: number = 0): string {
