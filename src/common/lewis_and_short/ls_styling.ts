@@ -48,6 +48,16 @@ export class TrieNode {
   }
 }
 
+export namespace AbbreviationTrie {
+  export function forMap(map: Map<string, string>): TrieNode {
+    const root = new TrieNode();
+    for (const [key, value] of map.entries()) {
+      root.add(key, value);
+    }
+    return root;
+  }
+}
+
 // Edge cases to watch out for:
 // We can have two separate abbreviated forms next to each other,
 // for example `Am. prol. 33` has:

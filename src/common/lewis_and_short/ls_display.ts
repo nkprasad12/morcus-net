@@ -8,11 +8,13 @@ import {
   MOOD_ABBREVIATIONS,
   NUMBER_ABBREVIATIONS,
   POS_ABBREVIATIONS,
+  USG_TRIE,
 } from "@/common/lewis_and_short/ls_abbreviations";
 import {
   substituteAbbreviation,
   attachHoverText,
   attachAbbreviations,
+  TrieNode,
 } from "@/common/lewis_and_short/ls_styling";
 
 // Table for easy access to the display handler functions
@@ -98,7 +100,7 @@ sense:
  */
 function displaySense(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "sense");
-  throw new Error("Not yet implemented.");
+  return defaultDisplay(root);
 }
 
 /**
@@ -235,13 +237,29 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): string {
     return defaultDisplay(root);
   }
   assertEqual(author.length, 1);
+
   const authorKey = XmlNode.getSoleText(author[0]);
-  const base = defaultDisplay(root);
   const works = LsAuthorAbbreviations.worksTrie().get(authorKey);
-  if (works === undefined) {
-    return base;
+
+  const result: string[] = [];
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      result.push(
+        works === undefined ? child : attachAbbreviations(child, works)
+      );
+    } else if (child.name === "hi") {
+      const childString = displayHi(child, root);
+      result.push(
+        works === undefined
+          ? childString
+          : attachAbbreviations(childString, works)
+      );
+    } else {
+      result.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child));
+    }
   }
-  return attachAbbreviations(base, works);
+
+  return result.join("");
 }
 
 /**
@@ -290,7 +308,7 @@ xr:
  */
 function displayXr(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "xr");
-  throw new Error("Not yet implemented.");
+  return defaultDisplay(root);
 }
 
 /**
@@ -318,7 +336,19 @@ Notes: Every instance has this attribute targOrder="U". Most have type="sym"
  */
 function displayRef(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "ref");
-  throw new Error("Not yet implemented.");
+  const word = XmlNode.getSoleText(root);
+  if (
+    word.includes("foll.") ||
+    word.includes("preced.") ||
+    word.includes(" ")
+  ) {
+    // TODO: Calculate what the preceding and following entries are.
+    // This also captures the "these words" case, for example like in "habeo". We need to
+    // figure out how to handle these as well.
+    return word;
+  }
+  const link = `${process.env.SOCKET_ADDRESS}/dicts#${word}`;
+  return `<a href="${link}">${word}</a>`;
 }
 
 /**
@@ -335,9 +365,9 @@ usg:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayUsg(root: XmlNode, _parent?: XmlNode): string {
+export function displayUsg(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "usg");
-  throw new Error("Not yet implemented.");
+  return attachAbbreviations(defaultDisplay(root), USG_TRIE);
 }
 
 /**
@@ -681,6 +711,28 @@ function displayReg(root: XmlNode, _parent?: XmlNode): string {
   );
 }
 
+export function formatSenseList(senseNodes: XmlNode[]): string {
+  const result: string[] = [];
+  let lastSenseLevel = 0;
+  for (const senseNode of senseNodes) {
+    const attrsMap = new Map(senseNode.attrs);
+    const level = +attrsMap.get("level")!;
+    const n = attrsMap.get("n")!;
+    for (let i = level; i < lastSenseLevel; i++) {
+      result.push("</ol>");
+    }
+    for (let i = level; i > lastSenseLevel; i--) {
+      result.push('<ol style="list-style-type:none">');
+    }
+    result.push(`<li><b>${n}.</b> ${defaultDisplay(senseNode)}</li>`);
+    lastSenseLevel = level;
+  }
+  for (let i = lastSenseLevel; i > 0; i--) {
+    result.push("</ol>");
+  }
+  return result.join("");
+}
+
 /**
  * Expands an `entryFree` element.
  *
@@ -714,5 +766,30 @@ entryFree:
  */
 export function displayEntryFree(root: XmlNode, _parent?: XmlNode): string {
   assert(root.name === "entryFree");
-  throw new Error("Not yet implemented.");
+
+  const senseNodes: XmlNode[] = [];
+  let level1Icount = 0;
+  const result: string[] = [];
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      result.push(child);
+    } else if (child.name === "sense") {
+      // Sense nodes are always the last nodes, so we can process them after.
+      senseNodes.push(child);
+      const attrsMap = new Map(child.attrs);
+      const level = attrsMap.get("level")!;
+      const n = attrsMap.get("n")!;
+      if (level === "1" && n === "I") {
+        level1Icount += 1;
+      }
+    } else {
+      result.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child));
+    }
+  }
+
+  if (level1Icount > 1) {
+    result.push(defaultDisplay(senseNodes[0]));
+  }
+  result.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
+  return result.join("");
 }

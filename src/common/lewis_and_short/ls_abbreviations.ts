@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/ls_parser";
-import { attachHoverText, TrieNode } from "./ls_styling";
+import { AbbreviationTrie, attachHoverText, TrieNode } from "./ls_styling";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
@@ -148,6 +148,8 @@ export const USG_ABBREVIATIONS = new Map<string, string>([
   ["Milit. t. t.", "Military [technical term]"],
   ["Mercant. t. t.", "Mercantile [technical term]"],
 ]);
+
+export const USG_TRIE = AbbreviationTrie.forMap(USG_ABBREVIATIONS);
 
 export namespace LsAuthorAbbreviations {
   const authorMap = new Map<string, string>();
