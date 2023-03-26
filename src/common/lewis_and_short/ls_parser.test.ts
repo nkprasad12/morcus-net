@@ -1,7 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import { readFileSync } from "fs";
 
-import { extractEntries, parse, parseEntries } from "./ls_parser";
+import { extractEntries, parse, parseEntries, XmlNode } from "./ls_parser";
 
 const LS_SUBSET = "testdata/ls/subset.xml";
 
@@ -73,8 +73,6 @@ describe("extractEntries", () => {
   });
 });
 
-const SAMPLE_ENTRY = `<entryFree key="canaba" type="main" id="n6427"><orth lang="la" extent="full">cānăba</orth> (or <orth lang="la" extent="full">cannăba</orth>), <itype>ae</itype>, <gen>f.</gen> <etym>kindr. with <foreign lang="greek">κάναβος</foreign> and <foreign lang="greek">κάννα</foreign>; acc. to others, with <foreign lang="greek">καλύβη</foreign></etym>, <sense level="1" n="I" id="n6427.0"><hi rend="ital">a hovel</hi>, <hi rend="ital">hut</hi>, <bibl n="August. Serm. 61"><author>Aug.</author> Serm. 61</bibl>, de Temp.; <bibl><author>Inscr. Orell.</author> 39</bibl>; <bibl>4077</bibl>.</sense></entryFree>`;
-
 describe("parseEntries", () => {
   test("returns expected nodes", () => {
     const xmlContents = readFileSync(LS_SUBSET, "utf8");
@@ -90,5 +88,72 @@ describe("parseEntries", () => {
 describe("parse", () => {
   test("parses all entries in file", () => {
     expect(parse(LS_SUBSET)).toHaveLength(4);
+  });
+});
+
+describe("getSoleText", () => {
+  it("returns text in happy path", () => {
+    const result = XmlNode.getSoleText(new XmlNode("", [], ["Caesar"]));
+    expect(result).toBe("Caesar");
+  });
+
+  it("raises on multiple children", () => {
+    expect(() =>
+      XmlNode.getSoleText(new XmlNode("", [], ["Caesar", "Gallia"]))
+    ).toThrow();
+  });
+
+  it("raises on node child", () => {
+    expect(() =>
+      XmlNode.getSoleText(new XmlNode("", [], [new XmlNode("", [], [])]))
+    ).toThrow();
+  });
+});
+
+describe("assertIsString", () => {
+  it("no-ops on string", () => {
+    expect(XmlNode.assertIsString("Gallia")).toBe("Gallia");
+  });
+
+  it("throws on XmlNode", () => {
+    expect(() => XmlNode.assertIsString(new XmlNode("", [], []))).toThrow();
+  });
+});
+
+describe("assertIsNode", () => {
+  it("no-ops on node", () => {
+    const node = new XmlNode("", [], []);
+    expect(XmlNode.assertIsNode(node)).toBe(node);
+  });
+
+  it("raises on incorrect tag name", () => {
+    const node = new XmlNode("caesar", [], []);
+    expect(() => XmlNode.assertIsNode(node, "caesa")).toThrow();
+  });
+
+  it("allows correct tag name", () => {
+    const node = new XmlNode("caesar", [], []);
+    expect(XmlNode.assertIsNode(node)).toBe(node);
+  });
+
+  it("throws on string", () => {
+    expect(() => XmlNode.assertIsNode("Gallia")).toThrow();
+  });
+});
+
+describe("XmlNode.findDescendants", () => {
+  it("finds all descendants", () => {
+    const child1 = new XmlNode("caesar", [["child", "1"]], []);
+    const child2 = new XmlNode("caesar", [["child", "2"]], [child1]);
+    const child3 = new XmlNode("augustus", [["child", "3"]], []);
+    const child4 = new XmlNode("caesar", [["child", "4"]], []);
+    const parent = new XmlNode("caesar", [], [child2, child3, child4]);
+
+    const result = parent.findDescendants("caesar");
+
+    expect(result).toHaveLength(3);
+    expect(result).toContain(child1);
+    expect(result).toContain(child2);
+    expect(result).toContain(child4);
   });
 });

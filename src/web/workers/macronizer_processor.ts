@@ -85,6 +85,9 @@ class NlpProcesser {
   }
 
   async process(input: string): Promise<string> {
+    if (input.length === 0) {
+      return "";
+    }
     return new Promise((resolve) => {
       log("Recieved processing request");
       if (this.currentResolver === undefined) {

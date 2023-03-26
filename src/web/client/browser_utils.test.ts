@@ -3,7 +3,28 @@
  */
 
 import { describe, expect, it } from "@jest/globals";
-import { getHash } from "./browser_utils";
+import { backendCall, getHash } from "./browser_utils";
+
+const realFetch = global.fetch;
+
+afterEach(() => {
+  global.fetch = realFetch;
+});
+
+function replaceFetch(ok: boolean = true, text: string = "", error?: Error) {
+  const mockSuccess = jest.fn((request) =>
+    Promise.resolve({
+      text: () => Promise.resolve(text),
+      ok: ok,
+      request: request,
+    })
+  );
+  const mockError = jest.fn((request) => Promise.reject(error));
+  const mockFetch = error === undefined ? mockSuccess : mockError;
+  // @ts-ignore
+  global.fetch = mockFetch;
+  return mockFetch;
+}
 
 describe("getHash", () => {
   let windowSpy: jest.SpyInstance;
@@ -44,5 +65,22 @@ describe("getHash", () => {
     }));
 
     expect(getHash()).toBe("partēs");
+  });
+});
+
+describe("backendCall", () => {
+  it("returns text on success", async () => {
+    replaceFetch(true, "Gallia est omnis");
+    expect(await backendCall("/foo")).toBe("Gallia est omnis");
+  });
+
+  it("returns message on server failure", async () => {
+    replaceFetch(false, "Gallia est omnis");
+    expect(await backendCall("/foo")).toContain("Error");
+  });
+
+  it("returns message on errored promise", async () => {
+    replaceFetch(false, "Gallia est omnis", new Error("Ya dun goofed"));
+    expect(await backendCall("/foo")).toContain("goofed");
   });
 });

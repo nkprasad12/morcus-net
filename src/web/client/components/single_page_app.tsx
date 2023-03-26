@@ -41,7 +41,7 @@ export function SinglePageApp(props: SinglePageApp.Props) {
   }
 
   return (
-    <div>
+    <>
       <ResponsiveAppBar
         pages={props.pages}
         setPage={(page) => {
@@ -50,6 +50,6 @@ export function SinglePageApp(props: SinglePageApp.Props) {
         }}
       />
       {chooseContent()}
-    </div>
+    </>
   );
 }

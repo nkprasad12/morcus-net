@@ -87,7 +87,16 @@ export function Dictionary(props: Dictionary.Props) {
             borderColor: Solarized.base2,
           }}
         >
-          <pre>{entry}</pre>
+          <div
+            style={{
+              whiteSpace: "pre-wrap",
+              fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+              lineHeight: 1.5,
+              letterSpacing: "0.00938em",
+              color: Solarized.base02,
+            }}
+            dangerouslySetInnerHTML={{ __html: entry }}
+          />
         </Box>
       )}
     </>

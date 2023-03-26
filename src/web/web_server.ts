@@ -18,8 +18,11 @@ export function setupServer(params: WebServerParams): void {
   const app = params.app;
   app.use(bodyParser.text());
   app.use(compression());
-  app.use("/public", express.static("public"));
-  app.use(express.static("genfiles_static"));
+  const staticOptions = {
+    maxAge: 100 * 365 * 24 * 3600 * 100,
+  };
+  app.use("/public", express.static("public", staticOptions));
+  app.use(express.static("genfiles_static", staticOptions));
 
   app.use("/*", (req, res, next) => {
     if (!req.baseUrl.startsWith("/api/")) {

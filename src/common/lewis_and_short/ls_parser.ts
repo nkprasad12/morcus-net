@@ -1,6 +1,6 @@
 import { XMLParser } from "fast-xml-parser";
-import { readFile, readFileSync } from "fs";
-import { assert } from "./assert";
+import { readFileSync } from "fs";
+import { assert, assertEqual } from "@/common/assert";
 
 const ENTRY_OPEN = "<entryFree ";
 const ENTRY_CLOSE = "</entryFree>";
@@ -12,8 +12,8 @@ const INDENT = "-   ";
 export class XmlNode {
   constructor(
     readonly name: string,
-    readonly attrs: [string, string][],
-    readonly children: (XmlNode | string)[]
+    readonly attrs: [string, string][] = [],
+    readonly children: (XmlNode | string)[] = []
   ) {}
 
   formatAsString(indent: boolean = true, level: number = 0): string {
@@ -34,8 +34,49 @@ export class XmlNode {
     return lines.join(indent ? "\n" : "");
   }
 
+  /** Returns all descendants with the given `name`. */
+  findDescendants(name: string): XmlNode[] {
+    const result: XmlNode[] = [];
+    for (const child of this.children) {
+      if (typeof child === "string") {
+        continue;
+      }
+      if (child.name === name) {
+        result.push(child);
+      }
+      child.findDescendants(name).forEach((element) => {
+        result.push(element);
+      });
+    }
+    return result;
+  }
+
   toString(): string {
     return this.formatAsString(false);
+  }
+}
+
+export namespace XmlNode {
+  export function getSoleText(node: XmlNode): string {
+    assert(node.children.length === 1);
+    return assertIsString(node.children[0]);
+  }
+
+  export function assertIsString(node: string | XmlNode): string {
+    if (typeof node === "string") {
+      return node;
+    }
+    throw new Error(`Expected "string", but got ${node.formatAsString()}`);
+  }
+
+  export function assertIsNode(node: string | XmlNode, name?: string): XmlNode {
+    if (typeof node === "string") {
+      throw new Error(`Expected XmlNode, but got string.`);
+    }
+    if (name !== undefined) {
+      assertEqual(name, node.name);
+    }
+    return node;
   }
 }
 

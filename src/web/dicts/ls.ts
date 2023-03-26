@@ -1,4 +1,5 @@
-import { parse, XmlNode } from "@/common/ls_parser";
+import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
+import { parse, XmlNode } from "@/common/lewis_and_short/ls_parser";
 import { assert } from "console";
 
 export class LewisAndShort {
@@ -17,7 +18,7 @@ export class LewisAndShort {
     if (index === undefined) {
       return undefined;
     }
-    return this.entries[index].formatAsString(true);
+    return displayEntryFree(this.entries[index]).toString();
   }
 
   async getEntry(input: string): Promise<string> {
