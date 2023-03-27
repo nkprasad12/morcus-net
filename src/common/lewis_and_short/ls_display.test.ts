@@ -173,9 +173,9 @@ describe("displayEntryFree", () => {
     const expected = [
       '<span><span class="lsOrth">cānăba</span> (or <span class="lsOrth">cannăba</span>), ',
       "<span>ae</span>, ",
-      '<span title="Expanded from: f." class="lsAbbrReplaced">feminine</span> ',
+      '<span title="Expanded from: f." class="lsHoverText">feminine</span> ',
       "<span>kindr. with <span>κάναβος</span> and <span>κάννα</span>; acc. to others, with <span>καλύβη</span></span>, ",
-      "<span><i><span>a hovel</span></i>, <i><span>hut</span></i>, ",
+      '<span><span class="lsEmph"><span>a hovel</span></span>, <span class="lsEmph"><span>hut</span></span>, ',
       '<span><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsAuthor">Aug.</span> ',
       '<span title="Expanded from: Serm." class="lsWork">Sermones.</span> 61</span>, de Temp.; ',
       '<span><span title="undefined" class="lsAuthor">Inscr. Orell.</span> 39</span>; <span>4077</span>.</span></span>',

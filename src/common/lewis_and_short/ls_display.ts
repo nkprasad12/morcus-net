@@ -129,11 +129,13 @@ function displayHi(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "hi");
   assertEqual(root.attrs[0][0], "rend");
   const rendAttr = root.attrs[0][1];
+  if (rendAttr === "sup") {
+    return new XmlNode("sup", [], [defaultDisplay(root)]);
+  }
   // The only options are "ital" and "sup"
-  const styleType = rendAttr === "sup" ? "sup" : "i";
   return new XmlNode(
-    styleType,
-    [],
+    "span",
+    [["class", "lsEmph"]],
     [defaultDisplay(root, ["q", "cb", "pb", "usg", "orth", "hi"])]
   );
 }
@@ -158,7 +160,8 @@ function displayForeign(root: XmlNode, _parent?: XmlNode): XmlNode {
   if (root.attrs.length === 0) {
     return attachHoverText(
       "[omitted from digitization]",
-      "Expanded from empty, usually for Hebrew or Etruscan."
+      "Usually for text in Hebrew or Etruscan scripts",
+      "lsHoverText"
     );
   }
   return defaultDisplay(root, ["cb", "reg"]);
@@ -280,11 +283,11 @@ function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
   const abbreviated = XmlNode.getSoleText(root);
   if (abbreviated === "id.") {
     // TODO: Support this properly.
-    return attachHoverText("id.", "idem (same as above)");
+    return attachHoverText("id.", "idem (same as above)", "lsHoverText");
   }
   if (abbreviated === "ib.") {
     // TODO: Support this properly.
-    return attachHoverText("ib.", "ibidem (in the same place)");
+    return attachHoverText("ib.", "ibidem (in the same place)", "lsHoverText");
   }
   const result = attachHoverText(
     abbreviated,
@@ -394,7 +397,11 @@ trans:
  */
 function displayTrans(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "trans");
-  const result = attachHoverText(defaultDisplay(root, ["tr"]), "translation");
+  const result = attachHoverText(
+    defaultDisplay(root, ["tr"]),
+    "translation",
+    "lsHoverText"
+  );
   result.attrs.push(["class", "lsTrans"]);
   return result;
 }
@@ -719,7 +726,8 @@ export function displayReg(root: XmlNode, _parent?: XmlNode): XmlNode {
   const corr = XmlNode.assertIsNode(root.children[1], "corr");
   return attachHoverText(
     XmlNode.getSoleText(corr),
-    `Corrected from original: ${XmlNode.getSoleText(sic)}`
+    `Corrected from original: ${XmlNode.getSoleText(sic)}`,
+    "lsHoverText"
   );
 }
 

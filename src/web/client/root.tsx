@@ -74,18 +74,22 @@ root.render(
       <GlobalStyles
         styles={{
           pre: { margin: "0" },
-          ".lsAbbrReplaced": { borderBottom: `1px dashed ${Solarized.base03}` },
+          ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
           ".lsSenseList": { li: { listStyleType: "none" } },
           ".lsAuthor": {
-            backgroundColor: Solarized.green + "40",
+            backgroundColor: Solarized.green + "28",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
           ".lsWork": {
-            backgroundColor: Solarized.violet + "40",
+            backgroundColor: Solarized.violet + "28",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
-          ".lsQuote": { backgroundColor: Solarized.orange + "40" },
-          ".lsOrth": { backgroundColor: Solarized.red + "40" },
+          ".lsQuote": { backgroundColor: Solarized.orange + "28" },
+          ".lsOrth": {
+            backgroundColor: Solarized.red + "70",
+            fontWeight: "bold",
+          },
+          ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
         }}
       />
       <StyledEngineProvider injectFirst>
