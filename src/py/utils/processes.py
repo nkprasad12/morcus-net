@@ -79,7 +79,7 @@ class Alatius(processing.Process[str, str]):
         return self._macronizer.macronize(input)
 
 
-class AlatiusManualWeb(processing.Process[str, str]):
+class AlatiusManualWeb(processing.Process[str, str]):  # pragma: no cover
     def process(self, inputStr: str) -> str:
         print("Enter text into Alatius")
         print(inputStr)
@@ -229,6 +229,83 @@ class Timer:
             tag_pad = " " * (max_tag_len - len(tag))
             time_pad = " " * (max_time_len - len(elapsed))
             print(f"{tag}{tag_pad} : {time_pad}{elapsed} ms")
+
+
+# Overall results are actually worse than Alatius, but preserving
+# for documentation reasons.
+class Lamon(processing.Process[str, str]):  # pragma: no cover
+    # pytype: disable=name-error
+    _lamon: "lamonpy.Lamon"
+    _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"
+    # pytype: enable=name-error
+
+    def initialize(self) -> None:
+        super().initialize()
+        # pytype: disable=import-error
+        import lamonpy
+        from src.libs.latin_macronizer.macronizer_modified import Macronizer
+
+        # pytype: enable=import-error
+
+        self._lamon = lamonpy.Lamon()
+        self._lamon.tag("ego")
+        self._macronizer = Macronizer()
+
+    def _run_alatius_pos(self, tokens: "list[tokenization.Token]"):
+        self._macronizer.tokenization = tokenization.to_alatius(tokens)
+        self._macronizer.wordlist.loadwords(
+            self._macronizer.tokenization.allwordforms()
+        )
+        newwordforms = self._macronizer.tokenization.splittokens(
+            self._macronizer.wordlist
+        )
+        self._macronizer.wordlist.loadwords(newwordforms)
+        # Real Alatius adds tags here, but we don't need it.
+        self._macronizer.tokenization.addlemmas(self._macronizer.wordlist)
+
+    def process(self, input: str) -> str:
+        # pytype: disable=import-error
+        from cltk.alphabet.text_normalization import cltk_normalize
+        from cltk.alphabet.text_normalization import remove_odd_punct
+
+        # pytype: enable=import-error
+        sanitized = remove_odd_punct(cltk_normalize(input))
+        lamon_result = self._lamon.tag(sanitized)[0][1]
+
+        tokens = tokenization.from_lamon(sanitized, lamon_result)
+        self._run_alatius_pos(tokens)
+
+        alatius = self._macronizer.tokenization
+        all_lamon_tokens = [
+            x.text for x in tokens if x.kind != tokenization.TokenType.OTHER
+        ]
+        # assert len(all_lamon_tokens) == len(lamon_result)
+        lamon_tokens = enumerate(iter(all_lamon_tokens))
+
+        for alatius_token in alatius.tokens:
+            if alatius_token.isspace:
+                continue
+            if alatius_token.isenclitic:
+                continue
+
+            alatius_text = alatius_token.text
+            j, lamon_token = next(lamon_tokens)
+            lamon_tag = lamon_result[j][3]
+
+            if lamon_token.lower() in ["nec"] and alatius_text.lower() in ["ne"]:
+                # Alatius analyzes nec as ne + que, for whatever reason.
+                pass
+            elif alatius_token.hasenclitic:
+                length = len(alatius_text)
+                assert alatius_text == lamon_token[:length]
+                assert lamon_token[length:].lower() in ["ne", "que", "ve"]
+            else:
+                assert alatius_text == lamon_token
+            alatius_token.tag = lamon_tag
+
+        alatius.getaccents(self._macronizer.wordlist)
+        alatius.macronize(True, False, False, False)
+        return alatius.detokenize(False)
 
 
 class StanzaCustomTokenization(processing.Process[str, str]):

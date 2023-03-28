@@ -36,6 +36,35 @@ const theme = createTheme({
   },
 });
 
+const typographyStyle = {
+  fontSize: 20,
+  fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+  fontWeight: 400,
+  lineHeight: 1.5,
+  letterSpacing: "0.00938em",
+  [theme.breakpoints.down("sm")]: {
+    fontSize: 16,
+    fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+    fontWeight: 400,
+    lineHeight: 1.5,
+    letterSpacing: "0.00938em",
+  },
+};
+
+theme.typography.h1 = typographyStyle;
+theme.typography.h2 = typographyStyle;
+theme.typography.h3 = typographyStyle;
+theme.typography.h4 = typographyStyle;
+theme.typography.h5 = typographyStyle;
+theme.typography.h6 = typographyStyle;
+theme.typography.subtitle1 = typographyStyle;
+theme.typography.subtitle2 = typographyStyle;
+theme.typography.body1 = typographyStyle;
+theme.typography.body2 = typographyStyle;
+theme.typography.button = typographyStyle;
+theme.typography.caption = typographyStyle;
+theme.typography.overline = typographyStyle;
+
 document.body.style.backgroundColor = Solarized.base3;
 
 const pages: SinglePageApp.Page[] = [
@@ -73,19 +102,28 @@ root.render(
     <ThemeProvider theme={theme}>
       <GlobalStyles
         styles={{
+          ol: {
+            listStyle: "none",
+            marginLeft: 0,
+            paddingLeft: "1em",
+            textIndent: "-1em",
+          },
           pre: { margin: "0" },
-          ".lsAbbrReplaced": { borderBottom: `1px dashed ${Solarized.base03}` },
-          ".lsSenseList": { li: { listStyleType: "none" } },
+          ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
           ".lsAuthor": {
-            backgroundColor: Solarized.green + "40",
+            backgroundColor: Solarized.violet + "48",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
           ".lsWork": {
-            backgroundColor: Solarized.violet + "40",
+            backgroundColor: Solarized.violet + "35",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
-          ".lsQuote": { backgroundColor: Solarized.orange + "40" },
-          ".lsOrth": { backgroundColor: Solarized.red + "40" },
+          ".lsQuote": { backgroundColor: Solarized.blue + "35" },
+          ".lsOrth": {
+            backgroundColor: Solarized.red + "70",
+            fontWeight: "bold",
+          },
+          ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
         }}
       />
       <StyledEngineProvider injectFirst>

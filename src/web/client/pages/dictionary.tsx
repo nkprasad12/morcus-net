@@ -6,6 +6,7 @@ import React from "react";
 
 import { getHash } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
+import Typography from "@mui/material/Typography";
 
 async function fetchEntry(input: string): Promise<string> {
   const response = await fetch(`${location.origin}${lsCall(input)}`);
@@ -51,11 +52,11 @@ export function Dictionary(props: Dictionary.Props) {
         freeSolo
         disableClearable
         options={[]}
-        sx={{ padding: 1, ml: 3, mr: 3, mt: 3, mb: 1 }}
+        sx={{ padding: 1, ml: 2, mr: 2, mt: 2, mb: 1 }}
         renderInput={(params) => (
           <TextField
             {...params}
-            label="Search for a word (can be an inflected form)"
+            label="Search for a word"
             InputLabelProps={{
               style: { color: Solarized.base1 },
             }}
@@ -78,21 +79,19 @@ export function Dictionary(props: Dictionary.Props) {
         <Box
           sx={{
             padding: 1,
-            ml: 4,
-            mr: 4,
+            ml: 3,
+            mr: 3,
             mt: 1,
-            mb: 3,
+            mb: 2,
             border: 2,
             borderRadius: 1,
             borderColor: Solarized.base2,
           }}
         >
-          <div
+          <Typography
+            component={"div"}
             style={{
               whiteSpace: "pre-wrap",
-              fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
-              lineHeight: 1.5,
-              letterSpacing: "0.00938em",
               color: Solarized.base02,
             }}
             dangerouslySetInnerHTML={{ __html: entry }}

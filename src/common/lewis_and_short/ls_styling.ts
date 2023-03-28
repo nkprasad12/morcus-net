@@ -169,7 +169,7 @@ export function attachHoverText(
 export function substituteAbbreviation(
   original: string,
   lookup: Map<string, string>,
-  expandedTextClass: string = "lsAbbrReplaced"
+  expandedTextClass: string = "lsHoverText"
 ): XmlNode {
   const expanded = lookup.get(original)!;
   return attachHoverText(

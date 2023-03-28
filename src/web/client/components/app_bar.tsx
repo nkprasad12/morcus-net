@@ -95,7 +95,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             >
               {props.pages.map((page) => (
                 <MenuItem key={page.name} onClick={handlePageClick(page.path)}>
-                  <Typography textAlign="center">{page.name + "F"}</Typography>
+                  <Typography textAlign="center">{page.name}</Typography>
                 </MenuItem>
               ))}
             </Menu>

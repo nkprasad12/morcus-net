@@ -76,6 +76,25 @@ def tokenize(input: str) -> "list[Token]":
     return tokens
 
 
+def from_lamon(
+    input: str, lamon_tokens: "list[tuple[int, int, str, str]]"
+) -> "list[Token]":
+    tokens: "list[Token]" = []
+    last_end = 0
+    for start, end, _, _ in lamon_tokens:
+        if start != last_end:
+            tokens.append(
+                Token(input[last_end:start], last_end, start, TokenType.OTHER)
+            )
+        token_type = TokenType.for_character(input[start])
+        tokens.append(Token(input[start:end], start, end, token_type))
+        last_end = end
+    n = len(input)
+    if last_end != n:
+        tokens.append(Token(input[last_end:n], last_end, n, TokenType.OTHER))
+    return tokens
+
+
 def to_alatius(tokens: "list[Token]") -> "macronizer_modified.Tokenization":
     alatius_tokens = [
         macronizer_modified.Token(token.text, start=token.start) for token in tokens

@@ -1,5 +1,6 @@
 import unittest
 
+from src.py.nlp.tokenization import from_lamon
 from src.py.nlp.tokenization import tokenize
 from src.py.nlp.tokenization import Token
 from src.py.nlp.tokenization import TokenType
@@ -51,6 +52,32 @@ class TestTokenize(unittest.TestCase):
         self.assertEqual(tokens[2], Token(" ", 5, 6, TokenType.OTHER))
         self.assertEqual(tokens[3], Token("Gallia", 6, 12, TokenType.WORD))
         self.assertEqual(tokens[4], Token(",", 12, 13, TokenType.PUNCTUATION))
+
+
+class TestFromLamon(unittest.TestCase):
+    def test_has_expected_tokens(self):
+        input = 'dixit, "Gallia est" '
+        lamon_tokens = [
+            (0, 5, "dico", "v3sria---"),
+            (5, 6, ",", "---------"),
+            (7, 8, '"', "---------"),
+            (8, 14, "Gallius", "a-s---fnp"),
+            (15, 18, "sum", "v3spia---"),
+            (18, 19, '"', "---------"),
+        ]
+
+        result = from_lamon(input, lamon_tokens)
+
+        self.assertEqual(len(result), 9)
+        self.assertEqual(result[0], Token("dixit", 0, 5, TokenType.WORD))
+        self.assertEqual(result[1], Token(",", 5, 6, TokenType.PUNCTUATION))
+        self.assertEqual(result[2], Token(" ", 6, 7, TokenType.OTHER))
+        self.assertEqual(result[3], Token('"', 7, 8, TokenType.PUNCTUATION))
+        self.assertEqual(result[4], Token("Gallia", 8, 14, TokenType.WORD))
+        self.assertEqual(result[5], Token(" ", 14, 15, TokenType.OTHER))
+        self.assertEqual(result[6], Token("est", 15, 18, TokenType.WORD))
+        self.assertEqual(result[7], Token('"', 18, 19, TokenType.PUNCTUATION))
+        self.assertEqual(result[8], Token(" ", 19, 20, TokenType.OTHER))
 
 
 if __name__ == "__main__":
