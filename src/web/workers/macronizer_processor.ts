@@ -8,6 +8,7 @@ import nodeCleanup from "node-cleanup";
 import { Message, WorkProcessor } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { startRemoteWorker } from "@/web/sockets/socket_workers";
+import { checkPresent } from "@/common/assert";
 
 const ON_LISTEN = "NLP_SERVER:LISTEN";
 const SERVER_ARGS = ["main.py", "--server", ON_LISTEN];
@@ -121,11 +122,11 @@ class MacronizerProcessor implements WorkProcessor<string, string> {
   }
 
   process(input: Message<string>): Promise<string> {
-    return this.processor!.process(input.content);
+    return checkPresent(this.processor).process(input.content);
   }
 
   teardown(): void {
-    this.processor!.close();
+    checkPresent(this.processor).close();
   }
 }
 

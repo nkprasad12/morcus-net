@@ -1,4 +1,4 @@
-import { assert, assertEqual } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/lewis_and_short/ls_parser";
 import {
   CASE_ABBREVIATIONS,
@@ -72,7 +72,9 @@ export function defaultDisplay(
       if (expectedNodes !== undefined && !expectedNodes.includes(child.name)) {
         throw new Error("Unexpected node.");
       }
-      result.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child, root));
+      result.push(
+        checkPresent(DISPLAY_HANDLER_LOOKUP.get(child.name))(child, root)
+      );
     }
   }
   return new XmlNode("span", [], result);
@@ -564,7 +566,7 @@ function displayLbl(root: XmlNode, parent?: XmlNode): XmlNode {
   assert(parent !== undefined, "<lbl> should have a parent.");
   return substituteAbbreviation(
     XmlNode.getSoleText(root),
-    LBL_ABBREVIATIONS.get(parent!.name)!
+    LBL_ABBREVIATIONS.get(checkPresent(parent).name)!
   );
 }
 
@@ -755,8 +757,8 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
   const stack: XmlNode[] = [];
   for (const senseNode of senseNodes) {
     const attrsMap = new Map(senseNode.attrs);
-    const level = +attrsMap.get("level")!;
-    const n = attrsMap.get("n")!;
+    const level = +checkPresent(attrsMap.get("level"));
+    const n = checkPresent(attrsMap.get("n"));
 
     while (stack.length < level) {
       const newList = new XmlNode("ol", [["class", "lsSenseList"]], []);
@@ -823,13 +825,15 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
       // Sense nodes are always the last nodes, so we can process them after.
       senseNodes.push(child);
       const attrsMap = new Map(child.attrs);
-      const level = attrsMap.get("level")!;
-      const n = attrsMap.get("n")!;
+      const level = checkPresent(attrsMap.get("level"));
+      const n = checkPresent(attrsMap.get("n"));
       if (level === "1" && n === "I") {
         level1Icount += 1;
       }
     } else {
-      children.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child, root));
+      children.push(
+        checkPresent(DISPLAY_HANDLER_LOOKUP.get(child.name))(child, root)
+      );
     }
   }
 

@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 
 import * as dotenv from "dotenv";
+import { checkPresent } from "./common/assert";
 import { displayEntryFree } from "./common/lewis_and_short/ls_display";
 import { parse, XmlNode } from "./common/lewis_and_short/ls_parser";
 dotenv.config();
@@ -17,7 +18,7 @@ function childrenMatching(node: XmlNode, name: string): XmlNode[] {
 
 // let multiplePos = 0;
 // let multipleEtym = 0;
-// for (const entry of parse(process.env.LS_PATH!)) {
+// for (const entry of parse(checkPresent(process.env.LS_PATH))) {
 //   if (childrenMatching(entry, "pos").length > 1) {
 //     multiplePos += 1;
 //   }
@@ -31,7 +32,7 @@ function childrenMatching(node: XmlNode, name: string): XmlNode[] {
 
 let errors = 0;
 let successes = 0;
-for (const entry of parse(process.env.LS_PATH!)) {
+for (const entry of parse(checkPresent(process.env.LS_PATH))) {
   try {
     displayEntryFree(entry);
     successes += 1;

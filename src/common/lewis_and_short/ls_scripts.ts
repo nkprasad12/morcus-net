@@ -5,6 +5,9 @@ dotenv.config();
 
 import { parse, XmlNode } from "@/common/lewis_and_short/ls_parser";
 import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
+import { checkPresent } from "../assert";
+
+const LS_PATH = checkPresent(process.env.LS_PATH);
 
 interface Schema {
   entry: string;
@@ -18,7 +21,7 @@ export function absorb(node: XmlNode) {
   if (!schemaMap.has(entryType)) {
     schemaMap.set(entryType, { entry: entryType, childrenTypes: new Set() });
   }
-  const schema = schemaMap.get(entryType)!;
+  const schema = checkPresent(schemaMap.get(entryType));
   for (const child of node.children) {
     if (typeof child === "string") {
       schema.childrenTypes.add("text");
@@ -30,7 +33,7 @@ export function absorb(node: XmlNode) {
 }
 
 export function printLsSchema(): void {
-  for (const entry of parse(process.env.LS_PATH!)) {
+  for (const entry of parse(LS_PATH)) {
     absorb(entry);
   }
 
@@ -52,7 +55,7 @@ export function printAuthorAbbrevs() {
 
 export function printElementValues(name: string) {
   const valueSet = new Set<string>();
-  for (const entry of parse(process.env.LS_PATH!)) {
+  for (const entry of parse(LS_PATH)) {
     const matchNodes = entry.findDescendants(name);
     for (const node of matchNodes) {
       valueSet.add(XmlNode.getSoleText(node));
@@ -65,11 +68,11 @@ export function printElementsMatching(
   test: (node: XmlNode) => boolean,
   limit: number = 1000000
 ) {
-  for (const entry of parse(process.env.LS_PATH!)) {
+  for (const entry of parse(LS_PATH)) {
     let printed = 0;
     const unprocessed = [entry];
     while (unprocessed.length > 0) {
-      const current = unprocessed.pop()!;
+      const current = checkPresent(unprocessed.pop());
       if (test(current)) {
         printed += 1;
         console.log(current.formatAsString(true));
@@ -88,10 +91,10 @@ export function printElementsMatching(
 
 export function printUniqueElementsMatching(test: (node: XmlNode) => boolean) {
   const reported = new Set<string>();
-  for (const entry of parse(process.env.LS_PATH!)) {
+  for (const entry of parse(LS_PATH)) {
     const unprocessed = [entry];
     while (unprocessed.length > 0) {
-      const current = unprocessed.pop()!;
+      const current = checkPresent(unprocessed.pop());
       if (test(current)) {
         const currentText = current.formatAsString(true);
         if (!reported.has(currentText)) {
@@ -110,7 +113,7 @@ export function printUniqueElementsMatching(test: (node: XmlNode) => boolean) {
 
 export function printElementAttributeTypes(name: string) {
   const valueSet = new Set<string>();
-  for (const entry of parse(process.env.LS_PATH!)) {
+  for (const entry of parse(LS_PATH)) {
     const matchNodes = entry.findDescendants(name);
     for (const node of matchNodes) {
       node.attrs.forEach((attribute) => valueSet.add(attribute[0]));
@@ -121,7 +124,7 @@ export function printElementAttributeTypes(name: string) {
 
 export function printElementAttributeValues(name: string, attrName: string) {
   const valueSet = new Set<string>();
-  for (const entry of parse(process.env.LS_PATH!)) {
+  for (const entry of parse(LS_PATH)) {
     const matchNodes = entry.findDescendants(name);
     for (const node of matchNodes) {
       const attrValue = new Map(node.attrs).get(attrName);
@@ -138,7 +141,7 @@ export function toSchemaString(
   const result = [];
   const queue: [XmlNode | string, number][] = [[root, 0]];
   while (queue.length > 0) {
-    const [node, depth] = queue.pop()!;
+    const [node, depth] = checkPresent(queue.pop());
     const pad = "-   ".repeat(depth);
     if (typeof node === "string") {
       result.push(`${pad}#text`);
@@ -156,7 +159,7 @@ export function toSchemaString(
 
 export function schemataCounts(name: string, terminals: string[] = []) {
   const schemata = new Map<string, number>();
-  for (const entry of parse(process.env.LS_PATH!)) {
+  for (const entry of parse(LS_PATH)) {
     for (const match of entry.findDescendants(name)) {
       const schema = toSchemaString(match, terminals);
       schemata.set(schema, (schemata.get(schema) || 0) + 1);

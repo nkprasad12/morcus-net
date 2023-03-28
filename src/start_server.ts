@@ -10,6 +10,7 @@ import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "./web/workers/requests";
 import { Workers } from "./web/workers/worker_types";
 import { randomInt } from "crypto";
+import { checkPresent } from "./common/assert";
 
 dotenv.config();
 
@@ -18,7 +19,7 @@ function log(message: string) {
 }
 
 const host = "localhost";
-const port = parseInt(process.env.PORT!);
+const port = parseInt(checkPresent(process.env.PORT));
 
 const app = express();
 const server = http.createServer(app);

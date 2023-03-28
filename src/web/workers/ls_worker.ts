@@ -6,6 +6,7 @@ import { Message, WorkProcessor } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { startRemoteWorker } from "@/web/sockets/socket_workers";
 import { LewisAndShort } from "@/common/lewis_and_short/ls";
+import { checkPresent } from "@/common/assert";
 
 class LsWorker implements WorkProcessor<string, string> {
   readonly category = Workers.LS_DICT;
@@ -16,7 +17,7 @@ class LsWorker implements WorkProcessor<string, string> {
   }
 
   process(input: Message<string>): Promise<string> {
-    return this.lewisAndShort!.getEntry(input.content);
+    return checkPresent(this.lewisAndShort).getEntry(input.content);
   }
 
   teardown(): void {}
