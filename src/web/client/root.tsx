@@ -102,18 +102,23 @@ root.render(
     <ThemeProvider theme={theme}>
       <GlobalStyles
         styles={{
+          ol: {
+            listStyle: "none",
+            marginLeft: 0,
+            paddingLeft: "1em",
+            textIndent: "-1em",
+          },
           pre: { margin: "0" },
           ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
-          ".lsSenseList": { li: { listStyleType: "none" } },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "38",
+            backgroundColor: Solarized.violet + "48",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
           ".lsWork": {
-            backgroundColor: Solarized.violet + "25",
+            backgroundColor: Solarized.violet + "35",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
-          ".lsQuote": { backgroundColor: Solarized.orange + "35" },
+          ".lsQuote": { backgroundColor: Solarized.blue + "35" },
           ".lsOrth": {
             backgroundColor: Solarized.red + "70",
             fontWeight: "bold",

@@ -17,6 +17,15 @@ import {
   attachAbbreviations,
 } from "@/common/lewis_and_short/ls_styling";
 
+const GREEK_BULLET_MAP = new Map<string, string>([
+  ["a", "α"],
+  ["b", "β"],
+  ["g", "γ"],
+  ["d", "δ"],
+  ["e", "ε"],
+  ["z", "ζ"],
+]);
+
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
   string,
@@ -731,6 +740,17 @@ export function displayReg(root: XmlNode, _parent?: XmlNode): XmlNode {
   );
 }
 
+export function getBullet(input: string): string {
+  if (input[0] !== "(") {
+    return input;
+  }
+  const result = GREEK_BULLET_MAP.get(input[1]);
+  if (result === undefined) {
+    return input;
+  }
+  return result;
+}
+
 export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
   const stack: XmlNode[] = [];
   for (const senseNode of senseNodes) {
@@ -752,7 +772,7 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
       new XmlNode(
         "li",
         [],
-        [new XmlNode("b", [], [`${n}. `]), defaultDisplay(senseNode)]
+        [new XmlNode("b", [], [`${getBullet(n)}. `]), defaultDisplay(senseNode)]
       )
     );
   }

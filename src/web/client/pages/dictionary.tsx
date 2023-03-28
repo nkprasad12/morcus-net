@@ -52,7 +52,7 @@ export function Dictionary(props: Dictionary.Props) {
         freeSolo
         disableClearable
         options={[]}
-        sx={{ padding: 1, ml: 3, mr: 3, mt: 3, mb: 1 }}
+        sx={{ padding: 1, ml: 2, mr: 2, mt: 2, mb: 1 }}
         renderInput={(params) => (
           <TextField
             {...params}
@@ -79,10 +79,10 @@ export function Dictionary(props: Dictionary.Props) {
         <Box
           sx={{
             padding: 1,
-            ml: 4,
-            mr: 4,
+            ml: 3,
+            mr: 3,
             mt: 1,
-            mb: 3,
+            mb: 2,
             border: 2,
             borderRadius: 1,
             borderColor: Solarized.base2,
