@@ -1,6 +1,7 @@
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import { parse, XmlNode } from "@/common/lewis_and_short/ls_parser";
 import { assert } from "console";
+import { checkPresent } from "../assert";
 
 export class LewisAndShort {
   private readonly byKey: Map<string, number> = new Map();
@@ -31,7 +32,7 @@ export class LewisAndShort {
 }
 
 export namespace LewisAndShort {
-  export function create(dataFile: string = process.env.LS_PATH!) {
+  export function create(dataFile: string = checkPresent(process.env.LS_PATH)) {
     return new LewisAndShort(parse(dataFile));
   }
 }

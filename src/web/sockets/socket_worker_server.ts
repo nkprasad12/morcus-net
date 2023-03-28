@@ -7,6 +7,7 @@ import {
   WorkHandler,
   WorkRequest,
 } from "@/web/workers/requests";
+import { checkPresent } from "@/common/assert";
 
 function log(channel: string, message: string) {
   console.log(`[socket_worker_server] [${channel}] ${message}`);
@@ -61,7 +62,7 @@ export class SocketWorkHandler<I, O> implements QueuedWorkHandler<I, O> {
         log(this.tag, `Got results for request: ${message.id}`);
         const resolvable = this.pending.get(message.id);
         if (resolvable === undefined) {
-          log(this.tag, "ERROR: No resolver for result!");
+          log(this.tag, "ERROR: No resolver for result.");
           return;
         }
 
@@ -120,12 +121,12 @@ export class SocketWorkHandlerManager {
 
     log(this.tag, `New ${workerType} worker connected`);
     const worker: SocketStringWorkHandler = new SocketWorkHandler(socket);
-    this.workers.get(workerType)!.add(worker);
+    checkPresent(this.workers.get(workerType)).add(worker);
     this.reportWorkers();
 
     socket.on("disconnect", () => {
       log(this.tag, `${workerType} worker disconnected`);
-      this.workers.get(workerType)!.delete(worker);
+      checkPresent(this.workers.get(workerType)).delete(worker);
       this.reportWorkers();
     });
   }

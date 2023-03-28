@@ -1,4 +1,4 @@
-import { assert, assertEqual } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/lewis_and_short/ls_parser";
 import {
   CASE_ABBREVIATIONS,
@@ -8,6 +8,7 @@ import {
   MOOD_ABBREVIATIONS,
   NUMBER_ABBREVIATIONS,
   POS_ABBREVIATIONS,
+  SCHOLAR_ABBREVIATIONS,
   USG_TRIE,
 } from "@/common/lewis_and_short/ls_abbreviations";
 import {
@@ -16,6 +17,9 @@ import {
   attachAbbreviationsRecursive,
   attachAbbreviations,
 } from "@/common/lewis_and_short/ls_styling";
+
+const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
+const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
 
 const GREEK_BULLET_MAP = new Map<string, string>([
   ["a", "α"],
@@ -72,7 +76,9 @@ export function defaultDisplay(
       if (expectedNodes !== undefined && !expectedNodes.includes(child.name)) {
         throw new Error("Unexpected node.");
       }
-      result.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child, root));
+      result.push(
+        checkPresent(DISPLAY_HANDLER_LOOKUP.get(child.name))(child, root)
+      );
     }
   }
   return new XmlNode("span", [], result);
@@ -287,9 +293,21 @@ author:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
+export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "author");
   const abbreviated = XmlNode.getSoleText(root);
+  if (SCHOLAR_ABBREVIATIONS.has(abbreviated)) {
+    // TODO: Handle this correctly.
+    return new XmlNode("span", [["class", "lsAuthor"]], [abbreviated]);
+  }
+  if (AUTHOR_PRE_EXPANDED.includes(abbreviated)) {
+    return new XmlNode("span", [["class", "lsAuthor"]], [abbreviated]);
+  }
+  if (abbreviated === "Pseudo") {
+    // TODO: Support this properly. We want to ideally read to the next
+    // text node and figure out who the Pseudo author was.
+    return new XmlNode("span", [["class", "lsAuthor"]], [abbreviated]);
+  }
   if (abbreviated === "id.") {
     // TODO: Support this properly.
     return attachHoverText("id.", "idem (same as above)", "lsHoverText");
@@ -298,9 +316,23 @@ function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
     // TODO: Support this properly.
     return attachHoverText("ib.", "ibidem (in the same place)", "lsHoverText");
   }
+  for (const edgeCase of AUTHOR_EDGE_CASES) {
+    if (!abbreviated.startsWith(edgeCase + " ")) {
+      continue;
+    }
+    const result = new XmlNode("span");
+    const authorExpanded = checkPresent(
+      LsAuthorAbbreviations.authors().get(edgeCase)
+    );
+    const end = abbreviated.substring(edgeCase.length + 1);
+    const worksMap = checkPresent(LsAuthorAbbreviations.works().get(edgeCase));
+    const endExpanded = checkPresent(worksMap.get(end));
+    const expanded = `${authorExpanded} ${endExpanded}`;
+    return attachHoverText(expanded, `Expanded from: ${abbreviated}`, "lsWork");
+  }
   const result = attachHoverText(
     abbreviated,
-    LsAuthorAbbreviations.authors().get(abbreviated)!
+    checkPresent(LsAuthorAbbreviations.authors().get(abbreviated))
   );
   result.attrs.push(["class", "lsAuthor"]);
   return result;
@@ -385,7 +417,11 @@ usg:
  */
 export function displayUsg(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "usg");
-  return attachAbbreviationsRecursive(defaultDisplay(root), USG_TRIE);
+  return attachAbbreviationsRecursive(
+    defaultDisplay(root),
+    USG_TRIE,
+    "lsHoverText"
+  );
 }
 
 /**
@@ -406,11 +442,7 @@ trans:
  */
 function displayTrans(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "trans");
-  const result = attachHoverText(
-    defaultDisplay(root, ["tr"]),
-    "translation",
-    "lsHoverText"
-  );
+  const result = defaultDisplay(root, ["tr"]);
   result.attrs.push(["class", "lsTrans"]);
   return result;
 }
@@ -564,7 +596,7 @@ function displayLbl(root: XmlNode, parent?: XmlNode): XmlNode {
   assert(parent !== undefined, "<lbl> should have a parent.");
   return substituteAbbreviation(
     XmlNode.getSoleText(root),
-    LBL_ABBREVIATIONS.get(parent!.name)!
+    checkPresent(LBL_ABBREVIATIONS.get(checkPresent(parent).name))
   );
 }
 
@@ -755,8 +787,8 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
   const stack: XmlNode[] = [];
   for (const senseNode of senseNodes) {
     const attrsMap = new Map(senseNode.attrs);
-    const level = +attrsMap.get("level")!;
-    const n = attrsMap.get("n")!;
+    const level = +checkPresent(attrsMap.get("level"));
+    const n = checkPresent(attrsMap.get("n"));
 
     while (stack.length < level) {
       const newList = new XmlNode("ol", [["class", "lsSenseList"]], []);
@@ -823,13 +855,15 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
       // Sense nodes are always the last nodes, so we can process them after.
       senseNodes.push(child);
       const attrsMap = new Map(child.attrs);
-      const level = attrsMap.get("level")!;
-      const n = attrsMap.get("n")!;
+      const level = checkPresent(attrsMap.get("level"));
+      const n = checkPresent(attrsMap.get("n"));
       if (level === "1" && n === "I") {
         level1Icount += 1;
       }
     } else {
-      children.push(DISPLAY_HANDLER_LOOKUP.get(child.name)!(child, root));
+      children.push(
+        checkPresent(DISPLAY_HANDLER_LOOKUP.get(child.name))(child, root)
+      );
     }
   }
 

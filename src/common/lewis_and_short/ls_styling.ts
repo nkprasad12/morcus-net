@@ -1,3 +1,4 @@
+import { checkPresent } from "../assert";
 import { XmlNode } from "./ls_parser";
 
 export interface TrieValue {
@@ -15,7 +16,7 @@ export class TrieNode {
       if (!lastNode.children.has(character)) {
         lastNode.children.set(character, new TrieNode());
       }
-      lastNode = lastNode.children.get(character)!;
+      lastNode = checkPresent(lastNode.children.get(character));
     }
     lastNode.values.push({ value: value, tags: tags });
   }
@@ -35,11 +36,12 @@ export class TrieNode {
         goodValues.push(trieValue.value);
         continue;
       }
-      if (trieValue.tags === undefined || trieValue.tags.length === 0) {
+      const trieTags = trieValue.tags;
+      if (trieTags === undefined || trieTags.length === 0) {
         continue;
       }
       const hasAllFilters = filters
-        .map((filter) => trieValue.tags!.includes(filter))
+        .map((filter) => trieTags.includes(filter))
         .reduce((previous, current) => previous && current);
       if (!hasAllFilters) {
         continue;
@@ -171,7 +173,7 @@ export function substituteAbbreviation(
   lookup: Map<string, string>,
   expandedTextClass: string = "lsHoverText"
 ): XmlNode {
-  const expanded = lookup.get(original)!;
+  const expanded = checkPresent(lookup.get(original));
   return attachHoverText(
     expanded,
     `Expanded from: ${original}`,

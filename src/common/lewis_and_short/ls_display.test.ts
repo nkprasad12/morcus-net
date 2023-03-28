@@ -1,5 +1,6 @@
 import {
   defaultDisplay,
+  displayAuthor,
   displayBibl,
   displayNote,
   displayUsg,
@@ -83,7 +84,7 @@ describe("displayUsg", () => {
 
     const parts = [
       "<span>",
-      '<span title="Expanded from: Medic. t. t.">',
+      '<span title="Expanded from: Medic. t. t." class="lsHoverText">',
       "Medical [technical term]",
       "</span>",
       "</span>",
@@ -193,10 +194,54 @@ describe("displayEntryFree", () => {
       '<span><span class="lsEmph"><span>a hovel</span></span>, <span class="lsEmph"><span>hut</span></span>, ',
       '<span><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsAuthor">Aug.</span> ',
       '<span title="Expanded from: Serm." class="lsWork">Sermones.</span> 61</span>, de Temp.; ',
-      '<span><span title="undefined" class="lsAuthor">Inscr. Orell.</span> 39</span>; <span>4077</span>.</span></span>',
+      '<span><span title="Expanded from: Inscr. Orell." class="lsWork">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
     ];
 
     const output = defaultDisplay(input);
     expect(output.toString()).toBe(expected.join(""));
+  });
+});
+
+describe("displayAuthor", () => {
+  it("handles scholar edge case", () => {
+    const input = new XmlNode("author", [], ["Schneid."]);
+    const output = displayAuthor(input);
+
+    expect(output.children).toHaveLength(1);
+    expect(output.children[0]).toBe("Schneid.");
+  });
+
+  it("handles curtius edge case", () => {
+    const input = new XmlNode("author", [], ["Georg Curtius"]);
+    const output = displayAuthor(input);
+
+    expect(output.children).toHaveLength(1);
+    expect(output.children[0]).toBe("Georg Curtius");
+  });
+
+  it("handles Pseudo edge case", () => {
+    const input = new XmlNode("author", [], ["Pseudo"]);
+    const output = displayAuthor(input);
+
+    expect(output.children).toHaveLength(1);
+    expect(output.children[0]).toBe("Pseudo");
+  });
+
+  it("handles author edge case", () => {
+    const input = new XmlNode("author", [], ["Inscr. Don."]);
+    const output = displayAuthor(input);
+
+    expect(output.toString()).toBe(
+      '<span title="Expanded from: Inscr. Don." class="lsWork">Inscriptiones. Donii.</span>'
+    );
+  });
+
+  it("handles regular author", () => {
+    const input = new XmlNode("author", [], ["Censor."]);
+    const output = displayAuthor(input);
+
+    expect(output.toString()).toBe(
+      '<span title="Censorinus, grammarian, flor. A.D. 238" class="lsAuthor">Censor.</span>'
+    );
   });
 });

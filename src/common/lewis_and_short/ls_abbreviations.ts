@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/ls_parser";
-import { AbbreviationTrie, attachHoverText, TrieNode } from "./ls_styling";
+import { AbbreviationTrie, TrieNode } from "./ls_styling";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
@@ -83,6 +83,8 @@ export function parseAuthorAbbreviations(
   return entries;
 }
 
+export const SCHOLAR_ABBREVIATIONS = new Set<string>(["Rib.", "Schneid."]);
+
 export const NUMBER_ABBREVIATIONS = new Map<string, string>([
   ["sing.", "singular"],
   ["plur.", "plural"],
@@ -102,7 +104,9 @@ export const CASE_ABBREVIATIONS = new Map<string, string>([
 ]);
 
 export const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
+  ["sense", new Map<string, string>([["dim.", "diminutive"]])],
   ["entryFree", new Map<string, string>([["dim.", "diminutive"]])],
+  ["etym", new Map<string, string>([["dim.", "diminutive"]])],
   ["xr", new Map<string, string>([["v.", "look [at entry]"]])],
 ]);
 
@@ -110,21 +114,17 @@ export const GEN_ABBREVIATIONS = new Map<string, string>([
   ["f.", "feminine"],
   ["m.", "masculine"],
   ["n.", "neuter"],
+  ["com.", "common gender"],
+  ["comm.", "common gender"],
 ]);
 
 export const POS_ABBREVIATIONS = new Map<string, string>([
   ["prep.", "preposition"],
   ["interj.", "interjection"],
   ["adj.", "adjective"],
-  ["v. n.", "verb [intransitive]"],
-  ["v. a.", "verb [transitive]"],
-  [
-    "v. freq. a.",
-    `verb [${attachHoverText(
-      "freq.",
-      "frequentative or frequently"
-    )} transitive]`,
-  ],
+  ["v. n.", "verb [active forms only]"],
+  ["v. a.", "verb [active and passive forms]"],
+  ["v. freq. a.", `verb [frequentative, active and passive forms]`],
   ["adv.", "adverb"],
   ["P. a.", "participal adjective"],
   ["v. dep.", "verb [deponent]"],
@@ -136,14 +136,14 @@ export const POS_ABBREVIATIONS = new Map<string, string>([
 ]);
 
 export const USG_ABBREVIATIONS = new Map<string, string>([
-  ["poet.", "poetical(ly)"],
+  ["poet.", "poetically"],
   ["Transf.", "Transferred"],
-  ["Lit.", "Literal [in a literal sense]"],
-  ["Absol.", "Absolute(ly) [without case or adjunct]"],
-  ["Trop.", "Figurative [tropical or figurative sense]"],
+  ["Lit.", "Literally"],
+  ["Absol.", "Absolutely [without case or adjunct]"],
+  ["Trop.", "Tropical [tropical or figurative sense]"],
   ["Polit. t. t.", "Political [technical term]"],
   ["Meton.", "By Metonymy"],
-  ["Poet.", "Poetical(ly)"],
+  ["Poet.", "Poetically"],
   ["Medic. t. t.", "Medical [technical term]"],
   ["Milit. t. t.", "Military [technical term]"],
   ["Mercant. t. t.", "Mercantile [technical term]"],

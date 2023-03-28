@@ -2,6 +2,7 @@ import crypto from "crypto";
 
 import { Message, WorkProcessor } from "@/web/workers/requests";
 import { io } from "socket.io-client";
+import { checkPresent } from "@/common/assert";
 
 function log(channel: string, message: string) {
   console.log(`[socket_workers] [${channel}] ${message}`);
@@ -12,7 +13,7 @@ export async function startRemoteWorker(
   uuid: number = crypto.randomInt(1000000)
 ): Promise<void> {
   await processor.setup();
-  const address = process.env.SOCKET_ADDRESS!;
+  const address = checkPresent(process.env.SOCKET_ADDRESS);
 
   const workerType = processor.category;
   const tag = `${workerType}.${uuid}`;
