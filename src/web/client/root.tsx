@@ -49,12 +49,6 @@ const typographyStyle = {
     lineHeight: 1.5,
     letterSpacing: "0.00938em",
   },
-  // [theme.breakpoints.up("md")]: {
-  //   backgroundColor: theme.palette.primary.main,
-  // },
-  // [theme.breakpoints.up("lg")]: {
-  //   backgroundColor: theme.palette.grey,
-  // },
 };
 
 theme.typography.h1 = typographyStyle;
@@ -112,7 +106,7 @@ root.render(
           ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
           ".lsSenseList": { li: { listStyleType: "none" } },
           ".lsAuthor": {
-            backgroundColor: Solarized.green + "38",
+            backgroundColor: Solarized.violet + "38",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
           ".lsWork": {
