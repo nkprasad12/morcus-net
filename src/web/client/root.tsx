@@ -72,6 +72,8 @@ theme.typography.caption = typographyStyle;
 theme.typography.overline = typographyStyle;
 
 document.body.style.backgroundColor = Solarized.base3;
+document.body.style.overflowX = "hidden";
+document.body.style.width = "100%";
 
 const pages: SinglePageApp.Page[] = [
   {
