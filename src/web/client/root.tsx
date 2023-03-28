@@ -124,6 +124,7 @@ root.render(
             fontWeight: "bold",
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
+          ".lsTrans": { fontStyle: "italic" },
         }}
       />
       <StyledEngineProvider injectFirst>

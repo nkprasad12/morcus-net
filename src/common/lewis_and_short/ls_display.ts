@@ -385,7 +385,11 @@ usg:
  */
 export function displayUsg(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "usg");
-  return attachAbbreviationsRecursive(defaultDisplay(root), USG_TRIE);
+  return attachAbbreviationsRecursive(
+    defaultDisplay(root),
+    USG_TRIE,
+    "lsHoverText"
+  );
 }
 
 /**
@@ -406,11 +410,7 @@ trans:
  */
 function displayTrans(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "trans");
-  const result = attachHoverText(
-    defaultDisplay(root, ["tr"]),
-    "translation",
-    "lsHoverText"
-  );
+  const result = defaultDisplay(root, ["tr"]);
   result.attrs.push(["class", "lsTrans"]);
   return result;
 }

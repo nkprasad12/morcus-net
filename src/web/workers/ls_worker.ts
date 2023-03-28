@@ -5,7 +5,7 @@ import * as dotenv from "dotenv";
 import { Message, WorkProcessor } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { startRemoteWorker } from "@/web/sockets/socket_workers";
-import { LewisAndShort } from "@/web/dicts/ls";
+import { LewisAndShort } from "@/common/lewis_and_short/ls";
 
 class LsWorker implements WorkProcessor<string, string> {
   readonly category = Workers.LS_DICT;

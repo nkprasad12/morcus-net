@@ -83,7 +83,7 @@ describe("displayUsg", () => {
 
     const parts = [
       "<span>",
-      '<span title="Expanded from: Medic. t. t.">',
+      '<span title="Expanded from: Medic. t. t." class="lsHoverText">',
       "Medical [technical term]",
       "</span>",
       "</span>",
