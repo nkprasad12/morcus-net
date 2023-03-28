@@ -56,7 +56,7 @@ export function Dictionary(props: Dictionary.Props) {
         renderInput={(params) => (
           <TextField
             {...params}
-            label="Search for a word (can be an inflected form)"
+            label="Search for a word"
             InputLabelProps={{
               style: { color: Solarized.base1 },
             }}

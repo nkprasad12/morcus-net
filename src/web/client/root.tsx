@@ -43,7 +43,7 @@ const typographyStyle = {
   lineHeight: 1.5,
   letterSpacing: "0.00938em",
   [theme.breakpoints.down("sm")]: {
-    fontSize: 30,
+    fontSize: 16,
     fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
     fontWeight: 400,
     lineHeight: 1.5,
@@ -72,8 +72,6 @@ theme.typography.caption = typographyStyle;
 theme.typography.overline = typographyStyle;
 
 document.body.style.backgroundColor = Solarized.base3;
-document.body.style.overflowX = "hidden";
-document.body.style.width = "100%";
 
 const pages: SinglePageApp.Page[] = [
   {
