@@ -8,6 +8,7 @@ import {
   MOOD_ABBREVIATIONS,
   NUMBER_ABBREVIATIONS,
   POS_ABBREVIATIONS,
+  SCHOLAR_ABBREVIATIONS,
   USG_TRIE,
 } from "@/common/lewis_and_short/ls_abbreviations";
 import {
@@ -16,6 +17,9 @@ import {
   attachAbbreviationsRecursive,
   attachAbbreviations,
 } from "@/common/lewis_and_short/ls_styling";
+
+const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
+const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
 
 const GREEK_BULLET_MAP = new Map<string, string>([
   ["a", "α"],
@@ -289,9 +293,21 @@ author:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
+export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "author");
   const abbreviated = XmlNode.getSoleText(root);
+  if (SCHOLAR_ABBREVIATIONS.has(abbreviated)) {
+    // TODO: Handle this correctly.
+    return new XmlNode("span", [["class", "lsAuthor"]], [abbreviated]);
+  }
+  if (AUTHOR_PRE_EXPANDED.includes(abbreviated)) {
+    return new XmlNode("span", [["class", "lsAuthor"]], [abbreviated]);
+  }
+  if (abbreviated === "Pseudo") {
+    // TODO: Support this properly. We want to ideally read to the next
+    // text node and figure out who the Pseudo author was.
+    return new XmlNode("span", [["class", "lsAuthor"]], [abbreviated]);
+  }
   if (abbreviated === "id.") {
     // TODO: Support this properly.
     return attachHoverText("id.", "idem (same as above)", "lsHoverText");
@@ -300,9 +316,23 @@ function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
     // TODO: Support this properly.
     return attachHoverText("ib.", "ibidem (in the same place)", "lsHoverText");
   }
+  for (const edgeCase of AUTHOR_EDGE_CASES) {
+    if (!abbreviated.startsWith(edgeCase + " ")) {
+      continue;
+    }
+    const result = new XmlNode("span");
+    const authorExpanded = checkPresent(
+      LsAuthorAbbreviations.authors().get(edgeCase)
+    );
+    const end = abbreviated.substring(edgeCase.length + 1);
+    const worksMap = checkPresent(LsAuthorAbbreviations.works().get(edgeCase));
+    const endExpanded = checkPresent(worksMap.get(end));
+    const expanded = `${authorExpanded} ${endExpanded}`;
+    return attachHoverText(expanded, `Expanded from: ${abbreviated}`, "lsWork");
+  }
   const result = attachHoverText(
     abbreviated,
-    LsAuthorAbbreviations.authors().get(abbreviated)!
+    checkPresent(LsAuthorAbbreviations.authors().get(abbreviated))
   );
   result.attrs.push(["class", "lsAuthor"]);
   return result;
@@ -566,7 +596,7 @@ function displayLbl(root: XmlNode, parent?: XmlNode): XmlNode {
   assert(parent !== undefined, "<lbl> should have a parent.");
   return substituteAbbreviation(
     XmlNode.getSoleText(root),
-    LBL_ABBREVIATIONS.get(checkPresent(parent).name)!
+    checkPresent(LBL_ABBREVIATIONS.get(checkPresent(parent).name))
   );
 }
 

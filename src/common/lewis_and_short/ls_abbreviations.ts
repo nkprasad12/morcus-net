@@ -2,7 +2,7 @@ import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/ls_parser";
-import { AbbreviationTrie, attachHoverText, TrieNode } from "./ls_styling";
+import { AbbreviationTrie, TrieNode } from "./ls_styling";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
@@ -83,6 +83,8 @@ export function parseAuthorAbbreviations(
   return entries;
 }
 
+export const SCHOLAR_ABBREVIATIONS = new Set<string>(["Rib.", "Schneid."]);
+
 export const NUMBER_ABBREVIATIONS = new Map<string, string>([
   ["sing.", "singular"],
   ["plur.", "plural"],
@@ -102,6 +104,7 @@ export const CASE_ABBREVIATIONS = new Map<string, string>([
 ]);
 
 export const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
+  ["sense", new Map<string, string>([["dim.", "diminutive"]])],
   ["entryFree", new Map<string, string>([["dim.", "diminutive"]])],
   ["etym", new Map<string, string>([["dim.", "diminutive"]])],
   ["xr", new Map<string, string>([["v.", "look [at entry]"]])],
@@ -111,6 +114,7 @@ export const GEN_ABBREVIATIONS = new Map<string, string>([
   ["f.", "feminine"],
   ["m.", "masculine"],
   ["n.", "neuter"],
+  ["com.", "common gender"],
   ["comm.", "common gender"],
 ]);
 
