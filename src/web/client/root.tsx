@@ -36,6 +36,41 @@ const theme = createTheme({
   },
 });
 
+const typographyStyle = {
+  fontSize: 20,
+  fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+  fontWeight: 400,
+  lineHeight: 1.5,
+  letterSpacing: "0.00938em",
+  [theme.breakpoints.down("sm")]: {
+    fontSize: 30,
+    fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+    fontWeight: 400,
+    lineHeight: 1.5,
+    letterSpacing: "0.00938em",
+  },
+  // [theme.breakpoints.up("md")]: {
+  //   backgroundColor: theme.palette.primary.main,
+  // },
+  // [theme.breakpoints.up("lg")]: {
+  //   backgroundColor: theme.palette.grey,
+  // },
+};
+
+theme.typography.h1 = typographyStyle;
+theme.typography.h2 = typographyStyle;
+theme.typography.h3 = typographyStyle;
+theme.typography.h4 = typographyStyle;
+theme.typography.h5 = typographyStyle;
+theme.typography.h6 = typographyStyle;
+theme.typography.subtitle1 = typographyStyle;
+theme.typography.subtitle2 = typographyStyle;
+theme.typography.body1 = typographyStyle;
+theme.typography.body2 = typographyStyle;
+theme.typography.button = typographyStyle;
+theme.typography.caption = typographyStyle;
+theme.typography.overline = typographyStyle;
+
 document.body.style.backgroundColor = Solarized.base3;
 
 const pages: SinglePageApp.Page[] = [
@@ -77,14 +112,14 @@ root.render(
           ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
           ".lsSenseList": { li: { listStyleType: "none" } },
           ".lsAuthor": {
-            backgroundColor: Solarized.green + "28",
+            backgroundColor: Solarized.green + "38",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
           ".lsWork": {
-            backgroundColor: Solarized.violet + "28",
+            backgroundColor: Solarized.violet + "25",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
-          ".lsQuote": { backgroundColor: Solarized.orange + "28" },
+          ".lsQuote": { backgroundColor: Solarized.orange + "35" },
           ".lsOrth": {
             backgroundColor: Solarized.red + "70",
             fontWeight: "bold",

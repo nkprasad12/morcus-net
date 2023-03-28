@@ -6,6 +6,7 @@ import React from "react";
 
 import { getHash } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
+import Typography from "@mui/material/Typography";
 
 async function fetchEntry(input: string): Promise<string> {
   const response = await fetch(`${location.origin}${lsCall(input)}`);
@@ -87,12 +88,10 @@ export function Dictionary(props: Dictionary.Props) {
             borderColor: Solarized.base2,
           }}
         >
-          <div
+          <Typography
+            component={"div"}
             style={{
               whiteSpace: "pre-wrap",
-              fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
-              lineHeight: 1.5,
-              letterSpacing: "0.00938em",
               color: Solarized.base02,
             }}
             dangerouslySetInnerHTML={{ __html: entry }}
