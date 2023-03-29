@@ -1,17 +1,76 @@
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import { parse, XmlNode } from "@/common/lewis_and_short/ls_parser";
-import { assert } from "console";
-import { checkPresent } from "../assert";
+import { assert, checkPresent } from "../assert";
+import fs from "fs";
+
+interface LsEntry {
+  key: string;
+  entry: string;
+}
+
+export class LewisAndShort2 {
+  constructor(private readonly entries: Map<string, string>) {}
+
+  async getEntry(input: string): Promise<string> {
+    const result = this.entries.get(input);
+    if (result === undefined) {
+      return `Could not find entry with key ${input}`;
+    }
+    return result;
+  }
+}
+
+export namespace LewisAndShort2 {
+  export function createProcessed(
+    rawFile: string = checkPresent(process.env.LS_PATH)
+  ): LsEntry[] {
+    const rootNodes = parse(rawFile);
+    return rootNodes.map((root) => {
+      const keys = root.attrs.filter((attr) => attr[0] === "key");
+      assert(keys.length === 1, "Expected exactly one `key` attribute.");
+      return {
+        key: keys[0][1],
+        entry: displayEntryFree(root).toString(),
+      };
+    });
+  }
+
+  export function save(
+    entries: LsEntry[],
+    destination: string = checkPresent(process.env.LS_PROCESSED_PATH)
+  ): void {
+    fs.writeFileSync(destination, JSON.stringify(entries));
+  }
+
+  export function create(
+    processedFile: string = checkPresent(process.env.LS_PROCESSED_PATH)
+  ) {
+    const data: LsEntry[] = JSON.parse(
+      fs.readFileSync(processedFile).toString()
+    );
+    const result = new Map<string, string>();
+    for (const entry of data) {
+      result.set(entry.key, entry.entry);
+    }
+    return new LewisAndShort2(result);
+  }
+}
 
 export class LewisAndShort {
   private readonly byKey: Map<string, number> = new Map();
 
   constructor(private readonly entries: XmlNode[]) {
-    this.entries.forEach((entry, i) => {
+    for (let i = 0; i < entries.length; i++) {
+      const entry = entries[i];
       const key = entry.attrs.filter((attr) => attr[0] === "key");
       assert(key.length === 1, "Expected exactly one `key` attribute.");
       this.byKey.set(key[0][1], i);
-    });
+    }
+    // this.entries.forEach((entry, i) => {
+    //   const key = entry.attrs.filter((attr) => attr[0] === "key");
+    //   assert(key.length === 1, "Expected exactly one `key` attribute.");
+    //   this.byKey.set(key[0][1], i);
+    // });
   }
 
   private entryByKey(key: string): string | undefined {
