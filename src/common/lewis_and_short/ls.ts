@@ -3,6 +3,7 @@ import { parse, XmlNode } from "@/common/lewis_and_short/ls_parser";
 import { assert, checkPresent } from "../assert";
 import fs from "fs";
 import readline from "readline";
+import { memoryUsage } from "process";
 
 interface LsEntry {
   key: string;
@@ -56,8 +57,9 @@ export namespace LewisAndShort2 {
   export async function create(
     processedFile: string = checkPresent(process.env.LS_PROCESSED_PATH)
   ) {
-    const result = new Map<string, string>();
-
+    console.log("Start of LS create");
+    console.log(memoryUsage());
+    const result: [string, string][] = [];
     while (!fs.existsSync(processedFile)) {
       await new Promise((resolve) => setTimeout(resolve, 100));
     }
@@ -65,12 +67,20 @@ export namespace LewisAndShort2 {
     const rl = readline.createInterface({
       input: fileStream,
     });
+    console.log("Created read stream");
+    console.log(memoryUsage());
+    let i = 0;
     let key: string | undefined = undefined;
     for await (const line of rl) {
+      i++;
+      if (i % 10000 === 0) {
+        console.log("Finished handling entries: " + i / 2);
+        console.log(memoryUsage());
+      }
       if (key === undefined) {
         key = line;
       } else {
-        result.set(key.replaceAll("@", "\n"), line.replaceAll("@", "\n"));
+        result.push([key.replaceAll("@", "\n"), line.replaceAll("@", "\n")]);
         key = undefined;
       }
     }
@@ -81,7 +91,12 @@ export namespace LewisAndShort2 {
     // for (const entry of data) {
     //   result.set(entry.key, entry.entry);
     // }
-    return new LewisAndShort2(result);
+    console.log("Finished processing from file");
+    console.log(memoryUsage());
+    const mpst = new LewisAndShort2(new Map(result));
+    console.log("Made LS2 object");
+    console.log(memoryUsage());
+    return mpst;
   }
 }
 
