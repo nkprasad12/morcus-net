@@ -8,7 +8,7 @@
   },
   "scripts": {
     "build": "npm run build-client -- --env production && npm run make-ls",
-    "start": "node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register src/start_server.ts --transpile-only",
+    "start": "node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only src/start_server.ts",
     "download-ls": "curl https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml > ls.xml",
     "make-ls": "npm run download-ls && npm run ts-node src/scripts/process_ls.ts && rm ls.xml",
     "format": "npx prettier . --write && python -m black .",
@@ -20,7 +20,7 @@
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",
     "ts-coverage": "npx jest --coverage",
     "coverage": "npm run ts-coverage && npm run py-coverage",
-    "ts-node": "node --max-old-space-size=4096 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only",
+    "ts-node": "node --max-old-space-size=4096 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register",
     "pytype": "python -m pytype src/py src/scripts",
     "build-client": "npx webpack",
     "server-w": "npm run build-client && npm run ts-node src/start_server.ts",
