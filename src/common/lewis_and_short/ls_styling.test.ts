@@ -205,4 +205,15 @@ describe("attachAbbreviationsRecursive", () => {
     const nested = XmlNode.assertIsNode(output.children[3]);
     expect(nested.children).toHaveLength(3);
   });
+
+  it("copies attributes", () => {
+    const originalAttrs: [string, string][] = [["a", "b"]];
+    const input = new XmlNode("span", originalAttrs, []);
+
+    const output = attachAbbreviationsRecursive(input, trieRoot);
+
+    expect(output.attrs).toStrictEqual(originalAttrs);
+    expect(output.attrs).not.toBe(originalAttrs);
+    expect(output.attrs[0]).not.toBe(originalAttrs[0]);
+  });
 });

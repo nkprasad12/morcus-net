@@ -153,7 +153,11 @@ export function attachAbbreviationsRecursive(
       attachAbbreviationsRecursive(child, defaultTrie, expandedTextClass)
     );
   }
-  return new XmlNode(contentRoot.name, [], children);
+  return new XmlNode(
+    contentRoot.name,
+    contentRoot.attrs.map(([k, v]) => [k, v]),
+    children
+  );
 }
 
 export function attachHoverText(
