@@ -1,16 +1,15 @@
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
-import { parse, XmlNode } from "@/common/lewis_and_short/ls_parser";
+import { parse } from "@/common/lewis_and_short/ls_parser";
 import { assert, checkPresent } from "../assert";
 import fs from "fs";
 import readline from "readline";
-import { memoryUsage } from "process";
 
 interface LsEntry {
   key: string;
   entry: string;
 }
 
-export class LewisAndShort2 {
+export class LewisAndShort {
   constructor(private readonly entries: Map<string, string>) {}
 
   async getEntry(input: string): Promise<string> {
@@ -22,7 +21,7 @@ export class LewisAndShort2 {
   }
 }
 
-export namespace LewisAndShort2 {
+export namespace LewisAndShort {
   export function createProcessed(
     rawFile: string = checkPresent(process.env.LS_PATH)
   ): LsEntry[] {
@@ -37,105 +36,42 @@ export namespace LewisAndShort2 {
     });
   }
 
-  export function save(
+  export async function save(
     entries: LsEntry[],
     destination: string = checkPresent(process.env.LS_PROCESSED_PATH)
-  ): void {
+  ): Promise<void> {
     if (fs.existsSync(destination)) {
       fs.unlinkSync(destination);
     }
     const stream = fs.createWriteStream(destination);
-    console.log("made write strm");
     for (const entry of entries) {
       const finalKey = entry.key.replaceAll("\n", "@");
       const finalEntry = entry.entry.replaceAll("\n", "@");
       stream.write(`${finalKey}\n${finalEntry}\n`);
     }
-    stream.end();
+    return new Promise<void>((resolve) => {
+      stream.end(() => {
+        resolve();
+      });
+    });
   }
 
   export async function create(
     processedFile: string = checkPresent(process.env.LS_PROCESSED_PATH)
   ) {
-    console.log("Start of LS create");
-    console.log(memoryUsage());
-    const result: [string, string][] = [];
-    while (!fs.existsSync(processedFile)) {
-      await new Promise((resolve) => setTimeout(resolve, 100));
-    }
-    const fileStream = fs.createReadStream(processedFile);
+    const result = new Map<string, string>();
     const rl = readline.createInterface({
-      input: fileStream,
+      input: fs.createReadStream(processedFile),
     });
-    console.log("Created read stream");
-    console.log(memoryUsage());
-    let i = 0;
     let key: string | undefined = undefined;
     for await (const line of rl) {
-      i++;
-      if (i % 10000 === 0) {
-        console.log("Finished handling entries: " + i / 2);
-        console.log(memoryUsage());
-      }
       if (key === undefined) {
         key = line;
       } else {
-        result.push([key.replaceAll("@", "\n"), line.replaceAll("@", "\n")]);
+        result.set(key.replaceAll("@", "\n"), line.replaceAll("@", "\n"));
         key = undefined;
       }
     }
-    // const data: LsEntry[] = JSON.parse(
-    //   fs.readFileSync(processedFile).toString()
-    // );
-    // const result = new Map<string, string>();
-    // for (const entry of data) {
-    //   result.set(entry.key, entry.entry);
-    // }
-    console.log("Finished processing from file");
-    console.log(memoryUsage());
-    const mpst = new LewisAndShort2(new Map(result));
-    console.log("Made LS2 object");
-    console.log(memoryUsage());
-    return mpst;
-  }
-}
-
-export class LewisAndShort {
-  private readonly byKey: Map<string, number> = new Map();
-
-  constructor(private readonly entries: XmlNode[]) {
-    for (let i = 0; i < entries.length; i++) {
-      const entry = entries[i];
-      const key = entry.attrs.filter((attr) => attr[0] === "key");
-      assert(key.length === 1, "Expected exactly one `key` attribute.");
-      this.byKey.set(key[0][1], i);
-    }
-    // this.entries.forEach((entry, i) => {
-    //   const key = entry.attrs.filter((attr) => attr[0] === "key");
-    //   assert(key.length === 1, "Expected exactly one `key` attribute.");
-    //   this.byKey.set(key[0][1], i);
-    // });
-  }
-
-  private entryByKey(key: string): string | undefined {
-    const index = this.byKey.get(key);
-    if (index === undefined) {
-      return undefined;
-    }
-    return displayEntryFree(this.entries[index]).toString();
-  }
-
-  async getEntry(input: string): Promise<string> {
-    const result = this.entryByKey(input);
-    if (result === undefined) {
-      return `Could not find entry with key ${input}`;
-    }
-    return result;
-  }
-}
-
-export namespace LewisAndShort {
-  export function create(dataFile: string = checkPresent(process.env.LS_PATH)) {
-    return new LewisAndShort(parse(dataFile));
+    return new LewisAndShort(new Map(result));
   }
 }
