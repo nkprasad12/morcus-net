@@ -11,6 +11,7 @@ import { WorkRequest } from "./web/workers/requests";
 import { Workers } from "./web/workers/worker_types";
 import { randomInt } from "crypto";
 import { checkPresent } from "./common/assert";
+import { LewisAndShort } from "./common/lewis_and_short/ls";
 
 dotenv.config();
 
@@ -24,6 +25,7 @@ const port = parseInt(checkPresent(process.env.PORT));
 const app = express();
 const server = http.createServer(app);
 
+const lewisAndShort = LewisAndShort.create();
 const workServer = new SocketWorkServer(new Server(server));
 
 async function callWorker(
@@ -42,11 +44,11 @@ async function callWorker(
 const params: WebServerParams = {
   app: app,
   macronizer: (input) => callWorker(Workers.MACRONIZER, input),
-  lsDict: (input) => callWorker(Workers.LS_DICT, input),
+  lsDict: async (input) => (await lewisAndShort).getEntry(input),
 };
 
 setupServer(params);
 
 server.listen(port, () => {
-  log(`Local server: http://${host}:${port}`);
+  log(`Local server: http://${host}:${port}/`);
 });

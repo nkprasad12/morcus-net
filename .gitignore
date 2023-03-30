@@ -120,3 +120,6 @@ genfiles_static/
 
 .env
 ls_dump.txt
+
+ls.xml
+lsp.txt

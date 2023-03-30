@@ -11,6 +11,7 @@ import { parseEntries, XmlNode } from "./ls_parser";
 
 const OL_OPEN = '<ol class="lsSenseList">';
 const CANABA = `<entryFree key="canaba" type="main" id="n6427"><orth lang="la" extent="full">cānăba</orth> (or <orth lang="la" extent="full">cannăba</orth>), <itype>ae</itype>, <gen>f.</gen> <etym>kindr. with <foreign lang="greek">κάναβος</foreign> and <foreign lang="greek">κάννα</foreign>; acc. to others, with <foreign lang="greek">καλύβη</foreign></etym>, <sense level="1" n="I" id="n6427.0"><hi rend="ital">a hovel</hi>, <hi rend="ital">hut</hi>, <bibl n="August. Serm. 61"><author>Aug.</author> Serm. 61</bibl>, de Temp.; <bibl><author>Inscr. Orell.</author> 39</bibl>; <bibl>4077</bibl>.</sense></entryFree>`;
+const BENEFIO = `<entryFree key="benefio" type="main" id="n5182"><orth lang="la" extent="full">bĕnĕfīo</orth>, v. benefacio.</entryFree>`;
 
 describe("getBullet", () => {
   it("returns original on unparenthesized", () => {
@@ -184,7 +185,7 @@ describe("defaultDisplay", () => {
 });
 
 describe("displayEntryFree", () => {
-  it("shows expected entry", () => {
+  it("shows expected entry with senses", () => {
     const input = parseEntries([CANABA])[0];
     const expected = [
       '<span><span class="lsOrth">cānăba</span> (or <span class="lsOrth">cannăba</span>), ',
@@ -195,6 +196,16 @@ describe("displayEntryFree", () => {
       '<span><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsAuthor">Aug.</span> ',
       '<span title="Expanded from: Serm." class="lsWork">Sermones.</span> 61</span>, de Temp.; ',
       '<span><span title="Expanded from: Inscr. Orell." class="lsWork">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
+    ];
+
+    const output = defaultDisplay(input);
+    expect(output.toString()).toBe(expected.join(""));
+  });
+
+  it("shows expected entry without senses", () => {
+    const input = parseEntries([BENEFIO])[0];
+    const expected = [
+      `<span><span class=\"lsOrth\">bĕnĕfīo</span>, v. benefacio.</span>`,
     ];
 
     const output = defaultDisplay(input);

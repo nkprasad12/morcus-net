@@ -867,9 +867,11 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
     }
   }
 
-  if (level1Icount > 1) {
-    children.push(defaultDisplay(senseNodes[0]));
+  if (senseNodes.length > 0) {
+    if (level1Icount > 1) {
+      children.push(defaultDisplay(senseNodes[0]));
+    }
+    children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
   }
-  children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
   return new XmlNode("div", [["class", "lsEntryFree"]], children);
 }
