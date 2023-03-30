@@ -98,7 +98,7 @@ parser.add_argument(
 args = parser.parse_args()
 
 if args.command in WEB_SERVER:
-    setup_processes = []
+    setup_processes: "list[subprocess.Popen]" = []
 
     if not args.no_build_client:
         build_command = ["npm", "run", "build-client"]
@@ -116,7 +116,9 @@ if args.command in WEB_SERVER:
         setup_processes.append(p)
 
     for setup_process in setup_processes:
-        setup_process.wait()
+        return_code = setup_process.wait()
+        if return_code != 0:
+            raise Exception("Setup process failed.")
 
     my_env = os.environ.copy()
     if args.prod:
