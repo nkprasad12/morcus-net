@@ -8,7 +8,7 @@ import subprocess
 
 load_dotenv()
 
-WEB_SERVER = ["web", "webserver"]
+WEB_SERVER = ["web"]
 WORKER = ["worker"]
 WORKERS = ["workers"]
 COMMANDS = WEB_SERVER + WORKER + WORKERS
@@ -49,9 +49,15 @@ def start_worker(args, worker_type):
 parser = argparse.ArgumentParser()
 parser.add_argument("command", help="The high level command to run.", choices=COMMANDS)
 parser.add_argument(
-    "-noc",
-    "--no_client",
+    "-no_bc",
+    "--no_build_client",
     help="If set, the client bundle will not be built.",
+    action="store_true",
+)
+parser.add_argument(
+    "-b_ls",
+    "--build_ls",
+    help="If set, re-processes LS.",
     action="store_true",
 )
 parser.add_argument(
@@ -83,11 +89,25 @@ parser.add_argument(
 args = parser.parse_args()
 
 if args.command in WEB_SERVER:
-    if not args.no_client:
+    setup_processes = []
+
+    if not args.no_build_client:
         build_command = ["npm", "run", "build-client"]
         if args.prod:
             build_command.extend(["--", "--env", "production"])
-        subprocess.run(build_command)
+        p = subprocess.Popen(" ".join(build_command), shell=True)
+        setup_processes.append(p)
+
+    if args.build_ls:
+        my_env = os.environ.copy()
+        build_command = ["npm", "run", "ts-node", "src/scripts/process_ls.ts"]
+        if args.ls_subset:
+            my_env["LS_PATH"] = "testdata/ls/subset.xml"
+        p = subprocess.Popen(" ".join(build_command), shell=True, env=my_env)
+        setup_processes.append(p)
+
+    for setup_process in setup_processes:
+        setup_process.wait()
 
     my_env = os.environ.copy()
     if args.prod:
@@ -101,6 +121,6 @@ elif args.command in WORKER:
     start_worker(args, args.worker_type).wait()
 
 elif args.command in WORKERS:
-    children = [start_worker(args, "mac"), start_worker(args, "ls")]
+    children = [start_worker(args, "mac")]
     for child in children:
         child.wait()

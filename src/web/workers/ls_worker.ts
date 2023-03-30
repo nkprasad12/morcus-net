@@ -13,7 +13,9 @@ class LsWorker implements WorkProcessor<string, string> {
   private lewisAndShort?: LewisAndShort = undefined;
 
   async setup(): Promise<void> {
-    this.lewisAndShort = LewisAndShort.create(process.env.LS_PATH);
+    this.lewisAndShort = await LewisAndShort.create(
+      process.env.LS_PROCESSED_PATH
+    );
   }
 
   process(input: Message<string>): Promise<string> {
