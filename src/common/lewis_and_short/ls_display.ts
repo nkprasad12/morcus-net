@@ -279,6 +279,7 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
       result.children.push(display);
     }
   }
+  result.attrs.push(["class", "lsBibl"]);
   return result;
 }
 
