@@ -20,6 +20,10 @@ def start_worker(args, worker_type):
     if args.prod:
         socket_address = f"https://www.morcus.net"
         my_env["NODE_ENV"] = "production"
+    if args.staging:
+        socket_address = f"https://morcus-net-dev.herokuapp.com"
+        my_env["NODE_ENV"] = "production"
+
     my_env["SOCKET_ADDRESS"] = socket_address
     worker_file = ""
     if worker_type == "mac":
@@ -73,6 +77,11 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    "--staging",
+    help="If set, runs setup suitable for staging.",
+    action="store_true",
+)
+parser.add_argument(
     "-k",
     "--keep",
     help="If set, keeps the worker on disconnect.",
@@ -93,7 +102,7 @@ if args.command in WEB_SERVER:
 
     if not args.no_build_client:
         build_command = ["npm", "run", "build-client"]
-        if args.prod:
+        if args.prod or args.staging:
             build_command.extend(["--", "--env", "production"])
         p = subprocess.Popen(" ".join(build_command), shell=True)
         setup_processes.append(p)
