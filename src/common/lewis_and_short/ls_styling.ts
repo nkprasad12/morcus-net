@@ -72,11 +72,10 @@ export namespace AbbreviationTrie {
 //
 // And also we can have multi-word keys like `de Or.` where we need to
 // make sure we are handling `de` as connected to `Or.`.
-export function expandAbbreviationsSingle(
+function findExpansions(
   message: string,
-  trieRoot: TrieNode,
-  expandedTextClass?: string
-): (XmlNode | string)[] {
+  trieRoot: TrieNode
+): [number, number, string[]][] {
   // [startIndex, length, expandedString]
   const expansions: [number, number, string[]][] = [];
   let triePosition: TrieNode = trieRoot;
@@ -112,7 +111,16 @@ export function expandAbbreviationsSingle(
       ];
     }
   }
+  return expansions;
+}
 
+export function handleAbbreviationsInMessage(
+  message: string,
+  trieRoot: TrieNode,
+  replace: boolean,
+  expandedTextClass?: string
+): (XmlNode | string)[] {
+  const expansions = findExpansions(message, trieRoot);
   const chunks: (XmlNode | string)[] = [];
   let lastChunkEnd = 0;
   for (const [startIndex, length, expandedString] of expansions) {
@@ -120,13 +128,11 @@ export function expandAbbreviationsSingle(
     const original = message.slice(startIndex, startIndex + length);
     lastChunkEnd = startIndex + length;
     if (expandedString.length === 1) {
-      chunks.push(
-        attachHoverText(
-          expandedString[0],
-          `Expanded from: ${original}`,
-          expandedTextClass
-        )
-      );
+      const toDisplay = replace ? expandedString[0] : original;
+      const onHover = replace
+        ? `Expanded from: ${original}`
+        : expandedString[0];
+      chunks.push(attachHoverText(toDisplay, onHover, expandedTextClass));
     } else {
       chunks.push(
         attachHoverText(
@@ -141,20 +147,26 @@ export function expandAbbreviationsSingle(
   return chunks;
 }
 
-export function expandAbbreviations(
+export function handleAbbreviations(
   contentRoot: XmlNode,
   defaultTrie: TrieNode,
+  replace: boolean = true,
   expandedTextClass?: string
 ): XmlNode {
   const children: (XmlNode | string)[] = [];
   for (const child of contentRoot.children) {
     if (typeof child === "string") {
-      expandAbbreviationsSingle(child, defaultTrie, expandedTextClass).forEach(
-        (x) => children.push(x)
-      );
+      handleAbbreviationsInMessage(
+        child,
+        defaultTrie,
+        replace,
+        expandedTextClass
+      ).forEach((x) => children.push(x));
       continue;
     }
-    children.push(expandAbbreviations(child, defaultTrie, expandedTextClass));
+    children.push(
+      handleAbbreviations(child, defaultTrie, replace, expandedTextClass)
+    );
   }
   return new XmlNode(
     contentRoot.name,

@@ -15,8 +15,8 @@ import {
 import {
   substituteAbbreviation,
   attachHoverText,
-  expandAbbreviations,
-  expandAbbreviationsSingle,
+  handleAbbreviations,
+  handleAbbreviationsInMessage,
 } from "@/common/lewis_and_short/ls_styling";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -266,8 +266,8 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
       if (works === undefined) {
         result.children.push(child);
       } else {
-        expandAbbreviationsSingle(child, works, "lsWork").forEach((x) =>
-          result.children.push(x)
+        handleAbbreviationsInMessage(child, works, true, "lsWork").forEach(
+          (x) => result.children.push(x)
         );
       }
     } else if (child.name === "author") {
@@ -275,7 +275,7 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
     } else {
       let display = defaultDisplay(child);
       if (works !== undefined) {
-        display = expandAbbreviations(display, works, "lsWork");
+        display = handleAbbreviations(display, works, true, "lsWork");
       }
       result.children.push(display);
     }
@@ -415,7 +415,12 @@ usg:
  */
 export function displayUsg(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "usg");
-  return expandAbbreviations(defaultDisplay(root), USG_TRIE, "lsHoverText");
+  return handleAbbreviations(
+    defaultDisplay(root),
+    USG_TRIE,
+    true,
+    "lsHoverText"
+  );
 }
 
 /**
@@ -868,5 +873,10 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
     children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
   }
   const result = new XmlNode("div", [["class", "lsEntryFree"]], children);
-  return expandAbbreviations(result, GENERIC_ABBREVIATIONS, "lsHoverText");
+  return handleAbbreviations(
+    result,
+    GENERIC_ABBREVIATIONS,
+    true,
+    "lsHoverText"
+  );
 }

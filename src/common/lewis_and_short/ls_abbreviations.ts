@@ -250,8 +250,8 @@ export const GENERIC_ABBREVIATIONS = AbbreviationTrie.forMap(
     // hist.,      history, -ian.
     // i. e.,      id est (that is, namely)
     // i. q.,      idem quod (the same as).
-    // ["ib.", "at the same place/citation"],
-    // ["id.", "the same author"],
+    ["ib.", "at the same place/citation"],
+    ["id.", "the same author"],
     // imper.,      imperative.
     // imperf.,      imperfect.
     // impers.,      impersonal, -ly.
