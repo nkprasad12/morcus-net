@@ -111,14 +111,16 @@ root.render(
           pre: { margin: "0" },
           ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "48",
+            backgroundColor: Solarized.violet + "18",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
           ".lsWork": {
-            backgroundColor: Solarized.violet + "35",
             borderBottom: `1px dashed ${Solarized.base03}`,
           },
-          ".lsQuote": { backgroundColor: Solarized.blue + "35" },
+          ".lsBibl": {
+            backgroundColor: Solarized.violet + "30",
+          },
+          ".lsQuote": { backgroundColor: Solarized.blue + "28" },
           ".lsOrth": {
             backgroundColor: Solarized.red + "70",
             fontWeight: "bold",

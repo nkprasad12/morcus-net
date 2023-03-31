@@ -126,6 +126,12 @@ describe("attachAbbreviationsRecursive", () => {
     expect(input.toString()).toStrictEqual(output.toString());
   });
 
+  it("does not expand in the middle of a word", () => {
+    const input = new XmlNode("span", [], ["That."]);
+    const output = attachAbbreviationsRecursive(input, trieRoot);
+    expect(input.toString()).toStrictEqual(output.toString());
+  });
+
   it("handles multi-word keys with no periods", () => {
     const input = new XmlNode("span", [], ["I have no de Or. substitutions."]);
     const output = attachAbbreviationsRecursive(input, trieRoot);
@@ -204,5 +210,16 @@ describe("attachAbbreviationsRecursive", () => {
     expect(output.children).toHaveLength(4);
     const nested = XmlNode.assertIsNode(output.children[3]);
     expect(nested.children).toHaveLength(3);
+  });
+
+  it("copies attributes", () => {
+    const originalAttrs: [string, string][] = [["a", "b"]];
+    const input = new XmlNode("span", originalAttrs, []);
+
+    const output = attachAbbreviationsRecursive(input, trieRoot);
+
+    expect(output.attrs).toStrictEqual(originalAttrs);
+    expect(output.attrs).not.toBe(originalAttrs);
+    expect(output.attrs[0]).not.toBe(originalAttrs[0]);
   });
 });

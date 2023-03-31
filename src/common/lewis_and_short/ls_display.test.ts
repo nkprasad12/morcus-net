@@ -43,7 +43,7 @@ describe("displayBibl", () => {
     const result = displayBibl(bibl);
 
     const parts = [
-      "<span>",
+      '<span class="lsBibl">',
       '<span title="T. Maccius Plautus, writer of comedy. ob. B.C. 184" class="lsAuthor">',
       "Plaut.",
       "</span>",
@@ -63,7 +63,7 @@ describe("displayBibl", () => {
     const result = displayBibl(bibl);
 
     const parts = [
-      "<span>",
+      '<span class="lsBibl">',
       '<span title="Q. Horatius Flaccus, poet, obiit B.C. 8" class="lsAuthor">',
       "Hor.",
       "</span>",
@@ -193,9 +193,9 @@ describe("displayEntryFree", () => {
       '<span title="Expanded from: f." class="lsHoverText">feminine</span> ',
       "<span>kindr. with <span>κάναβος</span> and <span>κάννα</span>; acc. to others, with <span>καλύβη</span></span>, ",
       '<span><span class="lsEmph"><span>a hovel</span></span>, <span class="lsEmph"><span>hut</span></span>, ',
-      '<span><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsAuthor">Aug.</span> ',
+      '<span class="lsBibl"><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsAuthor">Aug.</span> ',
       '<span title="Expanded from: Serm." class="lsWork">Sermones.</span> 61</span>, de Temp.; ',
-      '<span><span title="Expanded from: Inscr. Orell." class="lsWork">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
+      '<span class="lsBibl"><span title="Expanded from: Inscr. Orell." class="lsWork">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
     ];
 
     const output = defaultDisplay(input);
