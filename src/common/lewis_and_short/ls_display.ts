@@ -2,6 +2,7 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/lewis_and_short/ls_parser";
 import {
   CASE_ABBREVIATIONS,
+  GENERIC_ABBREVIATIONS,
   GEN_ABBREVIATIONS,
   LBL_ABBREVIATIONS,
   LsAuthorAbbreviations,
@@ -311,7 +312,7 @@ export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
   }
   if (abbreviated === "id.") {
     // TODO: Support this properly.
-    return attachHoverText("id.", "idem (same as above)", "lsHoverText");
+    return attachHoverText("id.", "idem (the same author)", "lsHoverText");
   }
   if (abbreviated === "ib.") {
     // TODO: Support this properly.
@@ -874,5 +875,10 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
     }
     children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
   }
-  return new XmlNode("div", [["class", "lsEntryFree"]], children);
+  const result = new XmlNode("div", [["class", "lsEntryFree"]], children);
+  return attachAbbreviationsRecursive(
+    result,
+    GENERIC_ABBREVIATIONS,
+    "lsHoverText"
+  );
 }

@@ -1,6 +1,8 @@
 import { checkPresent } from "../assert";
 import { XmlNode } from "./ls_parser";
 
+const START_CHARACTERS = new Set<string>([" "]);
+
 export interface TrieValue {
   value: string;
   tags?: string[];
@@ -99,7 +101,10 @@ export function attachAbbreviations(
       currentStart = i;
     }
     triePosition = nextNode;
-    if (triePosition.isFullWord()) {
+    if (
+      triePosition.isFullWord() &&
+      (currentStart === 0 || START_CHARACTERS.has(message[currentStart - 1]))
+    ) {
       bestExpansion = [
         currentStart,
         i - currentStart + 1,

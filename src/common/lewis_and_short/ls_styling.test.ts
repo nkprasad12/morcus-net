@@ -126,6 +126,12 @@ describe("attachAbbreviationsRecursive", () => {
     expect(input.toString()).toStrictEqual(output.toString());
   });
 
+  it("does not expand in the middle of a word", () => {
+    const input = new XmlNode("span", [], ["That."]);
+    const output = attachAbbreviationsRecursive(input, trieRoot);
+    expect(input.toString()).toStrictEqual(output.toString());
+  });
+
   it("handles multi-word keys with no periods", () => {
     const input = new XmlNode("span", [], ["I have no de Or. substitutions."]);
     const output = attachAbbreviationsRecursive(input, trieRoot);
