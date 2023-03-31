@@ -2,7 +2,8 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/lewis_and_short/ls_parser";
 import {
   CASE_ABBREVIATIONS,
-  GENERIC_ABBREVIATIONS,
+  GENERIC_EXPANSIONS,
+  GENERIC_HOVERS,
   GEN_ABBREVIATIONS,
   LBL_ABBREVIATIONS,
   LsAuthorAbbreviations,
@@ -15,8 +16,8 @@ import {
 import {
   substituteAbbreviation,
   attachHoverText,
-  attachAbbreviationsRecursive,
-  attachAbbreviations,
+  handleAbbreviations,
+  handleAbbreviationsInMessage,
 } from "@/common/lewis_and_short/ls_styling";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -266,8 +267,8 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
       if (works === undefined) {
         result.children.push(child);
       } else {
-        attachAbbreviations(child, works, "lsWork").forEach((x) =>
-          result.children.push(x)
+        handleAbbreviationsInMessage(child, works, true, "lsWork").forEach(
+          (x) => result.children.push(x)
         );
       }
     } else if (child.name === "author") {
@@ -275,7 +276,7 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
     } else {
       let display = defaultDisplay(child);
       if (works !== undefined) {
-        display = attachAbbreviationsRecursive(display, works, "lsWork");
+        display = handleAbbreviations(display, works, true, "lsWork");
       }
       result.children.push(display);
     }
@@ -310,19 +311,14 @@ export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
     // text node and figure out who the Pseudo author was.
     return new XmlNode("span", [["class", "lsAuthor"]], [abbreviated]);
   }
-  if (abbreviated === "id.") {
-    // TODO: Support this properly.
-    return attachHoverText("id.", "idem (the same author)", "lsHoverText");
-  }
-  if (abbreviated === "ib.") {
-    // TODO: Support this properly.
-    return attachHoverText("ib.", "ibidem (in the same place)", "lsHoverText");
+  if (abbreviated === "id." || abbreviated === "ib.") {
+    // TODO: Support these properly.
+    return new XmlNode("span", [], [abbreviated]);
   }
   for (const edgeCase of AUTHOR_EDGE_CASES) {
     if (!abbreviated.startsWith(edgeCase + " ")) {
       continue;
     }
-    const result = new XmlNode("span");
     const authorExpanded = checkPresent(
       LsAuthorAbbreviations.authors().get(edgeCase)
     );
@@ -419,9 +415,10 @@ usg:
  */
 export function displayUsg(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "usg");
-  return attachAbbreviationsRecursive(
+  return handleAbbreviations(
     defaultDisplay(root),
     USG_TRIE,
+    true,
     "lsHoverText"
   );
 }
@@ -875,10 +872,15 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
     }
     children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
   }
-  const result = new XmlNode("div", [["class", "lsEntryFree"]], children);
-  return attachAbbreviationsRecursive(
-    result,
-    GENERIC_ABBREVIATIONS,
+  return handleAbbreviations(
+    handleAbbreviations(
+      new XmlNode("div", [["class", "lsEntryFree"]], children),
+      GENERIC_EXPANSIONS,
+      true,
+      "lsHoverText"
+    ),
+    GENERIC_HOVERS,
+    false,
     "lsHoverText"
   );
 }

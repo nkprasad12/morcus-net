@@ -6,6 +6,7 @@ import { displayEntryFree } from "./common/lewis_and_short/ls_display";
 import { parse, XmlNode } from "./common/lewis_and_short/ls_parser";
 dotenv.config();
 
+// @ts-ignore
 function childrenMatching(node: XmlNode, name: string): XmlNode[] {
   const results = [];
   for (const child of node.children) {

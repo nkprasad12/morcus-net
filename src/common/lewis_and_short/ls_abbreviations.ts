@@ -151,7 +151,14 @@ export const USG_ABBREVIATIONS = new Map<string, string>([
 
 export const USG_TRIE = AbbreviationTrie.forMap(USG_ABBREVIATIONS);
 
-export const GENERIC_ABBREVIATIONS = AbbreviationTrie.forMap(
+export const GENERIC_HOVERS = AbbreviationTrie.forMap(
+  new Map<string, string>([
+    ["ib.", "at the same place / citation"],
+    ["id.", "the same author"],
+  ])
+);
+
+export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
   new Map<string, string>([
     // a. or act.,      active, -ly.
     // abbrev.,      abbreviated, -tion.
@@ -250,8 +257,6 @@ export const GENERIC_ABBREVIATIONS = AbbreviationTrie.forMap(
     // hist.,      history, -ian.
     // i. e.,      id est (that is, namely)
     // i. q.,      idem quod (the same as).
-    // ["ib.", "at the same place/citation"],
-    // ["id.", "the same author"],
     // imper.,      imperative.
     // imperf.,      imperfect.
     // impers.,      impersonal, -ly.
