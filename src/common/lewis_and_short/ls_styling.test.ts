@@ -198,6 +198,14 @@ describe("handleAbbreviations", () => {
     );
   });
 
+  it("only substitutes in hover mode", () => {
+    const input = new XmlNode("span", [], ["I de v. hi."]);
+    const output = handleAbbreviations(input, trieRoot, false);
+    expect(output.toString()).toStrictEqual(
+      `<span>I de ${attachHoverText("v.", "verb")} hi.</span>`
+    );
+  });
+
   it("handles nested  nodes", () => {
     const input = new XmlNode(
       "span",

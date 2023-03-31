@@ -2,7 +2,8 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/lewis_and_short/ls_parser";
 import {
   CASE_ABBREVIATIONS,
-  GENERIC_ABBREVIATIONS,
+  GENERIC_EXPANSIONS,
+  GENERIC_HOVERS,
   GEN_ABBREVIATIONS,
   LBL_ABBREVIATIONS,
   LsAuthorAbbreviations,
@@ -872,11 +873,15 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
     }
     children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
   }
-  const result = new XmlNode("div", [["class", "lsEntryFree"]], children);
   return handleAbbreviations(
-    result,
-    GENERIC_ABBREVIATIONS,
-    true,
+    handleAbbreviations(
+      new XmlNode("div", [["class", "lsEntryFree"]], children),
+      GENERIC_EXPANSIONS,
+      true,
+      "lsHoverText"
+    ),
+    GENERIC_HOVERS,
+    false,
     "lsHoverText"
   );
 }
