@@ -319,7 +319,6 @@ export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
     if (!abbreviated.startsWith(edgeCase + " ")) {
       continue;
     }
-    const result = new XmlNode("span");
     const authorExpanded = checkPresent(
       LsAuthorAbbreviations.authors().get(edgeCase)
     );
