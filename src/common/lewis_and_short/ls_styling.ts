@@ -72,7 +72,7 @@ export namespace AbbreviationTrie {
 //
 // And also we can have multi-word keys like `de Or.` where we need to
 // make sure we are handling `de` as connected to `Or.`.
-export function attachAbbreviations(
+export function expandAbbreviationsSingle(
   message: string,
   trieRoot: TrieNode,
   expandedTextClass?: string
@@ -141,7 +141,7 @@ export function attachAbbreviations(
   return chunks;
 }
 
-export function attachAbbreviationsRecursive(
+export function expandAbbreviations(
   contentRoot: XmlNode,
   defaultTrie: TrieNode,
   expandedTextClass?: string
@@ -149,14 +149,12 @@ export function attachAbbreviationsRecursive(
   const children: (XmlNode | string)[] = [];
   for (const child of contentRoot.children) {
     if (typeof child === "string") {
-      attachAbbreviations(child, defaultTrie, expandedTextClass).forEach((x) =>
-        children.push(x)
+      expandAbbreviationsSingle(child, defaultTrie, expandedTextClass).forEach(
+        (x) => children.push(x)
       );
       continue;
     }
-    children.push(
-      attachAbbreviationsRecursive(child, defaultTrie, expandedTextClass)
-    );
+    children.push(expandAbbreviations(child, defaultTrie, expandedTextClass));
   }
   return new XmlNode(
     contentRoot.name,
