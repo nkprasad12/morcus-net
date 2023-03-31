@@ -496,7 +496,10 @@ etym:
  */
 function displayEtym(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "etym");
-  return defaultDisplay(root);
+  const result = defaultDisplay(root);
+  result.children.unshift("[");
+  result.children.push("]");
+  return result;
 }
 
 /**
