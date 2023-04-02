@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/lewis_and_short/ls_parser";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   CASE_ABBREVIATIONS,
   GENERIC_EXPANSIONS,
@@ -177,8 +177,7 @@ function displayForeign(root: XmlNode, _parent?: XmlNode): XmlNode {
   if (root.attrs.length === 0) {
     return attachHoverText(
       "[omitted from digitization]",
-      "Usually for text in Hebrew or Etruscan scripts",
-      "lsHoverText"
+      "Usually for text in Hebrew or Etruscan scripts"
     );
   }
   return defaultDisplay(root, ["cb", "reg"]);
@@ -267,8 +266,8 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
       if (works === undefined) {
         result.children.push(child);
       } else {
-        handleAbbreviationsInMessage(child, works, true, "lsWork").forEach(
-          (x) => result.children.push(x)
+        handleAbbreviationsInMessage(child, works, true).forEach((x) =>
+          result.children.push(x)
         );
       }
     } else if (child.name === "author") {
@@ -276,7 +275,7 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
     } else {
       let display = defaultDisplay(child);
       if (works !== undefined) {
-        display = handleAbbreviations(display, works, true, "lsWork");
+        display = handleAbbreviations(display, works, true);
       }
       result.children.push(display);
     }
@@ -326,14 +325,13 @@ export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
     const worksMap = checkPresent(LsAuthorAbbreviations.works().get(edgeCase));
     const endExpanded = checkPresent(worksMap.get(end));
     const expanded = `${authorExpanded} ${endExpanded}`;
-    return attachHoverText(expanded, `Expanded from: ${abbreviated}`, "lsWork");
+    return attachHoverText(expanded, `Expanded from: ${abbreviated}`);
   }
-  const result = attachHoverText(
+  return attachHoverText(
     abbreviated,
-    checkPresent(LsAuthorAbbreviations.authors().get(abbreviated))
+    checkPresent(LsAuthorAbbreviations.authors().get(abbreviated)),
+    ["lsAuthor"]
   );
-  result.attrs.push(["class", "lsAuthor"]);
-  return result;
 }
 
 /**
@@ -415,12 +413,7 @@ usg:
  */
 export function displayUsg(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "usg");
-  return handleAbbreviations(
-    defaultDisplay(root),
-    USG_TRIE,
-    true,
-    "lsHoverText"
-  );
+  return handleAbbreviations(defaultDisplay(root), USG_TRIE, true);
 }
 
 /**
@@ -496,7 +489,10 @@ etym:
  */
 function displayEtym(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "etym");
-  return defaultDisplay(root);
+  const result = defaultDisplay(root);
+  result.children.unshift("[");
+  result.children.push("]");
+  return result;
 }
 
 /**
@@ -766,8 +762,7 @@ export function displayReg(root: XmlNode, _parent?: XmlNode): XmlNode {
   const corr = XmlNode.assertIsNode(root.children[1], "corr");
   return attachHoverText(
     XmlNode.getSoleText(corr),
-    `Corrected from original: ${XmlNode.getSoleText(sic)}`,
-    "lsHoverText"
+    `Corrected from original: ${XmlNode.getSoleText(sic)}`
   );
 }
 
@@ -876,11 +871,9 @@ export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
     handleAbbreviations(
       new XmlNode("div", [["class", "lsEntryFree"]], children),
       GENERIC_EXPANSIONS,
-      true,
-      "lsHoverText"
+      true
     ),
     GENERIC_HOVERS,
-    false,
-    "lsHoverText"
+    false
   );
 }
