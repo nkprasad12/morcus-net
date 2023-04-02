@@ -8,6 +8,34 @@ import { getHash } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
+import { ClickAwayListener, Tooltip } from "@mui/material";
+
+function ClickableTooltip(props: {
+  titleText: string;
+  className: string | undefined;
+  ChildFactory: React.ForwardRefExoticComponent<
+    Omit<any, "ref"> & React.RefAttributes<unknown>
+  >;
+}) {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <ClickAwayListener onClickAway={() => setOpen(false)}>
+      <Tooltip
+        title={props.titleText}
+        className={props.className}
+        placement="top-start"
+        disableFocusListener
+        disableHoverListener
+        disableTouchListener
+        onClose={() => setOpen(false)}
+        open={open}
+      >
+        <props.ChildFactory onClick={() => setOpen(!open)} />
+      </Tooltip>
+    </ClickAwayListener>
+  );
+}
 
 export function xmlNodeToJsx(root: XmlNode): JSX.Element {
   const children = root.children.map((child) => {
@@ -17,12 +45,36 @@ export function xmlNodeToJsx(root: XmlNode): JSX.Element {
     return xmlNodeToJsx(child);
   });
   const props: { [key: string]: string } = {};
+  let titleText: string | undefined = undefined;
+  let className: string | undefined = undefined;
   for (const [key, value] of root.attrs) {
     if (key === "class") {
+      className = value;
       props.className = value;
       continue;
     }
+    if (key === "title") {
+      titleText = value;
+      continue;
+    }
     props[key] = value;
+  }
+
+  if (titleText !== undefined) {
+    const ForwardedNode = React.forwardRef(
+      (forwardProps: any, forwardRef: any) => {
+        const allProps = { ...props, ...forwardProps };
+        allProps["ref"] = forwardRef;
+        return React.createElement(root.name, allProps, children);
+      }
+    );
+    return (
+      <ClickableTooltip
+        titleText={titleText}
+        className={className}
+        ChildFactory={ForwardedNode}
+      />
+    );
   }
   return React.createElement(root.name, props, children);
 }
@@ -72,7 +124,6 @@ export function Dictionary(props: Dictionary.Props) {
             whiteSpace: "pre-wrap",
             color: Solarized.base02,
           }}
-          // dangerouslySetInnerHTML={{ __html: entry }}
         >
           {xmlNodeToJsx(xmlRoot)}
         </Typography>

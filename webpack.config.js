@@ -32,6 +32,7 @@ module.exports = (env) => {
     splitChunks: {
       chunks: "all",
       minSize: 10000,
+      maxSize: 100000,
       cacheGroups: {
         vendorBundle: {
           test: /[\\/]node_modules[\\/]/,
