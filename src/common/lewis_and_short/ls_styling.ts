@@ -1,5 +1,5 @@
 import { checkPresent } from "../assert";
-import { XmlNode } from "./ls_parser";
+import { XmlNode } from "./xml_node";
 
 const START_CHARACTERS = new Set<string>([" "]);
 

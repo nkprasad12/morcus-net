@@ -7,17 +7,41 @@ import React from "react";
 import { getHash } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
+import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 
-async function fetchEntry(input: string): Promise<string> {
+export function xmlNodeToJsx(root: XmlNode): JSX.Element {
+  const children = root.children.map((child) => {
+    if (typeof child === "string") {
+      return child;
+    }
+    return xmlNodeToJsx(child);
+  });
+  const props: { [key: string]: string } = {};
+  for (const [key, value] of root.attrs) {
+    if (key === "class") {
+      props.className = value;
+      continue;
+    }
+    props[key] = value;
+  }
+  return React.createElement(root.name, props, children);
+}
+
+async function fetchEntry(input: string): Promise<XmlNode> {
   const response = await fetch(`${location.origin}${lsCall(input)}`);
   if (!response.ok) {
-    return "Failed to fetch the entry. Please try again later.";
+    return new XmlNode(
+      "span",
+      [],
+      ["Failed to fetch the entry. Please try again later."]
+    );
   }
-  return await response.text();
+  const rawText = await response.text();
+  return parseEntries([rawText])[0];
 }
 
 export function Dictionary(props: Dictionary.Props) {
-  const [entry, setEntry] = React.useState<string>("");
+  const [entry, setEntry] = React.useState<XmlNode | undefined>(undefined);
   const [inputState, setInputState] = React.useState<string>(props.input);
 
   async function onEnter() {
@@ -28,7 +52,7 @@ export function Dictionary(props: Dictionary.Props) {
     history.pushState(`#${inputState}`, "", `#${inputState}`);
   }
 
-  function contentBox() {
+  function contentBox(xmlRoot: XmlNode) {
     return (
       <Box
         sx={{
@@ -48,8 +72,10 @@ export function Dictionary(props: Dictionary.Props) {
             whiteSpace: "pre-wrap",
             color: Solarized.base02,
           }}
-          dangerouslySetInnerHTML={{ __html: entry }}
-        />
+          // dangerouslySetInnerHTML={{ __html: entry }}
+        >
+          {xmlNodeToJsx(xmlRoot)}
+        </Typography>
       </Box>
     );
   }
@@ -58,7 +84,7 @@ export function Dictionary(props: Dictionary.Props) {
     const hashListener = () => {
       const input = getHash();
       if (input.length === 0) {
-        setEntry("");
+        setEntry(undefined);
         return;
       }
       fetchEntry(input).then(setEntry);
@@ -101,7 +127,7 @@ export function Dictionary(props: Dictionary.Props) {
           />
         )}
       />
-      {entry && contentBox()}
+      {entry && contentBox(entry)}
     </>
   );
 }

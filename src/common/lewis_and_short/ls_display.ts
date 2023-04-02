@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/lewis_and_short/ls_parser";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   CASE_ABBREVIATIONS,
   GENERIC_EXPANSIONS,
