@@ -1,6 +1,6 @@
 # morcus.net
 
-Source code for morcus.net, a collection of digital tools for Latin.
+Source code for [morcus.net](https://www.morcus.net), a collection of digital tools for Latin.
 
 [![CI Status](https://github.com/nkprasad12/morcus-net/actions/workflows/ci-workflow.yaml/badge.svg)](https://github.com/nkprasad12/morcus-net/actions)
 [![Coverage](https://codecov.io/gh/nkprasad12/morcus-net/branch/main/graph/badge.svg?token=G65VJM8B56)](https://codecov.io/gh/nkprasad12/morcus-net)

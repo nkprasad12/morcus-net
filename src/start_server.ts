@@ -1,5 +1,18 @@
 /* istanbul ignore file */
 
+// To run the server with node on javascript directly, uncomment this line:
+//```
+// require("module-alias/register");
+//```
+// and install `module-alias`. Then, add
+// "_moduleAliases": {
+//   "@": "build"
+// },
+//  to the `package.json`. This current fucks with the jest config.
+// Then, `npx tsc -p tsconfig.json` to build js, and
+// `node build/start_server.js` to start the server.
+// Based on local testing, this saves ~30-40 MB memory.
+
 import "dd-trace/init";
 import * as dotenv from "dotenv";
 import express from "express";
