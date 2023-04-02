@@ -13,6 +13,7 @@
 // `node build/start_server.js` to start the server.
 // Based on local testing, this saves ~30-40 MB memory.
 
+import "dd-trace/init";
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
