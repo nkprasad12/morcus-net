@@ -109,18 +109,12 @@ root.render(
             textIndent: "-1em",
           },
           pre: { margin: "0" },
-          ".lsHoverText": {
+          ".lsHover": {
             borderBottom: `1px dashed ${Solarized.base03}`,
             cursor: "help",
           },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "18",
-            borderBottom: `1px dashed ${Solarized.base03}`,
-            cursor: "help",
-          },
-          ".lsWork": {
-            borderBottom: `1px dashed ${Solarized.base03}`,
-            cursor: "help",
+            backgroundColor: Solarized.violet + "20",
           },
           ".lsBibl": {
             backgroundColor: Solarized.violet + "40",

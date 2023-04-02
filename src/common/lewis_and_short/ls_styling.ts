@@ -118,7 +118,7 @@ export function handleAbbreviationsInMessage(
   message: string,
   trieRoot: TrieNode,
   replace: boolean,
-  expandedTextClass?: string
+  expandedCssClasses?: string[]
 ): (XmlNode | string)[] {
   const expansions = findExpansions(message, trieRoot);
   const chunks: (XmlNode | string)[] = [];
@@ -132,13 +132,13 @@ export function handleAbbreviationsInMessage(
       const onHover = replace
         ? `Expanded from: ${original}`
         : expandedString[0];
-      chunks.push(attachHoverText(toDisplay, onHover, expandedTextClass));
+      chunks.push(attachHoverText(toDisplay, onHover, expandedCssClasses));
     } else {
       chunks.push(
         attachHoverText(
           original,
           `Ambiguous: ${expandedString.join(" OR ")}`,
-          expandedTextClass
+          expandedCssClasses
         )
       );
     }
@@ -151,7 +151,7 @@ export function handleAbbreviations(
   contentRoot: XmlNode,
   defaultTrie: TrieNode,
   replace: boolean = true,
-  expandedTextClass?: string
+  expandedCssClasses?: string[]
 ): XmlNode {
   const children: (XmlNode | string)[] = [];
   for (const child of contentRoot.children) {
@@ -160,12 +160,12 @@ export function handleAbbreviations(
         child,
         defaultTrie,
         replace,
-        expandedTextClass
+        expandedCssClasses
       ).forEach((x) => children.push(x));
       continue;
     }
     children.push(
-      handleAbbreviations(child, defaultTrie, replace, expandedTextClass)
+      handleAbbreviations(child, defaultTrie, replace, expandedCssClasses)
     );
   }
   return new XmlNode(
@@ -178,24 +178,29 @@ export function handleAbbreviations(
 export function attachHoverText(
   displayText: XmlNode | string,
   hoverText: string,
-  expandedTextClass?: string
+  expandedCssClasses?: string[]
 ): XmlNode {
-  const attrs: [string, string][] = [["title", hoverText]];
-  if (expandedTextClass !== undefined) {
-    attrs.push(["class", expandedTextClass]);
+  const allClasses = ["lsHover"];
+  for (const expandedCssClass of expandedCssClasses || []) {
+    allClasses.push(expandedCssClass);
   }
+  const attrs: [string, string][] = [
+    ["title", hoverText],
+    ["class", allClasses.join(" ")],
+  ];
+
   return new XmlNode("span", attrs, [displayText]);
 }
 
 export function substituteAbbreviation(
   original: string,
   lookup: Map<string, string>,
-  expandedTextClass: string = "lsHoverText"
+  expandedCssClasses?: string[]
 ): XmlNode {
   const expanded = checkPresent(lookup.get(original));
   return attachHoverText(
     expanded,
     `Expanded from: ${original}`,
-    expandedTextClass
+    expandedCssClasses
   );
 }

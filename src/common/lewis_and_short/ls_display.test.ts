@@ -44,10 +44,10 @@ describe("displayBibl", () => {
 
     const parts = [
       '<span class="lsBibl">',
-      '<span title="T. Maccius Plautus, writer of comedy. ob. B.C. 184" class="lsAuthor">',
+      '<span title="T. Maccius Plautus, writer of comedy. ob. B.C. 184" class="lsHover lsAuthor">',
       "Plaut.",
       "</span>",
-      '<span title="Expanded from: Mil." class="lsWork">',
+      '<span title="Expanded from: Mil." class="lsHover">',
       "Miles Gloriosus.",
       "</span>",
       " 4, 4, 36",
@@ -64,10 +64,10 @@ describe("displayBibl", () => {
 
     const parts = [
       '<span class="lsBibl">',
-      '<span title="Q. Horatius Flaccus, poet, obiit B.C. 8" class="lsAuthor">',
+      '<span title="Q. Horatius Flaccus, poet, obiit B.C. 8" class="lsHover lsAuthor">',
       "Hor.",
       "</span>",
-      '<span title="Expanded from: C." class="lsWork">',
+      '<span title="Expanded from: C." class="lsHover">',
       "Carmina, or Odae.",
       "</span>",
       " 1, 12, 32",
@@ -85,7 +85,7 @@ describe("displayUsg", () => {
 
     const parts = [
       "<span>",
-      '<span title="Expanded from: Medic. t. t." class="lsHoverText">',
+      '<span title="Expanded from: Medic. t. t." class="lsHover">',
       "Medical [technical term]",
       "</span>",
       "</span>",
@@ -190,12 +190,12 @@ describe("displayEntryFree", () => {
     const expected = [
       '<span><span class="lsOrth">cānăba</span> (or <span class="lsOrth">cannăba</span>), ',
       "<span>ae</span>, ",
-      '<span title="Expanded from: f." class="lsHoverText">feminine</span> ',
+      '<span title="Expanded from: f." class="lsHover">feminine</span> ',
       "<span>[kindr. with <span>κάναβος</span> and <span>κάννα</span>; acc. to others, with <span>καλύβη</span>]</span>, ",
       '<span><span class="lsEmph"><span>a hovel</span></span>, <span class="lsEmph"><span>hut</span></span>, ',
-      '<span class="lsBibl"><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsAuthor">Aug.</span> ',
-      '<span title="Expanded from: Serm." class="lsWork">Sermones.</span> 61</span>, de Temp.; ',
-      '<span class="lsBibl"><span title="Expanded from: Inscr. Orell." class="lsWork">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
+      '<span class="lsBibl"><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsHover lsAuthor">Aug.</span> ',
+      '<span title="Expanded from: Serm." class="lsHover">Sermones.</span> 61</span>, de Temp.; ',
+      '<span class="lsBibl"><span title="Expanded from: Inscr. Orell." class="lsHover">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
     ];
 
     const output = defaultDisplay(input);
@@ -205,7 +205,7 @@ describe("displayEntryFree", () => {
   it("shows expected entry without senses", () => {
     const input = parseEntries([BENEFIO])[0];
     const expected = [
-      `<span><span class=\"lsOrth\">bĕnĕfīo</span>, v. benefacio.</span>`,
+      `<span><span class="lsOrth">bĕnĕfīo</span>, v. benefacio.</span>`,
     ];
 
     const output = defaultDisplay(input);
@@ -243,7 +243,7 @@ describe("displayAuthor", () => {
     const output = displayAuthor(input);
 
     expect(output.toString()).toBe(
-      '<span title="Expanded from: Inscr. Don." class="lsWork">Inscriptiones. Donii.</span>'
+      '<span title="Expanded from: Inscr. Don." class="lsHover">Inscriptiones. Donii.</span>'
     );
   });
 
@@ -252,7 +252,7 @@ describe("displayAuthor", () => {
     const output = displayAuthor(input);
 
     expect(output.toString()).toBe(
-      '<span title="Censorinus, grammarian, flor. A.D. 238" class="lsAuthor">Censor.</span>'
+      '<span title="Censorinus, grammarian, flor. A.D. 238" class="lsHover lsAuthor">Censor.</span>'
     );
   });
 });
