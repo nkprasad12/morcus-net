@@ -109,20 +109,25 @@ root.render(
             textIndent: "-1em",
           },
           pre: { margin: "0" },
-          ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
+          ".lsHoverText": {
+            borderBottom: `1px dashed ${Solarized.base03}`,
+            cursor: "help",
+          },
           ".lsAuthor": {
             backgroundColor: Solarized.violet + "18",
             borderBottom: `1px dashed ${Solarized.base03}`,
+            cursor: "help",
           },
           ".lsWork": {
             borderBottom: `1px dashed ${Solarized.base03}`,
+            cursor: "help",
           },
           ".lsBibl": {
-            backgroundColor: Solarized.violet + "30",
+            backgroundColor: Solarized.violet + "40",
           },
-          ".lsQuote": { backgroundColor: Solarized.blue + "28" },
+          ".lsQuote": { backgroundColor: Solarized.blue + "38" },
           ".lsOrth": {
-            backgroundColor: Solarized.red + "70",
+            backgroundColor: Solarized.red + "78",
             fontWeight: "bold",
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },

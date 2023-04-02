@@ -28,6 +28,32 @@ export function Dictionary(props: Dictionary.Props) {
     history.pushState(`#${inputState}`, "", `#${inputState}`);
   }
 
+  function contentBox() {
+    return (
+      <Box
+        sx={{
+          padding: 1,
+          ml: 3,
+          mr: 3,
+          mt: 1,
+          mb: 2,
+          border: 2,
+          borderRadius: 1,
+          borderColor: Solarized.base2,
+        }}
+      >
+        <Typography
+          component={"div"}
+          style={{
+            whiteSpace: "pre-wrap",
+            color: Solarized.base02,
+          }}
+          dangerouslySetInnerHTML={{ __html: entry }}
+        />
+      </Box>
+    );
+  }
+
   React.useEffect(() => {
     const hashListener = () => {
       const input = getHash();
@@ -75,29 +101,7 @@ export function Dictionary(props: Dictionary.Props) {
           />
         )}
       />
-      {entry && (
-        <Box
-          sx={{
-            padding: 1,
-            ml: 3,
-            mr: 3,
-            mt: 1,
-            mb: 2,
-            border: 2,
-            borderRadius: 1,
-            borderColor: Solarized.base2,
-          }}
-        >
-          <Typography
-            component={"div"}
-            style={{
-              whiteSpace: "pre-wrap",
-              color: Solarized.base02,
-            }}
-            dangerouslySetInnerHTML={{ __html: entry }}
-          />
-        </Box>
-      )}
+      {entry && contentBox()}
     </>
   );
 }
