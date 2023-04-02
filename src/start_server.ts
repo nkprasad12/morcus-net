@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import 'dd-trace/init';
+import "dd-trace/init";
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
