@@ -1,43 +1,52 @@
-import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, checkPresent } from "../assert";
+import { assert, assertEqual, checkPresent } from "../assert";
 import fs from "fs";
 import readline from "readline";
+import { parseEntries } from "./xml_node";
+import { displayEntryFree } from "./ls_display";
 
-interface LsEntry {
-  key: string;
+interface RawLsEntry {
+  keys: string[];
   entry: string;
 }
 
 export class LewisAndShort {
-  constructor(private readonly entries: Map<string, string>) {}
+  private readonly keyToEntry = new Map<string, number>();
+
+  constructor(keys: string[][], private readonly entries: string[]) {
+    assertEqual(keys.length, entries.length);
+    for (let i = 0; i < keys.length; i++) {
+      for (const key of keys[i]) {
+        this.keyToEntry.set(key, i);
+      }
+    }
+  }
 
   async getEntry(input: string): Promise<string> {
-    const result = this.entries.get(input);
+    const result = this.keyToEntry.get(input);
     if (result === undefined) {
-      return `<span>Could not find entry with key ${input}</span>`;
+      return `<span>Could not find entry for ${input}</span>`;
     }
-    return result;
+    return displayEntryFree(parseEntries([this.entries[result]])[0]).toString();
   }
 }
 
 export namespace LewisAndShort {
   export function createProcessed(
     rawFile: string = checkPresent(process.env.LS_PATH)
-  ): LsEntry[] {
-    const rootNodes = parse(rawFile);
-    return rootNodes.map((root) => {
+  ): RawLsEntry[] {
+    return parse(rawFile).map((root) => {
       const keys = root.attrs.filter((attr) => attr[0] === "key");
       assert(keys.length === 1, "Expected exactly one `key` attribute.");
       return {
-        key: keys[0][1],
-        entry: displayEntryFree(root).toString(),
+        keys: [keys[0][1]],
+        entry: root.toString(),
       };
     });
   }
 
   export async function save(
-    entries: LsEntry[],
+    entries: RawLsEntry[],
     destination: string = checkPresent(process.env.LS_PROCESSED_PATH)
   ): Promise<void> {
     if (fs.existsSync(destination)) {
@@ -45,9 +54,14 @@ export namespace LewisAndShort {
     }
     const stream = fs.createWriteStream(destination);
     for (const entry of entries) {
-      const finalKey = entry.key.replaceAll("\n", "@");
-      const finalEntry = entry.entry.replaceAll("\n", "@");
-      stream.write(`${finalKey}\n${finalEntry}\n`);
+      for (const key of entry.keys) {
+        assert(!key.includes(","));
+        assert(!key.includes("\n"));
+      }
+      stream.write(entry.keys.join(","));
+      stream.write("$$");
+      stream.write(entry.entry.replaceAll("\n", "@"));
+      stream.write("\n");
     }
     return new Promise<void>((resolve) => {
       stream.end(() => {
@@ -56,22 +70,27 @@ export namespace LewisAndShort {
     });
   }
 
-  export async function create(
+  export async function readFromFile(
     processedFile: string = checkPresent(process.env.LS_PROCESSED_PATH)
-  ) {
-    const result = new Map<string, string>();
+  ): Promise<[string[][], string[]]> {
     const rl = readline.createInterface({
       input: fs.createReadStream(processedFile),
     });
-    let key: string | undefined = undefined;
+    const keys: string[][] = [];
+    const entries: string[] = [];
     for await (const line of rl) {
-      if (key === undefined) {
-        key = line;
-      } else {
-        result.set(key.replaceAll("@", "\n"), line.replaceAll("@", "\n"));
-        key = undefined;
-      }
+      const chunks = line.split("$$");
+      assertEqual(chunks.length, 2);
+      keys.push(chunks[0].split(","));
+      entries.push(chunks[1].replaceAll("@", "\n"));
     }
-    return new LewisAndShort(new Map(result));
+    return [keys, entries];
+  }
+
+  export async function create(
+    processedFile: string = checkPresent(process.env.LS_PROCESSED_PATH)
+  ) {
+    const [keys, entries] = await readFromFile(processedFile);
+    return new LewisAndShort(keys, entries);
   }
 }
