@@ -135,6 +135,14 @@ describe("xmlNodeToJsx", () => {
     expect(result.props.className).toBe("Caesar");
   });
 
+  it("handles nodes with titles", () => {
+    const root = new XmlNode("span", [["title", "Caesar"]], ["Gallia"]);
+    const result = xmlNodeToJsx(root);
+
+    expect(result.type).toBe(ClickableTooltip);
+    expect(result.props.titleText).toBe("Caesar");
+  });
+
   it("handles nested and text nodes", () => {
     const root = new XmlNode(
       "span",
