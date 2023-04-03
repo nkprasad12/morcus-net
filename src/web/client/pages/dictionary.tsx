@@ -10,11 +10,11 @@ import Typography from "@mui/material/Typography";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { ClickAwayListener, Tooltip } from "@mui/material";
 
-function ClickableTooltip(props: {
+export function ClickableTooltip(props: {
   titleText: string;
   className: string | undefined;
   ChildFactory: React.ForwardRefExoticComponent<
-    Omit<any, "ref"> & React.RefAttributes<unknown>
+    Omit<any, "ref"> & React.RefAttributes<any>
   >;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -61,7 +61,7 @@ export function xmlNodeToJsx(root: XmlNode): JSX.Element {
   }
 
   if (titleText !== undefined) {
-    const ForwardedNode = React.forwardRef(
+    const ForwardedNode = React.forwardRef<HTMLElement>(
       (forwardProps: any, forwardRef: any) => {
         const allProps = { ...props, ...forwardProps };
         allProps["ref"] = forwardRef;

@@ -8,7 +8,7 @@ import { act, render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { Dictionary, xmlNodeToJsx } from "./dictionary";
+import { ClickableTooltip, Dictionary, xmlNodeToJsx } from "./dictionary";
 
 const realFetch = global.fetch;
 
@@ -146,5 +146,43 @@ describe("xmlNodeToJsx", () => {
     expect(result.props.children).toHaveLength(2);
     expect(result.props.children[0]).toBe("Caesar");
     expect(result.props.children[1].props.children[0]).toBe("Gaius");
+  });
+});
+
+describe("ClickableTooltip", () => {
+  const DivWithRef = React.forwardRef<HTMLDivElement>((props, ref) => {
+    return (
+      <div {...props} ref={ref}>
+        Gallia
+      </div>
+    );
+  });
+
+  it("shows base text on initial load", async () => {
+    render(
+      <ClickableTooltip
+        titleText="Caesar"
+        className=""
+        ChildFactory={DivWithRef}
+      />
+    );
+
+    expect(screen.queryByText("Caesar")).toBeNull();
+    expect(screen.queryByText("Gallia")).not.toBeNull();
+  });
+
+  it("shows tooltip on click", async () => {
+    render(
+      <ClickableTooltip
+        titleText="Caesar"
+        className=""
+        ChildFactory={DivWithRef}
+      />
+    );
+
+    await user.click(screen.getByText("Gallia"));
+
+    expect(screen.queryByText("Caesar")).not.toBeNull();
+    expect(screen.queryByText("Gallia")).not.toBeNull();
   });
 });
