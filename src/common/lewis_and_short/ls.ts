@@ -15,7 +15,7 @@ export class LewisAndShort {
   async getEntry(input: string): Promise<string> {
     const result = this.entries.get(input);
     if (result === undefined) {
-      return `Could not find entry with key ${input}`;
+      return `<span>Could not find entry with key ${input}</span>`;
     }
     return result;
   }
