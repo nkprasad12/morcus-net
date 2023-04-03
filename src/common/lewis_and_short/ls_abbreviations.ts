@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
-import { parseEntries, XmlNode } from "@/common/lewis_and_short/ls_parser";
+import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { AbbreviationTrie, TrieNode } from "./ls_styling";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {

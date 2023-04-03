@@ -1,23 +1,22 @@
 /* istanbul ignore file */
 
-import React from "react";
-import ReactDOM from "react-dom/client";
-import {
-  createTheme,
-  StyledEngineProvider,
-  ThemeProvider,
-} from "@mui/material/styles";
-
 import "@fontsource/roboto/300.css";
 import "@fontsource/roboto/400.css";
 import "@fontsource/roboto/500.css";
 import "@fontsource/roboto/700.css";
 
+import React from "react";
+import ReactDOM from "react-dom/client";
+
+import GlobalStyles from "@mui/material/GlobalStyles";
+import StyledEngineProvider from "@mui/material/StyledEngineProvider";
+import createTheme from "@mui/material/styles/createTheme";
+import ThemeProvider from "@mui/material/styles/ThemeProvider";
+
 import { Macronizer } from "@/web/client/pages/macron";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { Dictionary } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
-import GlobalStyles from "@mui/material/GlobalStyles";
 import { getHash } from "@/web/client/browser_utils";
 
 const theme = createTheme({
@@ -109,20 +108,19 @@ root.render(
             textIndent: "-1em",
           },
           pre: { margin: "0" },
-          ".lsHoverText": { borderBottom: `1px dashed ${Solarized.base03}` },
-          ".lsAuthor": {
-            backgroundColor: Solarized.violet + "18",
+          ".lsHover": {
             borderBottom: `1px dashed ${Solarized.base03}`,
+            cursor: "help",
           },
-          ".lsWork": {
-            borderBottom: `1px dashed ${Solarized.base03}`,
+          ".lsAuthor": {
+            backgroundColor: Solarized.violet + "20",
           },
           ".lsBibl": {
-            backgroundColor: Solarized.violet + "30",
+            backgroundColor: Solarized.violet + "40",
           },
-          ".lsQuote": { backgroundColor: Solarized.blue + "28" },
+          ".lsQuote": { backgroundColor: Solarized.blue + "38" },
           ".lsOrth": {
-            backgroundColor: Solarized.red + "70",
+            backgroundColor: Solarized.red + "78",
             fontWeight: "bold",
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },

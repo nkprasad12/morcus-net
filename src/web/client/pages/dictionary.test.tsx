@@ -2,12 +2,13 @@
  * @jest-environment jsdom
  */
 
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import { describe, expect, it } from "@jest/globals";
 import { act, render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { Dictionary } from "./dictionary";
+import { ClickableTooltip, Dictionary, xmlNodeToJsx } from "./dictionary";
 
 const realFetch = global.fetch;
 
@@ -85,7 +86,7 @@ describe("Dictionary View", () => {
   });
 
   it("shows result on success", async () => {
-    replaceFetch(true, "France or whatever idk lol");
+    replaceFetch(true, "<span>France or whatever idk lol</span>");
     render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
 
@@ -98,7 +99,7 @@ describe("Dictionary View", () => {
   });
 
   it("fetches result from props input", async () => {
-    replaceFetch(true, "France or whatever idk lol");
+    replaceFetch(true, "<span>France or whatever idk lol</span>");
 
     render(<Dictionary input="Gallia" />);
 
@@ -112,7 +113,7 @@ describe("Dictionary View", () => {
     window.addEventListener = mockAddEventListener;
     render(<Dictionary input="" />);
 
-    replaceFetch(true, "France or whatever idk lol");
+    replaceFetch(true, "<span>France or whatever idk lol</span>");
     act(() => {
       mockAddEventListener.mock.lastCall![1]();
     });
@@ -124,5 +125,72 @@ describe("Dictionary View", () => {
     await waitFor(() => {
       expect(screen.getByText("France or whatever idk lol")).toBeDefined();
     });
+  });
+});
+
+describe("xmlNodeToJsx", () => {
+  it("changes class to className", () => {
+    const root = new XmlNode("span", [["class", "Caesar"]], []);
+    const result = xmlNodeToJsx(root);
+    expect(result.props.className).toBe("Caesar");
+  });
+
+  it("handles nodes with titles", () => {
+    const root = new XmlNode("span", [["title", "Caesar"]], ["Gallia"]);
+    const result = xmlNodeToJsx(root);
+
+    expect(result.type).toBe(ClickableTooltip);
+    expect(result.props.titleText).toBe("Caesar");
+  });
+
+  it("handles nested and text nodes", () => {
+    const root = new XmlNode(
+      "span",
+      [],
+      ["Caesar", new XmlNode("span", [], ["Gaius"])]
+    );
+    const result = xmlNodeToJsx(root);
+
+    expect(result.props.children).toHaveLength(2);
+    expect(result.props.children[0]).toBe("Caesar");
+    expect(result.props.children[1].props.children[0]).toBe("Gaius");
+  });
+});
+
+describe("ClickableTooltip", () => {
+  const DivWithRef = React.forwardRef<HTMLDivElement>((props, ref) => {
+    return (
+      <div {...props} ref={ref}>
+        Gallia
+      </div>
+    );
+  });
+
+  it("shows base text on initial load", async () => {
+    render(
+      <ClickableTooltip
+        titleText="Caesar"
+        className=""
+        ChildFactory={DivWithRef}
+      />
+    );
+
+    expect(screen.queryByText("Caesar")).toBeNull();
+    expect(screen.queryByText("Gallia")).not.toBeNull();
+  });
+
+  it("shows tooltip on click", async () => {
+    render(
+      <ClickableTooltip
+        titleText="Caesar"
+        className=""
+        ChildFactory={DivWithRef}
+      />
+    );
+
+    await user.click(screen.getByText("Gallia"));
+
+    expect(screen.queryByText("Caesar")).not.toBeNull();
+    expect(screen.queryByText("Gallia")).not.toBeNull();
   });
 });

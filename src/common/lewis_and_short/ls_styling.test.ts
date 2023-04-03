@@ -1,4 +1,4 @@
-import { XmlNode } from "./ls_parser";
+import { XmlNode } from "./xml_node";
 import {
   substituteAbbreviation,
   attachHoverText,
