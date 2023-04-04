@@ -53,6 +53,15 @@ export class XmlNode {
   toString(): string {
     return this.formatAsString(false);
   }
+
+  getAttr(attrName: string): string | undefined {
+    for (const [key, value] of this.attrs) {
+      if (attrName === key) {
+        return value;
+      }
+    }
+    return undefined;
+  }
 }
 
 export namespace XmlNode {

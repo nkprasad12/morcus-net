@@ -6,42 +6,140 @@ import { parse } from "./common/lewis_and_short/ls_parser";
 import { XmlNode } from "./common/lewis_and_short/xml_node";
 dotenv.config();
 
-function childrenMatching(node: XmlNode, name: string): [XmlNode, number][] {
-  const results: [XmlNode, number][] = [];
-  node.children.forEach((child, i) => {
-    if (typeof child !== "string" && child.name === name) {
-      results.push([child, i]);
+const MACRONS = "āēīōūȳÃĒĪÕŪ";
+const BREVES = "ăĕĭŏŭўĬ";
+const OTHER_ACCENTED = "áïìëèöüúùÿ";
+const ALPHA_ACC = MACRONS + BREVES + OTHER_ACCENTED;
+const LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
+const UPPER_CASE = "ABCDEFGHIJKLMNOPQRSTUVWXYZ";
+const ALPHA_REG = LOWER_CASE + UPPER_CASE;
+const BASE_CHARS = new Set(ALPHA_ACC + ALPHA_REG + " '");
+const SPLITS = [", ", " (", "; "];
+
+function rawOrths(root: XmlNode): string[] {
+  const orths: string[] = [];
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      continue;
     }
-  });
+    if (child.name !== "orth") {
+      continue;
+    }
+    if (child.getAttr("type") === "alt") {
+      continue;
+    }
+    orths.push(XmlNode.getSoleText(child));
+  }
+  return orths;
+}
+
+function nonAlphabetics(text: string): [string, number][] {
+  const result: [string, number][] = [];
+  for (let i = 0; i < text.length; i++) {
+    const c = text[i];
+    if (!BASE_CHARS.has(c)) {
+      result.push([c, i]);
+    }
+  }
+  return result;
+}
+
+function isRegularOrth(orth: string): boolean {
+  const nonAlphas = nonAlphabetics(orth);
+  for (const [c, i] of nonAlphas) {
+    if (c === "^") {
+      continue;
+    }
+    if (c === "_") {
+      continue;
+    }
+    if (c === "-" && i > 0 && i < orth.length - 1) {
+      continue;
+    }
+    if (["!", "?"].includes(c) && i === orth.length - 1) {
+      continue;
+    }
+    return false;
+  }
+  return true;
+}
+
+function splitOrth(orth: string): string[] {
+  let results: string[] = [orth];
+  for (const splitter of SPLITS) {
+    results = results.flatMap((token) => token.split(splitter));
+  }
   return results;
 }
 
-// let multiplePos = 0;
-// let multipleEtym = 0;
-// const counts = new Map<number, number>();
-for (const entry of parse(checkPresent(process.env.LS_PATH))) {
-  if (childrenMatching(entry, "pos").length > 1) {
-    console.log(
-      childrenMatching(entry, "pos").forEach((x) => console.log(x.toString()))
-    );
-    console.log("\n");
-    // multiplePos += 1;
+function removeHapaxMark(orth: string): string {
+  if (orth.startsWith("† ")) {
+    return orth.substring(2);
   }
-  // const etyms = childrenMatching(entry, "etym");
-  // const keyToIncr = etyms.length === 0 ? -1 : etyms[0][1];
-  // if (keyToIncr > 17) {
-  //   console.log(entry.formatAsString(true));
-  //   console.log("\n");
-  // }
-  // if (!counts.has(keyToIncr)) {
-  //   counts.set(keyToIncr, 0);
-  // }
-  // counts.set(keyToIncr, counts.get(keyToIncr)! + 1);
-  // if (etyms.length > 1) {
-  //   multipleEtym += 1;
-  //   console.log(entry.attrs);
-  // }
+  return orth;
 }
-// console.log(`multiplePos: ${multiplePos}`);
-// console.log(`multipleEtym: ${multipleEtym}`);
-// console.log(counts);
+
+function replaceWeirds(orth: string): string {
+  // TODO: We have at least one instance `hălĭÆĕtos` where Ae occurs
+  // in the middle of a word. We should probably normalize this.
+  return orth
+    .replaceAll("œ", "ae")
+    .replaceAll("Æ", "Ae")
+    .replaceAll("o︤︥y", "oy")
+    .replaceAll("u͡s", "us");
+}
+
+function getOrths(root: XmlNode): (string | undefined)[] {
+  const orths = rawOrths(root)
+    .flatMap(splitOrth)
+    .map(removeHapaxMark)
+    .map(replaceWeirds);
+  if (orths.length === 0) {
+    console.log("Got 0 orths");
+    return orths;
+  }
+  let regulars = orths.map(isRegularOrth);
+  const allNonAlphas = orths.map(nonAlphabetics);
+  for (let i = 1; i < orths.length; i++) {
+    if (regulars[i]) {
+      continue;
+    }
+    if (!regulars[0]) {
+      continue;
+    }
+
+    const nonAlphas = allNonAlphas[i];
+    let updated = orths[i];
+    if (nonAlphas[0][0] === "-" && nonAlphas[0][1] === 0) {
+      // TODO: Merge this correctly.
+      updated = orths[0] + updated;
+    }
+    const last = nonAlphas.length - 1;
+    if (
+      nonAlphas[last][0] === "-" &&
+      nonAlphas[last][1] === orths[i].length - 1
+    ) {
+      // TODO: Merge this correctly.
+      updated = updated + orths[0];
+    }
+    orths[i] = updated;
+  }
+
+  regulars = orths.map(isRegularOrth);
+  const results: (string | undefined)[] = [];
+  for (let i = 0; i < orths.length; i++) {
+    results.push(regulars[i] ? orths[i] : undefined);
+  }
+  return results;
+}
+
+// const weirdChars = ["^"]; // ",", ";", "/", "[", "†", "(", "(", "=", "?"];
+let unhandled = 0;
+for (const entry of parse(checkPresent(process.env.LS_PATH))) {
+  const orths = getOrths(entry);
+  if (orths.includes(undefined)) {
+    console.log(rawOrths(entry));
+    unhandled += 1;
+  }
+}
+console.log(unhandled);

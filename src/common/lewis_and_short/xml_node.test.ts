@@ -151,3 +151,15 @@ describe("XmlNode.findDescendants", () => {
     expect(result).toContain(child4);
   });
 });
+
+describe("XmlNode.getAttr", () => {
+  it("returns attribute if present", () => {
+    const root = new XmlNode("caesar", [["child", "octavianus"]], []);
+    expect(root.getAttr("child")).toBe("octavianus");
+  });
+
+  it("returns undefined if not present", () => {
+    const root = new XmlNode("caesar", [["child", "octavianus"]], []);
+    expect(root.getAttr("parent")).toBe(undefined);
+  });
+});
