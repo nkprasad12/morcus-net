@@ -38,6 +38,12 @@ describe("cleanOrths", () => {
     expect(result).toStrictEqual(["Caesar"]);
   });
 
+  it("strips trailing punctuation", () => {
+    const input = ["véni?"];
+    const result = cleanOrths(input);
+    expect(result).toStrictEqual(["véni"]);
+  });
+
   it("splits strings and cleans", () => {
     const result = cleanOrths(["Cœsar, Julius"]);
     expect(result).toStrictEqual(["Caesar", "Julius"]);
@@ -66,12 +72,6 @@ describe("regularizeOrths", () => {
     const input = ["-véni"];
     const result = regularizeOrths(input);
     expect(result).toStrictEqual(["-véni"]);
-  });
-
-  it("strips trailing punctuation", () => {
-    const input = ["véni?"];
-    const result = regularizeOrths(input);
-    expect(result).toStrictEqual(["véni"]);
   });
 });
 

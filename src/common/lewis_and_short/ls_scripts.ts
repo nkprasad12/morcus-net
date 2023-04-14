@@ -7,6 +7,7 @@ import { parse } from "@/common/lewis_and_short/ls_parser";
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
 import { checkPresent } from "../assert";
+import { getOrths, isRegularOrth } from "./ls_orths";
 
 const LS_PATH = checkPresent(process.env.LS_PATH);
 
@@ -171,4 +172,37 @@ export function schemataCounts(name: string, terminals: string[] = []) {
     console.log(schema);
     console.log(`Matches: ${count}`);
   });
+}
+
+export function printUnhandledOrths() {
+  let unhandled = 0;
+  const starts: [string[], string[]][] = [];
+  const ends: [string[], string[]][] = [];
+  for (const entry of parse(checkPresent(process.env.LS_PATH))) {
+    const orths = getOrths(entry);
+    if (orths.filter((orth) => !isRegularOrth(orth)).length === 0) {
+      continue;
+    }
+    console.log(orths);
+    unhandled += 1;
+    let lastRegular: string | undefined = undefined;
+    for (const orth of orths) {
+      if (isRegularOrth(orth)) {
+        lastRegular = orth;
+        continue;
+      }
+      if (lastRegular === undefined) {
+        continue;
+      }
+      if (orth.startsWith("-")) {
+        ends.push([[orth], [lastRegular]]);
+      }
+      if (orth.endsWith("-")) {
+        starts.push([[orth], [lastRegular]]);
+      }
+    }
+  }
+  console.log(unhandled);
+  console.log(starts);
+  console.log(ends);
 }

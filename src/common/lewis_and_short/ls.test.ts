@@ -21,7 +21,7 @@ describe("LewisAndShort", () => {
     const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
-      entry.keys.includes("camus")
+      entry.keys.includes("cāmus")
     );
 
     expect(result).toHaveLength(1);
