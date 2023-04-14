@@ -620,8 +620,6 @@ export function regularizeOrths(inputOrths: string[]): string[] {
     const nonAlphas = allNonAlphas[i];
     let updated = orths[i];
     if (nonAlphas[0][0] === "-" && nonAlphas[0][1] === 0) {
-      // TODO: Merge this correctly.
-      // updated = orths[0] + updated;
       updated = attachAltEnd(orths.slice(0, i), updated);
     }
     const last = nonAlphas.length - 1;
@@ -629,9 +627,7 @@ export function regularizeOrths(inputOrths: string[]): string[] {
       nonAlphas[last][0] === "-" &&
       nonAlphas[last][1] === orths[i].length - 1
     ) {
-      // TODO: Merge this correctly.
       updated = attachAltStart(orths.slice(0, i), updated);
-      // updated = updated + orths[0];
     }
     orths[i] = updated;
   }

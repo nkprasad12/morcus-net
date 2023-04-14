@@ -73,6 +73,24 @@ describe("regularizeOrths", () => {
     const result = regularizeOrths(input);
     expect(result).toStrictEqual(["-véni"]);
   });
+
+  it("handles alternate start", () => {
+    const input = ["interclūdo", "-claudo"];
+    const result = regularizeOrths(input);
+    expect(result).toStrictEqual(["interclūdo", "interclaudo"]);
+  });
+
+  it("handles multiple alternate start", () => {
+    const input = ["blahcles", "-as", "-is"];
+    const result = regularizeOrths(input);
+    expect(result).toStrictEqual(["blahcles", "blahclas", "blahclis"]);
+  });
+
+  it("handles cases with alternate end", () => {
+    const input = ["Carthago", "Karth-"];
+    const result = regularizeOrths(input);
+    expect(result).toStrictEqual(["Carthago", "Karthago"]);
+  });
 });
 
 describe("attachAltStart", () => {
