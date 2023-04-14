@@ -4,6 +4,7 @@ import fs from "fs";
 import readline from "readline";
 import { parseEntries } from "./xml_node";
 import { displayEntryFree } from "./ls_display";
+import { getOrths } from "./ls_orths";
 
 interface RawLsEntry {
   keys: string[];
@@ -36,10 +37,10 @@ export namespace LewisAndShort {
     rawFile: string = checkPresent(process.env.LS_PATH)
   ): RawLsEntry[] {
     return parse(rawFile).map((root) => {
-      const keys = root.attrs.filter((attr) => attr[0] === "key");
-      assert(keys.length === 1, "Expected exactly one `key` attribute.");
+      const orths = getOrths(root);
+      assert(orths.length > 0, "Entries should be > 0 orths");
       return {
-        keys: [keys[0][1]],
+        keys: orths,
         entry: root.toString(),
       };
     });
@@ -88,7 +89,10 @@ export namespace LewisAndShort {
   }
 
   export async function create(
-    processedFile: string = checkPresent(process.env.LS_PROCESSED_PATH)
+    processedFile: string = checkPresent(
+      process.env.LS_PROCESSED_PATH,
+      "LS_PROCESSED_PATH environment variable."
+    )
   ) {
     const [keys, entries] = await readFromFile(processedFile);
     return new LewisAndShort(keys, entries);

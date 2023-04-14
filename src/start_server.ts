@@ -34,7 +34,9 @@ function log(message: string) {
 }
 
 const host = "localhost";
-const port = parseInt(checkPresent(process.env.PORT));
+const port = parseInt(
+  checkPresent(process.env.PORT, "PORT environment variable")
+);
 
 const app = express();
 const server = http.createServer(app);
