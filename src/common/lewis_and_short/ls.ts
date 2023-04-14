@@ -5,6 +5,7 @@ import readline from "readline";
 import { parseEntries } from "./xml_node";
 import { displayEntryFree } from "./ls_display";
 import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
+import { removeDiacritics } from "../text_cleaning";
 
 interface RawLsEntry {
   keys: string[];
@@ -12,23 +13,35 @@ interface RawLsEntry {
 }
 
 export class LewisAndShort {
-  private readonly keyToEntry = new Map<string, number>();
+  private readonly keyToEntries = new Map<string, [number, number][]>();
 
   constructor(keys: string[][], private readonly entries: string[]) {
     assertEqual(keys.length, entries.length);
     for (let i = 0; i < keys.length; i++) {
-      for (const key of keys[i]) {
-        this.keyToEntry.set(key, i);
+      for (let j = 0; j < keys[i].length; j++) {
+        const cleanKey = removeDiacritics(keys[i][j]);
+        if (!this.keyToEntries.has(cleanKey)) {
+          this.keyToEntries.set(cleanKey, []);
+        }
+        this.keyToEntries.get(cleanKey)!.push([i, j]);
       }
     }
   }
 
   async getEntry(input: string): Promise<string> {
-    const result = this.keyToEntry.get(input);
-    if (result === undefined) {
-      return `<span>Could not find entry for ${input}</span>`;
+    const indices = this.keyToEntries.get(input);
+    if (indices === undefined) {
+      return JSON.stringify([`<span>Could not find entry for ${input}</span>`]);
     }
-    return displayEntryFree(parseEntries([this.entries[result]])[0]).toString();
+    const entries: string[] = [];
+    for (const [entriesIndex, _] of indices) {
+      entries.push(
+        displayEntryFree(
+          parseEntries([this.entries[entriesIndex]])[0]
+        ).toString()
+      );
+    }
+    return JSON.stringify(entries);
   }
 }
 

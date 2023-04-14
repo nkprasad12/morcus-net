@@ -6,6 +6,25 @@ import { XmlNode } from "./xml_node";
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
+const LS_DATA = [
+  {
+    keys: ["Julius"],
+    entry: new XmlNode("entryFree", [], ["Gallia est omnis"]).toString(),
+  },
+  {
+    keys: ["Publius", "Naso"],
+    entry: new XmlNode(
+      "entryFree",
+      [],
+      ["Non iterum repetenda suo"]
+    ).toString(),
+  },
+  {
+    keys: ["Naso"],
+    entry: new XmlNode("entryFree", [], ["Pennisque levatus"]).toString(),
+  },
+];
+
 function writeFile(contents: string) {
   fs.writeFileSync(TEMP_FILE, contents);
 }
@@ -135,33 +154,42 @@ describe("LewisAndShort", () => {
     expect(entries[2]).toStrictEqual(data[2].entry);
   });
 
-  test("create has expected entries", async () => {
-    const data = [
-      {
-        keys: ["Julius"],
-        entry: new XmlNode("entryFree", [], ["Gallia est omnis"]).toString(),
-      },
-      {
-        keys: ["Publius", "Naso"],
-        entry: new XmlNode(
-          "entryFree",
-          [],
-          ["Non iterum repetenda suo"]
-        ).toString(),
-      },
-    ];
-
-    await LewisAndShort.save(data, TEMP_FILE);
+  test("getEntry handles expected entries", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    expect(await dict.getEntry("Julius")).toBe(
-      '<div class="lsEntryFree">Gallia est omnis</div>'
-    );
-    expect(await dict.getEntry("Publius")).toBe(
+    const julius = JSON.parse(await dict.getEntry("Julius"));
+    const publius = JSON.parse(await dict.getEntry("Publius"));
+    expect(julius).toStrictEqual([
+      '<div class="lsEntryFree">Gallia est omnis</div>',
+    ]);
+    expect(publius).toStrictEqual([
+      '<div class="lsEntryFree">Non iterum repetenda suo</div>',
+    ]);
+  });
+
+  test("getEntry handles ambiguous queries", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    const result = JSON.parse(await dict.getEntry("Naso"));
+
+    expect(result).toHaveLength(2);
+    expect(result).toContain(
       '<div class="lsEntryFree">Non iterum repetenda suo</div>'
     );
-    expect(await dict.getEntry("Foo")).toContain(
-      "<span>Could not find entry for Foo</span>"
+    expect(result).toContain(
+      '<div class="lsEntryFree">Pennisque levatus</div>'
     );
+  });
+
+  test("getEntry handles unknown queries", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    const result = JSON.parse(await dict.getEntry("Foo"));
+
+    expect(result).toHaveLength(1);
+    expect(result).toContain("<span>Could not find entry for Foo</span>");
   });
 });

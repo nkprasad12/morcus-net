@@ -646,5 +646,6 @@ export function regularizeOrths(inputOrths: string[]): string[] {
 }
 
 export function getOrths(root: XmlNode): string[] {
-  return regularizeOrths(cleanOrths(rawOrths(root)));
+  const orths = regularizeOrths(cleanOrths(rawOrths(root)));
+  return [...new Set(orths)];
 }

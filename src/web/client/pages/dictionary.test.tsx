@@ -86,7 +86,10 @@ describe("Dictionary View", () => {
   });
 
   it("shows result on success", async () => {
-    replaceFetch(true, "<span>France or whatever idk lol</span>");
+    replaceFetch(
+      true,
+      JSON.stringify(["<span>France or whatever idk lol</span>"])
+    );
     render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
 
@@ -99,7 +102,10 @@ describe("Dictionary View", () => {
   });
 
   it("fetches result from props input", async () => {
-    replaceFetch(true, "<span>France or whatever idk lol</span>");
+    replaceFetch(
+      true,
+      JSON.stringify(["<span>France or whatever idk lol</span>"])
+    );
 
     render(<Dictionary input="Gallia" />);
 
@@ -113,7 +119,10 @@ describe("Dictionary View", () => {
     window.addEventListener = mockAddEventListener;
     render(<Dictionary input="" />);
 
-    replaceFetch(true, "<span>France or whatever idk lol</span>");
+    replaceFetch(
+      true,
+      JSON.stringify(["<span>France or whatever idk lol</span>"])
+    );
     act(() => {
       mockAddEventListener.mock.lastCall![1]();
     });

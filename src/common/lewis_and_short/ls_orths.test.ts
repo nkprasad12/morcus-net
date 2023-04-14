@@ -3,6 +3,7 @@ import {
   attachAltEnd,
   attachAltStart,
   cleanOrths,
+  getOrths,
   mergeVowelMarkers,
   rawOrths,
   regularizeOrths,
@@ -126,5 +127,20 @@ describe("mergeVowelMarkers", () => {
 
   it("is no-op if not present", () => {
     expect(mergeVowelMarkers("ana")).toBe("ana");
+  });
+});
+
+describe("getOrths", () => {
+  it("removes duplicates", () => {
+    const orth1 = new XmlNode("orth", [], ["adpello"]);
+    const orth2 = new XmlNode("orth", [], ["appello"]);
+    const orth3 = new XmlNode("orth", [], ["adpello"]);
+    const root = new XmlNode("entryFree", [], [orth1, orth2, orth3]);
+
+    const result = getOrths(root);
+
+    expect(result).toHaveLength(2);
+    expect(result).toContain("appello");
+    expect(result).toContain("adpello");
   });
 });

@@ -79,30 +79,68 @@ export function xmlNodeToJsx(root: XmlNode): JSX.Element {
   return React.createElement(root.name, props, children);
 }
 
-async function fetchEntry(input: string): Promise<XmlNode> {
+async function fetchEntry(input: string): Promise<XmlNode[]> {
   const response = await fetch(`${location.origin}${lsCall(input)}`);
   if (!response.ok) {
-    return new XmlNode(
-      "span",
-      [],
-      ["Failed to fetch the entry. Please try again later."]
-    );
+    return [
+      new XmlNode(
+        "span",
+        [],
+        ["Failed to fetch the entry. Please try again later."]
+      ),
+    ];
   }
   const rawText = await response.text();
-  return parseEntries([rawText])[0];
+  return parseEntries(JSON.parse(rawText));
 }
 
-export function Dictionary(props: Dictionary.Props) {
-  const [entry, setEntry] = React.useState<XmlNode | undefined>(undefined);
+function SearchBox(props: {
+  input: string;
+  onNewEntries: (entries: XmlNode[]) => any;
+}) {
   const [inputState, setInputState] = React.useState<string>(props.input);
 
   async function onEnter() {
     if (inputState.length === 0) {
       return;
     }
-    setEntry(await fetchEntry(inputState));
+    props.onNewEntries(await fetchEntry(inputState));
     history.pushState(`#${inputState}`, "", `#${inputState}`);
   }
+
+  return (
+    <Autocomplete
+      freeSolo
+      disableClearable
+      options={[]}
+      sx={{ padding: 1, ml: 2, mr: 2, mt: 2, mb: 1 }}
+      renderInput={(params) => (
+        <TextField
+          {...params}
+          label="Search for a word"
+          InputLabelProps={{
+            style: { color: Solarized.base1 },
+          }}
+          onKeyPress={(e) => {
+            if (e.key === "Enter") {
+              onEnter();
+            }
+          }}
+          onChange={(e) => {
+            setInputState(e.target.value);
+          }}
+          InputProps={{
+            ...params.InputProps,
+            type: "search",
+          }}
+        />
+      )}
+    />
+  );
+}
+
+export function Dictionary(props: Dictionary.Props) {
+  const [entries, setEntries] = React.useState<XmlNode[]>([]);
 
   function contentBox(xmlRoot: XmlNode) {
     return (
@@ -135,14 +173,14 @@ export function Dictionary(props: Dictionary.Props) {
     const hashListener = () => {
       const input = getHash();
       if (input.length === 0) {
-        setEntry(undefined);
+        setEntries([]);
         return;
       }
-      fetchEntry(input).then(setEntry);
+      fetchEntry(input).then(setEntries);
     };
     window.addEventListener("hashchange", hashListener, false);
     if (props.input.length > 0) {
-      fetchEntry(props.input).then(setEntry);
+      fetchEntry(props.input).then(setEntries);
     }
     return () => {
       window.removeEventListener("hashchange", hashListener);
@@ -151,34 +189,13 @@ export function Dictionary(props: Dictionary.Props) {
 
   return (
     <>
-      <Autocomplete
-        freeSolo
-        disableClearable
-        options={[]}
-        sx={{ padding: 1, ml: 2, mr: 2, mt: 2, mb: 1 }}
-        renderInput={(params) => (
-          <TextField
-            {...params}
-            label="Search for a word"
-            InputLabelProps={{
-              style: { color: Solarized.base1 },
-            }}
-            onKeyPress={(e) => {
-              if (e.key === "Enter") {
-                onEnter();
-              }
-            }}
-            onChange={(e) => {
-              setInputState(e.target.value);
-            }}
-            InputProps={{
-              ...params.InputProps,
-              type: "search",
-            }}
-          />
-        )}
-      />
-      {entry && contentBox(entry)}
+      <SearchBox input={props.input} onNewEntries={setEntries} />
+      {entries.length !== 1
+        ? contentBox(
+            new XmlNode("span", [], [`Found ${entries.length} entries.`])
+          )
+        : undefined}
+      {entries.map((entry) => contentBox(entry))}
     </>
   );
 }
