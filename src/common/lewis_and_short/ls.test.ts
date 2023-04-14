@@ -25,6 +25,10 @@ const LS_DATA = [
   },
 ];
 
+function toLsData(keys: string[]) {
+  return keys.map((key) => ({ keys: [key + "_"], entry: key }));
+}
+
 function writeFile(contents: string) {
   fs.writeFileSync(TEMP_FILE, contents);
 }
@@ -191,5 +195,47 @@ describe("LewisAndShort", () => {
 
     expect(result).toHaveLength(1);
     expect(result).toContain("<span>Could not find entry for Foo</span>");
+  });
+
+  test("getCompletions returns expected results", async () => {
+    const inputKeys = ["aba", "abbas", "abas", "abat", "abbat", "abatta"];
+    await LewisAndShort.save(toLsData(inputKeys), TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expect(await dict.getCompletions("ab")).toStrictEqual([
+      "aba_",
+      "abas_",
+      "abat_",
+      "abatta_",
+      "abbas_",
+      "abbat_",
+    ]);
+    expect(await dict.getCompletions("abat")).toStrictEqual([
+      "abat_",
+      "abatta_",
+    ]);
+    expect(await dict.getCompletions("abba")).toStrictEqual([
+      "abbas_",
+      "abbat_",
+    ]);
+    expect(await dict.getCompletions("abbax")).toStrictEqual([]);
+  });
+
+  test("getCompletions handles entries with multiple keys", async () => {
+    const data = [
+      {
+        keys: ["Julius", "Iulius"],
+        entry: "",
+      },
+      {
+        keys: ["Julus"],
+        entry: "",
+      },
+    ];
+    await LewisAndShort.save(data, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expect(await dict.getCompletions("Juliu")).toStrictEqual(["Julius"]);
+    expect(await dict.getCompletions("Iuliu")).toStrictEqual(["Iulius"]);
   });
 });

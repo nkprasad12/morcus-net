@@ -14,18 +14,25 @@ interface RawLsEntry {
 
 export class LewisAndShort {
   private readonly keyToEntries = new Map<string, [number, number][]>();
+  private readonly keys: string[];
 
-  constructor(keys: string[][], private readonly entries: string[]) {
-    assertEqual(keys.length, entries.length);
-    for (let i = 0; i < keys.length; i++) {
-      for (let j = 0; j < keys[i].length; j++) {
-        const cleanKey = removeDiacritics(keys[i][j]);
+  constructor(
+    private readonly rawKeys: string[][],
+    private readonly entries: string[]
+  ) {
+    assertEqual(rawKeys.length, entries.length);
+    for (let i = 0; i < rawKeys.length; i++) {
+      for (let j = 0; j < rawKeys[i].length; j++) {
+        const cleanKey = removeDiacritics(rawKeys[i][j]);
         if (!this.keyToEntries.has(cleanKey)) {
           this.keyToEntries.set(cleanKey, []);
         }
         this.keyToEntries.get(cleanKey)!.push([i, j]);
       }
     }
+    this.keys = [...this.keyToEntries.keys()].sort((a, b) =>
+      a.localeCompare(b)
+    );
   }
 
   async getEntry(input: string): Promise<string> {
@@ -42,6 +49,32 @@ export class LewisAndShort {
       );
     }
     return JSON.stringify(entries);
+  }
+
+  async getCompletions(prefix: string): Promise<string[]> {
+    // TODO: Use Binary search here.
+    let start = -1;
+    for (let i = 0; i < this.keys.length; i++) {
+      if (this.keys[i].startsWith(prefix)) {
+        start = i;
+        break;
+      }
+    }
+    if (start === -1) {
+      return [];
+    }
+
+    const result = [];
+    for (let i = start; i < this.keys.length; i++) {
+      if (!this.keys[i].startsWith(prefix)) {
+        break;
+      }
+      const indices = this.keyToEntries.get(this.keys[i]) || [];
+      for (const [keyIndex, orthIndex] of indices) {
+        result.push(this.rawKeys[keyIndex][orthIndex]);
+      }
+    }
+    return result;
   }
 }
 
