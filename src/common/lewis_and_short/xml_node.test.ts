@@ -158,7 +158,7 @@ describe("XmlNode.findChildren", () => {
     const child2 = new XmlNode("caesar", [["child", "2"]], [child1]);
     const child3 = new XmlNode("caesar", [["child", "3"]], []);
     const child4 = new XmlNode("augustus", [["child", "4"]], []);
-    const parent = new XmlNode("caesar", [], [child2, child3, child4]);
+    const parent = new XmlNode("caesar", [], [child2, child3, child4, "foo"]);
 
     const result = parent.findChildren("caesar");
 

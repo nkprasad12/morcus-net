@@ -3,7 +3,7 @@ import fs from "fs";
 import { LewisAndShort } from "./ls";
 import { XmlNode } from "./xml_node";
 
-const LS_SUBSET = "testdata/ls/subset.xml";
+const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
 function writeFile(contents: string) {
@@ -17,7 +17,7 @@ describe("LewisAndShort", () => {
     } catch (e) {}
   });
 
-  test("createProcessed processes elements", () => {
+  test("createProcessed writes element contents", () => {
     const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
@@ -26,6 +26,41 @@ describe("LewisAndShort", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].entry).toContain("A muzzle");
+  });
+
+  test("createProcessed handles elements with alts", () => {
+    const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
+
+    const result = lewisAndShort.filter((entry) =>
+      entry.keys.includes("attango")
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].keys).toHaveLength(2);
+    expect(result[0].keys).toContain("adtango");
+    expect(result[0].keys).toContain("attango");
+  });
+
+  test("createProcessed handles elements with only alts", () => {
+    const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
+
+    const result = lewisAndShort.filter((entry) => entry.keys.includes("abs-"));
+
+    expect(result).toHaveLength(1);
+    expect(result[0].keys).toHaveLength(1);
+    expect(result[0].keys).toContain("abs-");
+  });
+
+  test("createProcessed removes alts if full orths are present", () => {
+    const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
+
+    const result = lewisAndShort.filter((entry) =>
+      entry.keys.includes("arruo")
+    );
+
+    expect(result).toHaveLength(1);
+    expect(result[0].keys).toHaveLength(1);
+    expect(result[0].keys).toContain("arruo");
   });
 
   test("save removes existing contents if present", async () => {

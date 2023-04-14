@@ -4,7 +4,7 @@ import fs from "fs";
 import readline from "readline";
 import { parseEntries } from "./xml_node";
 import { displayEntryFree } from "./ls_display";
-import { getOrths } from "./ls_orths";
+import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
 
 interface RawLsEntry {
   keys: string[];
@@ -37,10 +37,11 @@ export namespace LewisAndShort {
     rawFile: string = checkPresent(process.env.LS_PATH)
   ): RawLsEntry[] {
     return parse(rawFile).map((root) => {
-      const orths = getOrths(root);
-      assert(orths.length > 0, "Entries should be > 0 orths");
+      const orths = getOrths(root).map(mergeVowelMarkers);
+      assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
+      const regulars = orths.filter(isRegularOrth);
       return {
-        keys: orths,
+        keys: regulars.length > 0 ? regulars : orths,
         entry: root.toString(),
       };
     });

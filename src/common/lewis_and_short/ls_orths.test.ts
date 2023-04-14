@@ -3,6 +3,7 @@ import {
   attachAltEnd,
   attachAltStart,
   cleanOrths,
+  mergeVowelMarkers,
   rawOrths,
   regularizeOrths,
 } from "./ls_orths";
@@ -115,5 +116,15 @@ describe("attachAltEnd", () => {
   it("handles is, -us", () => {
     const result = attachAltEnd(["anāpis"], "-us");
     expect(result).toBe("anāpus");
+  });
+});
+
+describe("mergeVowelMarkers", () => {
+  it("removes lengths if present", () => {
+    expect(mergeVowelMarkers("a^na")).toBe("ana");
+  });
+
+  it("is no-op if not present", () => {
+    expect(mergeVowelMarkers("ana")).toBe("ana");
   });
 });

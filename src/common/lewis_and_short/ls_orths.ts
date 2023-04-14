@@ -501,6 +501,17 @@ function removeTrailingPunctuation(orth: string): string {
   return orth;
 }
 
+export function mergeVowelMarkers(orth: string): string {
+  let result = "";
+  for (const c of orth) {
+    if (c === "^" || c === "_") {
+      continue;
+    }
+    result += c;
+  }
+  return result;
+}
+
 export function cleanOrths(orths: string[]): string[] {
   return orths
     .flatMap(splitOrth)
