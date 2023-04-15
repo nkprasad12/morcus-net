@@ -2,7 +2,7 @@ import { describe, expect, test } from "@jest/globals";
 import express from "express";
 import request from "supertest";
 
-import { lsCall, macronizeCall } from "@/web/api_routes";
+import { entriesByPrefix, lsCall, macronizeCall } from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 
 function getServer(): express.Express {
@@ -11,6 +11,7 @@ function getServer(): express.Express {
     app: app,
     macronizer: (a) => Promise.resolve(a + "2"),
     lsDict: (a) => Promise.resolve(`${a} def`),
+    entriesByPrefix: (a) => Promise.resolve([a]),
   };
   setupServer(params);
   return app;
@@ -44,6 +45,13 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.text).toBe(`Caesar def`);
+  });
+
+  test("handles LS completion route", async () => {
+    const response = await request(app).get(entriesByPrefix("Caesar"));
+
+    expect(response.status).toBe(200);
+    expect(JSON.parse(response.text)).toStrictEqual(["Caesar"]);
   });
 
   test("sends out requests to index", async () => {

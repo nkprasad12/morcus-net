@@ -1,6 +1,6 @@
 import compression from "compression";
 import express, { Request } from "express";
-import { lsCall, macronizeCall } from "@/web/api_routes";
+import { entriesByPrefix, lsCall, macronizeCall } from "@/web/api_routes";
 import path from "path";
 import bodyParser from "body-parser";
 
@@ -12,6 +12,7 @@ export interface WebServerParams {
   app: express.Express;
   macronizer: (input: string) => Promise<string>;
   lsDict: (entry: string) => Promise<string>;
+  entriesByPrefix: (prefix: string) => Promise<string[]>;
 }
 
 export function setupServer(params: WebServerParams): void {
@@ -46,4 +47,12 @@ export function setupServer(params: WebServerParams): void {
     log(`Got LS request`);
     res.send(await params.lsDict(req.params.entry));
   });
+
+  app.get(
+    entriesByPrefix(":prefix"),
+    async (req: Request<{ prefix: string }>, res) => {
+      log(`Got entriesByPrefix request`);
+      res.send(JSON.stringify(await params.entriesByPrefix(req.params.prefix)));
+    }
+  );
 }

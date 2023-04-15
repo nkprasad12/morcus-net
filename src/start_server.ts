@@ -61,6 +61,8 @@ const params: WebServerParams = {
   app: app,
   macronizer: (input) => callWorker(Workers.MACRONIZER, input),
   lsDict: async (input) => (await lewisAndShort).getEntry(input),
+  entriesByPrefix: async (prefix) =>
+    (await lewisAndShort).getCompletions(prefix),
 };
 
 setupServer(params);
