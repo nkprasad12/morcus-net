@@ -238,4 +238,18 @@ describe("LewisAndShort", () => {
     expect(await dict.getCompletions("Juliu")).toStrictEqual(["Julius"]);
     expect(await dict.getCompletions("Iuliu")).toStrictEqual(["Iulius"]);
   });
+
+  test("getCompletions handles different capitalization", async () => {
+    await LewisAndShort.save(
+      toLsData(["arbor", "Arbor", "arboris"]),
+      TEMP_FILE
+    );
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expect(await dict.getCompletions("ar")).toStrictEqual([
+      "arbor_",
+      "Arbor_",
+      "arboris_",
+    ]);
+  });
 });

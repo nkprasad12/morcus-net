@@ -23,7 +23,7 @@ export class LewisAndShort {
     assertEqual(rawKeys.length, entries.length);
     for (let i = 0; i < rawKeys.length; i++) {
       for (let j = 0; j < rawKeys[i].length; j++) {
-        const cleanKey = removeDiacritics(rawKeys[i][j]);
+        const cleanKey = removeDiacritics(rawKeys[i][j]).toLowerCase();
         if (!this.keyToEntries.has(cleanKey)) {
           this.keyToEntries.set(cleanKey, []);
         }
@@ -51,7 +51,8 @@ export class LewisAndShort {
     return JSON.stringify(entries);
   }
 
-  async getCompletions(prefix: string): Promise<string[]> {
+  async getCompletions(input: string): Promise<string[]> {
+    const prefix = removeDiacritics(input).toLowerCase();
     // TODO: Use Binary search here.
     let start = -1;
     for (let i = 0; i < this.keys.length; i++) {
