@@ -252,4 +252,11 @@ describe("LewisAndShort", () => {
       "arboris_",
     ]);
   });
+
+  test("getCompletions removes duplicate orths", async () => {
+    await LewisAndShort.save(toLsData(["arbor", "abeo", "abeo"]), TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expect(await dict.getCompletions("a")).toStrictEqual(["abeo_", "arbor_"]);
+  });
 });

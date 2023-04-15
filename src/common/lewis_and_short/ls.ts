@@ -65,17 +65,17 @@ export class LewisAndShort {
       return [];
     }
 
-    const result = [];
+    const result = new Set<string>();
     for (let i = start; i < this.keys.length; i++) {
       if (!this.keys[i].startsWith(prefix)) {
         break;
       }
       const indices = this.keyToEntries.get(this.keys[i]) || [];
       for (const [keyIndex, orthIndex] of indices) {
-        result.push(this.rawKeys[keyIndex][orthIndex]);
+        result.add(this.rawKeys[keyIndex][orthIndex]);
       }
     }
-    return result;
+    return [...result];
   }
 }
 
