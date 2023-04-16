@@ -118,7 +118,8 @@ function SearchBox(props: {
       sx={{ padding: 1, ml: 2, mr: 2, mt: 2, mb: 1 }}
       onInputChange={async (_, value) => {
         setInputState(value);
-        setOptions(await AutocompleteCache.get().getOptions(value));
+        const prefixOptions = await AutocompleteCache.get().getOptions(value);
+        setOptions(prefixOptions.slice(0, 200));
       }}
       renderInput={(params) => (
         <TextField
