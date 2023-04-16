@@ -5,7 +5,7 @@ import { io } from "socket.io-client";
 import { checkPresent } from "@/common/assert";
 
 function log(channel: string, message: string) {
-  console.log(`[socket_workers] [${channel}] ${message}`);
+  console.debug(`[socket_workers] [${channel}] ${message}`);
 }
 
 export async function startRemoteWorker(

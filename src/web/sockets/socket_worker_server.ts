@@ -10,7 +10,7 @@ import {
 import { checkPresent } from "@/common/assert";
 
 function log(channel: string, message: string) {
-  console.log(`[socket_worker_server] [${channel}] ${message}`);
+  console.debug(`[socket_worker_server] [${channel}] ${message}`);
 }
 
 export function authenticate(
@@ -139,7 +139,7 @@ export class SocketWorkHandlerManager {
 
     let leastBusy: SocketStringWorkHandler | undefined = undefined;
     for (const option of options.values()) {
-      console.log(`${option.tag}: ${option.numPending()} pending`);
+      console.debug(`${option.tag}: ${option.numPending()} pending`);
       if (
         leastBusy !== undefined &&
         leastBusy.numPending() < option.numPending()

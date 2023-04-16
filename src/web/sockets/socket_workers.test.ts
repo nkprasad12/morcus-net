@@ -5,6 +5,8 @@ import { Workers } from "@/web/workers/worker_types";
 
 import { startRemoteWorker } from "./socket_workers";
 
+console.debug = jest.fn();
+
 jest.mock("socket.io-client", () => {
   return {
     io: jest.fn(() => {

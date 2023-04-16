@@ -3,6 +3,8 @@ import fs from "fs";
 import { LewisAndShort } from "./ls";
 import { XmlNode } from "./xml_node";
 
+console.debug = jest.fn();
+
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
