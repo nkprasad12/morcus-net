@@ -38,14 +38,17 @@ export function ClickableTooltip(props: {
   );
 }
 
-export function xmlNodeToJsx(root: XmlNode): JSX.Element {
-  const children = root.children.map((child) => {
+export function xmlNodeToJsx(root: XmlNode, key?: string): JSX.Element {
+  const children = root.children.map((child, i) => {
     if (typeof child === "string") {
       return child;
     }
-    return xmlNodeToJsx(child);
+    return xmlNodeToJsx(child, `${i}`);
   });
   const props: { [key: string]: string } = {};
+  if (key !== undefined) {
+    props.key = key;
+  }
   let titleText: string | undefined = undefined;
   let className: string | undefined = undefined;
   for (const [key, value] of root.attrs) {
@@ -146,7 +149,7 @@ function SearchBox(props: {
 export function Dictionary(props: Dictionary.Props) {
   const [entries, setEntries] = React.useState<XmlNode[]>([]);
 
-  function contentBox(xmlRoot: XmlNode) {
+  function contentBox(xmlRoot: XmlNode, key: string) {
     return (
       <Box
         sx={{
@@ -159,6 +162,7 @@ export function Dictionary(props: Dictionary.Props) {
           borderRadius: 1,
           borderColor: Solarized.base2,
         }}
+        key={key}
       >
         <Typography
           component={"div"}
@@ -196,10 +200,13 @@ export function Dictionary(props: Dictionary.Props) {
       <SearchBox input={props.input} onNewEntries={setEntries} />
       {entries.length > 1
         ? contentBox(
-            new XmlNode("span", [], [`Found ${entries.length} entries.`])
+            new XmlNode("span", [], [`Found ${entries.length} entries.`]),
+            "searchHeader"
           )
         : undefined}
-      {entries.map((entry) => contentBox(entry))}
+      {entries.map((entry) =>
+        contentBox(entry, entry.getAttr("id") || `${performance.now()}`)
+      )}
     </>
   );
 }
