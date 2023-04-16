@@ -1,4 +1,4 @@
-import { lsCall } from "@/web/api_routes";
+import { entriesByPrefix, lsCall } from "@/web/api_routes";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/system/Box";
@@ -94,11 +94,21 @@ async function fetchEntry(input: string): Promise<XmlNode[]> {
   return parseEntries(JSON.parse(rawText));
 }
 
+async function fetchOptions(input: string): Promise<string[]> {
+  const response = await fetch(`${location.origin}${entriesByPrefix(input)}`);
+  if (!response.ok) {
+    return [];
+  }
+  const rawText = await response.text();
+  return JSON.parse(rawText);
+}
+
 function SearchBox(props: {
   input: string;
   onNewEntries: (entries: XmlNode[]) => any;
 }) {
   const [inputState, setInputState] = React.useState<string>(props.input);
+  const [options, setOptions] = React.useState<string[]>([]);
 
   async function onEnter() {
     if (inputState.length === 0) {
@@ -112,8 +122,16 @@ function SearchBox(props: {
     <Autocomplete
       freeSolo
       disableClearable
-      options={[]}
+      options={options}
       sx={{ padding: 1, ml: 2, mr: 2, mt: 2, mb: 1 }}
+      onInputChange={async (_, value) => {
+        setInputState(value);
+        if (value.length === 0) {
+          setOptions([]);
+          return;
+        }
+        setOptions(await fetchOptions(value));
+      }}
       renderInput={(params) => (
         <TextField
           {...params}
@@ -125,9 +143,6 @@ function SearchBox(props: {
             if (e.key === "Enter") {
               onEnter();
             }
-          }}
-          onChange={(e) => {
-            setInputState(e.target.value);
           }}
           InputProps={{
             ...params.InputProps,

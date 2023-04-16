@@ -46,16 +46,30 @@ describe("Dictionary View", () => {
     expect(mockFetch.mock.calls).toHaveLength(0);
   });
 
+  it("calls server for autocomplete entries", async () => {
+    const mockFetch = replaceFetch(false);
+    render(<Dictionary input="" />);
+    const searchBar = screen.getByRole("combobox");
+
+    await user.click(searchBar);
+    await user.type(searchBar, "G");
+
+    expect(mockFetch.mock.calls).toHaveLength(1);
+    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/entriesByPrefix/G");
+  });
+
   it("calls server on submit", async () => {
     const mockFetch = replaceFetch(false);
     render(<Dictionary input="" />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
-    await user.type(searchBar, "Gallia{enter}");
+    await user.type(searchBar, "G");
+    mockFetch.mockClear();
+    await user.type(searchBar, "{enter}");
 
     expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/ls/Gallia");
+    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/ls/G");
   });
 
   test("updates history state on submit", async () => {
