@@ -194,7 +194,7 @@ export function Dictionary(props: Dictionary.Props) {
   return (
     <>
       <SearchBox input={props.input} onNewEntries={setEntries} />
-      {entries.length !== 1
+      {entries.length > 1
         ? contentBox(
             new XmlNode("span", [], [`Found ${entries.length} entries.`])
           )
