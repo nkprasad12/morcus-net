@@ -151,7 +151,7 @@ function isTextNode(node: any): boolean {
   return false;
 }
 
-export function parseEntries(entries: string[]): XmlNode[] {
+export function* parseEntriesInline(entries: string[]): Generator<XmlNode> {
   const options = {
     ignoreAttributes: false,
     alwaysCreateTextNode: true,
@@ -159,12 +159,14 @@ export function parseEntries(entries: string[]): XmlNode[] {
     trimValues: false,
   };
   const parser = new XMLParser(options);
-  const parsedEntries = [];
   for (const entry of entries) {
     const entryFree = parser.parse(entry)[0];
-    parsedEntries.push(crawlEntry(entryFree));
+    yield crawlEntry(entryFree);
   }
-  return parsedEntries;
+}
+
+export function parseEntries(entries: string[]): XmlNode[] {
+  return [...parseEntriesInline(entries)];
 }
 
 export function extractEntries(xmlContents: string): string[] {

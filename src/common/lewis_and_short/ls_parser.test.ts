@@ -6,6 +6,6 @@ const LS_SUBSET = "testdata/ls/subset.xml";
 
 describe("parse", () => {
   test("parses all entries in file", () => {
-    expect(parse(LS_SUBSET)).toHaveLength(4);
+    expect([...parse(LS_SUBSET)]).toHaveLength(4);
   });
 });
