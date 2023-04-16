@@ -34,7 +34,9 @@ function log(message: string) {
 }
 
 const host = "localhost";
-const port = parseInt(checkPresent(process.env.PORT));
+const port = parseInt(
+  checkPresent(process.env.PORT, "PORT environment variable")
+);
 
 const app = express();
 const server = http.createServer(app);
@@ -59,6 +61,8 @@ const params: WebServerParams = {
   app: app,
   macronizer: (input) => callWorker(Workers.MACRONIZER, input),
   lsDict: async (input) => (await lewisAndShort).getEntry(input),
+  entriesByPrefix: async (prefix) =>
+    (await lewisAndShort).getCompletions(prefix),
 };
 
 setupServer(params);

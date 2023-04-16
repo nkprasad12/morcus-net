@@ -5,3 +5,7 @@ export function macronizeCall(): string {
 export function lsCall(entry: string): string {
   return `/api/dicts/ls/${entry}`;
 }
+
+export function entriesByPrefix(prefix: string): string {
+  return `/api/dicts/entriesByPrefix/${prefix}`;
+}

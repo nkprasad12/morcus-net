@@ -151,3 +151,31 @@ describe("XmlNode.findDescendants", () => {
     expect(result).toContain(child4);
   });
 });
+
+describe("XmlNode.findChildren", () => {
+  it("finds only direct children", () => {
+    const child1 = new XmlNode("caesar", [["child", "1"]], []);
+    const child2 = new XmlNode("caesar", [["child", "2"]], [child1]);
+    const child3 = new XmlNode("caesar", [["child", "3"]], []);
+    const child4 = new XmlNode("augustus", [["child", "4"]], []);
+    const parent = new XmlNode("caesar", [], [child2, child3, child4, "foo"]);
+
+    const result = parent.findChildren("caesar");
+
+    expect(result).toHaveLength(2);
+    expect(result).toContain(child2);
+    expect(result).toContain(child3);
+  });
+});
+
+describe("XmlNode.getAttr", () => {
+  it("returns attribute if present", () => {
+    const root = new XmlNode("caesar", [["child", "octavianus"]], []);
+    expect(root.getAttr("child")).toBe("octavianus");
+  });
+
+  it("returns undefined if not present", () => {
+    const root = new XmlNode("caesar", [["child", "octavianus"]], []);
+    expect(root.getAttr("parent")).toBe(undefined);
+  });
+});

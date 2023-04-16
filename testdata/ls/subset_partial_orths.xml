@@ -1,0 +1,363 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE TEI.2 PUBLIC "-//TEI P4//DTD Main DTD Driver File//EN" "http://www.tei-c.org/Vault/P4/xml/schema/dtd/tei2.dtd" [
+<!ENTITY % TEI.XML "INCLUDE">
+<!ENTITY % PersDict PUBLIC "-//Perseus P4//DTD Perseus Dictionaries//EN" "http://www.perseus.tufts.edu/DTD/1.0/PersDict.dtd">
+%PersDict;
+]>
+<TEI.2>
+  <teiHeader type="text" status="new">
+    <fileDesc>
+      <titleStmt>
+	<title>A Latin Dictionary</title>
+	<title type="sub">Machine readable text</title>
+	<author>Charlton T. Lewis</author>
+	<author>Charles Short</author>
+        <sponsor>Perseus Project, Tufts University</sponsor>
+        <principal>Gregory Crane</principal>
+        <respStmt>
+          <resp>Prepared under the supervision of</resp>
+          <name>Lisa Cerrato</name>
+          <name>William Merrill</name>
+          <name>David Smith</name>
+        </respStmt>
+        <funder n="org:NEH">The National Endowment for the Humanities</funder>
+   
+      </titleStmt>
+      <publicationStmt>
+        <publisher>Trustees of Tufts University</publisher>
+        <pubPlace>Medford, MA</pubPlace>
+        <authority>Perseus Project</authority>
+        <date>1997-10-28</date>
+        <!-- release date -->
+      </publicationStmt>
+      <sourceDesc>
+	<biblStruct>
+	  <monogr>
+	    <title>A Latin Dictionary</title>
+	    <title>Founded on Andrews' edition of Freund's Latin dictionary</title>
+	    <respStmt>
+	      <resp>revised, enlarged, and in great part rewritten by</resp>
+	      <name>Charlton T. Lewis, Ph.D.</name>
+	      <resp>and</resp>
+	      <name>Charles Short, LL.D.</name>
+	    </respStmt>
+	    <imprint>
+	      <pubPlace>Oxford</pubPlace>
+	      <publisher>Clarendon Press</publisher>
+	      <date>1879</date>
+	    </imprint>
+	  </monogr>
+	  <idno type="ISBN">0198642016</idno>
+	</biblStruct>
+      </sourceDesc>
+    </fileDesc>
+
+    <encodingDesc>
+      <refsDecl doctype="TEI.2">
+	<state unit="entry" n="chunk"/>
+      </refsDecl>
+      <refsDecl doctype="TEI.2">
+	<state unit="alphabetic letter"/>
+	<state unit="entry"/>
+      </refsDecl>
+    </encodingDesc>
+    
+    <profileDesc>
+      <langUsage>
+	<language id="en">English
+	</language><language id="la">Latin
+	</language><language id="greek">Greek
+      </language></langUsage>
+    </profileDesc>
+    
+    <revisionDesc>
+
+      <change><date>4 December 2000</date>
+	<respStmt><name>DAS</name><resp>ed.</resp></respStmt>
+	<item>
+2019-10-31 Lisa Cerrato created new file with Greek beta code to Unicode transformation
+2019-10-30 Lisa Cerrato removed and replaced entities manually; for combining characters that do not have a single glyph unicode equivalent, some marks, such as macron, appear following the character(s); fixed tei addresss
+2016-01-20 Lisa Cerrato Edited entry corrumpo changed rāpi, to rūpī as reported by user shomauno
+
+$Log: ls.xml,v $
+Revision 1.2  2014-07-09 12:30:00   akrohn01
+ replaced most abo ids or abbreviations in bibl tags with cts urns or Trismegistos urls in the case of papyri
+
+Revision 1.1  2014-07-08 17:33:50  lcerrato
+latest version of file 08-Jul-14
+
+Revision 1.30  2014-06-20 19:00:09  lcerrato
+typo 24872.6 il to it
+
+Revision 1.29  2013-09-30 19:11:01  lcerrato
+incorrect reference in labor2
+
+Revision 1.28  2013-09-26 19:31:51  lcerrato
+changed nandsome to handsome n501.1
+
+Revision 1.27  2013-09-26 19:21:05  lcerrato
+fixed typo in entry n17775.1 aique to atque
+
+Revision 1.26  2013-09-26 18:25:39  lcerrato
+fixed typo in entry calidus in greek where gamma was listed for upsilon as gdata and it should be udata
+
+Revision 1.25  2013-03-29 16:12:31  lcerrato
+split entry for daemon1 and adjusted draco1
+
+Revision 1.24  2013-01-30 21:49:07  lcerrato
+fixed refs 4.16.2 to 6.16.2; 70.13 to 70.16; ciothe to clothe, and trans of litus3
+
+Revision 1.23  2012-02-22 22:03:23  lcerrato
+fixed small typo
+
+Revision 1.22  2011-10-04 20:09:19  lcerrato
+fixing bad bibl refs
+
+Revision 1.21  2011-09-23 20:05:30  lcerrato
+fixed tagging around definition in juvo entry in order to improve word study tool results
+
+Revision 1.20  2011-09-22 19:53:42  lcerrato
+fixed bibls which should point to Rut. Lup. not Afran.
+
+Revision 1.19  2011-09-22 17:47:05  lcerrato
+fixed 2 John and 3 John bibls
+
+Revision 1.18  2011-08-03 16:24:25  lcerrato
+fixed minor typo
+
+Revision 1.17  2011-08-02 19:08:06  lcerrato
+fixed minor typo(s)
+
+Revision 1.16  2011-03-22 15:52:38  lcerrato
+fixed error in entry for aries, replaced macron with breve in genitive
+
+Revision 1.15  2010-12-10 20:59:25  lcerrato
+changed typo nulium to nullum
+
+Revision 1.14  2010-11-22 18:38:14  lcerrato
+changed heatkcock to heath-cock in tetrao
+
+Revision 1.13  2010/09/29 20:02:27  lcerrato
+changed back tagging done in 1.11 re Juvo entry as this was the wrong way to fix the error
+
+Revision 1.12  2010/09/29 17:46:43  lcerrato
+fixed incorrect spacing in phrase pater quartum vel potius millesimum
+
+Revision 1.11  2010/09/29 17:32:53  lcerrato
+fixed missing trans tag in Juvo
+
+Revision 1.10  2010/08/19 17:21:40  lcerrato
+fixed abos in document
+
+Revision 1.9  2010/08/12 20:52:10  lcerrato
+added refs to Augustine
+
+Revision 1.8  2010/08/06 16:58:48  lcerrato
+added refs to Augustine
+
+Revision 1.7  2010/06/02 20:02:02  lcerrato
+fixed phi abos through 23xx
+
+Revision 1.6  2010/06/01 19:51:33  lcerrato
+fixed phi abos through 1xxx
+
+Revision 1.5  2010/02/17 21:09:53  lcerrato
+fixed abos through phi13xx
+
+Revision 1.4  2010/02/11 20:42:04  lcerrato
+fixed abos through phi1014
+
+Revision 1.3  2010/01/15 21:50:51  lcerrato
+fixing phi 1002
+
+Revision 1.2  2010/01/07 16:55:30  lcerrato
+fixed some tagging at start of entry jaceo to correct missed translations
+
+Revision 1.1  2009/12/01 18:28:21  rsingh04
+moved more xml files around based on copyright status
+
+Revision 1.36  2009/11/24 20:00:57  lcerrato
+changed mhil to nihil
+
+Revision 1.35  2009/11/20 22:16:02  lcerrato
+split the entries for drachma and draco1 which were incorrectly run together
+
+Revision 1.34  2009/11/17 15:56:03  lcerrato
+fixed abos through 09xx
+
+Revision 1.33  2009/11/10 20:44:00  lcerrato
+fixed abos through part of 0959
+
+Revision 1.32  2009/10/28 19:52:42  lcerrato
+fixed abos through 6xx
+
+Revision 1.31  2009/10/02 20:50:41  lcerrato
+fixed abos
+
+Revision 1.30  2009/10/01 20:57:35  lcerrato
+fixed abos through phi0588
+
+Revision 1.29  2009/10/01 16:54:30  lcerrato
+fixed Cic. Ver. refs to sections rather than chapters
+
+Revision 1.28  2009/09/23 19:09:04  lcerrato
+fixed abos and Cic. Ver. refs
+
+Revision 1.27  2009/09/22 21:12:31  lcerrato
+fixed abos
+
+Revision 1.26  2009/09/21 20:58:10  lcerrato
+fixed abos
+
+Revision 1.25  2009/09/21 20:04:58  lcerrato
+fixed abos through 04xx except Verrines
+
+Revision 1.24  2009/09/17 20:45:41  lcerrato
+fixed abos through 0474,03
+
+Revision 1.23  2009/09/17 18:15:46  lcerrato
+fixed abos
+
+Revision 1.22  2009/09/16 21:04:20  lcerrato
+fixed abos
+
+Revision 1.21  2009/09/13 01:17:26  lcerrato
+fixed all abos beginning with 01
+
+Revision 1.20  2009/09/11 15:10:11  rsingh04
+fixed Pl. Merc. to Pl. Mer.
+
+Revision 1.19  2009/09/10 20:47:08  lcerrato
+working on abos: Platus and Terence
+
+Revision 1.18  2009/09/09 20:24:15  lcerrato
+working on Plautus abos
+
+Revision 1.17  2009/09/08 20:38:32  lcerrato
+fixed typo
+
+Revision 1.16  2009/09/02 03:15:19  lcerrato
+removing Plautus abos
+
+Revision 1.15  2009/09/01 16:09:51  lcerrato
+removed abos for phi,001x and working on Plautus abos
+
+Revision 1.14  2009/08/27 17:53:30  rsingh04
+changed more bibls with Perseus:abo to corresponding abbreviation
+
+Revision 1.13  2009/08/26 20:02:12  rsingh04
+changed more bibls with Perseus:abo to corresponding abbreviation
+
+Revision 1.12  2009/08/25 20:56:46  rsingh04
+started changing bibls with Perseus:abo to corresponding abbreviation
+
+Revision 1.11  2009/08/06 20:04:00  student
+fixed bibl errors - zr
+
+Revision 1.10  2009/08/04 19:59:58  student
+fixed bibl errors through part of "ab" - zr
+
+Revision 1.9  2009/07/31 21:26:51  rsingh04
+removed ^ and _ marks from key attribute in entryFree tags so user can access any entry from the jump box without needing to input those marks
+
+Revision 1.8  2009/07/24 17:42:18  lcerrato
+fixed typo vird to bird
+
+Revision 1.7  2009/07/01 15:33:43  rsingh04
+fixed references to livy
+
+Revision 1.6  2009/01/27 20:54:52  lcerrato
+fixed typo in ref
+
+Revision 1.5  2008/12/18 20:24:53  lcerrato
+fixing typos
+
+Revision 1.4  2005/10/18 17:51:22  lcerrato
+changed volive to votive
+
+Revision 1.3  2004/12/14 19:21:53  packel
+fixed spurious tag caused by the previous log msg; added ids to entries/senses
+
+Revision 1.2  2004/12/10 15:29:26  packel
+removed spurious item tags
+
+Revision 1.1  2004/12/09 15:39:07  packel
+initial revision; converted to XML, ids added
+
+Revision 1.9  2004/10/08 13:02:14  mimno
+inous inopus, bad tag in moera
+
+Revision 1.8  2004/10/07 19:29:35  packel
+rid entry keys of †s
+
+Revision 1.7  2004/10/07 14:01:21  packel
+caught an ë with no trailing ;
+
+Revision 1.6  2004/10/07 13:49:33  packel
+fixed character entities in entry keys
+
+Revision 1.5  2004/09/21 15:44:45  packel
+numbered lots of lingering duplicate entries (all of them, we hope)
+
+Revision 1.4  2004/09/01 20:45:17  packel
+Set a couple hundred mislabeled keys to the values in their orth tags (e.g.,
+"ex" to "exporrigo").
+
+Revision 1.3  2004/06/15 19:20:19  lcerrato
+1. beluatis: marked (bell-) section
+2. orior: mjuria to injuria
+3. verto: aller to alter
+4. latus: sems to senis
+5. k: scund to sound
+6. faex: less to lees
+7. siren: fuei to fuci
+8. obligatio: piedging to pledging
+9. anceps: hazaraous to hazardous
+10. praeceptum: monitig to monitis
+11. crgasterium to ergasterium
+12. abductio: foroible to forcible
+13. animus: an mus to animus
+14. parastas: delermine to determine
+15. obsequium: comptiance to compliance
+16. gloria: laddis to laudis
+
+Revision 1.2  2004/06/15 17:30:40  amahoney
+ABO for Nepos distinguishes lives, for abbreviations
+
+Revision 1.1  2003/01/09 22:57:38  amahoney
+make these the canonical forms, no longer generated
+
+Revision 1.3  2001/04/20 22:11:35  dasmith
+Added funder.
+
+Revision 1.2  2000/12/08 16:40:11  dasmith
+Edited out ampersand.
+
+Revision 1.1  2000/12/07 20:15:37  dasmith
+Moved from special ls directory.
+
+Revision 1.3  2000/12/05 17:38:44  dasmith
+Replace han with arrow.
+
+Revision 1.2  2000/12/05 01:08:17  dasmith
+Added ad-hoc hand entity.
+
+Revision 1.1  2000/12/04 21:40:47  dasmith
+First cut at header to Lewis and Short.
+
+</item></change></revisionDesc></teiHeader>
+<text>
+<body>
+<pb n="1"></pb> <cb n="A"/>
+<div0 n="A" type="alphabetic letter">
+<head lang="la">A</head>
+<entryFree n="3" key="a2" type="main" id="n1"><orth lang="la" extent="full">a</orth>, <pos>prep.</pos>=ab, v. ab.</entryFree>
+<entryFree n="3" key="abs" type="main" id="n1"><orth lang="la" extent="full">abs-</orth>, <pos>prep.</pos>=ab, v. ab.</entryFree>
+<entryFree n="3" key="attango" type="main" id="n1"><orth lang="la" extent="full">adtango</orth><orth lang="la" extent="full">att-</orth>, <pos>prep.</pos>=ab, v. ab.</entryFree>
+<entryFree n="3" key="arruo" type="main" id="n1"><orth lang="la" extent="full">arruo</orth><orth lang="la" extent="full">abc-</orth>, <pos>prep.</pos>=ab, v. ab.</entryFree>
+  <entryFree n="4" key="a3" type="main" id="n2"><orth lang="la" extent="full">ā</orth>, <pos>interj.</pos>=ah, v. ah.</entryFree>
+<entryFree key="camus" type="greek" id="n6426"><orth lang="la" extent="full">cāmus</orth>, <itype>i</itype>, <gen>m.</gen>, = <foreign lang="greek">κημός</foreign> (Dor. <foreign lang="greek">καμός</foreign>). <sense level="1" n="I" id="n6426.0"> <hi rend="ital">A muzzle</hi> for horses (only in eccl. Lat.), <bibl n="urn:cts:greekLit:tlg0527.tlg027:31:9"><author>Vulg.</author> Psa. 31, 9</bibl>; <bibl><author>Ambros.</author> Hex. 6, 3</bibl>.—* </sense><sense level="1" n="II" id="n6426.1"> Perh. <hi rend="ital">a kind of collar for the neck</hi>, <bibl><author>Non.</author> p. 200, 16</bibl> (Trag. Rel. v. 302 Rib.).</sense>
+†† <orth lang="la" extent="full">cana</orth>, Gr. (*<foreign lang="greek">κάνεον</foreign>, <number>plur.</number> <foreign lang="greek">κάνεα κάνη</foreign>, a wicker basket) for canistra, acc. to Paul. ex <bibl n="urn:cts:latinLit:phi1236.phi001"><author>Fest.</author> p. 45</bibl> Müll.</entryFree>
+<entryFree key="canaba" type="main" id="n6427"><orth lang="la" extent="full">cānăba</orth> (or <orth lang="la" extent="full">cannăba</orth>), <itype>ae</itype>, <gen>f.</gen> <etym>kindr. with <foreign lang="greek">κάναβος</foreign> and <foreign lang="greek">κάννα</foreign>; acc. to others, with <foreign lang="greek">καλύβη</foreign></etym>, <sense level="1" n="I" id="n6427.0"><hi rend="ital">a hovel</hi>, <hi rend="ital">hut</hi>, <bibl n="August. Serm. 61"><author>Aug.</author> Serm. 61</bibl>, de Temp.; <bibl><author>Inscr. Orell.</author> 39</bibl>; <bibl>4077</bibl>.</sense></entryFree>
+</div0>
+</body></text></TEI.2>
