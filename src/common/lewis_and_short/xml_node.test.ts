@@ -3,6 +3,8 @@ import { readFileSync } from "fs";
 
 import { extractEntries, parseEntries, XmlNode } from "./xml_node";
 
+console.debug = jest.fn();
+
 const LS_SUBSET = "testdata/ls/subset.xml";
 
 function makeEntry(contents: string): string {
@@ -82,6 +84,12 @@ describe("parseEntries", () => {
     for (let i = 0; i < rawEntries.length; i++) {
       expect(rawEntries[i]).toBe(entries[i].toString());
     }
+  });
+
+  test("collapses regs", () => {
+    const rawEntry = makeEntry("<reg><sic>a</sic><corr>b</corr></reg>");
+    const entry = parseEntries([rawEntry])[0];
+    expect(entry.children).toStrictEqual(["b"]);
   });
 });
 

@@ -137,7 +137,16 @@ function crawlEntry(root: any): XmlNode {
       children.push(`${child[TEXT_NODE]}`);
       continue;
     }
-    children.push(crawlEntry(child));
+    const childResult = crawlEntry(child);
+    if (childResult.name === "reg") {
+      assert(childResult.children.length === 2);
+      XmlNode.assertIsNode(childResult.children[0], "sic");
+      const corr = XmlNode.assertIsNode(childResult.children[1], "corr");
+      children.push(XmlNode.getSoleText(corr));
+      console.debug(`Corrected ${childResult} -> ${XmlNode.getSoleText(corr)}`);
+      continue;
+    }
+    children.push(childResult);
   }
   return new XmlNode(tagName, attributes, children);
 }
