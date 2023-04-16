@@ -36,19 +36,23 @@ export class LewisAndShort {
   }
 
   async getEntry(input: string): Promise<string> {
-    const indices = this.keyToEntries.get(input);
+    const request = removeDiacritics(input).toLowerCase();
+    const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
       return JSON.stringify([`<span>Could not find entry for ${input}</span>`]);
     }
-    const entries: string[] = [];
-    for (const [entriesIndex, _] of indices) {
-      entries.push(
-        displayEntryFree(
-          parseEntries([this.entries[entriesIndex]])[0]
-        ).toString()
-      );
-    }
-    return JSON.stringify(entries);
+
+    const hasDiactrics = input === request;
+    const exactMatches = indices.filter(
+      ([i, j]) => this.rawKeys[i][j] === input
+    );
+    const resultIndices =
+      hasDiactrics && exactMatches.length > 0 ? exactMatches : indices;
+    const entryStrings = resultIndices.map(([i, _]) => this.entries[i]);
+    const entryNodes = parseEntries(entryStrings);
+    return JSON.stringify(
+      entryNodes.map((node) => displayEntryFree(node).toString())
+    );
   }
 
   async getCompletions(input: string): Promise<string[]> {
