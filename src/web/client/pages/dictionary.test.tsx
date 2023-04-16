@@ -55,7 +55,7 @@ describe("Dictionary View", () => {
     await user.type(searchBar, "G");
 
     expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/entriesByPrefix/G");
+    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/entriesByPrefix/g");
   });
 
   it("calls server on submit", async () => {

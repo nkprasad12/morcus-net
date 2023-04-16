@@ -1,4 +1,4 @@
-import { entriesByPrefix, lsCall } from "@/web/api_routes";
+import { lsCall } from "@/web/api_routes";
 import Autocomplete from "@mui/material/Autocomplete";
 import TextField from "@mui/material/TextField";
 import Box from "@mui/system/Box";
@@ -9,6 +9,7 @@ import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { ClickAwayListener, Tooltip } from "@mui/material";
+import { AutocompleteCache } from "./autocomplete_cache";
 
 export function ClickableTooltip(props: {
   titleText: string;
@@ -94,15 +95,6 @@ async function fetchEntry(input: string): Promise<XmlNode[]> {
   return parseEntries(JSON.parse(rawText));
 }
 
-async function fetchOptions(input: string): Promise<string[]> {
-  const response = await fetch(`${location.origin}${entriesByPrefix(input)}`);
-  if (!response.ok) {
-    return [];
-  }
-  const rawText = await response.text();
-  return JSON.parse(rawText);
-}
-
 function SearchBox(props: {
   input: string;
   onNewEntries: (entries: XmlNode[]) => any;
@@ -126,11 +118,7 @@ function SearchBox(props: {
       sx={{ padding: 1, ml: 2, mr: 2, mt: 2, mb: 1 }}
       onInputChange={async (_, value) => {
         setInputState(value);
-        if (value.length === 0) {
-          setOptions([]);
-          return;
-        }
-        setOptions(await fetchOptions(value));
+        setOptions(await AutocompleteCache.get().getOptions(value));
       }}
       renderInput={(params) => (
         <TextField
