@@ -4,7 +4,7 @@ import { assert } from "../assert";
 // const LOWER_CONSONANTS = "bcdfghjklmnpqrstvxz";
 // const UPPER_CONSONANTS = "BCDFGHJKLMNPQRSTVXZ";
 // const CONSONANTS = LOWER_CONSONANTS + UPPER_CONSONANTS;
-const MACRONS = "āēīōūȳÃĒĪÕŪ";
+const MACRONS = "āēīōūȳÃĀĒĪÕŪ";
 const BREVES = "ăĕĭŏŭўĬ";
 const OTHER_ACCENTED = "áïìëèöüúùÿ";
 const ALPHA_ACC = MACRONS + BREVES + OTHER_ACCENTED;
