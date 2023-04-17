@@ -39,11 +39,11 @@ export function ClickableTooltip(props: {
 }
 
 export function xmlNodeToJsx(root: XmlNode, key?: string): JSX.Element {
-  const children = root.children.map((child, i) => {
+  const children = root.children.map((child) => {
     if (typeof child === "string") {
       return child;
     }
-    return xmlNodeToJsx(child, `${i}`);
+    return xmlNodeToJsx(child);
   });
   const props: { [key: string]: string } = {};
   if (key !== undefined) {
@@ -149,7 +149,7 @@ function SearchBox(props: {
 export function Dictionary(props: Dictionary.Props) {
   const [entries, setEntries] = React.useState<XmlNode[]>([]);
 
-  function contentBox(xmlRoot: XmlNode, key: string) {
+  function contentBox(xmlRoot: XmlNode, key?: string) {
     return (
       <Box
         sx={{
@@ -204,9 +204,7 @@ export function Dictionary(props: Dictionary.Props) {
             "searchHeader"
           )
         : undefined}
-      {entries.map((entry) =>
-        contentBox(entry, entry.getAttr("id") || `${performance.now()}`)
-      )}
+      {entries.map((entry) => contentBox(entry))}
     </>
   );
 }

@@ -474,13 +474,17 @@ function removeHapaxMark(orth: string): string {
 function replaceWeirds(orth: string): string {
   // TODO: We have at least one instance `hălĭÆĕtos` where Ae occurs
   // in the middle of a word. We should probably normalize this.
-  return orth
-    .replaceAll("œ", "ae")
-    .replaceAll("Æ", "Ae")
-    .replaceAll("o︤︥y", "oy")
-    .replaceAll("u͡s", "us")
-    .replaceAll(" -", "-")
-    .replaceAll("af-f", "aff");
+  return (
+    orth
+      .replaceAll("œ", "ae")
+      .replaceAll("Æ", "Ae")
+      .replaceAll("o︤︥y", "oy")
+      .replaceAll("u͡s", "us")
+      .replaceAll(" -", "-")
+      // This causes problems with Autocomplete for reasons I don't understand.
+      .replaceAll("ў", "y")
+      .replaceAll("af-f", "aff")
+  );
 }
 
 function removeInternalDashes(orth: string): string {
