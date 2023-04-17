@@ -1,4 +1,4 @@
-import { XMLParser } from "fast-xml-parser";
+import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { assert, assertEqual } from "@/common/assert";
 
 const ENTRY_OPEN = "<entryFree ";
@@ -160,7 +160,10 @@ function isTextNode(node: any): boolean {
   return false;
 }
 
-export function* parseEntriesInline(entries: string[]): Generator<XmlNode> {
+export function* parseEntriesInline(
+  entries: string[],
+  validate: boolean = false
+): Generator<XmlNode> {
   const options = {
     ignoreAttributes: false,
     alwaysCreateTextNode: true,
@@ -170,12 +173,22 @@ export function* parseEntriesInline(entries: string[]): Generator<XmlNode> {
   const parser = new XMLParser(options);
   for (const entry of entries) {
     const entryFree = parser.parse(entry)[0];
+    if (validate && XMLValidator.validate(entry) !== true) {
+      throw new Error(
+        `XML Validation Error: ${JSON.stringify(
+          XMLValidator.validate(entry)
+        )}\n${entry}`
+      );
+    }
     yield crawlEntry(entryFree);
   }
 }
 
-export function parseEntries(entries: string[]): XmlNode[] {
-  return [...parseEntriesInline(entries)];
+export function parseEntries(
+  entries: string[],
+  validate: boolean = false
+): XmlNode[] {
+  return [...parseEntriesInline(entries, validate)];
 }
 
 export function extractEntries(xmlContents: string): string[] {
@@ -191,6 +204,10 @@ export function extractEntries(xmlContents: string): string[] {
     const hasClose = closeIndex !== -1;
     const hasPartial = partial.length > 0;
 
+    if (hasOpen && !hasClose) {
+      console.log("Got open without close");
+      console.log(line.substring(0, 50));
+    }
     if (hasOpen) {
       const beforeOpen = line.substring(0, openIndex);
       if (beforeOpen.trim().length !== 0) {

@@ -76,7 +76,7 @@ describe("extractEntries", () => {
 });
 
 describe("parseEntries", () => {
-  test("returns expected nodes", () => {
+  it("returns expected nodes", () => {
     const xmlContents = readFileSync(LS_SUBSET, "utf8");
     const rawEntries = extractEntries(xmlContents);
     const entries = parseEntries(rawEntries);
@@ -84,6 +84,11 @@ describe("parseEntries", () => {
     for (let i = 0; i < rawEntries.length; i++) {
       expect(rawEntries[i]).toBe(entries[i].toString());
     }
+  });
+
+  it("raises on unpaired tags if validation is enabled", () => {
+    expect(() => parseEntries([makeEntry("<sense>")], true)[0]).toThrowError();
+    expect(() => parseEntries([makeEntry("</sense>")], true)[0]).toThrowError();
   });
 
   test("collapses regs", () => {
