@@ -6,7 +6,9 @@ export function assert(condition: boolean, message: string = "") {
 
 export function assertEqual(expected: any, actual: any) {
   if (expected !== actual) {
-    throw new Error(`Expected ${expected}, but got ${actual}.`);
+    throw new Error(
+      `Expected ${JSON.stringify(actual)}, but got ${JSON.stringify(expected)}.`
+    );
   }
 }
 

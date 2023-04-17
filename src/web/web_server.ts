@@ -5,7 +5,7 @@ import path from "path";
 import bodyParser from "body-parser";
 
 function log(message: string) {
-  console.log(`[web_server] [${Date.now() / 1000}] ${message}`);
+  console.debug(`[web_server] [${Date.now() / 1000}] ${message}`);
 }
 
 export interface WebServerParams {

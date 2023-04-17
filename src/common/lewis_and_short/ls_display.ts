@@ -63,7 +63,6 @@ const DISPLAY_HANDLER_LOOKUP = new Map<
   ["q", displayQ],
   ["figure", displayFigure],
   ["note", displayNote],
-  ["reg", displayReg],
 ]);
 
 export function defaultDisplay(
@@ -729,41 +728,6 @@ function displayFigure(root: XmlNode, _parent?: XmlNode): XmlNode {
 export function displayNote(root: XmlNode, _parent?: XmlNode): XmlNode {
   assert(root.name === "note");
   return new XmlNode("span");
-}
-
-/**
- * Expands a `reg` element.
- *
- * reg:
- * - sic
- * - corr
- *
- * Decision: Only occurs once. Parse as a special case where we display corr with a mouseover showing the sic.
- *
- * sic:
- * - text
- *
- * Decision: Save the contained text to show on hover for corr.
- *           Only occurrs once with reg and corr.
- *
- * corr:
- * - text
- *
- * Decision: Save the containted text to show as main text.
- *           Only occurs once with reg and sic.
- *
- * @param root The root node for this element.
- * @param _parent The parent node for the root.
- */
-export function displayReg(root: XmlNode, _parent?: XmlNode): XmlNode {
-  assert(root.name === "reg");
-  assert(root.children.length === 2);
-  const sic = XmlNode.assertIsNode(root.children[0], "sic");
-  const corr = XmlNode.assertIsNode(root.children[1], "corr");
-  return attachHoverText(
-    XmlNode.getSoleText(corr),
-    `Corrected from original: ${XmlNode.getSoleText(sic)}`
-  );
 }
 
 export function getBullet(input: string): string {

@@ -8,6 +8,8 @@ import {
 } from "./socket_worker_server";
 import { WorkRequest } from "@/web/workers/requests";
 
+console.debug = jest.fn();
+
 jest.mock("socket.io", () => {
   return {
     Socket: jest.fn().mockImplementation((auth, on?, emit?) => {

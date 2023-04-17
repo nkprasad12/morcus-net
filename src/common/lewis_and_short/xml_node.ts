@@ -1,4 +1,4 @@
-import { XMLParser } from "fast-xml-parser";
+import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { assert, assertEqual } from "@/common/assert";
 
 const ENTRY_OPEN = "<entryFree ";
@@ -137,7 +137,16 @@ function crawlEntry(root: any): XmlNode {
       children.push(`${child[TEXT_NODE]}`);
       continue;
     }
-    children.push(crawlEntry(child));
+    const childResult = crawlEntry(child);
+    if (childResult.name === "reg") {
+      assert(childResult.children.length === 2);
+      XmlNode.assertIsNode(childResult.children[0], "sic");
+      const corr = XmlNode.assertIsNode(childResult.children[1], "corr");
+      children.push(XmlNode.getSoleText(corr));
+      console.debug(`Corrected ${childResult} -> ${XmlNode.getSoleText(corr)}`);
+      continue;
+    }
+    children.push(childResult);
   }
   return new XmlNode(tagName, attributes, children);
 }
@@ -151,7 +160,10 @@ function isTextNode(node: any): boolean {
   return false;
 }
 
-export function parseEntries(entries: string[]): XmlNode[] {
+export function* parseEntriesInline(
+  entries: string[],
+  validate: boolean = false
+): Generator<XmlNode> {
   const options = {
     ignoreAttributes: false,
     alwaysCreateTextNode: true,
@@ -159,12 +171,24 @@ export function parseEntries(entries: string[]): XmlNode[] {
     trimValues: false,
   };
   const parser = new XMLParser(options);
-  const parsedEntries = [];
   for (const entry of entries) {
     const entryFree = parser.parse(entry)[0];
-    parsedEntries.push(crawlEntry(entryFree));
+    if (validate && XMLValidator.validate(entry) !== true) {
+      throw new Error(
+        `XML Validation Error: ${JSON.stringify(
+          XMLValidator.validate(entry)
+        )}\n${entry}`
+      );
+    }
+    yield crawlEntry(entryFree);
   }
-  return parsedEntries;
+}
+
+export function parseEntries(
+  entries: string[],
+  validate: boolean = false
+): XmlNode[] {
+  return [...parseEntriesInline(entries, validate)];
 }
 
 export function extractEntries(xmlContents: string): string[] {
@@ -180,6 +204,10 @@ export function extractEntries(xmlContents: string): string[] {
     const hasClose = closeIndex !== -1;
     const hasPartial = partial.length > 0;
 
+    if (hasOpen && !hasClose) {
+      console.log("Got open without close");
+      console.log(line.substring(0, 50));
+    }
     if (hasOpen) {
       const beforeOpen = line.substring(0, openIndex);
       if (beforeOpen.trim().length !== 0) {

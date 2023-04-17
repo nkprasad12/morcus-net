@@ -21,7 +21,10 @@ const DIACRITICS = new Map<string, string>([
   ["ȳ", "y"],
   ["ў", "y"],
   ["ÿ", "y"],
+  // This is A with a tilde.
   ["Ã", "A"],
+  // This is A with a macron.
+  ["Ā", "A"],
   ["Ē", "E"],
   ["Ī", "I"],
   ["Ĭ", "I"],

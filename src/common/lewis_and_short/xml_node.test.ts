@@ -3,6 +3,8 @@ import { readFileSync } from "fs";
 
 import { extractEntries, parseEntries, XmlNode } from "./xml_node";
 
+console.debug = jest.fn();
+
 const LS_SUBSET = "testdata/ls/subset.xml";
 
 function makeEntry(contents: string): string {
@@ -74,7 +76,7 @@ describe("extractEntries", () => {
 });
 
 describe("parseEntries", () => {
-  test("returns expected nodes", () => {
+  it("returns expected nodes", () => {
     const xmlContents = readFileSync(LS_SUBSET, "utf8");
     const rawEntries = extractEntries(xmlContents);
     const entries = parseEntries(rawEntries);
@@ -82,6 +84,17 @@ describe("parseEntries", () => {
     for (let i = 0; i < rawEntries.length; i++) {
       expect(rawEntries[i]).toBe(entries[i].toString());
     }
+  });
+
+  it("raises on unpaired tags if validation is enabled", () => {
+    expect(() => parseEntries([makeEntry("<sense>")], true)[0]).toThrowError();
+    expect(() => parseEntries([makeEntry("</sense>")], true)[0]).toThrowError();
+  });
+
+  test("collapses regs", () => {
+    const rawEntry = makeEntry("<reg><sic>a</sic><corr>b</corr></reg>");
+    const entry = parseEntries([rawEntry])[0];
+    expect(entry.children).toStrictEqual(["b"]);
   });
 });
 

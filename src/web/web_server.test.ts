@@ -5,6 +5,8 @@ import request from "supertest";
 import { entriesByPrefix, lsCall, macronizeCall } from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 
+console.debug = jest.fn();
+
 function getServer(): express.Express {
   const app = express();
   const params: WebServerParams = {

@@ -42,7 +42,7 @@ const typographyStyle = {
   lineHeight: 1.5,
   letterSpacing: "0.00938em",
   [theme.breakpoints.down("sm")]: {
-    fontSize: 16,
+    fontSize: 19,
     fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
     fontWeight: 400,
     lineHeight: 1.5,

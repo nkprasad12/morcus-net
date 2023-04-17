@@ -87,15 +87,20 @@ export namespace LewisAndShort {
   export function createProcessed(
     rawFile: string = checkPresent(process.env.LS_PATH)
   ): RawLsEntry[] {
-    return parse(rawFile).map((root) => {
+    const results: RawLsEntry[] = [];
+    for (const root of parse(rawFile)) {
+      if (results.length % 1000 === 0) {
+        console.debug(`Processed ${results.length}`);
+      }
       const orths = getOrths(root).map(mergeVowelMarkers);
       assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
       const regulars = orths.filter(isRegularOrth);
-      return {
+      results.push({
         keys: regulars.length > 0 ? regulars : orths,
         entry: root.toString(),
-      };
-    });
+      });
+    }
+    return results;
   }
 
   export async function save(

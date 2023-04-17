@@ -9,7 +9,7 @@ import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviati
 import { checkPresent } from "../assert";
 import { getOrths, isRegularOrth } from "./ls_orths";
 
-const LS_PATH = checkPresent(process.env.LS_PATH);
+export const LS_PATH = checkPresent(process.env.LS_PATH);
 
 interface Schema {
   entry: string;
