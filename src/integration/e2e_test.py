@@ -20,7 +20,7 @@ wait_and_check(download_ls, "Failed to download raw LS file")
 subproc_env = os.environ.copy()
 subproc_env["LS_PATH"] = "ls.xml"
 subproc_env["LS_PROCESSED_PATH"] = "lsp.txt"
-subproc_env["PORT"] = 5757
+subproc_env["PORT"] = "5757"
 
 process_ls = subprocess.Popen(PROCESS_LS, shell=True, env=subproc_env)
 wait_and_check(build_client, "Failed to build the client")
