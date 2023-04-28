@@ -36,6 +36,8 @@ jobs:
           python-version: "3.8"
       - name: Installing npm dependencies
         run: npm ci
+      - name: Installing Python dependencies
+        run: pip install requests
       - name: Running integration checks
         run: python src/integration/e2e_test.py
 
