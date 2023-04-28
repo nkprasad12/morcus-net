@@ -42,8 +42,8 @@ try:
     wait_and_check(process_ls, "Failed to process or verify LS")
 
     start_server = start_process(START_SERVER)
-    time.sleep(5)
-    api_result = requests.get(f"http://localhost:{PORT}/api/dicts/ls/unda", timeout=15)
+    time.sleep(15)
+    api_result = requests.get(f"http://localhost:{PORT}/api/dicts/ls/unda", timeout=5)
     print(api_result.text)
     assert "a wave, billow, surge" in api_result.text
 finally:
