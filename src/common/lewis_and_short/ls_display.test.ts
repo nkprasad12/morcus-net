@@ -75,6 +75,66 @@ describe("displayBibl", () => {
     ];
     expect(result.toString()).toBe(parts.join(""));
   });
+
+  it("shows expected result for ambiguous author case", () => {
+    const author = new XmlNode("author", [], ["Plin."]);
+    const bibl = new XmlNode("bibl", [], [author, "Ep. 1, 12, 32"]);
+
+    const result = displayBibl(bibl);
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="C. Plinius Caecilius Secundus (minor), ob. A.D. 113" class="lsHover lsAuthor">',
+      "Plin.",
+      "</span>",
+      '<span title="Expanded from: Ep." class="lsHover">',
+      "Epistulae.",
+      "</span>",
+      " 1, 12, 32",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("handles case insensitivity when needed", () => {
+    const author = new XmlNode("author", [], ["Cic."]);
+    const bibl = new XmlNode("bibl", [], [author, "Ad brut. 3, 7, 26"]);
+
+    const result = displayBibl(bibl);
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
+      "Cic.",
+      "</span>",
+      '<span title="Expanded from: Ad brut." class="lsHover">',
+      "ad Brutum Epistulae.",
+      "</span>",
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("handles Cicero de Or.", () => {
+    const author = new XmlNode("author", [], ["Cic."]);
+    const bibl = new XmlNode("bibl", [], [author, "de Or. 3, 7, 26"]);
+
+    const result = displayBibl(bibl);
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
+      "Cic.",
+      "</span>",
+      '<span title="Expanded from: de Or." class="lsHover">',
+      "De Oratore.",
+      "</span>",
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
 });
 
 describe("displayUsg", () => {
@@ -245,6 +305,70 @@ describe("displayAuthor", () => {
     expect(output.toString()).toBe(
       '<span title="Expanded from: Inscr. Don." class="lsHover">Inscriptiones. Donii.</span>'
     );
+  });
+
+  it("handles ambiguous author", () => {
+    const input = new XmlNode("author", [], ["Plin."]);
+    const bibl = new XmlNode("bibl", [], [input, "Ep. 2, 17, 25"]);
+
+    const output = displayAuthor(input, bibl);
+
+    expect(output.toString()).toBe(
+      '<span title="C. Plinius Caecilius Secundus (minor), ob. A.D. 113" class="lsHover lsAuthor">Plin.</span>'
+    );
+  });
+
+  it("handles Pliny the Elder edge case", () => {
+    const input = new XmlNode("author", [], ["Plin."]);
+    const bibl = new XmlNode("bibl", [], [input, " 17, 2, 2, § 10"]);
+
+    const output = displayAuthor(input, bibl);
+
+    expect(output.toString()).toBe(
+      '<span title="(Likely) Pliny the Elder; (Rarely) Pliny the Younger" class="lsHover lsAuthor">Plin.</span>'
+    );
+  });
+
+  it("handles Justinus edge case", () => {
+    const input = new XmlNode("author", [], ["Just."]);
+    const bibl = new XmlNode("bibl", [], [input, "2, 6, 15"]);
+
+    const output = displayAuthor(input, bibl);
+
+    const expected = [
+      '<span title="(Likely) Justinus, historian, about fl.(?) A.D. 150;',
+      ' (Rarely) Justinianus, emperor, ob. A.D. 565"',
+      ' class="lsHover lsAuthor">Just.</span>',
+    ];
+    expect(output.toString()).toBe(expected.join(""));
+  });
+
+  it("handles no citation after author edge case", () => {
+    const input = new XmlNode("author", [], ["Just."]);
+    const bibl = new XmlNode("bibl", [], [input]);
+
+    const output = displayAuthor(input, bibl);
+
+    const expected = [
+      '<span title="Justinus, historian, about fl.(?) A.D. 150',
+      ' OR Justinianus, emperor, ob. A.D. 565"',
+      ' class="lsHover lsAuthor">Just.</span>',
+    ];
+    expect(output.toString()).toBe(expected.join(""));
+  });
+
+  it("handles unknown citation after author edge case", () => {
+    const input = new XmlNode("author", [], ["Just."]);
+    const bibl = new XmlNode("bibl", [], [input, "Blah. 7 6"]);
+
+    const output = displayAuthor(input, bibl);
+
+    const expected = [
+      '<span title="Justinus, historian, about fl.(?) A.D. 150',
+      ' OR Justinianus, emperor, ob. A.D. 565"',
+      ' class="lsHover lsAuthor">Just.</span>',
+    ];
+    expect(output.toString()).toBe(expected.join(""));
   });
 
   it("handles regular author", () => {

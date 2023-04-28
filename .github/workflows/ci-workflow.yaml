@@ -3,7 +3,7 @@ name: morcus.net CI
 on: [push]
 
 jobs:
-  ci-workflow:
+  presubmit-checks:
     runs-on: ubuntu-latest
 
     steps:
@@ -16,15 +16,41 @@ jobs:
         run: npm ci
       - name: Installing Python dependencies
         run: pip install -r requirements.txt
-      - name: Building the client bundle
-        run: npm run build-client
       - name: Running unit tests
         run: npm run coverage
-      - name: Checking formatting
-        run: npm run format-check
-      - name: Checking Pytype
-        run: npm run pytype
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v3
         with:
           directory: ./coverage
+      - name: Checking formatting
+        run: npm run format-check
+
+  integration-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Installing Python dependencies
+        run: pip install requests
+      - name: Running integration checks
+        run: python src/integration/e2e_test.py
+
+  pytype-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Installing Python dependencies
+        run: pip install -r requirements.txt
+      - name: Checking Pytype
+        run: npm run pytype

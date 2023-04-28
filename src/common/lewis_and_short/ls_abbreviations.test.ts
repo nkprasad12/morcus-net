@@ -96,9 +96,4 @@ describe("LsAuthorAbbreviations", () => {
     const first = LsAuthorAbbreviations.authors();
     expect(LsAuthorAbbreviations.authors()).toBe(first);
   });
-
-  it("uses singleton works map", () => {
-    const first = LsAuthorAbbreviations.works();
-    expect(LsAuthorAbbreviations.works()).toBe(first);
-  });
 });

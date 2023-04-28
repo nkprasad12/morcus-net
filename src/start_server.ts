@@ -26,6 +26,7 @@ import { Workers } from "./web/workers/worker_types";
 import { randomInt } from "crypto";
 import { checkPresent } from "./common/assert";
 import { LewisAndShort } from "./common/lewis_and_short/ls";
+import path from "path";
 
 dotenv.config();
 
@@ -63,6 +64,7 @@ const params: WebServerParams = {
   lsDict: async (input) => (await lewisAndShort).getEntry(input),
   entriesByPrefix: async (prefix) =>
     (await lewisAndShort).getCompletions(prefix),
+  indexFilePath: path.join(__dirname, "../genfiles_static", "index.html"),
 };
 
 setupServer(params);

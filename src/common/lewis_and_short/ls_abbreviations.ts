@@ -107,7 +107,7 @@ export const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
   ["sense", new Map<string, string>([["dim.", "diminutive"]])],
   ["entryFree", new Map<string, string>([["dim.", "diminutive"]])],
   ["etym", new Map<string, string>([["dim.", "diminutive"]])],
-  ["xr", new Map<string, string>([["v.", "look [at entry]"]])],
+  ["xr", new Map<string, string>([["v.", "see"]])],
 ]);
 
 export const GEN_ABBREVIATIONS = new Map<string, string>([
@@ -160,261 +160,259 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
 
 export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
   new Map<string, string>([
-    // a. or act.,      active, -ly.
-    // abbrev.,      abbreviated, -tion.
-    //abl.,      ablative.
-    // absol. or abs.,      absolute, -ly, i. e. without case or adjunct.
+    // ["a. or act.", "active, -ly."],
+    // ["abbrev.", "abbreviated, -tion."],
+    // ["abl.", "ablative."],
+    // ["absol. or abs.", "absolute, -ly, i. e. without case or adjunct."],
     ["abstr.", "abstract"],
-    // acc.,      accusative or according.
+    // ["acc.", "accusative or according."],
     ["access.", "accessory"],
-    // adj.,      adjective, -ly.
-    // ad loc. or ad h. l.,      ad locum or ad hunc locum. (comment on this passage)
-    // adv.,      adverb, -ial, -ially; or adversus.
+    // ["adj.", "adjective, -ly."],
+    // ["ad loc. or ad h. l.", "ad locum or ad hunc locum. (comment on this passage)"],
+    // ["adv.", "adverb, -ial, -ially; or adversus."],
     ["agric.", "agricultural"],
     ["agricult.", "agricultural"],
-    // a. h. v.,      ad hanc vocem. (at this entry)
-    // al.,      alii or alia, others or other.
+    // ["a. h. v.", "ad hanc vocem. (at this entry)"],
+    // ["al.", "alii or alia, others or other."],
     ["amplif.", "amplificative"],
-    // analog.,      analogous, -ly.
-    // antiq.,      antiquities. <- Seems to occur in other ways
+    // ["analog.", "analogous, -ly."],
+    // ["antiq.", "antiquities. <- Seems to occur in other ways"],
     ["ap.", "apud (in)"],
     ["appel.", "appellative"],
-    // append. or app.,      appendix. <- seems to occur in other ways
+    // ["append. or app.", "appendix. <- seems to occur in other ways"],
     ["Arab.", "Arabic"],
-    // archit.,      architecture, -tural.
-    // art.,      article.
-    // aug.,      augmentative.
-    // Aug.,      Augustan.
-    // c.,      cum (with).
-    // c. c.,      coupled with.
+    // ["archit.", "architecture, -tural."],
+    // ["art.", "article."],
+    // ["aug.", "augmentative."],
+    // ["Aug.", "Augustan."],
+    // ["c.", "cum (with)."],
+    // ["c. c.", "coupled with."],
     ["cf.", "compare"],
-    // chh.,      church.
-    // class.,      classic, -al.
-    // Cod.,      Codex (MS).
-    // collat.,      collateral.
-    // collect.,      collective, -ly.
-    // com.,      commonly, comicus, comic, or in comedy.
-    // comm. or c.,      common gender.
-    // commentt.,      commentators.
-    // comp.,      compare or comparative.
-    // compd.,      compound.
-    // concr.,      concrete.
-    // conj.,      conjunction, conjunctive, or conjugation.
-    // constr.,      construed, -ction.
-    // contr.,      contracted, contraction, or contrary.
-    // corresp.,      corresponding.
-    // dat.,      dative.
-    // decl.,      declension.
-    // demonstr. or dem., demonstrative.
-    // dep.,      deponent.
-    // deriv.,      derived, -ative, -ation.
-    // diff.,      differs or different.
-    // dim.,      diminutive.
-    // dissyl.,      dissyllable, -abic.
-    // distr.,      distributive.
+    // ["chh.", "church."],
+    // ["class.", "classic, -al."],
+    // ["Cod.", "Codex (MS)."],
+    // ["collat.", "collateral."],
+    // ["collect.", "collective, -ly."],
+    // ["com.", "commonly, comicus, comic, or in comedy."],
+    // ["comm. or c.", "common gender."],
+    // ["commentt.", "commentators."],
+    // ["comp.", "compare or comparative."],
+    // ["compd.", "compound."],
+    // ["concr.", "concrete."],
+    // ["conj.", "conjunction, conjunctive, or conjugation."],
+    // ["constr.", "construed, -ction."],
+    // ["contr.", "contracted, contraction, or contrary."],
+    // ["corresp.", "corresponding."],
+    // ["dat.", "dative."],
+    // ["decl.", "declension."],
+    // ["demonstr. or dem.", "demonstrative."],
+    // ["dep.", "deponent."],
+    // ["deriv.", "derived, -ative, -ation."],
+    // ["diff.", "differs or different."],
+    // ["dim.", "diminutive."],
+    // ["dissyl.", "dissyllable, -abic."],
+    // ["distr.", "distributive."],
     ["dub.", "doubtful"],
-    // eccl.,      ecclesiastical.
-    // ed.,      editio or editor.
-    // e. g.,      exempli gratiâ.
-    // ellipt.,      elliptical, -ly.
-    // elsewh.,      elsewhere.
-    // epic.,      epicene.
-    // epit.,      epitaph.
-    // equiv.,      equivalent.
-    // esp.,      especially.
-    // etc.,      et cetera.
+    ["eccl.", "ecclesiastical."],
+    // ["ed.", "editio or editor."],
+    // ["e. g.", "exempli gratiâ."],
+    // ["ellipt.", "elliptical, -ly."],
+    // ["elsewh.", "elsewhere."],
+    // ["epic.", "epicene."],
+    // ["epit.", "epitaph."],
+    // ["equiv.", "equivalent."],
+    // ["esp.", "especially."],
+    // ["etc.", "et cetera."],
     ["etym.", "etymology"],
-    // etym. etymology, -ical.
-    // euphon.,      euphonic, -ny.
-    // ex., exs.,      example, examples.
-    // expl.,      explanation, explained.
-    // express.,      expression.
-    // ext.,      externa.
-    // extr.,      extremo (at the end).
-    // f. or fem.,      feminine.
-    // fig.,      figure, -ative, -atively.
-    // fin. or ad fin.,      at the end.
-    // finit.,      finite (opp. to infinitive).
-    // foll.,      following.
-    // Fr.,      French.
-    // fr.,      from.
-    // fragm.,      frgm.,      or fr.,      fragmenta.
-    // freq. or fr.,      frequentative or frequent, -ly.
-    // fut.,      future.
+    // ["etym. etymology", "-ical."],
+    // ["euphon.", "euphonic, -ny."],
+    // ["ex.", "exs.,      example, examples."],
+    // ["expl.", "explanation, explained."],
+    // ["express.", "expression."],
+    // ["ext.", "externa."],
+    // ["extr.", "extremo (at the end)."],
+    // ["f. or fem.", "feminine."],
+    // ["fig.", "figure, -ative, -atively."],
+    // ["fin. or ad fin.", "at the end."],
+    // ["finit.", "finite (opp. to infinitive)."],
+    // ["foll.", "following."],
+    // ["Fr.", "French."],
+    // ["fr.", "from."],
+    // ["fragm.", "frgm.,      or fr.,      fragmenta."],
+    // ["freq. or fr.", "frequentative or frequent, -ly."],
+    // ["fut.", "future."],
     ["In gen.", "In general"],
     ["in gen.", "in general"],
-    // gen.,      genitive or general.
-    // geog.,      geography, -ical.
-    // Germ.,      German.
-    // Goth.,      Gothic.
+    // ["gen.", "genitive or general."],
+    // ["geog.", "geography, -ical."],
+    // ["Germ.", "German."],
+    // ["Goth.", "Gothic."],
     // Gr. Greek.
-    // gr. or gram.,      grammar, -ian, -atical, grammatici.
-    // h.,      hence.
-    // h.l.,      hic locus (this passage).
-    // h.v., h. vv.,      this word, these words.
-    // Heb.,      Hebrew.
-    // hibr.,      hybrid.
-    // hist.,      history, -ian.
-    // i. e.,      id est (that is, namely)
-    // i. q.,      idem quod (the same as).
-    // imper.,      imperative.
-    // imperf.,      imperfect.
-    // impers.,      impersonal, -ly.
-    // in bon. part.,      in bonam partem. (positive)
-    // in mal. part.,      in malam partem. (pejorative)
-    // inanim.,      inanimate.
-    // inch.,      inchoative, inceptive.
-    // indecl.,      indeclinable.
-    // indef.,      indefinite.
-    // indic.,      indicative.
+    // ["gr. or gram.", "grammar, -ian, -atical, grammatici."],
+    // ["h.", "hence."],
+    // ["h.l.", "hic locus (this passage)."],
+    // ["h.v.", "h. vv.,      this word, these words."],
+    // ["Heb.", "Hebrew."],
+    // ["hibr.", "hybrid."],
+    // ["hist.", "history, -ian."],
+    // ["i. e.", "id est (that is, namely)"],
+    // ["i. q.", "idem quod (the same as)."],
+    // ["imper.", "imperative."],
+    // ["imperf.", "imperfect."],
+    // ["impers.", "impersonal, -ly."],
+    // ["in bon. part.", "in bonam partem. (positive)"],
+    // ["in mal. part.", "in malam partem. (pejorative)"],
+    // ["inanim.", "inanimate."],
+    // ["inch.", "inchoative, inceptive."],
+    // ["indecl.", "indeclinable."],
+    // ["indef.", "indefinite."],
+    // ["indic.", "indicative."],
     ["inf.", "infinitive"],
-    // init., in.,      or ad init.,      at the beginning.
-    // inscrr.,      inscriptions.
-    // intens.,      intensive.
-    // interrog.,      interrogative, -tion.
+    // ["init.", "in.,      or ad init.,      at the beginning."],
+    // ["inscrr.", "inscriptions."],
+    // ["intens.", "intensive."],
+    // ["interrog.", "interrogative, -tion."],
     ["intr.", "intransitive"],
     ["Ital.", "Italian"],
-    // JCtus.,      juris consultus.
+    // ["JCtus.", "juris consultus."],
     ["jurid.", "juridical"],
     ["kindr.", "kindred"],
-    // l. c. or l. l.,      loco citato or laudato, in the place already cited above (in this same entry).
-    // l.,      lege or lectio. (read! (X instead of Y); reading)
-    // lang.,      language.
-    // Lat.,      Latin.
-    // leg.,      legit, legunt. (he/she reads; they read)
-    // lex.,      lexicon.
-    // lit.,      literal, in a literal sense.
-    // Lith.,      Lithuanian.
-    // m. or masc.,      masculine.
-    // math.,      mathematics, -ical.
-    // med.,      medio (in the middle).
-    // medic.,      medical or medicine.
-    // metaph.,      metaphorical, -ly.
+    // ["l. c. or l. l.", "loco citato or laudato, in the place already cited above (in this same entry)."],
+    // ["l.", "lege or lectio. (read! (X instead of Y); reading)"],
+    // ["lang.", "language."],
+    // ["Lat.", "Latin."],
+    // ["leg.", "legit, legunt. (he/she reads; they read)"],
+    // ["lex.", "lexicon."],
+    // ["lit.", "literal, in a literal sense."],
+    // ["Lith.", "Lithuanian."],
+    // ["m. or masc.", "masculine."],
+    // ["math.", "mathematics, -ical."],
+    // ["med.", "medio (in the middle)."],
+    // ["medic.", "medical or medicine."],
+    // ["metaph.", "metaphorical, -ly."],
     ["meton.", "by metonymy"],
-    // mid. or med.,      medial; in a middle or reflexive sense.
-    // milit.,      military, in military affairs.
-    // MS.,      manuscript; MSS. manuscripts.
-    // n. pr. or nom. propr.,      nomen proprium (proper name)
+    // ["mid. or med.", "medial; in a middle or reflexive sense."],
+    // ["milit.", "military, in military affairs."],
+    // ["MS.", "manuscript; MSS. manuscripts."],
+    // ["n. pr. or nom. propr.", "nomen proprium (proper name)"],
     // n. or neutr. neuter.
-    // naut.,      nautical.
-    // neg.,      negative, -ly.
-    // no.,      numero.
-    // nom.,      nominative.
-    // num. or numer.,      numeral.
-    // obj. or object.,      object, objective, -ly.
-    // obl.,      oblique.
-    // om.,      omit.
-    // ["onomat.",      "onomatopoeia"],
-    // opp.,      opposed to, opposite, -tion.
-    // orig.,      originally.
-    // p.,      page.
-    // part.,      participle.
-    // partit.,      partitive.
-    // pass.,      passive, -ly, or passage.
+    // ["naut.", "nautical."],
+    // ["neg.", "negative, -ly."],
+    // ["no.", "numero."],
+    // ["nom.", "nominative."],
+    // ["num. or numer.", "numeral."],
+    // ["obj. or object.", "object, objective, -ly."],
+    // ["obl.", "oblique."],
+    // ["om.", "omit."],
+    // ["["onomat."", ""onomatopoeia"],"],
+    // ["opp.", "opposed to, opposite, -tion."],
+    // ["orig.", "originally."],
+    // ["p.", "page."],
+    // ["part.", "participle."],
+    // ["partit.", "partitive."],
+    // ["pass.", "passive, -ly, or passage."],
     ["patr.", "patronymic"],
-    // per.,      period.
-    // perf.,      perfect.
+    // ["per.", "period."],
+    // ["perf.", "perfect."],
     ["perh.", "perhaps"],
-    // pers.,      personal, -ly.
-    // philos.,      philosophy, -ical, -ically, -opher.
-    // pl. or plur.,      plural.
+    // ["pers.", "personal, -ly."],
+    // ["philos.", "philosophy, -ical, -ically, -opher."],
+    // ["pl. or plur.", "plural."],
     ["pleon.", "pleonastically"],
-    // plqpf.,      plusquamperfectum.
-    // plur. tant.,      used only in the plural.
-    // poet.,      poetical, -ly.
-    // polit.,      political, -ly.
-    // posit. or pos.,      positive.
-    // poss.,      possessive.
-    // praef.,      praefatio.
-    // praep.,      preposition.
-    // preced.,      preceding.
-    // pregn.,      pregnant, -ly.
-    // prep.,      preposition.
-    // pres.,      present.
-    // prob.,      probably.
-    // prol.,      prologus.
-    // pron.,      pronoun.
-    // prooem.,      prooemium.
-    // prop.,      proper, -ly, in a proper sense.
-    // prov. or proverb.,      proverbial, -ly.
-    // q. v.,      quod videas. (look it up in that entry)
+    // ["plqpf.", "plusquamperfectum."],
+    // ["plur. tant.", "used only in the plural."],
+    // ["poet.", "poetical, -ly."],
+    // ["polit.", "political, -ly."],
+    // ["posit. or pos.", "positive."],
+    // ["poss.", "possessive."],
+    // ["praef.", "praefatio."],
+    // ["praep.", "preposition."],
+    // ["preced.", "preceding."],
+    // ["pregn.", "pregnant, -ly."],
+    // ["prep.", "preposition."],
+    // ["pres.", "present."],
+    // ["prob.", "probably."],
+    // ["prol.", "prologus."],
+    // ["pron.", "pronoun."],
+    // ["prooem.", "prooemium."],
+    // ["prop.", "proper, -ly, in a proper sense."],
+    // ["prov. or proverb.", "proverbial, -ly."],
+    // ["q. v.", "quod videas. (look it up in that entry)"],
     ["qs.", "quasi"],
-    // rad.,      radical or root.
-    // rar.,      rare, -ly.
-    // ref.,      refer, -ence.
-    // rel.,      relative or reliquiae.
-    // respect.,      respectūs.
-    // rhet.,      rhetoric, -al; in rhetoric.
-    // Rom.,      Roman.
-    // s. h. v.,      sub hac voce. (in this entry)
-    // saep.,      saepe.
-    // saepis.,      saepissime.
-    // sc.,      scilicet.
-    // signif.,      signifies, -cation.
-    // ["simp.",      "simple"],
-    // ["Span.",      "Spanish"],
-    // specif.,      specifically.
-    // sq.,      sequens;
-    // sqq.,      sequentes (and the following).
-    // subj.,      subjunctive.
-    // subject. or subj.,      subject, subjective. -ly.
-    // subst.,      substantive, -ly.
-    // suff.,      suffix.
-    // sup.,      superlative or supine.
-    // syll.,      syllable.
-    // syn.,      synonym, -ymous.
+    // ["rad.", "radical or root."],
+    // ["rar.", "rare, -ly."],
+    // ["ref.", "refer, -ence."],
+    // ["rel.", "relative or reliquiae."],
+    // ["respect.", "respectūs."],
+    // ["rhet.", "rhetoric, -al; in rhetoric."],
+    // ["Rom.", "Roman."],
+    // ["s. h. v.", "sub hac voce. (in this entry)"],
+    // ["saep.", "saepe."],
+    // ["saepis.", "saepissime."],
+    // ["sc.", "scilicet."],
+    // ["signif.", "signifies, -cation."],
+    // ["["simp."", ""simple"],"],
+    // ["["Span."", ""Spanish"],"],
+    // ["specif.", "specifically."],
+    // ["sq.", "sequens;"],
+    // ["sqq.", "sequentes (and the following)."],
+    // ["subj.", "subjunctive."],
+    // ["subject. or subj.", "subject, subjective. -ly."],
+    // ["subst.", "substantive, -ly."],
+    ["suff.", "suffix."],
+    // ["sup.", "superlative or supine."],
+    // ["syll.", "syllable."],
+    // ["syn.", "synonym, -ymous."],
     ["sync.", "syncopated"],
-    // t. t.,      technical term.
-    // tab.,      tabula (table, plate).
+    // ["t. t.", "technical term."],
+    // ["tab.", "tabula (table, plate)."],
     // temp. tense or temporal.
-    // term.,      terminus.
-    // trag.,      tragicus, tragic, or in tragedy.
-    // trans.,      translated, -tion.
-    // transf.,      transferred.
-    // trisyl.,      trisyllable, -abic.
-    // trop.,      in a tropical or figurative sense.
-    // usu.,      usual, -ly.
-    // usu.,      usual, -ly.
-    // v. h. v.,      vide hanc vocem. (see this entry)
-    // v.,      verb, vide, or vox.
-    // var. lect.,      varia lectio (different reading).
+    // ["term.", "terminus."],
+    // ["trag.", "tragicus, tragic, or in tragedy."],
+    // ["trans.", "translated, -tion."],
+    // ["transf.", "transferred."],
+    // ["trisyl.", "trisyllable, -abic."],
+    // ["trop.", "in a tropical or figurative sense."],
+    // ["usu.", "usual, -ly."],
+    // ["v. h. v.", "vide hanc vocem. (see this entry)"],
+    // ["v.", "verb, vide, or vox."],
+    // ["var. lect.", "varia lectio (different reading)."],
     ["vb.", "verb"],
-    // voc.,      vocative.
+    // ["voc.", "vocative."],
   ])
 );
 
 export namespace LsAuthorAbbreviations {
-  const authorMap = new Map<string, string>();
-  const worksMap = new Map<string, Map<string, string>>();
-  const worksTrieMap = new Map<string, TrieNode>();
+  export interface LsAuthorData extends LsAuthorAbbreviation {
+    worksTrie: TrieNode;
+  }
+
+  const authorMap = new Map<string, LsAuthorData[]>();
 
   function populateMaps() {
     if (authorMap.size === 0) {
       const data = parseAuthorAbbreviations();
       for (const datum of data) {
-        authorMap.set(datum.key, datum.expanded);
-        worksMap.set(datum.key, datum.works);
+        if (!authorMap.has(datum.key)) {
+          authorMap.set(datum.key, []);
+        }
         const root = new TrieNode();
         for (const [key, value] of datum.works.entries()) {
           root.add(key, value);
         }
-        worksTrieMap.set(datum.key, root);
+        const result: LsAuthorData = {
+          worksTrie: root,
+          key: datum.key,
+          expanded: datum.expanded,
+          works: datum.works,
+        };
+        authorMap.get(datum.key)!.push(result);
       }
     }
   }
 
-  export function authors(): Map<string, string> {
+  export function authors(): Map<string, LsAuthorData[]> {
     populateMaps();
     return authorMap;
-  }
-
-  export function works(): Map<string, Map<string, string>> {
-    populateMaps();
-    return worksMap;
-  }
-
-  export function worksTrie(): Map<string, TrieNode> {
-    populateMaps();
-    return worksTrieMap;
   }
 }

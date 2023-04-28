@@ -2,10 +2,15 @@ import { parse } from "@/common/lewis_and_short/ls_parser";
 import { assert, assertEqual, checkPresent } from "../assert";
 import fs from "fs";
 import readline from "readline";
-import { parseEntries } from "./xml_node";
+import { parseEntries, XmlNode } from "./xml_node";
 import { displayEntryFree } from "./ls_display";
 import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
 import { removeDiacritics } from "../text_cleaning";
+
+interface ProcessedLsEntry {
+  keys: string[];
+  entry: XmlNode;
+}
 
 interface RawLsEntry {
   keys: string[];
@@ -84,23 +89,40 @@ export class LewisAndShort {
 }
 
 export namespace LewisAndShort {
-  export function createProcessed(
+  export function processedToRaw(input: ProcessedLsEntry): RawLsEntry {
+    return {
+      keys: input.keys,
+      entry: input.entry.toString(),
+    };
+  }
+
+  export function* createProcessedRaw(
     rawFile: string = checkPresent(process.env.LS_PATH)
-  ): RawLsEntry[] {
-    const results: RawLsEntry[] = [];
+  ): Generator<ProcessedLsEntry> {
+    let numHandled = 0;
     for (const root of parse(rawFile)) {
-      if (results.length % 1000 === 0) {
-        console.debug(`Processed ${results.length}`);
+      if (numHandled % 1000 === 0) {
+        console.debug(`Processed ${numHandled}`);
       }
       const orths = getOrths(root).map(mergeVowelMarkers);
       assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
       const regulars = orths.filter(isRegularOrth);
-      results.push({
+      yield {
         keys: regulars.length > 0 ? regulars : orths,
-        entry: root.toString(),
-      });
+        entry: root,
+      };
+      numHandled += 1;
     }
-    return results;
+  }
+
+  export function createProcessed(
+    rawFile: string = checkPresent(process.env.LS_PATH)
+  ): RawLsEntry[] {
+    const result: RawLsEntry[] = [];
+    for (const item of createProcessedRaw(rawFile)) {
+      result.push(processedToRaw(item));
+    }
+    return result;
   }
 
   export async function save(

@@ -18,6 +18,7 @@ import {
   attachHoverText,
   handleAbbreviations,
   handleAbbreviationsInMessage,
+  findExpansions,
 } from "@/common/lewis_and_short/ls_styling";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -228,6 +229,37 @@ function displayQuote(root: XmlNode, _parent?: XmlNode): XmlNode {
   return result;
 }
 
+function chooseAuthor(
+  biblRoot: XmlNode,
+  authorRoot: XmlNode
+): LsAuthorAbbreviations.LsAuthorData | undefined {
+  // TODO: Dedupe with logic in displayAuthor
+  const authorKey = XmlNode.getSoleText(authorRoot);
+  const authorData = checkPresent(
+    LsAuthorAbbreviations.authors().get(authorKey)
+  );
+  const siblings = biblRoot.children;
+  let nextSibling: string | undefined = undefined;
+  for (let i = 0; i < siblings.length - 1; i++) {
+    if (siblings[i] === authorRoot) {
+      nextSibling = XmlNode.assertIsString(siblings[i + 1]);
+      break;
+    }
+  }
+  if (nextSibling === undefined) {
+    return undefined;
+  }
+  const workStart = nextSibling.trim().toLowerCase();
+  for (const option of authorData) {
+    for (const work of option.works.keys()) {
+      if (workStart.startsWith(work.trim().toLowerCase())) {
+        return option;
+      }
+    }
+  }
+  return undefined;
+}
+
 /**
  * Expands a `bibl` element.
  *
@@ -258,14 +290,22 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
   assertEqual(author.length, 1);
 
   const authorKey = XmlNode.getSoleText(author[0]);
-  const works = LsAuthorAbbreviations.worksTrie().get(authorKey);
+  const authorData = LsAuthorAbbreviations.authors().get(authorKey);
+  let works = authorData === undefined ? undefined : authorData[0].worksTrie;
+  if (authorData !== undefined && authorData.length > 1) {
+    works = chooseAuthor(root, author[0])?.worksTrie;
+  }
   const result = new XmlNode("span", [], []);
   for (const child of root.children) {
     if (typeof child === "string") {
       if (works === undefined) {
         result.children.push(child);
       } else {
-        handleAbbreviationsInMessage(child, works, true).forEach((x) =>
+        let expansions = findExpansions(child, works);
+        if (expansions.length === 0) {
+          expansions = findExpansions(child, works, true);
+        }
+        handleAbbreviationsInMessage(child, expansions, true).forEach((x) =>
           result.children.push(x)
         );
       }
@@ -292,9 +332,9 @@ author:
  * Decision: Expand the containing text as needed, show orig on hover.
  *
  * @param root The root node for this element.
- * @param _parent The parent node for the root.
+ * @param parent The parent node for the root.
  */
-export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
+export function displayAuthor(root: XmlNode, parent?: XmlNode): XmlNode {
   assert(root.name === "author");
   const abbreviated = XmlNode.getSoleText(root);
   if (SCHOLAR_ABBREVIATIONS.has(abbreviated)) {
@@ -317,20 +357,62 @@ export function displayAuthor(root: XmlNode, _parent?: XmlNode): XmlNode {
     if (!abbreviated.startsWith(edgeCase + " ")) {
       continue;
     }
-    const authorExpanded = checkPresent(
+    const authorData = checkPresent(
       LsAuthorAbbreviations.authors().get(edgeCase)
     );
+    assertEqual(authorData.length, 1);
     const end = abbreviated.substring(edgeCase.length + 1);
-    const worksMap = checkPresent(LsAuthorAbbreviations.works().get(edgeCase));
+    const worksMap = checkPresent(authorData[0].works);
     const endExpanded = checkPresent(worksMap.get(end));
-    const expanded = `${authorExpanded} ${endExpanded}`;
+    const expanded = `${authorData[0].expanded} ${endExpanded}`;
     return attachHoverText(expanded, `Expanded from: ${abbreviated}`);
   }
-  return attachHoverText(
-    abbreviated,
-    checkPresent(LsAuthorAbbreviations.authors().get(abbreviated)),
-    ["lsAuthor"]
+  const authorData = checkPresent(
+    LsAuthorAbbreviations.authors().get(abbreviated)
   );
+  assert(authorData.length > 0);
+  if (authorData.length === 1) {
+    return attachHoverText(abbreviated, authorData[0].expanded, ["lsAuthor"]);
+  }
+  // TODO: Dedupe with logic in displayBibl
+  const siblings = checkPresent(parent).children;
+  let nextSibling: string | undefined = undefined;
+  for (let i = 0; i < siblings.length - 1; i++) {
+    if (siblings[i] === root) {
+      nextSibling = XmlNode.assertIsString(siblings[i + 1]);
+      break;
+    }
+  }
+  if (nextSibling === undefined) {
+    const expansions = authorData.map((data) => data.expanded).join(" OR ");
+    return attachHoverText(abbreviated, expansions, ["lsAuthor"]);
+  }
+  const workStart = nextSibling.trim().toLowerCase();
+  for (const option of authorData) {
+    for (const work of option.works.keys()) {
+      if (workStart.startsWith(work.trim().toLowerCase())) {
+        return attachHoverText(abbreviated, option.expanded, ["lsAuthor"]);
+      }
+    }
+  }
+  if (/^\d/.test(workStart)) {
+    if (abbreviated === "Plin.") {
+      return attachHoverText(
+        abbreviated,
+        "(Likely) Pliny the Elder; (Rarely) Pliny the Younger",
+        ["lsAuthor"]
+      );
+    }
+    if (abbreviated === "Just.") {
+      return attachHoverText(
+        abbreviated,
+        "(Likely) Justinus, historian, about fl.(?) A.D. 150; (Rarely) Justinianus, emperor, ob. A.D. 565",
+        ["lsAuthor"]
+      );
+    }
+  }
+  const expansions = authorData.map((data) => data.expanded).join(" OR ");
+  return attachHoverText(abbreviated, expansions, ["lsAuthor"]);
 }
 
 /**

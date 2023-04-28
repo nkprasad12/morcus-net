@@ -1,7 +1,6 @@
 import compression from "compression";
 import express, { Request } from "express";
 import { entriesByPrefix, lsCall, macronizeCall } from "@/web/api_routes";
-import path from "path";
 import bodyParser from "body-parser";
 
 function log(message: string) {
@@ -13,6 +12,7 @@ export interface WebServerParams {
   macronizer: (input: string) => Promise<string>;
   lsDict: (entry: string) => Promise<string>;
   entriesByPrefix: (prefix: string) => Promise<string[]>;
+  indexFilePath: string;
 }
 
 export function setupServer(params: WebServerParams): void {
@@ -27,7 +27,7 @@ export function setupServer(params: WebServerParams): void {
 
   app.use("/*", (req, res, next) => {
     if (!req.baseUrl.startsWith("/api/")) {
-      res.sendFile(path.join(__dirname, "../../genfiles_static", "index.html"));
+      res.sendFile(params.indexFilePath);
       return;
     }
     next();
