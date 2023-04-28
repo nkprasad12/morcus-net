@@ -22,10 +22,22 @@ jobs:
         uses: codecov/codecov-action@v3
         with:
           directory: ./coverage
-      - name: Building the client bundle
-        run: npm run build-client
       - name: Checking formatting
         run: npm run format-check
+
+  integration-checks:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Set up Python 3.8
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.8"
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Running integration checks
+        run: python src/integration/e2e_test.py
 
   pytype-checks:
     runs-on: ubuntu-latest
