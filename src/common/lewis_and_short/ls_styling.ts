@@ -72,9 +72,10 @@ export namespace AbbreviationTrie {
 //
 // And also we can have multi-word keys like `de Or.` where we need to
 // make sure we are handling `de` as connected to `Or.`.
-function findExpansions(
+export function findExpansions(
   message: string,
-  trieRoot: TrieNode
+  trieRoot: TrieNode,
+  ignoreCase: boolean = false
 ): [number, number, string[]][] {
   // [startIndex, length, expandedString]
   const expansions: [number, number, string[]][] = [];
@@ -83,7 +84,9 @@ function findExpansions(
   let bestExpansion: [number, number, string[]] | undefined = undefined;
   for (let i = 0; i <= message.length; i++) {
     const c = i === message.length ? "@@" : message[i];
-    const nextNode = triePosition.next(c);
+    const nextNode = ignoreCase
+      ? triePosition.next(c.toLowerCase()) || triePosition.next(c.toUpperCase())
+      : triePosition.next(c);
     if (nextNode === undefined) {
       triePosition = trieRoot;
       if (bestExpansion !== undefined) {
@@ -116,11 +119,10 @@ function findExpansions(
 
 export function handleAbbreviationsInMessage(
   message: string,
-  trieRoot: TrieNode,
+  expansions: [number, number, string[]][],
   replace: boolean,
   expandedCssClasses?: string[]
 ): (XmlNode | string)[] {
-  const expansions = findExpansions(message, trieRoot);
   const chunks: (XmlNode | string)[] = [];
   let lastChunkEnd = 0;
   for (const [startIndex, length, expandedString] of expansions) {
@@ -158,7 +160,7 @@ export function handleAbbreviations(
     if (typeof child === "string") {
       handleAbbreviationsInMessage(
         child,
-        defaultTrie,
+        findExpansions(child, defaultTrie),
         replace,
         expandedCssClasses
       ).forEach((x) => children.push(x));

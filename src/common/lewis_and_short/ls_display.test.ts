@@ -95,6 +95,46 @@ describe("displayBibl", () => {
     ];
     expect(result.toString()).toBe(parts.join(""));
   });
+
+  it("handles case insensitivity when needed", () => {
+    const author = new XmlNode("author", [], ["Cic."]);
+    const bibl = new XmlNode("bibl", [], [author, "Ad brut. 3, 7, 26"]);
+
+    const result = displayBibl(bibl);
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
+      "Cic.",
+      "</span>",
+      '<span title="Expanded from: Ad brut." class="lsHover">',
+      "ad Brutum Epistulae.",
+      "</span>",
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("handles Cicero de Or.", () => {
+    const author = new XmlNode("author", [], ["Cic."]);
+    const bibl = new XmlNode("bibl", [], [author, "de Or. 3, 7, 26"]);
+
+    const result = displayBibl(bibl);
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
+      "Cic.",
+      "</span>",
+      '<span title="Expanded from: de Or." class="lsHover">',
+      "De Oratore.",
+      "</span>",
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
 });
 
 describe("displayUsg", () => {

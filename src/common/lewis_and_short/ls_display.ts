@@ -18,6 +18,7 @@ import {
   attachHoverText,
   handleAbbreviations,
   handleAbbreviationsInMessage,
+  findExpansions,
 } from "@/common/lewis_and_short/ls_styling";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -300,7 +301,11 @@ export function displayBibl(root: XmlNode, _parent?: XmlNode): XmlNode {
       if (works === undefined) {
         result.children.push(child);
       } else {
-        handleAbbreviationsInMessage(child, works, true).forEach((x) =>
+        let expansions = findExpansions(child, works);
+        if (expansions.length === 0) {
+          expansions = findExpansions(child, works, true);
+        }
+        handleAbbreviationsInMessage(child, expansions, true).forEach((x) =>
           result.children.push(x)
         );
       }
