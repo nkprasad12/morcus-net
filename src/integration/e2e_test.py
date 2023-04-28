@@ -43,9 +43,9 @@ try:
 
     start_server = start_process(START_SERVER)
     time.sleep(15)
-    api_result = requests.get(f"http://localhost:{PORT}/api/dicts/ls/unda", timeout=5)
+    api_result = requests.get(f"http://localhost:{PORT}/api/dicts/ls/canaba", timeout=5)
     print(api_result.text)
-    assert "a wave, billow, surge" in api_result.text
+    assert "cannăba" in api_result.text
 finally:
     print(f"Cleaning up {len(processes)} processes.")
     for process in processes:
