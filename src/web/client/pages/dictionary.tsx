@@ -26,7 +26,7 @@ export function ClickableTooltip(props: {
   return (
     <ClickAwayListener onClickAway={() => setOpen(false)}>
       <Tooltip
-        title={props.titleText}
+        title={<Typography>{props.titleText}</Typography>}
         className={props.className}
         placement="top-start"
         disableFocusListener

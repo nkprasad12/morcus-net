@@ -107,7 +107,7 @@ export const LBL_ABBREVIATIONS = new Map<string, Map<string, string>>([
   ["sense", new Map<string, string>([["dim.", "diminutive"]])],
   ["entryFree", new Map<string, string>([["dim.", "diminutive"]])],
   ["etym", new Map<string, string>([["dim.", "diminutive"]])],
-  ["xr", new Map<string, string>([["v.", "look [at entry]"]])],
+  ["xr", new Map<string, string>([["v.", "see"]])],
 ]);
 
 export const GEN_ABBREVIATIONS = new Map<string, string>([
@@ -384,37 +384,36 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
 );
 
 export namespace LsAuthorAbbreviations {
-  const authorMap = new Map<string, string>();
-  const worksMap = new Map<string, Map<string, string>>();
-  const worksTrieMap = new Map<string, TrieNode>();
+  export interface LsAuthorData extends LsAuthorAbbreviation {
+    worksTrie: TrieNode;
+  }
+
+  const authorMap = new Map<string, LsAuthorData[]>();
 
   function populateMaps() {
     if (authorMap.size === 0) {
       const data = parseAuthorAbbreviations();
       for (const datum of data) {
-        authorMap.set(datum.key, datum.expanded);
-        worksMap.set(datum.key, datum.works);
+        if (!authorMap.has(datum.key)) {
+          authorMap.set(datum.key, []);
+        }
         const root = new TrieNode();
         for (const [key, value] of datum.works.entries()) {
           root.add(key, value);
         }
-        worksTrieMap.set(datum.key, root);
+        const result: LsAuthorData = {
+          worksTrie: root,
+          key: datum.key,
+          expanded: datum.expanded,
+          works: datum.works,
+        };
+        authorMap.get(datum.key)!.push(result);
       }
     }
   }
 
-  export function authors(): Map<string, string> {
+  export function authors(): Map<string, LsAuthorData[]> {
     populateMaps();
     return authorMap;
-  }
-
-  export function works(): Map<string, Map<string, string>> {
-    populateMaps();
-    return worksMap;
-  }
-
-  export function worksTrie(): Map<string, TrieNode> {
-    populateMaps();
-    return worksTrieMap;
   }
 }
