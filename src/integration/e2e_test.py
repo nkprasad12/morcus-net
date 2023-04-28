@@ -17,7 +17,7 @@ subproc_env["LS_PROCESSED_PATH"] = "lsp.txt"
 subproc_env["PORT"] = f"{PORT}"
 
 
-processes: list[subprocess.Popen] = []
+processes: "list[subprocess.Popen]" = []
 
 
 def wait_and_check(proc: subprocess.Popen, message: str) -> None:
