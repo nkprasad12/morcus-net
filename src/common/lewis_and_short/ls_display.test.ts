@@ -75,6 +75,26 @@ describe("displayBibl", () => {
     ];
     expect(result.toString()).toBe(parts.join(""));
   });
+
+  it("shows expected result for ambiguous author case", () => {
+    const author = new XmlNode("author", [], ["Plin."]);
+    const bibl = new XmlNode("bibl", [], [author, "Ep. 1, 12, 32"]);
+
+    const result = displayBibl(bibl);
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="C. Plinius Caecilius Secundus (minor), ob. A.D. 113" class="lsHover lsAuthor">',
+      "Plin.",
+      "</span>",
+      '<span title="Expanded from: Ep." class="lsHover">',
+      "Epistulae.",
+      "</span>",
+      " 1, 12, 32",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
 });
 
 describe("displayUsg", () => {
@@ -278,6 +298,34 @@ describe("displayAuthor", () => {
     const expected = [
       '<span title="(Likely) Justinus, historian, about fl.(?) A.D. 150;',
       ' (Rarely) Justinianus, emperor, ob. A.D. 565"',
+      ' class="lsHover lsAuthor">Just.</span>',
+    ];
+    expect(output.toString()).toBe(expected.join(""));
+  });
+
+  it("handles no citation after author edge case", () => {
+    const input = new XmlNode("author", [], ["Just."]);
+    const bibl = new XmlNode("bibl", [], [input]);
+
+    const output = displayAuthor(input, bibl);
+
+    const expected = [
+      '<span title="Justinus, historian, about fl.(?) A.D. 150',
+      ' OR Justinianus, emperor, ob. A.D. 565"',
+      ' class="lsHover lsAuthor">Just.</span>',
+    ];
+    expect(output.toString()).toBe(expected.join(""));
+  });
+
+  it("handles unknown citation after author edge case", () => {
+    const input = new XmlNode("author", [], ["Just."]);
+    const bibl = new XmlNode("bibl", [], [input, "Blah. 7 6"]);
+
+    const output = displayAuthor(input, bibl);
+
+    const expected = [
+      '<span title="Justinus, historian, about fl.(?) A.D. 150',
+      ' OR Justinianus, emperor, ob. A.D. 565"',
       ' class="lsHover lsAuthor">Just.</span>',
     ];
     expect(output.toString()).toBe(expected.join(""));
