@@ -110,12 +110,12 @@ function SearchBox(props: {
   const [options, setOptions] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
 
-  async function onEnter() {
-    if (inputState.length === 0) {
+  async function onEnter(searchTerm: string) {
+    if (searchTerm.length === 0) {
       return;
     }
-    props.onNewEntries(await fetchEntry(inputState));
-    history.pushState(`#${inputState}`, "", `#${inputState}`);
+    props.onNewEntries(await fetchEntry(searchTerm));
+    history.pushState(`#${searchTerm}`, "", `#${searchTerm}`);
   }
 
   return (
@@ -132,8 +132,12 @@ function SearchBox(props: {
         mt: 2,
         mb: 1,
       }}
-      onInputChange={async (_, value) => {
+      onInputChange={async (event, value) => {
         setInputState(value);
+        if (["click", "keydown"].includes(event.type)) {
+          onEnter(value);
+          return;
+        }
         setLoading(true);
         const prefixOptions = await AutocompleteCache.get().getOptions(value);
         setOptions(prefixOptions.slice(0, 200));
@@ -148,7 +152,7 @@ function SearchBox(props: {
           }}
           onKeyPress={(e) => {
             if (e.key === "Enter") {
-              onEnter();
+              onEnter(inputState);
             }
           }}
           InputProps={{

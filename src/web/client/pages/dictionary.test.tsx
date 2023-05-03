@@ -58,6 +58,21 @@ describe("Dictionary View", () => {
     expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/entriesByPrefix/g");
   });
 
+  it("handles autocomplete option clicks", async () => {
+    replaceFetch(true, JSON.stringify(["Goo"]));
+    render(<Dictionary input="" />);
+    const searchBar = screen.getByRole("combobox");
+
+    await user.click(searchBar);
+    await user.type(searchBar, "G");
+    const option = screen.getByText("Goo");
+    const mockFetch = replaceFetch(true, JSON.stringify(["<span/>"]));
+    await user.click(option);
+
+    expect(mockFetch.mock.calls).toHaveLength(1);
+    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/ls/G");
+  });
+
   it("calls server on submit", async () => {
     const mockFetch = replaceFetch(false);
     render(<Dictionary input="" />);
