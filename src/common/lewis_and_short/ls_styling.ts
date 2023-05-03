@@ -1,7 +1,7 @@
 import { checkPresent } from "../assert";
 import { XmlNode } from "./xml_node";
 
-const START_CHARACTERS = new Set<string>([" "]);
+const START_CHARACTERS = new Set<string>(" ();");
 
 export interface TrieValue {
   value: string;
@@ -84,6 +84,9 @@ export function findExpansions(
   let bestExpansion: [number, number, string[]] | undefined = undefined;
   for (let i = 0; i <= message.length; i++) {
     const c = i === message.length ? "@@" : message[i];
+    // TODO: This is not correct. Backtracking will always choose the lower case branch
+    // if it is present, so if we have `aBc hi hello`, and with abbreviations
+    // `abd` and `aBc`, we would never find `aBc`.
     const nextNode = ignoreCase
       ? triePosition.next(c.toLowerCase()) || triePosition.next(c.toUpperCase())
       : triePosition.next(c);
@@ -91,9 +94,14 @@ export function findExpansions(
       triePosition = trieRoot;
       if (bestExpansion !== undefined) {
         expansions.push(bestExpansion);
+        // Restart right after the consumed substring for which we found an expansion.
+        // We have the `-1` because the loop will increment after this.
+        i = bestExpansion[0] + bestExpansion[1] - 1;
         bestExpansion = undefined;
       } else if (currentStart !== undefined) {
-        i = currentStart + 1;
+        // The loop will increment `i`, so in the next iteration
+        // we will read the character after `currentStart`.
+        i = currentStart;
       }
       currentStart = undefined;
       continue;
