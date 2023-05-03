@@ -127,6 +127,16 @@ describe("handleAbbreviations", () => {
     expect(input.toString()).toStrictEqual(output.toString());
   });
 
+  it("skips already expanded words", () => {
+    const input = new XmlNode(
+      "span",
+      [["class", "lsHover lsBlah"]],
+      ["q. t. t."]
+    );
+    const output = handleAbbreviations(input, trieRoot);
+    expect(input.toString()).toStrictEqual(output.toString());
+  });
+
   it("does not expand in the middle of a word", () => {
     const input = new XmlNode("span", [], ["That."]);
     const output = handleAbbreviations(input, trieRoot);

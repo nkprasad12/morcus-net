@@ -165,6 +165,12 @@ export function handleAbbreviations(
 ): XmlNode {
   const children: (XmlNode | string)[] = [];
   for (const child of contentRoot.children) {
+    const rootClass = contentRoot.getAttr("class") || "";
+    if (rootClass.includes("lsHover")) {
+      // Do not abbreviate any part of a string that has already been expanded.
+      children.push(child);
+      continue;
+    }
     if (typeof child === "string") {
       handleAbbreviationsInMessage(
         child,
