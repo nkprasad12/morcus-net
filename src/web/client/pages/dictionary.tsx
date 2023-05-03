@@ -108,6 +108,7 @@ function SearchBox(props: {
 }) {
   const [inputState, setInputState] = React.useState<string>(props.input);
   const [options, setOptions] = React.useState<string[]>([]);
+  const [loading, setLoading] = React.useState<boolean>(false);
 
   async function onEnter() {
     if (inputState.length === 0) {
@@ -121,6 +122,8 @@ function SearchBox(props: {
     <Autocomplete
       freeSolo
       disableClearable
+      loading={loading}
+      loadingText={"Loading options..."}
       options={options}
       sx={{
         padding: 1,
@@ -131,8 +134,10 @@ function SearchBox(props: {
       }}
       onInputChange={async (_, value) => {
         setInputState(value);
+        setLoading(true);
         const prefixOptions = await AutocompleteCache.get().getOptions(value);
         setOptions(prefixOptions.slice(0, 200));
+        setLoading(false);
       }}
       renderInput={(params) => (
         <TextField
