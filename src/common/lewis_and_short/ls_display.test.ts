@@ -8,14 +8,10 @@ import {
   formatSenseList,
   getBullet,
 } from "./ls_display";
+import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
 import { parseEntries, XmlNode } from "./xml_node";
 
 const OL_OPEN = '<ol class="lsSenseList">';
-const CANABA = `<entryFree key="canaba" type="main" id="n6427"><orth lang="la" extent="full">cānăba</orth> (or <orth lang="la" extent="full">cannăba</orth>), <itype>ae</itype>, <gen>f.</gen> <etym>kindr. with <foreign lang="greek">κάναβος</foreign> and <foreign lang="greek">κάννα</foreign>; acc. to others, with <foreign lang="greek">καλύβη</foreign></etym>, <sense level="1" n="I" id="n6427.0"><hi rend="ital">a hovel</hi>, <hi rend="ital">hut</hi>, <bibl n="August. Serm. 61"><author>Aug.</author> Serm. 61</bibl>, de Temp.; <bibl><author>Inscr. Orell.</author> 39</bibl>; <bibl>4077</bibl>.</sense></entryFree>`;
-const BENEFIO = `<entryFree key="benefio" type="main" id="n5182"><orth lang="la" extent="full">bĕnĕfīo</orth>, v. benefacio.</entryFree>`;
-// const ANTHOL_LAT_EDGE_CASE = `<entryFree key="bimatris" type="main" id="n5352"><orth lang="la" extent="full">bĭmātris</orth>, <itype>e</itype>, <pos>adj.</pos> <etym>bis - mater</etym>, <sense level="1" n="I" id="n5352.0"><hi rend="ital">having two mothers</hi>, <usg type="style">poet.</usg> epithet of Bacchus (v. Bacchus <hi rend="ital">init.</hi>): <cit><quote lang="la">satumque iterum solumque bimatrem,</quote> <bibl n="urn:cts:latinLit:phi0959.phi006.perseus-lat1:4:12"><author>Ov.</author> M. 4, 12</bibl></cit>; <bibl n="Hyg. Fab. 167"><author>Hyg.</author> Fab. 167</bibl>; <bibl><author>Anthol. Lat.</author> 1, 19, 2</bibl> (where it is scanned bīmăter).</sense></entryFree>`;
-const BIMATRIS = `<entryFree key="bimatris" type="main" id="n5352"><orth lang="la" extent="full">bĭmātris</orth>, <itype>e</itype>, <pos>adj.</pos> <etym>bis - mater</etym>, <sense level="1" n="I" id="n5352.0"><hi rend="ital">having two mothers</hi>, <usg type="style">poet.</usg> epithet of Bacchus (v. Bacchus <hi rend="ital">init.</hi>): <cit><quote lang="la">satumque iterum solumque bimatrem,</quote> <bibl n="urn:cts:latinLit:phi0959.phi006.perseus-lat1:4:12"><author>Ov.</author> M. 4, 12</bibl></cit>; <bibl n="Hyg. Fab. 167"><author>Hyg.</author> Fab. 167</bibl>; <bibl><author>Anthol. Lat.</author> 1, 19, 2</bibl> (where it is scanned bīmăter).</sense></entryFree>
-`;
 
 describe("getBullet", () => {
   it("returns original on unparenthesized", () => {
@@ -277,7 +273,7 @@ describe("defaultDisplay", () => {
   });
 });
 
-describe("defaultDisplay", () => {
+describe("displayEntryFree", () => {
   it("handles Anthol. Lat. edge case", () => {
     const input = parseEntries([BIMATRIS])[0];
 
