@@ -1,5 +1,7 @@
 import { readFileSync, unlinkSync, writeFileSync } from "fs";
-import { LsRewriters, rewriteLs } from "../ls_write";
+import { LsRewriters, rewriteLs } from "./ls_write";
+import { CANABA, PALUS1 } from "./sample_entries";
+import { XmlNode } from "./xml_node";
 
 const IN_FILE = "ls_write.test.tmp.in.xml";
 
@@ -79,5 +81,27 @@ describe("rewriters", () => {
 
     const rewritten = readFileSync(IN_FILE, "utf8");
     expect(rewritten).toEqual("header\n<body>\nentry1\nentry2");
+  });
+
+  test("transformEntries modifies entries and only entries", async () => {
+    const original = ["header", "<body>", CANABA, "<div1></div>", PALUS1].join(
+      "\n"
+    );
+    writeFileSync(IN_FILE, original);
+
+    await LsRewriters.transformEntries(
+      IN_FILE,
+      (root) => new XmlNode("box", [], [root])
+    );
+    const rewritten = readFileSync(IN_FILE, "utf8");
+    expect(rewritten).toEqual(
+      [
+        "header",
+        "<body>",
+        `<box>${CANABA}</box>`,
+        "<div1></div>",
+        `<box>${PALUS1}</box>`,
+      ].join("\n")
+    );
   });
 });

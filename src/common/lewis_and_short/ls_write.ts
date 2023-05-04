@@ -1,4 +1,5 @@
 import { createWriteStream, readFileSync, renameSync } from "fs";
+import { parseEntries, XmlNode } from "./xml_node";
 
 /**
  * Rewrites the contents of an XML file at the specified path by applying
@@ -52,5 +53,18 @@ export namespace LsRewriters {
     return rewriteLs(input, (line) =>
       line.length === 0 ? "" : "\n" + line.trim()
     );
+  }
+
+  export function transformEntries(
+    inputPath: string,
+    transformer: (input: XmlNode) => XmlNode
+  ): Promise<void> {
+    return rewriteLs(inputPath, (line) => {
+      if (!line.startsWith("<entryFree ")) {
+        return "\n" + line;
+      }
+      const original = parseEntries([line])[0];
+      return "\n" + transformer(original).toString();
+    });
   }
 }
