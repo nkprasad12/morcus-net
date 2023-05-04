@@ -27,6 +27,34 @@ describe("rawOrths", () => {
 
     expect(result).toStrictEqual(["Caesar", "divisa"]);
   });
+
+  it("handles reg", () => {
+    const root = new XmlNode(
+      "entryFree",
+      [],
+      [
+        new XmlNode("orth", [], ["Gallia"]),
+        new XmlNode(
+          "orth",
+          [],
+          [
+            new XmlNode(
+              "reg",
+              [],
+              [
+                new XmlNode("sic", [], ["est"]),
+                new XmlNode("corr", [], ["omnis"]),
+              ]
+            ),
+          ]
+        ),
+      ]
+    );
+
+    const result = rawOrths(root);
+
+    expect(result).toStrictEqual(["Gallia", "omnis"]);
+  });
 });
 
 describe("cleanOrths", () => {

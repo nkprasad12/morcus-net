@@ -420,6 +420,12 @@ export function rawOrths(root: XmlNode): string[] {
     if (child.getAttr("type") === "alt") {
       continue;
     }
+    if (typeof child.children[0] !== "string") {
+      const reg = XmlNode.assertIsNode(child.children[0], "reg");
+      const corr = XmlNode.assertIsNode(reg.children[1], "corr");
+      orths.push(XmlNode.getSoleText(corr));
+      continue;
+    }
     orths.push(XmlNode.getSoleText(child));
   }
   return orths;
