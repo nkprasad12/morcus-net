@@ -283,6 +283,25 @@ describe("displayEntryFree", () => {
     expect(output).toContain("Anthol. Lat.");
     expect(output).not.toContain("Latin.");
   });
+
+  it("collapses regs", () => {
+    const rawEntry =
+      "<entryFree><reg><sic>a</sic><corr>b</corr></reg></entryFree>";
+    const entry = parseEntries([rawEntry])[0];
+
+    const output = displayEntryFree(entry);
+
+    expect(output.children).toStrictEqual(["b"]);
+  });
+
+  it("removes comments", () => {
+    const rawEntry = "<entryFree>hello <!-- I am a comment --></entryFree>";
+    const entry = parseEntries([rawEntry])[0];
+
+    const output = displayEntryFree(entry);
+
+    expect(output.children).toStrictEqual(["hello "]);
+  });
 });
 
 describe("displayAuthor", () => {

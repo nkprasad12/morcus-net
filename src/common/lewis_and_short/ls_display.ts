@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { COMMENT_NODE, XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   CASE_ABBREVIATIONS,
   GENERIC_EXPANSIONS,
@@ -851,6 +851,26 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
   return stack[0];
 }
 
+function sanitizeTree(root: XmlNode): XmlNode {
+  const children: (XmlNode | string)[] = [];
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      children.push(child);
+    } else if (child.name === "reg") {
+      assert(child.children.length === 2);
+      XmlNode.assertIsNode(child.children[0], "sic");
+      const corr = XmlNode.assertIsNode(child.children[1], "corr");
+      children.push(XmlNode.getSoleText(corr));
+      console.debug(`Corrected ${child} -> ${XmlNode.getSoleText(corr)}`);
+    } else if (child.name === COMMENT_NODE) {
+      // Intentional no-op. We want to just ignore comments.
+    } else {
+      children.push(sanitizeTree(child));
+    }
+  }
+  return new XmlNode(root.name, root.attrs, children);
+}
+
 /**
  * Expands an `entryFree` element.
  *
@@ -879,11 +899,15 @@ entryFree:
  *
  * Decision: TODO
  *
- * @param root The root node for this element.
+ * @param rootNode The root node for this element.
  * @param _parent The parent node for the root.
  */
-export function displayEntryFree(root: XmlNode, _parent?: XmlNode): XmlNode {
-  assert(root.name === "entryFree");
+export function displayEntryFree(
+  rootNode: XmlNode,
+  _parent?: XmlNode
+): XmlNode {
+  assert(rootNode.name === "entryFree");
+  const root = sanitizeTree(rootNode);
 
   const senseNodes: XmlNode[] = [];
   let level1Icount = 0;

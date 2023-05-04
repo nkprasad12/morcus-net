@@ -1,5 +1,13 @@
 import { describe, expect, test } from "@jest/globals";
 import { readFileSync } from "fs";
+import {
+  ABACULUS,
+  ABEQUITO,
+  ACCIANUS,
+  ACEO,
+  CONDICTICIUS,
+  PALUS1,
+} from "./sample_entries";
 
 import { extractEntries, parseEntries, XmlNode } from "./xml_node";
 
@@ -89,12 +97,6 @@ describe("parseEntries", () => {
   it("raises on unpaired tags if validation is enabled", () => {
     expect(() => parseEntries([makeEntry("<sense>")], true)[0]).toThrowError();
     expect(() => parseEntries([makeEntry("</sense>")], true)[0]).toThrowError();
-  });
-
-  test("collapses regs", () => {
-    const rawEntry = makeEntry("<reg><sic>a</sic><corr>b</corr></reg>");
-    const entry = parseEntries([rawEntry])[0];
-    expect(entry.children).toStrictEqual(["b"]);
   });
 });
 
@@ -190,5 +192,33 @@ describe("XmlNode.getAttr", () => {
   it("returns undefined if not present", () => {
     const root = new XmlNode("caesar", [["child", "octavianus"]], []);
     expect(root.getAttr("parent")).toBe(undefined);
+  });
+});
+
+describe("XmlNode utils does not modify string", () => {
+  function assertUnchanged(entry: string) {
+    const node = parseEntries([entry])[0];
+    expect(node.toString()).toStrictEqual(entry);
+  }
+
+  test("entries with column breaks are handled", () => {
+    assertUnchanged(ABACULUS);
+  });
+
+  test("entries with page breaks are handled", () => {
+    assertUnchanged(ABEQUITO);
+  });
+
+  test("entries with corrections are handled", () => {
+    assertUnchanged(CONDICTICIUS);
+  });
+
+  test("entries with XML comments are handled", () => {
+    assertUnchanged(PALUS1);
+  });
+
+  test("Handles sampling of entries", () => {
+    assertUnchanged(ACEO);
+    assertUnchanged(ACCIANUS);
   });
 });
