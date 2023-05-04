@@ -154,8 +154,16 @@ export const USG_TRIE = AbbreviationTrie.forMap(USG_ABBREVIATIONS);
 export const GENERIC_HOVERS = AbbreviationTrie.forMap(
   new Map<string, string>([
     ["ad loc.", "ad locum (comment on this passage)"],
+    ["a. h. l.", "ad hunc locum (comment on this passage). "],
     ["ad h. l.", "ad hunc locum (comment on this passage). "],
+    ["ad h.l.", "ad hunc locum (comment on this passage). "],
+    ["h.l.", "hic locus (this passage)."],
+    ["h. l.", "hic locus (this passage)."],
     ["ib.", "at the same place / citation"],
+    ["i. e.", "id est (that is, namely)"],
+    ["i.e.", "id est (that is, namely)"],
+    ["i.q.", "idem quod (the same as)."],
+    ["i. q.", "idem quod (the same as)."],
     ["id.", "the same author"],
     ["tab.", "tabula (table, plate)."],
     ["var. lect.", "varia lectio (different reading)."],
@@ -176,10 +184,8 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["adv.", "adverb, -ial, -ially; or adversus."],
     ["agric.", "agricultural"],
     ["agricult.", "agricultural"],
-    // This seems not to appear?
-    // ["a. h. v.", "ad hanc vocem. (at this entry)"],
-    // This should be familiar to readers via et. al.
-    // ["al.", "alii or alia, others or other."],
+    // ["a. h. v.", "ad hanc vocem. (at this entry)"],  // This seems not to appear?
+    // ["al.", "alii or alia, others or other."],  // This should be familiar to readers via et. al.
     ["amplif.", "amplificative"],
     ["analog.", "analogous(ly)"],
     // ["antiq.", "antiquities. <- Seems to occur in other ways"],
@@ -194,7 +200,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["c.", "cum (with)."],
     // ["c. c.", "coupled with."],
     ["cf.", "compare"],
-    // ["chh.", "church."],
+    // ["chh.", "church."],  // This seems never to appear?
     // ["class.", "classic, -al."],
     // ["Cod.", "Codex (MS)."],
     // ["collat.", "collateral."],
@@ -221,21 +227,20 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["dub.", "doubtful"],
     ["eccl.", "ecclesiastical."],
     // ["ed.", "editio or editor."],
-    // ["e. g.", "exempli gratiâ."],
+    // ["e. g.", "exempli gratiâ."],  // This is familiar in English.
     // ["ellipt.", "elliptical, -ly."],
-    // ["elsewh.", "elsewhere."],
-    // ["epic.", "epicene."],
-    // ["epit.", "epitaph."],
+    ["elsewh.", "elsewhere."],
+    // ["epic.", "epicene."],  // This is never abbreviated
+    ["epit.", "epitaph."],
     // ["equiv.", "equivalent."],
     // ["esp.", "especially."],
-    // ["etc.", "et cetera."],
+    // ["etc.", "et cetera."],  // This is familiar in English.
     ["etym.", "etymology"],
     // ["etym. etymology", "-ical."],
     // ["euphon.", "euphonic, -ny."],
     // ["ex.", "exs.,      example, examples."],
     // ["expl.", "explanation, explained."],
-    // This never actually appears?
-    // ["express.", "expression."],
+    // ["express.", "expression."],  // This never actually appears?
     // ["ext.", "externa."],
     // ["extr.", "extremo (at the end)."],
     // ["f. or fem.", "feminine."],
@@ -257,13 +262,10 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // Gr. Greek.
     // ["gr. or gram.", "grammar, -ian, -atical, grammatici."],
     // ["h.", "hence."],
-    // ["h.l.", "hic locus (this passage)."],
     // ["h.v.", "h. vv.,      this word, these words."],
     // ["Heb.", "Hebrew."],
     // ["hibr.", "hybrid."],
     // ["hist.", "history, -ian."],
-    // ["i. e.", "id est (that is, namely)"],
-    // ["i. q.", "idem quod (the same as)."],
     // ["imper.", "imperative."],
     // ["imperf.", "imperfect."],
     // ["impers.", "impersonal, -ly."],
