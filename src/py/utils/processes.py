@@ -66,7 +66,7 @@ _MOOD_DICT = {
 }
 
 
-class Alatius(processing.Process[str, str]):
+class Alatius(processing.Process[str, str]):  # pragma: no cover
     def initialize(self) -> None:
         super().initialize()
         # pytype: disable=import-error
@@ -92,7 +92,7 @@ class AlatiusManualWeb(processing.Process[str, str]):  # pragma: no cover
         return "\n".join(inputs)
 
 
-class AlatiusCustomTokenization(processing.Process[str, str]):
+class AlatiusCustomTokenization(processing.Process[str, str]):  # pragma: no cover
     def initialize(self) -> None:
         super().initialize()
         # pytype: disable=import-error
@@ -308,7 +308,7 @@ class Lamon(processing.Process[str, str]):  # pragma: no cover
         return alatius.detokenize(False)
 
 
-class StanzaCustomTokenization(processing.Process[str, str]):
+class StanzaCustomTokenization(processing.Process[str, str]):  # pragma: no cover
     # pytype: disable=name-error
     _nlp: "stanza.Pipeline"
     _macronizer: "src.libs.latin_macronizer.macronizer_modified.Macronizer"
