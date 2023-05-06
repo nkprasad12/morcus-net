@@ -23,6 +23,18 @@ export namespace ResponsiveAppBar {
   }
 }
 
+function LogoImage() {
+  return (
+    <img
+      src="./public/favicon.ico"
+      className="App-logo"
+      width={48}
+      height={48}
+      alt="logo"
+    />
+  );
+}
+
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
     null
@@ -61,7 +73,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               textDecoration: "none",
             }}
           >
-            <img src="./public/favicon.ico" className="App-logo" alt="logo" />
+            <LogoImage />
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
@@ -116,7 +128,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               textDecoration: "none",
             }}
           >
-            <img src="./public/favicon.ico" className="App-logo" alt="logo" />
+            <LogoImage />
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
             {props.pages.map((page) => (
