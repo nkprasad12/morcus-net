@@ -195,6 +195,29 @@ describe("XmlNode.getAttr", () => {
   });
 });
 
+describe("XmlNode.deepcopy", () => {
+  it("copies resursively", () => {
+    const child2 = new XmlNode("child2", [["chil2", "ya"]], ["child2"]);
+    const child1 = new XmlNode(
+      "child1",
+      [["child1", "ya"]],
+      ["child1", child2]
+    );
+    const root = new XmlNode("caesar", [], ["root", child1]);
+
+    const copy = root.deepcopy();
+
+    expect(root).toStrictEqual(copy);
+    expect(root).not.toBe(copy);
+    const child1Copy = XmlNode.assertIsNode(copy.children[1]);
+    expect(child1).toStrictEqual(child1Copy);
+    expect(child1).not.toBe(child1Copy);
+    const child2Copy = child1Copy.children[1];
+    expect(child2).toStrictEqual(child2Copy);
+    expect(child2).not.toBe(child2Copy);
+  });
+});
+
 describe("XmlNode utils does not modify string", () => {
   function assertUnchanged(entry: string) {
     const node = parseEntries([entry])[0];

@@ -23,15 +23,14 @@ class Tally<T> {
   }
 }
 
-interface TextNodeData {
-  text: string;
-  parent: XmlNode;
-}
-
 interface NodeData {
   parent: XmlNode;
   textIndex: number;
   ancestors: XmlNode[];
+}
+
+function getNodeDataString(data: NodeData): string {
+  return XmlNode.assertIsString(data.parent.children[data.textIndex]);
 }
 
 function iterateFromNode(root: XmlNode, ancestors: XmlNode[]): NodeData[] {
@@ -52,53 +51,36 @@ function iterateFromNode(root: XmlNode, ancestors: XmlNode[]): NodeData[] {
   return results;
 }
 
-function getTextNodes(root: XmlNode): TextNodeData[] {
-  let result: TextNodeData[] = [];
-  for (const child of root.children) {
-    if (typeof child === "string") {
-      result.push({ text: child, parent: root });
-    } else {
-      result = result.concat(getTextNodes(child));
+function removeTextNode(data: NodeData) {
+  data.parent.children.splice(data.textIndex, 1);
+  const ancestors = [data.parent].concat(data.ancestors.reverse());
+  for (let i = 0; i < ancestors.length - 1; i++) {
+    const ancestor = ancestors[i];
+    if (ancestor.children.length > 0) {
+      break;
     }
+    const nextParent = ancestors[i + 1];
+    const removeIndex = nextParent.children.indexOf(ancestor);
+    assert(removeIndex > -1);
+    nextParent.children.splice(removeIndex, 1);
   }
-  return result;
 }
 
-export function findSplitVerbPos() {
-  const S = ["v. n.", "v. a. and n.", "v. freq. a. and n.", "v. freq. n."];
-  const cats = new Map<string, number>();
-
-  for (const entry of parse(LS_PATH)) {
-    const texts = getTextNodes(entry);
-    const rawEntry = texts.map((data) => data.text).join("");
-    const posTexts = entry
-      .findDescendants("pos")
-      .map((n) => XmlNode.getSoleText(n));
-    for (const s of S) {
-      if (!rawEntry.includes(s)) {
-        continue;
-      }
-      if (!posTexts.includes(s)) {
-        if (!cats.has(s)) {
-          cats.set(s, 0);
-        }
-        cats.set(s, cats.get(s)! + 1);
-        console.log(entry.attrs);
-      }
-    }
-  }
-  console.log(cats);
-}
+const VERB_SPLITS = [
+  "v. n.",
+  "v. a. and n.",
+  "v. freq. a. and n.",
+  "v. freq. n.",
+];
 
 export function verbPosSplits() {
-  const S = ["v. n.", "v. a. and n.", "v. freq. a. and n.", "v. freq. n."];
-  const setThing = new Set(S);
   for (const entry of parse(LS_PATH)) {
-    findSplits(entry, setThing);
+    correctSplits(entry, VERB_SPLITS);
   }
 }
 
-export function findSplits(root: XmlNode, conjugenda: Set<string>) {
+export function correctSplits(node: XmlNode, conjugenda: string[]): XmlNode {
+  const root = node.deepcopy();
   const children = iterateFromNode(root, []);
   const chunks = children.map((data) =>
     XmlNode.assertIsString(data.parent.children[data.textIndex])
@@ -182,9 +164,18 @@ export function findSplits(root: XmlNode, conjugenda: Set<string>) {
       if (levels[0] !== levels[2] || levels[0] !== levels[1] + 1) {
         logInfo();
         console.log("Levels: " + JSON.stringify(levels));
+        continue;
       }
+
+      splitChunks[0].parent.children[splitChunks[0].textIndex] =
+        getNodeDataString(splitChunks[0]) +
+        getNodeDataString(splitChunks[1]) +
+        getNodeDataString(splitChunks[2]);
+      removeTextNode(splitChunks[1]);
+      removeTextNode(splitChunks[2]);
     }
   }
+  return root;
 }
 
 export function findDuplicateAuthorAbbreviations() {
@@ -217,7 +208,16 @@ export function countChildTypesAfterAuthor() {
   console.log(afterAuthors.counts);
 }
 
-LsRewriters.transformEntries(LS_PATH, (root) => root);
+LsRewriters.transformEntries(LS_PATH, (root) =>
+  correctSplits(root, VERB_SPLITS)
+);
+// const root = new XmlNode(
+//   "entryFree",
+//   [],
+//   [new XmlNode("pos", [], ["v. a."]), " and ", new XmlNode("gen", [], ["n."])]
+// );
+// const out = correctSplits(root, new Set(["v. a. and n."]));
+// console.log(out.toString());
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);

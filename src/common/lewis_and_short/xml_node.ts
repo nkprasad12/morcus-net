@@ -90,6 +90,19 @@ export class XmlNode {
     }
     return undefined;
   }
+
+  deepcopy(): XmlNode {
+    const children: (XmlNode | string)[] = [];
+    for (const child of this.children) {
+      if (typeof child === "string") {
+        children.push(child);
+      } else {
+        children.push(child.deepcopy());
+      }
+    }
+    const attrs: [string, string][] = this.attrs.map(([k, v]) => [k, v]);
+    return new XmlNode(this.name, attrs, children);
+  }
 }
 
 export namespace XmlNode {
