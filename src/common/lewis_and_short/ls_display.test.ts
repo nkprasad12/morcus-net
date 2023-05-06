@@ -2,16 +2,16 @@ import {
   defaultDisplay,
   displayAuthor,
   displayBibl,
+  displayEntryFree,
   displayNote,
   displayUsg,
   formatSenseList,
   getBullet,
 } from "./ls_display";
+import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
 import { parseEntries, XmlNode } from "./xml_node";
 
 const OL_OPEN = '<ol class="lsSenseList">';
-const CANABA = `<entryFree key="canaba" type="main" id="n6427"><orth lang="la" extent="full">cānăba</orth> (or <orth lang="la" extent="full">cannăba</orth>), <itype>ae</itype>, <gen>f.</gen> <etym>kindr. with <foreign lang="greek">κάναβος</foreign> and <foreign lang="greek">κάννα</foreign>; acc. to others, with <foreign lang="greek">καλύβη</foreign></etym>, <sense level="1" n="I" id="n6427.0"><hi rend="ital">a hovel</hi>, <hi rend="ital">hut</hi>, <bibl n="August. Serm. 61"><author>Aug.</author> Serm. 61</bibl>, de Temp.; <bibl><author>Inscr. Orell.</author> 39</bibl>; <bibl>4077</bibl>.</sense></entryFree>`;
-const BENEFIO = `<entryFree key="benefio" type="main" id="n5182"><orth lang="la" extent="full">bĕnĕfīo</orth>, v. benefacio.</entryFree>`;
 
 describe("getBullet", () => {
   it("returns original on unparenthesized", () => {
@@ -244,7 +244,7 @@ describe("defaultDisplay", () => {
   });
 });
 
-describe("displayEntryFree", () => {
+describe("defaultDisplay", () => {
   it("shows expected entry with senses", () => {
     const input = parseEntries([CANABA])[0];
     const expected = [
@@ -270,6 +270,37 @@ describe("displayEntryFree", () => {
 
     const output = defaultDisplay(input);
     expect(output.toString()).toBe(expected.join(""));
+  });
+});
+
+describe("displayEntryFree", () => {
+  it("handles Anthol. Lat. edge case", () => {
+    const input = parseEntries([BIMATRIS])[0];
+
+    const output = displayEntryFree(input).toString();
+
+    // Lat. should *not* be expanded to Latin!
+    expect(output).toContain("Anthol. Lat.");
+    expect(output).not.toContain("Latin.");
+  });
+
+  it("collapses regs", () => {
+    const rawEntry =
+      "<entryFree><reg><sic>a</sic><corr>b</corr></reg></entryFree>";
+    const entry = parseEntries([rawEntry])[0];
+
+    const output = displayEntryFree(entry);
+
+    expect(output.children).toStrictEqual(["b"]);
+  });
+
+  it("removes comments", () => {
+    const rawEntry = "<entryFree>hello <!-- I am a comment --></entryFree>";
+    const entry = parseEntries([rawEntry])[0];
+
+    const output = displayEntryFree(entry);
+
+    expect(output.children).toStrictEqual(["hello "]);
   });
 });
 

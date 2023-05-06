@@ -1,5 +1,13 @@
 import { describe, expect, test } from "@jest/globals";
 import { readFileSync } from "fs";
+import {
+  ABACULUS,
+  ABEQUITO,
+  ACCIANUS,
+  ACEO,
+  CONDICTICIUS,
+  PALUS1,
+} from "./sample_entries";
 
 import { extractEntries, parseEntries, XmlNode } from "./xml_node";
 
@@ -89,12 +97,6 @@ describe("parseEntries", () => {
   it("raises on unpaired tags if validation is enabled", () => {
     expect(() => parseEntries([makeEntry("<sense>")], true)[0]).toThrowError();
     expect(() => parseEntries([makeEntry("</sense>")], true)[0]).toThrowError();
-  });
-
-  test("collapses regs", () => {
-    const rawEntry = makeEntry("<reg><sic>a</sic><corr>b</corr></reg>");
-    const entry = parseEntries([rawEntry])[0];
-    expect(entry.children).toStrictEqual(["b"]);
   });
 });
 
@@ -190,5 +192,56 @@ describe("XmlNode.getAttr", () => {
   it("returns undefined if not present", () => {
     const root = new XmlNode("caesar", [["child", "octavianus"]], []);
     expect(root.getAttr("parent")).toBe(undefined);
+  });
+});
+
+describe("XmlNode.deepcopy", () => {
+  it("copies resursively", () => {
+    const child2 = new XmlNode("child2", [["chil2", "ya"]], ["child2"]);
+    const child1 = new XmlNode(
+      "child1",
+      [["child1", "ya"]],
+      ["child1", child2]
+    );
+    const root = new XmlNode("caesar", [], ["root", child1]);
+
+    const copy = root.deepcopy();
+
+    expect(root).toStrictEqual(copy);
+    expect(root).not.toBe(copy);
+    const child1Copy = XmlNode.assertIsNode(copy.children[1]);
+    expect(child1).toStrictEqual(child1Copy);
+    expect(child1).not.toBe(child1Copy);
+    const child2Copy = child1Copy.children[1];
+    expect(child2).toStrictEqual(child2Copy);
+    expect(child2).not.toBe(child2Copy);
+  });
+});
+
+describe("XmlNode utils does not modify string", () => {
+  function assertUnchanged(entry: string) {
+    const node = parseEntries([entry])[0];
+    expect(node.toString()).toStrictEqual(entry);
+  }
+
+  test("entries with column breaks are handled", () => {
+    assertUnchanged(ABACULUS);
+  });
+
+  test("entries with page breaks are handled", () => {
+    assertUnchanged(ABEQUITO);
+  });
+
+  test("entries with corrections are handled", () => {
+    assertUnchanged(CONDICTICIUS);
+  });
+
+  test("entries with XML comments are handled", () => {
+    assertUnchanged(PALUS1);
+  });
+
+  test("Handles sampling of entries", () => {
+    assertUnchanged(ACEO);
+    assertUnchanged(ACCIANUS);
   });
 });

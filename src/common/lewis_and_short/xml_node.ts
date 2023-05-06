@@ -8,6 +8,8 @@ const ATTRIBUTES_KEY = ":@";
 const TEXT_NODE = "#text";
 const INDENT = "-   ";
 
+export const COMMENT_NODE = "#comment";
+
 export class XmlNode {
   constructor(
     readonly name: string,
@@ -21,7 +23,16 @@ export class XmlNode {
     for (const attr of this.attrs) {
       attrributes += ` ${attr[0]}="${attr[1]}"`;
     }
-    const lines = [`${padding}<${this.name}${attrributes}>`];
+    let tagOpen = `${padding}<${this.name}${attrributes}`;
+    if (this.children.length === 0 && ["cb"].includes(this.name)) {
+      return `${tagOpen}/>`;
+    }
+    if (this.name === COMMENT_NODE) {
+      tagOpen = `${padding}<!--`;
+    } else {
+      tagOpen += ">";
+    }
+    const lines = [tagOpen];
     for (const child of this.children) {
       if (typeof child === "string") {
         lines.push(`${padding}${indent ? INDENT : ""}${child}`);
@@ -29,7 +40,11 @@ export class XmlNode {
       }
       lines.push(child.formatAsString(indent, level + 1));
     }
-    lines.push(`${padding}</${this.name}>`);
+    if (this.name === COMMENT_NODE) {
+      lines.push(`${padding}-->`);
+    } else {
+      lines.push(`${padding}</${this.name}>`);
+    }
     return lines.join(indent ? "\n" : "");
   }
 
@@ -74,6 +89,19 @@ export class XmlNode {
       }
     }
     return undefined;
+  }
+
+  deepcopy(): XmlNode {
+    const children: (XmlNode | string)[] = [];
+    for (const child of this.children) {
+      if (typeof child === "string") {
+        children.push(child);
+      } else {
+        children.push(child.deepcopy());
+      }
+    }
+    const attrs: [string, string][] = this.attrs.map(([k, v]) => [k, v]);
+    return new XmlNode(this.name, attrs, children);
   }
 }
 
@@ -138,14 +166,6 @@ function crawlEntry(root: any): XmlNode {
       continue;
     }
     const childResult = crawlEntry(child);
-    if (childResult.name === "reg") {
-      assert(childResult.children.length === 2);
-      XmlNode.assertIsNode(childResult.children[0], "sic");
-      const corr = XmlNode.assertIsNode(childResult.children[1], "corr");
-      children.push(XmlNode.getSoleText(corr));
-      console.debug(`Corrected ${childResult} -> ${XmlNode.getSoleText(corr)}`);
-      continue;
-    }
     children.push(childResult);
   }
   return new XmlNode(tagName, attributes, children);
@@ -169,6 +189,7 @@ export function* parseEntriesInline(
     alwaysCreateTextNode: true,
     preserveOrder: true,
     trimValues: false,
+    commentPropName: COMMENT_NODE,
   };
   const parser = new XMLParser(options);
   for (const entry of entries) {
@@ -205,8 +226,8 @@ export function extractEntries(xmlContents: string): string[] {
     const hasPartial = partial.length > 0;
 
     if (hasOpen && !hasClose) {
-      console.log("Got open without close");
-      console.log(line.substring(0, 50));
+      console.debug("Got open without close");
+      console.debug(line.substring(0, 50));
     }
     if (hasOpen) {
       const beforeOpen = line.substring(0, openIndex);
