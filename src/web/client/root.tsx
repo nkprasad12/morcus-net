@@ -66,16 +66,20 @@ theme.typography.overline = typographyStyle;
 
 document.body.style.backgroundColor = Solarized.base3;
 
-const pages: SinglePageApp.Page[] = [
-  {
-    name: "Dictionary",
-    path: "/dicts",
-  },
-  {
-    name: "Macronizer",
-    path: "/macronizer",
-  },
-];
+const DICT_PAGE: SinglePageApp.Page = {
+  name: "Dictionary",
+  path: "/dicts",
+};
+const MACRONIZER_PAGE: SinglePageApp.Page = {
+  name: "Macronizer",
+  path: "/macronizer",
+};
+
+const pages: SinglePageApp.Page[] = [DICT_PAGE];
+
+if (process.env.NODE_ENV !== "production") {
+  pages.push(MACRONIZER_PAGE);
+}
 
 const wirings: SinglePageApp.Wiring[] = [
   {
