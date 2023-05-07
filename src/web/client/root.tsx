@@ -123,12 +123,12 @@ root.render(
             cursor: "help",
           },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "20",
+            backgroundColor: Solarized.violet + "24",
           },
           ".lsBibl": {
-            backgroundColor: Solarized.violet + "40",
+            backgroundColor: Solarized.violet + "44",
           },
-          ".lsQuote": { backgroundColor: Solarized.blue + "38" },
+          ".lsQuote": { backgroundColor: Solarized.blue + "40" },
           ".lsOrth": {
             backgroundColor: Solarized.red + "78",
             fontWeight: "bold",

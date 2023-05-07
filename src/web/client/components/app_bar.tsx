@@ -20,6 +20,7 @@ export namespace ResponsiveAppBar {
   export interface Props {
     pages: Page[];
     setPage: (page: string) => any;
+    currentPage: string;
   }
 }
 
@@ -54,6 +55,8 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
       props.setPage(path);
     };
   };
+
+  const isCurrentPage = (name: string) => name === props.currentPage;
 
   return (
     <AppBar position="static">
@@ -135,9 +138,16 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               <Button
                 key={page.name}
                 onClick={handlePageClick(page.path)}
-                sx={{ my: 2, color: Solarized.base0, display: "block" }}
+                sx={{
+                  my: 2,
+                  mx: 1,
+                  color: isCurrentPage(page.path)
+                    ? Solarized.base01
+                    : "#91b8a5",
+                  display: "block",
+                }}
               >
-                {page.name}
+                <b>{page.name}</b>
               </Button>
             ))}
           </Box>
