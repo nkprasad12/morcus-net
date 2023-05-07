@@ -937,9 +937,14 @@ export function displayEntryFree(
     }
     children.push(formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0)));
   }
+  const attrs: [string, string][] = [["class", "lsEntryFree"]];
+  const idAttr = root.getAttr("id");
+  if (idAttr !== undefined) {
+    attrs.push(["id", idAttr]);
+  }
   return handleAbbreviations(
     handleAbbreviations(
-      new XmlNode("div", [["class", "lsEntryFree"]], children),
+      new XmlNode("div", attrs, children),
       GENERIC_EXPANSIONS,
       true
     ),

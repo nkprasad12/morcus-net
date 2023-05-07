@@ -225,12 +225,12 @@ export function Dictionary(props: Dictionary.Props) {
         smallScreen={smallScreen}
       />
       {entries.length > 1 && (
-        <ContentBox contentKey="searchHeader">
+        <ContentBox key="searchHeader">
           <div>Found {entries.length} entries.</div>
         </ContentBox>
       )}
       {entries.map((entry) => (
-        <ContentBox>{xmlNodeToJsx(entry)}</ContentBox>
+        <ContentBox key={entry.getAttr("id")}>{xmlNodeToJsx(entry)}</ContentBox>
       ))}
     </Container>
   );
