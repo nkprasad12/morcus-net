@@ -23,8 +23,8 @@ export function About() {
               Comments, contributions or feature requests are welcome - feel
               free to contact me on GitHub or ask for Mórcus on the{" "}
               <a href="https://discord.gg/latin">Latin Discord</a>. Please
-              submit corrections or other issues with dictionary entries through
-              the in-app feedback.
+              submit corrections or other issues with dictionary entries by
+              clicking on the flag icon in the top navigation bar.
             </span>
           </section>
           <section>

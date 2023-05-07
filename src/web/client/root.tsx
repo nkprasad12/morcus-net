@@ -29,6 +29,9 @@ const theme = createTheme({
     secondary: {
       main: Solarized.magenta,
     },
+    info: {
+      main: Solarized.base01 + "90",
+    },
     text: {
       primary: Solarized.base01,
       secondary: Solarized.base00,

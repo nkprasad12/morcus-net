@@ -27,6 +27,8 @@ const HELP_ENTRY = new XmlNode(
       ],
       ["example"]
     ),
+    ". If you find bugs, typos, or other issues, please report them " +
+      "by clicking on the flag icon in the top navigation bar",
   ]
 );
 
