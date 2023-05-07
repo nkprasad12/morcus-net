@@ -22,22 +22,48 @@ describe("App Bar View", () => {
 
   test("shows menu buttons", () => {
     render(
-      <ResponsiveAppBar pages={pages} setPage={() => {}} currentPage="" />
+      <ResponsiveAppBar
+        pages={pages}
+        setPage={() => {}}
+        currentPage=""
+        openIssueDialog={() => {}}
+      />
     );
 
     expect(screen.getAllByText(pages[0].name)[0]).toBeDefined();
     expect(screen.getAllByText(pages[1].name)[0]).toBeDefined();
   });
 
-  test("handles clicks", async () => {
+  test("handles menu clicks", async () => {
     const mockSetPage = jest.fn(() => {});
     render(
-      <ResponsiveAppBar pages={pages} setPage={mockSetPage} currentPage="" />
+      <ResponsiveAppBar
+        pages={pages}
+        setPage={mockSetPage}
+        currentPage=""
+        openIssueDialog={() => {}}
+      />
     );
 
     await user.click(screen.getAllByText(pages[0].name)[0]);
 
     expect(mockSetPage).toBeCalledTimes(1);
     expect(mockSetPage).toBeCalledWith(pages[0].path);
+  });
+
+  test("handles issue clicks", async () => {
+    const mockReportIssue = jest.fn(() => {});
+    render(
+      <ResponsiveAppBar
+        pages={pages}
+        setPage={() => {}}
+        currentPage=""
+        openIssueDialog={mockReportIssue}
+      />
+    );
+
+    await user.click(screen.getByLabelText("report an issue"));
+
+    expect(mockReportIssue).toBeCalledTimes(1);
   });
 });

@@ -22,6 +22,7 @@ export namespace ResponsiveAppBar {
     pages: Page[];
     setPage: (page: string) => any;
     currentPage: string;
+    openIssueDialog: () => any;
   }
 }
 
@@ -158,7 +159,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               size="large"
               aria-label="report an issue"
               aria-haspopup="true"
-              onClick={() => {}}
+              onClick={props.openIssueDialog}
               color="info"
             >
               <FlagIcon />
