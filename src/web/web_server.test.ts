@@ -3,7 +3,12 @@ import express from "express";
 import fs from "fs";
 import request from "supertest";
 
-import { entriesByPrefix, lsCall, macronizeCall } from "@/web/api_routes";
+import {
+  entriesByPrefix,
+  lsCall,
+  macronizeCall,
+  report,
+} from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 import path from "path";
 
@@ -25,6 +30,8 @@ afterAll(() => {
   } catch (e) {}
 });
 
+const fileIssueReportResults: (() => Promise<any>)[] = [];
+
 function getServer(): express.Express {
   const app = express();
   const params: WebServerParams = {
@@ -33,6 +40,8 @@ function getServer(): express.Express {
     lsDict: (a) => Promise.resolve(`${a} def`),
     entriesByPrefix: (a) => Promise.resolve([a]),
     indexFilePath: path.resolve(TEMP_FILE),
+    fileIssueReport: (a) =>
+      (fileIssueReportResults.pop() || (() => Promise.resolve(a)))(),
   };
   setupServer(params);
   return app;
@@ -59,6 +68,34 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.text).toBe(`Invalid request`);
+  });
+
+  it("handles report route", async () => {
+    const response = await request(app)
+      .post(report())
+      .send("testPostPleaseIgnore")
+      .set("Content-Type", "text/plain; charset=utf-8");
+
+    expect(response.status).toBe(200);
+  });
+
+  it("handles report route with bad data", async () => {
+    const response = await request(app)
+      .post(report())
+      .send({ data: "testPostPleaseIgnore" })
+      .set("Content-Type", "application/json");
+
+    expect(response.status).toBe(400);
+  });
+
+  it("handles report error", async () => {
+    fileIssueReportResults.push(() => Promise.reject("Error"));
+    const response = await request(app)
+      .post(report())
+      .send("testPostPleaseIgnore")
+      .set("Content-Type", "text/plain; charset=utf-8");
+
+    expect(response.status).toBe(500);
   });
 
   test("handles LS dict route", async () => {

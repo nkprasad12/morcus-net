@@ -284,6 +284,12 @@ describe("displayEntryFree", () => {
     expect(output).not.toContain("Latin.");
   });
 
+  it("propagates id to output", () => {
+    const input = parseEntries([BIMATRIS])[0];
+    const output = displayEntryFree(input);
+    expect(output.getAttr("id")).toBe("n5352");
+  });
+
   it("collapses regs", () => {
     const rawEntry =
       "<entryFree><reg><sic>a</sic><corr>b</corr></reg></entryFree>";

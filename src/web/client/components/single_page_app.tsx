@@ -1,6 +1,7 @@
 import React from "react";
 
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
+import { ReportIssueDialog } from "./report_issue_dialog";
 
 export namespace SinglePageApp {
   export type Page = ResponsiveAppBar.Page;
@@ -21,6 +22,7 @@ export function SinglePageApp(props: SinglePageApp.Props) {
   const [currentPage, setCurrentPage] = React.useState<string>(
     props.initialPage
   );
+  const [showIssueDialog, setShowIssueDialog] = React.useState<boolean>(false);
 
   React.useEffect(() => {
     window.addEventListener("popstate", () => {
@@ -49,8 +51,13 @@ export function SinglePageApp(props: SinglePageApp.Props) {
           history.pushState(page, "", page);
           setCurrentPage(page);
         }}
+        openIssueDialog={() => setShowIssueDialog(true)}
       />
       {chooseContent()}
+      <ReportIssueDialog
+        show={showIssueDialog}
+        onClose={() => setShowIssueDialog(false)}
+      />
     </>
   );
 }

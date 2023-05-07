@@ -6,6 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import Menu from "@mui/material/Menu";
 import MenuIcon from "@mui/icons-material/Menu";
+import FlagIcon from "@mui/icons-material/Flag";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
@@ -21,6 +22,7 @@ export namespace ResponsiveAppBar {
     pages: Page[];
     setPage: (page: string) => any;
     currentPage: string;
+    openIssueDialog: () => any;
   }
 }
 
@@ -143,13 +145,25 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                   mx: 1,
                   color: isCurrentPage(page.path)
                     ? Solarized.base01
-                    : "#91b8a5",
+                    : Solarized.base01 + "90",
                   display: "block",
                 }}
               >
                 <b>{page.name}</b>
               </Button>
             ))}
+          </Box>
+          <Box>
+            {" "}
+            <IconButton
+              size="large"
+              aria-label="report an issue"
+              aria-haspopup="true"
+              onClick={props.openIssueDialog}
+              color="info"
+            >
+              <FlagIcon />
+            </IconButton>
           </Box>
         </Toolbar>
       </Container>

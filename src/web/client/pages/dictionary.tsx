@@ -14,6 +14,24 @@ import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { ClickAwayListener, Divider, Tooltip } from "@mui/material";
 import { AutocompleteCache } from "./autocomplete_cache";
 
+const HELP_ENTRY = new XmlNode(
+  "div",
+  [],
+  [
+    "Dashed words are abbreviated in the original text. Click on them to learn more: ",
+    new XmlNode(
+      "span",
+      [
+        ["class", "lsHover"],
+        ["title", "Click to dismiss"],
+      ],
+      ["example"]
+    ),
+    ". If you find bugs, typos, or other issues, please report them " +
+      "by clicking on the flag icon in the top navigation bar",
+  ]
+);
+
 export function ClickableTooltip(props: {
   titleText: string;
   className: string | undefined;
@@ -170,7 +188,7 @@ export function Dictionary(props: Dictionary.Props) {
   const theme = useTheme();
   const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  function contentBox(xmlRoot: XmlNode, key?: string) {
+  function ContentBox(props: { children: JSX.Element; contentKey?: string }) {
     return (
       <>
         <Box
@@ -182,7 +200,7 @@ export function Dictionary(props: Dictionary.Props) {
             mb: 2,
             borderColor: Solarized.base2,
           }}
-          key={key}
+          key={props.contentKey}
         >
           <Typography
             component={"div"}
@@ -191,7 +209,7 @@ export function Dictionary(props: Dictionary.Props) {
               color: Solarized.base02,
             }}
           >
-            {xmlNodeToJsx(xmlRoot)}
+            {props.children}
           </Typography>
         </Box>
         <Divider sx={{ ml: smallScreen ? 1 : 3, mr: smallScreen ? 1 : 3 }} />
@@ -224,13 +242,35 @@ export function Dictionary(props: Dictionary.Props) {
         onNewEntries={setEntries}
         smallScreen={smallScreen}
       />
-      {entries.length > 1
-        ? contentBox(
-            new XmlNode("div", [], [`Found ${entries.length} entries.`]),
-            "searchHeader"
-          )
-        : undefined}
-      {entries.map((entry) => contentBox(entry))}
+      {entries.length > 0 && (
+        <ContentBox key="searchHeader">
+          <div style={{ fontSize: 16, lineHeight: "normal" }}>
+            {entries.length > 1 && (
+              <>
+                <div>Found {entries.length} results.</div>
+                <br></br>
+              </>
+            )}
+            {xmlNodeToJsx(HELP_ENTRY)}
+          </div>
+        </ContentBox>
+      )}
+      {entries.map((entry) => (
+        <ContentBox key={entry.getAttr("id")}>{xmlNodeToJsx(entry)}</ContentBox>
+      ))}
+      {entries.length > 0 && (
+        <ContentBox key="attributionBox">
+          <span style={{ fontSize: 15, lineHeight: "normal" }}>
+            Results are taken from a digitization of Lewis & Short kindly
+            provided by <a href="https://github.com/PerseusDL">Perseus</a> under
+            a{" "}
+            <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+              CC BY-SA 4.0
+            </a>{" "}
+            license.
+          </span>
+        </ContentBox>
+      )}
     </Container>
   );
 }
