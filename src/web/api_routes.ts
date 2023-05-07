@@ -9,3 +9,7 @@ export function lsCall(entry: string): string {
 export function entriesByPrefix(prefix: string): string {
   return `/api/dicts/entriesByPrefix/${prefix}`;
 }
+
+export function report(): string {
+  return `/api/report/`;
+}

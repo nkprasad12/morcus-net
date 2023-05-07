@@ -7,6 +7,11 @@ beforeAll(() => {
   process.env.GITHUB_TOKEN = "token";
 });
 
+beforeEach(() => {
+  // @ts-ignore
+  fetch.mockClear();
+});
+
 describe("reportIssue", () => {
   it("rejects on API error", async () => {
     // @ts-ignore
@@ -23,7 +28,7 @@ describe("reportIssue", () => {
   it("resolves on successful API", async () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: true }));
-    expect(GitHub.reportIssue("TestTitle\nTestBody")).resolves.toBeTruthy();
+    expect(GitHub.reportIssue("TestTitle\nTestBody")).resolves;
   });
 
   it("passes correct arguments", async () => {

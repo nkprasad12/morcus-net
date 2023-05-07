@@ -1,6 +1,11 @@
 import compression from "compression";
 import express, { Request } from "express";
-import { entriesByPrefix, lsCall, macronizeCall } from "@/web/api_routes";
+import {
+  entriesByPrefix,
+  lsCall,
+  macronizeCall,
+  report,
+} from "@/web/api_routes";
 import bodyParser from "body-parser";
 
 function log(message: string) {
@@ -12,6 +17,7 @@ export interface WebServerParams {
   macronizer: (input: string) => Promise<string>;
   lsDict: (entry: string) => Promise<string>;
   entriesByPrefix: (prefix: string) => Promise<string[]>;
+  fileIssueReport: (reportText: string) => Promise<void>;
   indexFilePath: string;
 }
 
@@ -41,6 +47,20 @@ export function setupServer(params: WebServerParams): void {
     }
     const result = await params.macronizer(req.body);
     res.send(result);
+  });
+
+  app.post(report(), async (req, res) => {
+    if (typeof req.body !== "string") {
+      res.status(400).send("Invalid request");
+      return;
+    }
+    try {
+      await params.fileIssueReport(req.body);
+      res.status(200).send();
+    } catch (e) {
+      log(`Failed to file issue report!\n${e}`);
+      res.status(500).send();
+    }
   });
 
   app.get(lsCall(":entry"), async (req: Request<{ entry: string }>, res) => {
