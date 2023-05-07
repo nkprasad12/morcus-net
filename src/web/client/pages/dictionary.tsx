@@ -170,7 +170,7 @@ export function Dictionary(props: Dictionary.Props) {
   const theme = useTheme();
   const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
-  function contentBox(xmlRoot: XmlNode, key?: string) {
+  function ContentBox(props: { children: JSX.Element; contentKey?: string }) {
     return (
       <>
         <Box
@@ -182,7 +182,7 @@ export function Dictionary(props: Dictionary.Props) {
             mb: 2,
             borderColor: Solarized.base2,
           }}
-          key={key}
+          key={props.contentKey}
         >
           <Typography
             component={"div"}
@@ -191,7 +191,7 @@ export function Dictionary(props: Dictionary.Props) {
               color: Solarized.base02,
             }}
           >
-            {xmlNodeToJsx(xmlRoot)}
+            {props.children}
           </Typography>
         </Box>
         <Divider sx={{ ml: smallScreen ? 1 : 3, mr: smallScreen ? 1 : 3 }} />
@@ -224,13 +224,14 @@ export function Dictionary(props: Dictionary.Props) {
         onNewEntries={setEntries}
         smallScreen={smallScreen}
       />
-      {entries.length > 1
-        ? contentBox(
-            new XmlNode("div", [], [`Found ${entries.length} entries.`]),
-            "searchHeader"
-          )
-        : undefined}
-      {entries.map((entry) => contentBox(entry))}
+      {entries.length > 1 && (
+        <ContentBox contentKey="searchHeader">
+          <div>Found {entries.length} entries.</div>
+        </ContentBox>
+      )}
+      {entries.map((entry) => (
+        <ContentBox>{xmlNodeToJsx(entry)}</ContentBox>
+      ))}
     </Container>
   );
 }
