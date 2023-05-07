@@ -143,7 +143,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                   mx: 1,
                   color: isCurrentPage(page.path)
                     ? Solarized.base01
-                    : Solarized.base01 + "80",
+                    : Solarized.base01 + "90",
                   display: "block",
                 }}
               >
