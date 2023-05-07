@@ -139,9 +139,7 @@ export function handleAbbreviationsInMessage(
     lastChunkEnd = startIndex + length;
     if (expandedString.length === 1) {
       const toDisplay = replace ? expandedString[0] : original;
-      const onHover = replace
-        ? `Expanded from: ${original}`
-        : expandedString[0];
+      const onHover = replace ? `Originally: ${original}` : expandedString[0];
       chunks.push(attachHoverText(toDisplay, onHover, expandedCssClasses));
     } else {
       chunks.push(
@@ -216,7 +214,7 @@ export function substituteAbbreviation(
   const expanded = checkPresent(lookup.get(original));
   return attachHoverText(
     expanded,
-    `Expanded from: ${original}`,
+    `Originally: ${original}`,
     expandedCssClasses
   );
 }
