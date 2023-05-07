@@ -9,11 +9,15 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
 import { Solarized } from "../colors";
+import { backendCall } from "../browser_utils";
+import { report } from "@/web/api_routes";
 
 export function ReportIssueDialog(props: {
   show: boolean;
   onClose: () => any;
 }) {
+  const [reportText, setReportText] = React.useState<string>("");
+
   return (
     <Dialog
       open={props.show}
@@ -35,7 +39,9 @@ export function ReportIssueDialog(props: {
         <TextField
           autoFocus
           margin="dense"
-          id="name"
+          onChange={(e) => {
+            setReportText(e.target.value);
+          }}
           defaultValue={`${window.location.href}\n`}
           fullWidth
           multiline
@@ -48,7 +54,20 @@ export function ReportIssueDialog(props: {
         <Button onClick={props.onClose} variant="text" color="info">
           Cancel
         </Button>
-        <Button onClick={props.onClose} variant="contained">
+        <Button
+          onClick={() => {
+            const options = {
+              method: "POST",
+              headers: {
+                "Content-Type": "text/plain; charset=utf-8",
+              },
+              body: reportText,
+            };
+            backendCall(report(), options);
+            props.onClose();
+          }}
+          variant="contained"
+        >
           <b>Submit</b>
         </Button>
       </DialogActions>
