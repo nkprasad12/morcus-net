@@ -44,6 +44,7 @@ export function SinglePageApp(props: SinglePageApp.Props) {
     <>
       <ResponsiveAppBar
         pages={props.pages}
+        currentPage={currentPage === "/" ? props.pages[0].path : currentPage}
         setPage={(page) => {
           history.pushState(page, "", page);
           setCurrentPage(page);

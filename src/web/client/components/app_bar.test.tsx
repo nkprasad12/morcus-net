@@ -21,7 +21,9 @@ describe("App Bar View", () => {
   ];
 
   test("shows menu buttons", () => {
-    render(<ResponsiveAppBar pages={pages} setPage={() => {}} />);
+    render(
+      <ResponsiveAppBar pages={pages} setPage={() => {}} currentPage="" />
+    );
 
     expect(screen.getAllByText(pages[0].name)[0]).toBeDefined();
     expect(screen.getAllByText(pages[1].name)[0]).toBeDefined();
@@ -29,7 +31,9 @@ describe("App Bar View", () => {
 
   test("handles clicks", async () => {
     const mockSetPage = jest.fn(() => {});
-    render(<ResponsiveAppBar pages={pages} setPage={mockSetPage} />);
+    render(
+      <ResponsiveAppBar pages={pages} setPage={mockSetPage} currentPage="" />
+    );
 
     await user.click(screen.getAllByText(pages[0].name)[0]);
 

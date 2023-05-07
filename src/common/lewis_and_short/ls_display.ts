@@ -365,7 +365,7 @@ export function displayAuthor(root: XmlNode, parent?: XmlNode): XmlNode {
     const worksMap = checkPresent(authorData[0].works);
     const endExpanded = checkPresent(worksMap.get(end));
     const expanded = `${authorData[0].expanded} ${endExpanded}`;
-    return attachHoverText(expanded, `Expanded from: ${abbreviated}`);
+    return attachHoverText(expanded, `Originally: ${abbreviated}`);
   }
   const authorData = checkPresent(
     LsAuthorAbbreviations.authors().get(abbreviated)

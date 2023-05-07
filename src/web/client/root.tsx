@@ -15,6 +15,7 @@ import ThemeProvider from "@mui/material/styles/ThemeProvider";
 
 import { Macronizer } from "@/web/client/pages/macron";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
+import { About } from "@/web/client/pages/about";
 import { Dictionary } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
 import { getHash } from "@/web/client/browser_utils";
@@ -66,16 +67,24 @@ theme.typography.overline = typographyStyle;
 
 document.body.style.backgroundColor = Solarized.base3;
 
-const pages: SinglePageApp.Page[] = [
-  {
-    name: "Dictionary",
-    path: "/dicts",
-  },
-  {
-    name: "Macronizer",
-    path: "/macronizer",
-  },
-];
+const ABOUT_PAGE: SinglePageApp.Page = {
+  name: "About",
+  path: "/about",
+};
+const DICT_PAGE: SinglePageApp.Page = {
+  name: "Dictionary",
+  path: "/dicts",
+};
+const MACRONIZER_PAGE: SinglePageApp.Page = {
+  name: "Macronizer",
+  path: "/macronizer",
+};
+
+const pages: SinglePageApp.Page[] = [DICT_PAGE];
+if (process.env.NODE_ENV !== "production") {
+  pages.push(MACRONIZER_PAGE);
+}
+pages.push(ABOUT_PAGE);
 
 const wirings: SinglePageApp.Wiring[] = [
   {
@@ -83,6 +92,7 @@ const wirings: SinglePageApp.Wiring[] = [
     content: (_) => <Dictionary input={getHash()} />,
   },
   { paths: [/^\/macronizer$/], content: (_) => <Macronizer /> },
+  { paths: [/^\/about$/], content: (_) => <About /> },
   { paths: [/.*/], content: (_) => <div>Error: Not found</div> },
 ];
 
@@ -113,12 +123,12 @@ root.render(
             cursor: "help",
           },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "20",
+            backgroundColor: Solarized.violet + "24",
           },
           ".lsBibl": {
-            backgroundColor: Solarized.violet + "40",
+            backgroundColor: Solarized.violet + "44",
           },
-          ".lsQuote": { backgroundColor: Solarized.blue + "38" },
+          ".lsQuote": { backgroundColor: Solarized.blue + "40" },
           ".lsOrth": {
             backgroundColor: Solarized.red + "78",
             fontWeight: "bold",

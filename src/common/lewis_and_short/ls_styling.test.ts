@@ -104,7 +104,7 @@ describe("substituteAbbreviation", () => {
     ).toString();
 
     expect(result).toContain("Augustus");
-    expect(result).toContain(`Expanded from: Caesar`);
+    expect(result).toContain(`Originally: Caesar`);
   });
 });
 
@@ -146,7 +146,7 @@ describe("handleAbbreviations", () => {
   it("handles multi-word keys with no periods", () => {
     const input = new XmlNode("span", [], ["I have no de Or. substitutions."]);
     const output = handleAbbreviations(input, trieRoot);
-    const deOr = attachHoverText("de Oratione", "Expanded from: de Or.");
+    const deOr = attachHoverText("de Oratione", "Originally: de Or.");
     expect(output.toString()).toStrictEqual(
       `<span>I have no ${deOr} substitutions.</span>`
     );
@@ -166,8 +166,8 @@ describe("handleAbbreviations", () => {
       ["I v. h. v. have no t. t. substitutions."]
     );
     const output = handleAbbreviations(input, trieRoot);
-    const vhv = attachHoverText("vide hanc vocem", "Expanded from: v. h. v.");
-    const tt = attachHoverText("technical term", "Expanded from: t. t.");
+    const vhv = attachHoverText("vide hanc vocem", "Originally: v. h. v.");
+    const tt = attachHoverText("technical term", "Originally: t. t.");
     expect(output.toString()).toStrictEqual(
       `<span>I ${vhv} have no ${tt} substitutions.</span>`
     );
@@ -176,8 +176,8 @@ describe("handleAbbreviations", () => {
   it("uses shortest keys if longer are not present", () => {
     const input = new XmlNode("span", [], ["I v. have no t. substitutions."]);
     const output = handleAbbreviations(input, trieRoot);
-    const v = attachHoverText("verb", "Expanded from: v.");
-    const t = attachHoverText("testPost", "Expanded from: t.");
+    const v = attachHoverText("verb", "Originally: v.");
+    const t = attachHoverText("testPost", "Originally: t.");
     expect(output.toString()).toStrictEqual(
       `<span>I ${v} have no ${t} substitutions.</span>`
     );
@@ -186,7 +186,7 @@ describe("handleAbbreviations", () => {
   it("handles abbreviations at start", () => {
     const input = new XmlNode("span", [], ["v. h. v. have no substitutions."]);
     const output = handleAbbreviations(input, trieRoot);
-    const vhv = attachHoverText("vide hanc vocem", "Expanded from: v. h. v.");
+    const vhv = attachHoverText("vide hanc vocem", "Originally: v. h. v.");
     expect(output.toString()).toStrictEqual(
       `<span>${vhv} have no substitutions.</span>`
     );
@@ -195,7 +195,7 @@ describe("handleAbbreviations", () => {
   it("handles abbreviations at end", () => {
     const input = new XmlNode("span", [], ["I have no substitutions t. t."]);
     const output = handleAbbreviations(input, trieRoot);
-    const tt = attachHoverText("technical term", "Expanded from: t. t.");
+    const tt = attachHoverText("technical term", "Originally: t. t.");
     expect(output.toString()).toStrictEqual(
       `<span>I have no substitutions ${tt}</span>`
     );
@@ -205,7 +205,7 @@ describe("handleAbbreviations", () => {
     const input = new XmlNode("span", [], ["I de v. hi."]);
     const output = handleAbbreviations(input, trieRoot);
     expect(output.toString()).toStrictEqual(
-      `<span>I de ${attachHoverText("verb", "Expanded from: v.")} hi.</span>`
+      `<span>I de ${attachHoverText("verb", "Originally: v.")} hi.</span>`
     );
   });
 

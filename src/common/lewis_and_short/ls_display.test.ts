@@ -47,7 +47,7 @@ describe("displayBibl", () => {
       '<span title="T. Maccius Plautus, writer of comedy. ob. B.C. 184" class="lsHover lsAuthor">',
       "Plaut.",
       "</span>",
-      '<span title="Expanded from: Mil." class="lsHover">',
+      '<span title="Originally: Mil." class="lsHover">',
       "Miles Gloriosus.",
       "</span>",
       " 4, 4, 36",
@@ -67,7 +67,7 @@ describe("displayBibl", () => {
       '<span title="Q. Horatius Flaccus, poet, obiit B.C. 8" class="lsHover lsAuthor">',
       "Hor.",
       "</span>",
-      '<span title="Expanded from: C." class="lsHover">',
+      '<span title="Originally: C." class="lsHover">',
       "Carmina, or Odae.",
       "</span>",
       " 1, 12, 32",
@@ -87,7 +87,7 @@ describe("displayBibl", () => {
       '<span title="C. Plinius Caecilius Secundus (minor), ob. A.D. 113" class="lsHover lsAuthor">',
       "Plin.",
       "</span>",
-      '<span title="Expanded from: Ep." class="lsHover">',
+      '<span title="Originally: Ep." class="lsHover">',
       "Epistulae.",
       "</span>",
       " 1, 12, 32",
@@ -107,7 +107,7 @@ describe("displayBibl", () => {
       '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
       "Cic.",
       "</span>",
-      '<span title="Expanded from: Ad brut." class="lsHover">',
+      '<span title="Originally: Ad brut." class="lsHover">',
       "ad Brutum Epistulae.",
       "</span>",
       " 3, 7, 26",
@@ -127,7 +127,7 @@ describe("displayBibl", () => {
       '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
       "Cic.",
       "</span>",
-      '<span title="Expanded from: de Or." class="lsHover">',
+      '<span title="Originally: de Or." class="lsHover">',
       "De Oratore.",
       "</span>",
       " 3, 7, 26",
@@ -145,7 +145,7 @@ describe("displayUsg", () => {
 
     const parts = [
       "<span>",
-      '<span title="Expanded from: Medic. t. t." class="lsHover">',
+      '<span title="Originally: Medic. t. t." class="lsHover">',
       "Medical [technical term]",
       "</span>",
       "</span>",
@@ -250,12 +250,12 @@ describe("defaultDisplay", () => {
     const expected = [
       '<span><span class="lsOrth">cānăba</span> (or <span class="lsOrth">cannăba</span>), ',
       "<span>ae</span>, ",
-      '<span title="Expanded from: f." class="lsHover">feminine</span> ',
+      '<span title="Originally: f." class="lsHover">feminine</span> ',
       "<span>[kindr. with <span>κάναβος</span> and <span>κάννα</span>; acc. to others, with <span>καλύβη</span>]</span>, ",
       '<span><span class="lsEmph"><span>a hovel</span></span>, <span class="lsEmph"><span>hut</span></span>, ',
       '<span class="lsBibl"><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsHover lsAuthor">Aug.</span> ',
-      '<span title="Expanded from: Serm." class="lsHover">Sermones.</span> 61</span>, de Temp.; ',
-      '<span class="lsBibl"><span title="Expanded from: Inscr. Orell." class="lsHover">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
+      '<span title="Originally: Serm." class="lsHover">Sermones.</span> 61</span>, de Temp.; ',
+      '<span class="lsBibl"><span title="Originally: Inscr. Orell." class="lsHover">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
     ];
 
     const output = defaultDisplay(input);
@@ -334,7 +334,7 @@ describe("displayAuthor", () => {
     const output = displayAuthor(input);
 
     expect(output.toString()).toBe(
-      '<span title="Expanded from: Inscr. Don." class="lsHover">Inscriptiones. Donii.</span>'
+      '<span title="Originally: Inscr. Don." class="lsHover">Inscriptiones. Donii.</span>'
     );
   });
 

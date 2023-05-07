@@ -20,7 +20,20 @@ export namespace ResponsiveAppBar {
   export interface Props {
     pages: Page[];
     setPage: (page: string) => any;
+    currentPage: string;
   }
+}
+
+function LogoImage() {
+  return (
+    <img
+      src="./public/favicon.ico"
+      className="App-logo"
+      width={48}
+      height={48}
+      alt="logo"
+    />
+  );
 }
 
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
@@ -43,6 +56,8 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
     };
   };
 
+  const isCurrentPage = (name: string) => name === props.currentPage;
+
   return (
     <AppBar position="static">
       <Container maxWidth="xl">
@@ -61,7 +76,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               textDecoration: "none",
             }}
           >
-            <img src="./public/favicon.ico" className="App-logo" alt="logo" />
+            <LogoImage />
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
@@ -116,16 +131,23 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               textDecoration: "none",
             }}
           >
-            <img src="./public/favicon.ico" className="App-logo" alt="logo" />
+            <LogoImage />
           </Typography>
           <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
             {props.pages.map((page) => (
               <Button
                 key={page.name}
                 onClick={handlePageClick(page.path)}
-                sx={{ my: 2, color: Solarized.base0, display: "block" }}
+                sx={{
+                  my: 2,
+                  mx: 1,
+                  color: isCurrentPage(page.path)
+                    ? Solarized.base01
+                    : "#91b8a5",
+                  display: "block",
+                }}
               >
-                {page.name}
+                <b>{page.name}</b>
               </Button>
             ))}
           </Box>
