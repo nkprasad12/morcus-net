@@ -308,6 +308,17 @@ describe("displayEntryFree", () => {
 
     expect(output.children).toStrictEqual(["hello "]);
   });
+
+  it("handles Lit. / Lat. edge cases", () => {
+    const rawEntry = "<entryFree>Poet. Lat.</entryFree>";
+    const entry = parseEntries([rawEntry])[0];
+
+    const output = displayEntryFree(entry).toString();
+
+    // It should not have been expanded to Latin
+    expect(output).not.toContain("Originally: Lat.");
+    expect(output).toContain("Poetarum Latinorum");
+  });
 });
 
 describe("displayAuthor", () => {

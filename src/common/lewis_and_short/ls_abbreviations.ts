@@ -4,6 +4,11 @@ import { assert, assertEqual } from "@/common/assert";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { AbbreviationTrie, TrieNode } from "./ls_styling";
 
+const POET_LAT_REL =
+  "Poetarum Latinorum Hostii, Laevii, C. Licinii Calvi, C. Helvii Cinnae, C. Valgii Rufi, Domitii Marsi Aliorumque Vitae Et Carminum Reliquiae";
+const ROM_LIT = "Romanische Literaturen";
+const LIT_GESCH = "Geschichte der Römischen Literatur";
+
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
   let i = 0;
@@ -158,6 +163,24 @@ export const USG_ABBREVIATIONS = new Map<string, string>([
 ]);
 
 export const USG_TRIE = AbbreviationTrie.forMap(USG_ABBREVIATIONS);
+
+export const EDGE_CASE_HOVERS = AbbreviationTrie.forMap(
+  new Map<string, string>([
+    ["Gesch. Rom. Lit.", LIT_GESCH],
+    ["Lit. Gesch.", LIT_GESCH],
+    ["Gesch. d. Röm. Lit.", LIT_GESCH],
+    ["Bähr, Röm. Lit.", LIT_GESCH],
+    ["Röm. Lit. Gesch.", LIT_GESCH],
+    ["Poet. Lat.", POET_LAT_REL],
+    ["Poët. Lat.", POET_LAT_REL],
+    ["Poët. Latin.", POET_LAT_REL],
+    ["Poët. Lat. Rel.", POET_LAT_REL],
+    ["Röm. Lit.", ROM_LIT],
+    ["Rom. Lit.", ROM_LIT],
+    ["Roem. Lit.", ROM_LIT],
+    ["Rö. Lit.", ROM_LIT],
+  ])
+);
 
 export const GENERIC_HOVERS = AbbreviationTrie.forMap(
   new Map<string, string>([
@@ -393,6 +416,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["v.", "verb, vide, or vox."],
     ["vb.", "verb"],
     // ["voc.", "vocative."],
+    ["Weich.", "Weichert"],
   ])
 );
 

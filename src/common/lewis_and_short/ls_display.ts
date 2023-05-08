@@ -2,6 +2,7 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { COMMENT_NODE, XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   CASE_ABBREVIATIONS,
+  EDGE_CASE_HOVERS,
   GENERIC_EXPANSIONS,
   GENERIC_HOVERS,
   GEN_ABBREVIATIONS,
@@ -942,13 +943,8 @@ export function displayEntryFree(
   if (idAttr !== undefined) {
     attrs.push(["id", idAttr]);
   }
-  return handleAbbreviations(
-    handleAbbreviations(
-      new XmlNode("div", attrs, children),
-      GENERIC_EXPANSIONS,
-      true
-    ),
-    GENERIC_HOVERS,
-    false
-  );
+  let result = new XmlNode("div", attrs, children);
+  result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
+  result = handleAbbreviations(result, GENERIC_EXPANSIONS, true);
+  return handleAbbreviations(result, GENERIC_HOVERS, false);
 }
