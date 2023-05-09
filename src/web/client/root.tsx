@@ -121,6 +121,11 @@ root.render(
             textIndent: "-1em",
           },
           pre: { margin: "0" },
+          ".highlighted": {
+            border: "2px solid",
+            borderRadius: 4,
+            borderColor: Solarized.magenta,
+          },
           ".lsHover": {
             borderBottom: `1px dashed ${Solarized.base03}`,
             cursor: "help",

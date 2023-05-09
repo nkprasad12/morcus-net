@@ -193,6 +193,27 @@ describe("xmlNodeToJsx", () => {
     expect(result.props.children[0]).toBe("Caesar");
     expect(result.props.children[1].props.children[0]).toBe("Gaius");
   });
+
+  it("adds highlight on matching id", () => {
+    const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
+    const result = xmlNodeToJsx(root, "Caesar");
+
+    expect(result.props["className"]).toBe("highlighted");
+  });
+
+  it("does not add highlight on different id", () => {
+    const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
+    const result = xmlNodeToJsx(root, "Augustus");
+
+    expect(result.props["className"]).toBe(undefined);
+  });
+
+  it("does not add highlight on both undefined", () => {
+    const root = new XmlNode("span", [], ["Gallia"]);
+    const result = xmlNodeToJsx(root, undefined);
+
+    expect(result.props["className"]).toBe(undefined);
+  });
 });
 
 describe("ClickableTooltip", () => {

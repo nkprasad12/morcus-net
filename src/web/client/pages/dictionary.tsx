@@ -7,7 +7,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import Box from "@mui/system/Box";
 import React from "react";
 
-import { getHash } from "@/web/client/browser_utils";
+import { getHash, getUrlParams } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
@@ -59,12 +59,16 @@ export function ClickableTooltip(props: {
   );
 }
 
-export function xmlNodeToJsx(root: XmlNode, key?: string): JSX.Element {
+export function xmlNodeToJsx(
+  root: XmlNode,
+  highlightId?: string,
+  key?: string
+): JSX.Element {
   const children = root.children.map((child) => {
     if (typeof child === "string") {
       return child;
     }
-    return xmlNodeToJsx(child);
+    return xmlNodeToJsx(child, highlightId);
   });
   const props: { [key: string]: string } = {};
   if (key !== undefined) {
@@ -100,8 +104,12 @@ export function xmlNodeToJsx(root: XmlNode, key?: string): JSX.Element {
         ChildFactory={ForwardedNode}
       />
     );
+  } else {
+    if (root.getAttr("id") === highlightId && highlightId !== undefined) {
+      props["className"] = "highlighted";
+    }
+    return React.createElement(root.name, props, children);
   }
-  return React.createElement(root.name, props, children);
 }
 
 async function fetchEntry(input: string): Promise<XmlNode[]> {
@@ -185,6 +193,9 @@ function SearchBox(props: {
 
 export function Dictionary(props: Dictionary.Props) {
   const [entries, setEntries] = React.useState<XmlNode[]>([]);
+  const [highlightId, setHighlightId] = React.useState<string | undefined>(
+    undefined
+  );
   const theme = useTheme();
   const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
 
@@ -224,11 +235,17 @@ export function Dictionary(props: Dictionary.Props) {
         setEntries([]);
         return;
       }
-      fetchEntry(input).then(setEntries);
+      fetchEntry(props.input).then((results) => {
+        setEntries(results);
+        setHighlightId(getUrlParams().get("highlight"));
+      });
     };
     window.addEventListener("hashchange", hashListener, false);
     if (props.input.length > 0) {
-      fetchEntry(props.input).then(setEntries);
+      fetchEntry(props.input).then((results) => {
+        setEntries(results);
+        setHighlightId(getUrlParams().get("highlight"));
+      });
     }
     return () => {
       window.removeEventListener("hashchange", hashListener);
@@ -256,7 +273,9 @@ export function Dictionary(props: Dictionary.Props) {
         </ContentBox>
       )}
       {entries.map((entry) => (
-        <ContentBox key={entry.getAttr("id")}>{xmlNodeToJsx(entry)}</ContentBox>
+        <ContentBox key={entry.getAttr("id")}>
+          {xmlNodeToJsx(entry, highlightId)}
+        </ContentBox>
       ))}
       {entries.length > 0 && (
         <ContentBox key="attributionBox">
