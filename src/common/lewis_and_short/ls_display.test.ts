@@ -319,6 +319,18 @@ describe("displayEntryFree", () => {
     expect(output).not.toContain("Originally: Lat.");
     expect(output).toContain("Poetarum Latinorum");
   });
+
+  it("propagates id to senses", () => {
+    const rawEntry =
+      '<entryFree><sense level="1" n="I" id="n33556.0">Content</sense></entryFree>';
+    const entry = parseEntries([rawEntry])[0];
+
+    const output = displayEntryFree(entry);
+
+    const listItems = output.findDescendants("li");
+    expect(listItems).toHaveLength(1);
+    expect(listItems[0].getAttr("id")).toBe("n33556.0");
+  });
 });
 
 describe("displayAuthor", () => {
