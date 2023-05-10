@@ -124,7 +124,7 @@ root.render(
           ".highlighted": {
             border: "2px solid",
             borderRadius: 4,
-            borderColor: Solarized.magenta,
+            borderColor: Solarized.red,
           },
           ".lsHover": {
             borderBottom: `1px dashed ${Solarized.base03}`,
@@ -132,16 +132,28 @@ root.render(
           },
           ".lsAuthor": {
             backgroundColor: Solarized.violet + "24",
+            borderRadius: 4,
           },
           ".lsBibl": {
             backgroundColor: Solarized.violet + "44",
+            borderRadius: 4,
           },
-          ".lsQuote": { backgroundColor: Solarized.blue + "40" },
+          ".lsQuote": {
+            backgroundColor: Solarized.blue + "40",
+            borderRadius: 4,
+          },
           ".lsOrth": {
             backgroundColor: Solarized.red + "78",
             fontWeight: "bold",
+            borderRadius: 4,
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
+          ".lsSenseBullet": {
+            fontWeight: "bold",
+            cursor: "pointer",
+            backgroundColor: Solarized.base01 + "40",
+            borderRadius: 4,
+          },
           ".lsTrans": { fontStyle: "italic" },
         }}
       />

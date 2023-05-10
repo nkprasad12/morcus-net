@@ -830,7 +830,7 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
     const attrsMap = new Map(senseNode.attrs);
     const level = +checkPresent(attrsMap.get("level"));
     const n = checkPresent(attrsMap.get("n"));
-    const id = senseNode.getAttr("id");
+    const id = checkPresent(senseNode.getAttr("id"));
 
     while (stack.length < level) {
       const newList = new XmlNode("ol", [["class", "lsSenseList"]], []);
@@ -843,10 +843,21 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
       stack.pop();
     }
     stack[stack.length - 1].children.push(
-      new XmlNode("li", id === undefined ? [] : [["id", id]], [
-        new XmlNode("b", [], [`${getBullet(n)}. `]),
-        defaultDisplay(senseNode),
-      ])
+      new XmlNode(
+        "li",
+        [["id", id]],
+        [
+          new XmlNode(
+            "span",
+            [
+              ["class", "lsSenseBullet"],
+              ["senseid", id],
+            ],
+            [` ${getBullet(n)}. `]
+          ),
+          defaultDisplay(senseNode),
+        ]
+      )
     );
   }
   return stack[0];

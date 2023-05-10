@@ -11,8 +11,6 @@ import {
 import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
 import { parseEntries, XmlNode } from "./xml_node";
 
-const OL_OPEN = '<ol class="lsSenseList">';
-
 describe("getBullet", () => {
   it("returns original on unparenthesized", () => {
     expect(getBullet("I")).toBe("I");
@@ -161,6 +159,7 @@ describe("displaySenseList", () => {
       [
         ["level", level],
         ["n", n],
+        ["id", level + n],
       ],
       [`${level}${n}`]
     );
@@ -171,13 +170,11 @@ describe("displaySenseList", () => {
 
     const result = formatSenseList(nodes);
 
-    const parts = [
-      OL_OPEN,
-      "<li><b>I. </b><span>1I</span></li>",
-      "<li><b>II. </b><span>1II</span></li>",
-      "</ol>",
-    ];
-    expect(result.toString()).toBe(parts.join(""));
+    expect(result.children).toHaveLength(2);
+    expect(XmlNode.assertIsNode(result.children[0]).name).toBe("li");
+    expect(XmlNode.assertIsNode(result.children[0]).getAttr("id")).toBe("1I");
+    expect(XmlNode.assertIsNode(result.children[1]).name).toBe("li");
+    expect(XmlNode.assertIsNode(result.children[1]).getAttr("id")).toBe("1II");
   });
 
   it("handles higher level final sense", () => {
@@ -185,15 +182,14 @@ describe("displaySenseList", () => {
 
     const result = formatSenseList(nodes);
 
-    const parts = [
-      OL_OPEN,
-      "<li><b>I. </b><span>1I</span></li>",
-      OL_OPEN,
-      "<li><b>A. </b><span>2A</span></li>",
-      "</ol>",
-      "</ol>",
-    ];
-    expect(result.toString()).toBe(parts.join(""));
+    expect(result.children).toHaveLength(2);
+    expect(XmlNode.assertIsNode(result.children[0]).name).toBe("li");
+    expect(XmlNode.assertIsNode(result.children[0]).getAttr("id")).toBe("1I");
+    const sublist = XmlNode.assertIsNode(result.children[1]);
+    expect(sublist.name).toBe("ol");
+    expect(sublist.children).toHaveLength(1);
+    expect(XmlNode.assertIsNode(sublist.children[0]).name).toBe("li");
+    expect(XmlNode.assertIsNode(sublist.children[0]).getAttr("id")).toBe("2A");
   });
 
   it("handles sense level nesting", () => {
@@ -207,20 +203,25 @@ describe("displaySenseList", () => {
 
     const result = formatSenseList(nodes);
 
-    const parts = [
-      OL_OPEN,
-      "<li><b>I. </b><span>1I</span></li>",
-      "<li><b>II. </b><span>1II</span></li>",
-      OL_OPEN,
-      "<li><b>A. </b><span>2A</span></li>",
-      OL_OPEN,
-      "<li><b>a. </b><span>3a</span></li>",
-      "</ol>",
-      "<li><b>B. </b><span>2B</span></li>",
-      "</ol>",
-      "</ol>",
-    ];
-    expect(result.toString()).toBe(parts.join(""));
+    expect(result.children).toHaveLength(3);
+    expect(XmlNode.assertIsNode(result.children[0]).name).toBe("li");
+    expect(XmlNode.assertIsNode(result.children[0]).getAttr("id")).toBe("1I");
+    expect(XmlNode.assertIsNode(result.children[1]).name).toBe("li");
+    expect(XmlNode.assertIsNode(result.children[1]).getAttr("id")).toBe("1II");
+    const sublist = XmlNode.assertIsNode(result.children[2]);
+    expect(sublist.name).toBe("ol");
+    expect(sublist.children).toHaveLength(3);
+    expect(XmlNode.assertIsNode(sublist.children[0]).name).toBe("li");
+    expect(XmlNode.assertIsNode(sublist.children[0]).getAttr("id")).toBe("2A");
+    const subsublist = XmlNode.assertIsNode(sublist.children[1]);
+    expect(subsublist.name).toBe("ol");
+    expect(subsublist.children).toHaveLength(1);
+    expect(XmlNode.assertIsNode(subsublist.children[0]).name).toBe("li");
+    expect(XmlNode.assertIsNode(subsublist.children[0]).getAttr("id")).toBe(
+      "3a"
+    );
+    expect(XmlNode.assertIsNode(sublist.children[2]).name).toBe("li");
+    expect(XmlNode.assertIsNode(sublist.children[2]).getAttr("id")).toBe("2B");
   });
 });
 
