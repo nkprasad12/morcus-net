@@ -18,7 +18,7 @@ import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
 import { Dictionary } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
-import { getHash } from "@/web/client/browser_utils";
+import { Router } from "./components/router";
 
 const theme = createTheme({
   palette: {
@@ -73,14 +73,17 @@ document.body.style.backgroundColor = Solarized.base3;
 const ABOUT_PAGE: SinglePageApp.Page = {
   name: "About",
   path: "/about",
+  content: About,
 };
 const DICT_PAGE: SinglePageApp.Page = {
   name: "Dictionary",
   path: "/dicts",
+  content: Dictionary,
 };
 const MACRONIZER_PAGE: SinglePageApp.Page = {
   name: "Macronizer",
   path: "/macronizer",
+  content: Macronizer,
 };
 
 const pages: SinglePageApp.Page[] = [DICT_PAGE];
@@ -89,20 +92,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 pages.push(ABOUT_PAGE);
 
-const wirings: SinglePageApp.Wiring[] = [
-  {
-    paths: [/^\/$/, /^\/dicts$/],
-    content: (_) => <Dictionary input={getHash()} />,
-  },
-  { paths: [/^\/macronizer$/], content: (_) => <Macronizer /> },
-  { paths: [/^\/about$/], content: (_) => <About /> },
-  { paths: [/.*/], content: (_) => <div>Error: Not found</div> },
-];
-
 const props: SinglePageApp.Props = {
-  initialPage: window.location.pathname,
   pages: pages,
-  wirings: wirings,
 };
 
 const root = ReactDOM.createRoot(
@@ -158,7 +149,9 @@ root.render(
         }}
       />
       <StyledEngineProvider injectFirst>
-        <SinglePageApp {...props} />
+        <Router.Handler>
+          <SinglePageApp {...props} />
+        </Router.Handler>
       </StyledEngineProvider>
     </ThemeProvider>
   </React.StrictMode>

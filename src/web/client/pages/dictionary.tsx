@@ -5,14 +5,15 @@ import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Box from "@mui/system/Box";
-import React from "react";
+import React, { MutableRefObject } from "react";
 
-import { getHash, getUrlParams } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { ClickAwayListener, Divider, Tooltip } from "@mui/material";
 import { AutocompleteCache } from "./autocomplete_cache";
+import { Navigation, RouteContext } from "../components/router";
+import { flushSync } from "react-dom";
 
 const HELP_ENTRY = new XmlNode(
   "div",
@@ -62,15 +63,16 @@ export function ClickableTooltip(props: {
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
+  sectionRef?: MutableRefObject<HTMLElement | null>,
   key?: string
 ): JSX.Element {
   const children = root.children.map((child) => {
     if (typeof child === "string") {
       return child;
     }
-    return xmlNodeToJsx(child, highlightId);
+    return xmlNodeToJsx(child, highlightId, sectionRef);
   });
-  const props: { [key: string]: string } = {};
+  const props: { [key: string]: any } = {};
   if (key !== undefined) {
     props.key = key;
   }
@@ -107,6 +109,7 @@ export function xmlNodeToJsx(
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";
+      props["ref"] = sectionRef!;
     }
     return React.createElement(root.name, props, children);
   }
@@ -135,13 +138,14 @@ function SearchBox(props: {
   const [inputState, setInputState] = React.useState<string>(props.input);
   const [options, setOptions] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
+  const nav = React.useContext(RouteContext);
 
   async function onEnter(searchTerm: string) {
     if (searchTerm.length === 0) {
       return;
     }
+    Navigation.query(nav, searchTerm);
     props.onNewEntries(await fetchEntry(searchTerm));
-    history.pushState(`#${searchTerm}`, "", `#${searchTerm}`);
   }
 
   return (
@@ -191,13 +195,12 @@ function SearchBox(props: {
   );
 }
 
-export function Dictionary(props: Dictionary.Props) {
-  const [entries, setEntries] = React.useState<XmlNode[]>([]);
-  const [highlightId, setHighlightId] = React.useState<string | undefined>(
-    undefined
-  );
+export function Dictionary() {
+  const [entries, setEntries] = React.useState<JSX.Element[]>([]);
   const theme = useTheme();
   const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const nav = React.useContext(RouteContext);
+  const sectionRef = React.useRef<HTMLElement | null>(null);
 
   function ContentBox(props: { children: JSX.Element; contentKey?: string }) {
     return (
@@ -229,34 +232,32 @@ export function Dictionary(props: Dictionary.Props) {
   }
 
   React.useEffect(() => {
-    const hashListener = () => {
-      const input = getHash();
-      if (input.length === 0) {
-        setEntries([]);
-        return;
-      }
-      fetchEntry(props.input).then((results) => {
-        setEntries(results);
-        setHighlightId(getUrlParams().get("highlight"));
-      });
-    };
-    window.addEventListener("hashchange", hashListener, false);
-    if (props.input.length > 0) {
-      fetchEntry(props.input).then((results) => {
-        setEntries(results);
-        setHighlightId(getUrlParams().get("highlight"));
+    if (nav.route.query !== undefined) {
+      fetchEntry(nav.route.query).then((newEntries) => {
+        flushSync(() => {
+          const jsxEntries = newEntries.map((e) =>
+            xmlNodeToJsx(e, nav.route.hash, sectionRef)
+          );
+          setEntries(jsxEntries);
+        });
+        sectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+        });
       });
     }
-    return () => {
-      window.removeEventListener("hashchange", hashListener);
-    };
-  }, [props.input]);
+  }, [nav.route.query]);
 
   return (
     <Container maxWidth="lg">
       <SearchBox
-        input={props.input}
-        onNewEntries={setEntries}
+        input={nav.route.query || ""}
+        onNewEntries={(newEntries) => {
+          const jsxEntries = newEntries.map((e) =>
+            xmlNodeToJsx(e, nav.route.hash, sectionRef)
+          );
+          setEntries(jsxEntries);
+        }}
         smallScreen={smallScreen}
       />
       {entries.length > 0 && (
@@ -273,9 +274,7 @@ export function Dictionary(props: Dictionary.Props) {
         </ContentBox>
       )}
       {entries.map((entry) => (
-        <ContentBox key={entry.getAttr("id")}>
-          {xmlNodeToJsx(entry, highlightId)}
-        </ContentBox>
+        <ContentBox>{entry}</ContentBox>
       ))}
       {entries.length > 0 && (
         <ContentBox key="attributionBox">
@@ -292,10 +291,4 @@ export function Dictionary(props: Dictionary.Props) {
       )}
     </Container>
   );
-}
-
-export namespace Dictionary {
-  export interface Props {
-    input: string;
-  }
 }

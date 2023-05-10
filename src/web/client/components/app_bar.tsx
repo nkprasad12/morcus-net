@@ -11,6 +11,7 @@ import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
 import { Solarized } from "../colors";
+import { Navigation, RouteContext } from "./router";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -20,8 +21,6 @@ export namespace ResponsiveAppBar {
 
   export interface Props {
     pages: Page[];
-    setPage: (page: string) => any;
-    currentPage: string;
     openIssueDialog: () => any;
   }
 }
@@ -39,6 +38,7 @@ function LogoImage() {
 }
 
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
+  const nav = React.useContext(RouteContext);
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
     null
   );
@@ -54,11 +54,11 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const handlePageClick = (path: string) => {
     return () => {
       handleCloseNavMenu();
-      props.setPage(path);
+      Navigation.to(nav, path);
     };
   };
 
-  const isCurrentPage = (name: string) => name === props.currentPage;
+  const isCurrentPage = (path: string) => nav.route.path === path;
 
   return (
     <AppBar position="static">
