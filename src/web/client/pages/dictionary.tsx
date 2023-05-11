@@ -1,4 +1,5 @@
 import { lsCall } from "@/web/api_routes";
+import LinkIcon from "@mui/icons-material/Link";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
 import { useTheme } from "@mui/material/styles";
@@ -10,10 +11,19 @@ import React, { MutableRefObject } from "react";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
-import { ClickAwayListener, Divider, Tooltip } from "@mui/material";
+import {
+  ClickAwayListener,
+  Divider,
+  IconButton,
+  SxProps,
+  Tooltip,
+} from "@mui/material";
 import { AutocompleteCache } from "./autocomplete_cache";
 import { Navigation, RouteContext } from "../components/router";
 import { flushSync } from "react-dom";
+import { checkPresent } from "@/common/assert";
+
+type Placement = "top-start" | "right";
 
 const HELP_ENTRY = new XmlNode(
   "div",
@@ -34,11 +44,13 @@ const HELP_ENTRY = new XmlNode(
 );
 
 export function ClickableTooltip(props: {
-  titleText: string;
+  titleText: string | JSX.Element;
   className: string | undefined;
   ChildFactory: React.ForwardRefExoticComponent<
     Omit<any, "ref"> & React.RefAttributes<any>
   >;
+  placement?: Placement;
+  tooltipSx?: SxProps;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -47,16 +59,60 @@ export function ClickableTooltip(props: {
       <Tooltip
         title={<Typography>{props.titleText}</Typography>}
         className={props.className}
-        placement="top-start"
+        placement={props.placement || "top-start"}
         disableFocusListener
         disableHoverListener
         disableTouchListener
         onClose={() => setOpen(false)}
         open={open}
+        arrow
+        componentsProps={{
+          tooltip: {
+            sx: props.tooltipSx,
+          },
+        }}
       >
         <props.ChildFactory onClick={() => setOpen(!open)} />
       </Tooltip>
     </ClickAwayListener>
+  );
+}
+
+function SectionLinkTooltip(props: {
+  className: string;
+  forwarded: any;
+  senseId: string;
+}) {
+  function onClick() {
+    const chunks = window.location.href.split("#");
+    navigator.clipboard.writeText(`${chunks[0]}#${props.senseId}`);
+  }
+
+  return (
+    <ClickableTooltip
+      titleText={
+        <Typography>
+          <IconButton
+            size="small"
+            aria-label="copy link"
+            aria-haspopup="false"
+            onClick={onClick}
+            color="info"
+          >
+            <LinkIcon />
+          </IconButton>
+          <span>Copy section link</span>
+        </Typography>
+      }
+      className={props.className}
+      ChildFactory={props.forwarded}
+      placement="right"
+      tooltipSx={{
+        backgroundColor: Solarized.base3,
+        color: Solarized.base01,
+        border: `3px solid ${Solarized.base01}`,
+      }}
+    />
   );
 }
 
@@ -109,6 +165,24 @@ export function xmlNodeToJsx(
         titleText={titleText}
         className={className}
         ChildFactory={ForwardedNode}
+      />
+    );
+  } else if (className === "lsSenseBullet") {
+    const ForwardedNode = React.forwardRef<HTMLElement>(
+      (forwardProps: any, forwardRef: any) => {
+        const allProps = { ...props, ...forwardProps };
+        allProps["ref"] = forwardRef;
+        return React.createElement(root.name, allProps, children);
+      }
+    );
+    return (
+      <SectionLinkTooltip
+        forwarded={ForwardedNode}
+        className={className}
+        senseId={checkPresent(
+          root.getAttr("senseid"),
+          "lsSenseBullet must have senseid!"
+        )}
       />
     );
   } else {
