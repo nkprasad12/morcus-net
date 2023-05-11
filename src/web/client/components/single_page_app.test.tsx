@@ -37,6 +37,20 @@ describe("Single Page App View", () => {
     expect(screen.queryByText("OmnisPage")).toBeNull();
   });
 
+  it("shows navigation on bad path", () => {
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/g" }, navigateTo: mockNav }}
+      >
+        <SinglePageApp pages={pages} />
+      </RouteContext.Provider>
+    );
+
+    expect(screen.queryAllByText("Gallia")).not.toHaveLength(0);
+    expect(screen.queryAllByText("Omnis")).not.toHaveLength(0);
+  });
+
   test("updates context on navigation", async () => {
     const mockNav = jest.fn(() => {});
     render(
