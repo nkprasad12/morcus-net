@@ -109,7 +109,9 @@ root.render(
             listStyle: "none",
             marginLeft: 0,
             paddingLeft: "1em",
-            textIndent: "-1em",
+          },
+          li: {
+            padding: "2px",
           },
           pre: { margin: "0" },
           ".highlighted": {
@@ -119,22 +121,23 @@ root.render(
           },
           ".lsHover": {
             borderBottom: `1px dashed ${Solarized.base03}`,
+            fontWeight: "normal",
             cursor: "help",
           },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "24",
+            backgroundColor: Solarized.violet + "20",
             borderRadius: 4,
           },
           ".lsBibl": {
-            backgroundColor: Solarized.violet + "44",
+            backgroundColor: Solarized.violet + "28",
             borderRadius: 4,
           },
           ".lsQuote": {
-            backgroundColor: Solarized.blue + "40",
+            backgroundColor: Solarized.blue + "20",
             borderRadius: 4,
           },
           ".lsOrth": {
-            backgroundColor: Solarized.red + "78",
+            backgroundColor: Solarized.red + "68",
             fontWeight: "bold",
             borderRadius: 4,
           },
@@ -142,7 +145,7 @@ root.render(
           ".lsSenseBullet": {
             fontWeight: "bold",
             cursor: "pointer",
-            backgroundColor: Solarized.base01 + "40",
+            backgroundColor: Solarized.base01 + "48",
             borderRadius: 4,
           },
           ".lsTrans": { fontStyle: "italic" },

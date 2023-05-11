@@ -66,11 +66,16 @@ export function xmlNodeToJsx(
   sectionRef?: MutableRefObject<HTMLElement | null>,
   key?: string
 ): JSX.Element {
-  const children = root.children.map((child) => {
+  const children = root.children.map((child, i) => {
     if (typeof child === "string") {
       return child;
     }
-    return xmlNodeToJsx(child, highlightId, sectionRef);
+    return xmlNodeToJsx(
+      child,
+      highlightId,
+      sectionRef,
+      child.getAttr("id") || `${i}`
+    );
   });
   const props: { [key: string]: any } = {};
   if (key !== undefined) {
@@ -242,7 +247,7 @@ export function Dictionary() {
         });
         sectionRef.current?.scrollIntoView({
           behavior: "smooth",
-          block: "center",
+          block: "start",
         });
       });
     }
