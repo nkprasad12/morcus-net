@@ -8,7 +8,12 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { ClickableTooltip, Dictionary, xmlNodeToJsx } from "./dictionary";
+import {
+  ClickableTooltip,
+  Dictionary,
+  SectionLinkTooltip,
+  xmlNodeToJsx,
+} from "./dictionary";
 import { RouteContext } from "../components/router";
 
 const realFetch = global.fetch;
@@ -245,5 +250,40 @@ describe("ClickableTooltip", () => {
 
     expect(screen.queryByText("Caesar")).not.toBeNull();
     expect(screen.queryByText("Gallia")).not.toBeNull();
+  });
+});
+
+describe("SectionLinkTooltip", () => {
+  const DivWithRef = React.forwardRef<HTMLDivElement>((props, ref) => {
+    return (
+      <div {...props} ref={ref}>
+        Gallia
+      </div>
+    );
+  });
+
+  it("shows link buttons", async () => {
+    const writeText = jest.fn();
+    Object.assign(navigator, {
+      clipboard: {
+        writeText,
+      },
+    });
+
+    render(
+      <SectionLinkTooltip
+        forwarded={DivWithRef}
+        className="foo"
+        senseId="bar"
+      />
+    );
+    await user.click(screen.getByText("Gallia"));
+
+    expect(screen.queryByText(/link/)).not.toBeNull();
+    const iconButton = screen.queryByLabelText("copy link");
+    expect(iconButton).not.toBeNull();
+
+    await user.click(iconButton!);
+    expect(writeText.mock.lastCall![0].endsWith("#bar")).toBe(true);
   });
 });

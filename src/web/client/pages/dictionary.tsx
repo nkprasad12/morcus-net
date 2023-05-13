@@ -78,9 +78,11 @@ export function ClickableTooltip(props: {
   );
 }
 
-function SectionLinkTooltip(props: {
+export function SectionLinkTooltip(props: {
   className: string;
-  forwarded: any;
+  forwarded: React.ForwardRefExoticComponent<
+    Omit<any, "ref"> & React.RefAttributes<any>
+  >;
   senseId: string;
 }) {
   function onClick() {
