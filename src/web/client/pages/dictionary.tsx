@@ -29,17 +29,33 @@ const HELP_ENTRY = new XmlNode(
   "div",
   [],
   [
-    "Dashed words are abbreviated in the original text. Click on them to learn more: ",
     new XmlNode(
       "span",
       [
         ["class", "lsHover"],
         ["title", "Click to dismiss"],
       ],
-      ["example"]
+      ["Highlighted words"]
     ),
-    ". If you find bugs, typos, or other issues, please report them " +
-      "by clicking on the flag icon in the top navigation bar",
+    " are abbreviated in the original text - click on them to learn more. " +
+      "Click on section headers (like ",
+    new XmlNode(
+      "span",
+      [
+        ["class", "lsSenseBullet"],
+        ["senseid", "tutorialExample"],
+      ],
+      [" A. "]
+    ),
+    ") to link directly to a particular section.",
+    new XmlNode(
+      "p",
+      [],
+      [
+        "If you find bugs, typos, or other issues, please report them " +
+          "by clicking on the flag icon in the top navigation bar.",
+      ]
+    ),
   ]
 );
 
