@@ -1,14 +1,18 @@
 const ERROR_MESSAGE = "Error: please try again later.";
 
-/**
- * @returns The URL decoded value of the current hash path value.
- */
-export function getHash(): string {
+function decodedHash(): string {
   const hash = window.location.hash;
   if (hash.length === 0) {
     return "";
   }
   return decodeURI(hash.substring(1));
+}
+
+/**
+ * @returns The URL decoded value of the current hash path value.
+ */
+export function getHash(): string {
+  return decodedHash();
 }
 
 export async function backendCall(api: string, options?: any): Promise<string> {

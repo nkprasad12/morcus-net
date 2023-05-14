@@ -116,7 +116,7 @@ export namespace LewisAndShort {
   }
 
   export function createProcessed(
-    rawFile: string = checkPresent(process.env.LS_PATH)
+    rawFile: string = checkPresent(process.env.LS_PATH, "LS_PATH")
   ): RawLsEntry[] {
     const result: RawLsEntry[] = [];
     for (const item of createProcessedRaw(rawFile)) {

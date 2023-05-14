@@ -1,57 +1,103 @@
 import { lsCall } from "@/web/api_routes";
+import LinkIcon from "@mui/icons-material/Link";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
 import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Box from "@mui/system/Box";
-import React from "react";
+import React, { MutableRefObject } from "react";
 
-import { getHash } from "@/web/client/browser_utils";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
-import { ClickAwayListener, Divider, Tooltip } from "@mui/material";
+import {
+  ClickAwayListener,
+  Divider,
+  IconButton,
+  SxProps,
+  Tooltip,
+} from "@mui/material";
 import { AutocompleteCache } from "./autocomplete_cache";
+import { Navigation, RouteContext } from "../components/router";
+import { flushSync } from "react-dom";
+import { checkPresent } from "@/common/assert";
+
+type Placement = "top-start" | "right";
 
 const HELP_ENTRY = new XmlNode(
   "div",
   [],
   [
-    "Dashed words are abbreviated in the original text. Click on them to learn more: ",
     new XmlNode(
       "span",
       [
         ["class", "lsHover"],
         ["title", "Click to dismiss"],
       ],
-      ["example"]
+      ["Highlighted words"]
     ),
-    ". If you find bugs, typos, or other issues, please report them " +
-      "by clicking on the flag icon in the top navigation bar",
+    " are abbreviated in the original text - click on them to learn more. " +
+      "Click on section headers (like ",
+    new XmlNode(
+      "span",
+      [
+        ["class", "lsSenseBullet"],
+        ["senseid", "tutorialExample"],
+      ],
+      [" A. "]
+    ),
+    ") to link directly to a particular section.",
+    new XmlNode(
+      "p",
+      [],
+      [
+        "If you find bugs, typos, or other issues, please report them " +
+          "by clicking on the flag icon in the top navigation bar.",
+      ]
+    ),
   ]
 );
 
+const LOADING_ENTRY = xmlNodeToJsx(
+  new XmlNode("div", [], ["Please wait - loading entries"])
+);
+
 export function ClickableTooltip(props: {
-  titleText: string;
+  titleText: string | JSX.Element;
   className: string | undefined;
   ChildFactory: React.ForwardRefExoticComponent<
     Omit<any, "ref"> & React.RefAttributes<any>
   >;
+  placement?: Placement;
+  tooltipSx?: SxProps;
 }) {
   const [open, setOpen] = React.useState(false);
 
   return (
     <ClickAwayListener onClickAway={() => setOpen(false)}>
       <Tooltip
-        title={<Typography>{props.titleText}</Typography>}
+        title={
+          <Typography
+            component={typeof props.titleText === "string" ? "p" : "div"}
+          >
+            {props.titleText}
+          </Typography>
+        }
         className={props.className}
-        placement="top-start"
+        placement={props.placement || "top-start"}
         disableFocusListener
         disableHoverListener
         disableTouchListener
+        describeChild={false}
         onClose={() => setOpen(false)}
         open={open}
+        arrow
+        componentsProps={{
+          tooltip: {
+            sx: props.tooltipSx,
+          },
+        }}
       >
         <props.ChildFactory onClick={() => setOpen(!open)} />
       </Tooltip>
@@ -59,14 +105,68 @@ export function ClickableTooltip(props: {
   );
 }
 
-export function xmlNodeToJsx(root: XmlNode, key?: string): JSX.Element {
-  const children = root.children.map((child) => {
+export function SectionLinkTooltip(props: {
+  className: string;
+  forwarded: React.ForwardRefExoticComponent<
+    Omit<any, "ref"> & React.RefAttributes<any>
+  >;
+  senseId: string;
+}) {
+  function onClick() {
+    const chunks = window.location.href.split("#");
+    navigator.clipboard.writeText(`${chunks[0]}#${props.senseId}`);
+  }
+
+  return (
+    <ClickableTooltip
+      titleText={
+        <Typography
+          onClick={onClick}
+          // TODO: Why do we need both here?
+          onTouchStart={onClick}
+          sx={{ cursor: "pointer" }}
+        >
+          <IconButton
+            size="small"
+            aria-label="copy link"
+            aria-haspopup="false"
+            color="info"
+          >
+            <LinkIcon />
+          </IconButton>
+          <span>Copy section link</span>
+        </Typography>
+      }
+      className={props.className}
+      ChildFactory={props.forwarded}
+      placement="top-start"
+      tooltipSx={{
+        backgroundColor: Solarized.mint,
+        color: Solarized.base01,
+        border: `2px solid ${Solarized.base01}`,
+      }}
+    />
+  );
+}
+
+export function xmlNodeToJsx(
+  root: XmlNode,
+  highlightId?: string,
+  sectionRef?: MutableRefObject<HTMLElement | null>,
+  key?: string
+): JSX.Element {
+  const children = root.children.map((child, i) => {
     if (typeof child === "string") {
       return child;
     }
-    return xmlNodeToJsx(child);
+    return xmlNodeToJsx(
+      child,
+      highlightId,
+      sectionRef,
+      child.getAttr("id") || `${i}`
+    );
   });
-  const props: { [key: string]: string } = {};
+  const props: { [key: string]: any } = {};
   if (key !== undefined) {
     props.key = key;
   }
@@ -100,8 +200,31 @@ export function xmlNodeToJsx(root: XmlNode, key?: string): JSX.Element {
         ChildFactory={ForwardedNode}
       />
     );
+  } else if (className === "lsSenseBullet") {
+    const ForwardedNode = React.forwardRef<HTMLElement>(
+      (forwardProps: any, forwardRef: any) => {
+        const allProps = { ...props, ...forwardProps };
+        allProps["ref"] = forwardRef;
+        return React.createElement(root.name, allProps, children);
+      }
+    );
+    return (
+      <SectionLinkTooltip
+        forwarded={ForwardedNode}
+        className={className}
+        senseId={checkPresent(
+          root.getAttr("senseid"),
+          "lsSenseBullet must have senseid!"
+        )}
+      />
+    );
+  } else {
+    if (root.getAttr("id") === highlightId && highlightId !== undefined) {
+      props["className"] = "highlighted";
+      props["ref"] = sectionRef!;
+    }
+    return React.createElement(root.name, props, children);
   }
-  return React.createElement(root.name, props, children);
 }
 
 async function fetchEntry(input: string): Promise<XmlNode[]> {
@@ -122,18 +245,21 @@ async function fetchEntry(input: string): Promise<XmlNode[]> {
 function SearchBox(props: {
   input: string;
   onNewEntries: (entries: XmlNode[]) => any;
+  onLoading: () => any;
   smallScreen: boolean;
 }) {
   const [inputState, setInputState] = React.useState<string>(props.input);
   const [options, setOptions] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
+  const nav = React.useContext(RouteContext);
 
   async function onEnter(searchTerm: string) {
     if (searchTerm.length === 0) {
       return;
     }
+    Navigation.query(nav, searchTerm);
+    props.onLoading();
     props.onNewEntries(await fetchEntry(searchTerm));
-    history.pushState(`#${searchTerm}`, "", `#${searchTerm}`);
   }
 
   return (
@@ -183,10 +309,12 @@ function SearchBox(props: {
   );
 }
 
-export function Dictionary(props: Dictionary.Props) {
-  const [entries, setEntries] = React.useState<XmlNode[]>([]);
+export function Dictionary() {
+  const [entries, setEntries] = React.useState<JSX.Element[]>([]);
   const theme = useTheme();
   const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+  const nav = React.useContext(RouteContext);
+  const sectionRef = React.useRef<HTMLElement | null>(null);
 
   function ContentBox(props: { children: JSX.Element; contentKey?: string }) {
     return (
@@ -218,28 +346,34 @@ export function Dictionary(props: Dictionary.Props) {
   }
 
   React.useEffect(() => {
-    const hashListener = () => {
-      const input = getHash();
-      if (input.length === 0) {
-        setEntries([]);
-        return;
-      }
-      fetchEntry(input).then(setEntries);
-    };
-    window.addEventListener("hashchange", hashListener, false);
-    if (props.input.length > 0) {
-      fetchEntry(props.input).then(setEntries);
+    if (nav.route.query !== undefined) {
+      setEntries([LOADING_ENTRY]);
+      fetchEntry(nav.route.query).then((newEntries) => {
+        flushSync(() => {
+          const jsxEntries = newEntries.map((e) =>
+            xmlNodeToJsx(e, nav.route.hash, sectionRef)
+          );
+          setEntries(jsxEntries);
+        });
+        sectionRef.current?.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      });
     }
-    return () => {
-      window.removeEventListener("hashchange", hashListener);
-    };
-  }, [props.input]);
+  }, [nav.route.query]);
 
   return (
     <Container maxWidth="lg">
       <SearchBox
-        input={props.input}
-        onNewEntries={setEntries}
+        input={nav.route.query || ""}
+        onNewEntries={(newEntries) => {
+          const jsxEntries = newEntries.map((e) =>
+            xmlNodeToJsx(e, nav.route.hash, sectionRef)
+          );
+          setEntries(jsxEntries);
+        }}
+        onLoading={() => setEntries([LOADING_ENTRY])}
         smallScreen={smallScreen}
       />
       {entries.length > 0 && (
@@ -256,7 +390,7 @@ export function Dictionary(props: Dictionary.Props) {
         </ContentBox>
       )}
       {entries.map((entry) => (
-        <ContentBox key={entry.getAttr("id")}>{xmlNodeToJsx(entry)}</ContentBox>
+        <ContentBox>{entry}</ContentBox>
       ))}
       {entries.length > 0 && (
         <ContentBox key="attributionBox">
@@ -273,10 +407,4 @@ export function Dictionary(props: Dictionary.Props) {
       )}
     </Container>
   );
-}
-
-export namespace Dictionary {
-  export interface Props {
-    input: string;
-  }
 }

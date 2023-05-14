@@ -4,11 +4,17 @@
 
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import { describe, expect, it } from "@jest/globals";
-import { act, render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { ClickableTooltip, Dictionary, xmlNodeToJsx } from "./dictionary";
+import {
+  ClickableTooltip,
+  Dictionary,
+  SectionLinkTooltip,
+  xmlNodeToJsx,
+} from "./dictionary";
+import { RouteContext } from "../components/router";
 
 const realFetch = global.fetch;
 
@@ -31,13 +37,13 @@ function replaceFetch(ok: boolean = true, text: string = "") {
 
 describe("Dictionary View", () => {
   it("shows expected components", () => {
-    render(<Dictionary input="" />);
+    render(<Dictionary />);
     expect(screen.getByRole("combobox")).toBeDefined();
   });
 
   it("does not call server on empty submit", async () => {
     const mockFetch = replaceFetch(false);
-    render(<Dictionary input="" />);
+    render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -48,7 +54,7 @@ describe("Dictionary View", () => {
 
   it("calls server for autocomplete entries", async () => {
     const mockFetch = replaceFetch(false);
-    render(<Dictionary input="" />);
+    render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -60,7 +66,7 @@ describe("Dictionary View", () => {
 
   it("handles autocomplete option clicks", async () => {
     replaceFetch(true, JSON.stringify(["Goo"]));
-    render(<Dictionary input="" />);
+    render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -75,7 +81,7 @@ describe("Dictionary View", () => {
 
   it("calls server on submit", async () => {
     const mockFetch = replaceFetch(false);
-    render(<Dictionary input="" />);
+    render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -89,19 +95,26 @@ describe("Dictionary View", () => {
 
   test("updates history state on submit", async () => {
     replaceFetch(false);
-    render(<Dictionary input="" />);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <Dictionary />
+      </RouteContext.Provider>
+    );
     const searchBar = screen.getByRole("combobox");
     history.pushState("", "", "");
 
     await user.click(searchBar);
     await user.type(searchBar, "Gallia{enter}");
 
-    expect(history.state).toBe("#Gallia");
+    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "Gallia" });
   });
 
   it("calls shows error on failure", async () => {
     replaceFetch(false);
-    render(<Dictionary input="" />);
+    render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -119,7 +132,7 @@ describe("Dictionary View", () => {
       true,
       JSON.stringify(["<span>France or whatever idk lol</span>"])
     );
-    render(<Dictionary input="" />);
+    render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -130,36 +143,22 @@ describe("Dictionary View", () => {
     });
   });
 
-  it("fetches result from props input", async () => {
-    replaceFetch(
+  it("fetches result from navigation context", async () => {
+    const mockFetch = replaceFetch(
       true,
       JSON.stringify(["<span>France or whatever idk lol</span>"])
     );
 
-    render(<Dictionary input="Gallia" />);
-
-    await waitFor(() => {
-      expect(screen.getByText("France or whatever idk lol")).toBeDefined();
-    });
-  });
-
-  it("handles hash update", async () => {
-    const mockAddEventListener = jest.fn();
-    window.addEventListener = mockAddEventListener;
-    render(<Dictionary input="" />);
-
-    replaceFetch(
-      true,
-      JSON.stringify(["<span>France or whatever idk lol</span>"])
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/", query: "Belgae" }, navigateTo: () => {} }}
+      >
+        <Dictionary />
+      </RouteContext.Provider>
     );
-    act(() => {
-      mockAddEventListener.mock.lastCall![1]();
-    });
 
-    const hashchangeCalls = mockAddEventListener.mock.calls.filter(
-      (call) => call[0] === "hashchange"
-    );
-    expect(hashchangeCalls).toHaveLength(1);
+    expect(mockFetch.mock.calls).toHaveLength(1);
+    expect(mockFetch.mock.calls[0][0]).toContain("Belgae");
     await waitFor(() => {
       expect(screen.getByText("France or whatever idk lol")).toBeDefined();
     });
@@ -192,6 +191,27 @@ describe("xmlNodeToJsx", () => {
     expect(result.props.children).toHaveLength(2);
     expect(result.props.children[0]).toBe("Caesar");
     expect(result.props.children[1].props.children[0]).toBe("Gaius");
+  });
+
+  it("adds highlight on matching id", () => {
+    const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
+    const result = xmlNodeToJsx(root, "Caesar");
+
+    expect(result.props["className"]).toBe("highlighted");
+  });
+
+  it("does not add highlight on different id", () => {
+    const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
+    const result = xmlNodeToJsx(root, "Augustus");
+
+    expect(result.props["className"]).toBe(undefined);
+  });
+
+  it("does not add highlight on both undefined", () => {
+    const root = new XmlNode("span", [], ["Gallia"]);
+    const result = xmlNodeToJsx(root, undefined);
+
+    expect(result.props["className"]).toBe(undefined);
   });
 });
 
@@ -230,5 +250,40 @@ describe("ClickableTooltip", () => {
 
     expect(screen.queryByText("Caesar")).not.toBeNull();
     expect(screen.queryByText("Gallia")).not.toBeNull();
+  });
+});
+
+describe("SectionLinkTooltip", () => {
+  const DivWithRef = React.forwardRef<HTMLDivElement>((props, ref) => {
+    return (
+      <div {...props} ref={ref}>
+        Gallia
+      </div>
+    );
+  });
+
+  it("shows link buttons", async () => {
+    const writeText = jest.fn();
+    Object.assign(navigator, {
+      clipboard: {
+        writeText,
+      },
+    });
+
+    render(
+      <SectionLinkTooltip
+        forwarded={DivWithRef}
+        className="foo"
+        senseId="bar"
+      />
+    );
+    await user.click(screen.getByText("Gallia"));
+
+    expect(screen.queryByText(/link/)).not.toBeNull();
+    const iconButton = screen.queryByLabelText("copy link");
+    expect(iconButton).not.toBeNull();
+
+    await user.click(iconButton!);
+    expect(writeText.mock.lastCall![0].endsWith("#bar")).toBe(true);
   });
 });

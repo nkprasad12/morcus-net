@@ -7,6 +7,7 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 import { ResponsiveAppBar } from "./app_bar";
+import { RouteContext } from "./router";
 
 describe("App Bar View", () => {
   const pages: ResponsiveAppBar.Page[] = [
@@ -21,14 +22,7 @@ describe("App Bar View", () => {
   ];
 
   test("shows menu buttons", () => {
-    render(
-      <ResponsiveAppBar
-        pages={pages}
-        setPage={() => {}}
-        currentPage=""
-        openIssueDialog={() => {}}
-      />
-    );
+    render(<ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />);
 
     expect(screen.getAllByText(pages[0].name)[0]).toBeDefined();
     expect(screen.getAllByText(pages[1].name)[0]).toBeDefined();
@@ -37,29 +31,23 @@ describe("App Bar View", () => {
   test("handles menu clicks", async () => {
     const mockSetPage = jest.fn(() => {});
     render(
-      <ResponsiveAppBar
-        pages={pages}
-        setPage={mockSetPage}
-        currentPage=""
-        openIssueDialog={() => {}}
-      />
+      <RouteContext.Provider
+        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}
+      >
+        <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
+      </RouteContext.Provider>
     );
 
     await user.click(screen.getAllByText(pages[0].name)[0]);
 
     expect(mockSetPage).toBeCalledTimes(1);
-    expect(mockSetPage).toBeCalledWith(pages[0].path);
+    expect(mockSetPage).toBeCalledWith({ path: pages[0].path });
   });
 
   test("handles issue clicks", async () => {
     const mockReportIssue = jest.fn(() => {});
     render(
-      <ResponsiveAppBar
-        pages={pages}
-        setPage={() => {}}
-        currentPage=""
-        openIssueDialog={mockReportIssue}
-      />
+      <ResponsiveAppBar pages={pages} openIssueDialog={mockReportIssue} />
     );
 
     await user.click(screen.getByLabelText("report an issue"));

@@ -18,7 +18,7 @@ import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
 import { Dictionary } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
-import { getHash } from "@/web/client/browser_utils";
+import { Router } from "./components/router";
 
 const theme = createTheme({
   palette: {
@@ -73,14 +73,17 @@ document.body.style.backgroundColor = Solarized.base3;
 const ABOUT_PAGE: SinglePageApp.Page = {
   name: "About",
   path: "/about",
+  content: About,
 };
 const DICT_PAGE: SinglePageApp.Page = {
   name: "Dictionary",
   path: "/dicts",
+  content: Dictionary,
 };
 const MACRONIZER_PAGE: SinglePageApp.Page = {
   name: "Macronizer",
   path: "/macronizer",
+  content: Macronizer,
 };
 
 const pages: SinglePageApp.Page[] = [DICT_PAGE];
@@ -89,20 +92,8 @@ if (process.env.NODE_ENV !== "production") {
 }
 pages.push(ABOUT_PAGE);
 
-const wirings: SinglePageApp.Wiring[] = [
-  {
-    paths: [/^\/$/, /^\/dicts$/],
-    content: (_) => <Dictionary input={getHash()} />,
-  },
-  { paths: [/^\/macronizer$/], content: (_) => <Macronizer /> },
-  { paths: [/^\/about$/], content: (_) => <About /> },
-  { paths: [/.*/], content: (_) => <div>Error: Not found</div> },
-];
-
 const props: SinglePageApp.Props = {
-  initialPage: window.location.pathname,
   pages: pages,
-  wirings: wirings,
 };
 
 const root = ReactDOM.createRoot(
@@ -118,30 +109,52 @@ root.render(
             listStyle: "none",
             marginLeft: 0,
             paddingLeft: "1em",
-            textIndent: "-1em",
+          },
+          li: {
+            padding: "2px",
           },
           pre: { margin: "0" },
+          ".highlighted": {
+            border: "2px solid",
+            borderRadius: 4,
+            borderColor: Solarized.red,
+          },
           ".lsHover": {
             borderBottom: `1px dashed ${Solarized.base03}`,
+            fontWeight: "normal",
             cursor: "help",
           },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "24",
+            backgroundColor: Solarized.violet + "22",
+            borderRadius: 4,
           },
           ".lsBibl": {
-            backgroundColor: Solarized.violet + "44",
+            backgroundColor: Solarized.violet + "30",
+            borderRadius: 4,
           },
-          ".lsQuote": { backgroundColor: Solarized.blue + "40" },
+          ".lsQuote": {
+            backgroundColor: Solarized.blue + "22",
+            borderRadius: 4,
+          },
           ".lsOrth": {
-            backgroundColor: Solarized.red + "78",
+            backgroundColor: Solarized.red + "68",
             fontWeight: "bold",
+            borderRadius: 4,
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
+          ".lsSenseBullet": {
+            fontWeight: "bold",
+            cursor: "pointer",
+            backgroundColor: Solarized.base01 + "48",
+            borderRadius: 4,
+          },
           ".lsTrans": { fontStyle: "italic" },
         }}
       />
       <StyledEngineProvider injectFirst>
-        <SinglePageApp {...props} />
+        <Router.Handler>
+          <SinglePageApp {...props} />
+        </Router.Handler>
       </StyledEngineProvider>
     </ThemeProvider>
   </React.StrictMode>

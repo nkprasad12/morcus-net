@@ -830,6 +830,7 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
     const attrsMap = new Map(senseNode.attrs);
     const level = +checkPresent(attrsMap.get("level"));
     const n = checkPresent(attrsMap.get("n"));
+    const id = checkPresent(senseNode.getAttr("id"));
 
     while (stack.length < level) {
       const newList = new XmlNode("ol", [["class", "lsSenseList"]], []);
@@ -844,8 +845,18 @@ export function formatSenseList(senseNodes: XmlNode[]): XmlNode {
     stack[stack.length - 1].children.push(
       new XmlNode(
         "li",
-        [],
-        [new XmlNode("b", [], [`${getBullet(n)}. `]), defaultDisplay(senseNode)]
+        [["id", id]],
+        [
+          new XmlNode(
+            "span",
+            [
+              ["class", "lsSenseBullet"],
+              ["senseid", id],
+            ],
+            [` ${getBullet(n)}. `]
+          ),
+          defaultDisplay(senseNode),
+        ]
       )
     );
   }
