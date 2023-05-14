@@ -125,15 +125,15 @@ root.render(
             cursor: "help",
           },
           ".lsAuthor": {
-            backgroundColor: Solarized.violet + "20",
+            backgroundColor: Solarized.violet + "22",
             borderRadius: 4,
           },
           ".lsBibl": {
-            backgroundColor: Solarized.violet + "28",
+            backgroundColor: Solarized.violet + "30",
             borderRadius: 4,
           },
           ".lsQuote": {
-            backgroundColor: Solarized.blue + "20",
+            backgroundColor: Solarized.blue + "22",
             borderRadius: 4,
           },
           ".lsOrth": {
