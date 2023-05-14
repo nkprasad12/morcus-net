@@ -43,6 +43,10 @@ const HELP_ENTRY = new XmlNode(
   ]
 );
 
+const LOADING_ENTRY = xmlNodeToJsx(
+  new XmlNode("div", [], ["Please wait - loading entries"])
+);
+
 export function ClickableTooltip(props: {
   titleText: string | JSX.Element;
   className: string | undefined;
@@ -57,7 +61,13 @@ export function ClickableTooltip(props: {
   return (
     <ClickAwayListener onClickAway={() => setOpen(false)}>
       <Tooltip
-        title={<Typography>{props.titleText}</Typography>}
+        title={
+          <Typography
+            component={typeof props.titleText === "string" ? "p" : "div"}
+          >
+            {props.titleText}
+          </Typography>
+        }
         className={props.className}
         placement={props.placement || "top-start"}
         disableFocusListener
@@ -108,11 +118,11 @@ export function SectionLinkTooltip(props: {
       }
       className={props.className}
       ChildFactory={props.forwarded}
-      placement="right"
+      placement="top-start"
       tooltipSx={{
-        backgroundColor: Solarized.base3,
+        backgroundColor: Solarized.mint,
         color: Solarized.base01,
-        border: `3px solid ${Solarized.base01}`,
+        border: `2px solid ${Solarized.base01}`,
       }}
     />
   );
@@ -214,6 +224,7 @@ async function fetchEntry(input: string): Promise<XmlNode[]> {
 function SearchBox(props: {
   input: string;
   onNewEntries: (entries: XmlNode[]) => any;
+  onLoading: () => any;
   smallScreen: boolean;
 }) {
   const [inputState, setInputState] = React.useState<string>(props.input);
@@ -226,6 +237,7 @@ function SearchBox(props: {
       return;
     }
     Navigation.query(nav, searchTerm);
+    props.onLoading();
     props.onNewEntries(await fetchEntry(searchTerm));
   }
 
@@ -314,6 +326,7 @@ export function Dictionary() {
 
   React.useEffect(() => {
     if (nav.route.query !== undefined) {
+      setEntries([LOADING_ENTRY]);
       fetchEntry(nav.route.query).then((newEntries) => {
         flushSync(() => {
           const jsxEntries = newEntries.map((e) =>
@@ -339,6 +352,7 @@ export function Dictionary() {
           );
           setEntries(jsxEntries);
         }}
+        onLoading={() => setEntries([LOADING_ENTRY])}
         smallScreen={smallScreen}
       />
       {entries.length > 0 && (
