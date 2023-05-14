@@ -73,6 +73,7 @@ export function ClickableTooltip(props: {
         disableFocusListener
         disableHoverListener
         disableTouchListener
+        describeChild={false}
         onClose={() => setOpen(false)}
         open={open}
         arrow
@@ -103,12 +104,16 @@ export function SectionLinkTooltip(props: {
   return (
     <ClickableTooltip
       titleText={
-        <Typography>
+        <Typography
+          onClick={onClick}
+          // TODO: Why do we need both here?
+          onTouchStart={onClick}
+          sx={{ cursor: "pointer" }}
+        >
           <IconButton
             size="small"
             aria-label="copy link"
             aria-haspopup="false"
-            onClick={onClick}
             color="info"
           >
             <LinkIcon />
