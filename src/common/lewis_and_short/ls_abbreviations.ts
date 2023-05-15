@@ -188,6 +188,9 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
     ["a. h. l.", "ad hunc locum (comment on this passage). "],
     ["ad h. l.", "ad hunc locum (comment on this passage). "],
     ["ad h.l.", "ad hunc locum (comment on this passage). "],
+    ["al.", "alii or alia, others or other."],
+    ["e. g.", "exempli gratia."],
+    ["etc.", "et cetera (and so on)."],
     ["h.l.", "hic locus (this passage)."],
     ["h. l.", "hic locus (this passage)."],
     ["ib.", "at the same place / citation"],
@@ -202,6 +205,15 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
   ])
 );
 
+// There are listed in the abbreviation table, but never appear in the
+// actual dictionary.
+// ["a. h. v.", "ad hanc vocem. (at this entry)"]
+// ["aug.", "augmentative."],
+// ["chh.", "church."]
+// ["epic.", "epicene."],
+// ["express.", "expression."]
+// ["JCtus.", "juris consultus."],
+
 export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
   new Map<string, string>([
     // ["a. or act.", "active, -ly."],
@@ -215,8 +227,6 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["adv.", "adverb, -ial, -ially; or adversus."],
     ["agric.", "agricultural"],
     ["agricult.", "agricultural"],
-    // ["a. h. v.", "ad hanc vocem. (at this entry)"],  // This seems not to appear?
-    // ["al.", "alii or alia, others or other."],  // This should be familiar to readers via et. al.
     ["amplif.", "amplificative"],
     ["analog.", "analogous(ly)"],
     // ["antiq.", "antiquities. <- Seems to occur in other ways"],
@@ -226,12 +236,10 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["Arab.", "Arabic"],
     // ["archit.", "architecture, -tural."],
     // ["art.", "article."],
-    // ["aug.", "augmentative."],
     // ["Aug.", "Augustan."],
     // ["c.", "cum (with)."],
     // ["c. c.", "coupled with."],
     ["cf.", "compare"],
-    // ["chh.", "church."],  // This seems never to appear?
     // ["class.", "classic, -al."],
     // ["Cod.", "Codex (MS)."],
     // ["collat.", "collateral."],
@@ -258,20 +266,16 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["dub.", "doubtful"],
     ["eccl.", "ecclesiastical."],
     // ["ed.", "editio or editor."],
-    // ["e. g.", "exempli gratiâ."],  // This is familiar in English.
     // ["ellipt.", "elliptical, -ly."],
     ["elsewh.", "elsewhere."],
-    // ["epic.", "epicene."],  // This is never abbreviated
     ["epit.", "epitaph."],
     // ["equiv.", "equivalent."],
     // ["esp.", "especially."],
-    // ["etc.", "et cetera."],  // This is familiar in English.
     ["etym.", "etymology"],
     // ["etym. etymology", "-ical."],
     // ["euphon.", "euphonic, -ny."],
     // ["ex.", "exs.,      example, examples."],
     // ["expl.", "explanation, explained."],
-    // ["express.", "expression."],  // This never actually appears?
     // ["ext.", "externa."],
     // ["extr.", "extremo (at the end)."],
     // ["f. or fem.", "feminine."],
@@ -314,7 +318,6 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["interrog.", "interrogative, -tion."],
     ["intr.", "intransitive"],
     ["Ital.", "Italian"],
-    // ["JCtus.", "juris consultus."],
     ["jurid.", "juridical"],
     ["kindr.", "kindred"],
     // ["l. c. or l. l.", "loco citato or laudato, in the place already cited above (in this same entry)."],
@@ -387,11 +390,11 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["rhet.", "rhetoric, -al; in rhetoric."],
     // ["Rom.", "Roman."],
     // ["s. h. v.", "sub hac voce. (in this entry)"],
-    // ["saep.", "saepe."],
-    // ["saepis.", "saepissime."],
+    ["saep.", "saepe."],
+    ["saepis.", "saepissime."],
     // ["sc.", "scilicet."],
     // ["signif.", "signifies, -cation."],
-    // ["["simp."", ""simple"],"],
+    ["simp.", "simple"],
     // ["["Span."", ""Spanish"],"],
     // ["specif.", "specifically."],
     // ["sq.", "sequens;"],
@@ -410,7 +413,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["trag.", "tragicus, tragic, or in tragedy."],
     // ["trans.", "translated, -tion."],
     // ["transf.", "transferred."],
-    // ["trisyl.", "trisyllable, -abic."],
+    ["trisyl.", "trisyllable(-abic)"],
     // ["trop.", "in a tropical or figurative sense."],
     // ["usu.", "usual, -ly."],
     // ["v.", "verb, vide, or vox."],
