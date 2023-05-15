@@ -32,8 +32,8 @@ export function About() {
           <section>
             <h4>Dictionary</h4>
             <p>
-              Dictionary data is derived from Perseus' digitization of Lewis &
-              Short, which is available{" "}
+              Dictionary data is derived from Perseus&apos; digitization of
+              Lewis & Short, which is available{" "}
               <a href="https://github.com/PerseusDL/lexica">here</a>. Perseus
               generously provides this data under the{" "}
               <a href="https://creativecommons.org/licenses/by-sa/4.0/">

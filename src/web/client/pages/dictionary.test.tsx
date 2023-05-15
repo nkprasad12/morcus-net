@@ -35,6 +35,14 @@ function replaceFetch(ok: boolean = true, text: string = "") {
   return mockFetch;
 }
 
+function GalliaRef(props: any, ref: any) {
+  return (
+    <div {...props} ref={ref}>
+      Gallia
+    </div>
+  );
+}
+
 describe("Dictionary View", () => {
   it("shows expected components", () => {
     render(<Dictionary />);
@@ -216,13 +224,7 @@ describe("xmlNodeToJsx", () => {
 });
 
 describe("ClickableTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>((props, ref) => {
-    return (
-      <div {...props} ref={ref}>
-        Gallia
-      </div>
-    );
-  });
+  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows base text on initial load", async () => {
     render(
@@ -254,13 +256,7 @@ describe("ClickableTooltip", () => {
 });
 
 describe("SectionLinkTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>((props, ref) => {
-    return (
-      <div {...props} ref={ref}>
-        Gallia
-      </div>
-    );
-  });
+  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows link buttons", async () => {
     const writeText = jest.fn();
