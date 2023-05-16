@@ -74,31 +74,41 @@ describe("Dictionary View", () => {
 
   it("handles autocomplete option clicks", async () => {
     replaceFetch(true, JSON.stringify(["Goo"]));
-    render(<Dictionary />);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <Dictionary />
+      </RouteContext.Provider>
+    );
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
     await user.type(searchBar, "G");
     const option = screen.getByText("Goo");
-    const mockFetch = replaceFetch(true, JSON.stringify(["<span/>"]));
     await user.click(option);
 
-    expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/ls/G");
+    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "Goo" });
   });
 
-  it("calls server on submit", async () => {
-    const mockFetch = replaceFetch(false);
-    render(<Dictionary />);
+  it("handles navigation on submit", async () => {
+    replaceFetch(false);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <Dictionary />
+      </RouteContext.Provider>
+    );
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
     await user.type(searchBar, "G");
-    mockFetch.mockClear();
     await user.type(searchBar, "{enter}");
 
-    expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/ls/G");
+    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "G" });
   });
 
   test("updates history state on submit", async () => {
@@ -122,11 +132,13 @@ describe("Dictionary View", () => {
 
   it("calls shows error on failure", async () => {
     replaceFetch(false);
-    render(<Dictionary />);
-    const searchBar = screen.getByRole("combobox");
-
-    await user.click(searchBar);
-    await user.type(searchBar, "Gallia{enter}");
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
+      >
+        <Dictionary />
+      </RouteContext.Provider>
+    );
 
     await waitFor(() => {
       expect(
@@ -140,11 +152,13 @@ describe("Dictionary View", () => {
       true,
       JSON.stringify(["<span>France or whatever idk lol</span>"])
     );
-    render(<Dictionary />);
-    const searchBar = screen.getByRole("combobox");
-
-    await user.click(searchBar);
-    await user.type(searchBar, "Gallia{enter}");
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
+      >
+        <Dictionary />
+      </RouteContext.Provider>
+    );
 
     await waitFor(() => {
       expect(screen.getByText("France or whatever idk lol")).toBeDefined();

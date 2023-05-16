@@ -242,12 +242,7 @@ async function fetchEntry(input: string): Promise<XmlNode[]> {
   return parseEntries(JSON.parse(rawText));
 }
 
-function SearchBox(props: {
-  input: string;
-  onNewEntries: (entries: XmlNode[]) => any;
-  onLoading: () => any;
-  smallScreen: boolean;
-}) {
+function SearchBox(props: { input: string; smallScreen: boolean }) {
   const [inputState, setInputState] = React.useState<string>(props.input);
   const [options, setOptions] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -258,8 +253,6 @@ function SearchBox(props: {
       return;
     }
     Navigation.query(nav, searchTerm);
-    props.onLoading();
-    props.onNewEntries(await fetchEntry(searchTerm));
   }
 
   return (
@@ -371,20 +364,7 @@ export function Dictionary() {
 
   return (
     <Container maxWidth="lg">
-      <SearchBox
-        input={nav.route.query || ""}
-        onNewEntries={(newEntries) => {
-          const jsxEntries = newEntries.map((e, i) => ({
-            element: xmlNodeToJsx(e, nav.route.hash, sectionRef),
-            key: e.getAttr("id") || `${i}`,
-          }));
-          setEntries(jsxEntries);
-        }}
-        onLoading={() =>
-          setEntries([{ element: LOADING_ENTRY, key: "LOADING_ENTRY" }])
-        }
-        smallScreen={smallScreen}
-      />
+      <SearchBox input={nav.route.query || ""} smallScreen={smallScreen} />
       {entries.length > 0 && (
         <ContentBox key="searchHeader">
           <div style={{ fontSize: 16, lineHeight: "normal" }}>
