@@ -138,7 +138,6 @@ root.render(
           },
           ".lsOrth": {
             backgroundColor: Solarized.red + "68",
-            fontWeight: "bold",
             borderRadius: 4,
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
