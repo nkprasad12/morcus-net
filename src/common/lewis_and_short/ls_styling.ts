@@ -1,7 +1,7 @@
 import { checkPresent } from "../assert";
 import { XmlNode } from "./xml_node";
 
-const START_CHARACTERS = new Set<string>(" ();");
+const START_CHARACTERS = new Set<string>(" ();—-");
 
 export interface TrieValue {
   value: string;

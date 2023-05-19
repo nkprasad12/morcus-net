@@ -611,7 +611,11 @@ function displayOrth(root: XmlNode, _parent?: XmlNode): XmlNode {
   return new XmlNode(
     "span",
     [["class", "lsOrth"]],
-    [XmlNode.getSoleText(root)]
+    [
+      XmlNode.getSoleText(root)
+        .replaceAll("^", "\u0306")
+        .replaceAll("_", "\u0304"),
+    ]
   );
 }
 

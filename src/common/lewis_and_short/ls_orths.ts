@@ -573,7 +573,7 @@ function lastOrthWithStarts(
 
 export function attachAltEnd(prevOrths: string[], altEnd: string): string {
   assert(altEnd.startsWith("-"));
-  let possibleResults = new Set<string>();
+  const possibleResults = new Set<string>();
   for (const [key, endingsList] of ENDINGS_MAP.entries()) {
     if (!key.includes(altEnd)) {
       continue;
@@ -599,7 +599,7 @@ export function attachAltEnd(prevOrths: string[], altEnd: string): string {
 
 export function attachAltStart(prevOrths: string[], altStart: string): string {
   assert(altStart.endsWith("-"));
-  let possibleResults: string[] = [];
+  const possibleResults: string[] = [];
   for (const [key, startsList] of STARTS_MAP.entries()) {
     if (!key.includes(altStart)) {
       continue;
@@ -628,7 +628,7 @@ export function regularizeOrths(inputOrths: string[]): string[] {
     return [];
   }
   const orths = inputOrths.map((orth) => orth);
-  let regulars = orths.map(isRegularOrth);
+  const regulars = orths.map(isRegularOrth);
   const allNonAlphas = orths.map(nonAlphabetics);
   for (let i = 1; i < orths.length; i++) {
     if (regulars[i]) {

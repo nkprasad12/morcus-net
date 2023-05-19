@@ -11,6 +11,8 @@ import {
 import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
 import { parseEntries, XmlNode } from "./xml_node";
 
+console.debug = jest.fn();
+
 describe("getBullet", () => {
   it("returns original on unparenthesized", () => {
     expect(getBullet("I")).toBe("I");

@@ -166,48 +166,47 @@ export function xmlNodeToJsx(
       child.getAttr("id") || `${i}`
     );
   });
-  const props: { [key: string]: any } = {};
+  const props: { [propKey: string]: any } = {};
   if (key !== undefined) {
     props.key = key;
   }
   let titleText: string | undefined = undefined;
   let className: string | undefined = undefined;
-  for (const [key, value] of root.attrs) {
-    if (key === "class") {
+  for (const [attrKey, value] of root.attrs) {
+    if (attrKey === "class") {
       className = value;
       props.className = value;
       continue;
     }
-    if (key === "title") {
+    if (attrKey === "title") {
       titleText = value;
       continue;
     }
-    props[key] = value;
+    props[attrKey] = value;
   }
 
   if (titleText !== undefined) {
-    const ForwardedNode = React.forwardRef<HTMLElement>(
-      (forwardProps: any, forwardRef: any) => {
-        const allProps = { ...props, ...forwardProps };
-        allProps["ref"] = forwardRef;
-        return React.createElement(root.name, allProps, children);
-      }
-    );
+    function hoverForwardedNode(forwardProps: any, forwardRef: any) {
+      const allProps = { ...props, ...forwardProps };
+      allProps["ref"] = forwardRef;
+      return React.createElement(root.name, allProps, children);
+    }
+    const ForwardedNode = React.forwardRef<HTMLElement>(hoverForwardedNode);
     return (
       <ClickableTooltip
         titleText={titleText}
         className={className}
         ChildFactory={ForwardedNode}
+        key={key}
       />
     );
   } else if (className === "lsSenseBullet") {
-    const ForwardedNode = React.forwardRef<HTMLElement>(
-      (forwardProps: any, forwardRef: any) => {
-        const allProps = { ...props, ...forwardProps };
-        allProps["ref"] = forwardRef;
-        return React.createElement(root.name, allProps, children);
-      }
-    );
+    function senseForwardedNode(forwardProps: any, forwardRef: any) {
+      const allProps = { ...props, ...forwardProps };
+      allProps["ref"] = forwardRef;
+      return React.createElement(root.name, allProps, children);
+    }
+    const ForwardedNode = React.forwardRef<HTMLElement>(senseForwardedNode);
     return (
       <SectionLinkTooltip
         forwarded={ForwardedNode}
@@ -216,6 +215,7 @@ export function xmlNodeToJsx(
           root.getAttr("senseid"),
           "lsSenseBullet must have senseid!"
         )}
+        key={key}
       />
     );
   } else {
@@ -242,12 +242,7 @@ async function fetchEntry(input: string): Promise<XmlNode[]> {
   return parseEntries(JSON.parse(rawText));
 }
 
-function SearchBox(props: {
-  input: string;
-  onNewEntries: (entries: XmlNode[]) => any;
-  onLoading: () => any;
-  smallScreen: boolean;
-}) {
+function SearchBox(props: { input: string; smallScreen: boolean }) {
   const [inputState, setInputState] = React.useState<string>(props.input);
   const [options, setOptions] = React.useState<string[]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
@@ -258,8 +253,6 @@ function SearchBox(props: {
       return;
     }
     Navigation.query(nav, searchTerm);
-    props.onLoading();
-    props.onNewEntries(await fetchEntry(searchTerm));
   }
 
   return (
@@ -309,8 +302,13 @@ function SearchBox(props: {
   );
 }
 
+interface ElementAndKey {
+  element: JSX.Element;
+  key: string;
+}
+
 export function Dictionary() {
-  const [entries, setEntries] = React.useState<JSX.Element[]>([]);
+  const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
   const theme = useTheme();
   const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
   const nav = React.useContext(RouteContext);
@@ -347,12 +345,13 @@ export function Dictionary() {
 
   React.useEffect(() => {
     if (nav.route.query !== undefined) {
-      setEntries([LOADING_ENTRY]);
+      setEntries([{ element: LOADING_ENTRY, key: "LOADING_ENTRY" }]);
       fetchEntry(nav.route.query).then((newEntries) => {
         flushSync(() => {
-          const jsxEntries = newEntries.map((e) =>
-            xmlNodeToJsx(e, nav.route.hash, sectionRef)
-          );
+          const jsxEntries = newEntries.map((e, i) => ({
+            element: xmlNodeToJsx(e, nav.route.hash, sectionRef),
+            key: e.getAttr("id") || `${i}`,
+          }));
           setEntries(jsxEntries);
         });
         sectionRef.current?.scrollIntoView({
@@ -365,17 +364,7 @@ export function Dictionary() {
 
   return (
     <Container maxWidth="lg">
-      <SearchBox
-        input={nav.route.query || ""}
-        onNewEntries={(newEntries) => {
-          const jsxEntries = newEntries.map((e) =>
-            xmlNodeToJsx(e, nav.route.hash, sectionRef)
-          );
-          setEntries(jsxEntries);
-        }}
-        onLoading={() => setEntries([LOADING_ENTRY])}
-        smallScreen={smallScreen}
-      />
+      <SearchBox input={nav.route.query || ""} smallScreen={smallScreen} />
       {entries.length > 0 && (
         <ContentBox key="searchHeader">
           <div style={{ fontSize: 16, lineHeight: "normal" }}>
@@ -390,7 +379,7 @@ export function Dictionary() {
         </ContentBox>
       )}
       {entries.map((entry) => (
-        <ContentBox>{entry}</ContentBox>
+        <ContentBox key={entry.key}>{entry.element}</ContentBox>
       ))}
       {entries.length > 0 && (
         <ContentBox key="attributionBox">

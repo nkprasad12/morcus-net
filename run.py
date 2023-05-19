@@ -21,7 +21,7 @@ def start_worker(args, worker_type):
         socket_address = f"https://www.morcus.net"
         my_env["NODE_ENV"] = "production"
     if args.staging:
-        socket_address = f"https://morcus-net-dev.herokuapp.com"
+        socket_address = f"https://dev.morcus.net"
         my_env["NODE_ENV"] = "production"
 
     my_env["SOCKET_ADDRESS"] = socket_address

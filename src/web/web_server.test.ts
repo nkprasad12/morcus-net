@@ -14,19 +14,25 @@ import path from "path";
 
 console.debug = jest.fn();
 
-const TEMP_FILE = "web_server.test.ts.html";
-
-function writeFile(contents: string) {
-  fs.writeFileSync(TEMP_FILE, contents);
-}
+const TEMP_DIR = "web_server_test_ts";
+const TEMP_FILE = `${TEMP_DIR}/sample.html`;
+const TEMP_INDEX_FILE = `${TEMP_DIR}/index.html`;
 
 beforeAll(() => {
-  writeFile("<!DOCTYPE html>\n<html></html>");
+  fs.mkdirSync(TEMP_DIR);
+  fs.writeFileSync(TEMP_FILE, "<!DOCTYPE html>\n<html></html>");
+  fs.writeFileSync(TEMP_INDEX_FILE, "<!DOCTYPE html>\n<html></html>");
 });
 
 afterAll(() => {
   try {
     fs.unlinkSync(TEMP_FILE);
+  } catch (e) {}
+  try {
+    fs.unlinkSync(TEMP_INDEX_FILE);
+  } catch (e) {}
+  try {
+    fs.rmdirSync(TEMP_DIR);
   } catch (e) {}
 });
 
@@ -39,7 +45,7 @@ function getServer(): express.Express {
     macronizer: (a) => Promise.resolve(a + "2"),
     lsDict: (a) => Promise.resolve(`${a} def`),
     entriesByPrefix: (a) => Promise.resolve([a]),
-    indexFilePath: path.resolve(TEMP_FILE),
+    buildDir: path.resolve(TEMP_DIR),
     fileIssueReport: (a) =>
       (fileIssueReportResults.pop() || (() => Promise.resolve(a)))(),
   };
@@ -117,5 +123,18 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("text/html");
+    expect(response.headers["cache-control"]).toBe(
+      "no-cache, no-store, must-revalidate"
+    );
+  });
+
+  test("sends out index without cache", async () => {
+    const response = await request(app).get("/index.html");
+
+    expect(response.status).toBe(200);
+    expect(response.type).toBe("text/html");
+    expect(response.headers["cache-control"]).toBe(
+      "no-cache, no-store, must-revalidate"
+    );
   });
 });

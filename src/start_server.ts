@@ -65,7 +65,7 @@ const params: WebServerParams = {
   lsDict: async (input) => (await lewisAndShort).getEntry(input),
   entriesByPrefix: async (prefix) =>
     (await lewisAndShort).getCompletions(prefix),
-  indexFilePath: path.join(__dirname, "../genfiles_static", "index.html"),
+  buildDir: path.join(__dirname, "../genfiles_static"),
   fileIssueReport: (reportText) => GitHub.reportIssue(reportText),
 };
 

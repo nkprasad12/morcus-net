@@ -1,5 +1,5 @@
 import compression from "compression";
-import express, { Request } from "express";
+import express, { Request, Response } from "express";
 import {
   entriesByPrefix,
   lsCall,
@@ -7,6 +7,7 @@ import {
   report,
 } from "@/web/api_routes";
 import bodyParser from "body-parser";
+import path from "path";
 
 function log(message: string) {
   console.debug(`[web_server] [${Date.now() / 1000}] ${message}`);
@@ -18,7 +19,7 @@ export interface WebServerParams {
   lsDict: (entry: string) => Promise<string>;
   entriesByPrefix: (prefix: string) => Promise<string[]>;
   fileIssueReport: (reportText: string) => Promise<void>;
-  indexFilePath: string;
+  buildDir: string;
 }
 
 export function setupServer(params: WebServerParams): void {
@@ -27,13 +28,23 @@ export function setupServer(params: WebServerParams): void {
   app.use(compression());
   const staticOptions = {
     maxAge: 100 * 365 * 24 * 3600 * 100,
+    setHeaders: (res: Response, path: string) => {
+      // Force users to always fetch the index from the server so that they
+      // always get the latest Javascript bundles.
+      if (path.endsWith("index.html")) {
+        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      }
+    },
   };
   app.use("/public", express.static("public", staticOptions));
-  app.use(express.static("genfiles_static", staticOptions));
+  app.use(express.static(params.buildDir, staticOptions));
 
   app.use("/*", (req, res, next) => {
     if (!req.baseUrl.startsWith("/api/")) {
-      res.sendFile(params.indexFilePath);
+      // Force users to always fetch the index from the server so that they
+      // always get the latest Javascript bundles.
+      res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      res.sendFile(path.join(params.buildDir, "index.html"));
       return;
     }
     next();
