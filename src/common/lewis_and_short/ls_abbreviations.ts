@@ -192,6 +192,7 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
     ["ad h. l.", "ad hunc locum (comment on this passage). "],
     ["ad h.l.", "ad hunc locum (comment on this passage). "],
     ["al.", "alii or alia, others or other."],
+    ["class.", "classic(al)."],
     ["com.", "commonly, comicus, comic, or in comedy."],
     ["comp.", "compare or comparative."],
     ["conj.", "conjunction, conjunctive, or conjugation."],
@@ -339,7 +340,6 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["Aug.", "Augustan."], <- Augustan, Augustus, Augustine... ahhhh
     ["c. c.", "coupled with."],
     ["cf.", "compare"],
-    ["class.", "classic(al)."],
     // ["Cod.", "Codex (MS)."], <- What does MS mean?
     ["collat.", "collateral."],
     ["Collat.", "collateral."],
