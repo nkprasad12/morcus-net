@@ -10,11 +10,13 @@ const INDENT = "-   ";
 
 export const COMMENT_NODE = "#comment";
 
+export type XmlChild = XmlNode | string;
+
 export class XmlNode {
   constructor(
     readonly name: string,
     readonly attrs: [string, string][] = [],
-    readonly children: (XmlNode | string)[] = []
+    readonly children: XmlChild[] = []
   ) {}
 
   formatAsString(indent: boolean = true, level: number = 0): string {
@@ -92,7 +94,7 @@ export class XmlNode {
   }
 
   deepcopy(): XmlNode {
-    const children: (XmlNode | string)[] = [];
+    const children: XmlChild[] = [];
     for (const child of this.children) {
       if (typeof child === "string") {
         children.push(child);
@@ -111,14 +113,14 @@ export namespace XmlNode {
     return assertIsString(node.children[0]);
   }
 
-  export function assertIsString(node: string | XmlNode): string {
+  export function assertIsString(node: XmlChild): string {
     if (typeof node === "string") {
       return node;
     }
     throw new Error(`Expected "string", but got ${node.formatAsString()}`);
   }
 
-  export function assertIsNode(node: string | XmlNode, name?: string): XmlNode {
+  export function assertIsNode(node: XmlChild, name?: string): XmlNode {
     if (typeof node === "string") {
       throw new Error(`Expected XmlNode, but got string.`);
     }
@@ -151,7 +153,7 @@ function crawlEntry(root: any): XmlNode {
 
   const tagName = keys.filter((key) => key !== ATTRIBUTES_KEY)[0];
   const attributes: [string, string][] = [];
-  const children: (XmlNode | string)[] = [];
+  const children: XmlChild[] = [];
 
   if (keys.includes(ATTRIBUTES_KEY)) {
     for (const attribute in root[ATTRIBUTES_KEY]) {
