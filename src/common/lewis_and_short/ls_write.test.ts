@@ -1,6 +1,7 @@
 import { readFileSync, unlinkSync, writeFileSync } from "fs";
 import {
   LsRewriters,
+  XmlOperations,
   TargetMatch,
   iterateFromNode,
   modifyInTree,
@@ -264,5 +265,102 @@ describe("modifyInTree", () => {
     const result = modifyInTree(root, ["happy", "sad3"], modifier);
 
     expect(result).toStrictEqual(rootNew);
+  });
+});
+
+describe("XmlOperations", () => {
+  function fakeTree(): XmlNode {
+    const ha = makeNode([" ha"]);
+    const happ = makeNode([" sad", ha, "pp"]);
+    const y = makeNode(["y "]);
+    return makeNode([happ, y]);
+  }
+
+  test("combine raises on invalid start chunk", () => {
+    const chunks = searchTree(fakeTree(), "happy").matches[0].chunks;
+    chunks[0].endIdx = 123;
+    expect(() => XmlOperations.combine(chunks)).toThrow();
+  });
+
+  test("combine raises on invalid end chunk", () => {
+    const chunks = searchTree(fakeTree(), "happy").matches[0].chunks;
+    chunks[chunks.length - 1].startIdx = 1;
+    expect(() => XmlOperations.combine(chunks)).toThrow();
+  });
+
+  test("combine raises on invalid middle chunk", () => {
+    const chunks = searchTree(fakeTree(), "happy").matches[0].chunks;
+    chunks[1].endIdx = 123;
+    expect(() => XmlOperations.combine(chunks)).toThrow();
+  });
+
+  test("combine merges expected blocks", () => {
+    const ha = makeNode([" ha"]);
+    const happ = makeNode([" sad", ha, "pp"]);
+    const root = makeNode([happ, "y "]);
+
+    const chunks = searchTree(root, "happy").matches[0].chunks;
+    XmlOperations.combine(chunks);
+
+    expect(root.children).toHaveLength(2);
+    expect(root.children[0]).toBe(happ);
+    expect(root.children[1]).toBe(" ");
+    expect(happ.children).toHaveLength(2);
+    expect(happ.children[0]).toBe(" sad");
+    expect(happ.children[1]).toBe(ha);
+    expect(ha.children).toHaveLength(1);
+    expect(ha.children[0]).toBe(" happy");
+  });
+
+  test("combine merges to middle block correctly", () => {
+    const ha = makeNode([" ha"]);
+    const happ = makeNode([" sad", ha, "pp"]);
+    const root = makeNode([happ, "y "]);
+
+    const chunks = searchTree(root, "happy").matches[0].chunks;
+    XmlOperations.combine(chunks, chunks[1]);
+
+    expect(root.children).toHaveLength(2);
+    expect(root.children[0]).toBe(happ);
+    expect(root.children[1]).toBe(" ");
+    expect(happ.children).toHaveLength(3);
+    expect(happ.children[0]).toBe(" sad");
+    expect(happ.children[1]).toBe(ha);
+    expect(ha.children).toHaveLength(1);
+    expect(ha.children[0]).toBe(" ");
+    expect(happ.children[2]).toBe("happy");
+  });
+
+  test("combine collapses nested nodes", () => {
+    const ha = makeNode(["ha"]);
+    const happ = makeNode([" sad", ha, "pp"]);
+    const root = makeNode([happ, "y "]);
+
+    const chunks = searchTree(root, "happy").matches[0].chunks;
+    XmlOperations.combine(chunks, chunks[2]);
+
+    expect(root.children).toHaveLength(2);
+    expect(root.children[0]).toBe(happ);
+    expect(root.children[1]).toBe("happy ");
+    expect(happ.children).toHaveLength(1);
+    expect(happ.children[0]).toBe(" sad");
+  });
+
+  test("removeMatchFromChunk handles removal from start", () => {
+    const root = makeNode(["start end"]);
+    const searchResult = searchTree(root, "start");
+
+    XmlOperations.removeMatchFromChunk(searchResult.matches[0].chunks[0]);
+
+    expect(root.children[0]).toBe(" end");
+  });
+
+  test("removeMatchFromChunk handles removal from start", () => {
+    const root = makeNode(["start end"]);
+    const searchResult = searchTree(root, "end");
+
+    XmlOperations.removeMatchFromChunk(searchResult.matches[0].chunks[0]);
+
+    expect(root.children[0]).toBe("start ");
   });
 });

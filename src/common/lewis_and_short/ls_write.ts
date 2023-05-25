@@ -116,7 +116,7 @@ export function iterateFromNode(
 /** Removes the given text node from the tree. */
 export function removeTextNode(data: TextNodeData) {
   data.parent.children.splice(data.textIndex, 1);
-  const ancestors = [data.parent].concat(data.ancestors.reverse());
+  const ancestors = [data.parent].concat(data.ancestors.slice().reverse());
   for (let i = 0; i < ancestors.length - 1; i++) {
     const ancestor = ancestors[i];
     if (ancestor.children.length > 0) {
@@ -259,4 +259,58 @@ export function modifyInTree(
     }
   }
   return node;
+}
+
+export namespace XmlOperations {
+  /**
+   * Combines the given chunks into the destination chunk, or the
+   * first chunk if no destination is specified.
+   */
+  export function combine(chunks: MatchedChunk[], destination?: MatchedChunk) {
+    if (chunks.length <= 1) {
+      return;
+    }
+    const target = destination || chunks[0];
+    const targetIdx = chunks.indexOf(target);
+    assert(
+      targetIdx > -1,
+      "The destination chunk should be one of the chunks to be combined."
+    );
+    chunks.slice(1).forEach((chunk) => assert(chunk.startIdx === 0));
+    chunks
+      .slice(0, -1)
+      .forEach((chunk) => assert(chunk.endIdx === chunk.data.text.length));
+
+    const allChunks = chunks.map((chunk) => chunk.match).join("");
+    chunks.forEach(removeMatchFromChunk);
+    const leftover = target.data.parent.children[target.data.textIndex];
+    target.data.parent.children[target.data.textIndex] =
+      targetIdx === 0 ? leftover + allChunks : allChunks + leftover;
+
+    // TODO: We reverse this in the hopes that the indices will end up correct
+    // after removals, but ideally every time we remove a node we should be passing
+    // in a registry of all the other textNodeData created in the same invocation
+    // and updating the indices.
+    for (const chunk of chunks.reverse()) {
+      const updatedValue = XmlNode.assertIsString(
+        chunk.data.parent.children[chunk.data.textIndex]
+      );
+      if (updatedValue.length === 0) {
+        removeTextNode(chunk.data);
+      }
+    }
+  }
+
+  export function removeMatchFromChunk(chunk: MatchedChunk) {
+    const textLength = chunk.data.text.length;
+    assert(
+      chunk.startIdx === 0 || chunk.endIdx === textLength,
+      "Cannot remove from middle of chunk."
+    );
+
+    const start = chunk.startIdx === 0 ? chunk.endIdx : 0;
+    const end = chunk.startIdx === 0 ? textLength : chunk.startIdx;
+    chunk.data.parent.children[chunk.data.textIndex] =
+      chunk.data.text.substring(start, end);
+  }
 }
