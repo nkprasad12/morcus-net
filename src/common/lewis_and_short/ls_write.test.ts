@@ -1,7 +1,9 @@
 import { readFileSync, unlinkSync, writeFileSync } from "fs";
 import {
   LsRewriters,
+  TargetMatch,
   iterateFromNode,
+  modifyInTree,
   removeTextNode,
   rewriteLs,
   searchTree,
@@ -228,5 +230,39 @@ describe("searchTree", () => {
     const chunk = result.matches[0].chunks[0];
     expect(chunk.startIdx).toBe(0);
     expect(chunk.endIdx).toBe(4);
+  });
+});
+
+describe("modifyInTree", () => {
+  const ha = makeNode([" ha"]);
+  const happ = makeNode([" sad", ha, "pp"]);
+  const y = makeNode(["y "]);
+  const happy = makeNode([" happy "]);
+  const hahahae = makeNode(["hahahae"]);
+  const root = makeNode([happ, y, hahahae, happy]);
+
+  const modifier = (match: TargetMatch) => {
+    match.chunks.forEach((value) => {
+      value.data.parent.children[value.data.textIndex] =
+        value.match + value.match.length;
+    });
+  };
+
+  it("does not modify the original", () => {
+    const copy = root.deepcopy();
+    modifyInTree(root, ["happy", "sad"], modifier);
+    expect(copy).toStrictEqual(root);
+  });
+
+  it("modifies the expected terms", () => {
+    const haNew = makeNode(["ha2"]);
+    const happNew = makeNode([" sad", haNew, "pp2"]);
+    const yNew = makeNode(["y1"]);
+    const happyNew = makeNode(["happy5"]);
+    const rootNew = makeNode([happNew, yNew, hahahae, happyNew]);
+
+    const result = modifyInTree(root, ["happy", "sad3"], modifier);
+
+    expect(result).toStrictEqual(rootNew);
   });
 });

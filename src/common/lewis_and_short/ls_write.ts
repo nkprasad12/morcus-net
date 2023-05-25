@@ -235,3 +235,28 @@ export function searchTree(root: XmlNode, target: string): MatchResult {
 
   return { allTextNodes: textNodes, matches: matches };
 }
+
+/**
+ * Searches the tree with the given root for the given targets and
+ * replaces them according to the given logic.
+ *
+ * @param root The root of the tree to search.
+ * @param targets The strings to search for.
+ * @param modifier The callback to be invoked on each match.
+ *
+ * @returns The root of the modified XML tree.
+ */
+export function modifyInTree(
+  root: XmlNode,
+  targets: string[],
+  modifier: (match: TargetMatch, node: XmlNode) => void
+): XmlNode {
+  const node = root.deepcopy();
+  for (const target of targets) {
+    const results = searchTree(node, target);
+    for (const match of results.matches.reverse()) {
+      modifier(match, node);
+    }
+  }
+  return node;
+}
