@@ -162,78 +162,76 @@ export interface MatchResult {
  * Searches the tree with the given root for the given targets.
  *
  * @param root The root of the tree to search.
- * @param targets The strings to search for.
+ * @param target The string to search for.
  *
  * @returns The matches for the given targets.
  */
-export function searchTree(root: XmlNode, targets: string[]): MatchResult {
+export function searchTree(root: XmlNode, target: string): MatchResult {
+  const matches: TargetMatch[] = [];
   const textNodes = iterateFromNode(root, []);
   const chunks = textNodes.map((data) => data.text);
-  const matches: TargetMatch[] = [];
 
   const starts = [0];
   for (let i = 0; i < chunks.length; i++) {
     starts.push(starts[i] + chunks[i].length);
   }
   const allText = chunks.join("");
-
-  for (const target of targets) {
-    const matchStarts: number[] = [];
-    let startIndex = 0;
-    while (true) {
-      const matchStart = allText.indexOf(target, startIndex);
-      if (matchStart === -1) {
+  const matchStarts: number[] = [];
+  let startIndex = 0;
+  while (true) {
+    const matchStart = allText.indexOf(target, startIndex);
+    if (matchStart === -1) {
+      break;
+    }
+    matchStarts.push(matchStart);
+    startIndex = matchStart + target.length;
+  }
+  for (const start of matchStarts) {
+    let startChunk = -1;
+    let startOffset = undefined;
+    for (let i = 0; i < starts.length - 1; i++) {
+      if (starts[i] <= start && start < starts[i + 1]) {
+        startChunk = i;
+        startOffset = start - starts[i];
         break;
       }
-      matchStarts.push(matchStart);
-      startIndex = matchStart + target.length;
     }
-    for (const start of matchStarts) {
-      let startChunk = -1;
-      let startOffset = undefined;
-      for (let i = 0; i < starts.length - 1; i++) {
-        if (starts[i] <= start && start < starts[i + 1]) {
-          startChunk = i;
-          startOffset = start - starts[i];
-          break;
-        }
+    const end = start + target.length - 1;
+    let endChunk = -1;
+    let endOffset = undefined;
+    for (let i = 0; i < starts.length - 1; i++) {
+      if (starts[i] <= end && end < starts[i + 1]) {
+        endChunk = i;
+        endOffset = end - starts[i] + 1;
+        break;
       }
-      const end = start + target.length - 1;
-      let endChunk = -1;
-      let endOffset = undefined;
-      for (let i = 0; i < starts.length - 1; i++) {
-        if (starts[i] <= end && end < starts[i + 1]) {
-          endChunk = i;
-          endOffset = end - starts[i] + 1;
-          break;
-        }
-      }
-
-      assert(startChunk > -1, "Expected to find a start chunk");
-      assert(endChunk > -1, "Expected to find an end chunk");
-      assert(
-        endChunk >= startChunk,
-        "Expected end chunk to be after the start chunk"
-      );
-      assert(startOffset !== undefined, "Expected to find a start offset");
-      assert(endOffset !== undefined, "Expected to find an end offset");
-
-      const matchNodes = textNodes.slice(startChunk, endChunk + 1);
-      const matchChunks: MatchedChunk[] = [];
-      const n = matchNodes.length;
-      for (let i = 0; i < n; i++) {
-        const nodeText = matchNodes[i].text;
-        const j = i === 0 ? startOffset! : 0;
-        const k = i === n - 1 ? endOffset! : nodeText.length;
-        matchChunks.push({
-          data: matchNodes[i],
-          match: nodeText.substring(j, k),
-          startIdx: j,
-          endIdx: k,
-        });
-      }
-      matches.push({ target: target, chunks: matchChunks });
     }
+
+    assert(startChunk > -1, "Expected to find a start chunk");
+    assert(endChunk > -1, "Expected to find an end chunk");
+    assert(
+      endChunk >= startChunk,
+      "Expected end chunk to be after the start chunk"
+    );
+    assert(startOffset !== undefined, "Expected to find a start offset");
+    assert(endOffset !== undefined, "Expected to find an end offset");
+
+    const matchNodes = textNodes.slice(startChunk, endChunk + 1);
+    const matchChunks: MatchedChunk[] = [];
+    const n = matchNodes.length;
+    for (let i = 0; i < n; i++) {
+      const nodeText = matchNodes[i].text;
+      const j = i === 0 ? startOffset! : 0;
+      const k = i === n - 1 ? endOffset! : nodeText.length;
+      matchChunks.push({
+        data: matchNodes[i],
+        match: nodeText.substring(j, k),
+        startIdx: j,
+        endIdx: k,
+      });
+    }
+    matches.push({ target: target, chunks: matchChunks });
   }
+
   return { allTextNodes: textNodes, matches: matches };
 }

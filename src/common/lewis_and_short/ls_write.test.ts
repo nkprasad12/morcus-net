@@ -189,11 +189,11 @@ describe("searchTree", () => {
   const happ = makeNode([" sad", ha, "pp"]);
   const y = makeNode(["y "]);
   const happy = makeNode([" happy "]);
-  const sad = makeNode(["sad"]);
-  const root = makeNode([happ, y, sad, happy]);
+  const hahahae = makeNode(["hahahae"]);
+  const root = makeNode([happ, y, hahahae, happy]);
 
   test("matches have expected contents", () => {
-    const result = searchTree(root, ["happy"]);
+    const result = searchTree(root, "happy");
 
     expect(result.matches).toHaveLength(2);
     const first = result.matches[0].chunks;
@@ -220,13 +220,13 @@ describe("searchTree", () => {
     expect(second[0].endIdx).toBe(6);
   });
 
-  it("finds expected matches for multiple targets", () => {
-    const result = searchTree(root, ["happy", "sad"]);
+  it("does not return overlapping values", () => {
+    const result = searchTree(root, "haha");
 
-    expect(result.matches).toHaveLength(4);
-    expect(result.matches[0].target).toBe("happy");
-    expect(result.matches[1].target).toBe("happy");
-    expect(result.matches[2].target).toBe("sad");
-    expect(result.matches[3].target).toBe("sad");
+    expect(result.matches).toHaveLength(1);
+    expect(result.matches[0].chunks).toHaveLength(1);
+    const chunk = result.matches[0].chunks[0];
+    expect(chunk.startIdx).toBe(0);
+    expect(chunk.endIdx).toBe(4);
   });
 });
