@@ -71,15 +71,21 @@ export namespace LsRewriters {
 }
 
 /** A node of text within an XML tree. */
-export interface TextNodeData {
+export interface SingleTextNode {
   /** The content of the text node. */
-  text: string;
+  readonly text: string;
   /** The parent node containing this text. */
   parent: XmlNode;
   /** The index of the text in the parent node's children. */
   textIndex: number;
   /** All ancestors of the parent node. Closer ancestors should be later in the list. */
   ancestors: XmlNode[];
+}
+
+/** A node of text within an XML tree with metadata for other nodes. */
+export interface TextNodeData extends SingleTextNode {
+  /** A registry of text nodes by parent node. */
+  readonly registry: Map<XmlNode, SingleTextNode[]>;
 }
 
 /**
@@ -89,13 +95,25 @@ export interface TextNodeData {
  * @param ancestors Ancestors of the root node in the overall tree, if any.
  *                  Closer ancestors should be later in the list.
  *
- * @returns Data for all text nodes, in sequence.
+ * @returns Data for all text nodes, in DFS sequence.
  */
-export function iterateFromNode(
+export function findTextNodes(root: XmlNode): TextNodeData[] {
+  const allNodes = findTextNodesInternal(root, []);
+  const registry = new Map<XmlNode, SingleTextNode[]>();
+  for (const node of allNodes) {
+    if (!registry.has(node.parent)) {
+      registry.set(node.parent, []);
+    }
+    registry.get(node.parent)!.push(node);
+  }
+  return allNodes.map((node) => Object.assign(node, { registry: registry }));
+}
+
+function findTextNodesInternal(
   root: XmlNode,
   ancestors: XmlNode[] = []
-): TextNodeData[] {
-  let results: TextNodeData[] = [];
+): SingleTextNode[] {
+  let results: SingleTextNode[] = [];
   root.children.forEach((child, i) => {
     if (typeof child === "string") {
       results.push({
@@ -106,7 +124,7 @@ export function iterateFromNode(
       });
     } else {
       results = results.concat(
-        iterateFromNode(child, ancestors.concat([root]))
+        findTextNodesInternal(child, ancestors.concat([root]))
       );
     }
   });
@@ -115,7 +133,26 @@ export function iterateFromNode(
 
 /** Removes the given text node from the tree. */
 export function removeTextNode(data: TextNodeData) {
-  data.parent.children.splice(data.textIndex, 1);
+  function updateSiblings(parent: XmlNode, removedIndex: number) {
+    const siblings = data.registry.get(parent);
+    if (siblings === undefined) {
+      return;
+    }
+    const updated = siblings.filter((data) => data.textIndex !== removedIndex);
+    for (const sibling of updated) {
+      if (sibling.textIndex > removedIndex) {
+        sibling.textIndex = sibling.textIndex - 1;
+      }
+    }
+    data.registry.set(parent, updated);
+  }
+
+  function removeChild(parent: XmlNode, childIndex: number) {
+    parent.children.splice(childIndex, 1);
+    updateSiblings(parent, childIndex);
+  }
+
+  removeChild(data.parent, data.textIndex);
   const ancestors = [data.parent].concat(data.ancestors.slice().reverse());
   for (let i = 0; i < ancestors.length - 1; i++) {
     const ancestor = ancestors[i];
@@ -125,7 +162,7 @@ export function removeTextNode(data: TextNodeData) {
     const nextParent = ancestors[i + 1];
     const removeIndex = nextParent.children.indexOf(ancestor);
     assert(removeIndex > -1);
-    nextParent.children.splice(removeIndex, 1);
+    removeChild(nextParent, removeIndex);
   }
 }
 
@@ -168,7 +205,7 @@ export interface MatchResult {
  */
 export function searchTree(root: XmlNode, target: string): MatchResult {
   const matches: TargetMatch[] = [];
-  const textNodes = iterateFromNode(root, []);
+  const textNodes = findTextNodes(root);
   const chunks = textNodes.map((data) => data.text);
 
   const starts = [0];
@@ -287,11 +324,7 @@ export namespace XmlOperations {
     target.data.parent.children[target.data.textIndex] =
       targetIdx === 0 ? leftover + allChunks : allChunks + leftover;
 
-    // TODO: We reverse this in the hopes that the indices will end up correct
-    // after removals, but ideally every time we remove a node we should be passing
-    // in a registry of all the other textNodeData created in the same invocation
-    // and updating the indices.
-    for (const chunk of chunks.reverse()) {
+    for (const chunk of chunks) {
       const updatedValue = XmlNode.assertIsString(
         chunk.data.parent.children[chunk.data.textIndex]
       );

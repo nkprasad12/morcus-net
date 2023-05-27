@@ -3,7 +3,7 @@ import {
   LsRewriters,
   XmlOperations,
   TargetMatch,
-  iterateFromNode,
+  findTextNodes,
   modifyInTree,
   removeTextNode,
   rewriteLs,
@@ -126,7 +126,7 @@ describe("iterateFromNode", () => {
   const D = makeNode([B, C]);
 
   it("contains all text nodes in order", () => {
-    const result = iterateFromNode(D);
+    const result = findTextNodes(D);
 
     expect(result).toHaveLength(4);
     const textNodes = result.map((d) => d.text);
@@ -134,7 +134,7 @@ describe("iterateFromNode", () => {
   });
 
   it("has correct parents", () => {
-    const result = iterateFromNode(D);
+    const result = findTextNodes(D);
 
     expect(result[0].parent).toBe(B);
     expect(result[1].parent).toBe(A);
@@ -143,7 +143,7 @@ describe("iterateFromNode", () => {
   });
 
   it("has correct indicies", () => {
-    const result = iterateFromNode(D);
+    const result = findTextNodes(D);
 
     expect(result[0].textIndex).toBe(0);
     expect(result[1].textIndex).toBe(0);
@@ -152,7 +152,7 @@ describe("iterateFromNode", () => {
   });
 
   it("has correct ancestors", () => {
-    const result = iterateFromNode(D);
+    const result = findTextNodes(D);
 
     expect(result[0].ancestors).toStrictEqual([D]);
     expect(result[1].ancestors).toStrictEqual([D, B]);
@@ -165,7 +165,7 @@ describe("removeTextNode", () => {
   it("handles removal of node with siblings", () => {
     const A = makeNode(["A"]);
     const B = makeNode(["B", A, "Ba"]);
-    const nodes = iterateFromNode(B);
+    const nodes = findTextNodes(B);
 
     removeTextNode(nodes[0]);
 
@@ -177,7 +177,7 @@ describe("removeTextNode", () => {
   it("handles removal of node without siblings", () => {
     const A = makeNode(["A"]);
     const B = makeNode(["B", A, "Ba"]);
-    const nodes = iterateFromNode(B);
+    const nodes = findTextNodes(B);
 
     removeTextNode(nodes[1]);
 
