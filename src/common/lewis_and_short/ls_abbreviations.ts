@@ -4,10 +4,13 @@ import { assert, assertEqual } from "@/common/assert";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { AbbreviationTrie, TrieNode } from "./ls_styling";
 
+const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =
   "Poetarum Latinorum Hostii, Laevii, C. Licinii Calvi, C. Helvii Cinnae, C. Valgii Rufi, Domitii Marsi Aliorumque Vitae Et Carminum Reliquiae";
 const ROM_LIT = "Romanische Literaturen";
 const LIT_GESCH = "Geschichte der Römischen Literatur";
+const VEN_FORT_GERM =
+  "vita Sancti Germani by Venantius Honorius Clementianus Fortunatus";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
@@ -179,6 +182,13 @@ export const EDGE_CASE_HOVERS = AbbreviationTrie.forMap(
     ["Rom. Lit.", ROM_LIT],
     ["Roem. Lit.", ROM_LIT],
     ["Rö. Lit.", ROM_LIT],
+    ["Mann. Germ.", UNKNOWN_REF_WORK],
+    ["Ukert, Germ.", UNKNOWN_REF_WORK],
+    ["Ven. Fort. v. Germ.", VEN_FORT_GERM],
+    ["Ven. Fort. Vit. Germ.", VEN_FORT_GERM],
+    ["Ven. Vit. S. Germ.", VEN_FORT_GERM],
+    ["Ven. et Germ.", VEN_FORT_GERM],
+    ["Ven. Vit. Germ.", VEN_FORT_GERM],
   ])
 );
 

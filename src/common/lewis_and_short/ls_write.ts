@@ -286,7 +286,7 @@ export function searchTree(root: XmlNode, target: string): MatchResult {
 export function modifyInTree(
   root: XmlNode,
   targets: string[],
-  modifier: (match: TargetMatch, node: XmlNode) => void
+  modifier: (match: TargetMatch, rootCopy: XmlNode) => void
 ): XmlNode {
   const node = root.deepcopy();
   for (const target of targets) {
