@@ -796,7 +796,7 @@ function displayLbl(
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayCb(
+export function displayCb(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -815,7 +815,7 @@ function displayCb(
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayPb(
+export function displayPb(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -835,7 +835,7 @@ function displayPb(
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayCase(
+export function displayCase(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -857,7 +857,7 @@ function displayCase(
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayMood(
+export function displayMood(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -879,7 +879,7 @@ function displayMood(
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayNumber(
+export function displayNumber(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -904,7 +904,7 @@ function displayNumber(
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayQ(
+export function displayQ(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -925,7 +925,7 @@ function displayQ(
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayFigure(
+export function displayFigure(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode

@@ -3,8 +3,15 @@ import {
   defaultDisplay,
   displayAuthor,
   displayBibl,
+  displayCase,
+  displayCb,
   displayEntryFree,
+  displayFigure,
+  displayMood,
   displayNote,
+  displayNumber,
+  displayPb,
+  displayQ,
   displayUsg,
   formatSenseList,
   getBullet,
@@ -535,5 +542,63 @@ describe("displayAuthor", () => {
     displayAuthor(input, context);
 
     expect(context.lastAuthor).toBe("Caes.");
+  });
+});
+
+describe("empty displays", () => {
+  test("display figure returns empty span", () => {
+    const input = new XmlNode("figure", [], ["id."]);
+    const output = displayFigure(input, {});
+    expect(output.toString()).toBe("<span></span>");
+  });
+
+  test("display cb returns empty span", () => {
+    const input = new XmlNode("cb", [], ["id."]);
+    const output = displayCb(input, {});
+    expect(output.toString()).toBe("<span></span>");
+  });
+
+  test("display pb returns empty span", () => {
+    const input = new XmlNode("pb", [], ["id."]);
+    const output = displayPb(input, {});
+    expect(output.toString()).toBe("<span></span>");
+  });
+});
+
+describe("displayQ", () => {
+  it("displays contents with class", () => {
+    const input = new XmlNode("q", [], ["contents"]);
+    const output = displayQ(input, {});
+    expect(output.toString()).toBe('<span class="lsQ">contents</span>');
+  });
+});
+
+describe("displayNumber", () => {
+  it("displays number with expansions", () => {
+    const input = new XmlNode("number", [], ["sing."]);
+    const output = displayNumber(input, {});
+    expect(output.toString()).toBe(
+      '<span title="Originally: sing." class="lsHover">singular</span>'
+    );
+  });
+});
+
+describe("displayMood", () => {
+  it("displays mood with expansions", () => {
+    const input = new XmlNode("mood", [], ["Part."]);
+    const output = displayMood(input, {});
+    expect(output.toString()).toBe(
+      '<span title="Originally: Part." class="lsHover">Participle</span>'
+    );
+  });
+});
+
+describe("displayCase", () => {
+  it("displays case with expansions", () => {
+    const input = new XmlNode("case", [], ["abl."]);
+    const output = displayCase(input, {});
+    expect(output.toString()).toBe(
+      '<span title="Originally: abl." class="lsHover">ablative</span>'
+    );
   });
 });
