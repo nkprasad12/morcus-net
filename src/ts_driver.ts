@@ -6,7 +6,14 @@ import { parseAuthorAbbreviations } from "./common/lewis_and_short/ls_abbreviati
 import { parse } from "./common/lewis_and_short/ls_parser";
 import { LS_PATH } from "./common/lewis_and_short/ls_scripts";
 import { XmlNode } from "./common/lewis_and_short/xml_node";
-import { LsRewriters } from "./common/lewis_and_short/ls_write";
+import {
+  LsRewriters,
+  XmlOperations,
+  // LsRewriters,
+  findTextNodes,
+  modifyInTree,
+  removeTextNode,
+} from "@/common/lewis_and_short/ls_write";
 
 dotenv.config();
 
@@ -23,49 +30,6 @@ class Tally<T> {
   }
 }
 
-interface NodeData {
-  parent: XmlNode;
-  textIndex: number;
-  ancestors: XmlNode[];
-}
-
-function getNodeDataString(data: NodeData): string {
-  return XmlNode.assertIsString(data.parent.children[data.textIndex]);
-}
-
-function iterateFromNode(root: XmlNode, ancestors: XmlNode[]): NodeData[] {
-  let results: NodeData[] = [];
-  root.children.forEach((child, i) => {
-    if (typeof child === "string") {
-      results.push({
-        parent: root,
-        textIndex: i,
-        ancestors: ancestors.map((x) => x),
-      });
-    } else {
-      results = results.concat(
-        iterateFromNode(child, ancestors.concat([root]))
-      );
-    }
-  });
-  return results;
-}
-
-function removeTextNode(data: NodeData) {
-  data.parent.children.splice(data.textIndex, 1);
-  const ancestors = [data.parent].concat(data.ancestors.reverse());
-  for (let i = 0; i < ancestors.length - 1; i++) {
-    const ancestor = ancestors[i];
-    if (ancestor.children.length > 0) {
-      break;
-    }
-    const nextParent = ancestors[i + 1];
-    const removeIndex = nextParent.children.indexOf(ancestor);
-    assert(removeIndex > -1);
-    nextParent.children.splice(removeIndex, 1);
-  }
-}
-
 const VERB_SPLITS = [
   "v. n.",
   "v. a. and n.",
@@ -73,15 +37,22 @@ const VERB_SPLITS = [
   "v. freq. n.",
 ];
 
+const CAES_GERM = [
+  "Caes. Germ.",
+  "Caes. German.",
+  "Germ. Arat.",
+  "German. Arat.",
+];
+
 export function verbPosSplits() {
   for (const entry of parse(LS_PATH)) {
-    correctSplits(entry, VERB_SPLITS);
+    correctPosSplits(entry, VERB_SPLITS);
   }
 }
 
-export function correctSplits(node: XmlNode, conjugenda: string[]): XmlNode {
+export function correctPosSplits(node: XmlNode, conjugenda: string[]): XmlNode {
   const root = node.deepcopy();
-  const children = iterateFromNode(root, []);
+  const children = findTextNodes(root);
   const chunks = children.map((data) =>
     XmlNode.assertIsString(data.parent.children[data.textIndex])
   );
@@ -168,9 +139,7 @@ export function correctSplits(node: XmlNode, conjugenda: string[]): XmlNode {
       }
 
       splitChunks[0].parent.children[splitChunks[0].textIndex] =
-        getNodeDataString(splitChunks[0]) +
-        getNodeDataString(splitChunks[1]) +
-        getNodeDataString(splitChunks[2]);
+        splitChunks[0].text + splitChunks[1].text + splitChunks[2].text;
       removeTextNode(splitChunks[1]);
       removeTextNode(splitChunks[2]);
     }
@@ -192,7 +161,7 @@ export function findDuplicateAuthorAbbreviations() {
 export function countChildTypesAfterAuthor() {
   const afterAuthors = new Tally<string>();
   for (const entry of parse(LS_PATH)) {
-    const textNodes = iterateFromNode(entry, []);
+    const textNodes = findTextNodes(entry);
     let lastWasAuthor = false;
     for (const data of textNodes) {
       if (data.parent.name === "bibl") {
@@ -208,9 +177,9 @@ export function countChildTypesAfterAuthor() {
   console.log(afterAuthors.counts);
 }
 
-LsRewriters.transformEntries(LS_PATH, (root) =>
-  correctSplits(root, VERB_SPLITS)
-);
+// LsRewriters.transformEntries(LS_PATH, (root) =>
+//   correctPosSplits(root, VERB_SPLITS)
+// );
 // const root = new XmlNode(
 //   "entryFree",
 //   [],
@@ -218,6 +187,17 @@ LsRewriters.transformEntries(LS_PATH, (root) =>
 // );
 // const out = correctSplits(root, new Set(["v. a. and n."]));
 // console.log(out.toString());
+
+// const matches = new Tally<string>();
+// for (const entry of parse(LS_PATH)) {
+//   for (const match of searchTree(entry, VERB_SPLITS[0]).matches) {
+//     matches.count(match.target);
+//   }
+// }
+// console.log(matches);
+LsRewriters.transformEntries(LS_PATH, (root) =>
+  modifyInTree(root, CAES_GERM, (match) => XmlOperations.combine(match.chunks))
+);
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);
