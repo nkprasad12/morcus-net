@@ -1,6 +1,13 @@
 import { removeDiacritics } from "@/common/text_cleaning";
 import { entriesByPrefix } from "@/web/api_routes";
 
+const EXTRA_KEY_LOOKUP = new Map<string, string>([
+  ["u", "v"],
+  ["v", "u"],
+  ["i", "j"],
+  ["j", "i"],
+]);
+
 async function fetchOptions(input: string): Promise<string[]> {
   const response = await fetch(`${location.origin}${entriesByPrefix(input)}`);
   if (!response.ok) {
@@ -18,19 +25,37 @@ export class AutocompleteCache {
       return [];
     }
     const prefix = removeDiacritics(input).toLowerCase();
-    const cacheKey = prefix[0];
-    if (!this.cache.has(cacheKey)) {
+    const mainKey = prefix[0];
+    const extra = EXTRA_KEY_LOOKUP.get(mainKey);
+    const allKeys = extra === undefined ? [mainKey] : [mainKey, extra];
+    allKeys.sort();
+
+    if (!this.cache.has(allKeys.join(""))) {
+      const allFetches = Promise.all(allKeys.map((key) => fetchOptions(key)));
       try {
-        const results = await fetchOptions(cacheKey);
-        this.cache.set(cacheKey, results);
+        this.cache.set(
+          allKeys.join(""),
+          (await allFetches).reduce((a, b) => a.concat(b), [])
+        );
       } catch (e) {
         return [];
       }
     }
 
-    const results = this.cache.get(cacheKey)!;
-    return results.filter((option) =>
-      removeDiacritics(option).toLowerCase().startsWith(prefix)
+    let prefixes: string[] = [""];
+    for (let i = 0; i < prefix.length; i++) {
+      const nextChar = prefix.charAt(i);
+      const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
+      const nextChars =
+        altChar === undefined ? [nextChar] : [nextChar, altChar];
+      prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
+    }
+
+    const allOptions = this.cache.get(allKeys.join(""))!;
+    return allOptions.filter((option) =>
+      prefixes.includes(
+        removeDiacritics(option).toLowerCase().substring(0, prefix.length)
+      )
     );
   }
 }

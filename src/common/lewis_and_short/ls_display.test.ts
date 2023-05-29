@@ -1,9 +1,17 @@
 import {
+  DisplayContext,
   defaultDisplay,
   displayAuthor,
   displayBibl,
+  displayCase,
+  displayCb,
   displayEntryFree,
+  displayFigure,
+  displayMood,
   displayNote,
+  displayNumber,
+  displayPb,
+  displayQ,
   displayUsg,
   formatSenseList,
   getBullet,
@@ -29,7 +37,7 @@ describe("getBullet", () => {
 
 describe("displayNote", () => {
   it("is collapsed entirely", () => {
-    const result = displayNote(new XmlNode("note", [], []));
+    const result = displayNote(new XmlNode("note", [], []), {});
     expect(result.name).toBe("span");
     expect(result.children).toHaveLength(0);
   });
@@ -40,7 +48,7 @@ describe("displayBibl", () => {
     const author = new XmlNode("author", [], ["Plaut."]);
     const bibl = new XmlNode("bibl", [], [author, "Mil. 4, 4, 36"]);
 
-    const result = displayBibl(bibl);
+    const result = displayBibl(bibl, {});
 
     const parts = [
       '<span class="lsBibl">',
@@ -60,7 +68,7 @@ describe("displayBibl", () => {
     const author = new XmlNode("author", [], ["Hor."]);
     const bibl = new XmlNode("bibl", [], [author, "C. 1, 12, 32"]);
 
-    const result = displayBibl(bibl);
+    const result = displayBibl(bibl, {});
 
     const parts = [
       '<span class="lsBibl">',
@@ -80,7 +88,7 @@ describe("displayBibl", () => {
     const author = new XmlNode("author", [], ["Plin."]);
     const bibl = new XmlNode("bibl", [], [author, "Ep. 1, 12, 32"]);
 
-    const result = displayBibl(bibl);
+    const result = displayBibl(bibl, {});
 
     const parts = [
       '<span class="lsBibl">',
@@ -100,7 +108,7 @@ describe("displayBibl", () => {
     const author = new XmlNode("author", [], ["Cic."]);
     const bibl = new XmlNode("bibl", [], [author, "Ad brut. 3, 7, 26"]);
 
-    const result = displayBibl(bibl);
+    const result = displayBibl(bibl, {});
 
     const parts = [
       '<span class="lsBibl">',
@@ -120,7 +128,7 @@ describe("displayBibl", () => {
     const author = new XmlNode("author", [], ["Cic."]);
     const bibl = new XmlNode("bibl", [], [author, "de Or. 3, 7, 26"]);
 
-    const result = displayBibl(bibl);
+    const result = displayBibl(bibl, {});
 
     const parts = [
       '<span class="lsBibl">',
@@ -135,13 +143,88 @@ describe("displayBibl", () => {
     ];
     expect(result.toString()).toBe(parts.join(""));
   });
+
+  it("expands unambiguous id. authors", () => {
+    const author = new XmlNode("author", [], ["id."]);
+    const bibl = new XmlNode("bibl", [], [author, "de Or. 3, 7, 26"]);
+
+    const result = displayBibl(bibl, { lastAuthor: "Cic." });
+
+    const parts = [
+      '<span class="lsBibl">',
+      "<span>",
+      "id.",
+      "</span>",
+      '<span title="Originally: de Or." class="lsHover">',
+      "De Oratore.",
+      "</span>",
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("skips expansion on unambiguous id. authors with bad last author", () => {
+    const author = new XmlNode("author", [], ["id."]);
+    const bibl = new XmlNode("bibl", [], [author, "de Or. 3, 7, 26"]);
+
+    const result = displayBibl(bibl, { lastAuthor: "Caes." });
+
+    const parts = [
+      '<span class="lsBibl">',
+      "<span>",
+      "id.",
+      "</span>",
+      "de Or. 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("expands ambiguous id. authors", () => {
+    const author = new XmlNode("author", [], ["id."]);
+    const bibl = new XmlNode("bibl", [], [author, "Germ. 3, 7, 26"]);
+
+    const result = displayBibl(bibl, { lastAuthor: "Tac." });
+
+    const parts = [
+      '<span class="lsBibl">',
+      "<span>",
+      "id.",
+      "</span>",
+      '<span title="Originally: Germ." class="lsHover">',
+      "Germania.",
+      "</span>",
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("skips expansion on ambiguous id. authors with bad last author", () => {
+    const author = new XmlNode("author", [], ["id."]);
+    const bibl = new XmlNode("bibl", [], [author, "Germ. 3, 7, 26"]);
+
+    const result = displayBibl(bibl, { lastAuthor: "Caes." });
+
+    const parts = [
+      '<span class="lsBibl">',
+      "<span>",
+      "id.",
+      "</span>",
+      "Germ.",
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
 });
 
 describe("displayUsg", () => {
   it("shows expected result for first level text", () => {
     const usg = new XmlNode("usg", [], ["Medic. t. t."]);
 
-    const result = displayUsg(usg);
+    const result = displayUsg(usg, {});
 
     const parts = [
       "<span>",
@@ -170,7 +253,7 @@ describe("displaySenseList", () => {
   it("shows expected result for top level", () => {
     const nodes = [senseNode("1", "I"), senseNode("1", "II")];
 
-    const result = formatSenseList(nodes);
+    const result = formatSenseList(nodes, {});
 
     expect(result.children).toHaveLength(2);
     expect(XmlNode.assertIsNode(result.children[0]).name).toBe("li");
@@ -182,7 +265,7 @@ describe("displaySenseList", () => {
   it("handles higher level final sense", () => {
     const nodes = [senseNode("1", "I"), senseNode("2", "A")];
 
-    const result = formatSenseList(nodes);
+    const result = formatSenseList(nodes, {});
 
     expect(result.children).toHaveLength(2);
     expect(XmlNode.assertIsNode(result.children[0]).name).toBe("li");
@@ -203,7 +286,7 @@ describe("displaySenseList", () => {
       senseNode("2", "B"),
     ];
 
-    const result = formatSenseList(nodes);
+    const result = formatSenseList(nodes, {});
 
     expect(result.children).toHaveLength(3);
     expect(XmlNode.assertIsNode(result.children[0]).name).toBe("li");
@@ -235,7 +318,7 @@ describe("defaultDisplay", () => {
       ["foo", new XmlNode("tr", [], ["bar"])]
     );
 
-    const output = defaultDisplay(input);
+    const output = defaultDisplay(input, {});
 
     expect(output.name).toBe("span");
     expect(output.children).toHaveLength(2);
@@ -261,7 +344,7 @@ describe("defaultDisplay", () => {
       '<span class="lsBibl"><span title="Originally: Inscr. Orell." class="lsHover">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
     ];
 
-    const output = defaultDisplay(input);
+    const output = defaultDisplay(input, {});
     expect(output.toString()).toBe(expected.join(""));
   });
 
@@ -271,7 +354,7 @@ describe("defaultDisplay", () => {
       `<span><span class="lsOrth">bĕnĕfīo</span>, v. benefacio.</span>`,
     ];
 
-    const output = defaultDisplay(input);
+    const output = defaultDisplay(input, {});
     expect(output.toString()).toBe(expected.join(""));
   });
 });
@@ -339,7 +422,7 @@ describe("displayEntryFree", () => {
 describe("displayAuthor", () => {
   it("handles scholar edge case", () => {
     const input = new XmlNode("author", [], ["Schneid."]);
-    const output = displayAuthor(input);
+    const output = displayAuthor(input, {});
 
     expect(output.children).toHaveLength(1);
     expect(output.children[0]).toBe("Schneid.");
@@ -347,7 +430,7 @@ describe("displayAuthor", () => {
 
   it("handles curtius edge case", () => {
     const input = new XmlNode("author", [], ["Georg Curtius"]);
-    const output = displayAuthor(input);
+    const output = displayAuthor(input, {});
 
     expect(output.children).toHaveLength(1);
     expect(output.children[0]).toBe("Georg Curtius");
@@ -355,7 +438,7 @@ describe("displayAuthor", () => {
 
   it("handles Pseudo edge case", () => {
     const input = new XmlNode("author", [], ["Pseudo"]);
-    const output = displayAuthor(input);
+    const output = displayAuthor(input, {});
 
     expect(output.children).toHaveLength(1);
     expect(output.children[0]).toBe("Pseudo");
@@ -363,7 +446,7 @@ describe("displayAuthor", () => {
 
   it("handles author edge case", () => {
     const input = new XmlNode("author", [], ["Inscr. Don."]);
-    const output = displayAuthor(input);
+    const output = displayAuthor(input, {});
 
     expect(output.toString()).toBe(
       '<span title="Originally: Inscr. Don." class="lsHover">Inscriptiones. Donii.</span>'
@@ -374,7 +457,7 @@ describe("displayAuthor", () => {
     const input = new XmlNode("author", [], ["Plin."]);
     const bibl = new XmlNode("bibl", [], [input, "Ep. 2, 17, 25"]);
 
-    const output = displayAuthor(input, bibl);
+    const output = displayAuthor(input, {}, bibl);
 
     expect(output.toString()).toBe(
       '<span title="C. Plinius Caecilius Secundus (minor), ob. A.D. 113" class="lsHover lsAuthor">Plin.</span>'
@@ -385,7 +468,7 @@ describe("displayAuthor", () => {
     const input = new XmlNode("author", [], ["Plin."]);
     const bibl = new XmlNode("bibl", [], [input, " 17, 2, 2, § 10"]);
 
-    const output = displayAuthor(input, bibl);
+    const output = displayAuthor(input, {}, bibl);
 
     expect(output.toString()).toBe(
       '<span title="(Likely) Pliny the Elder; (Rarely) Pliny the Younger" class="lsHover lsAuthor">Plin.</span>'
@@ -396,7 +479,7 @@ describe("displayAuthor", () => {
     const input = new XmlNode("author", [], ["Just."]);
     const bibl = new XmlNode("bibl", [], [input, "2, 6, 15"]);
 
-    const output = displayAuthor(input, bibl);
+    const output = displayAuthor(input, {}, bibl);
 
     const expected = [
       '<span title="(Likely) Justinus, historian, about fl.(?) A.D. 150;',
@@ -410,7 +493,7 @@ describe("displayAuthor", () => {
     const input = new XmlNode("author", [], ["Just."]);
     const bibl = new XmlNode("bibl", [], [input]);
 
-    const output = displayAuthor(input, bibl);
+    const output = displayAuthor(input, {}, bibl);
 
     const expected = [
       '<span title="Justinus, historian, about fl.(?) A.D. 150',
@@ -424,7 +507,7 @@ describe("displayAuthor", () => {
     const input = new XmlNode("author", [], ["Just."]);
     const bibl = new XmlNode("bibl", [], [input, "Blah. 7 6"]);
 
-    const output = displayAuthor(input, bibl);
+    const output = displayAuthor(input, {}, bibl);
 
     const expected = [
       '<span title="Justinus, historian, about fl.(?) A.D. 150',
@@ -436,10 +519,86 @@ describe("displayAuthor", () => {
 
   it("handles regular author", () => {
     const input = new XmlNode("author", [], ["Censor."]);
-    const output = displayAuthor(input);
+    const output = displayAuthor(input, {});
 
     expect(output.toString()).toBe(
       '<span title="Censorinus, grammarian, flor. A.D. 238" class="lsHover lsAuthor">Censor.</span>'
+    );
+  });
+
+  it("updates context on regular author", () => {
+    const input = new XmlNode("author", [], ["Censor."]);
+    const context: DisplayContext = {};
+
+    displayAuthor(input, context);
+
+    expect(context.lastAuthor).toBe("Censor.");
+  });
+
+  it("does not update context on id. author", () => {
+    const input = new XmlNode("author", [], ["id."]);
+    const context: DisplayContext = { lastAuthor: "Caes." };
+
+    displayAuthor(input, context);
+
+    expect(context.lastAuthor).toBe("Caes.");
+  });
+});
+
+describe("empty displays", () => {
+  test("display figure returns empty span", () => {
+    const input = new XmlNode("figure", [], ["id."]);
+    const output = displayFigure(input, {});
+    expect(output.toString()).toBe("<span></span>");
+  });
+
+  test("display cb returns empty span", () => {
+    const input = new XmlNode("cb", [], ["id."]);
+    const output = displayCb(input, {});
+    expect(output.toString()).toBe("<span></span>");
+  });
+
+  test("display pb returns empty span", () => {
+    const input = new XmlNode("pb", [], ["id."]);
+    const output = displayPb(input, {});
+    expect(output.toString()).toBe("<span></span>");
+  });
+});
+
+describe("displayQ", () => {
+  it("displays contents with class", () => {
+    const input = new XmlNode("q", [], ["contents"]);
+    const output = displayQ(input, {});
+    expect(output.toString()).toBe('<span class="lsQ">contents</span>');
+  });
+});
+
+describe("displayNumber", () => {
+  it("displays number with expansions", () => {
+    const input = new XmlNode("number", [], ["sing."]);
+    const output = displayNumber(input, {});
+    expect(output.toString()).toBe(
+      '<span title="Originally: sing." class="lsHover">singular</span>'
+    );
+  });
+});
+
+describe("displayMood", () => {
+  it("displays mood with expansions", () => {
+    const input = new XmlNode("mood", [], ["Part."]);
+    const output = displayMood(input, {});
+    expect(output.toString()).toBe(
+      '<span title="Originally: Part." class="lsHover">Participle</span>'
+    );
+  });
+});
+
+describe("displayCase", () => {
+  it("displays case with expansions", () => {
+    const input = new XmlNode("case", [], ["abl."]);
+    const output = displayCase(input, {});
+    expect(output.toString()).toBe(
+      '<span title="Originally: abl." class="lsHover">ablative</span>'
     );
   });
 });

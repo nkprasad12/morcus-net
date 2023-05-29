@@ -4,10 +4,13 @@ import { assert, assertEqual } from "@/common/assert";
 import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
 import { AbbreviationTrie, TrieNode } from "./ls_styling";
 
+const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =
   "Poetarum Latinorum Hostii, Laevii, C. Licinii Calvi, C. Helvii Cinnae, C. Valgii Rufi, Domitii Marsi Aliorumque Vitae Et Carminum Reliquiae";
 const ROM_LIT = "Romanische Literaturen";
 const LIT_GESCH = "Geschichte der Römischen Literatur";
+const VEN_FORT_GERM =
+  "vita Sancti Germani by Venantius Honorius Clementianus Fortunatus";
 
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
@@ -179,6 +182,13 @@ export const EDGE_CASE_HOVERS = AbbreviationTrie.forMap(
     ["Rom. Lit.", ROM_LIT],
     ["Roem. Lit.", ROM_LIT],
     ["Rö. Lit.", ROM_LIT],
+    ["Mann. Germ.", UNKNOWN_REF_WORK],
+    ["Ukert, Germ.", UNKNOWN_REF_WORK],
+    ["Ven. Fort. v. Germ.", VEN_FORT_GERM],
+    ["Ven. Fort. Vit. Germ.", VEN_FORT_GERM],
+    ["Ven. Vit. S. Germ.", VEN_FORT_GERM],
+    ["Ven. et Germ.", VEN_FORT_GERM],
+    ["Ven. Vit. Germ.", VEN_FORT_GERM],
   ])
 );
 
@@ -192,6 +202,7 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
     ["ad h. l.", "ad hunc locum (comment on this passage). "],
     ["ad h.l.", "ad hunc locum (comment on this passage). "],
     ["al.", "alii or alia, others or other."],
+    ["class.", "classic(al)."],
     ["com.", "commonly, comicus, comic, or in comedy."],
     ["comp.", "compare or comparative."],
     ["conj.", "conjunction, conjunctive, or conjugation."],
@@ -275,6 +286,7 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
     ["subst.", "substantive(ly)."],
     ["sup.", "superlative or supine."],
     ["Sup.", "superlative or supine."],
+    ["syn.", "synonym, synonymous (with)."],
     ["tab.", "tabula (table, plate)."],
     ["temp.", "tense or temporal."],
     ["trag.", "tragicus, tragic, or in tragedy."],
@@ -330,7 +342,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["amplif.", "amplificative"],
     ["analog.", "analogous(ly)"],
     // ["antiq.", "antiquities. <- Seems to occur in other ways"],
-    ["ap.", "apud (in)"],
+    ["ap.", "in"],
     ["appel.", "appellative"],
     // ["append. or app.", "appendix. <- seems to occur in other ways"],
     ["Arab.", "Arabic"],
@@ -339,7 +351,6 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["Aug.", "Augustan."], <- Augustan, Augustus, Augustine... ahhhh
     ["c. c.", "coupled with."],
     ["cf.", "compare"],
-    ["class.", "classic(al)."],
     // ["Cod.", "Codex (MS)."], <- What does MS mean?
     ["collat.", "collateral."],
     ["Collat.", "collateral."],
@@ -349,6 +360,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["Comp.", "Compare."],
     ["compd.", "compound."],
     ["concr.", "concrete(ly)."],
+    ["Concr.", "Concrete(ly)."],
     ["Constr.", "Constructed."],
     // ["contr.", "contracted, contraction, or contrary."],
     // ^ There are issues with something `Aug. contr.` and `Phil. contr.`
@@ -384,6 +396,8 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["Fragm.", "Fragmenta."],
     ["fut.", "future."],
     ["Fut.", "future."],
+    ["in concr.", "in concrete"],
+    ["In concr.", "in concrete"],
     ["In gen.", "In general"],
     ["in gen.", "in general"],
     ["geog.", "geography(ical)."],
@@ -492,13 +506,12 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["substt.", "substantives."],
     ["suff.", "suffix."],
     ["syll.", "syllable."],
-    ["syn.", "synonym(ous)."],
     ["sync.", "syncopated"],
     ["t. t.", "technical term."],
     // ["term.", "terminus."], <- WTF does this mean
     ["transf.", "transferred."],
     ["trisyl.", "trisyllable(-abic)"],
-    ["usu.", "usual(-ly)."],
+    ["usu.", "usual(ly)."],
     // ["v.", "verb, vide, or vox."],
     ["vb.", "verb"],
     ["voc.", "vocative."],
