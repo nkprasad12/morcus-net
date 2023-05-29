@@ -13,17 +13,25 @@ afterEach(() => {
 function replaceFetch(
   ok: boolean = true,
   error: boolean = false,
-  options: string[] = ["ab", "abago"]
+  options: string[] = ["ab", "abago", "insunt", "jam"]
 ) {
   const mockFetch = error
     ? jest.fn((_) => Promise.reject())
-    : jest.fn((request) =>
-        Promise.resolve({
-          text: () => Promise.resolve(JSON.stringify(options)),
+    : jest.fn((request: string) => {
+        const parts = request.split("/");
+        return Promise.resolve({
+          text: () =>
+            Promise.resolve(
+              JSON.stringify(
+                options.filter((option) =>
+                  option.startsWith(parts[parts.length - 1])
+                )
+              )
+            ),
           ok: ok,
           request: request,
-        })
-      );
+        });
+      });
   // @ts-ignore
   global.fetch = mockFetch;
   return mockFetch;
@@ -98,5 +106,28 @@ describe("AutocompleteCache", () => {
 
     expect(result).toStrictEqual(["abago"]);
     expect(mockFetch.mock.calls).toHaveLength(1);
+  });
+
+  it("fetches alternate character completions", async () => {
+    const mockFetch = replaceFetch();
+
+    await new AutocompleteCache().getOptions("i");
+
+    const calls = mockFetch.mock.calls.map((call) => call[0]);
+    expect(calls).toHaveLength(2);
+    expect(calls[0].endsWith("/i"));
+    expect(calls[1].endsWith("/j"));
+  });
+
+  it("displays correct options with special start character", async () => {
+    replaceFetch();
+    const result = await new AutocompleteCache().getOptions("i");
+    expect(result).toStrictEqual(["insunt", "jam"]);
+  });
+
+  it("displays correct options with internal character", async () => {
+    replaceFetch();
+    const result = await new AutocompleteCache().getOptions("insv");
+    expect(result).toStrictEqual(["insunt"]);
   });
 });

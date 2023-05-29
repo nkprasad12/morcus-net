@@ -262,6 +262,7 @@ function SearchBox(props: { input: string; smallScreen: boolean }) {
       loading={loading}
       loadingText={"Loading options..."}
       options={options}
+      filterOptions={(x) => x}
       sx={{
         padding: 1,
         ml: props.smallScreen ? 1 : 2,
