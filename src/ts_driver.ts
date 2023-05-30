@@ -9,7 +9,6 @@ import { XmlNode } from "./common/lewis_and_short/xml_node";
 import {
   LsRewriters,
   XmlOperations,
-  // LsRewriters,
   findTextNodes,
   modifyInTree,
   removeTextNode,
