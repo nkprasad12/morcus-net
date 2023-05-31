@@ -2,30 +2,41 @@
 
 import * as dotenv from "dotenv";
 import { assert } from "./common/assert";
-import { parseAuthorAbbreviations } from "./common/lewis_and_short/ls_abbreviations";
 import { parse } from "./common/lewis_and_short/ls_parser";
 import { LS_PATH } from "./common/lewis_and_short/ls_scripts";
 import { XmlNode } from "./common/lewis_and_short/xml_node";
 import {
-  LsRewriters,
-  XmlOperations,
   findTextNodes,
-  modifyInTree,
+  // modifyInTree,
   removeTextNode,
 } from "@/common/lewis_and_short/ls_write";
+// import { LsRewriters } from "@/common/lewis_and_short/ls_write";
+// import { LsRewriters } from "@/common/lewis_and_short/ls_write";
 
 dotenv.config();
 
 const startTime = performance.now();
 
 class Tally<T> {
-  readonly counts = new Map<T, number>();
+  private readonly counts = new Map<T, number>();
 
   count(item: T) {
     if (!this.counts.has(item)) {
       this.counts.set(item, 0);
     }
     this.counts.set(item, this.counts.get(item)! + 1);
+  }
+
+  toString(): string {
+    const entries = Array.from(this.counts.entries());
+    const total = entries.map(([_, count]) => count).reduce((a, b) => a + b, 0);
+    return (
+      `Total: ${total}\n` +
+      entries
+        .sort(([_a, aCount], [_b, bCount]) => bCount - aCount)
+        .map(([label, count]) => `${count} <= ${label}`)
+        .join("\n")
+    );
   }
 }
 
@@ -34,13 +45,6 @@ const VERB_SPLITS = [
   "v. a. and n.",
   "v. freq. a. and n.",
   "v. freq. n.",
-];
-
-const CAES_GERM = [
-  "Caes. Germ.",
-  "Caes. German.",
-  "Germ. Arat.",
-  "German. Arat.",
 ];
 
 export function verbPosSplits() {
@@ -146,57 +150,95 @@ export function correctPosSplits(node: XmlNode, conjugenda: string[]): XmlNode {
   return root;
 }
 
-export function findDuplicateAuthorAbbreviations() {
-  const authors = parseAuthorAbbreviations();
-  const authorNames = new Set<string>();
-  for (const author of authors) {
-    if (authorNames.has(author.key)) {
-      console.log("Duplicate for " + author.key);
-    }
-    authorNames.add(author.key);
-  }
-}
-
-export function countChildTypesAfterAuthor() {
-  const afterAuthors = new Tally<string>();
+export function findMistaggedPos() {
+  const posTypes = new Tally<string>();
   for (const entry of parse(LS_PATH)) {
-    const textNodes = findTextNodes(entry);
-    let lastWasAuthor = false;
-    for (const data of textNodes) {
-      if (data.parent.name === "bibl") {
-        lastWasAuthor = true;
+    const hiNodes = entry.findDescendants("hi");
+    for (const node of hiNodes) {
+      if (node.getAttr("rend") !== "ital") {
         continue;
       }
-      if (lastWasAuthor) {
-        afterAuthors.count(data.parent.name);
+      if (node.children.length !== 1) {
+        continue;
       }
-      lastWasAuthor = false;
+      const firstChild = node.children[0];
+      if (typeof firstChild !== "string") {
+        continue;
+      }
+      if (!firstChild.startsWith("v.")) {
+        continue;
+      }
+      if ((firstChild.match(/\./g) || []).length <= 1) {
+        continue;
+      }
+      // const parts = firstChild.split(" ");
+      // if (parts.filter((part) => !ALLOWED_PARTS.has(part)).length > 0) {
+      //   continue;
+      // }
+
+      posTypes.count(firstChild);
     }
   }
-  console.log(afterAuthors.counts);
+  console.log(posTypes.toString());
 }
 
-// LsRewriters.transformEntries(LS_PATH, (root) =>
-//   correctPosSplits(root, VERB_SPLITS)
-// );
-// const root = new XmlNode(
-//   "entryFree",
-//   [],
-//   [new XmlNode("pos", [], ["v. a."]), " and ", new XmlNode("gen", [], ["n."])]
-// );
-// const out = correctSplits(root, new Set(["v. a. and n."]));
-// console.log(out.toString());
+// const ALLOWED_PARTS = new Set([
+//   "v.",
+//   "inch.",
+//   "n.",
+//   "dep.",
+//   "a.",
+//   "freq.",
+//   "impers.",
+//   "intens.",
+// ]);
 
-// const matches = new Tally<string>();
-// for (const entry of parse(LS_PATH)) {
-//   for (const match of searchTree(entry, VERB_SPLITS[0]).matches) {
-//     matches.count(match.target);
+findMistaggedPos();
+// LsRewriters.transformEntries(LS_PATH, (entry) => {
+//   const queue: XmlNode[] = [entry];
+//   // Parent, index.
+//   const hiNodes: [XmlNode, number][] = [];
+//   while (queue.length > 0) {
+//     const current = queue.pop()!;
+//     current.children.forEach((child, i) => {
+//       if (typeof child === "string") {
+//         return;
+//       }
+//       if (child.name === "hi") {
+//         hiNodes.push([current, i]);
+//       }
+//       queue.push(child);
+//     });
 //   }
-// }
-// console.log(matches);
-LsRewriters.transformEntries(LS_PATH, (root) =>
-  modifyInTree(root, CAES_GERM, (match) => XmlOperations.combine(match.chunks))
-);
+
+//   // const hiNodes = entry.findDescendants("hi");
+//   for (const [parent, index] of hiNodes) {
+//     const node = XmlNode.assertIsNode(parent.children[index]);
+//     if (node.getAttr("rend") !== "ital") {
+//       continue;
+//     }
+//     if (node.children.length !== 1) {
+//       continue;
+//     }
+//     const firstChild = node.children[0];
+//     if (typeof firstChild !== "string") {
+//       continue;
+//     }
+//     if (!firstChild.startsWith("v.")) {
+//       continue;
+//     }
+//     if ((firstChild.match(/\./g) || []).length <= 1) {
+//       continue;
+//     }
+//     // posTypes.count(firstChild.split(",")[0]);
+//     const parts = firstChild.split(" ");
+//     if (parts.filter((part) => !ALLOWED_PARTS.has(part)).length > 0) {
+//       continue;
+//     }
+//     parent.children[index] = new XmlNode("pos", [], [firstChild]);
+//   }
+//   return entry;
+// });
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);
