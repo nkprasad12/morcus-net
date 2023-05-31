@@ -13,6 +13,26 @@
   "[typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
-  }
+  },
+  "workbench.colorCustomizations": {
+    "activityBar.activeBackground": "#32636b",
+    "activityBar.background": "#32636b",
+    "activityBar.foreground": "#e7e7e7",
+    "activityBar.inactiveForeground": "#e7e7e799",
+    "activityBarBadge.background": "#411e3c",
+    "activityBarBadge.foreground": "#e7e7e7",
+    "commandCenter.border": "#e7e7e799",
+    "sash.hoverBorder": "#32636b",
+    "statusBar.background": "#224348",
+    "statusBar.foreground": "#e7e7e7",
+    "statusBarItem.hoverBackground": "#32636b",
+    "statusBarItem.remoteBackground": "#224348",
+    "statusBarItem.remoteForeground": "#e7e7e7",
+    "titleBar.activeBackground": "#224348",
+    "titleBar.activeForeground": "#e7e7e7",
+    "titleBar.inactiveBackground": "#22434899",
+    "titleBar.inactiveForeground": "#e7e7e799"
+  },
+  "peacock.color": "#224348"
   // "python.analysis.typeCheckingMode": "basic"
 }
