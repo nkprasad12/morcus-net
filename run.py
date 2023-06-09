@@ -65,6 +65,12 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    "-to",
+    "--transpile_only",
+    help="If set, skips type checking for the client bundle.",
+    action="store_true",
+)
+parser.add_argument(
     "-lss",
     "--ls_subset",
     help="If set, only a subset of LS will be loaded at startup.",
@@ -102,8 +108,17 @@ if args.command in WEB_SERVER:
 
     if not args.no_build_client:
         build_command = ["npm", "run", "build-client"]
+        extra_args = []
+        
         if args.prod or args.staging:
-            build_command.extend(["--", "--env", "production"])
+            extra_args.append(["--env", "production"])
+        if args.transpile_only:
+            extra_args.append(["--env", "transpileOnly"])
+        if extra_args:
+            build_command.append("--")
+        for extra_arg in extra_args:
+            build_command.extend(extra_arg)
+
         p = subprocess.Popen(" ".join(build_command), shell=True)
         setup_processes.append(p)
 
