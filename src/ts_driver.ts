@@ -193,7 +193,14 @@ export function findMistaggedPos() {
 //   "intens.",
 // ]);
 
-findMistaggedPos();
+// findMistaggedPos();
+const posTypes = new Tally<string>();
+for (const entry of parse(LS_PATH)) {
+  entry
+    .findDescendants("pos")
+    .forEach((node) => posTypes.count(XmlNode.getSoleText(node)));
+}
+console.log(posTypes.toString());
 // LsRewriters.transformEntries(LS_PATH, (entry) => {
 //   const queue: XmlNode[] = [entry];
 //   // Parent, index.
