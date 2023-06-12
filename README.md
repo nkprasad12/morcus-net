@@ -37,6 +37,8 @@ For common commands, see `package.json` or `run.py`.
 | `PORT`              | The port number on which the server will listen. Example: `5757`.                                                                        |
 | `LS_PATH`           | The path to the raw Lewis and Short XML file. Example: `[PATH_TO_LEXICA_REPO]/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml` |
 | `LS_PROCESSED_PATH` | The path where the processed Lewis and Short file will be. Example: `lsp.data`                                                           |
+| `MONGODB_URI`       | MongoDB database URI for metrics.                                                                                                        |
+| `DB_SOURCE`         | Tag used for metrics written to MongoDB. Example: `local`.                                                                               |
 
 ---
 
