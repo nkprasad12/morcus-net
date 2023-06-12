@@ -28,6 +28,7 @@ import { checkPresent } from "./common/assert";
 import { LewisAndShort } from "./common/lewis_and_short/ls";
 import path from "path";
 import { GitHub } from "./web/utils/github";
+import { MongoLogger } from "./web/telemetry/mongo_logger";
 
 dotenv.config();
 
@@ -45,6 +46,7 @@ const server = http.createServer(app);
 
 const lewisAndShort = LewisAndShort.create();
 const workServer = new SocketWorkServer(new Server(server));
+const telemetry = MongoLogger.create();
 
 async function callWorker(
   category: Workers.Category,
@@ -67,6 +69,7 @@ const params: WebServerParams = {
     (await lewisAndShort).getCompletions(prefix),
   buildDir: path.join(__dirname, "../genfiles_static"),
   fileIssueReport: (reportText) => GitHub.reportIssue(reportText),
+  telemetry: telemetry,
 };
 
 setupServer(params);

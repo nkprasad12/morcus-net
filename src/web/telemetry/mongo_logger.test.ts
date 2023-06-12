@@ -52,7 +52,7 @@ describe("MongoLogger", () => {
 
     let hadError = false;
     try {
-      await logger.logApiCall({ name: "" });
+      await logger.logApiCall({ name: "", status: 200, latencyMs: 5 });
     } catch {
       hadError = true;
     }
@@ -62,12 +62,14 @@ describe("MongoLogger", () => {
   it("logs to database on logApiCall", async () => {
     const logger = await MongoLogger.create("foo", "bar");
 
-    await logger.logApiCall({ name: "lsDict" });
+    await logger.logApiCall({ name: "lsDict", status: 200, latencyMs: 4 });
 
     expect(mockInsertOne).toHaveBeenCalledTimes(1);
     const loggedEvent: ApiCallEvent = mockInsertOne.mock.lastCall!.at(0)!;
     expect(loggedEvent.name).toBe("lsDict");
     expect(loggedEvent.source).toBe("bar");
+    expect(loggedEvent.status).toBe(200);
+    expect(loggedEvent.latencyMs).toBe(4);
     expect(loggedEvent.timestamp).toBeDefined();
   });
 });

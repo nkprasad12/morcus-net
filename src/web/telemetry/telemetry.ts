@@ -6,15 +6,18 @@ export interface TelemetryEvent {
 }
 
 export interface ApiParam {
-  readonly key: string;
-  readonly value: string;
+  [key: string]: string;
 }
 
 export interface ApiCallData {
   /** The API that was called. */
   readonly name: string;
   /** The parameters that this API was called with. */
-  readonly params?: ApiParam[];
+  readonly params?: ApiParam;
+  /** The status code of the API request. */
+  readonly status: number;
+  /** The response latency in milliseconds. */
+  readonly latencyMs: number;
 }
 
 export interface ApiCallEvent extends TelemetryEvent, ApiCallData {}
