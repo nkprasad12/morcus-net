@@ -109,7 +109,7 @@ if args.command in WEB_SERVER:
     if not args.no_build_client:
         build_command = ["npm", "run", "build-client"]
         extra_args = []
-        
+
         if args.prod or args.staging:
             extra_args.append(["--env", "production"])
         if args.transpile_only:

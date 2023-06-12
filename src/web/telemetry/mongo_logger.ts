@@ -46,7 +46,7 @@ export class MongoLogger implements TelemetryLogger {
     return this.log(data, API_CALL_COLLECTION);
   }
 
-  private async log(data: Object, collectionName: string): Promise<void> {
+  private async log(data: object, collectionName: string): Promise<void> {
     const event: TelemetryEvent = {
       ...data,
       timestamp: Date.now(),
