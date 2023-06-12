@@ -27,8 +27,11 @@ jobs:
         run: npm run format-check
 
   integration-checks:
-    runs-on: ubuntu-latest
     environment: Actions CI
+    env:
+      MONGODB_URI: ${{ secrets.MONGODB_URI }}
+      DB_SOURCE: ${{ secrets.DB_SOURCE }}
+    runs-on: ubuntu-latest
     timeout-minutes: 6
 
     steps:
