@@ -11,11 +11,34 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 **First Time Setup**
 
 1. Run `npm install` to set up your environment for `Typescript` code.
-2. Run `npm run setup-alatius` to set up the macronizer for local use.
-3. Set up a Python `venv` and install the `requirements.txt`.
-4. To run the models, you may also need to install `stanza` and `cltk` from `pip`.
+2. Set up a Python `venv` and install the `requirements.txt`.
 
-For common commands, see `package.json`.
+Specific steps for:
+
+_Python ML Code_
+
+1. Run `npm run setup-alatius` to set up the macronizer for local use.
+2. To run NLP models, you may also need to install `stanza` and `cltk` from `pip`.
+
+_morcus.net Server and Client_
+
+1. Clone https://github.com/nkprasad12/lexica
+2. Create a `.env` file in the root directory (see the next section for contents).
+3. Run `./run.py web -p --build_ls`. This will build the LS processed data file and start the server.
+
+For common commands, see `package.json` or `run.py`.
+
+---
+
+**Environment Variables**
+
+| Name                | Content                                                                                                                                  |
+| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`              | The port number on which the server will listen. Example: `5757`.                                                                        |
+| `LS_PATH`           | The path to the raw Lewis and Short XML file. Example: `[PATH_TO_LEXICA_REPO]/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml` |
+| `LS_PROCESSED_PATH` | The path where the processed Lewis and Short file will be. Example: `lsp.data`                                                           |
+| `MONGODB_URI`       | MongoDB database URI for metrics.                                                                                                        |
+| `DB_SOURCE`         | Tag used for metrics written to MongoDB. Example: `local`.                                                                               |
 
 ---
 
@@ -24,7 +47,7 @@ For common commands, see `package.json`.
 1. File an issue (or accept an existing one) for tracking purposes
 2. Make sure to write unit tests verifying your change, if applicable
 3. Run `npm run pre-commit` to run all formatting checks, tests, and builds.
-4. Send a Pull Request to merge to `main`
+4. Send a Pull Request to merge to `dev`
 
 ---
 

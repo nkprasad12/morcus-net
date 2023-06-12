@@ -2,18 +2,23 @@
 
 import * as dotenv from "dotenv";
 import { assert } from "./common/assert";
-import { parseAuthorAbbreviations } from "./common/lewis_and_short/ls_abbreviations";
 import { parse } from "./common/lewis_and_short/ls_parser";
 import { LS_PATH } from "./common/lewis_and_short/ls_scripts";
 import { XmlNode } from "./common/lewis_and_short/xml_node";
-import { LsRewriters } from "./common/lewis_and_short/ls_write";
+import {
+  findTextNodes,
+  // modifyInTree,
+  removeTextNode,
+} from "@/common/lewis_and_short/ls_write";
+// import { LsRewriters } from "@/common/lewis_and_short/ls_write";
+// import { LsRewriters } from "@/common/lewis_and_short/ls_write";
 
 dotenv.config();
 
 const startTime = performance.now();
 
 class Tally<T> {
-  readonly counts = new Map<T, number>();
+  private readonly counts = new Map<T, number>();
 
   count(item: T) {
     if (!this.counts.has(item)) {
@@ -21,48 +26,17 @@ class Tally<T> {
     }
     this.counts.set(item, this.counts.get(item)! + 1);
   }
-}
 
-interface NodeData {
-  parent: XmlNode;
-  textIndex: number;
-  ancestors: XmlNode[];
-}
-
-function getNodeDataString(data: NodeData): string {
-  return XmlNode.assertIsString(data.parent.children[data.textIndex]);
-}
-
-function iterateFromNode(root: XmlNode, ancestors: XmlNode[]): NodeData[] {
-  let results: NodeData[] = [];
-  root.children.forEach((child, i) => {
-    if (typeof child === "string") {
-      results.push({
-        parent: root,
-        textIndex: i,
-        ancestors: ancestors.map((x) => x),
-      });
-    } else {
-      results = results.concat(
-        iterateFromNode(child, ancestors.concat([root]))
-      );
-    }
-  });
-  return results;
-}
-
-function removeTextNode(data: NodeData) {
-  data.parent.children.splice(data.textIndex, 1);
-  const ancestors = [data.parent].concat(data.ancestors.reverse());
-  for (let i = 0; i < ancestors.length - 1; i++) {
-    const ancestor = ancestors[i];
-    if (ancestor.children.length > 0) {
-      break;
-    }
-    const nextParent = ancestors[i + 1];
-    const removeIndex = nextParent.children.indexOf(ancestor);
-    assert(removeIndex > -1);
-    nextParent.children.splice(removeIndex, 1);
+  toString(): string {
+    const entries = Array.from(this.counts.entries());
+    const total = entries.map(([_, count]) => count).reduce((a, b) => a + b, 0);
+    return (
+      `Total: ${total}\n` +
+      entries
+        .sort(([_a, aCount], [_b, bCount]) => bCount - aCount)
+        .map(([label, count]) => `${count} <= ${label}`)
+        .join("\n")
+    );
   }
 }
 
@@ -75,13 +49,13 @@ const VERB_SPLITS = [
 
 export function verbPosSplits() {
   for (const entry of parse(LS_PATH)) {
-    correctSplits(entry, VERB_SPLITS);
+    correctPosSplits(entry, VERB_SPLITS);
   }
 }
 
-export function correctSplits(node: XmlNode, conjugenda: string[]): XmlNode {
+export function correctPosSplits(node: XmlNode, conjugenda: string[]): XmlNode {
   const root = node.deepcopy();
-  const children = iterateFromNode(root, []);
+  const children = findTextNodes(root);
   const chunks = children.map((data) =>
     XmlNode.assertIsString(data.parent.children[data.textIndex])
   );
@@ -168,9 +142,7 @@ export function correctSplits(node: XmlNode, conjugenda: string[]): XmlNode {
       }
 
       splitChunks[0].parent.children[splitChunks[0].textIndex] =
-        getNodeDataString(splitChunks[0]) +
-        getNodeDataString(splitChunks[1]) +
-        getNodeDataString(splitChunks[2]);
+        splitChunks[0].text + splitChunks[1].text + splitChunks[2].text;
       removeTextNode(splitChunks[1]);
       removeTextNode(splitChunks[2]);
     }
@@ -178,46 +150,102 @@ export function correctSplits(node: XmlNode, conjugenda: string[]): XmlNode {
   return root;
 }
 
-export function findDuplicateAuthorAbbreviations() {
-  const authors = parseAuthorAbbreviations();
-  const authorNames = new Set<string>();
-  for (const author of authors) {
-    if (authorNames.has(author.key)) {
-      console.log("Duplicate for " + author.key);
-    }
-    authorNames.add(author.key);
-  }
-}
-
-export function countChildTypesAfterAuthor() {
-  const afterAuthors = new Tally<string>();
+export function findMistaggedPos() {
+  const posTypes = new Tally<string>();
   for (const entry of parse(LS_PATH)) {
-    const textNodes = iterateFromNode(entry, []);
-    let lastWasAuthor = false;
-    for (const data of textNodes) {
-      if (data.parent.name === "bibl") {
-        lastWasAuthor = true;
+    const hiNodes = entry.findDescendants("hi");
+    for (const node of hiNodes) {
+      if (node.getAttr("rend") !== "ital") {
         continue;
       }
-      if (lastWasAuthor) {
-        afterAuthors.count(data.parent.name);
+      if (node.children.length !== 1) {
+        continue;
       }
-      lastWasAuthor = false;
+      const firstChild = node.children[0];
+      if (typeof firstChild !== "string") {
+        continue;
+      }
+      if (!firstChild.startsWith("v.")) {
+        continue;
+      }
+      if ((firstChild.match(/\./g) || []).length <= 1) {
+        continue;
+      }
+      // const parts = firstChild.split(" ");
+      // if (parts.filter((part) => !ALLOWED_PARTS.has(part)).length > 0) {
+      //   continue;
+      // }
+
+      posTypes.count(firstChild);
     }
   }
-  console.log(afterAuthors.counts);
+  console.log(posTypes.toString());
 }
 
-LsRewriters.transformEntries(LS_PATH, (root) =>
-  correctSplits(root, VERB_SPLITS)
-);
-// const root = new XmlNode(
-//   "entryFree",
-//   [],
-//   [new XmlNode("pos", [], ["v. a."]), " and ", new XmlNode("gen", [], ["n."])]
-// );
-// const out = correctSplits(root, new Set(["v. a. and n."]));
-// console.log(out.toString());
+// const ALLOWED_PARTS = new Set([
+//   "v.",
+//   "inch.",
+//   "n.",
+//   "dep.",
+//   "a.",
+//   "freq.",
+//   "impers.",
+//   "intens.",
+// ]);
+
+// findMistaggedPos();
+const posTypes = new Tally<string>();
+for (const entry of parse(LS_PATH)) {
+  entry
+    .findDescendants("pos")
+    .forEach((node) => posTypes.count(XmlNode.getSoleText(node)));
+}
+console.log(posTypes.toString());
+// LsRewriters.transformEntries(LS_PATH, (entry) => {
+//   const queue: XmlNode[] = [entry];
+//   // Parent, index.
+//   const hiNodes: [XmlNode, number][] = [];
+//   while (queue.length > 0) {
+//     const current = queue.pop()!;
+//     current.children.forEach((child, i) => {
+//       if (typeof child === "string") {
+//         return;
+//       }
+//       if (child.name === "hi") {
+//         hiNodes.push([current, i]);
+//       }
+//       queue.push(child);
+//     });
+//   }
+
+//   // const hiNodes = entry.findDescendants("hi");
+//   for (const [parent, index] of hiNodes) {
+//     const node = XmlNode.assertIsNode(parent.children[index]);
+//     if (node.getAttr("rend") !== "ital") {
+//       continue;
+//     }
+//     if (node.children.length !== 1) {
+//       continue;
+//     }
+//     const firstChild = node.children[0];
+//     if (typeof firstChild !== "string") {
+//       continue;
+//     }
+//     if (!firstChild.startsWith("v.")) {
+//       continue;
+//     }
+//     if ((firstChild.match(/\./g) || []).length <= 1) {
+//       continue;
+//     }
+//     // posTypes.count(firstChild.split(",")[0]);
+//     const parts = firstChild.split(" ");
+//     if (parts.filter((part) => !ALLOWED_PARTS.has(part)).length > 0) {
+//       continue;
+//     }
+//     parent.children[index] = new XmlNode("pos", [], [firstChild]);
+//   }
+//   return entry;
+// });
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);

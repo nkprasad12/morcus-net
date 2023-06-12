@@ -11,6 +11,7 @@ import {
 } from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 import path from "path";
+import { TelemetryLogger } from "./telemetry/telemetry";
 
 console.debug = jest.fn();
 
@@ -37,6 +38,10 @@ afterAll(() => {
 });
 
 const fileIssueReportResults: (() => Promise<any>)[] = [];
+const fakeTelemetryLogger: TelemetryLogger = {
+  logApiCall: (d) => Promise.resolve(),
+  teardown: () => Promise.resolve(),
+};
 
 function getServer(): express.Express {
   const app = express();
@@ -48,6 +53,7 @@ function getServer(): express.Express {
     buildDir: path.resolve(TEMP_DIR),
     fileIssueReport: (a) =>
       (fileIssueReportResults.pop() || (() => Promise.resolve(a)))(),
+    telemetry: Promise.resolve(fakeTelemetryLogger),
   };
   setupServer(params);
   return app;

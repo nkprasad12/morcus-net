@@ -7,6 +7,7 @@ const TerserPlugin = require("terser-webpack-plugin");
 module.exports = (env) => {
   console.log(env);
 
+  const transpileOnly = env.transpileOnly === true;
   const isProduction = env.production === true;
   const shouldMinimize = isProduction;
 
@@ -69,6 +70,7 @@ module.exports = (env) => {
               loader: "ts-loader",
               options: {
                 configFile: "tsconfig.json",
+                transpileOnly: transpileOnly,
               },
             },
           ],
