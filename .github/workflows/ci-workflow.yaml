@@ -28,6 +28,7 @@ jobs:
 
   integration-checks:
     runs-on: ubuntu-latest
+    environment: Actions CI
     timeout-minutes: 6
 
     steps:
