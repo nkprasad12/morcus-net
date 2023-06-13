@@ -10,8 +10,6 @@ import {
   // modifyInTree,
   removeTextNode,
 } from "@/common/lewis_and_short/ls_write";
-// import { LsRewriters } from "@/common/lewis_and_short/ls_write";
-// import { LsRewriters } from "@/common/lewis_and_short/ls_write";
 
 dotenv.config();
 
@@ -193,14 +191,14 @@ export function findMistaggedPos() {
 //   "intens.",
 // ]);
 
-// findMistaggedPos();
-const posTypes = new Tally<string>();
-for (const entry of parse(LS_PATH)) {
-  entry
-    .findDescendants("pos")
-    .forEach((node) => posTypes.count(XmlNode.getSoleText(node)));
-}
-console.log(posTypes.toString());
+findMistaggedPos();
+// const posTypes = new Tally<string>();
+// for (const entry of parse(LS_PATH)) {
+//   entry
+//     .findDescendants("pos")
+//     .forEach((node) => posTypes.count(XmlNode.getSoleText(node)));
+// }
+// console.log(posTypes.toString());
 // LsRewriters.transformEntries(LS_PATH, (entry) => {
 //   const queue: XmlNode[] = [entry];
 //   // Parent, index.
@@ -219,7 +217,7 @@ console.log(posTypes.toString());
 //   }
 
 //   // const hiNodes = entry.findDescendants("hi");
-//   for (const [parent, index] of hiNodes) {
+//   for (const [parent, index] of hiNodes.reverse()) {
 //     const node = XmlNode.assertIsNode(parent.children[index]);
 //     if (node.getAttr("rend") !== "ital") {
 //       continue;
@@ -237,12 +235,21 @@ console.log(posTypes.toString());
 //     if ((firstChild.match(/\./g) || []).length <= 1) {
 //       continue;
 //     }
+
+//     const sections = firstChild.split(", ");
+//     if (sections.length === 0) {
+//       continue;
+//     }
+
 //     // posTypes.count(firstChild.split(",")[0]);
-//     const parts = firstChild.split(" ");
+//     const parts = sections[0].split(" ");
 //     if (parts.filter((part) => !ALLOWED_PARTS.has(part)).length > 0) {
 //       continue;
 //     }
-//     parent.children[index] = new XmlNode("pos", [], [firstChild]);
+
+//     node.children[0] = sections.slice(1).join(", ");
+//     parent.children.splice(index, 0, ", ");
+//     parent.children.splice(index, 0, new XmlNode("pos", [], [sections[0]]));
 //   }
 //   return entry;
 // });
