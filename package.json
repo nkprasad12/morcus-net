@@ -28,6 +28,8 @@
     "ts-driver": "npm run ts-node src/ts_driver.ts -- --allowUnusedLabels",
     "py-driver": "python -c \"import src.py.driver\"",
     "pre-commit": "npm run format && npm run test && npm run build-client && npm run pytype",
+    "ts-count": "find src -regextype sed -regex '.*/*\\.tsx\\?' | xargs wc -l",
+    "py-count": "find src -regextype sed -regex '.*/*\\.py' | xargs wc -l",
     "scale": "heroku ps:scale web=1 -a morcus-net",
     "unscale": "heroku ps:scale web=0 -a morcus-net",
     "logs": "heroku logs -t -a morcus-net",
