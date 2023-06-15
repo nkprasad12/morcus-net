@@ -1,4 +1,4 @@
-export type Validator<T> = (t: unknown) => t is T;
+import { Validator } from "./parsing";
 
 export type HttpMethod = "GET" | "POST";
 

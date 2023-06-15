@@ -2,6 +2,7 @@ import { assert } from "@/common/assert";
 import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
 import express, { Request, Response } from "express";
 import { ApiRoute } from "./api_route";
+import { decodeMessage, encodeMessage } from "./parsing";
 
 type Data = boolean | string | number | object;
 
@@ -30,25 +31,42 @@ async function logApi(
   (await telemetry).logApiCall(finalData);
 }
 
-function extractInput<I, O>(req: Request, route: ApiRoute<I, O>): unknown {
+function findInput<I, O>(req: Request, route: ApiRoute<I, O>): string {
   if (route.method === "GET") {
     return req.params.input;
   } else if (route.method === "POST") {
-    return req.body;
+    const body: unknown = req.body;
+    if (typeof body !== "string") {
+      throw new TypeError(
+        `Received unexpected body type. Ensure message` +
+          ` bodies are parsed as text in server configuration.`
+      );
+    }
+    return body;
   }
-  assert(false, `Unhandled method: ${route.method}`);
+  throw new TypeError(`Unhandled method: ${route.method}`);
+}
+
+function extractInput<I, O>(req: Request, route: ApiRoute<I, O>): I | Error {
+  try {
+    return decodeMessage(findInput(req, route), route.inputValidator);
+  } catch (e) {
+    return new Error(`Error extracting input on route: ${route.path}`, {
+      cause: e,
+    });
+  }
 }
 
 function adaptHandler<I, O extends Data>(
   app: { server: express.Express; telemetry: Promise<TelemetryLogger> },
   route: ApiRoute<I, O>,
-  handler: (input: I) => Promise<O | { serverErrorStatus: number }>
+  handler: ApiHandler<I, O>
 ) {
   return (req: Request, res: Response) => {
     const start = performance.now();
     console.debug(`[${Date.now() / 1000}] ${route.path}`);
     const input = extractInput(req, route);
-    if (!route.inputValidator(input)) {
+    if (input instanceof Error) {
       res.status(400).send();
       logApi({ name: route.path, status: 400 }, start, app.telemetry);
       return;
@@ -70,12 +88,16 @@ function adaptHandler<I, O extends Data>(
         status = 500;
       })
       .finally(() => {
-        res.status(status).send(body);
+        const result = body === undefined ? undefined : encodeMessage(body);
+        res.status(status).send(result);
         logApi(
           {
             name: route.path,
             status: status,
-            params: { input: JSON.stringify(req.params.input) },
+            params:
+              route.method === "GET"
+                ? { input: JSON.stringify(req.params.input) }
+                : undefined,
           },
           start,
           app.telemetry
@@ -84,15 +106,25 @@ function adaptHandler<I, O extends Data>(
   };
 }
 
+export type PossibleError<T> = T | { serverErrorStatus: number };
+export type ApiHandler<I, O> = (input: I) => Promise<PossibleError<O>>;
+export interface RouteAndHandler<I, O> {
+  route: ApiRoute<I, O>;
+  handler: ApiHandler<I, O>;
+}
+
 export function addApi<I, O extends Data>(
   app: { server: express.Express; telemetry: Promise<TelemetryLogger> },
-  route: ApiRoute<I, O>,
-  handler: (input: I) => Promise<O | { serverErrorStatus: number }>
+  routeAndHandler: RouteAndHandler<I, O>
 ): void {
+  const route = routeAndHandler.route;
+  const handler = routeAndHandler.handler;
   if (route.method === "GET") {
     app.server.get(`${route.path}/:input`, adaptHandler(app, route, handler));
+    return;
   } else if (route.method === "POST") {
-    app.server.post(route.path);
+    app.server.post(route.path, adaptHandler(app, route, handler));
+    return;
   }
   assert(false, `Unhandled method: ${route.method}`);
 }
