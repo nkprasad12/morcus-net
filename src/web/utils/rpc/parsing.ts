@@ -68,7 +68,19 @@ export function isBoolean(x: unknown): x is boolean {
   return typeof x === "boolean";
 }
 
+export function isAny(x: unknown): x is any {
+  return true;
+}
+
 export type Class<T> = { new (...args: any[]): T };
+
+export function typeOf(type: "string"): (x: unknown) => x is string;
+export function typeOf(type: "boolean"): (x: unknown) => x is boolean;
+export function typeOf(type: "number"): (x: unknown) => x is number;
+export function typeOf(type: "object"): (x: unknown) => x is object;
+export function typeOf(type: "string" | "boolean" | "number" | "object") {
+  return (x: unknown) => typeof x === type;
+}
 
 export function instanceOf<T>(c: Class<T>): (x: unknown) => x is T {
   return (x): x is T => x instanceof c;

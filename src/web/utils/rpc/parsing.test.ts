@@ -3,8 +3,10 @@ import {
   decodeMessage,
   encodeMessage,
   instanceOf,
+  isAny,
   isArray,
   isString,
+  typeOf,
 } from "./parsing";
 
 class StringWrapper {
@@ -25,6 +27,29 @@ describe("instanceOf", () => {
 
   it("returns false on others", () => {
     expect(instanceOf(StringWrapper)("foo")).toBe(false);
+  });
+});
+
+describe("typeOf", () => {
+  it("it returns valid on strings", () => {
+    expect(typeOf("string")("1")).toBe(true);
+    expect(typeOf("string")(1)).toBe(false);
+  });
+
+  it("it returns valid on boolean", () => {
+    expect(typeOf("boolean")(false)).toBe(true);
+    expect(typeOf("boolean")("false")).toBe(false);
+  });
+
+  it("it returns valid on number", () => {
+    expect(typeOf("number")(1)).toBe(true);
+    expect(typeOf("number")("1")).toBe(false);
+  });
+});
+
+describe("isPrimitives", () => {
+  test("isAny returns true", () => {
+    expect(isAny(null)).toBe(true);
   });
 });
 
