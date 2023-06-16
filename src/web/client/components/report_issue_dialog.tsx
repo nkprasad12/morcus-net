@@ -9,8 +9,8 @@ import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
 import { Solarized } from "../colors";
-import { backendCall } from "../browser_utils";
-import { report } from "@/web/api_routes";
+import { callApi } from "@/web/utils/rpc/client_rpc";
+import { ReportApi } from "@/web/utils/rpc/routes";
 
 export function ReportIssueDialog(props: {
   show: boolean;
@@ -56,14 +56,7 @@ export function ReportIssueDialog(props: {
         </Button>
         <Button
           onClick={() => {
-            const options = {
-              method: "POST",
-              headers: {
-                "Content-Type": "text/plain; charset=utf-8",
-              },
-              body: reportText,
-            };
-            backendCall(report(), options);
+            callApi(ReportApi, reportText).catch(() => {});
             props.onClose();
           }}
           variant="contained"

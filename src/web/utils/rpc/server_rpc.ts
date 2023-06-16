@@ -76,6 +76,9 @@ function adaptHandler<I, O extends Data>(
     let body: O | undefined = undefined;
     handler(input)
       .then((output) => {
+        if (output === undefined || output === null) {
+          return;
+        }
         if (isObject(output) && Object.hasOwn(output, "serverErrorStatus")) {
           // @ts-ignore
           status = output.serverErrorStatus;
@@ -84,8 +87,9 @@ function adaptHandler<I, O extends Data>(
         // @ts-ignore
         body = output;
       })
-      .catch(() => {
+      .catch((reason) => {
         status = 500;
+        body = reason;
       })
       .finally(() => {
         const result = body === undefined ? undefined : encodeMessage(body);

@@ -1,11 +1,11 @@
 import compression from "compression";
 import express, { Request, Response } from "express";
-import { entriesByPrefix, lsCall, report } from "@/web/api_routes";
+import { entriesByPrefix, lsCall } from "@/web/api_routes";
 import bodyParser from "body-parser";
 import path from "path";
 import { ApiCallData, TelemetryLogger } from "./telemetry/telemetry";
 import { addApi } from "./utils/rpc/server_rpc";
-import { MacronizeApi } from "./utils/rpc/routes";
+import { MacronizeApi, ReportApi } from "./utils/rpc/routes";
 
 function log(message: string) {
   console.debug(`[web_server] [${Date.now() / 1000}] ${message}`);
@@ -57,28 +57,8 @@ export function setupServer(params: WebServerParams): void {
     next();
   });
 
-  addApi(params, {
-    route: MacronizeApi,
-    handler: params.macronizer,
-  });
-
-  app.post(report(), async (req, res) => {
-    const start = performance.now();
-    if (typeof req.body !== "string") {
-      res.status(400).send("Invalid request");
-      logApi({ name: "Report", status: 400 }, start);
-      return;
-    }
-    try {
-      await params.fileIssueReport(req.body);
-      res.status(200).send();
-      logApi({ name: "Report", status: 200 }, start);
-    } catch (e) {
-      log(`Failed to file issue report!\n${e}`);
-      res.status(500).send();
-      logApi({ name: "Report", status: 500 }, start);
-    }
-  });
+  addApi(params, { route: MacronizeApi, handler: params.macronizer });
+  addApi(params, { route: ReportApi, handler: params.fileIssueReport });
 
   app.get(lsCall(":entry"), async (req: Request<{ entry: string }>, res) => {
     const start = performance.now();

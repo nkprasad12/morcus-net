@@ -3,11 +3,11 @@ import express from "express";
 import fs from "fs";
 import request from "supertest";
 
-import { entriesByPrefix, lsCall, report } from "@/web/api_routes";
+import { entriesByPrefix, lsCall } from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 import path from "path";
 import { TelemetryLogger } from "./telemetry/telemetry";
-import { MacronizeApi } from "./utils/rpc/routes";
+import { MacronizeApi, ReportApi } from "./utils/rpc/routes";
 import { encodeMessage } from "./utils/rpc/parsing";
 
 console.debug = jest.fn();
@@ -77,30 +77,11 @@ describe("WebServer", () => {
 
   it("handles report route", async () => {
     const response = await request(app)
-      .post(report())
-      .send("testPostPleaseIgnore")
+      .post(ReportApi.path)
+      .send(encodeMessage("testPostPleaseIgnore"))
       .set("Content-Type", "text/plain; charset=utf-8");
 
     expect(response.status).toBe(200);
-  });
-
-  it("handles report route with bad data", async () => {
-    const response = await request(app)
-      .post(report())
-      .send({ data: "testPostPleaseIgnore" })
-      .set("Content-Type", "application/json");
-
-    expect(response.status).toBe(400);
-  });
-
-  it("handles report error", async () => {
-    fileIssueReportResults.push(() => Promise.reject("Error"));
-    const response = await request(app)
-      .post(report())
-      .send("testPostPleaseIgnore")
-      .set("Content-Type", "text/plain; charset=utf-8");
-
-    expect(response.status).toBe(500);
   });
 
   test("handles LS dict route", async () => {
