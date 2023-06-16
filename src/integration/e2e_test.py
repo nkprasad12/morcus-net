@@ -1,14 +1,16 @@
+import json
 import os
 import requests
 import subprocess
 import time
+from urllib import parse
 
 
 BUILD_CLIENT = "npm run build-client -- --env production"
 DOWNLOAD_LS = "npm run download-ls"
 PROCESS_LS = "npm run ts-node src/scripts/process_ls.ts -- --verify"
 START_SERVER = "npm run ts-node src/start_server.ts"
-PORT = 5757
+PORT = 8000
 
 
 subproc_env = os.environ.copy()
@@ -43,7 +45,11 @@ try:
 
     start_server = start_process(START_SERVER)
     time.sleep(15)
-    api_result = requests.get(f"http://localhost:{PORT}/api/dicts/ls/canaba", timeout=5)
+
+    arg = parse.quote(json.dumps({"wrappedData": "canaba"}))
+    route = f"http://localhost:{PORT}/api/dict/ls/{arg}"
+    print(route)
+    api_result = requests.get(route, timeout=5)
     print(api_result.text)
     assert "cannăba" in api_result.text
 finally:
