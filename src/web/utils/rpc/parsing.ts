@@ -68,6 +68,12 @@ export function isBoolean(x: unknown): x is boolean {
   return typeof x === "boolean";
 }
 
+export type Class<T> = { new (...args: any[]): T };
+
+export function instanceOf<T>(c: Class<T>): (x: unknown) => x is T {
+  return (x): x is T => x instanceof c;
+}
+
 export function isArray<T>(
   tVal: (t: unknown) => t is T
 ): (x: unknown) => x is T[] {

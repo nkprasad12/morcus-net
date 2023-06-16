@@ -2,6 +2,7 @@ import {
   Serialization,
   decodeMessage,
   encodeMessage,
+  instanceOf,
   isArray,
   isString,
 } from "./parsing";
@@ -16,6 +17,16 @@ class StringWrapper {
     deserialize: (t) => new StringWrapper(t),
   };
 }
+
+describe("instanceOf", () => {
+  it("returns true on instances", () => {
+    expect(instanceOf(StringWrapper)(new StringWrapper("foo"))).toBe(true);
+  });
+
+  it("returns false on others", () => {
+    expect(instanceOf(StringWrapper)("foo")).toBe(false);
+  });
+});
 
 describe("isArray", () => {
   it("checks if input is array", () => {
