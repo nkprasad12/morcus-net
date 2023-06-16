@@ -4,38 +4,30 @@
 
 import { AutocompleteCache } from "./autocomplete_cache";
 
-const realFetch = global.fetch;
+import { callApi } from "@/web/utils/rpc/client_rpc";
+
+console.debug = jest.fn();
+
+jest.mock("@/web/utils/rpc/client_rpc");
+
+// @ts-ignore
+const mockCallApi: jest.Mock<any, any, any> = callApi;
 
 afterEach(() => {
-  global.fetch = realFetch;
+  mockCallApi.mockReset();
 });
 
-function replaceFetch(
-  ok: boolean = true,
-  error: boolean = false,
-  options: string[] = ["ab", "abago", "insunt", "jam"]
-) {
-  const mockFetch = error
-    ? jest.fn((_) => Promise.reject())
-    : jest.fn((request: string) => {
-        const parts = request.split("/");
-        return Promise.resolve({
-          text: () =>
-            Promise.resolve(
-              JSON.stringify(
-                options.filter((option) =>
-                  option.startsWith(parts[parts.length - 1])
-                )
-              )
-            ),
-          ok: ok,
-          request: request,
-        });
-      });
-  // @ts-ignore
-  global.fetch = mockFetch;
-  return mockFetch;
+function setApiResult(result: string[] | Error) {
+  if (result instanceof Error) {
+    mockCallApi.mockRejectedValue(result);
+  } else {
+    mockCallApi.mockImplementation((_, prefix) =>
+      result.filter((word) => word.startsWith(prefix))
+    );
+  }
 }
+
+const WORD_LIST = ["ab", "abago", "insunt", "jam"];
 
 describe("AutocompleteCache", () => {
   test("get returns singleton", () => {
@@ -43,90 +35,82 @@ describe("AutocompleteCache", () => {
   });
 
   it("returns empty list on fetch error", async () => {
-    replaceFetch(false, true);
+    setApiResult(new Error(""));
     const result = await new AutocompleteCache().getOptions("a");
     expect(result).toHaveLength(0);
-  });
-
-  it("returns empty list on response not ok", async () => {
-    const mockFetch = replaceFetch(false, false);
-
-    const result = await new AutocompleteCache().getOptions("a");
-
-    expect(result).toHaveLength(0);
-    expect(mockFetch.mock.calls).toHaveLength(1);
   });
 
   it("returns empty list on empty input", async () => {
-    const mockFetch = replaceFetch();
+    setApiResult(WORD_LIST);
 
     const result = await new AutocompleteCache().getOptions("");
 
     expect(result).toHaveLength(0);
-    expect(mockFetch.mock.calls).toHaveLength(0);
+    expect(mockCallApi).not.toHaveBeenCalled();
   });
 
   it("returns results on request", async () => {
-    const mockFetch = replaceFetch();
+    setApiResult(WORD_LIST);
 
     const result = await new AutocompleteCache().getOptions("a");
 
     expect(result).toStrictEqual(["ab", "abago"]);
-    expect(mockFetch.mock.calls).toHaveLength(1);
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
   });
 
   it("caches results on subsequent requests", async () => {
-    const mockFetch = replaceFetch();
+    setApiResult(WORD_LIST);
     const cache = new AutocompleteCache();
 
     await cache.getOptions("a");
-    mockFetch.mockClear();
+    mockCallApi.mockClear();
 
     const result = await cache.getOptions("a");
     expect(result).toStrictEqual(["ab", "abago"]);
-    expect(mockFetch.mock.calls).toHaveLength(0);
+    expect(mockCallApi).not.toHaveBeenCalled();
   });
 
   it("does not cache response not ok", async () => {
-    replaceFetch(false, false);
+    setApiResult(new Error());
     const cache = new AutocompleteCache();
     await cache.getOptions("a");
 
-    const mockFetch = replaceFetch();
+    mockCallApi.mockClear();
+    setApiResult(WORD_LIST);
     const result = await cache.getOptions("a");
 
     expect(result).toStrictEqual(["ab", "abago"]);
-    expect(mockFetch.mock.calls).toHaveLength(1);
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
   });
 
   it("returns expected substrings", async () => {
-    const mockFetch = replaceFetch();
+    setApiResult(WORD_LIST);
 
     const result = await new AutocompleteCache().getOptions("aba");
 
     expect(result).toStrictEqual(["abago"]);
-    expect(mockFetch.mock.calls).toHaveLength(1);
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
   });
 
   it("fetches alternate character completions", async () => {
-    const mockFetch = replaceFetch();
+    setApiResult(WORD_LIST);
 
     await new AutocompleteCache().getOptions("i");
 
-    const calls = mockFetch.mock.calls.map((call) => call[0]);
+    const calls = mockCallApi.mock.calls.map((call) => call[1]);
     expect(calls).toHaveLength(2);
     expect(calls[0].endsWith("/i"));
     expect(calls[1].endsWith("/j"));
   });
 
   it("displays correct options with special start character", async () => {
-    replaceFetch();
+    setApiResult(WORD_LIST);
     const result = await new AutocompleteCache().getOptions("i");
     expect(result).toStrictEqual(["insunt", "jam"]);
   });
 
   it("displays correct options with internal character", async () => {
-    replaceFetch();
+    setApiResult(WORD_LIST);
     const result = await new AutocompleteCache().getOptions("insv");
     expect(result).toStrictEqual(["insunt"]);
   });

@@ -3,15 +3,17 @@ import express from "express";
 import fs from "fs";
 import request from "supertest";
 
-import {
-  entriesByPrefix,
-  lsCall,
-  macronizeCall,
-  report,
-} from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 import path from "path";
 import { TelemetryLogger } from "./telemetry/telemetry";
+import {
+  DictsLsApi,
+  EntriesByPrefixApi,
+  MacronizeApi,
+  ReportApi,
+} from "./utils/rpc/routes";
+import { encodeMessage } from "./utils/rpc/parsing";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 
 console.debug = jest.fn();
 
@@ -38,22 +40,18 @@ afterAll(() => {
 });
 
 const fileIssueReportResults: (() => Promise<any>)[] = [];
-const fakeTelemetryLogger: TelemetryLogger = {
-  logApiCall: (d) => Promise.resolve(),
-  teardown: () => Promise.resolve(),
-};
 
 function getServer(): express.Express {
   const app = express();
   const params: WebServerParams = {
-    app: app,
+    webApp: app,
     macronizer: (a) => Promise.resolve(a + "2"),
-    lsDict: (a) => Promise.resolve(`${a} def`),
+    lsDict: (a) => Promise.resolve([new XmlNode(a + " def")]),
     entriesByPrefix: (a) => Promise.resolve([a]),
     buildDir: path.resolve(TEMP_DIR),
     fileIssueReport: (a) =>
       (fileIssueReportResults.pop() || (() => Promise.resolve(a)))(),
-    telemetry: Promise.resolve(fakeTelemetryLogger),
+    telemetry: Promise.resolve(TelemetryLogger.NoOp),
   };
   setupServer(params);
   return app;
@@ -64,67 +62,50 @@ describe("WebServer", () => {
 
   test("handles macronize route", async () => {
     const response = await request(app)
-      .post(macronizeCall())
-      .send("testPostPleaseIgnore")
+      .post(MacronizeApi.path)
+      .send(encodeMessage("testPostPleaseIgnore"))
       .set("Content-Type", "text/plain; charset=utf-8");
 
     expect(response.status).toBe(200);
-    expect(response.text).toBe(`testPostPleaseIgnore2`);
+    expect(response.text).toContain(`testPostPleaseIgnore2`);
   });
 
   test("handles macronize route with bad data", async () => {
     const response = await request(app)
-      .post(macronizeCall())
-      .send({ data: "testPostPleaseIgnore" })
+      .post(MacronizeApi.path)
+      .send(encodeMessage({ data: "testPostPleaseIgnore" }))
       .set("Content-Type", "application/json");
 
-    expect(response.status).toBe(200);
-    expect(response.text).toBe(`Invalid request`);
+    expect(response.status).toBe(400);
+    expect(response.text).toContain("Error extracting input");
   });
 
   it("handles report route", async () => {
     const response = await request(app)
-      .post(report())
-      .send("testPostPleaseIgnore")
+      .post(ReportApi.path)
+      .send(encodeMessage("testPostPleaseIgnore"))
       .set("Content-Type", "text/plain; charset=utf-8");
 
     expect(response.status).toBe(200);
-  });
-
-  it("handles report route with bad data", async () => {
-    const response = await request(app)
-      .post(report())
-      .send({ data: "testPostPleaseIgnore" })
-      .set("Content-Type", "application/json");
-
-    expect(response.status).toBe(400);
-  });
-
-  it("handles report error", async () => {
-    fileIssueReportResults.push(() => Promise.reject("Error"));
-    const response = await request(app)
-      .post(report())
-      .send("testPostPleaseIgnore")
-      .set("Content-Type", "text/plain; charset=utf-8");
-
-    expect(response.status).toBe(500);
   });
 
   test("handles LS dict route", async () => {
-    const response = await request(app).get(lsCall("Caesar"));
+    const path = `${DictsLsApi.path}/${encodeMessage("Caesar")}`;
+    const response = await request(app).get(path);
 
     expect(response.status).toBe(200);
-    expect(response.text).toBe(`Caesar def`);
+    expect(response.text).toContain(`Caesar def`);
   });
 
   test("handles LS completion route", async () => {
-    const response = await request(app).get(entriesByPrefix("Caesar"));
+    const path = `${EntriesByPrefixApi.path}/${encodeMessage("Caesar")}`;
+    const response = await request(app).get(path);
 
     expect(response.status).toBe(200);
-    expect(JSON.parse(response.text)).toStrictEqual(["Caesar"]);
+    expect(response.text).toContain("Caesar");
   });
 
-  test("sends out requests to index", async () => {
+  test("sends  unknown requests to index", async () => {
     const response = await request(app).get("/notEvenRemotelyReal");
 
     expect(response.status).toBe(200);

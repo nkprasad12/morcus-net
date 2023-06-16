@@ -245,3 +245,18 @@ describe("XmlNode utils does not modify string", () => {
     assertUnchanged(ACCIANUS);
   });
 });
+
+describe("XmlNode.SERIALIZATION", () => {
+  it("transfers same information", () => {
+    const child1 = new XmlNode("caesar", [["child", "1"]], []);
+    const child2 = new XmlNode("caesar", [["child", "2"]], [child1]);
+    const child3 = new XmlNode("augustus", [["child", "3"]], []);
+    const child4 = new XmlNode("caesar", [["child", "4"]], []);
+    const parent = new XmlNode("caesar", [], [child2, child3, child4]);
+
+    const serialized = XmlNode.SERIALIZATION.serialize(parent);
+    const output = XmlNode.SERIALIZATION.deserialize(serialized);
+
+    expect(parent).toStrictEqual(output);
+  });
+});

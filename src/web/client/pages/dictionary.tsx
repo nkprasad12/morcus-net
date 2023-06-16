@@ -1,4 +1,3 @@
-import { lsCall } from "@/web/api_routes";
 import LinkIcon from "@mui/icons-material/Link";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
@@ -10,7 +9,7 @@ import React, { MutableRefObject } from "react";
 
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
-import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   ClickAwayListener,
   Divider,
@@ -22,9 +21,16 @@ import { AutocompleteCache } from "./autocomplete_cache";
 import { Navigation, RouteContext } from "../components/router";
 import { flushSync } from "react-dom";
 import { checkPresent } from "@/common/assert";
+import { DictsLsApi } from "@/web/utils/rpc/routes";
+import { callApi } from "@/web/utils/rpc/client_rpc";
 
 type Placement = "top-start" | "right";
 
+const ERROR_MESSAGE = new XmlNode(
+  "span",
+  [],
+  ["Failed to fetch the entry. Please try again later."]
+);
 const HELP_ENTRY = new XmlNode(
   "div",
   [],
@@ -228,18 +234,12 @@ export function xmlNodeToJsx(
 }
 
 async function fetchEntry(input: string): Promise<XmlNode[]> {
-  const response = await fetch(`${location.origin}${lsCall(input)}`);
-  if (!response.ok) {
-    return [
-      new XmlNode(
-        "span",
-        [],
-        ["Failed to fetch the entry. Please try again later."]
-      ),
-    ];
+  try {
+    return await callApi(DictsLsApi, input);
+  } catch (e) {
+    console.debug(e);
+    return [ERROR_MESSAGE];
   }
-  const rawText = await response.text();
-  return parseEntries(JSON.parse(rawText));
 }
 
 function SearchBox(props: { input: string; smallScreen: boolean }) {

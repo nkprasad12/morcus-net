@@ -8,25 +8,18 @@ import user from "@testing-library/user-event";
 import React from "react";
 
 import { Macronizer } from "./macron";
+import { callApi } from "@/web/utils/rpc/client_rpc";
 
-const realFetch = global.fetch;
+console.debug = jest.fn();
 
-afterAll(() => {
-  global.fetch = realFetch;
+jest.mock("@/web/utils/rpc/client_rpc");
+
+// @ts-ignore
+const mockCallApi: jest.Mock<any, any, any> = callApi;
+
+afterEach(() => {
+  mockCallApi.mockReset();
 });
-
-function replaceFetch(ok: boolean = true, text: string = "") {
-  const mockFetch = jest.fn((request) =>
-    Promise.resolve({
-      text: () => Promise.resolve(text),
-      ok: ok,
-      request: request,
-    })
-  );
-  // @ts-ignore
-  global.fetch = mockFetch;
-  return mockFetch;
-}
 
 describe("Macronizer View", () => {
   test("shows expected components", () => {
@@ -37,17 +30,15 @@ describe("Macronizer View", () => {
   });
 
   test("does not call server on empty submit", async () => {
-    const mockFetch = replaceFetch(false);
     render(<Macronizer />);
     const submit = screen.getByRole("button");
 
     await user.click(submit);
 
-    expect(mockFetch.mock.calls).toHaveLength(0);
+    expect(mockCallApi).not.toHaveBeenCalled();
   });
 
   test("calls server on submit", async () => {
-    const mockFetch = replaceFetch(false);
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");
     const submit = screen.getByRole("button");
@@ -55,12 +46,11 @@ describe("Macronizer View", () => {
     await user.type(inputBox, "Gallia est omnis");
     await user.click(submit);
 
-    expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain("api/macronize/");
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
   });
 
   test("calls shows error on failure", async () => {
-    replaceFetch(false);
+    mockCallApi.mockRejectedValue(new Error());
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");
     const submit = screen.getByRole("button");
@@ -74,7 +64,8 @@ describe("Macronizer View", () => {
   });
 
   test("shows result on success", async () => {
-    replaceFetch(true, "in partēs trēs");
+    mockCallApi.mockReturnValue(Promise.resolve("in partēs trēs"));
+
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");
     const submit = screen.getByRole("button");

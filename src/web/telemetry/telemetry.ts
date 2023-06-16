@@ -26,3 +26,10 @@ export interface TelemetryLogger {
   readonly teardown: () => Promise<void>;
   readonly logApiCall: (data: ApiCallData) => Promise<void>;
 }
+
+export namespace TelemetryLogger {
+  export const NoOp: TelemetryLogger = {
+    teardown: async () => {},
+    logApiCall: async (d) => console.debug(d),
+  };
+}

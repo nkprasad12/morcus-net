@@ -1,5 +1,6 @@
 import { removeDiacritics } from "@/common/text_cleaning";
-import { entriesByPrefix } from "@/web/api_routes";
+import { callApi } from "@/web/utils/rpc/client_rpc";
+import { EntriesByPrefixApi } from "@/web/utils/rpc/routes";
 
 const EXTRA_KEY_LOOKUP = new Map<string, string>([
   ["u", "v"],
@@ -7,15 +8,6 @@ const EXTRA_KEY_LOOKUP = new Map<string, string>([
   ["i", "j"],
   ["j", "i"],
 ]);
-
-async function fetchOptions(input: string): Promise<string[]> {
-  const response = await fetch(`${location.origin}${entriesByPrefix(input)}`);
-  if (!response.ok) {
-    throw "Response not OK";
-  }
-  const rawText = await response.text();
-  return JSON.parse(rawText);
-}
 
 export class AutocompleteCache {
   readonly cache: Map<string, string[]> = new Map();
@@ -31,7 +23,9 @@ export class AutocompleteCache {
     allKeys.sort();
 
     if (!this.cache.has(allKeys.join(""))) {
-      const allFetches = Promise.all(allKeys.map((key) => fetchOptions(key)));
+      const allFetches = Promise.all(
+        allKeys.map((key) => callApi(EntriesByPrefixApi, key))
+      );
       try {
         this.cache.set(
           allKeys.join(""),
