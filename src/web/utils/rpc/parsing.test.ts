@@ -1,69 +1,69 @@
 import {
-  Serializable,
-  // Validator,
+  Serialization,
+  decodeMessage,
   encodeMessage,
   isArray,
   isString,
 } from "./parsing";
 
-class TestClass {
+class StringWrapper {
   constructor(readonly prop: string) {}
-  static fromString: (data: string) => TestClass = (d) => new TestClass(d);
-  static serialize(t: TestClass): string {
-    return t.prop;
-  }
-}
 
-function fromClass<Type>(c: {
-  new (...args: any[]): Type;
-}): Serializable<Type> {
-  return {
-    name: c.name,
-    validator: (x): x is Type => x instanceof c,
-    fromString: c.prototype.fromString,
-    toString: c.prototype.toString,
+  static SERIALIZATION: Serialization<StringWrapper> = {
+    name: "StringWrapper",
+    validator: (t): t is StringWrapper => t instanceof StringWrapper,
+    serialize: (t) => t.prop,
+    deserialize: (t) => new StringWrapper(t),
   };
 }
 
 describe("isArray", () => {
   it("checks if input is array", () => {
-    expect(isArray("canaba", isString)).toBe(false);
+    expect(isArray(isString)("canaba")).toBe(false);
   });
 
   it("checks if all elements match validator", () => {
-    expect(isArray(["canaba", 4], isString)).toBe(false);
+    expect(isArray(isString)(["canaba", 4])).toBe(false);
   });
 
   it("validates valid arrays", () => {
-    expect(isArray(["canaba", "4"], isString)).toBe(true);
+    expect(isArray(isString)(["canaba", "4"])).toBe(true);
   });
 });
 
-describe("decodeMessage", () => {
-  it("checks if input is array", () => {
-    expect(isArray("canaba", isString)).toBe(false);
+describe("encode and decode", () => {
+  it("handles string input", () => {
+    const input = "hello";
+
+    const encoded = encodeMessage(input);
+    const result = decodeMessage(encoded, isString);
+
+    expect(result).toStrictEqual(input);
   });
 
-  it("checks if all elements match validator", () => {
-    expect(isArray(["canaba", 4], isString)).toBe(false);
+  it("handles simple registry input", () => {
+    const input = new StringWrapper("foo");
+
+    const encoded = encodeMessage(input, [StringWrapper.SERIALIZATION]);
+    const result = decodeMessage(
+      encoded,
+      StringWrapper.SERIALIZATION.validator,
+      [StringWrapper.SERIALIZATION]
+    );
+
+    expect(result).toStrictEqual<StringWrapper>(input);
   });
 
-  it("validates valid arrays", () => {
-    expect(isArray(["canaba", "4"], isString)).toBe(true);
-  });
-});
+  it("handles array registry input", () => {
+    const input = [new StringWrapper("foo")];
 
-describe("encodeMessage", () => {
-  it("stringifies without registry", () => {
-    expect(encodeMessage("foo")).toBe('{"wrappedData":"foo"}');
-  });
+    const encoded = encodeMessage(input, [StringWrapper.SERIALIZATION]);
+    const result = decodeMessage(
+      encoded,
+      isArray(StringWrapper.SERIALIZATION.validator),
+      [StringWrapper.SERIALIZATION]
+    );
 
-  it("blah", () => {
-    const registry = [fromClass(TestClass)];
-    expect(registry[0].name).toBe("TestClass");
-    expect(registry[0].validator("should be false")).toBe(false);
-    expect(registry[0].validator(new TestClass("foo"))).toBe(true);
-    expect(registry[0].toString(new TestClass("foo"))).toStrictEqual("foo");
-    expect(registry[0].fromString("foo")).toStrictEqual("f");
+    expect(result).toStrictEqual<StringWrapper[]>(input);
   });
 });

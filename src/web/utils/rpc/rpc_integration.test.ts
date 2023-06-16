@@ -43,7 +43,7 @@ function isObject(t: unknown, attrValidators: AttrValidator<any>[]): boolean {
 function isTestType(x: unknown): x is TestType {
   return isObject(x, [
     ["nested", (t): t is { str: string } => isObject(t, [["str", isString]])],
-    ["arr", (t): t is string[] => isArray<string>(t, isString)],
+    ["arr", isArray(isString)],
   ]);
 }
 
