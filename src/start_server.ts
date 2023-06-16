@@ -47,10 +47,10 @@ const server = http.createServer(app);
 
 const lewisAndShort = LewisAndShort.create();
 const workServer = new SocketWorkServer(new Server(server));
-const isProd = process.env.NODE_ENV === "production";
-const telemetry = isProd
-  ? MongoLogger.create()
-  : Promise.resolve(TelemetryLogger.NoOp);
+const telemetry =
+  process.env.CONSOLE_TELEMETRY !== "yes"
+    ? MongoLogger.create()
+    : Promise.resolve(TelemetryLogger.NoOp);
 
 async function callWorker(
   category: Workers.Category,
