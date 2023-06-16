@@ -5,11 +5,22 @@ const POST_HEADERS = {
   "Content-Type": "text/plain; charset=utf-8",
 };
 
+function timed<T>(func: () => T, tag?: string): T {
+  const start = performance.now();
+  const result = func();
+  const runtime = (performance.now() - start).toFixed(2);
+  console.debug(`${tag || "Runtime"}: ${runtime} ms`);
+  return result;
+}
+
 export async function callApi<I, O>(
   route: ApiRoute<I, O>,
   input: I
 ): Promise<O> {
-  const message = encodeMessage(input, route.registry);
+  const message = timed(
+    () => encodeMessage(input, route.registry),
+    `${route.path} encode`
+  );
   const base = `${location.origin}${route.path}`;
   const address = route.method === "GET" ? `${base}/${message}` : base;
   const options =
@@ -25,7 +36,10 @@ export async function callApi<I, O>(
   }
   try {
     const result = await response.text();
-    return decodeMessage(result, route.outputValidator, route.registry);
+    return timed(
+      () => decodeMessage(result, route.outputValidator, route.registry),
+      `${route.path} decode`
+    );
   } catch (e) {
     return Promise.reject(
       new Error(`Unable to decode result from ${base}`, { cause: e })
