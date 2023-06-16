@@ -54,7 +54,7 @@ function appBundle() {
     logApiCall: (d) => Promise.resolve(),
     teardown: () => Promise.resolve(),
   };
-  return { server: app, telemetry: Promise.resolve(telemetryLogger) };
+  return { webApp: app, telemetry: Promise.resolve(telemetryLogger) };
 }
 
 // Routes and Handlers
@@ -208,9 +208,9 @@ function setupApp(useBodyParser: boolean = true): Promise<http.Server> {
   return new Promise((resolve) => {
     const bundle = appBundle();
     if (useBodyParser) {
-      bundle.server.use(bodyParser.text());
+      bundle.webApp.use(bodyParser.text());
     }
-    const server = http.createServer(bundle.server);
+    const server = http.createServer(bundle.webApp);
     handlers.forEach((h) => addApi(bundle, h));
     server.listen(PORT, () => {
       resolve(server);

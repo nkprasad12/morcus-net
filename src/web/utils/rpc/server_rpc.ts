@@ -58,7 +58,7 @@ function extractInput<I, O>(req: Request, route: ApiRoute<I, O>): I | Error {
 }
 
 function adaptHandler<I, O extends Data>(
-  app: { server: express.Express; telemetry: Promise<TelemetryLogger> },
+  app: { webApp: express.Express; telemetry: Promise<TelemetryLogger> },
   route: ApiRoute<I, O>,
   handler: ApiHandler<I, O>
 ) {
@@ -67,7 +67,7 @@ function adaptHandler<I, O extends Data>(
     console.debug(`[${Date.now() / 1000}] ${route.path}`);
     const input = extractInput(req, route);
     if (input instanceof Error) {
-      res.status(400).send();
+      res.status(400).send(input.message);
       logApi({ name: route.path, status: 400 }, start, app.telemetry);
       return;
     }
@@ -114,16 +114,16 @@ export interface RouteAndHandler<I, O> {
 }
 
 export function addApi<I, O extends Data>(
-  app: { server: express.Express; telemetry: Promise<TelemetryLogger> },
+  app: { webApp: express.Express; telemetry: Promise<TelemetryLogger> },
   routeAndHandler: RouteAndHandler<I, O>
 ): void {
   const route = routeAndHandler.route;
   const handler = routeAndHandler.handler;
   if (route.method === "GET") {
-    app.server.get(`${route.path}/:input`, adaptHandler(app, route, handler));
+    app.webApp.get(`${route.path}/:input`, adaptHandler(app, route, handler));
     return;
   } else if (route.method === "POST") {
-    app.server.post(route.path, adaptHandler(app, route, handler));
+    app.webApp.post(route.path, adaptHandler(app, route, handler));
     return;
   }
   assert(false, `Unhandled method: ${route.method}`);

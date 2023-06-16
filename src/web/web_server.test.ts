@@ -3,15 +3,12 @@ import express from "express";
 import fs from "fs";
 import request from "supertest";
 
-import {
-  entriesByPrefix,
-  lsCall,
-  macronizeCall,
-  report,
-} from "@/web/api_routes";
+import { entriesByPrefix, lsCall, report } from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 import path from "path";
 import { TelemetryLogger } from "./telemetry/telemetry";
+import { MacronizeApi } from "./utils/rpc/routes";
+import { encodeMessage } from "./utils/rpc/parsing";
 
 console.debug = jest.fn();
 
@@ -42,7 +39,7 @@ const fileIssueReportResults: (() => Promise<any>)[] = [];
 function getServer(): express.Express {
   const app = express();
   const params: WebServerParams = {
-    app: app,
+    webApp: app,
     macronizer: (a) => Promise.resolve(a + "2"),
     lsDict: (a) => Promise.resolve(`${a} def`),
     entriesByPrefix: (a) => Promise.resolve([a]),
@@ -60,22 +57,22 @@ describe("WebServer", () => {
 
   test("handles macronize route", async () => {
     const response = await request(app)
-      .post(macronizeCall())
-      .send("testPostPleaseIgnore")
+      .post(MacronizeApi.path)
+      .send(encodeMessage("testPostPleaseIgnore"))
       .set("Content-Type", "text/plain; charset=utf-8");
 
     expect(response.status).toBe(200);
-    expect(response.text).toBe(`testPostPleaseIgnore2`);
+    expect(response.text).toContain(`testPostPleaseIgnore2`);
   });
 
   test("handles macronize route with bad data", async () => {
     const response = await request(app)
-      .post(macronizeCall())
-      .send({ data: "testPostPleaseIgnore" })
+      .post(MacronizeApi.path)
+      .send(encodeMessage({ data: "testPostPleaseIgnore" }))
       .set("Content-Type", "application/json");
 
-    expect(response.status).toBe(200);
-    expect(response.text).toBe(`Invalid request`);
+    expect(response.status).toBe(400);
+    expect(response.text).toContain("Error extracting input");
   });
 
   it("handles report route", async () => {

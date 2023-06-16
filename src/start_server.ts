@@ -66,7 +66,7 @@ async function callWorker(
 }
 
 const params: WebServerParams = {
-  app: app,
+  webApp: app,
   macronizer: (input) => callWorker(Workers.MACRONIZER, input),
   lsDict: async (input) => (await lewisAndShort).getEntry(input),
   entriesByPrefix: async (prefix) =>

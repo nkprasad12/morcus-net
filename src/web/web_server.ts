@@ -1,21 +1,18 @@
 import compression from "compression";
 import express, { Request, Response } from "express";
-import {
-  entriesByPrefix,
-  lsCall,
-  macronizeCall,
-  report,
-} from "@/web/api_routes";
+import { entriesByPrefix, lsCall, report } from "@/web/api_routes";
 import bodyParser from "body-parser";
 import path from "path";
 import { ApiCallData, TelemetryLogger } from "./telemetry/telemetry";
+import { addApi } from "./utils/rpc/server_rpc";
+import { MacronizeApi } from "./utils/rpc/routes";
 
 function log(message: string) {
   console.debug(`[web_server] [${Date.now() / 1000}] ${message}`);
 }
 
 export interface WebServerParams {
-  app: express.Express;
+  webApp: express.Express;
   macronizer: (input: string) => Promise<string>;
   lsDict: (entry: string) => Promise<string>;
   entriesByPrefix: (prefix: string) => Promise<string[]>;
@@ -33,7 +30,7 @@ export function setupServer(params: WebServerParams): void {
     (await params.telemetry).logApiCall(finalData);
   }
 
-  const app = params.app;
+  const app = params.webApp;
   app.use(bodyParser.text());
   app.use(compression());
   const staticOptions = {
@@ -60,24 +57,9 @@ export function setupServer(params: WebServerParams): void {
     next();
   });
 
-  app.post(macronizeCall(), async (req, res) => {
-    const start = performance.now();
-    log(`Got macronize request`);
-    if (typeof req.body !== "string") {
-      res.send("Invalid request");
-      logApi({ name: "Macronize", status: 400 }, start);
-      return;
-    }
-    const result = await params.macronizer(req.body);
-    res.send(result);
-    logApi(
-      {
-        name: "Macronize",
-        status: 200,
-        params: { textLength: req.body.length.toString() },
-      },
-      start
-    );
+  addApi(params, {
+    route: MacronizeApi,
+    handler: params.macronizer,
   });
 
   app.post(report(), async (req, res) => {

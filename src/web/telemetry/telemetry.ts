@@ -30,6 +30,6 @@ export interface TelemetryLogger {
 export namespace TelemetryLogger {
   export const NoOp: TelemetryLogger = {
     teardown: async () => {},
-    logApiCall: async (d) => {},
+    logApiCall: async (d) => console.debug(d),
   };
 }
