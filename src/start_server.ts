@@ -29,6 +29,7 @@ import { LewisAndShort } from "./common/lewis_and_short/ls";
 import path from "path";
 import { GitHub } from "./web/utils/github";
 import { MongoLogger } from "./web/telemetry/mongo_logger";
+import { TelemetryLogger } from "./web/telemetry/telemetry";
 
 dotenv.config();
 
@@ -46,7 +47,10 @@ const server = http.createServer(app);
 
 const lewisAndShort = LewisAndShort.create();
 const workServer = new SocketWorkServer(new Server(server));
-const telemetry = MongoLogger.create();
+const isProd = process.env.NODE_ENV === "production";
+const telemetry = isProd
+  ? MongoLogger.create()
+  : Promise.resolve(TelemetryLogger.NoOp);
 
 async function callWorker(
   category: Workers.Category,

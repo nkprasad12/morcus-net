@@ -38,10 +38,6 @@ afterAll(() => {
 });
 
 const fileIssueReportResults: (() => Promise<any>)[] = [];
-const fakeTelemetryLogger: TelemetryLogger = {
-  logApiCall: (d) => Promise.resolve(),
-  teardown: () => Promise.resolve(),
-};
 
 function getServer(): express.Express {
   const app = express();
@@ -53,7 +49,7 @@ function getServer(): express.Express {
     buildDir: path.resolve(TEMP_DIR),
     fileIssueReport: (a) =>
       (fileIssueReportResults.pop() || (() => Promise.resolve(a)))(),
-    telemetry: Promise.resolve(fakeTelemetryLogger),
+    telemetry: Promise.resolve(TelemetryLogger.NoOp),
   };
   setupServer(params);
   return app;
