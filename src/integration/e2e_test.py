@@ -46,7 +46,7 @@ try:
     start_server = start_process(START_SERVER)
     time.sleep(15)
 
-    arg = parse.quote(json.dumps({"wrappedData": "canaba"}))
+    arg = parse.quote(json.dumps({"w": "canaba"}))
     route = f"http://localhost:{PORT}/api/dict/ls/{arg}"
     print(route)
     api_result = requests.get(route, timeout=5)

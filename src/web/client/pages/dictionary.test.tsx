@@ -17,6 +17,8 @@ import {
 } from "./dictionary";
 import { RouteContext } from "../components/router";
 
+console.debug = jest.fn();
+
 jest.mock("@/web/utils/rpc/client_rpc");
 
 // @ts-ignore

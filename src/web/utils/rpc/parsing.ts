@@ -18,7 +18,7 @@ export function encodeMessage<T>(
   t: T,
   registry?: Serialization<any>[]
 ): string {
-  return JSON.stringify({ wrappedData: t }, (_key, value) => {
+  return JSON.stringify({ w: t }, (_key, value) => {
     for (const cls of registry || []) {
       if (!cls.validator(value)) {
         continue;
@@ -47,7 +47,7 @@ export function decodeMessage<T>(
     return value;
   });
   const data: unknown = checkPresent(
-    result.wrappedData,
+    result.w,
     "Received improperly wrapped message!"
   );
   if (!validator(data)) {

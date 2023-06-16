@@ -11,13 +11,17 @@ export interface ApiParam {
 
 export interface ApiCallData {
   /** The API that was called. */
-  readonly name: string;
+  name: string;
   /** The parameters that this API was called with. */
-  readonly params?: ApiParam;
+  params?: ApiParam;
   /** The status code of the API request. */
-  readonly status: number;
+  status: number;
   /** The response latency in milliseconds. */
-  readonly latencyMs: number;
+  latencyMs: number;
+  /** The string length of the serialized input. */
+  inputLength?: number;
+  /** The string length of the serialized output. */
+  outputLength?: number;
 }
 
 export interface ApiCallEvent extends TelemetryEvent, ApiCallData {}

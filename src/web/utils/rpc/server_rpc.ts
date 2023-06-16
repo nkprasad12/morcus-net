@@ -47,13 +47,16 @@ function findInput<I, O>(req: Request, route: ApiRoute<I, O>): string {
   throw new TypeError(`Unhandled method: ${route.method}`);
 }
 
-function extractInput<I, O>(req: Request, route: ApiRoute<I, O>): I | Error {
+function extractInput<I, O>(
+  req: Request,
+  route: ApiRoute<I, O>
+): [I, number] | Error {
   try {
-    return decodeMessage(
-      findInput(req, route),
-      route.inputValidator,
-      route.registry
-    );
+    const input = findInput(req, route);
+    return [
+      decodeMessage(input, route.inputValidator, route.registry),
+      input.length,
+    ];
   } catch (e) {
     return new Error(`Error extracting input on route: ${route.path}`, {
       cause: e,
@@ -69,12 +72,13 @@ function adaptHandler<I, O extends Data>(
   return (req: Request, res: Response) => {
     const start = performance.now();
     console.debug(`[${Date.now() / 1000}] ${route.path}`);
-    const input = extractInput(req, route);
-    if (input instanceof Error) {
-      res.status(400).send(input.message);
+    const inputOrError = extractInput(req, route);
+    if (inputOrError instanceof Error) {
+      res.status(400).send(inputOrError.message);
       logApi({ name: route.path, status: 400 }, start, app.telemetry);
       return;
     }
+    const [input, rawLength] = inputOrError;
 
     let status: number = 200;
     let body: O | undefined = undefined;
@@ -99,18 +103,17 @@ function adaptHandler<I, O extends Data>(
         const result =
           body === undefined ? undefined : encodeMessage(body, route.registry);
         res.status(status).send(result);
-        logApi(
-          {
-            name: route.path,
-            status: status,
-            params:
-              route.method === "GET"
-                ? { input: JSON.stringify(input) }
-                : undefined,
-          },
-          start,
-          app.telemetry
-        );
+        const telemetryData: Omit<ApiCallData, "latencyMs"> = {
+          name: route.path,
+          status: status,
+          inputLength: rawLength,
+          outputLength: result === undefined ? 0 : result.length,
+        };
+        if (route.method === "GET") {
+          telemetryData.params = { input: JSON.stringify(input) };
+        }
+        telemetryData.params;
+        logApi(telemetryData, start, app.telemetry);
       });
   };
 }
