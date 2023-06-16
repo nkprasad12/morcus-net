@@ -1,33 +1,34 @@
 import compression from "compression";
-import express, { Request, Response } from "express";
-import { entriesByPrefix, lsCall } from "@/web/api_routes";
+import express, { Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
-import { ApiCallData, TelemetryLogger } from "./telemetry/telemetry";
-import { addApi } from "./utils/rpc/server_rpc";
-import { MacronizeApi, ReportApi } from "./utils/rpc/routes";
-
-function log(message: string) {
-  console.debug(`[web_server] [${Date.now() / 1000}] ${message}`);
-}
+import { TelemetryLogger } from "./telemetry/telemetry";
+import { ApiHandler, Data, addApi } from "./utils/rpc/server_rpc";
+import {
+  DictsLsApi,
+  EntriesByPrefixApi,
+  MacronizeApi,
+  ReportApi,
+} from "./utils/rpc/routes";
+import { ApiRoute } from "./utils/rpc/api_route";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 
 export interface WebServerParams {
   webApp: express.Express;
-  macronizer: (input: string) => Promise<string>;
-  lsDict: (entry: string) => Promise<string>;
-  entriesByPrefix: (prefix: string) => Promise<string[]>;
-  fileIssueReport: (reportText: string) => Promise<void>;
+  macronizer: ApiHandler<string, string>;
+  lsDict: ApiHandler<string, XmlNode[]>;
+  entriesByPrefix: ApiHandler<string, string[]>;
+  fileIssueReport: ApiHandler<string, any>;
   telemetry: Promise<TelemetryLogger>;
   buildDir: string;
 }
 
 export function setupServer(params: WebServerParams): void {
-  async function logApi(data: Omit<ApiCallData, "latencyMs">, start: number) {
-    const finalData = {
-      ...data,
-      latencyMs: Math.round(performance.now() - start),
-    };
-    (await params.telemetry).logApiCall(finalData);
+  function handleApi<I, O extends Data>(
+    route: ApiRoute<I, O>,
+    handler: ApiHandler<I, O>
+  ) {
+    addApi(params, { route: route, handler: handler });
   }
 
   const app = params.webApp;
@@ -57,37 +58,8 @@ export function setupServer(params: WebServerParams): void {
     next();
   });
 
-  addApi(params, { route: MacronizeApi, handler: params.macronizer });
-  addApi(params, { route: ReportApi, handler: params.fileIssueReport });
-
-  app.get(lsCall(":entry"), async (req: Request<{ entry: string }>, res) => {
-    const start = performance.now();
-    log(`Got LS request`);
-    res.send(await params.lsDict(req.params.entry));
-    logApi(
-      {
-        name: "LsQuery",
-        status: 200,
-        params: { entry: req.params.entry },
-      },
-      start
-    );
-  });
-
-  app.get(
-    entriesByPrefix(":prefix"),
-    async (req: Request<{ prefix: string }>, res) => {
-      const start = performance.now();
-      log(`Got entriesByPrefix request`);
-      res.send(JSON.stringify(await params.entriesByPrefix(req.params.prefix)));
-      logApi(
-        {
-          name: "EntriesByPrefix",
-          status: 200,
-          params: { prefix: req.params.prefix },
-        },
-        start
-      );
-    }
-  );
+  handleApi(MacronizeApi, params.macronizer);
+  handleApi(ReportApi, params.fileIssueReport);
+  handleApi(DictsLsApi, params.lsDict);
+  handleApi(EntriesByPrefixApi, params.entriesByPrefix);
 }

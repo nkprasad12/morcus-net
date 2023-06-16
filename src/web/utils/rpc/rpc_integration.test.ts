@@ -3,7 +3,15 @@ import express from "express";
 import http from "http";
 import { RouteAndHandler, addApi } from "./server_rpc";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
-import { Validator, isArray, isBoolean, isNumber, isString } from "./parsing";
+import {
+  Serialization,
+  Validator,
+  instanceOf,
+  isArray,
+  isBoolean,
+  isNumber,
+  isString,
+} from "./parsing";
 import fetch from "node-fetch";
 import { callApi } from "./client_rpc";
 
@@ -20,6 +28,21 @@ console.debug = jest.fn();
 interface TestType {
   nested: { str: string };
   arr: string[];
+}
+
+class StringWrapper {
+  constructor(readonly prop: string) {}
+
+  static SERIALIZATION: Serialization<StringWrapper> = {
+    name: "StringWrapper",
+    validator: (t): t is StringWrapper => t instanceof StringWrapper,
+    serialize: (t) => t.prop,
+    deserialize: (t) => new StringWrapper(t),
+  };
+
+  double(): StringWrapper {
+    return new StringWrapper(`${this.prop}${this.prop}`);
+  }
 }
 
 type AttrValidator<T> = [string, Validator<T>];
@@ -189,6 +212,17 @@ const InputValidationError: RouteAndHandler<string, string> = {
   handler: async (s) => s,
 };
 
+const ClassObjectRoute: RouteAndHandler<StringWrapper, StringWrapper> = {
+  route: {
+    path: "/ClassObjectRoute",
+    method: "GET",
+    inputValidator: instanceOf(StringWrapper),
+    outputValidator: instanceOf(StringWrapper),
+    registry: [StringWrapper.SERIALIZATION],
+  },
+  handler: async (sw) => sw.double(),
+};
+
 const handlers: RouteAndHandler<any, any>[] = [
   StringGet,
   StringPost,
@@ -202,6 +236,7 @@ const handlers: RouteAndHandler<any, any>[] = [
   OutputValidationThrows,
   ErroringHandler,
   InputValidationError,
+  ClassObjectRoute,
 ];
 
 function setupApp(useBodyParser: boolean = true): Promise<http.Server> {
@@ -327,6 +362,14 @@ describe("RPC library", () => {
     };
 
     expect(() => addApi(bundle, Connect)).toThrowError();
+  });
+
+  test("handles data with serialization registry", async () => {
+    server = await setupApp();
+    const result = callApi(ClassObjectRoute.route, new StringWrapper("foo"));
+    await expect(result).resolves.toStrictEqual<StringWrapper>(
+      new StringWrapper("foofoo")
+    );
   });
 
   afterEach(async () => {

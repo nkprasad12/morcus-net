@@ -40,11 +40,11 @@ export class LewisAndShort {
     );
   }
 
-  async getEntry(input: string): Promise<string> {
+  async getEntry(input: string): Promise<XmlNode[]> {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
-      return JSON.stringify([`<span>Could not find entry for ${input}</span>`]);
+      return [new XmlNode("span", [], [`Could not find entry for ${input}`])];
     }
 
     const hasDiactrics = input === request;
@@ -55,9 +55,7 @@ export class LewisAndShort {
       hasDiactrics && exactMatches.length > 0 ? exactMatches : indices;
     const entryStrings = resultIndices.map(([i, _]) => this.entries[i]);
     const entryNodes = parseEntries(entryStrings);
-    return JSON.stringify(
-      entryNodes.map((node) => displayEntryFree(node).toString())
-    );
+    return entryNodes.map((node) => displayEntryFree(node));
   }
 
   async getCompletions(input: string): Promise<string[]> {

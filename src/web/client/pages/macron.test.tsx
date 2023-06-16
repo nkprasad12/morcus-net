@@ -12,21 +12,16 @@ import { callApi } from "@/web/utils/rpc/client_rpc";
 
 console.debug = jest.fn();
 
-jest.mock("@/web/utils/rpc/client_rpc", () => {
-  const originalModule = jest.requireActual("@/web/utils/rpc/client_rpc");
-  return {
-    __esModule: true,
-    ...originalModule,
-    callApi: jest.fn(),
-  };
+jest.mock("@/web/utils/rpc/client_rpc");
+
+// @ts-ignore
+const mockCallApi: jest.Mock<any, any, any> = callApi;
+
+afterEach(() => {
+  mockCallApi.mockReset();
 });
 
 describe("Macronizer View", () => {
-  afterEach(() => {
-    // @ts-ignore
-    callApi.mockReset();
-  });
-
   test("shows expected components", () => {
     render(<Macronizer />);
 
@@ -40,8 +35,7 @@ describe("Macronizer View", () => {
 
     await user.click(submit);
 
-    // @ts-ignore
-    expect(callApi.mock.calls).toHaveLength(0);
+    expect(mockCallApi).not.toHaveBeenCalled();
   });
 
   test("calls server on submit", async () => {
@@ -52,12 +46,11 @@ describe("Macronizer View", () => {
     await user.type(inputBox, "Gallia est omnis");
     await user.click(submit);
 
-    expect(callApi).toHaveBeenCalledTimes(1);
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
   });
 
   test("calls shows error on failure", async () => {
-    // @ts-ignore
-    callApi.mockRejectedValue(new Error());
+    mockCallApi.mockRejectedValue(new Error());
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");
     const submit = screen.getByRole("button");
@@ -71,8 +64,7 @@ describe("Macronizer View", () => {
   });
 
   test("shows result on success", async () => {
-    // @ts-ignore
-    callApi.mockReturnValue(Promise.resolve("in partēs trēs"));
+    mockCallApi.mockReturnValue(Promise.resolve("in partēs trēs"));
 
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");

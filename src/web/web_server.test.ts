@@ -3,12 +3,17 @@ import express from "express";
 import fs from "fs";
 import request from "supertest";
 
-import { entriesByPrefix, lsCall } from "@/web/api_routes";
 import { setupServer, WebServerParams } from "./web_server";
 import path from "path";
 import { TelemetryLogger } from "./telemetry/telemetry";
-import { MacronizeApi, ReportApi } from "./utils/rpc/routes";
+import {
+  DictsLsApi,
+  EntriesByPrefixApi,
+  MacronizeApi,
+  ReportApi,
+} from "./utils/rpc/routes";
 import { encodeMessage } from "./utils/rpc/parsing";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 
 console.debug = jest.fn();
 
@@ -41,7 +46,7 @@ function getServer(): express.Express {
   const params: WebServerParams = {
     webApp: app,
     macronizer: (a) => Promise.resolve(a + "2"),
-    lsDict: (a) => Promise.resolve(`${a} def`),
+    lsDict: (a) => Promise.resolve([new XmlNode(a + " def")]),
     entriesByPrefix: (a) => Promise.resolve([a]),
     buildDir: path.resolve(TEMP_DIR),
     fileIssueReport: (a) =>
@@ -85,20 +90,22 @@ describe("WebServer", () => {
   });
 
   test("handles LS dict route", async () => {
-    const response = await request(app).get(lsCall("Caesar"));
+    const path = `${DictsLsApi.path}/${encodeMessage("Caesar")}`;
+    const response = await request(app).get(path);
 
     expect(response.status).toBe(200);
-    expect(response.text).toBe(`Caesar def`);
+    expect(response.text).toContain(`Caesar def`);
   });
 
   test("handles LS completion route", async () => {
-    const response = await request(app).get(entriesByPrefix("Caesar"));
+    const path = `${EntriesByPrefixApi.path}/${encodeMessage("Caesar")}`;
+    const response = await request(app).get(path);
 
     expect(response.status).toBe(200);
-    expect(JSON.parse(response.text)).toStrictEqual(["Caesar"]);
+    expect(response.text).toContain("Caesar");
   });
 
-  test("sends out requests to index", async () => {
+  test("sends  unknown requests to index", async () => {
     const response = await request(app).get("/notEvenRemotelyReal");
 
     expect(response.status).toBe(200);

@@ -51,7 +51,7 @@ export function decodeMessage<T>(
     "Received improperly wrapped message!"
   );
   if (!validator(data)) {
-    throw Error("Invalid message received!");
+    throw new Error("Invalid message received!");
   }
   return data;
 }

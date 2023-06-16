@@ -1,4 +1,4 @@
-import { Validator } from "./parsing";
+import { Serialization, Validator } from "./parsing";
 
 export type HttpMethod = "GET" | "POST";
 
@@ -11,4 +11,10 @@ export interface ApiRoute<I, O> {
   inputValidator: Validator<I>;
   /** Validator for the output. */
   outputValidator: Validator<O>;
+  /**
+   * Registry of serialization to use when encoding and decoding inputs.
+   * This is only required for class objects that need to be revived after
+   * transfer across the wire.
+   */
+  registry?: Serialization<any>[];
 }

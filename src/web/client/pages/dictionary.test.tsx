@@ -3,6 +3,7 @@
  */
 
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { callApi } from "@/web/utils/rpc/client_rpc";
 import { describe, expect, it } from "@jest/globals";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
@@ -16,24 +17,10 @@ import {
 } from "./dictionary";
 import { RouteContext } from "../components/router";
 
-const realFetch = global.fetch;
+jest.mock("@/web/utils/rpc/client_rpc");
 
-afterAll(() => {
-  global.fetch = realFetch;
-});
-
-function replaceFetch(ok: boolean = true, text: string = "") {
-  const mockFetch = jest.fn((request) =>
-    Promise.resolve({
-      text: () => Promise.resolve(text),
-      ok: ok,
-      request: request,
-    })
-  );
-  // @ts-ignore
-  global.fetch = mockFetch;
-  return mockFetch;
-}
+// @ts-ignore
+const mockCallApi: jest.Mock<any, any, any> = callApi;
 
 function GalliaRef(props: any, ref: any) {
   return (
@@ -44,36 +31,39 @@ function GalliaRef(props: any, ref: any) {
 }
 
 describe("Dictionary View", () => {
+  afterEach(() => {
+    mockCallApi.mockReset();
+  });
+
   it("shows expected components", () => {
     render(<Dictionary />);
     expect(screen.getByRole("combobox")).toBeDefined();
   });
 
   it("does not call server on empty submit", async () => {
-    const mockFetch = replaceFetch(false);
     render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
     await user.type(searchBar, "{enter}");
 
-    expect(mockFetch.mock.calls).toHaveLength(0);
+    expect(mockCallApi).not.toHaveBeenCalled();
   });
 
   it("calls server for autocomplete entries", async () => {
-    const mockFetch = replaceFetch(false);
+    mockCallApi.mockResolvedValue(["Goo"]);
     render(<Dictionary />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
     await user.type(searchBar, "G");
 
-    expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain("api/dicts/entriesByPrefix/g");
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    expect(mockCallApi.mock.calls[0][1]).toBe("g");
   });
 
   it("handles autocomplete option clicks", async () => {
-    replaceFetch(true, JSON.stringify(["Goo"]));
+    mockCallApi.mockResolvedValue(["Goo"]);
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -93,7 +83,7 @@ describe("Dictionary View", () => {
   });
 
   it("handles navigation on submit", async () => {
-    replaceFetch(false);
+    mockCallApi.mockResolvedValue([]);
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -112,7 +102,7 @@ describe("Dictionary View", () => {
   });
 
   test("updates history state on submit", async () => {
-    replaceFetch(false);
+    mockCallApi.mockResolvedValue(["Goo"]);
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -131,7 +121,7 @@ describe("Dictionary View", () => {
   });
 
   it("calls shows error on failure", async () => {
-    replaceFetch(false);
+    mockCallApi.mockRejectedValue(new Error("Failure for test"));
     render(
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
@@ -148,10 +138,8 @@ describe("Dictionary View", () => {
   });
 
   it("shows result on success", async () => {
-    replaceFetch(
-      true,
-      JSON.stringify(["<span>France or whatever idk lol</span>"])
-    );
+    const resultString = "France or whatever idk lol";
+    mockCallApi.mockResolvedValue([new XmlNode("span", [], [resultString])]);
     render(
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
@@ -161,15 +149,13 @@ describe("Dictionary View", () => {
     );
 
     await waitFor(() => {
-      expect(screen.getByText("France or whatever idk lol")).toBeDefined();
+      expect(screen.getByText(resultString)).toBeDefined();
     });
   });
 
   it("fetches result from navigation context", async () => {
-    const mockFetch = replaceFetch(
-      true,
-      JSON.stringify(["<span>France or whatever idk lol</span>"])
-    );
+    const resultString = "France or whatever idk lol";
+    mockCallApi.mockResolvedValue([new XmlNode("span", [], [resultString])]);
 
     render(
       <RouteContext.Provider
@@ -179,8 +165,8 @@ describe("Dictionary View", () => {
       </RouteContext.Provider>
     );
 
-    expect(mockFetch.mock.calls).toHaveLength(1);
-    expect(mockFetch.mock.calls[0][0]).toContain("Belgae");
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    expect(mockCallApi.mock.calls[0][1]).toBe("Belgae");
     await waitFor(() => {
       expect(screen.getByText("France or whatever idk lol")).toBeDefined();
     });

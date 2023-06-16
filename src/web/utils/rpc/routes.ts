@@ -14,6 +14,7 @@ export const DictsLsApi: ApiRoute<string, XmlNode[]> = {
   method: "GET",
   inputValidator: isString,
   outputValidator: isArray(instanceOf(XmlNode)),
+  registry: [XmlNode.SERIALIZATION],
 };
 
 export const EntriesByPrefixApi: ApiRoute<string, string[]> = {

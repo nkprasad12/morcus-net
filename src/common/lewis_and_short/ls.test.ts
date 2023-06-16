@@ -35,6 +35,11 @@ function writeFile(contents: string) {
   fs.writeFileSync(TEMP_FILE, contents);
 }
 
+function expectEqual(nodes: XmlNode[], expected: string[]) {
+  const actuals = nodes.map((node) => node.toString());
+  expect(actuals).toStrictEqual(expected);
+}
+
 describe("LewisAndShort", () => {
   afterEach(() => {
     try {
@@ -164,12 +169,10 @@ describe("LewisAndShort", () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    const julius = JSON.parse(await dict.getEntry("Julius"));
-    const publius = JSON.parse(await dict.getEntry("Publius"));
-    expect(julius).toStrictEqual([
+    expectEqual(await dict.getEntry("Julius"), [
       '<div class="lsEntryFree">Gallia est omnis</div>',
     ]);
-    expect(publius).toStrictEqual([
+    expectEqual(await dict.getEntry("Publius"), [
       '<div class="lsEntryFree">Non iterum repetenda suo</div>',
     ]);
   });
@@ -178,25 +181,19 @@ describe("LewisAndShort", () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    const result = JSON.parse(await dict.getEntry("Naso"));
-
-    expect(result).toHaveLength(2);
-    expect(result).toContain(
-      '<div class="lsEntryFree">Non iterum repetenda suo</div>'
-    );
-    expect(result).toContain(
-      '<div class="lsEntryFree">Pennisque levatus</div>'
-    );
+    expectEqual(await dict.getEntry("Naso"), [
+      '<div class="lsEntryFree">Non iterum repetenda suo</div>',
+      '<div class="lsEntryFree">Pennisque levatus</div>',
+    ]);
   });
 
   test("getEntry handles unknown queries", async () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    const result = JSON.parse(await dict.getEntry("Foo"));
-
-    expect(result).toHaveLength(1);
-    expect(result).toContain("<span>Could not find entry for Foo</span>");
+    expectEqual(await dict.getEntry("Foo"), [
+      "<span>Could not find entry for Foo</span>",
+    ]);
   });
 
   test("getCompletions returns expected results", async () => {

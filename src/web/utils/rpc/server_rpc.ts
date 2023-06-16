@@ -4,7 +4,7 @@ import express, { Request, Response } from "express";
 import { ApiRoute } from "./api_route";
 import { decodeMessage, encodeMessage } from "./parsing";
 
-type Data = boolean | string | number | object;
+export type Data = boolean | string | number | object;
 
 function isObject(data: Data): data is object {
   if (typeof data === "string") {
@@ -49,7 +49,11 @@ function findInput<I, O>(req: Request, route: ApiRoute<I, O>): string {
 
 function extractInput<I, O>(req: Request, route: ApiRoute<I, O>): I | Error {
   try {
-    return decodeMessage(findInput(req, route), route.inputValidator);
+    return decodeMessage(
+      findInput(req, route),
+      route.inputValidator,
+      route.registry
+    );
   } catch (e) {
     return new Error(`Error extracting input on route: ${route.path}`, {
       cause: e,
@@ -92,7 +96,8 @@ function adaptHandler<I, O extends Data>(
         body = reason;
       })
       .finally(() => {
-        const result = body === undefined ? undefined : encodeMessage(body);
+        const result =
+          body === undefined ? undefined : encodeMessage(body, route.registry);
         res.status(status).send(result);
         logApi(
           {
@@ -100,7 +105,7 @@ function adaptHandler<I, O extends Data>(
             status: status,
             params:
               route.method === "GET"
-                ? { input: JSON.stringify(req.params.input) }
+                ? { input: JSON.stringify(input) }
                 : undefined,
           },
           start,

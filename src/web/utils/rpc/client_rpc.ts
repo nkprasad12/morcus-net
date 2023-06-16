@@ -9,7 +9,7 @@ export async function callApi<I, O>(
   route: ApiRoute<I, O>,
   input: I
 ): Promise<O> {
-  const message = encodeMessage(input);
+  const message = encodeMessage(input, route.registry);
   const base = `${location.origin}${route.path}`;
   const address = route.method === "GET" ? `${base}/${message}` : base;
   const options =
@@ -25,7 +25,7 @@ export async function callApi<I, O>(
   }
   try {
     const result = await response.text();
-    return decodeMessage(result, route.outputValidator);
+    return decodeMessage(result, route.outputValidator, route.registry);
   } catch (e) {
     return Promise.reject(
       new Error(`Unable to decode result from ${base}`, { cause: e })
