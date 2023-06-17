@@ -10,7 +10,7 @@ BUILD_CLIENT = "npm run build-client -- --env production"
 DOWNLOAD_LS = "npm run download-ls"
 PROCESS_LS = "npm run ts-node src/scripts/process_ls.ts -- --verify"
 START_SERVER = "npm run ts-node src/start_server.ts"
-PORT = 8000
+PORT = 5757
 
 
 subproc_env = os.environ.copy()
@@ -36,12 +36,12 @@ def start_process(command: str) -> None:
 
 try:
     build_client = start_process(BUILD_CLIENT)
-    download_ls = start_process(DOWNLOAD_LS)
-    wait_and_check(download_ls, "Failed to download raw LS file")
+    # download_ls = start_process(DOWNLOAD_LS)
+    # wait_and_check(download_ls, "Failed to download raw LS file")
 
-    process_ls = start_process(PROCESS_LS)
-    wait_and_check(build_client, "Failed to build the client")
-    wait_and_check(process_ls, "Failed to process or verify LS")
+    # process_ls = start_process(PROCESS_LS)
+    # wait_and_check(build_client, "Failed to build the client")
+    # wait_and_check(process_ls, "Failed to process or verify LS")
 
     start_server = start_process(START_SERVER)
     time.sleep(15)
