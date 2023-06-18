@@ -95,6 +95,9 @@ pages.push(ABOUT_PAGE);
 const props: SinglePageApp.Props = {
   pages: pages,
 };
+if (window.location.pathname === "/") {
+  window.history.replaceState({}, "", props.pages[0].path);
+}
 
 const root = ReactDOM.createRoot(
   document.querySelector("#placeholder") as HTMLElement
