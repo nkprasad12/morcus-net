@@ -51,9 +51,10 @@ export class LewisAndShort {
     const exactMatches = indices.filter(
       ([i, j]) => this.rawKeys[i][j] === input
     );
-    const resultIndices =
+    const allMatches =
       hasDiactrics && exactMatches.length > 0 ? exactMatches : indices;
-    const entryStrings = resultIndices.map(([i, _]) => this.entries[i]);
+    const resultIndices = [...new Set(allMatches.map(([i, _]) => i))];
+    const entryStrings = resultIndices.map((i) => this.entries[i]);
     const entryNodes = parseEntries(entryStrings);
     return entryNodes.map((node) => displayEntryFree(node));
   }
