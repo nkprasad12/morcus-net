@@ -31,20 +31,35 @@ const ERROR_MESSAGE = new XmlNode(
   [],
   ["Failed to fetch the entry. Please try again later."]
 );
-const HELP_ENTRY = new XmlNode(
+const HIGHLIGHT_HELP = new XmlNode(
   "div",
   [],
   [
+    "Click on ",
     new XmlNode(
       "span",
       [
         ["class", "lsHover"],
         ["title", "Click to dismiss"],
       ],
-      ["Highlighted words"]
+      ["underlined"]
     ),
-    " are abbreviated in the original text - click on them to learn more. " +
-      "Click on section headers (like ",
+    " text for more details. ",
+  ]
+);
+const BUG_HELP = new XmlNode(
+  "div",
+  [],
+  [
+    "Please report typos or other bugs " +
+      "by clicking on the flag icon in the top bar.",
+  ]
+);
+const BULLET_HELP = new XmlNode(
+  "p",
+  [],
+  [
+    "Click on sections buttons (like ",
     new XmlNode(
       "span",
       [
@@ -53,16 +68,13 @@ const HELP_ENTRY = new XmlNode(
       ],
       [" A. "]
     ),
-    ") to link directly to a particular section.",
-    new XmlNode(
-      "p",
-      [],
-      [
-        "If you find bugs, typos, or other issues, please report them " +
-          "by clicking on the flag icon in the top navigation bar.",
-      ]
-    ),
+    ") to link directly to that section.",
   ]
+);
+const HELP_ENTRY = new XmlNode(
+  "div",
+  [],
+  [HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
 );
 
 const LOADING_ENTRY = xmlNodeToJsx(
