@@ -1,6 +1,7 @@
 import LinkIcon from "@mui/icons-material/Link";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
+import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -308,10 +309,17 @@ interface ElementAndKey {
   key: string;
 }
 
+const noSsr = { noSsr: true };
+
 export function Dictionary() {
   const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
   const theme = useTheme();
-  const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
+
+  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const isMed = useMediaQuery(theme.breakpoints.only("md"), noSsr);
+  const isLarge = useMediaQuery(theme.breakpoints.only("lg"), noSsr);
+  const isXl = useMediaQuery(theme.breakpoints.up("xl"), noSsr);
+
   const nav = React.useContext(RouteContext);
   const sectionRef = React.useRef<HTMLElement | null>(null);
 
@@ -321,8 +329,8 @@ export function Dictionary() {
         <Box
           sx={{
             padding: 1,
-            ml: smallScreen ? 1 : 3,
-            mr: smallScreen ? 1 : 3,
+            ml: isSmall ? 1 : 3,
+            mr: isSmall ? 1 : 3,
             mt: 1,
             mb: 2,
             borderColor: Solarized.base2,
@@ -339,7 +347,7 @@ export function Dictionary() {
             {props.children}
           </Typography>
         </Box>
-        <Divider sx={{ ml: smallScreen ? 1 : 3, mr: smallScreen ? 1 : 3 }} />
+        <Divider sx={{ ml: isSmall ? 1 : 3, mr: isSmall ? 1 : 3 }} />
       </>
     );
   }
@@ -363,38 +371,72 @@ export function Dictionary() {
     }
   }, [nav.route.query]);
 
+  function MainDictionary() {
+    return (
+      <>
+        <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
+        {entries.length > 0 && (
+          <ContentBox key="searchHeader">
+            <div style={{ fontSize: 16, lineHeight: "normal" }}>
+              {entries.length > 1 && (
+                <>
+                  <div>Found {entries.length} results.</div>
+                  <br></br>
+                </>
+              )}
+              {xmlNodeToJsx(HELP_ENTRY)}
+            </div>
+          </ContentBox>
+        )}
+        {entries.map((entry) => (
+          <ContentBox key={entry.key}>{entry.element}</ContentBox>
+        ))}
+        {entries.length > 0 && (
+          <ContentBox key="attributionBox">
+            <span style={{ fontSize: 15, lineHeight: "normal" }}>
+              Results are taken from a digitization of Lewis & Short kindly
+              provided by <a href="https://github.com/PerseusDL">Perseus</a>{" "}
+              under a{" "}
+              <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+                CC BY-SA 4.0
+              </a>{" "}
+              license.
+            </span>
+          </ContentBox>
+        )}
+      </>
+    );
+  }
+
+  function DictionaryLayout(props: { children: JSX.Element }) {
+    const dictWidth = isXl ? "lg" : isLarge ? "md" : isMed ? "sm" : "sm";
+    const showSidebar = isXl || isLarge || isMed;
+
+    if (!showSidebar) {
+      return <Container maxWidth="xl">{props.children}</Container>;
+    }
+
+    return (
+      <Container maxWidth="xl">
+        <Stack
+          direction="row"
+          spacing={1}
+          divider={<Divider orientation="vertical" flexItem />}
+        >
+          <Container maxWidth="xxs" disableGutters={true}>
+            <div>{"this ".repeat(50)}</div>
+          </Container>
+          <Container maxWidth={dictWidth} disableGutters={true}>
+            {props.children}
+          </Container>
+        </Stack>
+      </Container>
+    );
+  }
+
   return (
-    <Container maxWidth="lg">
-      <SearchBox input={nav.route.query || ""} smallScreen={smallScreen} />
-      {entries.length > 0 && (
-        <ContentBox key="searchHeader">
-          <div style={{ fontSize: 16, lineHeight: "normal" }}>
-            {entries.length > 1 && (
-              <>
-                <div>Found {entries.length} results.</div>
-                <br></br>
-              </>
-            )}
-            {xmlNodeToJsx(HELP_ENTRY)}
-          </div>
-        </ContentBox>
-      )}
-      {entries.map((entry) => (
-        <ContentBox key={entry.key}>{entry.element}</ContentBox>
-      ))}
-      {entries.length > 0 && (
-        <ContentBox key="attributionBox">
-          <span style={{ fontSize: 15, lineHeight: "normal" }}>
-            Results are taken from a digitization of Lewis & Short kindly
-            provided by <a href="https://github.com/PerseusDL">Perseus</a> under
-            a{" "}
-            <a href="https://creativecommons.org/licenses/by-sa/4.0/">
-              CC BY-SA 4.0
-            </a>{" "}
-            license.
-          </span>
-        </ContentBox>
-      )}
-    </Container>
+    <DictionaryLayout>
+      <MainDictionary />
+    </DictionaryLayout>
   );
 }

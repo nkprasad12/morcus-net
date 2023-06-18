@@ -20,6 +20,13 @@ import { Dictionary } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
 import { Router } from "./components/router";
 
+declare module "@mui/material/styles" {
+  interface BreakpointOverrides {
+    xxxs: true;
+    xxs: true;
+  }
+}
+
 const theme = createTheme({
   palette: {
     primary: {
@@ -35,6 +42,17 @@ const theme = createTheme({
     text: {
       primary: Solarized.base01,
       secondary: Solarized.base00,
+    },
+  },
+  breakpoints: {
+    values: {
+      xxxs: 0,
+      xxs: 275,
+      xs: 400,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1536,
     },
   },
 });
