@@ -1,10 +1,5 @@
 /* istanbul ignore file */
 
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
-
 import React from "react";
 import ReactDOM from "react-dom/client";
 
@@ -39,15 +34,16 @@ const theme = createTheme({
   },
 });
 
+const allowedFonts = `"Roboto","Helvetica","Arial",sans-serif`;
 const typographyStyle = {
   fontSize: 20,
-  fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+  fontFamily: allowedFonts,
   fontWeight: 400,
   lineHeight: 1.5,
   letterSpacing: "0.00938em",
   [theme.breakpoints.down("sm")]: {
     fontSize: 19,
-    fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+    fontFamily: allowedFonts,
     fontWeight: 400,
     lineHeight: 1.5,
     letterSpacing: "0.00938em",
@@ -142,6 +138,7 @@ root.render(
           ".lsOrth": {
             backgroundColor: Solarized.red + "68",
             borderRadius: 4,
+            padding: 2,
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
           ".lsSenseBullet": {
