@@ -10,6 +10,8 @@ import FlagIcon from "@mui/icons-material/Flag";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import MenuItem from "@mui/material/MenuItem";
+import { useTheme } from "@mui/material/styles";
+import useMediaQuery from "@mui/material/useMediaQuery";
 import { Solarized } from "../colors";
 import { Navigation, RouteContext } from "./router";
 
@@ -38,6 +40,10 @@ function LogoImage() {
 }
 
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
+  const noSsr = { noSsr: true };
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+
   const nav = React.useContext(RouteContext);
   const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
     null
@@ -70,7 +76,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             component="a"
             sx={{
               mr: 2,
-              display: { xs: "none", md: "flex" },
+              display: isSmall ? "none" : "flex",
               fontFamily: "monospace",
               fontWeight: 700,
               letterSpacing: ".3rem",
@@ -81,7 +87,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             <LogoImage />
           </Typography>
 
-          <Box sx={{ flexGrow: 1, display: { xs: "flex", md: "none" } }}>
+          <Box sx={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}>
             <IconButton
               size="medium"
               aria-label="site pages"
@@ -124,7 +130,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             href=""
             sx={{
               mr: 2,
-              display: { xs: "flex", md: "none" },
+              display: isSmall ? "flex" : "none",
               flexGrow: 1,
               fontFamily: "monospace",
               fontWeight: 700,
@@ -135,7 +141,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
           >
             <LogoImage />
           </Typography>
-          <Box sx={{ flexGrow: 1, display: { xs: "none", md: "flex" } }}>
+          <Box sx={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
             {props.pages.map((page) => (
               <Button
                 key={page.name}

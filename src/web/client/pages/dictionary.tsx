@@ -383,12 +383,19 @@ export function Dictionary() {
     }
   }, [nav.route.query]);
 
-  function MainDictionary() {
+  function SearchBar() {
+    return (
+      <Container maxWidth="md">
+        <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
+      </Container>
+    );
+  }
+
+  function TableOfContents() {
     return (
       <>
-        <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
         {entries.length > 0 && (
-          <ContentBox key="searchHeader">
+          <ContentBox key="tableOfContents">
             <div style={{ fontSize: 16, lineHeight: "normal" }}>
               {entries.length > 1 && (
                 <>
@@ -396,10 +403,31 @@ export function Dictionary() {
                   <br></br>
                 </>
               )}
+              <div>{"this ".repeat(50)}</div>
+            </div>
+          </ContentBox>
+        )}
+      </>
+    );
+  }
+
+  function SearchHeader() {
+    return (
+      <>
+        {entries.length > 0 && (
+          <ContentBox key="searchHeader">
+            <div style={{ fontSize: 16, lineHeight: "normal" }}>
               {xmlNodeToJsx(HELP_ENTRY)}
             </div>
           </ContentBox>
         )}
+      </>
+    );
+  }
+
+  function DictionaryEntries() {
+    return (
+      <>
         {entries.map((entry) => (
           <ContentBox key={entry.key}>{entry.element}</ContentBox>
         ))}
@@ -420,35 +448,40 @@ export function Dictionary() {
     );
   }
 
-  function DictionaryLayout(props: { children: JSX.Element }) {
+  function DictionaryPage() {
     const dictWidth = isXl ? "lg" : isLarge ? "md" : isMed ? "sm" : "sm";
     const showSidebar = isXl || isLarge || isMed;
 
     if (!showSidebar) {
-      return <Container maxWidth="xl">{props.children}</Container>;
+      return (
+        <Container maxWidth="lg">
+          <SearchBar />
+          <SearchHeader />
+          <TableOfContents />
+          <DictionaryEntries />
+        </Container>
+      );
     }
 
     return (
       <Container maxWidth="xl">
+        <SearchBar />
         <Stack
           direction="row"
           spacing={1}
           divider={<Divider orientation="vertical" flexItem />}
         >
           <Container maxWidth="xxs" disableGutters={true}>
-            <div>{"this ".repeat(50)}</div>
+            <TableOfContents />
           </Container>
           <Container maxWidth={dictWidth} disableGutters={true}>
-            {props.children}
+            <SearchHeader />
+            <DictionaryEntries />
           </Container>
         </Stack>
       </Container>
     );
   }
 
-  return (
-    <DictionaryLayout>
-      <MainDictionary />
-    </DictionaryLayout>
-  );
+  return <DictionaryPage />;
 }
