@@ -25,11 +25,15 @@ const DIACRITICS = new Map<string, string>([
   ["Ã", "A"],
   // This is A with a macron.
   ["Ā", "A"],
+  ["Ă", "A"],
   ["Ē", "E"],
+  ["Ĕ", "E"],
   ["Ī", "I"],
   ["Ĭ", "I"],
   ["Õ", "O"],
+  ["Ŏ", "O"],
   ["Ū", "U"],
+  ["Ŭ", "U"],
 ]);
 
 export function removeDiacritics(input: string): string {

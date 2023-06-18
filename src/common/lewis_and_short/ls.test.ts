@@ -25,6 +25,10 @@ const LS_DATA = [
     keys: ["Naso"],
     entry: new XmlNode("entryFree", [], ["Pennisque levatus"]).toString(),
   },
+  {
+    keys: ["īnō", "Ino"],
+    entry: new XmlNode("entryFree", [], ["Ino edge case"]).toString(),
+  },
 ];
 
 function toLsData(keys: string[]) {
@@ -193,6 +197,15 @@ describe("LewisAndShort", () => {
 
     expectEqual(await dict.getEntry("Foo"), [
       "<span>Could not find entry for Foo</span>",
+    ]);
+  });
+
+  test("getEntry handles same ascii orths in single article", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expectEqual(await dict.getEntry("ino"), [
+      '<div class="lsEntryFree">Ino edge case</div>',
     ]);
   });
 

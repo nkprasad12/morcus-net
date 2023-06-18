@@ -1,15 +1,20 @@
 /* istanbul ignore file */
 
 import * as dotenv from "dotenv";
-import { assert } from "./common/assert";
+import { assert, checkPresent } from "./common/assert";
 import { parse } from "./common/lewis_and_short/ls_parser";
 import { LS_PATH } from "./common/lewis_and_short/ls_scripts";
 import { XmlNode } from "./common/lewis_and_short/xml_node";
 import {
+  // LsRewriters,
   findTextNodes,
   // modifyInTree,
   removeTextNode,
 } from "@/common/lewis_and_short/ls_write";
+import { cleanOrths, regularizeOrths } from "./common/lewis_and_short/ls_orths";
+import { removeDiacritics } from "./common/text_cleaning";
+import { isString } from "./web/utils/rpc/parsing";
+import { LsRewriters } from "@/common/lewis_and_short/ls_write";
 
 dotenv.config();
 
@@ -180,6 +185,133 @@ export function findMistaggedPos() {
   console.log(posTypes.toString());
 }
 
+export function capsInKeys() {
+  function extractOrth(node: XmlNode): string {
+    const rawOrth = [[XmlNode.getSoleText(node)][0]];
+    const cleanedOrth = regularizeOrths(cleanOrths(rawOrth))[0];
+    let orth = cleanedOrth.split(" ")[0];
+    orth = removeDiacritics(orth);
+    orth = orth.replaceAll("^", "").replaceAll("_", "");
+    orth = orth.slice(-1) === "-" ? orth.slice(0, -1) : orth;
+    return orth;
+  }
+
+  function startsWithLowerCase(a: string) {
+    const aStart = a.charAt(0);
+    return aStart === aStart.toLowerCase();
+  }
+
+  function startWithSameCase(a: string, b: string) {
+    return startsWithLowerCase(a) === startsWithLowerCase(b);
+  }
+
+  function capitalize(a: string) {
+    return a.charAt(0).toUpperCase() + a.slice(1);
+  }
+
+  // const wrongKey = new Set(["ino", "hypatius"]);
+  // const intentionalMismatches = new Set(["satiricus"]);
+  const falseMatches = new Set<string>(["Typhoeus"]);
+
+  LsRewriters.transformEntries(LS_PATH, (entry) => {
+    // for (const entry of parse(LS_PATH)) {
+    const orthNodes = entry
+      .findChildren("orth")
+      // .filter((node) => node.getAttr("type") !== "alt")
+      .filter((node) => node.children.length === 1)
+      .filter((node) => isString(node.children[0]));
+
+    if (orthNodes.length === 0) {
+      // continue;
+      return entry;
+    }
+
+    let key = checkPresent(entry.getAttr("key"));
+    key = key.split(" ")[0];
+    key = isNaN(+key.slice(-1)) ? key : key.slice(0, -1);
+
+    if (key.length === 1) {
+      // continue;
+      return entry;
+    }
+
+    const nodeAndOrths = orthNodes.map((n) => ({
+      node: n,
+      orth: extractOrth(n),
+    }));
+
+    const firstOrth = nodeAndOrths[0].orth;
+    if (key.toLowerCase() !== firstOrth.toLowerCase()) {
+      // continue;
+      return entry;
+    }
+    if (falseMatches.has(key)) {
+      //continue;
+      return entry;
+    }
+
+    const toChange = nodeAndOrths
+      .filter((x) => x.orth.charAt(0) !== "-")
+      .filter((x) => x.orth !== key)
+      .filter((x) => !startWithSameCase(key, x.orth))
+      .filter(
+        (x) => x.orth.charAt(0).toLowerCase() === key.charAt(0).toLowerCase()
+      );
+
+    if (toChange.length > 0 && !startsWithLowerCase(key)) {
+      // const results = toChange.map(
+      //   (x) => `${x.orth} (${capitalize(XmlNode.getSoleText(x.node))})`
+      // );
+      // console.log(`${key} : ${results}`);
+      toChange.forEach((x) => {
+        x.node.children[0] = capitalize(XmlNode.getSoleText(x.node));
+      });
+    }
+    return entry;
+    // }
+  });
+}
+
+capsInKeys();
+
+// const SPLITS = [", ", " (", "; "];
+// LsRewriters.transformEntries(LS_PATH, (root) => {
+//   const orths = findTextNodes(root)
+//     .filter((data) => data.parent.name === "orth")
+//     .filter((data) => data.parent.children.length === 1)
+//     .filter((data) => isString(data.parent.children[0]))
+//     .filter((data) => SPLITS.some((splitter) => data.text.includes(splitter)))
+//     .reverse();
+//   for (const orth of orths) {
+//     let chunks: string[] = [orth.text];
+//     for (const splitter of SPLITS) {
+//       chunks = chunks.flatMap((chunk) =>
+//         chunk
+//           .split(splitter)
+//           .flatMap((subchunk) => [splitter, subchunk])
+//           .slice(1)
+//       );
+//     }
+//     const r: XmlChild[] = chunks.map((chunk, i) =>
+//       i % 2 === 0
+//         ? new XmlNode(orth.parent.name, orth.parent.attrs, [chunk])
+//         : chunk
+//     );
+//     const grandparent = orth.ancestors[orth.ancestors.length - 1];
+//     const parentIndex = grandparent.children.findIndex(
+//       (child) => child === orth.parent
+//     );
+//     assert(parentIndex > -1);
+//     grandparent.children.splice(parentIndex, 1, ...r);
+//     // console.log(
+//     //   `${orth.text} -> ${r
+//     //     .map((c) => (typeof c === "string" ? c : c.toString()))
+//     //     .join("")}`
+//     // );
+//   }
+//   return root;
+// });
+
 // const ALLOWED_PARTS = new Set([
 //   "v.",
 //   "inch.",
@@ -191,7 +323,7 @@ export function findMistaggedPos() {
 //   "intens.",
 // ]);
 
-findMistaggedPos();
+// findMistaggedPos();
 // const posTypes = new Tally<string>();
 // for (const entry of parse(LS_PATH)) {
 //   entry
