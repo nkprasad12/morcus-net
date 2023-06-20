@@ -1,4 +1,5 @@
 import LinkIcon from "@mui/icons-material/Link";
+import TocIcon from "@mui/icons-material/Toc";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
@@ -26,7 +27,10 @@ import { DictsLsApi } from "@/web/utils/rpc/routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 
 type Placement = "top-start" | "right";
-
+const SCROLL_OPTIONS: ScrollIntoViewOptions = {
+  behavior: "smooth",
+  block: "start",
+};
 const ERROR_MESSAGE = new XmlNode(
   "span",
   [],
@@ -333,9 +337,14 @@ export function Dictionary() {
   const isXl = useMediaQuery(theme.breakpoints.up("xl"), noSsr);
 
   const nav = React.useContext(RouteContext);
-  const sectionRef = React.useRef<HTMLElement | null>(null);
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const tocRef = React.useRef<HTMLElement>(null);
 
-  function ContentBox(props: { children: JSX.Element; contentKey?: string }) {
+  function ContentBox(props: {
+    children: JSX.Element;
+    contentKey?: string;
+    contentRef?: React.RefObject<HTMLElement>;
+  }) {
     return (
       <>
         <Box
@@ -348,6 +357,7 @@ export function Dictionary() {
             borderColor: Solarized.base2,
           }}
           key={props.contentKey}
+          ref={props.contentRef}
         >
           <Typography
             component={"div"}
@@ -375,10 +385,7 @@ export function Dictionary() {
           }));
           setEntries(jsxEntries);
         });
-        sectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+        sectionRef.current?.scrollIntoView(SCROLL_OPTIONS);
       });
     }
   }, [nav.route.query]);
@@ -395,7 +402,7 @@ export function Dictionary() {
     return (
       <>
         {entries.length > 0 && (
-          <ContentBox key="tableOfContents">
+          <ContentBox key="tableOfContents" contentRef={tocRef}>
             <div style={{ fontSize: 16, lineHeight: "normal" }}>
               {entries.length > 1 && (
                 <>
@@ -458,6 +465,19 @@ export function Dictionary() {
           <SearchBar />
           <SearchHeader />
           <TableOfContents />
+          <TocIcon
+            onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
+            fontSize="large"
+            sx={{
+              position: "fixed",
+              float: "right",
+              right: "4%",
+              bottom: "2%",
+              borderRadius: 2,
+              backgroundColor: Solarized.base2 + "A0",
+              color: Solarized.base1 + "A0",
+            }}
+          />
           <DictionaryEntries />
         </Container>
       );
