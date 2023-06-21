@@ -71,7 +71,7 @@ function DrawerMenu(props: {
                   <b>{page.name}</b>
                 </Button>
               </ListItem>
-              <Divider light variant="middle" />
+              <Divider key={page.name + "_divider"} light variant="middle" />
             </>
           ))}
         </List>
@@ -94,7 +94,7 @@ function DrawerMenu(props: {
             >
               mórcus.net
             </Button>
-            <LogoImage />
+            <LogoImage key="morcus.net logo" />
           </div>
         </List>
       </Box>
