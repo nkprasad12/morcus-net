@@ -4,16 +4,18 @@ import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
-import Menu from "@mui/material/Menu";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
-import MenuItem from "@mui/material/MenuItem";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Solarized } from "../colors";
 import { Navigation, RouteContext } from "./router";
+import List from "@mui/material/List";
+import ListItem from "@mui/material/ListItem";
+import Drawer from "@mui/material/Drawer";
+import { Divider } from "@mui/material";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -39,27 +41,93 @@ function LogoImage() {
   );
 }
 
+function DrawerMenu(props: {
+  pages: ResponsiveAppBar.Page[];
+  onPageClick: (path: string) => any;
+  onClose: () => any;
+  open: boolean;
+  isCurrentPage: (page: string) => boolean;
+}) {
+  function DrawerItems() {
+    return (
+      <Box role="navigation" onClick={props.onClose} id="menu-appbar">
+        <List>
+          {props.pages.map((page) => (
+            <>
+              <ListItem key={page.name} disablePadding>
+                <Button
+                  key={page.name}
+                  onClick={props.onPageClick(page.path)}
+                  sx={{
+                    my: 1,
+                    mx: 2,
+                    color: props.isCurrentPage(page.path)
+                      ? Solarized.base01
+                      : Solarized.base01 + "90",
+                    display: "block",
+                    justifyContent: "center",
+                  }}
+                >
+                  <b>{page.name}</b>
+                </Button>
+              </ListItem>
+              <Divider light variant="middle" />
+            </>
+          ))}
+        </List>
+        <List style={{ marginTop: `auto` }}>
+          <div
+            style={{
+              position: "fixed",
+              bottom: 0,
+              textAlign: "center",
+              paddingBottom: 10,
+            }}
+          >
+            <Button
+              key="morcus.net"
+              sx={{
+                mx: 2,
+                color: Solarized.base01 + "90",
+                display: "block",
+              }}
+            >
+              mórcus.net
+            </Button>
+            <LogoImage />
+          </div>
+        </List>
+      </Box>
+    );
+  }
+
+  return (
+    <Drawer
+      anchor="left"
+      open={props.open}
+      onClose={props.onClose}
+      PaperProps={{
+        sx: {
+          backgroundColor: Solarized.base2,
+        },
+      }}
+    >
+      <DrawerItems />
+    </Drawer>
+  );
+}
+
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const noSsr = { noSsr: true };
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
 
   const nav = React.useContext(RouteContext);
-  const [anchorElNav, setAnchorElNav] = React.useState<null | HTMLElement>(
-    null
-  );
-
-  const handleOpenNavMenu = (event: React.MouseEvent<HTMLElement>) => {
-    setAnchorElNav(event.currentTarget);
-  };
-
-  const handleCloseNavMenu = () => {
-    setAnchorElNav(null);
-  };
+  const [drawerVisible, setDrawerVisible] = React.useState<boolean>(false);
 
   const handlePageClick = (path: string) => {
     return () => {
-      handleCloseNavMenu();
+      setDrawerVisible(false);
       Navigation.to(nav, path);
     };
   };
@@ -93,35 +161,18 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-label="site pages"
               aria-controls="menu-appbar"
               aria-haspopup="true"
-              onClick={handleOpenNavMenu}
+              onClick={() => setDrawerVisible(true)}
               color="inherit"
             >
               <MenuIcon />
             </IconButton>
-            <Menu
-              id="menu-appbar"
-              anchorEl={anchorElNav}
-              anchorOrigin={{
-                vertical: "bottom",
-                horizontal: "left",
-              }}
-              keepMounted
-              transformOrigin={{
-                vertical: "top",
-                horizontal: "left",
-              }}
-              open={Boolean(anchorElNav)}
-              onClose={handleCloseNavMenu}
-              sx={{
-                display: { xs: "block", md: "none" },
-              }}
-            >
-              {props.pages.map((page) => (
-                <MenuItem key={page.name} onClick={handlePageClick(page.path)}>
-                  <Typography textAlign="center">{page.name}</Typography>
-                </MenuItem>
-              ))}
-            </Menu>
+            <DrawerMenu
+              pages={props.pages}
+              onPageClick={handlePageClick}
+              onClose={() => setDrawerVisible(false)}
+              open={drawerVisible}
+              isCurrentPage={isCurrentPage}
+            />
           </Box>
           <Typography
             variant="h5"
