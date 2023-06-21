@@ -7,7 +7,7 @@ import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Box from "@mui/system/Box";
-import React, { MutableRefObject } from "react";
+import React, { MutableRefObject, useEffect } from "react";
 
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
@@ -458,6 +458,10 @@ export function Dictionary() {
   function DictionaryPage() {
     const dictWidth = isXl ? "lg" : isLarge ? "md" : isMed ? "sm" : "sm";
     const showSidebar = isXl || isLarge || isMed;
+    const contentRef = React.useRef<HTMLDivElement>(null);
+    const [maxHeight, setMaxHeight] = React.useState<number | undefined>(
+      undefined
+    );
 
     if (!showSidebar) {
       return (
@@ -485,6 +489,14 @@ export function Dictionary() {
       );
     }
 
+    useEffect(() => {
+      const offsetTop = contentRef.current?.offsetTop;
+      if (offsetTop === undefined) {
+        return;
+      }
+      setMaxHeight(window.innerHeight - offsetTop);
+    }, []);
+
     return (
       <Container maxWidth="xl">
         <SearchBar />
@@ -492,14 +504,27 @@ export function Dictionary() {
           direction="row"
           spacing={1}
           divider={<Divider orientation="vertical" flexItem />}
+          ref={contentRef}
         >
-          <Container maxWidth="xxs" disableGutters={true}>
-            <TableOfContents />
-          </Container>
-          <Container maxWidth={dictWidth} disableGutters={true}>
-            <SearchHeader />
-            <DictionaryEntries />
-          </Container>
+          {maxHeight && (
+            <Container
+              maxWidth="xxs"
+              disableGutters={true}
+              sx={{ overflow: "auto", maxHeight: maxHeight }}
+            >
+              <TableOfContents />
+            </Container>
+          )}
+          {maxHeight && (
+            <Container
+              maxWidth={dictWidth}
+              disableGutters={true}
+              sx={{ overflow: "auto", maxHeight: maxHeight }}
+            >
+              <SearchHeader />
+              <DictionaryEntries />
+            </Container>
+          )}
         </Stack>
       </Container>
     );
