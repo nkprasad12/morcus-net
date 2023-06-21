@@ -465,19 +465,21 @@ export function Dictionary() {
           <SearchBar />
           <SearchHeader />
           <TableOfContents />
-          <TocIcon
-            onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
-            fontSize="large"
-            sx={{
-              position: "fixed",
-              float: "right",
-              right: "4%",
-              bottom: "2%",
-              borderRadius: 2,
-              backgroundColor: Solarized.base2 + "A0",
-              color: Solarized.base1 + "A0",
-            }}
-          />
+          {entries.length > 0 && (
+            <TocIcon
+              onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
+              fontSize="large"
+              sx={{
+                position: "fixed",
+                float: "right",
+                right: "4%",
+                bottom: "2%",
+                borderRadius: 2,
+                backgroundColor: Solarized.base2 + "A0",
+                color: Solarized.base1 + "A0",
+              }}
+            />
+          )}
           <DictionaryEntries />
         </Container>
       );
