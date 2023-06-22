@@ -7,7 +7,7 @@ import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Box from "@mui/system/Box";
-import React, { MutableRefObject, useEffect } from "react";
+import React, { MutableRefObject } from "react";
 
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
@@ -83,7 +83,14 @@ const HELP_ENTRY = new XmlNode(
 );
 
 const LOADING_ENTRY = xmlNodeToJsx(
-  new XmlNode("div", [], ["Please wait - loading entries"])
+  new XmlNode(
+    "div",
+    [],
+    [
+      "Please wait - searching for matching entries on the server. " +
+        "Contact Mórcus if this takes more than a few seconds.",
+    ]
+  )
 );
 
 export function ClickableTooltip(props: {
@@ -332,9 +339,6 @@ export function Dictionary() {
   const theme = useTheme();
 
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
-  const isMed = useMediaQuery(theme.breakpoints.only("md"), noSsr);
-  const isLarge = useMediaQuery(theme.breakpoints.only("lg"), noSsr);
-  const isXl = useMediaQuery(theme.breakpoints.up("xl"), noSsr);
 
   const nav = React.useContext(RouteContext);
   const sectionRef = React.useRef<HTMLElement>(null);
@@ -392,7 +396,7 @@ export function Dictionary() {
 
   function SearchBar() {
     return (
-      <Container maxWidth="md">
+      <Container maxWidth="md" disableGutters={true}>
         <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
       </Container>
     );
@@ -410,7 +414,7 @@ export function Dictionary() {
                   <br></br>
                 </>
               )}
-              <div>{"this ".repeat(50)}</div>
+              <div>{"this ".repeat(500)}</div>
             </div>
           </ContentBox>
         )}
@@ -456,14 +460,7 @@ export function Dictionary() {
   }
 
   function DictionaryPage() {
-    const dictWidth = isXl ? "lg" : isLarge ? "md" : isMed ? "sm" : "sm";
-    const showSidebar = isXl || isLarge || isMed;
-    const contentRef = React.useRef<HTMLDivElement>(null);
-    const [maxHeight, setMaxHeight] = React.useState<number | undefined>(
-      undefined
-    );
-
-    if (!showSidebar) {
+    if (isSmall) {
       return (
         <Container maxWidth="lg">
           <SearchBar />
@@ -489,42 +486,37 @@ export function Dictionary() {
       );
     }
 
-    useEffect(() => {
-      const offsetTop = contentRef.current?.offsetTop;
-      if (offsetTop === undefined) {
-        return;
-      }
-      setMaxHeight(window.innerHeight - offsetTop);
-    }, []);
+    if (entries.length === 0) {
+      return (
+        <Container maxWidth="xl">
+          <SearchBar />
+        </Container>
+      );
+    }
 
     return (
       <Container maxWidth="xl">
-        <SearchBar />
-        <Stack
-          direction="row"
-          spacing={1}
-          divider={<Divider orientation="vertical" flexItem />}
-          ref={contentRef}
-        >
-          {maxHeight && (
-            <Container
-              maxWidth="xxs"
-              disableGutters={true}
-              sx={{ overflow: "auto", maxHeight: maxHeight }}
-            >
-              <TableOfContents />
-            </Container>
-          )}
-          {maxHeight && (
-            <Container
-              maxWidth={dictWidth}
-              disableGutters={true}
-              sx={{ overflow: "auto", maxHeight: maxHeight }}
-            >
-              <SearchHeader />
-              <DictionaryEntries />
-            </Container>
-          )}
+        <Stack direction="row" spacing={0} justifyContent="center">
+          <div
+            style={{
+              position: "sticky",
+              zIndex: 1,
+              top: 0,
+              left: 0,
+              marginTop: 10,
+              overflow: "auto",
+              maxHeight: window.innerHeight - 40,
+              maxWidth: "25%",
+              minWidth: "250px",
+            }}
+          >
+            <TableOfContents />
+          </div>
+          <div style={{ maxWidth: "none" }}>
+            <SearchBar />
+            <SearchHeader />
+            <DictionaryEntries />
+          </div>
         </Stack>
       </Container>
     );
