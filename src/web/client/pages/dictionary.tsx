@@ -1,5 +1,6 @@
 import LinkIcon from "@mui/icons-material/Link";
 import TocIcon from "@mui/icons-material/Toc";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
@@ -87,8 +88,8 @@ const LOADING_ENTRY = xmlNodeToJsx(
     "div",
     [],
     [
-      "Please wait - searching for matching entries on the server. " +
-        "Contact Mórcus if this takes more than a few seconds.",
+      "Please wait - checking for results." +
+        "Dedit oscula nato non iterum repetenda suo ".repeat(3),
     ]
   )
 );
@@ -343,6 +344,7 @@ export function Dictionary() {
   const nav = React.useContext(RouteContext);
   const sectionRef = React.useRef<HTMLElement>(null);
   const tocRef = React.useRef<HTMLElement>(null);
+  const entriesRef = React.useRef<HTMLDivElement>(null);
 
   function ContentBox(props: {
     children: JSX.Element;
@@ -394,27 +396,29 @@ export function Dictionary() {
     }
   }, [nav.route.query]);
 
-  function SearchBar() {
+  function SearchBar(props: { maxWidth: "md" | "lg" }) {
     return (
-      <Container maxWidth="md" disableGutters={true}>
+      <Container maxWidth={props.maxWidth} disableGutters={true}>
         <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
       </Container>
     );
   }
 
   function TableOfContents() {
+    const TOC_FILLER =
+      "This will eventually be a table of contents, but for now: Gallia est omnis divisa in partes tres. ";
+
     return (
       <>
         {entries.length > 0 && (
           <ContentBox key="tableOfContents" contentRef={tocRef}>
             <div style={{ fontSize: 16, lineHeight: "normal" }}>
-              {entries.length > 1 && (
-                <>
-                  <div>Found {entries.length} results.</div>
-                  <br></br>
-                </>
-              )}
-              <div>{"this ".repeat(500)}</div>
+              <span>
+                Found {entries.length} result{entries.length > 1 ? "s" : ""}.
+              </span>
+              <Divider variant="middle" light={true} sx={{ padding: "5px" }} />
+              <br></br>
+              <div>{TOC_FILLER.repeat(10)}</div>
             </div>
           </ContentBox>
         )}
@@ -463,25 +467,46 @@ export function Dictionary() {
     if (isSmall) {
       return (
         <Container maxWidth="lg">
-          <SearchBar />
+          <SearchBar maxWidth="lg" />
           <SearchHeader />
-          <TableOfContents />
-          {entries.length > 0 && (
-            <TocIcon
-              onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
-              fontSize="large"
-              sx={{
-                position: "fixed",
-                float: "right",
-                right: "4%",
-                bottom: "2%",
-                borderRadius: 2,
-                backgroundColor: Solarized.base2 + "A0",
-                color: Solarized.base1 + "A0",
-              }}
-            />
-          )}
-          <DictionaryEntries />
+          <div>
+            {entries.length > 0 && (
+              <ArrowDownwardIcon
+                onClick={() =>
+                  entriesRef.current?.scrollIntoView(SCROLL_OPTIONS)
+                }
+                fontSize="large"
+                sx={{
+                  position: "sticky",
+                  float: "right",
+                  right: "4%",
+                  bottom: "2%",
+                  borderRadius: 2,
+                  backgroundColor: Solarized.base2 + "80",
+                  color: Solarized.base1 + "80",
+                }}
+              />
+            )}
+            <TableOfContents />
+          </div>
+          <div ref={entriesRef}>
+            <DictionaryEntries />
+            {entries.length > 0 && (
+              <TocIcon
+                onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
+                fontSize="large"
+                sx={{
+                  position: "sticky",
+                  float: "right",
+                  right: "4%",
+                  bottom: "2%",
+                  borderRadius: 2,
+                  backgroundColor: Solarized.base2 + "D0",
+                  color: Solarized.base1 + "D0",
+                }}
+              />
+            )}
+          </div>
         </Container>
       );
     }
@@ -489,7 +514,7 @@ export function Dictionary() {
     if (entries.length === 0) {
       return (
         <Container maxWidth="xl">
-          <SearchBar />
+          <SearchBar maxWidth="md" />
         </Container>
       );
     }
@@ -513,7 +538,7 @@ export function Dictionary() {
             <TableOfContents />
           </div>
           <div style={{ maxWidth: "none" }}>
-            <SearchBar />
+            <SearchBar maxWidth="lg" />
             <SearchHeader />
             <DictionaryEntries />
           </div>
