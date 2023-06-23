@@ -101,3 +101,32 @@ export function isArray<T>(
     return true;
   };
 }
+
+export function maybeUndefined<T>(
+  checker: (x: unknown) => x is T
+): (x: unknown) => x is T | undefined {
+  return (x: unknown): x is T | undefined => {
+    return x === undefined || checker(x);
+  };
+}
+
+export function matches<T>(
+  fieldCheckers: [string, (x: unknown) => boolean][]
+): (x: unknown) => x is T {
+  return (x: unknown): x is T => {
+    if (x === null) {
+      return false;
+    }
+    if (typeof x !== "object") {
+      return false;
+    }
+    for (const [name, checker] of fieldCheckers) {
+      // @ts-ignore
+      const value = x[name];
+      if (!checker(value)) {
+        return false;
+      }
+    }
+    return true;
+  };
+}

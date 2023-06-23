@@ -5,7 +5,10 @@ import {
   instanceOf,
   isAny,
   isArray,
+  isNumber,
   isString,
+  matches,
+  maybeUndefined,
   typeOf,
 } from "./parsing";
 
@@ -44,6 +47,47 @@ describe("typeOf", () => {
   it("it returns valid on number", () => {
     expect(typeOf("number")(1)).toBe(true);
     expect(typeOf("number")("1")).toBe(false);
+  });
+});
+
+describe("maybeUndefined", () => {
+  it("returns true on undefined", () => {
+    expect(maybeUndefined(isString)(undefined)).toBe(true);
+  });
+
+  it("returns true on match", () => {
+    expect(maybeUndefined(isString)("undef")).toBe(true);
+  });
+
+  it("returns false on other", () => {
+    expect(maybeUndefined(isString)(57)).toBe(false);
+  });
+});
+
+describe("matchesInterface", () => {
+  const matcher = matches([
+    ["a", isString],
+    ["b", isNumber],
+  ]);
+
+  it("returns false on non object", () => {
+    expect(matcher(57)).toBe(false);
+  });
+
+  it("returns false on null object", () => {
+    expect(matcher(null)).toBe(false);
+  });
+
+  it("returns false on missing argument", () => {
+    expect(matcher({ a: "57" })).toBe(false);
+  });
+
+  it("returns false on bad argument", () => {
+    expect(matcher({ a: "57", b: "57" })).toBe(false);
+  });
+
+  it("returns true on good input", () => {
+    expect(matcher({ a: "57", b: 57 })).toBe(true);
   });
 });
 
