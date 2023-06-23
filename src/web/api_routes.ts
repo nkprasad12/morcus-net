@@ -1,6 +1,12 @@
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
-import { ApiRoute } from "./api_route";
-import { instanceOf, isAny, isArray, isString, typeOf } from "./parsing";
+import { ApiRoute } from "./utils/rpc/rpc";
+import {
+  instanceOf,
+  isAny,
+  isArray,
+  isString,
+  typeOf,
+} from "./utils/rpc/parsing";
 
 export const MacronizeApi: ApiRoute<string, string> = {
   path: "/api/macronize",

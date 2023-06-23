@@ -1,7 +1,7 @@
 import { assert } from "@/common/assert";
 import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
 import express, { Request, Response } from "express";
-import { ApiRoute } from "./api_route";
+import { ApiRoute } from "./rpc";
 import { decodeMessage, encodeMessage } from "./parsing";
 
 export type Data = boolean | string | number | object;

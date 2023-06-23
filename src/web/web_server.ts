@@ -9,8 +9,8 @@ import {
   EntriesByPrefixApi,
   MacronizeApi,
   ReportApi,
-} from "./utils/rpc/routes";
-import { ApiRoute } from "./utils/rpc/api_route";
+} from "./api_routes";
+import { ApiRoute } from "./utils/rpc/rpc";
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
 
 export interface WebServerParams {

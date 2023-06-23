@@ -11,7 +11,7 @@ import {
   EntriesByPrefixApi,
   MacronizeApi,
   ReportApi,
-} from "./utils/rpc/routes";
+} from "./api_routes";
 import { encodeMessage } from "./utils/rpc/parsing";
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
 

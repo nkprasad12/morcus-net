@@ -1,4 +1,4 @@
-import { ApiRoute } from "./api_route";
+import { ApiRoute } from "./rpc";
 import { decodeMessage, encodeMessage } from "./parsing";
 
 const POST_HEADERS = {
