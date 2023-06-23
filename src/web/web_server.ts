@@ -3,34 +3,16 @@ import express, { Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
 import { TelemetryLogger } from "./telemetry/telemetry";
-import { ApiHandler, Data, addApi } from "./utils/rpc/server_rpc";
-import {
-  DictsLsApi,
-  EntriesByPrefixApi,
-  MacronizeApi,
-  ReportApi,
-} from "./api_routes";
-import { ApiRoute } from "./utils/rpc/rpc";
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { RouteAndHandler, addApi } from "./utils/rpc/server_rpc";
 
 export interface WebServerParams {
   webApp: express.Express;
-  macronizer: ApiHandler<string, string>;
-  lsDict: ApiHandler<string, XmlNode[]>;
-  entriesByPrefix: ApiHandler<string, string[]>;
-  fileIssueReport: ApiHandler<string, any>;
+  routes: RouteAndHandler<any, any>[];
   telemetry: Promise<TelemetryLogger>;
   buildDir: string;
 }
 
 export function setupServer(params: WebServerParams): void {
-  function handleApi<I, O extends Data>(
-    route: ApiRoute<I, O>,
-    handler: ApiHandler<I, O>
-  ) {
-    addApi(params, { route: route, handler: handler });
-  }
-
   const app = params.webApp;
   app.use(bodyParser.text());
   app.use(compression());
@@ -58,8 +40,5 @@ export function setupServer(params: WebServerParams): void {
     next();
   });
 
-  handleApi(MacronizeApi, params.macronizer);
-  handleApi(ReportApi, params.fileIssueReport);
-  handleApi(DictsLsApi, params.lsDict);
-  handleApi(EntriesByPrefixApi, params.entriesByPrefix);
+  params.routes.forEach((r) => addApi(params, r));
 }
