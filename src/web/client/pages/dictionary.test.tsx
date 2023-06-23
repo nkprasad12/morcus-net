@@ -141,7 +141,11 @@ describe("Dictionary View", () => {
 
   it("shows result on success", async () => {
     const resultString = "France or whatever idk lol";
-    mockCallApi.mockResolvedValue([new XmlNode("span", [], [resultString])]);
+    mockCallApi.mockResolvedValue([
+      {
+        entry: new XmlNode("span", [], [resultString]),
+      },
+    ]);
     render(
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
@@ -157,8 +161,11 @@ describe("Dictionary View", () => {
 
   it("fetches result from navigation context", async () => {
     const resultString = "France or whatever idk lol";
-    mockCallApi.mockResolvedValue([new XmlNode("span", [], [resultString])]);
-
+    mockCallApi.mockResolvedValue([
+      {
+        entry: new XmlNode("span", [], [resultString]),
+      },
+    ]);
     render(
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Belgae" }, navigateTo: () => {} }}

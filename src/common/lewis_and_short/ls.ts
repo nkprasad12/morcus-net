@@ -6,6 +6,7 @@ import { parseEntries, XmlNode } from "./xml_node";
 import { displayEntryFree } from "./ls_display";
 import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
 import { removeDiacritics } from "../text_cleaning";
+import { LsResult } from "@/web/utils/rpc/ls_api_result";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -40,11 +41,15 @@ export class LewisAndShort {
     );
   }
 
-  async getEntry(input: string): Promise<XmlNode[]> {
+  async getEntry(input: string): Promise<LsResult[]> {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
-      return [new XmlNode("span", [], [`Could not find entry for ${input}`])];
+      return [
+        {
+          entry: new XmlNode("span", [], [`Could not find entry for ${input}`]),
+        },
+      ];
     }
 
     const hasDiactrics = input === request;
@@ -56,7 +61,7 @@ export class LewisAndShort {
     const resultIndices = [...new Set(allMatches.map(([i, _]) => i))];
     const entryStrings = resultIndices.map((i) => this.entries[i]);
     const entryNodes = parseEntries(entryStrings);
-    return entryNodes.map((node) => displayEntryFree(node));
+    return entryNodes.map((node) => ({ entry: displayEntryFree(node) }));
   }
 
   async getCompletions(input: string): Promise<string[]> {

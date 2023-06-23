@@ -260,7 +260,8 @@ export function xmlNodeToJsx(
 
 async function fetchEntry(input: string): Promise<XmlNode[]> {
   try {
-    return await callApi(DictsLsApi, input);
+    const results = await callApi(DictsLsApi, input);
+    return results.map((r) => r.entry);
   } catch (e) {
     console.debug(e);
     return [ERROR_MESSAGE];

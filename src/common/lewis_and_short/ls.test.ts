@@ -173,40 +173,47 @@ describe("LewisAndShort", () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    expectEqual(await dict.getEntry("Julius"), [
-      '<div class="lsEntryFree">Gallia est omnis</div>',
-    ]);
-    expectEqual(await dict.getEntry("Publius"), [
-      '<div class="lsEntryFree">Non iterum repetenda suo</div>',
-    ]);
+    expectEqual(
+      (await dict.getEntry("Julius")).map((r) => r.entry),
+      ['<div class="lsEntryFree">Gallia est omnis</div>']
+    );
+    expectEqual(
+      (await dict.getEntry("Publius")).map((r) => r.entry),
+      ['<div class="lsEntryFree">Non iterum repetenda suo</div>']
+    );
   });
 
   test("getEntry handles ambiguous queries", async () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    expectEqual(await dict.getEntry("Naso"), [
-      '<div class="lsEntryFree">Non iterum repetenda suo</div>',
-      '<div class="lsEntryFree">Pennisque levatus</div>',
-    ]);
+    expectEqual(
+      (await dict.getEntry("Naso")).map((r) => r.entry),
+      [
+        '<div class="lsEntryFree">Non iterum repetenda suo</div>',
+        '<div class="lsEntryFree">Pennisque levatus</div>',
+      ]
+    );
   });
 
   test("getEntry handles unknown queries", async () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    expectEqual(await dict.getEntry("Foo"), [
-      "<span>Could not find entry for Foo</span>",
-    ]);
+    expectEqual(
+      (await dict.getEntry("Foo")).map((r) => r.entry),
+      ["<span>Could not find entry for Foo</span>"]
+    );
   });
 
   test("getEntry handles same ascii orths in single article", async () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    expectEqual(await dict.getEntry("ino"), [
-      '<div class="lsEntryFree">Ino edge case</div>',
-    ]);
+    expectEqual(
+      (await dict.getEntry("ino")).map((r) => r.entry),
+      ['<div class="lsEntryFree">Ino edge case</div>']
+    );
   });
 
   test("getCompletions returns expected results", async () => {
