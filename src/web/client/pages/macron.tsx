@@ -5,7 +5,7 @@ import TextField from "@mui/material/TextField";
 
 import { Solarized } from "../colors";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import { MacronizeApi } from "@/web/utils/rpc/routes";
+import { MacronizeApi } from "@/web/api_routes";
 
 export function Macronizer() {
   const [rawInput, setRawInput] = useState<string | undefined>(undefined);

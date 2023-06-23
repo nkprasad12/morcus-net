@@ -24,7 +24,7 @@ import { AutocompleteCache } from "./autocomplete_cache";
 import { Navigation, RouteContext } from "../components/router";
 import { flushSync } from "react-dom";
 import { checkPresent } from "@/common/assert";
-import { DictsLsApi } from "@/web/utils/rpc/routes";
+import { DictsLsApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 
 type Placement = "top-start" | "right";

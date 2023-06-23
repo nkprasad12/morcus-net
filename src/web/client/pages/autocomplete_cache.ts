@@ -1,6 +1,6 @@
 import { removeDiacritics } from "@/common/text_cleaning";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import { EntriesByPrefixApi } from "@/web/utils/rpc/routes";
+import { EntriesByPrefixApi } from "@/web/api_routes";
 
 const EXTRA_KEY_LOOKUP = new Map<string, string>([
   ["u", "v"],

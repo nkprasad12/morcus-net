@@ -10,7 +10,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 
 import { Solarized } from "../colors";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import { ReportApi } from "@/web/utils/rpc/routes";
+import { ReportApi } from "@/web/api_routes";
 
 export function ReportIssueDialog(props: {
   show: boolean;
