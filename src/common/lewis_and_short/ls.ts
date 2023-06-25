@@ -7,6 +7,7 @@ import { displayEntryFree } from "./ls_display";
 import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
 import { removeDiacritics } from "../text_cleaning";
 import { LsResult } from "@/web/utils/rpc/ls_api_result";
+import { extractOutline } from "./ls_outline";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -61,7 +62,10 @@ export class LewisAndShort {
     const resultIndices = [...new Set(allMatches.map(([i, _]) => i))];
     const entryStrings = resultIndices.map((i) => this.entries[i]);
     const entryNodes = parseEntries(entryStrings);
-    return entryNodes.map((node) => ({ entry: displayEntryFree(node) }));
+    return entryNodes.map((node) => ({
+      entry: displayEntryFree(node),
+      outline: extractOutline(node),
+    }));
   }
 
   async getCompletions(input: string): Promise<string[]> {

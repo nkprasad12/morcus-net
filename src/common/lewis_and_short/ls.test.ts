@@ -1,9 +1,14 @@
 import fs from "fs";
 
 import { LewisAndShort } from "./ls";
+// import { extractOutline } from "./ls_outline";
 import { XmlNode } from "./xml_node";
 
 console.debug = jest.fn();
+
+jest.mock("./ls_outline", () => ({
+  extractOutline: jest.fn(() => "mockOutline"),
+}));
 
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
@@ -181,6 +186,15 @@ describe("LewisAndShort", () => {
       (await dict.getEntry("Publius")).map((r) => r.entry),
       ['<div class="lsEntryFree">Non iterum repetenda suo</div>']
     );
+  });
+
+  test("getEntry handles expected entries", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
+
+    expect(outline).toStrictEqual(["mockOutline"]);
   });
 
   test("getEntry handles ambiguous queries", async () => {
