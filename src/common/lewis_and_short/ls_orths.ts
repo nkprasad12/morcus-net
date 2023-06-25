@@ -659,3 +659,7 @@ export function getOrths(root: XmlNode): string[] {
   const orths = regularizeOrths(cleanOrths(rawOrths(root)));
   return [...new Set(orths)];
 }
+
+export function displayTextForOrth(orth: string) {
+  return orth.replaceAll("^", "\u0306").replaceAll("_", "\u0304");
+}

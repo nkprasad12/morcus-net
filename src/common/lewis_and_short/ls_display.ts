@@ -21,6 +21,7 @@ import {
   handleAbbreviationsInMessage,
   findExpansions,
 } from "@/common/lewis_and_short/ls_styling";
+import { displayTextForOrth } from "./ls_orths";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
@@ -704,11 +705,7 @@ function displayOrth(
   return new XmlNode(
     "span",
     [["class", "lsOrth"]],
-    [
-      XmlNode.getSoleText(root)
-        .replaceAll("^", "\u0306")
-        .replaceAll("_", "\u0304"),
-    ]
+    [displayTextForOrth(XmlNode.getSoleText(root))]
   );
 }
 
@@ -1007,7 +1004,7 @@ export function formatSenseList(
   return stack[0];
 }
 
-function sanitizeTree(root: XmlNode): XmlNode {
+export function sanitizeTree(root: XmlNode): XmlNode {
   const children: (XmlNode | string)[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
