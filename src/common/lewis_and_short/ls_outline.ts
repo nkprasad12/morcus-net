@@ -1,5 +1,5 @@
 import { LsOutline, SectionOutline } from "@/web/utils/rpc/ls_api_result";
-import { COMMENT_NODE, XmlNode } from "./xml_node";
+import { COMMENT_NODE, XmlChild, XmlNode } from "./xml_node";
 import { assert, checkPresent } from "../assert";
 import { displayTextForOrth } from "./ls_orths";
 
@@ -40,8 +40,13 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
   }
 
   const entryId = checkPresent(rootNode.getAttr("id"), "Root must have an id.");
+  const mainBlurb = getContainedText(
+    rootNode,
+    100,
+    (nextNode) => nextNode !== level1Isenses[0][0] && nextNode.name === "sense"
+  );
   const mainSection: SectionOutline = {
-    text: `MainBlurb[${entryId}]`,
+    text: mainBlurb,
     level: 0,
     ordinal: "",
     sectionId: entryId,
@@ -49,7 +54,7 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
   const senseBlurbs: SectionOutline[] = senses.map((sense) => {
     const senseId = checkPresent(sense.getAttr("id"), "Sense must have an id.");
     return {
-      text: `SenseBlurb[${senseId}]`,
+      text: getSenseBlurb(sense),
       level: +checkPresent(sense.getAttr("level"), "Sense must have a level"),
       ordinal: checkPresent(sense.getAttr("n"), "Sense must have an n"),
       sectionId: senseId,
@@ -81,4 +86,57 @@ export function sanitizeTree(root: XmlNode): XmlNode {
     }
   }
   return new XmlNode(root.name, root.attrs, children);
+}
+
+function getSenseBlurb(senseNode: XmlNode): string {
+  const text = getContainedText(senseNode);
+  console.log(text);
+  const bracketFree = removeBracketedText(text);
+  return bracketFree.split(":")[0];
+}
+
+function removeBracketedText(input: string): string {
+  let result: string = "";
+  const openQueue: string[] = [];
+  for (const c of input) {
+    if (c === "(") {
+      openQueue.push(")");
+    } else if (c === "[") {
+      openQueue.push("]");
+    } else if (openQueue[0] === c) {
+      openQueue.pop();
+    } else if (openQueue.length === 0) {
+      result += c;
+    }
+  }
+  return result;
+}
+
+function getContainedText(
+  root: XmlNode,
+  charsRequested: number = 35,
+  stopCheck: (node: XmlNode) => boolean = (n) => false
+): string {
+  const queue: XmlChild[] = [root];
+  let result = "";
+  while (queue.length > 0) {
+    const top = queue.pop()!;
+    if (typeof top === "string") {
+      result += top;
+      if (result.length > charsRequested) {
+        return result + " ...";
+      }
+      continue;
+    }
+    if (top.name === "etym") {
+      continue;
+    }
+    if (stopCheck(top)) {
+      return result;
+    }
+    for (let i = 0; i < top.children.length; i++) {
+      queue.push(top.children[top.children.length - i - 1]);
+    }
+  }
+  return result;
 }
