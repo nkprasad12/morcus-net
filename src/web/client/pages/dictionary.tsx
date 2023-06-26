@@ -1,5 +1,6 @@
 import LinkIcon from "@mui/icons-material/Link";
 import TocIcon from "@mui/icons-material/Toc";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
@@ -26,17 +27,21 @@ import { flushSync } from "react-dom";
 import { checkPresent } from "@/common/assert";
 import { DictsLsApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
+import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
+import { getBullet } from "@/common/lewis_and_short/ls_outline";
 
 type Placement = "top-start" | "right";
 const SCROLL_OPTIONS: ScrollIntoViewOptions = {
-  behavior: "smooth",
+  behavior: "auto",
   block: "start",
 };
-const ERROR_MESSAGE = new XmlNode(
-  "span",
-  [],
-  ["Failed to fetch the entry. Please try again later."]
-);
+const ERROR_MESSAGE = {
+  entry: new XmlNode(
+    "span",
+    [],
+    ["Failed to fetch the entry. Please try again later."]
+  ),
+};
 const HIGHLIGHT_HELP = new XmlNode(
   "div",
   [],
@@ -180,6 +185,64 @@ export function SectionLinkTooltip(props: {
   );
 }
 
+function OutlineSection(props: {
+  outline: LsOutline | undefined;
+  onClick: (section: string) => any;
+}) {
+  const senses = props.outline?.senses;
+
+  return (
+    <div>
+      <Divider variant="middle" light={true} sx={{ padding: "5px" }} />
+      <br />
+      <span
+        style={{ cursor: "pointer" }}
+        onClick={() =>
+          props.onClick(props.outline?.mainSection.sectionId || "undefined")
+        }
+      >
+        {props.outline?.mainSection.text || "Missing outline data"}
+      </span>
+      {senses === undefined ? (
+        <></>
+      ) : (
+        <ol style={{ paddingLeft: "0em" }}>
+          {senses.map((sense) => {
+            const header = getBullet(sense.ordinal);
+            return (
+              <li
+                key={sense.sectionId}
+                style={{
+                  cursor: "pointer",
+                  marginBottom: "4px",
+                  paddingLeft: `${(sense.level - 1) / 2}em`,
+                }}
+                onClick={() => props.onClick(sense.sectionId)}
+              >
+                <span
+                  className="lsSenseBullet"
+                  style={{ backgroundColor: Solarized.base01 + "30" }}
+                >
+                  <OpenInNewIcon
+                    sx={{
+                      marginBottom: "-0.1em",
+                      marginRight: "-0.1em",
+                      fontSize: "0.8rem",
+                      paddingLeft: "0.1em",
+                    }}
+                  />
+                  {` ${header}. `}
+                </span>
+                <span>{" " + sense.text}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
@@ -258,12 +321,10 @@ export function xmlNodeToJsx(
   }
 }
 
-async function fetchEntry(input: string): Promise<XmlNode[]> {
+async function fetchEntry(input: string): Promise<LsResult[]> {
   try {
-    const results = await callApi(DictsLsApi, input);
-    return results.map((r) => r.entry);
+    return await callApi(DictsLsApi, input);
   } catch (e) {
-    console.debug(e);
     return [ERROR_MESSAGE];
   }
 }
@@ -338,6 +399,7 @@ const noSsr = { noSsr: true };
 
 export function Dictionary() {
   const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
+  const [outlines, setOutlines] = React.useState<(LsOutline | undefined)[]>([]);
   const theme = useTheme();
 
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
@@ -384,13 +446,14 @@ export function Dictionary() {
   React.useEffect(() => {
     if (nav.route.query !== undefined) {
       setEntries([{ element: LOADING_ENTRY, key: "LOADING_ENTRY" }]);
-      fetchEntry(nav.route.query).then((newEntries) => {
+      fetchEntry(nav.route.query).then((newResults) => {
         flushSync(() => {
-          const jsxEntries = newEntries.map((e, i) => ({
-            element: xmlNodeToJsx(e, nav.route.hash, sectionRef),
-            key: e.getAttr("id") || `${i}`,
+          const jsxEntries = newResults.map((e, i) => ({
+            element: xmlNodeToJsx(e.entry, nav.route.hash, sectionRef),
+            key: e.entry.getAttr("id") || `${i}`,
           }));
           setEntries(jsxEntries);
+          setOutlines(newResults.map((r) => r.outline));
         });
         sectionRef.current?.scrollIntoView(SCROLL_OPTIONS);
       });
@@ -406,9 +469,6 @@ export function Dictionary() {
   }
 
   function TableOfContents() {
-    const TOC_FILLER =
-      "This will eventually be a table of contents, but for now: Gallia est omnis divisa in partes tres. ";
-
     return (
       <>
         {entries.length > 0 && (
@@ -417,9 +477,22 @@ export function Dictionary() {
               <span>
                 Found {entries.length} result{entries.length > 1 ? "s" : ""}.
               </span>
-              <Divider variant="middle" light={true} sx={{ padding: "5px" }} />
-              <br></br>
-              <div>{TOC_FILLER.repeat(10)}</div>
+              {outlines.map((outline, index) => (
+                <OutlineSection
+                  key={outline?.mainSection.sectionId || `undefined${index}`}
+                  outline={outline}
+                  onClick={(section) => {
+                    const selected = document.getElementById(section);
+                    if (selected === null) {
+                      return;
+                    }
+                    window.scrollTo({
+                      behavior: "auto",
+                      top: selected.offsetTop,
+                    });
+                  }}
+                />
+              ))}
             </div>
           </ContentBox>
         )}
@@ -476,13 +549,13 @@ export function Dictionary() {
                 onClick={() =>
                   entriesRef.current?.scrollIntoView(SCROLL_OPTIONS)
                 }
-                fontSize="large"
                 sx={{
                   position: "sticky",
                   float: "right",
                   right: "4%",
                   bottom: "2%",
-                  borderRadius: 2,
+                  fontSize: "1.75rem",
+                  borderRadius: 1,
                   backgroundColor: Solarized.base2 + "80",
                   color: Solarized.base1 + "80",
                 }}
@@ -532,13 +605,13 @@ export function Dictionary() {
               marginTop: 10,
               overflow: "auto",
               maxHeight: window.innerHeight - 40,
-              maxWidth: "25%",
+              maxWidth: "35%",
               minWidth: "250px",
             }}
           >
             <TableOfContents />
           </div>
-          <div style={{ maxWidth: "none" }}>
+          <div style={{ maxWidth: "65%" }}>
             <SearchBar maxWidth="lg" />
             <SearchHeader />
             <DictionaryEntries />

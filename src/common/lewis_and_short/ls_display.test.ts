@@ -14,26 +14,11 @@ import {
   displayQ,
   displayUsg,
   formatSenseList,
-  getBullet,
 } from "./ls_display";
 import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
 import { parseEntries, XmlNode } from "./xml_node";
 
 console.debug = jest.fn();
-
-describe("getBullet", () => {
-  it("returns original on unparenthesized", () => {
-    expect(getBullet("I")).toBe("I");
-  });
-
-  it("returns Greek character on known parenthesized", () => {
-    expect(getBullet("(d)")).toBe("δ");
-  });
-
-  it("returns original on unknown parenthesized", () => {
-    expect(getBullet("(*d)")).toBe("(*d)");
-  });
-});
 
 describe("displayNote", () => {
   it("is collapsed entirely", () => {

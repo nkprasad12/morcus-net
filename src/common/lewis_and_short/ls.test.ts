@@ -7,6 +7,7 @@ import { XmlNode } from "./xml_node";
 console.debug = jest.fn();
 
 jest.mock("./ls_outline", () => ({
+  ...jest.requireActual("./ls_outline"),
   extractOutline: jest.fn(() => "mockOutline"),
 }));
 
