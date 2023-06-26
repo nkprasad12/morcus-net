@@ -189,19 +189,33 @@ function OutlineSection(props: {
   outline: LsOutline | undefined;
   onClick: (section: string) => any;
 }) {
-  const senses = props.outline?.senses;
+  const outline = props.outline;
+  if (outline === undefined) {
+    return <span>Missing outline data</span>;
+  }
+
+  const senses = outline.senses;
 
   return (
     <div>
       <Divider variant="middle" light={true} sx={{ padding: "5px" }} />
       <br />
-      <span
-        style={{ cursor: "pointer" }}
-        onClick={() =>
-          props.onClick(props.outline?.mainSection.sectionId || "undefined")
-        }
-      >
-        {props.outline?.mainSection.text || "Missing outline data"}
+      <span onClick={() => props.onClick(outline.mainSection.sectionId)}>
+        <span
+          className="lsSenseBullet"
+          style={{ backgroundColor: Solarized.base01 + "30" }}
+        >
+          <OpenInNewIcon
+            sx={{
+              marginBottom: "-0.1em",
+              marginRight: "-0.1em",
+              fontSize: "0.8rem",
+              paddingLeft: "0.1em",
+            }}
+          />
+          {` ${outline.mainOrth}`}
+        </span>
+        {" " + outline.mainSection.text}
       </span>
       {senses === undefined ? (
         <></>

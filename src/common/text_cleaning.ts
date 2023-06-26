@@ -30,6 +30,7 @@ const DIACRITICS = new Map<string, string>([
   ["Ĕ", "E"],
   ["Ī", "I"],
   ["Ĭ", "I"],
+  ["Ō", "O"],
   ["Õ", "O"],
   ["Ŏ", "O"],
   ["Ū", "U"],

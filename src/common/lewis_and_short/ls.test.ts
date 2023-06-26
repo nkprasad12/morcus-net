@@ -1,7 +1,6 @@
 import fs from "fs";
 
 import { LewisAndShort } from "./ls";
-// import { extractOutline } from "./ls_outline";
 import { XmlNode } from "./xml_node";
 
 console.debug = jest.fn();

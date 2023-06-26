@@ -8,4 +8,9 @@ describe("removeDiacritics", () => {
   it("removes only diacritics if present", () => {
     expect(removeDiacritics("cānaba")).toBe("canaba");
   });
+
+  it("handles weird tilde characters in o", () => {
+    const result = removeDiacritics("Ōărĭon").toLowerCase();
+    expect(result).toBe("oarion");
+  });
 });

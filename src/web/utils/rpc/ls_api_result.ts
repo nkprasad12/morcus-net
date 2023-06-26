@@ -26,6 +26,7 @@ export namespace SectionOutline {
 }
 
 export interface LsOutline {
+  mainOrth: string;
   mainSection: SectionOutline;
   senses?: SectionOutline[];
 }

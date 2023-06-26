@@ -34,7 +34,7 @@ describe("Ls API types", () => {
 
   test("LsResult.isMatch returns true with good outline", () => {
     const input = new XmlNode("span");
-    const result: LsResult = {
+    const result = {
       entry: input,
       outline: {
         mainSection: {

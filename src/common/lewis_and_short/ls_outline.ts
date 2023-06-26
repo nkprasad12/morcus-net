@@ -1,6 +1,7 @@
 import { LsOutline, SectionOutline } from "@/web/utils/rpc/ls_api_result";
 import { COMMENT_NODE, XmlNode } from "./xml_node";
 import { assert, checkPresent } from "../assert";
+import { displayTextForOrth } from "./ls_orths";
 
 const GREEK_BULLET_MAP = new Map<string, string>([
   ["a", "α"],
@@ -54,7 +55,12 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
       sectionId: senseId,
     };
   });
-  return { mainSection: mainSection, senses: senseBlurbs };
+  const orths = root.findChildren("orth");
+  return {
+    mainSection: mainSection,
+    mainOrth: displayTextForOrth(XmlNode.getSoleText(orths[0])),
+    senses: senseBlurbs,
+  };
 }
 
 export function sanitizeTree(root: XmlNode): XmlNode {
