@@ -177,7 +177,7 @@ describe("extractOutline", () => {
     expect(result).toStrictEqual({
       mainOrth: "mainOrth",
       mainSection: {
-        text: "mainOrth I am a blurb.I am a sense1 blurb",
+        text: "mainOrth I am a blurb.; I am a sense1 blurb",
         level: 0,
         ordinal: "",
         sectionId: "n1",

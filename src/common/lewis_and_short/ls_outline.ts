@@ -46,7 +46,10 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
       80,
       (nextNode) =>
         nextNode.name === "sense" && nextNode !== level1Isenses[0][0]
-    ) + (level1Isenses.length > 1 ? getContainedText(level1Isenses[0][0]) : "");
+    ) +
+    (level1Isenses.length > 1
+      ? "; " + getContainedText(level1Isenses[0][0])
+      : "");
   const mainSection: SectionOutline = {
     text: mainBlurb,
     level: 0,
