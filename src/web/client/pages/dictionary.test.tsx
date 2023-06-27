@@ -139,36 +139,39 @@ describe("Dictionary View", () => {
     });
   });
 
-  it("shows result on success", async () => {
+  it("shows fetched result on success", async () => {
+    const spyScrollTo = jest.fn();
+    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
     const resultString = "France or whatever idk lol";
     mockCallApi.mockResolvedValue([
       {
-        entry: new XmlNode("span", [], [resultString]),
+        entry: new XmlNode("span", [["id", "n3"]], [resultString]),
+        outline: {
+          mainOrth: "mainOrth",
+          mainSection: {
+            text: "mainBlurb",
+            sectionId: "n1",
+          },
+          senses: [
+            {
+              text: "sense1",
+              level: 1,
+              ordinal: "A",
+              sectionId: "n2",
+            },
+            {
+              text: "sense2",
+              level: 1,
+              ordinal: "B",
+              sectionId: "n3",
+            },
+          ],
+        },
       },
     ]);
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
-      >
-        <Dictionary />
-      </RouteContext.Provider>
-    );
-
-    await waitFor(() => {
-      expect(screen.getByText(resultString)).toBeDefined();
-    });
-  });
-
-  it("fetches result from navigation context", async () => {
-    const resultString = "France or whatever idk lol";
-    mockCallApi.mockResolvedValue([
-      {
-        entry: new XmlNode("span", [], [resultString]),
-      },
-    ]);
-    render(
-      <RouteContext.Provider
-        value={{ route: { path: "/", query: "Belgae" }, navigateTo: () => {} }}
+        value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
       >
         <Dictionary />
       </RouteContext.Provider>
@@ -177,8 +180,15 @@ describe("Dictionary View", () => {
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toBe("Belgae");
     await waitFor(() => {
-      expect(screen.getByText("France or whatever idk lol")).toBeDefined();
+      expect(screen.getByText(resultString)).toBeDefined();
+      expect(screen.getByText("mainBlurb")).toBeDefined();
+      expect(screen.getByText("sense1")).toBeDefined();
+      expect(screen.getByText("sense2")).toBeDefined();
+      console.log(screen.getByText("sense2").getBoundingClientRect());
     });
+
+    await user.click(screen.getByText("B."));
+    expect(spyScrollTo).toHaveBeenCalled();
   });
 });
 
