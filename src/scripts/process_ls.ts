@@ -2,6 +2,7 @@
 
 import { LewisAndShort } from "@/common/lewis_and_short/ls";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
+import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import * as dotenv from "dotenv";
 dotenv.config();
 
@@ -13,7 +14,13 @@ if (verify) {
   const result = [];
   for (const item of allProcessed) {
     result.push(LewisAndShort.processedToRaw(item));
-    displayEntryFree(item.entry);
+    try {
+      displayEntryFree(item.entry);
+      extractOutline(item.entry);
+    } catch (e) {
+      console.log(item.entry);
+      throw e;
+    }
   }
   LewisAndShort.save(result);
 } else {

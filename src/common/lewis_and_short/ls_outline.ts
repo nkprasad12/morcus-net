@@ -41,12 +41,18 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
 
   const entryId = checkPresent(rootNode.getAttr("id"), "Root must have an id.");
   const mainBlurb =
-    getContainedText(
-      rootNode,
-      80,
-      (nextNode) =>
-        nextNode.name === "sense" && nextNode !== level1Isenses[0][0]
-    ) +
+    getContainedText(rootNode, 80, (nextNode) => {
+      // We only want to break on senses.
+      if (nextNode.name !== "sense") {
+        return false;
+      }
+      // If there is no sense to be merged into the main, stop.
+      if (level1Isenses.length <= 1) {
+        return true;
+      }
+      // Consume the first level 1I sense, and stop otherwise.
+      return nextNode !== level1Isenses[0][0];
+    }) +
     (level1Isenses.length > 1
       ? "; " + getContainedText(level1Isenses[0][0])
       : "");

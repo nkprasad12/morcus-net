@@ -135,6 +135,46 @@ describe("extractOutline", () => {
     });
   });
 
+  it("handles entry with no 1I senses", () => {
+    const root = new XmlNode(
+      "entryFree",
+      [["id", "n1"]],
+      [
+        new XmlNode("orth", [], ["mainOrth"]),
+        " I am a blurb.",
+        new XmlNode(
+          "sense",
+          [
+            ["level", "3"],
+            ["n", "B"],
+            ["id", "n2"],
+          ],
+          ["I am a sense1 blurb"]
+        ),
+      ]
+    );
+
+    const result = extractOutline(root);
+
+    expect(result).toStrictEqual({
+      mainOrth: "mainOrth",
+      mainSection: {
+        text: "mainOrth I am a blurb.",
+        level: 0,
+        ordinal: "",
+        sectionId: "n1",
+      },
+      senses: [
+        {
+          level: 3,
+          ordinal: "B",
+          sectionId: "n2",
+          text: "I am a sense1 blurb",
+        },
+      ],
+    });
+  });
+
   it("handles entry with duplicated 1I senses", () => {
     const root = new XmlNode(
       "entryFree",
