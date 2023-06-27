@@ -217,9 +217,7 @@ function OutlineSection(props: {
         </span>
         {" " + outline.mainSection.text}
       </span>
-      {senses === undefined ? (
-        <></>
-      ) : (
+      {senses && (
         <ol style={{ paddingLeft: "0em" }}>
           {senses.map((sense) => {
             const header = getBullet(sense.ordinal);

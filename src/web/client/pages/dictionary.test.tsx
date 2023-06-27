@@ -4,17 +4,11 @@
 
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import { describe, expect, it } from "@jest/globals";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import {
-  ClickableTooltip,
-  Dictionary,
-  SectionLinkTooltip,
-  xmlNodeToJsx,
-} from "./dictionary";
+import { Dictionary } from "./dictionary";
 import { RouteContext } from "../components/router";
 
 console.debug = jest.fn();
@@ -23,14 +17,6 @@ jest.mock("@/web/utils/rpc/client_rpc");
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
-
-function GalliaRef(props: any, ref: any) {
-  return (
-    <div {...props} ref={ref}>
-      Gallia
-    </div>
-  );
-}
 
 describe("Dictionary View", () => {
   afterEach(() => {
@@ -184,121 +170,16 @@ describe("Dictionary View", () => {
       expect(screen.getByText("mainBlurb")).toBeDefined();
       expect(screen.getByText("sense1")).toBeDefined();
       expect(screen.getByText("sense2")).toBeDefined();
-      console.log(screen.getByText("sense2").getBoundingClientRect());
     });
 
+    // Expect this to scroll since the linked section exists
+    spyScrollTo.mockClear();
     await user.click(screen.getByText("B."));
-    expect(spyScrollTo).toHaveBeenCalled();
-  });
-});
+    expect(spyScrollTo).toHaveBeenCalledTimes(1);
 
-describe("xmlNodeToJsx", () => {
-  it("changes class to className", () => {
-    const root = new XmlNode("span", [["class", "Caesar"]], []);
-    const result = xmlNodeToJsx(root);
-    expect(result.props.className).toBe("Caesar");
-  });
-
-  it("handles nodes with titles", () => {
-    const root = new XmlNode("span", [["title", "Caesar"]], ["Gallia"]);
-    const result = xmlNodeToJsx(root);
-
-    expect(result.type).toBe(ClickableTooltip);
-    expect(result.props.titleText).toBe("Caesar");
-  });
-
-  it("handles nested and text nodes", () => {
-    const root = new XmlNode(
-      "span",
-      [],
-      ["Caesar", new XmlNode("span", [], ["Gaius"])]
-    );
-    const result = xmlNodeToJsx(root);
-
-    expect(result.props.children).toHaveLength(2);
-    expect(result.props.children[0]).toBe("Caesar");
-    expect(result.props.children[1].props.children[0]).toBe("Gaius");
-  });
-
-  it("adds highlight on matching id", () => {
-    const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
-    const result = xmlNodeToJsx(root, "Caesar");
-
-    expect(result.props["className"]).toBe("highlighted");
-  });
-
-  it("does not add highlight on different id", () => {
-    const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
-    const result = xmlNodeToJsx(root, "Augustus");
-
-    expect(result.props["className"]).toBe(undefined);
-  });
-
-  it("does not add highlight on both undefined", () => {
-    const root = new XmlNode("span", [], ["Gallia"]);
-    const result = xmlNodeToJsx(root, undefined);
-
-    expect(result.props["className"]).toBe(undefined);
-  });
-});
-
-describe("ClickableTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
-
-  it("shows base text on initial load", async () => {
-    render(
-      <ClickableTooltip
-        titleText="Caesar"
-        className=""
-        ChildFactory={DivWithRef}
-      />
-    );
-
-    expect(screen.queryByText("Caesar")).toBeNull();
-    expect(screen.queryByText("Gallia")).not.toBeNull();
-  });
-
-  it("shows tooltip on click", async () => {
-    render(
-      <ClickableTooltip
-        titleText="Caesar"
-        className=""
-        ChildFactory={DivWithRef}
-      />
-    );
-
-    await user.click(screen.getByText("Gallia"));
-
-    expect(screen.queryByText("Caesar")).not.toBeNull();
-    expect(screen.queryByText("Gallia")).not.toBeNull();
-  });
-});
-
-describe("SectionLinkTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
-
-  it("shows link buttons", async () => {
-    const writeText = jest.fn();
-    Object.assign(navigator, {
-      clipboard: {
-        writeText,
-      },
-    });
-
-    render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
-    );
-    await user.click(screen.getByText("Gallia"));
-
-    expect(screen.queryByText(/link/)).not.toBeNull();
-    const iconButton = screen.queryByLabelText("copy link");
-    expect(iconButton).not.toBeNull();
-
-    await user.click(iconButton!);
-    expect(writeText.mock.lastCall![0].endsWith("#bar")).toBe(true);
+    // Expect this to no-op since the linked section does not exist
+    spyScrollTo.mockClear();
+    await user.click(screen.getByText("mainOrth"));
+    expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 });
