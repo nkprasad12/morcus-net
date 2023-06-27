@@ -35,16 +35,18 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
         sense.getAttr("level") === "1" && sense.getAttr("n") === "I"
     );
 
-  if (level1Isenses.length > 0) {
+  if (level1Isenses.length > 1) {
     senses.splice(level1Isenses[0][1], 1);
   }
 
   const entryId = checkPresent(rootNode.getAttr("id"), "Root must have an id.");
-  const mainBlurb = getContainedText(
-    rootNode,
-    100,
-    (nextNode) => nextNode !== level1Isenses[0][0] && nextNode.name === "sense"
-  );
+  const mainBlurb =
+    getContainedText(
+      rootNode,
+      80,
+      (nextNode) =>
+        nextNode.name === "sense" && nextNode !== level1Isenses[0][0]
+    ) + (level1Isenses.length > 1 ? getContainedText(level1Isenses[0][0]) : "");
   const mainSection: SectionOutline = {
     text: mainBlurb,
     level: 0,
@@ -89,8 +91,11 @@ export function sanitizeTree(root: XmlNode): XmlNode {
 }
 
 function getSenseBlurb(senseNode: XmlNode): string {
+  // This getContainedText call should probably break on authors or citations or whatever.
   const text = getContainedText(senseNode);
-  console.log(text);
+  // TODO: This could potentially remove lot of characters, we
+  // should consider updating the logic to keep 35 characters always so
+  // we display something.
   const bracketFree = removeBracketedText(text);
   return bracketFree.split(":")[0];
 }
@@ -112,6 +117,8 @@ function removeBracketedText(input: string): string {
   return result;
 }
 
+// TODO: This will add the `...` overflow markers
+// even if there is no more text (i.e the last word causes the overflow)
 function getContainedText(
   root: XmlNode,
   charsRequested: number = 35,
