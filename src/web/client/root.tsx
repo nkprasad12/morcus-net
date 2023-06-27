@@ -1,10 +1,5 @@
 /* istanbul ignore file */
 
-import "@fontsource/roboto/300.css";
-import "@fontsource/roboto/400.css";
-import "@fontsource/roboto/500.css";
-import "@fontsource/roboto/700.css";
-
 import React from "react";
 import ReactDOM from "react-dom/client";
 
@@ -19,6 +14,13 @@ import { About } from "@/web/client/pages/about";
 import { Dictionary } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
 import { Router } from "./components/router";
+
+declare module "@mui/material/styles" {
+  interface BreakpointOverrides {
+    xxxs: true;
+    xxs: true;
+  }
+}
 
 const theme = createTheme({
   palette: {
@@ -37,17 +39,29 @@ const theme = createTheme({
       secondary: Solarized.base00,
     },
   },
+  breakpoints: {
+    values: {
+      xxxs: 0,
+      xxs: 275,
+      xs: 400,
+      sm: 600,
+      md: 900,
+      lg: 1200,
+      xl: 1400,
+    },
+  },
 });
 
+const allowedFonts = `"Roboto","Helvetica","Arial",sans-serif`;
 const typographyStyle = {
   fontSize: 20,
-  fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+  fontFamily: allowedFonts,
   fontWeight: 400,
   lineHeight: 1.5,
   letterSpacing: "0.00938em",
   [theme.breakpoints.down("sm")]: {
     fontSize: 19,
-    fontFamily: `"Roboto","Helvetica","Arial",sans-serif`,
+    fontFamily: allowedFonts,
     fontWeight: 400,
     lineHeight: 1.5,
     letterSpacing: "0.00938em",
@@ -95,6 +109,9 @@ pages.push(ABOUT_PAGE);
 const props: SinglePageApp.Props = {
   pages: pages,
 };
+if (window.location.pathname === "/") {
+  window.history.replaceState({}, "", props.pages[0].path);
+}
 
 const root = ReactDOM.createRoot(
   document.querySelector("#placeholder") as HTMLElement
@@ -139,6 +156,7 @@ root.render(
           ".lsOrth": {
             backgroundColor: Solarized.red + "68",
             borderRadius: 4,
+            padding: 2,
           },
           ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
           ".lsSenseBullet": {

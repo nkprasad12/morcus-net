@@ -1,5 +1,6 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { assert, assertEqual } from "@/common/assert";
+import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 const ENTRY_OPEN = "<entryFree ";
 const ENTRY_CLOSE = "</entryFree>";
@@ -129,6 +130,13 @@ export namespace XmlNode {
     }
     return node;
   }
+
+  export const SERIALIZATION: Serialization<XmlNode> = {
+    name: "XmlNode",
+    validator: instanceOf(XmlNode),
+    serialize: (t) => t.toString(),
+    deserialize: (t) => parseEntries([t])[0],
+  };
 }
 
 function crawlEntry(root: any): XmlNode {

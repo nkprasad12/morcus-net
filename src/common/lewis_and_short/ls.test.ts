@@ -5,6 +5,11 @@ import { XmlNode } from "./xml_node";
 
 console.debug = jest.fn();
 
+jest.mock("./ls_outline", () => ({
+  ...jest.requireActual("./ls_outline"),
+  extractOutline: jest.fn(() => "mockOutline"),
+}));
+
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
@@ -25,6 +30,10 @@ const LS_DATA = [
     keys: ["Naso"],
     entry: new XmlNode("entryFree", [], ["Pennisque levatus"]).toString(),
   },
+  {
+    keys: ["īnō", "Ino"],
+    entry: new XmlNode("entryFree", [], ["Ino edge case"]).toString(),
+  },
 ];
 
 function toLsData(keys: string[]) {
@@ -33,6 +42,11 @@ function toLsData(keys: string[]) {
 
 function writeFile(contents: string) {
   fs.writeFileSync(TEMP_FILE, contents);
+}
+
+function expectEqual(nodes: XmlNode[], expected: string[]) {
+  const actuals = nodes.map((node) => node.toString());
+  expect(actuals).toStrictEqual(expected);
 }
 
 describe("LewisAndShort", () => {
@@ -164,28 +178,35 @@ describe("LewisAndShort", () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    const julius = JSON.parse(await dict.getEntry("Julius"));
-    const publius = JSON.parse(await dict.getEntry("Publius"));
-    expect(julius).toStrictEqual([
-      '<div class="lsEntryFree">Gallia est omnis</div>',
-    ]);
-    expect(publius).toStrictEqual([
-      '<div class="lsEntryFree">Non iterum repetenda suo</div>',
-    ]);
+    expectEqual(
+      (await dict.getEntry("Julius")).map((r) => r.entry),
+      ['<div class="lsEntryFree">Gallia est omnis</div>']
+    );
+    expectEqual(
+      (await dict.getEntry("Publius")).map((r) => r.entry),
+      ['<div class="lsEntryFree">Non iterum repetenda suo</div>']
+    );
+  });
+
+  test("getEntry handles expected entries", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
+
+    expect(outline).toStrictEqual(["mockOutline"]);
   });
 
   test("getEntry handles ambiguous queries", async () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    const result = JSON.parse(await dict.getEntry("Naso"));
-
-    expect(result).toHaveLength(2);
-    expect(result).toContain(
-      '<div class="lsEntryFree">Non iterum repetenda suo</div>'
-    );
-    expect(result).toContain(
-      '<div class="lsEntryFree">Pennisque levatus</div>'
+    expectEqual(
+      (await dict.getEntry("Naso")).map((r) => r.entry),
+      [
+        '<div class="lsEntryFree">Non iterum repetenda suo</div>',
+        '<div class="lsEntryFree">Pennisque levatus</div>',
+      ]
     );
   });
 
@@ -193,10 +214,20 @@ describe("LewisAndShort", () => {
     await LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = await LewisAndShort.create(TEMP_FILE);
 
-    const result = JSON.parse(await dict.getEntry("Foo"));
+    expectEqual(
+      (await dict.getEntry("Foo")).map((r) => r.entry),
+      ["<span>Could not find entry for Foo</span>"]
+    );
+  });
 
-    expect(result).toHaveLength(1);
-    expect(result).toContain("<span>Could not find entry for Foo</span>");
+  test("getEntry handles same ascii orths in single article", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expectEqual(
+      (await dict.getEntry("ino")).map((r) => r.entry),
+      ['<div class="lsEntryFree">Ino edge case</div>']
+    );
   });
 
   test("getCompletions returns expected results", async () => {

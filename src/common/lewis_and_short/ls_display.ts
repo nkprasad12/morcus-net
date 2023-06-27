@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { COMMENT_NODE, XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   CASE_ABBREVIATIONS,
   EDGE_CASE_HOVERS,
@@ -21,18 +21,11 @@ import {
   handleAbbreviationsInMessage,
   findExpansions,
 } from "@/common/lewis_and_short/ls_styling";
+import { displayTextForOrth } from "./ls_orths";
+import { getBullet, sanitizeTree } from "./ls_outline";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
-
-const GREEK_BULLET_MAP = new Map<string, string>([
-  ["a", "α"],
-  ["b", "β"],
-  ["g", "γ"],
-  ["d", "δ"],
-  ["e", "ε"],
-  ["z", "ζ"],
-]);
 
 export interface DisplayContext {
   lastAuthor?: string;
@@ -704,11 +697,7 @@ function displayOrth(
   return new XmlNode(
     "span",
     [["class", "lsOrth"]],
-    [
-      XmlNode.getSoleText(root)
-        .replaceAll("^", "\u0306")
-        .replaceAll("_", "\u0304"),
-    ]
+    [displayTextForOrth(XmlNode.getSoleText(root))]
   );
 }
 
@@ -954,17 +943,6 @@ export function displayNote(
   return new XmlNode("span");
 }
 
-export function getBullet(input: string): string {
-  if (input[0] !== "(") {
-    return input;
-  }
-  const result = GREEK_BULLET_MAP.get(input[1]);
-  if (result === undefined) {
-    return input;
-  }
-  return result;
-}
-
 export function formatSenseList(
   senseNodes: XmlNode[],
   context: DisplayContext
@@ -1005,26 +983,6 @@ export function formatSenseList(
     );
   }
   return stack[0];
-}
-
-function sanitizeTree(root: XmlNode): XmlNode {
-  const children: (XmlNode | string)[] = [];
-  for (const child of root.children) {
-    if (typeof child === "string") {
-      children.push(child);
-    } else if (child.name === "reg") {
-      assert(child.children.length === 2);
-      XmlNode.assertIsNode(child.children[0], "sic");
-      const corr = XmlNode.assertIsNode(child.children[1], "corr");
-      children.push(XmlNode.getSoleText(corr));
-      console.debug(`Corrected ${child} -> ${XmlNode.getSoleText(corr)}`);
-    } else if (child.name === COMMENT_NODE) {
-      // Intentional no-op. We want to just ignore comments.
-    } else {
-      children.push(sanitizeTree(child));
-    }
-  }
-  return new XmlNode(root.name, root.attrs, children);
 }
 
 /**

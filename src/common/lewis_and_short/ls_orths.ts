@@ -5,7 +5,7 @@ import { assert } from "../assert";
 // const UPPER_CONSONANTS = "BCDFGHJKLMNPQRSTVXZ";
 // const CONSONANTS = LOWER_CONSONANTS + UPPER_CONSONANTS;
 const MACRONS = "āēīōūȳÃĀĒĪÕŪ";
-const BREVES = "ăĕĭŏŭўĬ";
+const BREVES = "ăĕĭŏŭўĂĬĔŎŬ";
 const OTHER_ACCENTED = "áïìëèöüúùÿ";
 const ALPHA_ACC = MACRONS + BREVES + OTHER_ACCENTED;
 const LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";
@@ -658,4 +658,8 @@ export function regularizeOrths(inputOrths: string[]): string[] {
 export function getOrths(root: XmlNode): string[] {
   const orths = regularizeOrths(cleanOrths(rawOrths(root)));
   return [...new Set(orths)];
+}
+
+export function displayTextForOrth(orth: string) {
+  return orth.replaceAll("^", "\u0306").replaceAll("_", "\u0304");
 }

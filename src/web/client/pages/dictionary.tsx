@@ -1,7 +1,10 @@
-import { lsCall } from "@/web/api_routes";
 import LinkIcon from "@mui/icons-material/Link";
+import TocIcon from "@mui/icons-material/Toc";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
 import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
+import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -10,7 +13,7 @@ import React, { MutableRefObject } from "react";
 
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
-import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   ClickAwayListener,
   Divider,
@@ -22,23 +25,52 @@ import { AutocompleteCache } from "./autocomplete_cache";
 import { Navigation, RouteContext } from "../components/router";
 import { flushSync } from "react-dom";
 import { checkPresent } from "@/common/assert";
+import { DictsLsApi } from "@/web/api_routes";
+import { callApi } from "@/web/utils/rpc/client_rpc";
+import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
+import { getBullet } from "@/common/lewis_and_short/ls_outline";
 
 type Placement = "top-start" | "right";
-
-const HELP_ENTRY = new XmlNode(
+const SCROLL_OPTIONS: ScrollIntoViewOptions = {
+  behavior: "auto",
+  block: "start",
+};
+const ERROR_MESSAGE = {
+  entry: new XmlNode(
+    "span",
+    [],
+    ["Failed to fetch the entry. Please try again later."]
+  ),
+};
+const HIGHLIGHT_HELP = new XmlNode(
   "div",
   [],
   [
+    "Click on ",
     new XmlNode(
       "span",
       [
         ["class", "lsHover"],
         ["title", "Click to dismiss"],
       ],
-      ["Highlighted words"]
+      ["underlined"]
     ),
-    " are abbreviated in the original text - click on them to learn more. " +
-      "Click on section headers (like ",
+    " text for more details. ",
+  ]
+);
+const BUG_HELP = new XmlNode(
+  "div",
+  [],
+  [
+    "Please report typos or other bugs " +
+      "by clicking on the flag icon in the top bar.",
+  ]
+);
+const BULLET_HELP = new XmlNode(
+  "p",
+  [],
+  [
+    "Click on sections buttons (like ",
     new XmlNode(
       "span",
       [
@@ -47,20 +79,24 @@ const HELP_ENTRY = new XmlNode(
       ],
       [" A. "]
     ),
-    ") to link directly to a particular section.",
-    new XmlNode(
-      "p",
-      [],
-      [
-        "If you find bugs, typos, or other issues, please report them " +
-          "by clicking on the flag icon in the top navigation bar.",
-      ]
-    ),
+    ") to link directly to that section.",
   ]
+);
+const HELP_ENTRY = new XmlNode(
+  "div",
+  [],
+  [HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
 );
 
 const LOADING_ENTRY = xmlNodeToJsx(
-  new XmlNode("div", [], ["Please wait - loading entries"])
+  new XmlNode(
+    "div",
+    [],
+    [
+      "Please wait - checking for results." +
+        "Dedit oscula nato non iterum repetenda suo ".repeat(3),
+    ]
+  )
 );
 
 export function ClickableTooltip(props: {
@@ -149,6 +185,76 @@ export function SectionLinkTooltip(props: {
   );
 }
 
+function OutlineSection(props: {
+  outline: LsOutline | undefined;
+  onClick: (section: string) => any;
+}) {
+  const outline = props.outline;
+  if (outline === undefined) {
+    return <span>Missing outline data</span>;
+  }
+
+  const senses = outline.senses;
+
+  return (
+    <div>
+      <Divider variant="middle" light={true} sx={{ padding: "5px" }} />
+      <br />
+      <span onClick={() => props.onClick(outline.mainSection.sectionId)}>
+        <span
+          className="lsSenseBullet"
+          style={{ backgroundColor: Solarized.base01 + "30" }}
+        >
+          <OpenInNewIcon
+            sx={{
+              marginBottom: "-0.1em",
+              marginRight: "-0.1em",
+              fontSize: "0.8rem",
+              paddingLeft: "0.1em",
+            }}
+          />
+          {` ${outline.mainOrth}`}
+        </span>
+        {" " + outline.mainSection.text}
+      </span>
+      {senses && (
+        <ol style={{ paddingLeft: "0em" }}>
+          {senses.map((sense) => {
+            const header = getBullet(sense.ordinal);
+            return (
+              <li
+                key={sense.sectionId}
+                style={{
+                  cursor: "pointer",
+                  marginBottom: "4px",
+                  paddingLeft: `${(sense.level - 1) / 2}em`,
+                }}
+                onClick={() => props.onClick(sense.sectionId)}
+              >
+                <span
+                  className="lsSenseBullet"
+                  style={{ backgroundColor: Solarized.base01 + "30" }}
+                >
+                  <OpenInNewIcon
+                    sx={{
+                      marginBottom: "-0.1em",
+                      marginRight: "-0.1em",
+                      fontSize: "0.8rem",
+                      paddingLeft: "0.1em",
+                    }}
+                  />
+                  {` ${header}. `}
+                </span>
+                <span>{" " + sense.text}</span>
+              </li>
+            );
+          })}
+        </ol>
+      )}
+    </div>
+  );
+}
+
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
@@ -227,19 +333,12 @@ export function xmlNodeToJsx(
   }
 }
 
-async function fetchEntry(input: string): Promise<XmlNode[]> {
-  const response = await fetch(`${location.origin}${lsCall(input)}`);
-  if (!response.ok) {
-    return [
-      new XmlNode(
-        "span",
-        [],
-        ["Failed to fetch the entry. Please try again later."]
-      ),
-    ];
+async function fetchEntry(input: string): Promise<LsResult[]> {
+  try {
+    return await callApi(DictsLsApi, input);
+  } catch (e) {
+    return [ERROR_MESSAGE];
   }
-  const rawText = await response.text();
-  return parseEntries(JSON.parse(rawText));
 }
 
 function SearchBox(props: { input: string; smallScreen: boolean }) {
@@ -308,26 +407,38 @@ interface ElementAndKey {
   key: string;
 }
 
+const noSsr = { noSsr: true };
+
 export function Dictionary() {
   const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
+  const [outlines, setOutlines] = React.useState<(LsOutline | undefined)[]>([]);
   const theme = useTheme();
-  const smallScreen = useMediaQuery(theme.breakpoints.down("sm"));
-  const nav = React.useContext(RouteContext);
-  const sectionRef = React.useRef<HTMLElement | null>(null);
 
-  function ContentBox(props: { children: JSX.Element; contentKey?: string }) {
+  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+
+  const nav = React.useContext(RouteContext);
+  const sectionRef = React.useRef<HTMLElement>(null);
+  const tocRef = React.useRef<HTMLElement>(null);
+  const entriesRef = React.useRef<HTMLDivElement>(null);
+
+  function ContentBox(props: {
+    children: JSX.Element;
+    contentKey?: string;
+    contentRef?: React.RefObject<HTMLElement>;
+  }) {
     return (
       <>
         <Box
           sx={{
             padding: 1,
-            ml: smallScreen ? 1 : 3,
-            mr: smallScreen ? 1 : 3,
+            ml: isSmall ? 1 : 3,
+            mr: isSmall ? 1 : 3,
             mt: 1,
             mb: 2,
             borderColor: Solarized.base2,
           }}
           key={props.contentKey}
+          ref={props.contentRef}
         >
           <Typography
             component={"div"}
@@ -339,7 +450,7 @@ export function Dictionary() {
             {props.children}
           </Typography>
         </Box>
-        <Divider sx={{ ml: smallScreen ? 1 : 3, mr: smallScreen ? 1 : 3 }} />
+        <Divider sx={{ ml: isSmall ? 1 : 3, mr: isSmall ? 1 : 3 }} />
       </>
     );
   }
@@ -347,54 +458,182 @@ export function Dictionary() {
   React.useEffect(() => {
     if (nav.route.query !== undefined) {
       setEntries([{ element: LOADING_ENTRY, key: "LOADING_ENTRY" }]);
-      fetchEntry(nav.route.query).then((newEntries) => {
+      fetchEntry(nav.route.query).then((newResults) => {
         flushSync(() => {
-          const jsxEntries = newEntries.map((e, i) => ({
-            element: xmlNodeToJsx(e, nav.route.hash, sectionRef),
-            key: e.getAttr("id") || `${i}`,
+          const jsxEntries = newResults.map((e, i) => ({
+            element: xmlNodeToJsx(e.entry, nav.route.hash, sectionRef),
+            key: e.entry.getAttr("id") || `${i}`,
           }));
           setEntries(jsxEntries);
+          setOutlines(newResults.map((r) => r.outline));
         });
-        sectionRef.current?.scrollIntoView({
-          behavior: "smooth",
-          block: "start",
-        });
+        sectionRef.current?.scrollIntoView(SCROLL_OPTIONS);
       });
     }
   }, [nav.route.query]);
 
-  return (
-    <Container maxWidth="lg">
-      <SearchBox input={nav.route.query || ""} smallScreen={smallScreen} />
-      {entries.length > 0 && (
-        <ContentBox key="searchHeader">
-          <div style={{ fontSize: 16, lineHeight: "normal" }}>
-            {entries.length > 1 && (
-              <>
-                <div>Found {entries.length} results.</div>
-                <br></br>
-              </>
+  function SearchBar(props: { maxWidth: "md" | "lg" }) {
+    return (
+      <Container maxWidth={props.maxWidth} disableGutters={true}>
+        <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
+      </Container>
+    );
+  }
+
+  function TableOfContents() {
+    return (
+      <>
+        {entries.length > 0 && (
+          <ContentBox key="tableOfContents" contentRef={tocRef}>
+            <div style={{ fontSize: 16, lineHeight: "normal" }}>
+              <span>
+                Found {entries.length} result{entries.length > 1 ? "s" : ""}.
+              </span>
+              {outlines.map((outline, index) => (
+                <OutlineSection
+                  key={outline?.mainSection.sectionId || `undefined${index}`}
+                  outline={outline}
+                  onClick={(section) => {
+                    const selected = document.getElementById(section);
+                    if (selected === null) {
+                      return;
+                    }
+                    window.scrollTo({
+                      behavior: "auto",
+                      top: selected.offsetTop,
+                    });
+                  }}
+                />
+              ))}
+            </div>
+          </ContentBox>
+        )}
+      </>
+    );
+  }
+
+  function SearchHeader() {
+    return (
+      <>
+        {entries.length > 0 && (
+          <ContentBox key="searchHeader">
+            <div style={{ fontSize: 16, lineHeight: "normal" }}>
+              {xmlNodeToJsx(HELP_ENTRY)}
+            </div>
+          </ContentBox>
+        )}
+      </>
+    );
+  }
+
+  function DictionaryEntries() {
+    return (
+      <>
+        {entries.map((entry) => (
+          <ContentBox key={entry.key}>{entry.element}</ContentBox>
+        ))}
+        {entries.length > 0 && (
+          <ContentBox key="attributionBox">
+            <span style={{ fontSize: 15, lineHeight: "normal" }}>
+              Results are taken from a digitization of Lewis & Short kindly
+              provided by <a href="https://github.com/PerseusDL">Perseus</a>{" "}
+              under a{" "}
+              <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+                CC BY-SA 4.0
+              </a>{" "}
+              license.
+            </span>
+          </ContentBox>
+        )}
+      </>
+    );
+  }
+
+  function DictionaryPage() {
+    if (isSmall) {
+      return (
+        <Container maxWidth="lg">
+          <SearchBar maxWidth="lg" />
+          <SearchHeader />
+          <div>
+            {entries.length > 0 && (
+              <ArrowDownwardIcon
+                onClick={() =>
+                  entriesRef.current?.scrollIntoView(SCROLL_OPTIONS)
+                }
+                sx={{
+                  position: "sticky",
+                  float: "right",
+                  right: "4%",
+                  bottom: "2%",
+                  fontSize: "1.75rem",
+                  borderRadius: 1,
+                  backgroundColor: Solarized.base2 + "80",
+                  color: Solarized.base1 + "80",
+                }}
+                aria-label="jump to entry"
+              />
             )}
-            {xmlNodeToJsx(HELP_ENTRY)}
+            <TableOfContents />
           </div>
-        </ContentBox>
-      )}
-      {entries.map((entry) => (
-        <ContentBox key={entry.key}>{entry.element}</ContentBox>
-      ))}
-      {entries.length > 0 && (
-        <ContentBox key="attributionBox">
-          <span style={{ fontSize: 15, lineHeight: "normal" }}>
-            Results are taken from a digitization of Lewis & Short kindly
-            provided by <a href="https://github.com/PerseusDL">Perseus</a> under
-            a{" "}
-            <a href="https://creativecommons.org/licenses/by-sa/4.0/">
-              CC BY-SA 4.0
-            </a>{" "}
-            license.
-          </span>
-        </ContentBox>
-      )}
-    </Container>
-  );
+          <div ref={entriesRef}>
+            <DictionaryEntries />
+            {entries.length > 0 && (
+              <TocIcon
+                onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
+                fontSize="large"
+                sx={{
+                  position: "sticky",
+                  float: "right",
+                  right: "4%",
+                  bottom: "2%",
+                  borderRadius: 2,
+                  backgroundColor: Solarized.base2 + "D0",
+                  color: Solarized.base1 + "D0",
+                }}
+                aria-label="jump to outline"
+              />
+            )}
+          </div>
+        </Container>
+      );
+    }
+
+    if (entries.length === 0) {
+      return (
+        <Container maxWidth="xl">
+          <SearchBar maxWidth="md" />
+        </Container>
+      );
+    }
+
+    return (
+      <Container maxWidth="xl">
+        <Stack direction="row" spacing={0} justifyContent="center">
+          <div
+            style={{
+              position: "sticky",
+              zIndex: 1,
+              top: 0,
+              left: 0,
+              marginTop: 10,
+              overflow: "auto",
+              maxHeight: window.innerHeight - 40,
+              maxWidth: "35%",
+              minWidth: "250px",
+            }}
+          >
+            <TableOfContents />
+          </div>
+          <div style={{ maxWidth: "65%" }}>
+            <SearchBar maxWidth="lg" />
+            <SearchHeader />
+            <DictionaryEntries />
+          </div>
+        </Stack>
+      </Container>
+    );
+  }
+
+  return <DictionaryPage />;
 }

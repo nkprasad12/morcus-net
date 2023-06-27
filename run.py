@@ -71,6 +71,12 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    "-r_db",
+    "--real_database",
+    help="If set, uses the real telemetry database.",
+    action="store_true",
+)
+parser.add_argument(
     "-lss",
     "--ls_subset",
     help="If set, only a subset of LS will be loaded at startup.",
@@ -138,6 +144,8 @@ if args.command in WEB_SERVER:
     my_env = os.environ.copy()
     if args.prod:
         my_env["NODE_ENV"] = "production"
+    if not args.real_database:
+        my_env["CONSOLE_TELEMETRY"] = "yes"
     subprocess.run(
         " ".join(["npm", "run", "ts-node", "src/start_server.ts"]),
         shell=True,

@@ -3,6 +3,7 @@ import {
   attachAltEnd,
   attachAltStart,
   cleanOrths,
+  displayTextForOrth,
   getOrths,
   mergeVowelMarkers,
   rawOrths,
@@ -155,6 +156,12 @@ describe("mergeVowelMarkers", () => {
 
   it("is no-op if not present", () => {
     expect(mergeVowelMarkers("ana")).toBe("ana");
+  });
+});
+
+describe("displayTextForOrths", () => {
+  it("adds correct unicode symbols", () => {
+    expect(displayTextForOrth("a^a_")).toBe("a\u0306a\u0304");
   });
 });
 

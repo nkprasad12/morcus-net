@@ -1,7 +1,9 @@
+import json
 import os
 import requests
 import subprocess
 import time
+from urllib import parse
 
 
 BUILD_CLIENT = "npm run build-client -- --env production"
@@ -43,7 +45,11 @@ try:
 
     start_server = start_process(START_SERVER)
     time.sleep(15)
-    api_result = requests.get(f"http://localhost:{PORT}/api/dicts/ls/canaba", timeout=5)
+
+    arg = parse.quote(json.dumps({"w": "canaba"}))
+    route = f"http://localhost:{PORT}/api/dict/ls/{arg}"
+    print(route)
+    api_result = requests.get(route, timeout=5)
     print(api_result.text)
     assert "cannăba" in api_result.text
 finally:

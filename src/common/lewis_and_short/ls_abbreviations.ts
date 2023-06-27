@@ -130,6 +130,7 @@ export const POS_ABBREVIATIONS = new Map<string, string>([
   ["prep.", "preposition"],
   ["interj.", "interjection"],
   ["adj.", "adjective"],
+  ["v.", "verb"],
   ["v. impers.", "verb [impersonal]"],
   ["v. inch.", "verb [inchoative]"],
   ["v. inch. impers.", "verb [inchoative; impersonal]"],

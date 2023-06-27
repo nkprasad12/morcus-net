@@ -13,7 +13,6 @@
 // `node build/start_server.js` to start the server.
 // Based on local testing, this saves ~30-40 MB memory.
 
-import "dd-trace/init";
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
@@ -29,8 +28,24 @@ import { LewisAndShort } from "./common/lewis_and_short/ls";
 import path from "path";
 import { GitHub } from "./web/utils/github";
 import { MongoLogger } from "./web/telemetry/mongo_logger";
+import { TelemetryLogger } from "./web/telemetry/telemetry";
+import {
+  DictsLsApi,
+  EntriesByPrefixApi,
+  MacronizeApi,
+  ReportApi,
+} from "./web/api_routes";
+import { ApiHandler, RouteAndHandler } from "./web/utils/rpc/server_rpc";
+import { ApiRoute } from "./web/utils/rpc/rpc";
 
 dotenv.config();
+
+function createApi<I, O>(
+  route: ApiRoute<I, O>,
+  handler: ApiHandler<I, O>
+): RouteAndHandler<I, O> {
+  return { route, handler };
+}
 
 function log(message: string) {
   console.log(`[start_server] ${message}`);
@@ -46,7 +61,10 @@ const server = http.createServer(app);
 
 const lewisAndShort = LewisAndShort.create();
 const workServer = new SocketWorkServer(new Server(server));
-const telemetry = MongoLogger.create();
+const telemetry =
+  process.env.CONSOLE_TELEMETRY !== "yes"
+    ? MongoLogger.create()
+    : Promise.resolve(TelemetryLogger.NoOp);
 
 async function callWorker(
   category: Workers.Category,
@@ -62,13 +80,18 @@ async function callWorker(
 }
 
 const params: WebServerParams = {
-  app: app,
-  macronizer: (input) => callWorker(Workers.MACRONIZER, input),
-  lsDict: async (input) => (await lewisAndShort).getEntry(input),
-  entriesByPrefix: async (prefix) =>
-    (await lewisAndShort).getCompletions(prefix),
+  webApp: app,
+  routes: [
+    createApi(MacronizeApi, (input) => callWorker(Workers.MACRONIZER, input)),
+    createApi(ReportApi, (text) => GitHub.reportIssue(text)),
+    createApi(DictsLsApi, async (input) =>
+      (await lewisAndShort).getEntry(input)
+    ),
+    createApi(EntriesByPrefixApi, async (prefix) =>
+      (await lewisAndShort).getCompletions(prefix)
+    ),
+  ],
   buildDir: path.join(__dirname, "../genfiles_static"),
-  fileIssueReport: (reportText) => GitHub.reportIssue(reportText),
   telemetry: telemetry,
 };
 

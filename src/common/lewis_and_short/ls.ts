@@ -6,6 +6,8 @@ import { parseEntries, XmlNode } from "./xml_node";
 import { displayEntryFree } from "./ls_display";
 import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
 import { removeDiacritics } from "../text_cleaning";
+import { LsResult } from "@/web/utils/rpc/ls_api_result";
+import { extractOutline } from "./ls_outline";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -40,24 +42,30 @@ export class LewisAndShort {
     );
   }
 
-  async getEntry(input: string): Promise<string> {
+  async getEntry(input: string): Promise<LsResult[]> {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
-      return JSON.stringify([`<span>Could not find entry for ${input}</span>`]);
+      return [
+        {
+          entry: new XmlNode("span", [], [`Could not find entry for ${input}`]),
+        },
+      ];
     }
 
     const hasDiactrics = input === request;
     const exactMatches = indices.filter(
       ([i, j]) => this.rawKeys[i][j] === input
     );
-    const resultIndices =
+    const allMatches =
       hasDiactrics && exactMatches.length > 0 ? exactMatches : indices;
-    const entryStrings = resultIndices.map(([i, _]) => this.entries[i]);
+    const resultIndices = [...new Set(allMatches.map(([i, _]) => i))];
+    const entryStrings = resultIndices.map((i) => this.entries[i]);
     const entryNodes = parseEntries(entryStrings);
-    return JSON.stringify(
-      entryNodes.map((node) => displayEntryFree(node).toString())
-    );
+    return entryNodes.map((node) => ({
+      entry: displayEntryFree(node),
+      outline: extractOutline(node),
+    }));
   }
 
   async getCompletions(input: string): Promise<string[]> {

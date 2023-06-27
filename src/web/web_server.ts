@@ -1,39 +1,19 @@
 import compression from "compression";
-import express, { Request, Response } from "express";
-import {
-  entriesByPrefix,
-  lsCall,
-  macronizeCall,
-  report,
-} from "@/web/api_routes";
+import express, { Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
-import { ApiCallData, TelemetryLogger } from "./telemetry/telemetry";
-
-function log(message: string) {
-  console.debug(`[web_server] [${Date.now() / 1000}] ${message}`);
-}
+import { TelemetryLogger } from "./telemetry/telemetry";
+import { RouteAndHandler, addApi } from "./utils/rpc/server_rpc";
 
 export interface WebServerParams {
-  app: express.Express;
-  macronizer: (input: string) => Promise<string>;
-  lsDict: (entry: string) => Promise<string>;
-  entriesByPrefix: (prefix: string) => Promise<string[]>;
-  fileIssueReport: (reportText: string) => Promise<void>;
+  webApp: express.Express;
+  routes: RouteAndHandler<any, any>[];
   telemetry: Promise<TelemetryLogger>;
   buildDir: string;
 }
 
 export function setupServer(params: WebServerParams): void {
-  async function logApi(data: Omit<ApiCallData, "latencyMs">, start: number) {
-    const finalData = {
-      ...data,
-      latencyMs: Math.round(performance.now() - start),
-    };
-    (await params.telemetry).logApiCall(finalData);
-  }
-
-  const app = params.app;
+  const app = params.webApp;
   app.use(bodyParser.text());
   app.use(compression());
   const staticOptions = {
@@ -60,72 +40,5 @@ export function setupServer(params: WebServerParams): void {
     next();
   });
 
-  app.post(macronizeCall(), async (req, res) => {
-    const start = performance.now();
-    log(`Got macronize request`);
-    if (typeof req.body !== "string") {
-      res.send("Invalid request");
-      logApi({ name: "Macronize", status: 400 }, start);
-      return;
-    }
-    const result = await params.macronizer(req.body);
-    res.send(result);
-    logApi(
-      {
-        name: "Macronize",
-        status: 200,
-        params: { textLength: req.body.length.toString() },
-      },
-      start
-    );
-  });
-
-  app.post(report(), async (req, res) => {
-    const start = performance.now();
-    if (typeof req.body !== "string") {
-      res.status(400).send("Invalid request");
-      logApi({ name: "Report", status: 400 }, start);
-      return;
-    }
-    try {
-      await params.fileIssueReport(req.body);
-      res.status(200).send();
-      logApi({ name: "Report", status: 200 }, start);
-    } catch (e) {
-      log(`Failed to file issue report!\n${e}`);
-      res.status(500).send();
-      logApi({ name: "Report", status: 500 }, start);
-    }
-  });
-
-  app.get(lsCall(":entry"), async (req: Request<{ entry: string }>, res) => {
-    const start = performance.now();
-    log(`Got LS request`);
-    res.send(await params.lsDict(req.params.entry));
-    logApi(
-      {
-        name: "LsQuery",
-        status: 200,
-        params: { entry: req.params.entry },
-      },
-      start
-    );
-  });
-
-  app.get(
-    entriesByPrefix(":prefix"),
-    async (req: Request<{ prefix: string }>, res) => {
-      const start = performance.now();
-      log(`Got entriesByPrefix request`);
-      res.send(JSON.stringify(await params.entriesByPrefix(req.params.prefix)));
-      logApi(
-        {
-          name: "EntriesByPrefix",
-          status: 200,
-          params: { prefix: req.params.prefix },
-        },
-        start
-      );
-    }
-  );
+  params.routes.forEach((r) => addApi(params, r));
 }

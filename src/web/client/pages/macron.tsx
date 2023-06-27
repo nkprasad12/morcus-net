@@ -3,20 +3,9 @@ import Box from "@mui/system/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 
-import { macronizeCall } from "@/web/api_routes";
 import { Solarized } from "../colors";
-import { backendCall } from "../browser_utils";
-
-async function process(input: string): Promise<string> {
-  const options = {
-    method: "POST",
-    headers: {
-      "Content-Type": "text/plain; charset=utf-8",
-    },
-    body: input,
-  };
-  return backendCall(macronizeCall(), options);
-}
+import { callApi } from "@/web/utils/rpc/client_rpc";
+import { MacronizeApi } from "@/web/api_routes";
 
 export function Macronizer() {
   const [rawInput, setRawInput] = useState<string | undefined>(undefined);
@@ -26,7 +15,12 @@ export function Macronizer() {
     if (rawInput === undefined) {
       return;
     }
-    setProcessed(await process(rawInput));
+    try {
+      setProcessed(await callApi(MacronizeApi, rawInput));
+    } catch (e) {
+      setProcessed("Error: please try again later.");
+      console.debug(e);
+    }
   }
 
   return (
