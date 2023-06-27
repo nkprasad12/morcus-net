@@ -11,6 +11,14 @@ import React from "react";
 import { Dictionary } from "./dictionary";
 import { RouteContext } from "../components/router";
 
+jest.mock("@mui/material/useMediaQuery", () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => false),
+  };
+});
+import { useMediaQuery } from "@mui/material";
+
 console.debug = jest.fn();
 
 jest.mock("@/web/utils/rpc/client_rpc");
@@ -125,7 +133,7 @@ describe("Dictionary View", () => {
     });
   });
 
-  it("shows fetched result on success", async () => {
+  it("shows fetched result on large screen", async () => {
     const spyScrollTo = jest.fn();
     Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
     const resultString = "France or whatever idk lol";
@@ -171,6 +179,71 @@ describe("Dictionary View", () => {
       expect(screen.getByText("sense1")).toBeDefined();
       expect(screen.getByText("sense2")).toBeDefined();
     });
+    expect(screen.queryByLabelText("jump to outline")).toBeNull();
+    expect(screen.queryByLabelText("jump to entry")).toBeNull();
+
+    // Expect this to scroll since the linked section exists
+    spyScrollTo.mockClear();
+    await user.click(screen.getByText("B."));
+    expect(spyScrollTo).toHaveBeenCalledTimes(1);
+
+    // Expect this to no-op since the linked section does not exist
+    spyScrollTo.mockClear();
+    await user.click(screen.getByText("mainOrth"));
+    expect(spyScrollTo).toHaveBeenCalledTimes(0);
+  });
+
+  it("shows fetched result on small screen", async () => {
+    // @ts-ignore
+    useMediaQuery.mockImplementation(() => true);
+    const spyScrollTo = jest.fn();
+    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    const resultString = "France or whatever idk lol";
+    mockCallApi.mockResolvedValue([
+      {
+        entry: new XmlNode("span", [["id", "n3"]], [resultString]),
+        outline: {
+          mainOrth: "mainOrth",
+          mainSection: {
+            text: "mainBlurb",
+            sectionId: "n1",
+          },
+          senses: [
+            {
+              text: "sense1",
+              level: 1,
+              ordinal: "A",
+              sectionId: "n2",
+            },
+            {
+              text: "sense2",
+              level: 1,
+              ordinal: "B",
+              sectionId: "n3",
+            },
+          ],
+        },
+      },
+    ]);
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
+      >
+        <Dictionary />
+      </RouteContext.Provider>
+    );
+
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    expect(mockCallApi.mock.calls[0][1]).toBe("Belgae");
+    await waitFor(() => {
+      expect(screen.getByText(resultString)).toBeDefined();
+      expect(screen.getByText("mainBlurb")).toBeDefined();
+      expect(screen.getByText("sense1")).toBeDefined();
+      expect(screen.getByText("sense2")).toBeDefined();
+    });
+
+    expect(screen.queryByLabelText("jump to outline")).not.toBeNull();
+    expect(screen.queryByLabelText("jump to entry")).not.toBeNull();
 
     // Expect this to scroll since the linked section exists
     spyScrollTo.mockClear();

@@ -571,6 +571,7 @@ export function Dictionary() {
                   backgroundColor: Solarized.base2 + "80",
                   color: Solarized.base1 + "80",
                 }}
+                aria-label="jump to entry"
               />
             )}
             <TableOfContents />
@@ -590,6 +591,7 @@ export function Dictionary() {
                   backgroundColor: Solarized.base2 + "D0",
                   color: Solarized.base1 + "D0",
                 }}
+                aria-label="jump to outline"
               />
             )}
           </div>
