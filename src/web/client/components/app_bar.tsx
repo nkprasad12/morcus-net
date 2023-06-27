@@ -53,8 +53,8 @@ function DrawerMenu(props: {
       <Box role="navigation" onClick={props.onClose} id="menu-appbar">
         <List>
           {props.pages.map((page) => (
-            <>
-              <ListItem key={page.name} disablePadding>
+            <div key={page.name}>
+              <ListItem disablePadding>
                 <Button
                   key={page.name}
                   onClick={props.onPageClick(page.path)}
@@ -72,7 +72,7 @@ function DrawerMenu(props: {
                 </Button>
               </ListItem>
               <Divider key={page.name + "_divider"} light variant="middle" />
-            </>
+            </div>
           ))}
         </List>
         <List style={{ marginTop: `auto` }}>
