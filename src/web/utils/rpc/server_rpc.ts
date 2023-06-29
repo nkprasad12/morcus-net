@@ -16,7 +16,7 @@ class Timer {
   }
 
   event(event: string): number {
-    const elapsed = Math.round(performance.now() - this.start);
+    const elapsed = Math.round(10 * (performance.now() - this.start)) / 10;
     this.events.push([event, elapsed]);
     return elapsed;
   }
