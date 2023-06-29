@@ -420,6 +420,7 @@ export function Dictionary() {
   const sectionRef = React.useRef<HTMLElement>(null);
   const tocRef = React.useRef<HTMLElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
+  const searchBarRef = React.useRef<HTMLDivElement>(null);
 
   function ContentBox(props: {
     children: JSX.Element;
@@ -469,14 +470,20 @@ export function Dictionary() {
           setEntries(jsxEntries);
           setOutlines(newResults.map((r) => r.outline));
         });
-        sectionRef.current?.scrollIntoView(SCROLL_OPTIONS);
+        (sectionRef.current || searchBarRef.current)?.scrollIntoView(
+          SCROLL_OPTIONS
+        );
       });
     }
   }, [nav.route.query]);
 
   function SearchBar(props: { maxWidth: "md" | "lg" }) {
     return (
-      <Container maxWidth={props.maxWidth} disableGutters={true}>
+      <Container
+        maxWidth={props.maxWidth}
+        disableGutters={true}
+        ref={searchBarRef}
+      >
         <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
       </Container>
     );
