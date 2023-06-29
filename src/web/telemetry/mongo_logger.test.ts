@@ -72,4 +72,16 @@ describe("MongoLogger", () => {
     expect(loggedEvent.latencyMs).toBe(4);
     expect(loggedEvent.timestamp).toBeDefined();
   });
+
+  it("logs to database on system health call", async () => {
+    const logger = await MongoLogger.create("foo", "bar");
+
+    const input = process.memoryUsage();
+    await logger.logServerHealth(input);
+
+    expect(mockInsertOne).toHaveBeenCalledTimes(1);
+    const loggedEvent: any = mockInsertOne.mock.lastCall!.at(0)!;
+    expect(loggedEvent.rss).toBe(input.rss);
+    expect(loggedEvent.timestamp).toBeDefined();
+  });
 });

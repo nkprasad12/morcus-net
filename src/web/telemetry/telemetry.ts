@@ -31,11 +31,13 @@ export interface ApiCallEvent extends TelemetryEvent, ApiCallData {}
 export interface TelemetryLogger {
   readonly teardown: () => Promise<void>;
   readonly logApiCall: (data: ApiCallData) => Promise<void>;
+  readonly logServerHealth: (data: NodeJS.MemoryUsage) => Promise<void>;
 }
 
 export namespace TelemetryLogger {
   export const NoOp: TelemetryLogger = {
     teardown: async () => {},
     logApiCall: async (d) => console.debug(d),
+    logServerHealth: async (d) => console.debug(d),
   };
 }

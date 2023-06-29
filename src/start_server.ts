@@ -51,6 +51,22 @@ function log(message: string) {
   console.log(`[start_server] ${message}`);
 }
 
+function bytesToMb(input: number): number {
+  const inMb = input / (1024 * 1024);
+  return Math.round(inMb * 10) / 10;
+}
+
+function logMemoryUsage(telemetry: TelemetryLogger): void {
+  const usage = process.memoryUsage();
+  telemetry.logServerHealth({
+    rss: bytesToMb(usage.rss),
+    heapTotal: bytesToMb(usage.heapTotal),
+    heapUsed: bytesToMb(usage.heapUsed),
+    external: bytesToMb(usage.external),
+    arrayBuffers: bytesToMb(usage.arrayBuffers),
+  });
+}
+
 const host = "localhost";
 const port = parseInt(
   checkPresent(process.env.PORT, "PORT environment variable")
@@ -99,4 +115,5 @@ setupServer(params);
 
 server.listen(port, () => {
   log(`Local server: http://${host}:${port}/`);
+  setInterval(() => telemetry.then(logMemoryUsage), 1000 * 60 * 15);
 });
