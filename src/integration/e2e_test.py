@@ -17,6 +17,7 @@ subproc_env = os.environ.copy()
 subproc_env["LS_PATH"] = "ls.xml"
 subproc_env["LS_PROCESSED_PATH"] = "lsp.txt"
 subproc_env["PORT"] = f"{PORT}"
+subproc_env["CONSOLE_TELEMETRY"] = "yes"
 
 
 processes: "list[subprocess.Popen]" = []
