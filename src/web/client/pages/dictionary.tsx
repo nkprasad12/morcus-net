@@ -160,12 +160,7 @@ export function SectionLinkTooltip(props: {
   return (
     <ClickableTooltip
       titleText={
-        <Typography
-          onClick={onClick}
-          // TODO: Why do we need both here?
-          onTouchStart={onClick}
-          sx={{ cursor: "pointer" }}
-        >
+        <Typography onPointerDown={onClick} sx={{ cursor: "pointer" }}>
           <IconButton
             size="small"
             aria-label="copy link"
