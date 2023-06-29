@@ -19,6 +19,7 @@ jest.mock("@mui/material/useMediaQuery", () => {
 });
 import { useMediaQuery } from "@mui/material";
 
+window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
 
 jest.mock("@/web/utils/rpc/client_rpc");
