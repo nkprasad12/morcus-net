@@ -31,8 +31,12 @@ import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
 
 type Placement = "top-start" | "right";
-const SCROLL_OPTIONS: ScrollIntoViewOptions = {
+const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
+  block: "start",
+};
+const SCROLL_SMOOTH: ScrollIntoViewOptions = {
+  behavior: "smooth",
   block: "start",
 };
 const ERROR_MESSAGE = {
@@ -470,14 +474,15 @@ export function Dictionary() {
           setEntries(jsxEntries);
           setOutlines(newResults.map((r) => r.outline));
         });
-        (sectionRef.current || searchBarRef.current)?.scrollIntoView(
-          SCROLL_OPTIONS
-        );
+        const scrollElement = sectionRef.current || searchBarRef.current;
+        const scrollType =
+          scrollElement === searchBarRef.current ? SCROLL_SMOOTH : SCROLL_JUMP;
+        scrollElement?.scrollIntoView(scrollType);
       });
     }
   }, [nav.route.query]);
 
-  function SearchBar(props: { maxWidth: "md" | "lg" }) {
+  function SearchBar(props: { maxWidth: "md" | "lg" | "xl" }) {
     return (
       <Container
         maxWidth={props.maxWidth}
@@ -572,9 +577,7 @@ export function Dictionary() {
           <div>
             {entries.length > 0 && (
               <ArrowDownwardIcon
-                onClick={() =>
-                  entriesRef.current?.scrollIntoView(SCROLL_OPTIONS)
-                }
+                onClick={() => entriesRef.current?.scrollIntoView(SCROLL_JUMP)}
                 sx={{
                   position: "sticky",
                   float: "right",
@@ -594,7 +597,7 @@ export function Dictionary() {
             <DictionaryEntries />
             {entries.length > 0 && (
               <TocIcon
-                onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
+                onClick={() => tocRef.current?.scrollIntoView(SCROLL_JUMP)}
                 fontSize="large"
                 sx={{
                   position: "sticky",
@@ -622,8 +625,8 @@ export function Dictionary() {
     }
 
     return (
-      <Container maxWidth="xl">
-        <Stack direction="row" spacing={1} justifyContent="center">
+      <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
+        <Stack direction="row" spacing={1} justifyContent="left">
           <div
             style={{
               position: "sticky",
@@ -633,16 +636,21 @@ export function Dictionary() {
               marginTop: 10,
               overflow: "auto",
               maxHeight: window.innerHeight - 40,
-              maxWidth: "27%",
-              minWidth: "250px",
+              minWidth: "min(29%, 300px)",
             }}
           >
             <TableOfContents />
           </div>
-          <div style={{ maxWidth: "73%" }}>
-            <SearchBar maxWidth="lg" />
+          <div style={{ maxWidth: "10000px" }}>
+            <SearchBar maxWidth="xl" />
             <SearchHeader />
             <DictionaryEntries />
+            <span
+              key={"horizonatalSpacePlaceholder"}
+              style={{ color: Solarized.base3, cursor: "default" }}
+            >
+              {"pla ceh old er".repeat(20)}
+            </span>
           </div>
         </Stack>
       </Container>
