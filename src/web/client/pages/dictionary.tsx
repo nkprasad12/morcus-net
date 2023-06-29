@@ -425,14 +425,16 @@ export function Dictionary() {
     children: JSX.Element;
     contentKey?: string;
     contentRef?: React.RefObject<HTMLElement>;
+    ml?: string;
+    mr?: string;
   }) {
     return (
       <>
         <Box
           sx={{
             padding: 1,
-            ml: isSmall ? 1 : 3,
-            mr: isSmall ? 1 : 3,
+            ml: props.ml || (isSmall ? 1 : 3),
+            mr: props.mr || (isSmall ? 1 : 3),
             mt: 1,
             mb: 2,
             borderColor: Solarized.base2,
@@ -484,7 +486,12 @@ export function Dictionary() {
     return (
       <>
         {entries.length > 0 && (
-          <ContentBox key="tableOfContents" contentRef={tocRef}>
+          <ContentBox
+            key="tableOfContents"
+            contentRef={tocRef}
+            ml="0px"
+            mr="0px"
+          >
             <div style={{ fontSize: 16, lineHeight: "normal" }}>
               <span>
                 Found {entries.length} result{entries.length > 1 ? "s" : ""}.
@@ -609,7 +616,7 @@ export function Dictionary() {
 
     return (
       <Container maxWidth="xl">
-        <Stack direction="row" spacing={0} justifyContent="center">
+        <Stack direction="row" spacing={1} justifyContent="center">
           <div
             style={{
               position: "sticky",
@@ -619,13 +626,13 @@ export function Dictionary() {
               marginTop: 10,
               overflow: "auto",
               maxHeight: window.innerHeight - 40,
-              maxWidth: "35%",
+              maxWidth: "27%",
               minWidth: "250px",
             }}
           >
             <TableOfContents />
           </div>
-          <div style={{ maxWidth: "65%" }}>
+          <div style={{ maxWidth: "73%" }}>
             <SearchBar maxWidth="lg" />
             <SearchHeader />
             <DictionaryEntries />
