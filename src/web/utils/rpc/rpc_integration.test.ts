@@ -76,6 +76,7 @@ function appBundle() {
   const telemetryLogger: TelemetryLogger = {
     logApiCall: (d) => Promise.resolve(),
     teardown: () => Promise.resolve(),
+    logServerHealth: (d) => Promise.resolve(),
   };
   return { webApp: app, telemetry: Promise.resolve(telemetryLogger) };
 }

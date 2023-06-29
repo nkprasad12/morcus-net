@@ -1,11 +1,10 @@
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import { assert } from "../assert";
+import { BREVES, MACRONS } from "../character_utils";
 
 // const LOWER_CONSONANTS = "bcdfghjklmnpqrstvxz";
 // const UPPER_CONSONANTS = "BCDFGHJKLMNPQRSTVXZ";
 // const CONSONANTS = LOWER_CONSONANTS + UPPER_CONSONANTS;
-const MACRONS = "āēīōūȳÃĀĒĪÕŪ";
-const BREVES = "ăĕĭŏŭўĂĬĔŎŬ";
 const OTHER_ACCENTED = "áïìëèöüúùÿ";
 const ALPHA_ACC = MACRONS + BREVES + OTHER_ACCENTED;
 const LOWER_CASE = "abcdefghijklmnopqrstuvwxyz";

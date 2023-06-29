@@ -6,6 +6,28 @@ import { decodeMessage, encodeMessage } from "./parsing";
 
 export type Data = boolean | string | number | object;
 
+class Timer {
+  private readonly start: number;
+  private readonly events: [string, number][];
+
+  constructor() {
+    this.start = performance.now();
+    this.events = [];
+  }
+
+  event(event: string): number {
+    const elapsed = Math.round(10 * (performance.now() - this.start)) / 10;
+    this.events.push([event, elapsed]);
+    return elapsed;
+  }
+
+  getEvents(): { [key: string]: number } {
+    const result: { [key: string]: number } = {};
+    this.events.forEach(([eventName, time]) => (result[eventName] = time));
+    return result;
+  }
+}
+
 function isObject(data: Data): data is object {
   if (typeof data === "string") {
     return false;
@@ -21,12 +43,13 @@ function isObject(data: Data): data is object {
 
 async function logApi(
   data: Omit<ApiCallData, "latencyMs">,
-  start: number,
+  timer: Timer,
   telemetry: Promise<TelemetryLogger>
 ) {
   const finalData = {
     ...data,
-    latencyMs: Math.round(performance.now() - start),
+    latencyMs: timer.event("end"),
+    extras: timer.getEvents(),
   };
   (await telemetry).logApiCall(finalData);
 }
@@ -70,12 +93,13 @@ function adaptHandler<I, O extends Data>(
   handler: ApiHandler<I, O>
 ) {
   return (req: Request, res: Response) => {
-    const start = performance.now();
+    const timer = new Timer();
     console.debug(`[${Date.now() / 1000}] ${route.path}`);
     const inputOrError = extractInput(req, route);
+    timer.event("extractInputComplete");
     if (inputOrError instanceof Error) {
       res.status(400).send(inputOrError.message);
-      logApi({ name: route.path, status: 400 }, start, app.telemetry);
+      logApi({ name: route.path, status: 400 }, timer, app.telemetry);
       return;
     }
     const [input, rawLength] = inputOrError;
@@ -100,8 +124,10 @@ function adaptHandler<I, O extends Data>(
         body = reason;
       })
       .finally(() => {
+        timer.event("handlerComplete");
         const result =
           body === undefined ? undefined : encodeMessage(body, route.registry);
+        timer.event("encodeMessageComplete");
         res.status(status).send(result);
         const telemetryData: Omit<ApiCallData, "latencyMs"> = {
           name: route.path,
@@ -113,7 +139,7 @@ function adaptHandler<I, O extends Data>(
           telemetryData.params = { input: JSON.stringify(input) };
         }
         telemetryData.params;
-        logApi(telemetryData, start, app.telemetry);
+        logApi(telemetryData, timer, app.telemetry);
       });
   };
 }

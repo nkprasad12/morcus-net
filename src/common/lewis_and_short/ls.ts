@@ -8,6 +8,7 @@ import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
 import { removeDiacritics } from "../text_cleaning";
 import { LsResult } from "@/web/utils/rpc/ls_api_result";
 import { extractOutline } from "./ls_outline";
+import { Vowels } from "../character_utils";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -53,12 +54,19 @@ export class LewisAndShort {
       ];
     }
 
-    const hasDiactrics = input === request;
-    const exactMatches = indices.filter(
-      ([i, j]) => this.rawKeys[i][j] === input
-    );
-    const allMatches =
-      hasDiactrics && exactMatches.length > 0 ? exactMatches : indices;
+    const allMatches = indices.filter(([i, j]) => {
+      const candidate = this.rawKeys[i][j];
+      for (let k = 0; k < input.length; k++) {
+        const inputCharLength = Vowels.getLength(input[k]);
+        const candidateCharLength = Vowels.getLength(candidate[k]);
+        const lengths = [inputCharLength, candidateCharLength];
+        if (lengths.includes("Long") && lengths.includes("Short")) {
+          return false;
+        }
+      }
+      return true;
+    });
+
     const resultIndices = [...new Set(allMatches.map(([i, _]) => i))];
     const entryStrings = resultIndices.map((i) => this.entries[i]);
     const entryNodes = parseEntries(entryStrings);

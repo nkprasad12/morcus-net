@@ -34,6 +34,18 @@ const LS_DATA = [
     keys: ["īnō", "Ino"],
     entry: new XmlNode("entryFree", [], ["Ino edge case"]).toString(),
   },
+  {
+    keys: ["quis"],
+    entry: new XmlNode("entryFree", [], ["quisUnspecified"]).toString(),
+  },
+  {
+    keys: ["quĭs"],
+    entry: new XmlNode("entryFree", [], ["quisShort"]).toString(),
+  },
+  {
+    keys: ["quīs"],
+    entry: new XmlNode("entryFree", [], ["quisLong"]).toString(),
+  },
 ];
 
 function toLsData(keys: string[]) {
@@ -227,6 +239,46 @@ describe("LewisAndShort", () => {
     expectEqual(
       (await dict.getEntry("ino")).map((r) => r.entry),
       ['<div class="lsEntryFree">Ino edge case</div>']
+    );
+  });
+
+  test("getEntry without diacritic returns all options", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expectEqual(
+      (await dict.getEntry("quis")).map((r) => r.entry),
+      [
+        '<div class="lsEntryFree">quisUnspecified</div>',
+        '<div class="lsEntryFree">quisShort</div>',
+        '<div class="lsEntryFree">quisLong</div>',
+      ]
+    );
+  });
+
+  test("getEntry with breve returns short and ambiguous", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expectEqual(
+      (await dict.getEntry("quĭs")).map((r) => r.entry),
+      [
+        '<div class="lsEntryFree">quisUnspecified</div>',
+        '<div class="lsEntryFree">quisShort</div>',
+      ]
+    );
+  });
+
+  test("getEntry with macron returns long and ambiguous", async () => {
+    await LewisAndShort.save(LS_DATA, TEMP_FILE);
+    const dict = await LewisAndShort.create(TEMP_FILE);
+
+    expectEqual(
+      (await dict.getEntry("quīs")).map((r) => r.entry),
+      [
+        '<div class="lsEntryFree">quisUnspecified</div>',
+        '<div class="lsEntryFree">quisLong</div>',
+      ]
     );
   });
 
