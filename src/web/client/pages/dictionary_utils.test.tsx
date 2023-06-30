@@ -13,6 +13,7 @@ import {
   xmlNodeToJsx,
 } from "./dictionary";
 
+console.log = jest.fn();
 console.debug = jest.fn();
 
 function GalliaRef(props: any, ref: any) {
@@ -109,7 +110,7 @@ describe("SectionLinkTooltip", () => {
   const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows link buttons", async () => {
-    const writeText = jest.fn();
+    const writeText = jest.fn((_e) => Promise.resolve());
     Object.assign(navigator, {
       clipboard: {
         writeText,

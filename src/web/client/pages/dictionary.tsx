@@ -154,7 +154,11 @@ export function SectionLinkTooltip(props: {
 }) {
   function onClick() {
     const chunks = window.location.href.split("#");
-    navigator.clipboard.writeText(`${chunks[0]}#${props.senseId}`);
+    const newUrl = `${chunks[0]}#${props.senseId}`;
+    const result = navigator.clipboard.writeText(newUrl);
+    result
+      .then(() => console.log("writeText success"))
+      .catch((e) => console.log(`writeText failure: ${e}`));
   }
 
   return (
