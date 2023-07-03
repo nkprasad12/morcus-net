@@ -34,42 +34,40 @@ function BaseTooltip(props: TooltipProps) {
         props.onClickAway();
       }}
     >
-      <div>
-        <Tooltip
-          title={
-            <Typography
-              component={typeof props.titleText === "string" ? "p" : "div"}
-            >
-              {props.titleText}
-            </Typography>
-          }
-          className={props.className}
-          placement={props.placement || "top-start"}
-          disableFocusListener
-          disableHoverListener
-          disableTouchListener
-          describeChild={false}
-          onClose={() => {
-            props.onTooltipClose();
+      <Tooltip
+        title={
+          <Typography
+            component={typeof props.titleText === "string" ? "p" : "div"}
+          >
+            {props.titleText}
+          </Typography>
+        }
+        className={props.className}
+        placement={props.placement || "top-start"}
+        disableFocusListener
+        disableHoverListener
+        disableTouchListener
+        describeChild={false}
+        onClose={() => {
+          props.onTooltipClose();
+        }}
+        open={props.open}
+        arrow
+        componentsProps={{
+          tooltip: {
+            sx: props.tooltipSx,
+          },
+          arrow: {
+            sx: props.arrowSx,
+          },
+        }}
+      >
+        <props.ChildFactory
+          onClick={() => {
+            props.onChildClick(props.open);
           }}
-          open={props.open}
-          arrow
-          componentsProps={{
-            tooltip: {
-              sx: props.tooltipSx,
-            },
-            arrow: {
-              sx: props.arrowSx,
-            },
-          }}
-        >
-          <props.ChildFactory
-            onClick={() => {
-              props.onChildClick(props.open);
-            }}
-          />
-        </Tooltip>
-      </div>
+        />
+      </Tooltip>
     </ClickAwayListener>
   );
 }
@@ -103,7 +101,10 @@ export function SectionLinkTooltip(props: {
   >;
   senseId: string;
 }) {
-  const [state, setState] = React.useState<SectionLinkTooltipState>("Closed");
+  // const [state, setState] = React.useState<SectionLinkTooltipState>("Closed");
+
+  const [visible, setVisible] = React.useState<boolean>(false);
+  const [content, setContent] = React.useState<JSX.Element>(<></>);
 
   function getLink(): string {
     const chunks = window.location.href.split("#");
@@ -116,8 +117,8 @@ export function SectionLinkTooltip(props: {
         size="small"
         aria-label="close tooltip"
         aria-haspopup="false"
-        color="warning"
-        onClick={() => setState("Closed")}
+        color="default"
+        onClick={() => setVisible(false)}
         sx={{ cursor: "pointer" }}
       >
         <CloseIcon />
@@ -129,10 +130,10 @@ export function SectionLinkTooltip(props: {
     const link = getLink();
     try {
       await navigator.clipboard.writeText(link);
-      setState("Success");
-      setTimeout(() => setState("Closed"), 500);
+      setContent(() => TitleText("Success"));
+      setTimeout(() => setVisible(false), 500);
     } catch (e) {
-      setState("Error");
+      setContent(() => TitleText("Error"));
     }
   }
 
@@ -158,11 +159,11 @@ export function SectionLinkTooltip(props: {
     );
   }
 
-  function TitleText() {
+  function TitleText(state: SectionLinkTooltipState) {
     if (state === "Error") {
       return (
         <Typography>
-          <div>
+          <div style={{ fontSize: 14, lineHeight: "normal" }}>
             <CloseButton />
             <span>Error: please copy manually: </span>
           </div>
@@ -181,7 +182,7 @@ export function SectionLinkTooltip(props: {
 
   return (
     <BaseTooltip
-      titleText={<TitleText />}
+      titleText={content}
       className={props.className}
       ChildFactory={props.forwarded}
       placement="top-start"
@@ -193,10 +194,16 @@ export function SectionLinkTooltip(props: {
       arrowSx={{
         color: Solarized.base02,
       }}
-      open={state !== "Closed"}
-      onChildClick={(isOpen) => setState(isOpen ? "Closed" : "ClickToCopy")}
-      onTooltipClose={() => setState("Closed")}
-      // onClickAway={() => setState("Closed")}
+      open={visible}
+      onChildClick={(isOpen) => {
+        if (isOpen) {
+          setVisible(false);
+          return;
+        }
+        setContent(TitleText("ClickToCopy"));
+        setVisible(true);
+      }}
+      onTooltipClose={() => setVisible(false)}
       onClickAway={() => {}}
     />
   );
