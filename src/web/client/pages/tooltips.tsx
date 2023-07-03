@@ -30,7 +30,7 @@ function BaseTooltip(props: TooltipProps) {
   return (
     <ClickAwayListener
       onClickAway={() => {
-        props.onClickAway();
+        // props.onClickAway();
       }}
     >
       <Tooltip
