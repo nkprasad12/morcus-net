@@ -7,11 +7,8 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import {
-  ClickableTooltip,
-  SectionLinkTooltip,
-  xmlNodeToJsx,
-} from "./dictionary";
+import { xmlNodeToJsx } from "./dictionary";
+import { ClickableTooltip, SectionLinkTooltip } from "./tooltips";
 
 console.log = jest.fn();
 console.debug = jest.fn();
