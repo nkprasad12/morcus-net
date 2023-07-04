@@ -23,7 +23,6 @@ export interface TooltipProps {
   arrowSx?: SxProps;
   open: boolean;
   onClickAway: () => any;
-  onTooltipClose: () => any;
   onChildClick: (isOpen: boolean) => any;
 }
 
@@ -48,9 +47,6 @@ function BaseTooltip(props: TooltipProps) {
         disableHoverListener
         disableTouchListener
         describeChild={false}
-        onClose={() => {
-          props.onTooltipClose();
-        }}
         open={props.open}
         arrow
         componentsProps={{
@@ -86,7 +82,6 @@ export function ClickableTooltip(props: {
       {...props}
       open={open}
       onChildClick={(isOpen) => setOpen(!isOpen)}
-      onTooltipClose={() => setOpen(false)}
       onClickAway={() => setOpen(false)}
     />
   );
@@ -101,10 +96,8 @@ export function SectionLinkTooltip(props: {
   >;
   senseId: string;
 }) {
-  // const [state, setState] = React.useState<SectionLinkTooltipState>("Closed");
-
   const [visible, setVisible] = React.useState<boolean>(false);
-  const [content, setContent] = React.useState<JSX.Element>(<></>);
+  const [content, setContent] = React.useState<JSX.Element>(<div />);
 
   function getLink(): string {
     const chunks = window.location.href.split("#");
@@ -139,7 +132,7 @@ export function SectionLinkTooltip(props: {
 
   function TextWithIcon(props: { message: string }) {
     return (
-      <Typography>
+      <Typography component="div">
         <CloseButton />
         <div
           onClick={onClick}
@@ -162,7 +155,7 @@ export function SectionLinkTooltip(props: {
   function TitleText(state: SectionLinkTooltipState) {
     if (state === "Error") {
       return (
-        <Typography>
+        <Typography component="div">
           <div style={{ fontSize: 14, lineHeight: "normal" }}>
             <CloseButton />
             <span>Error: please copy manually: </span>
@@ -203,7 +196,6 @@ export function SectionLinkTooltip(props: {
         setContent(TitleText("ClickToCopy"));
         setVisible(true);
       }}
-      onTooltipClose={() => setVisible(false)}
       onClickAway={() => {}}
     />
   );
