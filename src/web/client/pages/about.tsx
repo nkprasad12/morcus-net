@@ -4,8 +4,11 @@ import Typography from "@mui/material/Typography";
 
 import React from "react";
 import { Solarized } from "../colors";
+import { getCommitHash } from "../define_vars";
 
 export function About() {
+  const commitHash = getCommitHash();
+
   return (
     <Container maxWidth="lg">
       <Box sx={{ padding: 3 }}>
@@ -65,6 +68,18 @@ export function About() {
               murky world of Digital Classics, for the long ideation
               converstions, and for the thorough feedback and many great ideas
               on improving the user interface. Grátiás vóbís agó!
+            </p>
+          </section>
+          <h4>Debugging</h4>
+          <section>
+            <p>
+              Built at{" "}
+              <a
+                href={`https://github.com/nkprasad12/morcus-net/commit/${commitHash}`}
+              >
+                {commitHash}
+              </a>
+              {"."}
             </p>
           </section>
         </Typography>
