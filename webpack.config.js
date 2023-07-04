@@ -1,8 +1,11 @@
 const path = require("path");
+const cp = require("child_process");
+
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const CompressionPlugin = require("compression-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
+const { DefinePlugin } = require("webpack");
 
 module.exports = (env) => {
   console.log(env);
@@ -11,8 +14,12 @@ module.exports = (env) => {
   const isProduction = env.production === true;
   const shouldMinimize = isProduction;
 
+  const { stdout } = cp.spawnSync("git", ["rev-parse", "HEAD"]);
+  const commitHash = JSON.stringify(stdout.toString());
+
   const plugins = [
     new CleanWebpackPlugin(),
+    new DefinePlugin({ COMMIT_HASH: commitHash }),
     new HtmlWebpackPlugin({
       chunks: ["Root"],
       filename: "index.html",

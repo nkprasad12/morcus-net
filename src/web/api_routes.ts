@@ -1,6 +1,6 @@
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import { ApiRoute } from "./utils/rpc/rpc";
-import { isAny, isArray, isString, typeOf } from "./utils/rpc/parsing";
+import { isAny, isArray, isString, matches, typeOf } from "./utils/rpc/parsing";
 import { LsResult } from "./utils/rpc/ls_api_result";
 
 export const MacronizeApi: ApiRoute<string, string> = {
@@ -25,9 +25,17 @@ export const EntriesByPrefixApi: ApiRoute<string, string[]> = {
   outputValidator: isArray(typeOf("string")),
 };
 
-export const ReportApi: ApiRoute<string, any> = {
+export interface ReportApiRequest {
+  reportText: string;
+  commit: string;
+}
+
+export const ReportApi: ApiRoute<ReportApiRequest, any> = {
   path: "/api/report",
   method: "POST",
-  inputValidator: isString,
+  inputValidator: matches<ReportApiRequest>([
+    ["reportText", isString],
+    ["commit", isString],
+  ]),
   outputValidator: isAny,
 };

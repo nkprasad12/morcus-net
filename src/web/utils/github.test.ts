@@ -16,26 +16,29 @@ describe("reportIssue", () => {
   it("rejects on API error", async () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.reject("Foo"));
-    expect(GitHub.reportIssue("TestTitle\nTestBody")).rejects.toContain("Foo");
+    const request = GitHub.reportIssue("TestTitle\nTestBody", "abc");
+    expect(request).rejects.toContain("Foo");
   });
 
   it("rejects on failed API", async () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: false }));
-    expect(GitHub.reportIssue("TestTitle\nTestBody")).rejects.toThrow();
+    const request = GitHub.reportIssue("TestTitle\nTestBody", "abc");
+    expect(request).rejects.toThrow();
   });
 
   it("resolves on successful API", async () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: true }));
-    expect(GitHub.reportIssue("TestTitle\nTestBody")).resolves;
+    const request = GitHub.reportIssue("TestTitle\nTestBody", "abc");
+    expect(request).resolves;
   });
 
   it("passes correct arguments", async () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: true }));
 
-    await GitHub.reportIssue("TestTitle\nTestBody");
+    await GitHub.reportIssue("TestTitle\nTestBody", "abc");
 
     // @ts-ignore
     const calls = fetch.mock.calls;

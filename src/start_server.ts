@@ -99,7 +99,9 @@ const params: WebServerParams = {
   webApp: app,
   routes: [
     createApi(MacronizeApi, (input) => callWorker(Workers.MACRONIZER, input)),
-    createApi(ReportApi, (text) => GitHub.reportIssue(text)),
+    createApi(ReportApi, (request) =>
+      GitHub.reportIssue(request.reportText, request.commit)
+    ),
     createApi(DictsLsApi, async (input) =>
       (await lewisAndShort).getEntry(input)
     ),

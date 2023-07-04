@@ -1,4 +1,3 @@
-import LinkIcon from "@mui/icons-material/Link";
 import TocIcon from "@mui/icons-material/Toc";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
@@ -14,13 +13,7 @@ import React, { MutableRefObject } from "react";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { XmlNode } from "@/common/lewis_and_short/xml_node";
-import {
-  ClickAwayListener,
-  Divider,
-  IconButton,
-  SxProps,
-  Tooltip,
-} from "@mui/material";
+import { Divider } from "@mui/material";
 import { AutocompleteCache } from "./autocomplete_cache";
 import { Navigation, RouteContext } from "../components/router";
 import { flushSync } from "react-dom";
@@ -29,10 +22,14 @@ import { DictsLsApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
+import { ClickableTooltip, SectionLinkTooltip } from "./tooltips";
 
-type Placement = "top-start" | "right";
-const SCROLL_OPTIONS: ScrollIntoViewOptions = {
+const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
+  block: "start",
+};
+const SCROLL_SMOOTH: ScrollIntoViewOptions = {
+  behavior: "smooth",
   block: "start",
 };
 const ERROR_MESSAGE = {
@@ -98,92 +95,6 @@ const LOADING_ENTRY = xmlNodeToJsx(
     ]
   )
 );
-
-export function ClickableTooltip(props: {
-  titleText: string | JSX.Element;
-  className: string | undefined;
-  ChildFactory: React.ForwardRefExoticComponent<
-    Omit<any, "ref"> & React.RefAttributes<any>
-  >;
-  placement?: Placement;
-  tooltipSx?: SxProps;
-}) {
-  const [open, setOpen] = React.useState(false);
-
-  return (
-    <ClickAwayListener onClickAway={() => setOpen(false)}>
-      <Tooltip
-        title={
-          <Typography
-            component={typeof props.titleText === "string" ? "p" : "div"}
-          >
-            {props.titleText}
-          </Typography>
-        }
-        className={props.className}
-        placement={props.placement || "top-start"}
-        disableFocusListener
-        disableHoverListener
-        disableTouchListener
-        describeChild={false}
-        onClose={() => setOpen(false)}
-        open={open}
-        arrow
-        componentsProps={{
-          tooltip: {
-            sx: props.tooltipSx,
-          },
-        }}
-      >
-        <props.ChildFactory onClick={() => setOpen(!open)} />
-      </Tooltip>
-    </ClickAwayListener>
-  );
-}
-
-export function SectionLinkTooltip(props: {
-  className: string;
-  forwarded: React.ForwardRefExoticComponent<
-    Omit<any, "ref"> & React.RefAttributes<any>
-  >;
-  senseId: string;
-}) {
-  function onClick() {
-    const chunks = window.location.href.split("#");
-    navigator.clipboard.writeText(`${chunks[0]}#${props.senseId}`);
-  }
-
-  return (
-    <ClickableTooltip
-      titleText={
-        <Typography
-          onClick={onClick}
-          // TODO: Why do we need both here?
-          onTouchStart={onClick}
-          sx={{ cursor: "pointer" }}
-        >
-          <IconButton
-            size="small"
-            aria-label="copy link"
-            aria-haspopup="false"
-            color="info"
-          >
-            <LinkIcon />
-          </IconButton>
-          <span>Copy section link</span>
-        </Typography>
-      }
-      className={props.className}
-      ChildFactory={props.forwarded}
-      placement="top-start"
-      tooltipSx={{
-        backgroundColor: Solarized.mint,
-        color: Solarized.base01,
-        border: `2px solid ${Solarized.base01}`,
-      }}
-    />
-  );
-}
 
 function OutlineSection(props: {
   outline: LsOutline | undefined;
@@ -470,14 +381,15 @@ export function Dictionary() {
           setEntries(jsxEntries);
           setOutlines(newResults.map((r) => r.outline));
         });
-        (sectionRef.current || searchBarRef.current)?.scrollIntoView(
-          SCROLL_OPTIONS
-        );
+        const scrollElement = sectionRef.current || searchBarRef.current;
+        const scrollType =
+          scrollElement === searchBarRef.current ? SCROLL_SMOOTH : SCROLL_JUMP;
+        scrollElement?.scrollIntoView(scrollType);
       });
     }
   }, [nav.route.query]);
 
-  function SearchBar(props: { maxWidth: "md" | "lg" }) {
+  function SearchBar(props: { maxWidth: "md" | "lg" | "xl" }) {
     return (
       <Container
         maxWidth={props.maxWidth}
@@ -572,9 +484,7 @@ export function Dictionary() {
           <div>
             {entries.length > 0 && (
               <ArrowDownwardIcon
-                onClick={() =>
-                  entriesRef.current?.scrollIntoView(SCROLL_OPTIONS)
-                }
+                onClick={() => entriesRef.current?.scrollIntoView(SCROLL_JUMP)}
                 sx={{
                   position: "sticky",
                   float: "right",
@@ -594,7 +504,7 @@ export function Dictionary() {
             <DictionaryEntries />
             {entries.length > 0 && (
               <TocIcon
-                onClick={() => tocRef.current?.scrollIntoView(SCROLL_OPTIONS)}
+                onClick={() => tocRef.current?.scrollIntoView(SCROLL_JUMP)}
                 fontSize="large"
                 sx={{
                   position: "sticky",
@@ -622,8 +532,8 @@ export function Dictionary() {
     }
 
     return (
-      <Container maxWidth="xl">
-        <Stack direction="row" spacing={1} justifyContent="center">
+      <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
+        <Stack direction="row" spacing={1} justifyContent="left">
           <div
             style={{
               position: "sticky",
@@ -633,16 +543,21 @@ export function Dictionary() {
               marginTop: 10,
               overflow: "auto",
               maxHeight: window.innerHeight - 40,
-              maxWidth: "27%",
-              minWidth: "250px",
+              minWidth: "min(29%, 300px)",
             }}
           >
             <TableOfContents />
           </div>
-          <div style={{ maxWidth: "73%" }}>
-            <SearchBar maxWidth="lg" />
+          <div style={{ maxWidth: "10000px" }}>
+            <SearchBar maxWidth="xl" />
             <SearchHeader />
             <DictionaryEntries />
+            <span
+              key={"horizonatalSpacePlaceholder"}
+              style={{ color: Solarized.base3, cursor: "default" }}
+            >
+              {"pla ceh old er".repeat(20)}
+            </span>
           </div>
         </Stack>
       </Container>
