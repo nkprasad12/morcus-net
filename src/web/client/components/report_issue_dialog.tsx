@@ -11,6 +11,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { Solarized } from "../colors";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
+import { getCommitHash } from "../define_vars";
 
 export function ReportIssueDialog(props: {
   show: boolean;
@@ -56,7 +57,11 @@ export function ReportIssueDialog(props: {
         </Button>
         <Button
           onClick={() => {
-            callApi(ReportApi, reportText).catch(() => {});
+            const request = {
+              reportText,
+              commit: getCommitHash(),
+            };
+            callApi(ReportApi, request).catch(() => {});
             props.onClose();
           }}
           variant="contained"

@@ -5,11 +5,15 @@ const GITHUB_ISSUES_API =
   "https://api.github.com/repos/nkprasad12/morcus-net/issues";
 
 export namespace GitHub {
-  export async function reportIssue(message: string): Promise<void> {
+  export async function reportIssue(
+    message: string,
+    commit: string
+  ): Promise<void> {
     const firstLine = message.split("\n")[0].slice(0, 50);
+    const commitLink = `https://github.com/nkprasad12/morcus-net/commit/${commit}`;
     const body = {
       title: `User Report: ${firstLine}`,
-      body: message,
+      body: [`Built at: ${commitLink}`, message].join("\n"),
       labels: ["userReport"],
     };
 
