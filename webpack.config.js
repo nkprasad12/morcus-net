@@ -14,12 +14,12 @@ module.exports = (env) => {
   const isProduction = env.production === true;
   const shouldMinimize = isProduction;
 
-  const {stdout} = cp.spawnSync('git', ["rev-parse", "HEAD"]);
-  const commitHash = JSON.stringify(stdout.toString())
+  const { stdout } = cp.spawnSync("git", ["rev-parse", "HEAD"]);
+  const commitHash = JSON.stringify(stdout.toString());
 
   const plugins = [
     new CleanWebpackPlugin(),
-    new DefinePlugin({COMMIT_HASH: commitHash}),
+    new DefinePlugin({ COMMIT_HASH: commitHash }),
     new HtmlWebpackPlugin({
       chunks: ["Root"],
       filename: "index.html",
