@@ -5,8 +5,6 @@ import { assert, checkPresent } from "@/common/assert";
 const API_CALL_COLLECTION = "ApiCalls";
 const SERVER_HEALTH_COLLECTION = "ServerHealth";
 
-process.memoryUsage();
-
 const CLIENT_OPTIONS: MongoClientOptions = {
   serverApi: {
     version: ServerApiVersion.v1,

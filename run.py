@@ -94,6 +94,11 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    "--bun",
+    help="If set, start the server using bun.",
+    action="store_true",
+)
+parser.add_argument(
     "-k",
     "--keep",
     help="If set, keeps the worker on disconnect.",
@@ -146,8 +151,11 @@ if args.command in WEB_SERVER:
         my_env["NODE_ENV"] = "production"
     if not args.real_database:
         my_env["CONSOLE_TELEMETRY"] = "yes"
+    base_run_args = ["npm", "run", "ts-node"]
+    if args.bun:
+        base_run_args = ["bun", "run"]
     subprocess.run(
-        " ".join(["npm", "run", "ts-node", "src/start_server.ts"]),
+        " ".join(base_run_args + ["src/start_server.ts"]),
         shell=True,
         env=my_env,
     )
