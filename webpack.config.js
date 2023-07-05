@@ -7,6 +7,14 @@ const CompressionPlugin = require("compression-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const { DefinePlugin } = require("webpack");
 
+function getHash() {
+  if (process.env.SOURCE_VERSION !== undefined) {
+    return process.env.SOURCE_VERSION;
+  }
+  const { stdout } = cp.spawnSync("git", ["rev-parse", "HEAD"]);
+  return stdout.toString();
+}
+
 module.exports = (env) => {
   console.log(env);
 
@@ -14,12 +22,9 @@ module.exports = (env) => {
   const isProduction = env.production === true;
   const shouldMinimize = isProduction;
 
-  const { stdout } = cp.spawnSync("git", ["rev-parse", "HEAD"]);
-  const commitHash = JSON.stringify(stdout.toString());
-
   const plugins = [
     new CleanWebpackPlugin(),
-    new DefinePlugin({ COMMIT_HASH: commitHash }),
+    new DefinePlugin({ COMMIT_HASH: JSON.stringify(getHash()) }),
     new HtmlWebpackPlugin({
       chunks: ["Root"],
       filename: "index.html",
