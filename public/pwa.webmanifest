@@ -1,5 +1,7 @@
 {
   "name": "morcus.net Latin Tools",
+  "short_name": "morcus.net",
+  "description": "A collection of free tools for Latin learners, by Mórcus.",
   "icons": [
     {
       "src": "/public/favicon.ico",
