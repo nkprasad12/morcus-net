@@ -64,7 +64,7 @@ const BUG_HELP = new XmlNode(
   ]
 );
 const BULLET_HELP = new XmlNode(
-  "p",
+  "div",
   [],
   [
     "Click on sections buttons (like ",

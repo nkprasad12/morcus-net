@@ -164,20 +164,20 @@ describe("SectionLinkTooltip", () => {
     expect(screen.queryByText(/copy manually/)).toBeVisible();
   });
 
-  it("closes on close button click", async () => {
+  it("closes on click away", async () => {
     render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
+      <>
+        <SectionLinkTooltip
+          forwarded={DivWithRef}
+          className="foo"
+          senseId="bar"
+        />
+        <div>Other elem</div>
+      </>
     );
     await user.click(screen.getByText("Gallia"));
 
-    const closeButton = screen.queryByLabelText("close tooltip");
-    expect(closeButton).toBeVisible();
-
-    await user.click(closeButton!);
+    await user.click(screen.queryByText("Other elem")!);
     expect(screen.queryByText(/copy manually/)).toBeNull();
     expect(screen.queryByText(/section link/)).not.toBeVisible();
   });
