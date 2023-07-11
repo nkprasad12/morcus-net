@@ -165,6 +165,9 @@ root.render(
             backgroundColor: Solarized.base01 + "48",
             borderRadius: 4,
           },
+          ".lsHelpText": {
+            marginBottom: 6,
+          },
           ".lsTrans": { fontStyle: "italic" },
         }}
       />

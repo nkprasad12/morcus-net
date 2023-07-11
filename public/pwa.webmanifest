@@ -1,0 +1,24 @@
+{
+  "name": "morcus.net Latin Tools",
+  "icons": [
+    {
+      "src": "/public/favicon.ico",
+      "type": "image/png",
+      "sizes": "48x48"
+    },
+    {
+      "src": "/public/logo192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/public/logo512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#f2f3f2",
+  "theme_color": "#bfdecf",
+  "display": "standalone"
+}

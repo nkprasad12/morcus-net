@@ -1,4 +1,3 @@
-import CloseIcon from "@mui/icons-material/Close";
 import LinkIcon from "@mui/icons-material/Link";
 import {
   SxProps,
@@ -33,37 +32,34 @@ function BaseTooltip(props: TooltipProps) {
         props.onClickAway();
       }}
     >
-      <Tooltip
-        title={
-          <Typography
-            component={typeof props.titleText === "string" ? "p" : "div"}
-          >
-            {props.titleText}
-          </Typography>
-        }
-        className={props.className}
-        placement={props.placement || "top-start"}
-        disableFocusListener
-        disableHoverListener
-        disableTouchListener
-        describeChild={false}
-        open={props.open}
-        arrow
-        componentsProps={{
-          tooltip: {
-            sx: props.tooltipSx,
-          },
-          arrow: {
-            sx: props.arrowSx,
-          },
-        }}
-      >
-        <props.ChildFactory
-          onClick={() => {
-            props.onChildClick(props.open);
+      <div role="presentation" style={{ display: "inline" }}>
+        <Tooltip
+          title={<Typography component={"div"}>{props.titleText}</Typography>}
+          className={props.className}
+          placement={props.placement || "top-start"}
+          disableFocusListener
+          disableHoverListener
+          disableTouchListener
+          describeChild={false}
+          open={props.open}
+          arrow
+          slotProps={{
+            tooltip: {
+              onClick: () => {},
+              sx: props.tooltipSx,
+            },
+            arrow: {
+              sx: props.arrowSx,
+            },
           }}
-        />
-      </Tooltip>
+        >
+          <props.ChildFactory
+            onClick={() => {
+              props.onChildClick(props.open);
+            }}
+          />
+        </Tooltip>
+      </div>
     </ClickAwayListener>
   );
 }
@@ -104,21 +100,6 @@ export function SectionLinkTooltip(props: {
     return `${chunks[0]}#${props.senseId}`;
   }
 
-  function CloseButton() {
-    return (
-      <IconButton
-        size="small"
-        aria-label="close tooltip"
-        aria-haspopup="false"
-        color="default"
-        onClick={() => setVisible(false)}
-        sx={{ cursor: "pointer" }}
-      >
-        <CloseIcon />
-      </IconButton>
-    );
-  }
-
   async function onClick() {
     const link = getLink();
     try {
@@ -133,7 +114,6 @@ export function SectionLinkTooltip(props: {
   function TextWithIcon(props: { message: string }) {
     return (
       <Typography component="div">
-        <CloseButton />
         <div
           onClick={onClick}
           style={{ cursor: "pointer", display: "inline-block" }}
@@ -156,10 +136,9 @@ export function SectionLinkTooltip(props: {
     if (state === "Error") {
       return (
         <Typography component="div">
-          <div style={{ fontSize: 14, lineHeight: "normal" }}>
-            <CloseButton />
-            <span>Error: please copy manually: </span>
-          </div>
+          <span style={{ fontSize: 14, lineHeight: "normal" }}>
+            Error: please copy manually:{" "}
+          </span>
           <br />
           <span style={{ fontSize: 16, lineHeight: "normal" }}>
             {getLink()}
@@ -196,7 +175,7 @@ export function SectionLinkTooltip(props: {
         setContent(TitleText("ClickToCopy"));
         setVisible(true);
       }}
-      onClickAway={() => {}}
+      onClickAway={() => setVisible(false)}
     />
   );
 }
