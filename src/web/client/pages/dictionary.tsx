@@ -41,7 +41,7 @@ const ERROR_MESSAGE = {
 };
 const HIGHLIGHT_HELP = new XmlNode(
   "div",
-  [],
+  [["className", "lsHelpText"]],
   [
     "Click on ",
     new XmlNode(
@@ -57,6 +57,8 @@ const HIGHLIGHT_HELP = new XmlNode(
 );
 const BUG_HELP = new XmlNode(
   "div",
+  // This is displayed last, so do not apply the help text style to
+  // avoid an extra margin. Yes, this is gross and hacky.
   [],
   [
     "Please report typos or other bugs " +
@@ -65,9 +67,9 @@ const BUG_HELP = new XmlNode(
 );
 const BULLET_HELP = new XmlNode(
   "div",
-  [],
+  [["className", "lsHelpText"]],
   [
-    "Click on sections buttons (like ",
+    "Click on sections (like ",
     new XmlNode(
       "span",
       [
