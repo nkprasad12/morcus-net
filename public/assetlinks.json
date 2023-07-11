@@ -1,0 +1,13 @@
+[
+  {
+    "relation": ["delegate_permission/common.handle_all_urls"],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "net.morcus.pwa",
+      "sha256_cert_fingerprints": [
+        "59:A9:DB:A6:8E:B4:64:E2:4A:69:E3:97:8B:1D:1F:E2:F6:66:BC:3C:24:FC:59:71:60:F0:62:FA:B3:D4:A4:59",
+        "6B:76:65:49:17:79:D0:C2:32:86:40:77:A0:75:08:53:BF:3C:A1:2D:89:78:C4:37:AA:9F:EB:19:C8:7C:93:4D"
+      ]
+    }
+  }
+]

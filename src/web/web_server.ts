@@ -27,6 +27,7 @@ export function setupServer(params: WebServerParams): void {
     },
   };
   app.use("/public", express.static("public", staticOptions));
+  app.use("/.well-known", express.static("public", staticOptions));
   app.use(express.static(params.buildDir, staticOptions));
 
   app.use("/*", (req, res, next) => {
