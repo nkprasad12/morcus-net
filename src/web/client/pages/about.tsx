@@ -6,6 +6,20 @@ import React from "react";
 import { Solarized } from "../colors";
 import { getCommitHash } from "../define_vars";
 
+const INSTALL_GUIDE =
+  "https://www.cdc.gov/niosh/mining/content/hearingloss/installPWA.html";
+
+type SectionProps = React.PropsWithChildren<{ name: string }>;
+
+function Section(props: SectionProps) {
+  return (
+    <section id={props.name.replace(" ", "-")}>
+      <h4>{props.name}</h4>
+      {props.children}
+    </section>
+  );
+}
+
 export function About() {
   const commitHash = getCommitHash();
 
@@ -13,8 +27,7 @@ export function About() {
     <Container maxWidth="lg">
       <Box sx={{ padding: 3 }}>
         <Typography component={"div"} color={Solarized.base00}>
-          <section>
-            <h4>Site</h4>
+          <Section name="Site">
             <p>
               This website is a free collection of resources for Latin learners,
               developed by Mórcus. It is provided under the{" "}
@@ -31,9 +44,8 @@ export function About() {
               submit corrections or other issues with dictionary entries by
               clicking on the flag icon in the top navigation bar.
             </p>
-          </section>
-          <section>
-            <h4>Dictionary</h4>
+          </Section>
+          <Section name="Dictionary">
             <p>
               Dictionary data is derived from Perseus&apos; digitization of
               Lewis & Short, which is available{" "}
@@ -47,9 +59,8 @@ export function About() {
               Perseus repo, to which I make changes and corrections which are
               eventually merged upstream.
             </p>
-          </section>
-          <section>
-            <h4>Acknowledgements</h4>
+          </Section>
+          <Section name="Acknowledgements">
             <p>
               I am ever grateful to the{" "}
               <a href="https://www.perseus.tufts.edu/hopper/">
@@ -69,9 +80,24 @@ export function About() {
               converstions, and for the thorough feedback and many great ideas
               on improving the user interface. Grátiás vóbís agó!
             </p>
-          </section>
-          <h4>Debugging</h4>
-          <section>
+          </Section>
+          <Section name="Installation">
+            <p>
+              morcus.net is also installable as a standalone app (meaning that
+              it will come with its own launcher icon, won't have the browser
+              search bar, some light extra theming, and so on). See instructions
+              for{" "}
+              <a href={`${INSTALL_GUIDE}#InstallingaPWAonAndroid`}>Android</a>
+              {", "}
+              <a href={`${INSTALL_GUIDE}#InstallingaPWAoniOS`}>iOS</a>
+              {", or "}
+              <a href={`${INSTALL_GUIDE}#InstallingaPWAonaWindowsPCorMac`}>
+                desktop
+              </a>
+              .
+            </p>
+          </Section>
+          <Section name="Debugging">
             <p>
               Built at{" "}
               <a
@@ -81,7 +107,7 @@ export function About() {
               </a>
               {"."}
             </p>
-          </section>
+          </Section>
         </Typography>
       </Box>
     </Container>
