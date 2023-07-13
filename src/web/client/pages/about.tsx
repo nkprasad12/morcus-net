@@ -77,7 +77,7 @@ export function About() {
               <a
                 href={`https://github.com/nkprasad12/morcus-net/commit/${commitHash}`}
               >
-                {commitHash}
+                {commitHash.substring(0, 8)}
               </a>
               {"."}
             </p>
