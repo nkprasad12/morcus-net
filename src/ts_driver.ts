@@ -6,8 +6,10 @@ import { parse } from "./common/lewis_and_short/ls_parser";
 import { LS_PATH } from "./common/lewis_and_short/ls_scripts";
 import { XmlNode } from "./common/lewis_and_short/xml_node";
 import {
+  XmlOperations,
   // LsRewriters,
   findTextNodes,
+  modifyInTree,
   // modifyInTree,
   removeTextNode,
 } from "@/common/lewis_and_short/ls_write";
@@ -272,7 +274,44 @@ export function capsInKeys() {
   });
 }
 
-capsInKeys();
+export function findSplitPos() {
+  LsRewriters.transformEntries(LS_PATH, (node) =>
+    modifyInTree(node, ["v. n. and a."], (match, _copy) => {
+      XmlOperations.combine(match.chunks);
+    })
+  );
+
+  // for (const entry of parse(LS_PATH)) {
+  //   const results = searchTree(entry, "v. n. and a.");
+  //   if (results.matches.length === 0) {
+  //     continue;
+  //   }
+  //   for (const match of results.matches) {
+  //     if (
+  //       match.chunks.length === 1 &&
+  //       match.chunks[0].data.parent.name === "pos"
+  //     ) {
+  //       continue;
+  //     }
+  //     const chunks = match.chunks;
+  //     if (chunks[0].data.parent.name !== "pos" || chunks[0].match !== "v. n.") {
+  //       console.log("weird first chunk");
+  //     }
+  //     if (chunks[1].match !== " and ") {
+  //       console.log("weird second chunk");
+  //     }
+  //     if (chunks[2].match !== "a.") {
+  //       console.log("weird third chunk");
+  //     }
+  //     if (chunks.length !== 3) {
+  //       console.log("weird num of chunks");
+  //     }
+  //     // console.log(match.chunks.map((c) => c.match));
+  //   }
+  // console.log(entry.getAttr("key"));
+}
+
+findSplitPos();
 
 // const SPLITS = [", ", " (", "; "];
 // LsRewriters.transformEntries(LS_PATH, (root) => {
