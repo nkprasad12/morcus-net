@@ -84,9 +84,9 @@ export function About() {
           <Section name="Installation">
             <p>
               morcus.net is also installable as a standalone app (meaning that
-              it will come with its own launcher icon, won't have the browser
-              search bar, some light extra theming, and so on). See instructions
-              for{" "}
+              it will come with its own launcher icon, will not have clutter
+              from the browser search bar, will have some light extra theming,
+              and so on). See instructions for{" "}
               <a href={`${INSTALL_GUIDE}#InstallingaPWAonAndroid`}>Android</a>
               {", "}
               <a href={`${INSTALL_GUIDE}#InstallingaPWAoniOS`}>iOS</a>
