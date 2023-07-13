@@ -22,7 +22,7 @@ function setApiResult(result: string[] | Error) {
     mockCallApi.mockRejectedValue(result);
   } else {
     mockCallApi.mockImplementation((_, prefix) =>
-      result.filter((word) => word.startsWith(prefix))
+      Promise.resolve(result.filter((word) => word.startsWith(prefix)))
     );
   }
 }
