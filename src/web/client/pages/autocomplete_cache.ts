@@ -9,8 +9,19 @@ const EXTRA_KEY_LOOKUP = new Map<string, string>([
   ["j", "i"],
 ]);
 
+function getPrefixes(prefix: string): string[] {
+  let prefixes: string[] = [""];
+  for (let i = 0; i < prefix.length; i++) {
+    const nextChar = prefix.charAt(i);
+    const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
+    const nextChars = altChar === undefined ? [nextChar] : [nextChar, altChar];
+    prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
+  }
+  return prefixes;
+}
+
 export class AutocompleteCache {
-  readonly cache: Map<string, string[]> = new Map();
+  readonly cache: Map<string, Promise<string[]>> = new Map();
 
   async getOptions(input: string): Promise<string[]> {
     if (input.length === 0) {
@@ -20,37 +31,31 @@ export class AutocompleteCache {
     const mainKey = prefix[0];
     const extra = EXTRA_KEY_LOOKUP.get(mainKey);
     const allKeys = extra === undefined ? [mainKey] : [mainKey, extra];
-    allKeys.sort();
+    const cacheKey = allKeys.sort().join("");
 
-    if (!this.cache.has(allKeys.join(""))) {
+    let madeApiCall = false;
+    if (!this.cache.has(cacheKey)) {
       const allFetches = Promise.all(
         allKeys.map((key) => callApi(EntriesByPrefixApi, key))
+      ).then((r) => r.reduce((a, b) => a.concat(b), []));
+      this.cache.set(cacheKey, allFetches);
+      madeApiCall = true;
+    }
+
+    try {
+      const allOptions = await this.cache.get(cacheKey)!;
+      const prefixes = getPrefixes(prefix);
+      return allOptions.filter((option) =>
+        prefixes.includes(
+          removeDiacritics(option).toLowerCase().substring(0, prefix.length)
+        )
       );
-      try {
-        this.cache.set(
-          allKeys.join(""),
-          (await allFetches).reduce((a, b) => a.concat(b), [])
-        );
-      } catch (e) {
-        return [];
+    } catch (e) {
+      if (madeApiCall) {
+        this.cache.delete(cacheKey);
       }
+      return [];
     }
-
-    let prefixes: string[] = [""];
-    for (let i = 0; i < prefix.length; i++) {
-      const nextChar = prefix.charAt(i);
-      const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
-      const nextChars =
-        altChar === undefined ? [nextChar] : [nextChar, altChar];
-      prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
-    }
-
-    const allOptions = this.cache.get(allKeys.join(""))!;
-    return allOptions.filter((option) =>
-      prefixes.includes(
-        removeDiacritics(option).toLowerCase().substring(0, prefix.length)
-      )
-    );
   }
 }
 

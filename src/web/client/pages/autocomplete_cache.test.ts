@@ -22,7 +22,7 @@ function setApiResult(result: string[] | Error) {
     mockCallApi.mockRejectedValue(result);
   } else {
     mockCallApi.mockImplementation((_, prefix) =>
-      result.filter((word) => word.startsWith(prefix))
+      Promise.resolve(result.filter((word) => word.startsWith(prefix)))
     );
   }
 }
@@ -56,6 +56,21 @@ describe("AutocompleteCache", () => {
 
     expect(result).toStrictEqual(["ab", "abago"]);
     expect(mockCallApi).toHaveBeenCalledTimes(1);
+  });
+
+  it("avoids duplication on bunched requests", async () => {
+    setApiResult(WORD_LIST);
+    const cache = new AutocompleteCache();
+
+    const aPromise = cache.getOptions("a");
+    const abPromise = cache.getOptions("ab");
+    const abaPromise = cache.getOptions("aba");
+    await Promise.all([aPromise, abPromise, abaPromise]);
+
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    expect(aPromise).resolves.toStrictEqual(["ab", "abago"]);
+    expect(abPromise).resolves.toStrictEqual(["ab", "abago"]);
+    expect(abaPromise).resolves.toStrictEqual(["abago"]);
   });
 
   it("caches results on subsequent requests", async () => {

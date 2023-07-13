@@ -1,4 +1,4 @@
-import { getCommitHash, tryOr } from "./define_vars";
+import { getBuildDate, getCommitHash, tryOr } from "./define_vars";
 
 describe("define_vars", () => {
   test("tryOr returns expected", () => {
@@ -11,7 +11,11 @@ describe("define_vars", () => {
     expect(tryOr(() => "result", "fallback")).toBe("result");
   });
 
-  it("falls back to undefined", () => {
+  it("falls back to undefined for hash", () => {
     expect(getCommitHash()).toBe("undefined");
+  });
+
+  it("falls back to undefined for build date", () => {
+    expect(getBuildDate()).toBe("undefined");
   });
 });

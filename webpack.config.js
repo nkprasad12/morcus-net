@@ -8,6 +8,8 @@ const TerserPlugin = require("terser-webpack-plugin");
 const { DefinePlugin } = require("webpack");
 
 function getHash() {
+  // The Heroku build environment removes git metadata, but provides
+  // commit information via environment variable instead.
   if (process.env.SOURCE_VERSION !== undefined) {
     return process.env.SOURCE_VERSION;
   }
@@ -24,7 +26,10 @@ module.exports = (env) => {
 
   const plugins = [
     new CleanWebpackPlugin(),
-    new DefinePlugin({ COMMIT_HASH: JSON.stringify(getHash()) }),
+    new DefinePlugin({
+      COMMIT_HASH: JSON.stringify(getHash()),
+      BUILD_DATE: JSON.stringify(new Date().toString()),
+    }),
     new HtmlWebpackPlugin({
       chunks: ["Root"],
       filename: "index.html",

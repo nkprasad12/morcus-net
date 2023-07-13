@@ -23,6 +23,7 @@ import { callApi } from "@/web/utils/rpc/client_rpc";
 import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
 import { ClickableTooltip, SectionLinkTooltip } from "./tooltips";
+import { getBuildDate } from "../define_vars";
 
 const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -97,6 +98,10 @@ const LOADING_ENTRY = xmlNodeToJsx(
     ]
   )
 );
+
+function SelfLink(props: { to: string }) {
+  return <a href={props.to}>{props.to}</a>;
+}
 
 function OutlineSection(props: {
   outline: LsOutline | undefined;
@@ -462,15 +467,22 @@ export function Dictionary() {
         ))}
         {entries.length > 0 && (
           <ContentBox key="attributionBox">
-            <span style={{ fontSize: 15, lineHeight: "normal" }}>
-              Results are taken from a digitization of Lewis & Short kindly
-              provided by <a href="https://github.com/PerseusDL">Perseus</a>{" "}
-              under a{" "}
-              <a href="https://creativecommons.org/licenses/by-sa/4.0/">
-                CC BY-SA 4.0
-              </a>{" "}
-              license.
-            </span>
+            <div style={{ fontSize: 15, lineHeight: "normal" }}>
+              <div>
+                Text provided under a CC BY-SA license by Perseus Digital
+                Library, <SelfLink to="http://www.perseus.tufts.edu" />, with
+                funding from The National Endowment for the Humanities.
+              </div>
+              <div>
+                Data originally from{" "}
+                <SelfLink to="https://github.com/PerseusDL/lexica/" />.
+              </div>
+              <div>
+                Data accessed from{" "}
+                <SelfLink to="https://github.com/nkprasad12/lexica/" />{" "}
+                {getBuildDate()}.
+              </div>
+            </div>
           </ContentBox>
         )}
       </>

@@ -151,6 +151,10 @@ export const POS_ABBREVIATIONS = new Map<string, string>([
     "v. a. and n.",
     "verb [depending on sense: active only, or active and passive]",
   ],
+  [
+    "v. n. and a.",
+    "verb [depending on sense: active only, or active and passive]",
+  ],
   ["v. freq. dep.", "verb [frequentative; deponent]"],
   ["v. freq. a. dep.", "verb [frequentative; deponent]"],
   ["v. freq. n.", "verb [frequentative; active only]"],
