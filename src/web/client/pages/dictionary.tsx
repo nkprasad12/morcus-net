@@ -351,9 +351,10 @@ export function Dictionary() {
       <>
         <Box
           sx={{
-            padding: 1,
-            ml: props.ml || (isSmall ? 1 : 3),
-            mr: props.mr || (isSmall ? 1 : 3),
+            paddingY: 1,
+            paddingLeft: isSmall ? 0 : 1,
+            ml: props.ml || (isSmall ? 0 : 3),
+            mr: props.mr || (isSmall ? 0 : 3),
             mt: 1,
             mb: 2,
             borderColor: Solarized.base2,
@@ -371,7 +372,7 @@ export function Dictionary() {
             {props.children}
           </Typography>
         </Box>
-        <Divider sx={{ ml: isSmall ? 1 : 3, mr: isSmall ? 1 : 3 }} />
+        <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
       </>
     );
   }
