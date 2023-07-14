@@ -24,6 +24,7 @@ import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
 import { ClickableTooltip, SectionLinkTooltip } from "./tooltips";
 import { getBuildDate } from "../define_vars";
+import { Footer } from "../components/footer";
 
 const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -534,6 +535,7 @@ export function Dictionary() {
               />
             )}
           </div>
+          <Footer />
         </Container>
       );
     }
@@ -542,6 +544,7 @@ export function Dictionary() {
       return (
         <Container maxWidth="xl">
           <SearchBar maxWidth="md" />
+          <Footer />
         </Container>
       );
     }
@@ -573,6 +576,7 @@ export function Dictionary() {
             >
               {"pla ceh old er".repeat(20)}
             </span>
+            <Footer />
           </div>
         </Stack>
       </Container>
