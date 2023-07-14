@@ -14,7 +14,14 @@ type SectionProps = React.PropsWithChildren<{ name: string }>;
 function Section(props: SectionProps) {
   return (
     <section id={props.name.replace(" ", "-")}>
-      <h4>{props.name}</h4>
+      <h4>
+        <a
+          style={{ textDecoration: "none", color: "inherit" }}
+          href={`#${props.name}`}
+        >
+          {props.name}
+        </a>
+      </h4>
       {props.children}
     </section>
   );
