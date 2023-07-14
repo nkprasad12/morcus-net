@@ -955,7 +955,9 @@ export function formatSenseList(
     const id = checkPresent(senseNode.getAttr("id"));
 
     while (stack.length < level) {
-      const newList = new XmlNode("ol", [["class", "lsSenseList"]], []);
+      const attrs: [string, string][] =
+        level === 1 ? [["class", "lsTopSense"]] : [];
+      const newList = new XmlNode("ol", attrs, []);
       if (stack.length > 0) {
         stack[stack.length - 1].children.push(newList);
       }

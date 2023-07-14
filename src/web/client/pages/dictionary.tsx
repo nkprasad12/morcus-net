@@ -24,6 +24,7 @@ import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
 import { ClickableTooltip, SectionLinkTooltip } from "./tooltips";
 import { getBuildDate } from "../define_vars";
+import { Footer } from "../components/footer";
 
 const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -351,9 +352,10 @@ export function Dictionary() {
       <>
         <Box
           sx={{
-            padding: 1,
-            ml: props.ml || (isSmall ? 1 : 3),
-            mr: props.mr || (isSmall ? 1 : 3),
+            paddingY: 1,
+            paddingLeft: isSmall ? 0 : 1,
+            ml: props.ml || (isSmall ? 0 : 3),
+            mr: props.mr || (isSmall ? 0 : 3),
             mt: 1,
             mb: 2,
             borderColor: Solarized.base2,
@@ -371,7 +373,7 @@ export function Dictionary() {
             {props.children}
           </Typography>
         </Box>
-        <Divider sx={{ ml: isSmall ? 1 : 3, mr: isSmall ? 1 : 3 }} />
+        <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
       </>
     );
   }
@@ -533,6 +535,7 @@ export function Dictionary() {
               />
             )}
           </div>
+          <Footer />
         </Container>
       );
     }
@@ -541,6 +544,7 @@ export function Dictionary() {
       return (
         <Container maxWidth="xl">
           <SearchBar maxWidth="md" />
+          <Footer />
         </Container>
       );
     }
@@ -572,6 +576,7 @@ export function Dictionary() {
             >
               {"pla ceh old er".repeat(20)}
             </span>
+            <Footer />
           </div>
         </Stack>
       </Container>
