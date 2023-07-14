@@ -125,10 +125,14 @@ root.render(
           ol: {
             listStyle: "none",
             marginLeft: 0,
-            paddingLeft: "1em",
+            paddingLeft: "1.2em",
           },
           li: {
-            padding: "2px",
+            paddingTop: "2px",
+            paddingBottom: "2px",
+          },
+          ".lsTopSense": {
+            paddingLeft: "0em",
           },
           pre: { margin: "0" },
           ".highlighted": {
