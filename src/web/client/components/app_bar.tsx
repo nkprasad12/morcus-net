@@ -178,7 +178,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             variant="h5"
             noWrap
             component="a"
-            href=""
+            onClick={handlePageClick(props.pages.slice(-1)[0].path)}
             sx={{
               mr: 2,
               display: isSmall ? "flex" : "none",
