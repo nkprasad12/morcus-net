@@ -276,6 +276,7 @@ export namespace LewisAndShort {
     entries: RawLsEntry[],
     destination: string = checkPresent(process.env.LS_PROCESSED_PATH)
   ): void {
+    const start = performance.now();
     if (fs.existsSync(destination)) {
       fs.unlinkSync(destination);
     }
@@ -295,6 +296,7 @@ export namespace LewisAndShort {
     });
     insertAll();
     db.close();
+    console.log("saveSql time: " + (performance.now() - start));
   }
 
   // export function readSql(

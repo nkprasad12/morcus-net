@@ -75,7 +75,9 @@ const port = parseInt(
 const app = express();
 const server = http.createServer(app);
 
+const lsInitStart = performance.now();
 const lewisAndShort = new LewisAndShortSql();
+console.log("LS blocking init: " + (performance.now() - lsInitStart));
 const workServer = new SocketWorkServer(new Server(server));
 const telemetry =
   process.env.CONSOLE_TELEMETRY !== "yes"
@@ -115,5 +117,5 @@ setupServer(params);
 
 server.listen(port, () => {
   log(`Local server: http://${host}:${port}/`);
-  setInterval(() => telemetry.then(logMemoryUsage), 1000 * 5);
+  setInterval(() => telemetry.then(logMemoryUsage), 1000 * 10 * 60);
 });
