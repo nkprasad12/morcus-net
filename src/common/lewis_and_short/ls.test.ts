@@ -15,11 +15,11 @@ const TEMP_FILE = "ls.test.ts.tmp.txt";
 
 const LS_DATA = [
   {
-    keys: ["Julius"],
+    keys: ["Julius"].join(","),
     entry: new XmlNode("entryFree", [], ["Gallia est omnis"]).toString(),
   },
   {
-    keys: ["Publius", "Naso"],
+    keys: ["Publius", "Naso"].join(","),
     entry: new XmlNode(
       "entryFree",
       [],
@@ -27,29 +27,29 @@ const LS_DATA = [
     ).toString(),
   },
   {
-    keys: ["Naso"],
+    keys: ["Naso"].join(","),
     entry: new XmlNode("entryFree", [], ["Pennisque levatus"]).toString(),
   },
   {
-    keys: ["īnō", "Ino"],
+    keys: ["īnō", "Ino"].join(","),
     entry: new XmlNode("entryFree", [], ["Ino edge case"]).toString(),
   },
   {
-    keys: ["quis"],
+    keys: ["quis"].join(","),
     entry: new XmlNode("entryFree", [], ["quisUnspecified"]).toString(),
   },
   {
-    keys: ["quĭs"],
+    keys: ["quĭs"].join(","),
     entry: new XmlNode("entryFree", [], ["quisShort"]).toString(),
   },
   {
-    keys: ["quīs"],
+    keys: ["quīs"].join(","),
     entry: new XmlNode("entryFree", [], ["quisLong"]).toString(),
   },
 ];
 
 function toLsData(keys: string[]) {
-  return keys.map((key) => ({ keys: [key + "_"], entry: key }));
+  return keys.map((key) => ({ keys: [key + "_"].join(","), entry: key }));
 }
 
 function writeFile(contents: string) {
@@ -87,9 +87,10 @@ describe("LewisAndShort", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].keys).toHaveLength(2);
-    expect(result[0].keys).toContain("adtango");
-    expect(result[0].keys).toContain("attango");
+    const keys = result[0].keys.split(",");
+    expect(keys).toHaveLength(2);
+    expect(keys).toContain("adtango");
+    expect(keys).toContain("attango");
   });
 
   test("createProcessed handles elements with only alts", () => {
@@ -98,8 +99,9 @@ describe("LewisAndShort", () => {
     const result = lewisAndShort.filter((entry) => entry.keys.includes("abs-"));
 
     expect(result).toHaveLength(1);
-    expect(result[0].keys).toHaveLength(1);
-    expect(result[0].keys).toContain("abs-");
+    const keys = result[0].keys.split(",");
+    expect(keys).toHaveLength(1);
+    expect(keys).toContain("abs-");
   });
 
   test("createProcessed removes alts if full orths are present", () => {
@@ -110,14 +112,16 @@ describe("LewisAndShort", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].keys).toHaveLength(1);
-    expect(result[0].keys).toContain("arruo");
+    expect(result[0].keys).toBe("arruo");
   });
 
   test("save removes existing contents if present", async () => {
     writeFile("foo");
 
-    await LewisAndShort.save([{ keys: ["bar"], entry: "baz" }], TEMP_FILE);
+    await LewisAndShort.save(
+      [{ keys: ["bar"].join(","), entry: "baz" }],
+      TEMP_FILE
+    );
 
     const result = fs.readFileSync(TEMP_FILE).toString();
 
@@ -127,8 +131,11 @@ describe("LewisAndShort", () => {
 
   test("save writes in expected format", async () => {
     const data = [
-      { keys: ["Julius"], entry: "Gallia est omnis divisa in partes tres" },
-      { keys: ["Publius"], entry: "Non iterum repetenda suo" },
+      {
+        keys: ["Julius"].join(","),
+        entry: "Gallia est omnis divisa in partes tres",
+      },
+      { keys: ["Publius"].join(","), entry: "Non iterum repetenda suo" },
     ];
     await LewisAndShort.save(data, TEMP_FILE);
 
@@ -136,15 +143,18 @@ describe("LewisAndShort", () => {
     const lines = result.split("\n");
 
     expect(lines).toHaveLength(3);
-    expect(lines[0]).toBe(data[0].keys.join(",") + "$$" + data[0].entry);
-    expect(lines[1]).toBe(data[1].keys.join(",") + "$$" + data[1].entry);
+    expect(lines[0]).toBe(data[0].keys + "$$" + data[0].entry);
+    expect(lines[1]).toBe(data[1].keys + "$$" + data[1].entry);
     // We expect a terminal newline, so there will be an empty string
     // at the end of the split.
     expect(lines[2]).toBe("");
   });
 
   test("save replaces newlines in contents", async () => {
-    await LewisAndShort.save([{ keys: ["bar"], entry: "baz\n" }], TEMP_FILE);
+    await LewisAndShort.save(
+      [{ keys: ["bar"].join(","), entry: "baz\n" }],
+      TEMP_FILE
+    );
 
     const result = fs.readFileSync(TEMP_FILE).toString();
     const lines = result.split("\n");
@@ -155,7 +165,7 @@ describe("LewisAndShort", () => {
 
   test("save writes list of keys", async () => {
     await LewisAndShort.save(
-      [{ keys: ["foo", "bar"], entry: "baz" }],
+      [{ keys: ["foo", "bar"].join(","), entry: "baz" }],
       TEMP_FILE
     );
 
@@ -168,9 +178,12 @@ describe("LewisAndShort", () => {
 
   test("readFromFile handles each entry", async () => {
     const data = [
-      { keys: ["Julius"], entry: "Gallia est omnis" },
-      { keys: ["bar"], entry: "baz\n" },
-      { keys: ["Publius", "Naso"], entry: "Non iterum repetenda suo" },
+      { keys: ["Julius"].join(","), entry: "Gallia est omnis" },
+      { keys: ["bar"].join(","), entry: "baz\n" },
+      {
+        keys: ["Publius", "Naso"].join(","),
+        entry: "Non iterum repetenda suo",
+      },
     ];
     await LewisAndShort.save(data, TEMP_FILE);
 
@@ -178,11 +191,11 @@ describe("LewisAndShort", () => {
 
     expect(keys.length).toBe(3);
     expect(entries.length).toBe(3);
-    expect(keys[0]).toStrictEqual(data[0].keys);
+    expect(keys[0]).toStrictEqual(data[0].keys.split(","));
     expect(entries[0]).toStrictEqual(data[0].entry);
-    expect(keys[1]).toStrictEqual(data[1].keys);
+    expect(keys[1]).toStrictEqual(data[1].keys.split(","));
     expect(entries[1]).toStrictEqual(data[1].entry);
-    expect(keys[2]).toStrictEqual(data[2].keys);
+    expect(keys[2]).toStrictEqual(data[2].keys.split(","));
     expect(entries[2]).toStrictEqual(data[2].entry);
   });
 
@@ -309,11 +322,11 @@ describe("LewisAndShort", () => {
   test("getCompletions handles entries with multiple keys", async () => {
     const data = [
       {
-        keys: ["Julius", "Iulius"],
+        keys: ["Julius", "Iulius"].join(","),
         entry: "",
       },
       {
-        keys: ["Julus"],
+        keys: ["Julus"].join(","),
         entry: "",
       },
     ];

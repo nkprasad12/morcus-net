@@ -22,9 +22,9 @@ if (verify) {
       throw e;
     }
   }
-  LewisAndShort.save(result);
+  LewisAndShort.saveSql(result);
 } else {
-  LewisAndShort.save(LewisAndShort.createProcessed());
+  LewisAndShort.saveSql(LewisAndShort.createProcessed());
 }
 
 const runTime = Math.round(performance.now() - startTime);

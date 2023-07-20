@@ -24,7 +24,7 @@ import { WorkRequest } from "./web/workers/requests";
 import { Workers } from "./web/workers/worker_types";
 import { randomInt } from "crypto";
 import { checkPresent } from "./common/assert";
-import { LewisAndShort } from "./common/lewis_and_short/ls";
+import { LewisAndShortSql } from "./common/lewis_and_short/ls";
 import path from "path";
 import { GitHub } from "./web/utils/github";
 import { MongoLogger } from "./web/telemetry/mongo_logger";
@@ -75,7 +75,7 @@ const port = parseInt(
 const app = express();
 const server = http.createServer(app);
 
-const lewisAndShort = LewisAndShort.create();
+const lewisAndShort = new LewisAndShortSql();
 const workServer = new SocketWorkServer(new Server(server));
 const telemetry =
   process.env.CONSOLE_TELEMETRY !== "yes"
@@ -102,11 +102,9 @@ const params: WebServerParams = {
     createApi(ReportApi, (request) =>
       GitHub.reportIssue(request.reportText, request.commit)
     ),
-    createApi(DictsLsApi, async (input) =>
-      (await lewisAndShort).getEntry(input)
-    ),
+    createApi(DictsLsApi, async (input) => lewisAndShort.getEntry(input)),
     createApi(EntriesByPrefixApi, async (prefix) =>
-      (await lewisAndShort).getCompletions(prefix)
+      lewisAndShort.getCompletions(prefix)
     ),
   ],
   buildDir: path.join(__dirname, "../genfiles_static"),
@@ -117,5 +115,5 @@ setupServer(params);
 
 server.listen(port, () => {
   log(`Local server: http://${host}:${port}/`);
-  setInterval(() => telemetry.then(logMemoryUsage), 1000 * 60 * 15);
+  setInterval(() => telemetry.then(logMemoryUsage), 1000 * 5);
 });
