@@ -3,6 +3,7 @@ import fs from "fs";
 import { LewisAndShort } from "./ls";
 import { XmlNode } from "./xml_node";
 import Database from "better-sqlite3";
+import { LsResult } from "@/web/utils/rpc/ls_api_result";
 
 console.debug = jest.fn();
 
@@ -17,35 +18,59 @@ const TEMP_FILE = "ls.test.ts.tmp.txt";
 const LS_DATA = [
   {
     keys: ["Julius"].join(","),
-    entry: new XmlNode("entryFree", [], ["Gallia est omnis"]).toString(),
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "Julius"]],
+      ["Gallia est omnis"]
+    ).toString(),
   },
   {
     keys: ["Publius", "Naso"].join(","),
     entry: new XmlNode(
       "entryFree",
-      [],
+      [["id", "Publius"]],
       ["Non iterum repetenda suo"]
     ).toString(),
   },
   {
     keys: ["Naso"].join(","),
-    entry: new XmlNode("entryFree", [], ["Pennisque levatus"]).toString(),
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "Naso"]],
+      ["Pennisque levatus"]
+    ).toString(),
   },
   {
     keys: ["īnō", "Ino"].join(","),
-    entry: new XmlNode("entryFree", [], ["Ino edge case"]).toString(),
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "Ino"]],
+      ["Ino edge case"]
+    ).toString(),
   },
   {
     keys: ["quis"].join(","),
-    entry: new XmlNode("entryFree", [], ["quisUnspecified"]).toString(),
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "quisNormal"]],
+      ["quisUnspecified"]
+    ).toString(),
   },
   {
     keys: ["quĭs"].join(","),
-    entry: new XmlNode("entryFree", [], ["quisShort"]).toString(),
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "quisBreve"]],
+      ["quisShort"]
+    ).toString(),
   },
   {
     keys: ["quīs"].join(","),
-    entry: new XmlNode("entryFree", [], ["quisLong"]).toString(),
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "quisMacron"]],
+      ["quisLong"]
+    ).toString(),
   },
 ];
 
@@ -63,6 +88,15 @@ function expectEqual(nodes: XmlNode[], expected: string[]) {
 }
 
 describe("LewisAndShort", () => {
+  async function expectEntriesWithIds(
+    promise: Promise<LsResult[]>,
+    expected: string[]
+  ) {
+    const results = await promise;
+    const ids = results.map((r) => r.entry.getAttr("id"));
+    expect(ids).toStrictEqual(expected);
+  }
+
   afterEach(() => {
     try {
       fs.unlinkSync(TEMP_FILE);
@@ -163,14 +197,8 @@ describe("LewisAndShort", () => {
     LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
-    expectEqual(
-      (await dict.getEntry("Julius")).map((r) => r.entry),
-      ['<div class="lsEntryFree">Gallia est omnis</div>']
-    );
-    expectEqual(
-      (await dict.getEntry("Publius")).map((r) => r.entry),
-      ['<div class="lsEntryFree">Non iterum repetenda suo</div>']
-    );
+    expectEntriesWithIds(dict.getEntry("Julius"), ["Julius"]);
+    expectEntriesWithIds(dict.getEntry("Publius"), ["Publius"]);
   });
 
   test("getEntry handles expected entries", async () => {
@@ -185,14 +213,7 @@ describe("LewisAndShort", () => {
   test("getEntry handles ambiguous queries", async () => {
     LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
-
-    expectEqual(
-      (await dict.getEntry("Naso")).map((r) => r.entry),
-      [
-        '<div class="lsEntryFree">Non iterum repetenda suo</div>',
-        '<div class="lsEntryFree">Pennisque levatus</div>',
-      ]
-    );
+    expectEntriesWithIds(dict.getEntry("Naso"), ["Publius", "Naso"]);
   });
 
   test("getEntry handles unknown queries", async () => {
@@ -208,51 +229,29 @@ describe("LewisAndShort", () => {
   test("getEntry handles same ascii orths in single article", async () => {
     LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
-
-    expectEqual(
-      (await dict.getEntry("ino")).map((r) => r.entry),
-      ['<div class="lsEntryFree">Ino edge case</div>']
-    );
+    expectEntriesWithIds(dict.getEntry("ino"), ["Ino"]);
   });
 
   test("getEntry without diacritic returns all options", async () => {
     LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
-
-    expectEqual(
-      (await dict.getEntry("quis")).map((r) => r.entry),
-      [
-        '<div class="lsEntryFree">quisUnspecified</div>',
-        '<div class="lsEntryFree">quisShort</div>',
-        '<div class="lsEntryFree">quisLong</div>',
-      ]
-    );
+    expectEntriesWithIds(dict.getEntry("quis"), [
+      "quisNormal",
+      "quisBreve",
+      "quisMacron",
+    ]);
   });
 
   test("getEntry with breve returns short and ambiguous", async () => {
     LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
-
-    expectEqual(
-      (await dict.getEntry("quĭs")).map((r) => r.entry),
-      [
-        '<div class="lsEntryFree">quisUnspecified</div>',
-        '<div class="lsEntryFree">quisShort</div>',
-      ]
-    );
+    expectEntriesWithIds(dict.getEntry("quĭs"), ["quisNormal", "quisBreve"]);
   });
 
   test("getEntry with macron returns long and ambiguous", async () => {
     LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
-
-    expectEqual(
-      (await dict.getEntry("quīs")).map((r) => r.entry),
-      [
-        '<div class="lsEntryFree">quisUnspecified</div>',
-        '<div class="lsEntryFree">quisLong</div>',
-      ]
-    );
+    expectEntriesWithIds(dict.getEntry("quīs"), ["quisNormal", "quisMacron"]);
   });
 
   test("getCompletions returns expected results", async () => {

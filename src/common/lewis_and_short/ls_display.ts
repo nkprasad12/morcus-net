@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlChild, XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
   CASE_ABBREVIATIONS,
   EDGE_CASE_HOVERS,
@@ -947,6 +947,9 @@ export function formatSenseList(
   senseNodes: XmlNode[],
   context: DisplayContext
 ): XmlNode {
+  if (senseNodes.length === 0) {
+    return new XmlNode("div");
+  }
   const stack: XmlNode[] = [];
   for (const senseNode of senseNodes) {
     const attrsMap = new Map(senseNode.attrs);
@@ -1024,14 +1027,26 @@ export function displayEntryFree(
 ): XmlNode {
   assert(rootNode.name === "entryFree");
   const root = sanitizeTree(rootNode);
+  const idAttr = checkPresent(root.getAttr("id"));
+  const blurbId = idAttr + "blurb";
   const context: DisplayContext = {};
 
+  const mainBlurbNodes: XmlChild[] = [
+    new XmlNode(
+      "span",
+      [
+        ["class", "lsSenseBullet"],
+        ["senseid", blurbId],
+      ],
+      [" ‣ "]
+    ),
+    " ",
+  ];
   const senseNodes: XmlNode[] = [];
   let level1Icount = 0;
-  const children: (XmlNode | string)[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
-      children.push(child);
+      mainBlurbNodes.push(child);
     } else if (child.name === "sense") {
       // Sense nodes are always the last nodes, so we can process them after.
       senseNodes.push(child);
@@ -1042,7 +1057,7 @@ export function displayEntryFree(
         level1Icount += 1;
       }
     } else {
-      children.push(
+      mainBlurbNodes.push(
         checkPresent(DISPLAY_HANDLER_LOOKUP.get(child.name))(
           child,
           context,
@@ -1054,18 +1069,15 @@ export function displayEntryFree(
 
   if (senseNodes.length > 0) {
     if (level1Icount > 1) {
-      children.push(defaultDisplay(senseNodes[0], context));
+      mainBlurbNodes.push(defaultDisplay(senseNodes[0], context));
     }
-    children.push(
-      formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0), context)
-    );
   }
   const attrs: [string, string][] = [["class", "lsEntryFree"]];
-  const idAttr = root.getAttr("id");
-  if (idAttr !== undefined) {
-    attrs.push(["id", idAttr]);
-  }
-  let result = new XmlNode("div", attrs, children);
+  attrs.push(["id", idAttr]);
+  let result = new XmlNode("div", attrs, [
+    new XmlNode("div", [["id", blurbId]], mainBlurbNodes),
+    formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0), context),
+  ]);
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
   result = handleAbbreviations(result, GENERIC_EXPANSIONS, true);
   return handleAbbreviations(result, GENERIC_HOVERS, false);
