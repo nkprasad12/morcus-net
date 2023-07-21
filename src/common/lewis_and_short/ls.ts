@@ -9,6 +9,7 @@ import { LsResult } from "@/web/utils/rpc/ls_api_result";
 import { extractOutline } from "./ls_outline";
 import { Vowels } from "../character_utils";
 import Database from "better-sqlite3";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -50,7 +51,7 @@ export class LewisAndShort {
     );
   }
 
-  async getEntry(input: string): Promise<LsResult[]> {
+  async getEntry(input: string, extras?: ServerExtras): Promise<LsResult[]> {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
@@ -75,14 +76,14 @@ export class LewisAndShort {
     });
 
     const resultIndices = [...new Set(allMatches.map(([_i, _j, n]) => n))];
-    const start = performance.now();
+    extras?.log("foundMatches");
     const entryStrings = resultIndices.map(
       (n) =>
         // @ts-ignore
         this.db.prepare(`SELECT entry FROM data WHERE n=${n} LIMIT 1`).all()[0]
           .entry
     );
-    console.debug("DB Fetch: " + (performance.now() - start).toFixed(3));
+    extras?.log("entriesFetched");
 
     const entryNodes = parseEntries(entryStrings);
     return entryNodes.map((node) => ({

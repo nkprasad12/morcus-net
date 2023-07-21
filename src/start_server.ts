@@ -102,8 +102,10 @@ const params: WebServerParams = {
     createApi(ReportApi, (request) =>
       GitHub.reportIssue(request.reportText, request.commit)
     ),
-    createApi(DictsLsApi, async (input) => lewisAndShort.getEntry(input)),
-    createApi(EntriesByPrefixApi, async (prefix) =>
+    createApi(DictsLsApi, (input, extras) =>
+      lewisAndShort.getEntry(input, extras)
+    ),
+    createApi(EntriesByPrefixApi, (prefix) =>
       lewisAndShort.getCompletions(prefix)
     ),
   ],
