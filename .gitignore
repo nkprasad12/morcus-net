@@ -122,6 +122,6 @@ genfiles_static/
 ls_dump.txt
 
 ls.xml
-lsp.txt
+lsp.txt*
 
 ls_logs/
