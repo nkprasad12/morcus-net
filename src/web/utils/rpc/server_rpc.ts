@@ -121,6 +121,7 @@ function adaptHandler<I, O extends Data>(
       })
       .catch((reason) => {
         status = 500;
+        console.debug(reason);
         body = reason;
       })
       .finally(() => {
