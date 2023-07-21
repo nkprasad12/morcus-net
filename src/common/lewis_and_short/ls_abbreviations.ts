@@ -12,6 +12,37 @@ const LIT_GESCH = "Geschichte der Römischen Literatur";
 const VEN_FORT_GERM =
   "vita Sancti Germani by Venantius Honorius Clementianus Fortunatus";
 
+function capitalizeFirst(input: string): string {
+  return input[0].toUpperCase() + input.slice(1);
+}
+
+function getPlural(input: [string, string]): [string, string] {
+  assert(input[0].endsWith("."));
+  assert(input[1].endsWith("."));
+  return [
+    input[0].slice(0, -1) + input[0].slice(-2, -1) + ".",
+    input[1].slice(0, -1) + "s.",
+  ];
+}
+
+export type Relaxers = "Case" | "Plural" | "All";
+
+export function useAbbreviation(
+  input: [string, string],
+  relaxMode: Relaxers
+): [string, string][] {
+  const relaxCase = ["Case", "All"].includes(relaxMode);
+  const plural = ["Plural", "All"].includes(relaxMode);
+  const results = [input];
+  if (relaxCase) {
+    results.push([capitalizeFirst(input[0]), capitalizeFirst(input[1])]);
+  }
+  if (plural) {
+    results.push(...results.map(getPlural));
+  }
+  return results;
+}
+
 function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
   assertEqual(root.name, "li");
   let i = 0;
@@ -283,7 +314,6 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
       "usually: short for legit, legunt, etc... usually used " +
         "for a different interpretation; sometimes: legal",
     ],
-    ["masc.", "masculine."],
     ["math.", "mathematics, -ical."],
     ["med.", "medio (in the middle)."],
     ["medic.", "medical or medicine."],
@@ -373,6 +403,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["acc. respect.", "accusative of respect."],
     ["access.", "accessory"],
     ["adjj.", "adjectives."],
+    ...useAbbreviation(["advv.", "adverbs."], "Case"),
     ["agric.", "agricultural"],
     ["agricult.", "agricultural"],
     ["amplif.", "amplificative"],
@@ -389,11 +420,13 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["cf.", "compare"],
     // ["Cod.", "Codex (MS)."], <- What does MS mean?
     ["collat.", "collateral."],
-    ["Collat.", "collateral."],
+    ["Collat.", "Collateral."],
     ["collect.", "collective(ly)"],
     ["comm.", "common."],
     ["commentt.", "commentators."],
     ["compd.", "compound."],
+    ["compp.", "comparatives."],
+    ["comp. clause", "comparative clause"],
     ["concr.", "concrete(ly)."],
     ["Concr.", "Concrete(ly)."],
     ["Constr.", "Constructed."],
@@ -443,8 +476,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["vox hibr.", "hybrid word."],
     ["imper.", "imperative."],
     ["Imper.", "Imperative."],
-    ["imperf.", "imperfect."],
-    ["Imperf.", "imperfect."],
+    ...useAbbreviation(["imperf.", "imperfect."], "Case"),
     ["impers.", "impersonal."],
     ["Impers.", "Impersonal."],
     ["bon. part.", "positive sense."],
@@ -471,6 +503,8 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     // ["lex.", "lexicon."], <- Most (all?) of the reference here are to actual works
     ["lit.", "literal."],
     ["Lith.", "Lithuanian."],
+    ["masc.", "masculine."],
+    ["Masc.", "Masculine."],
     ["Metaph.", "Metaphorical."],
     ["meton.", "by metonymy"],
     ["mid.", "medial; in a middle or reflexive sense."],
@@ -488,6 +522,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["obj.clause", "object clause"],
     ["obj.-clause", "object clause"],
     ["obj.-gen", "objective genitive"],
+    ...useAbbreviation(["object-inf.", "objective infinitive."], "All"),
     ["obliq.", "oblique."],
     ["om.", "omit."],
     ["onomatop.", "onomatopoeia"],
@@ -538,7 +573,9 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["simp.", "simple"],
     ["Span.", "Spanish"],
     ["specif.", "specifically."],
+    ...useAbbreviation(["subject-inf.", "subject infinitive."], "All"),
     ["substt.", "substantives."],
+    ["superll.", "superlatives."],
     ["suff.", "suffix."],
     ["syll.", "syllable."],
     ["sync.", "syncopated"],

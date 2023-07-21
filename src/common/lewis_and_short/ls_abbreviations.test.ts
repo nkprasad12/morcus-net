@@ -2,6 +2,7 @@ import fs from "fs";
 import {
   LsAuthorAbbreviations,
   parseAuthorAbbreviations,
+  useAbbreviation,
 } from "./ls_abbreviations";
 
 const TEMP_FILE = "ls_abbreviations.tmp.html";
@@ -95,5 +96,39 @@ describe("LsAuthorAbbreviations", () => {
   it("uses singleton authors map", () => {
     const first = LsAuthorAbbreviations.authors();
     expect(LsAuthorAbbreviations.authors()).toBe(first);
+  });
+});
+
+describe("useAbbreviation", () => {
+  it("returns expected on case only", () => {
+    const abbreviation: [string, string] = ["obj.", "object."];
+
+    const result = useAbbreviation(abbreviation, "Case");
+
+    expect(result).toHaveLength(2);
+    expect(result).toContainEqual(abbreviation);
+    expect(result).toContainEqual(["Obj.", "Object."]);
+  });
+
+  it("returns expected on number only", () => {
+    const abbreviation: [string, string] = ["obj.", "object."];
+
+    const result = useAbbreviation(abbreviation, "Plural");
+
+    expect(result).toHaveLength(2);
+    expect(result).toContainEqual(abbreviation);
+    expect(result).toContainEqual(["objj.", "objects."]);
+  });
+
+  it("returns expected on case and number", () => {
+    const abbreviation: [string, string] = ["obj.", "object."];
+
+    const result = useAbbreviation(abbreviation, "All");
+
+    expect(result).toHaveLength(4);
+    expect(result).toContainEqual(abbreviation);
+    expect(result).toContainEqual(["objj.", "objects."]);
+    expect(result).toContainEqual(["Obj.", "Object."]);
+    expect(result).toContainEqual(["Objj.", "Objects."]);
   });
 });

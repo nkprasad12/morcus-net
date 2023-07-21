@@ -1,7 +1,6 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, assertEqual, checkPresent } from "../assert";
+import { assert, checkPresent } from "../assert";
 import fs from "fs";
-import readline from "readline";
 import { parseEntries, XmlNode } from "./xml_node";
 import { displayEntryFree } from "./ls_display";
 import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
@@ -9,6 +8,8 @@ import { removeDiacritics } from "../text_cleaning";
 import { LsResult } from "@/web/utils/rpc/ls_api_result";
 import { extractOutline } from "./ls_outline";
 import { Vowels } from "../character_utils";
+import Database from "better-sqlite3";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -16,26 +17,33 @@ interface ProcessedLsEntry {
 }
 
 interface RawLsEntry {
-  keys: string[];
+  keys: string;
   entry: string;
 }
 
 export class LewisAndShort {
-  private readonly keyToEntries = new Map<string, [number, number][]>();
+  private readonly keyToEntries = new Map<string, [number, number, number][]>();
   private readonly keys: string[];
+  private readonly rawKeys: string[][];
+  private readonly db: Database.Database;
 
-  constructor(
-    private readonly rawKeys: string[][],
-    private readonly entries: string[]
-  ) {
-    assertEqual(rawKeys.length, entries.length);
-    for (let i = 0; i < rawKeys.length; i++) {
-      for (let j = 0; j < rawKeys[i].length; j++) {
-        const cleanKey = removeDiacritics(rawKeys[i][j]).toLowerCase();
+  constructor(dbFile: string = checkPresent(process.env.LS_PROCESSED_PATH)) {
+    this.db = new Database(dbFile, { readonly: true });
+    this.db.pragma("journal_mode = WAL");
+    const read = this.db.prepare("SELECT keys, n FROM data");
+    // @ts-ignore
+    const result: { keys: string; n: number }[] = read.all();
+    result.sort((a, b) => a.n - b.n);
+
+    this.rawKeys = result.map((row) => row.keys.split(","));
+
+    for (let i = 0; i < this.rawKeys.length; i++) {
+      for (let j = 0; j < this.rawKeys[i].length; j++) {
+        const cleanKey = removeDiacritics(this.rawKeys[i][j]).toLowerCase();
         if (!this.keyToEntries.has(cleanKey)) {
           this.keyToEntries.set(cleanKey, []);
         }
-        this.keyToEntries.get(cleanKey)!.push([i, j]);
+        this.keyToEntries.get(cleanKey)!.push([i, j, result[i].n]);
       }
     }
     this.keys = [...this.keyToEntries.keys()].sort((a, b) =>
@@ -43,7 +51,7 @@ export class LewisAndShort {
     );
   }
 
-  async getEntry(input: string): Promise<LsResult[]> {
+  async getEntry(input: string, extras?: ServerExtras): Promise<LsResult[]> {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
@@ -67,8 +75,16 @@ export class LewisAndShort {
       return true;
     });
 
-    const resultIndices = [...new Set(allMatches.map(([i, _]) => i))];
-    const entryStrings = resultIndices.map((i) => this.entries[i]);
+    const resultIndices = [...new Set(allMatches.map(([_i, _j, n]) => n))];
+    extras?.log("foundMatches");
+    const entryStrings = resultIndices.map(
+      (n) =>
+        // @ts-ignore
+        this.db.prepare(`SELECT entry FROM data WHERE n=${n} LIMIT 1`).all()[0]
+          .entry
+    );
+    extras?.log("entriesFetched");
+
     const entryNodes = parseEntries(entryStrings);
     return entryNodes.map((node) => ({
       entry: displayEntryFree(node),
@@ -106,8 +122,11 @@ export class LewisAndShort {
 
 export namespace LewisAndShort {
   export function processedToRaw(input: ProcessedLsEntry): RawLsEntry {
+    for (const key of input.keys) {
+      assert(!key.includes(","));
+    }
     return {
-      keys: input.keys,
+      keys: input.keys.join(","),
       entry: input.entry.toString(),
     };
   }
@@ -141,55 +160,43 @@ export namespace LewisAndShort {
     return result;
   }
 
-  export async function save(
+  export function save(
     entries: RawLsEntry[],
     destination: string = checkPresent(process.env.LS_PROCESSED_PATH)
-  ): Promise<void> {
+  ): void {
+    const start = performance.now();
     if (fs.existsSync(destination)) {
       fs.unlinkSync(destination);
     }
-    const stream = fs.createWriteStream(destination);
-    for (const entry of entries) {
-      for (const key of entry.keys) {
-        assert(!key.includes(","));
-        assert(!key.includes("\n"));
-      }
-      stream.write(entry.keys.join(","));
-      stream.write("$$");
-      stream.write(entry.entry.replaceAll("\n", "@"));
-      stream.write("\n");
-    }
-    return new Promise<void>((resolve) => {
-      stream.end(() => {
-        resolve();
+    const db = new Database(destination);
+    db.pragma("journal_mode = WAL");
+    db.exec(
+      "CREATE TABLE data('keys' varchar, 'entry' varchar, 'n' INTEGER PRIMARY KEY ASC );"
+    );
+    const insert = db.prepare(
+      "INSERT INTO data (keys, entry, n) VALUES (@keys, @entry, @n)"
+    );
+
+    const insertAll = db.transaction(() => {
+      entries.forEach((entry, index) => {
+        insert.run({ ...entry, n: index });
       });
     });
+    insertAll();
+    db.close();
+    console.debug("saveSql time: " + (performance.now() - start));
   }
 
-  export async function readFromFile(
-    processedFile: string = checkPresent(process.env.LS_PROCESSED_PATH)
-  ): Promise<[string[][], string[]]> {
-    const rl = readline.createInterface({
-      input: fs.createReadStream(processedFile),
-    });
-    const keys: string[][] = [];
-    const entries: string[] = [];
-    for await (const line of rl) {
-      const chunks = line.split("$$");
-      assertEqual(chunks.length, 2);
-      keys.push(chunks[0].split(","));
-      entries.push(chunks[1].replaceAll("@", "\n"));
-    }
-    return [keys, entries];
-  }
-
-  export async function create(
+  export function create(
     processedFile: string = checkPresent(
       process.env.LS_PROCESSED_PATH,
       "LS_PROCESSED_PATH environment variable."
     )
-  ) {
-    const [keys, entries] = await readFromFile(processedFile);
-    return new LewisAndShort(keys, entries);
+  ): LewisAndShort {
+    const start = performance.now();
+    const result = new LewisAndShort(processedFile);
+    const elapsed = (performance.now() - start).toFixed(3);
+    console.debug(`LewisAndShort init: ${elapsed} ms`);
+    return result;
   }
 }

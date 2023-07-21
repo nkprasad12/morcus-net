@@ -102,11 +102,11 @@ const params: WebServerParams = {
     createApi(ReportApi, (request) =>
       GitHub.reportIssue(request.reportText, request.commit)
     ),
-    createApi(DictsLsApi, async (input) =>
-      (await lewisAndShort).getEntry(input)
+    createApi(DictsLsApi, (input, extras) =>
+      lewisAndShort.getEntry(input, extras)
     ),
-    createApi(EntriesByPrefixApi, async (prefix) =>
-      (await lewisAndShort).getCompletions(prefix)
+    createApi(EntriesByPrefixApi, (prefix) =>
+      lewisAndShort.getCompletions(prefix)
     ),
   ],
   buildDir: path.join(__dirname, "../genfiles_static"),

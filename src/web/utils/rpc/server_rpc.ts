@@ -16,7 +16,7 @@ class Timer {
   }
 
   event(event: string): number {
-    const elapsed = Math.round(10 * (performance.now() - this.start)) / 10;
+    const elapsed = Math.round(100 * (performance.now() - this.start)) / 100;
     this.events.push([event, elapsed]);
     return elapsed;
   }
@@ -106,7 +106,7 @@ function adaptHandler<I, O extends Data>(
 
     let status: number = 200;
     let body: O | undefined = undefined;
-    handler(input)
+    handler(input, { log: (tag) => timer.event(tag) })
       .then((output) => {
         if (output === undefined || output === null) {
           return;
@@ -121,6 +121,7 @@ function adaptHandler<I, O extends Data>(
       })
       .catch((reason) => {
         status = 500;
+        console.debug(reason);
         body = reason;
       })
       .finally(() => {
@@ -145,7 +146,13 @@ function adaptHandler<I, O extends Data>(
 }
 
 export type PossibleError<T> = T | { serverErrorStatus: number };
-export type ApiHandler<I, O> = (input: I) => Promise<PossibleError<O>>;
+export interface ServerExtras {
+  log: (tag: string) => any;
+}
+export type ApiHandler<I, O> = (
+  input: I,
+  extras?: ServerExtras
+) => Promise<PossibleError<O>>;
 export interface RouteAndHandler<I, O> {
   route: ApiRoute<I, O>;
   handler: ApiHandler<I, O>;

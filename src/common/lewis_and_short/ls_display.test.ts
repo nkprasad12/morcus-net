@@ -345,6 +345,10 @@ describe("defaultDisplay", () => {
 });
 
 describe("displayEntryFree", () => {
+  function getBlurbNodes(root: XmlNode) {
+    return XmlNode.assertIsNode(root.children[0]).children.slice(2);
+  }
+
   it("handles Anthol. Lat. edge case", () => {
     const input = parseEntries([BIMATRIS])[0];
 
@@ -362,26 +366,25 @@ describe("displayEntryFree", () => {
   });
 
   it("collapses regs", () => {
-    const rawEntry =
-      "<entryFree><reg><sic>a</sic><corr>b</corr></reg></entryFree>";
+    const rawEntry = `<entryFree id="n1"><reg><sic>a</sic><corr>b</corr></reg></entryFree>`;
     const entry = parseEntries([rawEntry])[0];
 
     const output = displayEntryFree(entry);
 
-    expect(output.children).toStrictEqual(["b"]);
+    expect(getBlurbNodes(output)).toStrictEqual(["b"]);
   });
 
   it("removes comments", () => {
-    const rawEntry = "<entryFree>hello <!-- I am a comment --></entryFree>";
+    const rawEntry = `<entryFree id="n1">hello <!-- I am a comment --></entryFree>`;
     const entry = parseEntries([rawEntry])[0];
 
     const output = displayEntryFree(entry);
 
-    expect(output.children).toStrictEqual(["hello "]);
+    expect(getBlurbNodes(output)).toStrictEqual(["hello "]);
   });
 
   it("handles Lit. / Lat. edge cases", () => {
-    const rawEntry = "<entryFree>Poet. Lat.</entryFree>";
+    const rawEntry = `<entryFree id="n1">Poet. Lat.</entryFree>`;
     const entry = parseEntries([rawEntry])[0];
 
     const output = displayEntryFree(entry).toString();
@@ -393,7 +396,7 @@ describe("displayEntryFree", () => {
 
   it("propagates id to senses", () => {
     const rawEntry =
-      '<entryFree><sense level="1" n="I" id="n33556.0">Content</sense></entryFree>';
+      '<entryFree id="n1"><sense level="1" n="I" id="n33556.0">Content</sense></entryFree>';
     const entry = parseEntries([rawEntry])[0];
 
     const output = displayEntryFree(entry);
