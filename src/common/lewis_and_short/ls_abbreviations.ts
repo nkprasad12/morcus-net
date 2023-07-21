@@ -25,11 +25,14 @@ function getPlural(input: [string, string]): [string, string] {
   ];
 }
 
+export type Relaxers = "Case" | "Plural" | "All";
+
 export function useAbbreviation(
   input: [string, string],
-  relaxCase: boolean = true,
-  plural: boolean = false
+  relaxMode: Relaxers
 ): [string, string][] {
+  const relaxCase = ["Case", "All"].includes(relaxMode);
+  const plural = ["Plural", "All"].includes(relaxMode);
   const results = [input];
   if (relaxCase) {
     results.push([capitalizeFirst(input[0]), capitalizeFirst(input[1])]);
@@ -520,6 +523,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["obj.clause", "object clause"],
     ["obj.-clause", "object clause"],
     ["obj.-gen", "objective genitive"],
+    ...useAbbreviation(["object-inf.", "objective infinitive."], "All"),
     ["obliq.", "oblique."],
     ["om.", "omit."],
     ["onomatop.", "onomatopoeia"],
@@ -570,6 +574,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
     ["simp.", "simple"],
     ["Span.", "Spanish"],
     ["specif.", "specifically."],
+    ...useAbbreviation(["subject-inf.", "subject infinitive."], "All"),
     ["substt.", "substantives."],
     ["superll.", "superlatives."],
     ["suff.", "suffix."],

@@ -103,7 +103,7 @@ describe("useAbbreviation", () => {
   it("returns expected on case only", () => {
     const abbreviation: [string, string] = ["obj.", "object."];
 
-    const result = useAbbreviation(abbreviation, true, false);
+    const result = useAbbreviation(abbreviation, "Case");
 
     expect(result).toHaveLength(2);
     expect(result).toContainEqual(abbreviation);
@@ -113,7 +113,7 @@ describe("useAbbreviation", () => {
   it("returns expected on number only", () => {
     const abbreviation: [string, string] = ["obj.", "object."];
 
-    const result = useAbbreviation(abbreviation, false, true);
+    const result = useAbbreviation(abbreviation, "Plural");
 
     expect(result).toHaveLength(2);
     expect(result).toContainEqual(abbreviation);
@@ -123,7 +123,7 @@ describe("useAbbreviation", () => {
   it("returns expected on case and number", () => {
     const abbreviation: [string, string] = ["obj.", "object."];
 
-    const result = useAbbreviation(abbreviation, true, true);
+    const result = useAbbreviation(abbreviation, "All");
 
     expect(result).toHaveLength(4);
     expect(result).toContainEqual(abbreviation);
