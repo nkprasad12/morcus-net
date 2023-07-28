@@ -1,6 +1,6 @@
 import React from "react";
 import { PropsWithChildren, createContext } from "react";
-import { defaultExperimentalMode } from "../define_vars";
+import { defaultExperimentalMode } from "@/web/client/define_vars";
 
 const SETTINGS_STORAGE_KEY = "GlobalSettings";
 

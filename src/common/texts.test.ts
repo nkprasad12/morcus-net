@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { Book, Chapter, FullText, Section } from "./texts";
+import { Book, Chapter, FullText, Section } from "@/common/texts";
 
 describe("Section", () => {
   test("has expected toString", () => {

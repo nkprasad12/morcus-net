@@ -13,8 +13,8 @@ import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
 import { DictionaryView } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
-import { Router } from "./components/router";
-import { SettingsHandler } from "./components/global_flags";
+import { Router } from "@/web/client/components/router";
+import { SettingsHandler } from "@/web/client/components/global_flags";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {

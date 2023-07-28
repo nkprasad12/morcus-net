@@ -3,11 +3,11 @@ import express from "express";
 import fs from "fs";
 import request from "supertest";
 
-import { setupServer, WebServerParams } from "./web_server";
+import { setupServer, WebServerParams } from "@/web/web_server";
 import path from "path";
-import { TelemetryLogger } from "./telemetry/telemetry";
-import { encodeMessage, isNumber } from "./utils/rpc/parsing";
-import { RouteAndHandler } from "./utils/rpc/server_rpc";
+import { TelemetryLogger } from "@/web/telemetry/telemetry";
+import { encodeMessage, isNumber } from "@/web/utils/rpc/parsing";
+import { RouteAndHandler } from "@/web/utils/rpc/server_rpc";
 
 console.debug = jest.fn();
 

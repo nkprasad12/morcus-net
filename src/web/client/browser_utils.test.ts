@@ -3,7 +3,7 @@
  */
 
 import { describe, expect, it } from "@jest/globals";
-import { backendCall, getHash } from "./browser_utils";
+import { backendCall, getHash } from "@/web/client/browser_utils";
 
 const realFetch = global.fetch;
 

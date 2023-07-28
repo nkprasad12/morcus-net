@@ -3,7 +3,7 @@ import {
   getBuildDate,
   getCommitHash,
   tryOr,
-} from "./define_vars";
+} from "@/web/client/define_vars";
 
 describe("define_vars", () => {
   test("tryOr returns expected", () => {

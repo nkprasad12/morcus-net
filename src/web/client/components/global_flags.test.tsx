@@ -8,7 +8,7 @@ import {
   GlobalSettings,
   GlobalSettingsContext,
   SettingsHandler,
-} from "./global_flags";
+} from "@/web/client/components/global_flags";
 import { act, render } from "@testing-library/react";
 
 interface Box<T> {

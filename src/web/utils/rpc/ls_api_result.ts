@@ -6,7 +6,7 @@ import {
   maybeUndefined,
   isArray,
   isNumber,
-} from "./parsing";
+} from "@/web/utils/rpc/parsing";
 
 export interface SectionOutline {
   text: string;

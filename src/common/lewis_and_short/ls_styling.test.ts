@@ -5,7 +5,7 @@ import {
   TrieNode,
   handleAbbreviations,
   findExpansions,
-} from "./ls_styling";
+} from "@/common/lewis_and_short/ls_styling";
 
 describe("TrieNode", () => {
   it("adds words correctly", () => {

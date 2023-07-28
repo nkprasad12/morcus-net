@@ -1,4 +1,4 @@
-import { Serialization, Validator } from "./parsing";
+import { Serialization, Validator } from "@/web/utils/rpc/parsing";
 
 export type HttpMethod = "GET" | "POST";
 

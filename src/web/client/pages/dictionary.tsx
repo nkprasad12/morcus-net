@@ -14,17 +14,20 @@ import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { XmlNode } from "@/common/xml_node";
 import { Divider } from "@mui/material";
-import { AutocompleteCache } from "./autocomplete_cache";
-import { Navigation, RouteContext } from "../components/router";
+import { AutocompleteCache } from "@/web/client/pages/autocomplete_cache";
+import { Navigation, RouteContext } from "@/web/client/components/router";
 import { flushSync } from "react-dom";
 import { checkPresent } from "@/common/assert";
 import { DictsLsApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
-import { ClickableTooltip, SectionLinkTooltip } from "./tooltips";
-import { getBuildDate } from "../define_vars";
-import { Footer } from "../components/footer";
+import {
+  ClickableTooltip,
+  SectionLinkTooltip,
+} from "@/web/client/pages/tooltips";
+import { getBuildDate } from "@/web/client/define_vars";
+import { Footer } from "@/web/client/components/footer";
 
 const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",

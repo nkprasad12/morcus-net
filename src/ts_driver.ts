@@ -1,10 +1,10 @@
 /* istanbul ignore file */
 
 import * as dotenv from "dotenv";
-import { assert, checkPresent } from "./common/assert";
-import { parse } from "./common/lewis_and_short/ls_parser";
-import { LS_PATH } from "./common/lewis_and_short/ls_scripts";
-import { XmlNode } from "./common/lewis_and_short/xml_node";
+import { assert, checkPresent } from "@/common/assert";
+import { parse } from "@/common/lewis_and_short/ls_parser";
+import { LS_PATH } from "@/common/lewis_and_short/ls_scripts";
+import { XmlNode } from "@/common/xml_node";
 import {
   XmlOperations,
   // LsRewriters,
@@ -13,9 +13,9 @@ import {
   // modifyInTree,
   removeTextNode,
 } from "@/common/lewis_and_short/ls_write";
-import { cleanOrths, regularizeOrths } from "./common/lewis_and_short/ls_orths";
-import { removeDiacritics } from "./common/text_cleaning";
-import { isString } from "./web/utils/rpc/parsing";
+import { cleanOrths, regularizeOrths } from "@/common/lewis_and_short/ls_orths";
+import { removeDiacritics } from "@/common/text_cleaning";
+import { isString } from "@/web/utils/rpc/parsing";
 import { LsRewriters } from "@/common/lewis_and_short/ls_write";
 
 dotenv.config();

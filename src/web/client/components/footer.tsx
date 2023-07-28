@@ -1,7 +1,7 @@
 import * as React from "react";
 
 import { Box, Typography } from "@mui/material";
-import { Solarized } from "../colors";
+import { Solarized } from "@/web/client/colors";
 
 export function Footer() {
   return (

@@ -6,7 +6,7 @@ import { render, screen } from "@testing-library/react";
 import { About } from "@/web/client/pages/about";
 import user from "@testing-library/user-event";
 import React from "react";
-import { SettingsHandler } from "../components/global_flags";
+import { SettingsHandler } from "@/web/client/components/global_flags";
 
 describe("About Page", () => {
   test("shows expected components", () => {

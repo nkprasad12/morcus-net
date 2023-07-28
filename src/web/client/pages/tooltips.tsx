@@ -7,7 +7,7 @@ import {
   IconButton,
 } from "@mui/material";
 import React from "react";
-import { Solarized } from "../colors";
+import { Solarized } from "@/web/client/colors";
 
 export type TooltipPlacement = "top-start" | "right";
 

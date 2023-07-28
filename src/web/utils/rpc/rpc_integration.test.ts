@@ -1,7 +1,7 @@
 import bodyParser from "body-parser";
 import express from "express";
 import http from "http";
-import { RouteAndHandler, addApi } from "./server_rpc";
+import { RouteAndHandler, addApi } from "@/web/utils/rpc/server_rpc";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   Serialization,
@@ -11,9 +11,9 @@ import {
   isBoolean,
   isNumber,
   isString,
-} from "./parsing";
+} from "@/web/utils/rpc/parsing";
 import fetch from "node-fetch";
-import { callApi } from "./client_rpc";
+import { callApi } from "@/web/utils/rpc/client_rpc";
 
 const PORT = 1594;
 

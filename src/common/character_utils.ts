@@ -1,4 +1,4 @@
-import { assertEqual } from "./assert";
+import { assertEqual } from "@/common/assert";
 
 // The last two are tilde characters. This look the same in VS code.
 export const MACRONS = "āēīōūȳĀĒĪŌŪÃÕ";

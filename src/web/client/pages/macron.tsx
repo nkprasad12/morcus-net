@@ -3,7 +3,7 @@ import Box from "@mui/system/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 
-import { Solarized } from "../colors";
+import { Solarized } from "@/web/client/colors";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { MacronizeApi } from "@/web/api_routes";
 

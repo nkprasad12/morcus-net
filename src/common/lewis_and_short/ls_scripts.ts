@@ -6,8 +6,8 @@ dotenv.config();
 import { parse } from "@/common/lewis_and_short/ls_parser";
 import { XmlNode } from "@/common/xml_node";
 import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
-import { checkPresent } from "../assert";
-import { getOrths, isRegularOrth } from "./ls_orths";
+import { checkPresent } from "@/common/assert";
+import { getOrths, isRegularOrth } from "@/common/lewis_and_short/ls_orths";
 
 export const LS_PATH = checkPresent(process.env.LS_PATH);
 

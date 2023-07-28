@@ -14,9 +14,13 @@ import {
   displayQ,
   displayUsg,
   formatSenseList,
-} from "./ls_display";
-import { parseEntries } from "./ls_xml_utils";
-import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
+} from "@/common/lewis_and_short/ls_display";
+import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
+import {
+  CANABA,
+  BENEFIO,
+  BIMATRIS,
+} from "@/common/lewis_and_short/sample_entries";
 import { XmlNode } from "@/common/xml_node";
 
 console.debug = jest.fn();

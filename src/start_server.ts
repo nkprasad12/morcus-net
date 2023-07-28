@@ -20,23 +20,23 @@ import { Server } from "socket.io";
 
 import { setupServer, WebServerParams } from "@/web/web_server";
 import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
-import { WorkRequest } from "./web/workers/requests";
-import { Workers } from "./web/workers/worker_types";
+import { WorkRequest } from "@/web/workers/requests";
+import { Workers } from "@/web/workers/worker_types";
 import { randomInt } from "crypto";
-import { checkPresent } from "./common/assert";
-import { LewisAndShort } from "./common/lewis_and_short/ls";
+import { checkPresent } from "@/common/assert";
+import { LewisAndShort } from "@/common/lewis_and_short/ls";
 import path from "path";
-import { GitHub } from "./web/utils/github";
-import { MongoLogger } from "./web/telemetry/mongo_logger";
-import { TelemetryLogger } from "./web/telemetry/telemetry";
+import { GitHub } from "@/web/utils/github";
+import { MongoLogger } from "@/web/telemetry/mongo_logger";
+import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   DictsLsApi,
   EntriesByPrefixApi,
   MacronizeApi,
   ReportApi,
-} from "./web/api_routes";
-import { ApiHandler, RouteAndHandler } from "./web/utils/rpc/server_rpc";
-import { ApiRoute } from "./web/utils/rpc/rpc";
+} from "@/web/api_routes";
+import { ApiHandler, RouteAndHandler } from "@/web/utils/rpc/server_rpc";
+import { ApiRoute } from "@/web/utils/rpc/rpc";
 
 dotenv.config();
 

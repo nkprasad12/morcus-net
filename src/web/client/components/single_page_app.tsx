@@ -1,9 +1,9 @@
 import React, { useContext } from "react";
 
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
-import { ReportIssueDialog } from "./report_issue_dialog";
-import { RouteContext } from "./router";
-import { GlobalSettingsContext } from "./global_flags";
+import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";
+import { RouteContext } from "@/web/client/components/router";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 export namespace SinglePageApp {
   export interface Page extends ResponsiveAppBar.Page {

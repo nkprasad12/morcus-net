@@ -1,4 +1,4 @@
-import { checkPresent } from "../assert";
+import { checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml_node";
 
 const START_CHARACTERS = new Set<string>(" ();—-");

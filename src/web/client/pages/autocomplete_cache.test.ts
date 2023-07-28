@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { AutocompleteCache } from "./autocomplete_cache";
+import { AutocompleteCache } from "@/web/client/pages/autocomplete_cache";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
 

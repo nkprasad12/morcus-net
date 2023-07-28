@@ -1,6 +1,12 @@
-import { ApiRoute } from "./utils/rpc/rpc";
-import { isAny, isArray, isString, matches, typeOf } from "./utils/rpc/parsing";
-import { LsResult } from "./utils/rpc/ls_api_result";
+import { ApiRoute } from "@/web/utils/rpc/rpc";
+import {
+  isAny,
+  isArray,
+  isString,
+  matches,
+  typeOf,
+} from "@/web/utils/rpc/parsing";
+import { LsResult } from "@/web/utils/rpc/ls_api_result";
 import { LsDict } from "@/common/lewis_and_short/ls_xml_utils";
 
 export const MacronizeApi: ApiRoute<string, string> = {

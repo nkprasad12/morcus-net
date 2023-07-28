@@ -3,7 +3,7 @@ import {
   LsAuthorAbbreviations,
   parseAuthorAbbreviations,
   useAbbreviation,
-} from "./ls_abbreviations";
+} from "@/common/lewis_and_short/ls_abbreviations";
 
 const TEMP_FILE = "ls_abbreviations.tmp.html";
 

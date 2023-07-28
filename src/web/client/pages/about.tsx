@@ -3,9 +3,9 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
 import React, { useContext } from "react";
-import { Solarized } from "../colors";
-import { getCommitHash } from "../define_vars";
-import { GlobalSettingsContext } from "../components/global_flags";
+import { Solarized } from "@/web/client/colors";
+import { getCommitHash } from "@/web/client/define_vars";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 const INSTALL_GUIDE =
   "https://www.cdc.gov/niosh/mining/content/hearingloss/installPWA.html";

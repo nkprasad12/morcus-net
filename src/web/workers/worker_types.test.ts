@@ -1,4 +1,4 @@
-import { Workers } from "./worker_types";
+import { Workers } from "@/web/workers/worker_types";
 
 describe("Workers.isValid", () => {
   it("rejects invalid inputs", () => {

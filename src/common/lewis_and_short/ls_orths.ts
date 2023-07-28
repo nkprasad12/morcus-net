@@ -1,6 +1,6 @@
 import { XmlNode } from "@/common/xml_node";
-import { assert } from "../assert";
-import { BREVES, MACRONS } from "../character_utils";
+import { assert } from "@/common/assert";
+import { BREVES, MACRONS } from "@/common/character_utils";
 
 // const LOWER_CONSONANTS = "bcdfghjklmnpqrstvxz";
 // const UPPER_CONSONANTS = "BCDFGHJKLMNPQRSTVXZ";

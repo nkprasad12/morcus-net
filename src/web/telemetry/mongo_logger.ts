@@ -1,5 +1,9 @@
 import { MongoClient, MongoClientOptions, ServerApiVersion } from "mongodb";
-import { ApiCallData, TelemetryEvent, TelemetryLogger } from "./telemetry";
+import {
+  ApiCallData,
+  TelemetryEvent,
+  TelemetryLogger,
+} from "@/web/telemetry/telemetry";
 import { assert, checkPresent } from "@/common/assert";
 
 const API_CALL_COLLECTION = "ApiCalls";
