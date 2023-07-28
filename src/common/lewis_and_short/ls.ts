@@ -1,7 +1,7 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
 import { assert, checkPresent } from "../assert";
 import fs from "fs";
-import { XmlNode } from "./xml_node";
+import { XmlNode } from "@/common/xml_node";
 import { displayEntryFree } from "./ls_display";
 import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
 import { removeDiacritics } from "../text_cleaning";

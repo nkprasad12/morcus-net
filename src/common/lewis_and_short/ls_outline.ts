@@ -1,5 +1,5 @@
 import { LsOutline, SectionOutline } from "@/web/utils/rpc/ls_api_result";
-import { COMMENT_NODE, XmlChild, XmlNode } from "./xml_node";
+import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml_node";
 import { assert, checkPresent } from "../assert";
 import { displayTextForOrth } from "./ls_orths";
 

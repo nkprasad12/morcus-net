@@ -7,10 +7,14 @@ import {
   ACEO,
   CONDICTICIUS,
   PALUS1,
-} from "./sample_entries";
+} from "./lewis_and_short/sample_entries";
 
-import { XmlNode } from "./xml_node";
-import { LsDict, extractEntries, parseEntries } from "./ls_xml_utils";
+import { XmlNode } from "@/common/xml_node";
+import {
+  LsDict,
+  extractEntries,
+  parseEntries,
+} from "./lewis_and_short/ls_xml_utils";
 
 console.debug = jest.fn();
 

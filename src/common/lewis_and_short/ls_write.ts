@@ -1,5 +1,5 @@
 import { createWriteStream, readFileSync, renameSync } from "fs";
-import { XmlNode } from "./xml_node";
+import { XmlNode } from "@/common/xml_node";
 import { assert } from "@/common/assert";
 import { parseEntries } from "./ls_xml_utils";
 

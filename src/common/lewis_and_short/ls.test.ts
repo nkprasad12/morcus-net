@@ -1,7 +1,7 @@
 import fs from "fs";
 
 import { LewisAndShort } from "./ls";
-import { XmlNode } from "./xml_node";
+import { XmlNode } from "@/common/xml_node";
 import Database from "better-sqlite3";
 import { LsResult } from "@/web/utils/rpc/ls_api_result";
 

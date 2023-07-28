@@ -1,7 +1,7 @@
 import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/xml_node";
 import { AbbreviationTrie, TrieNode } from "./ls_styling";
 import { parseEntries } from "./ls_xml_utils";
 

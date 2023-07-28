@@ -1,5 +1,5 @@
 import { extractOutline, getBullet } from "./ls_outline";
-import { XmlNode } from "./xml_node";
+import { XmlNode } from "@/common/xml_node";
 
 describe("getBullet", () => {
   it("returns original on unparenthesized", () => {

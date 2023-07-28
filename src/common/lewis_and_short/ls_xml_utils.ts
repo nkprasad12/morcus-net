@@ -1,6 +1,6 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { assert } from "@/common/assert";
-import { COMMENT_NODE, XmlChild, XmlNode } from "./xml_node";
+import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml_node";
 import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 const ENTRY_OPEN = "<entryFree ";

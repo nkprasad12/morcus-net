@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/xml_node";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";

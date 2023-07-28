@@ -12,7 +12,7 @@ import React, { MutableRefObject } from "react";
 
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/xml_node";
 import { Divider } from "@mui/material";
 import { AutocompleteCache } from "./autocomplete_cache";
 import { Navigation, RouteContext } from "../components/router";

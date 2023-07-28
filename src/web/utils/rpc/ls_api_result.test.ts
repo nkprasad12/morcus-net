@@ -1,4 +1,4 @@
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/xml_node";
 import { LsResult } from "./ls_api_result";
 
 describe("Ls API types", () => {

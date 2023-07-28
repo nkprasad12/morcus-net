@@ -4,7 +4,7 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/xml_node";
 import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
 import { checkPresent } from "../assert";
 import { getOrths, isRegularOrth } from "./ls_orths";

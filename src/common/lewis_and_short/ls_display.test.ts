@@ -17,7 +17,7 @@ import {
 } from "./ls_display";
 import { parseEntries } from "./ls_xml_utils";
 import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
-import { XmlNode } from "./xml_node";
+import { XmlNode } from "@/common/xml_node";
 
 console.debug = jest.fn();
 

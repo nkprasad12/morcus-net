@@ -10,7 +10,7 @@ import {
   searchTree,
 } from "./ls_write";
 import { CANABA, PALUS1 } from "./sample_entries";
-import { XmlChild, XmlNode } from "./xml_node";
+import { XmlChild, XmlNode } from "@/common/xml_node";
 
 const IN_FILE = "ls_write.test.tmp.in.xml";
 
