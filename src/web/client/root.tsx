@@ -14,6 +14,7 @@ import { About } from "@/web/client/pages/about";
 import { Dictionary } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
 import { Router } from "./components/router";
+import { SettingsHandler } from "./components/global_flags";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -98,16 +99,11 @@ const MACRONIZER_PAGE: SinglePageApp.Page = {
   name: "Macronizer",
   path: "/macronizer",
   content: Macronizer,
+  experimental: true,
 };
 
-const pages: SinglePageApp.Page[] = [DICT_PAGE];
-if (process.env.NODE_ENV !== "production") {
-  pages.push(MACRONIZER_PAGE);
-}
-pages.push(ABOUT_PAGE);
-
 const props: SinglePageApp.Props = {
-  pages: pages,
+  pages: [DICT_PAGE, MACRONIZER_PAGE, ABOUT_PAGE],
 };
 if (window.location.pathname === "/") {
   window.history.replaceState({}, "", props.pages[0].path);
@@ -119,67 +115,69 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <GlobalStyles
-        styles={{
-          ol: {
-            listStyle: "none",
-            marginLeft: 0,
-            paddingLeft: "1.2em",
-          },
-          li: {
-            paddingTop: "2px",
-            paddingBottom: "2px",
-          },
-          ".lsTopSense": {
-            paddingLeft: "0em",
-          },
-          pre: { margin: "0" },
-          ".highlighted": {
-            border: "2px solid",
-            borderRadius: 4,
-            borderColor: Solarized.red,
-          },
-          ".lsHover": {
-            borderBottom: `1px dashed ${Solarized.base03}`,
-            fontWeight: "normal",
-            cursor: "help",
-          },
-          ".lsAuthor": {
-            backgroundColor: Solarized.violet + "22",
-            borderRadius: 4,
-          },
-          ".lsBibl": {
-            backgroundColor: Solarized.violet + "30",
-            borderRadius: 4,
-          },
-          ".lsQuote": {
-            backgroundColor: Solarized.blue + "22",
-            borderRadius: 4,
-          },
-          ".lsOrth": {
-            backgroundColor: Solarized.red + "68",
-            borderRadius: 4,
-            padding: 2,
-          },
-          ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
-          ".lsSenseBullet": {
-            fontWeight: "bold",
-            cursor: "pointer",
-            backgroundColor: Solarized.base01 + "48",
-            borderRadius: 4,
-          },
-          ".lsHelpText": {
-            marginBottom: 6,
-          },
-          ".lsTrans": { fontStyle: "italic" },
-        }}
-      />
-      <StyledEngineProvider injectFirst>
-        <Router.Handler>
-          <SinglePageApp {...props} />
-        </Router.Handler>
-      </StyledEngineProvider>
-    </ThemeProvider>
+    <SettingsHandler>
+      <ThemeProvider theme={theme}>
+        <GlobalStyles
+          styles={{
+            ol: {
+              listStyle: "none",
+              marginLeft: 0,
+              paddingLeft: "1.2em",
+            },
+            li: {
+              paddingTop: "2px",
+              paddingBottom: "2px",
+            },
+            ".lsTopSense": {
+              paddingLeft: "0em",
+            },
+            pre: { margin: "0" },
+            ".highlighted": {
+              border: "2px solid",
+              borderRadius: 4,
+              borderColor: Solarized.red,
+            },
+            ".lsHover": {
+              borderBottom: `1px dashed ${Solarized.base03}`,
+              fontWeight: "normal",
+              cursor: "help",
+            },
+            ".lsAuthor": {
+              backgroundColor: Solarized.violet + "22",
+              borderRadius: 4,
+            },
+            ".lsBibl": {
+              backgroundColor: Solarized.violet + "30",
+              borderRadius: 4,
+            },
+            ".lsQuote": {
+              backgroundColor: Solarized.blue + "22",
+              borderRadius: 4,
+            },
+            ".lsOrth": {
+              backgroundColor: Solarized.red + "68",
+              borderRadius: 4,
+              padding: 2,
+            },
+            ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
+            ".lsSenseBullet": {
+              fontWeight: "bold",
+              cursor: "pointer",
+              backgroundColor: Solarized.base01 + "48",
+              borderRadius: 4,
+            },
+            ".lsHelpText": {
+              marginBottom: 6,
+            },
+            ".lsTrans": { fontStyle: "italic" },
+          }}
+        />
+        <StyledEngineProvider injectFirst>
+          <Router.Handler>
+            <SinglePageApp {...props} />
+          </Router.Handler>
+        </StyledEngineProvider>
+      </ThemeProvider>
+    </SettingsHandler>
   </React.StrictMode>
 );
