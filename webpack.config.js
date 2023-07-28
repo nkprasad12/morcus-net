@@ -29,6 +29,7 @@ module.exports = (env) => {
     new DefinePlugin({
       COMMIT_HASH: JSON.stringify(getHash()),
       BUILD_DATE: JSON.stringify(new Date().toString()),
+      DEFAULT_EXPERIMENTAL_MODE: JSON.stringify(!isProduction)
     }),
     new HtmlWebpackPlugin({
       chunks: ["Root"],
