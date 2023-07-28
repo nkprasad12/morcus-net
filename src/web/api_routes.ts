@@ -1,7 +1,7 @@
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import { ApiRoute } from "./utils/rpc/rpc";
 import { isAny, isArray, isString, matches, typeOf } from "./utils/rpc/parsing";
 import { LsResult } from "./utils/rpc/ls_api_result";
+import { LsDict } from "@/common/lewis_and_short/ls_xml_utils";
 
 export const MacronizeApi: ApiRoute<string, string> = {
   path: "/api/macronize",
@@ -15,7 +15,7 @@ export const DictsLsApi: ApiRoute<string, LsResult[]> = {
   method: "GET",
   inputValidator: isString,
   outputValidator: isArray(LsResult.isMatch),
-  registry: [XmlNode.SERIALIZATION],
+  registry: [LsDict.SERIALIZATION],
 };
 
 export const EntriesByPrefixApi: ApiRoute<string, string[]> = {

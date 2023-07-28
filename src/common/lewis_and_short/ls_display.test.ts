@@ -15,8 +15,9 @@ import {
   displayUsg,
   formatSenseList,
 } from "./ls_display";
+import { parseEntries } from "./ls_xml_utils";
 import { CANABA, BENEFIO, BIMATRIS } from "./sample_entries";
-import { parseEntries, XmlNode } from "./xml_node";
+import { XmlNode } from "./xml_node";
 
 console.debug = jest.fn();
 

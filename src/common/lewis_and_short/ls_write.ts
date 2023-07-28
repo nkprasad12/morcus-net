@@ -1,6 +1,7 @@
 import { createWriteStream, readFileSync, renameSync } from "fs";
-import { parseEntries, XmlNode } from "./xml_node";
+import { XmlNode } from "./xml_node";
 import { assert } from "@/common/assert";
+import { parseEntries } from "./ls_xml_utils";
 
 /**
  * Rewrites the contents of an XML file at the specified path by applying
