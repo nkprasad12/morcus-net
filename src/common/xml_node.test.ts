@@ -11,10 +11,10 @@ import {
 
 import { XmlNode } from "@/common/xml_node";
 import {
-  LsDict,
   extractEntries,
   parseEntries,
 } from "@/common/lewis_and_short/ls_xml_utils";
+import { XmlNodeSerialization } from "./xml_node_serialization";
 
 console.debug = jest.fn();
 
@@ -251,7 +251,7 @@ describe("XmlNode utils does not modify string", () => {
   });
 });
 
-describe("LsDict.SERIALIZATION", () => {
+describe("XmlNodeSerialization.DEFAULT", () => {
   it("transfers same information", () => {
     const child1 = new XmlNode("caesar", [["child", "1"]], []);
     const child2 = new XmlNode("caesar", [["child", "2"]], [child1]);
@@ -259,8 +259,8 @@ describe("LsDict.SERIALIZATION", () => {
     const child4 = new XmlNode("caesar", [["child", "4"]], []);
     const parent = new XmlNode("caesar", [], [child2, child3, child4]);
 
-    const serialized = LsDict.SERIALIZATION.serialize(parent);
-    const output = LsDict.SERIALIZATION.deserialize(serialized);
+    const serialized = XmlNodeSerialization.DEFAULT.serialize(parent);
+    const output = XmlNodeSerialization.DEFAULT.deserialize(serialized);
 
     expect(parent).toStrictEqual(output);
   });

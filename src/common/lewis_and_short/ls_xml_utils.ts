@@ -1,7 +1,6 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { assert } from "@/common/assert";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml_node";
-import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 const ENTRY_OPEN = "<entryFree ";
 const ENTRY_CLOSE = "</entryFree>";
@@ -145,13 +144,4 @@ export function extractEntries(xmlContents: string): string[] {
     throw new Error("Got unclosed entry.");
   }
   return entries;
-}
-
-export namespace LsDict {
-  export const SERIALIZATION: Serialization<XmlNode> = {
-    name: "XmlNode",
-    validator: instanceOf(XmlNode),
-    serialize: (t) => t.toString(),
-    deserialize: (t) => parseEntries([t])[0],
-  };
 }
