@@ -8,19 +8,24 @@ import user from "@testing-library/user-event";
 import React from "react";
 import { SinglePageApp } from "./single_page_app";
 import { RouteContext } from "./router";
+import { SettingsHandler } from "./global_flags";
+
+const GALLIA_PAGE: SinglePageApp.Page = {
+  name: "Gallia",
+  path: "/gallia",
+  content: () => <div>GalliaPage</div>,
+};
+const OMNIS_PAGE: SinglePageApp.Page = {
+  name: "Omnis",
+  path: "/omnis",
+  content: () => <div>OmnisPage</div>,
+};
 
 describe("Single Page App View", () => {
-  const pages: SinglePageApp.Page[] = [
-    {
-      name: "Gallia",
-      path: "/gallia",
-      content: () => <div>GalliaPage</div>,
-    },
-    {
-      name: "Omnis",
-      path: "/omnis",
-      content: () => <div>OmnisPage</div>,
-    },
+  const pages: SinglePageApp.Page[] = [GALLIA_PAGE, OMNIS_PAGE];
+  const experimentPages: SinglePageApp.Page[] = [
+    { ...GALLIA_PAGE, experimental: true },
+    OMNIS_PAGE,
   ];
 
   it("shows correct initial content", () => {
@@ -35,6 +40,50 @@ describe("Single Page App View", () => {
 
     expect(screen.queryByText("GalliaPage")).not.toBeNull();
     expect(screen.queryByText("OmnisPage")).toBeNull();
+  });
+
+  it("shows all pages in experiment mode", () => {
+    localStorage.setItem(
+      "GlobalSettings",
+      JSON.stringify({
+        experimentalMode: true,
+      })
+    );
+    const mockNav = jest.fn(() => {});
+    render(
+      <SettingsHandler>
+        <RouteContext.Provider
+          value={{ route: { path: "/gallia" }, navigateTo: mockNav }}
+        >
+          <SinglePageApp pages={experimentPages} />
+        </RouteContext.Provider>
+      </SettingsHandler>
+    );
+
+    expect(screen.queryAllByText("Gallia")).not.toHaveLength(0);
+    expect(screen.queryAllByText("Omnis")).not.toHaveLength(0);
+  });
+
+  it("hides pages in experiment mode", () => {
+    localStorage.setItem(
+      "GlobalSettings",
+      JSON.stringify({
+        experimentalMode: false,
+      })
+    );
+    const mockNav = jest.fn(() => {});
+    render(
+      <SettingsHandler>
+        <RouteContext.Provider
+          value={{ route: { path: "/gallia" }, navigateTo: mockNav }}
+        >
+          <SinglePageApp pages={experimentPages} />
+        </RouteContext.Provider>
+      </SettingsHandler>
+    );
+
+    expect(screen.queryAllByText("Gallia")).toHaveLength(0);
+    expect(screen.queryAllByText("Omnis")).not.toHaveLength(0);
   });
 
   it("shows navigation on bad path", () => {
