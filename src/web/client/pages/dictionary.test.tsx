@@ -8,7 +8,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { Dictionary } from "./dictionary";
+import { DictionaryView } from "./dictionary";
 import { RouteContext } from "../components/router";
 
 jest.mock("@mui/material/useMediaQuery", () => {
@@ -33,12 +33,12 @@ describe("Dictionary View", () => {
   });
 
   it("shows expected components", () => {
-    render(<Dictionary />);
+    render(<DictionaryView />);
     expect(screen.getByRole("combobox")).toBeDefined();
   });
 
   it("does not call server on empty submit", async () => {
-    render(<Dictionary />);
+    render(<DictionaryView />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -49,7 +49,7 @@ describe("Dictionary View", () => {
 
   it("calls server for autocomplete entries", async () => {
     mockCallApi.mockResolvedValue(["Goo"]);
-    render(<Dictionary />);
+    render(<DictionaryView />);
     const searchBar = screen.getByRole("combobox");
 
     await user.click(searchBar);
@@ -66,7 +66,7 @@ describe("Dictionary View", () => {
       <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}
       >
-        <Dictionary />
+        <DictionaryView />
       </RouteContext.Provider>
     );
     const searchBar = screen.getByRole("combobox");
@@ -86,7 +86,7 @@ describe("Dictionary View", () => {
       <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}
       >
-        <Dictionary />
+        <DictionaryView />
       </RouteContext.Provider>
     );
     const searchBar = screen.getByRole("combobox");
@@ -105,7 +105,7 @@ describe("Dictionary View", () => {
       <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}
       >
-        <Dictionary />
+        <DictionaryView />
       </RouteContext.Provider>
     );
     const searchBar = screen.getByRole("combobox");
@@ -123,7 +123,7 @@ describe("Dictionary View", () => {
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
       >
-        <Dictionary />
+        <DictionaryView />
       </RouteContext.Provider>
     );
 
@@ -168,7 +168,7 @@ describe("Dictionary View", () => {
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
       >
-        <Dictionary />
+        <DictionaryView />
       </RouteContext.Provider>
     );
 
@@ -230,7 +230,7 @@ describe("Dictionary View", () => {
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
       >
-        <Dictionary />
+        <DictionaryView />
       </RouteContext.Provider>
     );
 

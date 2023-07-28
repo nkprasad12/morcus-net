@@ -11,7 +11,7 @@ import ThemeProvider from "@mui/material/styles/ThemeProvider";
 import { Macronizer } from "@/web/client/pages/macron";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
-import { Dictionary } from "@/web/client/pages/dictionary";
+import { DictionaryView } from "@/web/client/pages/dictionary";
 import { Solarized } from "@/web/client/colors";
 import { Router } from "./components/router";
 import { SettingsHandler } from "./components/global_flags";
@@ -93,7 +93,7 @@ const ABOUT_PAGE: SinglePageApp.Page = {
 const DICT_PAGE: SinglePageApp.Page = {
   name: "Dictionary",
   path: "/dicts",
-  content: Dictionary,
+  content: DictionaryView,
 };
 const MACRONIZER_PAGE: SinglePageApp.Page = {
   name: "Macronizer",

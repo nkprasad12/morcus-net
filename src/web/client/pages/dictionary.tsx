@@ -328,7 +328,7 @@ interface ElementAndKey {
 
 const noSsr = { noSsr: true };
 
-export function Dictionary() {
+export function DictionaryView() {
   const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
   const [outlines, setOutlines] = React.useState<(LsOutline | undefined)[]>([]);
   const theme = useTheme();
