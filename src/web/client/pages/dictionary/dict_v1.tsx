@@ -1,11 +1,9 @@
 import TocIcon from "@mui/icons-material/Toc";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
-import Autocomplete from "@mui/material/Autocomplete";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
-import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Box from "@mui/system/Box";
 import React from "react";
@@ -13,8 +11,7 @@ import React from "react";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { Divider } from "@mui/material";
-import { AutocompleteCache } from "@/web/client/pages/dictionary/autocomplete_cache";
-import { Navigation, RouteContext } from "@/web/client/components/router";
+import { RouteContext } from "@/web/client/components/router";
 import { flushSync } from "react-dom";
 import { DictsLsApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
@@ -31,6 +28,7 @@ import {
   SelfLink,
   xmlNodeToJsx,
 } from "@/web/client/pages/dictionary/dictionary_utils";
+import { DictionarySearch } from "@/web/client/pages/dictionary/autocomplete/search_box";
 
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {
@@ -107,67 +105,6 @@ function OutlineSection(props: {
         </ol>
       )}
     </div>
-  );
-}
-
-function SearchBox(props: { input: string; smallScreen: boolean }) {
-  const [inputState, setInputState] = React.useState<string>(props.input);
-  const [options, setOptions] = React.useState<string[]>([]);
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const nav = React.useContext(RouteContext);
-
-  async function onEnter(searchTerm: string) {
-    if (searchTerm.length === 0) {
-      return;
-    }
-    Navigation.query(nav, searchTerm);
-  }
-
-  return (
-    <Autocomplete
-      freeSolo
-      disableClearable
-      loading={loading}
-      loadingText={"Loading options..."}
-      options={options}
-      filterOptions={(x) => x}
-      sx={{
-        padding: 1,
-        ml: props.smallScreen ? 1 : 2,
-        mr: props.smallScreen ? 1 : 2,
-        mt: 2,
-        mb: 1,
-      }}
-      onInputChange={async (event, value) => {
-        setInputState(value);
-        if (["click", "keydown"].includes(event.type)) {
-          onEnter(value);
-          return;
-        }
-        setLoading(true);
-        const prefixOptions = await AutocompleteCache.get().getOptions(value);
-        setOptions(prefixOptions.slice(0, 200));
-        setLoading(false);
-      }}
-      renderInput={(params) => (
-        <TextField
-          {...params}
-          label="Search for a word"
-          InputLabelProps={{
-            style: { color: Solarized.base1 },
-          }}
-          onKeyPress={(e) => {
-            if (e.key === "Enter") {
-              onEnter(inputState);
-            }
-          }}
-          InputProps={{
-            ...params.InputProps,
-            type: "search",
-          }}
-        />
-      )}
-    />
   );
 }
 
@@ -255,7 +192,7 @@ export function DictionaryView() {
         disableGutters={true}
         ref={searchBarRef}
       >
-        <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
+        <DictionarySearch input={nav.route.query || ""} smallScreen={isSmall} />
       </Container>
     );
   }
