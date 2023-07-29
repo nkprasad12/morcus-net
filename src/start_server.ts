@@ -30,6 +30,8 @@ import { GitHub } from "@/web/utils/github";
 import { MongoLogger } from "@/web/telemetry/mongo_logger";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
+  CompletionsFusedApi,
+  DictsFusedApi,
   DictsLsApi,
   EntriesByPrefixApi,
   MacronizeApi,
@@ -37,6 +39,7 @@ import {
 } from "@/web/api_routes";
 import { ApiHandler, RouteAndHandler } from "@/web/utils/rpc/server_rpc";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
+import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 
 dotenv.config();
 
@@ -76,6 +79,7 @@ const app = express();
 const server = http.createServer(app);
 
 const lewisAndShort = LewisAndShort.create();
+const fusedDict = new FusedDictionary([lewisAndShort]);
 const workServer = new SocketWorkServer(new Server(server));
 const telemetry =
   process.env.CONSOLE_TELEMETRY !== "yes"
@@ -107,6 +111,12 @@ const params: WebServerParams = {
     ),
     createApi(EntriesByPrefixApi, (prefix) =>
       lewisAndShort.getCompletions(prefix)
+    ),
+    createApi(DictsFusedApi, (input, extras) =>
+      fusedDict.getEntry(input, extras)
+    ),
+    createApi(CompletionsFusedApi, (input, extras) =>
+      fusedDict.getCompletions(input, extras)
     ),
   ],
   buildDir: path.join(__dirname, "../genfiles_static"),

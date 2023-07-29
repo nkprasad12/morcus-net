@@ -15,6 +15,8 @@ import { Vowels } from "@/common/character_utils";
 import Database from "better-sqlite3";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { DictInfo } from "@/common/dictionaries/dictionaries";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -31,6 +33,8 @@ export class LewisAndShort {
   private readonly keys: string[];
   private readonly rawKeys: string[][];
   private readonly db: Database.Database;
+
+  readonly info: DictInfo = LatinDict.LewisAndShort;
 
   constructor(dbFile: string = checkPresent(process.env.LS_PROCESSED_PATH)) {
     this.db = new Database(dbFile, { readonly: true });

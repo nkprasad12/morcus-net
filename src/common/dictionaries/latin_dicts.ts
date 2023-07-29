@@ -8,5 +8,12 @@ export namespace LatinDict {
     tags: ["Classical"],
   };
 
+  export const SmithAndHall: DictInfo = {
+    key: "S&H",
+    displayName: "Smith and Hall",
+    languages: { from: "En", to: "La" },
+    tags: ["Classical"],
+  };
+
   export const AVAILABLE: DictInfo[] = [LewisAndShort];
 }
