@@ -8,11 +8,11 @@ import "@testing-library/jest-dom";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { xmlNodeToJsx } from "@/web/client/pages/dictionary";
 import {
   ClickableTooltip,
   SectionLinkTooltip,
 } from "@/web/client/pages/tooltips";
+import { xmlNodeToJsx } from "@/web/client/pages/dictionary_utils";
 
 console.log = jest.fn();
 console.debug = jest.fn();

@@ -8,103 +8,36 @@ import { useTheme } from "@mui/material/styles";
 import TextField from "@mui/material/TextField";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Box from "@mui/system/Box";
-import React, { MutableRefObject } from "react";
+import React from "react";
 
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
-import { XmlNode } from "@/common/xml_node";
 import { Divider } from "@mui/material";
 import { AutocompleteCache } from "@/web/client/pages/autocomplete_cache";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { flushSync } from "react-dom";
-import { checkPresent } from "@/common/assert";
 import { DictsLsApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
-import {
-  ClickableTooltip,
-  SectionLinkTooltip,
-} from "@/web/client/pages/tooltips";
 import { getBuildDate } from "@/web/client/define_vars";
 import { Footer } from "@/web/client/components/footer";
+import {
+  ERROR_MESSAGE,
+  HELP_ENTRY,
+  LOADING_ENTRY,
+  SCROLL_JUMP,
+  SCROLL_SMOOTH,
+  SelfLink,
+  xmlNodeToJsx,
+} from "@/web/client/pages/dictionary_utils";
 
-const SCROLL_JUMP: ScrollIntoViewOptions = {
-  behavior: "auto",
-  block: "start",
-};
-const SCROLL_SMOOTH: ScrollIntoViewOptions = {
-  behavior: "smooth",
-  block: "start",
-};
-const ERROR_MESSAGE = {
-  entry: new XmlNode(
-    "span",
-    [],
-    ["Failed to fetch the entry. Please try again later."]
-  ),
-};
-const HIGHLIGHT_HELP = new XmlNode(
-  "div",
-  [["className", "lsHelpText"]],
-  [
-    "Click on ",
-    new XmlNode(
-      "span",
-      [
-        ["class", "lsHover"],
-        ["title", "Click to dismiss"],
-      ],
-      ["underlined"]
-    ),
-    " text for more details. ",
-  ]
-);
-const BUG_HELP = new XmlNode(
-  "div",
-  // This is displayed last, so do not apply the help text style to
-  // avoid an extra margin. Yes, this is gross and hacky.
-  [],
-  [
-    "Please report typos or other bugs " +
-      "by clicking on the flag icon in the top bar.",
-  ]
-);
-const BULLET_HELP = new XmlNode(
-  "div",
-  [["className", "lsHelpText"]],
-  [
-    "Click on sections (like ",
-    new XmlNode(
-      "span",
-      [
-        ["class", "lsSenseBullet"],
-        ["senseid", "tutorialExample"],
-      ],
-      [" A. "]
-    ),
-    ") to link directly to that section.",
-  ]
-);
-const HELP_ENTRY = new XmlNode(
-  "div",
-  [],
-  [HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
-);
-
-const LOADING_ENTRY = xmlNodeToJsx(
-  new XmlNode(
-    "div",
-    [],
-    [
-      "Please wait - checking for results." +
-        "Dedit oscula nato non iterum repetenda suo ".repeat(3),
-    ]
-  )
-);
-
-function SelfLink(props: { to: string }) {
-  return <a href={props.to}>{props.to}</a>;
+async function fetchEntry(input: string): Promise<LsResult[]> {
+  try {
+    return await callApi(DictsLsApi, input);
+  } catch (e) {
+    return [ERROR_MESSAGE];
+  }
 }
 
 function OutlineSection(props: {
@@ -175,92 +108,6 @@ function OutlineSection(props: {
       )}
     </div>
   );
-}
-
-export function xmlNodeToJsx(
-  root: XmlNode,
-  highlightId?: string,
-  sectionRef?: MutableRefObject<HTMLElement | null>,
-  key?: string
-): JSX.Element {
-  const children = root.children.map((child, i) => {
-    if (typeof child === "string") {
-      return child;
-    }
-    return xmlNodeToJsx(
-      child,
-      highlightId,
-      sectionRef,
-      child.getAttr("id") || `${i}`
-    );
-  });
-  const props: { [propKey: string]: any } = {};
-  if (key !== undefined) {
-    props.key = key;
-  }
-  let titleText: string | undefined = undefined;
-  let className: string | undefined = undefined;
-  for (const [attrKey, value] of root.attrs) {
-    if (attrKey === "class") {
-      className = value;
-      props.className = value;
-      continue;
-    }
-    if (attrKey === "title") {
-      titleText = value;
-      continue;
-    }
-    props[attrKey] = value;
-  }
-
-  if (titleText !== undefined) {
-    function hoverForwardedNode(forwardProps: any, forwardRef: any) {
-      const allProps = { ...props, ...forwardProps };
-      allProps["ref"] = forwardRef;
-      return React.createElement(root.name, allProps, children);
-    }
-    const ForwardedNode = React.forwardRef<HTMLElement>(hoverForwardedNode);
-    return (
-      <ClickableTooltip
-        titleText={titleText}
-        className={className}
-        ChildFactory={ForwardedNode}
-        key={key}
-      />
-    );
-  } else if (className === "lsSenseBullet") {
-    function senseForwardedNode(forwardProps: any, forwardRef: any) {
-      const allProps = { ...props, ...forwardProps };
-      allProps["ref"] = forwardRef;
-      return React.createElement(root.name, allProps, children);
-    }
-    const ForwardedNode = React.forwardRef<HTMLElement>(senseForwardedNode);
-    return (
-      <SectionLinkTooltip
-        forwarded={ForwardedNode}
-        className={className}
-        senseId={checkPresent(
-          root.getAttr("senseid"),
-          "lsSenseBullet must have senseid!"
-        )}
-        key={key}
-      />
-    );
-  } else {
-    if (root.getAttr("id") === highlightId && highlightId !== undefined) {
-      props["className"] = "highlighted";
-      props["ref"] = sectionRef!;
-    }
-    return React.createElement(root.name, props, children);
-  }
-}
-
-async function fetchEntry(input: string): Promise<LsResult[]> {
-  try {
-    return await callApi(DictsLsApi, input);
-  } catch (e) {
-    return [ERROR_MESSAGE];
-  }
 }
 
 function SearchBox(props: { input: string; smallScreen: boolean }) {

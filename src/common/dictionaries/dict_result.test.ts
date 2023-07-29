@@ -37,6 +37,7 @@ describe("Dict Result API types", () => {
     const result = {
       entry: input,
       outline: {
+        mainOrth: "foooo",
         mainSection: {
           text: "foo",
           level: 1,
