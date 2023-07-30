@@ -1,6 +1,6 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { removeDiacritics } from "@/common/text_cleaning";
-import { FusedAutocompleteFetcher } from "@/web/client/pages/dictionary/autocomplete/fused_autocomplete_fetcher";
+import { FusedAutocompleteFetcher } from "@/web/client/pages/dictionary/search/fused_autocomplete_fetcher";
 
 const EXTRA_KEY_LOOKUP = new Map<string, string>([
   ["u", "v"],

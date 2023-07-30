@@ -2,7 +2,7 @@ import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { Solarized } from "@/web/client/colors";
 import { RouteContext, Navigation } from "@/web/client/components/router";
-import { autocompleteOptions } from "@/web/client/pages/dictionary/autocomplete/autocomplete_options";
+import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { isString } from "@/web/utils/rpc/parsing";
 import { Autocomplete, TextField } from "@mui/material";
 import React from "react";
@@ -30,7 +30,7 @@ export function DictionarySearch(props: {
   input: string;
   smallScreen: boolean;
 }) {
-  // const [inputState, setInputState] = React.useState<string>(props.input);
+  const input = React.useRef<string>("");
   const [options, setOptions] = React.useState<[DictInfo, string][]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
   const nav = React.useContext(RouteContext);
@@ -70,34 +70,16 @@ export function DictionarySearch(props: {
         mb: 1,
       }}
       getOptionLabel={(option) => (isString(option) ? option : option[1])}
-      onKeyDown={(event) => {
-        console.log(`onKeyDown ${event.key} | ${event.type}`);
-        console.log(event.currentTarget);
-        event.persist;
-      }}
+      onKeyUp={(event) => (event.key === "Enter" ? onEnter(input.current) : "")}
       onInputChange={async (event, value) => {
         if (event.type === "click") {
           return;
         }
-        console.log(`onInputChange ${value} | ${event.type}`);
-        if (
-          event.type === "click" ||
-          // @ts-ignore
-          (event.type === "keydown" && event.key === "Enter")
-        ) {
-          onEnter(value);
-          return;
-        }
+        input.current = value;
         loadOptions(value);
       }}
       renderOption={(props, option) => (
-        <li
-          {...props}
-          onClick={() => onEnter(option[1])}
-          onKeyDown={(e) => {
-            console.log("li onKeyDown");
-          }}
-        >
+        <li {...props} onClick={() => onEnter(option[1])}>
           <DictChip info={option[0]} />
           <span>{option[1]}</span>
         </li>
