@@ -6,14 +6,21 @@ import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autoco
 import { isString } from "@/web/utils/rpc/parsing";
 import {
   Autocomplete,
+  Button,
+  DialogActions,
+  FormControlLabel,
+  FormGroup,
   IconButton,
   InputAdornment,
+  Switch,
   TextField,
 } from "@mui/material";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SearchIcon from "@mui/icons-material/Search";
-import Stack from "@mui/material/Stack";
 import React from "react";
+import Dialog from "@mui/material/Dialog";
+import DialogContent from "@mui/material/DialogContent";
+import DialogTitle from "@mui/material/DialogTitle";
 
 function DictChip(props: { label: string }) {
   return (
@@ -33,11 +40,67 @@ function DictChip(props: { label: string }) {
   );
 }
 
+function SearchSettingsDialog(props: {
+  open: boolean;
+  onClose: () => any;
+  dicts: DictInfo[];
+  onDictChanged: (changed: DictInfo, present: boolean) => any;
+}) {
+  return (
+    <Dialog open={props.open} onClose={props.onClose} sx={{ top: "-40%" }}>
+      <DialogTitle>Dictionary Options</DialogTitle>
+      <DialogContent>
+        <FormGroup>
+          {LatinDict.AVAILABLE.map((dict) => (
+            <FormControlLabel
+              key={dict.key}
+              control={
+                <Switch
+                  checked={props.dicts.includes(dict)}
+                  onChange={(e) => props.onDictChanged(dict, e.target.checked)}
+                />
+              }
+              label={
+                <span>
+                  <DictChip label={dict.key} /> {dict.displayName}
+                </span>
+              }
+            />
+          ))}
+        </FormGroup>
+      </DialogContent>
+      <DialogActions>
+        <Button autoFocus onClick={props.onClose} color="info">
+          Close
+        </Button>
+      </DialogActions>
+    </Dialog>
+  );
+}
+
+function SearchSettings(props: { onOpenSettings: () => any }): JSX.Element {
+  return (
+    <IconButton
+      aria-label="search settings"
+      aria-haspopup="true"
+      sx={{ marginRight: 0.5 }}
+      onClick={props.onOpenSettings}
+      id="DictSearchSettingsButton"
+    >
+      <SettingsIcon fontSize="medium" sx={{ color: Solarized.base1 }} />
+    </IconButton>
+  );
+}
+
 export function DictionarySearch(props: { smallScreen: boolean }) {
   const input = React.useRef<string>("");
   const [options, setOptions] = React.useState<[DictInfo, string][]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
   const nav = React.useContext(RouteContext);
+  const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
+  const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
+    LatinDict.AVAILABLE
+  );
 
   async function onEnter(searchTerm: string) {
     if (searchTerm.length === 0) {
@@ -50,7 +113,7 @@ export function DictionarySearch(props: { smallScreen: boolean }) {
     setLoading(true);
     const prefixOptions = await autocompleteOptions(
       searchTerm,
-      LatinDict.AVAILABLE,
+      dictsToUse,
       200
     );
     setOptions(prefixOptions);
@@ -58,38 +121,54 @@ export function DictionarySearch(props: { smallScreen: boolean }) {
   }
 
   return (
-    <Autocomplete
-      freeSolo
-      disableClearable
-      loading={loading}
-      loadingText={"Loading options..."}
-      options={options}
-      filterOptions={(x) => x}
-      sx={{
-        padding: 1,
-        paddingTop: 2,
-        ml: props.smallScreen ? 1 : 2,
-        mr: props.smallScreen ? 1 : 2,
-        mt: 2,
-        mb: 1,
-      }}
-      getOptionLabel={(option) => (isString(option) ? option : option[1])}
-      onKeyUp={(event) => (event.key === "Enter" ? onEnter(input.current) : "")}
-      onInputChange={async (event, value) => {
-        if (event.type === "click") {
-          return;
+    <>
+      <SearchSettingsDialog
+        open={dialogOpen}
+        onClose={() => setDialogOpen(false)}
+        dicts={dictsToUse}
+        onDictChanged={(dict, present) => {
+          const items = new Set(dictsToUse);
+          if (present) {
+            items.add(dict);
+          } else {
+            items.delete(dict);
+          }
+          setDictsToUse([...items]);
+        }}
+      />
+      <Autocomplete
+        freeSolo
+        disableClearable
+        loading={loading}
+        loadingText={"Loading options..."}
+        options={options}
+        filterOptions={(x) => x}
+        sx={{
+          padding: 1,
+          paddingTop: 2,
+          ml: props.smallScreen ? 1 : 2,
+          mr: props.smallScreen ? 1 : 2,
+          mt: 2,
+          mb: 1,
+        }}
+        getOptionLabel={(option) => (isString(option) ? option : option[1])}
+        onKeyUp={(event) =>
+          event.key === "Enter" ? onEnter(input.current) : ""
         }
-        input.current = value;
-        loadOptions(value);
-      }}
-      renderOption={(props, option) => (
-        <li {...props} onClick={() => onEnter(option[1])}>
-          <DictChip label={option[0].key} />
-          <span style={{ marginLeft: 10 }}>{option[1]}</span>
-        </li>
-      )}
-      renderInput={(params) => (
-        <Stack direction="row" spacing={2}>
+        onInputChange={async (event, value) => {
+          if (event.type === "click") {
+            return;
+          }
+          input.current = value;
+          loadOptions(value);
+        }}
+        renderOption={(props, option) => (
+          <li {...props} onClick={() => onEnter(option[1])}>
+            <DictChip label={option[0].key} />
+            <span style={{ marginLeft: 10 }}>{option[1]}</span>
+          </li>
+        )}
+        renderInput={(params) => (
           <TextField
             {...params}
             label="Search for a word"
@@ -99,7 +178,6 @@ export function DictionarySearch(props: { smallScreen: boolean }) {
             autoFocus
             InputProps={{
               ...params.InputProps,
-              // type: "search",
               startAdornment: (
                 <InputAdornment position="start">
                   <SearchIcon
@@ -110,22 +188,13 @@ export function DictionarySearch(props: { smallScreen: boolean }) {
               ),
               endAdornment: (
                 <InputAdornment position="end">
-                  <IconButton
-                    aria-label="search settings"
-                    aria-haspopup="true"
-                    sx={{ marginRight: 0.5 }}
-                  >
-                    <SettingsIcon
-                      fontSize="medium"
-                      sx={{ color: Solarized.base1 }}
-                    />
-                  </IconButton>
+                  <SearchSettings onOpenSettings={() => setDialogOpen(true)} />
                 </InputAdornment>
               ),
             }}
           />
-        </Stack>
-      )}
-    />
+        )}
+      />
+    </>
   );
 }
