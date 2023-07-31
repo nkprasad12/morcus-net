@@ -61,6 +61,10 @@ const ED1: DictInfo = {
 };
 
 describe("autocompleteOptions", () => {
+  it("returns empty on empty", async () => {
+    expect(await autocompleteOptions("", [LD1])).toEqual([]);
+  });
+
   it("handles underlying error", async () => {
     setApiResult(new Error());
     const result = await autocompleteOptions("ab", [LD1]);

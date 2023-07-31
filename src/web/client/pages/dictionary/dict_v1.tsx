@@ -28,7 +28,7 @@ import {
   SelfLink,
   xmlNodeToJsx,
 } from "@/web/client/pages/dictionary/dictionary_utils";
-import { DictionarySearch } from "@/web/client/pages/dictionary/search/search_box";
+import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {

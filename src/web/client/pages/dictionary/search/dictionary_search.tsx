@@ -26,10 +26,7 @@ function DictChip(props: { info: DictInfo }) {
   );
 }
 
-export function DictionarySearch(props: {
-  input: string;
-  smallScreen: boolean;
-}) {
+export function DictionarySearch(props: { smallScreen: boolean }) {
   const input = React.useRef<string>("");
   const [options, setOptions] = React.useState<[DictInfo, string][]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
