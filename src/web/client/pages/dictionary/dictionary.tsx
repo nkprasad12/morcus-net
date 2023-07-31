@@ -31,6 +31,8 @@ import {
   SelfLink,
   xmlNodeToJsx,
 } from "@/web/client/pages/dictionary/dictionary_utils";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {
@@ -249,13 +251,19 @@ export function DictionaryView() {
   }, [nav.route.query]);
 
   function SearchBar(props: { maxWidth: "md" | "lg" | "xl" }) {
+    const globalSettings = React.useContext(GlobalSettingsContext);
+
     return (
       <Container
         maxWidth={props.maxWidth}
         disableGutters={true}
         ref={searchBarRef}
       >
-        <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
+        {globalSettings.data.experimentalMode ? (
+          <DictionarySearch smallScreen={isSmall} />
+        ) : (
+          <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
+        )}
       </Container>
     );
   }
