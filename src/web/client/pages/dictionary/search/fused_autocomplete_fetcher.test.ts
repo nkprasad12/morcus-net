@@ -55,7 +55,7 @@ describe("FusedAutoCompleteFetcher", () => {
 
     const result = new FusedAutocompleteFetcher().getOptions(request);
 
-    expect(result).rejects;
+    expect(result).rejects.toThrow();
   });
 
   it("rejects on too long input", async () => {
@@ -64,7 +64,7 @@ describe("FusedAutoCompleteFetcher", () => {
 
     const result = new FusedAutocompleteFetcher().getOptions(request);
 
-    expect(result).rejects;
+    expect(result).rejects.toThrow();
   });
 
   it("returns single results on request", async () => {
@@ -149,36 +149,4 @@ describe("FusedAutoCompleteFetcher", () => {
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toEqual({ query: "a", dicts: ["SH"] });
   });
-
-  //   it("returns expected substrings", async () => {
-  //     setApiResult(ALL_DICTS);
-
-  //     const result = await new FusedAutocompleteFetcher().getOptions("aba");
-
-  //     expect(result).toStrictEqual(["abago"]);
-  //     expect(mockCallApi).toHaveBeenCalledTimes(1);
-  //   });
-
-  //   it("fetches alternate character completions", async () => {
-  //     setApiResult(ALL_DICTS);
-
-  //     await new FusedAutocompleteFetcher().getOptions("i");
-
-  //     const calls = mockCallApi.mock.calls.map((call) => call[1]);
-  //     expect(calls).toHaveLength(2);
-  //     expect(calls[0].endsWith("/i"));
-  //     expect(calls[1].endsWith("/j"));
-  //   });
-
-  //   it("displays correct options with special start character", async () => {
-  //     setApiResult(ALL_DICTS);
-  //     const result = await new FusedAutocompleteFetcher().getOptions("i");
-  //     expect(result).toStrictEqual(["insunt", "jam"]);
-  //   });
-
-  //   it("displays correct options with internal character", async () => {
-  //     setApiResult(ALL_DICTS);
-  //     const result = await new FusedAutocompleteFetcher().getOptions("insv");
-  //     expect(result).toStrictEqual(["insunt"]);
-  //   });
 });

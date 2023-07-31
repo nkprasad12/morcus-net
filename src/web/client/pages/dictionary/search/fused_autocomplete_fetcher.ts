@@ -5,7 +5,7 @@ import {
   CompletionsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
 import { CompletionsFusedApi } from "@/web/api_routes";
-import { checkPresent } from "@/common/assert";
+import { assertEqual, checkPresent } from "@/common/assert";
 
 interface CachePair {
   dictKey: string;
@@ -51,13 +51,11 @@ export class FusedAutocompleteFetcher {
   async getOptions(
     request: CompletionsFusedRequest
   ): Promise<CompletionsFusedResponse> {
+    assertEqual(request.query.length, 1);
     const queryKey = removeDiacritics(request.query).toLowerCase();
     const response: Record<string, string[]> = {};
     for (const dictKey of request.dicts) {
       response[dictKey] = [];
-    }
-    if (queryKey.length !== 1) {
-      return response;
     }
 
     const allKeys = request.dicts.map((dictKey) => ({ dictKey, queryKey }));
