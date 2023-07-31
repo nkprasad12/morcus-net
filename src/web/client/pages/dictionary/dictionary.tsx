@@ -13,7 +13,7 @@ import React from "react";
 import { Solarized } from "@/web/client/colors";
 import Typography from "@mui/material/Typography";
 import { Divider } from "@mui/material";
-import { AutocompleteCache } from "@/web/client/pages/autocomplete_cache";
+import { AutocompleteCache } from "@/web/client/pages/dictionary/autocomplete_cache";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { flushSync } from "react-dom";
 import { DictsLsApi } from "@/web/api_routes";
@@ -30,7 +30,7 @@ import {
   SCROLL_SMOOTH,
   SelfLink,
   xmlNodeToJsx,
-} from "@/web/client/pages/dictionary_utils";
+} from "@/web/client/pages/dictionary/dictionary_utils";
 
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {

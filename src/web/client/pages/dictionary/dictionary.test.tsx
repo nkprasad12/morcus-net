@@ -8,7 +8,7 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
-import { DictionaryView } from "@/web/client/pages/dictionary";
+import { DictionaryView } from "@/web/client/pages/dictionary/dictionary";
 import { RouteContext } from "@/web/client/components/router";
 
 jest.mock("@mui/material/useMediaQuery", () => {

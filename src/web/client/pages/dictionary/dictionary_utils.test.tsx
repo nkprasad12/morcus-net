@@ -12,7 +12,7 @@ import {
   ClickableTooltip,
   SectionLinkTooltip,
 } from "@/web/client/pages/tooltips";
-import { xmlNodeToJsx } from "@/web/client/pages/dictionary_utils";
+import { xmlNodeToJsx } from "@/web/client/pages/dictionary/dictionary_utils";
 
 console.log = jest.fn();
 console.debug = jest.fn();
