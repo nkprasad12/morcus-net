@@ -4,14 +4,21 @@ import { Solarized } from "@/web/client/colors";
 import { RouteContext, Navigation } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { isString } from "@/web/utils/rpc/parsing";
-import { Autocomplete, TextField } from "@mui/material";
+import {
+  Autocomplete,
+  IconButton,
+  InputAdornment,
+  TextField,
+} from "@mui/material";
+import SettingsIcon from "@mui/icons-material/Settings";
+import SearchIcon from "@mui/icons-material/Search";
+import Stack from "@mui/material/Stack";
 import React from "react";
 
-function DictChip(props: { info: DictInfo }) {
+function DictChip(props: { label: string }) {
   return (
     <span
       style={{
-        marginRight: 10,
         backgroundColor: Solarized.base2 + "40",
         color: Solarized.base1,
         borderRadius: 4,
@@ -21,7 +28,7 @@ function DictChip(props: { info: DictInfo }) {
         fontFamily: "monospace",
       }}
     >
-      {props.info.key}
+      {props.label}
     </span>
   );
 }
@@ -77,23 +84,47 @@ export function DictionarySearch(props: { smallScreen: boolean }) {
       }}
       renderOption={(props, option) => (
         <li {...props} onClick={() => onEnter(option[1])}>
-          <DictChip info={option[0]} />
-          <span>{option[1]}</span>
+          <DictChip label={option[0].key} />
+          <span style={{ marginLeft: 10 }}>{option[1]}</span>
         </li>
       )}
       renderInput={(params) => (
-        <TextField
-          {...params}
-          label="Search for a word"
-          InputLabelProps={{
-            style: { color: Solarized.base1 },
-          }}
-          autoFocus
-          InputProps={{
-            ...params.InputProps,
-            type: "search",
-          }}
-        />
+        <Stack direction="row" spacing={2}>
+          <TextField
+            {...params}
+            label="Search for a word"
+            InputLabelProps={{
+              style: { color: Solarized.base1 },
+            }}
+            autoFocus
+            InputProps={{
+              ...params.InputProps,
+              // type: "search",
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon
+                    fontSize="medium"
+                    sx={{ marginLeft: 1.4, color: Solarized.base1 + "40" }}
+                  />
+                </InputAdornment>
+              ),
+              endAdornment: (
+                <InputAdornment position="end">
+                  <IconButton
+                    aria-label="search settings"
+                    aria-haspopup="true"
+                    sx={{ marginRight: 0.5 }}
+                  >
+                    <SettingsIcon
+                      fontSize="medium"
+                      sx={{ color: Solarized.base1 }}
+                    />
+                  </IconButton>
+                </InputAdornment>
+              ),
+            }}
+          />
+        </Stack>
       )}
     />
   );
