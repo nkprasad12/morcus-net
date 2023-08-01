@@ -60,7 +60,12 @@ function SearchSettingsDialog(props: {
   }
 
   return (
-    <Dialog open={props.open} onClose={onClose} sx={{ top: "-40%" }}>
+    <Dialog
+      open={props.open}
+      onClose={onClose}
+      sx={{ top: "-40%" }}
+      disableScrollLock={true}
+    >
       <DialogTitle>Dictionary Options</DialogTitle>
       <DialogContent>
         <FormGroup>
