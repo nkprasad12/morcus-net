@@ -188,7 +188,7 @@ export function DictionarySearch(props: {
             InputLabelProps={{
               style: { color: Solarized.base1 },
             }}
-            autoFocus
+            autoFocus={nav.route.query === undefined}
             InputProps={{
               ...params.InputProps,
               startAdornment: (
