@@ -36,6 +36,23 @@ import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionar
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
+export namespace SearchSettings {
+  const SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY";
+
+  export function store(dicts: DictInfo[]) {
+    const keys = dicts.map((dict) => dict.key);
+    sessionStorage.setItem(SEARCH_SETTINGS_KEY, keys.join(";"));
+  }
+
+  export function retrieve(): DictInfo[] {
+    const stored = sessionStorage.getItem(SEARCH_SETTINGS_KEY)?.split(";");
+    if (stored === undefined) {
+      return LatinDict.AVAILABLE;
+    }
+    return LatinDict.AVAILABLE.filter((d) => stored.includes(d.key));
+  }
+}
+
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {
     return await callApi(DictsLsApi, input);
@@ -226,7 +243,7 @@ export function DictionaryView() {
   const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
   const [outlines, setOutlines] = React.useState<(LsOutline | undefined)[]>([]);
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
-    LatinDict.AVAILABLE
+    SearchSettings.retrieve()
   );
   const theme = useTheme();
 
@@ -271,7 +288,10 @@ export function DictionaryView() {
           <DictionarySearch
             smallScreen={isSmall}
             dicts={dictsToUse}
-            setDicts={setDictsToUse}
+            setDicts={(newDicts) => {
+              SearchSettings.store(newDicts);
+              setDictsToUse(newDicts);
+            }}
           />
         ) : (
           <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />

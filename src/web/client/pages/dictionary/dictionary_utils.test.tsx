@@ -13,6 +13,8 @@ import {
   SectionLinkTooltip,
 } from "@/web/client/pages/tooltips";
 import { xmlNodeToJsx } from "@/web/client/pages/dictionary/dictionary_utils";
+import { SearchSettings } from "@/web/client/pages/dictionary/dictionary";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 console.log = jest.fn();
 console.debug = jest.fn();
@@ -199,5 +201,25 @@ describe("SectionLinkTooltip", () => {
 
     expect(screen.queryByText(/copy manually/)).toBeNull();
     expect(screen.queryByText(/section link/)).not.toBeVisible();
+  });
+});
+
+describe("SearchSettings", () => {
+  beforeEach(() => {
+    window.sessionStorage.clear();
+  });
+
+  it("returns full list on retrieve without store", () => {
+    expect(SearchSettings.retrieve()).toStrictEqual(LatinDict.AVAILABLE);
+  });
+
+  it("returns empty list for empty store", () => {
+    SearchSettings.store([]);
+    expect(SearchSettings.retrieve()).toStrictEqual([]);
+  });
+
+  it("returns expected list for other store", () => {
+    SearchSettings.store([LatinDict.LewisAndShort]);
+    expect(SearchSettings.retrieve()).toStrictEqual([LatinDict.LewisAndShort]);
   });
 });
