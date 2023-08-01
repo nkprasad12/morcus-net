@@ -19,6 +19,8 @@ afterEach(() => {
   mockAutocomplete.mockReset();
 });
 
+const BOTH_DICTS = [LatinDict.LewisAndShort, LatinDict.SmithAndHall];
+
 describe("DictionarySearch", () => {
   beforeEach(() => {
     mockAutocomplete.mockResolvedValue([
@@ -28,7 +30,13 @@ describe("DictionarySearch", () => {
   });
 
   it("shows options on type", async () => {
-    render(<DictionarySearch smallScreen={false} />);
+    render(
+      <DictionarySearch
+        smallScreen={false}
+        dicts={BOTH_DICTS}
+        onDictChanged={() => {}}
+      />
+    );
     expect(screen.queryByText("ab")).toBeNull();
     expect(screen.queryByText("ack")).toBeNull();
     const search = screen.getByRole("combobox");
@@ -46,7 +54,11 @@ describe("DictionarySearch", () => {
       <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}
       >
-        <DictionarySearch smallScreen={false} />
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          onDictChanged={() => {}}
+        />
       </RouteContext.Provider>
     );
     const search = screen.getByRole("combobox");
@@ -65,7 +77,11 @@ describe("DictionarySearch", () => {
       <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}
       >
-        <DictionarySearch smallScreen={false} />
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          onDictChanged={() => {}}
+        />
       </RouteContext.Provider>
     );
     const search = screen.getByRole("combobox");
@@ -84,7 +100,11 @@ describe("DictionarySearch", () => {
       <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}
       >
-        <DictionarySearch smallScreen={false} />
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          onDictChanged={() => {}}
+        />
       </RouteContext.Provider>
     );
     const search = screen.getByRole("combobox");
@@ -99,26 +119,30 @@ describe("DictionarySearch", () => {
   });
 
   it("has an options menu that disables and enables dicts", async () => {
+    const mockOnDictChanged = jest.fn();
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}
       >
-        <DictionarySearch smallScreen={false} />
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          onDictChanged={mockOnDictChanged}
+        />
       </RouteContext.Provider>
     );
     expect(screen.queryByText("Dictionary Options")).toBeNull();
-    const search = screen.getByRole("combobox");
-
-    // Open the dialog, change a setting, and click out of the dialog.
     const settings = screen.getByLabelText("search settings");
     await user.click(settings);
+
     expect(screen.queryByText("Dictionary Options")).not.toBeNull();
     const lsCheck = screen.getByRole("checkbox");
     await user.click(lsCheck);
+    expect(mockOnDictChanged).toHaveBeenLastCalledWith(
+      LatinDict.LewisAndShort,
+      false
+    );
     await user.click(screen.getByText("Close"));
-
-    await user.type(search, "a");
-    expect(mockAutocomplete).toHaveBeenLastCalledWith("a", [], 200);
   });
 });

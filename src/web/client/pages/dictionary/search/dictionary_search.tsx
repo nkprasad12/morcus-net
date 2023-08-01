@@ -92,15 +92,16 @@ function SearchSettings(props: { onOpenSettings: () => any }): JSX.Element {
   );
 }
 
-export function DictionarySearch(props: { smallScreen: boolean }) {
+export function DictionarySearch(props: {
+  smallScreen: boolean;
+  dicts: DictInfo[];
+  onDictChanged: (changed: DictInfo, present: boolean) => any;
+}) {
   const input = React.useRef<string>("");
   const [options, setOptions] = React.useState<[DictInfo, string][]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
   const nav = React.useContext(RouteContext);
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
-  const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
-    LatinDict.AVAILABLE
-  );
 
   async function onEnter(searchTerm: string) {
     if (searchTerm.length === 0) {
@@ -113,7 +114,7 @@ export function DictionarySearch(props: { smallScreen: boolean }) {
     setLoading(true);
     const prefixOptions = await autocompleteOptions(
       searchTerm,
-      dictsToUse,
+      props.dicts,
       200
     );
     setOptions(prefixOptions);
@@ -125,16 +126,8 @@ export function DictionarySearch(props: { smallScreen: boolean }) {
       <SearchSettingsDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
-        dicts={dictsToUse}
-        onDictChanged={(dict, present) => {
-          const items = new Set(dictsToUse);
-          if (present) {
-            items.add(dict);
-          } else {
-            items.delete(dict);
-          }
-          setDictsToUse([...items]);
-        }}
+        dicts={props.dicts}
+        onDictChanged={props.onDictChanged}
       />
       <Autocomplete
         freeSolo

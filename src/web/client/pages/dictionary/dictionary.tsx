@@ -33,6 +33,8 @@ import {
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
+import { DictInfo } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {
@@ -180,9 +182,52 @@ interface ElementAndKey {
 
 const noSsr = { noSsr: true };
 
+function ContentBox(props: {
+  children: JSX.Element;
+  isSmall: boolean;
+  contentKey?: string;
+  contentRef?: React.RefObject<HTMLElement>;
+  ml?: string;
+  mr?: string;
+}) {
+  const isSmall = props.isSmall;
+
+  return (
+    <>
+      <Box
+        sx={{
+          paddingY: 1,
+          paddingLeft: isSmall ? 0 : 1,
+          ml: props.ml || (isSmall ? 0 : 3),
+          mr: props.mr || (isSmall ? 0 : 3),
+          mt: 1,
+          mb: 2,
+          borderColor: Solarized.base2,
+        }}
+        key={props.contentKey}
+        ref={props.contentRef}
+      >
+        <Typography
+          component={"div"}
+          style={{
+            whiteSpace: "pre-wrap",
+            color: Solarized.base02,
+          }}
+        >
+          {props.children}
+        </Typography>
+      </Box>
+      <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
+    </>
+  );
+}
+
 export function DictionaryView() {
   const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
   const [outlines, setOutlines] = React.useState<(LsOutline | undefined)[]>([]);
+  const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
+    LatinDict.AVAILABLE
+  );
   const theme = useTheme();
 
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
@@ -192,43 +237,6 @@ export function DictionaryView() {
   const tocRef = React.useRef<HTMLElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
   const searchBarRef = React.useRef<HTMLDivElement>(null);
-
-  function ContentBox(props: {
-    children: JSX.Element;
-    contentKey?: string;
-    contentRef?: React.RefObject<HTMLElement>;
-    ml?: string;
-    mr?: string;
-  }) {
-    return (
-      <>
-        <Box
-          sx={{
-            paddingY: 1,
-            paddingLeft: isSmall ? 0 : 1,
-            ml: props.ml || (isSmall ? 0 : 3),
-            mr: props.mr || (isSmall ? 0 : 3),
-            mt: 1,
-            mb: 2,
-            borderColor: Solarized.base2,
-          }}
-          key={props.contentKey}
-          ref={props.contentRef}
-        >
-          <Typography
-            component={"div"}
-            style={{
-              whiteSpace: "pre-wrap",
-              color: Solarized.base02,
-            }}
-          >
-            {props.children}
-          </Typography>
-        </Box>
-        <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
-      </>
-    );
-  }
 
   React.useEffect(() => {
     if (nav.route.query !== undefined) {
@@ -260,7 +268,19 @@ export function DictionaryView() {
         ref={searchBarRef}
       >
         {globalSettings.data.experimentalMode ? (
-          <DictionarySearch smallScreen={isSmall} />
+          <DictionarySearch
+            smallScreen={isSmall}
+            dicts={dictsToUse}
+            onDictChanged={(dict, present) => {
+              const items = new Set(dictsToUse);
+              if (present) {
+                items.add(dict);
+              } else {
+                items.delete(dict);
+              }
+              setDictsToUse([...items]);
+            }}
+          />
         ) : (
           <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />
         )}
@@ -275,6 +295,7 @@ export function DictionaryView() {
           <ContentBox
             key="tableOfContents"
             contentRef={tocRef}
+            isSmall={isSmall}
             ml="0px"
             mr="0px"
           >
@@ -309,7 +330,7 @@ export function DictionaryView() {
     return (
       <>
         {entries.length > 0 && (
-          <ContentBox key="searchHeader">
+          <ContentBox key="searchHeader" isSmall={isSmall}>
             <div style={{ fontSize: 16, lineHeight: "normal" }}>
               {xmlNodeToJsx(HELP_ENTRY)}
             </div>
@@ -319,14 +340,21 @@ export function DictionaryView() {
     );
   }
 
-  function DictionaryEntries() {
+  function DictionaryEntries(props: {
+    isSmall: boolean;
+    entries: ElementAndKey[];
+  }) {
+    const entries = props.entries;
+
     return (
       <>
         {entries.map((entry) => (
-          <ContentBox key={entry.key}>{entry.element}</ContentBox>
+          <ContentBox key={entry.key} isSmall={props.isSmall}>
+            {entry.element}
+          </ContentBox>
         ))}
         {entries.length > 0 && (
-          <ContentBox key="attributionBox">
+          <ContentBox key="attributionBox" isSmall={props.isSmall}>
             <div style={{ fontSize: 15, lineHeight: "normal" }}>
               <div>
                 Text provided under a CC BY-SA license by Perseus Digital
@@ -375,7 +403,7 @@ export function DictionaryView() {
             <TableOfContents />
           </div>
           <div ref={entriesRef}>
-            <DictionaryEntries />
+            <DictionaryEntries isSmall={isSmall} entries={entries} />
             {entries.length > 0 && (
               <TocIcon
                 onClick={() => tocRef.current?.scrollIntoView(SCROLL_JUMP)}
@@ -427,7 +455,7 @@ export function DictionaryView() {
           <div style={{ maxWidth: "10000px" }}>
             <SearchBar maxWidth="xl" />
             <SearchHeader />
-            <DictionaryEntries />
+            <DictionaryEntries isSmall={isSmall} entries={entries} />
             <span
               key={"horizonatalSpacePlaceholder"}
               style={{ color: Solarized.base3, cursor: "default" }}
