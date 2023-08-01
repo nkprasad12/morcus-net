@@ -128,6 +128,8 @@ export function DictionarySearch(props: {
   const nav = React.useContext(RouteContext);
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
 
+  const numDicts = props.dicts.length;
+
   async function onEnter(searchTerm: string) {
     if (searchTerm.length === 0) {
       return;
@@ -189,7 +191,14 @@ export function DictionarySearch(props: {
         renderInput={(params) => (
           <TextField
             {...params}
-            label="Search for a word"
+            label={
+              numDicts === 0
+                ? "Enable a dictionary in settings"
+                : `Search for a word (${props.dicts
+                    .map((d) => d.key)
+                    .join(",")})`
+            }
+            error={numDicts === 0}
             InputLabelProps={{
               style: { color: Solarized.base1 },
             }}
