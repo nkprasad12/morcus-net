@@ -44,10 +44,23 @@ function SearchSettingsDialog(props: {
   open: boolean;
   onClose: () => any;
   dicts: DictInfo[];
-  onDictChanged: (changed: DictInfo, present: boolean) => any;
+  setDicts: (newDicts: DictInfo[]) => any;
 }) {
+  const [pending, setPending] = React.useState<Set<DictInfo>>(
+    new Set(props.dicts)
+  );
+
+  function onClose() {
+    const prev = props.dicts;
+    const next = pending;
+    if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
+      props.setDicts([...pending]);
+    }
+    props.onClose();
+  }
+
   return (
-    <Dialog open={props.open} onClose={props.onClose} sx={{ top: "-40%" }}>
+    <Dialog open={props.open} onClose={onClose} sx={{ top: "-40%" }}>
       <DialogTitle>Dictionary Options</DialogTitle>
       <DialogContent>
         <FormGroup>
@@ -56,8 +69,15 @@ function SearchSettingsDialog(props: {
               key={dict.key}
               control={
                 <Switch
-                  checked={props.dicts.includes(dict)}
-                  onChange={(e) => props.onDictChanged(dict, e.target.checked)}
+                  checked={pending.has(dict)}
+                  onChange={(e) => {
+                    if (e.target.checked) {
+                      pending.add(dict);
+                    } else {
+                      pending.delete(dict);
+                    }
+                    setPending(new Set(pending));
+                  }}
                 />
               }
               label={
@@ -70,7 +90,7 @@ function SearchSettingsDialog(props: {
         </FormGroup>
       </DialogContent>
       <DialogActions>
-        <Button autoFocus onClick={props.onClose} color="info">
+        <Button autoFocus onClick={onClose} color="info">
           Close
         </Button>
       </DialogActions>
@@ -95,7 +115,7 @@ function SearchSettings(props: { onOpenSettings: () => any }): JSX.Element {
 export function DictionarySearch(props: {
   smallScreen: boolean;
   dicts: DictInfo[];
-  onDictChanged: (changed: DictInfo, present: boolean) => any;
+  setDicts: (newDicts: DictInfo[]) => any;
 }) {
   const input = React.useRef<string>("");
   const [options, setOptions] = React.useState<[DictInfo, string][]>([]);
@@ -127,7 +147,7 @@ export function DictionarySearch(props: {
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         dicts={props.dicts}
-        onDictChanged={props.onDictChanged}
+        setDicts={props.setDicts}
       />
       <Autocomplete
         freeSolo

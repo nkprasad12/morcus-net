@@ -271,15 +271,7 @@ export function DictionaryView() {
           <DictionarySearch
             smallScreen={isSmall}
             dicts={dictsToUse}
-            onDictChanged={(dict, present) => {
-              const items = new Set(dictsToUse);
-              if (present) {
-                items.add(dict);
-              } else {
-                items.delete(dict);
-              }
-              setDictsToUse([...items]);
-            }}
+            setDicts={setDictsToUse}
           />
         ) : (
           <SearchBox input={nav.route.query || ""} smallScreen={isSmall} />

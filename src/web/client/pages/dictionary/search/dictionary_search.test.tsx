@@ -34,7 +34,7 @@ describe("DictionarySearch", () => {
       <DictionarySearch
         smallScreen={false}
         dicts={BOTH_DICTS}
-        onDictChanged={() => {}}
+        setDicts={() => {}}
       />
     );
     expect(screen.queryByText("ab")).toBeNull();
@@ -57,7 +57,7 @@ describe("DictionarySearch", () => {
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
-          onDictChanged={() => {}}
+          setDicts={() => {}}
         />
       </RouteContext.Provider>
     );
@@ -80,7 +80,7 @@ describe("DictionarySearch", () => {
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
-          onDictChanged={() => {}}
+          setDicts={() => {}}
         />
       </RouteContext.Provider>
     );
@@ -103,7 +103,7 @@ describe("DictionarySearch", () => {
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
-          onDictChanged={() => {}}
+          setDicts={() => {}}
         />
       </RouteContext.Provider>
     );
@@ -119,7 +119,7 @@ describe("DictionarySearch", () => {
   });
 
   it("has an options menu that disables and enables dicts", async () => {
-    const mockOnDictChanged = jest.fn();
+    const mockSetDicts = jest.fn();
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -128,7 +128,7 @@ describe("DictionarySearch", () => {
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
-          onDictChanged={mockOnDictChanged}
+          setDicts={mockSetDicts}
         />
       </RouteContext.Provider>
     );
@@ -139,10 +139,8 @@ describe("DictionarySearch", () => {
     expect(screen.queryByText("Dictionary Options")).not.toBeNull();
     const lsCheck = screen.getByRole("checkbox");
     await user.click(lsCheck);
-    expect(mockOnDictChanged).toHaveBeenLastCalledWith(
-      LatinDict.LewisAndShort,
-      false
-    );
+    expect(mockSetDicts).not.toHaveBeenCalled();
     await user.click(screen.getByText("Close"));
+    expect(mockSetDicts).toHaveBeenCalledWith([LatinDict.SmithAndHall]);
   });
 });
