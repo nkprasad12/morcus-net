@@ -16,7 +16,7 @@ import { Divider } from "@mui/material";
 import { AutocompleteCache } from "@/web/client/pages/dictionary/autocomplete_cache";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { flushSync } from "react-dom";
-import { DictsLsApi } from "@/web/api_routes";
+import { DictsFusedApi, DictsLsApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { LsOutline, LsResult } from "@/web/utils/rpc/ls_api_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
@@ -35,6 +35,7 @@ import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { EntryResult } from "@/common/dictionaries/dict_result";
 
 export namespace SearchSettings {
   const SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY";
@@ -56,6 +57,30 @@ export namespace SearchSettings {
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {
     return await callApi(DictsLsApi, input);
+  } catch (e) {
+    return [ERROR_MESSAGE];
+  }
+}
+
+async function fetchEntryNew(input: string): Promise<EntryResult[]> {
+  const parts = input.split(",");
+  const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
+  const dicts =
+    parts.length > 1
+      ? LatinDict.AVAILABLE.filter((dict) => dictParts.includes(dict.key)).map(
+          (dict) => dict.key
+        )
+      : LatinDict.AVAILABLE.map((dict) => dict.key);
+  try {
+    const results = await callApi(DictsFusedApi, {
+      query: parts[0],
+      dicts: dicts,
+    });
+    const entries: EntryResult[] = [];
+    for (const dict in results) {
+      entries.push(...results[dict]);
+    }
+    return entries;
   } catch (e) {
     return [ERROR_MESSAGE];
   }
@@ -245,25 +270,30 @@ export function DictionaryView() {
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
     SearchSettings.retrieve()
   );
-  const theme = useTheme();
 
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
-
-  const nav = React.useContext(RouteContext);
   const sectionRef = React.useRef<HTMLElement>(null);
   const tocRef = React.useRef<HTMLElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
   const searchBarRef = React.useRef<HTMLDivElement>(null);
 
+  const nav = React.useContext(RouteContext);
+  const globalSettings = React.useContext(GlobalSettingsContext);
+  const theme = useTheme();
+  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+
   React.useEffect(() => {
     if (nav.route.query !== undefined) {
       setEntries([{ element: LOADING_ENTRY, key: "LOADING_ENTRY" }]);
-      fetchEntry(nav.route.query).then((newResults) => {
+      const serverResult =
+        globalSettings.data.experimentalMode === true
+          ? fetchEntryNew(nav.route.query)
+          : fetchEntry(nav.route.query);
+      serverResult.then((newResults) => {
+        const jsxEntries = newResults.map((e, i) => ({
+          element: xmlNodeToJsx(e.entry, nav.route.hash, sectionRef),
+          key: e.entry.getAttr("id") || `${i}`,
+        }));
         flushSync(() => {
-          const jsxEntries = newResults.map((e, i) => ({
-            element: xmlNodeToJsx(e.entry, nav.route.hash, sectionRef),
-            key: e.entry.getAttr("id") || `${i}`,
-          }));
           setEntries(jsxEntries);
           setOutlines(newResults.map((r) => r.outline));
         });
@@ -273,11 +303,9 @@ export function DictionaryView() {
         scrollElement?.scrollIntoView(scrollType);
       });
     }
-  }, [nav.route.query]);
+  }, [nav.route.query, globalSettings]);
 
   function SearchBar(props: { maxWidth: "md" | "lg" | "xl" }) {
-    const globalSettings = React.useContext(GlobalSettingsContext);
-
     return (
       <Container
         maxWidth={props.maxWidth}

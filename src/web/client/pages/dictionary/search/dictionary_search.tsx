@@ -22,6 +22,10 @@ import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 
+function toQuery(info: [DictInfo, string]): string {
+  return `${info[1]},${info[0].key.replace("&", "n")}`;
+}
+
 function DictChip(props: { label: string }) {
   return (
     <span
@@ -171,7 +175,9 @@ export function DictionarySearch(props: {
           mt: 2,
           mb: 1,
         }}
-        getOptionLabel={(option) => (isString(option) ? option : option[1])}
+        getOptionLabel={(option) =>
+          isString(option) ? option : toQuery(option)
+        }
         onKeyUp={(event) =>
           event.key === "Enter" ? onEnter(input.current) : ""
         }
@@ -183,7 +189,7 @@ export function DictionarySearch(props: {
           loadOptions(value);
         }}
         renderOption={(props, option) => (
-          <li {...props} onClick={() => onEnter(option[1])}>
+          <li {...props} onClick={() => onEnter(toQuery(option))}>
             <DictChip label={option[0].key} />
             <span style={{ marginLeft: 10 }}>{option[1]}</span>
           </li>
