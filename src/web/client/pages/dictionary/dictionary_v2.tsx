@@ -127,41 +127,33 @@ function JumpToMenuButton(props: { onClick: () => any }) {
   );
 }
 
-function EdgeCaseContent(props: {
-  state: EdgeCaseState;
-  dicts: DictInfo[];
-  isSmall: boolean;
-}) {
-  if (props.state === "No Results") {
-    return (
-      <ContentBox isSmall={props.isSmall}>
-        <>
-          <div>
-            No results found in{" "}
-            {props.dicts
-              .map((dict) => <DictChip label={dict.key} />)
-              .join(", ")}
-            .
-          </div>
-          <div>If applicable, try enabling another dictionary in settings.</div>
-        </>
-      </ContentBox>
-    );
-  }
+function NoResultsContent(props: { isSmall: boolean; dicts: DictInfo[] }) {
+  const labels =
+    props.dicts.length > 0 ? props.dicts.map((d) => d.key) : ["None"];
+  return (
+    <ContentBox isSmall={props.isSmall}>
+      <>
+        <div>
+          No results found. If applicable, try enabling another dictionary in
+          settings.
+        </div>
+        <div>
+          Enabled dictionaries:{" "}
+          {labels.map((label) => (
+            <DictChip label={label} />
+          ))}
+        </div>
+      </>
+    </ContentBox>
+  );
+}
 
-  if (props.state === "Error") {
-    return (
-      <ContentBox isSmall={props.isSmall}>
-        <div>{ERROR_STATE_MESSAGE}</div>
-      </ContentBox>
-    );
-  }
-
-  if (props.state === "Landing") {
-    return <></>;
-  }
-
-  throw Error("Unexpected state " + props.state);
+function ErrorContent(props: { isSmall: boolean }) {
+  return (
+    <ContentBox isSmall={props.isSmall}>
+      <div>{ERROR_STATE_MESSAGE}</div>
+    </ContentBox>
+  );
 }
 
 export function DictionaryViewV2() {
@@ -211,12 +203,16 @@ export function DictionaryViewV2() {
     });
   }, [nav.route.query]);
 
-  function SearchBar(props: { maxWidth: "md" | "lg" | "xl" }) {
+  function SearchBar(props: {
+    maxWidth: "md" | "lg" | "xl";
+    marginLeft?: "auto" | "0";
+  }) {
     return (
       <Container
         maxWidth={props.maxWidth}
         disableGutters={true}
         ref={searchBarRef}
+        sx={{ marginLeft: props.marginLeft || "auto" }}
       >
         <DictionarySearch
           smallScreen={isSmall}
@@ -280,7 +276,7 @@ export function DictionaryViewV2() {
         <Stack direction="row" spacing={1} justifyContent="left">
           <div style={TOC_SIDEBAR_STYLE}>{props.SidebarContent}</div>
           <div style={{ maxWidth: "10000px" }}>
-            <SearchBar maxWidth="xl" />
+            <SearchBar maxWidth="md" marginLeft="0" />
             {props.MainContent}
             <HorizontalPlaceholder />
             <Footer />
@@ -290,13 +286,33 @@ export function DictionaryViewV2() {
     );
   }
 
-  if (state === "Landing" || state === "Error" || state === "No Results") {
-    return (
-      <Container maxWidth="xl">
-        <SearchBar maxWidth="md" />
-        <EdgeCaseContent dicts={dictsToUse} state={state} isSmall={isSmall} />
-        <Footer />
-      </Container>
+  if (state === "Landing") {
+    return isSmall ? (
+      <OneColumnLayout Content={<></>} />
+    ) : (
+      <TwoColumnLayout SidebarContent={<></>} MainContent={<></>} />
+    );
+  }
+
+  if (state === "Error") {
+    return isSmall ? (
+      <OneColumnLayout Content={<ErrorContent isSmall={isSmall} />} />
+    ) : (
+      <TwoColumnLayout
+        SidebarContent={<></>}
+        MainContent={<ErrorContent isSmall={isSmall} />}
+      />
+    );
+  }
+
+  if (state === "No Results") {
+    const noResultsElement = (
+      <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />
+    );
+    return isSmall ? (
+      <OneColumnLayout Content={noResultsElement} />
+    ) : (
+      <TwoColumnLayout SidebarContent={<></>} MainContent={noResultsElement} />
     );
   }
 
