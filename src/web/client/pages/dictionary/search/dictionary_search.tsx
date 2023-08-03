@@ -26,7 +26,7 @@ function toQuery(info: [DictInfo, string]): string {
   return `${info[1]},${info[0].key.replace("&", "n")}`;
 }
 
-function DictChip(props: { label: string }) {
+export function DictChip(props: { label: string }) {
   return (
     <span
       style={{

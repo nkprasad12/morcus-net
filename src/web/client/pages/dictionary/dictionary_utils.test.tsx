@@ -12,8 +12,10 @@ import {
   ClickableTooltip,
   SectionLinkTooltip,
 } from "@/web/client/pages/tooltips";
-import { xmlNodeToJsx } from "@/web/client/pages/dictionary/dictionary_utils";
-import { SearchSettings } from "@/web/client/pages/dictionary/dictionary";
+import {
+  xmlNodeToJsx,
+  SearchSettings,
+} from "@/web/client/pages/dictionary/dictionary_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 console.log = jest.fn();

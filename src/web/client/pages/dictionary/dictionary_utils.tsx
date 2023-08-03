@@ -6,6 +6,8 @@ import {
   ClickableTooltip,
   SectionLinkTooltip,
 } from "@/web/client/pages/tooltips";
+import { DictInfo } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -161,4 +163,26 @@ export function xmlNodeToJsx(
     }
     return React.createElement(root.name, props, children);
   }
+}
+
+export namespace SearchSettings {
+  const SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY";
+
+  export function store(dicts: DictInfo[]) {
+    const keys = dicts.map((dict) => dict.key);
+    sessionStorage.setItem(SEARCH_SETTINGS_KEY, keys.join(";"));
+  }
+
+  export function retrieve(): DictInfo[] {
+    const stored = sessionStorage.getItem(SEARCH_SETTINGS_KEY)?.split(";");
+    if (stored === undefined) {
+      return LatinDict.AVAILABLE;
+    }
+    return LatinDict.AVAILABLE.filter((d) => stored.includes(d.key));
+  }
+}
+
+export interface ElementAndKey {
+  element: JSX.Element;
+  key: string;
 }
