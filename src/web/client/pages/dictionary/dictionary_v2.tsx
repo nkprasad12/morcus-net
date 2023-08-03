@@ -140,7 +140,7 @@ function NoResultsContent(props: { isSmall: boolean; dicts: DictInfo[] }) {
         <div>
           Enabled dictionaries:{" "}
           {labels.map((label) => (
-            <DictChip label={label} />
+            <DictChip label={label} key={label} />
           ))}
         </div>
       </>
