@@ -64,11 +64,7 @@ export class LewisAndShort {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
-      return [
-        {
-          entry: new XmlNode("span", [], [`Could not find entry for ${input}`]),
-        },
-      ];
+      return [];
     }
 
     const allMatches = indices.filter(([i, j]) => {

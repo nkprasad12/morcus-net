@@ -30,6 +30,7 @@ import {
 } from "@/web/client/pages/dictionary/sections";
 import { TableOfContents } from "@/web/client/pages/dictionary/table_of_contents";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
+import { XmlNode } from "@/common/xml_node";
 
 async function fetchEntry(input: string): Promise<LsResult[]> {
   try {
@@ -57,7 +58,19 @@ function DictionaryViewV1() {
   React.useEffect(() => {
     if (nav.route.query !== undefined) {
       setEntries([{ element: LOADING_ENTRY, key: "LOADING_ENTRY" }]);
-      fetchEntry(nav.route.query).then((newResults) => {
+      fetchEntry(nav.route.query).then((fetchResults) => {
+        const newResults =
+          fetchResults.length === 0
+            ? [
+                {
+                  entry: new XmlNode(
+                    "span",
+                    [],
+                    [`Could not find entry for ${nav.route.query}`]
+                  ),
+                },
+              ]
+            : fetchResults;
         const jsxEntries = newResults.map((e, i) => ({
           element: xmlNodeToJsx(e.entry, nav.route.hash, sectionRef),
           key: e.entry.getAttr("id") || `${i}`,
