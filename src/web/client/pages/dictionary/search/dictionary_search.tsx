@@ -50,17 +50,60 @@ function SearchSettingsDialog(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
+  const [saving, setSaving] = React.useState<boolean>(false);
   const [pending, setPending] = React.useState<Set<DictInfo>>(
     new Set(props.dicts)
   );
 
   function onClose() {
+    setSaving(true);
     const prev = props.dicts;
     const next = pending;
-    if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
-      props.setDicts([...pending]);
-    }
-    props.onClose();
+    setTimeout(() => {
+      if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
+        props.setDicts([...pending]);
+      }
+      props.onClose();
+    }, 1);
+  }
+
+  function FormAndActions() {
+    return (
+      <>
+        <DialogContent>
+          <FormGroup>
+            {LatinDict.AVAILABLE.map((dict) => (
+              <FormControlLabel
+                key={dict.key}
+                control={
+                  <Switch
+                    checked={pending.has(dict)}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        pending.add(dict);
+                      } else {
+                        pending.delete(dict);
+                      }
+                      setPending(new Set(pending));
+                    }}
+                  />
+                }
+                label={
+                  <span>
+                    <DictChip label={dict.key} /> {dict.displayName}
+                  </span>
+                }
+              />
+            ))}
+          </FormGroup>
+        </DialogContent>
+        <DialogActions>
+          <Button autoFocus onClick={onClose} color="info">
+            Close
+          </Button>
+        </DialogActions>
+      </>
+    );
   }
 
   return (
@@ -70,39 +113,10 @@ function SearchSettingsDialog(props: {
       sx={{ top: "-40%" }}
       disableScrollLock={true}
     >
-      <DialogTitle>Dictionary Options</DialogTitle>
-      <DialogContent>
-        <FormGroup>
-          {LatinDict.AVAILABLE.map((dict) => (
-            <FormControlLabel
-              key={dict.key}
-              control={
-                <Switch
-                  checked={pending.has(dict)}
-                  onChange={(e) => {
-                    if (e.target.checked) {
-                      pending.add(dict);
-                    } else {
-                      pending.delete(dict);
-                    }
-                    setPending(new Set(pending));
-                  }}
-                />
-              }
-              label={
-                <span>
-                  <DictChip label={dict.key} /> {dict.displayName}
-                </span>
-              }
-            />
-          ))}
-        </FormGroup>
-      </DialogContent>
-      <DialogActions>
-        <Button autoFocus onClick={onClose} color="info">
-          Close
-        </Button>
-      </DialogActions>
+      <DialogTitle>
+        {saving ? "Saving Settings" : "Dictionary Options"}
+      </DialogTitle>
+      {!saving && <FormAndActions />}
     </Dialog>
   );
 }
