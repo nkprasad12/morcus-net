@@ -1,11 +1,11 @@
-import { XmlNode } from "./xml_node";
+import { XmlNode } from "@/common/xml_node";
 import {
   substituteAbbreviation,
   attachHoverText,
   TrieNode,
   handleAbbreviations,
   findExpansions,
-} from "./ls_styling";
+} from "@/common/lewis_and_short/ls_styling";
 
 describe("TrieNode", () => {
   it("adds words correctly", () => {

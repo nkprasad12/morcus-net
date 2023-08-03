@@ -1,7 +1,7 @@
-import { MongoLogger } from "./mongo_logger";
+import { MongoLogger } from "@/web/telemetry/mongo_logger";
 // @ts-ignore
 import { MongoClient } from "mongodb";
-import { ApiCallEvent } from "./telemetry";
+import { ApiCallEvent } from "@/web/telemetry/telemetry";
 
 console.log = jest.fn();
 

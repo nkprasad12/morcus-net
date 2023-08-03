@@ -6,11 +6,12 @@ import {
   isAny,
   isArray,
   isNumber,
+  isRecord,
   isString,
   matches,
   maybeUndefined,
   typeOf,
-} from "./parsing";
+} from "@/web/utils/rpc/parsing";
 
 class StringWrapper {
   constructor(readonly prop: string) {}
@@ -108,6 +109,21 @@ describe("isArray", () => {
 
   it("validates valid arrays", () => {
     expect(isArray(isString)(["canaba", "4"])).toBe(true);
+  });
+});
+
+describe("isStringRecord", () => {
+  it("checks if input is record", () => {
+    expect(isRecord(isString)(true)).toBe(false);
+    expect(isRecord(isString)(null)).toBe(false);
+  });
+
+  it("checks if all values match validator", () => {
+    expect(isRecord(isString)({ canaba: 4 })).toBe(false);
+  });
+
+  it("validates valid records", () => {
+    expect(isRecord(isString)({ canaba: "4" })).toBe(true);
   });
 });
 

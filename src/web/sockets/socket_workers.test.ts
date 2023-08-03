@@ -3,7 +3,7 @@ import { io } from "socket.io-client";
 import { WorkProcessor } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 
-import { startRemoteWorker } from "./socket_workers";
+import { startRemoteWorker } from "@/web/sockets/socket_workers";
 
 console.debug = jest.fn();
 

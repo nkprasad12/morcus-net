@@ -20,23 +20,26 @@ import { Server } from "socket.io";
 
 import { setupServer, WebServerParams } from "@/web/web_server";
 import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
-import { WorkRequest } from "./web/workers/requests";
-import { Workers } from "./web/workers/worker_types";
+import { WorkRequest } from "@/web/workers/requests";
+import { Workers } from "@/web/workers/worker_types";
 import { randomInt } from "crypto";
-import { checkPresent } from "./common/assert";
-import { LewisAndShort } from "./common/lewis_and_short/ls";
+import { checkPresent } from "@/common/assert";
+import { LewisAndShort } from "@/common/lewis_and_short/ls";
 import path from "path";
-import { GitHub } from "./web/utils/github";
-import { MongoLogger } from "./web/telemetry/mongo_logger";
-import { TelemetryLogger } from "./web/telemetry/telemetry";
+import { GitHub } from "@/web/utils/github";
+import { MongoLogger } from "@/web/telemetry/mongo_logger";
+import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
+  CompletionsFusedApi,
+  DictsFusedApi,
   DictsLsApi,
   EntriesByPrefixApi,
   MacronizeApi,
   ReportApi,
-} from "./web/api_routes";
-import { ApiHandler, RouteAndHandler } from "./web/utils/rpc/server_rpc";
-import { ApiRoute } from "./web/utils/rpc/rpc";
+} from "@/web/api_routes";
+import { ApiHandler, RouteAndHandler } from "@/web/utils/rpc/server_rpc";
+import { ApiRoute } from "@/web/utils/rpc/rpc";
+import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 
 dotenv.config();
 
@@ -76,6 +79,7 @@ const app = express();
 const server = http.createServer(app);
 
 const lewisAndShort = LewisAndShort.create();
+const fusedDict = new FusedDictionary([lewisAndShort]);
 const workServer = new SocketWorkServer(new Server(server));
 const telemetry =
   process.env.CONSOLE_TELEMETRY !== "yes"
@@ -107,6 +111,12 @@ const params: WebServerParams = {
     ),
     createApi(EntriesByPrefixApi, (prefix) =>
       lewisAndShort.getCompletions(prefix)
+    ),
+    createApi(DictsFusedApi, (input, extras) =>
+      fusedDict.getEntry(input, extras)
+    ),
+    createApi(CompletionsFusedApi, (input, extras) =>
+      fusedDict.getCompletions(input, extras)
     ),
   ],
   buildDir: path.join(__dirname, "../genfiles_static"),

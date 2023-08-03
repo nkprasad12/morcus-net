@@ -8,10 +8,10 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
-import { Solarized } from "../colors";
+import { Solarized } from "@/web/client/colors";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
-import { getCommitHash } from "../define_vars";
+import { getCommitHash } from "@/web/client/define_vars";
 
 export function ReportIssueDialog(props: {
   show: boolean;

@@ -4,7 +4,12 @@
 
 import { act, render } from "@testing-library/react";
 import React from "react";
-import { Navigation, RouteContext, RouteInfo, Router } from "./router";
+import {
+  Navigation,
+  RouteContext,
+  RouteInfo,
+  Router,
+} from "@/web/client/components/router";
 
 function TestApp(props: { navSpy: (info: RouteInfo) => any }) {
   const nav = React.useContext(RouteContext);

@@ -1,5 +1,5 @@
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
-import { LsResult } from "./ls_api_result";
+import { XmlNode } from "@/common/xml_node";
+import { LsResult } from "@/web/utils/rpc/ls_api_result";
 
 describe("Ls API types", () => {
   test("isMatch returns false on raw node", () => {

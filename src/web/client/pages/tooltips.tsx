@@ -7,16 +7,18 @@ import {
   IconButton,
 } from "@mui/material";
 import React from "react";
-import { Solarized } from "../colors";
+import { Solarized } from "@/web/client/colors";
 
 export type TooltipPlacement = "top-start" | "right";
 
+export type TooltipChild = React.ForwardRefExoticComponent<
+  Omit<any, "ref"> & React.RefAttributes<any>
+>;
+
 export interface TooltipProps {
   titleText: string | JSX.Element;
-  className: string | undefined;
-  ChildFactory: React.ForwardRefExoticComponent<
-    Omit<any, "ref"> & React.RefAttributes<any>
-  >;
+  className?: string | undefined;
+  ChildFactory: TooltipChild;
   placement?: TooltipPlacement;
   tooltipSx?: SxProps;
   arrowSx?: SxProps;
@@ -66,10 +68,8 @@ function BaseTooltip(props: TooltipProps) {
 
 export function ClickableTooltip(props: {
   titleText: string | JSX.Element;
-  className: string | undefined;
-  ChildFactory: React.ForwardRefExoticComponent<
-    Omit<any, "ref"> & React.RefAttributes<any>
-  >;
+  className?: string | undefined;
+  ChildFactory: TooltipChild;
 }) {
   const [open, setOpen] = React.useState(false);
 
@@ -87,9 +87,7 @@ type SectionLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 
 export function SectionLinkTooltip(props: {
   className: string;
-  forwarded: React.ForwardRefExoticComponent<
-    Omit<any, "ref"> & React.RefAttributes<any>
-  >;
+  forwarded: TooltipChild;
   senseId: string;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);

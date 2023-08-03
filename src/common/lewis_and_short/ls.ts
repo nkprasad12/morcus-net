@@ -1,15 +1,22 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, checkPresent } from "../assert";
+import { assert, checkPresent } from "@/common/assert";
 import fs from "fs";
-import { parseEntries, XmlNode } from "./xml_node";
-import { displayEntryFree } from "./ls_display";
-import { getOrths, isRegularOrth, mergeVowelMarkers } from "./ls_orths";
-import { removeDiacritics } from "../text_cleaning";
+import { XmlNode } from "@/common/xml_node";
+import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
+import {
+  getOrths,
+  isRegularOrth,
+  mergeVowelMarkers,
+} from "@/common/lewis_and_short/ls_orths";
+import { removeDiacritics } from "@/common/text_cleaning";
 import { LsResult } from "@/web/utils/rpc/ls_api_result";
-import { extractOutline } from "./ls_outline";
-import { Vowels } from "../character_utils";
+import { extractOutline } from "@/common/lewis_and_short/ls_outline";
+import { Vowels } from "@/common/character_utils";
 import Database from "better-sqlite3";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { DictInfo } from "@/common/dictionaries/dictionaries";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -26,6 +33,8 @@ export class LewisAndShort {
   private readonly keys: string[];
   private readonly rawKeys: string[][];
   private readonly db: Database.Database;
+
+  readonly info: DictInfo = LatinDict.LewisAndShort;
 
   constructor(dbFile: string = checkPresent(process.env.LS_PROCESSED_PATH)) {
     this.db = new Database(dbFile, { readonly: true });
@@ -55,11 +64,7 @@ export class LewisAndShort {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
-      return [
-        {
-          entry: new XmlNode("span", [], [`Could not find entry for ${input}`]),
-        },
-      ];
+      return [];
     }
 
     const allMatches = indices.filter(([i, j]) => {

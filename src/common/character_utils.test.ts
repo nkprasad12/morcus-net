@@ -1,4 +1,4 @@
-import { Vowels } from "./character_utils";
+import { Vowels } from "@/common/character_utils";
 
 describe("Vowels getLength", () => {
   it("returns unspecified on other", () => {

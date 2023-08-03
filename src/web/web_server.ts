@@ -2,8 +2,8 @@ import compression from "compression";
 import express, { Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
-import { TelemetryLogger } from "./telemetry/telemetry";
-import { RouteAndHandler, addApi } from "./utils/rpc/server_rpc";
+import { TelemetryLogger } from "@/web/telemetry/telemetry";
+import { RouteAndHandler, addApi } from "@/web/utils/rpc/server_rpc";
 
 export interface WebServerParams {
   webApp: express.Express;

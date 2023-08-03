@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import { assert, assertEqual, checkPresent } from "./assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 
 describe("assert", () => {
   test("raises message on false", () => {

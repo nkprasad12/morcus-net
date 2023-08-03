@@ -1,8 +1,12 @@
 import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
-import { parseEntries, XmlNode } from "@/common/lewis_and_short/xml_node";
-import { AbbreviationTrie, TrieNode } from "./ls_styling";
+import { XmlNode } from "@/common/xml_node";
+import {
+  AbbreviationTrie,
+  TrieNode,
+} from "@/common/lewis_and_short/ls_styling";
+import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
 
 const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =

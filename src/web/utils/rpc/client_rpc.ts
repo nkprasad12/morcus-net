@@ -1,5 +1,5 @@
-import { ApiRoute } from "./rpc";
-import { decodeMessage, encodeMessage } from "./parsing";
+import { ApiRoute } from "@/web/utils/rpc/rpc";
+import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 
 const POST_HEADERS = {
   "Content-Type": "text/plain; charset=utf-8",

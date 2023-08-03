@@ -1,0 +1,113 @@
+import { EntryResult } from "@/common/dictionaries/dict_result";
+import {
+  CompletionsFusedRequest,
+  DictInfo,
+  Dictionary,
+} from "@/common/dictionaries/dictionaries";
+import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+
+class FakeDict implements Dictionary {
+  readonly fakeGetEntry = jest.fn((i, e) => Promise.reject(new Error()));
+  readonly fakeGetCompletions = jest.fn((i, e) => Promise.resolve(["a", "b"]));
+
+  constructor(readonly info: DictInfo) {}
+
+  getEntry(
+    input: string,
+    extras?: ServerExtras | undefined
+  ): Promise<EntryResult[]> {
+    return this.fakeGetEntry(input, extras);
+  }
+
+  getCompletions(
+    input: string,
+    extras?: ServerExtras | undefined
+  ): Promise<string[]> {
+    return this.fakeGetCompletions(input, extras);
+  }
+}
+
+describe("FusedDictionary", () => {
+  it("handles all failures gracefully", async () => {
+    const fakeLs = new FakeDict(LatinDict.LewisAndShort);
+    const fakeSh = new FakeDict(LatinDict.SmithAndHall);
+    const dict = new FusedDictionary([fakeLs, fakeSh]);
+    const request: CompletionsFusedRequest = {
+      query: "",
+      dicts: [fakeLs.info.key, fakeSh.info.key],
+    };
+
+    const result = await dict.getEntry(request);
+
+    expect(result).toEqual({});
+  });
+
+  it("handles partial failure correctly", async () => {
+    const fakeLs = new FakeDict(LatinDict.LewisAndShort);
+    const fakeSh = new FakeDict(LatinDict.SmithAndHall);
+    fakeSh.fakeGetCompletions.mockRejectedValue(new Error());
+    const dict = new FusedDictionary([fakeLs, fakeSh]);
+    const request: CompletionsFusedRequest = {
+      query: "",
+      dicts: [fakeLs.info.key, fakeSh.info.key],
+    };
+
+    const result = await dict.getCompletions(request);
+
+    const expected: Record<string, string[]> = {};
+    expected[fakeLs.info.key] = ["a", "b"];
+    expect(result).toEqual(expected);
+  });
+
+  it("handles multiple success correctly", async () => {
+    const fakeLs = new FakeDict(LatinDict.LewisAndShort);
+    const fakeSh = new FakeDict(LatinDict.SmithAndHall);
+    fakeSh.fakeGetCompletions.mockResolvedValue(["c", "d"]);
+    const dict = new FusedDictionary([fakeLs, fakeSh]);
+    const request: CompletionsFusedRequest = {
+      query: "",
+      dicts: [fakeLs.info.key, fakeSh.info.key],
+    };
+
+    const result = await dict.getCompletions(request);
+
+    const expected: Record<string, string[]> = {};
+    expected[fakeLs.info.key] = ["a", "b"];
+    expected[fakeSh.info.key] = ["c", "d"];
+    expect(result).toEqual(expected);
+  });
+
+  it("handles unsupported dicts correctly", async () => {
+    const fakeLs = new FakeDict(LatinDict.LewisAndShort);
+    const fakeSh = new FakeDict(LatinDict.SmithAndHall);
+    const dict = new FusedDictionary([fakeLs]);
+    const request: CompletionsFusedRequest = {
+      query: "",
+      dicts: [fakeLs.info.key, fakeSh.info.key],
+    };
+
+    const result = await dict.getCompletions(request);
+
+    const expected: Record<string, string[]> = {};
+    expected[fakeLs.info.key] = ["a", "b"];
+    expect(result).toEqual(expected);
+  });
+
+  it("handles unrequested dicts correctly", async () => {
+    const fakeLs = new FakeDict(LatinDict.LewisAndShort);
+    const fakeSh = new FakeDict(LatinDict.SmithAndHall);
+    const dict = new FusedDictionary([fakeLs, fakeSh]);
+    const request: CompletionsFusedRequest = {
+      query: "",
+      dicts: [fakeSh.info.key],
+    };
+
+    const result = await dict.getCompletions(request);
+
+    const expected: Record<string, string[]> = {};
+    expected[fakeSh.info.key] = ["a", "b"];
+    expect(result).toEqual(expected);
+  });
+});

@@ -8,9 +8,9 @@ import {
   removeTextNode,
   rewriteLs,
   searchTree,
-} from "./ls_write";
-import { CANABA, PALUS1 } from "./sample_entries";
-import { XmlChild, XmlNode } from "./xml_node";
+} from "@/common/lewis_and_short/ls_write";
+import { CANABA, PALUS1 } from "@/common/lewis_and_short/sample_entries";
+import { XmlChild, XmlNode } from "@/common/xml_node";
 
 const IN_FILE = "ls_write.test.tmp.in.xml";
 

@@ -1,14 +1,14 @@
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
 import {
-  attachAltEnd,
-  attachAltStart,
+  rawOrths,
   cleanOrths,
+  regularizeOrths,
+  attachAltStart,
+  attachAltEnd,
+  mergeVowelMarkers,
   displayTextForOrth,
   getOrths,
-  mergeVowelMarkers,
-  rawOrths,
-  regularizeOrths,
-} from "./ls_orths";
+} from "@/common/lewis_and_short/ls_orths";
+import { XmlNode } from "@/common/xml_node";
 
 describe("rawOrths", () => {
   it("returns only expected orths", () => {

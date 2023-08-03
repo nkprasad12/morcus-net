@@ -1,4 +1,4 @@
-import { removeDiacritics } from "./text_cleaning";
+import { removeDiacritics } from "@/common/text_cleaning";
 
 describe("removeDiacritics", () => {
   it("does not modify text without diacritics", () => {

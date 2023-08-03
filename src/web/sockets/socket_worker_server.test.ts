@@ -5,7 +5,7 @@ import {
   SocketWorkHandlerManager,
   SocketWorkHandler,
   SocketWorkServer,
-} from "./socket_worker_server";
+} from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "@/web/workers/requests";
 
 console.debug = jest.fn();

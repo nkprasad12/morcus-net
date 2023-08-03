@@ -102,6 +102,22 @@ export function isArray<T>(
   };
 }
 
+export function isRecord<V>(
+  vVal: (v: unknown) => v is V
+): (x: unknown) => x is Record<string, V> {
+  return (x): x is Record<string, V> => {
+    if (typeof x !== "object" || x === null) {
+      return false;
+    }
+    for (const [_, value] of Object.entries(x)) {
+      if (!vVal(value)) {
+        return false;
+      }
+    }
+    return true;
+  };
+}
+
 export function maybeUndefined<T>(
   checker: (x: unknown) => x is T
 ): (x: unknown) => x is T | undefined {

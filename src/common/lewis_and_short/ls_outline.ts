@@ -1,7 +1,7 @@
 import { LsOutline, SectionOutline } from "@/web/utils/rpc/ls_api_result";
-import { COMMENT_NODE, XmlChild, XmlNode } from "./xml_node";
-import { assert, checkPresent } from "../assert";
-import { displayTextForOrth } from "./ls_orths";
+import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml_node";
+import { assert, checkPresent } from "@/common/assert";
+import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 
 const GREEK_BULLET_MAP = new Map<string, string>([
   ["a", "α"],

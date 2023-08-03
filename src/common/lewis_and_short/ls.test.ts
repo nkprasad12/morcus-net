@@ -1,7 +1,7 @@
 import fs from "fs";
 
-import { LewisAndShort } from "./ls";
-import { XmlNode } from "./xml_node";
+import { LewisAndShort } from "@/common/lewis_and_short/ls";
+import { XmlNode } from "@/common/xml_node";
 import Database from "better-sqlite3";
 import { LsResult } from "@/web/utils/rpc/ls_api_result";
 
@@ -80,11 +80,6 @@ function toLsData(keys: string[]) {
 
 function writeFile(contents: string) {
   fs.writeFileSync(TEMP_FILE, contents);
-}
-
-function expectEqual(nodes: XmlNode[], expected: string[]) {
-  const actuals = nodes.map((node) => node.toString());
-  expect(actuals).toStrictEqual(expected);
 }
 
 describe("LewisAndShort", () => {
@@ -219,11 +214,7 @@ describe("LewisAndShort", () => {
   test("getEntry handles unknown queries", async () => {
     LewisAndShort.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
-
-    expectEqual(
-      (await dict.getEntry("Foo")).map((r) => r.entry),
-      ["<span>Could not find entry for Foo</span>"]
-    );
+    expect(dict.getEntry("Foo")).resolves.toEqual([]);
   });
 
   test("getEntry handles same ascii orths in single article", async () => {

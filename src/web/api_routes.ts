@@ -1,7 +1,19 @@
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
-import { ApiRoute } from "./utils/rpc/rpc";
-import { isAny, isArray, isString, matches, typeOf } from "./utils/rpc/parsing";
-import { LsResult } from "./utils/rpc/ls_api_result";
+import { ApiRoute } from "@/web/utils/rpc/rpc";
+import {
+  isAny,
+  isArray,
+  isString,
+  matches,
+  typeOf,
+} from "@/web/utils/rpc/parsing";
+import { LsResult } from "@/web/utils/rpc/ls_api_result";
+import {
+  CompletionsFusedRequest,
+  CompletionsFusedResponse,
+  DictsFusedRequest,
+  DictsFusedResponse,
+} from "@/common/dictionaries/dictionaries";
+import { XmlNodeSerialization } from "@/common/xml_node_serialization";
 
 export const MacronizeApi: ApiRoute<string, string> = {
   path: "/api/macronize",
@@ -15,7 +27,15 @@ export const DictsLsApi: ApiRoute<string, LsResult[]> = {
   method: "GET",
   inputValidator: isString,
   outputValidator: isArray(LsResult.isMatch),
-  registry: [XmlNode.SERIALIZATION],
+  registry: [XmlNodeSerialization.DEFAULT],
+};
+
+export const DictsFusedApi: ApiRoute<DictsFusedRequest, DictsFusedResponse> = {
+  path: "/api/dicts/fused",
+  method: "GET",
+  inputValidator: DictsFusedRequest.isMatch,
+  outputValidator: DictsFusedResponse.isMatch,
+  registry: [XmlNodeSerialization.DEFAULT],
 };
 
 export const EntriesByPrefixApi: ApiRoute<string, string[]> = {
@@ -23,6 +43,16 @@ export const EntriesByPrefixApi: ApiRoute<string, string[]> = {
   method: "GET",
   inputValidator: isString,
   outputValidator: isArray(typeOf("string")),
+};
+
+export const CompletionsFusedApi: ApiRoute<
+  CompletionsFusedRequest,
+  CompletionsFusedResponse
+> = {
+  path: "/api/completions/fused",
+  method: "GET",
+  inputValidator: CompletionsFusedRequest.isMatch,
+  outputValidator: CompletionsFusedResponse.isMatch,
 };
 
 export interface ReportApiRequest {

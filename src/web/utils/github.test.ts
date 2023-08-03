@@ -1,5 +1,5 @@
 import fetch from "node-fetch";
-import { GitHub } from "./github";
+import { GitHub } from "@/web/utils/github";
 
 jest.mock("node-fetch");
 

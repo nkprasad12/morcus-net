@@ -1,5 +1,9 @@
 import { readFileSync } from "fs";
-import { extractEntries, parseEntriesInline, XmlNode } from "./xml_node";
+import { XmlNode } from "@/common/xml_node";
+import {
+  extractEntries,
+  parseEntriesInline,
+} from "@/common/lewis_and_short/ls_xml_utils";
 
 export function getRaw(path: string): string[] {
   const xmlContents = readFileSync(path, "utf8");

@@ -1,4 +1,4 @@
-import { XmlNode } from "@/common/lewis_and_short/xml_node";
+import { XmlNode } from "@/common/xml_node";
 import {
   matches,
   instanceOf,
@@ -6,7 +6,7 @@ import {
   maybeUndefined,
   isArray,
   isNumber,
-} from "./parsing";
+} from "@/web/utils/rpc/parsing";
 
 export interface SectionOutline {
   text: string;
