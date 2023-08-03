@@ -40,6 +40,9 @@ import { TableOfContents } from "@/web/client/pages/dictionary/table_of_contents
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection and try again." +
   " If the issue persists, contact Mórcus.";
+export const NO_RESULTS_MESSAGE =
+  "No results found. If applicable, try enabling another " +
+  +"dictionary in settings.";
 
 const TOC_SIDEBAR_STYLE: CSSProperties = {
   position: "sticky",
@@ -133,10 +136,7 @@ function NoResultsContent(props: { isSmall: boolean; dicts: DictInfo[] }) {
   return (
     <ContentBox isSmall={props.isSmall}>
       <>
-        <div>
-          No results found. If applicable, try enabling another dictionary in
-          settings.
-        </div>
+        <div>{NO_RESULTS_MESSAGE}</div>
         <div>
           Enabled dictionaries:{" "}
           {labels.map((label) => (

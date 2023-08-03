@@ -11,6 +11,7 @@ import React from "react";
 import {
   DictionaryViewV2,
   ERROR_STATE_MESSAGE,
+  NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { RouteContext } from "@/web/client/components/router";
 
@@ -153,11 +154,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     await waitFor(() => {
-      expect(
-        screen.getByText(
-          "If applicable, try enabling another dictionary in settings."
-        )
-      ).toBeDefined();
+      expect(screen.getByText(NO_RESULTS_MESSAGE)).toBeDefined();
     });
   });
 
