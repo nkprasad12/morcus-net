@@ -286,48 +286,45 @@ export function DictionaryViewV2() {
     );
   }
 
-  if (state === "Landing") {
+  function ResponsiveLayout(props: {
+    oneCol?: JSX.Element;
+    twoColSide?: JSX.Element;
+    twoColMain?: JSX.Element;
+  }) {
     return isSmall ? (
-      <OneColumnLayout Content={<></>} />
+      <OneColumnLayout Content={props.oneCol || <></>} />
     ) : (
-      <TwoColumnLayout SidebarContent={<></>} MainContent={<></>} />
+      <TwoColumnLayout
+        SidebarContent={props.twoColSide || <></>}
+        MainContent={props.twoColMain || <></>}
+      />
     );
+  }
+
+  if (state === "Landing") {
+    return <ResponsiveLayout />;
   }
 
   if (state === "Error") {
-    return isSmall ? (
-      <OneColumnLayout Content={<ErrorContent isSmall={isSmall} />} />
-    ) : (
-      <TwoColumnLayout
-        SidebarContent={<></>}
-        MainContent={<ErrorContent isSmall={isSmall} />}
-      />
-    );
+    const errorContent = <ErrorContent isSmall={isSmall} />;
+    return <ResponsiveLayout oneCol={errorContent} twoColMain={errorContent} />;
   }
 
   if (state === "No Results") {
-    const noResultsElement = (
-      <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />
-    );
-    return isSmall ? (
-      <OneColumnLayout Content={noResultsElement} />
-    ) : (
-      <TwoColumnLayout SidebarContent={<></>} MainContent={noResultsElement} />
-    );
+    const noResults = <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />;
+    return <ResponsiveLayout oneCol={noResults} twoColMain={noResults} />;
   }
 
   if (state === "Loading") {
-    return isSmall ? (
-      <OneColumnLayout Content={<LoadingMessage />} />
-    ) : (
-      <TwoColumnLayout
-        SidebarContent={<></>}
-        MainContent={<LoadingMessage />}
+    return (
+      <ResponsiveLayout
+        oneCol={<LoadingMessage />}
+        twoColMain={<LoadingMessage />}
       />
     );
   }
 
-  const ToC = (
+  const tableOfContents = (
     <TableOfContents
       entries={entries}
       outlines={outlines}
@@ -335,16 +332,16 @@ export function DictionaryViewV2() {
       tocRef={tocRef}
     />
   );
-  return isSmall ? (
-    <OneColumnLayout
-      Content={
+  return (
+    <ResponsiveLayout
+      oneCol={
         <>
           <HelpSection />
           <div>
             <JumpToNextButton
               onClick={() => entriesRef.current?.scrollIntoView(SCROLL_JUMP)}
             />
-            {ToC}
+            {tableOfContents}
           </div>
           <div ref={entriesRef}>
             <DictionaryEntries />
@@ -354,11 +351,8 @@ export function DictionaryViewV2() {
           </div>
         </>
       }
-    />
-  ) : (
-    <TwoColumnLayout
-      SidebarContent={ToC}
-      MainContent={
+      twoColSide={tableOfContents}
+      twoColMain={
         <>
           <HelpSection />
           <DictionaryEntries />
