@@ -56,15 +56,16 @@ function SearchSettingsDialog(props: {
   );
 
   function onClose() {
-    setSaving(true);
     const prev = props.dicts;
     const next = pending;
-    setTimeout(() => {
-      if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
+    if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
+      setSaving(true);
+      setTimeout(() => {
         props.setDicts([...pending]);
-      }
+      }, 1);
+    } else {
       props.onClose();
-    }, 1);
+    }
   }
 
   function FormAndActions() {
