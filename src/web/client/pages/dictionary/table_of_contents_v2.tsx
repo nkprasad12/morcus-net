@@ -59,7 +59,13 @@ function OutlineSection(props: {
 
   return (
     <div>
-      <span onClick={() => props.onClick(outline.mainSection.sectionId)}>
+      <Divider variant="middle" light={true} sx={{ padding: "3px" }} />
+      <br />
+      <div
+        onClick={() => props.onClick(outline.mainSection.sectionId)}
+        style={{ cursor: "pointer" }}
+        className="clickableOutlineSection"
+      >
         <DictChip label={props.dictKey} />
         <span
           className="lsSenseBullet"
@@ -76,7 +82,7 @@ function OutlineSection(props: {
           {` ${outline.mainOrth}`}
         </span>
         {" " + outline.mainSection.text}
-      </span>
+      </div>
       {senses && (
         <ol style={{ paddingLeft: "0em" }}>
           {senses.map((sense) => {
@@ -90,6 +96,7 @@ function OutlineSection(props: {
                   paddingLeft: `${(sense.level - 1) / 2}em`,
                 }}
                 onClick={() => props.onClick(sense.sectionId)}
+                className="clickableOutlineSection"
               >
                 <span
                   className="lsSenseBullet"
@@ -111,8 +118,6 @@ function OutlineSection(props: {
           })}
         </ol>
       )}
-      <Divider variant="middle" light={true} sx={{ padding: "5px" }} />
-      <br />
     </div>
   );
 }

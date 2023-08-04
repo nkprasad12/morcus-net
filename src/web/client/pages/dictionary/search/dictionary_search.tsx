@@ -30,7 +30,7 @@ export function DictChip(props: { label: string }) {
   return (
     <span
       style={{
-        backgroundColor: Solarized.base2 + "40",
+        backgroundColor: Solarized.base2 + "60",
         color: Solarized.base1,
         borderRadius: 4,
         paddingLeft: 3,

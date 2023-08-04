@@ -48,12 +48,12 @@ const theme = createTheme({
       sm: 600,
       md: 900,
       lg: 1200,
-      xl: 1600,
+      xl: 1500,
     },
   },
 });
 
-const allowedFonts = `"Roboto","Helvetica","Arial",sans-serif`;
+const allowedFonts = `"Roboto","Arial","Helvetica",sans-serif`;
 const typographyStyle = {
   fontSize: 20,
   fontFamily: allowedFonts,
@@ -142,6 +142,10 @@ root.render(
               fontWeight: "normal",
               cursor: "help",
             },
+            ".lsHover:hover": {
+              backgroundColor: Solarized.base1 + "20",
+              borderRadius: 4,
+            },
             ".lsAuthor": {
               backgroundColor: Solarized.violet + "22",
               borderRadius: 4,
@@ -166,10 +170,19 @@ root.render(
               backgroundColor: Solarized.base01 + "48",
               borderRadius: 4,
             },
+            ".lsSenseBullet:hover": {
+              backgroundColor: Solarized.base01 + "80",
+            },
             ".lsHelpText": {
               marginBottom: 6,
             },
             ".lsTrans": { fontStyle: "italic" },
+            ".clickableOutlineSection": {
+              borderRadius: 4,
+            },
+            ".clickableOutlineSection:hover": {
+              backgroundColor: Solarized.base1 + "20",
+            },
           }}
         />
         <StyledEngineProvider injectFirst>

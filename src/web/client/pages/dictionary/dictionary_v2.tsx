@@ -284,8 +284,8 @@ export function DictionaryViewV2() {
                   style={{
                     whiteSpace: "pre-wrap",
                     borderRadius: 4,
-                    color: Solarized.base01,
-                    backgroundColor: Solarized.base2 + "80",
+                    color: Solarized.base03 + "60",
+                    backgroundColor: Solarized.base2 + "60",
                     fontWeight: "bold",
                     padding: 4,
                     paddingLeft: 6,
