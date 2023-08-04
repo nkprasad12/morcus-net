@@ -9,7 +9,6 @@ import {
   mergeVowelMarkers,
 } from "@/common/lewis_and_short/ls_orths";
 import { removeDiacritics } from "@/common/text_cleaning";
-import { LsResult } from "@/web/utils/rpc/ls_api_result";
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { Vowels } from "@/common/character_utils";
 import Database from "better-sqlite3";
@@ -17,6 +16,7 @@ import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
+import { EntryResult } from "@/common/dictionaries/dict_result";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -60,7 +60,7 @@ export class LewisAndShort {
     );
   }
 
-  async getEntry(input: string, extras?: ServerExtras): Promise<LsResult[]> {
+  async getEntry(input: string, extras?: ServerExtras): Promise<EntryResult[]> {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
