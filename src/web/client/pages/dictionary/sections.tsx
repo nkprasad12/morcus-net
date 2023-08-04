@@ -12,6 +12,7 @@ export function ContentBox(props: {
   contentRef?: React.RefObject<HTMLElement>;
   ml?: string;
   mr?: string;
+  noDivider?: true;
 }) {
   const isSmall = props.isSmall;
 
@@ -40,7 +41,9 @@ export function ContentBox(props: {
           {props.children}
         </Typography>
       </Box>
-      <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
+      {props.noDivider === undefined && (
+        <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
+      )}
     </>
   );
 }

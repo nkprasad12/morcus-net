@@ -1,5 +1,6 @@
 import TocIcon from "@mui/icons-material/Toc";
 import ArrowDownwardIcon from "@mui/icons-material/ArrowDownward";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
@@ -20,10 +21,7 @@ import {
   SearchSettings,
   xmlNodeToJsx,
 } from "@/web/client/pages/dictionary/dictionary_utils";
-import {
-  DictChip,
-  DictionarySearch,
-} from "@/web/client/pages/dictionary/search/dictionary_search";
+import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import {
   DictInfo,
   DictsFusedResponse,
@@ -34,7 +32,10 @@ import {
   ContentBox,
   DictAttribution,
 } from "@/web/client/pages/dictionary/sections";
-import { TableOfContentsV2 } from "@/web/client/pages/dictionary/table_of_contents_v2";
+import {
+  TableOfContentsV2,
+  jumpToSection,
+} from "@/web/client/pages/dictionary/table_of_contents_v2";
 import Typography from "@mui/material/Typography";
 
 export const ERROR_STATE_MESSAGE =
@@ -42,7 +43,7 @@ export const ERROR_STATE_MESSAGE =
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE =
   "No results found. If applicable, try enabling another " +
-  +"dictionary in settings.";
+  "dictionary in settings.";
 
 const TOC_SIDEBAR_STYLE: CSSProperties = {
   position: "sticky",
@@ -132,7 +133,7 @@ function JumpToMenuButton(props: { onClick: () => any }) {
 
 function NoResultsContent(props: { isSmall: boolean; dicts: DictInfo[] }) {
   const labels =
-    props.dicts.length > 0 ? props.dicts.map((d) => d.key) : ["None"];
+    props.dicts.length > 0 ? props.dicts.map((d) => d.displayName) : ["None"];
   return (
     <ContentBox isSmall={props.isSmall}>
       <>
@@ -140,7 +141,9 @@ function NoResultsContent(props: { isSmall: boolean; dicts: DictInfo[] }) {
         <div>
           Enabled dictionaries:{" "}
           {labels.map((label) => (
-            <DictChip label={label} key={label} />
+            <>
+              <FullDictChip label={label} key={label} />{" "}
+            </>
           ))}
         </div>
       </>
@@ -153,6 +156,26 @@ function ErrorContent(props: { isSmall: boolean }) {
     <ContentBox isSmall={props.isSmall}>
       <div>{ERROR_STATE_MESSAGE}</div>
     </ContentBox>
+  );
+}
+
+function FullDictChip(props: { label: string }) {
+  return (
+    <Typography
+      component={"span"}
+      style={{
+        whiteSpace: "pre-wrap",
+        borderRadius: 4,
+        color: Solarized.base03 + "60",
+        backgroundColor: Solarized.base2 + "60",
+        fontWeight: "bold",
+        padding: 2,
+        paddingLeft: 6,
+        paddingRight: 6,
+      }}
+    >
+      {props.label}
+    </Typography>
   );
 }
 
@@ -215,10 +238,7 @@ export function DictionaryViewV2() {
       );
       flushSync(() => {
         setEntries(allEntries);
-        const numEntries = allEntries.reduce(
-          (sum, current) => sum + current.entries.length,
-          0
-        );
+        const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
         setState(numEntries === 0 ? "No Results" : "Results");
       });
       const scrollElement = sectionRef.current || searchBarRef.current;
@@ -251,10 +271,58 @@ export function DictionaryViewV2() {
     );
   }
 
+  function ToEntryButton(props: { outline: EntryOutline }) {
+    return (
+      <span
+        className="lsSenseBullet"
+        style={{
+          marginLeft: 3,
+          cursor: "pointer",
+          whiteSpace: "nowrap",
+          fontWeight: "normal",
+        }}
+        onClick={() => jumpToSection(props.outline.mainSection.sectionId)}
+      >
+        <OpenInNewIcon
+          sx={{
+            marginBottom: "-0.1em",
+            marginRight: "-0.1em",
+            fontSize: "0.8rem",
+            paddingLeft: "0.1em",
+          }}
+        />
+        {` ${props.outline.mainOrth}`}
+      </span>
+    );
+  }
+
+  function SummarySection() {
+    const numEntries = entries.reduce((s, c) => s + c.entries.length, 0);
+    return (
+      <ContentBox isSmall={isSmall}>
+        <>
+          <div>
+            Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
+          </div>
+          {entries
+            .filter((entry) => entry.outlines.length > 0)
+            .map((entry) => (
+              <div key={entry.dictKey + "SummarySection"}>
+                <FullDictChip label={entry.name} />{" "}
+                {entry.outlines.map((outline) => (
+                  <ToEntryButton outline={outline} />
+                ))}
+              </div>
+            ))}
+        </>
+      </ContentBox>
+    );
+  }
+
   function HelpSection() {
     return (
       <ContentBox key="helpSection" isSmall={isSmall}>
-        <div style={{ fontSize: 16, lineHeight: "normal" }}>
+        <div style={{ fontSize: 14, lineHeight: "normal" }}>
           {xmlNodeToJsx(HELP_ENTRY)}
         </div>
       </ContentBox>
@@ -279,21 +347,7 @@ export function DictionaryViewV2() {
           <ContentBox key={entry.key} isSmall={isSmall}>
             <>
               <div style={{ marginBottom: 10 }}>
-                <Typography
-                  component={"span"}
-                  style={{
-                    whiteSpace: "pre-wrap",
-                    borderRadius: 4,
-                    color: Solarized.base03 + "60",
-                    backgroundColor: Solarized.base2 + "60",
-                    fontWeight: "bold",
-                    padding: 4,
-                    paddingLeft: 6,
-                    paddingRight: 6,
-                  }}
-                >
-                  {props.data.name}
-                </Typography>
+                <FullDictChip label={props.data.name} />
               </div>
               {entry.element}
             </>
@@ -409,6 +463,7 @@ export function DictionaryViewV2() {
             <JumpToNextButton
               onClick={() => entriesRef.current?.scrollIntoView(SCROLL_JUMP)}
             />
+            <SummarySection />
             <TableOfContents />
           </div>
           <div ref={entriesRef}>
@@ -423,6 +478,7 @@ export function DictionaryViewV2() {
       twoColMain={
         <>
           <HelpSection />
+          <SummarySection />
           <DictionaryEntries />
         </>
       }

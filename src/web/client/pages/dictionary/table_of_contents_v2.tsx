@@ -9,6 +9,17 @@ import { Divider } from "@mui/material";
 import React from "react";
 import { DictChip } from "./search/dictionary_search";
 
+export function jumpToSection(sectionId: string) {
+  const selected = document.getElementById(sectionId);
+  if (selected === null) {
+    return;
+  }
+  window.scrollTo({
+    behavior: "auto",
+    top: selected.offsetTop,
+  });
+}
+
 export function TableOfContentsV2(props: {
   outlines: EntryOutline[];
   dictKey: string;
@@ -25,6 +36,7 @@ export function TableOfContentsV2(props: {
       isSmall={isSmall}
       ml="0px"
       mr="0px"
+      noDivider
     >
       <div style={{ fontSize: 16, lineHeight: "normal" }}>
         {outlines.map((outline, index) => (
@@ -32,16 +44,7 @@ export function TableOfContentsV2(props: {
             key={outline?.mainSection.sectionId || `undefined${index}`}
             dictKey={props.dictKey}
             outline={outline}
-            onClick={(section) => {
-              const selected = document.getElementById(section);
-              if (selected === null) {
-                return;
-              }
-              window.scrollTo({
-                behavior: "auto",
-                top: selected.offsetTop,
-              });
-            }}
+            onClick={jumpToSection}
           />
         ))}
       </div>
@@ -59,8 +62,6 @@ function OutlineSection(props: {
 
   return (
     <div>
-      <Divider variant="middle" light={true} sx={{ padding: "3px" }} />
-      <br />
       <div
         onClick={() => props.onClick(outline.mainSection.sectionId)}
         style={{ cursor: "pointer" }}
@@ -118,6 +119,8 @@ function OutlineSection(props: {
           })}
         </ol>
       )}
+      <Divider variant="middle" light={true} sx={{ padding: "3px" }} />
+      <br />
     </div>
   );
 }
