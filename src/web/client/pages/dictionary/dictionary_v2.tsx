@@ -97,16 +97,7 @@ function JumpToNextButton(props: { onClick: () => any }) {
   return (
     <ArrowDownwardIcon
       onClick={props.onClick}
-      sx={{
-        position: "sticky",
-        float: "right",
-        right: "4%",
-        bottom: "2%",
-        fontSize: "1.75rem",
-        borderRadius: 1,
-        backgroundColor: Solarized.base2 + "80",
-        color: Solarized.base1 + "80",
-      }}
+      className="mobileNavButton"
       aria-label="jump to entry"
     />
   );
@@ -117,15 +108,7 @@ function JumpToMenuButton(props: { onClick: () => any }) {
     <TocIcon
       onClick={props.onClick}
       fontSize="large"
-      sx={{
-        position: "sticky",
-        float: "right",
-        right: "4%",
-        bottom: "2%",
-        borderRadius: 2,
-        backgroundColor: Solarized.base2 + "D0",
-        color: Solarized.base1 + "D0",
-      }}
+      className="mobileNavButton"
       aria-label="jump to outline"
     />
   );
@@ -304,16 +287,20 @@ export function DictionaryViewV2() {
           <div>
             Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
           </div>
-          {entries
-            .filter((entry) => entry.outlines.length > 0)
-            .map((entry) => (
-              <div key={entry.dictKey + "SummarySection"}>
-                <FullDictChip label={entry.name} />{" "}
-                {entry.outlines.map((outline) => (
-                  <ToEntryButton outline={outline} />
-                ))}
-              </div>
-            ))}
+          {numEntries > 1 &&
+            entries
+              .filter((entry) => entry.outlines.length > 0)
+              .map((entry) => (
+                <div key={entry.dictKey + "SummarySection"}>
+                  <FullDictChip label={entry.name} />{" "}
+                  {entry.outlines.map((outline) => (
+                    <ToEntryButton
+                      outline={outline}
+                      key={outline.mainSection.sectionId}
+                    />
+                  ))}
+                </div>
+              ))}
         </>
       </ContentBox>
     );

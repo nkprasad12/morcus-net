@@ -183,6 +183,20 @@ root.render(
             ".clickableOutlineSection:hover": {
               backgroundColor: Solarized.base1 + "20",
             },
+            ".mobileNavButton": {
+              position: "sticky",
+              float: "right",
+              right: "4%",
+              bottom: "2%",
+              borderRadius: 2,
+              backgroundColor: Solarized.base2 + "C0",
+              color: Solarized.base1 + "C0",
+            },
+            ".mobileNavButton:hover": {
+              backgroundColor: Solarized.base2,
+              color: Solarized.base1,
+              cursor: "pointer",
+            },
           }}
         />
         <StyledEngineProvider injectFirst>
