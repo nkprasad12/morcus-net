@@ -17,34 +17,34 @@ export function ContentBox(props: {
   const isSmall = props.isSmall;
 
   return (
-    <>
-      <Box
-        sx={{
-          paddingY: 1,
-          paddingLeft: isSmall ? 0 : 1,
-          ml: props.ml || (isSmall ? 0 : 3),
-          mr: props.mr || (isSmall ? 0 : 3),
-          mt: 1,
-          mb: 2,
-          borderColor: Solarized.base2,
+    <Box
+      sx={{
+        paddingTop: 0,
+        paddingBottom: 0,
+        paddingLeft: isSmall ? 0 : 1,
+        paddingRight: isSmall ? 0 : 1,
+        ml: props.ml || (isSmall ? 0 : 3),
+        mr: props.mr || (isSmall ? 0 : 3),
+        mt: 1,
+        mb: 2,
+        borderColor: Solarized.base2,
+      }}
+      key={props.contentKey}
+      ref={props.contentRef}
+    >
+      <Typography
+        component={"div"}
+        style={{
+          whiteSpace: "pre-wrap",
+          color: Solarized.base02,
         }}
-        key={props.contentKey}
-        ref={props.contentRef}
       >
-        <Typography
-          component={"div"}
-          style={{
-            whiteSpace: "pre-wrap",
-            color: Solarized.base02,
-          }}
-        >
-          {props.children}
-        </Typography>
-      </Box>
+        {props.children}
+      </Typography>
       {props.noDivider === undefined && (
-        <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
+        <Divider light={true} sx={{ mt: "16px" }} />
       )}
-    </>
+    </Box>
   );
 }
 

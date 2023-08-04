@@ -149,7 +149,7 @@ function FullDictChip(props: { label: string }) {
       style={{
         whiteSpace: "pre-wrap",
         borderRadius: 4,
-        color: Solarized.base03 + "60",
+        color: Solarized.base03 + "81",
         backgroundColor: Solarized.base2 + "60",
         fontWeight: "bold",
         padding: 2,
@@ -390,7 +390,7 @@ export function DictionaryViewV2() {
   }) {
     return (
       <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
-        <Stack direction="row" spacing={1} justifyContent="left">
+        <Stack direction="row" spacing={0} justifyContent="left">
           <div style={TOC_SIDEBAR_STYLE}>{props.SidebarContent}</div>
           <div style={{ maxWidth: "10000px" }}>
             <SearchBar maxWidth="md" marginLeft="0" />
