@@ -44,14 +44,14 @@ export namespace EntryOutline {
 /** The pre-processed result for a dictionary entry. */
 export interface EntryResult {
   entry: XmlNode;
-  outline?: EntryOutline;
+  outline: EntryOutline;
 }
 
 export namespace EntryResult {
   export const isMatch: (x: unknown) => x is EntryResult = matches<EntryResult>(
     [
       ["entry", instanceOf(XmlNode)],
-      ["outline", maybeUndefined(EntryOutline.isMatch)],
+      ["outline", EntryOutline.isMatch],
     ]
   );
 }

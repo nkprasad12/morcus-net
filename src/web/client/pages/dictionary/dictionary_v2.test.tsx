@@ -158,6 +158,48 @@ describe("New Dictionary View", () => {
     });
   });
 
+  it("shows multi results case", async () => {
+    const spyScrollTo = jest.fn();
+    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    mockCallApi.mockResolvedValue({
+      LS: [
+        {
+          entry: new XmlNode("span", [["id", "n3"]], ["Entry1"]),
+          outline: {
+            mainOrth: "mainOrth1",
+            mainSection: {
+              text: "mainBlurb1",
+              sectionId: "n1",
+            },
+          },
+        },
+        {
+          entry: new XmlNode("span", [["id", "n3"]], ["Entry2"]),
+          outline: {
+            mainOrth: "mainOrth2",
+            mainSection: {
+              text: "mainBlurb2",
+              sectionId: "n2",
+            },
+          },
+        },
+      ],
+    });
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
+      >
+        <DictionaryViewV2 />
+      </RouteContext.Provider>
+    );
+
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    await waitFor(() => {
+      expect(screen.getByText("Entry1")).toBeDefined();
+      expect(screen.getByText("Entry2")).toBeDefined();
+    });
+  });
+
   it("shows fetched result on small screen", async () => {
     // @ts-ignore
     useMediaQuery.mockImplementation(() => true);

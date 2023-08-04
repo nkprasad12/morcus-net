@@ -30,7 +30,7 @@ export function DictChip(props: { label: string }) {
   return (
     <span
       style={{
-        backgroundColor: Solarized.base2 + "40",
+        backgroundColor: Solarized.base2 + "60",
         color: Solarized.base1,
         borderRadius: 4,
         paddingLeft: 3,
@@ -56,15 +56,16 @@ function SearchSettingsDialog(props: {
   );
 
   function onClose() {
-    setSaving(true);
     const prev = props.dicts;
     const next = pending;
-    setTimeout(() => {
-      if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
+    if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
+      setSaving(true);
+      setTimeout(() => {
         props.setDicts([...pending]);
-      }
+      }, 1);
+    } else {
       props.onClose();
-    }, 1);
+    }
   }
 
   function FormAndActions() {

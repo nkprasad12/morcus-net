@@ -1,3 +1,4 @@
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { Solarized } from "@/web/client/colors";
 import { getBuildDate } from "@/web/client/define_vars";
 import { SelfLink } from "@/web/client/pages/dictionary/dictionary_utils";
@@ -11,6 +12,7 @@ export function ContentBox(props: {
   contentRef?: React.RefObject<HTMLElement>;
   ml?: string;
   mr?: string;
+  noDivider?: true;
 }) {
   const isSmall = props.isSmall;
 
@@ -39,14 +41,16 @@ export function ContentBox(props: {
           {props.children}
         </Typography>
       </Box>
-      <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
+      {props.noDivider === undefined && (
+        <Divider sx={{ ml: isSmall ? 0 : 3, mr: isSmall ? 0 : 3 }} />
+      )}
     </>
   );
 }
 
 export function LsAttribution(props: { isSmall: boolean }) {
   return (
-    <ContentBox key="attributionBox" isSmall={props.isSmall}>
+    <ContentBox isSmall={props.isSmall}>
       <div style={{ fontSize: 15, lineHeight: "normal" }}>
         <div>
           Text provided under a CC BY-SA license by Perseus Digital Library,{" "}
@@ -62,6 +66,20 @@ export function LsAttribution(props: { isSmall: boolean }) {
           <SelfLink to="https://github.com/nkprasad12/lexica/" />{" "}
           {getBuildDate()}.
         </div>
+      </div>
+    </ContentBox>
+  );
+}
+
+export function DictAttribution(props: { isSmall: boolean; dictKey: string }) {
+  const key = props.dictKey + "AttrBox";
+  if (props.dictKey === LatinDict.LewisAndShort.key) {
+    return <LsAttribution isSmall={props.isSmall} key={key} />;
+  }
+  return (
+    <ContentBox isSmall={props.isSmall}>
+      <div style={{ fontSize: 15, lineHeight: "normal" }}>
+        TODO: Write attribution for {props.dictKey}
       </div>
     </ContentBox>
   );
