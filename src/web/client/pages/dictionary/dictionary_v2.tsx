@@ -11,7 +11,6 @@ import { RouteContext } from "@/web/client/components/router";
 import { flushSync } from "react-dom";
 import { DictsFusedApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import { LsOutline } from "@/web/utils/rpc/ls_api_result";
 import { Footer } from "@/web/client/components/footer";
 import {
   ElementAndKey,
@@ -30,12 +29,13 @@ import {
   DictsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { EntryResult } from "@/common/dictionaries/dict_result";
+import { EntryOutline } from "@/common/dictionaries/dict_result";
 import {
   ContentBox,
-  LsAttribution,
+  DictAttribution,
 } from "@/web/client/pages/dictionary/sections";
-import { TableOfContents } from "@/web/client/pages/dictionary/table_of_contents";
+import { TableOfContentsV2 } from "@/web/client/pages/dictionary/table_of_contents_v2";
+import Typography from "@mui/material/Typography";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection and try again." +
@@ -156,10 +156,35 @@ function ErrorContent(props: { isSmall: boolean }) {
   );
 }
 
+function getEntriesByDict(
+  response: DictsFusedResponse,
+  sectionRef: React.RefObject<HTMLElement>,
+  hash?: string
+): EntriesByDict[] {
+  const result: EntriesByDict[] = [];
+  for (const dictKey in response) {
+    const rawEntries = response[dictKey];
+    const entries = rawEntries.map((e, i) => ({
+      element: xmlNodeToJsx(e.entry, hash, sectionRef),
+      key: e.entry.getAttr("id") || `${dictKey}${i}`,
+    }));
+    const outlines = rawEntries.map((e) => e.outline);
+    const name = LatinDict.BY_KEY.get(dictKey)?.displayName || dictKey;
+    result.push({ dictKey, name, entries, outlines });
+  }
+  return result;
+}
+
+interface EntriesByDict {
+  dictKey: string;
+  name: string;
+  entries: ElementAndKey[];
+  outlines: EntryOutline[];
+}
+
 export function DictionaryViewV2() {
   const [state, setState] = React.useState<DictState>("Landing");
-  const [entries, setEntries] = React.useState<ElementAndKey[]>([]);
-  const [outlines, setOutlines] = React.useState<(LsOutline | undefined)[]>([]);
+  const [entries, setEntries] = React.useState<EntriesByDict[]>([]);
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
     SearchSettings.retrieve()
   );
@@ -183,18 +208,18 @@ export function DictionaryViewV2() {
         setState("Error");
         return;
       }
-      const allEntries: EntryResult[] = [];
-      for (const key in newResults) {
-        allEntries.push(...newResults[key]);
-      }
-      const jsxEntries = allEntries.map((e, i) => ({
-        element: xmlNodeToJsx(e.entry, nav.route.hash, sectionRef),
-        key: e.entry.getAttr("id") || `${i}`,
-      }));
+      const allEntries = getEntriesByDict(
+        newResults,
+        sectionRef,
+        nav.route.hash
+      );
       flushSync(() => {
-        setEntries(jsxEntries);
-        setOutlines(allEntries.map((r) => r.outline));
-        setState(jsxEntries.length === 0 ? "No Results" : "Results");
+        setEntries(allEntries);
+        const numEntries = allEntries.reduce(
+          (sum, current) => sum + current.entries.length,
+          0
+        );
+        setState(numEntries === 0 ? "No Results" : "Results");
       });
       const scrollElement = sectionRef.current || searchBarRef.current;
       const scrollType =
@@ -244,15 +269,66 @@ export function DictionaryViewV2() {
     );
   }
 
+  function SingleDictSection(props: { data: EntriesByDict }) {
+    if (props.data.entries.length === 0) {
+      return <></>;
+    }
+    return (
+      <>
+        {props.data.entries.map((entry) => (
+          <ContentBox key={entry.key} isSmall={isSmall}>
+            <>
+              <div style={{ marginBottom: 10 }}>
+                <Typography
+                  component={"span"}
+                  style={{
+                    whiteSpace: "pre-wrap",
+                    borderRadius: 4,
+                    color: Solarized.base01,
+                    backgroundColor: Solarized.base2 + "80",
+                    fontWeight: "bold",
+                    padding: 4,
+                    paddingLeft: 6,
+                    paddingRight: 6,
+                  }}
+                >
+                  {props.data.name}
+                </Typography>
+              </div>
+              {entry.element}
+            </>
+          </ContentBox>
+        ))}
+        <DictAttribution isSmall={isSmall} dictKey={props.data.dictKey} />
+      </>
+    );
+  }
+
   function DictionaryEntries() {
     return (
       <>
         {entries.map((entry) => (
-          <ContentBox key={entry.key} isSmall={isSmall}>
-            {entry.element}
-          </ContentBox>
+          <SingleDictSection
+            data={entry}
+            key={`${entry.dictKey}EntrySection`}
+          />
         ))}
-        <LsAttribution isSmall={isSmall} />
+      </>
+    );
+  }
+
+  function TableOfContents() {
+    return (
+      <>
+        {entries.map((entry) => (
+          <TableOfContentsV2
+            dictKey={entry.dictKey}
+            outlines={entry.outlines}
+            isSmall={isSmall}
+            tocRef={tocRef}
+            key={entry.dictKey + "ToC"}
+          />
+        ))}
       </>
     );
   }
@@ -324,14 +400,6 @@ export function DictionaryViewV2() {
     );
   }
 
-  const tableOfContents = (
-    <TableOfContents
-      entries={entries}
-      outlines={outlines}
-      isSmall={isSmall}
-      tocRef={tocRef}
-    />
-  );
   return (
     <ResponsiveLayout
       oneCol={
@@ -341,7 +409,7 @@ export function DictionaryViewV2() {
             <JumpToNextButton
               onClick={() => entriesRef.current?.scrollIntoView(SCROLL_JUMP)}
             />
-            {tableOfContents}
+            <TableOfContents />
           </div>
           <div ref={entriesRef}>
             <DictionaryEntries />
@@ -351,7 +419,7 @@ export function DictionaryViewV2() {
           </div>
         </>
       }
-      twoColSide={tableOfContents}
+      twoColSide={<TableOfContents />}
       twoColMain={
         <>
           <HelpSection />

@@ -16,4 +16,7 @@ export namespace LatinDict {
   };
 
   export const AVAILABLE: DictInfo[] = [LewisAndShort];
+  export const BY_KEY = new Map<string, DictInfo>(
+    AVAILABLE.map((d) => [d.key, d])
+  );
 }

@@ -9,6 +9,15 @@ import { XmlNode } from "@/common/xml_node";
 
 const ENTRY_RESULT: EntryResult = {
   entry: new XmlNode("foo"),
+  outline: {
+    mainOrth: "foo",
+    mainSection: {
+      text: "bar",
+      level: 0,
+      ordinal: "",
+      sectionId: "",
+    },
+  },
 };
 
 describe("Dictionaries API types", () => {

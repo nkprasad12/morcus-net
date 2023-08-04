@@ -7,9 +7,9 @@ describe("Dict Result API types", () => {
     expect(EntryResult.isMatch(input)).toBe(false);
   });
 
-  test("EntryResult.isMatch returns true on no outline", () => {
+  test("EntryResult.isMatch returns false on no outline", () => {
     const input = new XmlNode("span");
-    expect(EntryResult.isMatch({ entry: input })).toBe(true);
+    expect(EntryResult.isMatch({ entry: input })).toBe(false);
   });
 
   test("EntryResult.isMatch returns false without main section", () => {
