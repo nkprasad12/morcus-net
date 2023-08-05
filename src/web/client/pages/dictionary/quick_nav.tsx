@@ -75,8 +75,7 @@ class NavHelper {
   }
 }
 
-// @ts-expect-error
-function QuickNavMenu() {
+export function QuickNavMenu() {
   const [open, setOpen] = React.useState<boolean>(false);
   const navHelper = React.useRef<NavHelper | null>(null);
 
@@ -99,8 +98,6 @@ function QuickNavMenu() {
             className="mobileNavButton"
             aria-label="jump to previous section"
           />
-        </div>
-        <div>
           <TocIcon
             onClick={() =>
               document
