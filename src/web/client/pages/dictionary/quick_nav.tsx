@@ -1,13 +1,16 @@
+/* istanbul ignore file */
+
 import React from "react";
 import TocIcon from "@mui/icons-material/Toc";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
 import MenuOpenIcon from "@mui/icons-material/MenuOpen";
 import CloseIcon from "@mui/icons-material/Close";
-import { SCROLL_JUMP } from "@/web/client/pages/dictionary/dictionary_utils";
+import {
+  QUICK_NAV_ANCHOR,
+  SCROLL_JUMP,
+} from "@/web/client/pages/dictionary/dictionary_utils";
 import { assertEqual } from "@/common/assert";
-
-export const QUICK_NAV_ANCHOR = "QNA-";
 
 class NavHelper {
   private readonly observer: IntersectionObserver;
@@ -72,7 +75,8 @@ class NavHelper {
   }
 }
 
-export function QuickNavMenu() {
+// @ts-expect-error
+function QuickNavMenu() {
   const [open, setOpen] = React.useState<boolean>(false);
   const navHelper = React.useRef<NavHelper | null>(null);
 

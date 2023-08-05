@@ -9,6 +9,8 @@ import {
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
+export const QUICK_NAV_ANCHOR = "QNA-";
+
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
   block: "start",

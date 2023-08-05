@@ -254,8 +254,9 @@ describe("New Dictionary View", () => {
       expect(screen.getByText("sense2")).toBeDefined();
     });
 
-    expect(screen.queryByLabelText("jump to outline")).not.toBeNull();
-    expect(screen.queryByLabelText("jump to entry")).not.toBeNull();
+    // We're disabling floating nav for now
+    // expect(screen.queryByLabelText("jump to outline")).not.toBeNull();
+    // expect(screen.queryByLabelText("jump to entry")).not.toBeNull();
 
     // Expect this to scroll since the linked section exists
     spyScrollTo.mockClear();
