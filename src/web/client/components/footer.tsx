@@ -3,9 +3,9 @@ import * as React from "react";
 import { Box, Typography } from "@mui/material";
 import { Solarized } from "@/web/client/colors";
 
-export function Footer() {
+export function Footer(props: { id?: string }) {
   return (
-    <Box padding="2em">
+    <Box padding="2em" id={props.id}>
       <Typography
         component={"div"}
         style={{ marginTop: window.innerHeight, color: Solarized.base02 }}

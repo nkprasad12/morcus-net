@@ -30,8 +30,8 @@ export function DictChip(props: { label: string }) {
   return (
     <span
       style={{
+        color: Solarized.base03 + "81",
         backgroundColor: Solarized.base2 + "60",
-        color: Solarized.base1,
         borderRadius: 4,
         paddingLeft: 3,
         paddingRight: 3,
@@ -183,10 +183,11 @@ export function DictionarySearch(props: {
         options={options}
         filterOptions={(x) => x}
         sx={{
-          padding: 1,
+          padding: props.smallScreen ? 0 : 1,
           paddingTop: 2,
-          ml: props.smallScreen ? 1 : 2,
-          mr: props.smallScreen ? 1 : 2,
+          paddingBottom: 2,
+          ml: props.smallScreen ? 0 : 3,
+          mr: props.smallScreen ? 0 : 3,
           mt: 2,
           mb: 1,
         }}

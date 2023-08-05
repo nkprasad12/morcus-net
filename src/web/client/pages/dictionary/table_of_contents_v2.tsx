@@ -61,7 +61,7 @@ function OutlineSection(props: {
   const senses = outline.senses;
 
   return (
-    <div>
+    <div style={{ marginTop: "12px" }}>
       <div
         onClick={() => props.onClick(outline.mainSection.sectionId)}
         style={{ cursor: "pointer" }}
@@ -119,8 +119,7 @@ function OutlineSection(props: {
           })}
         </ol>
       )}
-      <Divider variant="middle" light={true} sx={{ padding: "3px" }} />
-      <br />
+      <Divider light={true} sx={{ margin: 0, padding: 0 }} />
     </div>
   );
 }

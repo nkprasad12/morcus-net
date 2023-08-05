@@ -11,7 +11,7 @@ import ThemeProvider from "@mui/material/styles/ThemeProvider";
 import { Macronizer } from "@/web/client/pages/macron";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
-import { DictionaryView } from "@/web/client/pages/dictionary/dictionary";
+import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { Solarized } from "@/web/client/colors";
 import { Router } from "@/web/client/components/router";
 import { SettingsHandler } from "@/web/client/components/global_flags";
@@ -93,7 +93,7 @@ const ABOUT_PAGE: SinglePageApp.Page = {
 const DICT_PAGE: SinglePageApp.Page = {
   name: "Dictionary",
   path: "/dicts",
-  content: DictionaryView,
+  content: DictionaryViewV2,
 };
 const MACRONIZER_PAGE: SinglePageApp.Page = {
   name: "Macronizer",
@@ -183,18 +183,26 @@ root.render(
             ".clickableOutlineSection:hover": {
               backgroundColor: Solarized.base1 + "20",
             },
-            ".mobileNavButton": {
+            ".mobileNavMenu": {
               position: "sticky",
               float: "right",
-              right: "4%",
-              bottom: "2%",
-              borderRadius: 2,
-              backgroundColor: Solarized.base2 + "C0",
-              color: Solarized.base1 + "C0",
+              bottom: "0%",
+              padding: 2,
+              backgroundColor: Solarized.base1 + "A0",
+              borderRadius: 4,
+            },
+            ".mobileNavButton": {
+              backgroundColor: Solarized.base2 + "D0",
+              color: Solarized.base1,
+              borderRadius: 4,
+              marginTop: 3,
+              marginLeft: 3,
+              marginRight: 3,
+              fontSize: 32,
             },
             ".mobileNavButton:hover": {
               backgroundColor: Solarized.base2,
-              color: Solarized.base1,
+              color: Solarized.base0,
               cursor: "pointer",
             },
           }}

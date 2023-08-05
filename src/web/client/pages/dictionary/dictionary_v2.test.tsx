@@ -164,7 +164,7 @@ describe("New Dictionary View", () => {
     mockCallApi.mockResolvedValue({
       LS: [
         {
-          entry: new XmlNode("span", [["id", "n3"]], ["Entry1"]),
+          entry: new XmlNode("span", [["id", "n4"]], ["Entry1"]),
           outline: {
             mainOrth: "mainOrth1",
             mainSection: {
@@ -254,8 +254,9 @@ describe("New Dictionary View", () => {
       expect(screen.getByText("sense2")).toBeDefined();
     });
 
-    expect(screen.queryByLabelText("jump to outline")).not.toBeNull();
-    expect(screen.queryByLabelText("jump to entry")).not.toBeNull();
+    // We're disabling floating nav for now
+    // expect(screen.queryByLabelText("jump to outline")).not.toBeNull();
+    // expect(screen.queryByLabelText("jump to entry")).not.toBeNull();
 
     // Expect this to scroll since the linked section exists
     spyScrollTo.mockClear();

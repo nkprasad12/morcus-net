@@ -9,6 +9,8 @@ import {
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
+export const QUICK_NAV_ANCHOR = "QNA-";
+
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
   block: "start",
@@ -16,13 +18,6 @@ export const SCROLL_JUMP: ScrollIntoViewOptions = {
 export const SCROLL_SMOOTH: ScrollIntoViewOptions = {
   behavior: "smooth",
   block: "start",
-};
-export const ERROR_MESSAGE = {
-  entry: new XmlNode(
-    "span",
-    [],
-    ["Failed to fetch the entry. Please try again later."]
-  ),
 };
 const HIGHLIGHT_HELP = new XmlNode(
   "div",
@@ -70,17 +65,6 @@ export const HELP_ENTRY = new XmlNode(
   "div",
   [],
   [HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
-);
-
-export const LOADING_ENTRY = xmlNodeToJsx(
-  new XmlNode(
-    "div",
-    [],
-    [
-      "Please wait - checking for results." +
-        "Dedit oscula nato non iterum repetenda suo ".repeat(3),
-    ]
-  )
 );
 
 export function SelfLink(props: { to: string }) {
