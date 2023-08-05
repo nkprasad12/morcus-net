@@ -7,7 +7,7 @@ import React, { CSSProperties } from "react";
 
 import { Solarized } from "@/web/client/colors";
 import { RouteContext } from "@/web/client/components/router";
-import ReactDOM, { flushSync } from "react-dom";
+import { flushSync } from "react-dom";
 import { DictsFusedApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { Footer } from "@/web/client/components/footer";
@@ -36,7 +36,6 @@ import {
   jumpToSection,
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
 import Typography from "@mui/material/Typography";
-import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection and try again." +
@@ -430,7 +429,7 @@ export function DictionaryViewV2() {
     <ResponsiveLayout
       oneCol={
         <>
-          {ReactDOM.createPortal(<QuickNavMenu />, document.body)}
+          {/* {ReactDOM.createPortal(<QuickNavMenu />, document.body)} */}
           <HelpSection id={QUICK_NAV_ANCHOR + "HelpSection"} />
           <div id={QUICK_NAV_ANCHOR + "Toc"}>
             <SummarySection />

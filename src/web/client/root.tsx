@@ -184,15 +184,10 @@ root.render(
               backgroundColor: Solarized.base1 + "20",
             },
             ".mobileNavMenu": {
-              // backgroundColor: Solarized.base1 + "A0",
               overflow: "hidden",
               position: "fixed",
               bottom: "0",
-              // right: "0",
               width: "100%",
-              // paddingLeft: 2,
-              // paddingTop: 2,
-              // borderRadius: 4,
             },
             ".mobileNavButton": {
               backgroundColor: Solarized.base2 + "F0",
