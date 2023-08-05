@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 
 import * as dotenv from "dotenv";
-import { processSmithHall } from "@/common/smith_and_hall/process";
+import { processSmithHall } from "@/common/smith_and_hall/sh_process";
 
 dotenv.config();
 
