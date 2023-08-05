@@ -186,7 +186,7 @@ root.render(
             ".mobileNavMenu": {
               position: "sticky",
               float: "right",
-              bottom: "30%",
+              bottom: "0%",
               padding: 2,
               backgroundColor: Solarized.base1 + "A0",
               borderRadius: 4,
@@ -198,7 +198,7 @@ root.render(
               marginTop: 3,
               marginLeft: 3,
               marginRight: 3,
-              fontSize: 28,
+              fontSize: 32,
             },
             ".mobileNavButton:hover": {
               backgroundColor: Solarized.base2,
