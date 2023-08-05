@@ -45,6 +45,10 @@ export const CORRECTIONS = new Map<string, string>([
     `thrum (<i>subs.</i>): līcium: <i>to add t.s to`,
     `<b>thrum</b> (<i>subs.</i>): līcium: <i>to add t.s to`,
   ],
+  [
+    "<b>uncouple (<f>animals</f>), to</b>: disjungo,",
+    "<b>uncouple (animals), to</b>: disjungo,",
+  ],
 ]);
 
 export const DASH_EDGE_CASES = new Map<string, string>([

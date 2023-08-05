@@ -64,50 +64,79 @@ describe("extractEntryKeyFromLine", () => {
   test("handles single word chunks", () => {
     const input = `<b>surety</b>:`;
     const expected = "surety";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
   test("handles multiword chunks", () => {
     const input = `<b>swim across</b>:`;
     const expected = "swim across";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
   test("handles v. words", () => {
     const input = `<b>thumb</b> (<i>v.</i>): *pollice versare (cf.`;
     const expected = "thumb";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
   test("handles subst. words", () => {
     const input = `<b>wax</b> (<i>subs.</i>): cēra: <i>we shape and`;
     const expected = "wax";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
   test("handles v. rare words", () => {
     const input = `<b>short-hand</b> (v. rare): nŏtae, arum`;
     const expected = "short-hand";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
   test("handles parenthical extras", () => {
     const input = `<b>bencher</b> (of an Inn of law): *advocatus`;
     const expected = "bencher";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
   test("handles parenthical extras with tags", () => {
     const input = `<b>bring before</b> (<i>call attention to</i>):`;
     const expected = "bring before";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
-  test("handles multiple words", () => {
+  test("handles replacement of alternate division", () => {
+    const input = `<b>baptizer</b>, qui baptizat.`;
+    const expected = "baptizer";
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
+  });
+
+  test("handles replacement of alternate division with parenthetical", () => {
+    const input = `<b>arrest</b> (<i>v.</i>).`;
+    const expected = "arrest";
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
+  });
+
+  test("handles parenthical extras with tags", () => {
+    const input = `<b>bring before</b> (<i>call attention to</i>):`;
+    const expected = "bring before";
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
+  });
+
+  test("handles cases with dashes", () => {
+    const input = "<b>----, make</b>, prŏbo, 1 (with";
+    const expected = "----, make";
+    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
+  });
+
+  test("handles multiple words before colon", () => {
     const input = `<b>vine-fretter</b> or <b>grub</b>: convolvŭlus`;
-    const expected = "short-hand";
-    expect(extractEntryKeyFromLine(input)).toBe(expected);
-    // What do we expact as the output here?
-    expect(true).toBe(false);
+    const expected = ["vine-fretter", "grub"];
+    expect(extractEntryKeyFromLine(input)).toEqual(expected);
+  });
+
+  test("handles multiple words without colon", () => {
+    const input =
+      "<b>villanous</b>,, <b>villanously</b>, <b>villanousness</b>,,";
+    const expected = ["villanous", "villanously", "villanousness"];
+    expect(extractEntryKeyFromLine(input)).toEqual(expected);
   });
 });

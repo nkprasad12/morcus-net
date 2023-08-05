@@ -1,5 +1,10 @@
 import { describe, expect, test } from "@jest/globals";
-import { assert, assertEqual, checkPresent } from "@/common/assert";
+import {
+  assert,
+  assertEqual,
+  checkPresent,
+  checkSatisfies,
+} from "@/common/assert";
 
 describe("assert", () => {
   test("raises message on false", () => {
@@ -32,5 +37,16 @@ describe("assertPresent", () => {
 
   test("is no-op on other values", () => {
     expect(checkPresent(false)).toBe(false);
+  });
+});
+
+describe("checkSatisfies", () => {
+  test("raises on failures", () => {
+    expect(() => checkSatisfies(["foo"], (a) => a.length === 2)).toThrowError();
+  });
+
+  test("returns same on true", () => {
+    const original = ["foo"];
+    expect(checkSatisfies(original, (a) => a.length === 1)).toBe(original);
   });
 });

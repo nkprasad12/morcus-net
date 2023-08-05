@@ -149,16 +149,16 @@ async function getArticles(): Promise<string[][]> {
 }
 
 export function expandDashes(
-  nameWithDashes: string,
-  lastUndashedName: string
-): string {
+  keysWithDashes: string[],
+  lastUndashedKeys: string[]
+): string[] {
   if (VERBOSE) {
     console.log(
-      `Need to normalize: ${nameWithDashes}\nLast: ${lastUndashedName}\n`
+      `Need to normalize: ${keysWithDashes}\nLast: ${lastUndashedKeys}\n`
     );
   }
   // TODO: Actually normalize this.
-  return nameWithDashes;
+  return keysWithDashes;
 }
 
 // TODO: SH sometimes has breves marked as e.g. [)o] or [)i] and
@@ -166,14 +166,13 @@ export function expandDashes(
 
 /** Normalizes ---- and combines `/ *` (no space) based articles  */
 interface NormalizedArticle {
-  name: string;
+  keys: string[];
   text: string[];
 }
 
 function normalizeArticles(rawArticles: string[][]): NormalizedArticle[] {
   const normalized: NormalizedArticle[] = [];
   let lastUndashed: NormalizedArticle | null = null;
-  const degens: string[] = [];
   for (const unnormalized of rawArticles) {
     if (unnormalized[0] === "/*") {
       // TODO: Here we have multiple headings for the same article.
@@ -181,20 +180,14 @@ function normalizeArticles(rawArticles: string[][]): NormalizedArticle[] {
       // the article, and attach the content to all headings.
       // Note that sometimes there is content after the }
       // console.log("Skipping a /* entry - make sure to handle this later.\n");
-      normalized.push({ name: "SKIPPED", text: ["SKIPPED FOR NOW"] });
+      normalized.push({ keys: ["SKIPPED"], text: ["SKIPPED FOR NOW"] });
       continue;
     }
     const firstLine = unnormalized[0];
-    let name: string | null = null;
-    try {
-      name = extractEntryKeyFromLine(firstLine);
-    } catch (e) {
-      degens.push(firstLine);
-      continue;
-    }
+    const keys = extractEntryKeyFromLine(firstLine);
 
-    if (!name.includes("----")) {
-      const result = { name, text: unnormalized.map((x) => x) };
+    if (!keys[0].includes("----")) {
+      const result = { keys, text: unnormalized.map((x) => x) };
       normalized.push(result);
       lastUndashed = result;
       continue;
@@ -204,15 +197,12 @@ function normalizeArticles(rawArticles: string[][]): NormalizedArticle[] {
       lastUndashed,
       "Got a dashed entry without a last undashed entry."
     );
-    const normalizedName = expandDashes(name, lastUndashed?.name!);
+    const expandedKeys = expandDashes(keys, lastUndashed?.keys!);
     // TODO: Also substitute for the dashes in the text.
     // Probably can replace `name` in unnormalized[0] with `normalizedName`.
     // Just need to check that there is only one instance.
-    normalized.push({ name: normalizedName, text: unnormalized.map((x) => x) });
+    normalized.push({ keys: expandedKeys, text: unnormalized.map((x) => x) });
   }
-  console.log(
-    `${degens.length}\n====\n${JSON.stringify(degens, undefined, 2)}\n====`
-  );
   return normalized;
 }
 
