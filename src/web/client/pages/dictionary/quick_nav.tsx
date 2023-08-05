@@ -88,15 +88,10 @@ export function QuickNavMenu() {
     return (
       <>
         <div>
-          <KeyboardArrowDown
-            onClick={() => navHelper.current?.scrollToNext()}
+          <CloseIcon
+            onClick={() => setOpen(false)}
             className="mobileNavButton"
-            aria-label="jump to next section"
-          />
-          <KeyboardArrowUp
-            onClick={() => navHelper.current?.scrollToPrevious()}
-            className="mobileNavButton"
-            aria-label="jump to previous section"
+            aria-label="close quick navigation"
           />
           <TocIcon
             onClick={() =>
@@ -107,10 +102,15 @@ export function QuickNavMenu() {
             className="mobileNavButton"
             aria-label="jump to entry"
           />
-          <CloseIcon
-            onClick={() => setOpen(false)}
+          <KeyboardArrowDown
+            onClick={() => navHelper.current?.scrollToNext()}
             className="mobileNavButton"
-            aria-label="close quick navigation"
+            aria-label="jump to next section"
+          />
+          <KeyboardArrowUp
+            onClick={() => navHelper.current?.scrollToPrevious()}
+            className="mobileNavButton"
+            aria-label="jump to previous section"
           />
         </div>
       </>
