@@ -13,6 +13,7 @@ export function ContentBox(props: {
   ml?: string;
   mr?: string;
   noDivider?: true;
+  id?: string;
 }) {
   const isSmall = props.isSmall;
 
@@ -31,6 +32,7 @@ export function ContentBox(props: {
       }}
       key={props.contentKey}
       ref={props.contentRef}
+      id={props.id}
     >
       <Typography
         component={"div"}

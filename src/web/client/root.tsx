@@ -183,18 +183,26 @@ root.render(
             ".clickableOutlineSection:hover": {
               backgroundColor: Solarized.base1 + "20",
             },
-            ".mobileNavButton": {
+            ".mobileNavMenu": {
               position: "sticky",
               float: "right",
-              right: "4%",
-              bottom: "2%",
-              borderRadius: 2,
-              backgroundColor: Solarized.base2 + "C0",
-              color: Solarized.base1 + "C0",
+              bottom: "30%",
+              padding: 2,
+              backgroundColor: Solarized.base1 + "A0",
+              borderRadius: 4,
+            },
+            ".mobileNavButton": {
+              backgroundColor: Solarized.base2 + "D0",
+              color: Solarized.base1,
+              borderRadius: 4,
+              marginTop: 3,
+              marginLeft: 3,
+              marginRight: 3,
+              fontSize: 28,
             },
             ".mobileNavButton:hover": {
               backgroundColor: Solarized.base2,
-              color: Solarized.base1,
+              color: Solarized.base0,
               cursor: "pointer",
             },
           }}
