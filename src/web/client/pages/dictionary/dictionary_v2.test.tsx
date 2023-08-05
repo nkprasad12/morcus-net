@@ -164,7 +164,7 @@ describe("New Dictionary View", () => {
     mockCallApi.mockResolvedValue({
       LS: [
         {
-          entry: new XmlNode("span", [["id", "n3"]], ["Entry1"]),
+          entry: new XmlNode("span", [["id", "n4"]], ["Entry1"]),
           outline: {
             mainOrth: "mainOrth1",
             mainSection: {
