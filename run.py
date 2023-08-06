@@ -67,7 +67,7 @@ parser.add_argument(
 parser.add_argument(
     "-to",
     "--transpile_only",
-    help="If set, skips type checking for the client bundle.",
+    help="If set, skips type checking for the client and server.",
     action="store_true",
 )
 parser.add_argument(
@@ -154,6 +154,8 @@ if args.command in WEB_SERVER:
     base_run_args = ["npm", "run", "ts-node"]
     if args.bun:
         base_run_args = ["bun", "run"]
+    elif args.transpile_only:
+        base_run_args.append("-- --transpile-only")
     subprocess.run(
         " ".join(base_run_args + ["src/start_server.ts"]),
         shell=True,
