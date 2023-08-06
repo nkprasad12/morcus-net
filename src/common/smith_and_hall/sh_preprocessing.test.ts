@@ -1,6 +1,8 @@
 import {
   extractEntryKeyFromLine,
   handleEditorNotes,
+  parseComboEntries,
+  replaceDash,
 } from "@/common/smith_and_hall/sh_preprocessing";
 
 describe("handleEditorNotes", () => {
@@ -139,4 +141,225 @@ describe("extractEntryKeyFromLine", () => {
     const expected = ["villanous", "villanously", "villanousness"];
     expect(extractEntryKeyFromLine(input)).toEqual(expected);
   });
+});
+
+describe("parseComboEntries", () => {
+  it("handles simple entries", () => {
+    const rawInput = [
+      "/*",
+      "<b>revel</b> (<i>subs.</i>): }",
+      "<b>revelling</b>:       }",
+      "*/",
+      "",
+      "1. cōmissātio: <i>to",
+      "prolong the r.s till",
+    ];
+
+    const result = parseComboEntries(rawInput);
+
+    expect(result.keys).toEqual(["revel", "revelling"]);
+    expect(result.text).toEqual([
+      "<b>revel</b> (<i>subs.</i>):; <b>revelling</b>:",
+      "",
+      "1. cōmissātio: <i>to",
+      "prolong the r.s till",
+    ]);
+  });
+
+  it("handles entries missing open and close", () => {
+    const rawInput = [
+      "<b>revel</b> (<i>subs.</i>): }",
+      "<b>revelling</b>:       }",
+      "",
+      "1. cōmissātio: <i>to",
+      "prolong the r.s till",
+    ];
+
+    const result = parseComboEntries(rawInput);
+
+    expect(result.keys).toEqual(["revel", "revelling"]);
+    expect(result.text).toEqual([
+      "<b>revel</b> (<i>subs.</i>): ; <b>revelling</b>:",
+      "",
+      "1. cōmissātio: <i>to",
+      "prolong the r.s till",
+    ]);
+  });
+
+  it("handles entries with dashes", () => {
+    const rawInput = [
+      "/*",
+      "<b>sedge-bird</b>:    }",
+      "<b>---- -warbler</b>: }",
+      "*/",
+      "",
+      "*călămŏdȳta phragmītis:",
+      "Wood.",
+    ];
+
+    const result = parseComboEntries(rawInput);
+
+    expect(result.keys).toEqual(["sedge-bird", "sedge -warbler"]);
+    expect(result.text).toEqual([
+      "<b>sedge-bird</b>: ; <b>sedge -warbler</b>:",
+      "",
+      "*călămŏdȳta phragmītis:",
+      "Wood.",
+    ]);
+  });
+
+  it("handles entries with single bracket", () => {
+    const rawInput = [
+      "/*",
+      "<b>shake</b>   }",
+      "<b>shaking</b> } <i>subs.</i>:",
+      "*/",
+      "",
+      "1. quassātio:",
+      "<i>the s. of their",
+    ];
+
+    const result = parseComboEntries(rawInput);
+
+    expect(result.keys).toEqual(["shake", "shaking"]);
+    expect(result.text).toEqual([
+      "<b>shake</b> ; <b>shaking</b>",
+      "<i>subs.</i>:",
+      "",
+      "1. quassātio:",
+      "<i>the s. of their",
+    ]);
+  });
+
+  it("handles entries with multiple bracket sets", () => {
+    const rawInput = [
+      "/*",
+      "<b>serpentine</b>  } (<i>subs.</i>): { ophītēs, ae, <i>m.</i>",
+      "<b>---- -stone</b> }            { (= Gr. ὀφίτης):",
+      "*/",
+      "",
+      "<i>s. like the spots of serpents, and",
+      "from this it took its name</i>, o. serpentium",
+    ];
+
+    const result = parseComboEntries(rawInput);
+
+    expect(result.keys).toEqual(["serpentine", "serpentine -stone"]);
+    expect(result.text).toEqual([
+      "<b>serpentine</b> ; <b>serpentine -stone</b>",
+      "(<i>subs.</i>):",
+      "ophītēs, ae, <i>m.</i>",
+      "(= Gr. ὀφίτης):",
+      "",
+      "<i>s. like the spots of serpents, and",
+      "from this it took its name</i>, o. serpentium",
+    ]);
+  });
+});
+
+describe("replaceDash", () => {
+  test("simple string case", () => {
+    const result = replaceDash("----, make", "acceptable, be");
+    expect(result).toBe("acceptable, make");
+  });
+
+  /*
+
+----, the being
+accessory
+
+----, be
+afraid
+
+---- ----, become
+acquainted with
+
+---- oneself
+acquaint
+
+---- between
+be amongst
+
+---- down
+burn at the end
+
+----, to be on
+fire,, of
+
+---- broker
+money-bag
+
+----wort
+money-bag
+
+---- in-law
+mother
+
+---- as, as
+much
+
+---- -bearing
+quiver
+
+----
+recoil
+
+---- -making
+road, to make
+
+----, ragged-
+robin
+
+---- leaved
+roundhead
+
+----, Italian
+rye-grass
+
+---- -keeping
+sabbath-breaker
+
+---- -sick, to be
+sea-eagle
+
+---- -hand writer
+short-hand
+
+---- room
+sick, to be
+
+---- -bird
+snow-ball-tree
+
+---- -bearing
+talebearer
+
+---- -upon
+therein
+
+---- -rigger
+thimbleful
+
+---- twin-brothers
+three-footed
+
+----
+under-ground
+
+---- ---- building
+under-ground
+
+---- ---- ---- over
+victory, to gain a
+
+---- -flood
+waterfall
+
+---- -melon
+waterman
+
+---- -nymph
+woodland
+
+*/
 });

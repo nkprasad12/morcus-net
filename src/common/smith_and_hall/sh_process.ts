@@ -1,8 +1,8 @@
-import { assert, checkPresent } from "@/common/assert";
+import { assert } from "@/common/assert";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import {
-  extractEntryKeyFromLine,
   handleEditorNotes,
+  normalizeArticles,
 } from "@/common/smith_and_hall/sh_preprocessing";
 import {
   CORRECTIONS,
@@ -148,64 +148,6 @@ async function getArticles(): Promise<string[][]> {
   return allArticles;
 }
 
-export function expandDashes(
-  keysWithDashes: string[],
-  lastUndashedKeys: string[]
-): string[] {
-  if (VERBOSE) {
-    console.log(
-      `Need to normalize: ${keysWithDashes}\nLast: ${lastUndashedKeys}\n`
-    );
-  }
-  // TODO: Actually normalize this.
-  return keysWithDashes;
-}
-
-// TODO: SH sometimes has breves marked as e.g. [)o] or [)i] and
-// sometimes has macra marked as e.g. [=o] and [=i]
-
-/** Normalizes ---- and combines `/ *` (no space) based articles  */
-interface NormalizedArticle {
-  keys: string[];
-  text: string[];
-}
-
-function normalizeArticles(rawArticles: string[][]): NormalizedArticle[] {
-  const normalized: NormalizedArticle[] = [];
-  let lastUndashed: NormalizedArticle | null = null;
-  for (const unnormalized of rawArticles) {
-    if (unnormalized[0] === "/*") {
-      // TODO: Here we have multiple headings for the same article.
-      // So we need to start headings in parallel, compute the content for
-      // the article, and attach the content to all headings.
-      // Note that sometimes there is content after the }
-      // console.log("Skipping a /* entry - make sure to handle this later.\n");
-      normalized.push({ keys: ["SKIPPED"], text: ["SKIPPED FOR NOW"] });
-      continue;
-    }
-    const firstLine = unnormalized[0];
-    const keys = extractEntryKeyFromLine(firstLine);
-
-    if (!keys[0].includes("----")) {
-      const result = { keys, text: unnormalized.map((x) => x) };
-      normalized.push(result);
-      lastUndashed = result;
-      continue;
-    }
-
-    checkPresent(
-      lastUndashed,
-      "Got a dashed entry without a last undashed entry."
-    );
-    const expandedKeys = expandDashes(keys, lastUndashed?.keys!);
-    // TODO: Also substitute for the dashes in the text.
-    // Probably can replace `name` in unnormalized[0] with `normalizedName`.
-    // Just need to check that there is only one instance.
-    normalized.push({ keys: expandedKeys, text: unnormalized.map((x) => x) });
-  }
-  return normalized;
-}
-
 // @ts-expect-error
 function processArticles(rawArticles: string[][]): ShEntry[] {
   // Rough algorithm:
@@ -223,36 +165,19 @@ function processArticles(rawArticles: string[][]): ShEntry[] {
 export async function processSmithHall() {
   const articles = await getArticles();
   normalizeArticles(articles);
-  // for (let i = 0; i < articles.length; i++) {
-  //   console.log(articles[i]);
-  //   console.log(JSON.stringify(processed[i]));
-  //   console.log("\n*************\n");
-  // }
 }
-
-// run();
 
 /* Where I left off:
   
-Look at sh_verbose.txt for 
-`Got a first line without :`
-
-These are the locations where we have an irregularity in the start of an entry.
-The typical format is:
-
-<b>word[, word2]</>: [stuff]
-
-But these do not have a `:` in the start line, which is an irregularity.
-
-Generally:
-- These have some sort of punctiation after their `:`, like `;` or `,`.
-- However, some entries have the format <b>w1</b>, <b>w2</b>: instead of the
-    expected <b>w1, w2</b>:
-
-Possibl next step here would be to try to merge all <b>w1</b>, <b>w2</b>:
-in a preprocessing step first.
-1. Come up with a way to detect these
-2. If there are few enough to review manually, check them all or sample them.
-     These should always be two English words with roughly similar meanings.
-
+We have some version of extracting keys.
+Next we need to:
+1. implement `expandDashes`
+2. implement parsing of the /* style entries
 */
+
+// Things to watch out for:
+// - [** symbol]
+// - [**no new paragraph]
+
+// TODO: SH sometimes has breves marked as e.g. [)o] or [)i] and
+// sometimes has macra marked as e.g. [=o] and [=i]
