@@ -40,8 +40,26 @@ import {
 import { ApiHandler, RouteAndHandler } from "@/web/utils/rpc/server_rpc";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
+import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 dotenv.config();
+
+function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
+  let delegate: Dictionary | null = null;
+  const cachedProvider = () => {
+    if (delegate === null) {
+      delegate = provider();
+    }
+    return delegate;
+  };
+  setTimeout(() => cachedProvider(), 50);
+  return {
+    info: info,
+    getEntry: (...args) => cachedProvider().getEntry(...args),
+    getCompletions: (...args) => cachedProvider().getCompletions(...args),
+  };
+}
 
 function createApi<I, O>(
   route: ApiRoute<I, O>,
@@ -78,7 +96,10 @@ const port = parseInt(
 const app = express();
 const server = http.createServer(app);
 
-const lewisAndShort = LewisAndShort.create();
+const lewisAndShort = delayedInit(
+  () => LewisAndShort.create(),
+  LatinDict.LewisAndShort
+);
 const fusedDict = new FusedDictionary([lewisAndShort]);
 const workServer = new SocketWorkServer(new Server(server));
 const telemetry =
