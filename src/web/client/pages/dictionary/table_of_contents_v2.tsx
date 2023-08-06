@@ -94,7 +94,7 @@ function OutlineSection(props: {
                 style={{
                   cursor: "pointer",
                   marginBottom: "4px",
-                  paddingLeft: `${(sense.level - 1) / 2}em`,
+                  marginLeft: `${(sense.level - 1) / 2}em`,
                 }}
                 onClick={() => props.onClick(sense.sectionId)}
                 className="clickableOutlineSection"
