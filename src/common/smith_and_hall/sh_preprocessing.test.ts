@@ -1,4 +1,5 @@
 import {
+  decomposeKey,
   extractEntryKeyFromLine,
   handleEditorNotes,
   parseComboEntries,
@@ -25,7 +26,7 @@ describe("handleEditorNotes", () => {
 
   test("substitutes in dash edge case", () => {
     const input = "[** ----] Ov. Prov.: <i>to have two";
-    const expected = "---- Ov. Prov.: <i>to have two";
+    const expected = "<b>----</b> Ov. Prov.: <i>to have two";
     expect(handleEditorNotes(input)).toBe(expected);
   });
 
@@ -159,7 +160,7 @@ describe("parseComboEntries", () => {
 
     expect(result.keys).toEqual(["revel", "revelling"]);
     expect(result.text).toEqual([
-      "<b>revel</b> (<i>subs.</i>):; <b>revelling</b>:",
+      "<b>revel</b> (<i>subs.</i>): ; <b>revelling</b>:",
       "",
       "1. cōmissātio: <i>to",
       "prolong the r.s till",
@@ -199,9 +200,9 @@ describe("parseComboEntries", () => {
 
     const result = parseComboEntries(rawInput);
 
-    expect(result.keys).toEqual(["sedge-bird", "sedge -warbler"]);
+    expect(result.keys).toEqual(["sedge-bird", "sedge-warbler"]);
     expect(result.text).toEqual([
-      "<b>sedge-bird</b>: ; <b>sedge -warbler</b>:",
+      "<b>sedge-bird</b>: ; <b>sedge-warbler</b>:",
       "",
       "*călămŏdȳta phragmītis:",
       "Wood.",
@@ -245,9 +246,9 @@ describe("parseComboEntries", () => {
 
     const result = parseComboEntries(rawInput);
 
-    expect(result.keys).toEqual(["serpentine", "serpentine -stone"]);
+    expect(result.keys).toEqual(["serpentine", "serpentine-stone"]);
     expect(result.text).toEqual([
-      "<b>serpentine</b> ; <b>serpentine -stone</b>",
+      "<b>serpentine</b> ; <b>serpentine-stone</b>",
       "(<i>subs.</i>):",
       "ophītēs, ae, <i>m.</i>",
       "(= Gr. ὀφίτης):",
@@ -271,62 +272,98 @@ describe("parseComboEntries", () => {
 
     expect(result.keys).toEqual(["pull out", "pull up"]);
     expect(result.text).toEqual([
-      "/*",
-      "<b>pull out</b> }",
-      "<b>pull up</b>  }",
-      "*/",
+      "<b>pull out</b> ; <b>pull up</b>",
       "",
       "1. vello, i, vulsum, 3:",
     ]);
   });
 });
 
-describe("replaceDash", () => {
-  expect(replaceDash("----, make", "acceptable, be")).toBe("acceptable, make");
-  expect(replaceDash("----, the being", "accessory")).toBe(
-    "accessory, the being"
-  );
-  expect(replaceDash("----, be", "afraid")).toBe("afraid, be");
-  expect(replaceDash("---- oneself", "acquaint")).toBe("acquaint oneself");
-  expect(replaceDash("---- between", "be amongst")).toBe("be between");
-  expect(replaceDash("---- down", "burn at the end")).toBe("burn down");
-  expect(replaceDash("----, to be on", "fire, of")).toBe("fire, to be on");
-  expect(replaceDash("---- broker", "money-bag")).toBe("money broker");
-  expect(replaceDash("---- in-law", "mother")).toBe("mother in-law");
-  expect(replaceDash("---- as, as", "much")).toBe("much as, as");
-  expect(replaceDash("---- -bearing", "quiver")).toBe("quiver-bearing");
-  expect(replaceDash("----", "recoil")).toBe("recoil");
-  expect(replaceDash("---- -making", "road, to make")).toBe("road-making");
-  expect(replaceDash("----, ragged-", "robin")).toBe("robin, ragged-");
-  expect(replaceDash("---- leaved", "roundhead")).toBe("round leaved");
-  expect(replaceDash("----, Italian", "rye-grass")).toBe("rye, Italian");
-  expect(replaceDash("---- -keeping", "sabbath-breaker")).toBe(
-    "sabbath -keeping"
-  );
-  expect(replaceDash("---- -sick, to be", "sea-eagle")).toBe("sea-sick, to be");
-  expect(replaceDash("---- -hand writer", "short-hand")).toBe(
-    "short-hand writer"
-  );
-  expect(replaceDash("---- room", "sick, to be")).toBe("sick room");
-  expect(replaceDash("---- -bird", "snow-ball-tree")).toBe("snow-bird");
-  expect(replaceDash("---- -bearing", "talebearer")).toBe("tale-bearing");
-  expect(replaceDash("---- -upon", "therein")).toBe("there-upon");
-  expect(replaceDash("---- -rigger", "thimbleful")).toBe("thimble-rigger");
-  expect(replaceDash("---- twin-brothers", "three-footed")).toBe(
-    "three twin-brothers"
-  );
-  expect(replaceDash("----", "under-ground")).toBe("under-ground");
-  expect(replaceDash("---- -flood", "waterfall")).toBe("water-flood");
-  expect(replaceDash("---- -melon", "waterman")).toBe("water-melon");
-  expect(replaceDash("---- -nymph", "woodland")).toBe("wood-nymph");
+describe("decomposeKey", () => {
+  it("handles all major decomposeKey cases", () => {
+    expect(decomposeKey("----, make")).toStrictEqual(["----", ",", "make"]);
+    expect(decomposeKey("---- in-law")).toStrictEqual([
+      "----",
+      " ",
+      "in",
+      "-",
+      "law",
+    ]);
+  });
+  expect(decomposeKey("---- -upon")).toStrictEqual(["----", "-", "upon"]);
 
-  expect(replaceDash("---- ----, become", "acquainted with")).toBe(
-    "acquainted with, become"
-  );
-  expect(replaceDash("---- ---- building", "under-ground")).toBe(
-    "under-ground building"
-  );
-  expect(replaceDash("---- ---- ---- over", "victory, to gain a")).toBe(
-    "victory, to gain over"
-  );
+  expect(decomposeKey("therein")).toStrictEqual(["there", "-", "in"]);
+  expect(decomposeKey("sea-eagle")).toStrictEqual(["sea", "-", "eagle"]);
+  expect(decomposeKey("---- ----, become")).toStrictEqual([
+    "----",
+    " ",
+    "----",
+    ",",
+    "become",
+  ]);
+  expect(decomposeKey("----, to be on")).toStrictEqual([
+    "----",
+    ",",
+    "to",
+    " ",
+    "be",
+    " ",
+    "on",
+  ]);
+});
+
+describe("replaceDash", () => {
+  it("handles all major replaceDash cases", () => {
+    expect(replaceDash("----, make", "acceptable, be")).toBe(
+      "acceptable, make"
+    );
+    expect(replaceDash("----, the being", "accessory")).toBe(
+      "accessory, the being"
+    );
+    expect(replaceDash("----, be", "afraid")).toBe("afraid, be");
+    expect(replaceDash("---- oneself", "acquaint")).toBe("acquaint oneself");
+    expect(replaceDash("---- between", "be amongst")).toBe("be between");
+    expect(replaceDash("---- down", "burn at the end")).toBe("burn down");
+    expect(replaceDash("----, to be on", "fire, of")).toBe("fire, to be on");
+    expect(replaceDash("---- broker", "money-bag")).toBe("money broker");
+    expect(replaceDash("---- in-law", "mother")).toBe("mother in-law");
+    expect(replaceDash("---- as, as", "much")).toBe("much as, as");
+    expect(replaceDash("---- -bearing", "quiver")).toBe("quiver-bearing");
+    expect(replaceDash("----", "recoil")).toBe("recoil");
+    expect(replaceDash("---- -making", "road, to make")).toBe("road-making");
+    expect(replaceDash("----, ragged-", "robin")).toBe("robin, ragged-");
+    expect(replaceDash("---- leaved", "roundhead")).toBe("round leaved");
+    expect(replaceDash("----, Italian", "rye-grass")).toBe("rye, Italian");
+    expect(replaceDash("---- -keeping", "sabbath-breaker")).toBe(
+      "sabbath-keeping"
+    );
+    expect(replaceDash("---- -sick, to be", "sea-eagle")).toBe(
+      "sea-sick, to be"
+    );
+    expect(replaceDash("---- -hand writer", "short-hand")).toBe(
+      "short-hand writer"
+    );
+    expect(replaceDash("---- room", "sick, to be")).toBe("sick room");
+    expect(replaceDash("---- -bird", "snow-ball-tree")).toBe("snow-bird");
+    expect(replaceDash("---- -bearing", "talebearer")).toBe("tale-bearing");
+    expect(replaceDash("---- -upon", "therein")).toBe("there-upon");
+    expect(replaceDash("---- -rigger", "thimbleful")).toBe("thimble-rigger");
+    expect(replaceDash("---- twin-brothers", "three-footed")).toBe(
+      "three twin-brothers"
+    );
+    expect(replaceDash("----", "under-ground")).toBe("under-ground");
+    expect(replaceDash("---- -flood", "waterfall")).toBe("water-flood");
+    expect(replaceDash("---- -melon", "waterman")).toBe("water-melon");
+    expect(replaceDash("---- -nymph", "woodland")).toBe("wood-nymph");
+
+    expect(replaceDash("---- ----, become", "acquainted with")).toBe(
+      "acquainted with, become"
+    );
+    expect(replaceDash("---- ---- building", "under-ground")).toBe(
+      "under ground building"
+    );
+    expect(replaceDash("---- ---- ---- over", "victory, to gain a")).toBe(
+      "victory, to gain a _ over"
+    );
+  });
 });

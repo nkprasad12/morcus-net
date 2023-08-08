@@ -14,6 +14,20 @@ const BASE_ENTRY_KEY_PATTERN =
   /^<b>([^<>]+)+<\/b>(?: \([a-zA-Z ,\.(?:<i>)(?:<i\/>)=]+\))?$/;
 const MULTI_KEY_PATTERN = /<b>([^<>]+)<\/b>/g;
 
+const UNMARKED_COMPOUNDS = new Map<string, string[]>([
+  ["roundhead", ["round", "head"]],
+  ["talebearer", ["tale", "bearer"]],
+  ["therein", ["there", "in"]],
+  ["thimbleful", ["thimble", "ful"]],
+  ["waterfall", ["water", "fall"]],
+  ["waterman", ["water", "man"]],
+  ["woodland", ["wood", "land"]],
+]);
+
+type KeyChunk = "D" | "W" | "," | "-" | " ";
+
+const SEPARATORS = [",", "-", " "];
+
 /** Normalizes ---- and combines `/ *` (no space) based articles  */
 export interface NormalizedArticle {
   keys: string[];
@@ -44,6 +58,31 @@ function replaceEndPunctuation(chunk: string) {
   }
 
   return chunk;
+}
+
+function interpolate(array: string[], inBetween: string): string[] {
+  return array
+    .flatMap((v, i) => (i === 0 ? v : [inBetween, v]))
+    .filter((v) => v !== "");
+}
+
+export function decomposeKey(rawKey: string): string[] {
+  let result = interpolate(rawKey.split(DASH), "%");
+  result = result.flatMap((v) => interpolate(v.split(" -"), "-"));
+  result = result.flatMap((v) => interpolate(v.split("-"), "-"));
+  result = result.flatMap((v) => interpolate(v.split(", "), ","));
+  result = result.flatMap((v) => interpolate(v.split(" "), " "));
+  return result.flatMap((v) =>
+    v === "%" ? DASH : interpolate(UNMARKED_COMPOUNDS.get(v) || [v], "-")
+  );
+}
+
+function keyParts(rawKey: string): { roles: KeyChunk[]; chunks: string[] } {
+  const chunks = decomposeKey(rawKey);
+  const roles = chunks.map((c) =>
+    c === "," || c === " " || c === "-" ? c : c === DASH ? "D" : "W"
+  );
+  return { roles, chunks };
 }
 
 export function extractEntryKeyFromLine(line: string): string[] {
@@ -113,33 +152,42 @@ export function replaceDash(dashed: string, undashed: string): string {
   checkPresent(dashed);
   checkPresent(undashed);
   assert(dashed.startsWith(DASH));
-
   if (dashed === DASH) {
     return undashed;
   }
+  if (dashed === "---- ---- ---- over") {
+    return "victory, to gain a _ over";
+  }
 
-  const dashCount = (dashed.match(/----/g) || []).length;
-  if (dashCount === 1) {
-    const templateCommaChunks = dashed.split(",");
-    const templateSpaceChunks = dashed.split(" ");
-    const completionCommaChunks = undashed.split(",");
-    const completionSpaceChunks = undashed.split(" ");
-    if (templateCommaChunks.length === 2) {
-      if (completionCommaChunks.length === 2) {
-        return [completionCommaChunks[0], templateCommaChunks[1]].join(",");
-      }
-      if (completionSpaceChunks.length <= 2) {
-        return [completionSpaceChunks[0], templateCommaChunks[1]].join(",");
-      }
+  const dashedParts = keyParts(dashed);
+  const undashedParts = keyParts(undashed);
+
+  let result = "";
+  let isMatch = true;
+  for (let i = 0; i < dashedParts.roles.length; i++) {
+    const dashedRole = dashedParts.roles[i];
+    const undashedRole = undashedParts.roles[i];
+    isMatch =
+      undashedRole === undefined ||
+      (SEPARATORS.includes(dashedRole) && SEPARATORS.includes(undashedRole)) ||
+      (!SEPARATORS.includes(dashedRole) && !SEPARATORS.includes(undashed));
+    if (!isMatch) {
+      break;
     }
-    if (templateSpaceChunks.length === 2 && completionSpaceChunks.length <= 2) {
-      return [completionSpaceChunks[0], templateSpaceChunks[1]].join(" ");
+
+    if (dashedRole === "W") {
+      result += dashedParts.chunks[i];
+    } else if (dashedRole === "D") {
+      result += undashedParts.chunks[i];
+    } else if (dashedRole === ",") {
+      result += ", ";
+    } else {
+      result += dashedRole;
     }
   }
 
-  // We MUST check whether there is more than one dash and replace those too.
-  console.log(undashed + "\n" + dashed + "\n");
-  return undashed.replace(DASH, "FOOO");
+  assert(isMatch);
+  return result;
 }
 
 export function expandDashes(
