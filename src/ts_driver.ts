@@ -31,7 +31,7 @@ class Tally<T> {
   }
 }
 
-processSmithHall();
-
-const runtime = Math.round(performance.now() - startTime);
-console.log(`Runtime: ${runtime} ms.`);
+processSmithHall().then(() => {
+  const runtime = Math.round(performance.now() - startTime);
+  console.log(`Runtime: ${runtime} ms.`);
+});

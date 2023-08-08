@@ -1,183 +1,118 @@
 import { assert } from "@/common/assert";
 import { exhaustiveGuard } from "@/common/misc_utils";
+import { getArticles, lineEmpty } from "@/common/smith_and_hall/sh_parse";
 import {
-  handleEditorNotes,
+  NormalizedArticle,
   normalizeArticles,
 } from "@/common/smith_and_hall/sh_preprocessing";
-import {
-  CORRECTIONS,
-  DASH_EDGE_CASES,
-} from "@/common/smith_and_hall/sh_replacements";
-import fs from "fs";
-import readline from "readline";
 
-const SHOW_FILE_NAMES = false;
-const VERBOSE = false;
+const SENSE_LEVELS =
+  /^([ABCDEFabcdef]|(?:1)?[0-9]|I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|U|Phr)$/;
+const PAREN_SENSE_START = /^\(<i>[abcde]<\/i>\)\./;
+const PAREN_SENSE_START_DOT = /^\(<i>[abcde]\.<\/i>\)/;
+const NO_ITAL_SENSE_START_DOT = /^\([1-9]\.\)/;
+const PAREN_SENSE_START_SPACE = /^\([A-F]\) /;
 
-const START_OF_FILE = "-----File:";
-const START_OF_ENTRIES = "-----File: b0001l.png";
-const END_OF_ENTRIES = "THE END.";
-const DASH_START_ENTRIES = /^----[^-]/;
-
-const HEADERS = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
-const SENSE_LEVELS = /^([A-Za-z0-9]|I|II|III|IV|V)$/;
+type ProcessState = "In Blurb" | "In Sense" | "None";
 
 interface ShSense {
   level: string;
   text: string;
 }
 
-interface ShEntry {
-  key: string;
-  blurb?: string;
-  senses?: ShSense[];
+export interface ShEntry {
+  keys: string[];
+  blurb: string;
+  senses: ShSense[];
 }
 
-type ParseState =
-  | "Unstarted"
-  | "NotInArticle"
-  | "InArticle"
-  | "MaybeEndingArticle";
-
-function lineEmpty(input: string): boolean {
-  return input.trim().length === 0;
-}
-
-async function getArticles(): Promise<string[][]> {
-  const fileStream = fs.createReadStream(process.env.SH_RAW_PATH!);
-  const rl = readline.createInterface({
-    input: fileStream,
-    crlfDelay: Infinity,
-  });
-
-  let nextHeaderIndex = 0;
-  let state: ParseState = "Unstarted";
-  let lastFile: string | null = null;
-  const allArticles: string[][] = [];
-  for await (const input of rl) {
-    if (input.startsWith(START_OF_FILE)) {
-      lastFile = input;
-    }
-    if (input === END_OF_ENTRIES) {
-      // OK to break because we have two blank lines before this.
-      break;
-    }
-
-    const corrected = CORRECTIONS.get(input) || input;
-    // This is assuming there's no overlap between these two.
-    // Since there are so few of each, we can manually verify.
-    const dashEdgeCaseRemoved = DASH_EDGE_CASES.get(corrected) || corrected;
-    if (VERBOSE) {
-      if (dashEdgeCaseRemoved !== input) {
-        console.log(`Corrected: ${input}\nto: ${dashEdgeCaseRemoved}\n`);
-      }
-    }
-
-    const line = handleEditorNotes(dashEdgeCaseRemoved.replaceAll(",,", ","));
-    switch (state) {
-      case "Unstarted":
-        if (line.startsWith(START_OF_ENTRIES)) {
-          state = "NotInArticle";
-        }
-        break;
-      case "NotInArticle":
-        if (lineEmpty(line)) {
-          continue;
-        }
-        if (line.startsWith("<b>")) {
-          // The expected case - a new article is starting.
-          state = "InArticle";
-          allArticles.push([line]);
-          continue;
-        }
-        if (DASH_START_ENTRIES.test(line)) {
-          state = "InArticle";
-          allArticles.push([line]);
-          continue;
-        }
-        if (line === "/*") {
-          state = "InArticle";
-          allArticles.push([line]);
-          continue;
-        }
-
-        if (
-          /^[A-Z]\.$/.test(line) &&
-          nextHeaderIndex < HEADERS.length &&
-          line === HEADERS.charAt(nextHeaderIndex) + "."
-        ) {
-          // We got a section header - A, B, C, D, E, etc...
-          nextHeaderIndex += 1;
-          continue;
-        }
-
-        if (SENSE_LEVELS.test(line.split(".")[0])) {
-          state = "InArticle";
-          // We have a sense that was accidentally separated from its article.
-          assert(allArticles.length > 0, "Need to have a last article");
-          allArticles[allArticles.length - 1].push(line);
-          continue;
-        }
-
-        if (SHOW_FILE_NAMES) {
-          console.log(lastFile);
-        }
-        throw new Error("Unexpected line");
-      case "InArticle":
-        if (line.startsWith(START_OF_FILE)) {
-          continue;
-        }
-        assert(allArticles.length > 0, "Need to have a last article");
-        allArticles[allArticles.length - 1].push(line);
-        if (lineEmpty(line)) {
-          state = "MaybeEndingArticle";
-        }
-        break;
-      case "MaybeEndingArticle":
-        if (line.startsWith(START_OF_FILE)) {
-          continue;
-        }
-        assert(allArticles.length > 0, "Need to have a last article");
-        allArticles[allArticles.length - 1].push(line);
-        state = lineEmpty(line) ? "NotInArticle" : "InArticle";
-        break;
-      default:
-        return exhaustiveGuard(state);
+export function splitSense(rawLine: string): ShSense {
+  const line = rawLine.trimStart();
+  if (PAREN_SENSE_START_DOT.test(line) || PAREN_SENSE_START.test(line)) {
+    return {
+      level: line[4],
+      text: line.substring(11),
+    };
+  }
+  if (NO_ITAL_SENSE_START_DOT.test(line)) {
+    return {
+      level: line[1],
+      text: line.substring(4),
+    };
+  }
+  if (PAREN_SENSE_START_SPACE.test(line)) {
+    return {
+      level: line[1],
+      text: line.substring(3),
+    };
+  }
+  for (const separator of [".", ",", ":"]) {
+    const i = line.indexOf(separator);
+    const maybeLevel = line.substring(0, i);
+    if (SENSE_LEVELS.test(maybeLevel)) {
+      return {
+        level: maybeLevel,
+        text: line.substring(i + 1),
+      };
     }
   }
-  return allArticles;
+  // throw Error(line);
+  console.log(rawLine);
+  return {
+    level: "I",
+    text: "FOO",
+  };
 }
 
-// @ts-expect-error
-function processArticles(rawArticles: string[][]): ShEntry[] {
-  // Rough algorithm:
-  // 1. Fix any ----
-  // 2. Compute entry key by splitting on :
+function processArticle(rawArticle: NormalizedArticle): ShEntry {
+  assert(!lineEmpty(rawArticle.text[0]));
+  assert(lineEmpty(rawArticle.text[rawArticle.text.length - 1]));
+
+  const result: ShEntry = { keys: rawArticle.keys, blurb: "", senses: [] };
+  let currentSense: Partial<ShSense> = {};
+  let state: ProcessState = "In Blurb";
+  for (const line of rawArticle.text) {
+    if (lineEmpty(line)) {
+      if (state === "In Sense") {
+        assert(currentSense.level !== undefined);
+        assert(currentSense.text !== undefined);
+        // @ts-ignore
+        result.senses.push(currentSense);
+        currentSense = {};
+      }
+      state = "None";
+      continue;
+    }
+    if (state === "In Sense") {
+      assert(currentSense.text !== undefined);
+      currentSense.text = currentSense.text + " " + line;
+    } else if (state === "In Blurb") {
+      result.blurb += " " + line;
+    } else if (state === "None") {
+      currentSense = splitSense(line);
+      state = "In Sense";
+    } else {
+      exhaustiveGuard(state);
+    }
+  }
   // 3. Take everything else up to the next empty line as the blurb
   // 4. After that, chunks are separated by empty lines
   // 5. For each chunk, split on the first "."
   // 6. The first half becomes the sense level, everything after is sense text
-
-  const entries: ShEntry[] = [];
-  return entries;
+  return result;
 }
 
 export async function processSmithHall() {
   const articles = await getArticles();
-  normalizeArticles(articles);
+  const normalized = normalizeArticles(articles);
+  const processed = normalized.map(processArticle);
+  for (const _article of processed) {
+    // console.log(article);
+  }
 }
 
-/* Where I left off:
-  
-We have some version of extracting keys.
-Next we need to:
-1. implement `expandDashes`
-2. implement parsing of the /* style entries
-*/
-
-// Things to watch out for:
-// - [** symbol]
-// - [**no new paragraph]
-
-// TODO: SH sometimes has breves marked as e.g. [)o] or [)i] and
-// sometimes has macra marked as e.g. [=o] and [=i]
+// TODO:
+// Many articles have (i), (ii), etc...
+// or (<i>a</i>) or (<i>b.</b>) etc...
+// in the text itself, and we need to correct these
+// and make them part of their own senses

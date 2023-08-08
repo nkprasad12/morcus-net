@@ -85,4 +85,9 @@ export const DASH_EDGE_CASES = new Map<string, string>([
     `<b>----wort</b>: *nūmŭlāria: Withering.`,
     `<b>---- wort</b>: *nūmŭlāria: Withering.`,
   ],
+  ["Respecting the Latin conjunctions", "U. Respecting the Latin conjunctions"],
+]);
+
+export const IGNORE_EMPTY_LINE_AFTER = new Set<string>([
+  "I. <i>Orderly disposition</i>:",
 ]);

@@ -35,13 +35,18 @@ export interface NormalizedArticle {
 }
 
 export function handleEditorNotes(input: string): string {
-  return input
-    .replace(KEPT_EDITOR_NOTE, "$1")
-    .replace(MISSING_CHAR_NOTE, "$1")
-    .replace(",[**P2: : ?]", ":")
-    .replace(".[**P2: : ?]", ":")
-    .replace("[** ----]", "<b>----</b>")
-    .replace(REMOVED_EDITOR_NOTE, "");
+  return (
+    input
+      .replace(KEPT_EDITOR_NOTE, "$1")
+      .replace(MISSING_CHAR_NOTE, "$1")
+      .replace(",[**P2: : ?]", ":")
+      .replace(".[**P2: : ?]", ":")
+      .replace("[** ----]", "<b>----</b>")
+      // U stands for unmarked.
+      .replace("[**no new paragraph]", "U. ")
+      .replace("[**no new paragr.]", "U. ")
+      .replace(REMOVED_EDITOR_NOTE, "")
+  );
 }
 
 function attemptEntryKeyExtraction(chunk: string): string | null {
