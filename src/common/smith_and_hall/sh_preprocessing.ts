@@ -69,7 +69,10 @@ export function extractEntryKeyFromLine(line: string): string[] {
   return checkSatisfies(allMatches, (a) => a.length > 0, "Unhandled: " + chunk);
 }
 
-export function parseComboEntries(rawEntry: string[]): NormalizedArticle {
+export function parseComboEntries(
+  rawEntry: string[],
+  lastUndashed?: string[]
+): NormalizedArticle & { originalKeys: string[] } {
   const firstLine = rawEntry[0];
   assert(firstLine === "/*" || firstLine.includes("}"));
   const keysPerLine: string[][] = [];
@@ -100,15 +103,43 @@ export function parseComboEntries(rawEntry: string[]): NormalizedArticle {
   const text = [keyContent.map((s) => s.trim()).join(" ; ")];
   text.push(...extraContent.map((s) => s.trim()).filter((s) => s.length > 0));
   text.push(...rawEntry.slice(linesConsumed));
-  return expandDashes(keys, [], text);
+  return {
+    ...expandDashes(keys, lastUndashed || [], text),
+    originalKeys: keys,
+  };
 }
 
-export function replaceDash(template: string, withDash: string): string {
-  checkPresent(template);
-  checkPresent(withDash);
+export function replaceDash(dashed: string, undashed: string): string {
+  checkPresent(dashed);
+  checkPresent(undashed);
+  assert(dashed.startsWith(DASH));
+
+  if (dashed === DASH) {
+    return undashed;
+  }
+
+  const dashCount = (dashed.match(/----/g) || []).length;
+  if (dashCount === 1) {
+    const templateCommaChunks = dashed.split(",");
+    const templateSpaceChunks = dashed.split(" ");
+    const completionCommaChunks = undashed.split(",");
+    const completionSpaceChunks = undashed.split(" ");
+    if (templateCommaChunks.length === 2) {
+      if (completionCommaChunks.length === 2) {
+        return [completionCommaChunks[0], templateCommaChunks[1]].join(",");
+      }
+      if (completionSpaceChunks.length <= 2) {
+        return [completionSpaceChunks[0], templateCommaChunks[1]].join(",");
+      }
+    }
+    if (templateSpaceChunks.length === 2 && completionSpaceChunks.length <= 2) {
+      return [completionSpaceChunks[0], templateSpaceChunks[1]].join(" ");
+    }
+  }
+
   // We MUST check whether there is more than one dash and replace those too.
-  console.log(withDash + "\n" + template + "\n");
-  return withDash.replace(DASH, "FOOO");
+  console.log(undashed + "\n" + dashed + "\n");
+  return undashed.replace(DASH, "FOOO");
 }
 
 export function expandDashes(
@@ -126,7 +157,14 @@ export function expandDashes(
     if (!current.includes(DASH)) {
       continue;
     }
-    keys[i] = replaceDash(template, current);
+    try {
+      keys[i] = replaceDash(current, template);
+    } catch (e) {
+      console.log(JSON.stringify(keysWithDashes));
+      console.log(JSON.stringify(lastUndashedKeys));
+      console.log(JSON.stringify(rawText, undefined, 2));
+      throw e;
+    }
     let replacements = 0;
     const toBeReplaced = `<b>${current}</b>`;
     for (let j = 0; j < text.length; j++) {
@@ -149,7 +187,11 @@ export function normalizeArticles(
   for (const unnormalized of rawArticles) {
     const firstLine = unnormalized[0];
     if (firstLine === "/*" || firstLine.includes("}")) {
-      normalized.push(parseComboEntries(unnormalized));
+      const result = parseComboEntries(unnormalized, lastUndashed?.keys);
+      if (result.originalKeys.filter((k) => k.includes(DASH)).length === 0) {
+        lastUndashed = result;
+      }
+      normalized.push(result);
       continue;
     }
     const keys = extractEntryKeyFromLine(firstLine);

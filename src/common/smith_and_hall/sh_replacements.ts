@@ -81,4 +81,8 @@ export const DASH_EDGE_CASES = new Map<string, string>([
     `<b>keep together</b>: cont[)i]neo, 2: Cic.:`,
   ],
   [`---- <b>up</b>:`, `<b>keep up</b>:`],
+  [
+    `<b>----wort</b>: *nūmŭlāria: Withering.`,
+    `<b>---- wort</b>: *nūmŭlāria: Withering.`,
+  ],
 ]);

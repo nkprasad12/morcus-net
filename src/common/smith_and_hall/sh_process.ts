@@ -73,7 +73,7 @@ async function getArticles(): Promise<string[][]> {
       }
     }
 
-    const line = handleEditorNotes(dashEdgeCaseRemoved);
+    const line = handleEditorNotes(dashEdgeCaseRemoved.replaceAll(",,", ","));
     switch (state) {
       case "Unstarted":
         if (line.startsWith(START_OF_ENTRIES)) {
