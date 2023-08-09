@@ -46,7 +46,8 @@ export class SqlDict implements Dictionary {
   constructor(
     dbFile: string,
     readonly info: DictInfo,
-    readonly entryConverter: (input: string[]) => EntryResult[]
+    readonly entryConverter: (input: string[]) => EntryResult[],
+    readonly keysConverter: (input: string) => string[]
   ) {
     this.db = new Database(dbFile, { readonly: true });
     this.db.pragma("journal_mode = WAL");
@@ -55,7 +56,7 @@ export class SqlDict implements Dictionary {
     const result: { keys: string; n: number }[] = read.all();
     result.sort((a, b) => a.n - b.n);
 
-    this.rawKeys = result.map((row) => row.keys.split(","));
+    this.rawKeys = result.map((row) => keysConverter(row.keys));
 
     for (let i = 0; i < this.rawKeys.length; i++) {
       for (let j = 0; j < this.rawKeys[i].length; j++) {

@@ -24,13 +24,18 @@ interface RawLsEntry {
 
 export class LewisAndShort extends SqlDict {
   constructor(dbFile: string = checkPresent(process.env.LS_PROCESSED_PATH)) {
-    super(dbFile, LatinDict.LewisAndShort, (entryStrings) => {
-      const entryNodes = parseEntries(entryStrings);
-      return entryNodes.map((node) => ({
-        entry: displayEntryFree(node),
-        outline: extractOutline(node),
-      }));
-    });
+    super(
+      dbFile,
+      LatinDict.LewisAndShort,
+      (entryStrings) => {
+        const entryNodes = parseEntries(entryStrings);
+        return entryNodes.map((node) => ({
+          entry: displayEntryFree(node),
+          outline: extractOutline(node),
+        }));
+      },
+      (input) => input.split(",")
+    );
   }
 }
 

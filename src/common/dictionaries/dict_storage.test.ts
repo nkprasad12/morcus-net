@@ -79,9 +79,15 @@ function writeFile(contents: string) {
 }
 
 function createSqlDict(): SqlDict {
-  return new SqlDict(TEMP_FILE, LatinDict.SmithAndHall, (input) =>
-    // @ts-expect-error
-    input.map((e) => ({ entry: XmlNodeSerialization.DEFAULT.deserialize(e) }))
+  return new SqlDict(
+    TEMP_FILE,
+    LatinDict.SmithAndHall,
+    (input) =>
+      // @ts-expect-error
+      input.map((e) => ({
+        entry: XmlNodeSerialization.DEFAULT.deserialize(e),
+      })),
+    (input) => input.split(",")
   );
 }
 
