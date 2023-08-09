@@ -36,8 +36,8 @@ export function FullDictChip(props: { label: string }) {
       style={{
         whiteSpace: "pre-wrap",
         borderRadius: 4,
-        color: backgroundColor(props.label),
-        backgroundColor: TEXT_COLOR,
+        backgroundColor: backgroundColor(props.label),
+        color: TEXT_COLOR,
         fontWeight: "bold",
         padding: 2,
         paddingLeft: 6,
