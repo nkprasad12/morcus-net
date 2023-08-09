@@ -65,6 +65,12 @@ parser.add_argument(
     action="store_true",
 )
 parser.add_argument(
+    "-b_sh",
+    "--build_sh",
+    help="If set, re-processes SH and saves to DB.",
+    action="store_true",
+)
+parser.add_argument(
     "-to",
     "--transpile_only",
     help="If set, skips type checking for the client and server.",
@@ -138,6 +144,11 @@ if args.command in WEB_SERVER:
         build_command = ["npm", "run", "ts-node", "src/scripts/process_ls.ts"]
         if args.ls_subset:
             my_env["LS_PATH"] = "testdata/ls/subset.xml"
+        p = subprocess.Popen(" ".join(build_command), shell=True, env=my_env)
+        setup_processes.append(p)
+    if args.build_sh:
+        my_env = os.environ.copy()
+        build_command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"]
         p = subprocess.Popen(" ".join(build_command), shell=True, env=my_env)
         setup_processes.append(p)
 
