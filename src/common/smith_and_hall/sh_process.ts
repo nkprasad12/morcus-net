@@ -102,13 +102,10 @@ function processArticle(rawArticle: NormalizedArticle): ShEntry {
   return result;
 }
 
-export async function processSmithHall() {
+export async function processSmithHall(): Promise<ShEntry[]> {
   const articles = await getArticles();
   const normalized = normalizeArticles(articles);
-  const processed = normalized.map(processArticle);
-  for (const _article of processed) {
-    // console.log(article);
-  }
+  return normalized.map(processArticle);
 }
 
 // TODO:

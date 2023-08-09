@@ -15,7 +15,7 @@ export namespace LatinDict {
     tags: ["Classical"],
   };
 
-  export const AVAILABLE: DictInfo[] = [LewisAndShort];
+  export const AVAILABLE: DictInfo[] = [LewisAndShort, SmithAndHall];
   export const BY_KEY = new Map<string, DictInfo>(
     AVAILABLE.map((d) => [d.key, d])
   );

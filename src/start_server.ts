@@ -39,9 +39,10 @@ import {
 } from "@/web/api_routes";
 import { ApiHandler, RouteAndHandler } from "@/web/utils/rpc/server_rpc";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
-import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
+import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 
 dotenv.config();
 
@@ -100,7 +101,12 @@ const lewisAndShort = delayedInit(
   () => LewisAndShort.create(),
   LatinDict.LewisAndShort
 );
-const fusedDict = new FusedDictionary([lewisAndShort]);
+const smithAndHall = delayedInit(
+  () => new SmithAndHall(),
+  LatinDict.SmithAndHall
+);
+const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
+
 const workServer = new SocketWorkServer(new Server(server));
 const telemetry =
   process.env.CONSOLE_TELEMETRY !== "yes"
