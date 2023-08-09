@@ -137,8 +137,8 @@ describe("DictionarySearch", () => {
     await user.click(settings);
 
     expect(screen.queryByText("Dictionary Options")).not.toBeNull();
-    const lsCheck = screen.getByRole("checkbox");
-    await user.click(lsCheck);
+    const lsCheck = screen.getAllByRole("checkbox");
+    await user.click(lsCheck[0]);
     expect(mockSetDicts).not.toHaveBeenCalled();
     await user.click(screen.getByText("Close"));
     expect(mockSetDicts).toHaveBeenCalledWith([LatinDict.SmithAndHall]);

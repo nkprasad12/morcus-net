@@ -11,7 +11,7 @@ const MISSING_CHAR_NOTE = /\[\*\*[A-Z0-9]+: missing (.+)\]/g;
 const REMOVED_EDITOR_NOTE = /\[\*\*[^\]]*\]/g;
 
 const BASE_ENTRY_KEY_PATTERN =
-  /^<b>([^<>]+)+<\/b>(?: \([a-zA-Z ,\.(?:<i>)(?:<i\/>)=]+\))?$/;
+  /^<b>([^<>]+)+<\/b>(?: \([a-zA-Z ,.(?:<i>)(?:<i/>)=]+\))?$/;
 const MULTI_KEY_PATTERN = /<b>([^<>]+)<\/b>/g;
 
 const UNMARKED_COMPOUNDS = new Map<string, string[]>([
@@ -100,7 +100,7 @@ export function extractEntryKeyFromLine(line: string): string[] {
     (s) => s.replaceAll(";", ":"),
   ];
   for (const modifier of modifiers) {
-    let attempt = attemptEntryKeyExtraction(modifier(chunk));
+    const attempt = attemptEntryKeyExtraction(modifier(chunk));
     if (attempt !== null) {
       return [attempt];
     }
@@ -256,11 +256,11 @@ export function normalizeArticles(
       continue;
     }
 
-    checkPresent(
+    const lastUndashedKeys = checkPresent(
       lastUndashed,
       "Got a dashed entry without a last undashed entry."
-    );
-    normalized.push(expandDashes(keys, lastUndashed?.keys!, unnormalized));
+    ).keys;
+    normalized.push(expandDashes(keys, lastUndashedKeys, unnormalized));
   }
   return normalized;
 }

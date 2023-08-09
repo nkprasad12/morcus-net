@@ -117,7 +117,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S"],
+      dicts: ["L&S", "S&H"],
       query: "Belgae",
     });
     await waitFor(() => {
@@ -244,7 +244,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S"],
+      dicts: ["L&S", "S&H"],
       query: "Belgae",
     });
     await waitFor(() => {
