@@ -35,7 +35,7 @@ import {
   TableOfContentsV2,
   jumpToSection,
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
-import Typography from "@mui/material/Typography";
+import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection and try again." +
@@ -117,26 +117,6 @@ function ErrorContent(props: { isSmall: boolean }) {
     <ContentBox isSmall={props.isSmall}>
       <div>{ERROR_STATE_MESSAGE}</div>
     </ContentBox>
-  );
-}
-
-function FullDictChip(props: { label: string }) {
-  return (
-    <Typography
-      component={"span"}
-      style={{
-        whiteSpace: "pre-wrap",
-        borderRadius: 4,
-        color: Solarized.base03 + "81",
-        backgroundColor: Solarized.base2 + "60",
-        fontWeight: "bold",
-        padding: 2,
-        paddingLeft: 6,
-        paddingRight: 6,
-      }}
-    >
-      {props.label}
-    </Typography>
   );
 }
 

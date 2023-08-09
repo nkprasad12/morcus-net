@@ -21,27 +21,10 @@ import React from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 
 function toQuery(info: [DictInfo, string]): string {
   return `${info[1]},${info[0].key.replace("&", "n")}`;
-}
-
-export function DictChip(props: { label: string }) {
-  return (
-    <span
-      style={{
-        color: Solarized.base03 + "81",
-        backgroundColor: Solarized.base2 + "60",
-        borderRadius: 4,
-        paddingLeft: 3,
-        paddingRight: 3,
-        fontSize: 14,
-        fontFamily: "monospace",
-      }}
-    >
-      {props.label}
-    </span>
-  );
 }
 
 function SearchSettingsDialog(props: {

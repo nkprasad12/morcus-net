@@ -1,13 +1,13 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
 import { Solarized } from "@/web/client/colors";
+import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { Divider } from "@mui/material";
 
 import React from "react";
-import { DictChip } from "./search/dictionary_search";
 
 export function jumpToSection(sectionId: string) {
   const selected = document.getElementById(sectionId);
