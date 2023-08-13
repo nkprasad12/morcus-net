@@ -5,13 +5,13 @@ import React from "react";
 
 const TEXT_COLOR = Solarized.base03 + "81";
 
-function backgroundColor(label: string): string {
-  return label === LatinDict.SmithAndHall.key
-    ? Solarized.blue + "30"
-    : Solarized.base2 + "60";
-}
-
 export function DictChip(props: { label: string }) {
+  function backgroundColor(label: string): string {
+    return label === LatinDict.SmithAndHall.key
+      ? Solarized.blue + "30"
+      : Solarized.base2 + "60";
+  }
+
   return (
     <span
       style={{
@@ -30,6 +30,12 @@ export function DictChip(props: { label: string }) {
 }
 
 export function FullDictChip(props: { label: string }) {
+  function backgroundColor(label: string): string {
+    return label === LatinDict.SmithAndHall.displayName
+      ? Solarized.blue + "30"
+      : Solarized.base2 + "60";
+  }
+
   return (
     <Typography
       component={"span"}
