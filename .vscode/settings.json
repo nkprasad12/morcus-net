@@ -33,6 +33,6 @@
     "titleBar.inactiveBackground": "#402b3199",
     "titleBar.inactiveForeground": "#e7e7e799"
   },
-  "peacock.color": "#402B31"
-  // "python.analysis.typeCheckingMode": "basic"
+  "peacock.color": "#402B31",
+  "git.openDiffOnClick": false
 }
