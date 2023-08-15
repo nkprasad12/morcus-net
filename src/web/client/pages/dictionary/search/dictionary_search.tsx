@@ -8,6 +8,7 @@ import {
   Autocomplete,
   Button,
   DialogActions,
+  DialogContentText,
   FormControlLabel,
   FormGroup,
   IconButton,
@@ -21,10 +22,47 @@ import React from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
+import Slider from "@mui/material/Slider";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
+import {
+  DEFAULT_HIGHLIGHT_STRENGTH,
+  GlobalSettingsContext,
+} from "@/web/client/components/global_flags";
 
 function toQuery(info: [DictInfo, string]): string {
   return `${info[1]},${info[0].key.replace("&", "n")}`;
+}
+
+function HighlightSlider(props: {
+  highlightStrength: number;
+  setHighlightStrength: (newValue: number) => any;
+}) {
+  const [value, setValue] = React.useState<number>(props.highlightStrength);
+
+  return (
+    <div>
+      <DialogContentText sx={{ marginTop: 2 }}>
+        Highlight Strength
+      </DialogContentText>
+      <Slider
+        aria-label="Highlight Strength"
+        getAriaValueText={(v) => `${v} %`}
+        value={value}
+        onChange={(_, newValue) => {
+          if (typeof newValue !== "number") {
+            return;
+          }
+          props.setHighlightStrength(newValue);
+          setValue(newValue);
+        }}
+        valueLabelDisplay="off"
+        step={10}
+        marks
+        min={10}
+        max={90}
+      />
+    </div>
+  );
 }
 
 function SearchSettingsDialog(props: {
@@ -37,8 +75,20 @@ function SearchSettingsDialog(props: {
   const [pending, setPending] = React.useState<Set<DictInfo>>(
     new Set(props.dicts)
   );
+  const globalSettings = React.useContext(GlobalSettingsContext);
+  const pendingHighlightStrength = React.useRef<number>(
+    globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
+  );
 
   function onClose() {
+    if (
+      globalSettings.data.highlightStrength !== pendingHighlightStrength.current
+    ) {
+      globalSettings.setData({
+        ...globalSettings.data,
+        highlightStrength: pendingHighlightStrength.current,
+      });
+    }
     const prev = props.dicts;
     const next = pending;
     if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
@@ -55,6 +105,9 @@ function SearchSettingsDialog(props: {
     return (
       <>
         <DialogContent>
+          <DialogContentText sx={{ marginTop: 2 }}>
+            Enabled Dictionaries
+          </DialogContentText>
           <FormGroup>
             {LatinDict.AVAILABLE.map((dict) => (
               <FormControlLabel
@@ -80,6 +133,12 @@ function SearchSettingsDialog(props: {
               />
             ))}
           </FormGroup>
+          <HighlightSlider
+            highlightStrength={pendingHighlightStrength.current}
+            setHighlightStrength={(v) => {
+              pendingHighlightStrength.current = v;
+            }}
+          />
         </DialogContent>
         <DialogActions>
           <Button autoFocus onClick={onClose} color="info">
@@ -97,7 +156,7 @@ function SearchSettingsDialog(props: {
       sx={{ top: "-40%" }}
       disableScrollLock={true}
     >
-      <DialogTitle>
+      <DialogTitle sx={{ fontWeight: "bold" }}>
         {saving ? "Saving Settings" : "Dictionary Options"}
       </DialogTitle>
       {!saving && <FormAndActions />}

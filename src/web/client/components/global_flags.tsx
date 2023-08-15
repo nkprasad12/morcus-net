@@ -4,8 +4,11 @@ import { defaultExperimentalMode } from "@/web/client/define_vars";
 
 const SETTINGS_STORAGE_KEY = "GlobalSettings";
 
+export const DEFAULT_HIGHLIGHT_STRENGTH = 50;
+
 export interface GlobalSettings {
   experimentalMode?: boolean;
+  highlightStrength?: number;
 }
 
 function toGlobalSettings(input: unknown): GlobalSettings {
@@ -35,6 +38,7 @@ function defaultGlobalSettings(): GlobalSettings {
     ? toGlobalSettings(JSON.parse(storageSetting))
     : {
         experimentalMode: defaultExperimentalMode(),
+        highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
       };
 }
 
