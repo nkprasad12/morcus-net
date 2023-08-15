@@ -7,7 +7,7 @@ import {
 } from "@/common/smith_and_hall/sh_preprocessing";
 
 const SENSE_LEVELS =
-  /^([ABCDEFabcdef]|(?:1)?[0-9]|I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|U|Phr)$/;
+  /^([ABCDEFabcdef]|(?:1|2)?[0-9]|I|II|III|IV|V|VI|VII|VIII|IX|X|XI|XII|XIII|XIV|XV|XVI|XVII|U|Phr)$/;
 const PAREN_SENSE_START = /^\(<i>[abcde]<\/i>\)\./;
 const PAREN_SENSE_START_DOT = /^\(<i>[abcde]\.<\/i>\)/;
 const NO_ITAL_SENSE_START_DOT = /^\([1-9]\.\)/;
@@ -25,6 +25,8 @@ export interface ShEntry {
   blurb: string;
   senses: ShSense[];
 }
+
+// let bads = 0;
 
 export function splitSense(rawLine: string): ShSense {
   const line = rawLine.trimStart();
@@ -56,12 +58,7 @@ export function splitSense(rawLine: string): ShSense {
       };
     }
   }
-  // throw Error(line);
-  console.log(rawLine);
-  return {
-    level: "I",
-    text: "FOO",
-  };
+  throw Error(line);
 }
 
 function processArticle(rawArticle: NormalizedArticle): ShEntry {
@@ -89,16 +86,23 @@ function processArticle(rawArticle: NormalizedArticle): ShEntry {
     } else if (state === "In Blurb") {
       result.blurb += " " + line;
     } else if (state === "None") {
-      currentSense = splitSense(line);
+      try {
+        currentSense = splitSense(line);
+      } catch (e) {
+        // bads += 1;
+        // console.log("\n" + bads + ":");
+        // console.log(line);
+        // console.log(JSON.stringify(rawArticle.text, undefined, 2));
+        currentSense = {
+          level: "I",
+          text: "FOO",
+        };
+      }
       state = "In Sense";
     } else {
       exhaustiveGuard(state);
     }
   }
-  // 3. Take everything else up to the next empty line as the blurb
-  // 4. After that, chunks are separated by empty lines
-  // 5. For each chunk, split on the first "."
-  // 6. The first half becomes the sense level, everything after is sense text
   return result;
 }
 

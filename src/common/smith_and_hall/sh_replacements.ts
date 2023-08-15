@@ -49,6 +49,32 @@ export const CORRECTIONS = new Map<string, string>([
     "<b>uncouple (<f>animals</f>), to</b>: disjungo,",
     "<b>uncouple (animals), to</b>: disjungo,",
   ],
+  ["<f>foreboding</f> (<i>subs.</i>):", "<b>foreboding</b> (<i>subs.</i>):"],
+  ["1[** I]. <i>A hack horse</i>:", "I. <i>A hack horse</i>:"],
+  [".[** s/b I.] Lit.:", "I. Lit.:"],
+  [
+    "I[**period missing] In ordinary senses senses:[**lower dot missing]",
+    "I. In ordinary senses:",
+  ],
+  ["2 rŏtābĭlis: Amm.", "2. rŏtābĭlis: Amm."],
+  ["3 vĕreor, ĭtus, 2 (<i>to", "3. vĕreor, ĭtus, 2 (<i>to"],
+  ["2[** missing .? P1|P3 yes] carmen,", "2. carmen,"],
+  ["4 rĕdipiscor,", "4. rĕdipiscor,"],
+  ["mergo, immergo, si, sum,", "U. mergo, immergo, si, sum,"],
+  [
+    "2[**P1: missing punctuation?|P3 s/b .] sērŏtĭnus[** ch. diacritic on 'o']",
+    "2. sērŏtĭnus",
+  ],
+  ["2 nĕcessĕ,", "2. nĕcessĕ,"],
+  [
+    "plug (<i>subs.</i>): perh. obtūrācŭlum, obtūrāmentum:",
+    "<b>plug</b> (<i>subs.</i>): perh. obtūrācŭlum, obtūrāmentum:",
+  ],
+  ["2 sēcrētum (not so in", "2. sēcrētum (not so in"],
+  [
+    "Phrr. with <i>put</i> followed by <i>in</i>:",
+    "<b>put ... in (phrases)</b>: Phrr. with <i>put</i> followed by <i>in</i>:",
+  ],
 ]);
 
 export const DASH_EDGE_CASES = new Map<string, string>([
@@ -90,4 +116,14 @@ export const DASH_EDGE_CASES = new Map<string, string>([
 
 export const IGNORE_EMPTY_LINE_AFTER = new Set<string>([
   "I. <i>Orderly disposition</i>:",
+]);
+
+export const IGNORE_EMPTY_LINE_BEFORE = new Set<string>([
+  "i. e. <i>to put in barrels</i>,",
+  "Fig.: <i>cross, ill-tempered</i>. Join:",
+]);
+
+export const START_NEW_ENTRY_AT = new Set<string>([
+  "<b>un----.</b>[**P2: prefix so short hyphen|F2: disagree, dash represents rest of word] This prefix gives a negative",
+  "<b>plug</b> (<i>subs.</i>): perh. obtūrācŭlum, obtūrāmentum:",
 ]);

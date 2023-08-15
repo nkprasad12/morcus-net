@@ -24,6 +24,27 @@ describe("handleEditorNotes", () => {
     expect(handleEditorNotes(input)).toBe(expected);
   });
 
+  test("substitutes for P2 editor notes", () => {
+    const input = "Virg.[**P2: :] Ov. Prov.: <i>to have two[**P2: .]";
+    const expected = "Virg.: Ov. Prov.: <i>to have two.";
+    expect(handleEditorNotes(input)).toBe(expected);
+  });
+
+  test("Removes multiple editor notes in one line", () => {
+    const input =
+      "Fr. 2,[**P2: ,] 10, <i>med.</i>: <i>to try to provoke a l.</i>, r.[** r unclear]";
+    const expected =
+      "Fr. 2,, 10, <i>med.</i>: <i>to try to provoke a l.</i>, r.";
+    expect(handleEditorNotes(input)).toBe(expected);
+  });
+
+  test("Removes multiple editor notes in one line edge case", () => {
+    const input =
+      "2[**P1: missing punctuation?|P3 s/b .] sērŏtĭnus[** ch. diacritic on 'o']";
+    const expected = "2 sērŏtĭnus";
+    expect(handleEditorNotes(input)).toBe(expected);
+  });
+
   test("substitutes in dash edge case", () => {
     const input = "[** ----] Ov. Prov.: <i>to have two";
     const expected = "<b>----</b> Ov. Prov.: <i>to have two";

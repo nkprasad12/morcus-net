@@ -7,7 +7,8 @@ import {
 
 const DASH = "----";
 const KEPT_EDITOR_NOTE = /\[\*\*[ ]?([^\]])\]/g;
-const MISSING_CHAR_NOTE = /\[\*\*[A-Z0-9]+: missing (.+)\]/g;
+const KEPT_P2_NOTE = /\[\*\*P2: (.)\]/g;
+const MISSING_CHAR_NOTE = /\[\*\*[A-Z0-9]+: missing (.)\]/g;
 const REMOVED_EDITOR_NOTE = /\[\*\*[^\]]*\]/g;
 
 const BASE_ENTRY_KEY_PATTERN =
@@ -38,6 +39,7 @@ export function handleEditorNotes(input: string): string {
   return (
     input
       .replace(KEPT_EDITOR_NOTE, "$1")
+      .replace(KEPT_P2_NOTE, "$1")
       .replace(MISSING_CHAR_NOTE, "$1")
       .replace(",[**P2: : ?]", ":")
       .replace(".[**P2: : ?]", ":")
@@ -45,6 +47,9 @@ export function handleEditorNotes(input: string): string {
       // U stands for unmarked.
       .replace("[**no new paragraph]", "U. ")
       .replace("[**no new paragr.]", "U. ")
+      .replace("[**no new paragr]", "U. ")
+      .replace("[**no new para]", "U.")
+      .replace("[**no new par.]", "U.")
       .replace(REMOVED_EDITOR_NOTE, "")
   );
 }

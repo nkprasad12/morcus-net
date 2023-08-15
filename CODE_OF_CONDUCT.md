@@ -100,7 +100,7 @@ and [Microsoft Open Source Code of Conduct][microsoft-coc].
 This Code of Conduct is licensed under the
 [Creative Commons Attribution 3.0 License][cc-by-3-us].
 
-[contributor-covenant-home]: https://www.contributor-covenant.org (https://www.contributor-covenant.org/)
+[contributor-covenant-home]: https://www.contributor-covenant.org "https://www.contributor-covenant.org/"
 [golang-coc]: https://golang.org/conduct
 [cncf-coc]: https://github.com/cncf/foundation/blob/master/code-of-conduct.md
 [microsoft-coc]: https://opensource.microsoft.com/codeofconduct/

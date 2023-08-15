@@ -5,6 +5,7 @@ import {
   CORRECTIONS,
   DASH_EDGE_CASES,
   IGNORE_EMPTY_LINE_AFTER,
+  IGNORE_EMPTY_LINE_BEFORE,
 } from "@/common/smith_and_hall/sh_replacements";
 import { removeDiacritics } from "@/common/text_cleaning";
 import fs from "fs";
@@ -20,6 +21,8 @@ const DASH_START_ENTRIES = /^----[^-]/;
 
 const HEADERS = "ABCDEFGHIJKLMNOPQRSTUVWYZ";
 const SENSE_LEVELS = /^([A-Za-z0-9]|I|II|III|IV|V)$/;
+const BASE_ENTRY_KEY_PATTERN =
+  /^<b>([^<>]+)+<\/b>(?: \([a-zA-Z ,.(?:<i>)(?:<i/>)=]+\))?:/;
 
 const MACRONS = "āēīōūȳ";
 const BREVES = "ăĕĭŏŭў";
@@ -54,8 +57,10 @@ function attachLengthMarks(input: string): string {
   return result;
 }
 
-export async function getArticles(): Promise<string[][]> {
-  const fileStream = fs.createReadStream(process.env.SH_RAW_PATH!);
+export async function getArticles(
+  fileName: string = process.env.SH_RAW_PATH!
+): Promise<string[][]> {
+  const fileStream = fs.createReadStream(fileName);
   const rl = readline.createInterface({
     input: fileStream,
     crlfDelay: Infinity,
@@ -72,6 +77,12 @@ export async function getArticles(): Promise<string[][]> {
     if (input === END_OF_ENTRIES) {
       // OK to break because we have two blank lines before this.
       break;
+    }
+
+    if (/^\[\*\*[^\]]+\]$/.test(input)) {
+      // Ignore lines that are only editor notes. We don't event want to
+      // record a newline from these.
+      continue;
     }
 
     const corrected = CORRECTIONS.get(input) || input;
@@ -125,7 +136,6 @@ export async function getArticles(): Promise<string[][]> {
         }
 
         if (SENSE_LEVELS.test(line.split(".")[0])) {
-          // \(<i>[abcdefghi](?:[abcdefghi])?(?:[abcdefghi])(?:\.)?</i>\)
           state = "InArticle";
           // We have a sense that was accidentally separated from its article.
           assert(allArticles.length > 0, "Need to have a last article");
@@ -155,6 +165,13 @@ export async function getArticles(): Promise<string[][]> {
       case "MaybeEndingArticle":
         if (line.startsWith(START_OF_FILE)) {
           continue;
+        }
+        if (BASE_ENTRY_KEY_PATTERN.test(line)) {
+          allArticles.push([]);
+        } else if (IGNORE_EMPTY_LINE_BEFORE.has(line)) {
+          assert(allArticles.length > 0, "Need to have a last article");
+          assert(allArticles[allArticles.length - 1].slice(-1)[0] === "");
+          allArticles[allArticles.length - 1].pop();
         }
         assert(allArticles.length > 0, "Need to have a last article");
         allArticles[allArticles.length - 1].push(line);
