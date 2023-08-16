@@ -26,8 +26,6 @@ export interface ShEntry {
   senses: ShSense[];
 }
 
-// let bads = 0;
-
 export function splitSense(rawLine: string): ShSense {
   const line = rawLine.trimStart();
   if (PAREN_SENSE_START_DOT.test(line) || PAREN_SENSE_START.test(line)) {
@@ -86,18 +84,7 @@ function processArticle(rawArticle: NormalizedArticle): ShEntry {
     } else if (state === "In Blurb") {
       result.blurb += " " + line;
     } else if (state === "None") {
-      try {
-        currentSense = splitSense(line);
-      } catch (e) {
-        // bads += 1;
-        // console.log("\n" + bads + ":");
-        // console.log(line);
-        // console.log(JSON.stringify(rawArticle.text, undefined, 2));
-        currentSense = {
-          level: "I",
-          text: "FOO",
-        };
-      }
+      currentSense = splitSense(line);
       state = "In Sense";
     } else {
       exhaustiveGuard(state);

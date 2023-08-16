@@ -116,6 +116,12 @@ export const DASH_EDGE_CASES = new Map<string, string>([
     "2 exĭguus (<i>very small, tiny</i>).[**P1: comma, not period?|P3 no s/b :]",
     "2. exĭguus (<i>very small, tiny</i>):",
   ],
+  [
+    "(1). insto, stĭti, 1 (<i>to be very",
+    "(1.) insto, stĭti, 1 (<i>to be very",
+  ],
+  ["(2). adsum, subsum:", "(2.) adsum, subsum:"],
+  ["(3). advento, appĕto", "(3.) advento, appĕto"],
 ]);
 
 export const IGNORE_EMPTY_LINE_AFTER = new Set<string>([
