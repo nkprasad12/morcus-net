@@ -124,11 +124,8 @@ export const DASH_EDGE_CASES = new Map<string, string>([
   ["(3). advento, appĕto", "(3.) advento, appĕto"],
 ]);
 
-export const IGNORE_EMPTY_LINE_AFTER = new Set<string>([
-  "I. <i>Orderly disposition</i>:",
-]);
-
 export const IGNORE_EMPTY_LINE_BEFORE = new Set<string>([
   "i. e. <i>to put in barrels</i>,",
   "Fig.: <i>cross, ill-tempered</i>. Join:",
+  "v. <f>ARRANGEMENT</f>, <f>ORDER</f>. Phr.:",
 ]);

@@ -28,18 +28,101 @@ function writeArticle(lines: string[]) {
   fs.writeFileSync(TEMP_FILE, allLines.join("\n"));
 }
 
-describe("getArticlesFromFile", () => {
+describe("getArticles", () => {
   it("handles page markers", async () => {
     const lines = [
       "<b>intermittent</b>:",
       "of <i>i. fevers</i> are there given, e. g. quoti-*",
       "-----File: b0418m.png------------------------------------------------------",
       "*diana, tertiana, quartana (quae altero,",
+      "",
+      "-----File: b0418m.png------------------------------------------------------",
+      "foo",
     ];
     const expected = [
       "<b>intermittent</b>:",
       "of <i>i. fevers</i> are there given, e. g. quoti-*",
       "*diana, tertiana, quartana (quae altero,",
+      "",
+      "foo",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toEqual([expected]);
+  });
+
+  it("handles dash start entries", async () => {
+    const lines = [
+      "----, <b>to become</b>:",
+      "-----File: b0418m.png------------------------------------------------------",
+      "",
+      "1. cl[=a]resco,",
+    ];
+    const expected = [
+      "<b>illustrious</b>, <b>to become</b>:",
+      "",
+      "1. clāresco,",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toEqual([expected]);
+  });
+
+  it("handles macrons and breves", async () => {
+    const lines = ["<b>to become</b>: cl[=a]r[)e]sco,"];
+    const expected = ["<b>to become</b>: clārĕsco,", "", ""];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toEqual([expected]);
+  });
+
+  it("handles combo entries", async () => {
+    const lines = [
+      "/*",
+      "<b>arrear</b>:  }",
+      "<b>arrears</b>: }",
+      "*/",
+      "",
+      "1. rĕlĭquum (usu. <i>plu.</i>):",
+    ];
+    const expected = [
+      "/*",
+      "<b>arrear</b>:  }",
+      "<b>arrears</b>: }",
+      "*/",
+      "",
+      "1. rĕlĭquum (usu. <i>plu.</i>):",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toEqual([expected]);
+  });
+
+  it("ignores section headers", async () => {
+    const lines = [
+      "",
+      "A.",
+      "",
+      "<b>intermittent</b>:",
+      "of <i>i. fevers</i> are there given, e. g. quoti-*",
+    ];
+    const expected = [
+      "<b>intermittent</b>:",
+      "of <i>i. fevers</i> are there given, e. g. quoti-*",
       "",
       "",
     ];
@@ -95,5 +178,48 @@ describe("getArticlesFromFile", () => {
 
     expect(result).toHaveLength(2);
     expect(result[1]).toEqual(expected);
+  });
+
+  it("respects edge case: ignore empty line before", async () => {
+    const lines = [
+      "<b>plug</b> (<i>v.</i>): obtūro, 1: v. <f>TO STOP UP</f>.",
+      "",
+      "i. e. <i>to put in barrels</i>,",
+    ];
+    const expected = [
+      "<b>plug</b> (<i>v.</i>): obtūro, 1: v. <f>TO STOP UP</f>.",
+      "i. e. <i>to put in barrels</i>,",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual(expected);
+  });
+
+  it("reunites lost senses with their articles", async () => {
+    const lines = [
+      "<b>plug</b> (<i>v.</i>): obtūro, 1: v. <f>TO STOP UP</f>.",
+      "",
+      "",
+      "I. i. e. <i>to put in barrels</i>,",
+    ];
+    const expected = [
+      "<b>plug</b> (<i>v.</i>): obtūro, 1: v. <f>TO STOP UP</f>.",
+      "",
+      "",
+      "I. i. e. <i>to put in barrels</i>,",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toHaveLength(1);
+    expect(result[0]).toEqual(expected);
   });
 });

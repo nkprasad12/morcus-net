@@ -4,7 +4,6 @@ import { handleEditorNotes } from "@/common/smith_and_hall/sh_preprocessing";
 import {
   CORRECTIONS,
   DASH_EDGE_CASES,
-  IGNORE_EMPTY_LINE_AFTER,
   IGNORE_EMPTY_LINE_BEFORE,
 } from "@/common/smith_and_hall/sh_replacements";
 import { removeDiacritics } from "@/common/text_cleaning";
@@ -108,11 +107,6 @@ function processSingleLine(
       }
       assert(allArticles.length > 0, "Need to have a last article");
       if (lineEmpty(line)) {
-        const lastArticle = allArticles[allArticles.length - 1];
-        const lastLine = lastArticle[lastArticle.length - 1];
-        if (IGNORE_EMPTY_LINE_AFTER.has(lastLine)) {
-          return "InArticle";
-        }
         allArticles[allArticles.length - 1].push(line);
         return "MaybeEndingArticle";
       }
