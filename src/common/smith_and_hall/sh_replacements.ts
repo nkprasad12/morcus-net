@@ -112,6 +112,10 @@ export const DASH_EDGE_CASES = new Map<string, string>([
     `<b>---- wort</b>: *nūmŭlāria: Withering.`,
   ],
   ["Respecting the Latin conjunctions", "U. Respecting the Latin conjunctions"],
+  [
+    "2 exĭguus (<i>very small, tiny</i>).[**P1: comma, not period?|P3 no s/b :]",
+    "2. exĭguus (<i>very small, tiny</i>):",
+  ],
 ]);
 
 export const IGNORE_EMPTY_LINE_AFTER = new Set<string>([
@@ -121,9 +125,4 @@ export const IGNORE_EMPTY_LINE_AFTER = new Set<string>([
 export const IGNORE_EMPTY_LINE_BEFORE = new Set<string>([
   "i. e. <i>to put in barrels</i>,",
   "Fig.: <i>cross, ill-tempered</i>. Join:",
-]);
-
-export const START_NEW_ENTRY_AT = new Set<string>([
-  "<b>un----.</b>[**P2: prefix so short hyphen|F2: disagree, dash represents rest of word] This prefix gives a negative",
-  "<b>plug</b> (<i>subs.</i>): perh. obtūrācŭlum, obtūrāmentum:",
 ]);

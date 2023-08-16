@@ -75,4 +75,25 @@ describe("getArticlesFromFile", () => {
 
     expect(result).toEqual([expected]);
   });
+
+  it("automatically handles entry starts with a missing blank line", async () => {
+    const lines = [
+      "<b>plug</b> (<i>v.</i>): obtūro, 1: v. <f>TO STOP UP</f>.",
+      "",
+      "plug (<i>subs.</i>): perh. obtūrācŭlum, obtūrāmentum:",
+      "v. <f>STOPPER</f>.",
+    ];
+    const expected = [
+      "<b>plug</b> (<i>subs.</i>): perh. obtūrācŭlum, obtūrāmentum:",
+      "v. <f>STOPPER</f>.",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toHaveLength(2);
+    expect(result[1]).toEqual(expected);
+  });
 });
