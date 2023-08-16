@@ -137,6 +137,15 @@ describe("encode and decode", () => {
     expect(result).toStrictEqual(input);
   });
 
+  it("handles string input with special characters", () => {
+    const input = "hello?there";
+
+    const encoded = encodeMessage(input, undefined, true);
+    const result = decodeMessage(encoded, isString, undefined, true);
+
+    expect(result).toStrictEqual(input);
+  });
+
   it("handles simple registry input", () => {
     const input = new StringWrapper("foo");
 
