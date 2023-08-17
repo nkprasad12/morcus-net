@@ -258,9 +258,9 @@ export function DictionarySearch(props: {
             label={
               numDicts === 0
                 ? "Enable a dictionary in settings"
-                : `Search for a word (${props.dicts
+                : `Search for a word (dictionaries: ${props.dicts
                     .map((d) => d.key)
-                    .join(",")})`
+                    .join(", ")})`
             }
             error={numDicts === 0}
             InputLabelProps={{
