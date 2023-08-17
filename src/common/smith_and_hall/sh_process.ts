@@ -15,7 +15,7 @@ const PAREN_SENSE_START_SPACE = /^\([A-F]\) /;
 
 type ProcessState = "In Blurb" | "In Sense" | "None";
 
-interface ShSense {
+export interface ShSense {
   level: string;
   text: string;
 }

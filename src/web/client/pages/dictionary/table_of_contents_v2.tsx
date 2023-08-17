@@ -82,7 +82,9 @@ function OutlineSection(props: {
           />
           {` ${outline.mainOrth}`}
         </span>
-        {" " + outline.mainSection.text}
+        <span
+          dangerouslySetInnerHTML={{ __html: " " + outline.mainSection.text }}
+        />
       </div>
       {senses && (
         <ol style={{ paddingLeft: "0em" }}>
@@ -113,7 +115,7 @@ function OutlineSection(props: {
                   />
                   {` ${header}. `}
                 </span>
-                <span>{" " + sense.text}</span>
+                <span dangerouslySetInnerHTML={{ __html: " " + sense.text }} />
               </li>
             );
           })}
