@@ -32,7 +32,7 @@ export const GlobalSettingsContext: React.Context<
   DataAndSetter<GlobalSettings>
 > = createContext(FALLBACK);
 
-function defaultGlobalSettings(): GlobalSettings {
+export function getGlobalSettings(): GlobalSettings {
   const storageSetting = localStorage.getItem(SETTINGS_STORAGE_KEY);
   return storageSetting !== null
     ? toGlobalSettings(JSON.parse(storageSetting))
@@ -44,7 +44,7 @@ function defaultGlobalSettings(): GlobalSettings {
 
 export function SettingsHandler(props: PropsWithChildren<Record<string, any>>) {
   const [settings, setSettings] = React.useState<GlobalSettings>(
-    defaultGlobalSettings()
+    getGlobalSettings()
   );
 
   return (
