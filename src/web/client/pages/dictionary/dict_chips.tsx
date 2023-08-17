@@ -4,12 +4,12 @@ import Typography from "@mui/material/Typography";
 import React from "react";
 
 const TEXT_COLOR = Solarized.base03 + "81";
+const LS_COLOR = Solarized.cyan + "30";
+const SH_COLOR = Solarized.violet + "30";
 
 export function DictChip(props: { label: string }) {
   function backgroundColor(label: string): string {
-    return label === LatinDict.SmithAndHall.key
-      ? Solarized.blue + "30"
-      : Solarized.base2 + "60";
+    return label === LatinDict.SmithAndHall.key ? SH_COLOR : LS_COLOR;
   }
 
   return (
@@ -31,9 +31,7 @@ export function DictChip(props: { label: string }) {
 
 export function FullDictChip(props: { label: string }) {
   function backgroundColor(label: string): string {
-    return label === LatinDict.SmithAndHall.displayName
-      ? Solarized.blue + "30"
-      : Solarized.base2 + "60";
+    return label === LatinDict.SmithAndHall.displayName ? SH_COLOR : LS_COLOR;
   }
 
   return (
