@@ -40,7 +40,9 @@ export class FusedDictionary {
       try {
         const dictResult = await pending;
         result[dictResult[0]] = dictResult[1];
-      } catch (e) {}
+      } catch (e) {
+        console.warn(e);
+      }
     }
     return result;
   }
