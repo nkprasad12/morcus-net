@@ -3,6 +3,9 @@ coverage:
   round: nearest
   precision: 1
   status:
+    patch:
+      default:
+        target: 80
     project:
       default:
         target: 92.5
