@@ -32,4 +32,4 @@ if (verify) {
 }
 
 const runTime = Math.round(performance.now() - startTime);
-console.log(`Runtime: ${runTime} ms.`);
+console.log(`Lewis and Short runtime: ${runTime} ms.`);
