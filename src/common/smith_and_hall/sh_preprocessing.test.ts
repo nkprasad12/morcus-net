@@ -2,6 +2,7 @@ import {
   decomposeKey,
   extractEntryKeyFromLine,
   handleEditorNotes,
+  normalizeArticles,
   parseComboEntries,
   replaceDash,
 } from "@/common/smith_and_hall/sh_preprocessing";
@@ -386,5 +387,69 @@ describe("replaceDash", () => {
     expect(replaceDash("---- ---- ---- over", "victory, to gain a")).toBe(
       "victory, to gain a _ over"
     );
+  });
+});
+
+describe("normalizeArticles", () => {
+  it("handles combo articles with simple articles", () => {
+    const input: string[][] = [
+      ["<b>antipope</b>: antĭpāpa: M. L.", "", ""],
+      [
+        "/*",
+        "<b>antiquarian</b> }",
+        "<b>antiquary</b>   }",
+        "*/",
+        "",
+        "[**no new paragraph]*rerum antiquarum",
+      ],
+    ];
+
+    const result = normalizeArticles(input);
+
+    expect(result).toEqual([
+      {
+        keys: ["antipope"],
+        text: ["<b>antipope</b>: antĭpāpa: M. L.", "", ""],
+      },
+      {
+        keys: ["antiquarian", "antiquary"],
+        text: [
+          "<b>antiquarian</b> ; <b>antiquary</b>",
+          "",
+          "[**no new paragraph]*rerum antiquarum",
+        ],
+        originalKeys: ["antiquarian", "antiquary"],
+      },
+    ]);
+  });
+
+  it("handles multiple dashed entries with senses", () => {
+    const input: string[][] = [
+      ["<b>keep apart</b>: dist[)i]neo, 2: Caes. B. G.", "4, 17: Liv.", "", ""],
+      ["<b>---- away</b>: v. <f>TO KEEP OFF</f>.", "", ""],
+      ["<b>---- back</b>:", "", "I. <i>To prevent from"],
+    ];
+
+    const result = normalizeArticles(input);
+
+    expect(result).toEqual([
+      {
+        keys: ["keep apart"],
+        text: [
+          "<b>keep apart</b>: dist[)i]neo, 2: Caes. B. G.",
+          "4, 17: Liv.",
+          "",
+          "",
+        ],
+      },
+      {
+        keys: ["keep away"],
+        text: ["<b>keep away</b>: v. <f>TO KEEP OFF</f>.", "", ""],
+      },
+      {
+        keys: ["keep back"],
+        text: ["<b>keep back</b>:", "", "I. <i>To prevent from"],
+      },
+    ]);
   });
 });
