@@ -113,7 +113,7 @@ function OutlineSection(props: {
                       paddingLeft: "0.1em",
                     }}
                   />
-                  {` ${header}. `}
+                  {` ${header} `}
                 </span>
                 <span dangerouslySetInnerHTML={{ __html: " " + sense.text }} />
               </li>

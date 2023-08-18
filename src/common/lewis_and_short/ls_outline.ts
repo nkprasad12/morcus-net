@@ -67,7 +67,7 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
     return {
       text: getSenseBlurb(sense),
       level: +checkPresent(sense.getAttr("level"), "Sense must have a level"),
-      ordinal: checkPresent(sense.getAttr("n"), "Sense must have an n"),
+      ordinal: checkPresent(sense.getAttr("n"), "Sense must have an n") + ".",
       sectionId: senseId,
     };
   });
