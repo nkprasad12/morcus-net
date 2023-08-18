@@ -1,5 +1,4 @@
-import { computeLevel } from "@/common/smith_and_hall/sh_levels";
-import { ShEntry, ShSense } from "@/common/smith_and_hall/sh_process";
+import { ShEntry, ShSense } from "@/common/smith_and_hall/sh_entry";
 import { XmlChild, XmlNode } from "@/common/xml_node";
 
 function formatSenseList(senses: ShSense[], entryId: number): XmlNode {
@@ -10,7 +9,7 @@ function formatSenseList(senses: ShSense[], entryId: number): XmlNode {
 
   for (let i = 0; i < senses.length; i++) {
     const sense = senses[i];
-    const level = computeLevel(sense.level);
+    const level = sense.level;
     const id = `sh${entryId}.${i}`;
 
     while (stack.length < level) {
@@ -36,7 +35,7 @@ function formatSenseList(senses: ShSense[], entryId: number): XmlNode {
               ["class", "lsSenseBullet"],
               ["senseid", id],
             ],
-            [` ${sense.level.trim()}. `]
+            [` ${sense.bullet} `]
           ),
           sense.text,
         ]

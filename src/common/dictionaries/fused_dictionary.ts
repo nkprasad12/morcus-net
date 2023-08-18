@@ -41,7 +41,7 @@ export class FusedDictionary {
         const dictResult = await pending;
         result[dictResult[0]] = dictResult[1];
       } catch (e) {
-        console.warn(e);
+        console.log(e);
       }
     }
     return result;
