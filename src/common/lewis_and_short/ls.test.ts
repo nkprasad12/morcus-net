@@ -2,9 +2,9 @@ import fs from "fs";
 
 import { LewisAndShort } from "@/common/lewis_and_short/ls";
 import { XmlNode } from "@/common/xml_node";
-import { LsResult } from "@/web/utils/rpc/ls_api_result";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { EntryResult } from "@/common/dictionaries/dict_result";
 
 console.debug = jest.fn();
 
@@ -69,7 +69,7 @@ const LS_DATA = [
 
 describe("LewisAndShort", () => {
   async function expectEntriesWithIds(
-    promise: Promise<LsResult[]>,
+    promise: Promise<EntryResult[]>,
     expected: string[]
   ) {
     const results = await promise;
