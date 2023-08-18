@@ -8,9 +8,9 @@ import {
   mergeVowelMarkers,
 } from "@/common/lewis_and_short/ls_orths";
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
-import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { XmlNodeSerialization } from "@/common/xml_node_serialization";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -28,7 +28,9 @@ export class LewisAndShort extends SqlDict {
       dbFile,
       LatinDict.LewisAndShort,
       (entryStrings) => {
-        const entryNodes = parseEntries(entryStrings);
+        const entryNodes = entryStrings.map(
+          XmlNodeSerialization.DEFAULT.deserialize
+        );
         return entryNodes.map((node) => ({
           entry: displayEntryFree(node),
           outline: extractOutline(node),

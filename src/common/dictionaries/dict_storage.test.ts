@@ -9,64 +9,56 @@ import { XmlNodeSerialization } from "@/common/xml_node_serialization";
 
 console.debug = jest.fn();
 
+const serialize = XmlNodeSerialization.DEFAULT.serialize;
+
 const TEMP_FILE = "dict_storage.ts.tmp.txt";
 
 const FAKE_DICT = [
   {
     keys: ["Julius"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Julius"]],
-      ["Gallia est omnis"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"])
+    ),
   },
   {
     keys: ["Publius", "Naso"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Publius"]],
-      ["Non iterum repetenda suo"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode(
+        "entryFree",
+        [["id", "Publius"]],
+        ["Non iterum repetenda suo"]
+      )
+    ),
   },
   {
     keys: ["Naso"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Naso"]],
-      ["Pennisque levatus"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"])
+    ),
   },
   {
     keys: ["īnō", "Ino"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Ino"]],
-      ["Ino edge case"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"])
+    ),
   },
   {
     keys: ["quis"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisNormal"]],
-      ["quisUnspecified"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisNormal"]], ["quisUnspecified"])
+    ),
   },
   {
     keys: ["quĭs"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisBreve"]],
-      ["quisShort"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"])
+    ),
   },
   {
     keys: ["quīs"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisMacron"]],
-      ["quisLong"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
+    ),
   },
 ];
 

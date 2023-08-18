@@ -4,6 +4,7 @@ import { LewisAndShort } from "@/common/lewis_and_short/ls";
 import { XmlNode } from "@/common/xml_node";
 import { LsResult } from "@/web/utils/rpc/ls_api_result";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { XmlNodeSerialization } from "@/common/xml_node_serialization";
 
 console.debug = jest.fn();
 
@@ -15,62 +16,54 @@ jest.mock("./ls_outline", () => ({
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
+const serialize = XmlNodeSerialization.DEFAULT.serialize;
+
 const LS_DATA = [
   {
     keys: ["Julius"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Julius"]],
-      ["Gallia est omnis"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"])
+    ),
   },
   {
     keys: ["Publius", "Naso"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Publius"]],
-      ["Non iterum repetenda suo"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode(
+        "entryFree",
+        [["id", "Publius"]],
+        ["Non iterum repetenda suo"]
+      )
+    ),
   },
   {
     keys: ["Naso"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Naso"]],
-      ["Pennisque levatus"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"])
+    ),
   },
   {
     keys: ["īnō", "Ino"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Ino"]],
-      ["Ino edge case"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"])
+    ),
   },
   {
     keys: ["quis"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisNormal"]],
-      ["quisUnspecified"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisNormal"]], ["quisUnspecified"])
+    ),
   },
   {
     keys: ["quĭs"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisBreve"]],
-      ["quisShort"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"])
+    ),
   },
   {
     keys: ["quīs"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisMacron"]],
-      ["quisLong"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
+    ),
   },
 ];
 
