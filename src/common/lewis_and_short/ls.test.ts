@@ -2,8 +2,9 @@ import fs from "fs";
 
 import { LewisAndShort } from "@/common/lewis_and_short/ls";
 import { XmlNode } from "@/common/xml_node";
-import Database from "better-sqlite3";
-import { LsResult } from "@/web/utils/rpc/ls_api_result";
+import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { EntryResult } from "@/common/dictionaries/dict_result";
 
 console.debug = jest.fn();
 
@@ -15,76 +16,60 @@ jest.mock("./ls_outline", () => ({
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
+const serialize = XmlNodeSerialization.DEFAULT.serialize;
+
 const LS_DATA = [
   {
     keys: ["Julius"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Julius"]],
-      ["Gallia est omnis"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"])
+    ),
   },
   {
     keys: ["Publius", "Naso"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Publius"]],
-      ["Non iterum repetenda suo"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode(
+        "entryFree",
+        [["id", "Publius"]],
+        ["Non iterum repetenda suo"]
+      )
+    ),
   },
   {
     keys: ["Naso"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Naso"]],
-      ["Pennisque levatus"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"])
+    ),
   },
   {
     keys: ["īnō", "Ino"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "Ino"]],
-      ["Ino edge case"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"])
+    ),
   },
   {
     keys: ["quis"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisNormal"]],
-      ["quisUnspecified"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisNormal"]], ["quisUnspecified"])
+    ),
   },
   {
     keys: ["quĭs"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisBreve"]],
-      ["quisShort"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"])
+    ),
   },
   {
     keys: ["quīs"].join(","),
-    entry: new XmlNode(
-      "entryFree",
-      [["id", "quisMacron"]],
-      ["quisLong"]
-    ).toString(),
+    entry: serialize(
+      new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
+    ),
   },
 ];
 
-function toLsData(keys: string[]) {
-  return keys.map((key) => ({ keys: [key + "_"].join(","), entry: key }));
-}
-
-function writeFile(contents: string) {
-  fs.writeFileSync(TEMP_FILE, contents);
-}
-
 describe("LewisAndShort", () => {
   async function expectEntriesWithIds(
-    promise: Promise<LsResult[]>,
+    promise: Promise<EntryResult[]>,
     expected: string[]
   ) {
     const results = await promise;
@@ -151,157 +136,20 @@ describe("LewisAndShort", () => {
     expect(result[0].keys).toBe("arruo");
   });
 
-  test("save removes existing contents if present", async () => {
-    writeFile("foo");
-
-    LewisAndShort.save([{ keys: ["bar"].join(","), entry: "baz" }], TEMP_FILE);
-
-    const result = fs.readFileSync(TEMP_FILE).toString();
-
-    expect(result).not.toContain("foo");
-    expect(result).toContain("bar");
-  });
-
-  test("save writes to SQL table", async () => {
-    const data = [
-      {
-        keys: "Julius",
-        entry: "Gallia est omnis divisa in partes tres",
-      },
-      { keys: "Publius", entry: "Non iterum repetenda suo" },
-    ];
-    LewisAndShort.save(data, TEMP_FILE);
-
-    const db = new Database(TEMP_FILE, { readonly: true });
-    const contents = db.prepare("SELECT * FROM data").all();
-
-    expect(contents).toHaveLength(2);
-    expect(contents[0]).toEqual({
-      keys: data[0].keys,
-      entry: data[0].entry,
-      n: 0,
-    });
-    expect(contents[1]).toEqual({
-      keys: data[1].keys,
-      entry: data[1].entry,
-      n: 1,
-    });
-  });
-
-  test("getEntry handles expected entries", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
+  test("getEntry returns expected entries", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     expectEntriesWithIds(dict.getEntry("Julius"), ["Julius"]);
     expectEntriesWithIds(dict.getEntry("Publius"), ["Publius"]);
   });
 
-  test("getEntry handles expected entries", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
+  test("getEntry returns expect outlines", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
 
     expect(outline).toStrictEqual(["mockOutline"]);
-  });
-
-  test("getEntry handles ambiguous queries", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-    expectEntriesWithIds(dict.getEntry("Naso"), ["Publius", "Naso"]);
-  });
-
-  test("getEntry handles unknown queries", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-    expect(dict.getEntry("Foo")).resolves.toEqual([]);
-  });
-
-  test("getEntry handles same ascii orths in single article", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-    expectEntriesWithIds(dict.getEntry("ino"), ["Ino"]);
-  });
-
-  test("getEntry without diacritic returns all options", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-    expectEntriesWithIds(dict.getEntry("quis"), [
-      "quisNormal",
-      "quisBreve",
-      "quisMacron",
-    ]);
-  });
-
-  test("getEntry with breve returns short and ambiguous", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-    expectEntriesWithIds(dict.getEntry("quĭs"), ["quisNormal", "quisBreve"]);
-  });
-
-  test("getEntry with macron returns long and ambiguous", async () => {
-    LewisAndShort.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-    expectEntriesWithIds(dict.getEntry("quīs"), ["quisNormal", "quisMacron"]);
-  });
-
-  test("getCompletions returns expected results", async () => {
-    const inputKeys = ["aba", "abbas", "abas", "abat", "abbat", "abatta"];
-    LewisAndShort.save(toLsData(inputKeys), TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-
-    expect(await dict.getCompletions("ab")).toStrictEqual([
-      "aba_",
-      "abas_",
-      "abat_",
-      "abatta_",
-      "abbas_",
-      "abbat_",
-    ]);
-    expect(await dict.getCompletions("abat")).toStrictEqual([
-      "abat_",
-      "abatta_",
-    ]);
-    expect(await dict.getCompletions("abba")).toStrictEqual([
-      "abbas_",
-      "abbat_",
-    ]);
-    expect(await dict.getCompletions("abbax")).toStrictEqual([]);
-  });
-
-  test("getCompletions handles entries with multiple keys", async () => {
-    const data = [
-      {
-        keys: ["Julius", "Iulius"].join(","),
-        entry: "",
-      },
-      {
-        keys: ["Julus"].join(","),
-        entry: "",
-      },
-    ];
-    LewisAndShort.save(data, TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-
-    expect(await dict.getCompletions("Juliu")).toStrictEqual(["Julius"]);
-    expect(await dict.getCompletions("Iuliu")).toStrictEqual(["Iulius"]);
-  });
-
-  test("getCompletions handles different capitalization", async () => {
-    LewisAndShort.save(toLsData(["arbor", "Arbor", "arboris"]), TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-
-    expect(await dict.getCompletions("ar")).toStrictEqual([
-      "arbor_",
-      "Arbor_",
-      "arboris_",
-    ]);
-  });
-
-  test("getCompletions removes duplicate orths", async () => {
-    LewisAndShort.save(toLsData(["arbor", "abeo", "abeo"]), TEMP_FILE);
-    const dict = LewisAndShort.create(TEMP_FILE);
-
-    expect(await dict.getCompletions("a")).toStrictEqual(["abeo_", "arbor_"]);
   });
 });

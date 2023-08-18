@@ -263,6 +263,12 @@ describe("RPC library", () => {
     expect(result).toBe("foo StringToStringGet");
   });
 
+  test("handles strings with GET and special characters", async () => {
+    server = await setupApp();
+    const result = await callApi(StringGet.route, "foo?bar");
+    expect(result).toBe("foo?bar StringToStringGet");
+  });
+
   test("handles strings with POST", async () => {
     server = await setupApp();
     const result = await callApi(StringPost.route, "foo");

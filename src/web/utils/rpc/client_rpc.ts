@@ -18,7 +18,7 @@ export async function callApi<I, O>(
   input: I
 ): Promise<O> {
   const message = timed(
-    () => encodeMessage(input, route.registry),
+    () => encodeMessage(input, route.registry, route.method === "GET"),
     `${route.path} encode`
   );
   const base = `${location.origin}${route.path}`;

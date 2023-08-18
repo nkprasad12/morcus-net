@@ -32,16 +32,33 @@ import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   CompletionsFusedApi,
   DictsFusedApi,
-  DictsLsApi,
-  EntriesByPrefixApi,
   MacronizeApi,
   ReportApi,
 } from "@/web/api_routes";
 import { ApiHandler, RouteAndHandler } from "@/web/utils/rpc/server_rpc";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
+import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 
 dotenv.config();
+
+function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
+  let delegate: Dictionary | null = null;
+  const cachedProvider = () => {
+    if (delegate === null) {
+      delegate = provider();
+    }
+    return delegate;
+  };
+  setTimeout(() => cachedProvider(), 50);
+  return {
+    info: info,
+    getEntry: (...args) => cachedProvider().getEntry(...args),
+    getCompletions: (...args) => cachedProvider().getCompletions(...args),
+  };
+}
 
 function createApi<I, O>(
   route: ApiRoute<I, O>,
@@ -78,8 +95,19 @@ const port = parseInt(
 const app = express();
 const server = http.createServer(app);
 
-const lewisAndShort = LewisAndShort.create();
-const fusedDict = new FusedDictionary([lewisAndShort]);
+const lewisAndShort = delayedInit(
+  () => LewisAndShort.create(),
+  LatinDict.LewisAndShort
+);
+const smithAndHall = delayedInit(() => {
+  const start = performance.now();
+  const result = new SmithAndHall();
+  const elapsed = (performance.now() - start).toFixed(3);
+  console.debug(`SmithAndHall init: ${elapsed} ms`);
+  return result;
+}, LatinDict.SmithAndHall);
+const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
+
 const workServer = new SocketWorkServer(new Server(server));
 const telemetry =
   process.env.CONSOLE_TELEMETRY !== "yes"
@@ -105,12 +133,6 @@ const params: WebServerParams = {
     createApi(MacronizeApi, (input) => callWorker(Workers.MACRONIZER, input)),
     createApi(ReportApi, (request) =>
       GitHub.reportIssue(request.reportText, request.commit)
-    ),
-    createApi(DictsLsApi, (input, extras) =>
-      lewisAndShort.getEntry(input, extras)
-    ),
-    createApi(EntriesByPrefixApi, (prefix) =>
-      lewisAndShort.getCompletions(prefix)
     ),
     createApi(DictsFusedApi, (input, extras) =>
       fusedDict.getEntry(input, extras)

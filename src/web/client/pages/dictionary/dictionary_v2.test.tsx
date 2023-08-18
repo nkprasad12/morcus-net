@@ -117,7 +117,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S"],
+      dicts: ["L&S", "S&H"],
       query: "Belgae",
     });
     await waitFor(() => {
@@ -131,7 +131,7 @@ describe("New Dictionary View", () => {
 
     // Expect this to scroll since the linked section exists
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("B."));
+    await user.click(screen.getByText("B"));
     expect(spyScrollTo).toHaveBeenCalledTimes(1);
 
     // Expect this to no-op since the linked section does not exist
@@ -244,7 +244,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S"],
+      dicts: ["L&S", "S&H"],
       query: "Belgae",
     });
     await waitFor(() => {
@@ -260,7 +260,7 @@ describe("New Dictionary View", () => {
 
     // Expect this to scroll since the linked section exists
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("B."));
+    await user.click(screen.getByText("B"));
     expect(spyScrollTo).toHaveBeenCalledTimes(1);
 
     // Expect this to no-op since the linked section does not exist

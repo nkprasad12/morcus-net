@@ -125,3 +125,6 @@ ls.xml
 lsp.txt*
 
 ls_logs/
+
+sh_out.txt
+shp.db*

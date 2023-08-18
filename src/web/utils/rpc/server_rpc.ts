@@ -77,7 +77,12 @@ function extractInput<I, O>(
   try {
     const input = findInput(req, route);
     return [
-      decodeMessage(input, route.inputValidator, route.registry),
+      decodeMessage(
+        input,
+        route.inputValidator,
+        route.registry,
+        route.method === "GET"
+      ),
       input.length,
     ];
   } catch (e) {

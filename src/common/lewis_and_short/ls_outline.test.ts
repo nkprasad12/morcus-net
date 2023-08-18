@@ -127,7 +127,7 @@ describe("extractOutline", () => {
       senses: [
         {
           level: 1,
-          ordinal: "I",
+          ordinal: "I.",
           sectionId: "n2",
           text: "I am a sense1 blurb",
         },
@@ -167,7 +167,7 @@ describe("extractOutline", () => {
       senses: [
         {
           level: 3,
-          ordinal: "B",
+          ordinal: "B.",
           sectionId: "n2",
           text: "I am a sense1 blurb",
         },
@@ -225,13 +225,13 @@ describe("extractOutline", () => {
       senses: [
         {
           level: 1,
-          ordinal: "I",
+          ordinal: "I.",
           sectionId: "n3",
           text: "I am a sense2 blurb",
         },
         {
           level: 1,
-          ordinal: "II",
+          ordinal: "II.",
           sectionId: "n4",
           text: "I am a sense3 blurb",
         },
@@ -291,19 +291,19 @@ describe("extractOutline", () => {
       senses: [
         {
           level: 1,
-          ordinal: "I",
+          ordinal: "I.",
           sectionId: "n2",
           text: "I am a sense1 blurb I am a sense1 blurb I am a sense1 blurb I am a sense1 blurb ...",
         },
         {
           level: 1,
-          ordinal: "II",
+          ordinal: "II.",
           sectionId: "n3",
           text: "I  am a sense2 blurb",
         },
         {
           level: 1,
-          ordinal: "III",
+          ordinal: "III.",
           sectionId: "n4",
           text: "a sense3 blurb",
         },

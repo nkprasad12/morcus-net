@@ -1,7 +1,10 @@
-import { LsOutline, SectionOutline } from "@/web/utils/rpc/ls_api_result";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml_node";
 import { assert, checkPresent } from "@/common/assert";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
+import {
+  EntryOutline,
+  OutlineSection,
+} from "@/common/dictionaries/dict_result";
 
 const GREEK_BULLET_MAP = new Map<string, string>([
   ["a", "α"],
@@ -23,7 +26,7 @@ export function getBullet(input: string): string {
   return result;
 }
 
-export function extractOutline(rootNode: XmlNode): LsOutline {
+export function extractOutline(rootNode: XmlNode): EntryOutline {
   assert(rootNode.name === "entryFree");
   // TODO: Pass a sanitized tree in to reduce duplication.
   const root = sanitizeTree(rootNode);
@@ -56,18 +59,18 @@ export function extractOutline(rootNode: XmlNode): LsOutline {
     (level1Isenses.length > 1
       ? "; " + getContainedText(level1Isenses[0][0])
       : "");
-  const mainSection: SectionOutline = {
+  const mainSection: OutlineSection = {
     text: mainBlurb,
     level: 0,
     ordinal: "",
     sectionId: entryId,
   };
-  const senseBlurbs: SectionOutline[] = senses.map((sense) => {
+  const senseBlurbs: OutlineSection[] = senses.map((sense) => {
     const senseId = checkPresent(sense.getAttr("id"), "Sense must have an id.");
     return {
       text: getSenseBlurb(sense),
       level: +checkPresent(sense.getAttr("level"), "Sense must have a level"),
-      ordinal: checkPresent(sense.getAttr("n"), "Sense must have an n"),
+      ordinal: checkPresent(sense.getAttr("n"), "Sense must have an n") + ".",
       sectionId: senseId,
     };
   });

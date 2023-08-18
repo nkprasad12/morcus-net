@@ -75,8 +75,7 @@ class NavHelper {
   }
 }
 
-// @ts-expect-error
-function QuickNavMenu() {
+export function QuickNavMenu() {
   const [open, setOpen] = React.useState<boolean>(false);
   const navHelper = React.useRef<NavHelper | null>(null);
 
@@ -89,18 +88,11 @@ function QuickNavMenu() {
     return (
       <>
         <div>
-          <KeyboardArrowDown
-            onClick={() => navHelper.current?.scrollToNext()}
+          <CloseIcon
+            onClick={() => setOpen(false)}
             className="mobileNavButton"
-            aria-label="jump to next section"
+            aria-label="close quick navigation"
           />
-          <KeyboardArrowUp
-            onClick={() => navHelper.current?.scrollToPrevious()}
-            className="mobileNavButton"
-            aria-label="jump to previous section"
-          />
-        </div>
-        <div>
           <TocIcon
             onClick={() =>
               document
@@ -110,10 +102,15 @@ function QuickNavMenu() {
             className="mobileNavButton"
             aria-label="jump to entry"
           />
-          <CloseIcon
-            onClick={() => setOpen(false)}
+          <KeyboardArrowDown
+            onClick={() => navHelper.current?.scrollToNext()}
             className="mobileNavButton"
-            aria-label="close quick navigation"
+            aria-label="jump to next section"
+          />
+          <KeyboardArrowUp
+            onClick={() => navHelper.current?.scrollToPrevious()}
+            className="mobileNavButton"
+            aria-label="jump to previous section"
           />
         </div>
       </>

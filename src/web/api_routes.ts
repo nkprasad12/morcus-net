@@ -1,12 +1,5 @@
 import { ApiRoute } from "@/web/utils/rpc/rpc";
-import {
-  isAny,
-  isArray,
-  isString,
-  matches,
-  typeOf,
-} from "@/web/utils/rpc/parsing";
-import { LsResult } from "@/web/utils/rpc/ls_api_result";
+import { isAny, isString, matches } from "@/web/utils/rpc/parsing";
 import {
   CompletionsFusedRequest,
   CompletionsFusedResponse,
@@ -22,27 +15,12 @@ export const MacronizeApi: ApiRoute<string, string> = {
   outputValidator: isString,
 };
 
-export const DictsLsApi: ApiRoute<string, LsResult[]> = {
-  path: "/api/dict/ls",
-  method: "GET",
-  inputValidator: isString,
-  outputValidator: isArray(LsResult.isMatch),
-  registry: [XmlNodeSerialization.DEFAULT],
-};
-
 export const DictsFusedApi: ApiRoute<DictsFusedRequest, DictsFusedResponse> = {
   path: "/api/dicts/fused",
   method: "GET",
   inputValidator: DictsFusedRequest.isMatch,
   outputValidator: DictsFusedResponse.isMatch,
   registry: [XmlNodeSerialization.DEFAULT],
-};
-
-export const EntriesByPrefixApi: ApiRoute<string, string[]> = {
-  path: "/api/dicts/entriesByPrefix",
-  method: "GET",
-  inputValidator: isString,
-  outputValidator: isArray(typeOf("string")),
 };
 
 export const CompletionsFusedApi: ApiRoute<

@@ -1,13 +1,13 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
 import { Solarized } from "@/web/client/colors";
+import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import { Divider } from "@mui/material";
 
 import React from "react";
-import { DictChip } from "./search/dictionary_search";
 
 export function jumpToSection(sectionId: string) {
   const selected = document.getElementById(sectionId);
@@ -82,7 +82,9 @@ function OutlineSection(props: {
           />
           {` ${outline.mainOrth}`}
         </span>
-        {" " + outline.mainSection.text}
+        <span
+          dangerouslySetInnerHTML={{ __html: " " + outline.mainSection.text }}
+        />
       </div>
       {senses && (
         <ol style={{ paddingLeft: "0em" }}>
@@ -94,7 +96,7 @@ function OutlineSection(props: {
                 style={{
                   cursor: "pointer",
                   marginBottom: "4px",
-                  paddingLeft: `${(sense.level - 1) / 2}em`,
+                  marginLeft: `${(sense.level - 1) / 2}em`,
                 }}
                 onClick={() => props.onClick(sense.sectionId)}
                 className="clickableOutlineSection"
@@ -111,9 +113,9 @@ function OutlineSection(props: {
                       paddingLeft: "0.1em",
                     }}
                   />
-                  {` ${header}. `}
+                  {` ${header} `}
                 </span>
-                <span>{" " + sense.text}</span>
+                <span dangerouslySetInnerHTML={{ __html: " " + sense.text }} />
               </li>
             );
           })}

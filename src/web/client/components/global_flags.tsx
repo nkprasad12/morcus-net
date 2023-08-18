@@ -4,8 +4,11 @@ import { defaultExperimentalMode } from "@/web/client/define_vars";
 
 const SETTINGS_STORAGE_KEY = "GlobalSettings";
 
+export const DEFAULT_HIGHLIGHT_STRENGTH = 50;
+
 export interface GlobalSettings {
   experimentalMode?: boolean;
+  highlightStrength?: number;
 }
 
 function toGlobalSettings(input: unknown): GlobalSettings {
@@ -29,18 +32,19 @@ export const GlobalSettingsContext: React.Context<
   DataAndSetter<GlobalSettings>
 > = createContext(FALLBACK);
 
-function defaultGlobalSettings(): GlobalSettings {
+export function getGlobalSettings(): GlobalSettings {
   const storageSetting = localStorage.getItem(SETTINGS_STORAGE_KEY);
   return storageSetting !== null
     ? toGlobalSettings(JSON.parse(storageSetting))
     : {
         experimentalMode: defaultExperimentalMode(),
+        highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
       };
 }
 
 export function SettingsHandler(props: PropsWithChildren<Record<string, any>>) {
   const [settings, setSettings] = React.useState<GlobalSettings>(
-    defaultGlobalSettings()
+    getGlobalSettings()
   );
 
   return (

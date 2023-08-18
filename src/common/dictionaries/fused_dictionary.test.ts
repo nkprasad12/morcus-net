@@ -8,6 +8,8 @@ import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
+console.log = jest.fn();
+
 class FakeDict implements Dictionary {
   readonly fakeGetEntry = jest.fn((i, e) => Promise.reject(new Error()));
   readonly fakeGetCompletions = jest.fn((i, e) => Promise.resolve(["a", "b"]));

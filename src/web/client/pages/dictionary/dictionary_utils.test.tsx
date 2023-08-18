@@ -211,8 +211,16 @@ describe("SearchSettings", () => {
     window.sessionStorage.clear();
   });
 
-  it("returns full list on retrieve without store", () => {
+  it("returns full list on retrieve without store and experimental on", () => {
+    const defaultValue = { experimentalMode: true };
+    localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
     expect(SearchSettings.retrieve()).toStrictEqual(LatinDict.AVAILABLE);
+  });
+
+  it("filters list with experimental off", () => {
+    const defaultValue = { experimentalMode: false };
+    localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
+    expect(SearchSettings.retrieve()).toStrictEqual([LatinDict.LewisAndShort]);
   });
 
   it("returns empty list for empty store", () => {

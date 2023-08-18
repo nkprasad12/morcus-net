@@ -16,9 +16,10 @@ export interface Serialization<T> extends Serializable<T> {
 
 export function encodeMessage<T>(
   t: T,
-  registry?: Serialization<any>[]
+  registry?: Serialization<any>[],
+  isInUrl?: boolean
 ): string {
-  return JSON.stringify({ w: t }, (_key, value) => {
+  const serialized = JSON.stringify({ w: t }, (_key, value) => {
     for (const cls of registry || []) {
       if (!cls.validator(value)) {
         continue;
@@ -29,14 +30,17 @@ export function encodeMessage<T>(
     }
     return value;
   });
+  return isInUrl === true ? encodeURIComponent(serialized) : serialized;
 }
 
 export function decodeMessage<T>(
   t: string,
   validator: Validator<T>,
-  registry?: Serialization<any>[]
+  registry?: Serialization<any>[],
+  isFromUrl?: boolean
 ): T {
-  const result = JSON.parse(t, (_key, value) => {
+  const decoded = isFromUrl ? decodeURIComponent(t) : t;
+  const result = JSON.parse(decoded, (_key, value) => {
     for (const serializable of registry || []) {
       const registered = value[PLACEHOLDER + serializable.name];
       if (registered === undefined) {

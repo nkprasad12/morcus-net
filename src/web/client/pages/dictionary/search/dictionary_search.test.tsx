@@ -3,10 +3,11 @@
  */
 
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { SettingsHandler } from "@/web/client/components/global_flags";
 import { RouteContext } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
-import { render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
@@ -137,10 +138,52 @@ describe("DictionarySearch", () => {
     await user.click(settings);
 
     expect(screen.queryByText("Dictionary Options")).not.toBeNull();
-    const lsCheck = screen.getByRole("checkbox");
-    await user.click(lsCheck);
+    const lsCheck = screen.getAllByRole("checkbox");
+    await user.click(lsCheck[0]);
     expect(mockSetDicts).not.toHaveBeenCalled();
     await user.click(screen.getByText("Close"));
     expect(mockSetDicts).toHaveBeenCalledWith([LatinDict.SmithAndHall]);
+  });
+
+  it("has an options menu that sets highlight strength", async () => {
+    const mockSetDicts = jest.fn();
+    render(
+      <SettingsHandler>
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          setDicts={mockSetDicts}
+        />
+      </SettingsHandler>
+    );
+    const settings = screen.getByLabelText("search settings");
+    await user.click(settings);
+
+    const slider = screen.queryByLabelText("Highlight Strength");
+    expect(slider).not.toBeNull();
+    // mock the getBoundingClientRect. This isn't handled by JSdom
+    // @ts-ignore
+    slider.getBoundingClientRect = jest.fn(() => {
+      return {
+        bottom: 286.22918701171875,
+        height: 28,
+        left: 19.572917938232422,
+        right: 583.0937919616699,
+        top: 258.22918701171875,
+        width: 563.5208740234375,
+        x: 19.572917938232422,
+        y: 258.22918701171875,
+      };
+    });
+    act(() => {
+      fireEvent.mouseDown(slider!, { clientX: 162, clientY: 302 });
+    });
+
+    let storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
+    expect(storage?.highlightStrength).not.toBe(90);
+    await user.click(screen.getByText("Close"));
+
+    storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
+    expect(storage.highlightStrength).toBe(90);
   });
 });

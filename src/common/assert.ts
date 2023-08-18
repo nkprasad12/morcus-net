@@ -24,3 +24,12 @@ export function checkPresent<T>(
   }
   return input;
 }
+
+export function checkSatisfies<T>(
+  input: T,
+  test: (t: T) => boolean,
+  message?: string
+): T {
+  assert(test(input), message);
+  return input;
+}

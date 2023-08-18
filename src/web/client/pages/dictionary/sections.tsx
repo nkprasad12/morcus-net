@@ -50,38 +50,54 @@ export function ContentBox(props: {
   );
 }
 
-export function LsAttribution(props: { isSmall: boolean }) {
+function LsAttribution() {
   return (
-    <ContentBox isSmall={props.isSmall}>
-      <div style={{ fontSize: 15, lineHeight: "normal" }}>
-        <div>
-          Text provided under a CC BY-SA license by Perseus Digital Library,{" "}
-          <SelfLink to="http://www.perseus.tufts.edu" />, with funding from The
-          National Endowment for the Humanities.
-        </div>
-        <div>
-          Data originally from{" "}
-          <SelfLink to="https://github.com/PerseusDL/lexica/" />.
-        </div>
-        <div>
-          Data accessed from{" "}
-          <SelfLink to="https://github.com/nkprasad12/lexica/" />{" "}
-          {getBuildDate()}.
-        </div>
+    <>
+      <div>
+        Text provided under a CC BY-SA license by Perseus Digital Library,{" "}
+        <SelfLink to="http://www.perseus.tufts.edu" />, with funding from The
+        National Endowment for the Humanities.
       </div>
-    </ContentBox>
+      <div>
+        Data originally from{" "}
+        <SelfLink to="https://github.com/PerseusDL/lexica/" />.
+      </div>
+      <div>
+        Data accessed from{" "}
+        <SelfLink to="https://github.com/nkprasad12/lexica/" /> {getBuildDate()}
+        .
+      </div>
+    </>
+  );
+}
+
+function ShAttribution() {
+  return (
+    <div>
+      This text was digitized by the Distributed Proofreaders and generously
+      placed into the public domain. See project page at{" "}
+      <SelfLink to="https://www.pgdp.net/c/project.php?id=projectID5775aeccac0c7" />
+      .
+    </div>
   );
 }
 
 export function DictAttribution(props: { isSmall: boolean; dictKey: string }) {
-  const key = props.dictKey + "AttrBox";
-  if (props.dictKey === LatinDict.LewisAndShort.key) {
-    return <LsAttribution isSmall={props.isSmall} key={key} />;
+  function AttributionContent() {
+    const key = props.dictKey + "AttrBox";
+    if (props.dictKey === LatinDict.LewisAndShort.key) {
+      return <LsAttribution key={key} />;
+    }
+    if (props.dictKey === LatinDict.SmithAndHall.key) {
+      return <ShAttribution key={key} />;
+    }
+    return <>TODO: Write attribution for {props.dictKey}</>;
   }
+
   return (
     <ContentBox isSmall={props.isSmall}>
       <div style={{ fontSize: 15, lineHeight: "normal" }}>
-        TODO: Write attribution for {props.dictKey}
+        <AttributionContent />
       </div>
     </ContentBox>
   );

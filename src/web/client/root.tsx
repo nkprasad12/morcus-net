@@ -14,7 +14,11 @@ import { About } from "@/web/client/pages/about";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { Solarized } from "@/web/client/colors";
 import { Router } from "@/web/client/components/router";
-import { SettingsHandler } from "@/web/client/components/global_flags";
+import {
+  DEFAULT_HIGHLIGHT_STRENGTH,
+  GlobalSettingsContext,
+  SettingsHandler,
+} from "@/web/client/components/global_flags";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -113,100 +117,116 @@ const root = ReactDOM.createRoot(
   document.querySelector("#placeholder") as HTMLElement
 );
 
+function ConfigurableStyles() {
+  const settings = React.useContext(GlobalSettingsContext);
+  const modifier =
+    (settings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH) /
+    DEFAULT_HIGHLIGHT_STRENGTH;
+
+  function modifiedStrength(baseStrength: number): string {
+    const decimalBase = (baseStrength / 160) * 100;
+    const decimalModified = modifier * decimalBase;
+    const hexModified = (160 * decimalModified) / 100;
+    return `${Math.round(hexModified)}`;
+  }
+
+  return (
+    <GlobalStyles
+      styles={{
+        ol: {
+          listStyle: "none",
+          marginLeft: 0,
+          paddingLeft: "1.2em",
+        },
+        li: {
+          paddingTop: "2px",
+          paddingBottom: "2px",
+        },
+        ".lsTopSense": {
+          paddingLeft: "0em",
+        },
+        pre: { margin: "0" },
+        ".highlighted": {
+          border: "2px solid",
+          borderRadius: 4,
+          borderColor: Solarized.red,
+        },
+        ".lsHover": {
+          borderBottom: `1px dashed ${Solarized.base03}`,
+          fontWeight: "normal",
+          cursor: "help",
+        },
+        ".lsHover:hover": {
+          backgroundColor: Solarized.base1 + "20",
+          borderRadius: 4,
+        },
+        ".lsAuthor": {
+          backgroundColor: Solarized.violet + modifiedStrength(22),
+          borderRadius: 4,
+        },
+        ".lsBibl": {
+          backgroundColor: Solarized.violet + modifiedStrength(30),
+          borderRadius: 4,
+        },
+        ".lsQuote": {
+          backgroundColor: Solarized.blue + modifiedStrength(22),
+          borderRadius: 4,
+        },
+        ".lsOrth": {
+          backgroundColor: Solarized.red + modifiedStrength(68),
+          borderRadius: 4,
+          padding: 2,
+        },
+        ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
+        ".lsSenseBullet": {
+          fontWeight: "bold",
+          cursor: "pointer",
+          backgroundColor: Solarized.base01 + "48",
+          borderRadius: 4,
+        },
+        ".lsSenseBullet:hover": {
+          backgroundColor: Solarized.base01 + "80",
+        },
+        ".lsHelpText": {
+          marginBottom: 6,
+        },
+        ".lsTrans": { fontStyle: "italic" },
+        ".clickableOutlineSection": {
+          borderRadius: 4,
+        },
+        ".clickableOutlineSection:hover": {
+          backgroundColor: Solarized.base1 + "20",
+        },
+        ".mobileNavMenu": {
+          overflow: "hidden",
+          position: "fixed",
+          bottom: "0",
+          width: "100%",
+        },
+        ".mobileNavButton": {
+          backgroundColor: Solarized.base2 + "F0",
+          color: Solarized.base1,
+          borderRadius: 4,
+          marginTop: 3,
+          marginLeft: 3,
+          marginRight: 3,
+          fontSize: 40,
+        },
+        ".mobileNavButton:hover": {
+          backgroundColor: Solarized.base2,
+          color: Solarized.base0,
+          cursor: "pointer",
+        },
+      }}
+    />
+  );
+}
+
 root.render(
   <React.StrictMode>
     <SettingsHandler>
       <ThemeProvider theme={theme}>
-        <GlobalStyles
-          styles={{
-            ol: {
-              listStyle: "none",
-              marginLeft: 0,
-              paddingLeft: "1.2em",
-            },
-            li: {
-              paddingTop: "2px",
-              paddingBottom: "2px",
-            },
-            ".lsTopSense": {
-              paddingLeft: "0em",
-            },
-            pre: { margin: "0" },
-            ".highlighted": {
-              border: "2px solid",
-              borderRadius: 4,
-              borderColor: Solarized.red,
-            },
-            ".lsHover": {
-              borderBottom: `1px dashed ${Solarized.base03}`,
-              fontWeight: "normal",
-              cursor: "help",
-            },
-            ".lsHover:hover": {
-              backgroundColor: Solarized.base1 + "20",
-              borderRadius: 4,
-            },
-            ".lsAuthor": {
-              backgroundColor: Solarized.violet + "22",
-              borderRadius: 4,
-            },
-            ".lsBibl": {
-              backgroundColor: Solarized.violet + "30",
-              borderRadius: 4,
-            },
-            ".lsQuote": {
-              backgroundColor: Solarized.blue + "22",
-              borderRadius: 4,
-            },
-            ".lsOrth": {
-              backgroundColor: Solarized.red + "68",
-              borderRadius: 4,
-              padding: 2,
-            },
-            ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
-            ".lsSenseBullet": {
-              fontWeight: "bold",
-              cursor: "pointer",
-              backgroundColor: Solarized.base01 + "48",
-              borderRadius: 4,
-            },
-            ".lsSenseBullet:hover": {
-              backgroundColor: Solarized.base01 + "80",
-            },
-            ".lsHelpText": {
-              marginBottom: 6,
-            },
-            ".lsTrans": { fontStyle: "italic" },
-            ".clickableOutlineSection": {
-              borderRadius: 4,
-            },
-            ".clickableOutlineSection:hover": {
-              backgroundColor: Solarized.base1 + "20",
-            },
-            ".mobileNavMenu": {
-              position: "sticky",
-              float: "right",
-              bottom: "0%",
-              padding: 2,
-              backgroundColor: Solarized.base1 + "A0",
-              borderRadius: 4,
-            },
-            ".mobileNavButton": {
-              backgroundColor: Solarized.base2 + "D0",
-              color: Solarized.base1,
-              borderRadius: 4,
-              marginTop: 3,
-              marginLeft: 3,
-              marginRight: 3,
-              fontSize: 32,
-            },
-            ".mobileNavButton:hover": {
-              backgroundColor: Solarized.base2,
-              color: Solarized.base0,
-              cursor: "pointer",
-            },
-          }}
-        />
+        <ConfigurableStyles />
         <StyledEngineProvider injectFirst>
           <Router.Handler>
             <SinglePageApp {...props} />
