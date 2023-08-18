@@ -48,7 +48,7 @@ export namespace LewisAndShort {
     }
     return {
       keys: input.keys.join(","),
-      entry: input.entry.toString(),
+      entry: XmlNodeSerialization.DEFAULT.serialize(input.entry),
     };
   }
 

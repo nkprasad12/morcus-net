@@ -32,8 +32,6 @@ import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   CompletionsFusedApi,
   DictsFusedApi,
-  DictsLsApi,
-  EntriesByPrefixApi,
   MacronizeApi,
   ReportApi,
 } from "@/web/api_routes";
@@ -101,10 +99,13 @@ const lewisAndShort = delayedInit(
   () => LewisAndShort.create(),
   LatinDict.LewisAndShort
 );
-const smithAndHall = delayedInit(
-  () => new SmithAndHall(),
-  LatinDict.SmithAndHall
-);
+const smithAndHall = delayedInit(() => {
+  const start = performance.now();
+  const result = new SmithAndHall();
+  const elapsed = (performance.now() - start).toFixed(3);
+  console.debug(`SmithAndHall init: ${elapsed} ms`);
+  return result;
+}, LatinDict.SmithAndHall);
 const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
 
 const workServer = new SocketWorkServer(new Server(server));
@@ -132,12 +133,6 @@ const params: WebServerParams = {
     createApi(MacronizeApi, (input) => callWorker(Workers.MACRONIZER, input)),
     createApi(ReportApi, (request) =>
       GitHub.reportIssue(request.reportText, request.commit)
-    ),
-    createApi(DictsLsApi, (input, extras) =>
-      lewisAndShort.getEntry(input, extras)
-    ),
-    createApi(EntriesByPrefixApi, (prefix) =>
-      lewisAndShort.getCompletions(prefix)
     ),
     createApi(DictsFusedApi, (input, extras) =>
       fusedDict.getEntry(input, extras)

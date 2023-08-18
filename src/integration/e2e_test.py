@@ -64,13 +64,13 @@ try:
     if "Power exerted" not in api_result.text:
         raise RuntimeError("Failed SH lookup")
 
-    arg = parse.quote(json.dumps({"w": "canaba"}))
-    route = f"http://localhost:{PORT}/api/dict/ls/{arg}"
+    arg = parse.quote(json.dumps({"w": {"query": "canaba", "dicts": ["L&S"]}}))
+    route = f"http://localhost:{PORT}/api/dicts/fused/{arg}"
     print(route)
     api_result = requests.get(route, timeout=5)
     print(api_result.text)
     if "cannăba" not in api_result.text:
-        raise RuntimeError("Failed legacy LS lookup")
+        raise RuntimeError("Failed LS lookup")
 finally:
     print(f"Cleaning up {len(processes)} processes.")
     for process in processes:
