@@ -1,7 +1,7 @@
 import { createWriteStream, readFileSync, renameSync } from "fs";
 import { XmlNode } from "@/common/xml_node";
 import { assert } from "@/common/assert";
-import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
+import { parseXmlStrings } from "../xml_utils";
 
 /**
  * Rewrites the contents of an XML file at the specified path by applying
@@ -65,7 +65,7 @@ export namespace LsRewriters {
       if (!line.startsWith("<entryFree ")) {
         return "\n" + line;
       }
-      const original = parseEntries([line])[0];
+      const original = parseXmlStrings([line])[0];
       return "\n" + transformer(original).toString();
     });
   }

@@ -10,11 +10,9 @@ import {
 } from "@/common/lewis_and_short/sample_entries";
 
 import { XmlNode } from "@/common/xml_node";
-import {
-  extractEntries,
-  parseEntries,
-} from "@/common/lewis_and_short/ls_xml_utils";
+import { extractEntries } from "@/common/lewis_and_short/ls_xml_utils";
 import { XmlNodeSerialization } from "./xml_node_serialization";
+import { parseXmlStrings } from "./xml_utils";
 
 console.debug = jest.fn();
 
@@ -92,7 +90,7 @@ describe("parseEntries", () => {
   it("returns expected nodes", () => {
     const xmlContents = readFileSync(LS_SUBSET, "utf8");
     const rawEntries = extractEntries(xmlContents);
-    const entries = parseEntries(rawEntries);
+    const entries = parseXmlStrings(rawEntries);
 
     for (let i = 0; i < rawEntries.length; i++) {
       expect(rawEntries[i]).toBe(entries[i].toString());
@@ -100,8 +98,12 @@ describe("parseEntries", () => {
   });
 
   it("raises on unpaired tags if validation is enabled", () => {
-    expect(() => parseEntries([makeEntry("<sense>")], true)[0]).toThrowError();
-    expect(() => parseEntries([makeEntry("</sense>")], true)[0]).toThrowError();
+    expect(
+      () => parseXmlStrings([makeEntry("<sense>")], true)[0]
+    ).toThrowError();
+    expect(
+      () => parseXmlStrings([makeEntry("</sense>")], true)[0]
+    ).toThrowError();
   });
 });
 
@@ -225,7 +227,7 @@ describe("XmlNode.deepcopy", () => {
 
 describe("XmlNode utils does not modify string", () => {
   function assertUnchanged(entry: string) {
-    const node = parseEntries([entry])[0];
+    const node = parseXmlStrings([entry])[0];
     expect(node.toString()).toStrictEqual(entry);
   }
 

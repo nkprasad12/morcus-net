@@ -6,7 +6,7 @@ import {
   AbbreviationTrie,
   TrieNode,
 } from "@/common/lewis_and_short/ls_styling";
-import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
+import { parseXmlStrings } from "../xml_utils";
 
 const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =
@@ -93,7 +93,7 @@ export function parseAuthorAbbreviations(
   path: string = "texts/latin/lewisAndShort/ls_abbreviations.html"
 ): LsAuthorAbbreviation[] {
   const xmlContents = readFileSync(path, "utf8");
-  const result = parseEntries([xmlContents])[0];
+  const result = parseXmlStrings([xmlContents])[0];
   const entries: LsAuthorAbbreviation[] = [];
   for (const author of result.children) {
     if (typeof author === "string") {

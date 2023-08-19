@@ -15,13 +15,13 @@ import {
   displayUsg,
   formatSenseList,
 } from "@/common/lewis_and_short/ls_display";
-import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
 import {
   CANABA,
   BENEFIO,
   BIMATRIS,
 } from "@/common/lewis_and_short/sample_entries";
 import { XmlNode } from "@/common/xml_node";
+import { parseXmlStrings } from "../xml_utils";
 
 console.debug = jest.fn();
 
@@ -322,7 +322,7 @@ describe("defaultDisplay", () => {
 
 describe("defaultDisplay", () => {
   it("shows expected entry with senses", () => {
-    const input = parseEntries([CANABA])[0];
+    const input = parseXmlStrings([CANABA])[0];
     const expected = [
       '<span><span class="lsOrth">cānăba</span> (or <span class="lsOrth">cannăba</span>), ',
       "<span>ae</span>, ",
@@ -339,7 +339,7 @@ describe("defaultDisplay", () => {
   });
 
   it("shows expected entry without senses", () => {
-    const input = parseEntries([BENEFIO])[0];
+    const input = parseXmlStrings([BENEFIO])[0];
     const expected = [
       `<span><span class="lsOrth">bĕnĕfīo</span>, v. benefacio.</span>`,
     ];
@@ -355,7 +355,7 @@ describe("displayEntryFree", () => {
   }
 
   it("handles Anthol. Lat. edge case", () => {
-    const input = parseEntries([BIMATRIS])[0];
+    const input = parseXmlStrings([BIMATRIS])[0];
 
     const output = displayEntryFree(input).toString();
 
@@ -365,14 +365,14 @@ describe("displayEntryFree", () => {
   });
 
   it("propagates id to output", () => {
-    const input = parseEntries([BIMATRIS])[0];
+    const input = parseXmlStrings([BIMATRIS])[0];
     const output = displayEntryFree(input);
     expect(output.getAttr("id")).toBe("n5352");
   });
 
   it("collapses regs", () => {
     const rawEntry = `<entryFree id="n1"><reg><sic>a</sic><corr>b</corr></reg></entryFree>`;
-    const entry = parseEntries([rawEntry])[0];
+    const entry = parseXmlStrings([rawEntry])[0];
 
     const output = displayEntryFree(entry);
 
@@ -381,7 +381,7 @@ describe("displayEntryFree", () => {
 
   it("removes comments", () => {
     const rawEntry = `<entryFree id="n1">hello <!-- I am a comment --></entryFree>`;
-    const entry = parseEntries([rawEntry])[0];
+    const entry = parseXmlStrings([rawEntry])[0];
 
     const output = displayEntryFree(entry);
 
@@ -390,7 +390,7 @@ describe("displayEntryFree", () => {
 
   it("handles Lit. / Lat. edge cases", () => {
     const rawEntry = `<entryFree id="n1">Poet. Lat.</entryFree>`;
-    const entry = parseEntries([rawEntry])[0];
+    const entry = parseXmlStrings([rawEntry])[0];
 
     const output = displayEntryFree(entry).toString();
 
@@ -402,7 +402,7 @@ describe("displayEntryFree", () => {
   it("propagates id to senses", () => {
     const rawEntry =
       '<entryFree id="n1"><sense level="1" n="I" id="n33556.0">Content</sense></entryFree>';
-    const entry = parseEntries([rawEntry])[0];
+    const entry = parseXmlStrings([rawEntry])[0];
 
     const output = displayEntryFree(entry);
 
