@@ -2,6 +2,7 @@ import * as React from "react";
 
 import { Box, Typography } from "@mui/material";
 import { Solarized } from "@/web/client/colors";
+import { SelfLink } from "@/web/client/components/misc";
 
 export function Footer(props: { id?: string }) {
   return (
@@ -23,10 +24,7 @@ export function Footer(props: { id?: string }) {
           MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
           Affero General Public License for more details.
         </p>
-        See{" "}
-        <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">
-          https://www.gnu.org/licenses/agpl-3.0.en.html
-        </a>{" "}
+        See <SelfLink to="https://www.gnu.org/licenses/agpl-3.0.en.html" />
         for a copy of the GNU Affero General Public License.
       </Typography>
     </Box>

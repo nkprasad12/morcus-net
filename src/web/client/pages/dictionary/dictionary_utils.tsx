@@ -68,10 +68,6 @@ export const HELP_ENTRY = new XmlNode(
   [HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
 );
 
-export function SelfLink(props: { to: string }) {
-  return <a href={props.to}>{props.to}</a>;
-}
-
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
