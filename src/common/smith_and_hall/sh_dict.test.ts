@@ -1,6 +1,6 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
-import { SmithAndHall, shToRaw } from "@/common/smith_and_hall/sh_dict";
+import { SmithAndHall, shListToRaw } from "@/common/smith_and_hall/sh_dict";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { XmlNode } from "@/common/xml_node";
 import fs from "fs";
@@ -39,7 +39,7 @@ describe("SmithAndHall dict", () => {
   });
 
   test("getEntry returns expected entries", async () => {
-    SqlDict.save(SH_ENTRIES.map(shToRaw), TEMP_FILE);
+    SqlDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
     const dict = new SmithAndHall(TEMP_FILE);
 
     expect(await dict.getEntry("Julius")).toEqual([]);
