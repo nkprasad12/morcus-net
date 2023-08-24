@@ -194,6 +194,7 @@ export function DictionaryViewV2() {
     maxWidth: "md" | "lg" | "xl";
     marginLeft?: "auto" | "0";
     id?: string;
+    className?: string;
   }) {
     return (
       <Container
@@ -202,6 +203,7 @@ export function DictionaryViewV2() {
         ref={searchBarRef}
         sx={{ marginLeft: props.marginLeft || "auto" }}
         id={props.id}
+        className={props.className}
       >
         <DictionarySearch
           smallScreen={isSmall}
@@ -267,9 +269,14 @@ export function DictionaryViewV2() {
     );
   }
 
-  function HelpSection(props: { id?: string }) {
+  function HelpSection(props: { id?: string; className?: string }) {
     return (
-      <ContentBox key="helpSection" isSmall={isSmall} id={props.id}>
+      <ContentBox
+        key="helpSection"
+        isSmall={isSmall}
+        id={props.id}
+        className={props.className}
+      >
         <div style={{ fontSize: 14, lineHeight: "normal" }}>
           {xmlNodeToJsx(HELP_ENTRY)}
         </div>
@@ -292,11 +299,7 @@ export function DictionaryViewV2() {
     return (
       <>
         {props.data.entries.map((entry) => (
-          <ContentBox
-            key={entry.key}
-            isSmall={isSmall}
-            id={QUICK_NAV_ANCHOR + entry.key}
-          >
+          <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
             <>
               <div style={{ marginBottom: 10 }}>
                 <FullDictChip label={props.data.name} />
@@ -342,9 +345,13 @@ export function DictionaryViewV2() {
   function OneColumnLayout(props: { Content: JSX.Element }) {
     return (
       <Container maxWidth="lg">
-        <SearchBar maxWidth="lg" id={QUICK_NAV_ANCHOR + "SearchBox"} />
+        <SearchBar
+          maxWidth="lg"
+          id={"SearchBox"}
+          className={QUICK_NAV_ANCHOR}
+        />
         {props.Content}
-        <Footer id={QUICK_NAV_ANCHOR + "Footer"} />
+        <Footer id={"Footer"} className={QUICK_NAV_ANCHOR} />
       </Container>
     );
   }
@@ -411,8 +418,8 @@ export function DictionaryViewV2() {
       oneCol={
         <>
           {ReactDOM.createPortal(<QuickNavMenu />, document.body)}
-          <HelpSection id={QUICK_NAV_ANCHOR + "HelpSection"} />
-          <div id={QUICK_NAV_ANCHOR + "Toc"}>
+          <HelpSection id={"HelpSection"} className={QUICK_NAV_ANCHOR} />
+          <div id={"Toc"} className={QUICK_NAV_ANCHOR}>
             <SummarySection />
             <TableOfContents />
           </div>

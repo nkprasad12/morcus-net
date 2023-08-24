@@ -11,7 +11,7 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { getGlobalSettings } from "@/web/client/components/global_flags";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 
-export const QUICK_NAV_ANCHOR = "QNA-";
+export const QUICK_NAV_ANCHOR = "QNA";
 
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",

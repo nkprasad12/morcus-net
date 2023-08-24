@@ -4,9 +4,9 @@ import { Box, Typography } from "@mui/material";
 import { Solarized } from "@/web/client/colors";
 import { SelfLink } from "@/web/client/components/misc";
 
-export function Footer(props: { id?: string }) {
+export function Footer(props: { id?: string; className?: string }) {
   return (
-    <Box padding="2em" id={props.id}>
+    <Box padding="2em" id={props.id} className={props.className}>
       <Typography
         component={"div"}
         style={{ marginTop: window.innerHeight, color: Solarized.base02 }}

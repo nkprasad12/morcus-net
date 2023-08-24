@@ -202,6 +202,12 @@ describe("New Dictionary View", () => {
 
   it("shows fetched result on small screen", async () => {
     // @ts-ignore
+    window.IntersectionObserver = jest.fn(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn(),
+    }));
+    // @ts-ignore
     useMediaQuery.mockImplementation(() => true);
     const spyScrollTo = jest.fn();
     Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });

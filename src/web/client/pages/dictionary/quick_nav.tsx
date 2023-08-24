@@ -29,18 +29,15 @@ class NavHelper {
             this.visible.delete(entry.target.id);
           }
         }
-        console.log(this.visible);
       },
       { threshold: [0.0] }
     );
-    document
-      .querySelectorAll(`[id^="${QUICK_NAV_ANCHOR}"]`)
-      .forEach((anchor, i) => {
-        this.observer.observe(anchor);
-        this.anchorIds.push(anchor.id);
-        assertEqual(this.idToIndex.get(anchor.id), undefined);
-        this.idToIndex.set(anchor.id, i);
-      });
+    document.querySelectorAll(`.${QUICK_NAV_ANCHOR}`).forEach((anchor, i) => {
+      this.observer.observe(anchor);
+      this.anchorIds.push(anchor.id);
+      assertEqual(this.idToIndex.get(anchor.id), undefined);
+      this.idToIndex.set(anchor.id, i);
+    });
   }
 
   scrollToNext() {

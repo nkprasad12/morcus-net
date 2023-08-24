@@ -972,7 +972,10 @@ export function formatSenseList(
     stack[stack.length - 1].children.push(
       new XmlNode(
         "li",
-        [["id", id]],
+        [
+          ["id", id],
+          ["class", "QNA"],
+        ],
         [
           new XmlNode(
             "span",
@@ -1028,7 +1031,7 @@ export function displayEntryFree(
   assert(rootNode.name === "entryFree");
   const root = sanitizeTree(rootNode);
   const idAttr = checkPresent(root.getAttr("id"));
-  const blurbId = idAttr + "blurb";
+  const blurbId = idAttr + ".blurb";
   const context: DisplayContext = {};
 
   const mainBlurbNodes: XmlChild[] = [
@@ -1075,7 +1078,14 @@ export function displayEntryFree(
   const attrs: [string, string][] = [["class", "lsEntryFree"]];
   attrs.push(["id", idAttr]);
   let result = new XmlNode("div", attrs, [
-    new XmlNode("div", [["id", blurbId]], mainBlurbNodes),
+    new XmlNode(
+      "div",
+      [
+        ["id", blurbId],
+        ["class", "QNA"],
+      ],
+      mainBlurbNodes
+    ),
     formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0), context),
   ]);
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
