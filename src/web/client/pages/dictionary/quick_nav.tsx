@@ -124,6 +124,7 @@ export function QuickNavMenu() {
         <MenuOpenIcon
           onClick={() => setOpen(true)}
           className="mobileNavButton"
+          style={{ color: Solarized.base1 + "80" }}
           aria-label="expand quick navigation"
         />
       )}

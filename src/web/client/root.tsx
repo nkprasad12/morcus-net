@@ -211,7 +211,7 @@ function ConfigurableStyles() {
           marginTop: 3,
           marginLeft: 3,
           marginRight: 3,
-          fontSize: 32,
+          fontSize: 40,
         },
         ".mobileNavButton:hover": {
           color: Solarized.base01,
