@@ -218,7 +218,8 @@ function ConfigurableStyles() {
           cursor: "pointer",
         },
         ".dLink": {
-          color: Solarized.blue + "D0",
+          color: Solarized.navy,
+          borderBottom: `1px solid ${Solarized.navy}`,
         },
         ".dLink:hover": {
           color: Solarized.blue,
