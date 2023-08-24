@@ -11,6 +11,7 @@ import {
   SCROLL_JUMP,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { assertEqual } from "@/common/assert";
+import { Solarized } from "@/web/client/colors";
 
 class NavHelper {
   private readonly observer: IntersectionObserver;
@@ -86,34 +87,32 @@ export function QuickNavMenu() {
 
   function OpenMenu() {
     return (
-      <>
-        <div>
-          <CloseIcon
-            onClick={() => setOpen(false)}
-            className="mobileNavButton"
-            aria-label="close quick navigation"
-          />
-          <TocIcon
-            onClick={() =>
-              document
-                .getElementById("DictResultsSummary")
-                ?.scrollIntoView(SCROLL_JUMP)
-            }
-            className="mobileNavButton"
-            aria-label="jump to entry"
-          />
-          <KeyboardArrowDown
-            onClick={() => navHelper.current?.scrollToNext()}
-            className="mobileNavButton"
-            aria-label="jump to next section"
-          />
-          <KeyboardArrowUp
-            onClick={() => navHelper.current?.scrollToPrevious()}
-            className="mobileNavButton"
-            aria-label="jump to previous section"
-          />
-        </div>
-      </>
+      <div style={{ backgroundColor: Solarized.base1 + "40" }}>
+        <KeyboardArrowDown
+          onClick={() => navHelper.current?.scrollToNext()}
+          className="mobileNavButton"
+          aria-label="jump to next section"
+        />
+        <KeyboardArrowUp
+          onClick={() => navHelper.current?.scrollToPrevious()}
+          className="mobileNavButton"
+          aria-label="jump to previous section"
+        />
+        <TocIcon
+          onClick={() =>
+            document
+              .getElementById("DictResultsSummary")
+              ?.scrollIntoView(SCROLL_JUMP)
+          }
+          className="mobileNavButton"
+          aria-label="jump to entry"
+        />
+        <CloseIcon
+          onClick={() => setOpen(false)}
+          className="mobileNavButton"
+          aria-label="close quick navigation"
+        />
+      </div>
     );
   }
 

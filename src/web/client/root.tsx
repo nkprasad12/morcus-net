@@ -200,21 +200,21 @@ function ConfigurableStyles() {
         ".mobileNavMenu": {
           overflow: "hidden",
           position: "fixed",
-          bottom: "0",
-          width: "100%",
+          bottom: "5%",
+          right: "0%",
+          borderRadius: 4,
         },
         ".mobileNavButton": {
-          backgroundColor: Solarized.base2 + "F0",
           color: Solarized.base1,
+          backgroundColor: Solarized.base3 + "D0",
           borderRadius: 4,
           marginTop: 3,
           marginLeft: 3,
           marginRight: 3,
-          fontSize: 40,
+          fontSize: 32,
         },
         ".mobileNavButton:hover": {
-          backgroundColor: Solarized.base2,
-          color: Solarized.base0,
+          color: Solarized.base01,
           cursor: "pointer",
         },
         ".dLink": {
