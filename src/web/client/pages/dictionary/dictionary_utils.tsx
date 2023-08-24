@@ -9,6 +9,7 @@ import {
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { getGlobalSettings } from "@/web/client/components/global_flags";
+import { Navigation, RouteContext } from "@/web/client/components/router";
 
 export const QUICK_NAV_ANCHOR = "QNA-";
 
@@ -137,6 +138,21 @@ export function xmlNodeToJsx(
         key={key}
       />
     );
+  } else if (className === "dLink") {
+    const target = root.getAttr("to");
+    const text = root.getAttr("text");
+    function LinkContent() {
+      const nav = React.useContext(RouteContext);
+      return (
+        <span
+          className="dLink"
+          onClick={() => Navigation.query(nav, target || "undefined")}
+        >
+          {text || "undefined"}
+        </span>
+      );
+    }
+    return <LinkContent />;
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";
