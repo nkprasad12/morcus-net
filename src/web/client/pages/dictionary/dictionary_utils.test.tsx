@@ -101,7 +101,7 @@ describe("xmlNodeToJsx", () => {
 
     await user.click(screen.getByText("Gallia"));
 
-    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "omnis" });
+    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "omnis,SnH" });
   });
 });
 

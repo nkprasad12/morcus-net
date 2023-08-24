@@ -141,12 +141,13 @@ export function xmlNodeToJsx(
   } else if (className === "dLink") {
     const target = root.getAttr("to");
     const text = root.getAttr("text");
+    const query = [target || "undefined", "SnH"];
     function LinkContent() {
       const nav = React.useContext(RouteContext);
       return (
         <span
           className="dLink"
-          onClick={() => Navigation.query(nav, target || "undefined")}
+          onClick={() => Navigation.query(nav, query.join(","))}
         >
           {text || "undefined"}
         </span>
