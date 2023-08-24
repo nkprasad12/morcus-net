@@ -276,7 +276,10 @@ function formatSenseList(
     stack[stack.length - 1].children.push(
       new XmlNode(
         "li",
-        [["id", id]],
+        [
+          ["id", id],
+          ["class", "QNA"],
+        ],
         [
           new XmlNode(
             "span",
@@ -312,7 +315,10 @@ export function displayShEntry(
   ];
   const blurbText = new XmlNode(
     "div",
-    [["id", `sh${id}`]],
+    [
+      ["id", `sh${id}`],
+      ["class", "QNA"],
+    ],
     mainBlurbButton.concat(...getMarkedUpText([entry.blurb], resolver))
   );
 

@@ -85,15 +85,15 @@ export function QuickNavMenu() {
   function OpenMenu() {
     return (
       <div style={{ backgroundColor: Solarized.base1 + "40" }}>
-        <KeyboardArrowDown
-          onClick={() => navHelper.current?.scrollToNext()}
-          className="mobileNavButton"
-          aria-label="jump to next section"
-        />
         <KeyboardArrowUp
           onClick={() => navHelper.current?.scrollToPrevious()}
           className="mobileNavButton"
           aria-label="jump to previous section"
+        />
+        <KeyboardArrowDown
+          onClick={() => navHelper.current?.scrollToNext()}
+          className="mobileNavButton"
+          aria-label="jump to next section"
         />
         <TocIcon
           onClick={() =>
