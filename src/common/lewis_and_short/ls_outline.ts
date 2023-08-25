@@ -77,7 +77,7 @@ export function extractOutline(rootNode: XmlNode): EntryOutline {
   const orths = root.findChildren("orth");
   return {
     mainSection: mainSection,
-    mainOrth: displayTextForOrth(XmlNode.getSoleText(orths[0])),
+    mainKey: displayTextForOrth(XmlNode.getSoleText(orths[0])),
     senses: senseBlurbs,
   };
 }

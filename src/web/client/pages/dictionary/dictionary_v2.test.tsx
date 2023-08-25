@@ -84,7 +84,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n3"]], [resultString]),
           outline: {
-            mainOrth: "mainOrth",
+            mainKey: "mainKey",
             mainSection: {
               text: "mainBlurb",
               sectionId: "n1",
@@ -136,7 +136,7 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainOrth"));
+    await user.click(screen.getByText("mainKey"));
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 
@@ -166,7 +166,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n4"]], ["Entry1"]),
           outline: {
-            mainOrth: "mainOrth1",
+            mainKey: "mainKey1",
             mainSection: {
               text: "mainBlurb1",
               sectionId: "n1",
@@ -176,7 +176,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n3"]], ["Entry2"]),
           outline: {
-            mainOrth: "mainOrth2",
+            mainKey: "mainKey2",
             mainSection: {
               text: "mainBlurb2",
               sectionId: "n2",
@@ -217,7 +217,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n3"]], [resultString]),
           outline: {
-            mainOrth: "mainOrth",
+            mainKey: "mainKey",
             mainSection: {
               text: "mainBlurb",
               sectionId: "n1",
@@ -271,7 +271,7 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainOrth"));
+    await user.click(screen.getByText("mainKey"));
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 });

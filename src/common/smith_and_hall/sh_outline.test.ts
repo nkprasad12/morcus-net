@@ -15,7 +15,7 @@ describe("getOutline", () => {
     const result = getOutline(input, 57);
 
     expect(result).toEqual({
-      mainOrth: "Hello",
+      mainKey: "Hello",
       mainSection: {
         level: 0,
         ordinal: "0",

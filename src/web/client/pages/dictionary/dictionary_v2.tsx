@@ -237,7 +237,7 @@ export function DictionaryViewV2() {
             paddingLeft: "0.1em",
           }}
         />
-        {` ${props.outline.mainOrth}`}
+        {` ${props.outline.mainKey}`}
       </span>
     );
   }

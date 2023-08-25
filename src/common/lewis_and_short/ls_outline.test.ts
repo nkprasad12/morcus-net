@@ -25,15 +25,15 @@ describe("extractOutline", () => {
     const root = new XmlNode(
       "entryFree",
       [["id", "n1"]],
-      [new XmlNode("orth", [], ["mainOrth"]), " I am a blurb."]
+      [new XmlNode("orth", [], ["mainKey"]), " I am a blurb."]
     );
 
     const result = extractOutline(root);
 
     expect(result).toStrictEqual({
-      mainOrth: "mainOrth",
+      mainKey: "mainKey",
       mainSection: {
-        text: "mainOrth I am a blurb.",
+        text: "mainKey I am a blurb.",
         level: 0,
         ordinal: "",
         sectionId: "n1",
@@ -47,7 +47,7 @@ describe("extractOutline", () => {
       "entryFree",
       [["id", "n1"]],
       [
-        new XmlNode("orth", [], ["mainOrth"]),
+        new XmlNode("orth", [], ["mainKey"]),
         " I am ",
         new XmlNode("etym", [], ["I will be skipped"]),
         "a blurb.",
@@ -57,9 +57,9 @@ describe("extractOutline", () => {
     const result = extractOutline(root);
 
     expect(result).toStrictEqual({
-      mainOrth: "mainOrth",
+      mainKey: "mainKey",
       mainSection: {
-        text: "mainOrth I am a blurb.",
+        text: "mainKey I am a blurb.",
         level: 0,
         ordinal: "",
         sectionId: "n1",
@@ -73,7 +73,7 @@ describe("extractOutline", () => {
       "entryFree",
       [["id", "n1"]],
       [
-        new XmlNode("orth", [], ["mainOrth"]),
+        new XmlNode("orth", [], ["mainKey"]),
         " I am ",
         new XmlNode("etym", [], ["I will be skipped"]),
         "a blurb.",
@@ -84,9 +84,9 @@ describe("extractOutline", () => {
     const result = extractOutline(root);
 
     expect(result).toStrictEqual({
-      mainOrth: "mainOrth",
+      mainKey: "mainKey",
       mainSection: {
-        text: "mainOrth I am a blurb." + "Averylongblurb!".repeat(4) + " ...",
+        text: "mainKey I am a blurb." + "Averylongblurb!".repeat(4) + " ...",
         level: 0,
         ordinal: "",
         sectionId: "n1",
@@ -100,7 +100,7 @@ describe("extractOutline", () => {
       "entryFree",
       [["id", "n1"]],
       [
-        new XmlNode("orth", [], ["mainOrth"]),
+        new XmlNode("orth", [], ["mainKey"]),
         " I am a blurb.",
         new XmlNode(
           "sense",
@@ -117,9 +117,9 @@ describe("extractOutline", () => {
     const result = extractOutline(root);
 
     expect(result).toStrictEqual({
-      mainOrth: "mainOrth",
+      mainKey: "mainKey",
       mainSection: {
-        text: "mainOrth I am a blurb.",
+        text: "mainKey I am a blurb.",
         level: 0,
         ordinal: "",
         sectionId: "n1",
@@ -140,7 +140,7 @@ describe("extractOutline", () => {
       "entryFree",
       [["id", "n1"]],
       [
-        new XmlNode("orth", [], ["mainOrth"]),
+        new XmlNode("orth", [], ["mainKey"]),
         " I am a blurb.",
         new XmlNode(
           "sense",
@@ -157,9 +157,9 @@ describe("extractOutline", () => {
     const result = extractOutline(root);
 
     expect(result).toStrictEqual({
-      mainOrth: "mainOrth",
+      mainKey: "mainKey",
       mainSection: {
-        text: "mainOrth I am a blurb.",
+        text: "mainKey I am a blurb.",
         level: 0,
         ordinal: "",
         sectionId: "n1",
@@ -180,7 +180,7 @@ describe("extractOutline", () => {
       "entryFree",
       [["id", "n1"]],
       [
-        new XmlNode("orth", [], ["mainOrth"]),
+        new XmlNode("orth", [], ["mainKey"]),
         " I am a blurb.",
         new XmlNode(
           "sense",
@@ -215,9 +215,9 @@ describe("extractOutline", () => {
     const result = extractOutline(root);
 
     expect(result).toStrictEqual({
-      mainOrth: "mainOrth",
+      mainKey: "mainKey",
       mainSection: {
-        text: "mainOrth I am a blurb.; I am a sense1 blurb",
+        text: "mainKey I am a blurb.; I am a sense1 blurb",
         level: 0,
         ordinal: "",
         sectionId: "n1",
@@ -244,7 +244,7 @@ describe("extractOutline", () => {
       "entryFree",
       [["id", "n1"]],
       [
-        new XmlNode("orth", [], ["mainOrth"]),
+        new XmlNode("orth", [], ["mainKey"]),
         " I am a blurb.",
         new XmlNode(
           "sense",
@@ -281,9 +281,9 @@ describe("extractOutline", () => {
     const result = extractOutline(root);
 
     expect(result).toStrictEqual({
-      mainOrth: "mainOrth",
+      mainKey: "mainKey",
       mainSection: {
-        text: "mainOrth I am a blurb.",
+        text: "mainKey I am a blurb.",
         level: 0,
         ordinal: "",
         sectionId: "n1",

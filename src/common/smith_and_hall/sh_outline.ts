@@ -10,7 +10,7 @@ export function getOutline(entry: ShEntry, id: number): EntryOutline {
     sectionId: `sh${id}.${j}`,
   }));
   return {
-    mainOrth: entry.keys[0],
+    mainKey: entry.keys[0],
     mainSection: {
       level: 0,
       ordinal: "0",
