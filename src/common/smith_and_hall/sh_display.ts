@@ -3,6 +3,7 @@ import { XmlChild, XmlNode } from "@/common/xml_node";
 import { parseXmlStrings } from "../xml_utils";
 import { assertEqual } from "@/common/assert";
 import { LINK_EDGE_CASES, SH_SKIPS } from "@/common/smith_and_hall/sh_links";
+import { expandShAbbreviationsIn } from "@/common/smith_and_hall/sh_abbreviations";
 
 const FILLER_WORDS = new Set<string>([
   "OF",
@@ -191,7 +192,7 @@ function markupText(senseRoot: XmlNode, resolver: ShLinkResolver): XmlNode {
   if (["sc"].includes(senseRoot.name)) {
     name = "i";
   }
-  const attrs: [string, string][] = [];
+  const attrs: [string, string][] = senseRoot.attrs.map((x) => x);
   if (senseRoot.name === "b") {
     attrs.push(["class", "lsOrth"]);
   }
@@ -237,9 +238,9 @@ function getMarkedUpText(
   senses: string[],
   resolver: ShLinkResolver
 ): XmlChild[][] {
-  return parseXmlStrings(senses.map((sense) => `<div>${sense}</div>`)).map(
-    (parsedXml) => markupText(parsedXml, resolver).children
-  );
+  return parseXmlStrings(
+    senses.map((sense) => `<div>${expandShAbbreviationsIn(sense)}</div>`)
+  ).map((parsedXml) => markupText(parsedXml, resolver).children);
 }
 
 function formatSenseList(

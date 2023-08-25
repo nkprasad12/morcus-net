@@ -2,6 +2,9 @@ import { checkPresent } from "@/common/assert";
 
 const START_CHARACTERS = new Set<string>(" ();—-");
 
+// [startIndex, length, [expansions1, expansion2]]
+export type TextExpansion = [number, number, string[]];
+
 export class GenericTrieNode<T> {
   private readonly children: Map<string, GenericTrieNode<T>> = new Map();
   private readonly values: T[] = [];
@@ -42,16 +45,29 @@ export namespace AbbreviationTrie {
   }
 }
 
+export function areExpansionsDisjoint(expansions: TextExpansion[]) {
+  const intervals: [number, number][] = expansions.map((e) => [
+    e[0],
+    e[0] + e[1],
+  ]);
+  intervals.sort((a, b) => a[0] - b[0]);
+  for (let i = 0; i < intervals.length - 1; i++) {
+    if (intervals[i][1] >= intervals[i + 1][0]) {
+      return false;
+    }
+  }
+  return true;
+}
+
 export function findExpansions(
   message: string,
   trieRoot: StringTrie,
   ignoreCase: boolean = false
-): [number, number, string[]][] {
-  // [startIndex, length, expandedString]
-  const expansions: [number, number, string[]][] = [];
+): TextExpansion[] {
+  const expansions: TextExpansion[] = [];
   let triePosition: StringTrie = trieRoot;
   let currentStart: number | undefined = undefined;
-  let bestExpansion: [number, number, string[]] | undefined = undefined;
+  let bestExpansion: TextExpansion | undefined = undefined;
   for (let i = 0; i <= message.length; i++) {
     const c = i === message.length ? "@@" : message[i];
     // TODO: This is not correct. Backtracking will always choose the lower case branch

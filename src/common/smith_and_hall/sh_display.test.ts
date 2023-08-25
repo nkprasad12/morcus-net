@@ -98,6 +98,40 @@ describe("displayShEntry", () => {
     );
   });
 
+  it("expands v. LINK abbreviations", () => {
+    const entry: ShEntry = {
+      keys: ["Hi"],
+      blurb: "<b>Hi</b>: v. <f>Hello</f>",
+      senses: [],
+    };
+    const result = displayShEntry(entry, 57, new ShLinkResolver([]));
+    expect(result.toString()).toEqual(
+      [
+        '<div><div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57"> ‣ </span>',
+        ' <span class="lsOrth">Hi</span>: ',
+        '<span class="lsHover" title="Originally: v.">see</span>',
+        " <span>Hello</span></div><div></div></div>",
+      ].join("")
+    );
+  });
+
+  it("adds hover span when needed", () => {
+    const entry: ShEntry = {
+      keys: ["Hi"],
+      blurb: "<b>Hi</b>: q. v.",
+      senses: [],
+    };
+    const result = displayShEntry(entry, 57, new ShLinkResolver([]));
+    expect(result.toString()).toEqual(
+      [
+        '<div><div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57"> ‣ </span>',
+        ' <span class="lsOrth">Hi</span>: ',
+        '<span class="lsHover" title="quod videas (look it up in that entry)">q. v.</span>',
+        "</div><div></div></div>",
+      ].join("")
+    );
+  });
+
   it("handles <sc> edge case", () => {
     const keys = [["greetings"], ["lo"]];
     verifyLinkMarkup(keys, "<sc>LO</sc>", "lo", "lo");
