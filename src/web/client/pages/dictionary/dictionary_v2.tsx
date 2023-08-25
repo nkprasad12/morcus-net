@@ -39,7 +39,8 @@ import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 
 export const ERROR_STATE_MESSAGE =
-  "Lookup failed. Please check your internet connection and try again." +
+  "Lookup failed. Please check your internet connection" +
+  " and / or refresh the page (or if using the app, close and re-open)." +
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE =
   "No results found. If applicable, try enabling another " +
