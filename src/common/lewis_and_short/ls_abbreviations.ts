@@ -5,8 +5,8 @@ import { XmlNode } from "@/common/xml_node";
 import {
   AbbreviationTrie,
   TrieNode,
-} from "@/common/lewis_and_short/ls_styling";
-import { parseXmlStrings } from "../xml_utils";
+} from "@/common/abbreviations/abbreviations";
+import { parseXmlStrings } from "@/common/xml_utils";
 
 const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =

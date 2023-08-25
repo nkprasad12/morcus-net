@@ -19,10 +19,10 @@ import {
   attachHoverText,
   handleAbbreviations,
   handleAbbreviationsInMessage,
-  findExpansions,
 } from "@/common/lewis_and_short/ls_styling";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
+import { findExpansions } from "@/common/abbreviations/abbreviations";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
