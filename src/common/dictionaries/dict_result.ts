@@ -28,7 +28,7 @@ export namespace OutlineSection {
 /** A pre-processed outline for a dictionary entry. */
 export interface EntryOutline {
   mainKey: string;
-
+  mainLabel?: string;
   mainSection: OutlineSection;
   senses?: OutlineSection[];
 }
@@ -37,6 +37,7 @@ export namespace EntryOutline {
   export const isMatch: (x: unknown) => x is EntryOutline =
     matches<EntryOutline>([
       ["mainKey", isString],
+      ["mainLabel", maybeUndefined(isString)],
       ["mainSection", OutlineSection.isMatch],
       ["senses", maybeUndefined(isArray(OutlineSection.isMatch))],
     ]);

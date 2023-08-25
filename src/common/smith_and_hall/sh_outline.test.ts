@@ -1,5 +1,8 @@
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
-import { getOutline } from "@/common/smith_and_hall/sh_outline";
+import {
+  findShLabelText,
+  getOutline,
+} from "@/common/smith_and_hall/sh_outline";
 
 describe("getOutline", () => {
   it("pipes through correct data", () => {
@@ -27,5 +30,43 @@ describe("getOutline", () => {
         { level: 1, ordinal: "II.", text: "Informal", sectionId: "sh57.1" },
       ],
     });
+  });
+});
+
+describe("findShLabelText", () => {
+  it("handles missing keys", () => {
+    const result = findShLabelText("Hello", "Greetings");
+    expect(result).toBeUndefined();
+  });
+
+  it("handles happy path", () => {
+    const result = findShLabelText("Hello", "<b>Hello</b> (subst.):");
+    expect(result).toBe("Hello (subst.)");
+  });
+
+  it("handles too many spaces path", () => {
+    const result = findShLabelText("Hello", "  <b>Hello</b>   (subst.):");
+    expect(result).toBe("Hello (subst.)");
+  });
+
+  it("handles no paren", () => {
+    const result = findShLabelText("Hello", "<b>Hello</b> a greeting");
+    expect(result).toBe(undefined);
+  });
+
+  it("handles no closing paren", () => {
+    const result = findShLabelText(
+      "Hello",
+      "<b>Hello</b> (Gallia est omnis divisa in partes tres"
+    );
+    expect(result).toBe("Hello (Gallia est omnis d");
+  });
+
+  it("handles too long blurb", () => {
+    const result = findShLabelText(
+      "Hello",
+      "<b>Hello</b> (Gallia est omnis divisa in partes tres):"
+    );
+    expect(result).toBe("Hello (Gallia est omnis d");
   });
 });

@@ -218,6 +218,7 @@ export function DictionaryViewV2() {
   }
 
   function ToEntryButton(props: { outline: EntryOutline }) {
+    const label = ` ${props.outline.mainLabel || props.outline.mainKey} `;
     return (
       <span
         className="lsSenseBullet"
@@ -237,7 +238,7 @@ export function DictionaryViewV2() {
             paddingLeft: "0.1em",
           }}
         />
-        {` ${props.outline.mainKey}`}
+        <span dangerouslySetInnerHTML={{ __html: label }} />
       </span>
     );
   }
