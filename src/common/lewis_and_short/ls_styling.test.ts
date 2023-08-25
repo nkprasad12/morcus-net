@@ -4,7 +4,7 @@ import {
   attachHoverText,
   handleAbbreviations,
 } from "@/common/lewis_and_short/ls_styling";
-import { TrieNode } from "@/common/abbreviations/abbreviations";
+import { StringTrie } from "@/common/abbreviations/abbreviations";
 
 describe("attachHoverText", () => {
   it("shows expected content", () => {
@@ -31,7 +31,7 @@ describe("substituteAbbreviation", () => {
 });
 
 describe("handleAbbreviations", () => {
-  const trieRoot = new TrieNode();
+  const trieRoot = new StringTrie();
 
   beforeAll(() => {
     trieRoot.add("de Or.", "de Oratione");

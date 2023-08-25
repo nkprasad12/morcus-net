@@ -4,7 +4,7 @@ import { assert, assertEqual } from "@/common/assert";
 import { XmlNode } from "@/common/xml_node";
 import {
   AbbreviationTrie,
-  TrieNode,
+  StringTrie,
 } from "@/common/abbreviations/abbreviations";
 import { parseXmlStrings } from "@/common/xml_utils";
 
@@ -597,7 +597,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
 
 export namespace LsAuthorAbbreviations {
   export interface LsAuthorData extends LsAuthorAbbreviation {
-    worksTrie: TrieNode;
+    worksTrie: StringTrie;
   }
 
   const authorMap = new Map<string, LsAuthorData[]>();
@@ -609,7 +609,7 @@ export namespace LsAuthorAbbreviations {
         if (!authorMap.has(datum.key)) {
           authorMap.set(datum.key, []);
         }
-        const root = new TrieNode();
+        const root = new StringTrie();
         for (const [key, value] of datum.works.entries()) {
           root.add(key, value);
         }

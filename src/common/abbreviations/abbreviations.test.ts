@@ -1,9 +1,12 @@
-import { TrieNode, findExpansions } from "@/common/abbreviations/abbreviations";
+import {
+  StringTrie,
+  findExpansions,
+} from "@/common/abbreviations/abbreviations";
 
 describe("TrieNode", () => {
   it("adds words correctly", () => {
-    const root = new TrieNode();
-    root.add("ab", "Caesar", ["Imperator"]);
+    const root = new StringTrie();
+    root.add("ab", "Caesar");
 
     expect(root.next("a")!.nodeValues()).toHaveLength(0);
     expect(root.next("a")!.isFullWord()).toBe(false);
@@ -15,7 +18,7 @@ describe("TrieNode", () => {
   });
 
   it("handles disjoint adds", () => {
-    const root = new TrieNode();
+    const root = new StringTrie();
     root.add("jc", "Caesar");
     root.add("a", "Augustus");
 
@@ -28,7 +31,7 @@ describe("TrieNode", () => {
   });
 
   it("handles duplicate adds", () => {
-    const root = new TrieNode();
+    const root = new StringTrie();
     root.add("jc", "Caesar");
     root.add("jc", "Augustus");
 
@@ -39,7 +42,7 @@ describe("TrieNode", () => {
   });
 
   it("handles overlapping adds", () => {
-    const root = new TrieNode();
+    const root = new StringTrie();
     root.add("jc", "Caesar");
     root.add("jca", "Augustus");
 
@@ -50,35 +53,10 @@ describe("TrieNode", () => {
     expect(jcaVals).toHaveLength(1);
     expect(jcaVals[0]).toBe("Augustus");
   });
-
-  it("returns values with filters as subset", () => {
-    const root = new TrieNode();
-    root.add("ab", "Caesar", ["Imperator", "Gaius"]);
-
-    const values = root.next("a")!.next("b")!.nodeValues(["Gaius"]);
-    expect(values).toHaveLength(1);
-    expect(root.next("a")!.next("b")!.isFullWord()).toBe(true);
-  });
-
-  it("returns no values if filters do not match", () => {
-    const root = new TrieNode();
-    root.add("ab", "Caesar", ["Imperator", "Gaius"]);
-
-    const values = root.next("a")!.next("b")!.nodeValues(["Gaius", "Filius"]);
-    expect(values).toHaveLength(0);
-  });
-
-  it("handles filters for entries with no tags", () => {
-    const root = new TrieNode();
-    root.add("ab", "Caesar");
-
-    const values = root.next("a")!.next("b")!.nodeValues(["Caesar"]);
-    expect(values).toHaveLength(0);
-  });
 });
 
 describe("findExpansions", () => {
-  const trieRoot = new TrieNode();
+  const trieRoot = new StringTrie();
 
   beforeAll(() => {
     trieRoot.add("de Or.", "de Oratione");

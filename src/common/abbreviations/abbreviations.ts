@@ -2,60 +2,39 @@ import { checkPresent } from "@/common/assert";
 
 const START_CHARACTERS = new Set<string>(" ();—-");
 
-export interface TrieValue {
-  value: string;
-  tags?: string[];
-}
+export class GenericTrieNode<T> {
+  private readonly children: Map<string, GenericTrieNode<T>> = new Map();
+  private readonly values: T[] = [];
 
-export class TrieNode {
-  private readonly children: Map<string, TrieNode> = new Map();
-  private readonly values: TrieValue[] = [];
-
-  add(word: string, value: string, tags?: string[]): void {
-    let lastNode: TrieNode = this;
+  add(word: string, value: T): void {
+    let lastNode: GenericTrieNode<T> = this;
     for (const character of word) {
       if (!lastNode.children.has(character)) {
-        lastNode.children.set(character, new TrieNode());
+        lastNode.children.set(character, new GenericTrieNode());
       }
       lastNode = checkPresent(lastNode.children.get(character));
     }
-    lastNode.values.push({ value: value, tags: tags });
+    lastNode.values.push(value);
   }
 
   isFullWord(): boolean {
     return this.values.length > 0;
   }
 
-  next(character: string): TrieNode | undefined {
+  next(character: string): GenericTrieNode<T> | undefined {
     return this.children.get(character);
   }
 
-  nodeValues(filters?: string[]): string[] {
-    const goodValues: string[] = [];
-    for (const trieValue of this.values) {
-      if (filters === undefined || filters.length === 0) {
-        goodValues.push(trieValue.value);
-        continue;
-      }
-      const trieTags = trieValue.tags;
-      if (trieTags === undefined || trieTags.length === 0) {
-        continue;
-      }
-      const hasAllFilters = filters
-        .map((filter) => trieTags.includes(filter))
-        .reduce((previous, current) => previous && current);
-      if (!hasAllFilters) {
-        continue;
-      }
-      goodValues.push(trieValue.value);
-    }
-    return goodValues;
+  nodeValues(): T[] {
+    return this.values.map((v) => v);
   }
 }
 
+export class StringTrie extends GenericTrieNode<string> {}
+
 export namespace AbbreviationTrie {
-  export function forMap(map: Map<string, string>): TrieNode {
-    const root = new TrieNode();
+  export function forMap(map: Map<string, string>): StringTrie {
+    const root = new StringTrie();
     for (const [key, value] of map.entries()) {
       root.add(key, value);
     }
@@ -63,22 +42,14 @@ export namespace AbbreviationTrie {
   }
 }
 
-// Edge cases to watch out for:
-// We can have two separate abbreviated forms next to each other,
-// for example `Am. prol. 33` has:
-// `Am.` -> `Amphitruo`
-// `prol.` -> Prologue
-//
-// And also we can have multi-word keys like `de Or.` where we need to
-// make sure we are handling `de` as connected to `Or.`.
 export function findExpansions(
   message: string,
-  trieRoot: TrieNode,
+  trieRoot: StringTrie,
   ignoreCase: boolean = false
 ): [number, number, string[]][] {
   // [startIndex, length, expandedString]
   const expansions: [number, number, string[]][] = [];
-  let triePosition: TrieNode = trieRoot;
+  let triePosition: StringTrie = trieRoot;
   let currentStart: number | undefined = undefined;
   let bestExpansion: [number, number, string[]] | undefined = undefined;
   for (let i = 0; i <= message.length; i++) {

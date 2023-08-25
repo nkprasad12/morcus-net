@@ -1,4 +1,7 @@
-import { TrieNode, findExpansions } from "@/common/abbreviations/abbreviations";
+import {
+  StringTrie,
+  findExpansions,
+} from "@/common/abbreviations/abbreviations";
 import { checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml_node";
 
@@ -34,7 +37,7 @@ export function handleAbbreviationsInMessage(
 
 export function handleAbbreviations(
   contentRoot: XmlNode,
-  defaultTrie: TrieNode,
+  defaultTrie: StringTrie,
   replace: boolean = true,
   expandedCssClasses?: string[]
 ): XmlNode {
