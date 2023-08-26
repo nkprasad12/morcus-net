@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { XmlChild, XmlNode } from "@/common/xml_node";
+import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import {
   CASE_ABBREVIATIONS,
   EDGE_CASE_HOVERS,

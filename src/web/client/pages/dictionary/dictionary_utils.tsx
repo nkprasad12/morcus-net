@@ -1,7 +1,7 @@
 import React, { MutableRefObject } from "react";
 
 import { checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import {
   ClickableTooltip,
   SectionLinkTooltip,

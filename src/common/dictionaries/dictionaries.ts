@@ -1,5 +1,5 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { isArray, isRecord, isString, matches } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 

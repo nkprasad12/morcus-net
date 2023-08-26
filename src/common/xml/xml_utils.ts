@@ -1,6 +1,6 @@
 import { XMLParser, XMLValidator } from "fast-xml-parser";
 import { assert } from "@/common/assert";
-import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml_node";
+import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
 
 const ATTRIBUTES_KEY = ":@";
 const TEXT_NODE = "#text";

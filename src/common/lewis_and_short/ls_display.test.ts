@@ -20,8 +20,8 @@ import {
   BENEFIO,
   BIMATRIS,
 } from "@/common/lewis_and_short/sample_entries";
-import { XmlNode } from "@/common/xml_node";
-import { parseXmlStrings } from "../xml_utils";
+import { XmlNode } from "@/common/xml/xml_node";
+import { parseXmlStrings } from "../xml/xml_utils";
 
 console.debug = jest.fn();
 

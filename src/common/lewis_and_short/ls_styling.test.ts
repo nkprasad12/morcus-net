@@ -1,4 +1,4 @@
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import {
   substituteAbbreviation,
   attachHoverText,

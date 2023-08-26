@@ -1,4 +1,4 @@
-import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml_node";
+import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
 import { assert, checkPresent } from "@/common/assert";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import {

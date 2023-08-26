@@ -7,7 +7,7 @@ import {
 } from "@/common/smith_and_hall/sh_display";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { getOutline } from "@/common/smith_and_hall/sh_outline";
-import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
 export function shListToRaw(entries: ShEntry[]) {
   const resolver = new ShLinkResolver(entries);

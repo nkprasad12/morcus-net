@@ -1,8 +1,8 @@
 // import zlib from "zlib";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import { CANABA, HABEO } from "@/common/lewis_and_short/sample_entries";
-import { XmlNode } from "@/common/xml_node";
-import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "./xml_utils";
 // import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 

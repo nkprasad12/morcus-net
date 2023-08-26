@@ -1,12 +1,12 @@
 import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import {
   AbbreviationTrie,
   StringTrie,
 } from "@/common/abbreviations/abbreviations";
-import { parseXmlStrings } from "@/common/xml_utils";
+import { parseXmlStrings } from "@/common/xml/xml_utils";
 
 const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =

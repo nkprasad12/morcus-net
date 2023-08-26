@@ -9,7 +9,7 @@ import {
   PALUS1,
 } from "@/common/lewis_and_short/sample_entries";
 
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { extractEntries } from "@/common/lewis_and_short/ls_xml_utils";
 import { XmlNodeSerialization } from "./xml_node_serialization";
 import { parseXmlStrings } from "./xml_utils";

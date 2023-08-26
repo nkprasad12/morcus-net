@@ -2,7 +2,7 @@ import { EntryResult } from "@/common/dictionaries/dict_result";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { SmithAndHall, shListToRaw } from "@/common/smith_and_hall/sh_dict";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import fs from "fs";
 
 console.debug = jest.fn();

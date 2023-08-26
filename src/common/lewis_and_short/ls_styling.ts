@@ -3,7 +3,7 @@ import {
   findExpansions,
 } from "@/common/abbreviations/abbreviations";
 import { checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 
 export function handleAbbreviationsInMessage(
   message: string,
