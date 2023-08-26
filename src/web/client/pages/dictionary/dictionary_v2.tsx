@@ -257,12 +257,15 @@ export function DictionaryViewV2() {
               .filter((entry) => entry.outlines.length > 0)
               .map((entry) => (
                 <div key={entry.dictKey + "SummarySection"}>
-                  <FullDictChip label={entry.name} />{" "}
+                  <FullDictChip label={entry.name} />
                   {entry.outlines.map((outline) => (
-                    <ToEntryButton
-                      outline={outline}
-                      key={outline.mainSection.sectionId}
-                    />
+                    <>
+                      {" "}
+                      <ToEntryButton
+                        outline={outline}
+                        key={outline.mainSection.sectionId}
+                      />
+                    </>
                   ))}
                 </div>
               ))}
