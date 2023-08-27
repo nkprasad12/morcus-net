@@ -1,37 +1,17 @@
 /* istanbul ignore file */
 
+import { parseTeiXml } from "@/common/xml/xml_files";
 import * as dotenv from "dotenv";
-import { processSmithHall } from "@/common/smith_and_hall/sh_process";
 
 dotenv.config();
 
+const DOC_PATH =
+  "/home/nitin/Downloads/raw.githubusercontent.com_PerseusDL_canonical-latinLit_master_data_phi0690_phi001_phi0690.phi001.perseus-lat2.xml";
+
 const startTime = performance.now();
 
-// @ts-ignore
-class Tally<T> {
-  private readonly counts = new Map<T, number>();
+const root = parseTeiXml(DOC_PATH);
+console.log(root);
 
-  count(item: T) {
-    if (!this.counts.has(item)) {
-      this.counts.set(item, 0);
-    }
-    this.counts.set(item, this.counts.get(item)! + 1);
-  }
-
-  toString(): string {
-    const entries = Array.from(this.counts.entries());
-    const total = entries.map(([_, count]) => count).reduce((a, b) => a + b, 0);
-    return (
-      `Total: ${total}\n` +
-      entries
-        .sort(([_a, aCount], [_b, bCount]) => bCount - aCount)
-        .map(([label, count]) => `${count} <= ${label}`)
-        .join("\n")
-    );
-  }
-}
-
-processSmithHall().then(() => {
-  const runtime = Math.round(performance.now() - startTime);
-  console.log(`Runtime: ${runtime} ms.`);
-});
+const runtime = Math.round(performance.now() - startTime);
+console.log(`Runtime: ${runtime} ms.`);
