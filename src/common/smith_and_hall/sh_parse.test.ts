@@ -41,8 +41,8 @@ describe("getArticles", () => {
     ];
     const expected = [
       "<b>intermittent</b>:",
-      "of <i>i. fevers</i> are there given, e. g. quoti-*",
-      "*diana, tertiana, quartana (quae altero,",
+      "of <i>i. fevers</i> are there given, e. g.",
+      "quotidiana, tertiana, quartana (quae altero,",
       "",
       "foo",
       "",
@@ -66,6 +66,51 @@ describe("getArticles", () => {
       "<b>illustrious</b>, <b>to become</b>:",
       "",
       "1. clāresco,",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toEqual([expected]);
+  });
+
+  it("handles -* in middle of words", async () => {
+    const lines = ["<b>intermittent</b>:", "3. exŏrior, 4 (two-*fold)"];
+    const expected = [
+      "<b>intermittent</b>:",
+      "3. exŏrior, 4 (two-fold)",
+      "",
+      "",
+    ];
+    writeArticle(lines);
+
+    const result = await getArticles(TEMP_FILE);
+
+    expect(result).toEqual([expected]);
+  });
+
+  it("handles split words", async () => {
+    const lines = [
+      "<b>intermittent</b>:",
+      "3. exŏrior, 4 (usu. <i>to a. sud-*</i>",
+      "-----File: b0045m.png------------------------------------------------------",
+      "<i>*denly</i>: also <i>to a. out of</i>): <i>may some",
+      "3. tran-*",
+      "-----File: b0076l.png------------------------------------------------------",
+      "*strum (<i>for rowers</i>): Caes.: Virg.",
+      "test <i>he-*</i>",
+      "<i>*llo</i> there.",
+    ];
+    const expected = [
+      "<b>intermittent</b>:",
+      "3. exŏrior, 4 (usu. <i>to a.",
+      "suddenly</i>: also <i>to a. out of</i>): <i>may some",
+      "3.",
+      "transtrum (<i>for rowers</i>): Caes.: Virg.",
+      "test",
+      "<i>hello</i> there.",
       "",
       "",
     ];
@@ -118,11 +163,11 @@ describe("getArticles", () => {
       "A.",
       "",
       "<b>intermittent</b>:",
-      "of <i>i. fevers</i> are there given, e. g. quoti-*",
+      "of <i>i. fevers</i> are there given, e. g.",
     ];
     const expected = [
       "<b>intermittent</b>:",
-      "of <i>i. fevers</i> are there given, e. g. quoti-*",
+      "of <i>i. fevers</i> are there given, e. g.",
       "",
       "",
     ];

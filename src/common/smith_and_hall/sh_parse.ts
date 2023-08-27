@@ -102,9 +102,6 @@ function processSingleLine(
 
       throw new Error("Unexpected line");
     case "InArticle":
-      if (line.startsWith(START_OF_FILE)) {
-        return "InArticle";
-      }
       assert(allArticles.length > 0, "Need to have a last article");
       if (lineEmpty(line)) {
         allArticles[allArticles.length - 1].push(line);
@@ -113,9 +110,6 @@ function processSingleLine(
       allArticles[allArticles.length - 1].push(line);
       return "InArticle";
     case "MaybeEndingArticle":
-      if (line.startsWith(START_OF_FILE)) {
-        return "MaybeEndingArticle";
-      }
       if (BASE_ENTRY_KEY_PATTERN.test(line)) {
         allArticles.push([]);
       } else if (IGNORE_EMPTY_LINE_BEFORE.has(line)) {
@@ -140,6 +134,7 @@ export async function getArticles(
     crlfDelay: Infinity,
   });
 
+  let lastLineChunk: string | undefined = undefined;
   const nextHeaderIndex = [0];
   let state: ParseState = "Unstarted";
   const allArticles: string[][] = [];
@@ -155,13 +150,43 @@ export async function getArticles(
       continue;
     }
 
-    const corrected = CORRECTIONS.get(input) || input;
-    // This is assuming there's no overlap between these two.
+    if (
+      input.startsWith(START_OF_FILE) &&
+      !input.startsWith(START_OF_ENTRIES)
+    ) {
+      continue;
+    }
+
+    let line = CORRECTIONS.get(input) || input;
+    if (lastLineChunk !== undefined) {
+      const endTag = lastLineChunk.match(/<\/([A-Za-z]+)>$/);
+      if (endTag === null) {
+        assert(
+          line.startsWith("*"),
+          `Last line end: ${lastLineChunk}\nLine: ${line}`
+        );
+        line = lastLineChunk.slice(1, -2) + line.substring(1);
+      } else {
+        const lineStart = `<${endTag[1]}>*`;
+        assert(line.startsWith(lineStart));
+        line =
+          lastLineChunk.slice(1, -(2 + lineStart.length)) +
+          line.substring(lineStart.length);
+      }
+      lastLineChunk = undefined;
+    }
+    // This is assuming there's no overlap between this and CORRECTIONS.
     // Since there are so few of each, we can manually verify.
-    const dashEdgeCaseRemoved = DASH_EDGE_CASES.get(corrected) || corrected;
-    const withoutLengthMarks = dashEdgeCaseRemoved.replaceAll(",,", ",");
-    const withLengthMarks = attachLengthMarks(withoutLengthMarks);
-    const line = handleEditorNotes(withLengthMarks);
+    line = DASH_EDGE_CASES.get(line) || line;
+    line = line.replaceAll(",,", ",");
+    line = attachLengthMarks(line);
+    line = handleEditorNotes(line);
+    line = line.replaceAll(/([A-Za-z])-\*([A-Za-z])/g, "$1-$2");
+    const splitWord = line.match(/ [^ ]+-\*(?:<\/[A-Za-z]>)?$/);
+    if (splitWord !== null) {
+      lastLineChunk = splitWord[0];
+      line = line.slice(0, -lastLineChunk.length);
+    }
     state = processSingleLine(state, line, allArticles, nextHeaderIndex);
   }
   return allArticles;
