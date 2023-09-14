@@ -23,6 +23,7 @@ import {
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
 import { findExpansions } from "@/common/abbreviations/abbreviations";
+import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
@@ -161,6 +162,12 @@ function displayHi(
     return new XmlNode("sup", [], [defaultDisplay(root, context)]);
   }
   // The only options are "ital" and "sup"
+  const firstChild = root.children[0];
+  if (firstChild !== undefined && typeof firstChild === "string") {
+    if (GRAMMAR_TERMS.has(firstChild)) {
+      return new XmlNode("span", [["class", "lsGrammar"]], [firstChild]);
+    }
+  }
   return new XmlNode(
     "span",
     [["class", "lsEmph"]],

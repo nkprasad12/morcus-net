@@ -172,6 +172,10 @@ function ConfigurableStyles() {
           backgroundColor: Solarized.blue + modifiedStrength(22),
           borderRadius: 4,
         },
+        ".lsGrammar": {
+          backgroundColor: Solarized.magenta + modifiedStrength(18),
+          borderRadius: 4,
+        },
         ".lsOrth": {
           backgroundColor: Solarized.red + modifiedStrength(68),
           borderRadius: 4,
