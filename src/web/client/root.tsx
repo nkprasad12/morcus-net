@@ -125,7 +125,7 @@ function ConfigurableStyles() {
 
   function modifiedStrength(baseStrength: number): string {
     const decimalBase = (baseStrength / 160) * 100;
-    const decimalModified = modifier * decimalBase;
+    const decimalModified = modifier * decimalBase * 0.65;
     const hexModified = (160 * decimalModified) / 100;
     return `${Math.round(hexModified)}`;
   }
@@ -169,15 +169,15 @@ function ConfigurableStyles() {
           borderRadius: 4,
         },
         ".lsQuote": {
-          backgroundColor: Solarized.blue + modifiedStrength(22),
+          backgroundColor: Solarized.blue + modifiedStrength(28),
           borderRadius: 4,
         },
         ".lsGrammar": {
-          backgroundColor: Solarized.magenta + modifiedStrength(18),
+          backgroundColor: Solarized.magenta + modifiedStrength(28),
           borderRadius: 4,
         },
         ".lsOrth": {
-          backgroundColor: Solarized.red + modifiedStrength(68),
+          backgroundColor: Solarized.red + modifiedStrength(54),
           borderRadius: 4,
           padding: 2,
         },
