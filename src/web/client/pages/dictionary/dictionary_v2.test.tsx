@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
@@ -84,7 +84,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n3"]], [resultString]),
           outline: {
-            mainOrth: "mainOrth",
+            mainKey: "mainKey",
             mainSection: {
               text: "mainBlurb",
               sectionId: "n1",
@@ -136,7 +136,7 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainOrth"));
+    await user.click(screen.getByText("mainKey"));
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 
@@ -166,7 +166,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n4"]], ["Entry1"]),
           outline: {
-            mainOrth: "mainOrth1",
+            mainKey: "mainKey1",
             mainSection: {
               text: "mainBlurb1",
               sectionId: "n1",
@@ -176,7 +176,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n3"]], ["Entry2"]),
           outline: {
-            mainOrth: "mainOrth2",
+            mainKey: "mainKey2",
             mainSection: {
               text: "mainBlurb2",
               sectionId: "n2",
@@ -202,6 +202,12 @@ describe("New Dictionary View", () => {
 
   it("shows fetched result on small screen", async () => {
     // @ts-ignore
+    window.IntersectionObserver = jest.fn(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn(),
+    }));
+    // @ts-ignore
     useMediaQuery.mockImplementation(() => true);
     const spyScrollTo = jest.fn();
     Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
@@ -211,7 +217,7 @@ describe("New Dictionary View", () => {
         {
           entry: new XmlNode("span", [["id", "n3"]], [resultString]),
           outline: {
-            mainOrth: "mainOrth",
+            mainKey: "mainKey",
             mainSection: {
               text: "mainBlurb",
               sectionId: "n1",
@@ -265,7 +271,7 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainOrth"));
+    await user.click(screen.getByText("mainKey"));
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 });

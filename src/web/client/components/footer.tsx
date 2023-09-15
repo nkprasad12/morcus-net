@@ -2,10 +2,11 @@ import * as React from "react";
 
 import { Box, Typography } from "@mui/material";
 import { Solarized } from "@/web/client/colors";
+import { SelfLink } from "@/web/client/components/misc";
 
-export function Footer(props: { id?: string }) {
+export function Footer(props: { id?: string; className?: string }) {
   return (
-    <Box padding="2em" id={props.id}>
+    <Box padding="2em" id={props.id} className={props.className}>
       <Typography
         component={"div"}
         style={{ marginTop: window.innerHeight, color: Solarized.base02 }}
@@ -23,10 +24,7 @@ export function Footer(props: { id?: string }) {
           MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
           Affero General Public License for more details.
         </p>
-        See{" "}
-        <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">
-          https://www.gnu.org/licenses/agpl-3.0.en.html
-        </a>{" "}
+        See <SelfLink to="https://www.gnu.org/licenses/agpl-3.0.en.html" />
         for a copy of the GNU Affero General Public License.
       </Typography>
     </Box>

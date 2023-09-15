@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import user from "@testing-library/user-event";
@@ -17,6 +17,7 @@ import {
   SearchSettings,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { RouteContext } from "@/web/client/components/router";
 
 console.log = jest.fn();
 console.debug = jest.fn();
@@ -76,6 +77,31 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, undefined);
 
     expect(result.props["className"]).toBe(undefined);
+  });
+
+  it("handles dLink elements", async () => {
+    const root = new XmlNode(
+      "span",
+      [
+        ["class", "dLink"],
+        ["to", "omnis"],
+        ["text", "Gallia"],
+      ],
+      []
+    );
+    const result = xmlNodeToJsx(root, undefined);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <div>{result}</div>
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.getByText("Gallia"));
+
+    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "omnis,SnH" });
   });
 });
 

@@ -125,7 +125,7 @@ function ConfigurableStyles() {
 
   function modifiedStrength(baseStrength: number): string {
     const decimalBase = (baseStrength / 160) * 100;
-    const decimalModified = modifier * decimalBase;
+    const decimalModified = modifier * decimalBase * 0.65;
     const hexModified = (160 * decimalModified) / 100;
     return `${Math.round(hexModified)}`;
   }
@@ -169,11 +169,15 @@ function ConfigurableStyles() {
           borderRadius: 4,
         },
         ".lsQuote": {
-          backgroundColor: Solarized.blue + modifiedStrength(22),
+          backgroundColor: Solarized.blue + modifiedStrength(28),
+          borderRadius: 4,
+        },
+        ".lsGrammar": {
+          backgroundColor: Solarized.orange + modifiedStrength(22),
           borderRadius: 4,
         },
         ".lsOrth": {
-          backgroundColor: Solarized.red + modifiedStrength(68),
+          backgroundColor: Solarized.red + modifiedStrength(54),
           borderRadius: 4,
           padding: 2,
         },
@@ -200,12 +204,13 @@ function ConfigurableStyles() {
         ".mobileNavMenu": {
           overflow: "hidden",
           position: "fixed",
-          bottom: "0",
-          width: "100%",
+          bottom: "5%",
+          right: "0%",
+          borderRadius: 4,
         },
         ".mobileNavButton": {
-          backgroundColor: Solarized.base2 + "F0",
           color: Solarized.base1,
+          backgroundColor: Solarized.base3 + "D0",
           borderRadius: 4,
           marginTop: 3,
           marginLeft: 3,
@@ -213,8 +218,16 @@ function ConfigurableStyles() {
           fontSize: 40,
         },
         ".mobileNavButton:hover": {
-          backgroundColor: Solarized.base2,
-          color: Solarized.base0,
+          color: Solarized.base01,
+          cursor: "pointer",
+        },
+        ".dLink": {
+          color: Solarized.navy,
+          borderBottom: `1px solid ${Solarized.navy}`,
+        },
+        ".dLink:hover": {
+          color: Solarized.blue,
+          borderBottom: `1px solid ${Solarized.blue}`,
           cursor: "pointer",
         },
       }}

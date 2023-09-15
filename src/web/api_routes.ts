@@ -6,7 +6,7 @@ import {
   DictsFusedRequest,
   DictsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
-import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
 export const MacronizeApi: ApiRoute<string, string> = {
   path: "/api/macronize",

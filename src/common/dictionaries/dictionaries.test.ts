@@ -5,12 +5,12 @@ import {
   DictsFusedRequest,
   DictsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 
 const ENTRY_RESULT: EntryResult = {
   entry: new XmlNode("foo"),
   outline: {
-    mainOrth: "foo",
+    mainKey: "foo",
     mainSection: {
       text: "bar",
       level: 0,

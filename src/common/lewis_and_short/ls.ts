@@ -1,6 +1,6 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
 import { assert, checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
   getOrths,
@@ -10,7 +10,7 @@ import {
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
-import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
 interface ProcessedLsEntry {
   keys: string[];

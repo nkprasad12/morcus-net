@@ -1,12 +1,12 @@
 import { readFileSync } from "fs";
 
 import { assert, assertEqual } from "@/common/assert";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import {
   AbbreviationTrie,
-  TrieNode,
-} from "@/common/lewis_and_short/ls_styling";
-import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
+  StringTrie,
+} from "@/common/abbreviations/abbreviations";
+import { parseXmlStrings } from "@/common/xml/xml_utils";
 
 const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =
@@ -93,7 +93,7 @@ export function parseAuthorAbbreviations(
   path: string = "texts/latin/lewisAndShort/ls_abbreviations.html"
 ): LsAuthorAbbreviation[] {
   const xmlContents = readFileSync(path, "utf8");
-  const result = parseEntries([xmlContents])[0];
+  const result = parseXmlStrings([xmlContents])[0];
   const entries: LsAuthorAbbreviation[] = [];
   for (const author of result.children) {
     if (typeof author === "string") {
@@ -170,36 +170,30 @@ export const POS_ABBREVIATIONS = new Map<string, string>([
   ["v. inch.", "verb [inchoative]"],
   ["v. inch. impers.", "verb [inchoative; impersonal]"],
   ["v. impers. inch.", "verb [inchoative; impersonal]"],
-  ["v. inch. n. impers.", "verb [inchoative; impersonal; active only]"],
-  ["v. n. impers.", "verb [impersonal; active only]"],
+  ["v. inch. n. impers.", "verb [inchoative; impersonal; intransitive]"],
+  ["v. n. impers.", "verb [impersonal; intransitive]"],
   ["v. inch. dep.", "verb [inchoative; deponent]"],
-  ["v. inch. n.", "verb [inchoative; active only]"],
-  ["v. inch. a.", "verb [inchoative; active and passive forms]"],
-  ["v. n. inch.", "verb [inchoative; active only]"],
-  ["v. a. intens.", "verb [intensive; active and passive forms]"],
-  ["v. intens. a.", "verb [intensive; active and passive forms]"],
+  ["v. inch. n.", "verb [inchoative; intransitive]"],
+  ["v. inch. a.", "verb [inchoative; transitive]"],
+  ["v. n. inch.", "verb [inchoative; intransitive]"],
+  ["v. a. intens.", "verb [intensive; transitive]"],
+  ["v. intens. a.", "verb [intensive; transitive]"],
   ["v. intens.", "verb [intensive]"],
-  ["v. intens. n.", "verb [intensive; active only]"],
-  ["v. n.", "verb [active only]"],
-  ["v. a.", "verb [active and passive forms]"],
-  [
-    "v. a. and n.",
-    "verb [depending on sense: active only, or active and passive]",
-  ],
-  [
-    "v. n. and a.",
-    "verb [depending on sense: active only, or active and passive]",
-  ],
+  ["v. intens. n.", "verb [intensive; intransitive]"],
+  ["v. n.", "verb [intransitive]"],
+  ["v. a.", "verb [transitive]"],
+  ["v. a. and n.", "verb [depending on sense: intransitive, or transitive]"],
+  ["v. n. and a.", "verb [depending on sense: intransitive, or transitive]"],
   ["v. freq. dep.", "verb [frequentative; deponent]"],
   ["v. freq. a. dep.", "verb [frequentative; deponent]"],
-  ["v. freq. n.", "verb [frequentative; active only]"],
-  ["v. n. freq.", "verb [frequentative; active only]"],
+  ["v. freq. n.", "verb [frequentative; intransitive]"],
+  ["v. n. freq.", "verb [frequentative; intransitive]"],
   ["v. freq.", "verb [frequentative]"],
-  ["v. a. freq.", `verb [frequentative; active and passive forms]`],
-  ["v. freq. a.", `verb [frequentative; active and passive forms]`],
+  ["v. a. freq.", `verb [frequentative; transitive]`],
+  ["v. freq. a.", `verb [frequentative; transitive]`],
   [
     "v. freq. a. and n.",
-    `verb [frequentative; depending on sense: active only, or active and passive]`,
+    `verb [frequentative; depending on sense: intransitive, or transitive]`,
   ],
   ["adv.", "adverb"],
   ["P. a.", "participal adjective"],
@@ -597,7 +591,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
 
 export namespace LsAuthorAbbreviations {
   export interface LsAuthorData extends LsAuthorAbbreviation {
-    worksTrie: TrieNode;
+    worksTrie: StringTrie;
   }
 
   const authorMap = new Map<string, LsAuthorData[]>();
@@ -609,7 +603,7 @@ export namespace LsAuthorAbbreviations {
         if (!authorMap.has(datum.key)) {
           authorMap.set(datum.key, []);
         }
-        const root = new TrieNode();
+        const root = new StringTrie();
         for (const [key, value] of datum.works.entries()) {
           root.add(key, value);
         }

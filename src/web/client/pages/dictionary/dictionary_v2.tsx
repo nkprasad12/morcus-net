@@ -7,7 +7,7 @@ import React, { CSSProperties } from "react";
 
 import { Solarized } from "@/web/client/colors";
 import { RouteContext } from "@/web/client/components/router";
-import { flushSync } from "react-dom";
+import ReactDOM, { flushSync } from "react-dom";
 import { DictsFusedApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { Footer } from "@/web/client/components/footer";
@@ -36,9 +36,11 @@ import {
   jumpToSection,
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
 import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
+import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 
 export const ERROR_STATE_MESSAGE =
-  "Lookup failed. Please check your internet connection and try again." +
+  "Lookup failed. Please check your internet connection" +
+  " and / or refresh the page (or if using the app, close and re-open)." +
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE =
   "No results found. If applicable, try enabling another " +
@@ -193,6 +195,7 @@ export function DictionaryViewV2() {
     maxWidth: "md" | "lg" | "xl";
     marginLeft?: "auto" | "0";
     id?: string;
+    className?: string;
   }) {
     return (
       <Container
@@ -201,6 +204,7 @@ export function DictionaryViewV2() {
         ref={searchBarRef}
         sx={{ marginLeft: props.marginLeft || "auto" }}
         id={props.id}
+        className={props.className}
       >
         <DictionarySearch
           smallScreen={isSmall}
@@ -215,6 +219,7 @@ export function DictionaryViewV2() {
   }
 
   function ToEntryButton(props: { outline: EntryOutline }) {
+    const label = ` ${props.outline.mainLabel || props.outline.mainKey} `;
     return (
       <span
         className="lsSenseBullet"
@@ -234,7 +239,7 @@ export function DictionaryViewV2() {
             paddingLeft: "0.1em",
           }}
         />
-        {` ${props.outline.mainOrth}`}
+        <span dangerouslySetInnerHTML={{ __html: label }} />
       </span>
     );
   }
@@ -252,12 +257,15 @@ export function DictionaryViewV2() {
               .filter((entry) => entry.outlines.length > 0)
               .map((entry) => (
                 <div key={entry.dictKey + "SummarySection"}>
-                  <FullDictChip label={entry.name} />{" "}
+                  <FullDictChip label={entry.name} />
                   {entry.outlines.map((outline) => (
-                    <ToEntryButton
-                      outline={outline}
-                      key={outline.mainSection.sectionId}
-                    />
+                    <span key={outline.mainSection.sectionId}>
+                      {" "}
+                      <ToEntryButton
+                        outline={outline}
+                        key={outline.mainSection.sectionId}
+                      />
+                    </span>
                   ))}
                 </div>
               ))}
@@ -266,9 +274,14 @@ export function DictionaryViewV2() {
     );
   }
 
-  function HelpSection(props: { id?: string }) {
+  function HelpSection(props: { id?: string; className?: string }) {
     return (
-      <ContentBox key="helpSection" isSmall={isSmall} id={props.id}>
+      <ContentBox
+        key="helpSection"
+        isSmall={isSmall}
+        id={props.id}
+        className={props.className}
+      >
         <div style={{ fontSize: 14, lineHeight: "normal" }}>
           {xmlNodeToJsx(HELP_ENTRY)}
         </div>
@@ -291,11 +304,7 @@ export function DictionaryViewV2() {
     return (
       <>
         {props.data.entries.map((entry) => (
-          <ContentBox
-            key={entry.key}
-            isSmall={isSmall}
-            id={QUICK_NAV_ANCHOR + entry.key}
-          >
+          <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
             <>
               <div style={{ marginBottom: 10 }}>
                 <FullDictChip label={props.data.name} />
@@ -341,9 +350,13 @@ export function DictionaryViewV2() {
   function OneColumnLayout(props: { Content: JSX.Element }) {
     return (
       <Container maxWidth="lg">
-        <SearchBar maxWidth="lg" id={QUICK_NAV_ANCHOR + "SearchBox"} />
+        <SearchBar
+          maxWidth="lg"
+          id={"SearchBox"}
+          className={QUICK_NAV_ANCHOR}
+        />
         {props.Content}
-        <Footer id={QUICK_NAV_ANCHOR + "Footer"} />
+        <Footer id={"Footer"} className={QUICK_NAV_ANCHOR} />
       </Container>
     );
   }
@@ -409,9 +422,9 @@ export function DictionaryViewV2() {
     <ResponsiveLayout
       oneCol={
         <>
-          {/* {ReactDOM.createPortal(<QuickNavMenu />, document.body)} */}
-          <HelpSection id={QUICK_NAV_ANCHOR + "HelpSection"} />
-          <div id={QUICK_NAV_ANCHOR + "Toc"}>
+          {ReactDOM.createPortal(<QuickNavMenu />, document.body)}
+          <HelpSection id={"HelpSection"} className={QUICK_NAV_ANCHOR} />
+          <div id={"Toc"} className={QUICK_NAV_ANCHOR}>
             <SummarySection />
             <TableOfContents />
           </div>

@@ -80,7 +80,7 @@ function OutlineSection(props: {
               paddingLeft: "0.1em",
             }}
           />
-          {` ${outline.mainOrth}`}
+          {` ${outline.mainKey}`}
         </span>
         <span
           dangerouslySetInnerHTML={{ __html: " " + outline.mainSection.text }}

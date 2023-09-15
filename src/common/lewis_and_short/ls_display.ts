@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { XmlChild, XmlNode } from "@/common/xml_node";
+import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import {
   CASE_ABBREVIATIONS,
   EDGE_CASE_HOVERS,
@@ -19,10 +19,11 @@ import {
   attachHoverText,
   handleAbbreviations,
   handleAbbreviationsInMessage,
-  findExpansions,
 } from "@/common/lewis_and_short/ls_styling";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
+import { findExpansions } from "@/common/abbreviations/abbreviations";
+import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
@@ -161,6 +162,12 @@ function displayHi(
     return new XmlNode("sup", [], [defaultDisplay(root, context)]);
   }
   // The only options are "ital" and "sup"
+  const firstChild = root.children[0];
+  if (firstChild !== undefined && typeof firstChild === "string") {
+    if (GRAMMAR_TERMS.has(firstChild)) {
+      return new XmlNode("span", [["class", "lsGrammar"]], [firstChild]);
+    }
+  }
   return new XmlNode(
     "span",
     [["class", "lsEmph"]],
@@ -972,7 +979,10 @@ export function formatSenseList(
     stack[stack.length - 1].children.push(
       new XmlNode(
         "li",
-        [["id", id]],
+        [
+          ["id", id],
+          ["class", "QNA"],
+        ],
         [
           new XmlNode(
             "span",
@@ -1028,7 +1038,7 @@ export function displayEntryFree(
   assert(rootNode.name === "entryFree");
   const root = sanitizeTree(rootNode);
   const idAttr = checkPresent(root.getAttr("id"));
-  const blurbId = idAttr + "blurb";
+  const blurbId = idAttr + ".blurb";
   const context: DisplayContext = {};
 
   const mainBlurbNodes: XmlChild[] = [
@@ -1075,7 +1085,14 @@ export function displayEntryFree(
   const attrs: [string, string][] = [["class", "lsEntryFree"]];
   attrs.push(["id", idAttr]);
   let result = new XmlNode("div", attrs, [
-    new XmlNode("div", [["id", blurbId]], mainBlurbNodes),
+    new XmlNode(
+      "div",
+      [
+        ["id", blurbId],
+        ["class", "QNA"],
+      ],
+      mainBlurbNodes
+    ),
     formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0), context),
   ]);
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);

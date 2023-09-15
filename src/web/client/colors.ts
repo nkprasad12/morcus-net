@@ -14,6 +14,7 @@ export namespace Solarized {
   export const magenta = "#d33682";
   export const violet = "#6c71c4";
   export const blue = "#268bd2";
+  export const navy = "#065ba2";
   export const cyan = "#2aa198";
   export const green = "#859900";
 }

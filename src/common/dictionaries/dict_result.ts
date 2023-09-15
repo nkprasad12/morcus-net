@@ -1,4 +1,4 @@
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import {
   matches,
   instanceOf,
@@ -27,7 +27,8 @@ export namespace OutlineSection {
 
 /** A pre-processed outline for a dictionary entry. */
 export interface EntryOutline {
-  mainOrth: string;
+  mainKey: string;
+  mainLabel?: string;
   mainSection: OutlineSection;
   senses?: OutlineSection[];
 }
@@ -35,7 +36,8 @@ export interface EntryOutline {
 export namespace EntryOutline {
   export const isMatch: (x: unknown) => x is EntryOutline =
     matches<EntryOutline>([
-      ["mainOrth", isString],
+      ["mainKey", isString],
+      ["mainLabel", maybeUndefined(isString)],
       ["mainSection", OutlineSection.isMatch],
       ["senses", maybeUndefined(isArray(OutlineSection.isMatch))],
     ]);

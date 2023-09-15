@@ -1,5 +1,5 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 
 describe("Dict Result API types", () => {
   test("isMatch returns false on raw node", () => {
@@ -37,7 +37,7 @@ describe("Dict Result API types", () => {
     const result = {
       entry: input,
       outline: {
-        mainOrth: "foooo",
+        mainKey: "foooo",
         mainSection: {
           text: "foo",
           level: 1,

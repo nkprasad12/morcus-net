@@ -1,7 +1,7 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { Solarized } from "@/web/client/colors";
+import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
-import { SelfLink } from "@/web/client/pages/dictionary/dictionary_utils";
 import { Box, Typography, Divider } from "@mui/material";
 import React from "react";
 
@@ -14,6 +14,7 @@ export function ContentBox(props: {
   mr?: string;
   noDivider?: true;
   id?: string;
+  className?: string;
 }) {
   const isSmall = props.isSmall;
 
@@ -33,6 +34,7 @@ export function ContentBox(props: {
       key={props.contentKey}
       ref={props.contentRef}
       id={props.id}
+      className={props.className}
     >
       <Typography
         component={"div"}

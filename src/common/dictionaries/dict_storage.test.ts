@@ -4,8 +4,8 @@ import Database from "better-sqlite3";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import { XmlNode } from "@/common/xml_node";
-import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
 console.debug = jest.fn();
 

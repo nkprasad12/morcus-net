@@ -11,6 +11,7 @@ import {
   SCROLL_JUMP,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { assertEqual } from "@/common/assert";
+import { Solarized } from "@/web/client/colors";
 
 class NavHelper {
   private readonly observer: IntersectionObserver;
@@ -28,18 +29,15 @@ class NavHelper {
             this.visible.delete(entry.target.id);
           }
         }
-        console.log(this.visible);
       },
       { threshold: [0.0] }
     );
-    document
-      .querySelectorAll(`[id^="${QUICK_NAV_ANCHOR}"]`)
-      .forEach((anchor, i) => {
-        this.observer.observe(anchor);
-        this.anchorIds.push(anchor.id);
-        assertEqual(this.idToIndex.get(anchor.id), undefined);
-        this.idToIndex.set(anchor.id, i);
-      });
+    document.querySelectorAll(`.${QUICK_NAV_ANCHOR}`).forEach((anchor, i) => {
+      this.observer.observe(anchor);
+      this.anchorIds.push(anchor.id);
+      assertEqual(this.idToIndex.get(anchor.id), undefined);
+      this.idToIndex.set(anchor.id, i);
+    });
   }
 
   scrollToNext() {
@@ -86,34 +84,32 @@ export function QuickNavMenu() {
 
   function OpenMenu() {
     return (
-      <>
-        <div>
-          <CloseIcon
-            onClick={() => setOpen(false)}
-            className="mobileNavButton"
-            aria-label="close quick navigation"
-          />
-          <TocIcon
-            onClick={() =>
-              document
-                .getElementById("DictResultsSummary")
-                ?.scrollIntoView(SCROLL_JUMP)
-            }
-            className="mobileNavButton"
-            aria-label="jump to entry"
-          />
-          <KeyboardArrowDown
-            onClick={() => navHelper.current?.scrollToNext()}
-            className="mobileNavButton"
-            aria-label="jump to next section"
-          />
-          <KeyboardArrowUp
-            onClick={() => navHelper.current?.scrollToPrevious()}
-            className="mobileNavButton"
-            aria-label="jump to previous section"
-          />
-        </div>
-      </>
+      <div style={{ backgroundColor: Solarized.base1 + "40" }}>
+        <KeyboardArrowUp
+          onClick={() => navHelper.current?.scrollToPrevious()}
+          className="mobileNavButton"
+          aria-label="jump to previous section"
+        />
+        <KeyboardArrowDown
+          onClick={() => navHelper.current?.scrollToNext()}
+          className="mobileNavButton"
+          aria-label="jump to next section"
+        />
+        <TocIcon
+          onClick={() =>
+            document
+              .getElementById("DictResultsSummary")
+              ?.scrollIntoView(SCROLL_JUMP)
+          }
+          className="mobileNavButton"
+          aria-label="jump to entry"
+        />
+        <CloseIcon
+          onClick={() => setOpen(false)}
+          className="mobileNavButton"
+          aria-label="close quick navigation"
+        />
+      </div>
     );
   }
 
@@ -125,6 +121,7 @@ export function QuickNavMenu() {
         <MenuOpenIcon
           onClick={() => setOpen(true)}
           className="mobileNavButton"
+          style={{ color: Solarized.base1 + "80" }}
           aria-label="expand quick navigation"
         />
       )}

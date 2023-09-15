@@ -1,9 +1,9 @@
 import fs from "fs";
 
 import { LewisAndShort } from "@/common/lewis_and_short/ls";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
-import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 
 console.debug = jest.fn();

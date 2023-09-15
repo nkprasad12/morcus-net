@@ -75,6 +75,10 @@ export const CORRECTIONS = new Map<string, string>([
     "Phrr. with <i>put</i> followed by <i>in</i>:",
     "<b>put ... in (phrases)</b>: Phrr. with <i>put</i> followed by <i>in</i>:",
   ],
+  [
+    "natural vocal expression</i>[**unclear phrase] (of birds): <f>VOX</f>[**or just plain vox?][**P2: ,]",
+    "natural vocal expression</i>[**unclear phrase] (of birds): vox",
+  ],
 ]);
 
 export const DASH_EDGE_CASES = new Map<string, string>([

@@ -94,10 +94,10 @@ export function About() {
           </Section>
           <Section name="Installation">
             <p>
-              morcus.net is also installable as a standalone app (meaning that
-              it will come with its own launcher icon, will not have clutter
-              from the browser search bar, will have some light extra theming,
-              and so on).
+              Morcus Latin Tools is also installable as a standalone app
+              (meaning that it will come with its own launcher icon, will not
+              have clutter from the browser search bar, will have some light
+              extra theming, and so on).
             </p>
             <p>
               Android users can get the app directly from the{" "}

@@ -1,7 +1,7 @@
 import React, { MutableRefObject } from "react";
 
 import { checkPresent } from "@/common/assert";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import {
   ClickableTooltip,
   SectionLinkTooltip,
@@ -9,8 +9,9 @@ import {
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { getGlobalSettings } from "@/web/client/components/global_flags";
+import { Navigation, RouteContext } from "@/web/client/components/router";
 
-export const QUICK_NAV_ANCHOR = "QNA-";
+export const QUICK_NAV_ANCHOR = "QNA";
 
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -67,10 +68,6 @@ export const HELP_ENTRY = new XmlNode(
   [],
   [HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
 );
-
-export function SelfLink(props: { to: string }) {
-  return <a href={props.to}>{props.to}</a>;
-}
 
 export function xmlNodeToJsx(
   root: XmlNode,
@@ -141,6 +138,22 @@ export function xmlNodeToJsx(
         key={key}
       />
     );
+  } else if (className === "dLink") {
+    const target = root.getAttr("to");
+    const text = root.getAttr("text");
+    const query = [target || "undefined", "SnH"];
+    function LinkContent() {
+      const nav = React.useContext(RouteContext);
+      return (
+        <span
+          className="dLink"
+          onClick={() => Navigation.query(nav, query.join(","))}
+        >
+          {text || "undefined"}
+        </span>
+      );
+    }
+    return <LinkContent />;
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";

@@ -8,7 +8,7 @@ import {
   displayTextForOrth,
   getOrths,
 } from "@/common/lewis_and_short/ls_orths";
-import { XmlNode } from "@/common/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 
 describe("rawOrths", () => {
   it("returns only expected orths", () => {

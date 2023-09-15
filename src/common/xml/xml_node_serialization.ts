@@ -1,6 +1,6 @@
 import { assert } from "@/common/assert";
-import { XmlChild } from "@/common/xml_node";
-import { XmlNode } from "@/common/xml_node";
+import { XmlChild } from "@/common/xml/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 function serialize(node: XmlNode): string {

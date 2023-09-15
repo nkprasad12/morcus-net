@@ -1,9 +1,9 @@
 // import zlib from "zlib";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
-import { parseEntries } from "@/common/lewis_and_short/ls_xml_utils";
 import { CANABA, HABEO } from "@/common/lewis_and_short/sample_entries";
-import { XmlNode } from "@/common/xml_node";
-import { XmlNodeSerialization } from "@/common/xml_node_serialization";
+import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { parseXmlStrings } from "./xml_utils";
 // import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 // const LEGACY: Serialization<XmlNode> = {
@@ -77,18 +77,18 @@ describe("XmlNode serialization", () => {
   });
 
   it("handles raw canaba case", () => {
-    const node = parseEntries([CANABA])[0];
+    const node = parseXmlStrings([CANABA])[0];
     expect(process(node)).toEqual(node);
   });
 
   it("handles processed canaba case", () => {
-    const rawNode = parseEntries([CANABA])[0];
+    const rawNode = parseXmlStrings([CANABA])[0];
     const node = displayEntryFree(rawNode);
     expect(process(node)).toEqual(node);
   });
 
   it("handles processed habeo case", () => {
-    const rawNode = parseEntries([HABEO])[0];
+    const rawNode = parseXmlStrings([HABEO])[0];
     const node = displayEntryFree(rawNode);
     expect(process(node)).toEqual(node);
   });
