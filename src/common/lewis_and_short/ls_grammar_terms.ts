@@ -3,6 +3,8 @@
 // Also want to connect "of thing;" with its preceding word
 
 export const GRAMMAR_TERMS = new Set([
+  "tandem",
+  "idem",
   "ut",
   "ad",
   "de",
