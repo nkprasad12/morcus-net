@@ -173,7 +173,7 @@ function ConfigurableStyles() {
           borderRadius: 4,
         },
         ".lsGrammar": {
-          backgroundColor: Solarized.magenta + modifiedStrength(28),
+          backgroundColor: Solarized.orange + modifiedStrength(22),
           borderRadius: 4,
         },
         ".lsOrth": {
