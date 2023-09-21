@@ -243,10 +243,10 @@ describe("SearchSettings", () => {
     expect(SearchSettings.retrieve()).toStrictEqual(LatinDict.AVAILABLE);
   });
 
-  it("filters list with experimental off", () => {
+  it("returns full list with experimental off", () => {
     const defaultValue = { experimentalMode: false };
     localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
-    expect(SearchSettings.retrieve()).toStrictEqual([LatinDict.LewisAndShort]);
+    expect(SearchSettings.retrieve()).toStrictEqual(LatinDict.AVAILABLE);
   });
 
   it("returns empty list for empty store", () => {
