@@ -24,11 +24,41 @@ function expand(
 }
 
 const SH_EXPANSIONS = AbbreviationTrie.forMap(
-  new Map<string, string>([expand("v.", "see", { postfix: " <f>" })])
+  new Map<string, string>([
+    expand("v.", "see", { postfix: " <f>" }),
+    ["abstr.", "abstract."],
+    ["Acta Syn. Dord.", "Acta Synodi Dordrechtensis."],
+    ["Ai.", "Ainsworth."],
+    ["Ains.", "Ainsworth."],
+    ["al.", "other(s)"],
+    ["al. leg.", "others read."],
+    ["ap.", "in"],
+    ["anat.", "anatomical."],
+    ["ant.", "antiquities."],
+    // "app." can also stand for apparently, but it is also used to abbreviate appono...
+    ["appy.", "apparently."],
+    ["appel.", "appellative."],
+    ["bot.", "botanical."],
+    ["Bau.", "Bauer."],
+    ["Blumen.", "Blumenbach."],
+  ])
 );
 
 const GENERIC_SH_HOVERS = AbbreviationTrie.forMap(
-  new Map<string, string>([["q. v.", "quod videas (look it up in that entry)"]])
+  new Map<string, string>([
+    ["q. v.", "quod videas (look it up in that entry)"],
+    ["act.", "active(ly)"],
+    ["abl.", "ablative"],
+    ["abs.", "absolute(ly); without case or adjunct."],
+    ["absol.", "absolute(ly); without case or adjunct."],
+    ["acc.", "accusative or according"],
+    ["adj.", "adjective(ly)"],
+    ["adv.,", " adverb., -ial, -ially; or, adversus."],
+    ["analog.", "analogous, -ly."],
+    ["arch.", "archaic, or architecture, -al"],
+    ["archit.", "architecture, -tural."],
+    // ["art., article[** .]"], -> Can we have a regular sentence ending with art.?
+  ])
 );
 
 export function expandShAbbreviationsIn(input: string): string {
