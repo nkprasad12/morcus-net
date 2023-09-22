@@ -1,9 +1,13 @@
+// // @ts-ignore
+// import { betaCodeToGreek } from "beta-code-js";
 import { assert, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import fs from "fs";
 
 const CONTENT_PATH = ["text", "body", "div"];
+// For the commentary.
+// const CONTENT_PATH = ["text", "body"];
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
 
 interface DocumentInfo {
@@ -67,8 +71,8 @@ function findTextParts(teiRoot: XmlNode): string[] {
   const result: string[] = [];
   for (const refState of refsDeclTei.children) {
     const node = XmlNode.assertIsNode(refState);
-    assert(node.name === "refState", node.toString());
-    result.push(checkPresent(node.getAttr("unit")));
+    assert(["refState", "step"].includes(node.name), node.toString());
+    result.push(checkPresent(node.getAttr("unit") || node.getAttr("refunit")));
   }
   return result;
 }
@@ -110,6 +114,72 @@ function findTextParts(teiRoot: XmlNode): string[] {
 //   }
 //   for (const child of root.children) {
 //     printPoem(XmlNode.assertIsNode(child));
+//   }
+// }
+
+// Code for the commentary
+// export function extractChildContent(child: XmlChild): string {
+//   if (typeof child === "string") {
+//     return child
+//       .replace(/-\n\s*/g, "")
+//       .replaceAll("\n", "")
+//       .replace(/\s+/g, " ");
+//   }
+//   if (child.name === "foreign") {
+//     assertEqual(child.getAttr("lang"), "greek");
+//     assertEqual(child.children.length, 1);
+//     return betaCodeToGreek(extractChildContent(child.children[0]));
+//   }
+//   if (child.name === "pb") {
+//     return " ";
+//   }
+//   if (child.name === "hi") {
+//     const rend = child.getAttr("rend");
+//     const text = child.children.map(extractChildContent).join(" ");
+//     if (rend === "caps") {
+//       return text.toUpperCase();
+//     } else if (rend === "italics") {
+//       return `<i>${text}</i>`;
+//     }
+//     throw new Error("Unknown rend: " + rend);
+//   }
+//   throw new Error("Unknown child: " + child.name);
+// }
+
+// export function printCommline(root: XmlNode) {
+//   assert(root.children.length === 1);
+//   const content = XmlNode.assertIsNode(root.children[0]);
+//   assert(content.name === "p");
+//   console.log(content.children.map(extractChildContent).join(" "));
+// }
+
+// export function printCommentaryPart(root: XmlNode) {
+//   for (const child of root.children) {
+//     const node = XmlNode.assertIsNode(child);
+//     if (node.name === "head") {
+//       console.log(XmlNode.getSoleText(node));
+//       console.log("\n");
+//       continue;
+//     }
+//     assert(node.name === "div2");
+//     assert(node.getAttr("type") === "commline");
+//     console.log(`\nLine ${node.getAttr("n")}`);
+//     printCommline(node);
+//   }
+// }
+
+// export function printCommentary(root: XmlNode) {
+//   for (const child of root.children) {
+//     const node = XmlNode.assertIsNode(child);
+//     if (node.name === "head") {
+//       console.log(XmlNode.getSoleText(node));
+//       console.log("\n");
+//       continue;
+//     }
+//     assert(node.name === "div1");
+//     assert(node.getAttr("type") === "poem");
+//     console.log(`\n*****\nPoem: ${node.getAttr("n")}\n*****`);
+//     printCommentaryPart(node);
 //   }
 // }
 
