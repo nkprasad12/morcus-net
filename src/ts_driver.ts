@@ -5,8 +5,8 @@ import { parse } from "@/common/lewis_and_short/ls_parser";
 import { LS_PATH } from "@/common/lewis_and_short/ls_scripts";
 import { findTextNodes } from "@/common/lewis_and_short/ls_write";
 import { Tally } from "@/common/misc_utils";
-import { XmlNode } from "@/common/xml/xml_node";
 import * as dotenv from "dotenv";
+import { XmlNode } from "@/common/xml/xml_node";
 
 dotenv.config();
 
@@ -51,6 +51,37 @@ export function schemataCounts() {
 }
 
 // schemataCounts();
+export function printLsSchema(): void {
+  let pbs = 1;
+  let cbs = 1;
+  for (const entry of parse(LS_PATH)) {
+    const queue: XmlNode[] = [entry];
+    while (queue.length > 0) {
+      const current = queue.pop()!;
+      if (current.name === "pb") {
+        cbs = 0;
+        pbs += 1;
+      } else if (current.name === "cb") {
+        cbs += 1;
+      } else if (current.name === "foreign" && current.children.length === 0) {
+        console.log(`P${pbs},C${cbs} ${entry.getAttr("key")}`);
+      }
+      current.children
+        .filter((child) => typeof child !== "string")
+        .map((x) => XmlNode.assertIsNode(x))
+        .reverse()
+        .forEach((x) => queue.push(x));
+    }
+    for (const foreign of entry.findDescendants("foreign")) {
+      if (foreign.children.length === 0) {
+      }
+    }
+  }
+}
+
+printLsSchema();
+// const root = parseTeiXml(DOC_PATH);
+// console.log(root);
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);

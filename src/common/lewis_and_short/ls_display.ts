@@ -190,7 +190,7 @@ foreign:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayForeign(
+export function displayForeign(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -198,9 +198,12 @@ function displayForeign(
   assert(root.name === "foreign");
   if (root.attrs.length === 0) {
     return attachHoverText(
-      "[omitted from digitization]",
+      "[omitted]",
       "Usually for text in Hebrew or Etruscan scripts"
     );
+  }
+  if (root.getAttr("lang") === "he") {
+    return new XmlNode("span", [["dir", "rtl"]], [XmlNode.getSoleText(root)]);
   }
   return defaultDisplay(root, context, ["cb", "reg"]);
 }
