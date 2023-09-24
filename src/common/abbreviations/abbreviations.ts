@@ -45,11 +45,14 @@ export namespace AbbreviationTrie {
   }
 }
 
-export function areExpansionsDisjoint(expansions: TextExpansion[]) {
-  const intervals: [number, number][] = expansions.map((e) => [
-    e[0],
-    e[0] + e[1],
-  ]);
+// type Partition = { min: number; max: number; items: Set<TextExpansion> };
+
+// export function clusterExpansions(expansions: TextExpansion[]) {
+//   const partitions: Partition[] = [];
+//   const newItem =
+// }
+
+function areIntervalsDisjoint(intervals: [number, number][]): boolean {
   intervals.sort((a, b) => a[0] - b[0]);
   for (let i = 0; i < intervals.length - 1; i++) {
     if (intervals[i][1] >= intervals[i + 1][0]) {
@@ -57,6 +60,14 @@ export function areExpansionsDisjoint(expansions: TextExpansion[]) {
     }
   }
   return true;
+}
+
+export function areExpansionsDisjoint(expansions: TextExpansion[]): boolean {
+  const intervals: [number, number][] = expansions.map((e) => [
+    e[0],
+    e[0] + e[1],
+  ]);
+  return areIntervalsDisjoint(intervals);
 }
 
 export function findExpansions(
