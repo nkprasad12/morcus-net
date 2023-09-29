@@ -1,0 +1,619 @@
+/*
+Aem. Mac.                    Aemilius Macer, <i>poet</i>,                     obiit B.C.  16
+
+Afran.                       Lucius Afranius, <i>writer of
+                               comedy</i>,                                  flor.   "   94
+
+Aggen.                       Aggenus Urbicus, <i>writer on husbandry</i>,                circa A.D. 4th cent.
+
+Albin.                       C. Pedo Albinovanus, <i>poet</i>,                  "   A.D.   8
+
+Alcim.                       Alcimus Avitus, <i>Christian
+                               writer</i>,                                    "    "   360
+
+Alfen.                       P. Alfenus Varus, <i>lawyer</i>,                   "   B.C.  22
+
+Amm.                         Ammianus Marcellinus, <i>hist.</i>,                "   A.D. 380
+
+Ampel.                       L. Ampelius, <i>hist.</i>                   about       "   300
+
+Apic.                        Apicius Coelius, <i>writer on
+                               cookery</i> (date of work unknown).
+
+Apul., Appul., App.          Lucius Apuleius, <i>philosopher</i>,               "    "   150
+                               (Ed. Delph.).
+
+" Apol., Apologia <i>or</i> De Magia.
+" Flor., Florida.
+" Met. <i>or</i> M., Metamorphoses.
+" Trism., Trismegistus.
+
+Apul., App.                  L. Apuleius Barbarus, <i>botanical writer</i>,        about  "    "   350
+
+" Herb., Herbarium.
+
+Arn., Arnob.                 Arnobius Afer, <i>Chr. writer</i>,                  "    "   297
+
+Ascon.                       Q. Asconius Pedianus, <i>grammarian</i>,           "    "    40
+
+Asin.                        C. Asinius Pollio, <i>orator and hist.</i>                                     ob.   "     4
+
+Att. <i>or</i> Acc.                 L. Attius <i>or</i> Accius, <i>writer of tragedy</i>,                   fl.  B.C. 130
+
+Auct. B. Afr.                Auctor Belli Africani.
+
+Auct. B. Alex.               Auctor Belli Alexandrini.
+
+Auct. B. Hisp.               Auctor Belli Hispaniensis.
+
+Auct. Har. resp.             Auctor de Haruspicum responsis (a speech usu. attributed to Cicero).
+
+Auct. pro Dom.               Auctor pro Domo sua (a speech usu. attributed to Cicero).
+
+Auct. Her.                   Auctor ad Herennium, <i>rhet.</i>
+
+Auct. Pervig. Ven.           Auctor Pervigilii Veneris.
+
+Aug.                         Aurelius Augustinus, <i>Christian writer</i>,                                   ob.  A.D. 430
+
+" Civ. D., de Civitate Dei.
+
+August.                      Caesar Octavianus Augustus,                   "    "    14
+
+Aur. Vict.                   Sextus Aurelius Victor, <i>hist.</i>              fl.   "   358
+
+Aus.                         D. Magnus Ausonius, <i>poet</i>,                   "    "   350
+
+" Ecl., Eclogarium.
+" Ep., Epistolae.
+" Epigr., Epigrammata.
+" Epit., Epitaphia.
+" Grat. Act., Gratiarum Actio.
+" Idyll., Idyllia. <i>or</i> Edyllia.
+" Parent., Parentalia.
+" Per., Periochae.
+" Prof., Professores.
+" Sap., Sapientes.
+
+Avien.                       R. Festus Avienus, <i>poet</i>,                    "    "   370
+
+Boëth.                       Anicius Manl. Torq. Severinus Boëthius, <i>phil.</i>                          ob.   "   524
+
+Brut.                        M. Junius Brutus,                             "   B.C.  42
+
+Caecil.                      Caecilius Statius, <i>writer of comedy</i>,                                    "    "   168
+
+Caes.                        Caius Julius Caesar, <i>hist.</i>                  "    "    44
+
+" B. C., Bellum Civile.
+" B. G., Bellum Gallicum.
+
+Callistr.                    Callistratus, <i>lawyer</i>,                      fl.  A.D. 200
+
+Calp.                        T. Julius Calpurnius, <i>poet</i>,             perh. about  "    "   285
+
+Cap. <i>or</i> Mart. Cap.           Martianus Mineus Felix Capella, <i>encyclopaedist</i>,                    about fl.   "   480
+*/
+-----File: a0009r.png------------------------------------------------------
+/*
+
+Capitol.                     Julius Capitolinus, <i>biographer</i>,         about fl.  A.D. 293
+
+Cass. Hem.                   L. Cassius Hemina, <i>hist.</i>                    "   B.C. 140
+
+Cassiod.                     M. A. Cassiodorus, <i>hist.</i>                   ob.  A.D. 562
+
+Cato                         M. Porcius Cato, <i>orator and hist.</i>           "   B.C. 149
+
+" R. R., De Re rustica.
+
+Cat.                         C. Valerius Catullus, <i>poet</i>,                fl.   "    55
+
+Cels.                        A. Cornelius Celsus, <i>physician</i>,               perh.  "  A.D.   25
+
+Censor.                      Censorinus, <i>chronologist</i>,                    "    "   238
+
+Charis.                      Flavius Sosipater Charisius, <i>grammarian</i>,          "    "   400
+
+Cic.                         M. Tullius Cicero, <i>orator and philosopher</i>,          ob.  B.C.  43
+
+" Acad., Academicae Quaestiones.
+" Aem. Scaur., Oratio pro Aemilio Scauro (Frag.).
+" Agr., Orationes de lege Agraria.
+" Am., de Amicitia. <i>or</i> Laelius.
+" Arat., transl. of Aratus.
+" Arch., Oratio pro Archia.
+" Att., Epistolae ad Atticum.
+" Balb., Oratio pro L. Corn. Balbo.
+" Brut., Brutus seu de Claris Oratoribus.
+" ad Br., Epistolae ad Brutum.
+" Caecin., Oratio pro Caecina.
+" Cat., Orationes in Catilinam.
+" Clod. et Cur., Oratio in Clodium et Curionem (Frag.)
+" Cl. <i>or</i> Clu., Oratio pro Cluentio.
+" Coel., Oratio pro M. Coelio.
+" Deiot., Oratio pro Rege Deiotaro.
+" Div., De Divinatione.
+" Div. in Caecil. <i>or</i> Div. Verr., Divinatio in Caecilium.
+" Dom., Oratio pro Domo.
+" Fam., Epistolae ad Familiares.
+" Fat., De Fato.
+" Fin., de Finibus.
+" Flac. <i>or</i> Fl., Oratio pro L. Flacco.
+" Font., Oratio pro M. Fonteio.
+" Fragm. <i>or</i> Fr., Fragmenta.
+" Inv., De Inventione.
+" Leg., De Legibus.
+" Lig., Oratio pro Ligario.
+" Man. <i>or</i> Manil., Oratio pro lege Manilia.
+" Marcell., Oratio pro Marcello.
+" Mil., Oratio pro Milone.
+" Mur., Oratio pro L. Murena.
+" N. D., De Natura Deorum.
+" Off., De Officiis.
+" Opt. Gen., De Optimo Genere Oratorum.
+" Or., Orator. ad M. Brutum.
+" De Or., De Oratore.
+" Par., Paradoxa.
+" Part. Or., Partitiones Oratoriae.
+" Phil., Orationes Philippicae.
+" Pis., Oratio in Pisonem.
+" Planc. <i>or</i> Pl., Oratio Pro Plancio.
+" Prov. Cons., De Provinciis Consularibus.
+" Quint., Oratio pro P. Quintio.
+" Q. Fr., Epistolae ad Q. Fratrem.
+" Rab. Perd. <i>or</i> C. Rab., Oratio Pro Rabirio perduellionis reo.
+" Rab. Post., Oratio pro Rabirio Postumo.
+" Rosc. Am. <i>or</i> R. Am., Oratio pro Roscio Amerino.
+" Rosc. Com. <i>or</i> R. Com., Oratio pro Roscio Comoedo.
+" Rep., De Republica.
+" De Sen. <i>or</i> Sen., De Senectute <i>or</i> Cato Major.
+" Sest. <i>or</i> Sext., Oratio pro Sestio (Sextio).
+" Sull., Oratio pro Sulla.
+" Top., Topica.
+" Tull., Oratio pro. M. Tullio (Frag.).
+" Tusc., Disputationes Tusculanae.
+" Tim., Timaeus <i>or</i> De Universo.
+" Vatin., Oratio in Vatinium.
+" Verr., Orationes in Verrem. 
+" Div. Verr., Orationes in Verrem. 
+" Verr. Act., Orationes in Verrem. 
+
+Claud.                       Claudius Claudianus, <i>poet</i>,                  fl.  A.D. 395
+
+Cod.                         Codex.
+
+" Greg., Gregorianus.
+" Hermog., Hermogenianus.
+" Just., Justinianus.
+" Theod., Theodosianus.
+
+Coel. Aurel.                 Coelius Aurelianus, <i>physician</i>,           (date uncertain, but not later than 3rd cent. A.D.).
+
+" Acut., Acutae Passiones.
+" Tard., Tardae Passiones.
+*/
+-----File: a0010l.png------------------------------------------------------
+/*
+
+Col.                              L. Jul. Moderatus Columella, <i>writer on husbandry</i>,                              fl.  A.D.  20
+
+ "  Arb., De Arboribus.
+
+Commod.                      Commodianus, <i>Chr. poet</i>,                                                              "     "  270
+
+Coripp.                      Fl. Cresconius Corippus, <i>poet and grammarian</i>,                                        "     "  566
+
+Curt.                        Q. Curtius Rufus, <i>hist.</i> prob. 1st cent. A.D.; acc. to Buttmann,                      "     "   69
+
+Cypr.                        Thascius Caecilius Cyprianus, <i>Chr. writer</i>,                                     ob.    "  258
+
+Dig.                         Digesta, <i>i. e.</i> libri Pandectarum
+
+Diom.                        Diomedes, <i>grammarian</i>, prob. 5th cent. A.D.
+
+Donat. <i>or</i> Don.             Aelius Donatus, <i>grammarian and commentator</i>,                                        fl.    "   350
+
+Eccl.                        Scriptores Ecclesiastici.
+
+Enn.                         Q. Ennius, <i>poet</i>,                                                                   ob.  B.C.  169
+
+Eutr.                        Flavius Eutropius, <i>hist.</i>                                                           fl.  A.D.  360
+
+Fenest.                      L. Fenestella, <i>hist.</i>                                                               ob.  A.D.   21
+
+Fest.                        Sext. Pompeius Festus, <i>grammarian</i>,        4th cent. A.D.
+
+Firm.                        Julius Firmicus Maternus, <i>mathematician</i>,                                           fl.    "   340
+
+Flor.                        L. Annaeus Florus, <i>hist.</i>                                                            "     "   115
+
+Fronto <i>or</i> Front.           M. Cornelius Fronto, <i>orator</i>,                                                        "     "   150
+
+Frontin. <i>or</i> Front.         S. Julius Frontinus, <i>writer De Strategematis</i>, <i>de Aquaeductibus</i>, etc.             ob.    "   106
+
+Fulg.                        Fabius Planciades Fulgentius, <i>grammarian</i>,        6th cent. A.D.
+
+Gai. <i>or</i> Cai.           Gaius <i>or</i> Caius, <i>lawyer</i>,                                                              fl.    "   160
+
+Gall.                  C. Cornelius Gallus, <i>poet</i>,                                                               ob.  B.C.   26
+
+Gell.                  Aulus Gellius, <i>gram.</i>, etc.                                                               fl.  A.D.  150
+
+Gloss.                 Glossarium.
+
+" Cyril., Cyrilli.
+" Philox., Philoxem.
+
+Grat. Falisc.          Gratius Faliscus, <i>poet</i>,                                                                   fl.  B.C.   6
+
+Hier.                  Hieronymus (Jerome), <i>Chr. writer</i>,                                                         ob.  A.D. 420
+
+Hirt.                  Aulus Hirtius, <i>hist.</i>                                                                       "   B.C.  43
+
+Hor.                   Q. Horatius Flaccus, <i>poet</i>,                                                                 "     "    8
+
+" A. P., Ars Poetica.
+" Carm. Sec., Carmen Seculare.
+" Ep., Epistolae.
+" Epod., Epodi.
+" Od., Odae.
+" S., Satirae.
+
+Hyg.                   C. Julius Hyginus, <i>poet and fabulist</i>,                                                      fl.  A.D.  4
+
+" Ast., Astronomia.
+" F., Fabellae.
+
+Hyg.                   Hyginus Gromaticus, <i>writer on surveying</i>,                                                      "  "  110
+
+Inscr.                 Inscriptiones.
+
+" Don., Donii.
+" Fabr., Fabretti.
+" Graev., Graevii.
+" Grut., Gruteri.
+" Gud., Gudii.
+" Maff., Maffeii.
+" Murat., Muratorii.
+" Orell., Orelli.
+" Rein., Reinesii.
+
+Isid.                  Isidorus Hispalensis, <i>gram.</i>                                                                    ob.  "  636
+
+" Orig., Origines.
+
+Jabol.                 Jabolenus <i>or</i> Javolenus Priscus, <i>lawyer</i>,                                                 fl.  "  120
+
+Jornand.               Jornandes, <i>hist.</i>                                                                         about   "  "  550
+
+Julian.                Salvius Julianus, <i>lawyer</i>,                                                                      "   "   148
+
+Just.                  Justinus, <i>hist.</i>          (date unknown)
+
+Justin. <i>or</i> Just.            Justinianus, <i>emperor</i>,                                                                  ob.  "   565
+
+Juv.                   D. Junius Juvenalis, <i>poet</i>,                                                                    fl.   "   82
+
+Laber.                 C. Decius Laberius, <i>mimographer</i>,                                                              ob.   "   43
+
+Lact.                  L. Coelius Lactantius Firmianus, <i>Chr. writer</i>,                                                 fl.   "  301
+
+Lampr.                  Aelius Lampridius, <i>hist.</i>              about      "       "   293
+
+Leg. XII. Tab.         Leges duodecim tabularum,                                                                             "  B.C.  450
+
+Liv.                    Titus Livius Patavinus, <i>hist.</i>                                                               ob.  A.D.   17
+
+Liv. Andron.            Livius Andronicus, <i>writer of tragedy</i>,                                                       fl.  B.C.  240
+
+Lucan.                 M. Annaeus Lucanus, <i>poet</i>,                                                                    ob.  A.D.   65
+
+Lucil.                 C. Ennius Lucilius, <i>satirist</i>,                                                                 "   B.C.  103
+*/
+-----File: a0010r.png------------------------------------------------------
+/*
+
+Lucr.                  T. Lucretius Carus, <i>poet and philosopher</i>,         about  ob.  B.C.  50
+
+M. Corvin.             Messala Corvinus, <i>hist.</i>                               fl.   "    10
+
+Macr.                  Aur. Theodosius Macrobius, <i>critic</i>,                    fl.  A.D. 395
+
+ " Sat. <i>or</i> S., Saturnalia.
+ " Somn. Scip., Somnium Scipionis.
+
+Mamert.                Claudius Mamertinus, <i>panegyrist</i>,                       "    "   290
+
+Manil.                 M. Manilius, <i>poet</i>,                                     "    "    16
+
+Marc.                  Aelius Marcianus, <i>lawyer</i>,                              "    "   230
+
+Marc. Emp.             Marcellus Empiricus, <i>physician</i>,                        "    "   400
+
+Mart.                  M. Valerius Martialis, <i>poet</i>,                          ob.   "   104
+
+Mela.                  Pomponius Mela, <i>geographer</i>,                           fl.   "    45
+
+Min. Fel.              Minutius Felix, <i>Chr. writer</i>,                           "    "   230
+
+Modest.                Herennius Modestinus, <i>lawyer</i>,                          "    "   230
+
+Naev.                  C. Naevius, <i>poet</i>,                                     ob.  B.C. 202
+
+Nemes.                 M. Aur. Olympius Nemesianus, <i>poet</i>,                    fl.  A.D. 288
+
+Nep.                   Cornelius Nepos, <i>biographer</i>,                           "   B.C.  44
+
+Nigid.                 P. Nigidius Figulus, <i>philos.</i>                           "    "    64
+
+Novat.                 Novatianus, <i>Chr. writer</i>,                               "   A.D. 251
+
+Non.                   Nonius Marcellus, <i>gram.</i>          between 2nd and 5th cent. A.D.
+
+Obseq.                      Julius Obsequens, <i>writer De Prodigiis</i>.
+
+Ov.                              P. Ovidius Naso, <i>poet</i>,                      ob.   "    18
+
+ " A. A., Ars Amatoria.
+ " Am., Amores.
+ " Cons., Consolatio.
+ " Fast. <i>or</i> F., Fasti.
+ " Hal., Halieuticon.
+ " H., Heroides.
+ " Ib., Ibis.
+ " Med., Medicamina.
+ " M., Metamorphoses.
+ " Nux, Nux Elegia.
+ " Pont., Epistolae ex Ponto.
+ " R. Am., Remedia Amoris.
+ " Tr., Tristia.
+
+Pac. <i>or</i> Pacuv.              M. Pacuvius, <i>writer of Tragedy</i>,                fl.  B.C. 154
+
+Pacat.                      Latinus Pacatus Drepanius, <i>panegyrist</i>,            "   A.D. 391
+
+Pall.                       Palladius Rutilius Taurus, <i>writer on husbandry</i>,        perh. about  "  "  350
+
+Papin.                      Aemilius Papinius, <i>lawyer</i>,                        "    "   200
+
+Paul.                       Julius Paullus, <i>lawyer</i>,                           "    "   210
+
+Paul. Nol.                  Pontius Paulinus Nolanus, <i>Chr. writer</i>,           ob.   "   431
+
+Paul. Vict.                 Paulus Victor, <i>topographer</i>,                      fl.   "   390
+
+Pers.                       A. Persius Flaccus, <i>satirist</i>,                    ob.   "    62
+
+Petr.                       T. Petronius Arbiter, <i>satirist</i>,                   "    "    66
+
+Phaedr.                     Phaedrus, <i>fabulist</i>,                              fl.   "    15
+
+Plaut. <i>or</i> Pl.               T. Maccius Plautus, <i>writer of comedy</i>,          ob.  B.C. 184
+
+     " Amph. <i>or</i> Am., Amphitruo.
+     " Asin. <i>or</i> As., Asinaria.
+     " Aul., Aulularia.
+     " Bacch. or Bac., Bacchides.
+     " Capt., Capteivei.
+     " Cas., Casina.
+     " Cist., Cistellaria.
+     " Curc., Curculio.
+     " Epid., Epidicus.
+     " Men., Menaechmei.
+     " Merc., Mercator.
+     " Mil., Miles Gloriosus.
+     " Most., Mostellaria.
+     " Pers., Persa.
+     " Poen., Poenulus.
+     " Ps., Pseudolus.
+     " Rud., Rudens.
+     " Stich., Stichus.
+     " Trin., Trinumus.
+     " Truc., Truculentus
+
+Plin.                  C. Plinius Secundus (major),                                 ob.  A.D.  79
+
+     " H. N., Naturalis Historia. (Ed. Ian.; Teubner.)
+
+Plin.                  C. Plinius Caecilius Secundus (minor),                       fl.   "   100
+
+     " Ep., Epistolae. (Ed. Gierig)
+     " Pan., Panegyricus.
+
+Plin. Val.             Plinius Valerianus, <i>physician</i> 3rd century; or, acc. to others,           "  "  500
+
+Pompon.                Sextus Pomponius, <i>lawyer</i>,                                    "   "   138
+*/
+-----File: a0011l.png------------------------------------------------------
+/*
+
+Porc. Latro.           M. Porcius Latro, <i>rhetorician</i>,           fl.  B.C.  17
+
+Prisc.                 Priscianus, <i>grammarian</i>,                   "   A.D. 440
+                          (Ed. Keil.).
+
+Prob.                  M. Valerius Probus, <i>grammarian</i> (date uncertain).
+
+Prop.                  Sex. Aurelius Propertius, <i>poet</i>,           "   B.C.  30
+
+Prud.                  Aurel. Prudentius Clemens, <i>Chr. poet</i>,          "   A.D. 397
+
+Ps.-Quint.             Pseudo-Quintilianus; the author (or authors) unknown.
+
+     " Decl., Declamationes.
+
+Publ. Syr.             Publius Syrus, <i>mimographer</i>,              "    B.C.  44
+
+Q. Cic.                Quintus Cicero, brother of Tullius,        ob.   "    43
+
+    " Pet. Consul., De Petitione Consulatus.
+
+Quint.                 M. T. Quintilianus, <i>rhetorician</i>,         "   A.D.  118
+
+Ruf.                   Sextus Rufus, <i>hist.</i>                     fl.   "    364
+
+Rutil.                 Claudius Rutilius Numatianus, <i>poet</i>,         "    "    410
+
+Sall.                  C. Sallustius Crispus, <i>hist.</i>            ob.  B.C.   34
+
+ " C., Catilina. 
+ " Hist., Historia. (Frag.)
+ " J., Jugurtha.
+
+Salv.                  Salvianus, <i>Chr. writer</i>,                 fl.  A.D.  475
+
+Scaev.                 Q. Mucius Scaevola, <i>lawyer</i>,             ob.  B.C.   82
+
+Scrib.                 Scribonius Largus, <i>physician</i>,           fl.  A.D.   43
+
+Scrr. Eccl.            Scriptores Ecclesiastici.
+
+  " Gram.,        "       Grammatici. (Ed. Putch and Lindemann.)
+  " Gromat.,        "       Gromatici. (Ed. Goes.)
+  " R. R.,        "       rei rusticae (Ed. Bipont.)
+
+Sedul.                  Coelius Sedulius, <i>Chr. poet</i>,             "    "   450
+
+Sen.                    M. Annaeus Seneca, <i>rhetorician</i>,          "    "    15
+
+  " Contr., Controversiae.
+  " Suas., Suasoriae.
+
+Sen.                    L. Annaeus Seneca, <i>philosopher</i>,         ob.   "    65
+
+  " Ben., De Beneticiis.
+  " Brev. Vit., De Brevitate Vitae.
+  " Clem., de Clementia.
+  " Cons. ad Helv., Consolatio ad Helviam.
+  " Cons. ad Marc., Consolatio ad Marciam.
+  " Cons. ad Poly., Consolatio ad Polybium.
+  " Const., De Constantia Sapientis.
+  " Ep., Epistolae.
+  " Ira <i>or</i> Ir., de Ira.
+  " Mort. Claud., De Morte Claudii Caes.
+  " N. Q., Naturales Questiones.
+  " Ot. Sap., De Otio Sapientis.
+  " Prov., De Providentia.
+  " Tranq., De Tranquillitate Anim.
+  " Vit. Beat., De Vita Beata.
+
+Sen.                  L. Annaeus Seneca, <i>writer of tragedy</i> (acc. to some, identical with the philosopher).
+
+  " Agam., Agamemnon.
+  " Herc. Fur., Hercules Furens.
+  " Herc. Oet., Hercules Oetaeus.
+  " Hippol., Hippolytus.
+  " Med., Medea.
+  " Octav., Octavia.
+  " Oedip., Oedipus.
+  " Phoen., Phoenissae (or Thebais)
+  " Thyest., Thyestes.
+  " Troad., Troades.
+
+Ser. Samm.             Q. Serenus Sammonicus, <i>physician</i>,              "  "  212
+
+Serv.                  Servius Maurus Honoratus, <i>grammarian</i>,        fl.  "  395
+
+Sev.                   Cornelius Severus, <i>poet</i>,                       "  "   10
+
+Sic. Fl.               Siculus Flaccus, <i>writer on surveying</i>,          "  "  100
+
+Sid., Sidon.           Sidonius Apollinaris, <i>Christian writer</i>,        ob.  "  482
+*/
+-----File: a0011r.png------------------------------------------------------
+/*
+
+Sil.                    C. Silius Italicus, <i>poet</i>,                  ob.  A.D.  100
+
+Sisenn.                 L. Cornelius Sisenna, <i>hist. and orator</i>,        fl.  B.C.   78
+
+Sol.                    C. Julius Solinus, <i>gram.</i>                    "   A.D.  238
+
+Spart.                  Aelius Spartianus, <i>biographer</i>,              "    "    293
+
+Stat.                   P. Papinius Statius, <i>poet</i>,                  "    "     87
+
+  " Ach., Achilleis.
+  " Silv. <i>or</i> S., Silvae.
+  " Theb. <i>or</i> Th., Thebais.
+
+Suet.                   C. Suetonius Tranquillus, <i>biographer</i>,         "    "    116
+
+Sulp.                   Sulpicius Severus, <i>Christian writer</i>,        "    "    400
+
+Symm.                   Q. Aurelius Symmachus, <i>orator</i>, etc.         "    "    395
+
+Tac.                    C. Cornelius Tacitus, <i>hist.</i>         perh.  ob.   "    118
+
+  " A., Annales.
+  " Agr., Agricola.
+  " G., Germania.
+  " H., Historia.
+  " Or., De Oratoribus.
+
+Ter.                         P. Terentius Afer, <i>writer of comedy</i>,        "   B.C.  159
+
+  " Ad., Adelphi.
+  " And., Andria.
+  " Eun., Eunuchus.
+  " Heaut., Heautontimorumenos.
+  " Hec., Hecyra.
+  " Ph., Phormio.
+
+Ter. Maur.              Terentianus Maurus, <i>gram.</i>                         fl.  A.D.  100
+
+Tert.                   Q. Septimius Florens Tertullianus, <i>Chr. writer</i>,         "    "    195
+
+Theod. Prisc.           Theodorus Priscianus, <i>physician</i>,                   "    "    397
+
+Tib.                    Albius Tibullus, <i>poet</i>,                            ob.  B.C.   18
+
+Titinn.                 Titinnius, <i>writer of comedy</i>,                      fl.   "    170
+
+Treb. Poll.             Trebellius Pollio, <i>hist.</i>                           "   A.D.  320
+
+Turp.                   Sextus Turpilius, <i>writer of comedy</i>,               ob.  B.C.  101
+
+Ulp.                    Domitius Ulpianus, <i>lawyer</i>,                         "   A.D.  228
+
+Val. Cato.              Valerius Cato, <i>poet</i>,                        about fl.  B.C.   80
+
+Val. Fl.                C. Valerius Flaccus, <i>poet</i>,                         "   A.D.   70
+
+Val. Max.               Valerius Maximus, <i>hist.</i>                            "    "     26
+
+Varr.                   M. Terentius Varro, <i>writer on husbandry</i>, etc.        ob.  B.C.   28
+
+  " L. L., De Lingua Latina. (Ed. Müller 1833).
+  " R. R., De Re Rustica.
+
+Veg.           F. Renatus Vegetius, <i>writer De Re Militari</i>,                fl.  A.D.  386
+
+Veg.           P. Vegetius Renatus, <i>writer De Re Veterinaria</i>         (his date is uncertain, but was long subsequent to that of the preceding author).
+
+Vell.          C. Velleius Paterculus, <i>hist.</i>                               "    "     30
+
+Venant.        Venantius Fortunatus, <i>Chr. poet</i>,                            "    "    600
+
+Ver. Flac.        Verrius Flaccus, <i>gram.</i>                                      "   B.C.   20
+
+Virg.          P. Virgilius Maro, <i>poet</i>,                                   ob.  B.C.   19
+
+  " Aen., Aeneis.
+  " Cat., Catalecta.
+  " Cir., Ciris.
+  " Cop., Copa.
+  " E., Eclogae.
+  " G., Georgica.
+  " Mor. <i>or</i> M., Moretum.
+
+Vitr.          Vitruvius Pollio, <i>writer on architecture</i>,                  fl.   "    20
+                     (Ed. Schneider.).
+
+Vop.           Flavius Vopiscus, <i>hist.</i>                                     "   A.D. 306
+
+Vulc. Gall.           Vulcatius Gallicanus, <i>historian</i>,              about  "    "   292
+
+Vulg.          Biblia Vulgatae Editionis.
+*/
