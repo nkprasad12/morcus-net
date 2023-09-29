@@ -6,7 +6,7 @@ export function getOutline(entry: ShEntry, id: number): EntryOutline {
   const senses: OutlineSection[] = entry.senses.map((sense, j) => ({
     level: sense.level,
     ordinal: sense.bullet,
-    text: sense.text.substring(0, 50),
+    text: chooseOutlineText(sense.text, 50),
     sectionId: `sh${id}.${j}`,
   }));
   return {
@@ -15,7 +15,7 @@ export function getOutline(entry: ShEntry, id: number): EntryOutline {
     mainSection: {
       level: 0,
       ordinal: "0",
-      text: entry.blurb.substring(0, 100),
+      text: chooseOutlineText(entry.blurb, 100),
       sectionId: `sh${id}`,
     },
     senses: senses,
@@ -44,4 +44,8 @@ export function findShLabelText(
     j = i + 18;
   }
   return `${key} ${blurb.substring(i, j + 1)}`;
+}
+
+function chooseOutlineText(input: string, _suggestedChars: number): string {
+  return input.split(":")[0];
 }

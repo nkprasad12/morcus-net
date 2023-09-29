@@ -1,6 +1,6 @@
 import {
   StringTrie,
-  findExpansions,
+  findExpansionsOld,
 } from "@/common/abbreviations/abbreviations";
 import { checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -52,7 +52,7 @@ export function handleAbbreviations(
     if (typeof child === "string") {
       handleAbbreviationsInMessage(
         child,
-        findExpansions(child, defaultTrie),
+        findExpansionsOld(child, defaultTrie),
         replace,
         expandedCssClasses
       ).forEach((x) => children.push(x));

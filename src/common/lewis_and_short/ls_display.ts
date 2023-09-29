@@ -22,7 +22,7 @@ import {
 } from "@/common/lewis_and_short/ls_styling";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
-import { findExpansions } from "@/common/abbreviations/abbreviations";
+import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -190,7 +190,7 @@ foreign:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayForeign(
+export function displayForeign(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
@@ -198,9 +198,12 @@ function displayForeign(
   assert(root.name === "foreign");
   if (root.attrs.length === 0) {
     return attachHoverText(
-      "[omitted from digitization]",
+      "[omitted]",
       "Usually for text in Hebrew or Etruscan scripts"
     );
+  }
+  if (root.getAttr("lang") === "he") {
+    return new XmlNode("span", [["dir", "rtl"]], [XmlNode.getSoleText(root)]);
   }
   return defaultDisplay(root, context, ["cb", "reg"]);
 }
@@ -357,9 +360,9 @@ export function displayBibl(
       if (works === undefined) {
         result.children.push(child);
       } else {
-        let expansions = findExpansions(child, works);
+        let expansions = findExpansionsOld(child, works);
         if (expansions.length === 0) {
-          expansions = findExpansions(child, works, true);
+          expansions = findExpansionsOld(child, works, true);
         }
         handleAbbreviationsInMessage(child, expansions, true).forEach((x) =>
           result.children.push(x)

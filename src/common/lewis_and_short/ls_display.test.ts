@@ -7,6 +7,7 @@ import {
   displayCb,
   displayEntryFree,
   displayFigure,
+  displayForeign,
   displayMood,
   displayNote,
   displayNumber,
@@ -593,5 +594,13 @@ describe("displayCase", () => {
     expect(output.toString()).toBe(
       '<span title="Originally: abl." class="lsHover">ablative</span>'
     );
+  });
+});
+
+describe("displayForeign", () => {
+  it("displays hebrew text rtl", () => {
+    const input = new XmlNode("foreign", [["lang", "he"]], ["blah"]);
+    const output = displayForeign(input, {});
+    expect(output.toString()).toBe('<span dir="rtl">blah</span>');
   });
 });

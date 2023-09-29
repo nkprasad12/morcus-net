@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { assert, assertEqual } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
 import {
-  AbbreviationTrie,
+  AbbreviationTrieOld,
   StringTrie,
 } from "@/common/abbreviations/abbreviations";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
@@ -229,9 +229,9 @@ export const USG_ABBREVIATIONS = new Map<string, string>([
   ["Mercant. t. t.", "Mercantile [technical term]"],
 ]);
 
-export const USG_TRIE = AbbreviationTrie.forMap(USG_ABBREVIATIONS);
+export const USG_TRIE = AbbreviationTrieOld.forMap(USG_ABBREVIATIONS);
 
-export const EDGE_CASE_HOVERS = AbbreviationTrie.forMap(
+export const EDGE_CASE_HOVERS = AbbreviationTrieOld.forMap(
   new Map<string, string>([
     ["Gesch. Rom. Lit.", LIT_GESCH],
     ["Lit. Gesch.", LIT_GESCH],
@@ -256,7 +256,7 @@ export const EDGE_CASE_HOVERS = AbbreviationTrie.forMap(
   ])
 );
 
-export const GENERIC_HOVERS = AbbreviationTrie.forMap(
+export const GENERIC_HOVERS = AbbreviationTrieOld.forMap(
   new Map<string, string>([
     ["acc.", "accusative or according."],
     ["adj.", "adjective, -ly."],
@@ -389,7 +389,7 @@ export const GENERIC_HOVERS = AbbreviationTrie.forMap(
 // ["diff.", "differs or different."], <- could be buggy with Diff., a work.
 // ["abbrev.", "abbreviated, -tion."],
 
-export const GENERIC_EXPANSIONS = AbbreviationTrie.forMap(
+export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
   new Map<string, string>([
     ["act.", "active, -ly."],
     // ^ Conflicts with the English word `act`?

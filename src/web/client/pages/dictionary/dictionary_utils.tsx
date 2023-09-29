@@ -8,7 +8,6 @@ import {
 } from "@/web/client/pages/tooltips";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { getGlobalSettings } from "@/web/client/components/global_flags";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 
 export const QUICK_NAV_ANCHOR = "QNA";
@@ -177,10 +176,7 @@ export namespace SearchSettings {
       stored === undefined
         ? LatinDict.AVAILABLE
         : LatinDict.AVAILABLE.filter((d) => stored.includes(d.key));
-    const experimentalMode = getGlobalSettings().experimentalMode === true;
-    return rawDicts.filter(
-      (dict) => experimentalMode || dict.key !== LatinDict.SmithAndHall.key
-    );
+    return rawDicts;
   }
 }
 
