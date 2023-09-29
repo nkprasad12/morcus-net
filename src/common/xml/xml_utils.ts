@@ -289,15 +289,16 @@ export interface MatchResult {
   matches: TargetMatch[];
 }
 
-/**
- * Searches the tree with the given root for the given targets.
- *
- * @param root The root of the tree to search.
- * @param target The string to search for.
- *
- * @returns The matches for the given targets.
- */
-export function searchTree(root: XmlNode, target: string): MatchResult {
+/** Represents the results of a search in a raw string. */
+export interface RawSearchMatch {
+  index: number;
+  text: string;
+}
+
+export function searchTree(
+  root: XmlNode,
+  matchFinder: (rawText: string) => RawSearchMatch[]
+): MatchResult {
   const matches: TargetMatch[] = [];
   const textNodes = findTextNodes(root);
   const chunks = textNodes.map((data) => data.text);
@@ -307,27 +308,19 @@ export function searchTree(root: XmlNode, target: string): MatchResult {
     starts.push(starts[i] + chunks[i].length);
   }
   const allText = chunks.join("");
-  const matchStarts: number[] = [];
-  let startIndex = 0;
-  while (true) {
-    const matchStart = allText.indexOf(target, startIndex);
-    if (matchStart === -1) {
-      break;
-    }
-    matchStarts.push(matchStart);
-    startIndex = matchStart + target.length;
-  }
-  for (const start of matchStarts) {
+  const rawMatches = matchFinder(allText);
+  for (const rawMatch of rawMatches) {
     let startChunk = -1;
     let startOffset = undefined;
+    const startIndex = rawMatch.index;
     for (let i = 0; i < starts.length - 1; i++) {
-      if (starts[i] <= start && start < starts[i + 1]) {
+      if (starts[i] <= startIndex && startIndex < starts[i + 1]) {
         startChunk = i;
-        startOffset = start - starts[i];
+        startOffset = startIndex - starts[i];
         break;
       }
     }
-    const end = start + target.length - 1;
+    const end = startIndex + rawMatch.text.length - 1;
     let endChunk = -1;
     let endOffset = undefined;
     for (let i = 0; i < starts.length - 1; i++) {
@@ -361,10 +354,34 @@ export function searchTree(root: XmlNode, target: string): MatchResult {
         endIdx: k,
       });
     }
-    matches.push({ target: target, chunks: matchChunks });
+    matches.push({ target: rawMatch.text, chunks: matchChunks });
   }
 
   return { allTextNodes: textNodes, matches: matches };
+}
+
+/**
+ * Searches the tree with the given root for the given target.
+ *
+ * @param root The root of the tree to search.
+ * @param target The string to search for.
+ *
+ * @returns The matches for the given target.
+ */
+export function searchTreeSimple(root: XmlNode, target: string): MatchResult {
+  return searchTree(root, (rawString: string) => {
+    const matches: RawSearchMatch[] = [];
+    let startIndex = 0;
+    while (true) {
+      const matchStart = rawString.indexOf(target, startIndex);
+      if (matchStart === -1) {
+        break;
+      }
+      matches.push({ index: matchStart, text: target });
+      startIndex = matchStart + target.length;
+    }
+    return matches;
+  });
 }
 
 /**
@@ -384,7 +401,7 @@ export function modifyInTree(
 ): XmlNode {
   const node = root.deepcopy();
   for (const target of targets) {
-    const results = searchTree(node, target);
+    const results = searchTreeSimple(node, target);
     for (const match of results.matches.reverse()) {
       modifier(match, node);
     }

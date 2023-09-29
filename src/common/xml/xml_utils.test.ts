@@ -7,6 +7,7 @@ import {
   parseRawXml,
   removeTextNode,
   searchTree,
+  searchTreeSimple,
 } from "@/common/xml/xml_utils";
 
 function makeNode(children: XmlChild[]): XmlNode {
@@ -113,7 +114,7 @@ describe("removeTextNode", () => {
   });
 });
 
-describe("searchTree", () => {
+describe("searchTreeSimple", () => {
   const ha = makeNode([" ha"]);
   const happ = makeNode([" sad", ha, "pp"]);
   const y = makeNode(["y "]);
@@ -122,7 +123,7 @@ describe("searchTree", () => {
   const root = makeNode([happ, y, hahahae, happy]);
 
   test("matches have expected contents", () => {
-    const result = searchTree(root, "happy");
+    const result = searchTreeSimple(root, "happy");
 
     expect(result.matches).toHaveLength(2);
     const first = result.matches[0].chunks;
@@ -150,13 +151,37 @@ describe("searchTree", () => {
   });
 
   it("does not return overlapping values", () => {
-    const result = searchTree(root, "haha");
+    const result = searchTreeSimple(root, "haha");
 
     expect(result.matches).toHaveLength(1);
     expect(result.matches[0].chunks).toHaveLength(1);
     const chunk = result.matches[0].chunks[0];
     expect(chunk.startIdx).toBe(0);
     expect(chunk.endIdx).toBe(4);
+  });
+});
+
+describe("searchTree", () => {
+  const start = makeNode([" happ"]);
+  const end = makeNode(["y birthday;happy"]);
+
+  test("matches have expected contents", () => {
+    const result = searchTree(makeNode([start, end]), (text) => {
+      return [{ index: text.indexOf("happy "), text: "happy" }];
+    });
+
+    expect(result.matches).toHaveLength(1);
+    const first = result.matches[0].chunks;
+
+    expect(first).toHaveLength(2);
+    expect(first[0].data.parent).toBe(start);
+    expect(first[0].match).toBe("happ");
+    expect(first[0].startIdx).toBe(1);
+    expect(first[0].endIdx).toBe(5);
+    expect(first[1].data.parent).toBe(end);
+    expect(first[1].match).toBe("y");
+    expect(first[1].startIdx).toBe(0);
+    expect(first[1].endIdx).toBe(1);
   });
 });
 
@@ -203,19 +228,19 @@ describe("XmlOperations", () => {
   }
 
   test("combine raises on invalid start chunk", () => {
-    const chunks = searchTree(fakeTree(), "happy").matches[0].chunks;
+    const chunks = searchTreeSimple(fakeTree(), "happy").matches[0].chunks;
     chunks[0].endIdx = 123;
     expect(() => XmlOperations.combine(chunks)).toThrow();
   });
 
   test("combine raises on invalid end chunk", () => {
-    const chunks = searchTree(fakeTree(), "happy").matches[0].chunks;
+    const chunks = searchTreeSimple(fakeTree(), "happy").matches[0].chunks;
     chunks[chunks.length - 1].startIdx = 1;
     expect(() => XmlOperations.combine(chunks)).toThrow();
   });
 
   test("combine raises on invalid middle chunk", () => {
-    const chunks = searchTree(fakeTree(), "happy").matches[0].chunks;
+    const chunks = searchTreeSimple(fakeTree(), "happy").matches[0].chunks;
     chunks[1].endIdx = 123;
     expect(() => XmlOperations.combine(chunks)).toThrow();
   });
@@ -225,7 +250,7 @@ describe("XmlOperations", () => {
     const happ = makeNode([" sad", ha, "pp"]);
     const root = makeNode([happ, "y "]);
 
-    const chunks = searchTree(root, "happy").matches[0].chunks;
+    const chunks = searchTreeSimple(root, "happy").matches[0].chunks;
     XmlOperations.combine(chunks);
 
     expect(root.children).toHaveLength(2);
@@ -243,7 +268,7 @@ describe("XmlOperations", () => {
     const happ = makeNode([" sad", ha, "pp"]);
     const root = makeNode([happ, "y "]);
 
-    const chunks = searchTree(root, "happy").matches[0].chunks;
+    const chunks = searchTreeSimple(root, "happy").matches[0].chunks;
     XmlOperations.combine(chunks, chunks[1]);
 
     expect(root.children).toHaveLength(2);
@@ -262,7 +287,7 @@ describe("XmlOperations", () => {
     const happ = makeNode([" sad", ha, "pp"]);
     const root = makeNode([happ, "y "]);
 
-    const chunks = searchTree(root, "happy").matches[0].chunks;
+    const chunks = searchTreeSimple(root, "happy").matches[0].chunks;
     XmlOperations.combine(chunks, chunks[2]);
 
     expect(root.children).toHaveLength(2);
@@ -274,7 +299,7 @@ describe("XmlOperations", () => {
 
   test("removeMatchFromChunk handles removal from start", () => {
     const root = makeNode(["start end"]);
-    const searchResult = searchTree(root, "start");
+    const searchResult = searchTreeSimple(root, "start");
 
     XmlOperations.removeMatchFromChunk(searchResult.matches[0].chunks[0]);
 
@@ -283,7 +308,7 @@ describe("XmlOperations", () => {
 
   test("removeMatchFromChunk handles removal from start", () => {
     const root = makeNode(["start end"]);
-    const searchResult = searchTree(root, "end");
+    const searchResult = searchTreeSimple(root, "end");
 
     XmlOperations.removeMatchFromChunk(searchResult.matches[0].chunks[0]);
 
