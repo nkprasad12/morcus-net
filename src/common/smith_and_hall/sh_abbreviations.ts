@@ -78,7 +78,8 @@ const SH_EXPANSIONS: AbbreviationData[] = [
   ["indecl.", "indeclinable."],
   ["indef.", "indefinite."],
   ["indic.", "indicative."],
-  ["inf.", "infinitive."],
+  // Not safe, since influence etc are also inf.
+  // ["inf.", "infinitive."],
   ["inscrr.", "inscriptions."],
   ["interj.", "interjection."],
   ["interrog.", "interrogative, -tion."],
