@@ -3,10 +3,10 @@
 // import { parseTeiXml } from "@/common/xml/xml_files";
 import { parse } from "@/common/lewis_and_short/ls_parser";
 import { LS_PATH } from "@/common/lewis_and_short/ls_scripts";
-import { findTextNodes } from "@/common/lewis_and_short/ls_write";
 import { Tally } from "@/common/misc_utils";
 import * as dotenv from "dotenv";
 import { XmlNode } from "@/common/xml/xml_node";
+import { findTextNodes } from "@/common/xml/xml_utils";
 
 dotenv.config();
 
