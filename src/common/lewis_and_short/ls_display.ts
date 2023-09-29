@@ -22,7 +22,7 @@ import {
 } from "@/common/lewis_and_short/ls_styling";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
-import { findExpansions } from "@/common/abbreviations/abbreviations";
+import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -360,9 +360,9 @@ export function displayBibl(
       if (works === undefined) {
         result.children.push(child);
       } else {
-        let expansions = findExpansions(child, works);
+        let expansions = findExpansionsOld(child, works);
         if (expansions.length === 0) {
-          expansions = findExpansions(child, works, true);
+          expansions = findExpansionsOld(child, works, true);
         }
         handleAbbreviationsInMessage(child, expansions, true).forEach((x) =>
           result.children.push(x)
