@@ -7,8 +7,18 @@ from src.py.utils import processes
 
 _HOST = "127.0.0.1"  # Standard loopback interface address (localhost)
 
-
 def start(on_listen: str, use_gpu: bool = False) -> None:
+    """
+    Starts a TCP server that listens for incoming requests, processes them using a custom tokenization model,
+    and sends back the result to the client.
+
+    Args:
+        on_listen (str): A string indicating the server is listening.
+        use_gpu (bool, optional): A boolean indicating whether to use GPU for processing. Defaults to False.
+
+    Returns:
+        None
+    """
     model = processes.StanzaCustomTokenization(use_gpu=use_gpu)
     model.initialize()
 
