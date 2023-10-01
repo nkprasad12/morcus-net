@@ -10,7 +10,7 @@ import { RawSense, ShEntry } from "@/common/smith_and_hall/sh_entry";
 
 type ProcessState = "In Blurb" | "In Sense" | "None";
 
-function processArticle(rawArticle: NormalizedArticle): ShEntry {
+export function processArticle(rawArticle: NormalizedArticle): ShEntry {
   assert(!lineEmpty(rawArticle.text[0]));
   assert(lineEmpty(rawArticle.text[rawArticle.text.length - 1]));
 
