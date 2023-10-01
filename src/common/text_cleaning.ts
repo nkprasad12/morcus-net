@@ -1,3 +1,7 @@
+
+/**
+ * A map of diacritics and their corresponding non-diacritic characters.
+ */
 const DIACRITICS = new Map<string, string>([
   ["ā", "a"],
   ["ă", "a"],
@@ -37,6 +41,11 @@ const DIACRITICS = new Map<string, string>([
   ["Ŭ", "U"],
 ]);
 
+/**
+ * Removes diacritics from the given input string.
+ * @param input - The input string to remove diacritics from.
+ * @returns The input string with diacritics removed.
+ */
 export function removeDiacritics(input: string): string {
   let result = "";
   for (const c of input) {

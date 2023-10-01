@@ -73,19 +73,6 @@ function isTextNode(node: any): boolean {
   return false;
 }
 
-// function findXmlElement(input: any, name: string): any {
-//   const candidates: any[] = [input];
-//   if (Array.isArray(input)) {
-//     candidates.push(...input);
-//   }
-//   for (const candidate of candidates) {
-//     if (candidate[name] !== undefined) {
-//       return candidate;
-//     }
-//   }
-//   throw new Error(`No ${name} found.\n${input}`);
-// }
-
 function validateXml(input: any): void {
   const result = XMLValidator.validate(input, {});
   if (result !== true) {
