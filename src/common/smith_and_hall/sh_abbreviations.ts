@@ -6,6 +6,7 @@ import {
   findExpansions,
 } from "@/common/abbreviations/abbreviations";
 import { assert } from "@/common/assert";
+import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 
 const SH_EXPANSIONS: AbbreviationData[] = [
   ["v.", { expansion: "see", postfix: " <f>" }],
@@ -270,16 +271,24 @@ function findBestExpansions(allData: ExpansionData[]): ExpansionData[] {
   return bestMatches;
 }
 
-function hoverSpan(mainText: string, hoverText: string): string {
-  return `<span class="lsHover" title="${hoverText}">${mainText}</span>`;
+function hoverSpan(mainText: string, hoverText: string): XmlNode {
+  return new XmlNode(
+    "span",
+    [
+      ["class", "lsHover"],
+      ["title", hoverText],
+    ],
+    [mainText]
+  );
+  // return `<span class="lsHover" title="${hoverText}">${mainText}</span>`;
 }
 
-export function expandShAbbreviationsIn(input: string): string {
+export function expandShAbbreviationsIn(input: string): XmlChild[] {
   const expansions = findExpansions(input, SH_COMBINED_EXPANSIONS);
   assert(areExpansionsDisjoint(expansions), input);
   expansions.sort((a, b) => b[0] - a[0]);
 
-  let result = input;
+  const result: XmlChild[] = [input];
   for (const [i, length, data] of expansions) {
     const best = findBestExpansions(data);
     const isExpansion = best.length === 1 && best[0].replace === true;
@@ -289,10 +298,14 @@ export function expandShAbbreviationsIn(input: string): string {
       ? `Originally: ${best[0].original}`
       : best.map((d) => d.expansion).join("; OR ");
 
-    result =
-      result.substring(0, i) +
-      hoverSpan(mainText, hoverText) +
-      result.substring(i + length);
+    const firstChunk = XmlNode.assertIsString(result[0]);
+    result.splice(
+      0,
+      1,
+      firstChunk.substring(0, i),
+      hoverSpan(mainText, hoverText),
+      firstChunk.substring(i + length)
+    );
   }
   return result;
 }

@@ -239,7 +239,9 @@ function getMarkedUpText(
   resolver: ShLinkResolver
 ): XmlChild[][] {
   return parseXmlStrings(
-    senses.map((sense) => `<div>${expandShAbbreviationsIn(sense)}</div>`)
+    senses.map((sense) =>
+      new XmlNode("div", [], expandShAbbreviationsIn(sense)).toString()
+    )
   ).map((parsedXml) => markupText(parsedXml, resolver).children);
 }
 
