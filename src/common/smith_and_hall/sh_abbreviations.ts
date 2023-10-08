@@ -2,11 +2,21 @@ import {
   AbbreviationData,
   AbbreviationTrie,
   ExpansionData,
+  GenericTrieNode,
+  MatchContext,
   areExpansionsDisjoint,
   findExpansions,
 } from "@/common/abbreviations/abbreviations";
+import { SH_AUTHORS_PROCESSED } from "@/common/smith_and_hall/sh_authors_processed";
 import { assert } from "@/common/assert";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+
+export interface AuthorData extends MatchContext {
+  abbreviations: string[];
+  expansions: string;
+  date?: string;
+  works?: [string[], string][];
+}
 
 const SH_EXPANSIONS: AbbreviationData[] = [
   ["v.", { expansion: "see", postfix: " <f>" }],
@@ -248,6 +258,15 @@ const SH_COMBINED_EXPANSIONS = AbbreviationTrie.from(
   SH_EXPANSIONS
 );
 
+const SH_AUTHOR_TRIE: GenericTrieNode<AuthorData> = GenericTrieNode.withValues(
+  SH_AUTHORS_PROCESSED.flatMap((data) =>
+    data.abbreviations.map((abbreviation): [string, AuthorData] => [
+      abbreviation,
+      data,
+    ])
+  )
+);
+
 function matchLength(data: ExpansionData): number {
   return (
     (data.prefix || "").length +
@@ -280,7 +299,36 @@ function hoverSpan(mainText: string, hoverText: string): XmlNode {
     ],
     [mainText]
   );
-  // return `<span class="lsHover" title="${hoverText}">${mainText}</span>`;
+}
+
+export function markAuthorAbbreviationsIn(input: string): XmlChild[] {
+  const matches = findExpansions(input, SH_AUTHOR_TRIE);
+  matches.sort((a, b) => b[0] - a[0]);
+  const result: XmlChild[] = [input];
+  for (const [i, length, data] of matches) {
+    const hover = data
+      .flatMap(
+        (data) =>
+          data.expansions + (data.date === undefined ? "" : ` ${data.date}`)
+      )
+      .join("; or ");
+    const firstChunk = XmlNode.assertIsString(result[0]);
+    result.splice(
+      0,
+      1,
+      firstChunk.substring(0, i),
+      new XmlNode(
+        "span",
+        [
+          ["class", "lsHover lsAuthor"],
+          ["title", hover],
+        ],
+        [firstChunk.substring(i, i + length)]
+      ),
+      firstChunk.substring(i + length)
+    );
+  }
+  return result;
 }
 
 export function expandShAbbreviationsIn(input: string): XmlChild[] {
@@ -307,5 +355,7 @@ export function expandShAbbreviationsIn(input: string): XmlChild[] {
       firstChunk.substring(i + length)
     );
   }
-  return result;
+  return result.flatMap((child) =>
+    typeof child === "string" ? markAuthorAbbreviationsIn(child) : child
+  );
 }

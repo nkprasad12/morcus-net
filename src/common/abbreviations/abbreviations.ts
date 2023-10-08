@@ -34,6 +34,16 @@ export class GenericTrieNode<T> {
   }
 }
 
+export namespace GenericTrieNode {
+  export function withValues<T>(initial: [string, T][]) {
+    const result = new GenericTrieNode<T>();
+    for (const [key, value] of initial) {
+      result.add(key, value);
+    }
+    return result;
+  }
+}
+
 export class StringTrie extends GenericTrieNode<string> {}
 
 /**
@@ -133,7 +143,7 @@ export function findExpansionsOld(
   return expansions;
 }
 
-interface MatchContext {
+export interface MatchContext {
   prefix?: string;
   postfix?: string;
 }

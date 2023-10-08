@@ -2,6 +2,7 @@
 
 import { assert, assertEqual } from "@/common/assert";
 import { exhaustiveGuard } from "@/common/misc_utils";
+import { AuthorData } from "@/common/smith_and_hall/sh_abbreviations";
 import fs from "fs";
 
 const AUTHORS_FILE = "texts/latin/smithandhall/sh_authors.txt";
@@ -17,13 +18,6 @@ type ProcessStates =
 interface RawAuthorData {
   authorLines: string[];
   worksLines: string[];
-}
-
-interface AuthorData {
-  abbreviations: string[];
-  expansions: string;
-  date?: string;
-  works?: [string[], string][];
 }
 
 function processAuthorData(data: RawAuthorData): AuthorData {
