@@ -1,11 +1,11 @@
 /* istanbul ignore file */
 
-import { assert } from "@/common/assert";
+import { assert, assertEqual } from "@/common/assert";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import fs from "fs";
 
 const AUTHORS_FILE = "texts/latin/smithandhall/sh_authors.txt";
-const OUT_FILE = "texts/latin/smithandhall/sh_authors_processed.txt";
+const OUT_FILE = "texts/latin/smithandhall/sh_authors_processed.json";
 const AUTHOR_COLUMN_SEPARATOR = "        ";
 
 type ProcessStates =
@@ -39,9 +39,6 @@ function processAuthorData(data: RawAuthorData): AuthorData {
     abbreviations: headerChunks[0].split(",").map((c) => c.trim()),
     expansions: headerChunks[1],
   };
-  //   if (result.abbreviations.length > 1) {
-  //     console.log(JSON.stringify(result.abbreviations));
-  //   }
   if (headerChunks.length === 3) {
     result.date = headerChunks[2];
   }
@@ -136,23 +133,63 @@ export function processFile(options?: { input?: string; output?: string }) {
     exhaustiveGuard(state);
   }
 
+  const processedData = authors.map(processAuthorData);
+  // Initialize to anything since we know the first one has it.
+  let lastEra: string = "B.C.";
+  let lastDateType: string = "obiit";
+  for (const authorData of processedData) {
+    const date = authorData.date;
+    if (date === undefined) {
+      continue;
+    }
+    // Some of the dates have notes or estimates instead of the regular format.
+    // These can be safely ignored as they never have data from the previous note
+    // to be filled in, nor do they contain data to be used for the next author.
+    if (
+      date.includes("(") ||
+      date === "circa A.D. 4th cent." ||
+      date === "between 2nd and 5th cent. A.D."
+    ) {
+      continue;
+    }
+    const allDateParts = date
+      .split(" ")
+      .map((x) => x.trim())
+      .filter((x) => x.length > 0);
+    const dateParts = allDateParts.slice(-3);
+    assertEqual(dateParts.length, 3, date);
+    if (dateParts.includes("A.D.")) {
+      lastEra = "A.D.";
+    }
+    if (dateParts.includes("B.C.")) {
+      assert(!dateParts.includes("A.D."));
+      lastEra = "B.C.";
+    }
+    if (
+      !["B.C.", "A.D.", '"'].includes(dateParts[1]) ||
+      !/^\d+$/.test(dateParts[2])
+    ) {
+      assert(!dateParts.includes('"'));
+      continue;
+    }
+
+    if (dateParts[0] !== '"') {
+      lastDateType = dateParts[0];
+    }
+
+    if (dateParts[0] === '"') {
+      dateParts[0] = lastDateType;
+    }
+    if (dateParts[1] === '"') {
+      dateParts[1] = lastEra;
+    }
+
+    assert(!dateParts.includes('"'));
+    authorData.date = allDateParts.slice(0, -3).concat(dateParts).join(" ");
+  }
   fs.writeFileSync(
     options?.output || OUT_FILE,
-    authors
-      .map((data) => {
-        // assert(data.authorLines.length > 0);
-        // let resultLines = ["AUTHOR"].concat(
-        //   data.authorLines.map((l) => "  " + l)
-        // );
-        // if (data.worksLines.length > 0) {
-        //   resultLines = resultLines.concat(
-        //     ["WORKS"].concat(data.worksLines.map((l) => "  " + l))
-        //   );
-        // }
-        // return resultLines.join("\n");
-        return JSON.stringify(processAuthorData(data), undefined, 2);
-      })
-      .join("\n\n\n")
+    JSON.stringify(processedData, undefined, 2)
   );
 }
 
