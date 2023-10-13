@@ -312,7 +312,7 @@ export function displayShEntry(
         ["class", "lsSenseBullet"],
         ["senseid", `sh${id}`],
       ],
-      [" ‣ "]
+      ["  •  "]
     ),
     " ",
   ];

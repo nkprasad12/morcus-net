@@ -1051,7 +1051,7 @@ export function displayEntryFree(
         ["class", "lsSenseBullet"],
         ["senseid", blurbId],
       ],
-      [" ‣ "]
+      ["  •  "]
     ),
     " ",
   ];
