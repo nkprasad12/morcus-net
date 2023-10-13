@@ -2,6 +2,7 @@ import {
   AbbreviationData,
   AbbreviationTrie,
   ExpansionData,
+  GenericExpansion,
   GenericTrieNode,
   MatchContext,
   areExpansionsDisjoint,
@@ -10,6 +11,9 @@ import {
 import { SH_AUTHORS_PROCESSED } from "@/common/smith_and_hall/sh_authors_processed";
 import { assert } from "@/common/assert";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+
+const CITATION_CHARS = /^[A-Za-z0-9., ]$/;
+const CITATION_TRIMS = /^[A-Za-z ]$/;
 
 export interface AuthorData extends MatchContext {
   abbreviations: string[];
@@ -301,31 +305,150 @@ function hoverSpan(mainText: string, hoverText: string): XmlNode {
   );
 }
 
-export function markAuthorAbbreviationsIn(input: string): XmlChild[] {
+interface ShCitation {
+  /** The start index of the citation in the raw string. */
+  i: number;
+  /** The length of the citation in the raw string. */
+  len: number;
+  /** The length of the author portion in the raw string. */
+  authLen: number;
+  /** The possible authors associated with this citation. */
+  authorDatas: AuthorData[];
+}
+
+function findCitations(
+  input: string,
+  authorMatches: GenericExpansion<AuthorData>[]
+) {
+  // Sort them by start index because we want to make sure that something like
+  // Cic. Quint. isn't parsed as Cicero Quintilian, etc...
+  authorMatches.sort((a, b) => a[0] - b[0]);
+  let lastConsumed = -1;
+  const n = input.length;
+  const results: ShCitation[] = [];
+  for (const match of authorMatches) {
+    if (lastConsumed >= match[0]) {
+      continue;
+    }
+    // Pick up any "citation-esque" characters after the author.
+    lastConsumed = match[0] + match[1];
+    while (lastConsumed < n && CITATION_CHARS.test(input[lastConsumed])) {
+      lastConsumed += 1;
+    }
+    lastConsumed = lastConsumed - 1;
+    // Trim any regular words at the end of the citation.
+    for (; lastConsumed >= match[0] + match[1]; lastConsumed--) {
+      if (!CITATION_TRIMS.test(input[lastConsumed])) {
+        break;
+      }
+    }
+    // TODO: Fix this to ensure that long strings of words aren't automatically included.
+    // e.g. all of:
+    // Cic. De Oratore. 2, 2, 5, omnia ... bene ei sunt dicenda, qui hoc se posse profitetur,
+    // ends up tagged as part of the quote. and similarly:
+    // Cic. When a number of words are connected, the latter mode is usually preferred unless special emphasis is needed.
+    results.push({
+      i: match[0],
+      len: lastConsumed + 1 - match[0],
+      authLen: match[1],
+      authorDatas: match[2],
+    });
+  }
+  return results;
+}
+
+function matchedWorks(
+  citation: string,
+  authors: AuthorData[]
+): [string, string, AuthorData][] {
+  const matches: [string, string, AuthorData][] = [];
+  for (const author of authors) {
+    for (const [workAbbrs, workName] of author.works || []) {
+      for (const workAbbr of workAbbrs) {
+        if (citation.includes(workAbbr)) {
+          matches.push([workAbbr, workName, author]);
+        }
+      }
+    }
+  }
+  const longest = Math.max(...matches.map((match) => match[0].length));
+  return matches.filter((match) => match[0].length === longest);
+}
+
+function substituteMatchedWorks(
+  citation: string,
+  matches: [string, string, AuthorData][]
+): XmlChild[] {
+  if (citation.length === 0) {
+    return [];
+  }
+  if (matches.length !== 1) {
+    return [citation];
+  }
+  const [abbreviation, expansion, _] = matches[0];
+  const i = citation.indexOf(abbreviation);
+  assert(i !== -1);
+  return [
+    citation.substring(0, i),
+    new XmlNode(
+      "span",
+      [
+        ["class", "lsHover"],
+        ["title", `Originally: ${abbreviation}`],
+      ],
+      [expansion]
+    ),
+    citation.substring(i + abbreviation.length),
+  ].filter((x) => typeof x !== "string" || x.length > 0);
+}
+
+export function markupCitations(input: string): XmlChild[] {
+  // TODO: Handle `id.`.
   const matches = findExpansions(input, SH_AUTHOR_TRIE);
-  matches.sort((a, b) => b[0] - a[0]);
+  const citations = findCitations(input, matches);
+  citations.sort((a, b) => b.i - a.i);
   const result: XmlChild[] = [input];
-  for (const [i, length, data] of matches) {
-    const hover = data
+  for (const citation of citations) {
+    const firstChunk = XmlNode.assertIsString(result[0]);
+    const i = citation.i;
+    const length = citation.len;
+    const afterAuthorText = firstChunk.substring(
+      i + citation.authLen,
+      i + length
+    );
+
+    const works = matchedWorks(afterAuthorText, citation.authorDatas);
+    const possibleAuthors =
+      works.length === 0 ? citation.authorDatas : works.map((work) => work[2]);
+    const hover = possibleAuthors
       .flatMap(
         (data) =>
           data.expansions + (data.date === undefined ? "" : ` ${data.date}`)
       )
       .join("; or ");
-    const firstChunk = XmlNode.assertIsString(result[0]);
+
     result.splice(
       0,
       1,
-      firstChunk.substring(0, i),
-      new XmlNode(
-        "span",
-        [
-          ["class", "lsHover lsAuthor"],
-          ["title", hover],
-        ],
-        [firstChunk.substring(i, i + length)]
-      ),
-      firstChunk.substring(i + length)
+      ...[
+        firstChunk.substring(0, i),
+        new XmlNode(
+          "span",
+          [["class", "lsBibl"]],
+          [
+            new XmlNode(
+              "span",
+              [
+                ["class", "lsHover lsAuthor"],
+                ["title", hover],
+              ],
+              [firstChunk.substring(i, i + citation.authLen)]
+            ),
+            ...substituteMatchedWorks(afterAuthorText, works),
+          ]
+        ),
+        firstChunk.substring(i + length),
+      ].filter((x) => typeof x !== "string" || x.length > 0)
     );
   }
   return result;
@@ -356,6 +479,6 @@ export function expandShAbbreviationsIn(input: string): XmlChild[] {
     );
   }
   return result.flatMap((child) =>
-    typeof child === "string" ? markAuthorAbbreviationsIn(child) : child
+    typeof child === "string" ? markupCitations(child) : child
   );
 }

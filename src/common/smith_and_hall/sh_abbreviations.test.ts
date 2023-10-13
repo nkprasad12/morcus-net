@@ -11,11 +11,17 @@ describe("expandAbbreviationsIn", () => {
       "blah ",
       new XmlNode(
         "span",
+        [["class", "lsBibl"]],
         [
-          ["class", "lsHover lsAuthor"],
-          ["title", "Auctor ad Herennium, rhet."],
-        ],
-        ["Auct. Her."]
+          new XmlNode(
+            "span",
+            [
+              ["class", "lsHover lsAuthor"],
+              ["title", "Auctor ad Herennium, rhet."],
+            ],
+            ["Auct. Her."]
+          ),
+        ]
       ),
       " blah",
     ]);
@@ -26,11 +32,17 @@ describe("expandAbbreviationsIn", () => {
       "blah ",
       new XmlNode(
         "span",
+        [["class", "lsBibl"]],
         [
-          ["class", "lsHover lsAuthor"],
-          ["title", "L. Ampelius, hist. about A.D. 300"],
-        ],
-        ["Ampel."]
+          new XmlNode(
+            "span",
+            [
+              ["class", "lsHover lsAuthor"],
+              ["title", "L. Ampelius, hist. about A.D. 300"],
+            ],
+            ["Ampel."]
+          ),
+        ]
       ),
       " blah",
     ]);
