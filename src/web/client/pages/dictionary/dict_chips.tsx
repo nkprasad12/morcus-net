@@ -4,8 +4,8 @@ import Typography from "@mui/material/Typography";
 import React from "react";
 
 const TEXT_COLOR = Solarized.base03 + "81";
-const LS_COLOR = Solarized.cyan + "30";
-const SH_COLOR = Solarized.violet + "30";
+const LS_COLOR = "#94cf42" + "30";
+const SH_COLOR = "#9d42cf" + "30";
 
 export function DictChip(props: { label: string }) {
   function backgroundColor(label: string): string {
