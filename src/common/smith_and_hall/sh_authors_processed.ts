@@ -30,9 +30,10 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Alfen."],
     expansions: "P. Alfenus Varus, lawyer,",
     date: "flor. B.C. 22",
+    works: [[["Perieg."], "Periegesis."]],
   },
   {
-    abbreviations: ["Amm."],
+    abbreviations: ["Amm.", "Amm. Marc."],
     expansions: "Ammianus Marcellinus, hist.,",
     date: "flor. A.D. 380",
   },
@@ -153,6 +154,11 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Boëth."],
     expansions: "Anicius Manl. Torq. Severinus Boëthius, phil.",
     date: "ob. A.D. 524",
+    works: [
+      [["Inst. Arithm."], "De institutione arithmetica libri duo"],
+      [["Geom.", "Ars Geom."], "Geometria."],
+      [["Mus."], "De institutione musica"],
+    ],
   },
   {
     abbreviations: ["Brut."],
@@ -177,6 +183,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Callistr."],
     expansions: "Callistratus, lawyer,",
     date: "fl. A.D. 200",
+    works: [[["Dig."], "Digesta."]],
   },
   {
     abbreviations: ["Calp."],
@@ -410,6 +417,12 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Fulg."],
     expansions: "Fabius Planciades Fulgentius, grammarian,",
     date: "6th cent. A.D.",
+    works: [
+      [["Myth."], "Mythologies."],
+      // Add this so we can mark it as known.
+      // TODO: Find the actual citation later.
+      [["de Prisc. Serm."], "de Prisc. Serm."],
+    ],
   },
   {
     abbreviations: ["Gai. or Cai."],
@@ -679,7 +692,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     date: "fl. A.D. 251",
   },
   {
-    abbreviations: ["Non."],
+    abbreviations: ["Non.", "Non. Marc."],
     expansions: "Nonius Marcellus, gram.",
     date: "between 2nd and 5th cent. A.D.",
   },
@@ -716,6 +729,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Pacat."],
     expansions: "Latinus Pacatus Drepanius, panegyrist,",
     date: "fl. A.D. 391",
+    works: [[["Pan. Theod."], "Panegyricus Theodosio"]],
   },
   {
     abbreviations: ["Pall."],
@@ -791,11 +805,11 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     works: [[["H. N."], "Naturalis Historia. (Ed. Ian.; Teubner.)"]],
   },
   {
-    abbreviations: ["Plin."],
+    abbreviations: ["Plin.", "Plin. jun."],
     expansions: "C. Plinius Caecilius Secundus (minor),",
     date: "fl. A.D. 100",
     works: [
-      [["Ep."], "Epistolae. (Ed. Gierig)"],
+      [["Ep.", "ep."], "Epistolae. (Ed. Gierig)"],
       [["Pan."], "Panegyricus."],
     ],
   },
@@ -864,6 +878,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Ruf."],
     expansions: "Sextus Rufus, hist.",
     date: "fl. A.D. 364",
+    works: [[["Brev."], "Breviarium rerum gestarum populi Romani"]],
   },
   {
     abbreviations: ["Rutil."],
@@ -894,6 +909,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Scrib."],
     expansions: "Scribonius Largus, physician,",
     date: "fl. A.D. 43",
+    works: [[["Comp."], "Compositiones."]],
   },
   {
     abbreviations: ["Scrr. Eccl."],
