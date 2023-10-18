@@ -76,7 +76,7 @@ const SH_EXPANSIONS: AbbreviationData[] = [
   //   ["fr.", "from. or fragmenta."],
   ["Forcell.", "Forcellini."],
   ["Forc.", "Forcellini."],
-  ["Fr.", "French."],
+  // ["Fr.", "French."],
   ["fragm.", "fragmenta."],
   ["frag.", "fragmenta."],
   ["fut.", "future."],
@@ -342,6 +342,15 @@ function findCitations(
         break;
       }
     }
+    if (input.substring(match[0], lastConsumed + 1).endsWith(" Fig.")) {
+      // console.log(
+      //   "Trimmed fig " + input.substring(match[0], lastConsumed + 1 - match[0])
+      // );
+      lastConsumed -= 5;
+    }
+    // Similarly, figure out something for `in X` where it's an author cited by another ancient author.
+    //
+
     // TODO: Fix this to ensure that long strings of words aren't automatically included.
     // e.g. all of:
     // Cic. De Oratore. 2, 2, 5, omnia ... bene ei sunt dicenda, qui hoc se posse profitetur,
@@ -357,10 +366,15 @@ function findCitations(
   return results;
 }
 
+export const unmatched = new Map<AuthorData, string[]>();
+
 function matchedWorks(
   citation: string,
   authors: AuthorData[]
 ): [string, string, AuthorData][] {
+  if (citation.trim().length === 0) {
+    return [];
+  }
   const matches: [string, string, AuthorData][] = [];
   for (const author of authors) {
     for (const [workAbbrs, workName] of author.works || []) {
@@ -370,6 +384,12 @@ function matchedWorks(
         }
       }
     }
+  }
+  if (matches.length === 0 && !/^[ ]*[0-9,.]+/.test(citation)) {
+    if (!unmatched.has(authors[0])) {
+      unmatched.set(authors[0], []);
+    }
+    unmatched.get(authors[0])!.push(citation);
   }
   const longest = Math.max(...matches.map((match) => match[0].length));
   return matches.filter((match) => match[0].length === longest);
