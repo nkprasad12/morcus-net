@@ -49,7 +49,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
   {
     abbreviations: ["Apul.", "Appul.", "App."],
     expansions: "Lucius Apuleius, philosopher, (Ed. Delph.).",
-    date: "about A.D. 150",
+    date: "flor. A.D. 150",
     works: [
       [["Apol."], "Apologia or De Magia."],
       [["Flor."], "Florida."],
@@ -60,18 +60,18 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
   {
     abbreviations: ["Apul.", "App."],
     expansions: "L. Apuleius Barbarus, botanical writer,",
-    date: "about about A.D. 350",
+    date: "flor. about A.D. 350",
     works: [[["Herb."], "Herbarium."]],
   },
   {
     abbreviations: ["Arn.", "Arnob."],
     expansions: "Arnobius Afer, Chr. writer,",
-    date: "about A.D. 297",
+    date: "flor. A.D. 297",
   },
   {
     abbreviations: ["Ascon."],
     expansions: "Q. Asconius Pedianus, grammarian,",
-    date: "about A.D. 40",
+    date: "flor. A.D. 40",
   },
   {
     abbreviations: ["Asin."],
@@ -553,12 +553,12 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
   {
     abbreviations: ["Lampr."],
     expansions: "Aelius Lampridius, hist.",
-    date: "about fl. A.D. 293",
+    date: "about A.D. 293",
   },
   {
     abbreviations: ["Leg. XII. Tab."],
     expansions: "Leges duodecim tabularum,",
-    date: "fl. B.C. 450",
+    date: "B.C. 450",
   },
   {
     abbreviations: ["Liv."],
@@ -734,7 +734,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
   {
     abbreviations: ["Pall."],
     expansions: "Palladius Rutilius Taurus, writer on husbandry,",
-    date: "perh. about fl. A.D. 350",
+    date: "perh. about A.D. 350",
   },
   {
     abbreviations: ["Papin."],
