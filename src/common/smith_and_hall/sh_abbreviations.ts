@@ -2,10 +2,25 @@ import {
   AbbreviationData,
   AbbreviationTrie,
   ExpansionData,
+  GenericExpansion,
+  GenericTrieNode,
+  MatchContext,
   areExpansionsDisjoint,
   findExpansions,
 } from "@/common/abbreviations/abbreviations";
+import { SH_AUTHORS_PROCESSED } from "@/common/smith_and_hall/sh_authors_processed";
 import { assert } from "@/common/assert";
+import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+
+const CITATION_CHARS = /^[A-Za-z0-9., ]$/;
+const CITATION_TRIMS = /^[A-Za-z ]$/;
+
+export interface AuthorData extends MatchContext {
+  abbreviations: string[];
+  expansions: string;
+  date?: string;
+  works?: [string[], string][];
+}
 
 const SH_EXPANSIONS: AbbreviationData[] = [
   ["v.", { expansion: "see", postfix: " <f>" }],
@@ -61,7 +76,7 @@ const SH_EXPANSIONS: AbbreviationData[] = [
   //   ["fr.", "from. or fragmenta."],
   ["Forcell.", "Forcellini."],
   ["Forc.", "Forcellini."],
-  ["Fr.", "French."],
+  // ["Fr.", "French."],
   ["fragm.", "fragmenta."],
   ["frag.", "fragmenta."],
   ["fut.", "future."],
@@ -247,6 +262,15 @@ const SH_COMBINED_EXPANSIONS = AbbreviationTrie.from(
   SH_EXPANSIONS
 );
 
+const SH_AUTHOR_TRIE: GenericTrieNode<AuthorData> = GenericTrieNode.withValues(
+  SH_AUTHORS_PROCESSED.flatMap((data) =>
+    data.abbreviations.map((abbreviation): [string, AuthorData] => [
+      abbreviation,
+      data,
+    ])
+  )
+);
+
 function matchLength(data: ExpansionData): number {
   return (
     (data.prefix || "").length +
@@ -270,16 +294,192 @@ function findBestExpansions(allData: ExpansionData[]): ExpansionData[] {
   return bestMatches;
 }
 
-function hoverSpan(mainText: string, hoverText: string): string {
-  return `<span class="lsHover" title="${hoverText}">${mainText}</span>`;
+function hoverSpan(mainText: string, hoverText: string): XmlNode {
+  return new XmlNode(
+    "span",
+    [
+      ["class", "lsHover"],
+      ["title", hoverText],
+    ],
+    [mainText]
+  );
 }
 
-export function expandShAbbreviationsIn(input: string): string {
+interface ShCitation {
+  /** The start index of the citation in the raw string. */
+  i: number;
+  /** The length of the citation in the raw string. */
+  len: number;
+  /** The length of the author portion in the raw string. */
+  authLen: number;
+  /** The possible authors associated with this citation. */
+  authorDatas: AuthorData[];
+}
+
+function findCitations(
+  input: string,
+  authorMatches: GenericExpansion<AuthorData>[]
+) {
+  // Sort them by start index because we want to make sure that something like
+  // Cic. Quint. isn't parsed as Cicero Quintilian, etc...
+  authorMatches.sort((a, b) => a[0] - b[0]);
+  let lastConsumed = -1;
+  const n = input.length;
+  const results: ShCitation[] = [];
+  for (const match of authorMatches) {
+    if (lastConsumed >= match[0]) {
+      continue;
+    }
+    // Pick up any "citation-esque" characters after the author.
+    lastConsumed = match[0] + match[1];
+    while (lastConsumed < n && CITATION_CHARS.test(input[lastConsumed])) {
+      lastConsumed += 1;
+    }
+    lastConsumed = lastConsumed - 1;
+    // Trim any regular words at the end of the citation.
+    for (; lastConsumed >= match[0] + match[1]; lastConsumed--) {
+      if (!CITATION_TRIMS.test(input[lastConsumed])) {
+        break;
+      }
+    }
+    if (input.substring(match[0], lastConsumed + 1).endsWith(" Fig.")) {
+      // console.log(
+      //   "Trimmed fig " + input.substring(match[0], lastConsumed + 1 - match[0])
+      // );
+      lastConsumed -= 5;
+    }
+    // Similarly, figure out something for `in X` where it's an author cited by another ancient author.
+    //
+
+    // TODO: Fix this to ensure that long strings of words aren't automatically included.
+    // e.g. all of:
+    // Cic. De Oratore. 2, 2, 5, omnia ... bene ei sunt dicenda, qui hoc se posse profitetur,
+    // ends up tagged as part of the quote. and similarly:
+    // Cic. When a number of words are connected, the latter mode is usually preferred unless special emphasis is needed.
+    results.push({
+      i: match[0],
+      len: lastConsumed + 1 - match[0],
+      authLen: match[1],
+      authorDatas: match[2],
+    });
+  }
+  return results;
+}
+
+export const unmatched = new Map<AuthorData, string[]>();
+
+function matchedWorks(
+  citation: string,
+  authors: AuthorData[]
+): [string, string, AuthorData][] {
+  if (citation.trim().length === 0) {
+    return [];
+  }
+  const matches: [string, string, AuthorData][] = [];
+  for (const author of authors) {
+    for (const [workAbbrs, workName] of author.works || []) {
+      for (const workAbbr of workAbbrs) {
+        if (citation.includes(workAbbr)) {
+          matches.push([workAbbr, workName, author]);
+        }
+      }
+    }
+  }
+  if (matches.length === 0 && !/^[ ]*[0-9,.]+/.test(citation)) {
+    if (!unmatched.has(authors[0])) {
+      unmatched.set(authors[0], []);
+    }
+    unmatched.get(authors[0])!.push(citation);
+  }
+  const longest = Math.max(...matches.map((match) => match[0].length));
+  return matches.filter((match) => match[0].length === longest);
+}
+
+function substituteMatchedWorks(
+  citation: string,
+  matches: [string, string, AuthorData][]
+): XmlChild[] {
+  if (citation.length === 0) {
+    return [];
+  }
+  if (matches.length !== 1) {
+    return [citation];
+  }
+  const [abbreviation, expansion, _] = matches[0];
+  const i = citation.indexOf(abbreviation);
+  assert(i !== -1);
+  return [
+    citation.substring(0, i),
+    new XmlNode(
+      "span",
+      [
+        ["class", "lsHover"],
+        ["title", `Originally: ${abbreviation}`],
+      ],
+      [expansion]
+    ),
+    citation.substring(i + abbreviation.length),
+  ].filter((x) => typeof x !== "string" || x.length > 0);
+}
+
+export function markupCitations(input: string): XmlChild[] {
+  // TODO: Handle `id.`.
+  const matches = findExpansions(input, SH_AUTHOR_TRIE);
+  const citations = findCitations(input, matches);
+  citations.sort((a, b) => b.i - a.i);
+  const result: XmlChild[] = [input];
+  for (const citation of citations) {
+    const firstChunk = XmlNode.assertIsString(result[0]);
+    const i = citation.i;
+    const length = citation.len;
+    const afterAuthorText = firstChunk.substring(
+      i + citation.authLen,
+      i + length
+    );
+
+    const works = matchedWorks(afterAuthorText, citation.authorDatas);
+    const possibleAuthors =
+      works.length === 0 ? citation.authorDatas : works.map((work) => work[2]);
+    const hover = possibleAuthors
+      .flatMap(
+        (data) =>
+          data.expansions + (data.date === undefined ? "" : ` ${data.date}`)
+      )
+      .join("; or ");
+
+    result.splice(
+      0,
+      1,
+      ...[
+        firstChunk.substring(0, i),
+        new XmlNode(
+          "span",
+          [["class", "lsBibl"]],
+          [
+            new XmlNode(
+              "span",
+              [
+                ["class", "lsHover lsAuthor"],
+                ["title", hover],
+              ],
+              [firstChunk.substring(i, i + citation.authLen)]
+            ),
+            ...substituteMatchedWorks(afterAuthorText, works),
+          ]
+        ),
+        firstChunk.substring(i + length),
+      ].filter((x) => typeof x !== "string" || x.length > 0)
+    );
+  }
+  return result;
+}
+
+export function expandShAbbreviationsIn(input: string): XmlChild[] {
   const expansions = findExpansions(input, SH_COMBINED_EXPANSIONS);
   assert(areExpansionsDisjoint(expansions), input);
   expansions.sort((a, b) => b[0] - a[0]);
 
-  let result = input;
+  const result: XmlChild[] = [input];
   for (const [i, length, data] of expansions) {
     const best = findBestExpansions(data);
     const isExpansion = best.length === 1 && best[0].replace === true;
@@ -289,10 +489,16 @@ export function expandShAbbreviationsIn(input: string): string {
       ? `Originally: ${best[0].original}`
       : best.map((d) => d.expansion).join("; OR ");
 
-    result =
-      result.substring(0, i) +
-      hoverSpan(mainText, hoverText) +
-      result.substring(i + length);
+    const firstChunk = XmlNode.assertIsString(result[0]);
+    result.splice(
+      0,
+      1,
+      firstChunk.substring(0, i),
+      hoverSpan(mainText, hoverText),
+      firstChunk.substring(i + length)
+    );
   }
-  return result;
+  return result.flatMap((child) =>
+    typeof child === "string" ? markupCitations(child) : child
+  );
 }

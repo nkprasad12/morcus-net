@@ -416,9 +416,6 @@ export function rawOrths(root: XmlNode): string[] {
     if (child.name !== "orth") {
       continue;
     }
-    if (child.getAttr("type") === "alt") {
-      continue;
-    }
     if (typeof child.children[0] !== "string") {
       const reg = XmlNode.assertIsNode(child.children[0], "reg");
       const corr = XmlNode.assertIsNode(reg.children[1], "corr");
@@ -572,7 +569,7 @@ function lastOrthWithStarts(
 
 export function attachAltEnd(prevOrths: string[], altEnd: string): string {
   assert(altEnd.startsWith("-"));
-  const possibleResults = new Set<string>();
+  const possibleResults: [string, number][] = [];
   for (const [key, endingsList] of ENDINGS_MAP.entries()) {
     if (!key.includes(altEnd)) {
       continue;
@@ -581,19 +578,29 @@ export function attachAltEnd(prevOrths: string[], altEnd: string): string {
     if (base === undefined) {
       continue;
     }
-    possibleResults.add(
+    const baseIndex = prevOrths.indexOf(base);
+    const variant =
       base.substring(0, base.length - endingsList[0].length) +
-        altEnd.substring(1)
-    );
+      altEnd.substring(1);
+    possibleResults.push([variant, baseIndex]);
   }
-  if (possibleResults.size === 0) {
+  if (possibleResults.length === 0) {
     return altEnd;
   }
-  assert(
-    possibleResults.size === 1,
-    `orths: ${prevOrths}; end: ${altEnd}; possibleResults: ${possibleResults}`
-  );
-  return possibleResults.values().next().value;
+  if (possibleResults.length === 1) {
+    return possibleResults[0][0];
+  }
+  possibleResults.sort((a, b) => b[1] - a[1]);
+  if (possibleResults.length !== 1) {
+    console.debug(
+      `orths: ${JSON.stringify(
+        prevOrths
+      )}; end: ${altEnd}; possibleResults: ${JSON.stringify([
+        ...possibleResults.values(),
+      ])}`
+    );
+  }
+  return possibleResults[0][0];
 }
 
 export function attachAltStart(prevOrths: string[], altStart: string): string {

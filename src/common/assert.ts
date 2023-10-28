@@ -4,10 +4,13 @@ export function assert(condition: boolean, message: string = "") {
   }
 }
 
-export function assertEqual(expected: any, actual: any) {
+export function assertEqual(expected: any, actual: any, details?: string) {
+  const extra = details === undefined ? "" : `\n${details}`;
   if (expected !== actual) {
     throw new Error(
-      `Expected ${JSON.stringify(actual)}, but got ${JSON.stringify(expected)}.`
+      `Expected ${JSON.stringify(actual)}, but got ${JSON.stringify(
+        expected
+      )}.${extra}`
     );
   }
 }

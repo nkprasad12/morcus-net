@@ -42,6 +42,18 @@ describe("extractOutline", () => {
     });
   });
 
+  it("handles macron + breves", () => {
+    const root = new XmlNode(
+      "entryFree",
+      [["id", "n1"]],
+      [new XmlNode("orth", [], ["ăd-ĕō^"])]
+    );
+
+    const result = extractOutline(root);
+
+    expect(result.mainSection.text).toStrictEqual("ăd-ĕō̆");
+  });
+
   it("removes etym from main blurb", () => {
     const root = new XmlNode(
       "entryFree",

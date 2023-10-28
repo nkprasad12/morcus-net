@@ -154,7 +154,11 @@ function getContainedText(
       return result;
     }
     for (let i = 0; i < top.children.length; i++) {
-      queue.push(top.children[top.children.length - i - 1]);
+      let child = top.children[top.children.length - i - 1];
+      if (typeof child === "string" && top.name === "orth") {
+        child = displayTextForOrth(child);
+      }
+      queue.push(child);
     }
   }
   return result;

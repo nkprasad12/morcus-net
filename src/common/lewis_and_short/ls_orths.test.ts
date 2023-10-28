@@ -26,7 +26,7 @@ describe("rawOrths", () => {
 
     const result = rawOrths(root);
 
-    expect(result).toStrictEqual(["Caesar", "divisa"]);
+    expect(result).toStrictEqual(["Gallia", "Caesar", "divisa"]);
   });
 
   it("handles reg", () => {
@@ -146,6 +146,11 @@ describe("attachAltEnd", () => {
   it("handles is, -us", () => {
     const result = attachAltEnd(["anāpis"], "-us");
     expect(result).toBe("anāpus");
+  });
+
+  it("returns closest match for alt orths", () => {
+    const result = attachAltEnd(["ăcŏpos", "ăcŏpus", "ăcōpon"], "-um");
+    expect(result).toBe("ăcōpum");
   });
 });
 
