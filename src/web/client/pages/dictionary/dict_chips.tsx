@@ -34,6 +34,12 @@ export function FullDictChip(props: { label: string }) {
     return label === LatinDict.SmithAndHall.displayName ? SH_COLOR : LS_COLOR;
   }
 
+  function displayText(label: string): string {
+    return label === LatinDict.SmithAndHall.displayName
+      ? `${label} [Beta]`
+      : label;
+  }
+
   return (
     <Typography
       component={"span"}
@@ -48,7 +54,7 @@ export function FullDictChip(props: { label: string }) {
         paddingRight: 6,
       }}
     >
-      {props.label}
+      {displayText(props.label)}
     </Typography>
   );
 }
