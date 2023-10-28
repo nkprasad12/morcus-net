@@ -7,6 +7,7 @@ import {
   normalizeArticles,
 } from "@/common/smith_and_hall/sh_preprocessing";
 import { RawSense, ShEntry } from "@/common/smith_and_hall/sh_entry";
+import { removeDiacritics } from "@/common/text_cleaning";
 
 type ProcessState = "In Blurb" | "In Sense" | "None";
 
@@ -14,9 +15,11 @@ function processArticle(rawArticle: NormalizedArticle): ShEntry {
   assert(!lineEmpty(rawArticle.text[0]));
   assert(lineEmpty(rawArticle.text[rawArticle.text.length - 1]));
 
-  const keys = rawArticle.keys.flatMap((key) =>
-    key.includes("-") ? [key, key.replaceAll("-", "")] : key
-  );
+  const keys = rawArticle.keys
+    .flatMap((key) =>
+      key.includes("-") ? [key, key.replaceAll("-", "")] : key
+    )
+    .map(removeDiacritics);
   const result: ShEntry = { keys: keys, blurb: "", senses: [] };
   let currentSense: Partial<RawSense> = {};
   let state: ProcessState = "In Blurb";
