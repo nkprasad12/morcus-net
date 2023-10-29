@@ -8,10 +8,7 @@ import StyledEngineProvider from "@mui/material/StyledEngineProvider";
 import createTheme from "@mui/material/styles/createTheme";
 import ThemeProvider from "@mui/material/styles/ThemeProvider";
 
-import { Macronizer } from "@/web/client/pages/macron";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
-import { About } from "@/web/client/pages/about";
-import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { Solarized } from "@/web/client/colors";
 import { Router } from "@/web/client/components/router";
 import {
@@ -20,6 +17,11 @@ import {
   SettingsHandler,
 } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
+import {
+  ABOUT_PAGE,
+  DICT_PAGE,
+  MACRONIZER_PAGE,
+} from "@/web/client/active_pages";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -89,23 +91,6 @@ theme.typography.caption = typographyStyle;
 theme.typography.overline = typographyStyle;
 
 document.body.style.backgroundColor = Solarized.base3;
-
-const ABOUT_PAGE: SinglePageApp.Page = {
-  name: "About",
-  path: "/about",
-  content: About,
-};
-export const DICT_PAGE: SinglePageApp.Page = {
-  name: "Dictionary",
-  path: "/dicts",
-  content: DictionaryViewV2,
-};
-const MACRONIZER_PAGE: SinglePageApp.Page = {
-  name: "Macronizer",
-  path: "/macronizer",
-  content: Macronizer,
-  experimental: true,
-};
 
 const props: SinglePageApp.Props = {
   pages: [DICT_PAGE, MACRONIZER_PAGE, ABOUT_PAGE],
