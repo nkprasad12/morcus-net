@@ -37,6 +37,7 @@ import {
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
 import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
+import { TitleContext } from "../../components/title";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -161,6 +162,7 @@ export function DictionaryViewV2() {
   const searchBarRef = React.useRef<HTMLDivElement>(null);
 
   const nav = React.useContext(RouteContext);
+  const title = React.useContext(TitleContext);
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
 
@@ -190,6 +192,17 @@ export function DictionaryViewV2() {
       scrollElement?.scrollIntoView(scrollType);
     });
   }, [nav.route.query]);
+
+  React.useEffect(() => {
+    const filteredEntries = entries.filter(
+      (entry) => entry.outlines.length > 0
+    );
+    if (!(state === "Results" && filteredEntries.length > 0)) {
+      title.setCurrentDictWord("");
+    } else {
+      title.setCurrentDictWord(filteredEntries[0].outlines[0].mainKey);
+    }
+  }, [state, entries]);
 
   function SearchBar(props: {
     maxWidth: "md" | "lg" | "xl";

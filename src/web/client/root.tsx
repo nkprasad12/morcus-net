@@ -19,6 +19,7 @@ import {
   GlobalSettingsContext,
   SettingsHandler,
 } from "@/web/client/components/global_flags";
+import { TitleHandler } from "./components/title";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -94,7 +95,7 @@ const ABOUT_PAGE: SinglePageApp.Page = {
   path: "/about",
   content: About,
 };
-const DICT_PAGE: SinglePageApp.Page = {
+export const DICT_PAGE: SinglePageApp.Page = {
   name: "Dictionary",
   path: "/dicts",
   content: DictionaryViewV2,
@@ -242,7 +243,9 @@ root.render(
         <ConfigurableStyles />
         <StyledEngineProvider injectFirst>
           <Router.Handler>
-            <SinglePageApp {...props} />
+            <TitleHandler>
+              <SinglePageApp {...props} />
+            </TitleHandler>
           </Router.Handler>
         </StyledEngineProvider>
       </ThemeProvider>
