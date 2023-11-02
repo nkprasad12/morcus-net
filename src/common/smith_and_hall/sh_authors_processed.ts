@@ -633,6 +633,7 @@ export const SH_AUTHORS_PROCESSED: AuthorData[] = [
     abbreviations: ["Min. Fel."],
     expansions: "Minutius Felix, Chr. writer,",
     date: "fl. A.D. 230",
+    works: [[["Oct."], "Octavius."]],
   },
   {
     abbreviations: ["Modest."],
