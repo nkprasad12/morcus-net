@@ -1,6 +1,6 @@
 import { checkPresent } from "@/common/assert";
 
-const START_CHARACTERS = new Set<string>(" ();—-");
+const START_CHARACTERS = new Set<string>(" ()[];—-");
 
 // [startIndex, length, [expansions1, expansion2]]
 export type GenericExpansion<T> = [number, number, T[]];
