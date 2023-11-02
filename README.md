@@ -10,35 +10,78 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 
 **First Time Setup**
 
-1. Run `npm install` to set up your environment for `Typescript` code.
-2. Set up a Python `venv` and install the `requirements.txt`.
+morcus.net development is currently done only on Linux machines.
+To get started, install `git`, `npm` and `python3.8` (other Python versions may work, but only `3.8` is run in CI and guaranteed to work.)
 
-Specific steps for:
+Then, clone this repo, install `typescript` dependencies, set up a `Python` virtual environment and install `Python` dependencies.
+
+1. `mkdir morcus`
+2. `git clone https://github.com/nkprasad12/morcus-net.git && cd morcus-net`
+3. `npm install`
+4. `python3.8 -m venv venv`
+5. `source venv/bin/activate && python3.8 -m pip install -r requirements.txt`
+
+To run the morcus.net server and client, download repos for the dictionaries.
+
+6. `cd ..` (i.e return to the `morcus` directory)
+7. `git clone https://github.com/nkprasad12/lexica.git`
+8. `git clone https://github.com/nkprasad12/smithandhall.git`
+9. `cd smithandhall && git checkout v1edits && cd ..`
+10. `cd morcus-net && touch .env`
+11. Populate the `.env` file with the following:
+
+```
+PORT=5757
+LS_PATH={PATH TO morcus DIRECTORY}/morcus/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
+LS_PROCESSED_PATH=lsp.data
+SH_RAW_PATH={PATH TO morcus DIRECTORY}/morcus/smithandhall/sh_F2_latest.txt
+SH_PROCESSED_PATH=shp.db
+```
+
+Make sure to replace `{PATH TO morcus DIRECTORY}` with the actual path to the `morcus` directory from Step 1.
+See the `Environment Variables` section for full details and other variables you may need to add in the future.
+
+Finally, process the dictionary raw files, build the client, and start the server. 12. `./run.py web --build_ls --build_sh`
+
+You will eventually see in the logs a link to see the local server, for example:
+
+```
+[start_server] Local server: http://localhost:5757/
+```
+
+In the future, you can run just `./run.py web` to build the client and start the server.
+Common arguments for this script (run `./run.py --help` for full options):
+
+| Flag               | Explanation                                                                                                                                                                                    |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `--build_ls`       | This processes Lewis and Short for use by the server. This needs to be run the first time and whenever you modify the Lewis and Short raw XML file. This is slow.                              |
+| `--build_sh`       | This processes Smith and Hall for use by the server. This needs to be run the first time and whenever you modify the Smith and Hall raw text file or any of the processing code. This is slow. |
+| `--prod`           | Builds the client and runs the server in production mode. This is slower.                                                                                                                      |
+| `--transpile_only` | Skips `typescript` type checking. This is _faster_.                                                                                                                                            |
+
+Other parts of the code require further setup:
 
 _Python ML Code_
 
 1. Run `npm run setup-alatius` to set up the macronizer for local use.
 2. To run NLP models, you may also need to install `stanza` and `cltk` from `pip`.
 
-_morcus.net Server and Client_
-
-1. Clone https://github.com/nkprasad12/lexica
-2. Create a `.env` file in the root directory (see the next section for contents).
-3. Run `./run.py web -p --build_ls`. This will build the LS processed data file and start the server.
-
-For common commands, see `package.json` or `run.py`.
-
 ---
 
 **Environment Variables**
 
-| Name                | Content                                                                                                                                  |
-| ------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`              | The port number on which the server will listen. Example: `5757`.                                                                        |
-| `LS_PATH`           | The path to the raw Lewis and Short XML file. Example: `[PATH_TO_LEXICA_REPO]/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml` |
-| `LS_PROCESSED_PATH` | The path where the processed Lewis and Short file will be. Example: `lsp.data`                                                           |
-| `MONGODB_URI`       | MongoDB database URI for metrics.                                                                                                        |
-| `DB_SOURCE`         | Tag used for metrics written to MongoDB. Example: `local`.                                                                               |
+| Name                      | Content                                                                                                                             |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| `PORT`                    | The port number on which the server will listen. Example: `5757`.                                                                   |
+| `LS_PATH`                 | The path to the raw Lewis and Short XML file. Example: `[Path to lexica]/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml` |
+| `LS_PROCESSED_PATH`       | The path where the processed Lewis and Short file will be. Example: `lsp.data`                                                      |
+| `SH_PROCESSED_PATH`       | blah                                                                                                                                |
+| `SH_RAW_PATH`             | blag                                                                                                                                |
+| `MONGODB_URI`             | MongoDB database URI for metrics.                                                                                                   |
+| `DB_SOURCE`               | Tag used for metrics written to MongoDB. Example: `local`.                                                                          |
+| `PROCESSING_SERVER_TOKEN` | A token used to authenticate workers with the server. Should be long and random.                                                    |
+| `RAW_LATIN_WORDS`         | Path to a raw list of Latin words. Used for some processing.                                                                        |
+| `RAW_ENGLISH_WORDS`       | Path to a raw list of English words. USed for some processing.                                                                      |
 
 ---
 
