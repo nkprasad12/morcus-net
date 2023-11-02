@@ -258,6 +258,7 @@ export const EDGE_CASE_HOVERS = AbbreviationTrieOld.forMap(
 
 export const GENERIC_HOVERS = AbbreviationTrieOld.forMap(
   new Map<string, string>([
+    ["absol.", "absolutely, i. e. without case or adjunct."],
     ["acc.", "accusative or according."],
     ["adj.", "adjective, -ly."],
     ["adv.", "adverb, -ial, -ially; or adversus."],
@@ -395,7 +396,6 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     // ^ Conflicts with the English word `act`?
     ["abl.", "ablative."],
     ["Abl.", "ablative."],
-    ["absol.", "absolutely, i. e. without case or adjunct."],
     ["Absol.", "absolutely, i. e. without case or adjunct."],
     ["abstr.", "abstract"],
     ["acc. respect.", "accusative of respect."],
