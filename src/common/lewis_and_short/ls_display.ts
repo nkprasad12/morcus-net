@@ -840,7 +840,9 @@ export function displayCase(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "case");
-  return substituteAbbreviation(XmlNode.getSoleText(root), CASE_ABBREVIATIONS);
+  return substituteAbbreviation(XmlNode.getSoleText(root), CASE_ABBREVIATIONS, [
+    "lsGrammar",
+  ]);
 }
 
 /**
