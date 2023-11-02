@@ -11,7 +11,7 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 **First Time Setup**
 
 morcus.net development is currently done only on Linux machines.
-To get started, install `git`, `npm` and `python3.8` (other Python versions may work, but only `3.8` is run in CI and guaranteed to work.)
+To get started, install `git`, `npm`, `node` (other Node versions will likely work, but only version `20` is run in CI and guaranteed to work) and `python3.8` (other Python versions may work, but only `3.8` is run in CI and guaranteed to work.)
 
 Then, clone this repo, install `typescript` dependencies, set up a `Python` virtual environment and install `Python` dependencies.
 
