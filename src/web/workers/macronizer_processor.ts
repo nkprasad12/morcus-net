@@ -22,7 +22,7 @@ async function startNlpServer(): Promise<net.Socket> {
   if (process.env.ALLOW_WORKERS_GPU === "true") {
     serverArgs.push("--gpu");
   }
-  const tcpProcess = cp.spawn("python", serverArgs);
+  const tcpProcess = cp.spawn("python3.8", serverArgs);
   nodeCleanup((_exitCode, _signal) => {
     log("Cleaning up Python TCP server");
     tcpProcess.kill();

@@ -131,19 +131,12 @@ describe("extractOutline", () => {
     expect(result).toStrictEqual({
       mainKey: "mainKey",
       mainSection: {
-        text: "mainKey I am a blurb.",
+        text: "mainKey I am a blurb.; I am a sense1 blurb",
         level: 0,
         ordinal: "",
         sectionId: "n1",
       },
-      senses: [
-        {
-          level: 1,
-          ordinal: "I.",
-          sectionId: "n2",
-          text: "I am a sense1 blurb",
-        },
-      ],
+      senses: [],
     });
   });
 

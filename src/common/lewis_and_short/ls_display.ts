@@ -1082,10 +1082,10 @@ export function displayEntryFree(
     }
   }
 
-  if (senseNodes.length > 0) {
-    if (level1Icount > 1) {
-      mainBlurbNodes.push(defaultDisplay(senseNodes[0], context));
-    }
+  const hasDuplicate1I = senseNodes.length > 0 && level1Icount > 1;
+  const isSole1I = senseNodes.length === 1 && level1Icount === 1;
+  if (hasDuplicate1I || isSole1I) {
+    mainBlurbNodes.push(...defaultDisplay(senseNodes[0], context).children);
   }
   const attrs: [string, string][] = [["class", "lsEntryFree"]];
   attrs.push(["id", idAttr]);
@@ -1098,7 +1098,10 @@ export function displayEntryFree(
       ],
       mainBlurbNodes
     ),
-    formatSenseList(senseNodes.slice(level1Icount > 1 ? 1 : 0), context),
+    formatSenseList(
+      senseNodes.slice(hasDuplicate1I || isSole1I ? 1 : 0),
+      context
+    ),
   ]);
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
   result = handleAbbreviations(result, GENERIC_EXPANSIONS, true);

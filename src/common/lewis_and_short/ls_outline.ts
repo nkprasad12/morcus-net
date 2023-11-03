@@ -38,7 +38,10 @@ export function extractOutline(rootNode: XmlNode): EntryOutline {
         sense.getAttr("level") === "1" && sense.getAttr("n") === "I"
     );
 
-  if (level1Isenses.length > 1) {
+  const mergeFirstSense =
+    level1Isenses.length > 1 ||
+    (senses.length === 1 && level1Isenses.length === 1);
+  if (mergeFirstSense) {
     senses.splice(level1Isenses[0][1], 1);
   }
 
@@ -50,15 +53,12 @@ export function extractOutline(rootNode: XmlNode): EntryOutline {
         return false;
       }
       // If there is no sense to be merged into the main, stop.
-      if (level1Isenses.length <= 1) {
+      if (!mergeFirstSense) {
         return true;
       }
       // Consume the first level 1I sense, and stop otherwise.
       return nextNode !== level1Isenses[0][0];
-    }) +
-    (level1Isenses.length > 1
-      ? "; " + getContainedText(level1Isenses[0][0])
-      : "");
+    }) + (mergeFirstSense ? "; " + getContainedText(level1Isenses[0][0]) : "");
   const mainSection: OutlineSection = {
     text: mainBlurb,
     level: 0,
