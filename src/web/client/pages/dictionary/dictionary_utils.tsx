@@ -41,7 +41,7 @@ const HIGHLIGHT_HELP = new XmlNode(
   [["className", "lsHelpText"]],
   [
     "Key for highlights: ",
-    new XmlNode("span", [["class", "lsOrth"]], ["Key word"]),
+    new XmlNode("span", [["class", "lsOrth"]], ["headword"]),
     ", ",
     new XmlNode("span", [["class", "lsGrammar"]], ["grammar or usage term"]),
     ", ",
