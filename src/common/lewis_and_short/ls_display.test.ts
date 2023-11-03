@@ -592,7 +592,7 @@ describe("displayCase", () => {
     const input = new XmlNode("case", [], ["abl."]);
     const output = displayCase(input, {});
     expect(output.toString()).toBe(
-      '<span title="Originally: abl." class="lsHover">ablative</span>'
+      '<span title="Originally: abl." class="lsHover lsGrammar">ablative</span>'
     );
   });
 });
