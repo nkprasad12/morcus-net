@@ -20,7 +20,7 @@ export const SCROLL_SMOOTH: ScrollIntoViewOptions = {
   behavior: "smooth",
   block: "start",
 };
-const HIGHLIGHT_HELP = new XmlNode(
+const HOVER_HELP = new XmlNode(
   "div",
   [["className", "lsHelpText"]],
   [
@@ -34,6 +34,27 @@ const HIGHLIGHT_HELP = new XmlNode(
       ["underlined"]
     ),
     " text for more details. ",
+  ]
+);
+const HIGHLIGHT_HELP = new XmlNode(
+  "div",
+  [["className", "lsHelpText"]],
+  [
+    "Key for highlights: ",
+    new XmlNode("span", [["class", "lsOrth"]], ["Key word"]),
+    ", ",
+    new XmlNode("span", [["class", "lsGrammar"]], ["grammar or usage term"]),
+    ", ",
+    new XmlNode("span", [["class", "lsQuote"]], ["latin quote"]),
+    ", ",
+    new XmlNode(
+      "span",
+      [["class", "lsBibl"]],
+      [
+        new XmlNode("span", [["class", "lsAuthor"]], ["Author Name."]),
+        " Work Name. location",
+      ]
+    ),
   ]
 );
 const BUG_HELP = new XmlNode(
@@ -65,7 +86,7 @@ const BULLET_HELP = new XmlNode(
 export const HELP_ENTRY = new XmlNode(
   "div",
   [],
-  [HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
+  [HOVER_HELP, HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
 );
 
 export function xmlNodeToJsx(
