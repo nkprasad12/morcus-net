@@ -406,6 +406,7 @@ describe("displayEntryFree", () => {
     const entry = parseXmlStrings([rawEntry])[0];
 
     const output = displayEntryFree(entry);
+    console.log(output.toString());
 
     const listItems = output.findDescendants("li");
     expect(listItems).toHaveLength(1);
