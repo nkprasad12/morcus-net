@@ -402,15 +402,27 @@ describe("displayEntryFree", () => {
 
   it("propagates id to senses", () => {
     const rawEntry =
+      '<entryFree id="n1"><sense level="1" n="I" id="n33556.0">Content</sense><sense level="1" n="II" id="n33556.1">Content</sense></entryFree>';
+    const entry = parseXmlStrings([rawEntry])[0];
+
+    const output = displayEntryFree(entry);
+
+    const listItems = output.findDescendants("li");
+    expect(listItems).toHaveLength(2);
+    expect(listItems[0].getAttr("id")).toBe("n33556.0");
+    expect(listItems[1].getAttr("id")).toBe("n33556.1");
+  });
+
+  it("merged lone senses with blurb", () => {
+    const rawEntry =
       '<entryFree id="n1"><sense level="1" n="I" id="n33556.0">Content</sense></entryFree>';
     const entry = parseXmlStrings([rawEntry])[0];
 
     const output = displayEntryFree(entry);
-    console.log(output.toString());
 
+    // Check that there are no senses.
     const listItems = output.findDescendants("li");
-    expect(listItems).toHaveLength(1);
-    expect(listItems[0].getAttr("id")).toBe("n33556.0");
+    expect(listItems).toHaveLength(0);
   });
 });
 
