@@ -1,6 +1,13 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { XmlNode } from "@/common/xml/xml_node";
-import { isArray, isRecord, isString, matches } from "@/web/utils/rpc/parsing";
+import {
+  isArray,
+  isNumber,
+  isRecord,
+  isString,
+  matches,
+  maybeUndefined,
+} from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 export type DictLang = "La" | "En";
@@ -23,15 +30,24 @@ export interface DictResult {
   entry: XmlNode;
 }
 
+export interface DictOptions {
+  handleInflections: boolean;
+}
+
 export interface Dictionary {
   readonly info: DictInfo;
-  getEntry(input: string, extras?: ServerExtras): Promise<EntryResult[]>;
+  getEntry(
+    input: string,
+    extras?: ServerExtras,
+    options?: DictOptions
+  ): Promise<EntryResult[]>;
   getCompletions(input: string, extras?: ServerExtras): Promise<string[]>;
 }
 
 export interface DictsFusedRequest {
   query: string;
   dicts: string[];
+  mode?: number;
 }
 
 export namespace DictsFusedRequest {
@@ -39,6 +55,7 @@ export namespace DictsFusedRequest {
     matches<DictsFusedRequest>([
       ["query", isString],
       ["dicts", isArray<string>(isString)],
+      ["mode", maybeUndefined(isNumber)],
     ]);
 }
 

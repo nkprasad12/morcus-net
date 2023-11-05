@@ -52,7 +52,11 @@ export class FusedDictionary {
     extras?: ServerExtras
   ): Promise<DictsFusedResponse> {
     const callable = (dict: Dictionary, query: string) =>
-      dict.getEntry(query, extras);
+      dict.getEntry(
+        query,
+        extras,
+        (request.mode || 0) === 0 ? undefined : { handleInflections: true }
+      );
     return this.collectResults(request, callable);
   }
 
