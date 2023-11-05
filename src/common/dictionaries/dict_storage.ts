@@ -1,8 +1,8 @@
-import fs from "fs";
 import Database from "better-sqlite3";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
+import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 
 export interface RawDictEntry {
   /** The serialized list of keys for this entry. */
@@ -13,27 +13,7 @@ export interface RawDictEntry {
 
 export class SqlDict {
   static save(entries: RawDictEntry[], destination: string): void {
-    const start = performance.now();
-    if (fs.existsSync(destination)) {
-      fs.unlinkSync(destination);
-    }
-    const db = new Database(destination);
-    db.pragma("journal_mode = WAL");
-    db.exec(
-      "CREATE TABLE data('keys' varchar, 'entry' varchar, 'n' INTEGER PRIMARY KEY ASC );"
-    );
-    const insert = db.prepare(
-      "INSERT INTO data (keys, entry, n) VALUES (@keys, @entry, @n)"
-    );
-
-    const insertAll = db.transaction(() => {
-      entries.forEach((entry, index) => {
-        insert.run({ ...entry, n: index });
-      });
-    });
-    insertAll();
-    db.close();
-    console.debug("saveSql time: " + (performance.now() - start));
+    ReadOnlyDb.saveToSql(destination, entries, ARRAY_INDEX);
   }
 
   private readonly keyToEntries = new Map<string, [number, number, number][]>();
@@ -42,8 +22,7 @@ export class SqlDict {
   private readonly db: Database.Database;
 
   constructor(dbFile: string, keyDelimiter: string) {
-    this.db = new Database(dbFile, { readonly: true });
-    this.db.pragma("journal_mode = WAL");
+    this.db = ReadOnlyDb.getDatabase(dbFile);
     const read = this.db.prepare("SELECT keys, n FROM data");
     // @ts-ignore
     const result: { keys: string; n: number }[] = read.all();
