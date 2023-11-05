@@ -1,9 +1,7 @@
 import fs from "fs";
 import Database from "better-sqlite3";
-import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
-import { EntryResult } from "@/common/dictionaries/dict_result";
 import { Vowels } from "@/common/character_utils";
 
 export interface RawDictEntry {
@@ -13,7 +11,7 @@ export interface RawDictEntry {
   entry: string;
 }
 
-export class SqlDict implements Dictionary {
+export class SqlDict {
   static save(entries: RawDictEntry[], destination: string): void {
     const start = performance.now();
     if (fs.existsSync(destination)) {
@@ -43,12 +41,7 @@ export class SqlDict implements Dictionary {
   private readonly rawKeys: string[][];
   private readonly db: Database.Database;
 
-  constructor(
-    dbFile: string,
-    readonly info: DictInfo,
-    readonly entryConverter: (input: string[]) => EntryResult[],
-    readonly keysConverter: (input: string) => string[]
-  ) {
+  constructor(dbFile: string, keyDelimiter: string) {
     this.db = new Database(dbFile, { readonly: true });
     this.db.pragma("journal_mode = WAL");
     const read = this.db.prepare("SELECT keys, n FROM data");
@@ -56,7 +49,7 @@ export class SqlDict implements Dictionary {
     const result: { keys: string; n: number }[] = read.all();
     result.sort((a, b) => a.n - b.n);
 
-    this.rawKeys = result.map((row) => keysConverter(row.keys));
+    this.rawKeys = result.map((row) => row.keys.split(keyDelimiter));
 
     for (let i = 0; i < this.rawKeys.length; i++) {
       for (let j = 0; j < this.rawKeys[i].length; j++) {
@@ -72,7 +65,7 @@ export class SqlDict implements Dictionary {
     );
   }
 
-  async getEntry(input: string, extras?: ServerExtras): Promise<EntryResult[]> {
+  getRawEntry(input: string, extras?: ServerExtras): string[] {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
     if (indices === undefined) {
@@ -101,11 +94,10 @@ export class SqlDict implements Dictionary {
           .entry
     );
     extras?.log("entriesFetched");
-
-    return this.entryConverter(entryStrings);
+    return entryStrings;
   }
 
-  async getCompletions(input: string): Promise<string[]> {
+  getCompletions(input: string): string[] {
     const prefix = removeDiacritics(input).toLowerCase();
     // TODO: Use Binary search here.
     let start = -1;

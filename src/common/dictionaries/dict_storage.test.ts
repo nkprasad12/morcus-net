@@ -2,8 +2,6 @@ import fs from "fs";
 
 import Database from "better-sqlite3";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { EntryResult } from "@/common/dictionaries/dict_result";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
@@ -71,25 +69,14 @@ function writeFile(contents: string) {
 }
 
 function createSqlDict(): SqlDict {
-  return new SqlDict(
-    TEMP_FILE,
-    LatinDict.SmithAndHall,
-    (input) =>
-      // @ts-expect-error
-      input.map((e) => ({
-        entry: XmlNodeSerialization.DEFAULT.deserialize(e),
-      })),
-    (input) => input.split(",")
-  );
+  return new SqlDict(TEMP_FILE, ",");
 }
 
 describe("SqlDict", () => {
-  async function expectEntriesWithIds(
-    promise: Promise<EntryResult[]>,
-    expected: string[]
-  ) {
-    const results = await promise;
-    const ids = results.map((r) => r.entry.getAttr("id"));
+  function expectEntriesWithIds(results: string[], expected: string[]) {
+    const ids = results
+      .map(XmlNodeSerialization.DEFAULT.deserialize)
+      .map((r) => r.getAttr("id"));
     expect(ids).toStrictEqual(expected);
   }
 
@@ -142,52 +129,55 @@ describe("SqlDict", () => {
     });
   });
 
-  test("getEntry handles expected entries", async () => {
+  test("getRawEntry handles expected entries", async () => {
     SqlDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();
 
-    expectEntriesWithIds(dict.getEntry("Julius"), ["Julius"]);
-    expectEntriesWithIds(dict.getEntry("Publius"), ["Publius"]);
+    expectEntriesWithIds(dict.getRawEntry("Julius"), ["Julius"]);
+    expectEntriesWithIds(dict.getRawEntry("Publius"), ["Publius"]);
   });
 
-  test("getEntry handles ambiguous queries", async () => {
+  test("getRawEntry handles ambiguous queries", async () => {
     SqlDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();
-    expectEntriesWithIds(dict.getEntry("Naso"), ["Publius", "Naso"]);
+    expectEntriesWithIds(dict.getRawEntry("Naso"), ["Publius", "Naso"]);
   });
 
-  test("getEntry handles unknown queries", async () => {
+  test("getRawEntry handles unknown queries", async () => {
     SqlDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();
-    expect(dict.getEntry("Foo")).resolves.toEqual([]);
+    expect(dict.getRawEntry("Foo")).toEqual([]);
   });
 
-  test("getEntry handles same ascii orths in single article", async () => {
+  test("getRawEntry handles same ascii orths in single article", async () => {
     SqlDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();
-    expectEntriesWithIds(dict.getEntry("ino"), ["Ino"]);
+    expectEntriesWithIds(dict.getRawEntry("ino"), ["Ino"]);
   });
 
-  test("getEntry without diacritic returns all options", async () => {
+  test("getRawEntry without diacritic returns all options", async () => {
     SqlDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();
-    expectEntriesWithIds(dict.getEntry("quis"), [
+    expectEntriesWithIds(dict.getRawEntry("quis"), [
       "quisNormal",
       "quisBreve",
       "quisMacron",
     ]);
   });
 
-  test("getEntry with breve returns short and ambiguous", async () => {
+  test("getRawEntry with breve returns short and ambiguous", async () => {
     SqlDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();
-    expectEntriesWithIds(dict.getEntry("quĭs"), ["quisNormal", "quisBreve"]);
+    expectEntriesWithIds(dict.getRawEntry("quĭs"), ["quisNormal", "quisBreve"]);
   });
 
-  test("getEntry with macron returns long and ambiguous", async () => {
+  test("getRawEntry with macron returns long and ambiguous", async () => {
     SqlDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();
-    expectEntriesWithIds(dict.getEntry("quīs"), ["quisNormal", "quisMacron"]);
+    expectEntriesWithIds(dict.getRawEntry("quīs"), [
+      "quisNormal",
+      "quisMacron",
+    ]);
   });
 
   test("getCompletions returns expected results", async () => {

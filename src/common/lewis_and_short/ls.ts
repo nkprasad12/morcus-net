@@ -11,6 +11,9 @@ import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { Dictionary } from "@/common/dictionaries/dictionaries";
+import { EntryResult } from "@/common/dictionaries/dict_result";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -22,22 +25,40 @@ interface RawLsEntry {
   entry: string;
 }
 
-export class LewisAndShort extends SqlDict {
+export class LewisAndShort implements Dictionary {
+  readonly info = LatinDict.LewisAndShort;
+
+  private readonly sqlDict: SqlDict;
+
   constructor(dbFile: string = checkPresent(process.env.LS_PROCESSED_PATH)) {
-    super(
-      dbFile,
-      LatinDict.LewisAndShort,
-      (entryStrings) => {
-        const entryNodes = entryStrings.map(
-          XmlNodeSerialization.DEFAULT.deserialize
-        );
-        return entryNodes.map((node) => ({
-          entry: displayEntryFree(node),
-          outline: extractOutline(node),
-        }));
-      },
-      (input) => input.split(",")
-    );
+    this.sqlDict = new SqlDict(dbFile, ",");
+  }
+
+  async getEntry(
+    input: string,
+    extras?: ServerExtras | undefined
+  ): Promise<EntryResult[]> {
+    const entryNodes = this.sqlDict
+      .getRawEntry(input, extras)
+      .map(XmlNodeSerialization.DEFAULT.deserialize);
+    return entryNodes.map((node) => ({
+      entry: displayEntryFree(node),
+      outline: extractOutline(node),
+      inflections: [
+        {
+          lemma: "habeo",
+          form: "habes",
+          data: "2P singular present active indicative",
+        },
+      ],
+    }));
+  }
+
+  async getCompletions(
+    input: string,
+    _extras?: ServerExtras | undefined
+  ): Promise<string[]> {
+    return this.sqlDict.getCompletions(input);
   }
 }
 
