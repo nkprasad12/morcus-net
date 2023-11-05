@@ -185,7 +185,7 @@ describe("SqlDict", () => {
     SqlDict.save(toDictData(inputKeys), TEMP_FILE);
     const dict = createSqlDict();
 
-    expect(await dict.getCompletions("ab")).toStrictEqual([
+    expect(dict.getCompletions("ab")).toStrictEqual([
       "aba_",
       "abas_",
       "abat_",
@@ -193,15 +193,9 @@ describe("SqlDict", () => {
       "abbas_",
       "abbat_",
     ]);
-    expect(await dict.getCompletions("abat")).toStrictEqual([
-      "abat_",
-      "abatta_",
-    ]);
-    expect(await dict.getCompletions("abba")).toStrictEqual([
-      "abbas_",
-      "abbat_",
-    ]);
-    expect(await dict.getCompletions("abbax")).toStrictEqual([]);
+    expect(dict.getCompletions("abat")).toStrictEqual(["abat_", "abatta_"]);
+    expect(dict.getCompletions("abba")).toStrictEqual(["abbas_", "abbat_"]);
+    expect(dict.getCompletions("abbax")).toStrictEqual([]);
   });
 
   test("getCompletions handles entries with multiple keys", async () => {
@@ -218,15 +212,15 @@ describe("SqlDict", () => {
     SqlDict.save(data, TEMP_FILE);
     const dict = createSqlDict();
 
-    expect(await dict.getCompletions("Juliu")).toStrictEqual(["Julius"]);
-    expect(await dict.getCompletions("Iuliu")).toStrictEqual(["Iulius"]);
+    expect(dict.getCompletions("Juliu")).toStrictEqual(["Julius"]);
+    expect(dict.getCompletions("Iuliu")).toStrictEqual(["Iulius"]);
   });
 
   test("getCompletions handles different capitalization", async () => {
     SqlDict.save(toDictData(["arbor", "Arbor", "arboris"]), TEMP_FILE);
     const dict = createSqlDict();
 
-    expect(await dict.getCompletions("ar")).toStrictEqual([
+    expect(dict.getCompletions("ar")).toStrictEqual([
       "arbor_",
       "Arbor_",
       "arboris_",
@@ -237,6 +231,6 @@ describe("SqlDict", () => {
     SqlDict.save(toDictData(["arbor", "abeo", "abeo"]), TEMP_FILE);
     const dict = createSqlDict();
 
-    expect(await dict.getCompletions("a")).toStrictEqual(["abeo_", "arbor_"]);
+    expect(dict.getCompletions("a")).toStrictEqual(["abeo_", "arbor_"]);
   });
 });
