@@ -13,7 +13,7 @@ function writeFile(contents: string) {
 }
 
 function makeTable(
-  records: Object[],
+  records: object[],
   primaryKey: string = ARRAY_INDEX,
   indices: string[][] = []
 ) {

@@ -225,7 +225,9 @@ export function formatInflectionData(allData: InflectionData[]) {
       ) : (
         <ul style={{ margin: 0 }}>
           {inflections.map((inflection) => (
-            <li style={{ lineHeight: "normal" }}>{inflection}</li>
+            <li style={{ lineHeight: "normal" }} key={inflection}>
+              {inflection}
+            </li>
           ))}
         </ul>
       )}

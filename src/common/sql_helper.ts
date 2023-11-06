@@ -4,7 +4,7 @@ import { assert } from "@/common/assert";
 
 export const ARRAY_INDEX = "@INDEX";
 
-function createTableCommand<T extends Object>(
+function createTableCommand<T extends object>(
   prototype: T,
   primaryKey: string | typeof ARRAY_INDEX
 ): [string, string[]] {
@@ -24,7 +24,7 @@ function createTableCommand<T extends Object>(
 }
 
 export namespace ReadOnlyDb {
-  export function saveToSql<T extends Object>(
+  export function saveToSql<T extends object>(
     destination: string,
     records: T[],
     primaryKey: string | typeof ARRAY_INDEX,
