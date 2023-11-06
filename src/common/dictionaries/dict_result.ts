@@ -43,10 +43,27 @@ export namespace EntryOutline {
     ]);
 }
 
+/** Data for the inflection of a word. */
+export interface InflectionData {
+  form: string;
+  lemma: string;
+  data: string;
+}
+
+export namespace InflectionData {
+  export const isMatch: (x: unknown) => x is InflectionData =
+    matches<InflectionData>([
+      ["form", isString],
+      ["lemma", isString],
+      ["data", isString],
+    ]);
+}
+
 /** The pre-processed result for a dictionary entry. */
 export interface EntryResult {
   entry: XmlNode;
   outline: EntryOutline;
+  inflections?: InflectionData[];
 }
 
 export namespace EntryResult {
@@ -54,6 +71,7 @@ export namespace EntryResult {
     [
       ["entry", instanceOf(XmlNode)],
       ["outline", EntryOutline.isMatch],
+      ["inflections", maybeUndefined(isArray(InflectionData.isMatch))],
     ]
   );
 }
