@@ -181,7 +181,8 @@ export function DictionaryViewV2() {
     setState("Loading");
     const serverResult = fetchEntry(
       nav.route.query,
-      settings.data.experimentalMode === true
+      settings.data.experimentalMode === true ||
+        nav.route.experimentalSearch === true
     );
     serverResult.then((newResults) => {
       if (newResults === null) {

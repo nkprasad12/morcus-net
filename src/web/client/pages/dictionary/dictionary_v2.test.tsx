@@ -57,7 +57,9 @@ describe("New Dictionary View", () => {
     await user.type(searchBar, "G");
     await user.type(searchBar, "{enter}");
 
-    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "G" });
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "G" })
+    );
   });
 
   it("calls shows error on failure", async () => {

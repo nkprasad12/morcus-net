@@ -69,7 +69,9 @@ describe("DictionarySearch", () => {
     await user.type(search, "{enter}");
     expect(mockNav).not.toHaveBeenCalled();
     await user.type(search, "a{enter}");
-    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "a" });
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "a" })
+    );
   });
 
   it("handles navigation on option click", async () => {
@@ -92,7 +94,9 @@ describe("DictionarySearch", () => {
 
     await user.click(screen.getByText("ab"));
 
-    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "ab,LnS" });
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "ab,LnS" })
+    );
   });
 
   it("handles navigation on option enter", async () => {
@@ -116,7 +120,9 @@ describe("DictionarySearch", () => {
     await user.hover(screen.getByText("ack"));
     await user.type(search, "{enter}");
 
-    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "ack,SnH" });
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "ack,SnH" })
+    );
   });
 
   it("has an options menu that disables and enables dicts", async () => {

@@ -2,20 +2,26 @@ import React, { PropsWithChildren, useEffect } from "react";
 import { createContext } from "react";
 
 const QUERY_KEY = "q";
+const OPTIONS_KEY = "o";
+
+const EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED = "1";
 
 export interface RouteInfo {
   path: string;
   query?: string;
+  experimentalSearch?: boolean;
   hash?: string;
 }
 
 function extractRouteInfo(): RouteInfo {
   const path = window.location.pathname;
-  const query = new URLSearchParams(window.location.search).get(QUERY_KEY);
+  const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash;
   return {
     path: path,
-    query: query || undefined,
+    query: params.get(QUERY_KEY) || undefined,
+    experimentalSearch:
+      params.get(OPTIONS_KEY) === EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED,
     hash: hash.length === 0 ? undefined : decodeURI(hash.substring(1)),
   };
 }
@@ -24,6 +30,9 @@ function pushRouteInfo(info: RouteInfo): void {
   let state = info.path;
   if (info.query !== undefined) {
     state += `?${QUERY_KEY}=${encodeURI(info.query)}`;
+    if (info.experimentalSearch !== undefined) {
+      state += `&${OPTIONS_KEY}=${EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED}`;
+    }
   }
   if (info.hash !== undefined) {
     state += `#${encodeURI(info.hash)}`;
@@ -49,8 +58,16 @@ export namespace Navigation {
     toRouteInfo(nav, { path: target });
   }
 
-  export function query(nav: Navigation, query: string): void {
-    toRouteInfo(nav, { path: nav.route.path, query: query });
+  export function query(
+    nav: Navigation,
+    query: string,
+    experimentalSearch?: boolean
+  ): void {
+    toRouteInfo(nav, {
+      path: nav.route.path,
+      query: query,
+      experimentalSearch: experimentalSearch || false,
+    });
   }
 
   function toRouteInfo(nav: Navigation, newInfo: RouteInfo) {
