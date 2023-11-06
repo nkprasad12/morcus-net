@@ -2,6 +2,7 @@ import fs from "fs";
 
 import Database from "better-sqlite3";
 import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
+import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 
 console.debug = jest.fn();
 
@@ -31,15 +32,7 @@ function getIndices(db: Database.Database): string[] {
 
 describe("SqlDict", () => {
   afterEach(() => {
-    try {
-      fs.unlinkSync(TEMP_FILE);
-    } catch (e) {}
-    try {
-      fs.unlinkSync(`${TEMP_FILE}-shm`);
-    } catch (e) {}
-    try {
-      fs.unlinkSync(`${TEMP_FILE}-wal`);
-    } catch (e) {}
+    cleanupSqlTableFiles(TEMP_FILE);
   });
 
   test("save removes existing contents if present", async () => {
