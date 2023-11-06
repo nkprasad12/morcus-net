@@ -30,7 +30,7 @@ function pushRouteInfo(info: RouteInfo): void {
   let state = info.path;
   if (info.query !== undefined) {
     state += `?${QUERY_KEY}=${encodeURI(info.query)}`;
-    if (info.experimentalSearch !== undefined) {
+    if (info.experimentalSearch === true) {
       state += `&${OPTIONS_KEY}=${EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED}`;
     }
   }
@@ -66,7 +66,7 @@ export namespace Navigation {
     toRouteInfo(nav, {
       path: nav.route.path,
       query: query,
-      experimentalSearch: experimentalSearch || false,
+      experimentalSearch: experimentalSearch,
     });
   }
 
