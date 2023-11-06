@@ -5,15 +5,16 @@ import fs from "fs";
 const TEMP_INFILE = "latin_words.test.ts.tmp";
 const TEMP_DB_FILE = "latin_words.test.ts.tmp.db";
 
+// Normally, the Morpheus output has `aug1` and `suff` as the 7th and 9th
+// lines. But to get under the github file limit, remove these
+// manually before processing.
 const SAMPLE_MORPHEUS_OUTPUT = `
 :raw excibat
 
 :workw exsci_bat
 :lem ex-scio
 :prvb ex			raw_preverb	
-:aug1 				
 :stem sc				conj4
-:suff 				
 :end i_bat	 imperf ind act 3rd sg		poetic	conj4
 
 :raw excidam
@@ -21,9 +22,7 @@ const SAMPLE_MORPHEUS_OUTPUT = `
 :workw exci_dam
 :lem ex-caedo
 :prvb ex				
-:aug1 				
 :stem ci_d			comp_only	conj3
-:suff 				
 :end am	 fut ind act 1st sg			conj3
 
 :raw excidam
@@ -31,9 +30,7 @@ const SAMPLE_MORPHEUS_OUTPUT = `
 :workw exci_dam
 :lem ex-caedo
 :prvb ex				
-:aug1 				
 :stem ci_d			comp_only	conj3
-:suff 				
 :end am	 pres subj act 1st sg			conj3
 `;
 

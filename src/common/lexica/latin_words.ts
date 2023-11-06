@@ -57,19 +57,25 @@ function loadMorpheusOutput(
 ) {
   const dbLines = readFileSync(rawPath, "utf8").split("\n");
   const result = new Map<string, MorpheusAnalysis[]>();
-  for (let i = 0; i < dbLines.length - 1; i += 10) {
+  // Normally, the Morpheus output has 10 lines per raw input but
+  // we remove two always empty lines to keep the total file size under
+  // the GitHub limit.
+  for (let i = 0; i < dbLines.length - 1; i += 8) {
     assert(dbLines[i].trim().length === 0);
     assert(dbLines[i + 2].trim().length === 0);
-    assert(getLineData(dbLines[i + 6], "aug1") === undefined);
-    assert(getLineData(dbLines[i + 8], "suff") === undefined);
+    // Normally, the Morpheus output has these as the 7th and 9th
+    // lines. But to get under the github file limit, remove these
+    // manually before processing.
+    // assert(getLineData(dbLines[i + 6], "aug1") === undefined);
+    // assert(getLineData(dbLines[i + 8], "suff") === undefined);
 
     const raw = checkPresent(getLineData(dbLines[i + 1], "raw"));
     const analysis: MorpheusAnalysis = {
       workw: checkPresent(getLineData(dbLines[i + 3], "workw")),
       lem: checkPresent(getLineData(dbLines[i + 4], "lem")),
       prvb: getLineData(dbLines[i + 5], "prvb"),
-      stem: checkPresent(getLineData(dbLines[i + 7], "stem")),
-      end: checkPresent(getLineData(dbLines[i + 9], "end")),
+      stem: checkPresent(getLineData(dbLines[i + 6], "stem")),
+      end: checkPresent(getLineData(dbLines[i + 7], "end")),
     };
     if (!result.has(raw)) {
       result.set(raw, []);
