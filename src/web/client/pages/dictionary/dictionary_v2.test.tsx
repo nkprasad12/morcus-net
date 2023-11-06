@@ -119,6 +119,7 @@ describe("New Dictionary View", () => {
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
       dicts: ["L&S", "S&H"],
       query: "Belgae",
+      mode: 0,
     });
     await waitFor(() => {
       expect(screen.getByText(resultString)).toBeDefined();
@@ -252,6 +253,7 @@ describe("New Dictionary View", () => {
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
       dicts: ["L&S", "S&H"],
       query: "Belgae",
+      mode: 0,
     });
     await waitFor(() => {
       expect(screen.getByText(resultString)).toBeDefined();
