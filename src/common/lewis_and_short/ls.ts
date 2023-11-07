@@ -1,10 +1,5 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import {
-  assert,
-  assertEqual,
-  checkPresent,
-  checkSatisfies,
-} from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
