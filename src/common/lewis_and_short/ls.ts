@@ -1,5 +1,10 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, checkPresent } from "@/common/assert";
+import {
+  assert,
+  assertEqual,
+  checkPresent,
+  checkSatisfies,
+} from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
@@ -66,13 +71,16 @@ export class LewisAndShort implements Dictionary {
       if (lemmaBase === removeDiacritics(input)) {
         continue;
       }
-      if (lemmaChunks.length !== 1) {
-        // TODO: handle e.g. liceo#1
-        console.log(analysis.lemma);
-      }
       const rawResults = this.sqlDict.getRawEntry(lemmaBase);
       const results: EntryResult[] = rawResults
         .map(XmlNodeSerialization.DEFAULT.deserialize)
+        .filter((root) => {
+          if (lemmaChunks.length === 1) {
+            return true;
+          }
+          assertEqual(lemmaChunks.length, 2);
+          return root.getAttr("n") === lemmaChunks[1];
+        })
         .map((node) => ({
           entry: displayEntryFree(node),
           outline: extractOutline(node),
