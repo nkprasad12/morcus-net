@@ -453,6 +453,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["esp.", "especially."],
     ["etym.", "etymology"],
     ["euphon.", "euphonic."],
+    ["exs.", "examples."],
     ["expl.", "explanation."],
     ["fem.", "feminine."],
     ["foll.", "following."],
