@@ -167,6 +167,7 @@ function ConfigurableStyles() {
           borderRadius: 4,
           padding: 2,
         },
+        ".lsPlay": { textDecoration: "underline", fontStyle: "italic" },
         ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
         ".lsSenseBullet": {
           fontWeight: "bold",

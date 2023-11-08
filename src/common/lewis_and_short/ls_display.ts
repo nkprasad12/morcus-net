@@ -164,8 +164,12 @@ function displayHi(
   // The only options are "ital" and "sup"
   const firstChild = root.children[0];
   if (firstChild !== undefined && typeof firstChild === "string") {
-    if (GRAMMAR_TERMS.has(firstChild)) {
+    const trimmed = firstChild.trim();
+    if (GRAMMAR_TERMS.has(trimmed)) {
       return new XmlNode("span", [["class", "lsGrammar"]], [firstChild]);
+    }
+    if (/^[A-Z][a-z][a-z]?\.$/.test(trimmed)) {
+      return new XmlNode("span", [["class", "lsPlay"]], [firstChild]);
     }
   }
   return new XmlNode(
