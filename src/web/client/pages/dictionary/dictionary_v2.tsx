@@ -14,11 +14,11 @@ import { Footer } from "@/web/client/components/footer";
 import {
   ElementAndKey,
   HELP_ENTRY,
+  InflectionDataSection,
   QUICK_NAV_ANCHOR,
   SCROLL_JUMP,
   SCROLL_SMOOTH,
   SearchSettings,
-  formatInflectionData,
   xmlNodeToJsx,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
@@ -332,7 +332,9 @@ export function DictionaryViewV2() {
         {props.data.entries.map((entry) => (
           <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
             <>
-              {entry.inflections && formatInflectionData(entry.inflections)}
+              {entry.inflections && (
+                <InflectionDataSection inflections={entry.inflections} />
+              )}
               <div style={{ marginBottom: 10 }}>
                 <FullDictChip label={props.data.name} />
               </div>
