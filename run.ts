@@ -19,11 +19,6 @@ if (args.command === WEB_SERVER) {
 } else if (args.command === WORKER) {
   awaitAll([startWorker(args, args.workerType)]);
 }
-// stayAlive();
-
-// function stayAlive() {
-//   setTimeout(stayAlive, 1000);
-// }
 
 function parseArguments() {
   const parser = new ArgumentParser({
