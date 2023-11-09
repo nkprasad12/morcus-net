@@ -211,17 +211,32 @@ export interface ElementAndKey {
 export function InflectionDataSection(props: {
   inflections: InflectionData[];
 }) {
-  const groups = new Map<string, string[]>();
+  const byForm = new Map<string, [string, string | undefined][]>();
   for (const data of props.inflections) {
-    if (!groups.has(data.form)) {
-      groups.set(data.form, []);
+    if (!byForm.has(data.form)) {
+      byForm.set(data.form, []);
     }
-    groups.get(data.form)!.push(data.data);
+    byForm.get(data.form)!.push([data.data, data.usageNote]);
   }
+  console.log(byForm);
+  const formatted: [string, string[]][] = Array.from(byForm.entries()).map(
+    ([form, data]) => [
+      form,
+      data
+        .sort(([_1, a], [_2, b]) =>
+          a === undefined ? -1 : b === undefined ? 1 : a.localeCompare(b)
+        )
+        .map(
+          ([inflection, usage]) =>
+            inflection + (usage === undefined ? "" : ` (${usage})`)
+        ),
+    ]
+  );
+  console.log(formatted);
 
   return (
     <>
-      {[...groups.entries()].map(([form, inflections]) => (
+      {formatted.map(([form, inflections]) => (
         <div style={{ fontSize: 16, paddingBottom: 3 }} key={form}>
           <span className="lsOrth">{form}</span>:
           {inflections.length === 1 ? (

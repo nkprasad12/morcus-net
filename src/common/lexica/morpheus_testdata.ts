@@ -16,7 +16,7 @@ export const SAMPLE_MORPHEUS_OUTPUT = `
 :lem ex-caedo
 :prvb ex				
 :stem ci_d			comp_only	conj3
-:end am	 fut ind act 1st sg			conj3
+:end am	 fut ind act 1st sg		poetic	conj3
 
 :raw excidam
 

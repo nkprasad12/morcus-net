@@ -48,6 +48,7 @@ export interface InflectionData {
   form: string;
   lemma: string;
   data: string;
+  usageNote?: string;
 }
 
 export namespace InflectionData {
@@ -56,6 +57,7 @@ export namespace InflectionData {
       ["form", isString],
       ["lemma", isString],
       ["data", isString],
+      ["usageNote", maybeUndefined(isString)],
     ]);
 }
 

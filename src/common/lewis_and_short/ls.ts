@@ -83,7 +83,8 @@ export class LewisAndShort implements Dictionary {
             inflData.inflectionData.map((info) => ({
               lemma: analysis.lemma,
               form: inflData.form,
-              data: info,
+              data: info.inflection,
+              usageNote: info.usageNote,
             }))
           ),
         }));

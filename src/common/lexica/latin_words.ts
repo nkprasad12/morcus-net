@@ -35,13 +35,17 @@ interface LatinWordRow {
   lemma: string;
   // lengthMarkedLemma: string;
   info: string;
+  usageNote: string;
 }
 
 export interface LatinWordAnalysis {
   lemma: string;
   inflectedForms: {
     form: string;
-    inflectionData: string[];
+    inflectionData: {
+      inflection: string;
+      usageNote?: string;
+    }[];
   }[];
 }
 
@@ -117,12 +121,6 @@ function removeInternalDashes(word: string): string {
 //   return headwordRows[0]?.workw;
 // }
 
-function extractInflectionInfo(analysis: MorpheusAnalysis): string {
-  const rowInfoChunks = analysis.end.split("\t");
-  assert(rowInfoChunks.length === 5, analysis.end);
-  return rowInfoChunks[1].trim();
-}
-
 export function makeMorpheusDb(
   rawInput: string = checkPresent(process.env.RAW_LATIN_WORDS),
   outputPath: string = checkPresent(process.env.LATIN_INFLECTION_DB)
@@ -130,14 +128,20 @@ export function makeMorpheusDb(
   const inflectionsDict = loadMorpheusOutput(rawInput);
   const rows: LatinWordRow[] = Array.from(inflectionsDict.entries()).flatMap(
     ([word, analyses]) =>
-      analyses.map((analysis) => ({
-        word: word,
-        lemma: analysis.lem,
-        lengthMarked: displayTextForOrth(analysis.workw),
-        // lengthMarkedLemma:
-        //   getLengthMarksForLemma(analysis.lem, inflectionsDict) || word,
-        info: extractInflectionInfo(analysis),
-      }))
+      analyses.map((analysis) => {
+        const rowInfoChunks = analysis.end.split("\t");
+        assert(rowInfoChunks.length === 5, analysis.end);
+
+        return {
+          word: word,
+          lemma: analysis.lem,
+          lengthMarked: displayTextForOrth(analysis.workw),
+          // lengthMarkedLemma:
+          //   getLengthMarksForLemma(analysis.lem, inflectionsDict) || word,
+          info: rowInfoChunks[1].trim(),
+          usageNote: rowInfoChunks[3].trim(),
+        };
+      })
   );
   ReadOnlyDb.saveToSql(outputPath, rows, ARRAY_INDEX, [["word"], ["lemma"]]);
 }
@@ -164,17 +168,23 @@ export namespace LatinWords {
       byLemma.get(undashed)!.push(row);
     }
     return Array.from(byLemma.entries()).map(([lemma, rows]) => {
-      const byLengthMarked = new Map<string, Set<string>>();
+      const byLengthMarked = new Map<string, Set<LatinWordRow>>();
       for (const row of rows) {
         if (!byLengthMarked.has(row.lengthMarked)) {
-          byLengthMarked.set(row.lengthMarked, new Set<string>());
+          byLengthMarked.set(row.lengthMarked, new Set<LatinWordRow>());
         }
-        byLengthMarked.get(row.lengthMarked)!.add(row.info);
+        byLengthMarked.get(row.lengthMarked)!.add(row);
       }
       return {
         lemma,
         inflectedForms: Array.from(byLengthMarked.entries()).map(
-          ([form, data]) => ({ form, inflectionData: [...data.values()] })
+          ([form, data]) => ({
+            form,
+            inflectionData: [...data.values()].map((row) => ({
+              inflection: row.info,
+              usageNote: row.usageNote.length === 0 ? undefined : row.usageNote,
+            })),
+          })
         ),
       };
     });
