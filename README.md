@@ -19,7 +19,7 @@ Before you get started, install `git` and:
 
 Clone this repo and install `typescript` dependencies
 
-1. `mkdir morcus`
+1. `mkdir morcus && cd morcus`
 2. `git clone https://github.com/nkprasad12/morcus-net.git && cd morcus-net`
 3. `npm install`
 
