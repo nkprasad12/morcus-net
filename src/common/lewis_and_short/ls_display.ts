@@ -150,7 +150,7 @@ hi:
  * @param root The root node for this element.
  * @param _parent The parent node for the root.
  */
-function displayHi(
+export function displayHi(
   root: XmlNode,
   context: DisplayContext,
   _parent?: XmlNode
