@@ -12,6 +12,7 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 
 morcus.net development is currently done only on Linux machines.
 Before you get started, install `git` and:
+
 - If you want to work on the Typescript code: `npm`, `node` (other Node versions will likely work, but only version `20` is run in CI and guaranteed to work)
 - If you want to work on the Python code: `python3.8` (other Python versions may work, but only `3.8` is run in CI and guaranteed to work.)
 
@@ -64,6 +65,7 @@ Common arguments for this script (run `./run.py --help` for full options):
 ### Python Code (ML)
 
 From the `morcus-net` root directory, set up a `Python` virtual environment and install `Python` dependencies.
+
 1. `python3.8 -m venv venv`
 2. `source venv/bin/activate && python3.8 -m pip install -r requirements.txt`
 3. Run `npm run setup-alatius` to set up the macronizer for local use.
@@ -113,7 +115,7 @@ After initial setup, run `npm install` to ensure you have the latest prettier co
 The project settings are already configured to use `prettier` as the default formatting for Typescript and Javascript, and `black`
 as the default formatter for Python. This will also turn on format on save.
 
-### Integrating Jest**
+### Integrating Jest\*\*
 
 After initial setup, install the [Jest Runner VS Code plugin](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner).
 This will allow you to run and debug unit tests from within the VS Code UI when browsing a test file.
