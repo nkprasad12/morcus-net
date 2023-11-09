@@ -148,6 +148,7 @@ const params: WebServerParams = {
 setupServer(params);
 
 server.listen(port, () => {
-  log(`Local server: http://${host}:${port}/`);
+  log(`Local server running! Go to http://${host}:${port}/`);
+  log("Press Ctrl+C to exit.");
   setInterval(() => telemetry.then(logMemoryUsage), 1000 * 60 * 15);
 });

@@ -18,42 +18,12 @@ Before you get started, install `git` and:
 
 ### Typescript Code (Client, Server, Workers)
 
-Clone this repo and install `typescript` dependencies
+To start, download and run the setup script. This will clone all required repositories, perform all required setup, build the client, and start the server locally.
 
-1. `mkdir morcus && cd morcus`
-2. `git clone https://github.com/nkprasad12/morcus-net.git && cd morcus-net`
-3. `npm install`
+`curl https://raw.githubusercontent.com/nkprasad12/morcus-net/main/first_time_setup.sh > setup_morcus.sh && ./setup_morcus.sh`
 
-Download repos for the dictionaries.
-
-4. `cd ..` (i.e return to the `morcus` directory)
-5. `git clone https://github.com/nkprasad12/lexica.git`
-6. `git clone https://github.com/nkprasad12/smithandhall.git`
-7. `cd smithandhall && git checkout v1edits && cd ..`
-8. `cd morcus-net && touch .env`
-9. Populate the `.env` file with the following:
-
-```
-PORT=5757
-LS_PATH={PATH TO morcus DIRECTORY}/morcus/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml
-LS_PROCESSED_PATH=lsp.data
-SH_RAW_PATH={PATH TO morcus DIRECTORY}/morcus/smithandhall/sh_F2_latest.txt
-SH_PROCESSED_PATH=shp.db
-```
-
-Make sure to replace `{PATH TO morcus DIRECTORY}` with the actual path to the `morcus` directory from Step 1.
-See the `Environment Variables` section for full details and other variables you may need to add in the future.
-
-Finally, process the dictionary raw files, build the client, and start the server. 12. `./run.sh web --build_ls --build_sh`
-
-You will eventually see in the logs a link to see the local server, for example:
-
-```
-[start_server] Local server: http://localhost:5757/
-```
-
-In the future, you can run just `./run.py web` to build the client and start the server.
-Common arguments for this script (run `./run.py --help` for full options):
+In the future, you can run `./run.sh web` from `morcus-net` to build the client and start the server.
+Common arguments for this script (run `./run.sh --help` for full options):
 
 | Flag               | Explanation                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
