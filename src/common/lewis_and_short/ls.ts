@@ -49,7 +49,7 @@ export class LewisAndShort implements Dictionary {
         outline: extractOutline(node),
       }));
     if (
-      !options?.handleInflections ||
+      options?.handleInflections !== true ||
       process.env.LATIN_INFLECTION_DB === undefined
     ) {
       return exactMatches;
