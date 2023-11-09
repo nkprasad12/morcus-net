@@ -14,6 +14,7 @@ import { Footer } from "@/web/client/components/footer";
 import {
   ElementAndKey,
   HELP_ENTRY,
+  InflectionDataSection,
   QUICK_NAV_ANCHOR,
   SCROLL_JUMP,
   SCROLL_SMOOTH,
@@ -38,6 +39,7 @@ import {
 import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 import { TitleContext } from "../../components/title";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -58,7 +60,10 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   minWidth: "min(29%, 300px)",
 };
 
-async function fetchEntry(input: string): Promise<DictsFusedResponse | null> {
+async function fetchEntry(
+  input: string,
+  experimentalMode: boolean
+): Promise<DictsFusedResponse | null> {
   const parts = input.split(",");
   const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
   const dicts =
@@ -70,6 +75,7 @@ async function fetchEntry(input: string): Promise<DictsFusedResponse | null> {
   const result = callApi(DictsFusedApi, {
     query: parts[0],
     dicts,
+    mode: experimentalMode ? 1 : 0,
   });
   try {
     return await result;
@@ -134,6 +140,7 @@ function getEntriesByDict(
     const entries = rawEntries.map((e, i) => ({
       element: xmlNodeToJsx(e.entry, hash, sectionRef),
       key: e.entry.getAttr("id") || `${dictKey}${i}`,
+      inflections: e.inflections,
     }));
     const outlines = rawEntries.map((e) => e.outline);
     const name = LatinDict.BY_KEY.get(dictKey)?.displayName || dictKey;
@@ -161,6 +168,7 @@ export function DictionaryViewV2() {
   const entriesRef = React.useRef<HTMLDivElement>(null);
   const searchBarRef = React.useRef<HTMLDivElement>(null);
 
+  const settings = React.useContext(GlobalSettingsContext);
   const nav = React.useContext(RouteContext);
   const title = React.useContext(TitleContext);
   const theme = useTheme();
@@ -171,7 +179,12 @@ export function DictionaryViewV2() {
       return;
     }
     setState("Loading");
-    fetchEntry(nav.route.query).then((newResults) => {
+    const serverResult = fetchEntry(
+      nav.route.query,
+      settings.data.experimentalMode === true ||
+        nav.route.experimentalSearch === true
+    );
+    serverResult.then((newResults) => {
       if (newResults === null) {
         setState("Error");
         return;
@@ -319,6 +332,9 @@ export function DictionaryViewV2() {
         {props.data.entries.map((entry) => (
           <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
             <>
+              {entry.inflections && (
+                <InflectionDataSection inflections={entry.inflections} />
+              )}
               <div style={{ marginBottom: 10 }}>
                 <FullDictChip label={props.data.name} />
               </div>

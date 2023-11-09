@@ -9,6 +9,7 @@ import {
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { Navigation, RouteContext } from "@/web/client/components/router";
+import { InflectionData } from "@/common/dictionaries/dict_result";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 
@@ -204,4 +205,38 @@ export namespace SearchSettings {
 export interface ElementAndKey {
   element: JSX.Element;
   key: string;
+  inflections?: InflectionData[];
+}
+
+export function InflectionDataSection(props: {
+  inflections: InflectionData[];
+}) {
+  const groups = new Map<string, string[]>();
+  for (const data of props.inflections) {
+    if (!groups.has(data.form)) {
+      groups.set(data.form, []);
+    }
+    groups.get(data.form)!.push(data.data);
+  }
+
+  return (
+    <>
+      {[...groups.entries()].map(([form, inflections]) => (
+        <div style={{ fontSize: 16, paddingBottom: 3 }} key={form}>
+          <span className="lsOrth">{form}</span>:
+          {inflections.length === 1 ? (
+            ` ${inflections[0]}`
+          ) : (
+            <ul style={{ margin: 0 }} aria-label="Inflections">
+              {inflections.map((inflection) => (
+                <li style={{ lineHeight: "normal" }} key={inflection}>
+                  {inflection}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+      ))}
+    </>
+  );
 }

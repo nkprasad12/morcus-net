@@ -15,6 +15,7 @@ import {
 import {
   xmlNodeToJsx,
   SearchSettings,
+  InflectionDataSection,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { RouteContext } from "@/web/client/components/router";
@@ -101,7 +102,9 @@ describe("xmlNodeToJsx", () => {
 
     await user.click(screen.getByText("Gallia"));
 
-    expect(mockNav).toHaveBeenCalledWith({ path: "/", query: "omnis,SnH" });
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "omnis,SnH" })
+    );
   });
 });
 
@@ -257,5 +260,33 @@ describe("SearchSettings", () => {
   it("returns expected list for other store", () => {
     SearchSettings.store([LatinDict.LewisAndShort]);
     expect(SearchSettings.retrieve()).toStrictEqual([LatinDict.LewisAndShort]);
+  });
+});
+
+describe("InflectionDataSection", () => {
+  it("shows a list with multiple inflections", () => {
+    render(
+      <InflectionDataSection
+        inflections={[
+          { form: "undae", lemma: "unda", data: "dat sg" },
+          { form: "undae", lemma: "unda", data: "gen sg" },
+        ]}
+      />
+    );
+
+    expect(screen.queryByText(/gen sg/)).toBeVisible();
+    expect(screen.queryByText(/dat sg/)).toBeVisible();
+    expect(screen.queryByRole("list", { name: "Inflections" })).toBeVisible();
+  });
+
+  it("shows a list with single inflections", () => {
+    render(
+      <InflectionDataSection
+        inflections={[{ form: "undae", lemma: "unda", data: "dat sg" }]}
+      />
+    );
+
+    expect(screen.queryByText(/dat sg/)).toBeVisible();
+    expect(screen.queryByRole("list", { name: "Inflections" })).toBeNull();
   });
 });

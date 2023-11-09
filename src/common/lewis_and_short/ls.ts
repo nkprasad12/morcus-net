@@ -1,5 +1,5 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
@@ -11,6 +11,11 @@ import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
+import { EntryResult } from "@/common/dictionaries/dict_result";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+import { LatinWords } from "@/common/lexica/latin_words";
+import { removeDiacritics } from "@/common/text_cleaning";
 
 interface ProcessedLsEntry {
   keys: string[];
@@ -22,22 +27,87 @@ interface RawLsEntry {
   entry: string;
 }
 
-export class LewisAndShort extends SqlDict {
+export class LewisAndShort implements Dictionary {
+  readonly info = LatinDict.LewisAndShort;
+
+  private readonly sqlDict: SqlDict;
+
   constructor(dbFile: string = checkPresent(process.env.LS_PROCESSED_PATH)) {
-    super(
-      dbFile,
-      LatinDict.LewisAndShort,
-      (entryStrings) => {
-        const entryNodes = entryStrings.map(
-          XmlNodeSerialization.DEFAULT.deserialize
-        );
-        return entryNodes.map((node) => ({
+    this.sqlDict = new SqlDict(dbFile, ",");
+  }
+
+  async getEntry(
+    input: string,
+    extras?: ServerExtras | undefined,
+    options?: DictOptions
+  ): Promise<EntryResult[]> {
+    const exactMatches: EntryResult[] = this.sqlDict
+      .getRawEntry(input, extras)
+      .map(XmlNodeSerialization.DEFAULT.deserialize)
+      .map((node) => ({
+        entry: displayEntryFree(node),
+        outline: extractOutline(node),
+      }));
+    if (
+      options?.handleInflections !== true ||
+      process.env.LATIN_INFLECTION_DB === undefined
+    ) {
+      return exactMatches;
+    }
+
+    const analyses = LatinWords.analysesFor(input);
+    const inflectedResults: EntryResult[] = [];
+    for (const analysis of analyses) {
+      const lemmaChunks = analysis.lemma.split("#");
+      const lemmaBase = lemmaChunks[0];
+      // TODO: Currently, getRawEntry will ignore case, i.e
+      // canis will also return inputs for Canis. Ignore this for
+      // now but we should fix it later and handle case difference explicitly.
+      if (lemmaBase === removeDiacritics(input)) {
+        continue;
+      }
+      const rawResults = this.sqlDict.getRawEntry(lemmaBase);
+      const results: EntryResult[] = rawResults
+        .map(XmlNodeSerialization.DEFAULT.deserialize)
+        .filter((root) => {
+          if (lemmaChunks.length === 1) {
+            return true;
+          }
+          assertEqual(lemmaChunks.length, 2);
+          return root.getAttr("n") === lemmaChunks[1];
+        })
+        .map((node) => ({
           entry: displayEntryFree(node),
           outline: extractOutline(node),
+          inflections: analysis.inflectedForms.flatMap((inflData) =>
+            inflData.inflectionData.map((info) => ({
+              lemma: analysis.lemma,
+              form: inflData.form,
+              data: info,
+            }))
+          ),
         }));
-      },
-      (input) => input.split(",")
-    );
+      inflectedResults.push(...results);
+    }
+
+    const results: EntryResult[] = [];
+    const idsSoFar = new Set<string>();
+    for (const candidate of exactMatches.concat(inflectedResults)) {
+      const id = candidate.entry.getAttr("id")!;
+      if (idsSoFar.has(id)) {
+        continue;
+      }
+      idsSoFar.add(id);
+      results.push(candidate);
+    }
+    return results;
+  }
+
+  async getCompletions(
+    input: string,
+    _extras?: ServerExtras | undefined
+  ): Promise<string[]> {
+    return this.sqlDict.getCompletions(input);
   }
 }
 

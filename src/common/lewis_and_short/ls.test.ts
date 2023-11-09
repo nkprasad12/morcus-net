@@ -5,6 +5,9 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { EntryResult } from "@/common/dictionaries/dict_result";
+import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
+import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
+import { makeMorpheusDb } from "@/common/lexica/latin_words";
 
 console.debug = jest.fn();
 
@@ -15,6 +18,22 @@ jest.mock("./ls_outline", () => ({
 
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
+
+const MORPH_FILE = "ls.test.ts.tmp.morph.txt";
+const INFL_DB_FILE = "ls.test.ts.tmp.lat.db";
+
+beforeAll(() => {
+  process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
+  fs.writeFileSync(MORPH_FILE, SAMPLE_MORPHEUS_OUTPUT);
+  makeMorpheusDb(MORPH_FILE, INFL_DB_FILE);
+});
+
+afterAll(() => {
+  try {
+    fs.unlinkSync(MORPH_FILE);
+  } catch {}
+  cleanupSqlTableFiles(INFL_DB_FILE);
+});
 
 const serialize = XmlNodeSerialization.DEFAULT.serialize;
 
@@ -65,6 +84,10 @@ const LS_DATA = [
       new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
     ),
   },
+  {
+    keys: "exscio",
+    entry: serialize(new XmlNode("entryFree", [["id", "exscio"]], ["exscio"])),
+  },
 ];
 
 describe("LewisAndShort", () => {
@@ -78,6 +101,7 @@ describe("LewisAndShort", () => {
   }
 
   afterEach(() => {
+    process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
     try {
       fs.unlinkSync(TEMP_FILE);
     } catch (e) {}
@@ -151,5 +175,48 @@ describe("LewisAndShort", () => {
     const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
 
     expect(outline).toStrictEqual(["mockOutline"]);
+  });
+
+  test("getEntry inflected returns no results with flag off", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
+    const dict = LewisAndShort.create(TEMP_FILE);
+
+    const results = await dict.getEntry("excibat", undefined, {
+      handleInflections: false,
+    });
+
+    expect(results).toHaveLength(0);
+  });
+
+  test("getEntry inflected returns no results with flag undefined", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
+    const dict = LewisAndShort.create(TEMP_FILE);
+
+    const results = await dict.getEntry("excibat", undefined, undefined);
+
+    expect(results).toHaveLength(0);
+  });
+
+  test("getEntry inflected gracefully handles flag on with no inflection db", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
+    const dict = LewisAndShort.create(TEMP_FILE);
+
+    process.env = { ...process.env, LATIN_INFLECTION_DB: undefined };
+    const results = await dict.getEntry("Julius", undefined, {
+      handleInflections: true,
+    });
+
+    expect(results).toHaveLength(1);
+  });
+
+  test("getEntry inflected returns results with flag on", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
+    const dict = LewisAndShort.create(TEMP_FILE);
+
+    const results = await dict.getEntry("excibat", undefined, {
+      handleInflections: true,
+    });
+
+    expect(results).toHaveLength(1);
   });
 });

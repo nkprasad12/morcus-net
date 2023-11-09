@@ -1,8 +1,8 @@
-import { assert } from "@/common/assert";
 import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
 import express, { Request, Response } from "express";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
+import { exhaustiveGuard } from "@/common/misc_utils";
 
 export type Data = boolean | string | number | object;
 
@@ -169,12 +169,14 @@ export function addApi<I, O extends Data>(
 ): void {
   const route = routeAndHandler.route;
   const handler = routeAndHandler.handler;
-  if (route.method === "GET") {
-    app.webApp.get(`${route.path}/:input`, adaptHandler(app, route, handler));
-    return;
-  } else if (route.method === "POST") {
-    app.webApp.post(route.path, adaptHandler(app, route, handler));
-    return;
+  switch (route.method) {
+    case "GET":
+      app.webApp.get(`${route.path}/:input`, adaptHandler(app, route, handler));
+      return;
+    case "POST":
+      app.webApp.post(route.path, adaptHandler(app, route, handler));
+      return;
+    default:
+      exhaustiveGuard(route.method);
   }
-  assert(false, `Unhandled method: ${route.method}`);
 }

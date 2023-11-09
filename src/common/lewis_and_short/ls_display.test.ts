@@ -8,6 +8,7 @@ import {
   displayEntryFree,
   displayFigure,
   displayForeign,
+  displayHi,
   displayMood,
   displayNote,
   displayNumber,
@@ -615,5 +616,21 @@ describe("displayForeign", () => {
     const input = new XmlNode("foreign", [["lang", "he"]], ["blah"]);
     const output = displayForeign(input, {});
     expect(output.toString()).toBe('<span dir="rtl">blah</span>');
+  });
+});
+
+describe("displayHi", () => {
+  it("styles play character names", () => {
+    const input = new XmlNode("hi", [["rend", "ital"]], [" Bl. "]);
+    const output = displayHi(input, {});
+    expect(output.toString()).toBe('<span class="lsPlay"> Bl. </span>');
+  });
+
+  it("styles grammar terms correctly", () => {
+    const input = new XmlNode("hi", [["rend", "ital"]], ["abl. absol."]);
+    const output = displayHi(input, {});
+    expect(output.toString()).toBe(
+      '<span class="lsGrammar">abl. absol.</span>'
+    );
   });
 });

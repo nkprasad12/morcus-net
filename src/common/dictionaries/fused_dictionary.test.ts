@@ -3,6 +3,7 @@ import {
   CompletionsFusedRequest,
   DictInfo,
   Dictionary,
+  DictsFusedRequest,
 } from "@/common/dictionaries/dictionaries";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
@@ -111,5 +112,25 @@ describe("FusedDictionary", () => {
     const expected: Record<string, string[]> = {};
     expected[fakeSh.info.key] = ["a", "b"];
     expect(result).toEqual(expected);
+  });
+
+  it("requests inflections if needed", async () => {
+    const fakeLs: Dictionary = {
+      info: LatinDict.LewisAndShort,
+      getEntry: jest.fn(async (_input, _extras, _options) => []),
+      getCompletions: jest.fn(),
+    };
+    const dict = new FusedDictionary([fakeLs]);
+    const request: DictsFusedRequest = {
+      query: "test",
+      dicts: [fakeLs.info.key],
+      mode: 1,
+    };
+
+    await dict.getEntry(request);
+
+    expect(fakeLs.getEntry).toHaveBeenCalledWith("test", undefined, {
+      handleInflections: true,
+    });
   });
 });

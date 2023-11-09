@@ -1,5 +1,7 @@
 import { checkPresent } from "@/common/assert";
+import { EntryResult } from "@/common/dictionaries/dict_result";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   ShLinkResolver,
@@ -8,6 +10,7 @@ import {
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { getOutline } from "@/common/smith_and_hall/sh_outline";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 export function shListToRaw(entries: ShEntry[]) {
   const resolver = new ShLinkResolver(entries);
@@ -24,19 +27,29 @@ export function shListToRaw(entries: ShEntry[]) {
   });
 }
 
-export class SmithAndHall extends SqlDict {
+export class SmithAndHall implements Dictionary {
+  readonly info = LatinDict.SmithAndHall;
+
+  private readonly sqlDict: SqlDict;
+
   constructor(dbPath: string = checkPresent(process.env.SH_PROCESSED_PATH)) {
-    super(
-      dbPath,
-      LatinDict.SmithAndHall,
-      (entryStrings) =>
-        entryStrings
-          .map((x) => JSON.parse(x))
-          .map((storedEntry) => ({
-            entry: XmlNodeSerialization.DEFAULT.deserialize(storedEntry.entry),
-            outline: storedEntry.outline,
-          })),
-      (input) => input.split("@")
-    );
+    this.sqlDict = new SqlDict(dbPath, "@");
+  }
+
+  async getEntry(
+    input: string,
+    extras?: ServerExtras | undefined
+  ): Promise<EntryResult[]> {
+    return this.sqlDict
+      .getRawEntry(input, extras)
+      .map((x) => JSON.parse(x))
+      .map((storedEntry) => ({
+        entry: XmlNodeSerialization.DEFAULT.deserialize(storedEntry.entry),
+        outline: storedEntry.outline,
+      }));
+  }
+
+  async getCompletions(input: string): Promise<string[]> {
+    return this.sqlDict.getCompletions(input);
   }
 }

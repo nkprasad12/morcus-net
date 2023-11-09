@@ -46,4 +46,11 @@ describe("SmithAndHall dict", () => {
     await expectEntriesWithIds(dict.getEntry("Hi"), ["sh0"]);
     await expectEntriesWithIds(dict.getEntry("Hello"), ["sh0", "sh1"]);
   });
+
+  test("getEntry returns expected completions", async () => {
+    SqlDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
+    const dict = new SmithAndHall(TEMP_FILE);
+
+    expect(await dict.getCompletions("H")).toEqual(["Hello", "Hi"]);
+  });
 });

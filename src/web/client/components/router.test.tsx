@@ -85,4 +85,33 @@ describe("Router", () => {
     expect(setInfo).toHaveBeenCalledWith(newPath);
     expect(pushState.mock.lastCall![2]).toBe("origin2/path2?q=query1#hash1");
   });
+
+  test.each([[undefined], [true], [false]])(
+    "Navigation.query updates expected state with experimental %p",
+    (experimentalSearch) => {
+      const pushState = jest.fn();
+      window.history.pushState = pushState;
+      const setInfo = jest.fn();
+      const initial: RouteInfo = {
+        path: "origin/path1",
+        query: "query1",
+      };
+      const nav: Navigation = {
+        route: initial,
+        navigateTo: setInfo,
+      };
+
+      Navigation.query(nav, "query2", experimentalSearch);
+
+      const newPath = {
+        path: "origin/path1",
+        query: "query2",
+        experimentalSearch: experimentalSearch,
+      };
+      expect(setInfo).toHaveBeenCalledWith(newPath);
+      expect(pushState.mock.lastCall![2]).toBe(
+        "origin/path1?q=query2" + (experimentalSearch ? "&o=1" : "")
+      );
+    }
+  );
 });

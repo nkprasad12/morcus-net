@@ -184,9 +184,12 @@ export function DictionarySearch(props: {
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
   const input = React.useRef<string>("");
+
+  const nav = React.useContext(RouteContext);
+  const settings = React.useContext(GlobalSettingsContext);
+
   const [options, setOptions] = React.useState<[DictInfo, string][]>([]);
   const [loading, setLoading] = React.useState<boolean>(false);
-  const nav = React.useContext(RouteContext);
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
 
   const numDicts = props.dicts.length;
@@ -195,7 +198,7 @@ export function DictionarySearch(props: {
     if (searchTerm.length === 0) {
       return;
     }
-    Navigation.query(nav, searchTerm);
+    Navigation.query(nav, searchTerm, settings.data.experimentalMode === true);
   }
 
   async function loadOptions(searchTerm: string) {
