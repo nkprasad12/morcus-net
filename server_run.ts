@@ -40,6 +40,10 @@ function parseArguments() {
     help: "If set, re-processes SH and saves to DB.",
     action: "store_true",
   });
+  parser.add_argument("-b_li", "--build_latin_inflections", {
+    help: "If set, re-processes Latin Inflections and saves to DB.",
+    action: "store_true",
+  });
   parser.add_argument("-to", "--transpile_only", {
     help: "If set, skips type checking for the client and server.",
     action: "store_true",
@@ -175,6 +179,15 @@ function setupAndStartWebServer(args: any) {
   }
   if (args.build_sh === true) {
     const command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"];
+    setupSteps.push([command, spawnChild(command)]);
+  }
+  if (args.build_latin_inflections === true) {
+    const command = [
+      "npm",
+      "run",
+      "ts-node",
+      "src/scripts/latin_inflections.ts",
+    ];
     setupSteps.push([command, spawnChild(command)]);
   }
 
