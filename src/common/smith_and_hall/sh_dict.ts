@@ -49,10 +49,7 @@ export class SmithAndHall implements Dictionary {
       }));
   }
 
-  async getCompletions(
-    input: string,
-    _extras?: ServerExtras | undefined
-  ): Promise<string[]> {
+  async getCompletions(input: string): Promise<string[]> {
     return this.sqlDict.getCompletions(input);
   }
 }
