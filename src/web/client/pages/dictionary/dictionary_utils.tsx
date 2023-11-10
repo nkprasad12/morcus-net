@@ -177,6 +177,7 @@ export function xmlNodeToJsx(
     return <LinkContent />;
   } else if (className === "latWord") {
     const word = root.getAttr("to")!;
+    const orig = root.getAttr("orig");
     function LinkContent() {
       const nav = React.useContext(RouteContext);
       return (
@@ -184,7 +185,7 @@ export function xmlNodeToJsx(
           className="latWord"
           onClick={() => Navigation.query(nav, `${word},LnS`, true)}
         >
-          {word}
+          {orig || word}
         </span>
       );
     }

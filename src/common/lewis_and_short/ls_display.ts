@@ -37,6 +37,7 @@ export interface DisplayContext {
 const COMMON_ENGLISH_WORDS = new Set([
   "a",
   "an",
+  "as",
   "at",
   "i",
   "in",
@@ -51,7 +52,7 @@ const COMMON_ENGLISH_WORDS = new Set([
   "the",
 ]);
 
-const BREAK_CHARACTERS = /([ ()[\];.,?])/;
+const BREAK_CHARACTERS = /([ ()[\];:.,?])/;
 
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
@@ -990,14 +991,27 @@ export function attachLatinLinks(root: XmlNode): XmlNode {
     }
     const latinWords = LatinWords.allWords();
     const words = child.split(BREAK_CHARACTERS);
-    const fragments = words.map((word) =>
-      latinWords.has(removeDiacritics(word)) && !COMMON_ENGLISH_WORDS.has(word)
-        ? new XmlNode("span", [
-            ["class", "latWord"],
-            ["to", word],
-          ])
-        : word
-    );
+    const fragments = words.map((word) => {
+      if (COMMON_ENGLISH_WORDS.has(word)) {
+        return word;
+      }
+      const noDiacritics = removeDiacritics(word);
+      if (latinWords.has(noDiacritics)) {
+        return new XmlNode("span", [
+          ["class", "latWord"],
+          ["to", word],
+        ]);
+      }
+      const lowerCase = noDiacritics.toLowerCase();
+      if (latinWords.has(lowerCase)) {
+        return new XmlNode("span", [
+          ["class", "latWord"],
+          ["to", word.toLowerCase()],
+          ["orig", word],
+        ]);
+      }
+      return word;
+    });
     const result: XmlChild[] = [];
     for (const fragment of fragments) {
       const topIndex = result.length - 1;
