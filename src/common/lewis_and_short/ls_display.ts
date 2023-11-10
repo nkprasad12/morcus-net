@@ -982,7 +982,8 @@ export function displayNote(
 }
 
 export function attachLatinLinks(root: XmlNode): XmlNode {
-  if (root.getAttr("class")?.includes("lsHover")) {
+  const className = root.getAttr("class");
+  if (className?.includes("lsHover") || className?.includes("lsSenseBullet")) {
     return root;
   }
   const linkified = root.children.flatMap((child) => {
