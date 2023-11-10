@@ -80,7 +80,9 @@ try:
     if "cannăba" not in api_result.text:
         raise RuntimeError("Failed LS lookup")
 
-    arg = parse.quote(json.dumps({"w": {"query": "undarum", "dicts": ["L&S"]}}))
+    arg = parse.quote(
+        json.dumps({"w": {"query": "undarum", "dicts": ["L&S"], "mode": 1}})
+    )
     route = f"http://localhost:{PORT}/api/dicts/fused/{arg}"
     print(route)
     api_result = requests.get(route, timeout=5)
