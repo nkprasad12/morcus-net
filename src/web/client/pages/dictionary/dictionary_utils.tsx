@@ -168,7 +168,9 @@ export function xmlNodeToJsx(
       return (
         <span
           className="dLink"
-          onClick={() => Navigation.query(nav, query.join(","))}
+          onClick={() =>
+            Navigation.query(nav, query.join(","), undefined, true)
+          }
         >
           {text || "undefined"}
         </span>
@@ -183,7 +185,7 @@ export function xmlNodeToJsx(
       return (
         <span
           className="latWord"
-          onClick={() => Navigation.query(nav, `${word},LnS`, true)}
+          onClick={() => Navigation.query(nav, `${word},LnS`, true, true)}
         >
           {orig || word}
         </span>

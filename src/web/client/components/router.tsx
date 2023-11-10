@@ -11,6 +11,7 @@ export interface RouteInfo {
   query?: string;
   experimentalSearch?: boolean;
   hash?: string;
+  internalSource?: boolean;
 }
 
 function extractRouteInfo(): RouteInfo {
@@ -61,12 +62,14 @@ export namespace Navigation {
   export function query(
     nav: Navigation,
     query: string,
-    experimentalSearch?: boolean
+    experimentalSearch?: boolean,
+    internalSource?: boolean
   ): void {
     toRouteInfo(nav, {
       path: nav.route.path,
       query: query,
       experimentalSearch: experimentalSearch,
+      internalSource: internalSource,
     });
   }
 

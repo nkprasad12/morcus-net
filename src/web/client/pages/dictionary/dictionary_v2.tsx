@@ -201,7 +201,11 @@ export function DictionaryViewV2() {
       });
       const scrollElement = sectionRef.current || searchBarRef.current;
       const scrollType =
-        scrollElement === searchBarRef.current ? SCROLL_SMOOTH : SCROLL_JUMP;
+        nav.route.internalSource === true
+          ? SCROLL_JUMP
+          : scrollElement === searchBarRef.current
+          ? SCROLL_SMOOTH
+          : SCROLL_JUMP;
       scrollElement?.scrollIntoView(scrollType);
     });
   }, [nav.route.query]);
