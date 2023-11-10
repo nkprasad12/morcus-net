@@ -1,4 +1,4 @@
-import { ApiRoute } from "@/web/utils/rpc/rpc";
+import { ApiRoute, ServerMessage } from "@/web/utils/rpc/rpc";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 
 const POST_HEADERS = {
@@ -13,10 +13,11 @@ function timed<T>(func: () => T, tag?: string): T {
   return result;
 }
 
-export async function callApi<I, O>(
+/** Calls an API and returns the result and any response metadata. */
+export async function callApiFull<I, O>(
   route: ApiRoute<I, O>,
   input: I
-): Promise<O> {
+): Promise<ServerMessage<O>> {
   const message = timed(
     () => encodeMessage(input, route.registry, route.method === "GET"),
     `${route.path} encode`
@@ -36,13 +37,36 @@ export async function callApi<I, O>(
   }
   try {
     const result = await response.text();
-    return timed(
-      () => decodeMessage(result, route.outputValidator, route.registry),
-      `${route.path} decode`
-    );
+    try {
+      return {
+        data: timed(
+          () => decodeMessage(result, route.outputValidator, route.registry),
+          `${route.path} decode legacy`
+        ),
+      };
+    } catch {
+      console.debug("Legacy decode failed, trying new format.");
+      return timed(
+        () =>
+          decodeMessage(
+            result,
+            ServerMessage.validator(route.outputValidator),
+            route.registry
+          ),
+        `${route.path} decode`
+      );
+    }
   } catch (e) {
     return Promise.reject(
       new Error(`Unable to decode result from ${base}`, { cause: e })
     );
   }
+}
+
+/** Calls an API and returns the result. */
+export async function callApi<I, O>(
+  route: ApiRoute<I, O>,
+  input: I
+): Promise<O> {
+  return callApiFull(route, input).then((result) => result.data);
 }

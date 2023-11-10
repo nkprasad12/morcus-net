@@ -9,7 +9,7 @@ import { Solarized } from "@/web/client/colors";
 import { RouteContext } from "@/web/client/components/router";
 import ReactDOM, { flushSync } from "react-dom";
 import { DictsFusedApi } from "@/web/api_routes";
-import { callApi } from "@/web/utils/rpc/client_rpc";
+import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { Footer } from "@/web/client/components/footer";
 import {
   ElementAndKey,
@@ -40,6 +40,7 @@ import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 import { TitleContext } from "../../components/title";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { getCommitHash } from "@/web/client/define_vars";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -60,10 +61,7 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   minWidth: "min(29%, 300px)",
 };
 
-async function fetchEntry(
-  input: string,
-  experimentalMode: boolean
-): Promise<DictsFusedResponse | null> {
+async function fetchEntry(input: string, experimentalMode: boolean) {
   const parts = input.split(",");
   const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
   const dicts =
@@ -72,7 +70,7 @@ async function fetchEntry(
           (dict) => dict.key
         )
       : LatinDict.AVAILABLE.map((dict) => dict.key);
-  const result = callApi(DictsFusedApi, {
+  const result = callApiFull(DictsFusedApi, {
     query: parts[0],
     dicts,
     mode: experimentalMode ? 1 : 0,
@@ -189,8 +187,19 @@ export function DictionaryViewV2() {
         setState("Error");
         return;
       }
+      const serverCommit = newResults.metadata?.commit;
+      const clientCommit = getCommitHash();
+      if (
+        serverCommit !== undefined &&
+        clientCommit !== "undefined" &&
+        serverCommit !== clientCommit
+      ) {
+        location.reload();
+        return;
+      }
+
       const allEntries = getEntriesByDict(
-        newResults,
+        newResults.data,
         sectionRef,
         nav.route.hash
       );
