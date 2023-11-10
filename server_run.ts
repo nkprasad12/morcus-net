@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 
 import { ArgumentParser } from "argparse";
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess, spawn, spawnSync } from "child_process";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -204,6 +204,8 @@ function setupAndStartWebServer(args: any) {
 
 async function setupStartWebServer(args: any) {
   const serverEnv = { ...process.env };
+  const commitHash = spawnSync("git", ["rev-parse", "HEAD"]);
+  serverEnv.SOURCE_VERSION = commitHash.stdout.toString();
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
   }
