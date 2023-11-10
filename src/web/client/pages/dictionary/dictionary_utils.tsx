@@ -175,6 +175,20 @@ export function xmlNodeToJsx(
       );
     }
     return <LinkContent />;
+  } else if (className === "latWord") {
+    const word = root.getAttr("to")!;
+    function LinkContent() {
+      const nav = React.useContext(RouteContext);
+      return (
+        <span
+          className="latWord"
+          onClick={() => Navigation.query(nav, `${word},LnS`, true)}
+        >
+          {word}
+        </span>
+      );
+    }
+    return <LinkContent />;
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";
@@ -218,7 +232,6 @@ export function InflectionDataSection(props: {
     }
     byForm.get(data.form)!.push([data.data, data.usageNote]);
   }
-  console.log(byForm);
   const formatted: [string, string[]][] = Array.from(byForm.entries()).map(
     ([form, data]) => [
       form,
@@ -232,7 +245,6 @@ export function InflectionDataSection(props: {
         ),
     ]
   );
-  console.log(formatted);
 
   return (
     <>

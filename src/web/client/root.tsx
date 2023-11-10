@@ -217,6 +217,11 @@ function ConfigurableStyles() {
           borderBottom: `1px solid ${Solarized.blue}`,
           cursor: "pointer",
         },
+        ".latWord:hover": {
+          color: Solarized.blue,
+          borderBottom: `1px solid ${Solarized.blue}`,
+          cursor: "pointer",
+        },
       }}
     />
   );

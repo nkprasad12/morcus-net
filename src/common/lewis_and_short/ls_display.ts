@@ -24,6 +24,8 @@ import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
 import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
+import { LatinWords } from "@/common/lexica/latin_words";
+import { removeDiacritics } from "@/common/text_cleaning";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
@@ -31,6 +33,25 @@ const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
 export interface DisplayContext {
   lastAuthor?: string;
 }
+
+const COMMON_ENGLISH_WORDS = new Set([
+  "a",
+  "an",
+  "at",
+  "i",
+  "in",
+  "is",
+  "it",
+  "do",
+  "has",
+  "his",
+  "me",
+  "of",
+  "on",
+  "the",
+]);
+
+const BREAK_CHARACTERS = /([ ()[\];.,?])/;
 
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
@@ -959,6 +980,39 @@ export function displayNote(
   return new XmlNode("span");
 }
 
+export function attachLatinLinks(root: XmlNode): XmlNode {
+  if (root.getAttr("class")?.includes("lsHover")) {
+    return root;
+  }
+  const linkified = root.children.flatMap((child) => {
+    if (typeof child !== "string") {
+      return attachLatinLinks(child);
+    }
+    const latinWords = LatinWords.allWords();
+    const words = child.split(BREAK_CHARACTERS);
+    const fragments = words.map((word) =>
+      latinWords.has(removeDiacritics(word)) && !COMMON_ENGLISH_WORDS.has(word)
+        ? new XmlNode("span", [
+            ["class", "latWord"],
+            ["to", word],
+          ])
+        : word
+    );
+    const result: XmlChild[] = [];
+    for (const fragment of fragments) {
+      const topIndex = result.length - 1;
+      const topChild = result[topIndex];
+      if (typeof fragment !== "string" || typeof topChild !== "string") {
+        result.push(fragment);
+        continue;
+      }
+      result[topIndex] = topChild + fragment;
+    }
+    return result;
+  });
+  return new XmlNode(root.name, root.attrs, linkified);
+}
+
 export function formatSenseList(
   senseNodes: XmlNode[],
   context: DisplayContext
@@ -1109,5 +1163,6 @@ export function displayEntryFree(
   ]);
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
   result = handleAbbreviations(result, GENERIC_EXPANSIONS, true);
-  return handleAbbreviations(result, GENERIC_HOVERS, false);
+  result = handleAbbreviations(result, GENERIC_HOVERS, false);
+  return attachLatinLinks(result);
 }

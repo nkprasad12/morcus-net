@@ -4,6 +4,10 @@ import { CANABA, HABEO } from "@/common/lewis_and_short/sample_entries";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "./xml_utils";
+import fs from "fs";
+import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
+import { makeMorpheusDb } from "@/common/lexica/latin_words";
+import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 // import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 // const LEGACY: Serialization<XmlNode> = {
@@ -13,7 +17,23 @@ import { parseXmlStrings } from "./xml_utils";
 //   deserialize: (t) => parseEntries([t])[0],
 // };
 
-function process(node: XmlNode): XmlNode {
+const MORPH_FILE = "xml_node_serialization.test.ts.tmp.morph.txt";
+const INFL_DB_FILE = "xml_node_serialization.test.ts.tmp.lat.db";
+
+beforeAll(() => {
+  process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
+  fs.writeFileSync(MORPH_FILE, SAMPLE_MORPHEUS_OUTPUT);
+  makeMorpheusDb(MORPH_FILE, INFL_DB_FILE);
+});
+
+afterAll(() => {
+  try {
+    fs.unlinkSync(MORPH_FILE);
+  } catch {}
+  cleanupSqlTableFiles(INFL_DB_FILE);
+});
+
+function processNode(node: XmlNode): XmlNode {
   const data = XmlNodeSerialization.DEFAULT.serialize(node);
   return XmlNodeSerialization.DEFAULT.deserialize(data);
 }
@@ -21,7 +41,7 @@ function process(node: XmlNode): XmlNode {
 describe("XmlNode serialization", () => {
   it("handles no children no attrs case", () => {
     const node = new XmlNode("div");
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles no children with attrs case", () => {
@@ -29,12 +49,12 @@ describe("XmlNode serialization", () => {
       ["id", "fooBar"],
       ["className", "lsSenseBullet"],
     ]);
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles string children with no attrs case", () => {
     const node = new XmlNode("div", [], ["Gallia est omnis", "divisa"]);
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles simple children with attrs case", () => {
@@ -46,7 +66,7 @@ describe("XmlNode serialization", () => {
       ],
       ["Gallia est omnis", "divisa"]
     );
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles simple nested children with attrs case", () => {
@@ -58,7 +78,7 @@ describe("XmlNode serialization", () => {
       ],
       ["Gallia est", new XmlNode("span", [], [" omnis "]), "divisa"]
     );
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles nested children with no strings case", () => {
@@ -73,24 +93,24 @@ describe("XmlNode serialization", () => {
         new XmlNode("span", [], [" omnis "]),
       ]
     );
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles raw canaba case", () => {
     const node = parseXmlStrings([CANABA])[0];
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles processed canaba case", () => {
     const rawNode = parseXmlStrings([CANABA])[0];
     const node = displayEntryFree(rawNode);
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 
   it("handles processed habeo case", () => {
     const rawNode = parseXmlStrings([HABEO])[0];
     const node = displayEntryFree(rawNode);
-    expect(process(node)).toEqual(node);
+    expect(processNode(node)).toEqual(node);
   });
 });
 

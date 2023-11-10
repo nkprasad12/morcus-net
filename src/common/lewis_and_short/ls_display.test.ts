@@ -24,8 +24,28 @@ import {
 } from "@/common/lewis_and_short/sample_entries";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseXmlStrings } from "../xml/xml_utils";
+import fs from "fs";
+import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
+import { makeMorpheusDb } from "@/common/lexica/latin_words";
+import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 
 console.debug = jest.fn();
+
+const MORPH_FILE = "ls_display.test.ts.tmp.morph.txt";
+const INFL_DB_FILE = "ls_display.test.ts.tmp.lat.db";
+
+beforeAll(() => {
+  process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
+  fs.writeFileSync(MORPH_FILE, SAMPLE_MORPHEUS_OUTPUT);
+  makeMorpheusDb(MORPH_FILE, INFL_DB_FILE);
+});
+
+afterAll(() => {
+  try {
+    fs.unlinkSync(MORPH_FILE);
+  } catch {}
+  cleanupSqlTableFiles(INFL_DB_FILE);
+});
 
 describe("displayNote", () => {
   it("is collapsed entirely", () => {

@@ -147,15 +147,30 @@ export function makeMorpheusDb(
 }
 
 let db: Database | undefined = undefined;
+let wordsOnly: Set<string> | undefined = undefined;
 
 export namespace LatinWords {
-  export function analysesFor(term: string): LatinWordAnalysis[] {
+  function getDb(): Database {
     if (db === undefined) {
       db = ReadOnlyDb.getDatabase(
         checkPresent(process.env.LATIN_INFLECTION_DB)
       );
     }
-    const read = db.prepare("SELECT * FROM data WHERE word = ?");
+    return db;
+  }
+
+  export function allWords(): Set<string> {
+    if (wordsOnly === undefined) {
+      const read = getDb().prepare("SELECT word FROM data");
+      // @ts-ignore
+      const words: { word: string }[] = read.all();
+      wordsOnly = new Set<string>(words.map((word) => word.word));
+    }
+    return wordsOnly;
+  }
+
+  export function analysesFor(term: string): LatinWordAnalysis[] {
+    const read = getDb().prepare("SELECT * FROM data WHERE word = ?");
     // @ts-ignore
     const rows: LatinWordRow[] = read.all(term);
 
