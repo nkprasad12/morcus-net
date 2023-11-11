@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { assertEqual, checkPresent } from "@/common/assert";
 import { DictsFusedApi } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";

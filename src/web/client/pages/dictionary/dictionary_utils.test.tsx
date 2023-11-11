@@ -106,6 +106,59 @@ describe("xmlNodeToJsx", () => {
       expect.objectContaining({ path: "/", query: "omnis,SnH" })
     );
   });
+
+  it("handles latWord elements", async () => {
+    const root = new XmlNode(
+      "span",
+      [
+        ["class", "latWord"],
+        ["to", "omnis"],
+      ],
+      []
+    );
+    const result = xmlNodeToJsx(root, undefined);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <div>{result}</div>
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.getByText("omnis"));
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+    );
+  });
+
+  it("handles latWord elements with different text", async () => {
+    const root = new XmlNode(
+      "span",
+      [
+        ["class", "latWord"],
+        ["to", "omnis"],
+        ["orig", "blah"],
+      ],
+      []
+    );
+    const result = xmlNodeToJsx(root, undefined);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <div>{result}</div>
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.getByText("blah"));
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+    );
+  });
 });
 
 describe("ClickableTooltip", () => {
