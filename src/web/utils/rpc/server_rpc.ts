@@ -138,12 +138,7 @@ function adaptHandler<I, O extends Data>(
       })
       .finally(() => {
         timer.event("handlerComplete");
-        const result =
-          process.env.NEW_RPC === undefined
-            ? body === undefined
-              ? undefined
-              : encodeMessage(body, route.registry)
-            : encodeMessage(serverMessage(body), route.registry);
+        const result = encodeMessage(serverMessage(body), route.registry);
         timer.event("encodeMessageComplete");
         res.status(status).send(result);
         const telemetryData: Omit<ApiCallData, "latencyMs"> = {

@@ -255,10 +255,6 @@ function setupApp(): Promise<http.Server> {
 describe("RPC library", () => {
   let server: http.Server | undefined = undefined;
 
-  afterEach(() => {
-    process.env = { ...process.env, NEW_RPC: undefined };
-  });
-
   test("handles strings with GET", async () => {
     server = await setupApp();
     const result = await callApi(StringGet.route, "foo");
@@ -301,21 +297,7 @@ describe("RPC library", () => {
     expect(await callApi(BoolPost.route, true)).toBe(false);
   });
 
-  test("handles JSON with GET with old protocol", async () => {
-    process.env = { ...process.env, NEW_RPC: undefined };
-    server = await setupApp();
-    const input = { nested: { str: "foo" }, arr: ["foo"] };
-
-    const result = await callApi(JsonGet.route, input);
-
-    expect(result).toStrictEqual({
-      nested: { str: "foo JsonGet" },
-      arr: ["foo", "JsonGet"],
-    });
-  });
-
-  test("handles JSON with GET and new protocol", async () => {
-    process.env = { ...process.env, NEW_RPC: "yes" };
+  test("handles JSON with GET", async () => {
     server = await setupApp();
     const input = { nested: { str: "foo" }, arr: ["foo"] };
 

@@ -37,25 +37,15 @@ export async function callApiFull<I, O>(
   }
   try {
     const result = await response.text();
-    try {
-      return {
-        data: timed(
-          () => decodeMessage(result, route.outputValidator, route.registry),
-          `${route.path} decode legacy`
+    return timed(
+      () =>
+        decodeMessage(
+          result,
+          ServerMessage.validator(route.outputValidator),
+          route.registry
         ),
-      };
-    } catch {
-      console.debug("Legacy decode failed, trying new format.");
-      return timed(
-        () =>
-          decodeMessage(
-            result,
-            ServerMessage.validator(route.outputValidator),
-            route.registry
-          ),
-        `${route.path} decode`
-      );
-    }
+      `${route.path} decode`
+    );
   } catch (e) {
     return Promise.reject(
       new Error(`Unable to decode result from ${base}`, { cause: e })
