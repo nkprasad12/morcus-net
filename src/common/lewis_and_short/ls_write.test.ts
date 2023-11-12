@@ -104,4 +104,26 @@ describe("rewriters", () => {
       ].join("\n")
     );
   });
+
+  test("transformEntries returns expected with async transformer", async () => {
+    const original = ["header", "<body>", CANABA, "<div1></div>", PALUS1].join(
+      "\n"
+    );
+    writeFileSync(IN_FILE, original);
+
+    await LsRewriters.transformEntries(
+      IN_FILE,
+      async (root) => new XmlNode("box", [], [root])
+    );
+    const rewritten = readFileSync(IN_FILE, "utf8");
+    expect(rewritten).toEqual(
+      [
+        "header",
+        "<body>",
+        `<box>${CANABA}</box>`,
+        "<div1></div>",
+        `<box>${PALUS1}</box>`,
+      ].join("\n")
+    );
+  });
 });
