@@ -8,7 +8,8 @@ dotenv.config();
 
 const WEB_SERVER = "web";
 const WORKER = "worker";
-const COMMANDS = [WEB_SERVER, WORKER];
+const EDITOR = "editor";
+const COMMANDS = [WEB_SERVER, WORKER, EDITOR];
 
 const cleanupOperations: (() => any)[] = [];
 
@@ -18,6 +19,8 @@ if (args.command === WEB_SERVER) {
   setupAndStartWebServer(args).then(() => console.log("Kicked off server!"));
 } else if (args.command === WORKER) {
   awaitAll([startWorker(args, args.workerType)]);
+} else if (args.command === EDITOR) {
+  startLsEditor();
 }
 
 function parseArguments() {
@@ -220,4 +223,12 @@ async function setupStartWebServer(args: any) {
   }
   baseCommand.push("src/start_server.ts");
   spawnChild(baseCommand, serverEnv);
+}
+
+async function startLsEditor() {
+  const editorRoot = "src/common/lewis_and_short/editor";
+  await processComplete(
+    spawnChild(["npx", "webpack", "--config", `webpack.editor.config.js`])
+  );
+  spawnChild(["npm", "run", "ts-node", `${editorRoot}/ls_interactive.ts`]);
 }
