@@ -57,15 +57,11 @@ export class LewisAndShort implements Dictionary {
 
     const analyses = LatinWords.analysesFor(input);
     const inflectedResults: EntryResult[] = [];
+    const exactResults: EntryResult[] = [];
     for (const analysis of analyses) {
       const lemmaChunks = analysis.lemma.split("#");
       const lemmaBase = lemmaChunks[0];
-      // TODO: Currently, getRawEntry will ignore case, i.e
-      // canis will also return inputs for Canis. Ignore this for
-      // now but we should fix it later and handle case difference explicitly.
-      if (lemmaBase === removeDiacritics(input)) {
-        continue;
-      }
+
       const rawResults = this.sqlDict.getRawEntry(lemmaBase);
       const results: EntryResult[] = rawResults
         .map(XmlNodeSerialization.DEFAULT.deserialize)
@@ -88,12 +84,21 @@ export class LewisAndShort implements Dictionary {
             }))
           ),
         }));
-      inflectedResults.push(...results);
+      // TODO: Currently, getRawEntry will ignore case, i.e
+      // canis will also return inputs for Canis. Ignore this for
+      // now but we should fix it later and handle case difference explicitly.
+      if (lemmaBase === removeDiacritics(input)) {
+        exactResults.push(...results);
+      } else {
+        inflectedResults.push(...results);
+      }
     }
 
     const results: EntryResult[] = [];
     const idsSoFar = new Set<string>();
-    for (const candidate of exactMatches.concat(inflectedResults)) {
+    for (const candidate of exactResults
+      .concat(exactMatches)
+      .concat(inflectedResults)) {
       const id = candidate.entry.getAttr("id")!;
       if (idsSoFar.has(id)) {
         continue;
