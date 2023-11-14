@@ -3,6 +3,7 @@ import { readFileSync } from "fs";
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
+import { execSync } from "child_process";
 
 // To generate Latin works with inflections, run the raw words list through morpheus.
 // That is, from the Morpheus directory:
@@ -57,29 +58,35 @@ function getLineData(line: string, key: string): string | undefined {
 }
 
 function loadMorpheusOutput(
-  rawPath: string = checkPresent(process.env.RAW_LATIN_WORDS)
+  rawPath: string = checkPresent(process.env.RAW_LATIN_WORDS),
+  obsoleteRowsRemoved: boolean = true
 ) {
-  const dbLines = readFileSync(rawPath, "utf8").split("\n");
+  return processMorpheusRaw(readFileSync(rawPath, "utf8"), true);
+}
+
+function processMorpheusRaw(rawOutput: string, obsoleteRowsRemoved: boolean) {
+  const dbLines = rawOutput.split("\n");
   const result = new Map<string, MorpheusAnalysis[]>();
   // Normally, the Morpheus output has 10 lines per raw input but
   // we remove two always empty lines to keep the total file size under
   // the GitHub limit.
-  for (let i = 0; i < dbLines.length - 1; i += 8) {
+  const linesPerEntry = obsoleteRowsRemoved ? 8 : 10;
+  // Normally, the Morpheus output has these as the 7th and 9th
+  // lines. But to get under the github file limit, some lines
+  // were removed.
+  const stemOffset = obsoleteRowsRemoved ? 6 : 7;
+  const endOffset = obsoleteRowsRemoved ? 7 : 9;
+  for (let i = 0; i < dbLines.length - 1; i += linesPerEntry) {
     assert(dbLines[i].trim().length === 0);
     assert(dbLines[i + 2].trim().length === 0);
-    // Normally, the Morpheus output has these as the 7th and 9th
-    // lines. But to get under the github file limit, remove these
-    // manually before processing.
-    // assert(getLineData(dbLines[i + 6], "aug1") === undefined);
-    // assert(getLineData(dbLines[i + 8], "suff") === undefined);
 
     const raw = checkPresent(getLineData(dbLines[i + 1], "raw"));
     const analysis: MorpheusAnalysis = {
       workw: checkPresent(getLineData(dbLines[i + 3], "workw")),
       lem: checkPresent(getLineData(dbLines[i + 4], "lem")),
       prvb: getLineData(dbLines[i + 5], "prvb"),
-      stem: checkPresent(getLineData(dbLines[i + 6], "stem")),
-      end: checkPresent(getLineData(dbLines[i + 7], "end")),
+      stem: checkPresent(getLineData(dbLines[i + stemOffset], "stem")),
+      end: checkPresent(getLineData(dbLines[i + endOffset], "end")),
     };
     if (!result.has(raw)) {
       result.set(raw, []);
@@ -121,27 +128,34 @@ function removeInternalDashes(word: string): string {
 //   return headwordRows[0]?.workw;
 // }
 
+function rowsFromMorpheusAnalysis(
+  analyses: [string, MorpheusAnalysis[]][]
+): LatinWordRow[] {
+  return analyses.flatMap(([word, analyses]) =>
+    analyses.map((analysis) => {
+      const rowInfoChunks = analysis.end.split("\t");
+      assert(rowInfoChunks.length === 5, analysis.end);
+
+      return {
+        word: word,
+        lemma: analysis.lem,
+        lengthMarked: displayTextForOrth(analysis.workw),
+        // lengthMarkedLemma:
+        //   getLengthMarksForLemma(analysis.lem, inflectionsDict) || word,
+        info: rowInfoChunks[1].trim(),
+        usageNote: rowInfoChunks[3].trim(),
+      };
+    })
+  );
+}
+
 export function makeMorpheusDb(
   rawInput: string = checkPresent(process.env.RAW_LATIN_WORDS),
   outputPath: string = checkPresent(process.env.LATIN_INFLECTION_DB)
 ) {
   const inflectionsDict = loadMorpheusOutput(rawInput);
-  const rows: LatinWordRow[] = Array.from(inflectionsDict.entries()).flatMap(
-    ([word, analyses]) =>
-      analyses.map((analysis) => {
-        const rowInfoChunks = analysis.end.split("\t");
-        assert(rowInfoChunks.length === 5, analysis.end);
-
-        return {
-          word: word,
-          lemma: analysis.lem,
-          lengthMarked: displayTextForOrth(analysis.workw),
-          // lengthMarkedLemma:
-          //   getLengthMarksForLemma(analysis.lem, inflectionsDict) || word,
-          info: rowInfoChunks[1].trim(),
-          usageNote: rowInfoChunks[3].trim(),
-        };
-      })
+  const rows: LatinWordRow[] = rowsFromMorpheusAnalysis(
+    Array.from(inflectionsDict.entries())
   );
   ReadOnlyDb.saveToSql(outputPath, rows, ARRAY_INDEX, [["word"], ["lemma"]]);
 }
@@ -169,11 +183,7 @@ export namespace LatinWords {
     return wordsOnly;
   }
 
-  export function analysesFor(term: string): LatinWordAnalysis[] {
-    const read = getDb().prepare("SELECT * FROM data WHERE word = ?");
-    // @ts-ignore
-    const rows: LatinWordRow[] = read.all(term);
-
+  function processMorpheusRows(rows: LatinWordRow[]): LatinWordAnalysis[] {
     const byLemma = new Map<string, LatinWordRow[]>();
     for (const row of rows) {
       const undashed = removeInternalDashes(row.lemma);
@@ -203,5 +213,23 @@ export namespace LatinWords {
         ),
       };
     });
+  }
+
+  export function callMorpheus(term: string): LatinWordAnalysis[] {
+    const output = execSync("bin/cruncher -Ld", {
+      env: { MORPHLIB: "stemlib" },
+      input: term,
+      cwd: process.env.MORPHEUS_ROOT,
+    });
+    const analyses = processMorpheusRaw(output.toString("utf8"), false);
+    const rows = rowsFromMorpheusAnalysis([...analyses.entries()]);
+    return processMorpheusRows(rows);
+  }
+
+  export function analysesFor(term: string): LatinWordAnalysis[] {
+    const read = getDb().prepare("SELECT * FROM data WHERE word = ?");
+    // @ts-ignore
+    const rows: LatinWordRow[] = read.all(term);
+    return processMorpheusRows(rows);
   }
 }
