@@ -55,7 +55,7 @@ export class LewisAndShort implements Dictionary {
       return exactMatches;
     }
 
-    const analyses = LatinWords.callMorpheus(input);
+    const analyses = LatinWords.analysesFor(input);
     const inflectedResults: EntryResult[] = [];
     const exactResults: EntryResult[] = [];
     for (const analysis of analyses) {

@@ -7,6 +7,10 @@ import { Tally } from "@/common/misc_utils";
 import * as dotenv from "dotenv";
 import { XmlNode } from "@/common/xml/xml_node";
 import { findTextNodes } from "@/common/xml/xml_utils";
+import { LatinWords } from "@/common/lexica/latin_words";
+// import { LewisAndShort } from "@/common/lewis_and_short/ls";
+// import { LatinWords } from "@/common/lexica/latin_words";
+// import { removeDiacritics } from "@/common/text_cleaning";
 
 dotenv.config();
 
@@ -79,9 +83,32 @@ export function printLsSchema(): void {
   }
 }
 
-printLsSchema();
+// printLsSchema();
 // const root = parseTeiXml(DOC_PATH);
 // console.log(root);
+// const allLs = [...LewisAndShort.createProcessedRaw()];
+// const morphWords = LatinWords.allWords();
+
+// let missingCount = 0;
+// let totalCount = 0;
+// for (const lsEntry of allLs) {
+//   const missingKeys = lsEntry.keys.filter(
+//     (key) => !morphWords.has(removeDiacritics(key))
+//   );
+//   totalCount += lsEntry.keys.length;
+//   if (missingKeys.length === 0) {
+//     continue;
+//   }
+//   console.log();
+//   console.log(
+//     `Entry: ${lsEntry.entry.getAttr("id")} ${lsEntry.entry.getAttr("key")}`
+//   );
+//   console.log(missingKeys.join(", "));
+//   missingCount += missingKeys.length;
+// }
+// console.log("missing: " + missingCount + " / " + totalCount);
+
+console.log(LatinWords.callMorpheus("salve"));
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);

@@ -17,13 +17,59 @@ export interface Lemma {
   variants?: string[];
 }
 
-export interface Inflection {}
+export type LatinCase =
+  | "Nominative"
+  | "Accusative"
+  | "Dative"
+  | "Genitive"
+  | "Ablative"
+  | "Vocative"
+  | "Locative";
+
+export type LatinNumber = "Singular" | "Plural";
+
+export type LatinGender = "Masculine" | "Feminine" | "Neuter";
+
+export type LatinPerson = "1st" | "2nd" | "3rd";
+
+export type LatinMood = "Indicative | Imperative | Subjunctive";
+
+export type LatinVoice = "Active" | "Passive";
+
+export type LatinTense =
+  | "Present"
+  | "Imperfect"
+  | "Perfect"
+  | "Future Perfect"
+  | "Future"
+  | "Pluperfect";
+
+export interface NounInflection {
+  case: LatinCase;
+  number: LatinNumber;
+}
+
+export interface AdjectiveInflection extends NounInflection {
+  gender: LatinCase;
+}
+
+export interface VerbInflection {
+  number: LatinNumber;
+  person: LatinPerson;
+  voice: LatinVoice;
+  mood: LatinMood;
+  tense: LatinTense;
+}
 
 export interface Word {
   /** The lemma associated with this word. */
   lemma: Lemma;
   /** The inflection data for this word. */
-  inflection: Inflection;
+  inflection:
+    | NounInflection
+    | AdjectiveInflection
+    | VerbInflection
+    | "Indeclinable";
 }
 
 export interface TokenAnalysis {
