@@ -12,7 +12,7 @@ describe("About Page", () => {
   test("shows expected components", () => {
     render(<About />);
 
-    expect(screen.getAllByText(/AGPL-3.0/)).toBeDefined();
+    expect(screen.getAllByText(/GPL-3.0/)).toBeDefined();
     expect(screen.getAllByText(/Perseus/)).toBeDefined();
   });
 

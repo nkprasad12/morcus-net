@@ -4,7 +4,7 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 
 [![CI Status](https://github.com/nkprasad12/morcus-net/actions/workflows/ci-workflow.yaml/badge.svg)](https://github.com/nkprasad12/morcus-net/actions)
 [![Coverage](https://codecov.io/gh/nkprasad12/morcus-net/branch/main/graph/badge.svg?token=G65VJM8B56)](https://codecov.io/gh/nkprasad12/morcus-net)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ---
 

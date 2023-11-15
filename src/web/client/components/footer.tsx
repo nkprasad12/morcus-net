@@ -24,7 +24,7 @@ export function Footer(props: { id?: string; className?: string }) {
           MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
           Affero General Public License for more details.
         </p>
-        See <SelfLink to="https://www.gnu.org/licenses/agpl-3.0.en.html" />
+        See <SelfLink to="https://www.gnu.org/licenses/gpl-3.0.en.html" />
         for a copy of the GNU Affero General Public License.
       </Typography>
     </Box>

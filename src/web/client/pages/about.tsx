@@ -42,9 +42,7 @@ export function About() {
             <p>
               This website is a free collection of resources for Latin learners,
               developed by Mórcus. It is provided under the{" "}
-              <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">
-                AGPL-3.0
-              </a>{" "}
+              <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GPL-3.0</a>{" "}
               license; source code is available on{" "}
               <a href="https://github.com/nkprasad12/morcus-net">GitHub</a>.
             </p>
