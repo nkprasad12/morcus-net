@@ -1,6 +1,7 @@
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
+import { Library } from "@/web/client/pages/library/library";
 import { Macronizer } from "@/web/client/pages/macron";
 
 export const ABOUT_PAGE: SinglePageApp.Page = {
@@ -19,5 +20,12 @@ export const MACRONIZER_PAGE: SinglePageApp.Page = {
   name: "Macronizer",
   path: "/macronizer",
   content: Macronizer,
+  experimental: true,
+};
+
+export const LIBRARY_PAGE: SinglePageApp.Page = {
+  name: "Library",
+  path: "/library",
+  content: Library,
   experimental: true,
 };
