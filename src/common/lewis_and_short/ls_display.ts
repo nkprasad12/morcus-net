@@ -25,7 +25,10 @@ import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
 import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 import { LatinWords } from "@/common/lexica/latin_words";
-import { removeDiacritics } from "@/common/text_cleaning";
+import {
+  TEXT_BREAK_CHARACTERS,
+  removeDiacritics,
+} from "@/common/text_cleaning";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
@@ -51,8 +54,6 @@ const COMMON_ENGLISH_WORDS = new Set([
   "on",
   "the",
 ]);
-
-const BREAK_CHARACTERS = /([ ()[\];:.,?])/;
 
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
@@ -991,7 +992,7 @@ export function attachLatinLinks(root: XmlNode): XmlNode {
       return attachLatinLinks(child);
     }
     const latinWords = LatinWords.allWords();
-    const words = child.split(BREAK_CHARACTERS);
+    const words = child.split(TEXT_BREAK_CHARACTERS);
     const fragments = words.map((word) => {
       if (COMMON_ENGLISH_WORDS.has(word)) {
         return word;
