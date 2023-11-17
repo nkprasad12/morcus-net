@@ -154,7 +154,10 @@ interface EntriesByDict {
   outlines: EntryOutline[];
 }
 
-export function DictionaryViewV2() {
+export function DictionaryViewV2(props?: {
+  embedded?: boolean;
+  initial?: string;
+}) {
   const [state, setState] = React.useState<DictState>("Landing");
   const [entries, setEntries] = React.useState<EntriesByDict[]>([]);
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
@@ -170,15 +173,14 @@ export function DictionaryViewV2() {
   const nav = React.useContext(RouteContext);
   const title = React.useContext(TitleContext);
   const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const isSmall =
+    props?.embedded === true ||
+    useMediaQuery(theme.breakpoints.down("md"), noSsr);
 
-  React.useEffect(() => {
-    if (nav.route.query === undefined) {
-      return;
-    }
+  function fetchAndDisplay(query: string) {
     setState("Loading");
     const serverResult = fetchEntry(
-      nav.route.query,
+      query,
       settings.data.experimentalMode === true ||
         nav.route.experimentalSearch === true
     );
@@ -217,7 +219,15 @@ export function DictionaryViewV2() {
           : SCROLL_JUMP;
       scrollElement?.scrollIntoView(scrollType);
     });
-  }, [nav.route.query]);
+  }
+
+  React.useEffect(() => {
+    const query = props?.embedded === true ? props?.initial : nav.route.query;
+    if (query === undefined) {
+      return;
+    }
+    fetchAndDisplay(query);
+  }, [nav.route.query, props?.initial]);
 
   React.useEffect(() => {
     const filteredEntries = entries.filter(

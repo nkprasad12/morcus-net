@@ -28,6 +28,7 @@ declare module "@mui/material/styles" {
   interface BreakpointOverrides {
     xxxs: true;
     xxs: true;
+    xxl: true;
   }
 }
 
@@ -57,6 +58,7 @@ const theme = createTheme({
       md: 900,
       lg: 1200,
       xl: 1500,
+      xxl: 2000,
     },
   },
 });
@@ -221,6 +223,10 @@ function ConfigurableStyles() {
         ".latWord:hover": {
           color: Solarized.blue,
           borderBottom: `1px solid ${Solarized.blue}`,
+          cursor: "pointer",
+        },
+        ".latWork:hover": {
+          color: Solarized.blue,
           cursor: "pointer",
         },
       }}
