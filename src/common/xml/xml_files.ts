@@ -3,6 +3,12 @@
 import { assert, checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
+import {
+  Validator,
+  isString,
+  matches,
+  maybeUndefined,
+} from "@/web/utils/rpc/parsing";
 import fs from "fs";
 
 const CONTENT_PATH = ["text", "body", "div"];
@@ -10,12 +16,22 @@ const CONTENT_PATH = ["text", "body", "div"];
 // const CONTENT_PATH = ["text", "body"];
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
 
-interface DocumentInfo {
+export interface DocumentInfo {
   title: string;
   author: string;
   editor?: string;
   sponsor?: string;
   funder?: string;
+}
+
+export namespace DocumentInfo {
+  export const isMatch: Validator<DocumentInfo> = matches([
+    ["title", isString],
+    ["author", isString],
+    ["editor", maybeUndefined(isString)],
+    ["sponsor", maybeUndefined(isString)],
+    ["funder", maybeUndefined(isString)],
+  ]);
 }
 
 // interface TextPart {
@@ -26,9 +42,12 @@ interface DocumentInfo {
 //   content: (string | TextPart)[];
 // }
 
-interface TeiDocument {
+export interface TeiDocument {
+  /** Basic information about this document like title, author, and so on. */
   info: DocumentInfo;
+  /** The names of the high levels divisions of this text. */
   textParts: string[];
+  /** The node containing the actual document content. */
   content: XmlNode;
 }
 

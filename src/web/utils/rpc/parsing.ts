@@ -125,6 +125,33 @@ export function isArray<T>(
   };
 }
 
+export function isPair<T, U>(
+  tVal: (t: unknown) => t is T,
+  uVal: (t: unknown) => t is U
+): (x: unknown) => x is [T, U] {
+  return (x): x is [T, U] => {
+    if (!Array.isArray(x) || x.length !== 2 || !tVal(x[0]) || !uVal(x[1])) {
+      return false;
+    }
+    return true;
+  };
+}
+
+export function isOneOf<T, U>(
+  tVal: (t: unknown) => t is T,
+  uVal: (t: unknown) => t is U
+): (x: unknown) => x is T | U {
+  return (x): x is T | U => {
+    if (tVal(x)) {
+      return true;
+    }
+    if (uVal(x)) {
+      return true;
+    }
+    return false;
+  };
+}
+
 export function isRecord<V>(
   vVal: (v: unknown) => v is V
 ): (x: unknown) => x is Record<string, V> {

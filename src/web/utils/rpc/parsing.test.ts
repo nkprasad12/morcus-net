@@ -6,6 +6,8 @@ import {
   isAny,
   isArray,
   isNumber,
+  isOneOf,
+  isPair,
   isRecord,
   isString,
   matches,
@@ -109,6 +111,37 @@ describe("isArray", () => {
 
   it("validates valid arrays", () => {
     expect(isArray(isString)(["canaba", "4"])).toBe(true);
+  });
+});
+
+describe("isPair", () => {
+  it("checks if input is array", () => {
+    expect(isPair(isString, isNumber)("canaba")).toBe(false);
+  });
+
+  it("checks if input is correct size", () => {
+    expect(isPair(isString, isNumber)(["foo", 4, 5])).toBe(false);
+  });
+
+  it("checks if all elements match validator", () => {
+    expect(isPair(isString, isNumber)([4, "foo"])).toBe(false);
+    expect(isPair(isString, isNumber)([4, 4])).toBe(false);
+    expect(isPair(isString, isNumber)(["foo", "foo"])).toBe(false);
+  });
+
+  it("validates valid arrays", () => {
+    expect(isPair(isString, isNumber)(["foo", 4])).toBe(true);
+  });
+});
+
+describe("isOneOf", () => {
+  it("rejects invalid inputs", () => {
+    expect(isOneOf(isString, isNumber)(true)).toBe(false);
+  });
+
+  it("validates either", () => {
+    expect(isOneOf(isString, isNumber)("4")).toBe(true);
+    expect(isOneOf(isString, isNumber)(4)).toBe(true);
   });
 });
 
