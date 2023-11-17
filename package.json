@@ -7,7 +7,7 @@
     "node": "20.x"
   },
   "scripts": {
-    "build": "npm run build-client -- --env production && npm run make-ls && npm run make-sh && npm run make-lat-infl-db && echo SOURCE_VERSION=$SOURCE_VERSION >> .env",
+    "build": "npm run build-client -- --env production && npm run make-ls && npm run make-sh && npm run make-lat-infl-db && npm run make-lat-lib && echo SOURCE_VERSION=$SOURCE_VERSION >> .env",
     "start": "node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only src/start_server.ts",
     "download-ls": "curl --compressed https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml > ls.xml",
     "make-ls": "npm run download-ls && npm run ts-node src/scripts/process_ls.ts && rm ls.xml",
@@ -15,6 +15,7 @@
     "make-sh": "npm run download-sh && npm run ts-node src/scripts/process_sh.ts && rm sh_raw.txt",
     "download-lat-infl-raw": "curl --compressed https://raw.githubusercontent.com/nkprasad12/morcus-raw-data/main/morpheus_out_aug1_suff_removed.txt > lat_raw.txt",
     "make-lat-infl-db": "npm run download-lat-infl-raw && npm run ts-node src/scripts/latin_inflections.ts && rm lat_raw.txt",
+    "make-lat-lib": "npm run ts-node src/scripts/process_lat_lib.ts",
     "format": "npx eslint . && npx prettier . --write && python -m black .",
     "format-check": "npx eslint . && npx prettier . --check && python -m black . --check",
     "setup-alatius": "python src/scripts/alatius.py",

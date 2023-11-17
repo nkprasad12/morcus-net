@@ -7,7 +7,10 @@ import {
   DictsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { ListLibraryWorksResponse } from "@/common/library/library_types";
+import {
+  ListLibraryWorksResponse,
+  ProcessedWork,
+} from "@/common/library/library_types";
 
 export const MacronizeApi: ApiRoute<string, string> = {
   path: "/api/macronize",
@@ -54,4 +57,12 @@ export const ListLibraryWorks: ApiRoute<any, ListLibraryWorksResponse> = {
   method: "GET",
   inputValidator: isAny,
   outputValidator: ListLibraryWorksResponse.isMatch,
+};
+
+export const GetWork: ApiRoute<string, ProcessedWork> = {
+  path: "/api/library/work",
+  method: "GET",
+  inputValidator: isString,
+  outputValidator: ProcessedWork.isMatch,
+  registry: [XmlNodeSerialization.DEFAULT],
 };

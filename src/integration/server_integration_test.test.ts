@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 
 import { assertEqual, checkPresent } from "@/common/assert";
-import { DictsFusedApi } from "@/web/api_routes";
+import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { ChildProcess, spawn } from "child_process";
 import fs from "fs";
@@ -24,6 +24,7 @@ const BUILD_CLIENT = "npm run build-client -- --env production";
 const PROCESS_LS = "npm run ts-node src/scripts/process_ls.ts -- --verify";
 const PROCESS_SH = "npm run ts-node src/scripts/process_sh.ts -- --verify";
 const MAKE_LAT_DB = "npm run ts-node src/scripts/latin_inflections.ts";
+const MAKE_LAT_LIB = "npm run ts-node src/scripts/process_lat_lib.ts";
 const START_SERVER =
   "node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only src/start_server.ts";
 const PORT = "3745";
@@ -115,9 +116,11 @@ export async function setUpEnvironment() {
   const makeLatDb = runCommand(MAKE_LAT_DB);
   assertEqual(await makeLatDb, 0, "Failed to make the Latin Inflections DB.");
 
+  const makeLabLib = runCommand(MAKE_LAT_LIB);
   const processLs = runCommand(PROCESS_LS);
   const processSh = runCommand(PROCESS_SH);
 
+  assertEqual(await makeLabLib, 0, "Failed to write processed Latin library");
   assertEqual(await buildClient, 0, "Failed to build the client");
   assertEqual(await processLs, 0, "Failed to process or verify LS");
   assertEqual(await processSh, 0, "Failed to process or verify SH");
@@ -209,5 +212,19 @@ describe("morcus.net backend", () => {
     expect(articles).toHaveLength(2);
     expect(articles[0].entry.toString().includes("Power exerted")).toBe(true);
     expect(articles[1].entry.toString().includes("impello")).toBe(true);
+  });
+
+  test("returns expected library result list", async () => {
+    const result = await callApiFull(ListLibraryWorks, {});
+
+    const works = result.data;
+    expect(
+      works.filter((work) => work.id === "phi0448.phi001.perseus-lat2")
+    ).toHaveLength(1);
+  });
+
+  test("returns DBG on request", async () => {
+    const result = await callApiFull(GetWork, "phi0448.phi001.perseus-lat2");
+    expect(result.data.info.title).toBe("De bello Gallico");
   });
 });

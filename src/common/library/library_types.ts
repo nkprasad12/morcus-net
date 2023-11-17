@@ -62,13 +62,11 @@ export interface LibraryWorkMetadata {
 }
 
 export namespace LibraryWorkMetadata {
-  export function isMatch(x: unknown): x is LibraryWorkMetadata {
-    return isMatch([
-      ["author", isString],
-      ["name", isString],
-      ["id", isString],
-    ]);
-  }
+  export const isMatch: Validator<LibraryWorkMetadata> = matches([
+    ["author", isString],
+    ["name", isString],
+    ["id", isString],
+  ]);
 }
 
 export type ListLibraryWorksResponse = LibraryWorkMetadata[];
