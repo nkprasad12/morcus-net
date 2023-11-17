@@ -173,9 +173,9 @@ export function DictionaryViewV2(props?: {
   const nav = React.useContext(RouteContext);
   const title = React.useContext(TitleContext);
   const theme = useTheme();
+  const isEmbedded = props?.embedded === true;
   const isSmall =
-    props?.embedded === true ||
-    useMediaQuery(theme.breakpoints.down("md"), noSsr);
+    isEmbedded || useMediaQuery(theme.breakpoints.down("md"), noSsr);
 
   function fetchAndDisplay(query: string) {
     setState("Loading");
@@ -246,6 +246,9 @@ export function DictionaryViewV2(props?: {
     id?: string;
     className?: string;
   }) {
+    if (isEmbedded) {
+      return <></>;
+    }
     return (
       <Container
         maxWidth={props.maxWidth}

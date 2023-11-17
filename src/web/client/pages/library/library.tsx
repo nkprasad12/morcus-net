@@ -81,9 +81,11 @@ export function ReadingPage(props: {
   return (
     <div>
       <Stack direction="row" spacing={0} justifyContent="left">
-        <div style={TOC_SIDEBAR_STYLE}>
-          <DictionaryViewV2 embedded={true} initial={props.dictWord} />
-        </div>
+        {props.dictWord && (
+          <div style={TOC_SIDEBAR_STYLE}>
+            <DictionaryViewV2 embedded={true} initial={props.dictWord} />
+          </div>
+        )}
         <div style={{ maxWidth: "10000px" }}>
           <WorkUi workdId={props.workId} setDictWord={props.setDictWord} />
         </div>
