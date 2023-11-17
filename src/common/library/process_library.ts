@@ -1,12 +1,15 @@
-import { LibraryWorkMetadata } from "@/common/library/library_types";
-import { ProcessedWork, processTei } from "@/common/library/process_work";
+import {
+  LibraryWorkMetadata,
+  ProcessedWork,
+} from "@/common/library/library_types";
+import { processTei } from "@/common/library/process_work";
 import { parseTeiXml } from "@/common/xml/xml_files";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";
 import { readFile } from "fs/promises";
 
-const OUTPUT_DIR = "library_processed";
+export const LIB_DEFAULT_DIR = "library_processed";
 const LIBRARY_INDEX = "morcus_library_index.json";
 // TODO: We should just crawl some root.
 const ALL_WORKS = [
@@ -18,7 +21,7 @@ interface LibraryIndex {
 }
 
 export function processLibrary(
-  outputDir: string = OUTPUT_DIR,
+  outputDir: string = LIB_DEFAULT_DIR,
   works: string[] = ALL_WORKS
 ) {
   const index: LibraryIndex = {};
@@ -45,7 +48,9 @@ export function processLibrary(
 
 const indices = new Map<string, Promise<LibraryIndex>>();
 
-async function getIndex(resultDir: string = OUTPUT_DIR): Promise<LibraryIndex> {
+async function getIndex(
+  resultDir: string = LIB_DEFAULT_DIR
+): Promise<LibraryIndex> {
   if (!indices.has(resultDir)) {
     indices.set(
       resultDir,
@@ -58,7 +63,7 @@ async function getIndex(resultDir: string = OUTPUT_DIR): Promise<LibraryIndex> {
 }
 
 export async function retrieveWorksList(
-  resultDir: string = OUTPUT_DIR
+  resultDir: string = LIB_DEFAULT_DIR
 ): Promise<LibraryWorkMetadata[]> {
   const index = await getIndex(resultDir);
   return Object.values(index).map(([_k, v]) => v);
@@ -66,7 +71,7 @@ export async function retrieveWorksList(
 
 export async function retrieveWork(
   workId: string,
-  resultDir: string = OUTPUT_DIR
+  resultDir: string = LIB_DEFAULT_DIR
 ): Promise<ProcessedWork> {
   const index = await getIndex(resultDir);
   const workPath = index[workId];

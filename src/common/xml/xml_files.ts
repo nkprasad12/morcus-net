@@ -1,38 +1,15 @@
 // // @ts-ignore
 // import { betaCodeToGreek } from "beta-code-js";
 import { assert, checkPresent } from "@/common/assert";
+import { DocumentInfo } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
-import {
-  Validator,
-  isString,
-  matches,
-  maybeUndefined,
-} from "@/web/utils/rpc/parsing";
 import fs from "fs";
 
 const CONTENT_PATH = ["text", "body", "div"];
 // For the commentary.
 // const CONTENT_PATH = ["text", "body"];
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
-
-export interface DocumentInfo {
-  title: string;
-  author: string;
-  editor?: string;
-  sponsor?: string;
-  funder?: string;
-}
-
-export namespace DocumentInfo {
-  export const isMatch: Validator<DocumentInfo> = matches([
-    ["title", isString],
-    ["author", isString],
-    ["editor", maybeUndefined(isString)],
-    ["sponsor", maybeUndefined(isString)],
-    ["funder", maybeUndefined(isString)],
-  ]);
-}
 
 // interface TextPart {
 //   type: string;

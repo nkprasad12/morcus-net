@@ -1,19 +1,10 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { LatinWords } from "@/common/lexica/latin_words";
+import { ProcessedWork } from "@/common/library/library_types";
 import { TEXT_BREAK_CHARACTERS } from "@/common/text_cleaning";
-import { DocumentInfo, TeiDocument } from "@/common/xml/xml_files";
+import { TeiDocument } from "@/common/xml/xml_files";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import { TextNodeData, findTextNodes } from "@/common/xml/xml_utils";
-import {
-  Validator,
-  instanceOf,
-  isArray,
-  isNumber,
-  isOneOf,
-  isPair,
-  isString,
-  matches,
-} from "@/web/utils/rpc/parsing";
 
 const DEFAULT_TEXT_NODES = ["p"];
 const KNOWN_ALT_NODES = ["add", "sic"];
@@ -74,28 +65,6 @@ function markupText(text: string, parentName: string): XmlChild[] {
   return isAlt ? [new XmlNode("span", [["alt", parentName]], words)] : words;
 }
 
-export interface ProcessedWork {
-  info: DocumentInfo;
-  textParts: string[];
-  chunks: [number[], XmlChild[]][];
-}
-
-export namespace ProcessedWork {
-  export const isMatch: Validator<ProcessedWork> = matches([
-    ["info", DocumentInfo.isMatch],
-    ["textParts", isArray(isString)],
-    [
-      "chunks",
-      isArray(
-        isPair(
-          isArray(isNumber),
-          isArray(isOneOf(isString, instanceOf(XmlNode)))
-        )
-      ),
-    ],
-  ]);
-}
-
 /** Returns the processed content of a TEI XML file. */
 export function processTei(teiRoot: TeiDocument): ProcessedWork {
   const chunks: [number[], XmlChild[]][] = [];
@@ -124,3 +93,4 @@ export function processTei(teiRoot: TeiDocument): ProcessedWork {
     chunks,
   };
 }
+export { ProcessedWork };
