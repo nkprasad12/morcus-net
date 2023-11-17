@@ -1,6 +1,10 @@
 import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
-import { processLibrary, retrieveWork } from "@/common/library/process_library";
+import {
+  processLibrary,
+  retrieveWork,
+  retrieveWorksList,
+} from "@/common/library/process_library";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import fs from "fs";
 
@@ -36,5 +40,12 @@ describe("Library Processing", () => {
     processLibrary(LIB_DIR, [DBG_PATH]);
     const result = await retrieveWork("phi0448.phi001.perseus-lat2", LIB_DIR);
     expect(result.info.author).toBe("Julius Caesar");
+  });
+
+  test("returns correct index", async () => {
+    const result = await retrieveWorksList(LIB_DIR);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].id).toBe("phi0448.phi001.perseus-lat2");
   });
 });
