@@ -127,7 +127,7 @@ export function WorkText(props: {
           key={chunk[0].join(",")}
           parts={props.work.textParts}
           id={chunk[0]}
-          textRoot={new XmlNode("div", [], chunk[1])}
+          textRoot={chunk[1]}
           setDictWord={props.setDictWord}
         />
       ))}

@@ -1,10 +1,9 @@
-import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import {
   Validator,
   instanceOf,
   isArray,
   isNumber,
-  isOneOf,
   isPair,
   isString,
   matches,
@@ -32,22 +31,14 @@ export namespace DocumentInfo {
 export interface ProcessedWork {
   info: DocumentInfo;
   textParts: string[];
-  chunks: [number[], XmlChild[]][];
+  chunks: [number[], XmlNode][];
 }
 
 export namespace ProcessedWork {
   export const isMatch: Validator<ProcessedWork> = matches([
     ["info", DocumentInfo.isMatch],
     ["textParts", isArray(isString)],
-    [
-      "chunks",
-      isArray(
-        isPair(
-          isArray(isNumber),
-          isArray(isOneOf(isString, instanceOf(XmlNode)))
-        )
-      ),
-    ],
+    ["chunks", isArray(isPair(isArray(isNumber), instanceOf(XmlNode)))],
   ]);
 }
 

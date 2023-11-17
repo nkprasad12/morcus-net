@@ -90,7 +90,6 @@ export function processTei(teiRoot: TeiDocument): ProcessedWork {
   return {
     info: teiRoot.info,
     textParts: teiRoot.textParts,
-    chunks,
+    chunks: chunks.map(([s, n]) => [s, new XmlNode("div", [], n)]),
   };
 }
-export { ProcessedWork };
