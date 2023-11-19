@@ -6,6 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
+import SettingsIcon from "@mui/icons-material/Settings";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
@@ -21,6 +22,7 @@ export namespace ResponsiveAppBar {
   export interface Page {
     name: string;
     path: string;
+    notInMainSection?: true;
   }
 
   export interface Props {
@@ -133,6 +135,9 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   };
 
   const isCurrentPage = (path: string) => nav.route.path === path;
+  const mainPages = props.pages.filter(
+    (page) => page.notInMainSection !== true
+  );
 
   return (
     <AppBar position="static">
@@ -167,7 +172,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               <MenuIcon />
             </IconButton>
             <DrawerMenu
-              pages={props.pages}
+              pages={mainPages}
               onPageClick={handlePageClick}
               onClose={() => setDrawerVisible(false)}
               open={drawerVisible}
@@ -178,7 +183,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             variant="h5"
             noWrap
             component="a"
-            onClick={handlePageClick(props.pages.slice(-1)[0].path)}
+            onClick={handlePageClick(mainPages.slice(-1)[0].path)}
             sx={{
               mr: 2,
               display: isSmall ? "flex" : "none",
@@ -193,7 +198,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             <LogoImage />
           </Typography>
           <Box sx={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
-            {props.pages.map((page) => (
+            {mainPages.map((page) => (
               <Button
                 key={page.name}
                 onClick={handlePageClick(page.path)}
@@ -211,7 +216,15 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             ))}
           </Box>
           <Box>
-            {" "}
+            <IconButton
+              size="large"
+              aria-label="site settings"
+              // TODO: Find a better way to configure this.
+              onClick={handlePageClick("/settings")}
+              color="info"
+            >
+              <SettingsIcon />
+            </IconButton>
             <IconButton
               size="large"
               aria-label="report an issue"

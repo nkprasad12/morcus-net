@@ -27,6 +27,11 @@ describe("App Bar View", () => {
       name: "Omnis",
       path: "/omnis",
     },
+    {
+      name: "IconPage",
+      path: "/settings",
+      notInMainSection: true,
+    },
   ];
 
   test("shows menu buttons", () => {
@@ -34,6 +39,11 @@ describe("App Bar View", () => {
 
     expect(screen.getAllByText(pages[0].name)[0]).toBeDefined();
     expect(screen.getAllByText(pages[1].name)[0]).toBeDefined();
+  });
+
+  test("does not show icon menu buttons", () => {
+    render(<ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />);
+    expect(screen.queryByText(pages[2].name)).toBeNull();
   });
 
   test("handles menu clicks", async () => {
@@ -50,6 +60,22 @@ describe("App Bar View", () => {
 
     expect(mockSetPage).toBeCalledTimes(1);
     expect(mockSetPage).toBeCalledWith({ path: pages[0].path });
+  });
+
+  test("icon menu clicks", async () => {
+    const mockSetPage = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}
+      >
+        <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.getByLabelText("site settings"));
+
+    expect(mockSetPage).toBeCalledTimes(1);
+    expect(mockSetPage).toBeCalledWith({ path: "/settings" });
   });
 
   test("handles issue clicks", async () => {

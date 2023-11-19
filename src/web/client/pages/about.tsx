@@ -2,10 +2,9 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
-import React, { useContext } from "react";
+import React from "react";
 import { Solarized } from "@/web/client/colors";
 import { getCommitHash } from "@/web/client/define_vars";
-import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 const INSTALL_GUIDE =
   "https://www.cdc.gov/niosh/mining/content/hearingloss/installPWA.html";
@@ -29,9 +28,6 @@ function Section(props: SectionProps) {
 }
 
 export function About() {
-  const globalSettings = useContext(GlobalSettingsContext);
-
-  const experimentalMode = globalSettings.data.experimentalMode === true;
   const commitHash = getCommitHash();
 
   return (
@@ -123,25 +119,6 @@ export function About() {
               </a>
               {"."}
             </p>
-            <div>
-              <input
-                id="enableExperimentalToggle"
-                type="checkbox"
-                checked={experimentalMode}
-                onChange={(e) =>
-                  globalSettings.setData({
-                    ...globalSettings.data,
-                    experimentalMode: e.currentTarget.checked,
-                  })
-                }
-              />
-              <label
-                htmlFor="enableExperimentalToggle"
-                style={{ paddingLeft: 8 }}
-              >
-                Enable Experimental Features
-              </label>
-            </div>
           </Section>
         </Typography>
       </Box>

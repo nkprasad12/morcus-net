@@ -22,6 +22,7 @@ import {
   DICT_PAGE,
   LIBRARY_PAGE,
   MACRONIZER_PAGE,
+  SETTINGS_PAGE,
 } from "@/web/client/active_pages";
 
 declare module "@mui/material/styles" {
@@ -96,7 +97,7 @@ theme.typography.overline = typographyStyle;
 document.body.style.backgroundColor = Solarized.base3;
 
 const props: SinglePageApp.Props = {
-  pages: [DICT_PAGE, LIBRARY_PAGE, MACRONIZER_PAGE, ABOUT_PAGE],
+  pages: [DICT_PAGE, LIBRARY_PAGE, MACRONIZER_PAGE, SETTINGS_PAGE, ABOUT_PAGE],
 };
 if (window.location.pathname === "/") {
   window.history.replaceState({}, "", props.pages[0].path);
