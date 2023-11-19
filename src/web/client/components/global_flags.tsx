@@ -6,8 +6,12 @@ const SETTINGS_STORAGE_KEY = "GlobalSettings";
 
 export const DEFAULT_HIGHLIGHT_STRENGTH = 50;
 
-export interface GlobalSettings {
+export interface GlobalBooleans {
   experimentalMode?: boolean;
+  darkMode?: boolean;
+}
+
+export interface GlobalSettings extends GlobalBooleans {
   highlightStrength?: number;
 }
 
@@ -39,6 +43,7 @@ export function getGlobalSettings(): GlobalSettings {
     : {
         experimentalMode: defaultExperimentalMode(),
         highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
+        darkMode: false,
       };
 }
 

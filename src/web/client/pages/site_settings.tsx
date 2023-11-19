@@ -5,22 +5,16 @@ import Typography from "@mui/material/Typography";
 import React, { useContext } from "react";
 import { Solarized } from "@/web/client/colors";
 import {
-  GlobalSettings,
+  GlobalBooleans,
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
-import { checkSatisfies } from "@/common/assert";
-import { isBoolean } from "@/web/utils/rpc/parsing";
 
 function GlobalSettingsCheckbox(props: {
   label: string;
-  settingKey: keyof GlobalSettings;
+  settingKey: keyof GlobalBooleans;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
-  const settingValue = checkSatisfies(
-    globalSettings.data[props.settingKey],
-    isBoolean
-  );
-  const enabled = settingValue === true;
+  const enabled = globalSettings.data[props.settingKey] === true;
 
   return (
     <div>
@@ -30,7 +24,6 @@ function GlobalSettingsCheckbox(props: {
         checked={enabled}
         onChange={(e) => {
           const newSettings = { ...globalSettings.data };
-          // @ts-ignore - we checked above that this is a boolean field.
           newSettings[props.settingKey] = e.currentTarget.checked;
           globalSettings.setData(newSettings);
         }}
@@ -51,6 +44,7 @@ export function SiteSettings() {
             label="Enable Experimental Settings"
             settingKey="experimentalMode"
           />
+          <GlobalSettingsCheckbox label="Dark Mode" settingKey="darkMode" />
         </Typography>
       </Box>
     </Container>
