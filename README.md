@@ -83,11 +83,12 @@ Work in this repository is provided under the terms of the `LICENSE` file in the
 ### Setting up formatting
 
 After initial setup, run `npm install` to ensure you have the latest prettier config. Then, install the
-[Prettier VS Code plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode).
+[Prettier VS Code plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) by
+by pressing Ctrl+P and entering `ext install esbenp.prettier-vscode`.
 The project settings are already configured to use `prettier` as the default formatting for Typescript and Javascript, and `black`
 as the default formatter for Python. This will also turn on format on save.
 
 ### Integrating Jest\*\*
 
-After initial setup, install the [Jest Runner VS Code plugin](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner).
+After initial setup, install the [Jest Runner VS Code plugin](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner) by pressing Ctrl+P and entering `ext install firsttris.vscode-jest-runner`.
 This will allow you to run and debug unit tests from within the VS Code UI when browsing a test file.
