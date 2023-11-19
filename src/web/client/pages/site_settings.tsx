@@ -3,7 +3,6 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
 import React, { useContext } from "react";
-import { Solarized } from "@/web/client/colors";
 import {
   GlobalBooleans,
   GlobalSettingsContext,
@@ -39,7 +38,7 @@ export function SiteSettings() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ padding: 3 }}>
-        <Typography component={"div"} color={Solarized.base00}>
+        <Typography component={"div"} className="nonDictText">
           <GlobalSettingsCheckbox
             label="Enable Experimental Settings"
             settingKey="experimentalMode"

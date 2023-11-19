@@ -3,7 +3,6 @@ import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
 import React from "react";
-import { Solarized } from "@/web/client/colors";
 import { getCommitHash } from "@/web/client/define_vars";
 
 const INSTALL_GUIDE =
@@ -33,7 +32,7 @@ export function About() {
   return (
     <Container maxWidth="lg">
       <Box sx={{ padding: 3 }}>
-        <Typography component={"div"} color={Solarized.base00}>
+        <Typography component={"div"} className="nonDictText">
           <Section name="Site">
             <p>
               This website is a free collection of resources for Latin learners,

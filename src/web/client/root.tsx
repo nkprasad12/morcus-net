@@ -94,8 +94,6 @@ theme.typography.button = typographyStyle;
 theme.typography.caption = typographyStyle;
 theme.typography.overline = typographyStyle;
 
-document.body.style.backgroundColor = Solarized.base3;
-
 const props: SinglePageApp.Props = {
   pages: [DICT_PAGE, LIBRARY_PAGE, MACRONIZER_PAGE, SETTINGS_PAGE, ABOUT_PAGE],
 };
@@ -120,6 +118,23 @@ function ConfigurableStyles() {
     return `${Math.round(hexModified)}`;
   }
 
+  const isDarkMode = settings.data.darkMode === true;
+  const backgroundColor = isDarkMode ? "#212022" : Solarized.base3;
+  document.body.style.backgroundColor = backgroundColor;
+  const bulletCollor = isDarkMode ? Solarized.base2 : Solarized.base01;
+  const dictChipTextColor = isDarkMode
+    ? Solarized.base1
+    : Solarized.base03 + "A1";
+  const menuItemBaseColor = isDarkMode ? Solarized.base02 : Solarized.base01;
+  const mobileNavButtonBase = {
+    backgroundColor: isDarkMode + "D0",
+    borderRadius: 4,
+    marginTop: 3,
+    marginLeft: 3,
+    marginRight: 3,
+    fontSize: 40,
+  };
+
   return (
     <GlobalStyles
       styles={{
@@ -132,6 +147,61 @@ function ConfigurableStyles() {
           paddingTop: "2px",
           paddingBottom: "2px",
         },
+        a: {
+          color: isDarkMode ? Solarized.blue : undefined,
+        },
+        ".MuiTooltip-arrow": {
+          color: isDarkMode ? Solarized.darkarkModeMint : Solarized.base01,
+        },
+        ".MuiTooltip-tooltipArrow": {
+          backgroundColor: isDarkMode
+            ? Solarized.darkarkModeMint
+            : Solarized.mint,
+          color: Solarized.base01,
+          border: `2px solid ${
+            isDarkMode ? Solarized.base02 : Solarized.base01
+          }`,
+        },
+        ".contentDivider": {
+          borderColor: isDarkMode ? Solarized.base00 : "#839191",
+        },
+        ".contentText": {
+          color: isDarkMode ? Solarized.base1 : Solarized.base02,
+        },
+        ".contentTextLight": {
+          color: isDarkMode ? Solarized.base00 : Solarized.base01,
+        },
+        ".menuIcon": {
+          color: isDarkMode ? Solarized.base00 : Solarized.base1,
+        },
+        ".menuIconFaded": {
+          color: (isDarkMode ? Solarized.base00 : Solarized.base1) + 40,
+        },
+        ".menu": {
+          backgroundColor: isDarkMode
+            ? Solarized.darkarkModeMint
+            : Solarized.base2,
+        },
+        ".menuItemActive": {
+          color: menuItemBaseColor + (isDarkMode ? "D0" : ""),
+        },
+        ".menuItemInactive": {
+          color: menuItemBaseColor + "90",
+        },
+        ".nonDictText": {
+          color: isDarkMode ? Solarized.base1 : Solarized.base00,
+        },
+        ".footer": {
+          color: isDarkMode ? Solarized.base1 : Solarized.base02,
+        },
+        ".lsChip": {
+          color: dictChipTextColor,
+          backgroundColor: "#7aab35" + (isDarkMode ? "60" : "30"),
+        },
+        ".shChip": {
+          color: dictChipTextColor,
+          backgroundColor: "#9d42cf" + (isDarkMode ? "60" : "30"),
+        },
         ".lsTopSense": {
           paddingLeft: "0em",
         },
@@ -141,8 +211,14 @@ function ConfigurableStyles() {
           borderRadius: 4,
           borderColor: Solarized.red,
         },
+        ".dictPlaceholder": {
+          color: backgroundColor,
+          cursor: "default",
+        },
         ".lsHover": {
-          borderBottom: `1px dashed ${Solarized.base03}`,
+          borderBottom: `1px dashed ${
+            isDarkMode ? Solarized.base0 : Solarized.base03
+          }`,
           fontWeight: "normal",
           cursor: "help",
         },
@@ -151,36 +227,50 @@ function ConfigurableStyles() {
           borderRadius: 4,
         },
         ".lsAuthor": {
-          backgroundColor: Solarized.violet + modifiedStrength(22),
+          backgroundColor: Solarized.violet + modifiedStrength(25),
           borderRadius: 4,
         },
         ".lsBibl": {
-          backgroundColor: Solarized.violet + modifiedStrength(30),
+          backgroundColor:
+            Solarized.violet + modifiedStrength(isDarkMode ? 50 : 30),
           borderRadius: 4,
         },
         ".lsQuote": {
-          backgroundColor: Solarized.blue + modifiedStrength(28),
+          backgroundColor:
+            Solarized.blue + modifiedStrength(isDarkMode ? 45 : 28),
           borderRadius: 4,
         },
         ".lsGrammar": {
-          backgroundColor: Solarized.orange + modifiedStrength(32),
+          backgroundColor:
+            Solarized.orange + modifiedStrength(isDarkMode ? 50 : 32),
           borderRadius: 4,
         },
         ".lsOrth": {
-          backgroundColor: Solarized.red + modifiedStrength(54),
+          backgroundColor:
+            Solarized.red + modifiedStrength(isDarkMode ? 80 : 54),
           borderRadius: 4,
           padding: 2,
         },
         ".lsPlay": { textDecoration: "underline", fontStyle: "italic" },
-        ".lsEmph": { fontWeight: "bold", fontStyle: "italic" },
+        ".lsEmph": {
+          fontWeight: "bold",
+          fontStyle: "italic",
+          color: isDarkMode ? "#9fa29f" : undefined,
+        },
         ".lsSenseBullet": {
           fontWeight: "bold",
           cursor: "pointer",
-          backgroundColor: Solarized.base01 + "48",
+          backgroundColor: bulletCollor + "48",
           borderRadius: 4,
         },
         ".lsSenseBullet:hover": {
-          backgroundColor: Solarized.base01 + "80",
+          backgroundColor: bulletCollor + "80",
+        },
+        ".outlineHead": {
+          fontWeight: "bold",
+          cursor: "pointer",
+          backgroundColor: bulletCollor + "30",
+          borderRadius: 4,
         },
         ".lsHelpText": {
           marginBottom: 6,
@@ -199,17 +289,19 @@ function ConfigurableStyles() {
           right: "0%",
           borderRadius: 4,
         },
+        ".mobileNavOpen": {
+          backgroundColor: Solarized.base1 + "40",
+        },
         ".mobileNavButton": {
-          color: Solarized.base1,
-          backgroundColor: Solarized.base3 + "D0",
-          borderRadius: 4,
-          marginTop: 3,
-          marginLeft: 3,
-          marginRight: 3,
-          fontSize: 40,
+          ...mobileNavButtonBase,
+          color: isDarkMode ? Solarized.base2 : Solarized.base1,
+        },
+        ".mobileNavButtonCollapsed": {
+          ...mobileNavButtonBase,
+          color: (isDarkMode ? Solarized.base2 : Solarized.base1) + "80",
         },
         ".mobileNavButton:hover": {
-          color: Solarized.base01,
+          color: isDarkMode ? Solarized.base3 : Solarized.base02,
           cursor: "pointer",
         },
         ".dLink": {
@@ -229,6 +321,17 @@ function ConfigurableStyles() {
         ".latWork:hover": {
           color: Solarized.blue,
           cursor: "pointer",
+        },
+        ".macronBox": {
+          borderColor: isDarkMode ? Solarized.base01 : Solarized.base2,
+        },
+        ".macronLabel": {
+          color: Solarized.base1,
+        },
+        ".autoCompItem": {
+          backgroundColor: isDarkMode ? Solarized.red : Solarized.base3,
+          paddingTop: "5px",
+          paddingBottom: "5px",
         },
       }}
     />

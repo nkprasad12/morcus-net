@@ -3,7 +3,6 @@ import Box from "@mui/system/Box";
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
 
-import { Solarized } from "@/web/client/colors";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { MacronizeApi } from "@/web/api_routes";
 
@@ -34,8 +33,8 @@ export function Macronizer() {
           mb: 3,
           border: 2,
           borderRadius: 1,
-          borderColor: Solarized.base2,
         }}
+        className="macronBox"
       >
         <TextField
           label="Enter text to macronize"
@@ -45,7 +44,7 @@ export function Macronizer() {
           variant="filled"
           inputProps={{ spellCheck: "false" }}
           InputLabelProps={{
-            style: { color: Solarized.base1 },
+            className: "macronLabel",
           }}
           onChange={(e) => {
             setRawInput(e.target.value);
@@ -54,8 +53,8 @@ export function Macronizer() {
         <Button
           onClick={handleClick}
           variant="contained"
-          color="primary"
-          sx={{ mt: 2, color: Solarized.base00, display: "block" }}
+          className="nonDictText"
+          sx={{ mt: 2, display: "block" }}
         >
           {"Macronize"}
         </Button>
@@ -70,8 +69,8 @@ export function Macronizer() {
             mb: 3,
             border: 2,
             borderRadius: 1,
-            borderColor: Solarized.base2,
           }}
+          className="macronBox"
         >
           <div style={{ whiteSpace: "pre-wrap" }}>{processed}</div>
         </Box>

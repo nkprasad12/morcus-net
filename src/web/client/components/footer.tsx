@@ -1,7 +1,6 @@
 import * as React from "react";
 
 import { Box, Typography } from "@mui/material";
-import { Solarized } from "@/web/client/colors";
 import { SelfLink } from "@/web/client/components/misc";
 
 export function Footer(props: { id?: string; className?: string }) {
@@ -9,7 +8,8 @@ export function Footer(props: { id?: string; className?: string }) {
     <Box padding="2em" id={props.id} className={props.className}>
       <Typography
         component={"div"}
-        style={{ marginTop: window.innerHeight, color: Solarized.base02 }}
+        className="footer"
+        style={{ marginTop: window.innerHeight }}
         fontSize={12}
       >
         <p>

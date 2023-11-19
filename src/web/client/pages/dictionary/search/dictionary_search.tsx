@@ -1,6 +1,5 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { Solarized } from "@/web/client/colors";
 import { RouteContext, Navigation } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { isString } from "@/web/utils/rpc/parsing";
@@ -173,7 +172,7 @@ function SearchSettings(props: { onOpenSettings: () => any }): JSX.Element {
       onClick={props.onOpenSettings}
       id="DictSearchSettingsButton"
     >
-      <SettingsIcon fontSize="medium" sx={{ color: Solarized.base1 }} />
+      <SettingsIcon fontSize="medium" className="menuIcon" />
     </IconButton>
   );
 }
@@ -267,7 +266,7 @@ export function DictionarySearch(props: {
             }
             error={numDicts === 0}
             InputLabelProps={{
-              style: { color: Solarized.base1 },
+              className: "contextTextLight",
             }}
             autoFocus={nav.route.query === undefined}
             InputProps={{
@@ -276,7 +275,8 @@ export function DictionarySearch(props: {
                 <InputAdornment position="start">
                   <SearchIcon
                     fontSize="medium"
-                    sx={{ marginLeft: 1.4, color: Solarized.base1 + "40" }}
+                    className="menuIconFaded"
+                    sx={{ marginLeft: 1.4 }}
                   />
                 </InputAdornment>
               ),

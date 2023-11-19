@@ -11,7 +11,6 @@ import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { Solarized } from "@/web/client/colors";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -60,12 +59,14 @@ function DrawerMenu(props: {
                 <Button
                   key={page.name}
                   onClick={props.onPageClick(page.path)}
+                  className={
+                    props.isCurrentPage(page.path)
+                      ? "menuItemActive"
+                      : "menuItemInactive"
+                  }
                   sx={{
                     my: 1,
                     mx: 2,
-                    color: props.isCurrentPage(page.path)
-                      ? Solarized.base01
-                      : Solarized.base01 + "90",
                     display: "block",
                     justifyContent: "center",
                   }}
@@ -90,7 +91,6 @@ function DrawerMenu(props: {
               key="morcus.net"
               sx={{
                 mx: 2,
-                color: Solarized.base01 + "90",
                 display: "block",
               }}
             >
@@ -109,9 +109,7 @@ function DrawerMenu(props: {
       open={props.open}
       onClose={props.onClose}
       PaperProps={{
-        sx: {
-          backgroundColor: Solarized.base2,
-        },
+        className: "menu",
       }}
     >
       <DrawerItems />
@@ -140,7 +138,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   );
 
   return (
-    <AppBar position="static">
+    <AppBar position="static" className="menu">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -167,7 +165,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={() => setDrawerVisible(true)}
-              color="inherit"
+              className="menuIcon"
             >
               <MenuIcon />
             </IconButton>
@@ -202,12 +200,14 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               <Button
                 key={page.name}
                 onClick={handlePageClick(page.path)}
+                className={
+                  isCurrentPage(page.path)
+                    ? "menuItemActive"
+                    : "menuItemInactive"
+                }
                 sx={{
                   my: 2,
                   mx: 1,
-                  color: isCurrentPage(page.path)
-                    ? Solarized.base01
-                    : Solarized.base01 + "90",
                   display: "block",
                 }}
               >
@@ -221,7 +221,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-label="site settings"
               // TODO: Find a better way to configure this.
               onClick={handlePageClick("/settings")}
-              color="info"
+              className="menuIcon"
             >
               <SettingsIcon />
             </IconButton>
@@ -230,7 +230,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-label="report an issue"
               aria-haspopup="true"
               onClick={props.openIssueDialog}
-              color="info"
+              className="menuIcon"
             >
               <FlagIcon />
             </IconButton>

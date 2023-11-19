@@ -17,4 +17,5 @@ export namespace Solarized {
   export const navy = "#065ba2";
   export const cyan = "#2aa198";
   export const green = "#859900";
+  export const darkarkModeMint = "#8fae9f";
 }

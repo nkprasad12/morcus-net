@@ -5,7 +5,6 @@ import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import React, { CSSProperties } from "react";
 
-import { Solarized } from "@/web/client/colors";
 import { RouteContext } from "@/web/client/components/router";
 import ReactDOM, { flushSync } from "react-dom";
 import { DictsFusedApi } from "@/web/api_routes";
@@ -90,10 +89,7 @@ type DictState = EdgeCaseState | "Loading" | "Results";
 
 function HorizontalPlaceholder() {
   return (
-    <span
-      key={"horizonatalSpacePlaceholder"}
-      style={{ color: Solarized.base3, cursor: "default" }}
-    >
+    <span key={"horizonatalSpacePlaceholder"} className="dictPlaceholder">
       {"pla ceh old er".repeat(20)}
     </span>
   );

@@ -7,7 +7,6 @@ import {
   IconButton,
 } from "@mui/material";
 import React from "react";
-import { Solarized } from "@/web/client/colors";
 
 export type TooltipPlacement = "top-start" | "right";
 
@@ -156,14 +155,6 @@ export function SectionLinkTooltip(props: {
       className={props.className}
       ChildFactory={props.forwarded}
       placement="top-start"
-      tooltipSx={{
-        backgroundColor: Solarized.mint,
-        color: Solarized.base01,
-        border: `2px solid ${Solarized.base02}`,
-      }}
-      arrowSx={{
-        color: Solarized.base02,
-      }}
       open={visible}
       onChildClick={(isOpen) => {
         if (isOpen) {
