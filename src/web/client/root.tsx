@@ -37,7 +37,7 @@ function appTheme(isDarkMode: boolean) {
   const theme = createTheme({
     palette: {
       primary: {
-        main: Solarized.darkarkModeMint,
+        main: isDarkMode ? Solarized.darkarkModeMint : "#afcebf",
       },
       text: {
         primary: isDarkMode ? Solarized.base1 : Solarized.base00,
