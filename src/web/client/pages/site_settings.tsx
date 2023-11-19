@@ -40,7 +40,7 @@ export function SiteSettings() {
       <Box sx={{ padding: 3 }}>
         <Typography component={"div"} className="nonDictText">
           <GlobalSettingsCheckbox
-            label="Enable Experimental Settings"
+            label="Enable Experimental Settings (beta)"
             settingKey="experimentalMode"
           />
           <GlobalSettingsCheckbox label="Dark Mode" settingKey="darkMode" />

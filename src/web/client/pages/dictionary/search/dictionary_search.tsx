@@ -249,7 +249,13 @@ export function DictionarySearch(props: {
           loadOptions(value);
         }}
         renderOption={(props, option) => (
-          <li {...props} onClick={() => onEnter(toQuery(option))}>
+          <li
+            {...props}
+            className={
+              (props.className ? `${props.className} ` : "") + "autoCompOpt"
+            }
+            onClick={() => onEnter(toQuery(option))}
+          >
             <DictChip label={option[0].key} />
             <span style={{ marginLeft: 10 }}>{option[1]}</span>
           </li>
@@ -266,7 +272,7 @@ export function DictionarySearch(props: {
             }
             error={numDicts === 0}
             InputLabelProps={{
-              className: "contextTextLight",
+              className: "autoCompleteOutline",
             }}
             autoFocus={nav.route.query === undefined}
             InputProps={{

@@ -78,27 +78,6 @@ function DrawerMenu(props: {
             </div>
           ))}
         </List>
-        <List style={{ marginTop: `auto` }}>
-          <div
-            style={{
-              position: "fixed",
-              bottom: 0,
-              textAlign: "center",
-              paddingBottom: 10,
-            }}
-          >
-            <Button
-              key="morcus.net"
-              sx={{
-                mx: 2,
-                display: "block",
-              }}
-            >
-              mórcus.net
-            </Button>
-            <LogoImage key="morcus.net logo" />
-          </div>
-        </List>
       </Box>
     );
   }
@@ -183,7 +162,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             component="a"
             onClick={handlePageClick(mainPages.slice(-1)[0].path)}
             sx={{
-              mr: 2,
+              ml: 3,
               display: isSmall ? "flex" : "none",
               flexGrow: 1,
               fontFamily: "monospace",

@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import React from "react";
+import React, { PropsWithChildren } from "react";
 import ReactDOM from "react-dom/client";
 
 import GlobalStyles from "@mui/material/GlobalStyles";
@@ -33,66 +33,71 @@ declare module "@mui/material/styles" {
   }
 }
 
-const theme = createTheme({
-  palette: {
-    primary: {
-      main: Solarized.base2,
-      contrastText: Solarized.base0,
+function appTheme(isDarkMode: boolean) {
+  const theme = createTheme({
+    palette: {
+      primary: {
+        main: Solarized.darkarkModeMint,
+      },
+      text: {
+        primary: isDarkMode ? Solarized.base1 : Solarized.base00,
+        secondary: isDarkMode ? Solarized.base0 : Solarized.base01,
+      },
     },
-    secondary: {
-      main: Solarized.magenta,
+    breakpoints: {
+      values: {
+        xxxs: 0,
+        xxs: 275,
+        xs: 400,
+        sm: 600,
+        md: 900,
+        lg: 1200,
+        xl: 1500,
+        xxl: 2000,
+      },
     },
-    info: {
-      main: Solarized.base01 + "90",
-    },
-    text: {
-      primary: Solarized.base01,
-      secondary: Solarized.base00,
-    },
-  },
-  breakpoints: {
-    values: {
-      xxxs: 0,
-      xxs: 275,
-      xs: 400,
-      sm: 600,
-      md: 900,
-      lg: 1200,
-      xl: 1500,
-      xxl: 2000,
-    },
-  },
-});
+  });
 
-const allowedFonts = `"Roboto","Arial","Helvetica",sans-serif`;
-const typographyStyle = {
-  fontSize: 20,
-  fontFamily: allowedFonts,
-  fontWeight: 400,
-  lineHeight: 1.5,
-  letterSpacing: "0.00938em",
-  [theme.breakpoints.down("sm")]: {
-    fontSize: 19,
+  const allowedFonts = `"Roboto","Arial","Helvetica",sans-serif`;
+  const typographyStyle = {
+    fontSize: 20,
     fontFamily: allowedFonts,
     fontWeight: 400,
     lineHeight: 1.5,
     letterSpacing: "0.00938em",
-  },
-};
+    [theme.breakpoints.down("sm")]: {
+      fontSize: 19,
+      fontFamily: allowedFonts,
+      fontWeight: 400,
+      lineHeight: 1.5,
+      letterSpacing: "0.00938em",
+    },
+  };
 
-theme.typography.h1 = typographyStyle;
-theme.typography.h2 = typographyStyle;
-theme.typography.h3 = typographyStyle;
-theme.typography.h4 = typographyStyle;
-theme.typography.h5 = typographyStyle;
-theme.typography.h6 = typographyStyle;
-theme.typography.subtitle1 = typographyStyle;
-theme.typography.subtitle2 = typographyStyle;
-theme.typography.body1 = typographyStyle;
-theme.typography.body2 = typographyStyle;
-theme.typography.button = typographyStyle;
-theme.typography.caption = typographyStyle;
-theme.typography.overline = typographyStyle;
+  theme.typography.h1 = typographyStyle;
+  theme.typography.h2 = typographyStyle;
+  theme.typography.h3 = typographyStyle;
+  theme.typography.h4 = typographyStyle;
+  theme.typography.h5 = typographyStyle;
+  theme.typography.h6 = typographyStyle;
+  theme.typography.subtitle1 = typographyStyle;
+  theme.typography.subtitle2 = typographyStyle;
+  theme.typography.body1 = typographyStyle;
+  theme.typography.body2 = typographyStyle;
+  theme.typography.button = typographyStyle;
+  theme.typography.caption = typographyStyle;
+  theme.typography.overline = typographyStyle;
+  return theme;
+}
+
+function CustomThemeProvider(props: PropsWithChildren<Record<string, any>>) {
+  const settings = React.useContext(GlobalSettingsContext);
+  return (
+    <ThemeProvider theme={appTheme(settings.data.darkMode === true)}>
+      {props.children}
+    </ThemeProvider>
+  );
+}
 
 const props: SinglePageApp.Props = {
   pages: [DICT_PAGE, LIBRARY_PAGE, MACRONIZER_PAGE, SETTINGS_PAGE, ABOUT_PAGE],
@@ -183,10 +188,10 @@ function ConfigurableStyles() {
             : Solarized.base2,
         },
         ".menuItemActive": {
-          color: menuItemBaseColor + (isDarkMode ? "D0" : ""),
+          color: menuItemBaseColor + (isDarkMode ? "D8" : ""),
         },
         ".menuItemInactive": {
-          color: menuItemBaseColor + "90",
+          color: menuItemBaseColor + (isDarkMode ? "88" : "90"),
         },
         ".nonDictText": {
           color: isDarkMode ? Solarized.base1 : Solarized.base00,
@@ -266,6 +271,10 @@ function ConfigurableStyles() {
         ".lsSenseBullet:hover": {
           backgroundColor: bulletCollor + "80",
         },
+        ".autoCompOpt": {
+          color: isDarkMode ? Solarized.base1 : Solarized.base01,
+          backgroundColor: isDarkMode ? Solarized.base02 : undefined,
+        },
         ".outlineHead": {
           fontWeight: "bold",
           cursor: "pointer",
@@ -341,7 +350,7 @@ function ConfigurableStyles() {
 root.render(
   <React.StrictMode>
     <SettingsHandler>
-      <ThemeProvider theme={theme}>
+      <CustomThemeProvider>
         <ConfigurableStyles />
         <StyledEngineProvider injectFirst>
           <Router.Handler>
@@ -350,7 +359,7 @@ root.render(
             </TitleHandler>
           </Router.Handler>
         </StyledEngineProvider>
-      </ThemeProvider>
+      </CustomThemeProvider>
     </SettingsHandler>
   </React.StrictMode>
 );

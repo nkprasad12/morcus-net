@@ -22,10 +22,11 @@ describe("Site Settings Page", () => {
         <SiteSettings />
       </SettingsHandler>
     );
-    expect(screen.getByRole("checkbox")).toHaveProperty("checked", true);
+    const checkbox = screen.getAllByRole("checkbox")[0];
+    expect(checkbox).toHaveProperty("checked", true);
 
-    await user.click(screen.getByRole("checkbox"));
-    expect(screen.getByRole("checkbox")).toHaveProperty("checked", false);
+    await user.click(checkbox);
+    expect(checkbox).toHaveProperty("checked", false);
     const storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
     expect(storage.experimentalMode).toBe(false);
   });

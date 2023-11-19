@@ -101,6 +101,5 @@ describe("App Bar View", () => {
     // The Drawer should now show the options too.
     expect(screen.getAllByText(pages[0].name)).toHaveLength(2);
     expect(screen.getAllByText(pages[1].name)).toHaveLength(2);
-    expect(screen.getByText("mórcus.net")).toBeDefined();
   });
 });
