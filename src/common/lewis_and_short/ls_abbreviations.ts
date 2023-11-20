@@ -421,6 +421,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["collat.", "collateral."],
     ["Collat.", "Collateral."],
     ["collect.", "collective(ly)"],
+    ...useAbbreviation(["colloq.", "colloquial."], "Case"),
     ["comm.", "common."],
     ["commentt.", "commentators."],
     ["compd.", "compound."],

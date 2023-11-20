@@ -163,7 +163,7 @@ export function DictionaryViewV2(props?: {
   const sectionRef = React.useRef<HTMLElement>(null);
   const tocRef = React.useRef<HTMLElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
-  const searchBarRef = React.useRef<HTMLDivElement>(null);
+  const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
   const settings = React.useContext(GlobalSettingsContext);
   const nav = React.useContext(RouteContext);
@@ -206,11 +206,11 @@ export function DictionaryViewV2(props?: {
         const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
         setState(numEntries === 0 ? "No Results" : "Results");
       });
-      const scrollElement = sectionRef.current || searchBarRef.current;
+      const scrollElement = sectionRef.current || scrollTopRef.current;
       const scrollType =
         nav.route.internalSource === true
           ? SCROLL_JUMP
-          : scrollElement === searchBarRef.current
+          : scrollElement === scrollTopRef.current
           ? SCROLL_SMOOTH
           : SCROLL_JUMP;
       scrollElement?.scrollIntoView(scrollType);
@@ -249,7 +249,7 @@ export function DictionaryViewV2(props?: {
       <Container
         maxWidth={props.maxWidth}
         disableGutters={true}
-        ref={searchBarRef}
+        ref={scrollTopRef}
         sx={{ marginLeft: props.marginLeft || "auto" }}
         id={props.id}
         className={props.className}
@@ -297,7 +297,7 @@ export function DictionaryViewV2(props?: {
     return (
       <ContentBox isSmall={isSmall} id="DictResultsSummary">
         <>
-          <div>
+          <div ref={props?.embedded ? scrollTopRef : undefined}>
             Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
           </div>
           {numEntries > 1 &&

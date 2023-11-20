@@ -20,7 +20,7 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   marginTop: 10,
   overflow: "auto",
   maxHeight: window.innerHeight - 40,
-  minWidth: "min(40%, 600px)",
+  minWidth: "60%",
 };
 
 export function Library() {
@@ -81,12 +81,26 @@ export function ReadingPage(props: {
   return (
     <div>
       <Stack direction="row" spacing={0} justifyContent="left">
-        {props.dictWord && (
-          <div style={TOC_SIDEBAR_STYLE}>
-            <DictionaryViewV2 embedded={true} initial={props.dictWord} />
-          </div>
-        )}
         <div style={{ maxWidth: "10000px" }}>
+          <ContentBox isSmall={false}>
+            <>
+              {props.dictWord ? (
+                <DictionaryViewV2 embedded={true} initial={props.dictWord} />
+              ) : (
+                <div>
+                  Click on a word for dictionary and inflection lookups.
+                </div>
+              )}
+              <span
+                key={"horizonatalSpacePlaceholder"}
+                className="dictPlaceholder"
+              >
+                {"pla ceh old er".repeat(20)}
+              </span>
+            </>
+          </ContentBox>
+        </div>
+        <div style={TOC_SIDEBAR_STYLE}>
           <WorkUi workdId={props.workId} setDictWord={props.setDictWord} />
         </div>
       </Stack>
