@@ -24,8 +24,8 @@ To start, download and run the setup script. This will clone all required reposi
 curl https://raw.githubusercontent.com/nkprasad12/morcus-net/main/first_time_setup.sh >> setup_morc.sh && chmod +x setup_morc.sh && ./setup_morc.sh
 ```
 
-In the future, you can run `./run.sh web` from `morcus-net` to build the client and start the server.
-Common arguments for this script (run `./run.sh --help` for full options):
+In the future, you can run `./morcus.sh web` from `morcus-net` to build the client and start the server.
+Common arguments for this script (run `./morcus.sh --help` for full options):
 
 | Flag               | Explanation                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -88,7 +88,7 @@ by pressing Ctrl+P and entering `ext install esbenp.prettier-vscode`.
 The project settings are already configured to use `prettier` as the default formatting for Typescript and Javascript, and `black`
 as the default formatter for Python. This will also turn on format on save.
 
-### Integrating Jest\*\*
+### Integrating Jest
 
 After initial setup, install the [Jest Runner VS Code plugin](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner) by pressing Ctrl+P and entering `ext install firsttris.vscode-jest-runner`.
 This will allow you to run and debug unit tests from within the VS Code UI when browsing a test file.
