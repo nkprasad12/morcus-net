@@ -62,6 +62,7 @@ function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   return {
     info: info,
     getEntry: (...args) => cachedProvider().getEntry(...args),
+    getEntryById: (...args) => cachedProvider().getEntryById(...args),
     getCompletions: (...args) => cachedProvider().getCompletions(...args),
   };
 }
