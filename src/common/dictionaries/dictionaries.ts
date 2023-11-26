@@ -35,12 +35,17 @@ export interface DictOptions {
 }
 
 export interface Dictionary {
+  /** Basic information about this dictionary. */
   readonly info: DictInfo;
+  /** Returns entries with keys matching the input. */
   getEntry(
     input: string,
     extras?: ServerExtras,
     options?: DictOptions
   ): Promise<EntryResult[]>;
+  /** Returns the entry, if any, with the given id. */
+  getEntryById(id: string): Promise<EntryResult | undefined>;
+  /** Returns all entry keys matching the input prefix. */
   getCompletions(input: string, extras?: ServerExtras): Promise<string[]>;
 }
 

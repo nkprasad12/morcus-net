@@ -151,6 +151,15 @@ describe("LewisAndShort", () => {
     expect(result[0].keys).toBe("arruo");
   });
 
+  test("getEntryById returns expected entries", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
+    const dict = LewisAndShort.create(TEMP_FILE);
+
+    expect(await dict.getEntryById("Juliu")).toBe(undefined);
+    const result = await dict.getEntryById("Julius")!;
+    expect(result?.entry.getAttr("id")).toBe("Julius");
+  });
+
   test("getEntry returns expected entries", async () => {
     SqlDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);

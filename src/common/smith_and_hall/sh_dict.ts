@@ -37,20 +37,27 @@ export class SmithAndHall implements Dictionary {
     this.sqlDict = new SqlDict(dbPath, "@");
   }
 
+  private reviveRaw(input: string) {
+    const parsed = JSON.parse(input);
+    return {
+      entry: XmlNodeSerialization.DEFAULT.deserialize(parsed.entry),
+      outline: parsed.outline,
+    };
+  }
+
   async getEntry(
     input: string,
     extras?: ServerExtras | undefined
   ): Promise<EntryResult[]> {
-    return this.sqlDict
-      .getRawEntry(input, extras)
-      .map((x) => JSON.parse(x))
-      .map((storedEntry) => ({
-        entry: XmlNodeSerialization.DEFAULT.deserialize(storedEntry.entry),
-        outline: storedEntry.outline,
-      }));
+    return this.sqlDict.getRawEntry(input, extras).map(this.reviveRaw, this);
   }
 
   async getCompletions(input: string): Promise<string[]> {
     return this.sqlDict.getCompletions(input);
+  }
+
+  async getEntryById(id: string): Promise<EntryResult | undefined> {
+    const rawResult = this.sqlDict.getById(id);
+    return rawResult === undefined ? rawResult : this.reviveRaw(rawResult);
   }
 }

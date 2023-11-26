@@ -13,6 +13,7 @@ console.log = jest.fn();
 
 class FakeDict implements Dictionary {
   readonly fakeGetEntry = jest.fn((i, e) => Promise.reject(new Error()));
+  readonly fakeGetEntryById = jest.fn((i) => Promise.reject(new Error()));
   readonly fakeGetCompletions = jest.fn((i, e) => Promise.resolve(["a", "b"]));
 
   constructor(readonly info: DictInfo) {}
@@ -22,6 +23,10 @@ class FakeDict implements Dictionary {
     extras?: ServerExtras | undefined
   ): Promise<EntryResult[]> {
     return this.fakeGetEntry(input, extras);
+  }
+
+  getEntryById(id: string): Promise<EntryResult | undefined> {
+    return this.fakeGetEntryById(id);
   }
 
   getCompletions(
@@ -118,6 +123,7 @@ describe("FusedDictionary", () => {
     const fakeLs: Dictionary = {
       info: LatinDict.LewisAndShort,
       getEntry: jest.fn(async (_input, _extras, _options) => []),
+      getEntryById: jest.fn(async (id) => undefined),
       getCompletions: jest.fn(),
     };
     const dict = new FusedDictionary([fakeLs]);

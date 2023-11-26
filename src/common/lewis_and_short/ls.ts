@@ -91,6 +91,14 @@ export class LewisAndShort implements Dictionary {
     this.sqlDict = new SqlDict(dbFile, ",");
   }
 
+  async getEntryById(id: string): Promise<EntryResult | undefined> {
+    const raw = this.sqlDict.getById(id);
+    if (raw === undefined) {
+      return undefined;
+    }
+    return StoredEntryData.toEntryResult(StoredEntryData.fromEncoded(raw));
+  }
+
   async getEntry(
     input: string,
     extras?: ServerExtras | undefined,
