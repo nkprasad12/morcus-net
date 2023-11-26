@@ -40,7 +40,7 @@ export function SiteSettings() {
       <Box sx={{ padding: 3 }}>
         <Typography component={"div"} className="nonDictText">
           <GlobalSettingsCheckbox
-            label="Enable Experimental Settings"
+            label="Enable Experimental Settings (Search inflected forms)"
             settingKey="experimentalMode"
           />
           <GlobalSettingsCheckbox
