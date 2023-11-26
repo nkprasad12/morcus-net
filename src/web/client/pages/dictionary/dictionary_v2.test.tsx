@@ -22,6 +22,7 @@ jest.mock("@mui/material/useMediaQuery", () => {
   };
 });
 import { useMediaQuery } from "@mui/material";
+import { assertEqual } from "@/common/assert";
 
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
@@ -146,7 +147,11 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainKey"));
+    const outlineMainKey = screen
+      .getAllByText("mainKey")
+      .filter((e) => e.className === "outlineHead");
+    assertEqual(outlineMainKey.length, 1);
+    await user.click(outlineMainKey[0]);
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 
@@ -282,7 +287,11 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainKey"));
+    const outlineMainKey = screen
+      .getAllByText("mainKey")
+      .filter((e) => e.className === "outlineHead");
+    assertEqual(outlineMainKey.length, 1);
+    await user.click(outlineMainKey[0]);
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 });

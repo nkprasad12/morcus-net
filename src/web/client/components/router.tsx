@@ -27,7 +27,7 @@ function extractRouteInfo(): RouteInfo {
   };
 }
 
-function pushRouteInfo(info: RouteInfo): void {
+function linkForInfo(info: RouteInfo): string {
   let state = info.path;
   if (info.query !== undefined) {
     state += `?${QUERY_KEY}=${encodeURI(info.query)}`;
@@ -38,7 +38,11 @@ function pushRouteInfo(info: RouteInfo): void {
   if (info.hash !== undefined) {
     state += `#${encodeURI(info.hash)}`;
   }
-  window.history.pushState({}, "", state);
+  return state;
+}
+
+function pushRouteInfo(info: RouteInfo): void {
+  window.history.pushState({}, "", linkForInfo(info));
 }
 
 export interface Navigation {

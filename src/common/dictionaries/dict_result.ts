@@ -27,6 +27,7 @@ export namespace OutlineSection {
 
 /** A pre-processed outline for a dictionary entry. */
 export interface EntryOutline {
+  /** The main key (headword) for this entry. */
   mainKey: string;
   mainLabel?: string;
   mainSection: OutlineSection;

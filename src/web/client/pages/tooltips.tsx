@@ -85,7 +85,7 @@ export function ClickableTooltip(props: {
 type SectionLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 
 export function SectionLinkTooltip(props: {
-  className: string;
+  className?: string;
   forwarded: TooltipChild;
   senseId: string;
 }) {

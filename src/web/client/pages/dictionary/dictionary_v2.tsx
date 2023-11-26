@@ -3,6 +3,7 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import LinkIcon from "@mui/icons-material/Link";
 import React, { CSSProperties } from "react";
 
 import { RouteContext } from "@/web/client/components/router";
@@ -40,6 +41,7 @@ import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 import { TitleContext } from "../../components/title";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { getCommitHash } from "@/web/client/define_vars";
+import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -345,20 +347,58 @@ export function DictionaryViewV2(props?: {
     );
   }
 
+  function articleLinkButton(text: string) {
+    function senseForwardedNode(forwardProps: any, forwardRef: any) {
+      return (
+        <span
+          {...forwardProps}
+          className="lsSenseBullet"
+          ref={forwardRef}
+          style={{
+            paddingLeft: 1,
+            marginRight: 5,
+            paddingTop: 1,
+            paddingBottom: 1,
+            paddingRight: 4,
+          }}
+        >
+          <LinkIcon
+            sx={{
+              marginBottom: "-0.2em",
+              marginRight: "-0.2em",
+              paddingLeft: "0.2em",
+              paddingRight: "0.4em",
+            }}
+          />
+          {`${text}`}
+        </span>
+      );
+    }
+    return React.forwardRef<HTMLElement>(senseForwardedNode);
+  }
+
   function SingleDictSection(props: { data: EntriesByDict }) {
     if (props.data.entries.length === 0) {
       return <></>;
     }
     return (
       <>
-        {props.data.entries.map((entry) => (
+        {props.data.entries.map((entry, i) => (
           <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
             <>
               {entry.inflections && (
                 <InflectionDataSection inflections={entry.inflections} />
               )}
-              <div style={{ marginBottom: 10 }}>
-                <FullDictChip label={props.data.name} />
+              <div style={{ marginBottom: 5, marginTop: 8 }}>
+                <span>
+                  <SectionLinkTooltip
+                    forwarded={articleLinkButton(
+                      props.data.outlines[i].mainKey
+                    )}
+                    senseId={props.data.outlines[i].mainSection.sectionId}
+                  />
+                  <FullDictChip label={props.data.name} />
+                </span>
               </div>
               {entry.element}
             </>
