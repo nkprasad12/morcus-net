@@ -202,6 +202,18 @@ describe("morcus.net backend", () => {
     expect(articles[0].entry.toString().includes("billow")).toBe(true);
   });
 
+  test("returns LS results in id mode", async () => {
+    const result = await callApiFull(DictsFusedApi, {
+      query: "n1153",
+      dicts: [LatinDict.LewisAndShort.key],
+      mode: 2,
+    });
+
+    const articles = result.data[LatinDict.LewisAndShort.key];
+    expect(articles).toHaveLength(1);
+    expect(articles[0].entry.toString().includes("ἀηδών")).toBe(true);
+  });
+
   test("returns SH results", async () => {
     const result = await callApiFull(DictsFusedApi, {
       query: "influence",
