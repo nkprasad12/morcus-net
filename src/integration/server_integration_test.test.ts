@@ -216,7 +216,7 @@ describe("morcus.net backend", () => {
 
   test("returns SH results in id mode", async () => {
     const result = await callApiFull(DictsFusedApi, {
-      query: "n2708",
+      query: "sh2708",
       dicts: [LatinDict.SmithAndHall.key],
       mode: 2,
     });
