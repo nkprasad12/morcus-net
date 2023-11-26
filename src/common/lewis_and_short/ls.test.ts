@@ -34,12 +34,16 @@ afterAll(() => {
   cleanupSqlTableFiles(INFL_DB_FILE);
 });
 
+function toRawDictEntry(keys: string[], entry: any) {
+  return StoredEntryData.toRawDictEntry(keys[0], keys, entry);
+}
+
 const LS_DATA = [
-  StoredEntryData.toRawDictEntry(["Julius"], {
+  toRawDictEntry(["Julius"], {
     entry: new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"]),
     outline: FAKE_OUTLINE,
   }),
-  StoredEntryData.toRawDictEntry(["Publius", "Naso"], {
+  toRawDictEntry(["Publius", "Naso"], {
     entry: new XmlNode(
       "entryFree",
       [["id", "Publius"]],
@@ -47,15 +51,15 @@ const LS_DATA = [
     ),
     outline: FAKE_OUTLINE,
   }),
-  StoredEntryData.toRawDictEntry(["Naso"], {
+  toRawDictEntry(["Naso"], {
     entry: new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"]),
     outline: FAKE_OUTLINE,
   }),
-  StoredEntryData.toRawDictEntry(["īnō", "Ino"], {
+  toRawDictEntry(["īnō", "Ino"], {
     entry: new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"]),
     outline: FAKE_OUTLINE,
   }),
-  StoredEntryData.toRawDictEntry(["quis"], {
+  toRawDictEntry(["quis"], {
     entry: new XmlNode(
       "entryFree",
       [["id", "quisNormal"]],
@@ -63,15 +67,15 @@ const LS_DATA = [
     ),
     outline: FAKE_OUTLINE,
   }),
-  StoredEntryData.toRawDictEntry(["quĭs"], {
+  toRawDictEntry(["quĭs"], {
     entry: new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"]),
     outline: FAKE_OUTLINE,
   }),
-  StoredEntryData.toRawDictEntry(["quīs"], {
+  toRawDictEntry(["quīs"], {
     entry: new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"]),
     outline: FAKE_OUTLINE,
   }),
-  StoredEntryData.toRawDictEntry(["exscio"], {
+  toRawDictEntry(["exscio"], {
     entry: new XmlNode("entryFree", [["id", "exscio"]], ["exscio"]),
     outline: FAKE_OUTLINE,
   }),

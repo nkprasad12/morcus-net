@@ -41,6 +41,7 @@ export namespace StoredEntryData {
   }
 
   export function toRawDictEntry(
+    id: string,
     keys: string[],
     entry: StoredEntryData
   ): RawDictEntry {
@@ -48,6 +49,7 @@ export namespace StoredEntryData {
     return {
       keys: keys.join(","),
       entry: encodeMessage(entry, REGISTRY),
+      id,
     };
   }
 
@@ -71,7 +73,11 @@ function* extractEntryData(rawFile: string): Generator<RawDictEntry> {
       outline: extractOutline(root),
       n: root.getAttr("n"),
     };
-    yield StoredEntryData.toRawDictEntry(keys, data);
+    yield StoredEntryData.toRawDictEntry(
+      checkPresent(root.getAttr("id")),
+      keys,
+      data
+    );
     numHandled += 1;
   }
 }
