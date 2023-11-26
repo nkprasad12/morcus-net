@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 
+import { makeLatinInflectionDb } from "@/scripts/latin_inflections_export";
 import { ArgumentParser } from "argparse";
 import { ChildProcess, spawn, spawnSync } from "child_process";
 import dotenv from "dotenv";
@@ -180,25 +181,20 @@ function setupAndStartWebServer(args: any) {
     buildCommand.push(...extraArgs);
     setupSteps.push([buildCommand, spawnChild(buildCommand)]);
   }
-  if (args.build_ls === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_ls.ts"];
-    setupSteps.push([command, spawnChild(command)]);
-  }
   if (args.build_sh === true) {
     const command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"];
     setupSteps.push([command, spawnChild(command)]);
   }
-  if (args.build_latin_library === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_lat_lib.ts"];
+
+  if (args.build_latin_inflections === true) {
+    makeLatinInflectionDb();
+  }
+  if (args.build_ls === true) {
+    const command = ["npm", "run", "ts-node", "src/scripts/process_ls.ts"];
     setupSteps.push([command, spawnChild(command)]);
   }
-  if (args.build_latin_inflections === true) {
-    const command = [
-      "npm",
-      "run",
-      "ts-node",
-      "src/scripts/latin_inflections.ts",
-    ];
+  if (args.build_latin_library === true) {
+    const command = ["npm", "run", "ts-node", "src/scripts/process_lat_lib.ts"];
     setupSteps.push([command, spawnChild(command)]);
   }
 
