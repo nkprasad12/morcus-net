@@ -139,4 +139,23 @@ describe("FusedDictionary", () => {
       handleInflections: true,
     });
   });
+
+  it("requests ids lookup if needed", async () => {
+    const fakeLs: Dictionary = {
+      info: LatinDict.LewisAndShort,
+      getEntry: jest.fn(async (_input, _extras, _options) => []),
+      getEntryById: jest.fn(async (id) => undefined),
+      getCompletions: jest.fn(),
+    };
+    const dict = new FusedDictionary([fakeLs]);
+    const request: DictsFusedRequest = {
+      query: "test",
+      dicts: [fakeLs.info.key],
+      mode: 2,
+    };
+
+    await dict.getEntry(request);
+
+    expect(fakeLs.getEntryById).toHaveBeenCalledWith("test");
+  });
 });

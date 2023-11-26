@@ -49,10 +49,15 @@ export interface Dictionary {
   getCompletions(input: string, extras?: ServerExtras): Promise<string[]>;
 }
 
+export type DictRequestMode =
+  | 0 // Search by keys only
+  | 1 // Search by keys and inflected forms
+  | 2; // Search by ids only
+
 export interface DictsFusedRequest {
   query: string;
   dicts: string[];
-  mode?: number;
+  mode?: DictRequestMode;
 }
 
 export namespace DictsFusedRequest {
