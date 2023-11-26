@@ -62,7 +62,11 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   minWidth: "min(29%, 300px)",
 };
 
-async function fetchEntry(input: string, experimentalMode: boolean) {
+async function fetchEntry(
+  input: string,
+  experimentalMode: boolean,
+  singleArticle: boolean
+) {
   const parts = input.split(",");
   const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
   const dicts =
@@ -74,7 +78,7 @@ async function fetchEntry(input: string, experimentalMode: boolean) {
   const result = callApiFull(DictsFusedApi, {
     query: parts[0],
     dicts,
-    mode: experimentalMode ? 1 : 0,
+    mode: singleArticle ? 2 : experimentalMode ? 1 : 0,
   });
   try {
     return await result;
@@ -174,13 +178,15 @@ export function DictionaryViewV2(props?: {
   const isEmbedded = props?.embedded === true;
   const isSmall =
     isEmbedded || useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const idSearch = nav.route.idSearch === true;
 
   function fetchAndDisplay(query: string) {
     setState("Loading");
     const serverResult = fetchEntry(
       query,
       settings.data.experimentalMode === true ||
-        nav.route.experimentalSearch === true
+        nav.route.experimentalSearch === true,
+      idSearch
     );
     serverResult.then((newResults) => {
       if (newResults === null) {
@@ -296,6 +302,9 @@ export function DictionaryViewV2(props?: {
 
   function SummarySection() {
     const numEntries = entries.reduce((s, c) => s + c.entries.length, 0);
+    if (idSearch) {
+      return <></>;
+    }
     return (
       <ContentBox isSmall={isSmall} id="DictResultsSummary">
         <>
@@ -396,6 +405,7 @@ export function DictionaryViewV2(props?: {
                       props.data.outlines[i].mainKey
                     )}
                     senseId={props.data.outlines[i].mainSection.sectionId}
+                    forArticle={true}
                   />
                   <FullDictChip label={props.data.name} />
                 </span>

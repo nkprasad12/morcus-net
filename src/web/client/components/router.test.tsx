@@ -9,6 +9,7 @@ import {
   RouteContext,
   RouteInfo,
   Router,
+  linkForInfo,
 } from "@/web/client/components/router";
 
 function TestApp(props: { navSpy: (info: RouteInfo) => any }) {
@@ -114,4 +115,9 @@ describe("Router", () => {
       );
     }
   );
+
+  test("link with id search", () => {
+    const link = linkForInfo({ path: "foo", query: "bar", idSearch: true });
+    expect(link).toBe("foo?q=bar&o=2");
+  });
 });

@@ -1,3 +1,8 @@
+import {
+  RouteInfo,
+  extractRouteInfo,
+  linkForInfo,
+} from "@/web/client/components/router";
 import LinkIcon from "@mui/icons-material/Link";
 import {
   SxProps,
@@ -87,14 +92,28 @@ type SectionLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 export function SectionLinkTooltip(props: {
   className?: string;
   forwarded: TooltipChild;
+  // This should be renamed to just ID
   senseId: string;
+  forArticle?: boolean;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
   const [content, setContent] = React.useState<JSX.Element>(<div />);
 
+  const isArticle = props.forArticle === true;
+
   function getLink(): string {
-    const chunks = window.location.href.split("#");
-    return `${chunks[0]}#${props.senseId}`;
+    const before = extractRouteInfo();
+    const after: RouteInfo = {
+      path: before.path,
+    };
+    if (isArticle) {
+      after.query = props.senseId;
+      after.idSearch = true;
+    } else {
+      after.query = before.query;
+      after.hash = props.senseId;
+    }
+    return `${window.location.origin}${linkForInfo(after)}`;
   }
 
   async function onClick() {
@@ -146,7 +165,11 @@ export function SectionLinkTooltip(props: {
     if (state === "Success") {
       return <TextWithIcon message="Link copied!" />;
     }
-    return <TextWithIcon message="Copy section link" />;
+    return (
+      <TextWithIcon
+        message={`Copy ${isArticle ? "article" : "section"} link`}
+      />
+    );
   }
 
   return (

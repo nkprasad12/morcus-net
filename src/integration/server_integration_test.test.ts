@@ -214,6 +214,18 @@ describe("morcus.net backend", () => {
     expect(articles[0].entry.toString().includes("ἀηδών")).toBe(true);
   });
 
+  test("returns SH results in id mode", async () => {
+    const result = await callApiFull(DictsFusedApi, {
+      query: "n2708",
+      dicts: [LatinDict.SmithAndHall.key],
+      mode: 2,
+    });
+
+    const articles = result.data[LatinDict.SmithAndHall.key];
+    expect(articles).toHaveLength(1);
+    expect(articles[0].entry.toString().includes("caerŭlĕus")).toBe(true);
+  });
+
   test("returns SH results", async () => {
     const result = await callApiFull(DictsFusedApi, {
       query: "influence",

@@ -5,6 +5,7 @@ const QUERY_KEY = "q";
 const OPTIONS_KEY = "o";
 
 const EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED = "1";
+const ID_SEARCH_ENABLED = "2";
 
 export interface RouteInfo {
   path: string;
@@ -12,27 +13,35 @@ export interface RouteInfo {
   experimentalSearch?: boolean;
   hash?: string;
   internalSource?: boolean;
+  idSearch?: boolean;
 }
 
-function extractRouteInfo(): RouteInfo {
+export function extractRouteInfo(): RouteInfo {
   const path = window.location.pathname;
   const params = new URLSearchParams(window.location.search);
   const hash = window.location.hash;
+  const option = params.get(OPTIONS_KEY);
   return {
     path: path,
     query: params.get(QUERY_KEY) || undefined,
-    experimentalSearch:
-      params.get(OPTIONS_KEY) === EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED,
+    experimentalSearch: option === EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED,
     hash: hash.length === 0 ? undefined : decodeURI(hash.substring(1)),
+    idSearch: option === ID_SEARCH_ENABLED,
   };
 }
 
-function linkForInfo(info: RouteInfo): string {
+export function linkForInfo(info: RouteInfo): string {
   let state = info.path;
   if (info.query !== undefined) {
     state += `?${QUERY_KEY}=${encodeURI(info.query)}`;
-    if (info.experimentalSearch === true) {
-      state += `&${OPTIONS_KEY}=${EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED}`;
+    const optionMode =
+      info.experimentalSearch === true
+        ? EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED
+        : info.idSearch === true
+        ? ID_SEARCH_ENABLED
+        : undefined;
+    if (optionMode !== undefined) {
+      state += `&${OPTIONS_KEY}=${optionMode}`;
     }
   }
   if (info.hash !== undefined) {
