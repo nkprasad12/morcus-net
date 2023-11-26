@@ -171,7 +171,7 @@ function ConfigurableStyles() {
           borderColor: isDarkMode ? Solarized.base00 : "#839191",
         },
         ".contentText": {
-          color: isDarkMode ? Solarized.base1 : Solarized.base01,
+          color: isDarkMode ? Solarized.base1 : Solarized.base015,
         },
         ".contentTextLight": {
           color: isDarkMode ? Solarized.base00 : Solarized.base01,

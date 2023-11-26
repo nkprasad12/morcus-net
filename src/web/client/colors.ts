@@ -1,6 +1,7 @@
 export namespace Solarized {
   export const base03 = "#002b36"; // gray (darkest)
   export const base02 = "#073642"; // gray (darker)
+  export const base015 = "#203a40"; // gray (dark)
   export const base01 = "#485e65"; // gray (dark)
   export const base00 = "#556b73"; // gray (light)
   export const base0 = "#738486"; // gray (lighter)
