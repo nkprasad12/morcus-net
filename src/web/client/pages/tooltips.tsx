@@ -92,8 +92,7 @@ type SectionLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 export function SectionLinkTooltip(props: {
   className?: string;
   forwarded: TooltipChild;
-  // This should be renamed to just ID
-  senseId: string;
+  id: string;
   forArticle?: boolean;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
@@ -107,11 +106,11 @@ export function SectionLinkTooltip(props: {
       path: before.path,
     };
     if (isArticle) {
-      after.query = props.senseId;
+      after.query = props.id;
       after.idSearch = true;
     } else {
       after.query = before.query;
-      after.hash = props.senseId;
+      after.hash = props.id;
     }
     return `${window.location.origin}${linkForInfo(after)}`;
   }

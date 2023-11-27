@@ -152,7 +152,7 @@ export function xmlNodeToJsx(
       <SectionLinkTooltip
         forwarded={ForwardedNode}
         className={className}
-        senseId={checkPresent(
+        id={checkPresent(
           root.getAttr("senseid"),
           "lsSenseBullet must have senseid!"
         )}

@@ -212,11 +212,7 @@ describe("SectionLinkTooltip", () => {
     });
 
     render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
+      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
 
@@ -237,11 +233,7 @@ describe("SectionLinkTooltip", () => {
     });
 
     render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
+      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
 
@@ -256,11 +248,7 @@ describe("SectionLinkTooltip", () => {
   it("closes on click away", async () => {
     render(
       <>
-        <SectionLinkTooltip
-          forwarded={DivWithRef}
-          className="foo"
-          senseId="bar"
-        />
+        <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
         <div>Other elem</div>
       </>
     );
@@ -273,11 +261,7 @@ describe("SectionLinkTooltip", () => {
 
   it("closes on origin element click", async () => {
     render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
+      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
 

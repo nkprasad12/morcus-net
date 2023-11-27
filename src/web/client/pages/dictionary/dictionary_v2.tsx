@@ -404,7 +404,7 @@ export function DictionaryViewV2(props?: {
                     forwarded={articleLinkButton(
                       props.data.outlines[i].mainKey
                     )}
-                    senseId={props.data.outlines[i].mainSection.sectionId}
+                    id={props.data.outlines[i].mainSection.sectionId}
                     forArticle={true}
                   />
                   <FullDictChip label={props.data.name} />
