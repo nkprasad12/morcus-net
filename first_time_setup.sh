@@ -51,4 +51,4 @@ echo "LATIN_INFLECTION_DB=latin_inflect.db" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."
 cd morcus-net
-./morcus.sh web --build_ls --build_sh --build_latin_inflections --prod
+./morcus.sh web -b_ls -b_sh -b_li -b_ll --prod
