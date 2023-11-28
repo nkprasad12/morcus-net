@@ -58,7 +58,7 @@ export function Library() {
     <Container maxWidth="xxl" sx={{ paddingTop: 3 }}>
       <ContentBox isSmall={false}>
         <>
-          <span>Welcome to the library.</span>
+          <div>Welcome to the library.</div>
           <WorksList />
         </>
       </ContentBox>
