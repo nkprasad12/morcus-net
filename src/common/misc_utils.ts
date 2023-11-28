@@ -29,3 +29,15 @@ export function exhaustiveGuard(_value: never): never {
     )}`
   );
 }
+
+export function singletonOf<T>(initializer: () => T): { get: () => T } {
+  let value: T | undefined = undefined;
+  return {
+    get: () => {
+      if (value === undefined) {
+        value = initializer();
+      }
+      return value;
+    },
+  };
+}
