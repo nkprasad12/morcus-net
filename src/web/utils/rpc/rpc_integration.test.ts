@@ -240,12 +240,10 @@ const handlers: RouteAndHandler<any, any>[] = [
   ClassObjectRoute,
 ];
 
-function setupApp(useBodyParser: boolean = true): Promise<http.Server> {
+function setupApp(): Promise<http.Server> {
   return new Promise((resolve) => {
     const bundle = appBundle();
-    if (useBodyParser) {
-      bundle.webApp.use(bodyParser.text());
-    }
+    bundle.webApp.use(bodyParser.text());
     const server = http.createServer(bundle.webApp);
     handlers.forEach((h) => addApi(bundle, h));
     server.listen(PORT, () => {

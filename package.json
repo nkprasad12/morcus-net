@@ -7,19 +7,21 @@
     "node": "20.x"
   },
   "scripts": {
-    "build": "npm run build-client -- --env production && npm run make-ls && npm run make-sh && npm run make-lat-infl-db",
+    "build": "npm run build-client -- --env production && npm run make-sh && npm run make-lat-infl-db && npm run make-ls && npm run make-lat-lib && echo SOURCE_VERSION=$SOURCE_VERSION >> .env",
     "start": "node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only src/start_server.ts",
     "download-ls": "curl --compressed https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml > ls.xml",
     "make-ls": "npm run download-ls && npm run ts-node src/scripts/process_ls.ts && rm ls.xml",
     "download-sh": "curl --compressed https://raw.githubusercontent.com/nkprasad12/smithandhall/v1edits/sh_F2_latest.txt > sh_raw.txt",
     "make-sh": "npm run download-sh && npm run ts-node src/scripts/process_sh.ts && rm sh_raw.txt",
     "download-lat-infl-raw": "curl --compressed https://raw.githubusercontent.com/nkprasad12/morcus-raw-data/main/morpheus_out_aug1_suff_removed.txt > lat_raw.txt",
-    "make-lat-infl-db": "npm run download-lat-infl-raw && npm run ts-node src/scripts/latin_inflections.ts && rm lat_raw.txt", 
+    "make-lat-infl-db": "npm run download-lat-infl-raw && npm run ts-node src/scripts/latin_inflections.ts && rm lat_raw.txt",
+    "make-lat-lib": "npm run ts-node src/scripts/process_lat_lib.ts",
     "format": "npx eslint . && npx prettier . --write && python -m black .",
     "format-check": "npx eslint . && npx prettier . --check && python -m black . --check",
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests": "npx jest",
+    "integration-tests": "npx jest server_integration_test --testPathIgnorePatterns=node_modules",
     "py-tests": "python -m unittest discover",
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",
     "ts-coverage": "npx jest --coverage",
@@ -46,7 +48,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "AGPLv3",
+  "license": "GPLv3",
   "bugs": {
     "url": "https://github.com/nkprasad12/morcus-net/issues"
   },
@@ -109,7 +111,7 @@
     "socket.io-client": "^4.6.1",
     "supertest": "^6.3.3",
     "terser-webpack-plugin": "^5.3.6",
-    "ts-jest": "^29.0.5",
+    "ts-jest": "^29.1.1",
     "typescript": "^5.1.3",
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1"

@@ -123,9 +123,12 @@ ls_dump.txt
 
 ls.xml
 lsp.txt*
+lsp.data*
 
 ls_logs/
 
 sh_out.txt
 shp.db*
 latin_inflect.db*
+
+library_processed/

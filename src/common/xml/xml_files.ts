@@ -1,6 +1,7 @@
 // // @ts-ignore
 // import { betaCodeToGreek } from "beta-code-js";
 import { assert, checkPresent } from "@/common/assert";
+import { DocumentInfo } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import fs from "fs";
@@ -10,14 +11,6 @@ const CONTENT_PATH = ["text", "body", "div"];
 // const CONTENT_PATH = ["text", "body"];
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
 
-interface DocumentInfo {
-  title: string;
-  author: string;
-  editor?: string;
-  sponsor?: string;
-  funder?: string;
-}
-
 // interface TextPart {
 //   type: string;
 //   n: number;
@@ -26,9 +19,12 @@ interface DocumentInfo {
 //   content: (string | TextPart)[];
 // }
 
-interface TeiDocument {
+export interface TeiDocument {
+  /** Basic information about this document like title, author, and so on. */
   info: DocumentInfo;
+  /** The names of the high levels divisions of this text. */
   textParts: string[];
+  /** The node containing the actual document content. */
   content: XmlNode;
 }
 

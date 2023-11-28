@@ -51,12 +51,18 @@ export class FusedDictionary {
     request: DictsFusedRequest,
     extras?: ServerExtras
   ): Promise<DictsFusedResponse> {
-    const callable = (dict: Dictionary, query: string) =>
-      dict.getEntry(
+    const callable = async (dict: Dictionary, query: string) => {
+      const mode = request.mode || 0;
+      if (mode === 2) {
+        const result = await dict.getEntryById(request.query);
+        return result === undefined ? [] : [result];
+      }
+      return dict.getEntry(
         query,
         extras,
         (request.mode || 0) === 0 ? undefined : { handleInflections: true }
       );
+    };
     return this.collectResults(request, callable);
   }
 

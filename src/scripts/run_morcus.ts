@@ -1,14 +1,16 @@
 /* istanbul ignore file */
 
+import { makeLatinInflectionDb } from "@/scripts/latin_inflections_export";
 import { ArgumentParser } from "argparse";
-import { ChildProcess, spawn } from "child_process";
+import { ChildProcess, spawn, spawnSync } from "child_process";
 import dotenv from "dotenv";
 
 dotenv.config();
 
 const WEB_SERVER = "web";
 const WORKER = "worker";
-const COMMANDS = [WEB_SERVER, WORKER];
+const EDITOR = "editor";
+const COMMANDS = [WEB_SERVER, WORKER, EDITOR];
 
 const cleanupOperations: (() => any)[] = [];
 
@@ -18,6 +20,8 @@ if (args.command === WEB_SERVER) {
   setupAndStartWebServer(args).then(() => console.log("Kicked off server!"));
 } else if (args.command === WORKER) {
   awaitAll([startWorker(args, args.workerType)]);
+} else if (args.command === EDITOR) {
+  startLsEditor();
 }
 
 function parseArguments() {
@@ -38,6 +42,14 @@ function parseArguments() {
   });
   parser.add_argument("-b_sh", "--build_sh", {
     help: "If set, re-processes SH and saves to DB.",
+    action: "store_true",
+  });
+  parser.add_argument("-b_li", "--build_latin_inflections", {
+    help: "If set, re-processes Latin Inflections and saves to DB.",
+    action: "store_true",
+  });
+  parser.add_argument("-b_ll", "--build_latin_library", {
+    help: "If set, processing and stores the Latin library contents.",
     action: "store_true",
   });
   parser.add_argument("-to", "--transpile_only", {
@@ -169,12 +181,20 @@ function setupAndStartWebServer(args: any) {
     buildCommand.push(...extraArgs);
     setupSteps.push([buildCommand, spawnChild(buildCommand)]);
   }
+  if (args.build_sh === true) {
+    const command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"];
+    setupSteps.push([command, spawnChild(command)]);
+  }
+
+  if (args.build_latin_inflections === true) {
+    makeLatinInflectionDb();
+  }
   if (args.build_ls === true) {
     const command = ["npm", "run", "ts-node", "src/scripts/process_ls.ts"];
     setupSteps.push([command, spawnChild(command)]);
   }
-  if (args.build_sh === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"];
+  if (args.build_latin_library === true) {
+    const command = ["npm", "run", "ts-node", "src/scripts/process_lat_lib.ts"];
     setupSteps.push([command, spawnChild(command)]);
   }
 
@@ -191,6 +211,8 @@ function setupAndStartWebServer(args: any) {
 
 async function setupStartWebServer(args: any) {
   const serverEnv = { ...process.env };
+  const commitHash = spawnSync("git", ["rev-parse", "HEAD"]);
+  serverEnv.SOURCE_VERSION = commitHash.stdout.toString();
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
   }
@@ -205,4 +227,12 @@ async function setupStartWebServer(args: any) {
   }
   baseCommand.push("src/start_server.ts");
   spawnChild(baseCommand, serverEnv);
+}
+
+async function startLsEditor() {
+  const editorRoot = "src/common/lewis_and_short/editor";
+  await processComplete(
+    spawnChild(["npx", "webpack", "--config", `webpack.editor.config.js`])
+  );
+  spawnChild(["npm", "run", "ts-node", `${editorRoot}/ls_interactive.ts`]);
 }

@@ -1,5 +1,5 @@
 import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent, envVar } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
@@ -9,22 +9,77 @@ import {
 } from "@/common/lewis_and_short/ls_orths";
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
-import { EntryResult } from "@/common/dictionaries/dict_result";
+import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { LatinWords } from "@/common/lexica/latin_words";
 import { removeDiacritics } from "@/common/text_cleaning";
+import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 
-interface ProcessedLsEntry {
-  keys: string[];
+const REGISTRY = [XmlNodeSerialization.DEFAULT];
+
+interface StoredEntryData {
+  /** The disambiguation number for this entry, if applicable. */
+  n?: string;
+  /** The outline for this entry. */
+  outline: EntryOutline;
+  /** The root node for a marked up entry. */
   entry: XmlNode;
 }
 
-interface RawLsEntry {
-  keys: string;
-  entry: string;
+/** Exported only for unit tests. */
+export namespace StoredEntryData {
+  export function validator(t: unknown): t is StoredEntryData {
+    // This is only used to restore from the SQL data so we don't need to check.
+    return true;
+  }
+
+  export function fromEncoded(message: string): StoredEntryData {
+    return decodeMessage(message, StoredEntryData.validator, REGISTRY);
+  }
+
+  export function toRawDictEntry(
+    id: string,
+    keys: string[],
+    entry: StoredEntryData
+  ): RawDictEntry {
+    assertEqual(keys.filter((k) => k.includes(",")).length, 0);
+    return {
+      keys: keys.join(","),
+      entry: encodeMessage(entry, REGISTRY),
+      id,
+    };
+  }
+
+  export function toEntryResult(entry: StoredEntryData): EntryResult {
+    return { outline: entry.outline, entry: entry.entry };
+  }
+}
+
+function* extractEntryData(rawFile: string): Generator<RawDictEntry> {
+  let numHandled = 0;
+  for (const root of parse(rawFile)) {
+    if (numHandled % 1000 === 0) {
+      console.debug(`Processed ${numHandled}`);
+    }
+    const orths = getOrths(root).map(mergeVowelMarkers);
+    assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
+    const regulars = orths.filter(isRegularOrth);
+    const keys = regulars.length > 0 ? regulars : orths;
+    const data: StoredEntryData = {
+      entry: displayEntryFree(root),
+      outline: extractOutline(root),
+      n: root.getAttr("n"),
+    };
+    yield StoredEntryData.toRawDictEntry(
+      checkPresent(root.getAttr("id")),
+      keys,
+      data
+    );
+    numHandled += 1;
+  }
 }
 
 export class LewisAndShort implements Dictionary {
@@ -36,63 +91,72 @@ export class LewisAndShort implements Dictionary {
     this.sqlDict = new SqlDict(dbFile, ",");
   }
 
+  async getEntryById(id: string): Promise<EntryResult | undefined> {
+    const raw = this.sqlDict.getById(id);
+    if (raw === undefined) {
+      return undefined;
+    }
+    return StoredEntryData.toEntryResult(StoredEntryData.fromEncoded(raw));
+  }
+
   async getEntry(
     input: string,
     extras?: ServerExtras | undefined,
     options?: DictOptions
   ): Promise<EntryResult[]> {
-    const exactMatches: EntryResult[] = this.sqlDict
+    const exactMatches: StoredEntryData[] = this.sqlDict
       .getRawEntry(input, extras)
-      .map(XmlNodeSerialization.DEFAULT.deserialize)
-      .map((node) => ({
-        entry: displayEntryFree(node),
-        outline: extractOutline(node),
-      }));
+      .map(StoredEntryData.fromEncoded);
     if (
       options?.handleInflections !== true ||
       process.env.LATIN_INFLECTION_DB === undefined
     ) {
-      return exactMatches;
+      return exactMatches.map(StoredEntryData.toEntryResult);
     }
 
     const analyses = LatinWords.analysesFor(input);
     const inflectedResults: EntryResult[] = [];
+    const exactResults: EntryResult[] = [];
     for (const analysis of analyses) {
       const lemmaChunks = analysis.lemma.split("#");
       const lemmaBase = lemmaChunks[0];
-      // TODO: Currently, getRawEntry will ignore case, i.e
-      // canis will also return inputs for Canis. Ignore this for
-      // now but we should fix it later and handle case difference explicitly.
-      if (lemmaBase === removeDiacritics(input)) {
-        continue;
-      }
+
       const rawResults = this.sqlDict.getRawEntry(lemmaBase);
       const results: EntryResult[] = rawResults
-        .map(XmlNodeSerialization.DEFAULT.deserialize)
-        .filter((root) => {
+        .map(StoredEntryData.fromEncoded)
+        .filter((data) => {
           if (lemmaChunks.length === 1) {
             return true;
           }
           assertEqual(lemmaChunks.length, 2);
-          return root.getAttr("n") === lemmaChunks[1];
+          return data.n === lemmaChunks[1];
         })
-        .map((node) => ({
-          entry: displayEntryFree(node),
-          outline: extractOutline(node),
+        .map((data) => ({
+          ...StoredEntryData.toEntryResult(data),
           inflections: analysis.inflectedForms.flatMap((inflData) =>
             inflData.inflectionData.map((info) => ({
               lemma: analysis.lemma,
               form: inflData.form,
-              data: info,
+              data: info.inflection,
+              usageNote: info.usageNote,
             }))
           ),
         }));
-      inflectedResults.push(...results);
+      // TODO: Currently, getRawEntry will ignore case, i.e
+      // canis will also return inputs for Canis. Ignore this for
+      // now but we should fix it later and handle case difference explicitly.
+      if (lemmaBase === removeDiacritics(input)) {
+        exactResults.push(...results);
+      } else {
+        inflectedResults.push(...results);
+      }
     }
 
     const results: EntryResult[] = [];
     const idsSoFar = new Set<string>();
-    for (const candidate of exactMatches.concat(inflectedResults)) {
+    for (const candidate of exactResults
+      .concat(exactMatches)
+      .concat(inflectedResults)) {
       const id = candidate.entry.getAttr("id")!;
       if (idsSoFar.has(id)) {
         continue;
@@ -112,50 +176,19 @@ export class LewisAndShort implements Dictionary {
 }
 
 export namespace LewisAndShort {
-  export function processedToRaw(input: ProcessedLsEntry): RawLsEntry {
-    for (const key of input.keys) {
-      assert(!key.includes(","));
-    }
-    return {
-      keys: input.keys.join(","),
-      entry: XmlNodeSerialization.DEFAULT.serialize(input.entry),
-    };
+  export function processPerseusXml(rawFile: string): RawDictEntry[] {
+    return [...extractEntryData(rawFile)];
   }
 
-  export function* createProcessedRaw(
-    rawFile: string = checkPresent(process.env.LS_PATH)
-  ): Generator<ProcessedLsEntry> {
-    let numHandled = 0;
-    for (const root of parse(rawFile)) {
-      if (numHandled % 1000 === 0) {
-        console.debug(`Processed ${numHandled}`);
-      }
-      const orths = getOrths(root).map(mergeVowelMarkers);
-      assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
-      const regulars = orths.filter(isRegularOrth);
-      yield {
-        keys: regulars.length > 0 ? regulars : orths,
-        entry: root,
-      };
-      numHandled += 1;
-    }
-  }
-
-  export function createProcessed(
-    rawFile: string = checkPresent(process.env.LS_PATH, "LS_PATH")
-  ): RawLsEntry[] {
-    const result: RawLsEntry[] = [];
-    for (const item of createProcessedRaw(rawFile)) {
-      result.push(processedToRaw(item));
-    }
-    return result;
+  export function saveToDb(
+    dbPath: string = envVar("LS_PROCESSED_PATH"),
+    rawFile: string = envVar("LS_PATH")
+  ) {
+    SqlDict.save(processPerseusXml(rawFile), dbPath);
   }
 
   export function create(
-    processedFile: string = checkPresent(
-      process.env.LS_PROCESSED_PATH,
-      "LS_PROCESSED_PATH environment variable."
-    )
+    processedFile: string = envVar("LS_PROCESSED_PATH")
   ): LewisAndShort {
     const start = performance.now();
     const result = new LewisAndShort(processedFile);

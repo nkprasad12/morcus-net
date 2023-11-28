@@ -13,12 +13,14 @@ const TEMP_FILE = "dict_storage.ts.tmp.txt";
 
 const FAKE_DICT = [
   {
+    id: "n1",
     keys: ["Julius"].join(","),
     entry: serialize(
       new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"])
     ),
   },
   {
+    id: "n2",
     keys: ["Publius", "Naso"].join(","),
     entry: serialize(
       new XmlNode(
@@ -29,30 +31,35 @@ const FAKE_DICT = [
     ),
   },
   {
+    id: "n3",
     keys: ["Naso"].join(","),
     entry: serialize(
       new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"])
     ),
   },
   {
+    id: "n4",
     keys: ["īnō", "Ino"].join(","),
     entry: serialize(
       new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"])
     ),
   },
   {
+    id: "n5",
     keys: ["quis"].join(","),
     entry: serialize(
       new XmlNode("entryFree", [["id", "quisNormal"]], ["quisUnspecified"])
     ),
   },
   {
+    id: "n6",
     keys: ["quĭs"].join(","),
     entry: serialize(
       new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"])
     ),
   },
   {
+    id: "n6",
     keys: ["quīs"].join(","),
     entry: serialize(
       new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
@@ -61,7 +68,11 @@ const FAKE_DICT = [
 ];
 
 function toDictData(keys: string[]) {
-  return keys.map((key) => ({ keys: [key + "_"].join(","), entry: key }));
+  return keys.map((key, i) => ({
+    id: `n${i}`,
+    keys: [key + "_"].join(","),
+    entry: key,
+  }));
 }
 
 function writeFile(contents: string) {
@@ -95,7 +106,10 @@ describe("SqlDict", () => {
   test("save removes existing contents if present", async () => {
     writeFile("foo");
 
-    SqlDict.save([{ keys: ["bar"].join(","), entry: "baz" }], TEMP_FILE);
+    SqlDict.save(
+      [{ id: "n1", keys: ["bar"].join(","), entry: "baz" }],
+      TEMP_FILE
+    );
 
     const result = fs.readFileSync(TEMP_FILE).toString();
 
@@ -106,10 +120,11 @@ describe("SqlDict", () => {
   test("save writes to SQL table", async () => {
     const data = [
       {
+        id: "n1",
         keys: "Julius",
         entry: "Gallia est omnis divisa in partes tres",
       },
-      { keys: "Publius", entry: "Non iterum repetenda suo" },
+      { id: "n2", keys: "Publius", entry: "Non iterum repetenda suo" },
     ];
     SqlDict.save(data, TEMP_FILE);
 
@@ -118,15 +133,25 @@ describe("SqlDict", () => {
 
     expect(contents).toHaveLength(2);
     expect(contents[0]).toEqual({
+      id: "n1",
       keys: data[0].keys,
       entry: data[0].entry,
       n: 0,
     });
     expect(contents[1]).toEqual({
+      id: "n2",
       keys: data[1].keys,
       entry: data[1].entry,
       n: 1,
     });
+  });
+
+  test("getById returns correct entry.", async () => {
+    SqlDict.save(FAKE_DICT, TEMP_FILE);
+    const dict = createSqlDict();
+
+    expect(dict.getById("n1")?.includes("Gallia est omnis")).toBe(true);
+    expect(dict.getById("n112")).toBeUndefined();
   });
 
   test("getRawEntry handles expected entries", async () => {
@@ -200,14 +225,8 @@ describe("SqlDict", () => {
 
   test("getCompletions handles entries with multiple keys", async () => {
     const data = [
-      {
-        keys: ["Julius", "Iulius"].join(","),
-        entry: "",
-      },
-      {
-        keys: ["Julus"].join(","),
-        entry: "",
-      },
+      { id: "n1", keys: ["Julius", "Iulius"].join(","), entry: "" },
+      { id: "n2", keys: ["Julus"].join(","), entry: "" },
     ];
     SqlDict.save(data, TEMP_FILE);
     const dict = createSqlDict();

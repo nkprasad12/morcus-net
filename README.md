@@ -4,7 +4,7 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 
 [![CI Status](https://github.com/nkprasad12/morcus-net/actions/workflows/ci-workflow.yaml/badge.svg)](https://github.com/nkprasad12/morcus-net/actions)
 [![Coverage](https://codecov.io/gh/nkprasad12/morcus-net/branch/main/graph/badge.svg?token=G65VJM8B56)](https://codecov.io/gh/nkprasad12/morcus-net)
-[![License: AGPL v3](https://img.shields.io/badge/License-AGPL_v3-blue.svg)](https://www.gnu.org/licenses/agpl-3.0)
+[![License: GPL v3](https://img.shields.io/badge/License-GPL_v3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 ---
 
@@ -24,8 +24,8 @@ To start, download and run the setup script. This will clone all required reposi
 curl https://raw.githubusercontent.com/nkprasad12/morcus-net/main/first_time_setup.sh >> setup_morc.sh && chmod +x setup_morc.sh && ./setup_morc.sh
 ```
 
-In the future, you can run `./run.sh web` from `morcus-net` to build the client and start the server.
-Common arguments for this script (run `./run.sh --help` for full options):
+In the future, you can run `./morcus.sh web` from `morcus-net` to build the client and start the server.
+Common arguments for this script (run `./morcus.sh --help` for full options):
 
 | Flag               | Explanation                                                                                                                                                                                    |
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -83,11 +83,12 @@ Work in this repository is provided under the terms of the `LICENSE` file in the
 ### Setting up formatting
 
 After initial setup, run `npm install` to ensure you have the latest prettier config. Then, install the
-[Prettier VS Code plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode).
+[Prettier VS Code plugin](https://marketplace.visualstudio.com/items?itemName=esbenp.prettier-vscode) by
+by pressing Ctrl+P and entering `ext install esbenp.prettier-vscode`.
 The project settings are already configured to use `prettier` as the default formatting for Typescript and Javascript, and `black`
 as the default formatter for Python. This will also turn on format on save.
 
-### Integrating Jest\*\*
+### Integrating Jest
 
-After initial setup, install the [Jest Runner VS Code plugin](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner).
+After initial setup, install the [Jest Runner VS Code plugin](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner) by pressing Ctrl+P and entering `ext install firsttris.vscode-jest-runner`.
 This will allow you to run and debug unit tests from within the VS Code UI when browsing a test file.

@@ -1,5 +1,4 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { Solarized } from "@/web/client/colors";
 import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
 import { Box, Typography, Divider } from "@mui/material";
@@ -29,7 +28,6 @@ export function ContentBox(props: {
         mr: props.mr || (isSmall ? 0 : 3),
         mt: 1,
         mb: 2,
-        borderColor: Solarized.base2,
       }}
       key={props.contentKey}
       ref={props.contentRef}
@@ -38,15 +36,15 @@ export function ContentBox(props: {
     >
       <Typography
         component={"div"}
+        className="contentText"
         style={{
           whiteSpace: "pre-wrap",
-          color: Solarized.base02,
         }}
       >
         {props.children}
       </Typography>
       {props.noDivider === undefined && (
-        <Divider light={true} sx={{ mt: "16px" }} />
+        <Divider className="contentDivider" sx={{ mt: "16px" }} />
       )}
     </Box>
   );

@@ -39,6 +39,8 @@ const DIACRITICS = new Map<string, string>([
   ["Ŭ", "U"],
 ]);
 
+export const TEXT_BREAK_CHARACTERS = /([ ()[\];:.,?])/;
+
 export function removeDiacritics(input: string): string {
   let result = "";
   for (const c of input) {

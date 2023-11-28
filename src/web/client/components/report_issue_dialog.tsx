@@ -8,7 +8,6 @@ import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
-import { Solarized } from "@/web/client/colors";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
 import { getCommitHash } from "@/web/client/define_vars";
@@ -24,9 +23,7 @@ export function ReportIssueDialog(props: {
       open={props.show}
       onClose={props.onClose}
       PaperProps={{
-        style: {
-          backgroundColor: Solarized.base3,
-        },
+        className: "menu",
       }}
     >
       <DialogTitle style={{ fontSize: 19, lineHeight: "normal" }}>

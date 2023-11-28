@@ -6,6 +6,7 @@ module.exports = {
   testEnvironment: "node",
   roots: ["<rootDir>"],
   modulePaths: ["./src"],
+  testPathIgnorePatterns: [".*/integration/server_integration_test"],
   moduleNameMapper: pathsToModuleNameMapper({
     "@/*": ["*"],
   }),

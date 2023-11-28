@@ -1,6 +1,5 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { getBullet } from "@/common/lewis_and_short/ls_outline";
-import { Solarized } from "@/web/client/colors";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 
@@ -68,10 +67,7 @@ function OutlineSection(props: {
         className="clickableOutlineSection"
       >
         <DictChip label={props.dictKey} />
-        <span
-          className="lsSenseBullet"
-          style={{ backgroundColor: Solarized.base01 + "30", marginLeft: 2 }}
-        >
+        <span className="outlineHead" style={{ marginLeft: 2 }}>
           <OpenInNewIcon
             sx={{
               marginBottom: "-0.1em",
@@ -101,10 +97,7 @@ function OutlineSection(props: {
                 onClick={() => props.onClick(sense.sectionId)}
                 className="clickableOutlineSection"
               >
-                <span
-                  className="lsSenseBullet"
-                  style={{ backgroundColor: Solarized.base01 + "30" }}
-                >
+                <span className="outlineHead">
                   <OpenInNewIcon
                     sx={{
                       marginBottom: "-0.1em",

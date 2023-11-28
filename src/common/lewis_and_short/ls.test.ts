@@ -1,26 +1,25 @@
 import fs from "fs";
 
-import { LewisAndShort } from "@/common/lewis_and_short/ls";
+import { LewisAndShort, StoredEntryData } from "@/common/lewis_and_short/ls";
 import { XmlNode } from "@/common/xml/xml_node";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { EntryResult } from "@/common/dictionaries/dict_result";
+import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
 import { makeMorpheusDb } from "@/common/lexica/latin_words";
 
 console.debug = jest.fn();
 
-jest.mock("./ls_outline", () => ({
-  ...jest.requireActual("./ls_outline"),
-  extractOutline: jest.fn(() => "mockOutline"),
-}));
-
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
 const MORPH_FILE = "ls.test.ts.tmp.morph.txt";
 const INFL_DB_FILE = "ls.test.ts.tmp.lat.db";
+
+const FAKE_OUTLINE: EntryOutline = {
+  mainKey: "",
+  mainSection: { text: "", level: 0, ordinal: "0", sectionId: "" },
+};
 
 beforeAll(() => {
   process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
@@ -35,59 +34,51 @@ afterAll(() => {
   cleanupSqlTableFiles(INFL_DB_FILE);
 });
 
-const serialize = XmlNodeSerialization.DEFAULT.serialize;
+function toRawDictEntry(keys: string[], entry: any) {
+  return StoredEntryData.toRawDictEntry(keys[0], keys, entry);
+}
 
 const LS_DATA = [
-  {
-    keys: ["Julius"].join(","),
-    entry: serialize(
-      new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"])
+  toRawDictEntry(["Julius"], {
+    entry: new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"]),
+    outline: FAKE_OUTLINE,
+  }),
+  toRawDictEntry(["Publius", "Naso"], {
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "Publius"]],
+      ["Non iterum repetenda suo"]
     ),
-  },
-  {
-    keys: ["Publius", "Naso"].join(","),
-    entry: serialize(
-      new XmlNode(
-        "entryFree",
-        [["id", "Publius"]],
-        ["Non iterum repetenda suo"]
-      )
+    outline: FAKE_OUTLINE,
+  }),
+  toRawDictEntry(["Naso"], {
+    entry: new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"]),
+    outline: FAKE_OUTLINE,
+  }),
+  toRawDictEntry(["īnō", "Ino"], {
+    entry: new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"]),
+    outline: FAKE_OUTLINE,
+  }),
+  toRawDictEntry(["quis"], {
+    entry: new XmlNode(
+      "entryFree",
+      [["id", "quisNormal"]],
+      ["quisUnspecified"]
     ),
-  },
-  {
-    keys: ["Naso"].join(","),
-    entry: serialize(
-      new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"])
-    ),
-  },
-  {
-    keys: ["īnō", "Ino"].join(","),
-    entry: serialize(
-      new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"])
-    ),
-  },
-  {
-    keys: ["quis"].join(","),
-    entry: serialize(
-      new XmlNode("entryFree", [["id", "quisNormal"]], ["quisUnspecified"])
-    ),
-  },
-  {
-    keys: ["quĭs"].join(","),
-    entry: serialize(
-      new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"])
-    ),
-  },
-  {
-    keys: ["quīs"].join(","),
-    entry: serialize(
-      new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
-    ),
-  },
-  {
-    keys: "exscio",
-    entry: serialize(new XmlNode("entryFree", [["id", "exscio"]], ["exscio"])),
-  },
+    outline: FAKE_OUTLINE,
+  }),
+  toRawDictEntry(["quĭs"], {
+    entry: new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"]),
+    outline: FAKE_OUTLINE,
+  }),
+  toRawDictEntry(["quīs"], {
+    entry: new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"]),
+    outline: FAKE_OUTLINE,
+  }),
+  toRawDictEntry(["exscio"], {
+    entry: new XmlNode("entryFree", [["id", "exscio"]], ["exscio"]),
+    outline: FAKE_OUTLINE,
+  }),
 ];
 
 describe("LewisAndShort", () => {
@@ -113,8 +104,8 @@ describe("LewisAndShort", () => {
     } catch (e) {}
   });
 
-  test("createProcessed writes element contents", () => {
-    const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
+  test("processPerseusXml writes element contents", () => {
+    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
       entry.keys.includes("cāmus")
@@ -124,8 +115,8 @@ describe("LewisAndShort", () => {
     expect(result[0].entry).toContain("A muzzle");
   });
 
-  test("createProcessed handles elements with alts", () => {
-    const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
+  test("processPerseusXml handles elements with alts", () => {
+    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
       entry.keys.includes("attango")
@@ -138,8 +129,8 @@ describe("LewisAndShort", () => {
     expect(keys).toContain("attango");
   });
 
-  test("createProcessed handles elements with only alts", () => {
-    const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
+  test("processPerseusXml handles elements with only alts", () => {
+    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) => entry.keys.includes("abs-"));
 
@@ -149,8 +140,8 @@ describe("LewisAndShort", () => {
     expect(keys).toContain("abs-");
   });
 
-  test("createProcessed removes alts if full orths are present", () => {
-    const lewisAndShort = LewisAndShort.createProcessed(LS_SUBSET);
+  test("processPerseusXml removes alts if full orths are present", () => {
+    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
       entry.keys.includes("arruo")
@@ -158,6 +149,15 @@ describe("LewisAndShort", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].keys).toBe("arruo");
+  });
+
+  test("getEntryById returns expected entries", async () => {
+    SqlDict.save(LS_DATA, TEMP_FILE);
+    const dict = LewisAndShort.create(TEMP_FILE);
+
+    expect(await dict.getEntryById("Juliu")).toBe(undefined);
+    const result = await dict.getEntryById("Julius")!;
+    expect(result?.entry.getAttr("id")).toBe("Julius");
   });
 
   test("getEntry returns expected entries", async () => {
@@ -174,7 +174,7 @@ describe("LewisAndShort", () => {
 
     const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
 
-    expect(outline).toStrictEqual(["mockOutline"]);
+    expect(outline).toStrictEqual([FAKE_OUTLINE]);
   });
 
   test("getEntry inflected returns no results with flag off", async () => {

@@ -152,7 +152,7 @@ export function xmlNodeToJsx(
       <SectionLinkTooltip
         forwarded={ForwardedNode}
         className={className}
-        senseId={checkPresent(
+        id={checkPresent(
           root.getAttr("senseid"),
           "lsSenseBullet must have senseid!"
         )}
@@ -168,9 +168,26 @@ export function xmlNodeToJsx(
       return (
         <span
           className="dLink"
-          onClick={() => Navigation.query(nav, query.join(","))}
+          onClick={() =>
+            Navigation.query(nav, query.join(","), undefined, true)
+          }
         >
           {text || "undefined"}
+        </span>
+      );
+    }
+    return <LinkContent />;
+  } else if (className === "latWord") {
+    const word = root.getAttr("to")!;
+    const orig = root.getAttr("orig");
+    function LinkContent() {
+      const nav = React.useContext(RouteContext);
+      return (
+        <span
+          className="latWord"
+          onClick={() => Navigation.query(nav, `${word},LnS`, true, true)}
+        >
+          {orig || word}
         </span>
       );
     }
@@ -211,17 +228,30 @@ export interface ElementAndKey {
 export function InflectionDataSection(props: {
   inflections: InflectionData[];
 }) {
-  const groups = new Map<string, string[]>();
+  const byForm = new Map<string, [string, string | undefined][]>();
   for (const data of props.inflections) {
-    if (!groups.has(data.form)) {
-      groups.set(data.form, []);
+    if (!byForm.has(data.form)) {
+      byForm.set(data.form, []);
     }
-    groups.get(data.form)!.push(data.data);
+    byForm.get(data.form)!.push([data.data, data.usageNote]);
   }
+  const formatted: [string, string[]][] = Array.from(byForm.entries()).map(
+    ([form, data]) => [
+      form,
+      data
+        .sort(([_1, a], [_2, b]) =>
+          a === undefined ? -1 : b === undefined ? 1 : a.localeCompare(b)
+        )
+        .map(
+          ([inflection, usage]) =>
+            inflection + (usage === undefined ? "" : ` (${usage})`)
+        ),
+    ]
+  );
 
   return (
     <>
-      {[...groups.entries()].map(([form, inflections]) => (
+      {formatted.map(([form, inflections]) => (
         <div style={{ fontSize: 16, paddingBottom: 3 }} key={form}>
           <span className="lsOrth">{form}</span>:
           {inflections.length === 1 ? (

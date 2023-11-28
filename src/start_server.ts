@@ -32,6 +32,8 @@ import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   CompletionsFusedApi,
   DictsFusedApi,
+  GetWork,
+  ListLibraryWorks,
   MacronizeApi,
   ReportApi,
 } from "@/web/api_routes";
@@ -41,6 +43,10 @@ import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
+import {
+  retrieveWork,
+  retrieveWorksList,
+} from "@/common/library/process_library";
 
 dotenv.config();
 
@@ -56,6 +62,7 @@ function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   return {
     info: info,
     getEntry: (...args) => cachedProvider().getEntry(...args),
+    getEntryById: (...args) => cachedProvider().getEntryById(...args),
     getCompletions: (...args) => cachedProvider().getCompletions(...args),
   };
 }
@@ -140,6 +147,8 @@ const params: WebServerParams = {
     createApi(CompletionsFusedApi, (input, extras) =>
       fusedDict.getCompletions(input, extras)
     ),
+    createApi(GetWork, (workId) => retrieveWork(workId)),
+    createApi(ListLibraryWorks, (_unused) => retrieveWorksList()),
   ],
   buildDir: path.join(__dirname, "../genfiles_static"),
   telemetry: telemetry,

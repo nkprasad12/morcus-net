@@ -27,7 +27,10 @@ describe("Latin Words", () => {
         inflectedForms: [
           {
             form: "excīdam",
-            inflectionData: ["fut ind act 1st sg", "pres subj act 1st sg"],
+            inflectionData: [
+              { inflection: "fut ind act 1st sg", usageNote: "poetic" },
+              { inflection: "pres subj act 1st sg" },
+            ],
           },
         ],
         lemma: "excaedo",

@@ -106,6 +106,59 @@ describe("xmlNodeToJsx", () => {
       expect.objectContaining({ path: "/", query: "omnis,SnH" })
     );
   });
+
+  it("handles latWord elements", async () => {
+    const root = new XmlNode(
+      "span",
+      [
+        ["class", "latWord"],
+        ["to", "omnis"],
+      ],
+      []
+    );
+    const result = xmlNodeToJsx(root, undefined);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <div>{result}</div>
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.getByText("omnis"));
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+    );
+  });
+
+  it("handles latWord elements with different text", async () => {
+    const root = new XmlNode(
+      "span",
+      [
+        ["class", "latWord"],
+        ["to", "omnis"],
+        ["orig", "blah"],
+      ],
+      []
+    );
+    const result = xmlNodeToJsx(root, undefined);
+    const mockNav = jest.fn(() => {});
+    render(
+      <RouteContext.Provider
+        value={{ route: { path: "/" }, navigateTo: mockNav }}
+      >
+        <div>{result}</div>
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.getByText("blah"));
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+    );
+  });
 });
 
 describe("ClickableTooltip", () => {
@@ -159,11 +212,7 @@ describe("SectionLinkTooltip", () => {
     });
 
     render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
+      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
 
@@ -184,11 +233,7 @@ describe("SectionLinkTooltip", () => {
     });
 
     render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
+      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
 
@@ -203,11 +248,7 @@ describe("SectionLinkTooltip", () => {
   it("closes on click away", async () => {
     render(
       <>
-        <SectionLinkTooltip
-          forwarded={DivWithRef}
-          className="foo"
-          senseId="bar"
-        />
+        <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
         <div>Other elem</div>
       </>
     );
@@ -220,11 +261,7 @@ describe("SectionLinkTooltip", () => {
 
   it("closes on origin element click", async () => {
     render(
-      <SectionLinkTooltip
-        forwarded={DivWithRef}
-        className="foo"
-        senseId="bar"
-      />
+      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
 

@@ -1,6 +1,6 @@
 import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
 import express, { Request, Response } from "express";
-import { ApiRoute } from "@/web/utils/rpc/rpc";
+import { ApiRoute, ServerMessage } from "@/web/utils/rpc/rpc";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { exhaustiveGuard } from "@/common/misc_utils";
 
@@ -39,6 +39,13 @@ function isObject(data: Data): data is object {
     return false;
   }
   return true;
+}
+
+function serverMessage<T>(t: T): ServerMessage<T> {
+  return {
+    data: t,
+    metadata: { commit: process.env.SOURCE_VERSION?.trim() },
+  };
 }
 
 async function logApi(
@@ -131,8 +138,7 @@ function adaptHandler<I, O extends Data>(
       })
       .finally(() => {
         timer.event("handlerComplete");
-        const result =
-          body === undefined ? undefined : encodeMessage(body, route.registry);
+        const result = encodeMessage(serverMessage(body), route.registry);
         timer.event("encodeMessageComplete");
         res.status(status).send(result);
         const telemetryData: Omit<ApiCallData, "latencyMs"> = {

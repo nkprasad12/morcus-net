@@ -27,6 +27,7 @@ export namespace OutlineSection {
 
 /** A pre-processed outline for a dictionary entry. */
 export interface EntryOutline {
+  /** The main key (headword) for this entry. */
   mainKey: string;
   mainLabel?: string;
   mainSection: OutlineSection;
@@ -48,6 +49,7 @@ export interface InflectionData {
   form: string;
   lemma: string;
   data: string;
+  usageNote?: string;
 }
 
 export namespace InflectionData {
@@ -56,6 +58,7 @@ export namespace InflectionData {
       ["form", isString],
       ["lemma", isString],
       ["data", isString],
+      ["usageNote", maybeUndefined(isString)],
     ]);
 }
 

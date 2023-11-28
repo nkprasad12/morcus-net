@@ -2,10 +2,8 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
-import React, { useContext } from "react";
-import { Solarized } from "@/web/client/colors";
+import React from "react";
 import { getCommitHash } from "@/web/client/define_vars";
-import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 const INSTALL_GUIDE =
   "https://www.cdc.gov/niosh/mining/content/hearingloss/installPWA.html";
@@ -29,22 +27,17 @@ function Section(props: SectionProps) {
 }
 
 export function About() {
-  const globalSettings = useContext(GlobalSettingsContext);
-
-  const experimentalMode = globalSettings.data.experimentalMode === true;
   const commitHash = getCommitHash();
 
   return (
     <Container maxWidth="lg">
       <Box sx={{ padding: 3 }}>
-        <Typography component={"div"} color={Solarized.base00}>
+        <Typography component={"div"} className="nonDictText">
           <Section name="Site">
             <p>
               This website is a free collection of resources for Latin learners,
               developed by Mórcus. It is provided under the{" "}
-              <a href="https://www.gnu.org/licenses/agpl-3.0.en.html">
-                AGPL-3.0
-              </a>{" "}
+              <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GPL-3.0</a>{" "}
               license; source code is available on{" "}
               <a href="https://github.com/nkprasad12/morcus-net">GitHub</a>.
             </p>
@@ -125,25 +118,6 @@ export function About() {
               </a>
               {"."}
             </p>
-            <div>
-              <input
-                id="enableExperimentalToggle"
-                type="checkbox"
-                checked={experimentalMode}
-                onChange={(e) =>
-                  globalSettings.setData({
-                    ...globalSettings.data,
-                    experimentalMode: e.currentTarget.checked,
-                  })
-                }
-              />
-              <label
-                htmlFor="enableExperimentalToggle"
-                style={{ paddingLeft: 8 }}
-              >
-                Enable Experimental Features
-              </label>
-            </div>
           </Section>
         </Typography>
       </Box>

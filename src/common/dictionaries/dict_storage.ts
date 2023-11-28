@@ -7,11 +7,15 @@ import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 export interface RawDictEntry {
   /** The serialized list of keys for this entry. */
   keys: string;
+  /** A unique identifier for this entry. */
+  id: string;
   /** A serialized form of this entry. */
   entry: string;
 }
 
+/** A dictionary backed by SQLlite. */
 export class SqlDict {
+  /** Saves the given entries to a SQLite table. */
   static save(entries: RawDictEntry[], destination: string): void {
     ReadOnlyDb.saveToSql(destination, entries, ARRAY_INDEX);
   }
@@ -44,6 +48,13 @@ export class SqlDict {
     );
   }
 
+  /**
+   * Returns the raw (serialized) entries for the given input
+   * query.
+   *
+   * @param input the query to search against keys.
+   * @param extras any server extras to pass to the function.
+   */
   getRawEntry(input: string, extras?: ServerExtras): string[] {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
@@ -76,6 +87,19 @@ export class SqlDict {
     return entryStrings;
   }
 
+  /** Returns the entry with the given ID, if present. */
+  getById(id: string): string | undefined {
+    // @ts-ignore
+    const result: { entry: string }[] = this.db
+      .prepare(`SELECT entry FROM data WHERE id=? LIMIT 1`)
+      .all(id);
+    if (result.length === 0) {
+      return undefined;
+    }
+    return result[0].entry;
+  }
+
+  /** Returns the possible completations for the given prefix. */
   getCompletions(input: string): string[] {
     const prefix = removeDiacritics(input).toLowerCase();
     // TODO: Use Binary search here.

@@ -28,6 +28,10 @@ export function checkPresent<T>(
   return input;
 }
 
+export function envVar(name: string): string {
+  return checkPresent(process.env[name], `Trying to read env var ${name}`);
+}
+
 export function checkSatisfies<T>(
   input: T,
   test: (t: T) => boolean,

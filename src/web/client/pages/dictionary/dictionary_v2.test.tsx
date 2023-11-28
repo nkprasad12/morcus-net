@@ -3,7 +3,7 @@
  */
 
 import { XmlNode } from "@/common/xml/xml_node";
-import { callApi } from "@/web/utils/rpc/client_rpc";
+import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
@@ -22,6 +22,7 @@ jest.mock("@mui/material/useMediaQuery", () => {
   };
 });
 import { useMediaQuery } from "@mui/material";
+import { assertEqual } from "@/common/assert";
 
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
@@ -29,7 +30,14 @@ console.debug = jest.fn();
 jest.mock("@/web/utils/rpc/client_rpc");
 
 // @ts-ignore
-const mockCallApi: jest.Mock<any, any, any> = callApi;
+const mockCallApi: jest.Mock<any, any, any> = callApiFull;
+// @ts-ignore
+const mockCallApiLegacy: jest.Mock<any, any, any> = callApi;
+
+function mockCallApiMockResolvedValue(input: any) {
+  mockCallApi.mockResolvedValue({ data: input });
+  mockCallApiLegacy.mockResolvedValue(input);
+}
 
 describe("New Dictionary View", () => {
   afterEach(() => {
@@ -42,7 +50,7 @@ describe("New Dictionary View", () => {
   });
 
   it("handles navigation on submit", async () => {
-    mockCallApi.mockResolvedValue([]);
+    mockCallApiMockResolvedValue([]);
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -81,7 +89,7 @@ describe("New Dictionary View", () => {
     const spyScrollTo = jest.fn();
     Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
     const resultString = "France or whatever idk lol";
-    mockCallApi.mockResolvedValue({
+    mockCallApiMockResolvedValue({
       LS: [
         {
           entry: new XmlNode("span", [["id", "n3"]], [resultString]),
@@ -139,14 +147,18 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainKey"));
+    const outlineMainKey = screen
+      .getAllByText("mainKey")
+      .filter((e) => e.className === "outlineHead");
+    assertEqual(outlineMainKey.length, 1);
+    await user.click(outlineMainKey[0]);
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 
   it("shows no results case", async () => {
     const spyScrollTo = jest.fn();
     Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
-    mockCallApi.mockResolvedValue({ LS: [] });
+    mockCallApiMockResolvedValue({ LS: [] });
     render(
       <RouteContext.Provider
         value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
@@ -164,7 +176,7 @@ describe("New Dictionary View", () => {
   it("shows multi results case", async () => {
     const spyScrollTo = jest.fn();
     Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
-    mockCallApi.mockResolvedValue({
+    mockCallApiMockResolvedValue({
       LS: [
         {
           entry: new XmlNode("span", [["id", "n4"]], ["Entry1"]),
@@ -215,7 +227,7 @@ describe("New Dictionary View", () => {
     const spyScrollTo = jest.fn();
     Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
     const resultString = "France or whatever idk lol";
-    mockCallApi.mockResolvedValue({
+    mockCallApiMockResolvedValue({
       LS: [
         {
           entry: new XmlNode("span", [["id", "n3"]], [resultString]),
@@ -275,7 +287,11 @@ describe("New Dictionary View", () => {
 
     // Expect this to no-op since the linked section does not exist
     spyScrollTo.mockClear();
-    await user.click(screen.getByText("mainKey"));
+    const outlineMainKey = screen
+      .getAllByText("mainKey")
+      .filter((e) => e.className === "outlineHead");
+    assertEqual(outlineMainKey.length, 1);
+    await user.click(outlineMainKey[0]);
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 });

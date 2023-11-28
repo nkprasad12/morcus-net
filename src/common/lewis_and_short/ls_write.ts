@@ -15,7 +15,7 @@ import { parseXmlStrings } from "../xml/xml_utils";
  */
 export async function rewriteLs(
   input: string,
-  rewriter: (input: string) => string
+  rewriter: (input: string) => string | Promise<string>
 ): Promise<void> {
   const xmlContents = readFileSync(input, "utf8");
   const tmpFile = `tmp.${performance.now()}`;
@@ -23,12 +23,13 @@ export async function rewriteLs(
 
   const lines = xmlContents.split("\n");
   let inBody = false;
-  lines.forEach((line, i) => {
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i];
     if (line.trim().startsWith("</body>")) {
       inBody = false;
     }
     if (inBody) {
-      fileStream.write(rewriter(line));
+      fileStream.write(await rewriter(line));
     } else {
       if (i !== 0) {
         fileStream.write("\n");
@@ -38,7 +39,7 @@ export async function rewriteLs(
         inBody = true;
       }
     }
-  });
+  }
 
   await new Promise<void>((resolve) => {
     fileStream.end(() => {
@@ -58,14 +59,14 @@ export namespace LsRewriters {
 
   export function transformEntries(
     inputPath: string,
-    transformer: (input: XmlNode) => XmlNode
+    transformer: (input: XmlNode) => XmlNode | Promise<XmlNode>
   ): Promise<void> {
-    return rewriteLs(inputPath, (line) => {
+    return rewriteLs(inputPath, async (line) => {
       if (!line.startsWith("<entryFree ")) {
         return "\n" + line;
       }
       const original = parseXmlStrings([line])[0];
-      return "\n" + transformer(original).toString();
+      return "\n" + (await transformer(original)).toString();
     });
   }
 }

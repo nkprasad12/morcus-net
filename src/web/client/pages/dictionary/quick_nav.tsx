@@ -11,7 +11,6 @@ import {
   SCROLL_JUMP,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { assertEqual } from "@/common/assert";
-import { Solarized } from "@/web/client/colors";
 
 class NavHelper {
   private readonly observer: IntersectionObserver;
@@ -84,7 +83,7 @@ export function QuickNavMenu() {
 
   function OpenMenu() {
     return (
-      <div style={{ backgroundColor: Solarized.base1 + "40" }}>
+      <div className="mobileNavOpen">
         <KeyboardArrowUp
           onClick={() => navHelper.current?.scrollToPrevious()}
           className="mobileNavButton"
@@ -120,8 +119,7 @@ export function QuickNavMenu() {
       ) : (
         <MenuOpenIcon
           onClick={() => setOpen(true)}
-          className="mobileNavButton"
-          style={{ color: Solarized.base1 + "80" }}
+          className="mobileNavButtonCollapsed"
           aria-label="expand quick navigation"
         />
       )}

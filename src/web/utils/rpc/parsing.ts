@@ -14,6 +14,14 @@ export interface Serialization<T> extends Serializable<T> {
   validator: Validator<T>;
 }
 
+/**
+ * Serializes the input object.
+ *
+ * @param t The object to serialize.
+ * @param registry The registry containing serialization steps for classes.
+ * @param isInUrl Whether the object will be sent as part of a URL.
+ * @returns A serialized string representation of the input.
+ */
 export function encodeMessage<T>(
   t: T,
   registry?: Serialization<any>[],
@@ -33,6 +41,17 @@ export function encodeMessage<T>(
   return isInUrl === true ? encodeURIComponent(serialized) : serialized;
 }
 
+/**
+ * Deserialized a serialized message.
+ *
+ * @param t The serialized string.
+ * @param validator A function used to validate whether the raw string
+ *                  conforms to the expected shape.
+ * @param registry A registry of serializations for class objects.
+ * @param isFromUrl Whether the the serialized string was received URL encoded.
+ *
+ * @returns The serialized object, if valid.
+ */
 export function decodeMessage<T>(
   t: string,
   validator: Validator<T>,
@@ -103,6 +122,33 @@ export function isArray<T>(
       }
     }
     return true;
+  };
+}
+
+export function isPair<T, U>(
+  tVal: (t: unknown) => t is T,
+  uVal: (t: unknown) => t is U
+): (x: unknown) => x is [T, U] {
+  return (x): x is [T, U] => {
+    if (!Array.isArray(x) || x.length !== 2 || !tVal(x[0]) || !uVal(x[1])) {
+      return false;
+    }
+    return true;
+  };
+}
+
+export function isOneOf<T, U>(
+  tVal: (t: unknown) => t is T,
+  uVal: (t: unknown) => t is U
+): (x: unknown) => x is T | U {
+  return (x): x is T | U => {
+    if (tVal(x)) {
+      return true;
+    }
+    if (uVal(x)) {
+      return true;
+    }
+    return false;
   };
 }
 

@@ -6,11 +6,11 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
+import SettingsIcon from "@mui/icons-material/Settings";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { Solarized } from "@/web/client/colors";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
@@ -21,6 +21,7 @@ export namespace ResponsiveAppBar {
   export interface Page {
     name: string;
     path: string;
+    notInMainSection?: true;
   }
 
   export interface Props {
@@ -58,12 +59,14 @@ function DrawerMenu(props: {
                 <Button
                   key={page.name}
                   onClick={props.onPageClick(page.path)}
+                  className={
+                    props.isCurrentPage(page.path)
+                      ? "menuItemActive"
+                      : "menuItemInactive"
+                  }
                   sx={{
                     my: 1,
                     mx: 2,
-                    color: props.isCurrentPage(page.path)
-                      ? Solarized.base01
-                      : Solarized.base01 + "90",
                     display: "block",
                     justifyContent: "center",
                   }}
@@ -75,28 +78,6 @@ function DrawerMenu(props: {
             </div>
           ))}
         </List>
-        <List style={{ marginTop: `auto` }}>
-          <div
-            style={{
-              position: "fixed",
-              bottom: 0,
-              textAlign: "center",
-              paddingBottom: 10,
-            }}
-          >
-            <Button
-              key="morcus.net"
-              sx={{
-                mx: 2,
-                color: Solarized.base01 + "90",
-                display: "block",
-              }}
-            >
-              mórcus.net
-            </Button>
-            <LogoImage key="morcus.net logo" />
-          </div>
-        </List>
       </Box>
     );
   }
@@ -107,9 +88,7 @@ function DrawerMenu(props: {
       open={props.open}
       onClose={props.onClose}
       PaperProps={{
-        sx: {
-          backgroundColor: Solarized.base2,
-        },
+        className: "menu",
       }}
     >
       <DrawerItems />
@@ -133,9 +112,12 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   };
 
   const isCurrentPage = (path: string) => nav.route.path === path;
+  const mainPages = props.pages.filter(
+    (page) => page.notInMainSection !== true
+  );
 
   return (
-    <AppBar position="static">
+    <AppBar position="static" className="menu">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -162,12 +144,12 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={() => setDrawerVisible(true)}
-              color="inherit"
+              className="menuIcon"
             >
               <MenuIcon />
             </IconButton>
             <DrawerMenu
-              pages={props.pages}
+              pages={mainPages}
               onPageClick={handlePageClick}
               onClose={() => setDrawerVisible(false)}
               open={drawerVisible}
@@ -178,9 +160,9 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             variant="h5"
             noWrap
             component="a"
-            onClick={handlePageClick(props.pages.slice(-1)[0].path)}
+            onClick={handlePageClick(mainPages.slice(-1)[0].path)}
             sx={{
-              mr: 2,
+              ml: 3,
               display: isSmall ? "flex" : "none",
               flexGrow: 1,
               fontFamily: "monospace",
@@ -193,16 +175,18 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             <LogoImage />
           </Typography>
           <Box sx={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
-            {props.pages.map((page) => (
+            {mainPages.map((page) => (
               <Button
                 key={page.name}
                 onClick={handlePageClick(page.path)}
+                className={
+                  isCurrentPage(page.path)
+                    ? "menuItemActive"
+                    : "menuItemInactive"
+                }
                 sx={{
                   my: 2,
                   mx: 1,
-                  color: isCurrentPage(page.path)
-                    ? Solarized.base01
-                    : Solarized.base01 + "90",
                   display: "block",
                 }}
               >
@@ -211,13 +195,21 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             ))}
           </Box>
           <Box>
-            {" "}
+            <IconButton
+              size="large"
+              aria-label="site settings"
+              // TODO: Find a better way to configure this.
+              onClick={handlePageClick("/settings")}
+              className="menuIcon"
+            >
+              <SettingsIcon />
+            </IconButton>
             <IconButton
               size="large"
               aria-label="report an issue"
               aria-haspopup="true"
               onClick={props.openIssueDialog}
-              color="info"
+              className="menuIcon"
             >
               <FlagIcon />
             </IconButton>

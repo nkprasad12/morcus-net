@@ -1,3 +1,8 @@
+import {
+  RouteInfo,
+  extractRouteInfo,
+  linkForInfo,
+} from "@/web/client/components/router";
 import LinkIcon from "@mui/icons-material/Link";
 import {
   SxProps,
@@ -7,7 +12,6 @@ import {
   IconButton,
 } from "@mui/material";
 import React from "react";
-import { Solarized } from "@/web/client/colors";
 
 export type TooltipPlacement = "top-start" | "right";
 
@@ -86,16 +90,29 @@ export function ClickableTooltip(props: {
 type SectionLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 
 export function SectionLinkTooltip(props: {
-  className: string;
+  className?: string;
   forwarded: TooltipChild;
-  senseId: string;
+  id: string;
+  forArticle?: boolean;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
   const [content, setContent] = React.useState<JSX.Element>(<div />);
 
+  const isArticle = props.forArticle === true;
+
   function getLink(): string {
-    const chunks = window.location.href.split("#");
-    return `${chunks[0]}#${props.senseId}`;
+    const before = extractRouteInfo();
+    const after: RouteInfo = {
+      path: before.path,
+    };
+    if (isArticle) {
+      after.query = props.id;
+      after.idSearch = true;
+    } else {
+      after.query = before.query;
+      after.hash = props.id;
+    }
+    return `${window.location.origin}${linkForInfo(after)}`;
   }
 
   async function onClick() {
@@ -147,7 +164,11 @@ export function SectionLinkTooltip(props: {
     if (state === "Success") {
       return <TextWithIcon message="Link copied!" />;
     }
-    return <TextWithIcon message="Copy section link" />;
+    return (
+      <TextWithIcon
+        message={`Copy ${isArticle ? "article" : "section"} link`}
+      />
+    );
   }
 
   return (
@@ -156,14 +177,6 @@ export function SectionLinkTooltip(props: {
       className={props.className}
       ChildFactory={props.forwarded}
       placement="top-start"
-      tooltipSx={{
-        backgroundColor: Solarized.mint,
-        color: Solarized.base01,
-        border: `2px solid ${Solarized.base02}`,
-      }}
-      arrowSx={{
-        color: Solarized.base02,
-      }}
       open={visible}
       onChildClick={(isOpen) => {
         if (isOpen) {

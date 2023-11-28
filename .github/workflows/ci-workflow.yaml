@@ -39,16 +39,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v4
-        with:
-          python-version: "3.8"
       - name: Installing npm dependencies
         run: npm ci
-      - name: Installing Python dependencies
-        run: pip install requests
       - name: Running integration checks
-        run: python src/integration/e2e_test.py
+        run: npm run integration-tests
 
   pytype-checks:
     runs-on: ubuntu-latest
