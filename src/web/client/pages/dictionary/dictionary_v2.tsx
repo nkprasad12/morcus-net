@@ -1,16 +1,23 @@
+import LinkIcon from "@mui/icons-material/Link";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import LinkIcon from "@mui/icons-material/Link";
 import React, { CSSProperties } from "react";
 
-import { RouteContext } from "@/web/client/components/router";
-import ReactDOM, { flushSync } from "react-dom";
+import { EntryOutline } from "@/common/dictionaries/dict_result";
+import {
+  DictInfo,
+  DictsFusedResponse,
+} from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DictsFusedApi } from "@/web/api_routes";
-import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { Footer } from "@/web/client/components/footer";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { RouteContext } from "@/web/client/components/router";
+import { getCommitHash } from "@/web/client/define_vars";
+import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   ElementAndKey,
   HELP_ENTRY,
@@ -21,13 +28,8 @@ import {
   SearchSettings,
   xmlNodeToJsx,
 } from "@/web/client/pages/dictionary/dictionary_utils";
+import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
-import {
-  DictInfo,
-  DictsFusedResponse,
-} from "@/common/dictionaries/dictionaries";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { EntryOutline } from "@/common/dictionaries/dict_result";
 import {
   ContentBox,
   DictAttribution,
@@ -36,12 +38,10 @@ import {
   TableOfContentsV2,
   jumpToSection,
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
-import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
-import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
-import { TitleContext } from "../../components/title";
-import { GlobalSettingsContext } from "@/web/client/components/global_flags";
-import { getCommitHash } from "@/web/client/define_vars";
 import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
+import { callApiFull } from "@/web/utils/rpc/client_rpc";
+import ReactDOM, { flushSync } from "react-dom";
+import { TitleContext } from "../../components/title";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +

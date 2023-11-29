@@ -8,12 +8,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
+import { assertEqual } from "@/common/assert";
+import { RouteContext } from "@/web/client/components/router";
 import {
   DictionaryViewV2,
   ERROR_STATE_MESSAGE,
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
-import { RouteContext } from "@/web/client/components/router";
+import { useMediaQuery } from "@mui/material";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -21,8 +23,6 @@ jest.mock("@mui/material/useMediaQuery", () => {
     default: jest.fn(() => false),
   };
 });
-import { useMediaQuery } from "@mui/material";
-import { assertEqual } from "@/common/assert";
 
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
