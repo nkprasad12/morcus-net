@@ -133,6 +133,14 @@ function WorkChunk(props: {
   );
 }
 
+function LatLink(props: { word: string; setDictWord: (input: string) => any }) {
+  return (
+    <span className="latWord" onClick={() => props.setDictWord(props.word)}>
+      {props.word}
+    </span>
+  );
+}
+
 function displayForLibraryChunk(
   root: XmlNode,
   setDictWord: (word: string | undefined) => any
@@ -145,14 +153,7 @@ function displayForLibraryChunk(
   });
   if (root.name === "libLat") {
     const word = XmlNode.assertIsString(root.children[0]);
-    function LinkContent() {
-      return (
-        <span className="latWord" onClick={() => setDictWord(word)}>
-          {word}
-        </span>
-      );
-    }
-    return <LinkContent />;
+    return <LatLink word={word} setDictWord={setDictWord} />;
   }
   return React.createElement(root.name, {}, children);
 }
