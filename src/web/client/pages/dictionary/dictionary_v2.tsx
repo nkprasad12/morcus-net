@@ -157,7 +157,9 @@ interface EntriesByDict {
 }
 
 export function DictionaryViewV2(props?: {
+  /** Whether the dictionary is embedded in another view. */
   embedded?: boolean;
+  /** An initial query, if any. */
   initial?: string;
 }) {
   const [state, setState] = React.useState<DictState>("Landing");
@@ -523,7 +525,8 @@ export function DictionaryViewV2(props?: {
     <ResponsiveLayout
       oneCol={
         <>
-          {ReactDOM.createPortal(<QuickNavMenu />, document.body)}
+          {!props?.embedded &&
+            ReactDOM.createPortal(<QuickNavMenu />, document.body)}
           <HelpSection id={"HelpSection"} className={QUICK_NAV_ANCHOR} />
           <div id={"Toc"} className={QUICK_NAV_ANCHOR}>
             <SummarySection />
