@@ -5,9 +5,12 @@ import { RouteContext } from "@/web/client/components/router";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
+import ArrowBack from "@mui/icons-material/ArrowBack";
+import ArrowForward from "@mui/icons-material/ArrowForward";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import Stack from "@mui/material/Stack";
 import React, { CSSProperties, useContext, useEffect, useState } from "react";
+import IconButton from "@mui/material/IconButton";
 
 const TOC_SIDEBAR_STYLE: CSSProperties = {
   position: "sticky",
@@ -17,8 +20,16 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   marginTop: 10,
   overflow: "auto",
   maxHeight: window.innerHeight - 40,
-  minWidth: "60%",
+  minWidth: "50%",
 };
+
+function Placeholder() {
+  return (
+    <span key={"horizonatalSpacePlaceholder"} className="dictPlaceholder">
+      {"pla ceh old er".repeat(20)}
+    </span>
+  );
+}
 
 export function ReadingPage() {
   const [dictWord, setDictWord] = React.useState<string | undefined>();
@@ -33,34 +44,29 @@ export function ReadingPage() {
             ) : (
               <div>Click on a word for dictionary and inflection lookups.</div>
             )}
-            <span
-              key={"horizonatalSpacePlaceholder"}
-              className="dictPlaceholder"
-            >
-              {"pla ceh old er".repeat(20)}
-            </span>
+            <Placeholder />
           </>
         </ContentBox>
       </div>
       <div style={TOC_SIDEBAR_STYLE}>
-        <WorkUi setDictWord={setDictWord} />
+        <WorkColumn setDictWord={setDictWord} />
       </div>
     </Stack>
   );
 }
 
-type WorkState = ProcessedWork | "Loading" | "Error";
+type PaginatedWork = ProcessedWork & { pageStarts: number[] };
+type WorkState = PaginatedWork | "Loading" | "Error";
 
-export function WorkUi(props: {
-  setDictWord: (word: string | undefined) => any;
-}) {
+function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
   const nav = useContext(RouteContext);
   const [work, setWork] = useState<WorkState>("Loading");
+  const [page, setPage] = useState<number>(-1);
 
   useEffect(() => {
     const id = nav.route.path.substring(WORK_PAGE.length + 1);
     callApi(GetWork, id)
-      .then(setWork)
+      .then((work) => setWork(dividePages(work)))
       .catch((reason) => {
         console.debug(reason);
         setWork("Error");
@@ -77,21 +83,80 @@ export function WorkUi(props: {
           server error
         </span>
       ) : (
-        <WorkText work={work} setDictWord={props.setDictWord} />
+        <>
+          <WorkNavigation page={page} setPage={setPage} />
+          <WorkTextPage
+            work={work}
+            setDictWord={props.setDictWord}
+            page={page}
+          />
+          <Placeholder />
+        </>
       )}
     </ContentBox>
   );
 }
 
-export function WorkText(props: {
-  work: ProcessedWork;
+function WorkNavigation(props: { page: number; setPage: (to: number) => any }) {
+  return (
+    <div>
+      <IconButton
+        size="large"
+        aria-label="previous section"
+        onClick={() => props.setPage(props.page - 1)}
+        className="menuIcon"
+      >
+        <ArrowBack />
+      </IconButton>
+      <IconButton
+        size="large"
+        aria-label="next section"
+        onClick={() => props.setPage(props.page + 1)}
+        className="menuIcon"
+      >
+        <ArrowForward />
+      </IconButton>
+    </div>
+  );
+}
+
+function dividePages(work: ProcessedWork): PaginatedWork {
+  let pageStarts = [];
+  let lastPageIndex: number[] = work.textParts.map((_) => -1);
+  for (let i = 0; i < work.chunks.length; i++) {
+    const chunk = work.chunks[i];
+    let matchesLast = true;
+    // For now, just split on the lowest level division.
+    for (let i = 0; i < lastPageIndex.length - 1; i++) {
+      if (lastPageIndex[i] !== chunk[0][i]) {
+        matchesLast = false;
+      }
+    }
+    if (!matchesLast) {
+      pageStarts.push(i);
+      lastPageIndex = chunk[0];
+    }
+  }
+  pageStarts.push(work.chunks.length);
+  return { ...work, pageStarts };
+}
+
+export function WorkTextPage(props: {
+  work: PaginatedWork;
   setDictWord: (word: string | undefined) => any;
+  page: number;
 }) {
+  if (props.page === -1) {
+    return <WorkInfo workInfo={props.work.info} />;
+  }
+
+  const i = props.work.pageStarts[props.page];
+  const j = props.work.pageStarts[props.page + 1];
+  const chunksToShow = props.work.chunks.slice(i, j);
+
   return (
     <>
-      <WorkInfo workInfo={props.work.info} />
-      <br />
-      {props.work.chunks.map((chunk) => (
+      {chunksToShow.map((chunk) => (
         <WorkChunk
           key={chunk[0].join(",")}
           parts={props.work.textParts}

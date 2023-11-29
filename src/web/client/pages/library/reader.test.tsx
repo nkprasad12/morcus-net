@@ -4,6 +4,7 @@
 
 import React from "react";
 
+import user from "@testing-library/user-event";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { RouteContext } from "@/web/client/components/router";
 import { render, screen } from "@testing-library/react";
@@ -98,5 +99,42 @@ describe("Reading UI", () => {
     await screen.findByText(/Caesar/);
     await screen.findByText(/divisa/);
     await screen.findByText(/Gallia/);
+  });
+
+  it("shows next and previous page contents", async () => {
+    const result: ProcessedWork = {
+      info: { title: "DBG", author: "Caesar" },
+      textParts: ["chapter", "section"],
+      chunks: [
+        [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
+        [[2, 1], new XmlNode("span", [], [" divisa in partes tres"])],
+      ],
+    };
+    mockCallApi.mockResolvedValue(result);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/DBG/);
+    expect(screen.queryByText(/Gallia/)).toBeNull();
+    expect(screen.queryByText(/divisa/)).toBeNull();
+
+    // We should see only the second chunk.
+    await user.click(screen.queryByLabelText("next section")!);
+    await user.click(screen.queryByLabelText("next section")!);
+    expect(screen.queryByText(/Gallia/)).toBeNull();
+    expect(screen.queryByText(/divisa/)).not.toBeNull();
+
+    // We should wee only the first chunk.
+    await user.click(screen.queryByLabelText("previous section")!);
+    expect(screen.queryByText(/Gallia/)).not.toBeNull();
+    expect(screen.queryByText(/divisa/)).toBeNull();
   });
 });
