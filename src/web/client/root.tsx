@@ -16,13 +16,7 @@ import {
   SettingsHandler,
 } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
-import {
-  ABOUT_PAGE,
-  DICT_PAGE,
-  LIBRARY_PAGE,
-  MACRONIZER_PAGE,
-  SETTINGS_PAGE,
-} from "@/web/client/active_pages";
+import { ACTIVE_PAGES } from "@/web/client/active_pages";
 import { getBackgroundColor, getGlobalStyles } from "@/web/client/styles";
 
 declare module "@mui/material/styles" {
@@ -100,7 +94,7 @@ function CustomThemeProvider(props: PropsWithChildren<Record<string, any>>) {
 }
 
 const props: SinglePageApp.Props = {
-  pages: [DICT_PAGE, LIBRARY_PAGE, MACRONIZER_PAGE, SETTINGS_PAGE, ABOUT_PAGE],
+  pages: [...ACTIVE_PAGES],
 };
 if (window.location.pathname === "/") {
   window.history.replaceState({}, "", props.pages[0].path);
