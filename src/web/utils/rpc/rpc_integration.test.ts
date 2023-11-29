@@ -198,7 +198,7 @@ const ErroringHandler: RouteAndHandler<string, string> = {
     inputValidator: isString,
     outputValidator: isString,
   },
-  handler: async (s) => ({ serverErrorStatus: 570 }),
+  handler: (s) => Promise.reject({ message: "Failed for test", status: 404 }),
 };
 
 const InputValidationError: RouteAndHandler<string, string> = {
@@ -341,7 +341,7 @@ describe("RPC library", () => {
     server = await setupApp();
     const result = callApi(ErroringHandler.route, "foo");
     await expect(result).rejects.toMatchObject({
-      message: expect.stringMatching("570"),
+      message: expect.stringMatching("404"),
     });
   });
 

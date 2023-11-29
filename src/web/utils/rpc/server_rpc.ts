@@ -1,8 +1,8 @@
-import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
-import express, { Request, Response } from "express";
-import { ApiRoute, ServerMessage } from "@/web/utils/rpc/rpc";
-import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { exhaustiveGuard } from "@/common/misc_utils";
+import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
+import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
+import { ApiRoute, ServerMessage } from "@/web/utils/rpc/rpc";
+import express, { Request, Response } from "express";
 
 export type Data = boolean | string | number | object;
 
@@ -26,19 +26,6 @@ class Timer {
     this.events.forEach(([eventName, time]) => (result[eventName] = time));
     return result;
   }
-}
-
-function isObject(data: Data): data is object {
-  if (typeof data === "string") {
-    return false;
-  }
-  if (typeof data === "number") {
-    return false;
-  }
-  if (typeof data === "boolean") {
-    return false;
-  }
-  return true;
 }
 
 function serverMessage<T>(t: T): ServerMessage<T> {
@@ -117,22 +104,16 @@ function adaptHandler<I, O extends Data>(
     const [input, rawLength] = inputOrError;
 
     let status: number = 200;
-    let body: O | undefined = undefined;
+    let body: O | HandlerError | undefined = undefined;
     handler(input, { log: (tag) => timer.event(tag) })
       .then((output) => {
         if (output === undefined || output === null) {
           return;
         }
-        if (isObject(output) && Object.hasOwn(output, "serverErrorStatus")) {
-          // @ts-ignore
-          status = output.serverErrorStatus;
-          return;
-        }
-        // @ts-ignore
         body = output;
       })
-      .catch((reason) => {
-        status = 500;
+      .catch((reason: HandlerError) => {
+        status = reason?.status || 500;
         console.debug(reason);
         body = reason;
       })
@@ -156,19 +137,26 @@ function adaptHandler<I, O extends Data>(
   };
 }
 
-export type PossibleError<T> = T | { serverErrorStatus: number };
+export type HandlerError = {
+  status: number;
+  message: string;
+};
 export interface ServerExtras {
   log: (tag: string) => any;
 }
-export type ApiHandler<I, O> = (
-  input: I,
-  extras?: ServerExtras
-) => Promise<PossibleError<O>>;
+export type ApiHandler<I, O> = (input: I, extras?: ServerExtras) => Promise<O>;
 export interface RouteAndHandler<I, O> {
   route: ApiRoute<I, O>;
   handler: ApiHandler<I, O>;
 }
 
+/**
+ * Adds the given API to the Express app.
+ *
+ * @param app the Express application.
+ * @param routeAndHandler the route definition and handler for the route. If the
+ *                        handler rejects, it should reject with a `HandlerError`.
+ */
 export function addApi<I, O extends Data>(
   app: { webApp: express.Express; telemetry: Promise<TelemetryLogger> },
   routeAndHandler: RouteAndHandler<I, O>

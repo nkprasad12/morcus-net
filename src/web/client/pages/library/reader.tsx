@@ -68,15 +68,18 @@ export function WorkUi(props: {
   }, []);
 
   return (
-    <div>
+    <ContentBox isSmall={false}>
       {work === "Loading" ? (
-        "Loading..."
+        <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
-        "An error occurred."
+        <span>
+          An error occurred - either the work is invalid or there could be a
+          server error
+        </span>
       ) : (
         <WorkText work={work} setDictWord={props.setDictWord} />
       )}
-    </div>
+    </ContentBox>
   );
 }
 
@@ -87,6 +90,7 @@ export function WorkText(props: {
   return (
     <>
       <WorkInfo workInfo={props.work.info} />
+      <br />
       {props.work.chunks.map((chunk) => (
         <WorkChunk
           key={chunk[0].join(",")}
@@ -102,15 +106,13 @@ export function WorkText(props: {
 
 function WorkInfo(props: { workInfo: DocumentInfo }) {
   return (
-    <ContentBox isSmall={false}>
-      <>
-        <div>{props.workInfo.title}</div>
-        <div>{props.workInfo.author}</div>
-        {props.workInfo.editor && <div>{props.workInfo.editor}</div>}
-        {props.workInfo.funder && <div>{props.workInfo.funder}</div>}
-        {props.workInfo.sponsor && <div>{props.workInfo.sponsor}</div>}
-      </>
-    </ContentBox>
+    <>
+      <div>{props.workInfo.title}</div>
+      <div>{props.workInfo.author}</div>
+      {props.workInfo.editor && <div>{props.workInfo.editor}</div>}
+      {props.workInfo.funder && <div>{props.workInfo.funder}</div>}
+      {props.workInfo.sponsor && <div>{props.workInfo.sponsor}</div>}
+    </>
   );
 }
 
@@ -124,12 +126,11 @@ function WorkChunk(props: {
     .map((partName, i) => `${partName} ${props.id[i]}`)
     .join(", ");
   return (
-    <ContentBox isSmall={false}>
-      <>
-        <div>{id}</div>
-        {displayForLibraryChunk(props.textRoot, props.setDictWord)}
-      </>
-    </ContentBox>
+    <div>
+      <div>{id}</div>
+      {displayForLibraryChunk(props.textRoot, props.setDictWord)}
+      <br />
+    </div>
   );
 }
 

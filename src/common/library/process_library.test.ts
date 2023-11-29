@@ -42,6 +42,13 @@ describe("Library Processing", () => {
     expect(result.info.author).toBe("Julius Caesar");
   });
 
+  test("handles invalid request correctly", async () => {
+    processLibrary(LIB_DIR, [DBG_PATH]);
+    expect(
+      retrieveWork("phi0448.phi001.perseus-lat", LIB_DIR)
+    ).rejects.toHaveProperty("status", 404);
+  });
+
   test("returns correct index", async () => {
     const result = await retrieveWorksList(LIB_DIR);
 
