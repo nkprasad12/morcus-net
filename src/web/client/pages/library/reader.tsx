@@ -121,7 +121,7 @@ function WorkNavigation(props: { page: number; setPage: (to: number) => any }) {
 }
 
 function dividePages(work: ProcessedWork): PaginatedWork {
-  let pageStarts = [];
+  const pageStarts = [];
   let lastPageIndex: number[] = work.textParts.map((_) => -1);
   for (let i = 0; i < work.chunks.length; i++) {
     const chunk = work.chunks[i];

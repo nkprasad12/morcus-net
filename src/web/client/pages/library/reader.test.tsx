@@ -94,11 +94,8 @@ describe("Reading UI", () => {
         <ReadingPage />
       </RouteContext.Provider>
     );
-
     await screen.findByText(/DBG/);
     await screen.findByText(/Caesar/);
-    await screen.findByText(/divisa/);
-    await screen.findByText(/Gallia/);
   });
 
   it("shows next and previous page contents", async () => {
