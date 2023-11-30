@@ -41,3 +41,10 @@ export function singletonOf<T>(initializer: () => T): { get: () => T } {
     },
   };
 }
+
+export function safeParseInt(input: string | undefined): number | undefined {
+  if (input === undefined || !/^(?:-)?\d+$/.test(input)) {
+    return undefined;
+  }
+  return parseInt(input);
+}
