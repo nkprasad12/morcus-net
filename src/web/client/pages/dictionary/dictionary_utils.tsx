@@ -95,7 +95,11 @@ function ShLink(props: { text: string; query: string }) {
   return (
     <span
       className="dLink"
-      onClick={() => Navigation.query(nav, props.query, undefined, true)}
+      onClick={() =>
+        Navigation.query(nav, props.query, {
+          internalSource: true,
+        })
+      }
     >
       {props.text}
     </span>
@@ -107,7 +111,12 @@ function LatLink(props: { word: string; orig?: string }) {
   return (
     <span
       className="latWord"
-      onClick={() => Navigation.query(nav, `${props.word},LnS`, true, true)}
+      onClick={() =>
+        Navigation.query(nav, `${props.word},LnS`, {
+          experimentalSearch: true,
+          internalSource: true,
+        })
+      }
     >
       {props.orig || props.word}
     </span>

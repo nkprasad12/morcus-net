@@ -61,34 +61,51 @@ export interface Navigation {
 
 export namespace Navigation {
   export function redirect(nav: Navigation, target: string): void {
-    toRouteInfo(nav, {
-      path: target,
-      query: nav.route.query,
-      hash: nav.route.hash,
-    });
+    toRouteInfo(
+      nav,
+      {
+        path: target,
+        query: nav.route.query,
+        hash: nav.route.hash,
+      },
+      false
+    );
   }
 
   export function to(nav: Navigation, target: string): void {
-    toRouteInfo(nav, { path: target });
+    toRouteInfo(nav, { path: target }, false);
   }
 
   export function query(
     nav: Navigation,
     query: string,
-    experimentalSearch?: boolean,
-    internalSource?: boolean
+    options?: {
+      experimentalSearch?: boolean;
+      internalSource?: boolean;
+      localOnly?: boolean;
+    }
   ): void {
-    toRouteInfo(nav, {
-      path: nav.route.path,
-      query: query,
-      experimentalSearch: experimentalSearch,
-      internalSource: internalSource,
-    });
+    toRouteInfo(
+      nav,
+      {
+        path: nav.route.path,
+        query: query,
+        experimentalSearch: options?.experimentalSearch,
+        internalSource: options?.internalSource,
+      },
+      options?.localOnly === true
+    );
   }
 
-  function toRouteInfo(nav: Navigation, newInfo: RouteInfo) {
+  function toRouteInfo(
+    nav: Navigation,
+    newInfo: RouteInfo,
+    localOnly: boolean
+  ) {
     pushRouteInfo(newInfo);
-    nav.navigateTo(newInfo);
+    if (!localOnly) {
+      nav.navigateTo(newInfo);
+    }
   }
 }
 

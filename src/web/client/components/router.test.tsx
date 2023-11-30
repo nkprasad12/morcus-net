@@ -102,7 +102,7 @@ describe("Router", () => {
         navigateTo: setInfo,
       };
 
-      Navigation.query(nav, "query2", experimentalSearch);
+      Navigation.query(nav, "query2", { experimentalSearch });
 
       const newPath = {
         path: "origin/path1",
@@ -115,6 +115,25 @@ describe("Router", () => {
       );
     }
   );
+
+  test("localOnly updates only update window state", () => {
+    const pushState = jest.fn();
+    window.history.pushState = pushState;
+    const setInfo = jest.fn();
+    const initial: RouteInfo = {
+      path: "origin/path1",
+      query: "query1",
+    };
+    const nav: Navigation = {
+      route: initial,
+      navigateTo: setInfo,
+    };
+
+    Navigation.query(nav, "query2", { localOnly: true });
+
+    expect(setInfo).not.toHaveBeenCalled();
+    expect(pushState.mock.lastCall![2]).toBe("origin/path1?q=query2");
+  });
 
   test("link with id search", () => {
     const link = linkForInfo({ path: "foo", query: "bar", idSearch: true });
