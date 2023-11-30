@@ -18,6 +18,15 @@ jest.mock("@/web/utils/rpc/client_rpc");
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
 
+const PROCESSED_WORK: ProcessedWork = {
+  info: { title: "DBG", author: "Caesar" },
+  textParts: ["chapter", "section"],
+  chunks: [
+    [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
+    [[1, 2], new XmlNode("span", [], [" divisa in partes tres"])],
+  ],
+};
+
 describe("Reading UI", () => {
   it("fetches the expected resource", () => {
     mockCallApi.mockReturnValue(new Promise(() => {}));
@@ -133,5 +142,41 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("previous section")!);
     expect(screen.queryByText(/Gallia/)).not.toBeNull();
     expect(screen.queryByText(/divisa/)).toBeNull();
+  });
+
+  it("uses correct nav updates", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+    const mockNav = jest.fn();
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: mockNav,
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.queryByLabelText("next section")!);
+
+    expect(mockNav).not.toHaveBeenCalled();
+    expect(window.location.href.includes("q=0")).toBe(true);
+  });
+
+  it("shows page specified from URL", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg`, query: "1" },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
   });
 });

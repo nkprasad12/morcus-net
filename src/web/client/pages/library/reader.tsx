@@ -1,7 +1,7 @@
 import { DocumentInfo, ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { GetWork } from "@/web/api_routes";
-import { RouteContext } from "@/web/client/components/router";
+import { Navigation, RouteContext } from "@/web/client/components/router";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
@@ -11,6 +11,7 @@ import { callApi } from "@/web/utils/rpc/client_rpc";
 import Stack from "@mui/material/Stack";
 import React, { CSSProperties, useContext, useEffect, useState } from "react";
 import IconButton from "@mui/material/IconButton";
+import { safeParseInt } from "@/common/misc_utils";
 
 const TOC_SIDEBAR_STYLE: CSSProperties = {
   position: "sticky",
@@ -61,10 +62,27 @@ type WorkState = PaginatedWork | "Loading" | "Error";
 function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
   const nav = useContext(RouteContext);
   const [work, setWork] = useState<WorkState>("Loading");
-  const [page, setPage] = useState<number>(-1);
+  const [currentPage, setCurrentPage] = useState<number>(-1);
+
+  function setUrl(newPage: number) {
+    // +1 so that the entry page is 0 and the other pages are 1-indexed.
+    Navigation.query(nav, `${newPage + 1}`, { localOnly: true });
+  }
+
+  function setPage(newPage: number) {
+    setUrl(newPage);
+    setCurrentPage(newPage);
+  }
 
   useEffect(() => {
     const id = nav.route.path.substring(WORK_PAGE.length + 1);
+    const urlPage = safeParseInt(nav.route.query);
+    // -1 because we add 1 when setting the page.
+    const newPage = urlPage === undefined ? currentPage : urlPage - 1;
+    setCurrentPage(newPage);
+    if (urlPage === undefined) {
+      setUrl(newPage);
+    }
     callApi(GetWork, id)
       .then((work) => setWork(dividePages(work)))
       .catch((reason) => {
@@ -84,11 +102,11 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
         </span>
       ) : (
         <>
-          <WorkNavigation page={page} setPage={setPage} />
+          <WorkNavigation page={currentPage} setPage={setPage} />
           <WorkTextPage
             work={work}
             setDictWord={props.setDictWord}
-            page={page}
+            page={currentPage}
           />
           <Placeholder />
         </>
