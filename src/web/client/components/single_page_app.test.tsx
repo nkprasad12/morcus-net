@@ -27,6 +27,9 @@ describe("Single Page App View", () => {
     { ...GALLIA_PAGE, experimental: true },
     OMNIS_PAGE,
   ];
+  const pagesWithSubpages: SinglePageApp.Page[] = [
+    { ...GALLIA_PAGE, hasSubpages: true },
+  ];
 
   it("shows correct initial content", () => {
     const mockNav = jest.fn(() => {});
@@ -62,6 +65,21 @@ describe("Single Page App View", () => {
 
     expect(screen.queryAllByText("Gallia")).not.toHaveLength(0);
     expect(screen.queryAllByText("Omnis")).not.toHaveLength(0);
+  });
+
+  it("show page on subpage, if required", () => {
+    const mockNav = jest.fn(() => {});
+    render(
+      <SettingsHandler>
+        <RouteContext.Provider
+          value={{ route: { path: "/gallia/bar" }, navigateTo: mockNav }}
+        >
+          <SinglePageApp pages={pagesWithSubpages} />
+        </RouteContext.Provider>
+      </SettingsHandler>
+    );
+
+    expect(screen.queryByText("GalliaPage")).not.toBeNull();
   });
 
   it("hides pages in experiment mode", () => {

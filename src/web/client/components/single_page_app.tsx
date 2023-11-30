@@ -9,6 +9,7 @@ export namespace SinglePageApp {
   export interface Page extends ResponsiveAppBar.Page {
     content: () => JSX.Element;
     experimental?: true;
+    hasSubpages?: true;
   }
 
   export interface Props {
@@ -29,7 +30,11 @@ export function SinglePageApp(props: SinglePageApp.Props) {
 
   function Content(): JSX.Element {
     for (const page of usedPages) {
-      if (page.path === nav.route.path) {
+      const subpages = page.hasSubpages === true;
+      if (
+        (subpages && nav.route.path.startsWith(page.path)) ||
+        page.path === nav.route.path
+      ) {
         return page.content();
       }
     }

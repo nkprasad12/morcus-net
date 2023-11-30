@@ -33,7 +33,7 @@ export namespace ResponsiveAppBar {
 function LogoImage() {
   return (
     <img
-      src="./public/favicon.ico"
+      src="/public/favicon.ico"
       className="App-logo"
       width={48}
       height={48}

@@ -29,3 +29,22 @@ export function exhaustiveGuard(_value: never): never {
     )}`
   );
 }
+
+export function singletonOf<T>(initializer: () => T): { get: () => T } {
+  let value: T | undefined = undefined;
+  return {
+    get: () => {
+      if (value === undefined) {
+        value = initializer();
+      }
+      return value;
+    },
+  };
+}
+
+export function safeParseInt(input: string | undefined): number | undefined {
+  if (input === undefined || !/^(?:-)?\d+$/.test(input)) {
+    return undefined;
+  }
+  return parseInt(input);
+}

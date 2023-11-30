@@ -197,7 +197,9 @@ export function DictionarySearch(props: {
     if (searchTerm.length === 0) {
       return;
     }
-    Navigation.query(nav, searchTerm, settings.data.experimentalMode === true);
+    Navigation.query(nav, searchTerm, {
+      experimentalSearch: settings.data.experimentalMode === true,
+    });
   }
 
   async function loadOptions(searchTerm: string) {

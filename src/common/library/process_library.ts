@@ -75,6 +75,9 @@ export async function retrieveWork(
 ): Promise<ProcessedWork> {
   const index = await getIndex(resultDir);
   const workPath = index[workId];
+  if (workPath === undefined) {
+    return Promise.reject({ status: 404, message: `Invalid id: ${workId}` });
+  }
   const rawWork = await readFile(workPath[0]);
   return decodeMessage(rawWork.toString(), ProcessedWork.isMatch, [
     XmlNodeSerialization.DEFAULT,

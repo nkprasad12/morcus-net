@@ -90,6 +90,39 @@ export const HELP_ENTRY = new XmlNode(
   [HOVER_HELP, HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
 );
 
+function ShLink(props: { text: string; query: string }) {
+  const nav = React.useContext(RouteContext);
+  return (
+    <span
+      className="dLink"
+      onClick={() =>
+        Navigation.query(nav, props.query, {
+          internalSource: true,
+        })
+      }
+    >
+      {props.text}
+    </span>
+  );
+}
+
+function LatLink(props: { word: string; orig?: string }) {
+  const nav = React.useContext(RouteContext);
+  return (
+    <span
+      className="latWord"
+      onClick={() =>
+        Navigation.query(nav, `${props.word},LnS`, {
+          experimentalSearch: true,
+          internalSource: true,
+        })
+      }
+    >
+      {props.orig || props.word}
+    </span>
+  );
+}
+
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
@@ -163,35 +196,11 @@ export function xmlNodeToJsx(
     const target = root.getAttr("to");
     const text = root.getAttr("text");
     const query = [target || "undefined", "SnH"];
-    function LinkContent() {
-      const nav = React.useContext(RouteContext);
-      return (
-        <span
-          className="dLink"
-          onClick={() =>
-            Navigation.query(nav, query.join(","), undefined, true)
-          }
-        >
-          {text || "undefined"}
-        </span>
-      );
-    }
-    return <LinkContent />;
+    return <ShLink query={query.join(",")} text={text || "undefined"} />;
   } else if (className === "latWord") {
     const word = root.getAttr("to")!;
     const orig = root.getAttr("orig");
-    function LinkContent() {
-      const nav = React.useContext(RouteContext);
-      return (
-        <span
-          className="latWord"
-          onClick={() => Navigation.query(nav, `${word},LnS`, true, true)}
-        >
-          {orig || word}
-        </span>
-      );
-    }
-    return <LinkContent />;
+    return <LatLink word={word} orig={orig} />;
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";

@@ -28,10 +28,23 @@ export namespace DocumentInfo {
   ]);
 }
 
+export type ProcessedWorkChunk = [number[], XmlNode];
+
 export interface ProcessedWork {
+  /** Basic information about this work such as author or title. */
   info: DocumentInfo;
+  /**
+   * The high level divisions of texts, like chapter, section, and so on.
+   * These are returned in descending order of size.
+   */
   textParts: string[];
-  chunks: [number[], XmlNode][];
+  /**
+   * The index of each of the chunks of the text, along with the marked
+   * up text. The index has one part for each of the `textParts`, so for example
+   * if `textParts` is `["Chapter", "Section"]`, then the index of `[2, 5]`
+   * identifies `Chapter 2, Section 5`.
+   */
+  chunks: ProcessedWorkChunk[];
 }
 
 export namespace ProcessedWork {

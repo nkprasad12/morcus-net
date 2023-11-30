@@ -8,12 +8,14 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import React from "react";
 
+import { assertEqual } from "@/common/assert";
+import { RouteContext } from "@/web/client/components/router";
 import {
   DictionaryViewV2,
   ERROR_STATE_MESSAGE,
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
-import { RouteContext } from "@/web/client/components/router";
+import { useMediaQuery } from "@mui/material";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -21,8 +23,6 @@ jest.mock("@mui/material/useMediaQuery", () => {
     default: jest.fn(() => false),
   };
 });
-import { useMediaQuery } from "@mui/material";
-import { assertEqual } from "@/common/assert";
 
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
@@ -293,5 +293,61 @@ describe("New Dictionary View", () => {
     assertEqual(outlineMainKey.length, 1);
     await user.click(outlineMainKey[0]);
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
+  });
+
+  it("shows fetched result on embedded view", async () => {
+    // @ts-ignore
+    window.IntersectionObserver = jest.fn(() => ({
+      observe: jest.fn(),
+      unobserve: jest.fn(),
+      disconnect: jest.fn(),
+    }));
+    // @ts-ignore
+    useMediaQuery.mockImplementation(() => true);
+    const spyScrollTo = jest.fn();
+    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    const resultString = "France or whatever idk lol";
+    mockCallApiMockResolvedValue({
+      LS: [
+        {
+          entry: new XmlNode("span", [["id", "n3"]], [resultString]),
+          outline: {
+            mainKey: "mainKey",
+            mainSection: {
+              text: "mainBlurb",
+              sectionId: "n1",
+            },
+            senses: [
+              {
+                text: "sense1",
+                level: 1,
+                ordinal: "A",
+                sectionId: "n2",
+              },
+              {
+                text: "sense2",
+                level: 1,
+                ordinal: "B",
+                sectionId: "n3",
+              },
+            ],
+          },
+        },
+      ],
+    });
+    render(<DictionaryViewV2 embedded={true} initial="Belgae" />);
+
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
+      dicts: ["L&S", "S&H"],
+      query: "Belgae",
+      mode: 0,
+    });
+    await waitFor(() => {
+      expect(screen.getByText(resultString)).toBeDefined();
+      expect(screen.getByText("mainBlurb")).toBeDefined();
+      expect(screen.getByText("sense1")).toBeDefined();
+      expect(screen.getByText("sense2")).toBeDefined();
+    });
   });
 });
