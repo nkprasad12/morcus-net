@@ -1,9 +1,10 @@
 import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
+import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
-import { callApi } from "@/web/utils/rpc/client_rpc";
+import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import Container from "@mui/material/Container";
 import React, { useEffect } from "react";
 
@@ -14,7 +15,10 @@ export function Library() {
   );
 
   useEffect(() => {
-    callApi(ListLibraryWorks, true).then(setWorks);
+    callApiFull(ListLibraryWorks, true).then((result) => {
+      reloadIfOldClient(result);
+      setWorks(result.data);
+    });
   }, []);
 
   function onWorkSelected(workId: string) {

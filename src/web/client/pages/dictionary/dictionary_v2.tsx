@@ -16,7 +16,6 @@ import { DictsFusedApi } from "@/web/api_routes";
 import { Footer } from "@/web/client/components/footer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { RouteContext } from "@/web/client/components/router";
-import { getCommitHash } from "@/web/client/define_vars";
 import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   ElementAndKey,
@@ -42,6 +41,7 @@ import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import ReactDOM, { flushSync } from "react-dom";
 import { TitleContext } from "../../components/title";
+import { reloadIfOldClient } from "@/web/client/components/page_utils";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -196,16 +196,7 @@ export function DictionaryViewV2(props?: {
         setState("Error");
         return;
       }
-      const serverCommit = newResults.metadata?.commit;
-      const clientCommit = getCommitHash();
-      if (
-        serverCommit !== undefined &&
-        clientCommit !== "undefined" &&
-        serverCommit !== clientCommit
-      ) {
-        location.reload();
-        return;
-      }
+      reloadIfOldClient(newResults);
 
       const allEntries = getEntriesByDict(
         newResults.data,
