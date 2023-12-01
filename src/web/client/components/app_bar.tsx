@@ -117,7 +117,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   );
 
   return (
-    <AppBar position="static" className="menu">
+    <AppBar position="static" className="menu" style={{ maxHeight: 74 }}>
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -127,9 +127,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             sx={{
               mr: 2,
               display: isSmall ? "none" : "flex",
-              fontFamily: "monospace",
-              fontWeight: 700,
-              letterSpacing: ".3rem",
               color: "inherit",
               textDecoration: "none",
             }}
@@ -185,7 +182,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                     : "menuItemInactive"
                 }
                 sx={{
-                  my: 2,
                   mx: 1,
                   display: "block",
                 }}

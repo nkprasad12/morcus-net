@@ -8,51 +8,55 @@ import { WORK_PAGE } from "@/web/client/pages/library/common";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import Stack from "@mui/material/Stack";
 import React, { CSSProperties, useContext, useEffect, useState } from "react";
 import IconButton from "@mui/material/IconButton";
 import { safeParseInt } from "@/common/misc_utils";
 
-const TOC_SIDEBAR_STYLE: CSSProperties = {
-  position: "sticky",
-  zIndex: 1,
-  top: 0,
-  left: 0,
-  marginTop: 10,
-  overflow: "auto",
-  maxHeight: window.innerHeight - 40,
-  minWidth: "50%",
+// We need to come up a with a better way to deal with this, since
+// Experimentally for large screen mode this is 64 but honestly who knows
+// about the true range.
+const APP_BAR_MAX_HEIGHT = 64;
+const COLUMN_TOP_MARGIN = 16;
+const COLUMN_BOTTON_MARGIN = 8;
+const CONTAINER_STYLE: CSSProperties = {
+  height:
+    window.innerHeight -
+    APP_BAR_MAX_HEIGHT -
+    COLUMN_TOP_MARGIN -
+    COLUMN_BOTTON_MARGIN,
 };
-
-function Placeholder() {
-  return (
-    <span key={"horizonatalSpacePlaceholder"} className="dictPlaceholder">
-      {"pla ceh old er".repeat(20)}
-    </span>
-  );
-}
+const COLUMN_STYLE: CSSProperties = {
+  height: "100%",
+  float: "left",
+  width: "48%",
+  overflow: "auto",
+  boxSizing: "border-box",
+  marginTop: COLUMN_TOP_MARGIN,
+  marginBottom: COLUMN_BOTTON_MARGIN,
+  marginLeft: "1%",
+  marginRight: "1%",
+};
 
 export function ReadingPage() {
   const [dictWord, setDictWord] = React.useState<string | undefined>();
 
   return (
-    <Stack direction="row" spacing={0} justifyContent="left">
-      <div style={{ maxWidth: "10000px" }}>
-        <ContentBox isSmall={false}>
+    <div style={CONTAINER_STYLE}>
+      <div style={COLUMN_STYLE}>
+        <ContentBox isSmall={true}>
           <>
             {dictWord ? (
               <DictionaryViewV2 embedded={true} initial={dictWord} />
             ) : (
               <div>Click on a word for dictionary and inflection lookups.</div>
             )}
-            <Placeholder />
           </>
         </ContentBox>
       </div>
-      <div style={TOC_SIDEBAR_STYLE}>
+      <div style={COLUMN_STYLE}>
         <WorkColumn setDictWord={setDictWord} />
       </div>
-    </Stack>
+    </div>
   );
 }
 
@@ -92,7 +96,7 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
   }, []);
 
   return (
-    <ContentBox isSmall={false}>
+    <ContentBox isSmall={true}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
@@ -108,7 +112,6 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
             setDictWord={props.setDictWord}
             page={currentPage}
           />
-          <Placeholder />
         </>
       )}
     </ContentBox>
