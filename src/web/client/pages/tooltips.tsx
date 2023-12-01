@@ -87,38 +87,20 @@ export function ClickableTooltip(props: {
   );
 }
 
-type SectionLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
+type CopyLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 
-export function SectionLinkTooltip(props: {
+function CopyLinkTooltip(props: {
   className?: string;
   forwarded: TooltipChild;
-  id: string;
-  forArticle?: boolean;
+  message: string;
+  link: string;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
   const [content, setContent] = React.useState<JSX.Element>(<div />);
 
-  const isArticle = props.forArticle === true;
-
-  function getLink(): string {
-    const before = extractRouteInfo();
-    const after: RouteInfo = {
-      path: before.path,
-    };
-    if (isArticle) {
-      after.query = props.id;
-      after.idSearch = true;
-    } else {
-      after.query = before.query;
-      after.hash = props.id;
-    }
-    return `${window.location.origin}${linkForInfo(after)}`;
-  }
-
   async function onClick() {
-    const link = getLink();
     try {
-      await navigator.clipboard.writeText(link);
+      await navigator.clipboard.writeText(props.link);
       setContent(() => TitleText("Success"));
       setTimeout(() => setVisible(false), 500);
     } catch (e) {
@@ -147,7 +129,7 @@ export function SectionLinkTooltip(props: {
     );
   }
 
-  function TitleText(state: SectionLinkTooltipState) {
+  function TitleText(state: CopyLinkTooltipState) {
     if (state === "Error") {
       return (
         <Typography component="div">
@@ -156,7 +138,7 @@ export function SectionLinkTooltip(props: {
           </span>
           <br />
           <span style={{ fontSize: 16, lineHeight: "normal" }}>
-            {getLink()}
+            {props.link}
           </span>
         </Typography>
       );
@@ -164,11 +146,7 @@ export function SectionLinkTooltip(props: {
     if (state === "Success") {
       return <TextWithIcon message="Link copied!" />;
     }
-    return (
-      <TextWithIcon
-        message={`Copy ${isArticle ? "article" : "section"} link`}
-      />
-    );
+    return <TextWithIcon message={props.message} />;
   }
 
   return (
@@ -187,6 +165,40 @@ export function SectionLinkTooltip(props: {
         setVisible(true);
       }}
       onClickAway={() => setVisible(false)}
+    />
+  );
+}
+
+export function SectionLinkTooltip(props: {
+  className?: string;
+  forwarded: TooltipChild;
+  id: string;
+  forArticle?: boolean;
+}) {
+  const isArticle = props.forArticle === true;
+  const message = `Copy ${isArticle ? "article" : "section"} link`;
+
+  function getLink(): string {
+    const before = extractRouteInfo();
+    const after: RouteInfo = {
+      path: before.path,
+    };
+    if (isArticle) {
+      after.query = props.id;
+      after.idSearch = true;
+    } else {
+      after.query = before.query;
+      after.hash = props.id;
+    }
+    return `${window.location.origin}${linkForInfo(after)}`;
+  }
+
+  return (
+    <CopyLinkTooltip
+      className={props.className}
+      forwarded={props.forwarded}
+      message={message}
+      link={getLink()}
     />
   );
 }
