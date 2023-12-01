@@ -43,7 +43,7 @@ export function ReadingPage() {
 
   return (
     <div style={CONTAINER_STYLE}>
-      <div style={COLUMN_STYLE}>
+      <div style={{ ...COLUMN_STYLE, paddingLeft: 4, paddingRight: 8 }}>
         <WorkColumn setDictWord={setDictWord} />
       </div>
       <div style={{ ...COLUMN_STYLE, paddingTop: 12 }}>
@@ -61,7 +61,7 @@ export function ReadingPage() {
   );
 }
 
-type PaginatedWork = ProcessedWork & { pageStarts: number[] };
+type PaginatedWork = ProcessedWork & { pageStarts: number[]; pages: number };
 type WorkState = PaginatedWork | "Loading" | "Error";
 
 function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
@@ -137,14 +137,15 @@ function InfoText(props: { text: string; style?: CSSProperties }) {
   );
 }
 
-function HeaderText(props: { data: ProcessedWork; page: number }) {
+function HeaderText(props: { data: PaginatedWork; page: number }) {
   if (props.page < 0) {
     return <></>;
   }
   const parts = props.data.textParts;
-  const signature = props.data.chunks[props.page][0];
+  const chunkIndex = props.data.pageStarts[props.page];
+  const firstChunk = props.data.chunks[chunkIndex][0];
   const idParts = parts
-    .map((partName, i) => `${partName} ${signature[i]}`)
+    .map((partName, i) => `${partName} ${firstChunk[i]}`)
     .slice(0, -1);
   return (
     <>
@@ -164,23 +165,29 @@ function WorkNavigation(props: {
 }) {
   return (
     <div>
-      <IconButton
-        size="small"
-        aria-label="previous section"
-        onClick={() => props.setPage(props.page - 1)}
-        className="menuIcon"
-      >
-        <ArrowBack />
-      </IconButton>
-      <IconButton
-        size="small"
-        aria-label="next section"
-        onClick={() => props.setPage(props.page + 1)}
-        className="menuIcon"
-      >
-        <ArrowForward />
-      </IconButton>
-      <HeaderText data={props.work} page={props.page} />
+      <div>
+        <IconButton
+          size="small"
+          aria-label="previous section"
+          onClick={() => props.setPage(Math.max(-1, props.page - 1))}
+          className="menuIcon"
+        >
+          <ArrowBack />
+        </IconButton>
+        <IconButton
+          size="small"
+          aria-label="next section"
+          onClick={() =>
+            props.setPage(Math.min(props.page + 1, props.work.pages))
+          }
+          className="menuIcon"
+        >
+          <ArrowForward />
+        </IconButton>
+      </div>
+      <div>
+        <HeaderText data={props.work} page={props.page} />
+      </div>
     </div>
   );
 }
@@ -203,7 +210,7 @@ function dividePages(work: ProcessedWork): PaginatedWork {
     }
   }
   pageStarts.push(work.chunks.length);
-  return { ...work, pageStarts };
+  return { ...work, pageStarts, pages: pageStarts.length - 1 };
 }
 
 export function WorkTextPage(props: {
