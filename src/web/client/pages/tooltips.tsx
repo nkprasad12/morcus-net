@@ -89,7 +89,7 @@ export function ClickableTooltip(props: {
 
 type CopyLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 
-function CopyLinkTooltip(props: {
+export function CopyLinkTooltip(props: {
   className?: string;
   forwarded: TooltipChild;
   message: string;

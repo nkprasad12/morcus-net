@@ -14,6 +14,7 @@ import React, { CSSProperties, useContext, useEffect, useState } from "react";
 import IconButton from "@mui/material/IconButton";
 import { safeParseInt } from "@/common/misc_utils";
 import Typography from "@mui/material/Typography";
+import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
@@ -162,11 +163,13 @@ function HeaderText(props: { data: PaginatedWork; page: number }) {
 
 function NavIcon(props: {
   label: string;
-  onClick: () => any;
+  onClick?: () => any;
   Icon: JSX.Element;
+  ref?: React.ForwardedRef<any>;
 }) {
   return (
     <IconButton
+      ref={props.ref}
       size="small"
       aria-label={props.label}
       onClick={props.onClick}
@@ -197,16 +200,17 @@ function WorkNavigation(props: {
             props.setPage(Math.min(props.page + 1, props.work.pages))
           }
         />
-        <NavIcon
-          Icon={<LinkIcon />}
-          label="link to section"
-          onClick={() => {}}
+        <CopyLinkTooltip
+          forwarded={React.forwardRef<any>((fProps, fRef) => (
+            <span {...fProps} ref={fRef}>
+              <NavIcon Icon={<LinkIcon />} label="link to section" />
+            </span>
+          ))}
+          message="Link to section"
+          link={window.location.href}
         />
-        <NavIcon
-          Icon={<DisplaySettings />}
-          label="display settings"
-          onClick={() => {}}
-        />
+
+        <NavIcon Icon={<DisplaySettings />} label="display settings" />
       </div>
       <div>
         <HeaderText data={props.work} page={props.page} />
