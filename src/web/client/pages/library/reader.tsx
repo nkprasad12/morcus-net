@@ -15,6 +15,9 @@ import IconButton from "@mui/material/IconButton";
 import { safeParseInt } from "@/common/misc_utils";
 import Typography from "@mui/material/Typography";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
+import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
+import Slider from "@mui/material/Slider";
+import { debounce } from "@mui/material";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
@@ -48,22 +51,35 @@ interface SidebarState {
 
 export function ReadingPage() {
   const [sidebar, setSidebar] = React.useState<SidebarState>({});
+  const [textWidth, setTextWidth] = usePersistedNumber(48, "READER_WORK_WIDTH");
 
   return (
     <div style={CONTAINER_STYLE}>
-      <div style={{ ...COLUMN_STYLE, paddingLeft: 4, paddingRight: 8 }}>
+      <div
+        style={{
+          ...COLUMN_STYLE,
+          width: `${textWidth}%`,
+          paddingLeft: 4,
+          paddingRight: 8,
+        }}
+      >
         <WorkColumn
           setDictWord={(word) => setSidebar({ dictWord: word })}
           showSettings={() => setSidebar({ settings: true })}
         />
       </div>
-      <div style={{ ...COLUMN_STYLE, paddingTop: 12 }}>
+      <div
+        style={{ ...COLUMN_STYLE, width: `${96 - textWidth}%`, paddingTop: 12 }}
+      >
         <ContentBox isSmall={true}>
           <>
             {sidebar.dictWord !== undefined ? (
               <DictionaryViewV2 embedded={true} initial={sidebar.dictWord} />
             ) : sidebar.settings === true ? (
-              <div>Reader settings</div>
+              <ReaderSettings
+                textWidth={textWidth}
+                setTextWidth={setTextWidth}
+              />
             ) : (
               <InfoText text="Click on a word for dictionary and inflection lookups." />
             )}
@@ -71,6 +87,49 @@ export function ReadingPage() {
         </ContentBox>
       </div>
     </div>
+  );
+}
+
+function WidthSlider(props: {
+  textWidth: number;
+  setTextWidth: (w: number) => any;
+}) {
+  return (
+    <div>
+      <InfoText text="Text width" />
+      <div style={{ paddingLeft: 12, paddingRight: 12 }}>
+        <Slider
+          aria-label="Text width"
+          size="small"
+          getAriaValueText={(v) => `${v}`}
+          value={props.textWidth}
+          onChange={debounce((_, newValue) => {
+            if (typeof newValue !== "number") {
+              return;
+            }
+            props.setTextWidth(newValue);
+          })}
+          valueLabelDisplay="off"
+          step={8}
+          marks
+          min={24}
+          max={80}
+          style={{ width: 150 }}
+        />
+      </div>
+    </div>
+  );
+}
+
+function ReaderSettings(props: {
+  textWidth: number;
+  setTextWidth: (w: number) => any;
+}) {
+  return (
+    <>
+      <div>Reader settings</div>
+      <WidthSlider {...props} />
+    </>
   );
 }
 
@@ -220,11 +279,16 @@ function WorkNavigation(props: {
           }
         />
         <CopyLinkTooltip
-          forwarded={React.forwardRef<any>((fProps, fRef) => (
-            <span {...fProps} ref={fRef}>
-              <NavIcon Icon={<LinkIcon />} label="link to section" />
-            </span>
-          ))}
+          forwarded={React.forwardRef<any>(function TooltipNavIcon(
+            fProps,
+            fRef
+          ) {
+            return (
+              <span {...fProps} ref={fRef}>
+                <NavIcon Icon={<LinkIcon />} label="link to section" />
+              </span>
+            );
+          })}
           message="Copy link to section"
           link={window.location.href}
         />
