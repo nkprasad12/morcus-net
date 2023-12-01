@@ -65,19 +65,19 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
 async function fetchEntry(
   input: string,
   experimentalMode: boolean,
-  singleArticle: boolean
+  singleArticle: boolean,
+  embedded: boolean
 ) {
   const parts = input.split(",");
   const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
-  const dicts =
-    parts.length > 1
-      ? LatinDict.AVAILABLE.filter((dict) => dictParts.includes(dict.key)).map(
-          (dict) => dict.key
-        )
-      : LatinDict.AVAILABLE.map((dict) => dict.key);
+  const dicts = embedded
+    ? LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La")
+    : parts.length > 1
+    ? LatinDict.AVAILABLE.filter((dict) => dictParts.includes(dict.key))
+    : LatinDict.AVAILABLE;
   const result = callApiFull(DictsFusedApi, {
     query: parts[0],
-    dicts,
+    dicts: dicts.map((dict) => dict.key),
     mode: singleArticle ? 2 : experimentalMode ? 1 : 0,
   });
   try {
@@ -188,7 +188,8 @@ export function DictionaryViewV2(props?: {
       query,
       settings.data.experimentalMode === true ||
         nav.route.experimentalSearch === true,
-      idSearch
+      idSearch,
+      isEmbedded
     );
     serverResult.then((newResults) => {
       if (newResults === null) {
