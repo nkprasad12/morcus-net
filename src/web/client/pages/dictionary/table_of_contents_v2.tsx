@@ -10,13 +10,7 @@ import React from "react";
 
 export function jumpToSection(sectionId: string) {
   const selected = document.getElementById(sectionId);
-  if (selected === null) {
-    return;
-  }
-  window.scrollTo({
-    behavior: "auto",
-    top: selected.offsetTop,
-  });
+  selected?.scrollIntoView({ behavior: "instant", block: "start" });
 }
 
 export function TableOfContentsV2(props: {

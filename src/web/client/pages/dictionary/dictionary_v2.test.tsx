@@ -87,7 +87,7 @@ describe("New Dictionary View", () => {
 
   it("shows fetched result on large screen", async () => {
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     const resultString = "France or whatever idk lol";
     mockCallApiMockResolvedValue({
       LS: [
@@ -157,7 +157,7 @@ describe("New Dictionary View", () => {
 
   it("shows no results case", async () => {
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     mockCallApiMockResolvedValue({ LS: [] });
     render(
       <RouteContext.Provider
@@ -175,7 +175,7 @@ describe("New Dictionary View", () => {
 
   it("shows multi results case", async () => {
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     mockCallApiMockResolvedValue({
       LS: [
         {
@@ -225,7 +225,7 @@ describe("New Dictionary View", () => {
     // @ts-ignore
     useMediaQuery.mockImplementation(() => true);
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     const resultString = "France or whatever idk lol";
     mockCallApiMockResolvedValue({
       LS: [
@@ -305,7 +305,7 @@ describe("New Dictionary View", () => {
     // @ts-ignore
     useMediaQuery.mockImplementation(() => true);
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     const resultString = "France or whatever idk lol";
     mockCallApiMockResolvedValue({
       LS: [
@@ -339,7 +339,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "S&H"],
+      dicts: ["L&S"],
       query: "Belgae",
       mode: 0,
     });
