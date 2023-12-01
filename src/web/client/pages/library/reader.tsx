@@ -11,12 +11,13 @@ import { callApi } from "@/web/utils/rpc/client_rpc";
 import React, { CSSProperties, useContext, useEffect, useState } from "react";
 import IconButton from "@mui/material/IconButton";
 import { safeParseInt } from "@/common/misc_utils";
+import Typography from "@mui/material/Typography";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
 // about the true range.
 const APP_BAR_MAX_HEIGHT = 64;
-const COLUMN_TOP_MARGIN = 16;
+const COLUMN_TOP_MARGIN = 8;
 const COLUMN_BOTTON_MARGIN = 8;
 const CONTAINER_STYLE: CSSProperties = {
   height:
@@ -43,18 +44,18 @@ export function ReadingPage() {
   return (
     <div style={CONTAINER_STYLE}>
       <div style={COLUMN_STYLE}>
+        <WorkColumn setDictWord={setDictWord} />
+      </div>
+      <div style={{ ...COLUMN_STYLE, paddingTop: 12 }}>
         <ContentBox isSmall={true}>
           <>
             {dictWord ? (
               <DictionaryViewV2 embedded={true} initial={dictWord} />
             ) : (
-              <div>Click on a word for dictionary and inflection lookups.</div>
+              <InfoText text="Click on a word for dictionary and inflection lookups." />
             )}
           </>
         </ContentBox>
-      </div>
-      <div style={COLUMN_STYLE}>
-        <WorkColumn setDictWord={setDictWord} />
       </div>
     </div>
   );
@@ -106,7 +107,7 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
         </span>
       ) : (
         <>
-          <WorkNavigation page={currentPage} setPage={setPage} />
+          <WorkNavigation page={currentPage} setPage={setPage} work={work} />
           <WorkTextPage
             work={work}
             setDictWord={props.setDictWord}
@@ -118,11 +119,53 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
   );
 }
 
-function WorkNavigation(props: { page: number; setPage: (to: number) => any }) {
+function capitalizeWords(input: string): string {
+  const words = input.split(" ");
+  return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(" ");
+}
+
+function InfoText(props: { text: string; style?: CSSProperties }) {
+  return (
+    <Typography
+      component="span"
+      className="contentTextLight"
+      fontSize={16}
+      style={{ marginLeft: 8, marginRight: 8, ...props.style }}
+    >
+      {props.text}
+    </Typography>
+  );
+}
+
+function HeaderText(props: { data: ProcessedWork; page: number }) {
+  if (props.page < 0) {
+    return <></>;
+  }
+  const parts = props.data.textParts;
+  const signature = props.data.chunks[props.page][0];
+  const idParts = parts
+    .map((partName, i) => `${partName} ${signature[i]}`)
+    .slice(0, -1);
+  return (
+    <>
+      {idParts.map((idPart) => (
+        <InfoText text={capitalizeWords(idPart)} key={idPart} />
+      ))}
+      <InfoText text={capitalizeWords(props.data.info.title)} />
+      <InfoText text={capitalizeWords(props.data.info.author)} />
+    </>
+  );
+}
+
+function WorkNavigation(props: {
+  page: number;
+  setPage: (to: number) => any;
+  work: PaginatedWork;
+}) {
   return (
     <div>
       <IconButton
-        size="large"
+        size="small"
         aria-label="previous section"
         onClick={() => props.setPage(props.page - 1)}
         className="menuIcon"
@@ -130,13 +173,14 @@ function WorkNavigation(props: { page: number; setPage: (to: number) => any }) {
         <ArrowBack />
       </IconButton>
       <IconButton
-        size="large"
+        size="small"
         aria-label="next section"
         onClick={() => props.setPage(props.page + 1)}
         className="menuIcon"
       >
         <ArrowForward />
       </IconButton>
+      <HeaderText data={props.work} page={props.page} />
     </div>
   );
 }
@@ -208,14 +252,13 @@ function WorkChunk(props: {
   textRoot: XmlNode;
   setDictWord: (word: string | undefined) => any;
 }) {
-  const id = props.parts
-    .map((partName, i) => `${partName} ${props.id[i]}`)
-    .join(", ");
+  const id = `${props.parts.slice(-1)[0]} ${props.id.slice(-1)[0]}`;
   return (
-    <div>
-      <div>{id}</div>
+    <div style={{ paddingTop: 8 }}>
+      <div>
+        <InfoText text={capitalizeWords(id)} style={{ marginLeft: 0 }} />
+      </div>
       {displayForLibraryChunk(props.textRoot, props.setDictWord)}
-      <br />
     </div>
   );
 }
