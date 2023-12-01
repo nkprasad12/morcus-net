@@ -41,19 +41,29 @@ const COLUMN_STYLE: CSSProperties = {
   marginRight: "1%",
 };
 
+interface SidebarState {
+  dictWord?: string;
+  settings?: true;
+}
+
 export function ReadingPage() {
-  const [dictWord, setDictWord] = React.useState<string | undefined>();
+  const [sidebar, setSidebar] = React.useState<SidebarState>({});
 
   return (
     <div style={CONTAINER_STYLE}>
       <div style={{ ...COLUMN_STYLE, paddingLeft: 4, paddingRight: 8 }}>
-        <WorkColumn setDictWord={setDictWord} />
+        <WorkColumn
+          setDictWord={(word) => setSidebar({ dictWord: word })}
+          showSettings={() => setSidebar({ settings: true })}
+        />
       </div>
       <div style={{ ...COLUMN_STYLE, paddingTop: 12 }}>
         <ContentBox isSmall={true}>
           <>
-            {dictWord ? (
-              <DictionaryViewV2 embedded={true} initial={dictWord} />
+            {sidebar.dictWord !== undefined ? (
+              <DictionaryViewV2 embedded={true} initial={sidebar.dictWord} />
+            ) : sidebar.settings === true ? (
+              <div>Reader settings</div>
             ) : (
               <InfoText text="Click on a word for dictionary and inflection lookups." />
             )}
@@ -67,7 +77,10 @@ export function ReadingPage() {
 type PaginatedWork = ProcessedWork & { pageStarts: number[]; pages: number };
 type WorkState = PaginatedWork | "Loading" | "Error";
 
-function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
+function WorkColumn(props: {
+  setDictWord: (word: string | undefined) => any;
+  showSettings: () => any;
+}) {
   const nav = useContext(RouteContext);
   const [work, setWork] = useState<WorkState>("Loading");
   const [currentPage, setCurrentPage] = useState<number>(-1);
@@ -110,7 +123,12 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
         </span>
       ) : (
         <>
-          <WorkNavigation page={currentPage} setPage={setPage} work={work} />
+          <WorkNavigation
+            page={currentPage}
+            setPage={setPage}
+            work={work}
+            showSettings={props.showSettings}
+          />
           <WorkTextPage
             work={work}
             setDictWord={props.setDictWord}
@@ -184,6 +202,7 @@ function WorkNavigation(props: {
   page: number;
   setPage: (to: number) => any;
   work: PaginatedWork;
+  showSettings: () => any;
 }) {
   return (
     <div>
@@ -206,11 +225,18 @@ function WorkNavigation(props: {
               <NavIcon Icon={<LinkIcon />} label="link to section" />
             </span>
           ))}
-          message="Link to section"
+          message="Copy link to section"
           link={window.location.href}
         />
 
-        <NavIcon Icon={<DisplaySettings />} label="display settings" />
+        <NavIcon
+          Icon={<DisplaySettings />}
+          label="Reader settings"
+          onClick={() => {
+            console.log("Settings clicked!");
+            props.showSettings();
+          }}
+        />
       </div>
       <div>
         <HeaderText data={props.work} page={props.page} />

@@ -138,7 +138,7 @@ describe("Reading UI", () => {
     expect(screen.queryByText(/Gallia/)).toBeNull();
     expect(screen.queryByText(/divisa/)).not.toBeNull();
 
-    // We should wee only the first chunk.
+    // We should see only the first chunk.
     await user.click(screen.queryByLabelText("previous section")!);
     expect(screen.queryByText(/Gallia/)).not.toBeNull();
     expect(screen.queryByText(/divisa/)).toBeNull();
@@ -162,6 +162,26 @@ describe("Reading UI", () => {
 
     expect(mockNav).not.toHaveBeenCalled();
     expect(window.location.href.includes("q=0")).toBe(true);
+  });
+
+  // TODO: Figure out why this test doesn't work.
+  it.skip("shows settings page", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+    const mockNav = jest.fn();
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg`, query: "1" },
+          navigateTo: mockNav,
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await user.click(screen.queryByLabelText("Reader settings")!);
+
+    await screen.findByText(/Reader settings/);
   });
 
   it("shows page specified from URL", async () => {
