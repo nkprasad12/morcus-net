@@ -74,7 +74,11 @@ function DrawerMenu(props: {
                   <b>{page.name}</b>
                 </Button>
               </ListItem>
-              <Divider key={page.name + "_divider"} light variant="middle" />
+              <Divider
+                key={page.name + "_divider"}
+                className="contentDivider"
+                variant="middle"
+              />
             </div>
           ))}
         </List>

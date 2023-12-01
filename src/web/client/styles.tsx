@@ -22,7 +22,7 @@ export function getGlobalStyles(settings: GlobalSettings): Record<string, any> {
 
   const isDarkMode = settings.darkMode === true;
   const backgroundColor = getBackgroundColor(settings);
-  const bulletCollor = isDarkMode ? Solarized.base2 : Solarized.base01;
+  const bulletColor = isDarkMode ? Solarized.base2 : Solarized.base01;
   const dictChipTextColor = isDarkMode
     ? Solarized.base1
     : Solarized.base03 + "A1";
@@ -58,7 +58,7 @@ export function getGlobalStyles(settings: GlobalSettings): Record<string, any> {
       border: `2px solid ${isDarkMode ? Solarized.base02 : Solarized.base01}`,
     },
     ".contentDivider": {
-      borderColor: isDarkMode ? Solarized.base00 : "#839191",
+      borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
     },
     ".contentText": {
       color: isDarkMode ? Solarized.base1 : Solarized.base015,
@@ -151,11 +151,11 @@ export function getGlobalStyles(settings: GlobalSettings): Record<string, any> {
     ".lsSenseBullet": {
       fontWeight: "bold",
       cursor: "pointer",
-      backgroundColor: bulletCollor + "48",
+      backgroundColor: bulletColor + "48",
       borderRadius: 4,
     },
     ".lsSenseBullet:hover": {
-      backgroundColor: bulletCollor + "80",
+      backgroundColor: bulletColor + "80",
     },
     ".autoCompOpt": {
       color: isDarkMode ? Solarized.base1 : Solarized.base01,
@@ -164,7 +164,7 @@ export function getGlobalStyles(settings: GlobalSettings): Record<string, any> {
     ".outlineHead": {
       fontWeight: "bold",
       cursor: "pointer",
-      backgroundColor: bulletCollor + "30",
+      backgroundColor: bulletColor + "30",
       borderRadius: 4,
     },
     ".lsHelpText": {

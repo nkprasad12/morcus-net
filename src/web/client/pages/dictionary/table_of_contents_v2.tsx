@@ -114,7 +114,7 @@ function OutlineSection(props: {
           })}
         </ol>
       )}
-      <Divider light={true} sx={{ margin: 0, padding: 0 }} />
+      <Divider className="contentDivider" sx={{ margin: 0, padding: 0 }} />
     </div>
   );
 }
