@@ -7,6 +7,8 @@ import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
+import LinkIcon from "@mui/icons-material/Link";
+import DisplaySettings from "@mui/icons-material/DisplaySettings";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import React, { CSSProperties, useContext, useEffect, useState } from "react";
 import IconButton from "@mui/material/IconButton";
@@ -158,6 +160,23 @@ function HeaderText(props: { data: PaginatedWork; page: number }) {
   );
 }
 
+function NavIcon(props: {
+  label: string;
+  onClick: () => any;
+  Icon: JSX.Element;
+}) {
+  return (
+    <IconButton
+      size="small"
+      aria-label={props.label}
+      onClick={props.onClick}
+      className="menuIcon"
+    >
+      {props.Icon}
+    </IconButton>
+  );
+}
+
 function WorkNavigation(props: {
   page: number;
   setPage: (to: number) => any;
@@ -166,24 +185,28 @@ function WorkNavigation(props: {
   return (
     <div>
       <div>
-        <IconButton
-          size="small"
-          aria-label="previous section"
+        <NavIcon
+          Icon={<ArrowBack />}
+          label="previous section"
           onClick={() => props.setPage(Math.max(-1, props.page - 1))}
-          className="menuIcon"
-        >
-          <ArrowBack />
-        </IconButton>
-        <IconButton
-          size="small"
-          aria-label="next section"
+        />
+        <NavIcon
+          Icon={<ArrowForward />}
+          label="next section"
           onClick={() =>
             props.setPage(Math.min(props.page + 1, props.work.pages))
           }
-          className="menuIcon"
-        >
-          <ArrowForward />
-        </IconButton>
+        />
+        <NavIcon
+          Icon={<LinkIcon />}
+          label="link to section"
+          onClick={() => {}}
+        />
+        <NavIcon
+          Icon={<DisplaySettings />}
+          label="display settings"
+          onClick={() => {}}
+        />
       </div>
       <div>
         <HeaderText data={props.work} page={props.page} />
