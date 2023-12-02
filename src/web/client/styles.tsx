@@ -4,6 +4,13 @@ import {
   GlobalSettings,
 } from "@/web/client/components/global_flags";
 
+export namespace FontSizes {
+  export const BIG_SCREEN = 20;
+  export const SMALL_SCREEN = 19;
+  export const SECONDARY = 16;
+  export const TERTIARY = 14;
+}
+
 export function getBackgroundColor(settings: GlobalSettings): string {
   return settings.darkMode === true ? "#212022" : Solarized.base3;
 }

@@ -5,6 +5,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import Divider from "@mui/material/Divider";
 import React from "react";
+import { FontSizes } from "@/web/client/styles";
 
 export function ContentBox(props: {
   children: JSX.Element;
@@ -16,6 +17,7 @@ export function ContentBox(props: {
   noDivider?: true;
   id?: string;
   className?: string;
+  textScale?: number;
 }) {
   const isSmall = props.isSmall;
 
@@ -41,6 +43,9 @@ export function ContentBox(props: {
         className="contentText"
         style={{
           whiteSpace: "pre-wrap",
+          fontSize: props.textScale
+            ? FontSizes.BIG_SCREEN * (props.textScale / 100)
+            : undefined,
         }}
       >
         {props.children}
@@ -84,7 +89,11 @@ function ShAttribution() {
   );
 }
 
-export function DictAttribution(props: { isSmall: boolean; dictKey: string }) {
+export function DictAttribution(props: {
+  isSmall: boolean;
+  dictKey: string;
+  textScale?: number;
+}) {
   function AttributionContent() {
     const key = props.dictKey + "AttrBox";
     if (props.dictKey === LatinDict.LewisAndShort.key) {
@@ -98,7 +107,12 @@ export function DictAttribution(props: { isSmall: boolean; dictKey: string }) {
 
   return (
     <ContentBox isSmall={props.isSmall}>
-      <div style={{ fontSize: 15, lineHeight: "normal" }}>
+      <div
+        style={{
+          fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
+          lineHeight: "normal",
+        }}
+      >
         <AttributionContent />
       </div>
     </ContentBox>

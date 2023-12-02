@@ -18,6 +18,7 @@ import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
 import Slider from "@mui/material/Slider";
 import { debounce } from "@mui/material/utils";
+import { FontSizes } from "@/web/client/styles";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
@@ -51,7 +52,9 @@ interface SidebarState {
 
 export function ReadingPage() {
   const [sidebar, setSidebar] = React.useState<SidebarState>({});
-  const [textWidth, setTextWidth] = usePersistedNumber(48, "READER_WORK_WIDTH");
+  const [textWidth, setTextWidth] = usePersistedNumber(56, "READER_WORK_WIDTH");
+  const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
+  const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
 
   return (
     <div style={CONTAINER_STYLE}>
@@ -66,6 +69,7 @@ export function ReadingPage() {
         <WorkColumn
           setDictWord={(word) => setSidebar({ dictWord: word })}
           showSettings={() => setSidebar({ settings: true })}
+          textScale={workScale}
         />
       </div>
       <div
@@ -74,12 +78,39 @@ export function ReadingPage() {
         <ContentBox isSmall={true}>
           <>
             {sidebar.dictWord !== undefined ? (
-              <DictionaryViewV2 embedded={true} initial={sidebar.dictWord} />
-            ) : sidebar.settings === true ? (
-              <ReaderSettings
-                textWidth={textWidth}
-                setTextWidth={setTextWidth}
+              <DictionaryViewV2
+                embedded={true}
+                initial={sidebar.dictWord}
+                textScale={dictScale}
               />
+            ) : sidebar.settings === true ? (
+              <>
+                <div>Reader settings</div>
+                <SettingSlider
+                  value={textWidth}
+                  setValue={setTextWidth}
+                  label="Main text width"
+                  min={24}
+                  max={80}
+                  step={8}
+                />
+                <SettingSlider
+                  value={workScale}
+                  setValue={setWorkScale}
+                  label="Main text size"
+                  min={50}
+                  max={150}
+                  step={10}
+                />
+                <SettingSlider
+                  value={dictScale}
+                  setValue={setDictScale}
+                  label="Sidebar text size"
+                  min={50}
+                  max={150}
+                  step={10}
+                />
+              </>
             ) : (
               <InfoText text="Click on a word for dictionary and inflection lookups." />
             )}
@@ -90,46 +121,38 @@ export function ReadingPage() {
   );
 }
 
-function WidthSlider(props: {
-  textWidth: number;
-  setTextWidth: (w: number) => any;
+function SettingSlider(props: {
+  value: number;
+  setValue: (w: number) => any;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
 }) {
   return (
     <div>
-      <InfoText text="Text width" />
+      <InfoText text={props.label} />
       <div style={{ paddingLeft: 12, paddingRight: 12 }}>
         <Slider
-          aria-label="Text width"
+          aria-label={props.label}
           size="small"
           getAriaValueText={(v) => `${v}`}
-          value={props.textWidth}
+          value={props.value}
           onChange={debounce((_, newValue) => {
             if (typeof newValue !== "number") {
               return;
             }
-            props.setTextWidth(newValue);
+            props.setValue(newValue);
           })}
           valueLabelDisplay="off"
-          step={8}
+          step={props.step}
           marks
-          min={24}
-          max={80}
+          min={props.min}
+          max={props.max}
           style={{ width: 150 }}
         />
       </div>
     </div>
-  );
-}
-
-function ReaderSettings(props: {
-  textWidth: number;
-  setTextWidth: (w: number) => any;
-}) {
-  return (
-    <>
-      <div>Reader settings</div>
-      <WidthSlider {...props} />
-    </>
   );
 }
 
@@ -139,6 +162,7 @@ type WorkState = PaginatedWork | "Loading" | "Error";
 function WorkColumn(props: {
   setDictWord: (word: string | undefined) => any;
   showSettings: () => any;
+  textScale: number;
 }) {
   const nav = useContext(RouteContext);
   const [work, setWork] = useState<WorkState>("Loading");
@@ -172,7 +196,7 @@ function WorkColumn(props: {
   }, []);
 
   return (
-    <ContentBox isSmall={true}>
+    <ContentBox isSmall={true} textScale={props.textScale}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
@@ -187,11 +211,13 @@ function WorkColumn(props: {
             setPage={setPage}
             work={work}
             showSettings={props.showSettings}
+            textScale={props.textScale}
           />
           <WorkTextPage
             work={work}
             setDictWord={props.setDictWord}
             page={currentPage}
+            textScale={props.textScale}
           />
         </>
       )}
@@ -204,12 +230,16 @@ function capitalizeWords(input: string): string {
   return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(" ");
 }
 
-function InfoText(props: { text: string; style?: CSSProperties }) {
+function InfoText(props: {
+  text: string;
+  textScale?: number;
+  style?: CSSProperties;
+}) {
   return (
     <Typography
       component="span"
       className="contentTextLight"
-      fontSize={16}
+      fontSize={FontSizes.TERTIARY * ((props.textScale || 100) / 100)}
       style={{ marginLeft: 8, marginRight: 8, ...props.style }}
     >
       {props.text}
@@ -217,7 +247,11 @@ function InfoText(props: { text: string; style?: CSSProperties }) {
   );
 }
 
-function HeaderText(props: { data: PaginatedWork; page: number }) {
+function HeaderText(props: {
+  data: PaginatedWork;
+  page: number;
+  textScale?: number;
+}) {
   if (props.page < 0) {
     return <></>;
   }
@@ -230,10 +264,20 @@ function HeaderText(props: { data: PaginatedWork; page: number }) {
   return (
     <>
       {idParts.map((idPart) => (
-        <InfoText text={capitalizeWords(idPart)} key={idPart} />
+        <InfoText
+          text={capitalizeWords(idPart)}
+          key={idPart}
+          textScale={props.textScale}
+        />
       ))}
-      <InfoText text={capitalizeWords(props.data.info.title)} />
-      <InfoText text={capitalizeWords(props.data.info.author)} />
+      <InfoText
+        text={capitalizeWords(props.data.info.title)}
+        textScale={props.textScale}
+      />
+      <InfoText
+        text={capitalizeWords(props.data.info.author)}
+        textScale={props.textScale}
+      />
     </>
   );
 }
@@ -262,6 +306,7 @@ function WorkNavigation(props: {
   setPage: (to: number) => any;
   work: PaginatedWork;
   showSettings: () => any;
+  textScale?: number;
 }) {
   return (
     <div>
@@ -303,7 +348,11 @@ function WorkNavigation(props: {
         />
       </div>
       <div>
-        <HeaderText data={props.work} page={props.page} />
+        <HeaderText
+          data={props.work}
+          page={props.page}
+          textScale={props.textScale}
+        />
       </div>
     </div>
   );
@@ -334,6 +383,7 @@ export function WorkTextPage(props: {
   work: PaginatedWork;
   setDictWord: (word: string | undefined) => any;
   page: number;
+  textScale?: number;
 }) {
   if (props.page === -1) {
     return <WorkInfo workInfo={props.work.info} />;
@@ -352,6 +402,7 @@ export function WorkTextPage(props: {
           id={chunk[0]}
           textRoot={chunk[1]}
           setDictWord={props.setDictWord}
+          textScale={props.textScale}
         />
       ))}
     </>
@@ -375,12 +426,17 @@ function WorkChunk(props: {
   id: number[];
   textRoot: XmlNode;
   setDictWord: (word: string | undefined) => any;
+  textScale?: number;
 }) {
   const id = `${props.parts.slice(-1)[0]} ${props.id.slice(-1)[0]}`;
   return (
     <div style={{ paddingTop: 8 }}>
       <div>
-        <InfoText text={capitalizeWords(id)} style={{ marginLeft: 0 }} />
+        <InfoText
+          text={capitalizeWords(id)}
+          style={{ marginLeft: 0 }}
+          textScale={props.textScale}
+        />
       </div>
       {displayForLibraryChunk(props.textRoot, props.setDictWord)}
     </div>

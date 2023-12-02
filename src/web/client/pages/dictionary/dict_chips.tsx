@@ -1,8 +1,9 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { FontSizes } from "@/web/client/styles";
 import Typography from "@mui/material/Typography";
 import React from "react";
 
-export function DictChip(props: { label: string }) {
+export function DictChip(props: { label: string; textScale?: number }) {
   function getClassName(label: string): string {
     return label === LatinDict.SmithAndHall.key ? "shChip" : "lsChip";
   }
@@ -14,7 +15,7 @@ export function DictChip(props: { label: string }) {
         borderRadius: 4,
         paddingLeft: 3,
         paddingRight: 3,
-        fontSize: 14,
+        fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
         fontFamily: "monospace",
       }}
     >
@@ -23,7 +24,7 @@ export function DictChip(props: { label: string }) {
   );
 }
 
-export function FullDictChip(props: { label: string }) {
+export function FullDictChip(props: { label: string; textScale?: number }) {
   function getClassName(label: string): string {
     return label === LatinDict.SmithAndHall.displayName ? "shChip" : "lsChip";
   }
@@ -45,6 +46,9 @@ export function FullDictChip(props: { label: string }) {
         padding: 2,
         paddingLeft: 6,
         paddingRight: 6,
+        fontSize: props.textScale
+          ? FontSizes.BIG_SCREEN * (props.textScale / 100)
+          : undefined,
       }}
     >
       {displayText(props.label)}

@@ -42,6 +42,7 @@ import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import ReactDOM, { flushSync } from "react-dom";
 import { TitleContext } from "../../components/title";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
+import { FontSizes } from "@/web/client/styles";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -161,6 +162,8 @@ export function DictionaryViewV2(props?: {
   embedded?: boolean;
   /** An initial query, if any. */
   initial?: string;
+  /** The scale of the text size to use. 100 uses default text values */
+  textScale?: number;
 }) {
   const [state, setState] = React.useState<DictState>("Landing");
   const [entries, setEntries] = React.useState<EntriesByDict[]>([]);
@@ -180,6 +183,11 @@ export function DictionaryViewV2(props?: {
   const isEmbedded = props?.embedded === true;
   const isSmall =
     isEmbedded || useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const scale = (props?.textScale || 100) / 100;
+  const textScale = props?.textScale;
+  const textSizeStyle: CSSProperties = {
+    fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
+  };
   const idSearch = nav.route.idSearch === true;
 
   function fetchAndDisplay(query: string) {
@@ -283,10 +291,10 @@ export function DictionaryViewV2(props?: {
       >
         <OpenInNewIcon
           sx={{
-            marginBottom: "-0.1em",
-            marginRight: "-0.1em",
-            fontSize: "0.8rem",
-            paddingLeft: "0.1em",
+            marginBottom: `${-0.1 * scale}em`,
+            marginRight: `${-0.1 * scale}em`,
+            fontSize: `${0.8 * scale}em`,
+            paddingLeft: `${0.1 * scale}em`,
           }}
         />
         <span dangerouslySetInnerHTML={{ __html: label }} />
@@ -300,9 +308,16 @@ export function DictionaryViewV2(props?: {
       return <></>;
     }
     return (
-      <ContentBox isSmall={isSmall} id="DictResultsSummary">
+      <ContentBox
+        isSmall={isSmall}
+        id="DictResultsSummary"
+        textScale={textScale}
+      >
         <>
-          <div ref={props?.embedded ? scrollTopRef : undefined}>
+          <div
+            ref={props?.embedded ? scrollTopRef : undefined}
+            style={textSizeStyle}
+          >
             Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
           </div>
           {numEntries > 1 &&
@@ -310,7 +325,7 @@ export function DictionaryViewV2(props?: {
               .filter((entry) => entry.outlines.length > 0)
               .map((entry) => (
                 <div key={entry.dictKey + "SummarySection"}>
-                  <FullDictChip label={entry.name} />
+                  <FullDictChip label={entry.name} textScale={textScale} />
                   {entry.outlines.map((outline) => (
                     <span key={outline.mainSection.sectionId}>
                       {" "}
@@ -335,7 +350,12 @@ export function DictionaryViewV2(props?: {
         id={props.id}
         className={props.className}
       >
-        <div style={{ fontSize: 14, lineHeight: "normal" }}>
+        <div
+          style={{
+            fontSize: FontSizes.TERTIARY * ((textScale || 100) / 100),
+            lineHeight: "normal",
+          }}
+        >
           {xmlNodeToJsx(HELP_ENTRY)}
         </div>
       </ContentBox>
@@ -344,7 +364,7 @@ export function DictionaryViewV2(props?: {
 
   function LoadingMessage() {
     return (
-      <ContentBox isSmall={isSmall}>
+      <ContentBox isSmall={isSmall} textScale={props?.textScale}>
         <span>Loading entries, please wait ... </span>
       </ContentBox>
     );
@@ -367,10 +387,11 @@ export function DictionaryViewV2(props?: {
         >
           <LinkIcon
             sx={{
-              marginBottom: "-0.2em",
-              marginRight: "-0.2em",
-              paddingLeft: "0.2em",
-              paddingRight: "0.4em",
+              marginBottom: `${-0.2 * scale}em`,
+              marginRight: `${-0.2 * scale}em`,
+              fontSize: `${1 * scale}em`,
+              paddingLeft: `${0.2 * scale}em`,
+              paddingRight: `${0.4 * scale}em`,
             }}
           />
           {`${text}`}
@@ -387,10 +408,18 @@ export function DictionaryViewV2(props?: {
     return (
       <>
         {props.data.entries.map((entry, i) => (
-          <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
+          <ContentBox
+            key={entry.key}
+            isSmall={isSmall}
+            id={entry.key}
+            textScale={textScale}
+          >
             <>
               {entry.inflections && (
-                <InflectionDataSection inflections={entry.inflections} />
+                <InflectionDataSection
+                  inflections={entry.inflections}
+                  textScale={textScale}
+                />
               )}
               <div style={{ marginBottom: 5, marginTop: 8 }}>
                 <span>
@@ -401,14 +430,18 @@ export function DictionaryViewV2(props?: {
                     id={props.data.outlines[i].mainSection.sectionId}
                     forArticle={true}
                   />
-                  <FullDictChip label={props.data.name} />
+                  <FullDictChip label={props.data.name} textScale={textScale} />
                 </span>
               </div>
               {entry.element}
             </>
           </ContentBox>
         ))}
-        <DictAttribution isSmall={isSmall} dictKey={props.data.dictKey} />
+        <DictAttribution
+          isSmall={isSmall}
+          dictKey={props.data.dictKey}
+          textScale={textScale}
+        />
       </>
     );
   }
@@ -436,6 +469,7 @@ export function DictionaryViewV2(props?: {
             isSmall={isSmall}
             tocRef={tocRef}
             key={entry.dictKey + "ToC"}
+            textScale={textScale}
           />
         ))}
       </>

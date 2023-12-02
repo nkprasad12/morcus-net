@@ -10,6 +10,7 @@ import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { InflectionData } from "@/common/dictionaries/dict_result";
+import { FontSizes } from "@/web/client/styles";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 
@@ -236,6 +237,7 @@ export interface ElementAndKey {
 
 export function InflectionDataSection(props: {
   inflections: InflectionData[];
+  textScale?: number;
 }) {
   const byForm = new Map<string, [string, string | undefined][]>();
   for (const data of props.inflections) {
@@ -261,7 +263,13 @@ export function InflectionDataSection(props: {
   return (
     <>
       {formatted.map(([form, inflections]) => (
-        <div style={{ fontSize: 16, paddingBottom: 3 }} key={form}>
+        <div
+          style={{
+            fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
+            paddingBottom: 3,
+          }}
+          key={form}
+        >
           <span className="lsOrth">{form}</span>:
           {inflections.length === 1 ? (
             ` ${inflections[0]}`

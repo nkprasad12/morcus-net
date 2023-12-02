@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import React, { PropsWithChildren } from "react";
+import React, { CSSProperties, PropsWithChildren } from "react";
 import ReactDOM from "react-dom/client";
 
 import GlobalStyles from "@mui/material/GlobalStyles";
@@ -17,7 +17,11 @@ import {
 } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
 import { ACTIVE_PAGES } from "@/web/client/active_pages";
-import { getBackgroundColor, getGlobalStyles } from "@/web/client/styles";
+import {
+  getBackgroundColor,
+  getGlobalStyles,
+  FontSizes,
+} from "@/web/client/styles";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -26,6 +30,14 @@ declare module "@mui/material/styles" {
     xxl: true;
   }
 }
+
+const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
+const TEXT_STYLE: CSSProperties = {
+  fontFamily: ALLOWED_FONTS,
+  fontWeight: 400,
+  lineHeight: 1.5,
+  letterSpacing: "0.00938em",
+};
 
 function appTheme(isDarkMode: boolean) {
   const theme = createTheme({
@@ -52,19 +64,12 @@ function appTheme(isDarkMode: boolean) {
     },
   });
 
-  const allowedFonts = `"Roboto","Arial","Helvetica",sans-serif`;
   const typographyStyle = {
-    fontSize: 20,
-    fontFamily: allowedFonts,
-    fontWeight: 400,
-    lineHeight: 1.5,
-    letterSpacing: "0.00938em",
+    ...TEXT_STYLE,
+    fontSize: FontSizes.BIG_SCREEN,
     [theme.breakpoints.down("sm")]: {
-      fontSize: 19,
-      fontFamily: allowedFonts,
-      fontWeight: 400,
-      lineHeight: 1.5,
-      letterSpacing: "0.00938em",
+      ...TEXT_STYLE,
+      fontSize: FontSizes.SMALL_SCREEN,
     },
   };
 
