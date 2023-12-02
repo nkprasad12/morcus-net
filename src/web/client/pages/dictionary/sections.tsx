@@ -1,7 +1,9 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
-import { Box, Typography, Divider } from "@mui/material";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
 import React from "react";
 
 export function ContentBox(props: {

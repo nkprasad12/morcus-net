@@ -15,7 +15,7 @@ jest.mock("@mui/material/useMediaQuery", () => {
     default: jest.fn(() => false),
   };
 });
-import { useMediaQuery } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 describe("App Bar View", () => {
   const pages: ResponsiveAppBar.Page[] = [

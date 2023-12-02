@@ -3,18 +3,16 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { RouteContext, Navigation } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { isString } from "@/web/utils/rpc/parsing";
-import {
-  Autocomplete,
-  Button,
-  DialogActions,
-  DialogContentText,
-  FormControlLabel,
-  FormGroup,
-  IconButton,
-  InputAdornment,
-  Switch,
-  TextField,
-} from "@mui/material";
+import Autocomplete from "@mui/material/Autocomplete";
+import Button from "@mui/material/Button";
+import DialogActions from "@mui/material/DialogActions";
+import DialogContentText from "@mui/material/DialogContentText";
+import FormControlLabel from "@mui/material/FormControlLabel";
+import FormGroup from "@mui/material/FormGroup";
+import InputAdornment from "@mui/material/InputAdornment";
+import Switch from "@mui/material/Switch";
+import TextField from "@mui/material/TextField";
+import IconButton from "@mui/material/IconButton";
 import SettingsIcon from "@mui/icons-material/Settings";
 import SearchIcon from "@mui/icons-material/Search";
 import React from "react";

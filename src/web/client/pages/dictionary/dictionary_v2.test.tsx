@@ -15,7 +15,7 @@ import {
   ERROR_STATE_MESSAGE,
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
-import { useMediaQuery } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {

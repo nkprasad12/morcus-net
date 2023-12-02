@@ -15,7 +15,7 @@ import { Navigation, RouteContext } from "@/web/client/components/router";
 import List from "@mui/material/List";
 import ListItem from "@mui/material/ListItem";
 import Drawer from "@mui/material/Drawer";
-import { Divider } from "@mui/material";
+import Divider from "@mui/material/Divider";
 
 export namespace ResponsiveAppBar {
   export interface Page {

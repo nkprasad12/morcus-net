@@ -1,10 +1,10 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
-import { getBullet } from "@/common/lewis_and_short/ls_outline";
+import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { Divider } from "@mui/material";
+import Divider from "@mui/material/Divider";
 
 import React from "react";
 

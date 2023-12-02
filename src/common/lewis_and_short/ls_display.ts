@@ -21,7 +21,7 @@ import {
   handleAbbreviationsInMessage,
 } from "@/common/lewis_and_short/ls_styling";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
-import { getBullet, sanitizeTree } from "@/common/lewis_and_short/ls_outline";
+import { sanitizeTree } from "@/common/lewis_and_short/ls_outline";
 import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 import { LatinWords } from "@/common/lexica/latin_words";
@@ -29,6 +29,7 @@ import {
   TEXT_BREAK_CHARACTERS,
   removeDiacritics,
 } from "@/common/text_cleaning";
+import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];

@@ -4,14 +4,12 @@ import {
   linkForInfo,
 } from "@/web/client/components/router";
 import LinkIcon from "@mui/icons-material/Link";
-import {
-  SxProps,
-  ClickAwayListener,
-  Tooltip,
-  Typography,
-  IconButton,
-} from "@mui/material";
+import ClickAwayListener from "@mui/material/ClickAwayListener";
+import Tooltip from "@mui/material/Tooltip";
+import Typography from "@mui/material/Typography";
+import IconButton from "@mui/material/IconButton";
 import React from "react";
+import type { SxProps } from "@mui/material";
 
 export type TooltipPlacement = "top-start" | "right";
 

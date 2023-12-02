@@ -17,7 +17,7 @@ import Typography from "@mui/material/Typography";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
 import Slider from "@mui/material/Slider";
-import { debounce } from "@mui/material";
+import debounce from "@mui/material/utils";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
