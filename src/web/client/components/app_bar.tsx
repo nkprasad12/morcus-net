@@ -12,8 +12,6 @@ import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Navigation, RouteContext } from "@/web/client/components/router";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
 
@@ -52,36 +50,32 @@ function DrawerMenu(props: {
   function DrawerItems() {
     return (
       <Box role="navigation" onClick={props.onClose} id="menu-appbar">
-        <List>
-          {props.pages.map((page) => (
-            <div key={page.name}>
-              <ListItem disablePadding>
-                <Button
-                  key={page.name}
-                  onClick={props.onPageClick(page.path)}
-                  className={
-                    props.isCurrentPage(page.path)
-                      ? "menuItemActive"
-                      : "menuItemInactive"
-                  }
-                  sx={{
-                    my: 1,
-                    mx: 2,
-                    display: "block",
-                    justifyContent: "center",
-                  }}
-                >
-                  <b>{page.name}</b>
-                </Button>
-              </ListItem>
-              <Divider
-                key={page.name + "_divider"}
-                className="contentDivider"
-                variant="middle"
-              />
-            </div>
-          ))}
-        </List>
+        {props.pages.map((page) => (
+          <div key={page.name}>
+            <Button
+              key={page.name}
+              onClick={props.onPageClick(page.path)}
+              className={
+                props.isCurrentPage(page.path)
+                  ? "menuItemActive"
+                  : "menuItemInactive"
+              }
+              sx={{
+                my: 1,
+                mx: 2,
+                display: "block",
+                justifyContent: "center",
+              }}
+            >
+              <b>{page.name}</b>
+            </Button>
+            <Divider
+              key={page.name + "_divider"}
+              className="contentDivider"
+              variant="middle"
+            />
+          </div>
+        ))}
       </Box>
     );
   }
