@@ -37,14 +37,13 @@ import {
   MacronizeApi,
   ReportApi,
 } from "@/web/api_routes";
-import { ApiHandler, RouteAndHandler } from "@/web/utils/rpc/server_rpc";
-import { ApiRoute } from "@/web/utils/rpc/rpc";
+import { RouteDefinition } from "@/web/utils/rpc/server_rpc";
 import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import {
-  retrieveWork,
+  retrieveWorkStringified,
   retrieveWorksList,
 } from "@/common/library/process_library";
 
@@ -65,13 +64,6 @@ function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
     getEntryById: (...args) => cachedProvider().getEntryById(...args),
     getCompletions: (...args) => cachedProvider().getCompletions(...args),
   };
-}
-
-function createApi<I, O>(
-  route: ApiRoute<I, O>,
-  handler: ApiHandler<I, O>
-): RouteAndHandler<I, O> {
-  return { route, handler };
 }
 
 function log(message: string) {
@@ -137,18 +129,24 @@ async function callWorker(
 const params: WebServerParams = {
   webApp: app,
   routes: [
-    createApi(MacronizeApi, (input) => callWorker(Workers.MACRONIZER, input)),
-    createApi(ReportApi, (request) =>
+    RouteDefinition.create(MacronizeApi, (input) =>
+      callWorker(Workers.MACRONIZER, input)
+    ),
+    RouteDefinition.create(ReportApi, (request) =>
       GitHub.reportIssue(request.reportText, request.commit)
     ),
-    createApi(DictsFusedApi, (input, extras) =>
+    RouteDefinition.create(DictsFusedApi, (input, extras) =>
       fusedDict.getEntry(input, extras)
     ),
-    createApi(CompletionsFusedApi, (input, extras) =>
+    RouteDefinition.create(CompletionsFusedApi, (input, extras) =>
       fusedDict.getCompletions(input, extras)
     ),
-    createApi(GetWork, (workId) => retrieveWork(workId)),
-    createApi(ListLibraryWorks, (_unused) => retrieveWorksList()),
+    RouteDefinition.create(
+      GetWork,
+      (workId) => retrieveWorkStringified(workId),
+      true
+    ),
+    RouteDefinition.create(ListLibraryWorks, (_unused) => retrieveWorksList()),
   ],
   buildDir: path.join(__dirname, "../genfiles_static"),
   telemetry: telemetry,

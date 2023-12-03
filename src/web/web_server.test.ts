@@ -7,7 +7,7 @@ import { setupServer, WebServerParams } from "@/web/web_server";
 import path from "path";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import { encodeMessage, isNumber } from "@/web/utils/rpc/parsing";
-import { RouteAndHandler } from "@/web/utils/rpc/server_rpc";
+import { PreStringifiedRpc, RouteDefinition } from "@/web/utils/rpc/server_rpc";
 
 console.debug = jest.fn();
 
@@ -33,7 +33,7 @@ afterAll(() => {
   } catch (e) {}
 });
 
-const NumberPost: RouteAndHandler<number, number> = {
+const NumberPost: RouteDefinition<number, number> = {
   route: {
     path: "/api/NumberPost",
     method: "POST",
@@ -43,7 +43,7 @@ const NumberPost: RouteAndHandler<number, number> = {
   handler: async (x) => x * 4,
 };
 
-const NumberGet: RouteAndHandler<number, number> = {
+const NumberGet: RouteDefinition<number, number> = {
   route: {
     path: "/api/NumberGet",
     method: "GET",
@@ -53,11 +53,26 @@ const NumberGet: RouteAndHandler<number, number> = {
   handler: async (x) => x * 3,
 };
 
+const NumberGetPreStringified: RouteDefinition<
+  number,
+  number,
+  PreStringifiedRpc
+> = {
+  route: {
+    path: "/api/NumberGetPreStringified",
+    method: "GET",
+    inputValidator: isNumber,
+    outputValidator: isNumber,
+  },
+  handler: async (x) => `${x * 3}`,
+  preStringified: true,
+};
+
 function getServer(): express.Express {
   const app = express();
   const params: WebServerParams = {
     webApp: app,
-    routes: [NumberGet, NumberPost],
+    routes: [NumberGet, NumberPost, NumberGetPreStringified],
     buildDir: path.resolve(TEMP_DIR),
     telemetry: Promise.resolve(TelemetryLogger.NoOp),
   };
@@ -90,6 +105,14 @@ describe("WebServer", () => {
 
   test("handles get route", async () => {
     const path = `${NumberGet.route.path}/${encodeMessage(57)}`;
+    const response = await request(app).get(path);
+
+    expect(response.status).toBe(200);
+    expect(response.text).toContain("171");
+  });
+
+  test("handles pre-stringified get route", async () => {
+    const path = `${NumberGetPreStringified.route.path}/${encodeMessage(57)}`;
     const response = await request(app).get(path);
 
     expect(response.status).toBe(200);

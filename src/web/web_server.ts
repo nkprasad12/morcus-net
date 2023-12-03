@@ -3,11 +3,16 @@ import express, { Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
-import { RouteAndHandler, addApi } from "@/web/utils/rpc/server_rpc";
+import {
+  Data,
+  RouteDefinition,
+  RouteDefinitionType,
+  addApi,
+} from "@/web/utils/rpc/server_rpc";
 
 export interface WebServerParams {
   webApp: express.Express;
-  routes: RouteAndHandler<any, any>[];
+  routes: RouteDefinition<any, Data, RouteDefinitionType>[];
   telemetry: Promise<TelemetryLogger>;
   buildDir: string;
 }
