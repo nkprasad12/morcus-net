@@ -5,7 +5,7 @@ import {
 import { processTei } from "@/common/library/process_work";
 import { parseTeiXml } from "@/common/xml/xml_files";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
+import { parseMessage, stringifyMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";
 import { readFile } from "fs/promises";
 
@@ -38,7 +38,7 @@ export function processLibrary(
       name: tei.info.title,
     };
     const result = processTei(tei);
-    const encoded = encodeMessage(result, [XmlNodeSerialization.DEFAULT]);
+    const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
     const outputPath = `${outputDir}/${workId}`;
     index[workId] = [outputPath, metadata];
     fs.writeFileSync(outputPath, encoded);
@@ -69,17 +69,25 @@ export async function retrieveWorksList(
   return Object.values(index).map(([_k, v]) => v);
 }
 
-export async function retrieveWork(
+export async function retrieveWorkStringified(
   workId: string,
   resultDir: string = LIB_DEFAULT_DIR
-): Promise<ProcessedWork> {
+): Promise<string> {
   const index = await getIndex(resultDir);
   const workPath = index[workId];
   if (workPath === undefined) {
     return Promise.reject({ status: 404, message: `Invalid id: ${workId}` });
   }
-  const rawWork = await readFile(workPath[0]);
-  return decodeMessage(rawWork.toString(), ProcessedWork.isMatch, [
-    XmlNodeSerialization.DEFAULT,
-  ]);
+  return (await readFile(workPath[0])).toString();
+}
+
+export async function retrieveWork(
+  workId: string,
+  resultDir: string = LIB_DEFAULT_DIR
+): Promise<ProcessedWork> {
+  return parseMessage(
+    await retrieveWorkStringified(workId, resultDir),
+    ProcessedWork.isMatch,
+    [XmlNodeSerialization.DEFAULT]
+  );
 }
