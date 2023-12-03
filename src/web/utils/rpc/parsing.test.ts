@@ -12,6 +12,8 @@ import {
   isString,
   matches,
   maybeUndefined,
+  parseMessage,
+  stringifyMessage,
   typeOf,
 } from "@/web/utils/rpc/parsing";
 
@@ -197,6 +199,43 @@ describe("encode and decode", () => {
 
     const encoded = encodeMessage(input, [StringWrapper.SERIALIZATION]);
     const result = decodeMessage(
+      encoded,
+      isArray(StringWrapper.SERIALIZATION.validator),
+      [StringWrapper.SERIALIZATION]
+    );
+
+    expect(result).toStrictEqual<StringWrapper[]>(input);
+  });
+});
+
+describe("stringifyMessage and parseMessage", () => {
+  it("handles string input", () => {
+    const input = "hello";
+
+    const encoded = stringifyMessage(input);
+    const result = parseMessage(encoded, isString);
+
+    expect(result).toStrictEqual(input);
+  });
+
+  it("handles simple registry input", () => {
+    const input = new StringWrapper("foo");
+
+    const encoded = stringifyMessage(input, [StringWrapper.SERIALIZATION]);
+    const result = parseMessage(
+      encoded,
+      StringWrapper.SERIALIZATION.validator,
+      [StringWrapper.SERIALIZATION]
+    );
+
+    expect(result).toStrictEqual<StringWrapper>(input);
+  });
+
+  it("handles array registry input", () => {
+    const input = [new StringWrapper("foo")];
+
+    const encoded = stringifyMessage(input, [StringWrapper.SERIALIZATION]);
+    const result = parseMessage(
       encoded,
       isArray(StringWrapper.SERIALIZATION.validator),
       [StringWrapper.SERIALIZATION]
