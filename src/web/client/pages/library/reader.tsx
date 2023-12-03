@@ -19,6 +19,7 @@ import { usePersistedNumber } from "@/web/client/pages/library/persisted_setting
 import Slider from "@mui/material/Slider";
 import { debounce } from "@mui/material/utils";
 import { FontSizes } from "@/web/client/styles";
+import Container from "@mui/material/Container";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
@@ -57,7 +58,7 @@ export function ReadingPage() {
   const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
 
   return (
-    <div style={CONTAINER_STYLE}>
+    <Container maxWidth="xl" style={CONTAINER_STYLE}>
       <div
         style={{
           ...COLUMN_STYLE,
@@ -117,7 +118,7 @@ export function ReadingPage() {
           </>
         </ContentBox>
       </div>
-    </div>
+    </Container>
   );
 }
 
