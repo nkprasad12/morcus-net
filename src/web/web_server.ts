@@ -10,6 +10,8 @@ import {
   addApi,
 } from "@/web/utils/rpc/server_rpc";
 
+const MAX_AGE = 100 * 365 * 24 * 3600 * 100;
+
 export interface WebServerParams {
   webApp: express.Express;
   routes: RouteDefinition<any, Data, RouteDefinitionType>[];
@@ -22,12 +24,15 @@ export function setupServer(params: WebServerParams): void {
   app.use(bodyParser.text());
   app.use(compression());
   const staticOptions = {
-    maxAge: 100 * 365 * 24 * 3600 * 100,
+    maxAge: MAX_AGE,
     setHeaders: (res: Response, path: string) => {
       // Force users to always fetch the index from the server so that they
       // always get the latest Javascript bundles.
       if (path.endsWith("index.html")) {
         res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+      }
+      if (path.endsWith(".client-bundle.js")) {
+        res.setHeader("Cache-Control", `public, max-age=${MAX_AGE}, immutable`);
       }
     },
   };
