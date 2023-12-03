@@ -189,6 +189,10 @@ export function SectionLinkTooltip(props: {
       after.hash = props.id;
       after.experimentalSearch = true;
     }
+    if (before.idSearch === true) {
+      after.experimentalSearch = false;
+      after.idSearch = true;
+    }
     return `${window.location.origin}${linkForInfo(after)}`;
   }
 
