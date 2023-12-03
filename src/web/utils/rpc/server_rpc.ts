@@ -6,6 +6,8 @@ import express, { Request, Response } from "express";
 
 export type Data = boolean | string | number | object;
 
+const DATA_PLACEHOLDER = "__@PRE_STRINGIFIED_PLACEHOLDER";
+
 class Timer {
   private readonly start: number;
   private readonly events: [string, number][];
@@ -86,12 +88,15 @@ function extractInput<I, O>(
   }
 }
 
-function adaptHandler<I, O extends Data>(
+type ExpressApiHandler = (req: Request, res: Response) => void;
+
+function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
   app: { webApp: express.Express; telemetry: Promise<TelemetryLogger> },
-  route: ApiRoute<I, O>,
-  handler: ApiHandler<I, O>
-) {
-  return (req: Request, res: Response) => {
+  routeDefinition: RouteDefinition<I, O, T>
+): ExpressApiHandler {
+  const route = routeDefinition.route;
+  const handler = routeDefinition.handler;
+  return (req, res) => {
     const timer = new Timer();
     console.debug(`[${Date.now() / 1000}] ${route.path}`);
     const inputOrError = extractInput(req, route);
@@ -104,7 +109,7 @@ function adaptHandler<I, O extends Data>(
     const [input, rawLength] = inputOrError;
 
     let status: number = 200;
-    let body: O | HandlerError | undefined = undefined;
+    let body: O | string | HandlerError | undefined = undefined;
     handler(input, { log: (tag) => timer.event(tag) })
       .then((output) => {
         if (output === undefined || output === null) {
@@ -119,7 +124,16 @@ function adaptHandler<I, O extends Data>(
       })
       .finally(() => {
         timer.event("handlerComplete");
-        const result = encodeMessage(serverMessage(body), route.registry);
+        const isPreStringified =
+          status === 200 && routeDefinition.preStringified;
+        let result = encodeMessage(
+          serverMessage(isPreStringified ? DATA_PLACEHOLDER : body),
+          route.registry
+        );
+        if (isPreStringified) {
+          // @ts-ignore
+          result = result.replace(`"${DATA_PLACEHOLDER}"`, body);
+        }
         timer.event("encodeMessageComplete");
         res.status(status).send(result);
         const telemetryData: Omit<ApiCallData, "latencyMs"> = {
@@ -145,30 +159,62 @@ export interface ServerExtras {
   log: (tag: string) => any;
 }
 export type ApiHandler<I, O> = (input: I, extras?: ServerExtras) => Promise<O>;
-export interface RouteAndHandler<I, O> {
+export type PreStringifiedRpc = "PreStringified";
+export type RouteDefinitionType = undefined | PreStringifiedRpc;
+type HandlerType<I, O, T> = T extends PreStringifiedRpc
+  ? ApiHandler<I, string>
+  : ApiHandler<I, O>;
+interface RouteDefinitionBase<I, O, T extends RouteDefinitionType = undefined> {
   route: ApiRoute<I, O>;
-  handler: ApiHandler<I, O>;
+  handler: HandlerType<I, O, T>;
+}
+export type RouteDefinition<
+  I,
+  O,
+  T extends RouteDefinitionType = undefined
+> = RouteDefinitionBase<I, O, T> &
+  (T extends PreStringifiedRpc
+    ? { preStringified: true }
+    : { preStringified?: undefined });
+export namespace RouteDefinition {
+  export function create<I, O>(
+    route: ApiRoute<I, O>,
+    handler: ApiHandler<I, O>
+  ): RouteDefinition<I, O>;
+  export function create<I, O>(
+    route: ApiRoute<I, O>,
+    handler: ApiHandler<I, string>,
+    preStringified: true
+  ): RouteDefinition<I, O, "PreStringified">;
+  export function create<I, O, T extends RouteDefinitionType>(
+    route: ApiRoute<I, O>,
+    handler: HandlerType<I, O, T>,
+    preStringified?: T extends PreStringifiedRpc ? true : undefined
+  ): RouteDefinition<I, O, T> {
+    // @ts-ignore
+    return { route, handler, preStringified };
+  }
 }
 
 /**
  * Adds the given API to the Express app.
  *
  * @param app the Express application.
- * @param routeAndHandler the route definition and handler for the route. If the
+ * @param routeDefinition the route definition to implement the API. If the
  *                        handler rejects, it should reject with a `HandlerError`.
  */
-export function addApi<I, O extends Data>(
+export function addApi<I, O extends Data, T extends RouteDefinitionType>(
   app: { webApp: express.Express; telemetry: Promise<TelemetryLogger> },
-  routeAndHandler: RouteAndHandler<I, O>
+  routeDefinition: RouteDefinition<I, O, T>
 ): void {
-  const route = routeAndHandler.route;
-  const handler = routeAndHandler.handler;
+  const route = routeDefinition.route;
+  const adapted = adaptHandler(app, routeDefinition);
   switch (route.method) {
     case "GET":
-      app.webApp.get(`${route.path}/:input`, adaptHandler(app, route, handler));
+      app.webApp.get(`${route.path}/:input`, adapted);
       return;
     case "POST":
-      app.webApp.post(route.path, adaptHandler(app, route, handler));
+      app.webApp.post(route.path, adapted);
       return;
     default:
       exhaustiveGuard(route.method);

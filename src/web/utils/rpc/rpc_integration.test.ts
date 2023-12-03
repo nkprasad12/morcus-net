@@ -1,7 +1,11 @@
 import bodyParser from "body-parser";
 import express from "express";
 import http from "http";
-import { RouteAndHandler, addApi } from "@/web/utils/rpc/server_rpc";
+import {
+  PreStringifiedRpc,
+  RouteDefinition,
+  addApi,
+} from "@/web/utils/rpc/server_rpc";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   Serialization,
@@ -11,6 +15,7 @@ import {
   isBoolean,
   isNumber,
   isString,
+  stringifyMessage,
 } from "@/web/utils/rpc/parsing";
 import fetch from "node-fetch";
 import { callApi } from "@/web/utils/rpc/client_rpc";
@@ -83,7 +88,7 @@ function appBundle() {
 
 // Routes and Handlers
 
-const StringPost: RouteAndHandler<string, string> = {
+const StringPost: RouteDefinition<string, string> = {
   route: {
     path: "/StringToStringPost",
     method: "POST",
@@ -93,7 +98,7 @@ const StringPost: RouteAndHandler<string, string> = {
   handler: async (s) => s + " StringToStringPost",
 };
 
-const StringGet: RouteAndHandler<string, string> = {
+const StringGet: RouteDefinition<string, string> = {
   route: {
     path: "/StringToStringGet",
     method: "GET",
@@ -103,7 +108,7 @@ const StringGet: RouteAndHandler<string, string> = {
   handler: async (s) => s + " StringToStringGet",
 };
 
-const NumberPost: RouteAndHandler<number, number> = {
+const NumberPost: RouteDefinition<number, number> = {
   route: {
     path: "/NumberPost",
     method: "POST",
@@ -113,7 +118,7 @@ const NumberPost: RouteAndHandler<number, number> = {
   handler: async (x) => x * 4,
 };
 
-const NumberGet: RouteAndHandler<number, number> = {
+const NumberGet: RouteDefinition<number, number> = {
   route: {
     path: "/NumberGet",
     method: "GET",
@@ -123,7 +128,7 @@ const NumberGet: RouteAndHandler<number, number> = {
   handler: async (x) => x * 3,
 };
 
-const BoolGet: RouteAndHandler<boolean, boolean> = {
+const BoolGet: RouteDefinition<boolean, boolean> = {
   route: {
     path: "/BoolGet",
     method: "GET",
@@ -133,7 +138,7 @@ const BoolGet: RouteAndHandler<boolean, boolean> = {
   handler: async (x) => x,
 };
 
-const BoolPost: RouteAndHandler<boolean, boolean> = {
+const BoolPost: RouteDefinition<boolean, boolean> = {
   route: {
     path: "/BoolPost",
     method: "POST",
@@ -143,7 +148,7 @@ const BoolPost: RouteAndHandler<boolean, boolean> = {
   handler: async (x) => !x,
 };
 
-const JsonGet: RouteAndHandler<TestType, TestType> = {
+const JsonGet: RouteDefinition<TestType, TestType> = {
   route: {
     path: "/JsonGet",
     method: "GET",
@@ -156,7 +161,26 @@ const JsonGet: RouteAndHandler<TestType, TestType> = {
   }),
 };
 
-const JsonPost: RouteAndHandler<TestType, TestType> = {
+const JsonGetPreStringified: RouteDefinition<
+  TestType,
+  TestType,
+  PreStringifiedRpc
+> = {
+  route: {
+    path: "/JsonGetPreStringified",
+    method: "GET",
+    inputValidator: isTestType,
+    outputValidator: isTestType,
+  },
+  handler: async (x) =>
+    stringifyMessage({
+      nested: { str: x.nested.str + " JsonGetPreStringified" },
+      arr: x.arr.concat(["JsonGetPreStringified"]),
+    }),
+  preStringified: true,
+};
+
+const JsonPost: RouteDefinition<TestType, TestType> = {
   route: {
     path: "/JsonPost",
     method: "POST",
@@ -169,7 +193,7 @@ const JsonPost: RouteAndHandler<TestType, TestType> = {
   }),
 };
 
-const ThrowingHandler: RouteAndHandler<string, string> = {
+const ThrowingHandler: RouteDefinition<string, string> = {
   route: {
     path: "/ThrowingHandler",
     method: "GET",
@@ -179,7 +203,7 @@ const ThrowingHandler: RouteAndHandler<string, string> = {
   handler: (s) => Promise.reject("s"),
 };
 
-const OutputValidationThrows: RouteAndHandler<string, string> = {
+const OutputValidationThrows: RouteDefinition<string, string> = {
   route: {
     path: "/OutputValidationThrows",
     method: "GET",
@@ -191,7 +215,7 @@ const OutputValidationThrows: RouteAndHandler<string, string> = {
   handler: async (s) => s,
 };
 
-const ErroringHandler: RouteAndHandler<string, string> = {
+const ErroringHandler: RouteDefinition<string, string> = {
   route: {
     path: "/ErroringHandler",
     method: "GET",
@@ -201,7 +225,7 @@ const ErroringHandler: RouteAndHandler<string, string> = {
   handler: (s) => Promise.reject({ message: "Failed for test", status: 404 }),
 };
 
-const InputValidationError: RouteAndHandler<string, string> = {
+const InputValidationError: RouteDefinition<string, string> = {
   route: {
     path: "/InputValidationError",
     method: "GET",
@@ -213,7 +237,7 @@ const InputValidationError: RouteAndHandler<string, string> = {
   handler: async (s) => s,
 };
 
-const ClassObjectRoute: RouteAndHandler<StringWrapper, StringWrapper> = {
+const ClassObjectRoute: RouteDefinition<StringWrapper, StringWrapper> = {
   route: {
     path: "/ClassObjectRoute",
     method: "GET",
@@ -224,7 +248,24 @@ const ClassObjectRoute: RouteAndHandler<StringWrapper, StringWrapper> = {
   handler: async (sw) => sw.double(),
 };
 
-const handlers: RouteAndHandler<any, any>[] = [
+const ClassObjectRoutePreStringified: RouteDefinition<
+  StringWrapper,
+  StringWrapper,
+  PreStringifiedRpc
+> = {
+  route: {
+    path: "/ClassObjectRoutePreStringified",
+    method: "GET",
+    inputValidator: instanceOf(StringWrapper),
+    outputValidator: instanceOf(StringWrapper),
+    registry: [StringWrapper.SERIALIZATION],
+  },
+  handler: async (sw) =>
+    stringifyMessage(sw.double(), [StringWrapper.SERIALIZATION]),
+  preStringified: true,
+};
+
+const handlers: RouteDefinition<any, any, any>[] = [
   StringGet,
   StringPost,
   NumberGet,
@@ -232,12 +273,14 @@ const handlers: RouteAndHandler<any, any>[] = [
   BoolGet,
   BoolPost,
   JsonGet,
+  JsonGetPreStringified,
   JsonPost,
   ThrowingHandler,
   OutputValidationThrows,
   ErroringHandler,
   InputValidationError,
   ClassObjectRoute,
+  ClassObjectRoutePreStringified,
 ];
 
 function setupApp(): Promise<http.Server> {
@@ -309,6 +352,18 @@ describe("RPC library", () => {
     });
   });
 
+  test("handles pre-serialized JSON with GET", async () => {
+    server = await setupApp();
+    const input = { nested: { str: "foo" }, arr: ["foo"] };
+
+    const result = await callApi(JsonGetPreStringified.route, input);
+
+    expect(result).toStrictEqual({
+      nested: { str: "foo JsonGetPreStringified" },
+      arr: ["foo", "JsonGetPreStringified"],
+    });
+  });
+
   test("handles JSON with POST", async () => {
     server = await setupApp();
     const input = { nested: { str: "foo" }, arr: ["foo"] };
@@ -355,7 +410,7 @@ describe("RPC library", () => {
 
   test("addApi on unsupported type raises", () => {
     const bundle = appBundle();
-    const Connect: RouteAndHandler<string, string> = {
+    const Connect: RouteDefinition<string, string> = {
       route: {
         path: "/Connect",
         // @ts-ignore
@@ -372,6 +427,17 @@ describe("RPC library", () => {
   test("handles data with serialization registry", async () => {
     server = await setupApp();
     const result = callApi(ClassObjectRoute.route, new StringWrapper("foo"));
+    await expect(result).resolves.toStrictEqual<StringWrapper>(
+      new StringWrapper("foofoo")
+    );
+  });
+
+  test("handles pre-serialized data with serialization registry", async () => {
+    server = await setupApp();
+    const result = callApi(
+      ClassObjectRoutePreStringified.route,
+      new StringWrapper("foo")
+    );
     await expect(result).resolves.toStrictEqual<StringWrapper>(
       new StringWrapper("foofoo")
     );
