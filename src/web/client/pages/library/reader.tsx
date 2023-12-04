@@ -12,13 +12,7 @@ import DisplaySettings from "@mui/icons-material/DisplaySettings";
 import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import React, {
-  CSSProperties,
-  useCallback,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { CSSProperties, useContext, useEffect, useState } from "react";
 import IconButton from "@mui/material/IconButton";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
 import Typography from "@mui/material/Typography";
@@ -53,6 +47,12 @@ const COLUMN_STYLE: CSSProperties = {
   marginLeft: "1%",
   marginRight: "1%",
 };
+const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | false)[] = [
+  "lg",
+  "xl",
+  "xxl",
+  false,
+];
 
 interface SidebarState {
   dictWord?: string;
@@ -86,6 +86,7 @@ function SettingSlider(props: {
   step: number;
   tag?: string;
   scale: number;
+  disableLabels?: boolean;
 }) {
   const scale = props.scale / 100;
   return (
@@ -111,7 +112,7 @@ function SettingSlider(props: {
           }
           props.setValue(newValue);
         })}
-        valueLabelDisplay="auto"
+        valueLabelDisplay={props.disableLabels ? "off" : "auto"}
         step={props.step}
         marks
         min={props.min}
@@ -135,6 +136,8 @@ function Sidebar(props: {
   setWorkScale: (x: number) => any;
   dictScale: number;
   setDictScale: (x: number) => any;
+  totalWidth: number;
+  setTotalWidth: (x: number) => any;
 }) {
   const scale = props.scale;
   const sidebar = props.sidebar;
@@ -147,10 +150,20 @@ function Sidebar(props: {
               <SettingsText message="Layout settings" scale={scale} />
             </summary>
             <SettingSlider
+              value={props.totalWidth}
+              setValue={props.setTotalWidth}
+              label="Total width"
+              min={0}
+              max={3}
+              step={1}
+              scale={scale}
+              disableLabels={true}
+            />
+            <SettingSlider
               value={props.mainWidth}
               setValue={props.setMainWidth}
               label="Main width"
-              min={24}
+              min={32}
               max={80}
               step={8}
               scale={scale}
@@ -207,12 +220,13 @@ function Sidebar(props: {
 
 export function ReadingPage() {
   const [sidebar, setSidebar] = React.useState<SidebarState>({ panel: "Dict" });
-  const [mainWidth, setMainWidth] = usePersistedNumber(56, "READER_WORK_WIDTH");
+  const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
+  const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
   const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
   const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
 
   return (
-    <Container maxWidth="xl" style={CONTAINER_STYLE}>
+    <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
       <div
         style={{
           ...COLUMN_STYLE,
@@ -252,6 +266,8 @@ export function ReadingPage() {
               setDictScale={setDictScale}
               workScale={workScale}
               setWorkScale={setWorkScale}
+              totalWidth={totalWidth}
+              setTotalWidth={setTotalWidth}
             />
           </>
         </ContentBox>
