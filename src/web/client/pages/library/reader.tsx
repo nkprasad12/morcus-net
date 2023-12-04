@@ -53,16 +53,75 @@ interface SidebarState {
 
 export function ReadingPage() {
   const [sidebar, setSidebar] = React.useState<SidebarState>({});
-  const [textWidth, setTextWidth] = usePersistedNumber(56, "READER_WORK_WIDTH");
+  const [mainWidth, setMainWidth] = usePersistedNumber(56, "READER_WORK_WIDTH");
   const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
   const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
+
+  function SettingsText(props: { message: string; size?: number }) {
+    return (
+      <Typography
+        component="span"
+        className="contentTextLight"
+        fontSize={
+          (props.size || FontSizes.BIG_SCREEN) * ((dictScale || 100) / 100)
+        }
+      >
+        {props.message}
+      </Typography>
+    );
+  }
+
+  function SettingSlider(props: {
+    value: number;
+    setValue: (w: number) => any;
+    label: string;
+    min: number;
+    max: number;
+    step: number;
+    tag?: string;
+    scale: number;
+  }) {
+    const scale = props.scale / 100;
+    return (
+      <div
+        style={{
+          alignItems: "center",
+          display: "flex",
+        }}
+      >
+        <SettingsText message={props.label} size={FontSizes.SECONDARY} />
+        <Slider
+          aria-label={(props.tag || "") + " " + props.label}
+          size="small"
+          getAriaValueText={(v) => `${v}`}
+          value={props.value}
+          onChange={debounce((_, newValue) => {
+            if (typeof newValue !== "number") {
+              return;
+            }
+            props.setValue(newValue);
+          })}
+          valueLabelDisplay="auto"
+          step={props.step}
+          marks
+          min={props.min}
+          max={props.max}
+          style={{
+            width: 250 * scale,
+            marginLeft: 12 * scale,
+            marginRight: 12 * scale,
+          }}
+        />
+      </div>
+    );
+  }
 
   return (
     <Container maxWidth="xl" style={CONTAINER_STYLE}>
       <div
         style={{
           ...COLUMN_STYLE,
-          width: `${textWidth}%`,
+          width: `${mainWidth}%`,
           paddingLeft: 4,
           paddingRight: 8,
         }}
@@ -74,7 +133,7 @@ export function ReadingPage() {
         />
       </div>
       <div
-        style={{ ...COLUMN_STYLE, width: `${96 - textWidth}%`, paddingTop: 12 }}
+        style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%`, paddingTop: 12 }}
       >
         <ContentBox isSmall={true}>
           <>
@@ -86,31 +145,50 @@ export function ReadingPage() {
               />
             ) : sidebar.settings === true ? (
               <>
-                <div>Reader settings</div>
-                <SettingSlider
-                  value={textWidth}
-                  setValue={setTextWidth}
-                  label="Main text width"
-                  min={24}
-                  max={80}
-                  step={8}
-                />
-                <SettingSlider
-                  value={workScale}
-                  setValue={setWorkScale}
-                  label="Main text size"
-                  min={50}
-                  max={150}
-                  step={10}
-                />
-                <SettingSlider
-                  value={dictScale}
-                  setValue={setDictScale}
-                  label="Sidebar text size"
-                  min={50}
-                  max={150}
-                  step={10}
-                />
+                <details>
+                  <summary>
+                    <SettingsText message="Layout settings" />
+                  </summary>
+                  <SettingSlider
+                    value={mainWidth}
+                    setValue={setMainWidth}
+                    label="Main width"
+                    min={24}
+                    max={80}
+                    step={8}
+                    scale={dictScale}
+                  />
+                </details>
+                <details>
+                  <summary>
+                    <SettingsText message="Main column settings" />
+                  </summary>
+                  <SettingSlider
+                    value={workScale}
+                    setValue={setWorkScale}
+                    label="Text size"
+                    tag="Main column"
+                    min={50}
+                    max={150}
+                    step={10}
+                    scale={dictScale}
+                  />
+                </details>
+                <details>
+                  <summary>
+                    <SettingsText message="Side column settings" />
+                  </summary>
+                  <SettingSlider
+                    value={dictScale}
+                    setValue={setDictScale}
+                    label="Text size"
+                    tag="Side column"
+                    min={50}
+                    max={150}
+                    step={10}
+                    scale={dictScale}
+                  />
+                </details>
               </>
             ) : (
               <InfoText text="Click on a word for dictionary and inflection lookups." />
@@ -119,41 +197,6 @@ export function ReadingPage() {
         </ContentBox>
       </div>
     </Container>
-  );
-}
-
-function SettingSlider(props: {
-  value: number;
-  setValue: (w: number) => any;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-}) {
-  return (
-    <div>
-      <InfoText text={props.label} />
-      <div style={{ paddingLeft: 12, paddingRight: 12 }}>
-        <Slider
-          aria-label={props.label}
-          size="small"
-          getAriaValueText={(v) => `${v}`}
-          value={props.value}
-          onChange={debounce((_, newValue) => {
-            if (typeof newValue !== "number") {
-              return;
-            }
-            props.setValue(newValue);
-          })}
-          valueLabelDisplay="off"
-          step={props.step}
-          marks
-          min={props.min}
-          max={props.max}
-          style={{ width: 150 }}
-        />
-      </div>
-    </div>
   );
 }
 

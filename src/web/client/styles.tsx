@@ -3,6 +3,7 @@ import {
   DEFAULT_HIGHLIGHT_STRENGTH,
   GlobalSettings,
 } from "@/web/client/components/global_flags";
+import { CSSProperties } from "react";
 
 export namespace FontSizes {
   export const BIG_SCREEN = 20;
@@ -15,7 +16,9 @@ export function getBackgroundColor(settings: GlobalSettings): string {
   return settings.darkMode === true ? "#212022" : Solarized.base3;
 }
 
-export function getGlobalStyles(settings: GlobalSettings): Record<string, any> {
+export function getGlobalStyles(
+  settings: GlobalSettings
+): Record<string, CSSProperties> {
   const modifier =
     (settings.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH) /
     DEFAULT_HIGHLIGHT_STRENGTH;
