@@ -506,7 +506,7 @@ export function WorkTextPage(props: {
   work: PaginatedWork;
   setDictWord: (word: string | undefined) => any;
   page: number;
-  textScale?: number;
+  textScale: number;
 }) {
   if (props.page === -1) {
     return <WorkInfo workInfo={props.work.info} />;
@@ -515,10 +515,13 @@ export function WorkTextPage(props: {
   const i = props.work.pageStarts[props.page];
   const j = props.work.pageStarts[props.page + 1];
   const chunksToShow = props.work.chunks.slice(i, j);
+  const gap = `${(props.textScale / 100) * 0.5}em`;
 
   return (
-    <>
-      {chunksToShow.map((chunk) => (
+    <div
+      style={{ display: "grid", columnGap: gap, rowGap: gap, marginTop: gap }}
+    >
+      {chunksToShow.map((chunk, i) => (
         <WorkChunk
           key={chunk[0].join(",")}
           parts={props.work.textParts}
@@ -526,9 +529,11 @@ export function WorkTextPage(props: {
           textRoot={chunk[1]}
           setDictWord={props.setDictWord}
           textScale={props.textScale}
+          i={i}
+          workName={capitalizeWords(props.work.info.title)}
         />
       ))}
-    </>
+    </div>
   );
 }
 
@@ -544,25 +549,58 @@ function WorkInfo(props: { workInfo: DocumentInfo }) {
   );
 }
 
+function WorkChunkHeader(props: {
+  text: string;
+  textScale: number;
+  blurb: string;
+}) {
+  return (
+    <CopyLinkTooltip
+      forwarded={React.forwardRef<any>(function WorkSectionHeader(
+        fProps,
+        fRef
+      ) {
+        return (
+          <span {...fProps} ref={fRef}>
+            <InfoText
+              text={props.text}
+              style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
+              textScale={props.textScale}
+            />
+          </span>
+        );
+      })}
+      message={props.blurb}
+      link={`${props.blurb}\n${window.location.href}`}
+    />
+  );
+}
+
 function WorkChunk(props: {
   parts: string[];
   id: number[];
   textRoot: XmlNode;
   setDictWord: (word: string | undefined) => any;
-  textScale?: number;
+  textScale: number;
+  i: number;
+  workName: string;
 }) {
-  const id = `${props.parts.slice(-1)[0]} ${props.id.slice(-1)[0]}`;
+  const partInitial = props.parts.slice(-1)[0][0].toUpperCase();
+  const id = `${partInitial}${props.id.slice(-1)[0]}`;
+  const row = props.i + 1;
   return (
-    <div style={{ paddingTop: 8 }}>
-      <div>
-        <InfoText
-          text={capitalizeWords(id)}
-          style={{ marginLeft: 0 }}
+    <>
+      <div style={{ gridColumn: 1, gridRow: row }}>
+        <WorkChunkHeader
+          text={`[${id}]`}
           textScale={props.textScale}
+          blurb={`${props.workName} ${props.id.join(".")}`}
         />
       </div>
-      {displayForLibraryChunk(props.textRoot, props.setDictWord)}
-    </div>
+      <div style={{ gridColumn: 2, gridRow: row }} id={id}>
+        {displayForLibraryChunk(props.textRoot, props.setDictWord)}
+      </div>
+    </>
   );
 }
 
