@@ -215,7 +215,7 @@ function Sidebar(props: {
     case "Info":
       return (
         <>
-          <WorkInfo workInfo={props.workInfo} />
+          <WorkInfo workInfo={props.workInfo} scale={props.scale} />
           <div>TODO: Add Navigation</div>
         </>
       );
@@ -555,18 +555,43 @@ export function WorkTextPage(props: {
   );
 }
 
-function WorkInfo(props: { workInfo?: DocumentInfo }) {
+function WorkInfo(props: { workInfo?: DocumentInfo; scale: number }) {
   if (props.workInfo === undefined) {
     return <></>;
   }
+
+  const scale = props.scale;
+
+  function InfoLine(props: { value: string; label: string }) {
+    return (
+      <div>
+        <SettingsText
+          scale={scale}
+          message={`${props.label}: ${props.value}`}
+        />
+      </div>
+    );
+  }
+
   return (
-    <>
-      <div>{props.workInfo.title}</div>
-      <div>{props.workInfo.author}</div>
-      {props.workInfo.editor && <div>{props.workInfo.editor}</div>}
-      {props.workInfo.funder && <div>{props.workInfo.funder}</div>}
-      {props.workInfo.sponsor && <div>{props.workInfo.sponsor}</div>}
-    </>
+    <details>
+      <summary>
+        <SettingsText
+          scale={props.scale}
+          message={capitalizeWords(props.workInfo.title)}
+        />
+      </summary>
+      <InfoLine label="Author" value={props.workInfo.author} />
+      {props.workInfo.editor && (
+        <InfoLine label="Editor" value={props.workInfo.editor} />
+      )}
+      {props.workInfo.funder && (
+        <InfoLine label="Funder" value={props.workInfo.funder} />
+      )}
+      {props.workInfo.sponsor && (
+        <InfoLine label="Sponsor" value={props.workInfo.sponsor} />
+      )}
+    </details>
   );
 }
 
