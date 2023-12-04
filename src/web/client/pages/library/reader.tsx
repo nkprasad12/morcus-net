@@ -9,10 +9,18 @@ import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import LinkIcon from "@mui/icons-material/Link";
 import DisplaySettings from "@mui/icons-material/DisplaySettings";
+import MenuBook from "@mui/icons-material/MenuBookOutlined";
+import Info from "@mui/icons-material/Info";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import React, { CSSProperties, useContext, useEffect, useState } from "react";
+import React, {
+  CSSProperties,
+  useCallback,
+  useContext,
+  useEffect,
+  useState,
+} from "react";
 import IconButton from "@mui/material/IconButton";
-import { safeParseInt } from "@/common/misc_utils";
+import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
 import Typography from "@mui/material/Typography";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
@@ -48,73 +56,160 @@ const COLUMN_STYLE: CSSProperties = {
 
 interface SidebarState {
   dictWord?: string;
-  settings?: true;
+  panel: "Info" | "Dict" | "Settings";
+}
+
+function SettingsText(props: {
+  message: string;
+  size?: number;
+  scale: number;
+}) {
+  return (
+    <Typography
+      component="span"
+      className="contentTextLight"
+      fontSize={
+        (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
+      }
+    >
+      {props.message}
+    </Typography>
+  );
+}
+
+function SettingSlider(props: {
+  value: number;
+  setValue: (w: number) => any;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  tag?: string;
+  scale: number;
+}) {
+  const scale = props.scale / 100;
+  return (
+    <div
+      style={{
+        alignItems: "center",
+        display: "flex",
+      }}
+    >
+      <SettingsText
+        message={props.label}
+        size={FontSizes.SECONDARY}
+        scale={props.scale}
+      />
+      <Slider
+        aria-label={(props.tag || "") + " " + props.label}
+        size="small"
+        getAriaValueText={(v) => `${v}`}
+        value={props.value}
+        onChange={debounce((_, newValue) => {
+          if (typeof newValue !== "number") {
+            return;
+          }
+          props.setValue(newValue);
+        })}
+        valueLabelDisplay="auto"
+        step={props.step}
+        marks
+        min={props.min}
+        max={props.max}
+        style={{
+          width: 250 * scale,
+          marginLeft: 12 * scale,
+          marginRight: 12 * scale,
+        }}
+      />
+    </div>
+  );
+}
+
+function Sidebar(props: {
+  scale: number;
+  sidebar: SidebarState;
+  mainWidth: number;
+  setMainWidth: (x: number) => any;
+  workScale: number;
+  setWorkScale: (x: number) => any;
+  dictScale: number;
+  setDictScale: (x: number) => any;
+}) {
+  const scale = props.scale;
+  const sidebar = props.sidebar;
+  switch (sidebar.panel) {
+    case "Settings":
+      return (
+        <>
+          <details>
+            <summary>
+              <SettingsText message="Layout settings" scale={scale} />
+            </summary>
+            <SettingSlider
+              value={props.mainWidth}
+              setValue={props.setMainWidth}
+              label="Main width"
+              min={24}
+              max={80}
+              step={8}
+              scale={scale}
+            />
+          </details>
+          <details>
+            <summary>
+              <SettingsText message="Main column settings" scale={scale} />
+            </summary>
+            <SettingSlider
+              value={props.workScale}
+              setValue={props.setWorkScale}
+              label="Text size"
+              tag="Main column"
+              min={50}
+              max={150}
+              step={10}
+              scale={scale}
+            />
+          </details>
+          <details>
+            <summary>
+              <SettingsText message="Side column settings" scale={scale} />
+            </summary>
+            <SettingSlider
+              value={props.dictScale}
+              setValue={props.setDictScale}
+              label="Text size"
+              tag="Side column"
+              min={50}
+              max={150}
+              step={10}
+              scale={scale}
+            />
+          </details>
+        </>
+      );
+    case "Dict":
+      return sidebar.dictWord === undefined ? (
+        <InfoText text="Click on a word for dictionary and inflection lookups." />
+      ) : (
+        <DictionaryViewV2
+          embedded={true}
+          initial={sidebar.dictWord}
+          textScale={props.dictScale}
+        />
+      );
+    case "Info":
+      return <span>TODO</span>;
+    default:
+      exhaustiveGuard(sidebar.panel);
+  }
 }
 
 export function ReadingPage() {
-  const [sidebar, setSidebar] = React.useState<SidebarState>({});
+  const [sidebar, setSidebar] = React.useState<SidebarState>({ panel: "Dict" });
   const [mainWidth, setMainWidth] = usePersistedNumber(56, "READER_WORK_WIDTH");
   const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
   const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
-
-  function SettingsText(props: { message: string; size?: number }) {
-    return (
-      <Typography
-        component="span"
-        className="contentTextLight"
-        fontSize={
-          (props.size || FontSizes.BIG_SCREEN) * ((dictScale || 100) / 100)
-        }
-      >
-        {props.message}
-      </Typography>
-    );
-  }
-
-  function SettingSlider(props: {
-    value: number;
-    setValue: (w: number) => any;
-    label: string;
-    min: number;
-    max: number;
-    step: number;
-    tag?: string;
-    scale: number;
-  }) {
-    const scale = props.scale / 100;
-    return (
-      <div
-        style={{
-          alignItems: "center",
-          display: "flex",
-        }}
-      >
-        <SettingsText message={props.label} size={FontSizes.SECONDARY} />
-        <Slider
-          aria-label={(props.tag || "") + " " + props.label}
-          size="small"
-          getAriaValueText={(v) => `${v}`}
-          value={props.value}
-          onChange={debounce((_, newValue) => {
-            if (typeof newValue !== "number") {
-              return;
-            }
-            props.setValue(newValue);
-          })}
-          valueLabelDisplay="auto"
-          step={props.step}
-          marks
-          min={props.min}
-          max={props.max}
-          style={{
-            width: 250 * scale,
-            marginLeft: 12 * scale,
-            marginRight: 12 * scale,
-          }}
-        />
-      </div>
-    );
-  }
 
   return (
     <Container maxWidth="xl" style={CONTAINER_STYLE}>
@@ -126,73 +221,38 @@ export function ReadingPage() {
           paddingRight: 8,
         }}
       >
-        <WorkColumn
-          setDictWord={(word) => setSidebar({ dictWord: word })}
-          showSettings={() => setSidebar({ settings: true })}
-          textScale={workScale}
-        />
+        <WorkColumn setSidebar={setSidebar} textScale={workScale} />
       </div>
-      <div
-        style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%`, paddingTop: 12 }}
-      >
+      <div style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}>
         <ContentBox isSmall={true}>
           <>
-            {sidebar.dictWord !== undefined ? (
-              <DictionaryViewV2
-                embedded={true}
-                initial={sidebar.dictWord}
-                textScale={dictScale}
+            <div>
+              <NavIcon
+                Icon={<Info />}
+                label="Work details"
+                onClick={() => setSidebar({ panel: "Info" })}
               />
-            ) : sidebar.settings === true ? (
-              <>
-                <details>
-                  <summary>
-                    <SettingsText message="Layout settings" />
-                  </summary>
-                  <SettingSlider
-                    value={mainWidth}
-                    setValue={setMainWidth}
-                    label="Main width"
-                    min={24}
-                    max={80}
-                    step={8}
-                    scale={dictScale}
-                  />
-                </details>
-                <details>
-                  <summary>
-                    <SettingsText message="Main column settings" />
-                  </summary>
-                  <SettingSlider
-                    value={workScale}
-                    setValue={setWorkScale}
-                    label="Text size"
-                    tag="Main column"
-                    min={50}
-                    max={150}
-                    step={10}
-                    scale={dictScale}
-                  />
-                </details>
-                <details>
-                  <summary>
-                    <SettingsText message="Side column settings" />
-                  </summary>
-                  <SettingSlider
-                    value={dictScale}
-                    setValue={setDictScale}
-                    label="Text size"
-                    tag="Side column"
-                    min={50}
-                    max={150}
-                    step={10}
-                    scale={dictScale}
-                  />
-                </details>
-              </>
-            ) : (
-              <InfoText text="Click on a word for dictionary and inflection lookups." />
-            )}
+              <NavIcon
+                Icon={<MenuBook />}
+                label="Dictionary"
+                onClick={() => setSidebar({ panel: "Dict" })}
+              />
+              <NavIcon
+                Icon={<DisplaySettings />}
+                label="Reader settings"
+                onClick={() => setSidebar({ panel: "Settings" })}
+              />
+            </div>
+            <Sidebar
+              scale={dictScale}
+              sidebar={sidebar}
+              mainWidth={mainWidth}
+              setMainWidth={setMainWidth}
+              dictScale={dictScale}
+              setDictScale={setDictScale}
+              workScale={workScale}
+              setWorkScale={setWorkScale}
+            />
           </>
         </ContentBox>
       </div>
@@ -204,8 +264,7 @@ type PaginatedWork = ProcessedWork & { pageStarts: number[]; pages: number };
 type WorkState = PaginatedWork | "Loading" | "Error";
 
 function WorkColumn(props: {
-  setDictWord: (word: string | undefined) => any;
-  showSettings: () => any;
+  setSidebar: (state: SidebarState) => any;
   textScale: number;
 }) {
   const nav = useContext(RouteContext);
@@ -254,12 +313,13 @@ function WorkColumn(props: {
             page={currentPage}
             setPage={setPage}
             work={work}
-            showSettings={props.showSettings}
             textScale={props.textScale}
           />
           <WorkTextPage
             work={work}
-            setDictWord={props.setDictWord}
+            setDictWord={(dictWord) =>
+              props.setSidebar({ panel: "Dict", dictWord })
+            }
             page={currentPage}
             textScale={props.textScale}
           />
@@ -349,7 +409,6 @@ function WorkNavigation(props: {
   page: number;
   setPage: (to: number) => any;
   work: PaginatedWork;
-  showSettings: () => any;
   textScale?: number;
 }) {
   return (
@@ -380,15 +439,6 @@ function WorkNavigation(props: {
           })}
           message="Copy link to section"
           link={window.location.href}
-        />
-
-        <NavIcon
-          Icon={<DisplaySettings />}
-          label="Reader settings"
-          onClick={() => {
-            console.log("Settings clicked!");
-            props.showSettings();
-          }}
         />
       </div>
       <div>

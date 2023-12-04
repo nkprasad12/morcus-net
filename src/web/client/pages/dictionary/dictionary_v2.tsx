@@ -478,7 +478,7 @@ export function DictionaryViewV2(props?: {
 
   function OneColumnLayout(props: { Content: JSX.Element }) {
     return (
-      <Container maxWidth="lg">
+      <Container maxWidth="lg" disableGutters={isEmbedded}>
         <SearchBar
           maxWidth="lg"
           id={"SearchBox"}
