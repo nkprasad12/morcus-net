@@ -359,7 +359,7 @@ function InfoText(props: {
     <Typography
       component="span"
       className="contentTextLight"
-      fontSize={FontSizes.TERTIARY * ((props.textScale || 100) / 100)}
+      fontSize={FontSizes.SECONDARY * ((props.textScale || 100) / 100)}
       style={{ marginLeft: 8, marginRight: 8, ...props.style }}
     >
       {props.text}
@@ -380,7 +380,7 @@ function HeaderText(props: {
   const firstChunk = props.data.chunks[chunkIndex][0];
   const idParts = parts
     .map((partName, i) => `${partName} ${firstChunk[i]}`)
-    .slice(0, -1);
+    .slice(0, -2);
   return (
     <>
       {idParts.map((idPart) => (
@@ -427,6 +427,18 @@ function WorkNavigation(props: {
   work: PaginatedWork;
   textScale?: number;
 }) {
+  function PenulimateLabel() {
+    const parts = props.work.textParts;
+    const i = parts.length - 2;
+    if (props.page < 0 || i < 0) {
+      return <></>;
+    }
+    const chunkIndex = props.work.pageStarts[props.page];
+    const firstChunk = props.work.chunks[chunkIndex][0];
+    const text = capitalizeWords(`${parts[i]} ${firstChunk[i]}`);
+    return <InfoText text={text} />;
+  }
+
   return (
     <div>
       <div>
@@ -435,6 +447,7 @@ function WorkNavigation(props: {
           label="previous section"
           onClick={() => props.setPage(Math.max(-1, props.page - 1))}
         />
+        <PenulimateLabel />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
