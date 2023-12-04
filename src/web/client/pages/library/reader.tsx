@@ -128,6 +128,7 @@ function SettingSlider(props: {
 }
 
 function Sidebar(props: {
+  workInfo?: DocumentInfo;
   scale: number;
   sidebar: SidebarState;
   mainWidth: number;
@@ -212,10 +213,20 @@ function Sidebar(props: {
         />
       );
     case "Info":
-      return <span>TODO</span>;
+      return (
+        <>
+          <WorkInfo workInfo={props.workInfo} />
+          <div>TODO: Add Navigation</div>
+        </>
+      );
     default:
       exhaustiveGuard(sidebar.panel);
   }
+}
+
+function setUrl(nav: Navigation, newPage: number) {
+  // +1 so that the entry page is 0 and the other pages are 1-indexed.
+  Navigation.query(nav, `${newPage + 1}`, { localOnly: true });
 }
 
 export function ReadingPage() {
@@ -224,6 +235,27 @@ export function ReadingPage() {
   const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
   const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
   const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
+
+  const [currentPage, setCurrentPage] = useState<number>(0);
+  const [work, setWork] = useState<WorkState>("Loading");
+  const nav = useContext(RouteContext);
+
+  useEffect(() => {
+    const id = nav.route.path.substring(WORK_PAGE.length + 1);
+    const urlPage = safeParseInt(nav.route.query);
+    // -1 because we add 1 when setting the page.
+    const newPage = urlPage === undefined ? currentPage : urlPage - 1;
+    setCurrentPage(newPage);
+    if (urlPage === undefined) {
+      setUrl(nav, newPage);
+    }
+    callApi(GetWork, id)
+      .then((work) => setWork(dividePages(work)))
+      .catch((reason) => {
+        console.debug(reason);
+        setWork("Error");
+      });
+  }, []);
 
   return (
     <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
@@ -235,7 +267,13 @@ export function ReadingPage() {
           paddingRight: 8,
         }}
       >
-        <WorkColumn setSidebar={setSidebar} textScale={workScale} />
+        <WorkColumn
+          setSidebar={setSidebar}
+          textScale={workScale}
+          work={work}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+        />
       </div>
       <div style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}>
         <ContentBox isSmall={true}>
@@ -258,6 +296,7 @@ export function ReadingPage() {
               />
             </div>
             <Sidebar
+              workInfo={typeof work === "string" ? undefined : work.info}
               scale={dictScale}
               sidebar={sidebar}
               mainWidth={mainWidth}
@@ -282,37 +321,20 @@ type WorkState = PaginatedWork | "Loading" | "Error";
 function WorkColumn(props: {
   setSidebar: (state: SidebarState) => any;
   textScale: number;
+  work: WorkState;
+  currentPage: number;
+  setCurrentPage: (page: number) => any;
 }) {
   const nav = useContext(RouteContext);
-  const [work, setWork] = useState<WorkState>("Loading");
-  const [currentPage, setCurrentPage] = useState<number>(-1);
 
-  function setUrl(newPage: number) {
-    // +1 so that the entry page is 0 and the other pages are 1-indexed.
-    Navigation.query(nav, `${newPage + 1}`, { localOnly: true });
-  }
+  const currentPage = props.currentPage;
+  const setCurrentPage = props.setCurrentPage;
+  const work = props.work;
 
   function setPage(newPage: number) {
-    setUrl(newPage);
+    setUrl(nav, newPage);
     setCurrentPage(newPage);
   }
-
-  useEffect(() => {
-    const id = nav.route.path.substring(WORK_PAGE.length + 1);
-    const urlPage = safeParseInt(nav.route.query);
-    // -1 because we add 1 when setting the page.
-    const newPage = urlPage === undefined ? currentPage : urlPage - 1;
-    setCurrentPage(newPage);
-    if (urlPage === undefined) {
-      setUrl(newPage);
-    }
-    callApi(GetWork, id)
-      .then((work) => setWork(dividePages(work)))
-      .catch((reason) => {
-        console.debug(reason);
-        setWork("Error");
-      });
-  }, []);
 
   return (
     <ContentBox isSmall={true} textScale={props.textScale}>
@@ -445,7 +467,7 @@ function WorkNavigation(props: {
         <NavIcon
           Icon={<ArrowBack />}
           label="previous section"
-          onClick={() => props.setPage(Math.max(-1, props.page - 1))}
+          onClick={() => props.setPage(Math.max(0, props.page - 1))}
         />
         <PenulimateLabel />
         <NavIcon
@@ -466,7 +488,7 @@ function WorkNavigation(props: {
               </span>
             );
           })}
-          message="Copy link to section"
+          message="Copy link to page"
           link={window.location.href}
         />
       </div>
@@ -508,10 +530,6 @@ export function WorkTextPage(props: {
   page: number;
   textScale: number;
 }) {
-  if (props.page === -1) {
-    return <WorkInfo workInfo={props.work.info} />;
-  }
-
   const i = props.work.pageStarts[props.page];
   const j = props.work.pageStarts[props.page + 1];
   const chunksToShow = props.work.chunks.slice(i, j);
@@ -537,7 +555,10 @@ export function WorkTextPage(props: {
   );
 }
 
-function WorkInfo(props: { workInfo: DocumentInfo }) {
+function WorkInfo(props: { workInfo?: DocumentInfo }) {
+  if (props.workInfo === undefined) {
+    return <></>;
+  }
   return (
     <>
       <div>{props.workInfo.title}</div>
