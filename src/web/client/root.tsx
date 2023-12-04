@@ -112,7 +112,7 @@ const root = ReactDOM.createRoot(
 function ConfigurableStyles() {
   const settings = React.useContext(GlobalSettingsContext);
   document.body.style.backgroundColor = getBackgroundColor(settings.data);
-  return <GlobalStyles styles={getGlobalStyles(settings.data)} />;
+  return <GlobalStyles {...getGlobalStyles(settings.data)} />;
 }
 
 root.render(
