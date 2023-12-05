@@ -533,16 +533,13 @@ export function WorkTextPage(props: {
   const i = props.work.pageStarts[props.page];
   const j = props.work.pageStarts[props.page + 1];
   const chunksToShow = props.work.chunks.slice(i, j);
-  const gap = `${(props.textScale / 100) * 0.5}em`;
+  const gap = `${(props.textScale / 100) * 0.75}em`;
 
   return (
-    <div
-      style={{ display: "grid", columnGap: gap, rowGap: gap, marginTop: gap }}
-    >
+    <div style={{ display: "inline-grid", columnGap: gap, marginTop: gap }}>
       {chunksToShow.map((chunk, i) => (
         <WorkChunk
           key={chunk[0].join(",")}
-          parts={props.work.textParts}
           id={chunk[0]}
           textRoot={chunk[1]}
           setDictWord={props.setDictWord}
@@ -623,7 +620,6 @@ function WorkChunkHeader(props: {
 }
 
 function WorkChunk(props: {
-  parts: string[];
   id: number[];
   textRoot: XmlNode;
   setDictWord: (word: string | undefined) => any;
@@ -631,28 +627,27 @@ function WorkChunk(props: {
   i: number;
   workName: string;
 }) {
-  const partInitial = props.parts.slice(-1)[0][0].toUpperCase();
-  const id = `${partInitial}${props.id.slice(-1)[0]}`;
+  const id = props.id.join(".");
   const row = props.i + 1;
   return (
     <>
-      <div style={{ gridColumn: 1, gridRow: row }}>
+      <span style={{ gridColumn: 1, gridRow: row }}>
         <WorkChunkHeader
-          text={`[${id}]`}
+          text={id}
           textScale={props.textScale}
-          blurb={`${props.workName} ${props.id.join(".")}`}
+          blurb={`${props.workName} ${id}`}
         />
-      </div>
-      <div style={{ gridColumn: 2, gridRow: row }} id={id}>
+      </span>
+      <span style={{ gridColumn: 2, gridRow: row }} id={id}>
         {displayForLibraryChunk(props.textRoot, props.setDictWord)}
-      </div>
+      </span>
     </>
   );
 }
 
 function LatLink(props: { word: string; setDictWord: (input: string) => any }) {
   return (
-    <span className="latWord" onClick={() => props.setDictWord(props.word)}>
+    <span className="workLatWord" onClick={() => props.setDictWord(props.word)}>
       {props.word}
     </span>
   );
@@ -672,5 +667,5 @@ function displayForLibraryChunk(
     const word = XmlNode.assertIsString(root.children[0]);
     return <LatLink word={word} setDictWord={setDictWord} />;
   }
-  return React.createElement(root.name, {}, children);
+  return React.createElement("span", {}, children);
 }

@@ -227,6 +227,10 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         borderBottom: `1px solid ${Solarized.blue}`,
         cursor: "pointer",
       },
+      ".workLatWord:hover": {
+        borderBottom: `1px solid`,
+        cursor: "pointer",
+      },
       ".latWork:hover": {
         color: Solarized.blue,
         cursor: "pointer",

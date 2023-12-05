@@ -6,7 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
-import SettingsIcon from "@mui/icons-material/Settings";
+import ScienceIcon from "@mui/icons-material/Science";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
@@ -196,7 +196,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               onClick={handlePageClick("/settings")}
               className="menuIcon"
             >
-              <SettingsIcon />
+              <ScienceIcon />
             </IconButton>
             <IconButton
               size="large"
