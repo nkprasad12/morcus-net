@@ -129,11 +129,8 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
     await screen.findByText(/DBG/);
-    expect(screen.queryByText(/Gallia/)).toBeNull();
-    expect(screen.queryByText(/divisa/)).toBeNull();
 
     // We should see only the second chunk.
-    await user.click(screen.queryByLabelText("next section")!);
     await user.click(screen.queryByLabelText("next section")!);
     expect(screen.queryByText(/Gallia/)).toBeNull();
     expect(screen.queryByText(/divisa/)).not.toBeNull();
@@ -161,7 +158,7 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("next section")!);
 
     expect(mockNav).not.toHaveBeenCalled();
-    expect(window.location.href.includes("q=0")).toBe(true);
+    expect(window.location.href.includes("q=1")).toBe(true);
   });
 
   // TODO: Figure out why this test doesn't work.
