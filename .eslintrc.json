@@ -36,6 +36,6 @@
     "react/prop-types": "off",
     "no-constant-condition": "off",
     "no-inner-declarations": "off",
-    "no-empty": "off"
+    "no-empty": ["error", {"allowEmptyCatch": true}]
   }
 }
