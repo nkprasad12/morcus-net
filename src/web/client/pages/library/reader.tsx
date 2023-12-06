@@ -36,6 +36,13 @@ const CONTAINER_STYLE: CSSProperties = {
     COLUMN_TOP_MARGIN -
     COLUMN_BOTTON_MARGIN,
 };
+// Styles for the top bar
+// style={{
+//   position: "sticky",
+//   top: 0,
+//   width: "100%",
+//   backgroundColor: "green",
+// }
 const COLUMN_STYLE: CSSProperties = {
   height: "100%",
   float: "left",

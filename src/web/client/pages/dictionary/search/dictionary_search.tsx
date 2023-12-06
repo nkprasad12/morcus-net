@@ -148,8 +148,6 @@ export function DictionarySearch(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
-  const input = React.useRef<string>("");
-
   const nav = React.useContext(RouteContext);
   const settings = React.useContext(GlobalSettingsContext);
 
@@ -157,9 +155,13 @@ export function DictionarySearch(props: {
   const [loading, setLoading] = React.useState<boolean>(false);
   const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
 
+  const [open, setOpen] = React.useState(false);
+  const [input, setInput] = React.useState<string>("");
+
   const numDicts = props.dicts.length;
 
   async function onEnter(searchTerm: string) {
+    setOpen(false);
     if (searchTerm.length === 0) {
       return;
     }
@@ -190,6 +192,8 @@ export function DictionarySearch(props: {
       <Autocomplete
         freeSolo
         disableClearable
+        onClose={() => setOpen(false)}
+        open={open}
         loading={loading}
         loadingText={"Loading options..."}
         options={options}
@@ -203,17 +207,29 @@ export function DictionarySearch(props: {
           mt: 2,
           mb: 1,
         }}
-        getOptionLabel={(option) =>
-          isString(option) ? option : toQuery(option)
-        }
+        getOptionLabel={(option) => (isString(option) ? option : option[1])}
         onKeyUp={(event) =>
-          event.key === "Enter" ? onEnter(input.current) : ""
+          event.key === "Enter" ? onEnter(input) : undefined
         }
-        onInputChange={async (event, value) => {
+        onChange={(event, value) => {
+          if (event.type !== "click") {
+            return;
+          }
+          setOpen(false);
+          if (typeof value === "string") {
+            setInput(value);
+            onEnter(value);
+          } else {
+            setInput(value[1]);
+            onEnter(toQuery(value));
+          }
+        }}
+        onInputChange={(event, value) => {
           if (event.type === "click") {
             return;
           }
-          input.current = value;
+          setInput(value);
+          setOpen(value.trim().length > 0);
           loadOptions(value);
         }}
         renderOption={(props, option) => (
@@ -222,7 +238,11 @@ export function DictionarySearch(props: {
             className={
               (props.className ? `${props.className} ` : "") + "autoCompOpt"
             }
-            onClick={() => onEnter(toQuery(option))}
+            onClick={() => {
+              setInput(option[1]);
+              onEnter(toQuery(option));
+            }}
+            key={toQuery(option)}
           >
             <DictChip label={option[0].key} />
             <span style={{ marginLeft: 10 }}>{option[1]}</span>
@@ -242,6 +262,7 @@ export function DictionarySearch(props: {
             InputLabelProps={{
               className: "autoCompleteOutline",
             }}
+            onClick={() => setOpen(input.length > 0)}
             autoFocus={nav.route.query === undefined}
             InputProps={{
               ...params.InputProps,
