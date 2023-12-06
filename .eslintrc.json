@@ -34,8 +34,9 @@
     "@typescript-eslint/no-empty-function": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "react/prop-types": "off",
+    "react/no-unstable-nested-components": "error",
     "no-constant-condition": "off",
     "no-inner-declarations": "off",
-    "no-empty": ["error", {"allowEmptyCatch": true}]
+    "no-empty": ["error", { "allowEmptyCatch": true }]
   }
 }

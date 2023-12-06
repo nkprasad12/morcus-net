@@ -146,8 +146,6 @@ describe("DictionarySearch", () => {
     expect(screen.queryByText("Dictionary Options")).not.toBeNull();
     const lsCheck = screen.getAllByRole("checkbox");
     await user.click(lsCheck[0]);
-    expect(mockSetDicts).not.toHaveBeenCalled();
-    await user.click(screen.getByText("Close"));
     expect(mockSetDicts).toHaveBeenCalledWith([LatinDict.SmithAndHall]);
   });
 
@@ -185,11 +183,7 @@ describe("DictionarySearch", () => {
       fireEvent.mouseDown(slider!, { clientX: 162, clientY: 302 });
     });
 
-    let storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
-    expect(storage?.highlightStrength).not.toBe(90);
-    await user.click(screen.getByText("Close"));
-
-    storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
+    const storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
     expect(storage.highlightStrength).toBe(90);
   });
 });

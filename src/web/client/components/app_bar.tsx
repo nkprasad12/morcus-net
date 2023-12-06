@@ -47,8 +47,15 @@ function DrawerMenu(props: {
   open: boolean;
   isCurrentPage: (page: string) => boolean;
 }) {
-  function DrawerItems() {
-    return (
+  return (
+    <Drawer
+      anchor="left"
+      open={props.open}
+      onClose={props.onClose}
+      PaperProps={{
+        className: "menu",
+      }}
+    >
       <Box role="navigation" onClick={props.onClose} id="menu-appbar">
         {props.pages.map((page) => (
           <div key={page.name}>
@@ -77,19 +84,6 @@ function DrawerMenu(props: {
           </div>
         ))}
       </Box>
-    );
-  }
-
-  return (
-    <Drawer
-      anchor="left"
-      open={props.open}
-      onClose={props.onClose}
-      PaperProps={{
-        className: "menu",
-      }}
-    >
-      <DrawerItems />
     </Drawer>
   );
 }

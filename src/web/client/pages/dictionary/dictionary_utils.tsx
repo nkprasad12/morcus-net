@@ -197,11 +197,13 @@ export function xmlNodeToJsx(
     const target = root.getAttr("to");
     const text = root.getAttr("text");
     const query = [target || "undefined", "SnH"];
-    return <ShLink query={query.join(",")} text={text || "undefined"} />;
+    return (
+      <ShLink query={query.join(",")} text={text || "undefined"} key={key} />
+    );
   } else if (className === "latWord") {
     const word = root.getAttr("to")!;
     const orig = root.getAttr("orig");
-    return <LatLink word={word} orig={orig} />;
+    return <LatLink word={word} orig={orig} key={key} />;
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";
@@ -275,7 +277,7 @@ export function InflectionDataSection(props: {
             ` ${inflections[0]}`
           ) : (
             <ul style={{ margin: 0 }} aria-label="Inflections">
-              {inflections.map((inflection) => (
+              {[...new Set(inflections)].map((inflection) => (
                 <li style={{ lineHeight: "normal" }} key={inflection}>
                   {inflection}
                 </li>

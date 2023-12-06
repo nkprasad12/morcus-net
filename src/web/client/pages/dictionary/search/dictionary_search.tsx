@@ -68,95 +68,63 @@ function SearchSettingsDialog(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
-  const [saving, setSaving] = React.useState<boolean>(false);
-  const [pending, setPending] = React.useState<Set<DictInfo>>(
-    new Set(props.dicts)
-  );
   const globalSettings = React.useContext(GlobalSettingsContext);
-  const pendingHighlightStrength = React.useRef<number>(
-    globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
-  );
-
-  function onClose() {
-    if (
-      globalSettings.data.highlightStrength !== pendingHighlightStrength.current
-    ) {
-      globalSettings.setData({
-        ...globalSettings.data,
-        highlightStrength: pendingHighlightStrength.current,
-      });
-    }
-    const prev = props.dicts;
-    const next = pending;
-    if (!(prev.length === next.size && prev.every((d) => next.has(d)))) {
-      setSaving(true);
-      setTimeout(() => {
-        props.setDicts([...pending]);
-      }, 1);
-    } else {
-      props.onClose();
-    }
-  }
-
-  function FormAndActions() {
-    return (
-      <>
-        <DialogContent>
-          <DialogContentText sx={{ marginTop: 2 }}>
-            Enabled Dictionaries
-          </DialogContentText>
-          <FormGroup>
-            {LatinDict.AVAILABLE.map((dict) => (
-              <FormControlLabel
-                key={dict.key}
-                control={
-                  <Switch
-                    checked={pending.has(dict)}
-                    onChange={(e) => {
-                      if (e.target.checked) {
-                        pending.add(dict);
-                      } else {
-                        pending.delete(dict);
-                      }
-                      setPending(new Set(pending));
-                    }}
-                  />
-                }
-                label={
-                  <span>
-                    <DictChip label={dict.key} /> {dict.displayName}
-                  </span>
-                }
-              />
-            ))}
-          </FormGroup>
-          <HighlightSlider
-            highlightStrength={pendingHighlightStrength.current}
-            setHighlightStrength={(v) => {
-              pendingHighlightStrength.current = v;
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button autoFocus onClick={onClose} color="info">
-            Close
-          </Button>
-        </DialogActions>
-      </>
-    );
-  }
 
   return (
     <Dialog
       open={props.open}
-      onClose={onClose}
+      onClose={props.onClose}
       sx={{ top: "-40%" }}
       disableScrollLock={true}
     >
-      <DialogTitle sx={{ fontWeight: "bold" }}>
-        {saving ? "Saving Settings" : "Dictionary Options"}
-      </DialogTitle>
-      {!saving && <FormAndActions />}
+      <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
+      <DialogContent>
+        <DialogContentText sx={{ marginTop: 2 }}>
+          Enabled Dictionaries
+        </DialogContentText>
+        <FormGroup>
+          {LatinDict.AVAILABLE.map((dict) => (
+            <FormControlLabel
+              key={dict.key}
+              control={
+                <Switch
+                  checked={props.dicts.includes(dict)}
+                  onChange={(e) => {
+                    const dicts = new Set(props.dicts);
+                    if (e.target.checked) {
+                      dicts.add(dict);
+                    } else {
+                      dicts.delete(dict);
+                    }
+                    props.setDicts([...dicts]);
+                  }}
+                />
+              }
+              label={
+                <span>
+                  <DictChip label={dict.key} /> {dict.displayName}
+                </span>
+              }
+            />
+          ))}
+        </FormGroup>
+        <HighlightSlider
+          highlightStrength={
+            globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
+          }
+          setHighlightStrength={(v) => {
+            globalSettings.setData({
+              ...globalSettings.data,
+              highlightStrength: v,
+            });
+          }}
+        />
+      </DialogContent>
+      <DialogActions>
+        <Button autoFocus onClick={props.onClose} color="info">
+          Close
+        </Button>
+      </DialogActions>
     </Dialog>
   );
 }

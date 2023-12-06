@@ -17,29 +17,29 @@ export namespace SinglePageApp {
   }
 }
 
-export function SinglePageApp(props: SinglePageApp.Props) {
+function Content(props: { usedPages: SinglePageApp.Page[] }) {
   const nav = useContext(RouteContext);
-  const globalSettings = useContext(GlobalSettingsContext);
 
+  for (const page of props.usedPages) {
+    const subpages = page.hasSubpages === true;
+    if (
+      (subpages && nav.route.path.startsWith(page.path)) ||
+      page.path === nav.route.path
+    ) {
+      return <page.content />;
+    }
+  }
+  return <></>;
+}
+
+export function SinglePageApp(props: SinglePageApp.Props) {
   const [showIssueDialog, setShowIssueDialog] = React.useState<boolean>(false);
 
+  const globalSettings = useContext(GlobalSettingsContext);
   const showExperimental = globalSettings.data.experimentalMode === true;
   const usedPages = props.pages.filter(
     (page) => showExperimental || page.experimental !== true
   );
-
-  function Content(): JSX.Element {
-    for (const page of usedPages) {
-      const subpages = page.hasSubpages === true;
-      if (
-        (subpages && nav.route.path.startsWith(page.path)) ||
-        page.path === nav.route.path
-      ) {
-        return page.content();
-      }
-    }
-    return <></>;
-  }
 
   return (
     <>
@@ -47,7 +47,7 @@ export function SinglePageApp(props: SinglePageApp.Props) {
         pages={usedPages}
         openIssueDialog={() => setShowIssueDialog(true)}
       />
-      <Content />
+      <Content usedPages={usedPages} />
       <ReportIssueDialog
         show={showIssueDialog}
         onClose={() => setShowIssueDialog(false)}

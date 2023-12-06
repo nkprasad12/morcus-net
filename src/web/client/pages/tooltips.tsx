@@ -10,6 +10,7 @@ import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import React from "react";
 import type { SxProps } from "@mui/material";
+import { exhaustiveGuard } from "@/common/misc_utils";
 
 export type TooltipPlacement = "top-start" | "right";
 
@@ -87,6 +88,86 @@ export function ClickableTooltip(props: {
 
 type CopyLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 
+function TextWithIcon(props: {
+  message: string;
+  link: string;
+  setState: (state: CopyLinkTooltipState) => any;
+  dismissTooltip: () => any;
+}) {
+  async function onClick() {
+    try {
+      await navigator.clipboard.writeText(props.link);
+      props.setState("Success");
+      setTimeout(() => props.dismissTooltip(), 500);
+    } catch (e) {
+      props.setState("Error");
+    }
+  }
+
+  return (
+    <Typography component="div">
+      <div
+        onClick={onClick}
+        style={{ cursor: "pointer", display: "inline-block" }}
+      >
+        <IconButton
+          size="small"
+          aria-label="copy link"
+          aria-haspopup="false"
+          color="success"
+        >
+          <LinkIcon />
+        </IconButton>
+        <span>{props.message}</span>
+      </div>
+    </Typography>
+  );
+}
+
+function TitleText(props: {
+  state: CopyLinkTooltipState;
+  mainMessage: string;
+  link: string;
+  setState: (state: CopyLinkTooltipState) => any;
+  dismissTooltip: () => any;
+}) {
+  if (props.state === "Closed") {
+    return <></>;
+  }
+  if (props.state === "Error") {
+    return (
+      <Typography component="div">
+        <span style={{ fontSize: 14, lineHeight: "normal" }}>
+          Error: please copy manually:{" "}
+        </span>
+        <br />
+        <span style={{ fontSize: 16, lineHeight: "normal" }}>{props.link}</span>
+      </Typography>
+    );
+  }
+  if (props.state === "Success") {
+    return (
+      <TextWithIcon
+        message="Link copied!"
+        setState={props.setState}
+        dismissTooltip={props.dismissTooltip}
+        link={props.link}
+      />
+    );
+  }
+  if (props.state === "ClickToCopy") {
+    return (
+      <TextWithIcon
+        message={props.mainMessage}
+        setState={props.setState}
+        dismissTooltip={props.dismissTooltip}
+        link={props.link}
+      />
+    );
+  }
+  exhaustiveGuard(props.state);
+}
+
 export function CopyLinkTooltip(props: {
   className?: string;
   forwarded: TooltipChild;
@@ -94,62 +175,19 @@ export function CopyLinkTooltip(props: {
   link: string;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
-  const [content, setContent] = React.useState<JSX.Element>(<div />);
-
-  async function onClick() {
-    try {
-      await navigator.clipboard.writeText(props.link);
-      setContent(() => TitleText("Success"));
-      setTimeout(() => setVisible(false), 500);
-    } catch (e) {
-      setContent(() => TitleText("Error"));
-    }
-  }
-
-  function TextWithIcon(props: { message: string }) {
-    return (
-      <Typography component="div">
-        <div
-          onClick={onClick}
-          style={{ cursor: "pointer", display: "inline-block" }}
-        >
-          <IconButton
-            size="small"
-            aria-label="copy link"
-            aria-haspopup="false"
-            color="success"
-          >
-            <LinkIcon />
-          </IconButton>
-          <span>{props.message}</span>
-        </div>
-      </Typography>
-    );
-  }
-
-  function TitleText(state: CopyLinkTooltipState) {
-    if (state === "Error") {
-      return (
-        <Typography component="div">
-          <span style={{ fontSize: 14, lineHeight: "normal" }}>
-            Error: please copy manually:{" "}
-          </span>
-          <br />
-          <span style={{ fontSize: 16, lineHeight: "normal" }}>
-            {props.link}
-          </span>
-        </Typography>
-      );
-    }
-    if (state === "Success") {
-      return <TextWithIcon message="Link copied!" />;
-    }
-    return <TextWithIcon message={props.message} />;
-  }
+  const [state, setState] = React.useState<CopyLinkTooltipState>("Closed");
 
   return (
     <BaseTooltip
-      titleText={content}
+      titleText={
+        <TitleText
+          state={state}
+          setState={setState}
+          mainMessage={props.message}
+          link={props.link}
+          dismissTooltip={() => setVisible(false)}
+        />
+      }
       className={props.className}
       ChildFactory={props.forwarded}
       placement="top-start"
@@ -159,7 +197,7 @@ export function CopyLinkTooltip(props: {
           setVisible(false);
           return;
         }
-        setContent(TitleText("ClickToCopy"));
+        setState("ClickToCopy");
         setVisible(true);
       }}
       onClickAway={() => setVisible(false)}

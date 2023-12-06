@@ -89,22 +89,22 @@ function ShAttribution() {
   );
 }
 
+function AttributionContent(props: { dictKey: string }) {
+  const key = props.dictKey + "AttrBox";
+  if (props.dictKey === LatinDict.LewisAndShort.key) {
+    return <LsAttribution key={key} />;
+  }
+  if (props.dictKey === LatinDict.SmithAndHall.key) {
+    return <ShAttribution key={key} />;
+  }
+  return <>TODO: Write attribution for {props.dictKey}</>;
+}
+
 export function DictAttribution(props: {
   isSmall: boolean;
   dictKey: string;
   textScale?: number;
 }) {
-  function AttributionContent() {
-    const key = props.dictKey + "AttrBox";
-    if (props.dictKey === LatinDict.LewisAndShort.key) {
-      return <LsAttribution key={key} />;
-    }
-    if (props.dictKey === LatinDict.SmithAndHall.key) {
-      return <ShAttribution key={key} />;
-    }
-    return <>TODO: Write attribution for {props.dictKey}</>;
-  }
-
   return (
     <ContentBox isSmall={props.isSmall}>
       <div
@@ -113,7 +113,7 @@ export function DictAttribution(props: {
           lineHeight: "normal",
         }}
       >
-        <AttributionContent />
+        <AttributionContent dictKey={props.dictKey} />
       </div>
     </ContentBox>
   );

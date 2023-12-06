@@ -157,6 +157,362 @@ interface EntriesByDict {
   outlines: EntryOutline[];
 }
 
+interface PassthroughSearchBarProps {
+  className?: string;
+  isEmbedded: boolean;
+  isSmall: boolean;
+  dictsToUse: DictInfo[];
+  setDictsToUse: (dicts: DictInfo[]) => any;
+  scrollTopRef: React.RefObject<HTMLDivElement>;
+}
+interface SearchBarProps extends PassthroughSearchBarProps {
+  maxWidth: "md" | "lg" | "xl";
+  marginLeft?: "auto" | "0";
+  id?: string;
+}
+function SearchBar(props: SearchBarProps) {
+  if (props.isEmbedded) {
+    return <></>;
+  }
+  return (
+    <Container
+      maxWidth={props.maxWidth}
+      disableGutters={true}
+      ref={props.scrollTopRef}
+      sx={{ marginLeft: props.marginLeft || "auto" }}
+      id={props.id}
+      className={props.className}
+    >
+      <DictionarySearch
+        smallScreen={props.isSmall}
+        dicts={props.dictsToUse}
+        setDicts={(newDicts) => {
+          SearchSettings.store(newDicts);
+          props.setDictsToUse(newDicts);
+        }}
+      />
+    </Container>
+  );
+}
+
+function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
+  const { scale } = props;
+  const label = ` ${props.outline.mainLabel || props.outline.mainKey} `;
+  return (
+    <span
+      className="lsSenseBullet"
+      style={{
+        marginLeft: 3,
+        cursor: "pointer",
+        whiteSpace: "nowrap",
+        fontWeight: "normal",
+      }}
+      onClick={() => jumpToSection(props.outline.mainSection.sectionId)}
+    >
+      <OpenInNewIcon
+        sx={{
+          marginBottom: `${-0.1 * scale}em`,
+          marginRight: `${-0.1 * scale}em`,
+          fontSize: `${0.8 * scale}em`,
+          paddingLeft: `${0.1 * scale}em`,
+        }}
+      />
+      <span dangerouslySetInnerHTML={{ __html: label }} />
+    </span>
+  );
+}
+
+function HelpSection(props: {
+  id?: string;
+  className?: string;
+  scale: number;
+  isSmall: boolean;
+}) {
+  const { scale, isSmall } = props;
+  return (
+    <ContentBox
+      key="helpSection"
+      isSmall={isSmall}
+      id={props.id}
+      className={props.className}
+    >
+      <div
+        style={{
+          fontSize: FontSizes.TERTIARY * scale,
+          lineHeight: "normal",
+        }}
+      >
+        {xmlNodeToJsx(HELP_ENTRY)}
+      </div>
+    </ContentBox>
+  );
+}
+
+function LoadingMessage(props: { isSmall: boolean; textScale?: number }) {
+  return (
+    <ContentBox isSmall={props.isSmall} textScale={props?.textScale}>
+      <span>Loading entries, please wait ... </span>
+    </ContentBox>
+  );
+}
+
+function ResponsiveLayout(
+  props: {
+    isSmall: boolean;
+    oneCol?: JSX.Element;
+    twoColSide?: JSX.Element;
+    twoColMain?: JSX.Element;
+  } & PassthroughSearchBarProps
+) {
+  return props.isSmall ? (
+    <OneColumnLayout {...props} Content={props.oneCol || <></>} />
+  ) : (
+    <TwoColumnLayout
+      {...props}
+      SidebarContent={props.twoColSide || <></>}
+      MainContent={props.twoColMain || <></>}
+    />
+  );
+}
+
+function OneColumnLayout(
+  props: { Content: JSX.Element } & PassthroughSearchBarProps
+) {
+  const { isEmbedded, isSmall, dictsToUse, setDictsToUse, scrollTopRef } =
+    props;
+  return (
+    <Container maxWidth="lg" disableGutters={isEmbedded}>
+      <SearchBar
+        maxWidth="lg"
+        id={"SearchBox"}
+        className={QUICK_NAV_ANCHOR}
+        isEmbedded={isEmbedded}
+        isSmall={isSmall}
+        dictsToUse={dictsToUse}
+        setDictsToUse={setDictsToUse}
+        scrollTopRef={scrollTopRef}
+      />
+      {props.Content}
+      <Footer id={"Footer"} className={QUICK_NAV_ANCHOR} />
+    </Container>
+  );
+}
+
+function TwoColumnLayout(
+  props: {
+    SidebarContent: JSX.Element;
+    MainContent: JSX.Element;
+  } & PassthroughSearchBarProps
+) {
+  const { isEmbedded, isSmall, dictsToUse, setDictsToUse, scrollTopRef } =
+    props;
+  return (
+    <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
+      <Stack direction="row" spacing={0} justifyContent="left">
+        <div style={TOC_SIDEBAR_STYLE}>{props.SidebarContent}</div>
+        <div style={{ maxWidth: "10000px" }}>
+          <SearchBar
+            maxWidth="md"
+            marginLeft="0"
+            isEmbedded={isEmbedded}
+            isSmall={isSmall}
+            dictsToUse={dictsToUse}
+            setDictsToUse={setDictsToUse}
+            scrollTopRef={scrollTopRef}
+          />
+          {props.MainContent}
+          <HorizontalPlaceholder />
+          <Footer />
+        </div>
+      </Stack>
+    </Container>
+  );
+}
+
+function SummarySection(props: {
+  isSmall: boolean;
+  textScale?: number;
+  idSearch: boolean;
+  isEmbedded: boolean;
+  entries: EntriesByDict[];
+  scale: number;
+  scrollTopRef: React.RefObject<HTMLDivElement>;
+}) {
+  const {
+    isSmall,
+    textScale,
+    idSearch,
+    isEmbedded,
+    entries,
+    scale,
+    scrollTopRef,
+  } = props;
+  if (idSearch) {
+    return <></>;
+  }
+
+  const numEntries = entries.reduce((s, c) => s + c.entries.length, 0);
+  return (
+    <ContentBox isSmall={isSmall} id="DictResultsSummary" textScale={textScale}>
+      <>
+        <div
+          ref={isEmbedded ? scrollTopRef : undefined}
+          style={{
+            fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
+          }}
+        >
+          Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
+        </div>
+        {numEntries > 1 &&
+          entries
+            .filter((entry) => entry.outlines.length > 0)
+            .map((entry) => (
+              <div key={entry.dictKey + "SummarySection"}>
+                <FullDictChip label={entry.name} textScale={textScale} />
+                {entry.outlines.map((outline) => (
+                  <span key={outline.mainSection.sectionId}>
+                    {" "}
+                    <ToEntryButton
+                      outline={outline}
+                      key={outline.mainSection.sectionId}
+                      scale={scale}
+                    />
+                  </span>
+                ))}
+              </div>
+            ))}
+      </>
+    </ContentBox>
+  );
+}
+
+function articleLinkButton(text: string, scale: number) {
+  function senseForwardedNode(forwardProps: any, forwardRef: any) {
+    return (
+      <span
+        {...forwardProps}
+        className="lsSenseBullet"
+        ref={forwardRef}
+        style={{
+          paddingLeft: 1,
+          marginRight: 5,
+          paddingTop: 1,
+          paddingBottom: 1,
+          paddingRight: 4,
+        }}
+      >
+        <LinkIcon
+          sx={{
+            marginBottom: `${-0.2 * scale}em`,
+            marginRight: `${-0.2 * scale}em`,
+            fontSize: `${1 * scale}em`,
+            paddingLeft: `${0.2 * scale}em`,
+            paddingRight: `${0.4 * scale}em`,
+          }}
+        />
+        {`${text}`}
+      </span>
+    );
+  }
+  return React.forwardRef<HTMLElement>(senseForwardedNode);
+}
+
+function DictionaryEntries(props: {
+  entries: EntriesByDict[];
+  isSmall: boolean;
+  textScale?: number;
+  scale: number;
+}) {
+  return (
+    <>
+      {props.entries.map((entry) => (
+        <SingleDictSection
+          data={entry}
+          key={`${entry.dictKey}EntrySection`}
+          isSmall={props.isSmall}
+          textScale={props.textScale}
+          scale={props.scale}
+        />
+      ))}
+    </>
+  );
+}
+
+function SingleDictSection(props: {
+  data: EntriesByDict;
+  isSmall: boolean;
+  textScale?: number;
+  scale: number;
+}) {
+  const { isSmall, textScale, scale } = props;
+  if (props.data.entries.length === 0) {
+    return <></>;
+  }
+  return (
+    <>
+      {props.data.entries.map((entry, i) => (
+        <ContentBox
+          key={entry.key}
+          isSmall={isSmall}
+          id={entry.key}
+          textScale={textScale}
+        >
+          <>
+            {entry.inflections && (
+              <InflectionDataSection
+                inflections={entry.inflections}
+                textScale={textScale}
+              />
+            )}
+            <div style={{ marginBottom: 5, marginTop: 8 }}>
+              <span>
+                <SectionLinkTooltip
+                  forwarded={articleLinkButton(
+                    props.data.outlines[i].mainKey,
+                    scale
+                  )}
+                  id={props.data.outlines[i].mainSection.sectionId}
+                  forArticle={true}
+                />
+                <FullDictChip label={props.data.name} textScale={textScale} />
+              </span>
+            </div>
+            {entry.element}
+          </>
+        </ContentBox>
+      ))}
+      <DictAttribution
+        isSmall={isSmall}
+        dictKey={props.data.dictKey}
+        textScale={textScale}
+      />
+    </>
+  );
+}
+
+function TableOfContents(props: {
+  entries: EntriesByDict[];
+  isSmall: boolean;
+  textScale?: number;
+  scale: number;
+  tocRef: React.RefObject<HTMLElement>;
+}) {
+  return (
+    <>
+      {props.entries.map((entry) => (
+        <TableOfContentsV2
+          dictKey={entry.dictKey}
+          outlines={entry.outlines}
+          isSmall={props.isSmall}
+          tocRef={props.tocRef}
+          key={entry.dictKey + "ToC"}
+          textScale={props.textScale}
+        />
+      ))}
+    </>
+  );
+}
+
 export function DictionaryViewV2(props?: {
   /** Whether the dictionary is embedded in another view. */
   embedded?: boolean;
@@ -185,9 +541,6 @@ export function DictionaryViewV2(props?: {
     isEmbedded || useMediaQuery(theme.breakpoints.down("md"), noSsr);
   const scale = (props?.textScale || 100) / 100;
   const textScale = props?.textScale;
-  const textSizeStyle: CSSProperties = {
-    fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
-  };
   const idSearch = nav.route.idSearch === true;
 
   function fetchAndDisplay(query: string) {
@@ -246,329 +599,127 @@ export function DictionaryViewV2(props?: {
     }
   }, [state, entries]);
 
-  function SearchBar(props: {
-    maxWidth: "md" | "lg" | "xl";
-    marginLeft?: "auto" | "0";
-    id?: string;
-    className?: string;
-  }) {
-    if (isEmbedded) {
-      return <></>;
-    }
+  if (state === "Landing") {
     return (
-      <Container
-        maxWidth={props.maxWidth}
-        disableGutters={true}
-        ref={scrollTopRef}
-        sx={{ marginLeft: props.marginLeft || "auto" }}
-        id={props.id}
-        className={props.className}
-      >
-        <DictionarySearch
-          smallScreen={isSmall}
-          dicts={dictsToUse}
-          setDicts={(newDicts) => {
-            SearchSettings.store(newDicts);
-            setDictsToUse(newDicts);
-          }}
-        />
-      </Container>
-    );
-  }
-
-  function ToEntryButton(props: { outline: EntryOutline }) {
-    const label = ` ${props.outline.mainLabel || props.outline.mainKey} `;
-    return (
-      <span
-        className="lsSenseBullet"
-        style={{
-          marginLeft: 3,
-          cursor: "pointer",
-          whiteSpace: "nowrap",
-          fontWeight: "normal",
-        }}
-        onClick={() => jumpToSection(props.outline.mainSection.sectionId)}
-      >
-        <OpenInNewIcon
-          sx={{
-            marginBottom: `${-0.1 * scale}em`,
-            marginRight: `${-0.1 * scale}em`,
-            fontSize: `${0.8 * scale}em`,
-            paddingLeft: `${0.1 * scale}em`,
-          }}
-        />
-        <span dangerouslySetInnerHTML={{ __html: label }} />
-      </span>
-    );
-  }
-
-  function SummarySection() {
-    const numEntries = entries.reduce((s, c) => s + c.entries.length, 0);
-    if (idSearch) {
-      return <></>;
-    }
-    return (
-      <ContentBox
+      <ResponsiveLayout
         isSmall={isSmall}
-        id="DictResultsSummary"
-        textScale={textScale}
-      >
-        <>
-          <div
-            ref={props?.embedded ? scrollTopRef : undefined}
-            style={textSizeStyle}
-          >
-            Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
-          </div>
-          {numEntries > 1 &&
-            entries
-              .filter((entry) => entry.outlines.length > 0)
-              .map((entry) => (
-                <div key={entry.dictKey + "SummarySection"}>
-                  <FullDictChip label={entry.name} textScale={textScale} />
-                  {entry.outlines.map((outline) => (
-                    <span key={outline.mainSection.sectionId}>
-                      {" "}
-                      <ToEntryButton
-                        outline={outline}
-                        key={outline.mainSection.sectionId}
-                      />
-                    </span>
-                  ))}
-                </div>
-              ))}
-        </>
-      </ContentBox>
-    );
-  }
-
-  function HelpSection(props: { id?: string; className?: string }) {
-    return (
-      <ContentBox
-        key="helpSection"
-        isSmall={isSmall}
-        id={props.id}
-        className={props.className}
-      >
-        <div
-          style={{
-            fontSize: FontSizes.TERTIARY * ((textScale || 100) / 100),
-            lineHeight: "normal",
-          }}
-        >
-          {xmlNodeToJsx(HELP_ENTRY)}
-        </div>
-      </ContentBox>
-    );
-  }
-
-  function LoadingMessage() {
-    return (
-      <ContentBox isSmall={isSmall} textScale={props?.textScale}>
-        <span>Loading entries, please wait ... </span>
-      </ContentBox>
-    );
-  }
-
-  function articleLinkButton(text: string) {
-    function senseForwardedNode(forwardProps: any, forwardRef: any) {
-      return (
-        <span
-          {...forwardProps}
-          className="lsSenseBullet"
-          ref={forwardRef}
-          style={{
-            paddingLeft: 1,
-            marginRight: 5,
-            paddingTop: 1,
-            paddingBottom: 1,
-            paddingRight: 4,
-          }}
-        >
-          <LinkIcon
-            sx={{
-              marginBottom: `${-0.2 * scale}em`,
-              marginRight: `${-0.2 * scale}em`,
-              fontSize: `${1 * scale}em`,
-              paddingLeft: `${0.2 * scale}em`,
-              paddingRight: `${0.4 * scale}em`,
-            }}
-          />
-          {`${text}`}
-        </span>
-      );
-    }
-    return React.forwardRef<HTMLElement>(senseForwardedNode);
-  }
-
-  function SingleDictSection(props: { data: EntriesByDict }) {
-    if (props.data.entries.length === 0) {
-      return <></>;
-    }
-    return (
-      <>
-        {props.data.entries.map((entry, i) => (
-          <ContentBox
-            key={entry.key}
-            isSmall={isSmall}
-            id={entry.key}
-            textScale={textScale}
-          >
-            <>
-              {entry.inflections && (
-                <InflectionDataSection
-                  inflections={entry.inflections}
-                  textScale={textScale}
-                />
-              )}
-              <div style={{ marginBottom: 5, marginTop: 8 }}>
-                <span>
-                  <SectionLinkTooltip
-                    forwarded={articleLinkButton(
-                      props.data.outlines[i].mainKey
-                    )}
-                    id={props.data.outlines[i].mainSection.sectionId}
-                    forArticle={true}
-                  />
-                  <FullDictChip label={props.data.name} textScale={textScale} />
-                </span>
-              </div>
-              {entry.element}
-            </>
-          </ContentBox>
-        ))}
-        <DictAttribution
-          isSmall={isSmall}
-          dictKey={props.data.dictKey}
-          textScale={textScale}
-        />
-      </>
-    );
-  }
-
-  function DictionaryEntries() {
-    return (
-      <>
-        {entries.map((entry) => (
-          <SingleDictSection
-            data={entry}
-            key={`${entry.dictKey}EntrySection`}
-          />
-        ))}
-      </>
-    );
-  }
-
-  function TableOfContents() {
-    return (
-      <>
-        {entries.map((entry) => (
-          <TableOfContentsV2
-            dictKey={entry.dictKey}
-            outlines={entry.outlines}
-            isSmall={isSmall}
-            tocRef={tocRef}
-            key={entry.dictKey + "ToC"}
-            textScale={textScale}
-          />
-        ))}
-      </>
-    );
-  }
-
-  function OneColumnLayout(props: { Content: JSX.Element }) {
-    return (
-      <Container maxWidth="lg" disableGutters={isEmbedded}>
-        <SearchBar
-          maxWidth="lg"
-          id={"SearchBox"}
-          className={QUICK_NAV_ANCHOR}
-        />
-        {props.Content}
-        <Footer id={"Footer"} className={QUICK_NAV_ANCHOR} />
-      </Container>
-    );
-  }
-
-  function TwoColumnLayout(props: {
-    SidebarContent: JSX.Element;
-    MainContent: JSX.Element;
-  }) {
-    return (
-      <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
-        <Stack direction="row" spacing={0} justifyContent="left">
-          <div style={TOC_SIDEBAR_STYLE}>{props.SidebarContent}</div>
-          <div style={{ maxWidth: "10000px" }}>
-            <SearchBar maxWidth="md" marginLeft="0" />
-            {props.MainContent}
-            <HorizontalPlaceholder />
-            <Footer />
-          </div>
-        </Stack>
-      </Container>
-    );
-  }
-
-  function ResponsiveLayout(props: {
-    oneCol?: JSX.Element;
-    twoColSide?: JSX.Element;
-    twoColMain?: JSX.Element;
-  }) {
-    return isSmall ? (
-      <OneColumnLayout Content={props.oneCol || <></>} />
-    ) : (
-      <TwoColumnLayout
-        SidebarContent={props.twoColSide || <></>}
-        MainContent={props.twoColMain || <></>}
+        isEmbedded={isEmbedded}
+        dictsToUse={dictsToUse}
+        setDictsToUse={setDictsToUse}
+        scrollTopRef={scrollTopRef}
       />
     );
   }
 
-  if (state === "Landing") {
-    return <ResponsiveLayout />;
-  }
-
   if (state === "Error") {
-    const errorContent = <ErrorContent isSmall={isSmall} />;
-    return <ResponsiveLayout oneCol={errorContent} twoColMain={errorContent} />;
+    return (
+      <ResponsiveLayout
+        oneCol={<ErrorContent isSmall={isSmall} />}
+        twoColMain={<ErrorContent isSmall={isSmall} />}
+        isSmall={isSmall}
+        isEmbedded={isEmbedded}
+        dictsToUse={dictsToUse}
+        setDictsToUse={setDictsToUse}
+        scrollTopRef={scrollTopRef}
+      />
+    );
   }
 
   if (state === "No Results") {
     const noResults = <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />;
-    return <ResponsiveLayout oneCol={noResults} twoColMain={noResults} />;
+    return (
+      <ResponsiveLayout
+        oneCol={noResults}
+        twoColMain={noResults}
+        isSmall={isSmall}
+        isEmbedded={isEmbedded}
+        dictsToUse={dictsToUse}
+        setDictsToUse={setDictsToUse}
+        scrollTopRef={scrollTopRef}
+      />
+    );
   }
 
   if (state === "Loading") {
     return (
       <ResponsiveLayout
-        oneCol={<LoadingMessage />}
-        twoColMain={<LoadingMessage />}
+        isSmall={isSmall}
+        isEmbedded={isEmbedded}
+        dictsToUse={dictsToUse}
+        setDictsToUse={setDictsToUse}
+        scrollTopRef={scrollTopRef}
+        oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
+        twoColMain={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
       />
     );
   }
 
   return (
     <ResponsiveLayout
+      isSmall={isSmall}
+      isEmbedded={isEmbedded}
+      dictsToUse={dictsToUse}
+      setDictsToUse={setDictsToUse}
+      scrollTopRef={scrollTopRef}
       oneCol={
         <>
           {!props?.embedded &&
             ReactDOM.createPortal(<QuickNavMenu />, document.body)}
-          <HelpSection id={"HelpSection"} className={QUICK_NAV_ANCHOR} />
+          <HelpSection
+            id={"HelpSection"}
+            className={QUICK_NAV_ANCHOR}
+            scale={scale}
+            isSmall={isSmall}
+          />
           <div id={"Toc"} className={QUICK_NAV_ANCHOR}>
-            <SummarySection />
-            <TableOfContents />
+            <SummarySection
+              isSmall={isSmall}
+              isEmbedded={isEmbedded}
+              scrollTopRef={scrollTopRef}
+              idSearch={idSearch}
+              entries={entries}
+              scale={scale}
+            />
+            <TableOfContents
+              isSmall={isSmall}
+              entries={entries}
+              scale={scale}
+              tocRef={tocRef}
+            />
           </div>
           <div ref={entriesRef}>
-            <DictionaryEntries />
+            <DictionaryEntries
+              isSmall={isSmall}
+              entries={entries}
+              scale={scale}
+            />
           </div>
         </>
       }
-      twoColSide={<TableOfContents />}
+      twoColSide={
+        <TableOfContents
+          isSmall={isSmall}
+          entries={entries}
+          scale={scale}
+          tocRef={tocRef}
+        />
+      }
       twoColMain={
         <>
-          <HelpSection />
-          <SummarySection />
-          <DictionaryEntries />
+          <HelpSection scale={scale} isSmall={isSmall} />
+          <SummarySection
+            isSmall={isSmall}
+            isEmbedded={isEmbedded}
+            scrollTopRef={scrollTopRef}
+            idSearch={idSearch}
+            entries={entries}
+            scale={scale}
+          />
+          <DictionaryEntries
+            isSmall={isSmall}
+            entries={entries}
+            scale={scale}
+          />
         </>
       }
     />

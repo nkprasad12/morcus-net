@@ -8,8 +8,28 @@ import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import Container from "@mui/material/Container";
 import React, { useEffect } from "react";
 
-export function Library() {
+function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
   const nav = React.useContext(RouteContext);
+
+  if (props.works === undefined) {
+    return <span>Loading titles ...</span>;
+  }
+
+  return (
+    <div>
+      {props.works.map((work) => (
+        <span
+          key={work.id}
+          className="latWork"
+          style={{ paddingLeft: 8 }}
+          onClick={() => Navigation.to(nav, `${WORK_PAGE}/${work.id}`)}
+        >{`${work.name} [${work.author}]`}</span>
+      ))}
+    </div>
+  );
+}
+
+export function Library() {
   const [works, setWorks] = React.useState<LibraryWorkMetadata[] | undefined>(
     undefined
   );
@@ -21,35 +41,13 @@ export function Library() {
     });
   }, []);
 
-  function onWorkSelected(workId: string) {
-    Navigation.to(nav, `${WORK_PAGE}/${workId}`);
-  }
-
-  function WorksList() {
-    if (works === undefined) {
-      return <span>Loading titles ...</span>;
-    }
-    return (
-      <div>
-        {works.map((work) => (
-          <span
-            key={work.id}
-            className="latWork"
-            style={{ paddingLeft: 8 }}
-            onClick={() => onWorkSelected(work.id)}
-          >{`${work.name} [${work.author}]`}</span>
-        ))}
-      </div>
-    );
-  }
-
   return (
     <Container maxWidth="xxl" sx={{ paddingTop: 3 }}>
       <ContentBox isSmall={false}>
         <>
           <div>Welcome to the library.</div>
           <div>Select a work from the list below.</div>
-          <WorksList />
+          <WorksList works={works} />
         </>
       </ContentBox>
     </Container>

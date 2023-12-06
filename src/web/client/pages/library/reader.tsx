@@ -443,24 +443,35 @@ function NavIcon(props: {
   );
 }
 
+const TooltipNavIcon = React.forwardRef<any>(function TooltipNavIcon(
+  fProps,
+  fRef
+) {
+  return (
+    <span {...fProps} ref={fRef}>
+      <NavIcon Icon={<LinkIcon />} label="link to section" />
+    </span>
+  );
+});
+
+function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
+  const parts = props.work.textParts;
+  const i = parts.length - 2;
+  if (props.page < 0 || i < 0) {
+    return <></>;
+  }
+  const chunkIndex = props.work.pageStarts[props.page];
+  const firstChunk = props.work.chunks[chunkIndex][0];
+  const text = capitalizeWords(`${parts[i]} ${firstChunk[i]}`);
+  return <InfoText text={text} />;
+}
+
 function WorkNavigation(props: {
   page: number;
   setPage: (to: number) => any;
   work: PaginatedWork;
   textScale?: number;
 }) {
-  function PenulimateLabel() {
-    const parts = props.work.textParts;
-    const i = parts.length - 2;
-    if (props.page < 0 || i < 0) {
-      return <></>;
-    }
-    const chunkIndex = props.work.pageStarts[props.page];
-    const firstChunk = props.work.chunks[chunkIndex][0];
-    const text = capitalizeWords(`${parts[i]} ${firstChunk[i]}`);
-    return <InfoText text={text} />;
-  }
-
   return (
     <div>
       <div>
@@ -469,7 +480,7 @@ function WorkNavigation(props: {
           label="previous section"
           onClick={() => props.setPage(Math.max(0, props.page - 1))}
         />
-        <PenulimateLabel />
+        <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
@@ -478,16 +489,7 @@ function WorkNavigation(props: {
           }
         />
         <CopyLinkTooltip
-          forwarded={React.forwardRef<any>(function TooltipNavIcon(
-            fProps,
-            fRef
-          ) {
-            return (
-              <span {...fProps} ref={fRef}>
-                <NavIcon Icon={<LinkIcon />} label="link to section" />
-              </span>
-            );
-          })}
+          forwarded={TooltipNavIcon}
           message="Copy link to page"
           link={window.location.href}
         />
@@ -552,22 +554,20 @@ export function WorkTextPage(props: {
   );
 }
 
+function InfoLine(props: { value: string; label: string; scale: number }) {
+  return (
+    <div>
+      <SettingsText
+        scale={props.scale}
+        message={`${props.label}: ${props.value}`}
+      />
+    </div>
+  );
+}
+
 function WorkInfo(props: { workInfo?: DocumentInfo; scale: number }) {
   if (props.workInfo === undefined) {
     return <></>;
-  }
-
-  const scale = props.scale;
-
-  function InfoLine(props: { value: string; label: string }) {
-    return (
-      <div>
-        <SettingsText
-          scale={scale}
-          message={`${props.label}: ${props.value}`}
-        />
-      </div>
-    );
   }
 
   return (
@@ -578,18 +578,51 @@ function WorkInfo(props: { workInfo?: DocumentInfo; scale: number }) {
           message={capitalizeWords(props.workInfo.title)}
         />
       </summary>
-      <InfoLine label="Author" value={props.workInfo.author} />
+      <InfoLine
+        label="Author"
+        value={props.workInfo.author}
+        scale={props.scale}
+      />
       {props.workInfo.editor && (
-        <InfoLine label="Editor" value={props.workInfo.editor} />
+        <InfoLine
+          label="Editor"
+          value={props.workInfo.editor}
+          scale={props.scale}
+        />
       )}
       {props.workInfo.funder && (
-        <InfoLine label="Funder" value={props.workInfo.funder} />
+        <InfoLine
+          label="Funder"
+          value={props.workInfo.funder}
+          scale={props.scale}
+        />
       )}
       {props.workInfo.sponsor && (
-        <InfoLine label="Sponsor" value={props.workInfo.sponsor} />
+        <InfoLine
+          label="Sponsor"
+          value={props.workInfo.sponsor}
+          scale={props.scale}
+        />
       )}
     </details>
   );
+}
+
+function workSectionHeader(
+  text: string,
+  textScale: number
+): React.ForwardRefRenderFunction<HTMLSpanElement, object> {
+  return function InternalWorkSectionHeader(fProps, fRef) {
+    return (
+      <span {...fProps} ref={fRef}>
+        <InfoText
+          text={text}
+          style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
+          textScale={textScale}
+        />
+      </span>
+    );
+  };
 }
 
 function WorkChunkHeader(props: {
@@ -599,20 +632,9 @@ function WorkChunkHeader(props: {
 }) {
   return (
     <CopyLinkTooltip
-      forwarded={React.forwardRef<any>(function WorkSectionHeader(
-        fProps,
-        fRef
-      ) {
-        return (
-          <span {...fProps} ref={fRef}>
-            <InfoText
-              text={props.text}
-              style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
-              textScale={props.textScale}
-            />
-          </span>
-        );
-      })}
+      forwarded={React.forwardRef<HTMLSpanElement>(
+        workSectionHeader(props.text, props.textScale)
+      )}
       message={props.blurb}
       link={`${props.blurb}\n${window.location.href}`}
     />
@@ -655,17 +677,18 @@ function LatLink(props: { word: string; setDictWord: (input: string) => any }) {
 
 function displayForLibraryChunk(
   root: XmlNode,
-  setDictWord: (word: string | undefined) => any
+  setDictWord: (word: string | undefined) => any,
+  key?: number
 ): JSX.Element {
-  const children = root.children.map((child) => {
+  const children = root.children.map((child, i) => {
     if (typeof child === "string") {
       return child;
     }
-    return displayForLibraryChunk(child, setDictWord);
+    return displayForLibraryChunk(child, setDictWord, i);
   });
   if (root.name === "libLat") {
     const word = XmlNode.assertIsString(root.children[0]);
-    return <LatLink word={word} setDictWord={setDictWord} />;
+    return <LatLink word={word} setDictWord={setDictWord} key={key} />;
   }
   return React.createElement("span", {}, children);
 }
