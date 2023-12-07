@@ -17,8 +17,6 @@ import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
 import { Server } from "socket.io";
-import webpack from "webpack";
-import webpackDevMiddleware from "webpack-dev-middleware";
 
 import { setupServer, WebServerParams } from "@/web/web_server";
 import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
@@ -129,6 +127,10 @@ async function callWorker(
 }
 const buildDir = path.join(__dirname, "../genfiles_static");
 if (process.env.NODE_ENV === "dev") {
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  const webpack = require("webpack");
+  /* eslint-disable @typescript-eslint/no-var-requires */
+  const webpackDevMiddleware = require("webpack-dev-middleware");
   const compiler = webpack(
     /* eslint-disable @typescript-eslint/no-var-requires */
     require("../webpack.config")({ transpileOnly: true, production: false })
@@ -136,7 +138,7 @@ if (process.env.NODE_ENV === "dev") {
   app.use(
     webpackDevMiddleware(compiler, {
       publicPath: buildDir,
-      writeToDisk: (fileName) => true,
+      writeToDisk: () => true,
     })
   );
 }
