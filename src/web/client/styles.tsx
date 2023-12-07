@@ -4,6 +4,7 @@ import {
   GlobalSettings,
 } from "@/web/client/components/global_flags";
 import { GlobalStylesProps } from "@mui/material";
+import { CSSProperties } from "react";
 
 export namespace FontSizes {
   export const BIG_SCREEN = 20;
@@ -11,6 +12,14 @@ export namespace FontSizes {
   export const SECONDARY = 16;
   export const TERTIARY = 14;
 }
+
+const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
+export const TEXT_STYLE: CSSProperties = {
+  fontFamily: ALLOWED_FONTS,
+  fontWeight: 400,
+  lineHeight: 1.5,
+  letterSpacing: "0.00938em",
+};
 
 export function getBackgroundColor(settings: GlobalSettings): string {
   return settings.darkMode === true ? "#212022" : Solarized.base3;
@@ -120,6 +129,56 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".dictPlaceholder": {
         color: backgroundColor,
         cursor: "default",
+      },
+      ".customSearchContainer": {
+        backgroundColor: backgroundColor,
+        width: "100%",
+        maxWidth: "100%",
+        borderRadius: 4,
+        border: `2px solid ${
+          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
+        }`,
+      },
+      ".customSearchContainerFocused": {
+        border: `2px solid ${
+          isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
+        }`,
+      },
+      ".customSearchBox": {
+        backgroundColor: backgroundColor,
+        width: "100%",
+        maxWidth: "100%",
+        border: "none",
+        padding: "12px",
+        outline: "none",
+        spellcheck: "false",
+        ...TEXT_STYLE,
+        fontSize: FontSizes.BIG_SCREEN,
+        color: isDarkMode ? Solarized.base1 : Solarized.base00,
+      },
+      ".customSearchPopup": {
+        color: isDarkMode ? Solarized.base1 : Solarized.base01,
+        backgroundColor: isDarkMode ? Solarized.base02 : "#fafafa",
+        ...TEXT_STYLE,
+        fontSize: FontSizes.BIG_SCREEN,
+        paddingTop: "8px",
+        paddingBottom: "8px",
+        borderRadius: "4px",
+        zIndex: 1000,
+        boxShadow: `0 1px 1px 1px ${
+          isDarkMode ? Solarized.base1 : Solarized.base00
+        }`,
+        overflow: "auto",
+      },
+      ".customSearchPopupOption": {
+        paddingLeft: "16px",
+        paddingTop: "6px",
+        paddingBottom: "6px",
+        display: "flex",
+        alignItems: "center",
+      },
+      ".customSearchPopupOption:hover": {
+        backgroundColor: Solarized.base1 + "20",
       },
       ".lsHover": {
         borderBottom: `1px dashed ${

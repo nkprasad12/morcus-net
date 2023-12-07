@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import React, { CSSProperties, PropsWithChildren } from "react";
+import React, { PropsWithChildren } from "react";
 import ReactDOM from "react-dom/client";
 
 import GlobalStyles from "@mui/material/GlobalStyles";
@@ -21,6 +21,7 @@ import {
   getBackgroundColor,
   getGlobalStyles,
   FontSizes,
+  TEXT_STYLE,
 } from "@/web/client/styles";
 
 declare module "@mui/material/styles" {
@@ -30,14 +31,6 @@ declare module "@mui/material/styles" {
     xxl: true;
   }
 }
-
-const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
-const TEXT_STYLE: CSSProperties = {
-  fontFamily: ALLOWED_FONTS,
-  fontWeight: 400,
-  lineHeight: 1.5,
-  letterSpacing: "0.00938em",
-};
 
 function appTheme(isDarkMode: boolean) {
   const theme = createTheme({
