@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import React from "react";
+import { useState, useRef, useEffect } from "react";
 import TocIcon from "@mui/icons-material/Toc";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
@@ -108,10 +108,10 @@ function OpenMenu(props: {
 }
 
 export function QuickNavMenu() {
-  const [open, setOpen] = React.useState<boolean>(false);
-  const navHelper = React.useRef<NavHelper | null>(null);
+  const [open, setOpen] = useState<boolean>(false);
+  const navHelper = useRef<NavHelper | null>(null);
 
-  React.useEffect(() => {
+  useEffect(() => {
     navHelper.current = new NavHelper();
     return () => navHelper.current?.destroy();
   }, []);

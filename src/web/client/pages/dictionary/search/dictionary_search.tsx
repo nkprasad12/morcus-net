@@ -8,7 +8,7 @@ import DialogContentText from "@mui/material/DialogContentText";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
 import Switch from "@mui/material/Switch";
-import React from "react";
+import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
@@ -28,7 +28,7 @@ function HighlightSlider(props: {
   highlightStrength: number;
   setHighlightStrength: (newValue: number) => any;
 }) {
-  const [value, setValue] = React.useState<number>(props.highlightStrength);
+  const [value, setValue] = useState<number>(props.highlightStrength);
 
   return (
     <div>
@@ -62,7 +62,7 @@ function SearchSettingsDialog(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
-  const globalSettings = React.useContext(GlobalSettingsContext);
+  const globalSettings = useContext(GlobalSettingsContext);
 
   return (
     <Dialog
@@ -137,10 +137,10 @@ export function DictionarySearch(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
-  const nav = React.useContext(RouteContext);
-  const settings = React.useContext(GlobalSettingsContext);
+  const nav = useContext(RouteContext);
+  const settings = useContext(GlobalSettingsContext);
 
-  const [dialogOpen, setDialogOpen] = React.useState<boolean>(false);
+  const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
   async function onEnter(searchTerm: string) {
     if (searchTerm.length === 0) {

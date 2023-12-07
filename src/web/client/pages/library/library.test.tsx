@@ -2,7 +2,6 @@
  * @jest-environment jsdom
  */
 
-import React from "react";
 import { Library } from "@/web/client/pages/library/library";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";

@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import React, { PropsWithChildren } from "react";
+import { useContext, StrictMode, PropsWithChildren } from "react";
 import ReactDOM from "react-dom/client";
 
 import GlobalStyles from "@mui/material/GlobalStyles";
@@ -83,7 +83,7 @@ function appTheme(isDarkMode: boolean) {
 }
 
 function CustomThemeProvider(props: PropsWithChildren<Record<string, any>>) {
-  const settings = React.useContext(GlobalSettingsContext);
+  const settings = useContext(GlobalSettingsContext);
   return (
     <ThemeProvider theme={appTheme(settings.data.darkMode === true)}>
       {props.children}
@@ -103,13 +103,13 @@ const root = ReactDOM.createRoot(
 );
 
 function ConfigurableStyles() {
-  const settings = React.useContext(GlobalSettingsContext);
+  const settings = useContext(GlobalSettingsContext);
   document.body.style.backgroundColor = getBackgroundColor(settings.data);
   return <GlobalStyles {...getGlobalStyles(settings.data)} />;
 }
 
 root.render(
-  <React.StrictMode>
+  <StrictMode>
     <SettingsHandler>
       <CustomThemeProvider>
         <ConfigurableStyles />
@@ -122,5 +122,5 @@ root.render(
         </StyledEngineProvider>
       </CustomThemeProvider>
     </SettingsHandler>
-  </React.StrictMode>
+  </StrictMode>
 );

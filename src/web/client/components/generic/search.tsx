@@ -1,4 +1,4 @@
-import React from "react";
+import { useRef, useState, useEffect } from "react";
 
 import SettingsIcon from "@mui/icons-material/Settings";
 import SearchIcon from "@mui/icons-material/Search";
@@ -25,17 +25,17 @@ export function SearchBox<T>(props: {
   toKey: (t: T) => string;
   toInputDisplay: (t: T) => string;
 }) {
-  const containerRef = React.useRef<HTMLDivElement>(null);
-  const inputRef = React.useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
 
-  const [focused, setFocused] = React.useState(props.autoFocused === true);
-  const [mouseOnPopup, setMouseOnPopup] = React.useState(false);
-  const [cursor, setCursor] = React.useState(-1);
-  const [input, setInput] = React.useState<string>("");
-  const [loading, setLoading] = React.useState<boolean>(false);
-  const [options, setOptions] = React.useState<T[]>([]);
+  const [focused, setFocused] = useState(props.autoFocused === true);
+  const [mouseOnPopup, setMouseOnPopup] = useState(false);
+  const [cursor, setCursor] = useState(-1);
+  const [input, setInput] = useState<string>("");
+  const [loading, setLoading] = useState<boolean>(false);
+  const [options, setOptions] = useState<T[]>([]);
 
-  React.useEffect(() => {
+  useEffect(() => {
     if (cursor < 0 || options.length === 0) {
       return;
     }

@@ -5,7 +5,6 @@
 import { describe, expect, test } from "@jest/globals";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 
 import { Macronizer } from "@/web/client/pages/macron";
 import { callApi } from "@/web/utils/rpc/client_rpc";

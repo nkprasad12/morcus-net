@@ -1,4 +1,4 @@
-import React, { useContext } from "react";
+import { useState, useContext } from "react";
 
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";
@@ -33,7 +33,7 @@ function Content(props: { usedPages: SinglePageApp.Page[] }) {
 }
 
 export function SinglePageApp(props: SinglePageApp.Props) {
-  const [showIssueDialog, setShowIssueDialog] = React.useState<boolean>(false);
+  const [showIssueDialog, setShowIssueDialog] = useState<boolean>(false);
 
   const globalSettings = useContext(GlobalSettingsContext);
   const showExperimental = globalSettings.data.experimentalMode === true;

@@ -3,7 +3,7 @@
  */
 
 import { act, render } from "@testing-library/react";
-import React from "react";
+import { useContext, useEffect } from "react";
 import {
   Navigation,
   RouteContext,
@@ -13,9 +13,9 @@ import {
 } from "@/web/client/components/router";
 
 function TestApp(props: { navSpy: (info: RouteInfo) => any }) {
-  const nav = React.useContext(RouteContext);
+  const nav = useContext(RouteContext);
 
-  React.useEffect(() => {
+  useEffect(() => {
     props.navSpy(nav.route);
   }, [nav]);
 

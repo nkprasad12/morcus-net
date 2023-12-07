@@ -2,8 +2,6 @@
  * @jest-environment jsdom
  */
 
-import React from "react";
-
 import user from "@testing-library/user-event";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { RouteContext } from "@/web/client/components/router";

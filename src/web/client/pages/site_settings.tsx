@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
-import React, { useContext } from "react";
+import { useContext } from "react";
 import {
   GlobalBooleans,
   GlobalSettingsContext,

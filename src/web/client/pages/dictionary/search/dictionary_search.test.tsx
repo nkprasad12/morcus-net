@@ -9,7 +9,6 @@ import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autoco
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 
 console.debug = jest.fn();
 

@@ -5,7 +5,6 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DictAttribution } from "@/web/client/pages/dictionary/sections";
 import { render, screen } from "@testing-library/react";
-import React from "react";
 
 describe("DictAttributions", () => {
   it("shows correct LS attributions", () => {

@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import React, { useState } from "react";
+import { useState } from "react";
 import ReactDOM from "react-dom/client";
 
 const root = ReactDOM.createRoot(

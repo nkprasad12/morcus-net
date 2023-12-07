@@ -6,7 +6,6 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 
 import { assertEqual } from "@/common/assert";
 import { RouteContext } from "@/web/client/components/router";

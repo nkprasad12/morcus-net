@@ -37,6 +37,9 @@
     "react/no-unstable-nested-components": "error",
     "no-constant-condition": "off",
     "no-inner-declarations": "off",
-    "no-empty": ["error", { "allowEmptyCatch": true }]
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    // Not required with new JSX transform.
+    "react/jsx-uses-react": "off",
+    "react/react-in-jsx-scope": "off"
   }
 }

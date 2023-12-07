@@ -1,4 +1,5 @@
-import React, { MutableRefObject } from "react";
+import { MutableRefObject } from "react";
+import * as React from "react";
 
 import { checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";

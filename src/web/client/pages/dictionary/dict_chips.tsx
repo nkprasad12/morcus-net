@@ -1,7 +1,6 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { FontSizes } from "@/web/client/styles";
 import Typography from "@mui/material/Typography";
-import React from "react";
 
 export function DictChip(props: { label: string; textScale?: number }) {
   function getClassName(label: string): string {

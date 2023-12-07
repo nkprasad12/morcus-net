@@ -6,10 +6,10 @@ import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import Container from "@mui/material/Container";
-import React, { useEffect } from "react";
+import { useContext, useState, useEffect } from "react";
 
 function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
-  const nav = React.useContext(RouteContext);
+  const nav = useContext(RouteContext);
 
   if (props.works === undefined) {
     return <span>Loading titles ...</span>;
@@ -30,7 +30,7 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
 }
 
 export function Library() {
-  const [works, setWorks] = React.useState<LibraryWorkMetadata[] | undefined>(
+  const [works, setWorks] = useState<LibraryWorkMetadata[] | undefined>(
     undefined
   );
 

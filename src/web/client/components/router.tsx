@@ -1,4 +1,5 @@
-import React, { PropsWithChildren, useEffect } from "react";
+import { PropsWithChildren, useEffect } from "react";
+import * as React from "react";
 import { createContext } from "react";
 
 const QUERY_KEY = "q";

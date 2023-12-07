@@ -6,7 +6,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import user from "@testing-library/user-event";
-import React from "react";
+import { forwardRef } from "react";
 
 import {
   ClickableTooltip,
@@ -162,7 +162,7 @@ describe("xmlNodeToJsx", () => {
 });
 
 describe("ClickableTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
+  const DivWithRef = forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows base text on initial load", async () => {
     render(
@@ -201,7 +201,7 @@ describe("ClickableTooltip", () => {
 });
 
 describe("SectionLinkTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
+  const DivWithRef = forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows link buttons", async () => {
     const writeText = jest.fn((_e) => Promise.resolve());

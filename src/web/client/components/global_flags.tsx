@@ -1,4 +1,4 @@
-import React from "react";
+import * as React from "react";
 import { PropsWithChildren, createContext } from "react";
 import { defaultExperimentalMode } from "@/web/client/define_vars";
 

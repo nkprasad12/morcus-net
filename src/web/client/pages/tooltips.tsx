@@ -8,7 +8,7 @@ import ClickAwayListener from "@mui/material/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
 import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
-import React from "react";
+import * as React from "react";
 import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
 

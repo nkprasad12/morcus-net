@@ -1,4 +1,4 @@
-import React from "react";
+import { useState } from "react";
 
 import Button from "@mui/material/Button";
 import TextField from "@mui/material/TextField";
@@ -16,7 +16,7 @@ export function ReportIssueDialog(props: {
   show: boolean;
   onClose: () => any;
 }) {
-  const [reportText, setReportText] = React.useState<string>("");
+  const [reportText, setReportText] = useState<string>("");
 
   return (
     <Dialog

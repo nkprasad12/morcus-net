@@ -7,7 +7,7 @@ import { FontSizes } from "@/web/client/styles";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import Divider from "@mui/material/Divider";
 
-import React from "react";
+import * as React from "react";
 
 export function jumpToSection(sectionId: string) {
   const selected = document.getElementById(sectionId);

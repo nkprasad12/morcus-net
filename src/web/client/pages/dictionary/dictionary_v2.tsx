@@ -4,7 +4,8 @@ import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import React, { CSSProperties } from "react";
+import { CSSProperties } from "react";
+import * as React from "react";
 
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import {

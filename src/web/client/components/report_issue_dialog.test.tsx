@@ -4,7 +4,6 @@
 
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 

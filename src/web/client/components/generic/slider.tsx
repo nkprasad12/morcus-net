@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 
 import { safeParseInt } from "@/common/misc_utils";
-import * as React from "react";
 
 export interface Cancelable {
   clear(): void;
