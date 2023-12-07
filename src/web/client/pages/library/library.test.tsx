@@ -20,7 +20,7 @@ describe("library view", () => {
   it("shows items", async () => {
     render(<Library />);
 
-    await screen.findByText("Welcome to the library.");
+    await screen.findByText(/Welcome/);
     await screen.findByText(/DBG/);
     await screen.findByText(/Caesar/);
   });

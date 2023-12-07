@@ -260,8 +260,14 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         borderBottom: `1px solid`,
         cursor: "pointer",
       },
+      ".latWork": {
+        borderRadius: "4px",
+        marginLeft: "8px",
+        padding: "8px",
+      },
       ".latWork:hover": {
         color: Solarized.blue,
+        backgroundColor: Solarized.base1 + "20",
         cursor: "pointer",
       },
 
@@ -321,7 +327,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
 
       /** Custom scrollbar styles */
       "::-webkit-scrollbar": {
-        width: "12px",
+        width: "9px",
       },
       "::-webkit-scrollbar-track": {
         backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,

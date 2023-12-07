@@ -239,12 +239,14 @@ export function ReadingPage() {
 
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
+
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
   const nav = useContext(RouteContext);
 
   useEffect(() => {
     const id = nav.route.path.substring(WORK_PAGE.length + 1);
     const urlPage = safeParseInt(nav.route.query);
-    // -1 because we add 1 when setting the page.
+    // -1 because we add 1 when setting the page, so that users see 1-indexed.
     const newPage = urlPage === undefined ? currentPage : urlPage - 1;
     setCurrentPage(newPage);
     if (urlPage === undefined) {
@@ -258,6 +260,14 @@ export function ReadingPage() {
       });
   }, []);
 
+  useEffect(() => {
+    const urlPage = safeParseInt(nav.route.query);
+    if (urlPage !== undefined) {
+      // -1 because we add 1 when setting the page, so that users see 1-indexed.
+      setCurrentPage(urlPage - 1);
+    }
+  }, [nav.route.query]);
+
   return (
     <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
       <div
@@ -267,14 +277,21 @@ export function ReadingPage() {
         }}
       >
         <WorkColumn
-          setSidebar={setSidebar}
+          setSidebar={(newSidebar) => {
+            // @ts-ignore
+            sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
+            setSidebar(newSidebar);
+          }}
           textScale={workScale}
           work={work}
           currentPage={currentPage}
           setCurrentPage={setCurrentPage}
         />
       </div>
-      <div style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}>
+      <div
+        style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}
+        ref={sidebarRef}
+      >
         <ContentBox isSmall>
           <>
             <div className="readerIconBar">
