@@ -308,11 +308,12 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       },
       ".customSearchPopupOption": {
         paddingLeft: "16px",
-        paddingTop: "9px",
-        paddingBottom: "9px",
+        paddingTop: "8px",
+        paddingBottom: "8px",
         display: "flex",
         alignItems: "center",
         cursor: "pointer",
+        userSelect: "none",
       },
       ".customSearchPopupOptionSelected": {
         backgroundColor: Solarized.base1 + "20",

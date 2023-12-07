@@ -74,14 +74,11 @@ export function SearchBox<T>(props: {
   }
 
   async function onOptionChosen(t: T) {
-    const newInput = props.toInputDisplay(t);
-    setInput(newInput);
     setMouseOnPopup(false);
     setCursor(-1);
     setFocused(false);
     props.onOptionSelected(t);
     inputRef.current?.blur();
-    setOptions(await props.optionsForInput(newInput));
   }
 
   return (
@@ -128,6 +125,7 @@ export function SearchBox<T>(props: {
                   key={props.toKey(t)}
                   id={props.toKey(t)}
                   onClick={() => onOptionChosen(t)}
+                  onTouchStart={() => setCursor(i)}
                   onMouseOver={() => setCursor(i)}
                 >
                   <props.RenderOption option={t} />
@@ -184,8 +182,10 @@ export function SearchBox<T>(props: {
           autoFocus={props.autoFocused}
           onFocus={() => setFocused(true)}
           onBlur={() => {
-            setFocused(false);
-            setCursor(-1);
+            setTimeout(() => {
+              setFocused(false);
+              setCursor(-1);
+            }, 16);
           }}
           placeholder={props.placeholderText}
           role="combobox"
