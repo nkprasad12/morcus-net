@@ -128,7 +128,7 @@ function SettingSlider(props: {
 }
 
 function Sidebar(props: {
-  workInfo?: DocumentInfo;
+  work?: PaginatedWork;
   scale: number;
   sidebar: SidebarState;
   mainWidth: number;
@@ -215,8 +215,12 @@ function Sidebar(props: {
     case "Info":
       return (
         <>
-          <WorkInfo workInfo={props.workInfo} scale={props.scale} />
-          <div>TODO: Add Navigation</div>
+          {props.work?.info && (
+            <WorkInfo workInfo={props.work?.info} scale={props.scale} />
+          )}
+          {props.work && (
+            <WorkNavigation work={props.work} scale={props.scale} />
+          )}
         </>
       );
     default:
@@ -312,7 +316,7 @@ export function ReadingPage() {
             </div>
             <div style={{ paddingRight: "8px" }}>
               <Sidebar
-                workInfo={typeof work === "string" ? undefined : work.info}
+                work={typeof work === "string" ? undefined : work}
                 scale={dictScale}
                 sidebar={sidebar}
                 mainWidth={mainWidth}
@@ -364,7 +368,7 @@ function WorkColumn(props: {
         </span>
       ) : (
         <>
-          <WorkNavigation
+          <WorkNavigationBar
             page={currentPage}
             setPage={setPage}
             work={work}
@@ -485,7 +489,7 @@ function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
   return <InfoText text={text} />;
 }
 
-function WorkNavigation(props: {
+function WorkNavigationBar(props: {
   page: number;
   setPage: (to: number) => any;
   work: PaginatedWork;
@@ -584,18 +588,22 @@ function InfoLine(props: { value: string; label: string; scale: number }) {
   );
 }
 
-function WorkInfo(props: { workInfo?: DocumentInfo; scale: number }) {
-  if (props.workInfo === undefined) {
-    return <></>;
-  }
-
+function WorkNavigation(props: { work: PaginatedWork; scale: number }) {
   return (
     <details>
       <summary>
-        <SettingsText
-          scale={props.scale}
-          message={capitalizeWords(props.workInfo.title)}
-        />
+        <SettingsText scale={props.scale} message={props.work.info.title} />
+      </summary>
+      <SettingsText scale={props.scale} message="Navigation in progress" />
+    </details>
+  );
+}
+
+function WorkInfo(props: { workInfo: DocumentInfo; scale: number }) {
+  return (
+    <details>
+      <summary>
+        <SettingsText scale={props.scale} message={"Attribution"} />
       </summary>
       <InfoLine
         label="Author"
