@@ -10,6 +10,7 @@ import { ReadingPage } from "@/web/client/pages/library/reader";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
 import { ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
+import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 
@@ -26,6 +27,9 @@ const PROCESSED_WORK: ProcessedWork = {
 };
 
 describe("Reading UI", () => {
+  beforeAll(invalidateWorkCache);
+  afterEach(invalidateWorkCache);
+
   it("fetches the expected resource", () => {
     mockCallApi.mockReturnValue(new Promise(() => {}));
     const testId = "caesar";

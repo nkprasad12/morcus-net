@@ -11,6 +11,7 @@ import * as React from "react";
 
 export function jumpToSection(sectionId: string) {
   const selected = document.getElementById(sectionId);
+  // @ts-ignore
   selected?.scrollIntoView({ behavior: "instant", block: "start" });
 }
 

@@ -340,7 +340,7 @@ describe("New Dictionary View", () => {
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
       dicts: ["L&S"],
       query: "Belgae",
-      mode: 0,
+      mode: 1,
     });
     await waitFor(() => {
       expect(screen.getByText(resultString)).toBeDefined();

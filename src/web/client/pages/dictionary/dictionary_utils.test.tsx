@@ -103,7 +103,7 @@ describe("xmlNodeToJsx", () => {
     await user.click(screen.getByText("Gallia"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "omnis,SnH" })
+      expect.objectContaining({ path: "/dicts", query: "omnis,SnH" })
     );
   });
 
@@ -129,7 +129,7 @@ describe("xmlNodeToJsx", () => {
     await user.click(screen.getByText("omnis"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+      expect.objectContaining({ path: "/dicts", query: "omnis,LnS" })
     );
   });
 
@@ -156,7 +156,7 @@ describe("xmlNodeToJsx", () => {
     await user.click(screen.getByText("blah"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+      expect.objectContaining({ path: "/dicts", query: "omnis,LnS" })
     );
   });
 });

@@ -84,12 +84,14 @@ export namespace Navigation {
       experimentalSearch?: boolean;
       internalSource?: boolean;
       localOnly?: boolean;
+      // This is a hack, remove it later.
+      canonicalPath?: string;
     }
   ): void {
     toRouteInfo(
       nav,
       {
-        path: nav.route.path,
+        path: options?.canonicalPath || nav.route.path,
         query: query,
         experimentalSearch: options?.experimentalSearch,
         internalSource: options?.internalSource,

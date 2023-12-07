@@ -1,8 +1,4 @@
-import {
-  RouteInfo,
-  extractRouteInfo,
-  linkForInfo,
-} from "@/web/client/components/router";
+import { RouteInfo, linkForInfo } from "@/web/client/components/router";
 import LinkIcon from "@mui/icons-material/Link";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
@@ -215,22 +211,18 @@ export function SectionLinkTooltip(props: {
   const message = `Copy ${isArticle ? "article" : "section"} link`;
 
   function getLink(): string {
-    const before = extractRouteInfo();
     const after: RouteInfo = {
-      path: before.path,
+      path: "/dicts",
     };
     if (isArticle) {
       after.query = props.id;
-      after.idSearch = true;
     } else {
-      after.query = before.query;
+      const coreId = props.id.split(".")[0];
+      after.query = coreId;
       after.hash = props.id;
-      after.experimentalSearch = true;
     }
-    if (before.idSearch === true) {
-      after.experimentalSearch = false;
-      after.idSearch = true;
-    }
+    after.experimentalSearch = false;
+    after.idSearch = true;
     return `${window.location.origin}${linkForInfo(after)}`;
   }
 

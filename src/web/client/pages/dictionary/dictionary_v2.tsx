@@ -80,7 +80,7 @@ async function fetchEntry(
   const result = callApiFull(DictsFusedApi, {
     query: parts[0],
     dicts: dicts.map((dict) => dict.key),
-    mode: singleArticle ? 2 : experimentalMode ? 1 : 0,
+    mode: singleArticle ? 2 : experimentalMode || embedded ? 1 : 0,
   });
   try {
     return await result;

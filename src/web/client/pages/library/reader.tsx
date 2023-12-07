@@ -1,6 +1,5 @@
 import { DocumentInfo, ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
-import { GetWork } from "@/web/api_routes";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
@@ -11,7 +10,6 @@ import LinkIcon from "@mui/icons-material/Link";
 import Settings from "@mui/icons-material/Settings";
 import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
-import { callApi } from "@/web/utils/rpc/client_rpc";
 import { CSSProperties, useContext, useEffect, useState } from "react";
 import * as React from "react";
 import IconButton from "@mui/material/IconButton";
@@ -23,6 +21,7 @@ import Slider from "@mui/material/Slider";
 import { debounce } from "@mui/material/utils";
 import { FontSizes } from "@/web/client/styles";
 import Container from "@mui/material/Container";
+import { fetchWork } from "@/web/client/pages/library/work_cache";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
@@ -252,7 +251,7 @@ export function ReadingPage() {
     if (urlPage === undefined) {
       setUrl(nav, newPage);
     }
-    callApi(GetWork, id)
+    fetchWork(id)
       .then((work) => setWork(dividePages(work)))
       .catch((reason) => {
         console.debug(reason);

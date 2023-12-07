@@ -243,6 +243,9 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: isDarkMode ? Solarized.base3 : Solarized.base02,
         cursor: "pointer",
       },
+      ".QNA": {
+        scrollMarginTop: "36px",
+      },
 
       /** Reader specific */
       ".readerIconBar": {

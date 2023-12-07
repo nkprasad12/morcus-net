@@ -100,6 +100,7 @@ function ShLink(props: { text: string; query: string }) {
       onClick={() =>
         Navigation.query(nav, props.query, {
           internalSource: true,
+          canonicalPath: "/dicts",
         })
       }
     >
@@ -117,6 +118,7 @@ function LatLink(props: { word: string; orig?: string }) {
         Navigation.query(nav, `${props.word},LnS`, {
           experimentalSearch: true,
           internalSource: true,
+          canonicalPath: "/dicts",
         })
       }
     >
