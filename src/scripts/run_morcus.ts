@@ -60,6 +60,10 @@ function parseArguments() {
     help: "If set, uses the real telemetry database.",
     action: "store_true",
   });
+  parser.add_argument("-d", "--dev", {
+    help: "If set, runs a dev server for local iteration.",
+    action: "store_true",
+  });
   parser.add_argument("-p", "--prod", {
     help: "If set, runs setup suitable for production.",
     action: "store_true",
@@ -166,7 +170,8 @@ function spawnChild(command: string[], env?: NodeJS.ProcessEnv): ChildProcess {
 function setupAndStartWebServer(args: any) {
   const setupSteps: [string[], ChildProcess][] = [];
 
-  if (args.no_build_client === false) {
+  // We use the hot dev server, so we don't need to pre-build;
+  if (args.no_build_client === false && args.dev !== true) {
     const buildCommand: string[] = ["npm", "run", "build-client"];
     const extraArgs: string[] = [];
     if (args.prod || args.staging) {
@@ -215,6 +220,8 @@ async function setupStartWebServer(args: any) {
   serverEnv.SOURCE_VERSION = commitHash.stdout.toString();
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
+  } else if (args.dev === true) {
+    serverEnv.NODE_ENV = "dev";
   }
   if (args.real_database === false) {
     serverEnv.CONSOLE_TELEMETRY = "yes";
