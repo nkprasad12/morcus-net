@@ -243,7 +243,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: isDarkMode ? Solarized.base3 : Solarized.base02,
         cursor: "pointer",
       },
-      ".QNA": {
+      ".QNAEmbedded": {
         scrollMarginTop: "36px",
       },
 

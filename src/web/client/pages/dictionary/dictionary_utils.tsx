@@ -14,6 +14,7 @@ import { InflectionData } from "@/common/dictionaries/dict_result";
 import { FontSizes } from "@/web/client/styles";
 
 export const QUICK_NAV_ANCHOR = "QNA";
+export const QNA_EMBEDDED = "QNAEmbedded";
 
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -127,11 +128,24 @@ function LatLink(props: { word: string; orig?: string }) {
   );
 }
 
+function transformClassAttr(value: string, isEmbedded: boolean) {
+  return value
+    .split(" ")
+    .map((chunk) => {
+      if (!isEmbedded || chunk !== QUICK_NAV_ANCHOR) {
+        return chunk;
+      }
+      return QNA_EMBEDDED;
+    })
+    .join(" ");
+}
+
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
   sectionRef?: MutableRefObject<HTMLElement | null>,
-  key?: string
+  key?: string,
+  isEmbedded?: boolean
 ): JSX.Element {
   const children = root.children.map((child, i) => {
     if (typeof child === "string") {
@@ -141,7 +155,8 @@ export function xmlNodeToJsx(
       child,
       highlightId,
       sectionRef,
-      child.getAttr("id") || `${i}`
+      child.getAttr("id") || `${i}`,
+      isEmbedded
     );
   });
   const props: { [propKey: string]: any } = {};
@@ -152,8 +167,8 @@ export function xmlNodeToJsx(
   let className: string | undefined = undefined;
   for (const [attrKey, value] of root.attrs) {
     if (attrKey === "class") {
-      className = value;
-      props.className = value;
+      className = transformClassAttr(value, isEmbedded === true);
+      props.className = className;
       continue;
     }
     if (attrKey === "title") {

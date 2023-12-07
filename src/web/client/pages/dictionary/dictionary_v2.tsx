@@ -23,6 +23,7 @@ import {
   HELP_ENTRY,
   InflectionDataSection,
   QUICK_NAV_ANCHOR,
+  QNA_EMBEDDED,
   SCROLL_JUMP,
   SCROLL_SMOOTH,
   SearchSettings,
@@ -134,13 +135,14 @@ function ErrorContent(props: { isSmall: boolean }) {
 function getEntriesByDict(
   response: DictsFusedResponse,
   sectionRef: React.RefObject<HTMLElement>,
-  hash?: string
+  hash: string | undefined,
+  isEmbedded: boolean
 ): EntriesByDict[] {
   const result: EntriesByDict[] = [];
   for (const dictKey in response) {
     const rawEntries = response[dictKey];
     const entries = rawEntries.map((e, i) => ({
-      element: xmlNodeToJsx(e.entry, hash, sectionRef),
+      element: xmlNodeToJsx(e.entry, hash, sectionRef, undefined, isEmbedded),
       key: e.entry.getAttr("id") || `${dictKey}${i}`,
       inflections: e.inflections,
     }));
@@ -286,7 +288,7 @@ function OneColumnLayout(
       <SearchBar
         maxWidth="lg"
         id={"SearchBox"}
-        className={QUICK_NAV_ANCHOR}
+        className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
         isEmbedded={isEmbedded}
         isSmall={isSmall}
         dictsToUse={dictsToUse}
@@ -294,7 +296,10 @@ function OneColumnLayout(
         scrollTopRef={scrollTopRef}
       />
       {props.Content}
-      <Footer id={"Footer"} className={QUICK_NAV_ANCHOR} />
+      <Footer
+        id={"Footer"}
+        className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+      />
     </Container>
   );
 }
@@ -563,7 +568,8 @@ export function DictionaryViewV2(props?: {
       const allEntries = getEntriesByDict(
         newResults.data,
         sectionRef,
-        nav.route.hash
+        nav.route.hash,
+        isEmbedded
       );
       flushSync(() => {
         setEntries(allEntries);
@@ -669,11 +675,14 @@ export function DictionaryViewV2(props?: {
             ReactDOM.createPortal(<QuickNavMenu />, document.body)}
           <HelpSection
             id={"HelpSection"}
-            className={QUICK_NAV_ANCHOR}
+            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
             scale={scale}
             isSmall={isSmall}
           />
-          <div id={"Toc"} className={QUICK_NAV_ANCHOR}>
+          <div
+            id={"Toc"}
+            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+          >
             <SummarySection
               isSmall={isSmall}
               isEmbedded={isEmbedded}
