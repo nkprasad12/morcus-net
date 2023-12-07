@@ -69,7 +69,7 @@ function SearchSettingsDialog(props: {
       open={props.open}
       onClose={props.onClose}
       sx={{ top: "-40%" }}
-      disableScrollLock={true}
+      disableScrollLock
     >
       <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
       <DialogContent>

@@ -166,7 +166,7 @@ function Sidebar(props: {
               max={3}
               step={1}
               scale={scale}
-              disableLabels={true}
+              disableLabels
             />
             <SettingSlider
               value={props.mainWidth}
@@ -215,7 +215,7 @@ function Sidebar(props: {
         <InfoText text="Click on a word for dictionary and inflection lookups." />
       ) : (
         <DictionaryViewV2
-          embedded={true}
+          embedded
           initial={sidebar.dictWord}
           textScale={props.dictScale}
         />
@@ -284,7 +284,7 @@ export function ReadingPage() {
         />
       </div>
       <div style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}>
-        <ContentBox isSmall={true}>
+        <ContentBox isSmall>
           <>
             <div>
               <NavIcon
@@ -345,7 +345,7 @@ function WorkColumn(props: {
   }
 
   return (
-    <ContentBox isSmall={true} textScale={props.textScale}>
+    <ContentBox isSmall textScale={props.textScale}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (

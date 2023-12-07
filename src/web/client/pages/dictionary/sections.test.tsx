@@ -8,18 +8,14 @@ import { render, screen } from "@testing-library/react";
 
 describe("DictAttributions", () => {
   it("shows correct LS attributions", () => {
-    render(
-      <DictAttribution isSmall={true} dictKey={LatinDict.LewisAndShort.key} />
-    );
+    render(<DictAttribution isSmall dictKey={LatinDict.LewisAndShort.key} />);
     expect(
       screen.getByText("perseus digital library", { exact: false })
     ).toBeDefined();
   });
 
   it("shows correct SH attributions", () => {
-    render(
-      <DictAttribution isSmall={true} dictKey={LatinDict.SmithAndHall.key} />
-    );
+    render(<DictAttribution isSmall dictKey={LatinDict.SmithAndHall.key} />);
     expect(
       screen.getByText("distributed proofreaders", { exact: false })
     ).toBeDefined();

@@ -26,13 +26,13 @@ describe("Report Issue Dialog", () => {
 
   it("is shown when open", async () => {
     const mockOnClose = jest.fn(() => {});
-    render(<ReportIssueDialog show={true} onClose={mockOnClose} />);
+    render(<ReportIssueDialog show onClose={mockOnClose} />);
     expect(screen.queryByText("Report an issue")).not.toBeNull();
   });
 
   it("calls close on cancel", async () => {
     const mockOnClose = jest.fn(() => {});
-    render(<ReportIssueDialog show={true} onClose={mockOnClose} />);
+    render(<ReportIssueDialog show onClose={mockOnClose} />);
 
     await user.click(screen.getByText("Cancel"));
 
@@ -41,7 +41,7 @@ describe("Report Issue Dialog", () => {
 
   it("calls close and server on submit", async () => {
     const mockOnClose = jest.fn(() => {});
-    render(<ReportIssueDialog show={true} onClose={mockOnClose} />);
+    render(<ReportIssueDialog show onClose={mockOnClose} />);
 
     await user.click(screen.getByText("Submit"));
 

@@ -178,7 +178,7 @@ function SearchBar(props: SearchBarProps) {
   return (
     <Container
       maxWidth={props.maxWidth}
-      disableGutters={true}
+      disableGutters
       ref={props.scrollTopRef}
       sx={{ marginLeft: props.marginLeft || "auto" }}
       id={props.id}
@@ -473,7 +473,7 @@ function SingleDictSection(props: {
                     scale
                   )}
                   id={props.data.outlines[i].mainSection.sectionId}
-                  forArticle={true}
+                  forArticle
                 />
                 <FullDictChip label={props.data.name} textScale={textScale} />
               </span>

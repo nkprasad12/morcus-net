@@ -334,7 +334,7 @@ describe("New Dictionary View", () => {
         },
       ],
     });
-    render(<DictionaryViewV2 embedded={true} initial="Belgae" />);
+    render(<DictionaryViewV2 embedded initial="Belgae" />);
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
