@@ -28,7 +28,7 @@ import Container from "@mui/material/Container";
 // Experimentally for large screen mode this is 64 but honestly who knows
 // about the true range.
 const APP_BAR_MAX_HEIGHT = 64;
-const COLUMN_TOP_MARGIN = 8;
+const COLUMN_TOP_MARGIN = 0;
 const COLUMN_BOTTON_MARGIN = 8;
 const CONTAINER_STYLE: CSSProperties = {
   height:
@@ -37,13 +37,6 @@ const CONTAINER_STYLE: CSSProperties = {
     COLUMN_TOP_MARGIN -
     COLUMN_BOTTON_MARGIN,
 };
-// Styles for the top bar
-// style={{
-//   position: "sticky",
-//   top: 0,
-//   width: "100%",
-//   backgroundColor: "green",
-// }
 const COLUMN_STYLE: CSSProperties = {
   height: "100%",
   float: "left",
@@ -286,7 +279,7 @@ export function ReadingPage() {
       <div style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}>
         <ContentBox isSmall>
           <>
-            <div>
+            <div className="readerIconBar">
               <NavIcon
                 Icon={<Info />}
                 label="Work details"
@@ -481,8 +474,8 @@ function WorkNavigation(props: {
   textScale?: number;
 }) {
   return (
-    <div>
-      <div>
+    <>
+      <div className="readerIconBar">
         <NavIcon
           Icon={<ArrowBack />}
           label="previous section"
@@ -509,7 +502,7 @@ function WorkNavigation(props: {
           textScale={props.textScale}
         />
       </div>
-    </div>
+    </>
   );
 }
 

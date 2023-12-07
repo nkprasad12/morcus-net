@@ -130,6 +130,30 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: backgroundColor,
         cursor: "default",
       },
+      ".readerIconBar": {
+        position: "sticky",
+        top: 0,
+        width: "100%",
+        borderRadius: "4px",
+        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+      },
+      "::-webkit-scrollbar": {
+        width: "8px",
+      },
+      /* Track */
+      "::-webkit-scrollbar-track": {
+        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+      },
+
+      /* Handle */
+      "::-webkit-scrollbar-thumb": {
+        background: "#888",
+      },
+
+      /* Handle on hover */
+      "::-webkit-scrollbar-thumb:hover": {
+        background: "#555",
+      },
       ".customSearchContainer": {
         backgroundColor: backgroundColor,
         width: "100%",
@@ -176,6 +200,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         paddingBottom: "6px",
         display: "flex",
         alignItems: "center",
+        cursor: "pointer",
       },
       ".customSearchPopupOptionSelected": {
         backgroundColor: Solarized.base1 + "20",
