@@ -22,6 +22,7 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
             key={work.id}
             className="latWork"
             onClick={() => Navigation.to(nav, `${WORK_PAGE}/${work.id}`)}
+            role="button"
           >
             <span>{work.name}</span>{" "}
             <span className="contentTextLight">{work.author}</span>

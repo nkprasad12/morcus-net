@@ -6,7 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
-import ScienceIcon from "@mui/icons-material/Science";
+import DisplaySettings from "@mui/icons-material/DisplaySettings";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
@@ -184,16 +184,16 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
           </Box>
           <Box>
             <IconButton
-              size="large"
+              size="medium"
               aria-label="site settings"
               // TODO: Find a better way to configure this.
               onClick={handlePageClick("/settings")}
               className="menuIcon"
             >
-              <ScienceIcon />
+              <DisplaySettings />
             </IconButton>
             <IconButton
-              size="large"
+              size="medium"
               aria-label="report an issue"
               aria-haspopup="true"
               onClick={props.openIssueDialog}

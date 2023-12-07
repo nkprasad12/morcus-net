@@ -8,7 +8,7 @@ import { WORK_PAGE } from "@/web/client/pages/library/common";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import LinkIcon from "@mui/icons-material/Link";
-import DisplaySettings from "@mui/icons-material/DisplaySettings";
+import Settings from "@mui/icons-material/Settings";
 import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
 import { callApi } from "@/web/utils/rpc/client_rpc";
@@ -306,7 +306,7 @@ export function ReadingPage() {
                 onClick={() => setSidebar({ panel: "Dict" })}
               />
               <NavIcon
-                Icon={<DisplaySettings />}
+                Icon={<Settings />}
                 label="Reader settings"
                 onClick={() => setSidebar({ panel: "Settings" })}
               />
