@@ -9,31 +9,79 @@ function spacing(input: number): string {
   return `${input * 8}px`;
 }
 
+function mod(n: number, m: number): number {
+  return ((n % m) + m) % m;
+}
+
 export function SearchBox<T>(props: {
   smallScreen?: boolean;
   autoFocused?: boolean;
   placeholderText?: string;
   onOpenSettings?: () => any;
   onRawEnter: (input: string) => any;
-  optionsForInput?: (input: string) => T[] | Promise<T[]>;
-  onOptionSelected?: (t: T) => any;
-  RenderOption?: (props: { option: T }) => JSX.Element;
-  toKey?: (t: T) => string;
-  toInputDisplay?: (t: T) => string;
+  optionsForInput: (input: string) => T[] | Promise<T[]>;
+  onOptionSelected: (t: T) => any;
+  RenderOption: (props: { option: T }) => JSX.Element;
+  toKey: (t: T) => string;
+  toInputDisplay: (t: T) => string;
 }) {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const inputRef = React.useRef<HTMLInputElement>(null);
 
   const [focused, setFocused] = React.useState(props.autoFocused === true);
-  const [interactingWithPopup, setInteractingWithPopup] = React.useState(false);
+  const [mouseOnPopup, setMouseOnPopup] = React.useState(false);
+  const [cursor, setCursor] = React.useState(-1);
   const [input, setInput] = React.useState<string>("");
   const [loading, setLoading] = React.useState<boolean>(false);
   const [options, setOptions] = React.useState<T[]>([]);
 
+  React.useEffect(() => {
+    if (cursor < 0 || options.length === 0) {
+      return;
+    }
+    const id = props.toKey(options[cursor]);
+    const element = document.getElementById(id);
+    if (element === null) {
+      return;
+    }
+    // @ts-ignore
+    element.scrollIntoView({ behavior: "instant", block: "nearest" });
+  }, [cursor]);
+
   const smallScreen = props.smallScreen === true;
+  const interactingWithPopup = mouseOnPopup;
+  const popperOpen =
+    containerRef.current !== null &&
+    (focused || interactingWithPopup) &&
+    (options.length > 0 || loading);
   const containerClasses = ["customSearchContainer"];
   if (focused) {
     containerClasses.push("customSearchContainerFocused");
+  }
+
+  function handleArrow(key: "ArrowDown" | "ArrowUp") {
+    if (loading || options.length === 0) {
+      return;
+    }
+    if (cursor === -1) {
+      if (key === "ArrowUp") {
+        setCursor(options.length - 1);
+      } else {
+        setCursor(0);
+      }
+    }
+    setCursor(mod(cursor + (key === "ArrowDown" ? 1 : -1), options.length));
+  }
+
+  async function onOptionChosen(t: T) {
+    const newInput = props.toInputDisplay(t);
+    setInput(newInput);
+    setMouseOnPopup(false);
+    setCursor(-1);
+    setFocused(false);
+    props.onOptionSelected(t);
+    inputRef.current?.blur();
+    setOptions(await props.optionsForInput(newInput));
   }
 
   return (
@@ -54,11 +102,7 @@ export function SearchBox<T>(props: {
         ref={containerRef}
       >
         <Popper
-          open={
-            containerRef.current !== null &&
-            (focused || interactingWithPopup) &&
-            (options.length > 0 || loading)
-          }
+          open={popperOpen}
           anchorEl={containerRef.current}
           placement="bottom"
         >
@@ -68,28 +112,25 @@ export function SearchBox<T>(props: {
               width: containerRef.current?.offsetWidth,
               maxHeight: window.innerHeight * 0.4,
             }}
-            onMouseOver={() => setInteractingWithPopup(true)}
-            onMouseOut={() => setInteractingWithPopup(false)}
+            onMouseOver={() => setMouseOnPopup(true)}
+            onMouseOut={() => setMouseOnPopup(false)}
           >
             {loading && options.length === 0 && (
               <div className="customSearchPopupOption">Loading options</div>
             )}
             {options.length > 0 &&
-              options.map((t) => (
+              options.map((t, i) => (
                 <div
-                  className="customSearchPopupOption"
-                  key={props.toKey!(t)}
-                  onClick={() => {
-                    props.onOptionSelected!(t);
-                    setInput(props.toInputDisplay!(t));
-                    setInteractingWithPopup(false);
-                  }}
+                  className={
+                    "customSearchPopupOption" +
+                    (cursor === i ? " customSearchPopupOptionSelected" : "")
+                  }
+                  key={props.toKey(t)}
+                  id={props.toKey(t)}
+                  onClick={() => onOptionChosen(t)}
+                  onMouseOver={() => setCursor(i)}
                 >
-                  {props.RenderOption ? (
-                    <props.RenderOption option={t} />
-                  ) : (
-                    JSON.stringify(t)
-                  )}
+                  <props.RenderOption option={t} />
                 </div>
               ))}
           </div>
@@ -113,20 +154,39 @@ export function SearchBox<T>(props: {
             if (props.optionsForInput === undefined) {
               return;
             }
+            inputRef.current?.selectionStart;
             setLoading(true);
             setOptions(await props.optionsForInput(newInput));
+            setCursor(-1);
             setLoading(false);
           }}
           onKeyUp={(event) => {
-            if (event.key === "Enter" && input.trim().length > 0) {
+            if (event.key !== "Enter") {
+              return;
+            }
+            if (cursor > -1) {
+              onOptionChosen(options[cursor]);
+            } else if (input.trim().length > 0) {
               props.onRawEnter(input);
               setFocused(false);
+              setCursor(-1);
+              setMouseOnPopup(false);
               inputRef.current?.blur();
+              return;
+            }
+          }}
+          onKeyDown={(event) => {
+            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+              handleArrow(event.key);
+              event.preventDefault();
             }
           }}
           autoFocus={props.autoFocused}
           onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
+          onBlur={() => {
+            setFocused(false);
+            setCursor(-1);
+          }}
           placeholder={props.placeholderText}
           role="combobox"
         />

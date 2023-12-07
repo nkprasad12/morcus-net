@@ -23,6 +23,10 @@ afterEach(() => {
 const BOTH_DICTS = [LatinDict.LewisAndShort, LatinDict.SmithAndHall];
 
 describe("DictionarySearch", () => {
+  beforeAll(() => {
+    window.HTMLElement.prototype.scrollIntoView = jest.fn();
+  });
+
   beforeEach(() => {
     mockAutocomplete.mockResolvedValue([
       [LatinDict.LewisAndShort, "ab"],

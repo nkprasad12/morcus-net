@@ -165,8 +165,8 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         paddingBottom: "8px",
         borderRadius: "4px",
         zIndex: 1000,
-        boxShadow: `0 1px 1px 1px ${
-          isDarkMode ? Solarized.base1 : Solarized.base00
+        boxShadow: `0 2px 3px 2px ${
+          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
         }`,
         overflow: "auto",
       },
@@ -177,7 +177,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         display: "flex",
         alignItems: "center",
       },
-      ".customSearchPopupOption:hover": {
+      ".customSearchPopupOptionSelected": {
         backgroundColor: Solarized.base1 + "20",
       },
       ".lsHover": {
