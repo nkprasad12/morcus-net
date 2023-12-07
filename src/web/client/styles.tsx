@@ -55,6 +55,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
 
   return {
     styles: {
+      /** For elements */
       ol: {
         listStyle: "none",
         marginLeft: 0,
@@ -67,6 +68,9 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       a: {
         color: isDarkMode ? Solarized.blue : undefined,
       },
+      pre: { margin: "0" },
+
+      /** Tooltip styling */
       ".MuiTooltip-arrow": {
         color: isDarkMode ? Solarized.darkarkModeMint : Solarized.base01,
       },
@@ -77,6 +81,8 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: Solarized.base01,
         border: `2px solid ${isDarkMode ? Solarized.base02 : Solarized.base01}`,
       },
+
+      /** Basic content primitives */
       ".contentDivider": {
         borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
       },
@@ -86,6 +92,8 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".contentTextLight": {
         color: isDarkMode ? Solarized.base00 : Solarized.base01,
       },
+
+      /** Menu and menu items */
       ".menuIcon": {
         color: isDarkMode ? Solarized.base00 : Solarized.base1,
       },
@@ -103,6 +111,8 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".menuItemInactive": {
         color: menuItemBaseColor + (isDarkMode ? "88" : "90"),
       },
+
+      /** Dictionary specific */
       ".nonDictText": {
         color: isDarkMode ? Solarized.base1 : Solarized.base00,
       },
@@ -120,7 +130,6 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".lsTopSense": {
         paddingLeft: "0em",
       },
-      pre: { margin: "0" },
       ".highlighted": {
         border: "2px solid",
         borderRadius: 4,
@@ -129,81 +138,6 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".dictPlaceholder": {
         color: backgroundColor,
         cursor: "default",
-      },
-      ".readerIconBar": {
-        position: "sticky",
-        top: 0,
-        width: "100%",
-        borderRadius: "4px",
-        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
-      },
-      "::-webkit-scrollbar": {
-        width: "8px",
-      },
-      /* Track */
-      "::-webkit-scrollbar-track": {
-        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
-      },
-
-      /* Handle */
-      "::-webkit-scrollbar-thumb": {
-        background: "#888",
-      },
-
-      /* Handle on hover */
-      "::-webkit-scrollbar-thumb:hover": {
-        background: "#555",
-      },
-      ".customSearchContainer": {
-        backgroundColor: backgroundColor,
-        width: "100%",
-        maxWidth: "100%",
-        borderRadius: 4,
-        border: `2px solid ${
-          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
-        }`,
-      },
-      ".customSearchContainerFocused": {
-        border: `2px solid ${
-          isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
-        }`,
-      },
-      ".customSearchBox": {
-        backgroundColor: backgroundColor,
-        width: "100%",
-        maxWidth: "100%",
-        border: "none",
-        padding: "12px",
-        outline: "none",
-        spellcheck: "false",
-        ...TEXT_STYLE,
-        fontSize: FontSizes.BIG_SCREEN,
-        color: isDarkMode ? Solarized.base1 : Solarized.base00,
-      },
-      ".customSearchPopup": {
-        color: isDarkMode ? Solarized.base1 : Solarized.base01,
-        backgroundColor: isDarkMode ? Solarized.base02 : "#fafafa",
-        ...TEXT_STYLE,
-        fontSize: FontSizes.BIG_SCREEN,
-        paddingTop: "8px",
-        paddingBottom: "8px",
-        borderRadius: "4px",
-        zIndex: 1000,
-        boxShadow: `0 2px 3px 2px ${
-          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
-        }`,
-        overflow: "auto",
-      },
-      ".customSearchPopupOption": {
-        paddingLeft: "16px",
-        paddingTop: "6px",
-        paddingBottom: "6px",
-        display: "flex",
-        alignItems: "center",
-        cursor: "pointer",
-      },
-      ".customSearchPopupOptionSelected": {
-        backgroundColor: Solarized.base1 + "20",
       },
       ".lsHover": {
         borderBottom: `1px dashed ${
@@ -255,10 +189,6 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".lsSenseBullet:hover": {
         backgroundColor: bulletColor + "80",
       },
-      ".autoCompOpt": {
-        color: isDarkMode ? Solarized.base1 : Solarized.base01,
-        backgroundColor: isDarkMode ? Solarized.base02 : undefined,
-      },
       ".outlineHead": {
         fontWeight: "bold",
         cursor: "pointer",
@@ -275,6 +205,22 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".clickableOutlineSection:hover": {
         backgroundColor: Solarized.base1 + "20",
       },
+      ".dLink": {
+        color: Solarized.navy,
+        borderBottom: `1px solid ${Solarized.navy}`,
+      },
+      ".dLink:hover": {
+        color: Solarized.blue,
+        borderBottom: `1px solid ${Solarized.blue}`,
+        cursor: "pointer",
+      },
+      ".latWord:hover": {
+        color: Solarized.blue,
+        borderBottom: `1px solid ${Solarized.blue}`,
+        cursor: "pointer",
+      },
+
+      /** Dictionary mobile quick nav */
       ".mobileNavMenu": {
         overflow: "hidden",
         position: "fixed",
@@ -297,19 +243,14 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: isDarkMode ? Solarized.base3 : Solarized.base02,
         cursor: "pointer",
       },
-      ".dLink": {
-        color: Solarized.navy,
-        borderBottom: `1px solid ${Solarized.navy}`,
-      },
-      ".dLink:hover": {
-        color: Solarized.blue,
-        borderBottom: `1px solid ${Solarized.blue}`,
-        cursor: "pointer",
-      },
-      ".latWord:hover": {
-        color: Solarized.blue,
-        borderBottom: `1px solid ${Solarized.blue}`,
-        cursor: "pointer",
+
+      /** Reader specific */
+      ".readerIconBar": {
+        position: "sticky",
+        top: 0,
+        width: "100%",
+        borderRadius: "4px",
+        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
       },
       ".workLatWord:hover": {
         borderBottom: `1px solid`,
@@ -319,16 +260,82 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: Solarized.blue,
         cursor: "pointer",
       },
+
+      /** Search box */
+      ".customSearchContainer": {
+        backgroundColor: backgroundColor,
+        width: "100%",
+        maxWidth: "100%",
+        borderRadius: 4,
+        border: `2px solid ${
+          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
+        }`,
+      },
+      ".customSearchContainerFocused": {
+        border: `2px solid ${
+          isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
+        }`,
+      },
+      ".customSearchBox": {
+        backgroundColor: backgroundColor,
+        width: "100%",
+        maxWidth: "100%",
+        border: "none",
+        padding: "12px",
+        outline: "none",
+        spellcheck: "false",
+        ...TEXT_STYLE,
+        fontSize: FontSizes.BIG_SCREEN,
+        color: isDarkMode ? Solarized.base1 : Solarized.base00,
+      },
+      ".customSearchPopup": {
+        color: isDarkMode ? Solarized.base1 : Solarized.base01,
+        backgroundColor: isDarkMode ? Solarized.base02 : "#fafafa",
+        ...TEXT_STYLE,
+        fontSize: FontSizes.BIG_SCREEN,
+        paddingTop: "8px",
+        paddingBottom: "8px",
+        borderRadius: "4px",
+        zIndex: 1000,
+        boxShadow: `0 2px 3px 2px ${
+          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
+        }`,
+        overflow: "auto",
+      },
+      ".customSearchPopupOption": {
+        paddingLeft: "16px",
+        paddingTop: "6px",
+        paddingBottom: "6px",
+        display: "flex",
+        alignItems: "center",
+        cursor: "pointer",
+      },
+      ".customSearchPopupOptionSelected": {
+        backgroundColor: Solarized.base1 + "20",
+      },
+
+      /** Custom scrollbar styles */
+      "::-webkit-scrollbar": {
+        width: "12px",
+      },
+      "::-webkit-scrollbar-track": {
+        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+        borderRadius: "4px",
+      },
+      "::-webkit-scrollbar-thumb": {
+        background: "#888",
+        borderRadius: "4px",
+      },
+      "::-webkit-scrollbar-thumb:hover": {
+        background: "#555",
+      },
+
+      /** Macronizer specific */
       ".macronBox": {
         borderColor: isDarkMode ? Solarized.base01 : Solarized.base2,
       },
       ".macronLabel": {
         color: Solarized.base1,
-      },
-      ".autoCompItem": {
-        backgroundColor: isDarkMode ? Solarized.red : Solarized.base3,
-        paddingTop: "5px",
-        paddingBottom: "5px",
       },
     },
   };
