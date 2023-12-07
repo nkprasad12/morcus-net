@@ -570,9 +570,10 @@ export function DictionaryViewV2(props?: {
         const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
         setState(numEntries === 0 ? "No Results" : "Results");
       });
-      const scrollElement = sectionRef.current || scrollTopRef.current;
+      const scrollElement =
+        sectionRef.current || (isEmbedded ? null : scrollTopRef.current);
       const scrollType =
-        nav.route.internalSource === true
+        nav.route.internalSource === true || isEmbedded
           ? SCROLL_JUMP
           : scrollElement === scrollTopRef.current
           ? SCROLL_SMOOTH

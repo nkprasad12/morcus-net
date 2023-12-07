@@ -249,8 +249,12 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         position: "sticky",
         top: 0,
         width: "100%",
-        borderRadius: "4px",
-        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+        // borderRadius: "4px",
+        boxShadow: `0 2px 3px 1px ${
+          isDarkMode ? Solarized.base015 : Solarized.base15
+        }`,
+        marginBottom: "3px",
+        backgroundColor: backgroundColor,
       },
       ".workLatWord:hover": {
         borderBottom: `1px solid`,
@@ -304,8 +308,8 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       },
       ".customSearchPopupOption": {
         paddingLeft: "16px",
-        paddingTop: "6px",
-        paddingBottom: "6px",
+        paddingTop: "9px",
+        paddingBottom: "9px",
         display: "flex",
         alignItems: "center",
         cursor: "pointer",

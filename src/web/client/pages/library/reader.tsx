@@ -28,7 +28,7 @@ import Container from "@mui/material/Container";
 // Experimentally for large screen mode this is 64 but honestly who knows
 // about the true range.
 const APP_BAR_MAX_HEIGHT = 64;
-const COLUMN_TOP_MARGIN = 0;
+const COLUMN_TOP_MARGIN = 8;
 const COLUMN_BOTTON_MARGIN = 8;
 const CONTAINER_STYLE: CSSProperties = {
   height:
@@ -264,8 +264,6 @@ export function ReadingPage() {
         style={{
           ...COLUMN_STYLE,
           width: `${mainWidth}%`,
-          paddingLeft: 4,
-          paddingRight: 8,
         }}
       >
         <WorkColumn
@@ -296,19 +294,21 @@ export function ReadingPage() {
                 onClick={() => setSidebar({ panel: "Settings" })}
               />
             </div>
-            <Sidebar
-              workInfo={typeof work === "string" ? undefined : work.info}
-              scale={dictScale}
-              sidebar={sidebar}
-              mainWidth={mainWidth}
-              setMainWidth={setMainWidth}
-              dictScale={dictScale}
-              setDictScale={setDictScale}
-              workScale={workScale}
-              setWorkScale={setWorkScale}
-              totalWidth={totalWidth}
-              setTotalWidth={setTotalWidth}
-            />
+            <div style={{ paddingRight: "8px" }}>
+              <Sidebar
+                workInfo={typeof work === "string" ? undefined : work.info}
+                scale={dictScale}
+                sidebar={sidebar}
+                mainWidth={mainWidth}
+                setMainWidth={setMainWidth}
+                dictScale={dictScale}
+                setDictScale={setDictScale}
+                workScale={workScale}
+                setWorkScale={setWorkScale}
+                totalWidth={totalWidth}
+                setTotalWidth={setTotalWidth}
+              />
+            </div>
           </>
         </ContentBox>
       </div>
@@ -354,14 +354,16 @@ function WorkColumn(props: {
             work={work}
             textScale={props.textScale}
           />
-          <WorkTextPage
-            work={work}
-            setDictWord={(dictWord) =>
-              props.setSidebar({ panel: "Dict", dictWord })
-            }
-            page={currentPage}
-            textScale={props.textScale}
-          />
+          <div style={{ paddingRight: "8px" }}>
+            <WorkTextPage
+              work={work}
+              setDictWord={(dictWord) =>
+                props.setSidebar({ panel: "Dict", dictWord })
+              }
+              page={currentPage}
+              textScale={props.textScale}
+            />
+          </div>
         </>
       )}
     </ContentBox>
