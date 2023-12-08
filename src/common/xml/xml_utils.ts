@@ -225,6 +225,32 @@ function findTextNodesInternal(
   return results;
 }
 
+export type DescendantNode = [XmlNode, XmlNode[]];
+/**
+ * Finds all descendants of the given root node.
+ *
+ * @param root the root node on which to begin traversal.
+ *
+ * @returns An array of all descendants of the given root node,
+ *          including itself. Each descendant is paired with a list
+ *          of all ancestor nodes, in order of traversal.
+ */
+export function findXmlNodes(root: XmlNode): DescendantNode[] {
+  const results: DescendantNode[] = [];
+  const queue: DescendantNode[] = [[root, []]];
+  while (queue.length > 0) {
+    const top = queue.pop()!;
+    results.push(top);
+    for (const child of top[0].children) {
+      if (typeof child === "string") {
+        continue;
+      }
+      queue.push([child, [...top[1], top[0]]]);
+    }
+  }
+  return results;
+}
+
 /** Removes the given text node from the tree. */
 export function removeTextNode(data: TextNodeData) {
   function updateSiblings(parent: XmlNode, removedIndex: number) {
