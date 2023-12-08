@@ -94,7 +94,7 @@ describe("findXmlNodes", () => {
     const A = new XmlNode("a");
     const B = new XmlNode("b", [], ["b"]);
     const C = new XmlNode("c", [], [A]);
-    const D = new XmlNode("d", [], [B, "d", C]);
+    const D = new XmlNode("d", [], [C, "d", B]);
 
     const result = findXmlNodes(D);
 

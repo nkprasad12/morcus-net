@@ -73,19 +73,6 @@ function isTextNode(node: any): boolean {
   return false;
 }
 
-// function findXmlElement(input: any, name: string): any {
-//   const candidates: any[] = [input];
-//   if (Array.isArray(input)) {
-//     candidates.push(...input);
-//   }
-//   for (const candidate of candidates) {
-//     if (candidate[name] !== undefined) {
-//       return candidate;
-//     }
-//   }
-//   throw new Error(`No ${name} found.\n${input}`);
-// }
-
 function validateXml(input: any): void {
   const result = XMLValidator.validate(input, {});
   if (result !== true) {
@@ -233,7 +220,8 @@ export type DescendantNode = [XmlNode, XmlNode[]];
  *
  * @returns An array of all descendants of the given root node,
  *          including itself. Each descendant is paired with a list
- *          of all ancestor nodes, in order of traversal.
+ *          of all ancestor nodes, in order of traversal. These are
+ *          guaranteed to be returned in DFS order.
  */
 export function findXmlNodes(root: XmlNode): DescendantNode[] {
   const results: DescendantNode[] = [];
@@ -241,7 +229,8 @@ export function findXmlNodes(root: XmlNode): DescendantNode[] {
   while (queue.length > 0) {
     const top = queue.pop()!;
     results.push(top);
-    for (const child of top[0].children) {
+    for (let i = top[0].children.length - 1; i >= 0; i--) {
+      const child = top[0].children[i];
       if (typeof child === "string") {
         continue;
       }
