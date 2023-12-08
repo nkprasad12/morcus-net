@@ -6,7 +6,6 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 
 import { assertEqual } from "@/common/assert";
 import { RouteContext } from "@/web/client/components/router";
@@ -15,7 +14,7 @@ import {
   ERROR_STATE_MESSAGE,
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
-import { useMediaQuery } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -87,7 +86,7 @@ describe("New Dictionary View", () => {
 
   it("shows fetched result on large screen", async () => {
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     const resultString = "France or whatever idk lol";
     mockCallApiMockResolvedValue({
       LS: [
@@ -157,7 +156,7 @@ describe("New Dictionary View", () => {
 
   it("shows no results case", async () => {
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     mockCallApiMockResolvedValue({ LS: [] });
     render(
       <RouteContext.Provider
@@ -175,7 +174,7 @@ describe("New Dictionary View", () => {
 
   it("shows multi results case", async () => {
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     mockCallApiMockResolvedValue({
       LS: [
         {
@@ -225,7 +224,7 @@ describe("New Dictionary View", () => {
     // @ts-ignore
     useMediaQuery.mockImplementation(() => true);
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     const resultString = "France or whatever idk lol";
     mockCallApiMockResolvedValue({
       LS: [
@@ -305,7 +304,7 @@ describe("New Dictionary View", () => {
     // @ts-ignore
     useMediaQuery.mockImplementation(() => true);
     const spyScrollTo = jest.fn();
-    Object.defineProperty(global.window, "scrollTo", { value: spyScrollTo });
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
     const resultString = "France or whatever idk lol";
     mockCallApiMockResolvedValue({
       LS: [
@@ -335,13 +334,13 @@ describe("New Dictionary View", () => {
         },
       ],
     });
-    render(<DictionaryViewV2 embedded={true} initial="Belgae" />);
+    render(<DictionaryViewV2 embedded initial="Belgae" />);
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "S&H"],
+      dicts: ["L&S"],
       query: "Belgae",
-      mode: 0,
+      mode: 1,
     });
     await waitFor(() => {
       expect(screen.getByText(resultString)).toBeDefined();

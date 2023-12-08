@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import React from "react";
+import { useState, useRef, useEffect } from "react";
 import TocIcon from "@mui/icons-material/Toc";
 import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
 import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
@@ -72,50 +72,54 @@ class NavHelper {
   }
 }
 
-export function QuickNavMenu() {
-  const [open, setOpen] = React.useState<boolean>(false);
-  const navHelper = React.useRef<NavHelper | null>(null);
+function OpenMenu(props: {
+  navHelper: NavHelper | null;
+  setOpen: (isOpen: boolean) => any;
+}) {
+  const { navHelper, setOpen } = props;
+  return (
+    <div className="mobileNavOpen">
+      <KeyboardArrowUp
+        onClick={() => navHelper?.scrollToPrevious()}
+        className="mobileNavButton"
+        aria-label="jump to previous section"
+      />
+      <KeyboardArrowDown
+        onClick={() => navHelper?.scrollToNext()}
+        className="mobileNavButton"
+        aria-label="jump to next section"
+      />
+      <TocIcon
+        onClick={() =>
+          document
+            .getElementById("DictResultsSummary")
+            ?.scrollIntoView(SCROLL_JUMP)
+        }
+        className="mobileNavButton"
+        aria-label="jump to entry"
+      />
+      <CloseIcon
+        onClick={() => setOpen(false)}
+        className="mobileNavButton"
+        aria-label="close quick navigation"
+      />
+    </div>
+  );
+}
 
-  React.useEffect(() => {
+export function QuickNavMenu() {
+  const [open, setOpen] = useState<boolean>(false);
+  const navHelper = useRef<NavHelper | null>(null);
+
+  useEffect(() => {
     navHelper.current = new NavHelper();
     return () => navHelper.current?.destroy();
   }, []);
 
-  function OpenMenu() {
-    return (
-      <div className="mobileNavOpen">
-        <KeyboardArrowUp
-          onClick={() => navHelper.current?.scrollToPrevious()}
-          className="mobileNavButton"
-          aria-label="jump to previous section"
-        />
-        <KeyboardArrowDown
-          onClick={() => navHelper.current?.scrollToNext()}
-          className="mobileNavButton"
-          aria-label="jump to next section"
-        />
-        <TocIcon
-          onClick={() =>
-            document
-              .getElementById("DictResultsSummary")
-              ?.scrollIntoView(SCROLL_JUMP)
-          }
-          className="mobileNavButton"
-          aria-label="jump to entry"
-        />
-        <CloseIcon
-          onClick={() => setOpen(false)}
-          className="mobileNavButton"
-          aria-label="close quick navigation"
-        />
-      </div>
-    );
-  }
-
   return (
     <div className="mobileNavMenu">
       {open ? (
-        <OpenMenu />
+        <OpenMenu navHelper={navHelper.current} setOpen={setOpen} />
       ) : (
         <MenuOpenIcon
           onClick={() => setOpen(true)}

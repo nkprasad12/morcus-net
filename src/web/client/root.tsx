@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import React, { PropsWithChildren } from "react";
+import { useContext, StrictMode, PropsWithChildren } from "react";
 import ReactDOM from "react-dom/client";
 
 import GlobalStyles from "@mui/material/GlobalStyles";
@@ -17,7 +17,12 @@ import {
 } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
 import { ACTIVE_PAGES } from "@/web/client/active_pages";
-import { getBackgroundColor, getGlobalStyles } from "@/web/client/styles";
+import {
+  getBackgroundColor,
+  getGlobalStyles,
+  FontSizes,
+  TEXT_STYLE,
+} from "@/web/client/styles";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -52,19 +57,12 @@ function appTheme(isDarkMode: boolean) {
     },
   });
 
-  const allowedFonts = `"Roboto","Arial","Helvetica",sans-serif`;
   const typographyStyle = {
-    fontSize: 20,
-    fontFamily: allowedFonts,
-    fontWeight: 400,
-    lineHeight: 1.5,
-    letterSpacing: "0.00938em",
+    ...TEXT_STYLE,
+    fontSize: FontSizes.BIG_SCREEN,
     [theme.breakpoints.down("sm")]: {
-      fontSize: 19,
-      fontFamily: allowedFonts,
-      fontWeight: 400,
-      lineHeight: 1.5,
-      letterSpacing: "0.00938em",
+      ...TEXT_STYLE,
+      fontSize: FontSizes.SMALL_SCREEN,
     },
   };
 
@@ -85,7 +83,7 @@ function appTheme(isDarkMode: boolean) {
 }
 
 function CustomThemeProvider(props: PropsWithChildren<Record<string, any>>) {
-  const settings = React.useContext(GlobalSettingsContext);
+  const settings = useContext(GlobalSettingsContext);
   return (
     <ThemeProvider theme={appTheme(settings.data.darkMode === true)}>
       {props.children}
@@ -105,13 +103,13 @@ const root = ReactDOM.createRoot(
 );
 
 function ConfigurableStyles() {
-  const settings = React.useContext(GlobalSettingsContext);
+  const settings = useContext(GlobalSettingsContext);
   document.body.style.backgroundColor = getBackgroundColor(settings.data);
-  return <GlobalStyles styles={getGlobalStyles(settings.data)} />;
+  return <GlobalStyles {...getGlobalStyles(settings.data)} />;
 }
 
 root.render(
-  <React.StrictMode>
+  <StrictMode>
     <SettingsHandler>
       <CustomThemeProvider>
         <ConfigurableStyles />
@@ -124,5 +122,5 @@ root.render(
         </StyledEngineProvider>
       </CustomThemeProvider>
     </SettingsHandler>
-  </React.StrictMode>
+  </StrictMode>
 );

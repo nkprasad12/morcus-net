@@ -1,22 +1,18 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
-import { getBullet } from "@/common/lewis_and_short/ls_outline";
+import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
+import { FontSizes } from "@/web/client/styles";
 
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import { Divider } from "@mui/material";
+import Divider from "@mui/material/Divider";
 
-import React from "react";
+import * as React from "react";
 
 export function jumpToSection(sectionId: string) {
   const selected = document.getElementById(sectionId);
-  if (selected === null) {
-    return;
-  }
-  window.scrollTo({
-    behavior: "auto",
-    top: selected.offsetTop,
-  });
+  // @ts-ignore
+  selected?.scrollIntoView({ behavior: "instant", block: "start" });
 }
 
 export function TableOfContentsV2(props: {
@@ -24,6 +20,7 @@ export function TableOfContentsV2(props: {
   dictKey: string;
   isSmall: boolean;
   tocRef: React.RefObject<HTMLElement>;
+  textScale?: number;
 }) {
   const isSmall = props.isSmall;
   const outlines = props.outlines;
@@ -37,13 +34,19 @@ export function TableOfContentsV2(props: {
       mr="0px"
       noDivider
     >
-      <div style={{ fontSize: 16, lineHeight: "normal" }}>
+      <div
+        style={{
+          fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
+          lineHeight: "normal",
+        }}
+      >
         {outlines.map((outline, index) => (
           <OutlineSection
             key={outline?.mainSection.sectionId || `undefined${index}`}
             dictKey={props.dictKey}
             outline={outline}
             onClick={jumpToSection}
+            textScale={props.textScale}
           />
         ))}
       </div>
@@ -55,9 +58,11 @@ function OutlineSection(props: {
   outline: EntryOutline;
   onClick: (section: string) => any;
   dictKey: string;
+  textScale?: number;
 }) {
   const outline = props.outline;
   const senses = outline.senses;
+  const scale = (props?.textScale || 100) / 100;
 
   return (
     <div style={{ marginTop: "12px" }}>
@@ -66,19 +71,20 @@ function OutlineSection(props: {
         style={{ cursor: "pointer" }}
         className="clickableOutlineSection"
       >
-        <DictChip label={props.dictKey} />
+        <DictChip label={props.dictKey} textScale={props.textScale} />
         <span className="outlineHead" style={{ marginLeft: 2 }}>
           <OpenInNewIcon
             sx={{
-              marginBottom: "-0.1em",
-              marginRight: "-0.1em",
-              fontSize: "0.8rem",
-              paddingLeft: "0.1em",
+              marginBottom: `${-0.1 * scale}em`,
+              marginRight: `${-0.1 * scale}em`,
+              fontSize: `${0.8 * scale}em`,
+              paddingLeft: `${0.1 * scale}em`,
             }}
           />
           {` ${outline.mainKey}`}
         </span>
         <span
+          style={{ fontSize: FontSizes.SECONDARY * scale }}
           dangerouslySetInnerHTML={{ __html: " " + outline.mainSection.text }}
         />
       </div>
@@ -97,24 +103,30 @@ function OutlineSection(props: {
                 onClick={() => props.onClick(sense.sectionId)}
                 className="clickableOutlineSection"
               >
-                <span className="outlineHead">
+                <span
+                  className="outlineHead"
+                  style={{ fontSize: FontSizes.SECONDARY * scale }}
+                >
                   <OpenInNewIcon
                     sx={{
-                      marginBottom: "-0.1em",
-                      marginRight: "-0.1em",
-                      fontSize: "0.8rem",
-                      paddingLeft: "0.1em",
+                      marginBottom: `${-0.1 * scale}em`,
+                      marginRight: `${-0.1 * scale}em`,
+                      fontSize: `${0.8 * scale}em`,
+                      paddingLeft: `${0.1 * scale}em`,
                     }}
                   />
                   {` ${header} `}
                 </span>
-                <span dangerouslySetInnerHTML={{ __html: " " + sense.text }} />
+                <span
+                  style={{ fontSize: FontSizes.SECONDARY * scale }}
+                  dangerouslySetInnerHTML={{ __html: " " + sense.text }}
+                />
               </li>
             );
           })}
         </ol>
       )}
-      <Divider light={true} sx={{ margin: 0, padding: 0 }} />
+      <Divider className="contentDivider" sx={{ margin: 0, padding: 0 }} />
     </div>
   );
 }

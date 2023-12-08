@@ -76,10 +76,6 @@ export function printLsSchema(): void {
         .reverse()
         .forEach((x) => queue.push(x));
     }
-    for (const foreign of entry.findDescendants("foreign")) {
-      if (foreign.children.length === 0) {
-      }
-    }
   }
 }
 

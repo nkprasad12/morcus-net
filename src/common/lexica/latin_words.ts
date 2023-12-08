@@ -1,6 +1,6 @@
 import { Database } from "better-sqlite3";
 import { readFileSync } from "fs";
-import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent, envVar } from "@/common/assert";
 import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { execSync } from "child_process";
@@ -150,8 +150,8 @@ function rowsFromMorpheusAnalysis(
 }
 
 export function makeMorpheusDb(
-  rawInput: string = checkPresent(process.env.RAW_LATIN_WORDS),
-  outputPath: string = checkPresent(process.env.LATIN_INFLECTION_DB)
+  rawInput: string = envVar("RAW_LATIN_WORDS"),
+  outputPath: string = envVar("LATIN_INFLECTION_DB")
 ) {
   const inflectionsDict = loadMorpheusOutput(rawInput);
   const rows: LatinWordRow[] = rowsFromMorpheusAnalysis(

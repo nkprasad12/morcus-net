@@ -1,4 +1,5 @@
-import { extractOutline, getBullet } from "@/common/lewis_and_short/ls_outline";
+import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
+import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { XmlNode } from "@/common/xml/xml_node";
 
 describe("getBullet", () => {

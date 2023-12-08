@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import React from "react";
+import { useContext, useEffect } from "react";
 import {
   DataAndSetter,
   GlobalSettings,
@@ -19,8 +19,8 @@ function setupHandler(): Box<DataAndSetter<GlobalSettings>> {
   const result: Box<DataAndSetter<GlobalSettings>> = { get: undefined };
 
   function TestApp() {
-    const settings = React.useContext(GlobalSettingsContext);
-    React.useEffect(() => {
+    const settings = useContext(GlobalSettingsContext);
+    useEffect(() => {
       result.get = settings;
     }, [settings]);
     return <></>;

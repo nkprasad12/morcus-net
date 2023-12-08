@@ -1,6 +1,7 @@
 import { DICT_PAGE } from "@/web/client/active_pages";
 import { RouteContext } from "@/web/client/components/router";
-import React, { ReactNode } from "react";
+import { ReactNode } from "react";
+import * as React from "react";
 
 export interface TitleContext {
   setCurrentDictWord: (word: string) => void;

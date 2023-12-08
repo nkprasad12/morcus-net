@@ -32,7 +32,6 @@ export const LIBRARY_PAGE: SinglePageApp.Page = {
   name: "Library",
   path: "/library",
   content: Library,
-  experimental: true,
 };
 
 export const SETTINGS_PAGE: SinglePageApp.Page = {

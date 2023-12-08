@@ -4,7 +4,6 @@
 
 import { render, screen } from "@testing-library/react";
 import { About } from "@/web/client/pages/about";
-import React from "react";
 
 describe("About Page", () => {
   test("shows expected components", () => {

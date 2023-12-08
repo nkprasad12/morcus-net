@@ -1,8 +1,11 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
-import { Box, Typography, Divider } from "@mui/material";
-import React from "react";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import Divider from "@mui/material/Divider";
+import * as React from "react";
+import { FontSizes } from "@/web/client/styles";
 
 export function ContentBox(props: {
   children: JSX.Element;
@@ -14,6 +17,7 @@ export function ContentBox(props: {
   noDivider?: true;
   id?: string;
   className?: string;
+  textScale?: number;
 }) {
   const isSmall = props.isSmall;
 
@@ -39,6 +43,9 @@ export function ContentBox(props: {
         className="contentText"
         style={{
           whiteSpace: "pre-wrap",
+          fontSize: props.textScale
+            ? FontSizes.BIG_SCREEN * (props.textScale / 100)
+            : undefined,
         }}
       >
         {props.children}
@@ -82,22 +89,31 @@ function ShAttribution() {
   );
 }
 
-export function DictAttribution(props: { isSmall: boolean; dictKey: string }) {
-  function AttributionContent() {
-    const key = props.dictKey + "AttrBox";
-    if (props.dictKey === LatinDict.LewisAndShort.key) {
-      return <LsAttribution key={key} />;
-    }
-    if (props.dictKey === LatinDict.SmithAndHall.key) {
-      return <ShAttribution key={key} />;
-    }
-    return <>TODO: Write attribution for {props.dictKey}</>;
+function AttributionContent(props: { dictKey: string }) {
+  const key = props.dictKey + "AttrBox";
+  if (props.dictKey === LatinDict.LewisAndShort.key) {
+    return <LsAttribution key={key} />;
   }
+  if (props.dictKey === LatinDict.SmithAndHall.key) {
+    return <ShAttribution key={key} />;
+  }
+  return <>TODO: Write attribution for {props.dictKey}</>;
+}
 
+export function DictAttribution(props: {
+  isSmall: boolean;
+  dictKey: string;
+  textScale?: number;
+}) {
   return (
     <ContentBox isSmall={props.isSmall}>
-      <div style={{ fontSize: 15, lineHeight: "normal" }}>
-        <AttributionContent />
+      <div
+        style={{
+          fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
+          lineHeight: "normal",
+        }}
+      >
+        <AttributionContent dictKey={props.dictKey} />
       </div>
     </ContentBox>
   );

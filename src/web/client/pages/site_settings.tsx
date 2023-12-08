@@ -2,7 +2,7 @@ import Box from "@mui/material/Box";
 import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
-import React, { useContext } from "react";
+import { useContext } from "react";
 import {
   GlobalBooleans,
   GlobalSettingsContext,
@@ -40,7 +40,7 @@ export function SiteSettings() {
       <Box sx={{ padding: 3 }}>
         <Typography component={"div"} className="nonDictText">
           <GlobalSettingsCheckbox
-            label="Enable Experimental Settings (Search inflected forms)"
+            label="Enable Experimental features (inflected dictionary lookups, macronizer)"
             settingKey="experimentalMode"
           />
           <GlobalSettingsCheckbox

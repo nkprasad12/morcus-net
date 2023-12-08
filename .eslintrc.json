@@ -24,6 +24,11 @@
     "src/py/",
     "venv/"
   ],
+  "settings": {
+    "react": {
+      "version": "detect"
+    }
+  },
   "rules": {
     "@typescript-eslint/no-unused-vars": "off",
     "@typescript-eslint/no-non-null-assertion": "off",
@@ -34,8 +39,15 @@
     "@typescript-eslint/no-empty-function": "off",
     "@typescript-eslint/ban-ts-comment": "off",
     "react/prop-types": "off",
+    "react/no-unstable-nested-components": "error",
     "no-constant-condition": "off",
     "no-inner-declarations": "off",
-    "no-empty": "off"
+    "no-empty": ["error", { "allowEmptyCatch": true }],
+    "react/jsx-boolean-value": "error",
+    "react/hook-use-state": "error",
+    "react/jsx-fragments": "error",
+    // Not required with new JSX transform.
+    "react/jsx-uses-react": "off",
+    "react/react-in-jsx-scope": "off"
   }
 }

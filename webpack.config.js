@@ -46,12 +46,12 @@ module.exports = (env) => {
     minimize: shouldMinimize,
     minimizer: [
       new TerserPlugin({
-        include: "vendorBundle",
+        include: ["vendorBundle", "Root"],
       }),
     ],
     splitChunks: {
       chunks: "all",
-      minSize: 250000,
+      minSize: 300000,
       maxSize: 500000,
       cacheGroups: {
         vendorBundle: {
@@ -78,7 +78,7 @@ module.exports = (env) => {
     watchOptions: {
       ignored: /node_modules/,
       aggregateTimeout: 500,
-      poll: 1500,
+      poll: 500,
     },
     module: {
       rules: [

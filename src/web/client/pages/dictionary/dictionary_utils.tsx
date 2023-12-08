@@ -1,4 +1,5 @@
-import React, { MutableRefObject } from "react";
+import { MutableRefObject } from "react";
+import * as React from "react";
 
 import { checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -10,8 +11,10 @@ import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { InflectionData } from "@/common/dictionaries/dict_result";
+import { FontSizes } from "@/web/client/styles";
 
 export const QUICK_NAV_ANCHOR = "QNA";
+export const QNA_EMBEDDED = "QNAEmbedded";
 
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -98,6 +101,7 @@ function ShLink(props: { text: string; query: string }) {
       onClick={() =>
         Navigation.query(nav, props.query, {
           internalSource: true,
+          canonicalPath: "/dicts",
         })
       }
     >
@@ -115,6 +119,7 @@ function LatLink(props: { word: string; orig?: string }) {
         Navigation.query(nav, `${props.word},LnS`, {
           experimentalSearch: true,
           internalSource: true,
+          canonicalPath: "/dicts",
         })
       }
     >
@@ -123,11 +128,24 @@ function LatLink(props: { word: string; orig?: string }) {
   );
 }
 
+function transformClassAttr(value: string, isEmbedded: boolean) {
+  return value
+    .split(" ")
+    .map((chunk) => {
+      if (!isEmbedded || chunk !== QUICK_NAV_ANCHOR) {
+        return chunk;
+      }
+      return QNA_EMBEDDED;
+    })
+    .join(" ");
+}
+
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
   sectionRef?: MutableRefObject<HTMLElement | null>,
-  key?: string
+  key?: string,
+  isEmbedded?: boolean
 ): JSX.Element {
   const children = root.children.map((child, i) => {
     if (typeof child === "string") {
@@ -137,7 +155,8 @@ export function xmlNodeToJsx(
       child,
       highlightId,
       sectionRef,
-      child.getAttr("id") || `${i}`
+      child.getAttr("id") || `${i}`,
+      isEmbedded
     );
   });
   const props: { [propKey: string]: any } = {};
@@ -148,8 +167,8 @@ export function xmlNodeToJsx(
   let className: string | undefined = undefined;
   for (const [attrKey, value] of root.attrs) {
     if (attrKey === "class") {
-      className = value;
-      props.className = value;
+      className = transformClassAttr(value, isEmbedded === true);
+      props.className = className;
       continue;
     }
     if (attrKey === "title") {
@@ -196,11 +215,13 @@ export function xmlNodeToJsx(
     const target = root.getAttr("to");
     const text = root.getAttr("text");
     const query = [target || "undefined", "SnH"];
-    return <ShLink query={query.join(",")} text={text || "undefined"} />;
+    return (
+      <ShLink query={query.join(",")} text={text || "undefined"} key={key} />
+    );
   } else if (className === "latWord") {
     const word = root.getAttr("to")!;
     const orig = root.getAttr("orig");
-    return <LatLink word={word} orig={orig} />;
+    return <LatLink word={word} orig={orig} key={key} />;
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";
@@ -236,6 +257,7 @@ export interface ElementAndKey {
 
 export function InflectionDataSection(props: {
   inflections: InflectionData[];
+  textScale?: number;
 }) {
   const byForm = new Map<string, [string, string | undefined][]>();
   for (const data of props.inflections) {
@@ -261,13 +283,19 @@ export function InflectionDataSection(props: {
   return (
     <>
       {formatted.map(([form, inflections]) => (
-        <div style={{ fontSize: 16, paddingBottom: 3 }} key={form}>
+        <div
+          style={{
+            fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
+            paddingBottom: 3,
+          }}
+          key={form}
+        >
           <span className="lsOrth">{form}</span>:
           {inflections.length === 1 ? (
             ` ${inflections[0]}`
           ) : (
             <ul style={{ margin: 0 }} aria-label="Inflections">
-              {inflections.map((inflection) => (
+              {[...new Set(inflections)].map((inflection) => (
                 <li style={{ lineHeight: "normal" }} key={inflection}>
                   {inflection}
                 </li>

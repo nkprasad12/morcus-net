@@ -9,7 +9,6 @@ import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autoco
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 
 console.debug = jest.fn();
 
@@ -23,6 +22,10 @@ afterEach(() => {
 const BOTH_DICTS = [LatinDict.LewisAndShort, LatinDict.SmithAndHall];
 
 describe("DictionarySearch", () => {
+  beforeAll(() => {
+    window.HTMLElement.prototype.scrollIntoView = jest.fn();
+  });
+
   beforeEach(() => {
     mockAutocomplete.mockResolvedValue([
       [LatinDict.LewisAndShort, "ab"],
@@ -146,8 +149,6 @@ describe("DictionarySearch", () => {
     expect(screen.queryByText("Dictionary Options")).not.toBeNull();
     const lsCheck = screen.getAllByRole("checkbox");
     await user.click(lsCheck[0]);
-    expect(mockSetDicts).not.toHaveBeenCalled();
-    await user.click(screen.getByText("Close"));
     expect(mockSetDicts).toHaveBeenCalledWith([LatinDict.SmithAndHall]);
   });
 
@@ -185,11 +186,7 @@ describe("DictionarySearch", () => {
       fireEvent.mouseDown(slider!, { clientX: 162, clientY: 302 });
     });
 
-    let storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
-    expect(storage?.highlightStrength).not.toBe(90);
-    await user.click(screen.getByText("Close"));
-
-    storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
+    const storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
     expect(storage.highlightStrength).toBe(90);
   });
 });

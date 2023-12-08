@@ -6,7 +6,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import user from "@testing-library/user-event";
-import React from "react";
+import { forwardRef } from "react";
 
 import {
   ClickableTooltip,
@@ -36,6 +36,18 @@ describe("xmlNodeToJsx", () => {
     const root = new XmlNode("span", [["class", "Caesar"]], []);
     const result = xmlNodeToJsx(root);
     expect(result.props.className).toBe("Caesar");
+  });
+
+  it("handles embedded QNA elements", () => {
+    const root = new XmlNode(
+      "span",
+      [["class", "Caesar QNA"]],
+      [new XmlNode("span", [["class", "QNA"]])]
+    );
+
+    const result = xmlNodeToJsx(root, undefined, undefined, undefined, true);
+    expect(result.props.className).toBe("Caesar QNAEmbedded");
+    expect(result.props.children[0].props.className).toBe("QNAEmbedded");
   });
 
   it("handles nodes with titles", () => {
@@ -103,7 +115,7 @@ describe("xmlNodeToJsx", () => {
     await user.click(screen.getByText("Gallia"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "omnis,SnH" })
+      expect.objectContaining({ path: "/dicts", query: "omnis,SnH" })
     );
   });
 
@@ -129,7 +141,7 @@ describe("xmlNodeToJsx", () => {
     await user.click(screen.getByText("omnis"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+      expect.objectContaining({ path: "/dicts", query: "omnis,LnS" })
     );
   });
 
@@ -156,13 +168,13 @@ describe("xmlNodeToJsx", () => {
     await user.click(screen.getByText("blah"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "omnis,LnS" })
+      expect.objectContaining({ path: "/dicts", query: "omnis,LnS" })
     );
   });
 });
 
 describe("ClickableTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
+  const DivWithRef = forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows base text on initial load", async () => {
     render(
@@ -201,7 +213,7 @@ describe("ClickableTooltip", () => {
 });
 
 describe("SectionLinkTooltip", () => {
-  const DivWithRef = React.forwardRef<HTMLDivElement>(GalliaRef);
+  const DivWithRef = forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows link buttons", async () => {
     const writeText = jest.fn((_e) => Promise.resolve());

@@ -5,7 +5,6 @@
 import { describe, expect, test } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { RouteContext } from "@/web/client/components/router";
 import { SettingsHandler } from "@/web/client/components/global_flags";

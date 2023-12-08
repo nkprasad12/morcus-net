@@ -1,89 +1,261 @@
 import { DocumentInfo, ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
-import { GetWork } from "@/web/api_routes";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
-import { callApi } from "@/web/utils/rpc/client_rpc";
-import Stack from "@mui/material/Stack";
-import React, { CSSProperties, useContext, useEffect, useState } from "react";
+import LinkIcon from "@mui/icons-material/Link";
+import Settings from "@mui/icons-material/Settings";
+import MenuBook from "@mui/icons-material/MenuBookOutlined";
+import Info from "@mui/icons-material/Info";
+import { CSSProperties, useContext, useEffect, useState } from "react";
+import * as React from "react";
 import IconButton from "@mui/material/IconButton";
-import { safeParseInt } from "@/common/misc_utils";
+import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
+import Typography from "@mui/material/Typography";
+import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
+import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
+import Slider from "@mui/material/Slider";
+import { debounce } from "@mui/material/utils";
+import { FontSizes } from "@/web/client/styles";
+import Container from "@mui/material/Container";
+import { fetchWork } from "@/web/client/pages/library/work_cache";
 
-const TOC_SIDEBAR_STYLE: CSSProperties = {
-  position: "sticky",
-  zIndex: 1,
-  top: 0,
-  left: 0,
-  marginTop: 10,
-  overflow: "auto",
-  maxHeight: window.innerHeight - 40,
-  minWidth: "50%",
+// We need to come up a with a better way to deal with this, since
+// Experimentally for large screen mode this is 64 but honestly who knows
+// about the true range.
+const APP_BAR_MAX_HEIGHT = 64;
+const COLUMN_TOP_MARGIN = 8;
+const COLUMN_BOTTON_MARGIN = 8;
+const CONTAINER_STYLE: CSSProperties = {
+  height:
+    window.innerHeight -
+    APP_BAR_MAX_HEIGHT -
+    COLUMN_TOP_MARGIN -
+    COLUMN_BOTTON_MARGIN,
 };
+const COLUMN_STYLE: CSSProperties = {
+  height: "100%",
+  float: "left",
+  width: "48%",
+  overflow: "auto",
+  boxSizing: "border-box",
+  marginTop: COLUMN_TOP_MARGIN,
+  marginBottom: COLUMN_BOTTON_MARGIN,
+  marginLeft: "1%",
+  marginRight: "1%",
+};
+const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | false)[] = [
+  "lg",
+  "xl",
+  "xxl",
+  false,
+];
 
-function Placeholder() {
+interface SidebarState {
+  dictWord?: string;
+  panel: "Info" | "Dict" | "Settings";
+}
+
+function SettingsText(props: {
+  message: string;
+  size?: number;
+  scale: number;
+}) {
   return (
-    <span key={"horizonatalSpacePlaceholder"} className="dictPlaceholder">
-      {"pla ceh old er".repeat(20)}
-    </span>
+    <Typography
+      component="span"
+      className="contentTextLight"
+      fontSize={
+        (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
+      }
+    >
+      {props.message}
+    </Typography>
   );
+}
+
+function SettingSlider(props: {
+  value: number;
+  setValue: (w: number) => any;
+  label: string;
+  min: number;
+  max: number;
+  step: number;
+  tag?: string;
+  scale: number;
+  disableLabels?: boolean;
+}) {
+  const scale = props.scale / 100;
+  return (
+    <div
+      style={{
+        alignItems: "center",
+        display: "flex",
+      }}
+    >
+      <SettingsText
+        message={props.label}
+        size={FontSizes.SECONDARY}
+        scale={props.scale}
+      />
+      <Slider
+        aria-label={(props.tag || "") + " " + props.label}
+        size="small"
+        getAriaValueText={(v) => `${v}`}
+        value={props.value}
+        onChange={debounce((_, newValue) => {
+          if (typeof newValue !== "number") {
+            return;
+          }
+          props.setValue(newValue);
+        })}
+        valueLabelDisplay={props.disableLabels ? "off" : "auto"}
+        step={props.step}
+        marks
+        min={props.min}
+        max={props.max}
+        style={{
+          width: 250 * scale,
+          marginLeft: 12 * scale,
+          marginRight: 12 * scale,
+        }}
+      />
+    </div>
+  );
+}
+
+function Sidebar(props: {
+  work?: PaginatedWork;
+  scale: number;
+  sidebar: SidebarState;
+  mainWidth: number;
+  setMainWidth: (x: number) => any;
+  workScale: number;
+  setWorkScale: (x: number) => any;
+  dictScale: number;
+  setDictScale: (x: number) => any;
+  totalWidth: number;
+  setTotalWidth: (x: number) => any;
+}) {
+  const scale = props.scale;
+  const sidebar = props.sidebar;
+  switch (sidebar.panel) {
+    case "Settings":
+      return (
+        <>
+          <details>
+            <summary>
+              <SettingsText message="Layout settings" scale={scale} />
+            </summary>
+            <SettingSlider
+              value={props.totalWidth}
+              setValue={props.setTotalWidth}
+              label="Total width"
+              min={0}
+              max={3}
+              step={1}
+              scale={scale}
+              disableLabels
+            />
+            <SettingSlider
+              value={props.mainWidth}
+              setValue={props.setMainWidth}
+              label="Main width"
+              min={32}
+              max={80}
+              step={8}
+              scale={scale}
+            />
+          </details>
+          <details>
+            <summary>
+              <SettingsText message="Main column settings" scale={scale} />
+            </summary>
+            <SettingSlider
+              value={props.workScale}
+              setValue={props.setWorkScale}
+              label="Text size"
+              tag="Main column"
+              min={50}
+              max={150}
+              step={10}
+              scale={scale}
+            />
+          </details>
+          <details>
+            <summary>
+              <SettingsText message="Side column settings" scale={scale} />
+            </summary>
+            <SettingSlider
+              value={props.dictScale}
+              setValue={props.setDictScale}
+              label="Text size"
+              tag="Side column"
+              min={50}
+              max={150}
+              step={10}
+              scale={scale}
+            />
+          </details>
+        </>
+      );
+    case "Dict":
+      return sidebar.dictWord === undefined ? (
+        <InfoText text="Click on a word for dictionary and inflection lookups." />
+      ) : (
+        <DictionaryViewV2
+          embedded
+          initial={sidebar.dictWord}
+          textScale={props.dictScale}
+        />
+      );
+    case "Info":
+      return (
+        <>
+          {props.work?.info && (
+            <WorkInfo workInfo={props.work?.info} scale={props.scale} />
+          )}
+          {props.work && (
+            <WorkNavigation work={props.work} scale={props.scale} />
+          )}
+        </>
+      );
+    default:
+      exhaustiveGuard(sidebar.panel);
+  }
+}
+
+function setUrl(nav: Navigation, newPage: number) {
+  // +1 so that the entry page is 0 and the other pages are 1-indexed.
+  Navigation.query(nav, `${newPage + 1}`, { localOnly: true });
 }
 
 export function ReadingPage() {
-  const [dictWord, setDictWord] = React.useState<string | undefined>();
+  const [sidebar, setSidebar] = React.useState<SidebarState>({ panel: "Dict" });
+  const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
+  const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
+  const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
+  const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
 
-  return (
-    <Stack direction="row" spacing={0} justifyContent="left">
-      <div style={{ maxWidth: "10000px" }}>
-        <ContentBox isSmall={false}>
-          <>
-            {dictWord ? (
-              <DictionaryViewV2 embedded={true} initial={dictWord} />
-            ) : (
-              <div>Click on a word for dictionary and inflection lookups.</div>
-            )}
-            <Placeholder />
-          </>
-        </ContentBox>
-      </div>
-      <div style={TOC_SIDEBAR_STYLE}>
-        <WorkColumn setDictWord={setDictWord} />
-      </div>
-    </Stack>
-  );
-}
-
-type PaginatedWork = ProcessedWork & { pageStarts: number[] };
-type WorkState = PaginatedWork | "Loading" | "Error";
-
-function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
-  const nav = useContext(RouteContext);
+  const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
-  const [currentPage, setCurrentPage] = useState<number>(-1);
 
-  function setUrl(newPage: number) {
-    // +1 so that the entry page is 0 and the other pages are 1-indexed.
-    Navigation.query(nav, `${newPage + 1}`, { localOnly: true });
-  }
-
-  function setPage(newPage: number) {
-    setUrl(newPage);
-    setCurrentPage(newPage);
-  }
+  const sidebarRef = React.useRef<HTMLDivElement>(null);
+  const nav = useContext(RouteContext);
 
   useEffect(() => {
     const id = nav.route.path.substring(WORK_PAGE.length + 1);
     const urlPage = safeParseInt(nav.route.query);
-    // -1 because we add 1 when setting the page.
+    // -1 because we add 1 when setting the page, so that users see 1-indexed.
     const newPage = urlPage === undefined ? currentPage : urlPage - 1;
     setCurrentPage(newPage);
     if (urlPage === undefined) {
-      setUrl(newPage);
+      setUrl(nav, newPage);
     }
-    callApi(GetWork, id)
+    fetchWork(id)
       .then((work) => setWork(dividePages(work)))
       .catch((reason) => {
         console.debug(reason);
@@ -91,8 +263,102 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
       });
   }, []);
 
+  useEffect(() => {
+    const urlPage = safeParseInt(nav.route.query);
+    if (urlPage !== undefined) {
+      // -1 because we add 1 when setting the page, so that users see 1-indexed.
+      setCurrentPage(urlPage - 1);
+    }
+  }, [nav.route.query]);
+
   return (
-    <ContentBox isSmall={false}>
+    <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
+      <div
+        style={{
+          ...COLUMN_STYLE,
+          width: `${mainWidth}%`,
+        }}
+      >
+        <WorkColumn
+          setSidebar={(newSidebar) => {
+            // @ts-ignore
+            sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
+            setSidebar(newSidebar);
+          }}
+          textScale={workScale}
+          work={work}
+          currentPage={currentPage}
+          setCurrentPage={setCurrentPage}
+        />
+      </div>
+      <div
+        style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}
+        ref={sidebarRef}
+      >
+        <ContentBox isSmall>
+          <>
+            <div className="readerIconBar">
+              <NavIcon
+                Icon={<Info />}
+                label="Work details"
+                onClick={() => setSidebar({ panel: "Info" })}
+              />
+              <NavIcon
+                Icon={<MenuBook />}
+                label="Dictionary"
+                onClick={() => setSidebar({ panel: "Dict" })}
+              />
+              <NavIcon
+                Icon={<Settings />}
+                label="Reader settings"
+                onClick={() => setSidebar({ panel: "Settings" })}
+              />
+            </div>
+            <div style={{ paddingRight: "8px" }}>
+              <Sidebar
+                work={typeof work === "string" ? undefined : work}
+                scale={dictScale}
+                sidebar={sidebar}
+                mainWidth={mainWidth}
+                setMainWidth={setMainWidth}
+                dictScale={dictScale}
+                setDictScale={setDictScale}
+                workScale={workScale}
+                setWorkScale={setWorkScale}
+                totalWidth={totalWidth}
+                setTotalWidth={setTotalWidth}
+              />
+            </div>
+          </>
+        </ContentBox>
+      </div>
+    </Container>
+  );
+}
+
+type PaginatedWork = ProcessedWork & { pageStarts: number[]; pages: number };
+type WorkState = PaginatedWork | "Loading" | "Error";
+
+function WorkColumn(props: {
+  setSidebar: (state: SidebarState) => any;
+  textScale: number;
+  work: WorkState;
+  currentPage: number;
+  setCurrentPage: (page: number) => any;
+}) {
+  const nav = useContext(RouteContext);
+
+  const currentPage = props.currentPage;
+  const setCurrentPage = props.setCurrentPage;
+  const work = props.work;
+
+  function setPage(newPage: number) {
+    setUrl(nav, newPage);
+    setCurrentPage(newPage);
+  }
+
+  return (
+    <ContentBox isSmall textScale={props.textScale}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
@@ -102,39 +368,163 @@ function WorkColumn(props: { setDictWord: (word: string | undefined) => any }) {
         </span>
       ) : (
         <>
-          <WorkNavigation page={currentPage} setPage={setPage} />
-          <WorkTextPage
-            work={work}
-            setDictWord={props.setDictWord}
+          <WorkNavigationBar
             page={currentPage}
+            setPage={setPage}
+            work={work}
+            textScale={props.textScale}
           />
-          <Placeholder />
+          <div style={{ paddingRight: "8px" }}>
+            <WorkTextPage
+              work={work}
+              setDictWord={(dictWord) =>
+                props.setSidebar({ panel: "Dict", dictWord })
+              }
+              page={currentPage}
+              textScale={props.textScale}
+            />
+          </div>
         </>
       )}
     </ContentBox>
   );
 }
 
-function WorkNavigation(props: { page: number; setPage: (to: number) => any }) {
+function capitalizeWords(input: string): string {
+  const words = input.split(" ");
+  return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(" ");
+}
+
+function InfoText(props: {
+  text: string;
+  textScale?: number;
+  style?: CSSProperties;
+}) {
   return (
-    <div>
-      <IconButton
-        size="large"
-        aria-label="previous section"
-        onClick={() => props.setPage(props.page - 1)}
-        className="menuIcon"
-      >
-        <ArrowBack />
-      </IconButton>
-      <IconButton
-        size="large"
-        aria-label="next section"
-        onClick={() => props.setPage(props.page + 1)}
-        className="menuIcon"
-      >
-        <ArrowForward />
-      </IconButton>
-    </div>
+    <Typography
+      component="span"
+      className="contentTextLight"
+      fontSize={FontSizes.SECONDARY * ((props.textScale || 100) / 100)}
+      style={{ marginLeft: 8, marginRight: 8, ...props.style }}
+    >
+      {props.text}
+    </Typography>
+  );
+}
+
+function HeaderText(props: {
+  data: PaginatedWork;
+  page: number;
+  textScale?: number;
+}) {
+  if (props.page < 0) {
+    return <></>;
+  }
+  const parts = props.data.textParts;
+  const chunkIndex = props.data.pageStarts[props.page];
+  const firstChunk = props.data.chunks[chunkIndex][0];
+  const idParts = parts
+    .map((partName, i) => `${partName} ${firstChunk[i]}`)
+    .slice(0, -2);
+  return (
+    <>
+      {idParts.map((idPart) => (
+        <InfoText
+          text={capitalizeWords(idPart)}
+          key={idPart}
+          textScale={props.textScale}
+        />
+      ))}
+      <InfoText
+        text={capitalizeWords(props.data.info.title)}
+        textScale={props.textScale}
+      />
+      <InfoText
+        text={capitalizeWords(props.data.info.author)}
+        textScale={props.textScale}
+      />
+    </>
+  );
+}
+
+function NavIcon(props: {
+  label: string;
+  onClick?: () => any;
+  Icon: JSX.Element;
+  ref?: React.ForwardedRef<any>;
+}) {
+  return (
+    <IconButton
+      ref={props.ref}
+      size="small"
+      aria-label={props.label}
+      onClick={props.onClick}
+      className="menuIcon"
+    >
+      {props.Icon}
+    </IconButton>
+  );
+}
+
+const TooltipNavIcon = React.forwardRef<any>(function TooltipNavIcon(
+  fProps,
+  fRef
+) {
+  return (
+    <span {...fProps} ref={fRef}>
+      <NavIcon Icon={<LinkIcon />} label="link to section" />
+    </span>
+  );
+});
+
+function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
+  const parts = props.work.textParts;
+  const i = parts.length - 2;
+  if (props.page < 0 || i < 0) {
+    return <></>;
+  }
+  const chunkIndex = props.work.pageStarts[props.page];
+  const firstChunk = props.work.chunks[chunkIndex][0];
+  const text = capitalizeWords(`${parts[i]} ${firstChunk[i]}`);
+  return <InfoText text={text} />;
+}
+
+function WorkNavigationBar(props: {
+  page: number;
+  setPage: (to: number) => any;
+  work: PaginatedWork;
+  textScale?: number;
+}) {
+  return (
+    <>
+      <div className="readerIconBar">
+        <NavIcon
+          Icon={<ArrowBack />}
+          label="previous section"
+          onClick={() => props.setPage(Math.max(0, props.page - 1))}
+        />
+        <PenulimateLabel page={props.page} work={props.work} />
+        <NavIcon
+          Icon={<ArrowForward />}
+          label="next section"
+          onClick={() =>
+            props.setPage(Math.min(props.page + 1, props.work.pages))
+          }
+        />
+        <CopyLinkTooltip
+          forwarded={TooltipNavIcon}
+          message="Copy link to page"
+          link={window.location.href}
+        />
+      </div>
+      <div>
+        <HeaderText
+          data={props.work}
+          page={props.page}
+          textScale={props.textScale}
+        />
+      </div>
+    </>
   );
 }
 
@@ -156,70 +546,157 @@ function dividePages(work: ProcessedWork): PaginatedWork {
     }
   }
   pageStarts.push(work.chunks.length);
-  return { ...work, pageStarts };
+  return { ...work, pageStarts, pages: pageStarts.length - 1 };
 }
 
 export function WorkTextPage(props: {
   work: PaginatedWork;
   setDictWord: (word: string | undefined) => any;
   page: number;
+  textScale: number;
 }) {
-  if (props.page === -1) {
-    return <WorkInfo workInfo={props.work.info} />;
-  }
-
   const i = props.work.pageStarts[props.page];
   const j = props.work.pageStarts[props.page + 1];
   const chunksToShow = props.work.chunks.slice(i, j);
+  const gap = `${(props.textScale / 100) * 0.75}em`;
 
   return (
-    <>
-      {chunksToShow.map((chunk) => (
+    <div style={{ display: "inline-grid", columnGap: gap, marginTop: gap }}>
+      {chunksToShow.map((chunk, i) => (
         <WorkChunk
           key={chunk[0].join(",")}
-          parts={props.work.textParts}
           id={chunk[0]}
           textRoot={chunk[1]}
           setDictWord={props.setDictWord}
+          textScale={props.textScale}
+          i={i}
+          workName={capitalizeWords(props.work.info.title)}
         />
       ))}
-    </>
+    </div>
   );
 }
 
-function WorkInfo(props: { workInfo: DocumentInfo }) {
+function InfoLine(props: { value: string; label: string; scale: number }) {
   return (
-    <>
-      <div>{props.workInfo.title}</div>
-      <div>{props.workInfo.author}</div>
-      {props.workInfo.editor && <div>{props.workInfo.editor}</div>}
-      {props.workInfo.funder && <div>{props.workInfo.funder}</div>}
-      {props.workInfo.sponsor && <div>{props.workInfo.sponsor}</div>}
-    </>
+    <div>
+      <SettingsText
+        scale={props.scale}
+        message={`${props.label}: ${props.value}`}
+      />
+    </div>
+  );
+}
+
+function WorkNavigation(props: { work: PaginatedWork; scale: number }) {
+  return (
+    <details>
+      <summary>
+        <SettingsText scale={props.scale} message={props.work.info.title} />
+      </summary>
+      <SettingsText scale={props.scale} message="Navigation in progress" />
+    </details>
+  );
+}
+
+function WorkInfo(props: { workInfo: DocumentInfo; scale: number }) {
+  return (
+    <details>
+      <summary>
+        <SettingsText scale={props.scale} message={"Attribution"} />
+      </summary>
+      <InfoLine
+        label="Author"
+        value={props.workInfo.author}
+        scale={props.scale}
+      />
+      {props.workInfo.editor && (
+        <InfoLine
+          label="Editor"
+          value={props.workInfo.editor}
+          scale={props.scale}
+        />
+      )}
+      {props.workInfo.funder && (
+        <InfoLine
+          label="Funder"
+          value={props.workInfo.funder}
+          scale={props.scale}
+        />
+      )}
+      {props.workInfo.sponsor && (
+        <InfoLine
+          label="Sponsor"
+          value={props.workInfo.sponsor}
+          scale={props.scale}
+        />
+      )}
+    </details>
+  );
+}
+
+function workSectionHeader(
+  text: string,
+  textScale: number
+): React.ForwardRefRenderFunction<HTMLSpanElement, object> {
+  return function InternalWorkSectionHeader(fProps, fRef) {
+    return (
+      <span {...fProps} ref={fRef}>
+        <InfoText
+          text={text}
+          style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
+          textScale={textScale}
+        />
+      </span>
+    );
+  };
+}
+
+function WorkChunkHeader(props: {
+  text: string;
+  textScale: number;
+  blurb: string;
+}) {
+  return (
+    <CopyLinkTooltip
+      forwarded={React.forwardRef<HTMLSpanElement>(
+        workSectionHeader(props.text, props.textScale)
+      )}
+      message={props.blurb}
+      link={`${props.blurb}\n${window.location.href}`}
+    />
   );
 }
 
 function WorkChunk(props: {
-  parts: string[];
   id: number[];
   textRoot: XmlNode;
   setDictWord: (word: string | undefined) => any;
+  textScale: number;
+  i: number;
+  workName: string;
 }) {
-  const id = props.parts
-    .map((partName, i) => `${partName} ${props.id[i]}`)
-    .join(", ");
+  const id = props.id.join(".");
+  const row = props.i + 1;
   return (
-    <div>
-      <div>{id}</div>
-      {displayForLibraryChunk(props.textRoot, props.setDictWord)}
-      <br />
-    </div>
+    <>
+      <span style={{ gridColumn: 1, gridRow: row }}>
+        <WorkChunkHeader
+          text={id}
+          textScale={props.textScale}
+          blurb={`${props.workName} ${id}`}
+        />
+      </span>
+      <span style={{ gridColumn: 2, gridRow: row }} id={id}>
+        {displayForLibraryChunk(props.textRoot, props.setDictWord)}
+      </span>
+    </>
   );
 }
 
 function LatLink(props: { word: string; setDictWord: (input: string) => any }) {
   return (
-    <span className="latWord" onClick={() => props.setDictWord(props.word)}>
+    <span className="workLatWord" onClick={() => props.setDictWord(props.word)}>
       {props.word}
     </span>
   );
@@ -227,17 +704,18 @@ function LatLink(props: { word: string; setDictWord: (input: string) => any }) {
 
 function displayForLibraryChunk(
   root: XmlNode,
-  setDictWord: (word: string | undefined) => any
+  setDictWord: (word: string | undefined) => any,
+  key?: number
 ): JSX.Element {
-  const children = root.children.map((child) => {
+  const children = root.children.map((child, i) => {
     if (typeof child === "string") {
       return child;
     }
-    return displayForLibraryChunk(child, setDictWord);
+    return displayForLibraryChunk(child, setDictWord, i);
   });
   if (root.name === "libLat") {
     const word = XmlNode.assertIsString(root.children[0]);
-    return <LatLink word={word} setDictWord={setDictWord} />;
+    return <LatLink word={word} setDictWord={setDictWord} key={key} />;
   }
-  return React.createElement(root.name, {}, children);
+  return React.createElement("span", {}, children);
 }

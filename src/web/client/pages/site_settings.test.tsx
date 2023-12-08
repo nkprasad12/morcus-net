@@ -4,7 +4,6 @@
 
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { SiteSettings } from "@/web/client/pages/site_settings";
 

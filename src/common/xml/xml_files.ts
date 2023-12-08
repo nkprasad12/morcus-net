@@ -2,10 +2,12 @@
 // import { betaCodeToGreek } from "beta-code-js";
 import { assert, checkPresent } from "@/common/assert";
 import { DocumentInfo } from "@/common/library/library_types";
+import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import fs from "fs";
 
+const XPATH_START = "#xpath(";
 const CONTENT_PATH = ["text", "body", "div"];
 // For the commentary.
 // const CONTENT_PATH = ["text", "body"];
@@ -26,6 +28,24 @@ export interface TeiDocument {
   textParts: string[];
   /** The node containing the actual document content. */
   content: XmlNode;
+}
+
+export interface CtsPathData {
+  /** The name of the XML node. */
+  name: string;
+  /** The data for the subpart of the identifier attached to this node, if present. */
+  idInfo?: {
+    /** The name of the attribute key to which the data is attched. */
+    key: string;
+    /** Which part of the match pattern is associated with this. */
+    index: number;
+  };
+}
+
+export interface CtsRefPattern {
+  name: string;
+  idSize: number;
+  nodePath: CtsPathData[];
 }
 
 function findChild(root: XmlNode, sequence: string[]) {
@@ -55,6 +75,54 @@ function extractInfo(teiRoot: XmlNode) {
     sponsor: firstTextOfChild(titleStatement, "sponsor"),
     funder: firstTextOfChild(titleStatement, "funder"),
   };
+}
+
+function parseXPath(xPath: string): CtsPathData[] {
+  assert(xPath.startsWith(XPATH_START));
+  assert(xPath.endsWith(")"));
+  const path = xPath.slice(XPATH_START.length, -1);
+  return path
+    .split("/tei:")
+    .filter((c) => c.length > 0)
+    .map((c) => {
+      const chunks = c.split("[@");
+      if (chunks.length === 1) {
+        return { name: c };
+      }
+      assert(chunks.length === 2);
+      assert(chunks[1].endsWith("]"));
+      const matches = checkPresent(chunks[1].match(/^(\w+)='\$(\d+)'\]$/));
+      return {
+        name: chunks[0],
+        idInfo: {
+          key: checkPresent(matches[1]),
+          index: checkPresent(safeParseInt(matches[2])),
+        },
+      };
+    });
+}
+
+export function findCtsEncoding(teiRoot: XmlNode): CtsRefPattern[] {
+  const encoding = findChild(teiRoot, ["teiHeader", "encodingDesc"]);
+  const refsDecls = encoding
+    .findChildren("refsDecl")
+    .filter((child) => child.getAttr("n") === "CTS");
+  assert(refsDecls.length === 1, "Expected exactly 1 CTS refsDecl");
+  return refsDecls[0]
+    .findChildren("cRefPattern")
+    .map((refPattern) => ({
+      name: checkPresent(refPattern.getAttr("n")),
+      matchPattern: checkPresent(refPattern.getAttr("matchPattern")),
+      replacementPattern: checkPresent(
+        refPattern.getAttr("replacementPattern")
+      ),
+    }))
+    .map((p) => ({
+      name: p.name,
+      // Assuming every open parenthesis starts a capture group.
+      idSize: (p.matchPattern.match(/\(/g) || []).length,
+      nodePath: parseXPath(p.replacementPattern),
+    }));
 }
 
 function findTextParts(teiRoot: XmlNode): string[] {

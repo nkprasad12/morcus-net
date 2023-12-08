@@ -5,7 +5,6 @@
 import { describe, expect, test } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
-import React from "react";
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 import { RouteContext } from "@/web/client/components/router";
 
@@ -15,7 +14,7 @@ jest.mock("@mui/material/useMediaQuery", () => {
     default: jest.fn(() => false),
   };
 });
-import { useMediaQuery } from "@mui/material";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
 describe("App Bar View", () => {
   const pages: ResponsiveAppBar.Page[] = [

@@ -6,16 +6,14 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
-import SettingsIcon from "@mui/icons-material/Settings";
+import DisplaySettings from "@mui/icons-material/DisplaySettings";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { Navigation, RouteContext } from "@/web/client/components/router";
-import List from "@mui/material/List";
-import ListItem from "@mui/material/ListItem";
 import Drawer from "@mui/material/Drawer";
-import { Divider } from "@mui/material";
+import Divider from "@mui/material/Divider";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -49,39 +47,6 @@ function DrawerMenu(props: {
   open: boolean;
   isCurrentPage: (page: string) => boolean;
 }) {
-  function DrawerItems() {
-    return (
-      <Box role="navigation" onClick={props.onClose} id="menu-appbar">
-        <List>
-          {props.pages.map((page) => (
-            <div key={page.name}>
-              <ListItem disablePadding>
-                <Button
-                  key={page.name}
-                  onClick={props.onPageClick(page.path)}
-                  className={
-                    props.isCurrentPage(page.path)
-                      ? "menuItemActive"
-                      : "menuItemInactive"
-                  }
-                  sx={{
-                    my: 1,
-                    mx: 2,
-                    display: "block",
-                    justifyContent: "center",
-                  }}
-                >
-                  <b>{page.name}</b>
-                </Button>
-              </ListItem>
-              <Divider key={page.name + "_divider"} light variant="middle" />
-            </div>
-          ))}
-        </List>
-      </Box>
-    );
-  }
-
   return (
     <Drawer
       anchor="left"
@@ -91,7 +56,34 @@ function DrawerMenu(props: {
         className: "menu",
       }}
     >
-      <DrawerItems />
+      <Box role="navigation" onClick={props.onClose} id="menu-appbar">
+        {props.pages.map((page) => (
+          <div key={page.name}>
+            <Button
+              key={page.name}
+              onClick={props.onPageClick(page.path)}
+              className={
+                props.isCurrentPage(page.path)
+                  ? "menuItemActive"
+                  : "menuItemInactive"
+              }
+              sx={{
+                my: 1,
+                mx: 2,
+                display: "block",
+                justifyContent: "center",
+              }}
+            >
+              <b>{page.name}</b>
+            </Button>
+            <Divider
+              key={page.name + "_divider"}
+              className="contentDivider"
+              variant="middle"
+            />
+          </div>
+        ))}
+      </Box>
     </Drawer>
   );
 }
@@ -117,7 +109,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   );
 
   return (
-    <AppBar position="static" className="menu">
+    <AppBar position="static" className="menu" style={{ maxHeight: 74 }}>
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -127,9 +119,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             sx={{
               mr: 2,
               display: isSmall ? "none" : "flex",
-              fontFamily: "monospace",
-              fontWeight: 700,
-              letterSpacing: ".3rem",
               color: "inherit",
               textDecoration: "none",
             }}
@@ -185,7 +174,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                     : "menuItemInactive"
                 }
                 sx={{
-                  my: 2,
                   mx: 1,
                   display: "block",
                 }}
@@ -196,16 +184,16 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
           </Box>
           <Box>
             <IconButton
-              size="large"
+              size="medium"
               aria-label="site settings"
               // TODO: Find a better way to configure this.
               onClick={handlePageClick("/settings")}
               className="menuIcon"
             >
-              <SettingsIcon />
+              <DisplaySettings />
             </IconButton>
             <IconButton
-              size="large"
+              size="medium"
               aria-label="report an issue"
               aria-haspopup="true"
               onClick={props.openIssueDialog}
