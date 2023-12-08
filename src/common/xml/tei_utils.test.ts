@@ -1,8 +1,10 @@
 import { readFileSync } from "fs";
 import {
   CtsPathData,
+  parseCtsTeiXml,
   findCtsEncoding,
   parseTeiXml,
+  TeiNode,
 } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { DescendantNode, parseRawXml } from "@/common/xml/xml_utils";
@@ -135,5 +137,31 @@ describe("parseTeiXml", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("extractTeiContent", () => {
+  const result = parseCtsTeiXml(dbgRoot());
+
+  it("has expected text parts", () => {
+    expect(result.textParts).toEqual(["Book", "Chapter", "Section"]);
+  });
+
+  it("has expected document info", () => {
+    expect(result.info.title).toBe("De bello Gallico");
+  });
+
+  it("has expected content root", () => {
+    expect(result.content.id).toEqual([]);
+  });
+
+  it("has expected content", () => {
+    const firstBook = <TeiNode>result.content.children[0];
+    expect(firstBook.id).toEqual(["1"]);
+    const firstChild = <XmlNode>firstBook.children[0];
+    expect(firstChild).toBeInstanceOf(XmlNode);
+    expect(firstChild.toString()).toBe("<head>COMMENTARIUS PRIMUS</head>");
+    const secondChild = <TeiNode>firstBook.children[1];
+    expect(secondChild.id).toEqual(["1", "1"]);
   });
 });
