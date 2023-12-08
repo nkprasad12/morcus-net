@@ -3,7 +3,7 @@ import {
   ProcessedWork,
 } from "@/common/library/library_types";
 import { processTei } from "@/common/library/process_work";
-import { parseTeiXml } from "@/common/xml/xml_files";
+import { parseTeiXml } from "@/common/xml/tei_utils";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseMessage, stringifyMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";

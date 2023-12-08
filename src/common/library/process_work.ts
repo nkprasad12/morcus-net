@@ -2,7 +2,7 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { LatinWords } from "@/common/lexica/latin_words";
 import { ProcessedWork } from "@/common/library/library_types";
 import { TEXT_BREAK_CHARACTERS } from "@/common/text_cleaning";
-import { TeiDocument } from "@/common/xml/xml_files";
+import { TeiDocument } from "@/common/xml/tei_utils";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import { TextNodeData, findTextNodes } from "@/common/xml/xml_utils";
 

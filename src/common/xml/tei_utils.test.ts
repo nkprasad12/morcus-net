@@ -1,5 +1,5 @@
 import { readFileSync } from "fs";
-import { findCtsEncoding, parseTeiXml } from "@/common/xml/xml_files";
+import { findCtsEncoding, parseTeiXml } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 
