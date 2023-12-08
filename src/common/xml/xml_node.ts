@@ -44,6 +44,7 @@ export class XmlNode {
     return lines.join(indent ? "\n" : "");
   }
 
+  /** Returns all children with the given `name`. */
   findChildren(name: string): XmlNode[] {
     const result: XmlNode[] = [];
     for (const child of this.children) {
