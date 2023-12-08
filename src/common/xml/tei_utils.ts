@@ -1,25 +1,15 @@
 // // @ts-ignore
 // import { betaCodeToGreek } from "beta-code-js";
-import { assert, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { DocumentInfo } from "@/common/library/library_types";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
-import { parseRawXml } from "@/common/xml/xml_utils";
+import { DescendantNode, parseRawXml } from "@/common/xml/xml_utils";
 import fs from "fs";
 
 const XPATH_START = "#xpath(";
 const CONTENT_PATH = ["text", "body", "div"];
-// For the commentary.
-// const CONTENT_PATH = ["text", "body"];
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
-
-// interface TextPart {
-//   type: string;
-//   n: number;
-//   metadata?: string[];
-//   header?: string;
-//   content: (string | TextPart)[];
-// }
 
 export interface TeiDocument {
   /** Basic information about this document like title, author, and so on. */
@@ -40,6 +30,34 @@ export interface CtsPathData {
     /** Which part of the match pattern is associated with this. */
     index: number;
   };
+}
+export namespace CtsPathData {
+  export function test(
+    descendantNode: DescendantNode,
+    ctsPath: CtsPathData[]
+  ): string[] | undefined {
+    const chain = [...descendantNode[1], descendantNode[0]];
+    if (chain.length !== ctsPath.length) {
+      return undefined;
+    }
+    const idParts: [number, string][] = [];
+    for (let i = 0; i < chain.length; i++) {
+      if (chain[i].name !== ctsPath[i].name) {
+        return undefined;
+      }
+      const idInfo = ctsPath[i].idInfo;
+      if (idInfo === undefined) {
+        continue;
+      }
+      const keyAttr = chain[i].getAttr(idInfo.key);
+      if (keyAttr === undefined) {
+        return undefined;
+      }
+      idParts.push([idInfo.index, keyAttr]);
+    }
+    idParts.sort((a, b) => a[0] - b[0]);
+    return idParts.map(([_, v]) => v);
+  }
 }
 
 export interface CtsRefPattern {
@@ -117,12 +135,14 @@ export function findCtsEncoding(teiRoot: XmlNode): CtsRefPattern[] {
         refPattern.getAttr("replacementPattern")
       ),
     }))
-    .map((p) => ({
-      name: p.name,
+    .map((p) => {
       // Assuming every open parenthesis starts a capture group.
-      idSize: (p.matchPattern.match(/\(/g) || []).length,
-      nodePath: parseXPath(p.replacementPattern),
-    }));
+      const idSize = (p.matchPattern.match(/\(/g) || []).length;
+      const nodePath = parseXPath(p.replacementPattern);
+      const idNodes = nodePath.filter((n) => n.idInfo !== undefined);
+      assertEqual(idNodes.length, idSize);
+      return { name: p.name, idSize, nodePath };
+    });
 }
 
 function findTextParts(teiRoot: XmlNode): string[] {
@@ -140,112 +160,6 @@ function findTextParts(teiRoot: XmlNode): string[] {
   }
   return result;
 }
-
-// function getLineText(lineRoot: XmlNode): string {
-//   const child = lineRoot.children[0];
-//   if (typeof child === "string") {
-//     return child;
-//   } else if (child.name === "del") {
-//     return child.toString();
-//   } else if (child.name === "quote") {
-//     return `"${XmlNode.getSoleText(child)}"`;
-//   }
-//   throw Error("Unhandled line");
-// }
-
-// function printPoem(root: XmlNode) {
-//   if (root.name === "head") {
-//     assert(root.children.length === 1);
-//     const text = XmlNode.assertIsString(root.children[0]);
-//     console.log();
-//     console.log(text);
-//     console.log();
-//     return;
-//   }
-//   if (root.name === "speaker") {
-//     assert(root.children.length === 1);
-//     const text = XmlNode.assertIsString(root.children[0]);
-//     console.log(text);
-//     return;
-//   }
-//   if (root.name === "l") {
-//     assert(root.children.length === 1);
-//     const lineNum = +checkPresent(root.getAttr("n"));
-//     const lineNumText = lineNum % 5 === 0 ? lineNum.toString() : "";
-//     const lineText = getLineText(root);
-//     console.log(`${lineNumText.padEnd(4)}${lineText}`);
-//     return;
-//   }
-//   for (const child of root.children) {
-//     printPoem(XmlNode.assertIsNode(child));
-//   }
-// }
-
-// Code for the commentary
-// export function extractChildContent(child: XmlChild): string {
-//   if (typeof child === "string") {
-//     return child
-//       .replace(/-\n\s*/g, "")
-//       .replaceAll("\n", "")
-//       .replace(/\s+/g, " ");
-//   }
-//   if (child.name === "foreign") {
-//     assertEqual(child.getAttr("lang"), "greek");
-//     assertEqual(child.children.length, 1);
-//     return betaCodeToGreek(extractChildContent(child.children[0]));
-//   }
-//   if (child.name === "pb") {
-//     return " ";
-//   }
-//   if (child.name === "hi") {
-//     const rend = child.getAttr("rend");
-//     const text = child.children.map(extractChildContent).join(" ");
-//     if (rend === "caps") {
-//       return text.toUpperCase();
-//     } else if (rend === "italics") {
-//       return `<i>${text}</i>`;
-//     }
-//     throw new Error("Unknown rend: " + rend);
-//   }
-//   throw new Error("Unknown child: " + child.name);
-// }
-
-// export function printCommline(root: XmlNode) {
-//   assert(root.children.length === 1);
-//   const content = XmlNode.assertIsNode(root.children[0]);
-//   assert(content.name === "p");
-//   console.log(content.children.map(extractChildContent).join(" "));
-// }
-
-// export function printCommentaryPart(root: XmlNode) {
-//   for (const child of root.children) {
-//     const node = XmlNode.assertIsNode(child);
-//     if (node.name === "head") {
-//       console.log(XmlNode.getSoleText(node));
-//       console.log("\n");
-//       continue;
-//     }
-//     assert(node.name === "div2");
-//     assert(node.getAttr("type") === "commline");
-//     console.log(`\nLine ${node.getAttr("n")}`);
-//     printCommline(node);
-//   }
-// }
-
-// export function printCommentary(root: XmlNode) {
-//   for (const child of root.children) {
-//     const node = XmlNode.assertIsNode(child);
-//     if (node.name === "head") {
-//       console.log(XmlNode.getSoleText(node));
-//       console.log("\n");
-//       continue;
-//     }
-//     assert(node.name === "div1");
-//     assert(node.getAttr("type") === "poem");
-//     console.log(`\n*****\nPoem: ${node.getAttr("n")}\n*****`);
-//     printCommentaryPart(node);
-//   }
-// }
 
 /** Returns the parsed content of a TEI XML file. */
 export function parseTeiXml(filePath: string): TeiDocument {
