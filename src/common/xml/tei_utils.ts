@@ -4,15 +4,9 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { DocumentInfo } from "@/common/library/library_types";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
-import {
-  DescendantNode,
-  findXmlNodes,
-  parseRawXml,
-} from "@/common/xml/xml_utils";
-import fs from "fs";
+import { DescendantNode, findXmlNodes } from "@/common/xml/xml_utils";
 
 const XPATH_START = "#xpath(";
-const CONTENT_PATH = ["text", "body", "div"];
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
 
 export interface TeiDocument {
@@ -286,33 +280,4 @@ function assembleTeiData(
     checkPresent(nodeLookup.get(parentId)).children.push(main);
   }
   return assembleTeiTree("", nodeLookup);
-}
-
-function findTextParts(teiRoot: XmlNode): string[] {
-  const encoding = findChild(teiRoot, ["teiHeader", "encodingDesc"]);
-  const refsDeclTeis = encoding.children.filter(
-    (c) => typeof c !== "string" && ["TEI", undefined].includes(c.getAttr("n"))
-  );
-  assert(refsDeclTeis.length === 1);
-  const refsDeclTei = XmlNode.assertIsNode(refsDeclTeis[0]);
-  const result: string[] = [];
-  for (const refState of refsDeclTei.children) {
-    const node = XmlNode.assertIsNode(refState);
-    assert(["refState", "step"].includes(node.name), node.toString());
-    result.push(checkPresent(node.getAttr("unit") || node.getAttr("refunit")));
-  }
-  return result;
-}
-
-/**
- * Returns the parsed content of a TEI XML file.
- *
- * @deprecated sda
- */
-export function parseTeiXml(filePath: string): TeiDocument {
-  const teiRoot = parseRawXml(fs.readFileSync(filePath));
-  const info = extractInfo(teiRoot);
-  const textParts = findTextParts(teiRoot);
-  const content = findChild(teiRoot, CONTENT_PATH);
-  return { info, textParts, content };
 }
