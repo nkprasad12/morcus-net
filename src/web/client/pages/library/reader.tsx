@@ -369,9 +369,13 @@ function HeaderText(props: {
   if (props.page < 0) {
     return <></>;
   }
-  const parts = props.data.textParts.slice(0, -2);
+
   const id = props.data.pages[props.page].id;
-  const idLabels = parts.map((textPart, i) => `${textPart} ${id[i]}`);
+  const idLabels: string[] = [];
+  for (let i = 0; i < props.data.textParts.length - 2; i++) {
+    const parentId = id.slice(0, i + 1);
+    idLabels.push(labelForId(parentId, props.data));
+  }
   return (
     <>
       {idLabels.map((idPart) => (
@@ -393,15 +397,22 @@ function HeaderText(props: {
   );
 }
 
+function labelForId(id: string[], work: PaginatedWork): string {
+  const parts = work.textParts;
+  const i = id.length - 1;
+  const header = findSectionById(id, work.root)?.header;
+  const subtitle = header === undefined ? "" : ` (${header})`;
+  const text = capitalizeWords(`${parts[i]} ${id[i]}`);
+  return text + subtitle;
+}
+
 function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
   const parts = props.work.textParts;
-  const i = parts.length - 2;
-  if (props.page < 0 || i < 0) {
+  if (props.page < 0 || parts.length <= 1) {
     return <></>;
   }
   const id = props.work.pages[props.page].id;
-  const text = capitalizeWords(`${parts[i]} ${id[i]}`);
-  return <InfoText text={text} />;
+  return <InfoText text={labelForId(id, props.work)} />;
 }
 
 function WorkNavigationBar(props: {

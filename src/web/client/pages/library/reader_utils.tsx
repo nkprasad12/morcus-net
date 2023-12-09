@@ -90,7 +90,13 @@ export function InfoText(props: {
       component="span"
       className="contentTextLight"
       fontSize={FontSizes.SECONDARY * ((props.textScale || 100) / 100)}
-      style={{ marginLeft: 8, marginRight: 8, ...props.style }}
+      style={{
+        marginLeft: 8,
+        marginRight: 8,
+        whiteSpace: "nowrap",
+        display: "inline-block",
+        ...props.style,
+      }}
     >
       {props.text}
     </Typography>
