@@ -421,12 +421,14 @@ function WorkNavigationBar(props: {
         <NavIcon
           Icon={<ArrowBack />}
           label="previous section"
+          disabled={props.page <= 0}
           onClick={() => setPage(Math.max(0, props.page - 1))}
         />
         <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
+          disabled={props.page >= props.work.pages.length - 1}
           onClick={() =>
             setPage(Math.min(props.page + 1, props.work.pages.length))
           }

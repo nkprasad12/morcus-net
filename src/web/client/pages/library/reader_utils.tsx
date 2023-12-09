@@ -102,6 +102,7 @@ export function NavIcon(props: {
   onClick?: () => any;
   Icon: JSX.Element;
   ref?: React.ForwardedRef<any>;
+  disabled?: boolean;
 }) {
   return (
     <IconButton
@@ -109,6 +110,7 @@ export function NavIcon(props: {
       size="small"
       aria-label={props.label}
       onClick={props.onClick}
+      disabled={props.disabled}
       className="menuIcon"
     >
       {props.Icon}
