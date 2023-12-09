@@ -3,8 +3,7 @@ import {
   Validator,
   instanceOf,
   isArray,
-  isNumber,
-  isPair,
+  isOneOf,
   isString,
   matches,
   maybeUndefined,
@@ -28,7 +27,27 @@ export namespace DocumentInfo {
   ]);
 }
 
-export type ProcessedWorkChunk = [number[], XmlNode];
+export interface ProcessedWorkNode {
+  /** The identified for this node. */
+  id: string[];
+  /** A header for this section, if any. */
+  header?: string;
+  /**
+   * The data for this node. Any recursive children are themselves versioned sections,
+   * while raw `XmlNode` children are data attached to this node.
+   */
+  children: (XmlNode | ProcessedWorkNode)[];
+}
+
+export namespace ProcessedWorkNode {
+  export const isMatch: Validator<ProcessedWorkNode> = matches([
+    ["id", isArray(isString)],
+    ["header", maybeUndefined(isString)],
+    // Apparently it doesn't work resursively, so just check that it's
+    // a JSON object.
+    ["children", isArray(isOneOf(instanceOf(XmlNode), matches([])))],
+  ]);
+}
 
 export interface ProcessedWork {
   /** Basic information about this work such as author or title. */
@@ -38,20 +57,15 @@ export interface ProcessedWork {
    * These are returned in descending order of size.
    */
   textParts: string[];
-  /**
-   * The index of each of the chunks of the text, along with the marked
-   * up text. The index has one part for each of the `textParts`, so for example
-   * if `textParts` is `["Chapter", "Section"]`, then the index of `[2, 5]`
-   * identifies `Chapter 2, Section 5`.
-   */
-  chunks: ProcessedWorkChunk[];
+  /** Root node for the content of this work. */
+  root: ProcessedWorkNode;
 }
 
 export namespace ProcessedWork {
   export const isMatch: Validator<ProcessedWork> = matches([
     ["info", DocumentInfo.isMatch],
     ["textParts", isArray(isString)],
-    ["chunks", isArray(isPair(isArray(isNumber), instanceOf(XmlNode)))],
+    ["root", ProcessedWorkNode.isMatch],
   ]);
 }
 

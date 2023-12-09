@@ -3,7 +3,7 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { DocumentInfo } from "@/common/library/library_types";
 import { safeParseInt } from "@/common/misc_utils";
-import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+import { XmlNode } from "@/common/xml/xml_node";
 import { DescendantNode, findXmlNodes } from "@/common/xml/xml_utils";
 
 const XPATH_START = "#xpath(";
@@ -29,7 +29,7 @@ export interface TeiCtsDocument {
 
 export interface TeiNode {
   id: string[];
-  children: (TeiNode | XmlChild)[];
+  children: (TeiNode | XmlNode)[];
 }
 
 export interface CtsPathData {

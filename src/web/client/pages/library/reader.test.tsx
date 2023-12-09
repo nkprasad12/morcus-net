@@ -20,10 +20,52 @@ const mockCallApi: jest.Mock<any, any, any> = callApi;
 const PROCESSED_WORK: ProcessedWork = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
-  chunks: [
-    [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
-    [[1, 2], new XmlNode("span", [], [" divisa in partes tres"])],
-  ],
+  root: {
+    id: [],
+    children: [
+      {
+        id: ["1"],
+        children: [
+          {
+            id: ["1", "1"],
+            children: [new XmlNode("span", [], ["Gallia est omnis"])],
+          },
+          {
+            id: ["1", "2"],
+            children: [new XmlNode("span", [], [" divisa in partes tres"])],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork = {
+  info: { title: "DBG", author: "Caesar" },
+  textParts: ["chapter", "section"],
+  root: {
+    id: [],
+    children: [
+      {
+        id: ["1"],
+        children: [
+          {
+            id: ["1", "1"],
+            children: [new XmlNode("span", [], ["Gallia est omnis"])],
+          },
+        ],
+      },
+      {
+        id: ["2"],
+        children: [
+          {
+            id: ["2", "1"],
+            children: [new XmlNode("span", [], [" divisa in partes tres"])],
+          },
+        ],
+      },
+    ],
+  },
 };
 
 describe("Reading UI", () => {
@@ -85,15 +127,7 @@ describe("Reading UI", () => {
   });
 
   it("shows work contents on success", async () => {
-    const result: ProcessedWork = {
-      info: { title: "DBG", author: "Caesar" },
-      textParts: ["chapter", "section"],
-      chunks: [
-        [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
-        [[1, 2], new XmlNode("span", [], [" divisa in partes tres"])],
-      ],
-    };
-    mockCallApi.mockResolvedValue(result);
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
 
     render(
       <RouteContext.Provider
@@ -110,15 +144,7 @@ describe("Reading UI", () => {
   });
 
   it("shows next and previous page contents", async () => {
-    const result: ProcessedWork = {
-      info: { title: "DBG", author: "Caesar" },
-      textParts: ["chapter", "section"],
-      chunks: [
-        [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
-        [[2, 1], new XmlNode("span", [], [" divisa in partes tres"])],
-      ],
-    };
-    mockCallApi.mockResolvedValue(result);
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
       <RouteContext.Provider
