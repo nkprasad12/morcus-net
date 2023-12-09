@@ -31,7 +31,7 @@ function getPlural(input: [string, string]): [string, string] {
 
 export type Relaxers = "Case" | "Plural" | "All";
 
-export function useAbbreviation(
+export function relaxedAbbrev(
   input: [string, string],
   relaxMode: Relaxers
 ): [string, string][] {
@@ -273,7 +273,7 @@ export const GENERIC_HOVERS = AbbreviationTrieOld.forMap(
     ["Comp.", "Compare or Comparative."],
     ["conj.", "conjunction, conjunctive, or conjugation."],
     ["constr.", "constructed, contruction; or: construed"],
-    ...useAbbreviation(["deriv.", "derived or derivation."], "All"),
+    ...relaxedAbbrev(["deriv.", "derived or derivation."], "All"),
     ["e. g.", "exempli gratia."],
     ["ed.", "editio or editor."],
     ["etc.", "et cetera (and so on)."],
@@ -402,7 +402,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["acc. respect.", "accusative of respect."],
     ["access.", "accessory"],
     ["adjj.", "adjectives."],
-    ...useAbbreviation(["advv.", "adverbs."], "Case"),
+    ...relaxedAbbrev(["advv.", "adverbs."], "Case"),
     ["agric.", "agricultural"],
     ["agricult.", "agricultural"],
     ["amplif.", "amplificative"],
@@ -421,7 +421,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["collat.", "collateral."],
     ["Collat.", "Collateral."],
     ["collect.", "collective(ly)"],
-    ...useAbbreviation(["colloq.", "colloquial."], "Case"),
+    ...relaxedAbbrev(["colloq.", "colloquial."], "Case"),
     ["comm.", "common."],
     ["commentt.", "commentators."],
     ["compd.", "compound."],
@@ -475,7 +475,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["vox hibr.", "hybrid word."],
     ["imper.", "imperative."],
     ["Imper.", "Imperative."],
-    ...useAbbreviation(["imperf.", "imperfect."], "Case"),
+    ...relaxedAbbrev(["imperf.", "imperfect."], "Case"),
     ["impers.", "impersonal."],
     ["Impers.", "Impersonal."],
     ["bon. part.", "positive sense."],
@@ -521,7 +521,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["obj.clause", "object clause"],
     ["obj.-clause", "object clause"],
     ["obj.-gen", "objective genitive"],
-    ...useAbbreviation(["object-inf.", "objective infinitive."], "All"),
+    ...relaxedAbbrev(["object-inf.", "objective infinitive."], "All"),
     ["obliq.", "oblique."],
     ["om.", "omit."],
     ["onomatop.", "onomatopoeia"],
@@ -572,7 +572,7 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["simp.", "simple"],
     ["Span.", "Spanish"],
     ["specif.", "specifically."],
-    ...useAbbreviation(["subject-inf.", "subject infinitive."], "All"),
+    ...relaxedAbbrev(["subject-inf.", "subject infinitive."], "All"),
     ["substt.", "substantives."],
     ["superll.", "superlatives."],
     ["suff.", "suffix."],

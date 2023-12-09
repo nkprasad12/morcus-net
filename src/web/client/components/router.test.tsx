@@ -14,10 +14,11 @@ import {
 
 function TestApp(props: { navSpy: (info: RouteInfo) => any }) {
   const nav = useContext(RouteContext);
+  const { navSpy } = props;
 
   useEffect(() => {
-    props.navSpy(nav.route);
-  }, [nav]);
+    navSpy(nav.route);
+  }, [nav.route, navSpy]);
 
   return <></>;
 }

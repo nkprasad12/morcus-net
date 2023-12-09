@@ -157,7 +157,7 @@ export function ReadingPage() {
     if (urlPage === undefined) {
       setUrl(nav, newPage);
     }
-  }, [nav.route.query]);
+  }, [currentPage, nav, nav.route.query]);
 
   return (
     <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
