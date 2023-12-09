@@ -62,19 +62,15 @@ export interface Navigation {
 
 export namespace Navigation {
   export function redirect(nav: Navigation, target: string): void {
-    toRouteInfo(
-      nav,
-      {
-        path: target,
-        query: nav.route.query,
-        hash: nav.route.hash,
-      },
-      false
-    );
+    toRouteInfo(nav, {
+      path: target,
+      query: nav.route.query,
+      hash: nav.route.hash,
+    });
   }
 
   export function to(nav: Navigation, target: string): void {
-    toRouteInfo(nav, { path: target }, false);
+    toRouteInfo(nav, { path: target });
   }
 
   export function query(

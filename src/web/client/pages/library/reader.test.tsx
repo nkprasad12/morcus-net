@@ -143,13 +143,13 @@ describe("Reading UI", () => {
     await screen.findByText(/Caesar/);
   });
 
-  it("shows next and previous page contents", async () => {
+  it("shows correct contents for page", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: `${WORK_PAGE}/dbg`, query: "2" },
           navigateTo: () => {},
         }}
       >
@@ -158,35 +158,54 @@ describe("Reading UI", () => {
     );
     await screen.findByText(/DBG/);
 
-    // We should see only the second chunk.
-    await user.click(screen.queryByLabelText("next section")!);
     expect(screen.queryByText(/Gallia/)).toBeNull();
     expect(screen.queryByText(/divisa/)).not.toBeNull();
-
-    // We should see only the first chunk.
-    await user.click(screen.queryByLabelText("previous section")!);
-    expect(screen.queryByText(/Gallia/)).not.toBeNull();
-    expect(screen.queryByText(/divisa/)).toBeNull();
   });
 
-  it("uses correct nav updates", async () => {
-    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+  it("uses correct nav updates on next page", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path },
           navigateTo: mockNav,
         }}
       >
         <ReadingPage />
       </RouteContext.Provider>
     );
+    await screen.findByText(/DBG/);
 
     await user.click(screen.queryByLabelText("next section")!);
 
-    expect(mockNav).not.toHaveBeenCalled();
-    expect(window.location.href.includes("q=1")).toBe(true);
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "2" })
+    );
+  });
+
+  it("uses correct nav updates on previous page", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path, query: "2" },
+          navigateTo: mockNav,
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/DBG/);
+
+    await user.click(screen.queryByLabelText("previous section")!);
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "1" })
+    );
   });
 
   // TODO: Figure out why this test doesn't work.

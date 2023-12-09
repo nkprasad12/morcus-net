@@ -70,11 +70,6 @@ interface PaginatedWork extends ProcessedWork {
 }
 type WorkState = PaginatedWork | "Loading" | "Error";
 
-function setUrl(nav: Navigation, newPage: number) {
-  // +1 so that the entry page is 0 and the other pages are 1-indexed.
-  Navigation.query(nav, `${newPage + 1}`);
-}
-
 function getWorkNodes(node: ProcessedWorkNode): ProcessedWorkNode[] {
   return node.children.filter(
     (child): child is ProcessedWorkNode => !(child instanceof XmlNode)
@@ -152,10 +147,7 @@ export function ReadingPage() {
 
   useEffect(() => {
     const urlPage = safeParseInt(nav.route.query);
-    setCurrentPage((current) =>
-      // -1 because we add 1 when setting the page, so that users see 1-indexed.
-      urlPage === undefined ? current : urlPage - 1
-    );
+    setCurrentPage(urlPage === undefined ? 0 : urlPage - 1);
   }, [nav.route.query]);
 
   return (
@@ -334,14 +326,8 @@ function WorkColumn(props: {
   work: WorkState;
   currentPage: number;
 }) {
-  const nav = useContext(RouteContext);
-
   const currentPage = props.currentPage;
   const work = props.work;
-
-  function setPage(newPage: number) {
-    setUrl(nav, newPage);
-  }
 
   return (
     <ContentBox isSmall textScale={props.textScale}>
@@ -356,7 +342,6 @@ function WorkColumn(props: {
         <>
           <WorkNavigationBar
             page={currentPage}
-            setPage={setPage}
             work={work}
             textScale={props.textScale}
           />
@@ -421,24 +406,29 @@ function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
 
 function WorkNavigationBar(props: {
   page: number;
-  setPage: (to: number) => any;
   work: PaginatedWork;
   textScale?: number;
 }) {
+  const nav = useContext(RouteContext);
+  function setPage(newPage: number) {
+    // Nav pages are 1-indexed.
+    Navigation.query(nav, `${newPage + 1}`);
+  }
+
   return (
     <>
       <div className="readerIconBar">
         <NavIcon
           Icon={<ArrowBack />}
           label="previous section"
-          onClick={() => props.setPage(Math.max(0, props.page - 1))}
+          onClick={() => setPage(Math.max(0, props.page - 1))}
         />
         <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
           onClick={() =>
-            props.setPage(Math.min(props.page + 1, props.work.pages.length))
+            setPage(Math.min(props.page + 1, props.work.pages.length))
           }
         />
         <CopyLinkTooltip
