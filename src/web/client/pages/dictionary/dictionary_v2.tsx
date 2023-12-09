@@ -552,9 +552,9 @@ export function DictionaryViewV2(props: {
   const idSearch = nav.route.idSearch === true;
 
   const { initial } = props;
+  const query = isEmbedded ? initial : nav.route.query;
 
   React.useEffect(() => {
-    const query = isEmbedded ? initial : nav.route.query;
     if (query === undefined) {
       return;
     }
@@ -595,8 +595,7 @@ export function DictionaryViewV2(props: {
       scrollElement?.scrollIntoView(scrollType);
     });
   }, [
-    initial,
-    nav.route.query,
+    query,
     nav.route.hash,
     nav.route.experimentalSearch,
     nav.route.internalSource,

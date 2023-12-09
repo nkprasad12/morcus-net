@@ -83,32 +83,21 @@ export namespace Navigation {
     options?: {
       experimentalSearch?: boolean;
       internalSource?: boolean;
-      localOnly?: boolean;
       // This is a hack, remove it later.
       canonicalPath?: string;
     }
   ): void {
-    toRouteInfo(
-      nav,
-      {
-        path: options?.canonicalPath || nav.route.path,
-        query: query,
-        experimentalSearch: options?.experimentalSearch,
-        internalSource: options?.internalSource,
-      },
-      options?.localOnly === true
-    );
+    toRouteInfo(nav, {
+      path: options?.canonicalPath || nav.route.path,
+      query: query,
+      experimentalSearch: options?.experimentalSearch,
+      internalSource: options?.internalSource,
+    });
   }
 
-  function toRouteInfo(
-    nav: Navigation,
-    newInfo: RouteInfo,
-    localOnly: boolean
-  ) {
+  function toRouteInfo(nav: Navigation, newInfo: RouteInfo) {
     pushRouteInfo(newInfo);
-    if (!localOnly) {
-      nav.navigateTo(newInfo);
-    }
+    nav.navigateTo(newInfo);
   }
 }
 

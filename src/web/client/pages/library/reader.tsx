@@ -72,7 +72,7 @@ type WorkState = PaginatedWork | "Loading" | "Error";
 
 function setUrl(nav: Navigation, newPage: number) {
   // +1 so that the entry page is 0 and the other pages are 1-indexed.
-  Navigation.query(nav, `${newPage + 1}`, { localOnly: true });
+  Navigation.query(nav, `${newPage + 1}`);
 }
 
 function getWorkNodes(node: ProcessedWorkNode): ProcessedWorkNode[] {
@@ -145,19 +145,18 @@ export function ReadingPage() {
         })
       )
       .catch((reason) => {
+        console.debug(reason);
         setWork("Error");
       });
   }, [setWork, nav.route.path]);
 
   useEffect(() => {
     const urlPage = safeParseInt(nav.route.query);
-    // -1 because we add 1 when setting the page, so that users see 1-indexed.
-    const newPage = urlPage === undefined ? currentPage : urlPage - 1;
-    setCurrentPage(newPage);
-    if (urlPage === undefined) {
-      setUrl(nav, newPage);
-    }
-  }, [currentPage, nav, nav.route.query]);
+    setCurrentPage((current) =>
+      // -1 because we add 1 when setting the page, so that users see 1-indexed.
+      urlPage === undefined ? current : urlPage - 1
+    );
+  }, [nav.route.query]);
 
   return (
     <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
@@ -176,7 +175,6 @@ export function ReadingPage() {
           textScale={workScale}
           work={work}
           currentPage={currentPage}
-          setCurrentPage={setCurrentPage}
         />
       </div>
       <div
@@ -335,17 +333,14 @@ function WorkColumn(props: {
   textScale: number;
   work: WorkState;
   currentPage: number;
-  setCurrentPage: (page: number) => any;
 }) {
   const nav = useContext(RouteContext);
 
   const currentPage = props.currentPage;
-  const setCurrentPage = props.setCurrentPage;
   const work = props.work;
 
   function setPage(newPage: number) {
     setUrl(nav, newPage);
-    setCurrentPage(newPage);
   }
 
   return (
