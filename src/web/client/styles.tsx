@@ -267,10 +267,14 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         borderRadius: "4px",
         marginLeft: "8px",
         padding: "8px",
+        backgroundColor: Solarized.base1 + "28",
+        marginTop: "8px",
+        display: "inline-block",
+        textTransform: "capitalize",
       },
       ".latWork:hover": {
         color: Solarized.blue,
-        backgroundColor: Solarized.base1 + "20",
+        backgroundColor: Solarized.base1 + "40",
         cursor: "pointer",
       },
 
