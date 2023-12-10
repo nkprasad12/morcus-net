@@ -52,6 +52,9 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
     marginRight: 3,
     fontSize: 40,
   };
+  const contextTextLightColor = isDarkMode
+    ? Solarized.base00
+    : Solarized.base01;
 
   return {
     styles: {
@@ -90,7 +93,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: isDarkMode ? Solarized.base1 : Solarized.base015,
       },
       ".contentTextLight": {
-        color: isDarkMode ? Solarized.base00 : Solarized.base01,
+        color: contextTextLightColor,
       },
 
       /** Menu and menu items */
@@ -273,6 +276,18 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         textTransform: "capitalize",
       },
       ".latWork:hover": {
+        color: Solarized.blue,
+        backgroundColor: Solarized.base1 + "40",
+        cursor: "pointer",
+      },
+      ".terminalNavItem": {
+        color: contextTextLightColor,
+        textTransform: "capitalize",
+        backgroundColor: Solarized.base1 + "10",
+        borderRadius: "4px",
+        padding: "2px",
+      },
+      ".terminalNavItem:hover": {
         color: Solarized.blue,
         backgroundColor: Solarized.base1 + "40",
         cursor: "pointer",

@@ -30,6 +30,8 @@ import {
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
+import Typography from "@mui/material/Typography";
+import { FontSizes } from "@/web/client/styles";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
@@ -113,6 +115,26 @@ function findSectionById(
     return findSectionById(id, child, sectionToCheck + 1);
   }
   return undefined;
+}
+
+function findWorksByLevel(
+  level: number,
+  root: ProcessedWorkNode
+): ProcessedWorkNode[] {
+  if (root.id.length > level) {
+    return [];
+  }
+  if (root.id.length === level) {
+    return [root];
+  }
+  const results: ProcessedWorkNode[] = [];
+  for (const child of root.children) {
+    if (child instanceof XmlNode) {
+      continue;
+    }
+    results.push(...findWorksByLevel(level, child));
+  }
+  return results;
 }
 
 export function ReadingPage() {
@@ -311,7 +333,7 @@ function Sidebar(props: {
             <WorkInfo workInfo={props.work?.info} scale={props.scale} />
           )}
           {props.work && (
-            <WorkNavigation work={props.work} scale={props.scale} />
+            <WorkNavigationSection work={props.work} scale={props.scale} />
           )}
         </>
       );
@@ -504,13 +526,80 @@ function InfoLine(props: { value: string; label: string; scale: number }) {
   );
 }
 
-function WorkNavigation(props: { work: PaginatedWork; scale: number }) {
+function WorkNavigation(props: {
+  work: PaginatedWork;
+  root: ProcessedWorkNode;
+  scale: number;
+  level: number;
+}) {
+  const nav = useContext(RouteContext);
+  const ofLevel = findWorksByLevel(props.level, props.root);
+
+  if (ofLevel.length === 0) {
+    return <></>;
+  }
+
+  const isTerminal = props.level > props.work.textParts.length - 2;
   return (
-    <details>
+    <>
+      {ofLevel.map((childRoot) => (
+        <div
+          key={childRoot.id.join(".")}
+          style={{ marginLeft: `${props.level * 8}px` }}
+        >
+          {isTerminal ? (
+            <div style={{ paddingLeft: "8px" }}>
+              <Typography
+                component="span"
+                className="terminalNavItem"
+                fontSize={FontSizes.BIG_SCREEN * ((props.scale || 100) / 100)}
+                onClick={() => {
+                  for (let i = 0; i < props.work.pages.length; i++) {
+                    const page = props.work.pages[i];
+                    if (page.id.join(".") === childRoot.id.join(".")) {
+                      // Nav pages are 1-indexed.
+                      Navigation.query(nav, `${i + 1}`);
+                    }
+                  }
+                }}
+              >
+                {labelForId(childRoot.id, props.work)}
+              </Typography>
+            </div>
+          ) : (
+            <details>
+              <summary>
+                <SettingsText
+                  scale={props.scale}
+                  message={labelForId(childRoot.id, props.work)}
+                />
+              </summary>
+              <WorkNavigation
+                work={props.work}
+                root={childRoot}
+                scale={props.scale}
+                level={props.level + 1}
+              />
+            </details>
+          )}
+        </div>
+      ))}
+    </>
+  );
+}
+
+function WorkNavigationSection(props: { work: PaginatedWork; scale: number }) {
+  return (
+    <details open>
       <summary>
         <SettingsText scale={props.scale} message={props.work.info.title} />
       </summary>
-      <SettingsText scale={props.scale} message="Navigation in progress" />
+      <WorkNavigation
+        root={props.work.root}
+        scale={props.scale}
+        work={props.work}
+        level={1}
+      />
     </details>
   );
 }
