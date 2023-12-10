@@ -15,7 +15,7 @@ import { findTextNodes } from "@/common/xml/xml_utils";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
 const DEFAULT_TEXT_NODES = ["p", "l"];
-const KNOWN_ALT_NODES = ["add", "sic", "del"];
+const KNOWN_ALT_NODES = ["add", "sic", "del", "gap"];
 
 function markupText(text: string, parentName: string): XmlChild[] {
   if (parentName === "#comment") {
@@ -36,6 +36,9 @@ function markupTextInNode(node: XmlNode): XmlNode {
   const children = findTextNodes(node).flatMap((textNode) =>
     markupText(textNode.text, textNode.parent.name)
   );
+  if (children.length === 0) {
+    return new XmlNode("span", [["alt", "gap"]]);
+  }
   return new XmlNode("span", [], children);
 }
 

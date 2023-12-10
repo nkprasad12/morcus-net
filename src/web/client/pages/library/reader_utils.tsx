@@ -77,7 +77,11 @@ export function SettingsText(props: {
 
 export function capitalizeWords(input: string): string {
   const words = input.split(" ");
-  return words.map((word) => word[0].toUpperCase() + word.slice(1)).join(" ");
+  return words
+    .map((word) =>
+      word.length === 0 ? word : word[0].toUpperCase() + word.slice(1)
+    )
+    .join(" ");
 }
 
 export function InfoText(props: {

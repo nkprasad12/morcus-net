@@ -434,12 +434,19 @@ function HeaderText(props: {
   );
 }
 
-function labelForId(id: string[], work: PaginatedWork): string {
+function labelForId(
+  id: string[],
+  work: PaginatedWork,
+  useHeader: boolean = true
+): string {
   const parts = work.textParts;
   const i = id.length - 1;
+  const text = capitalizeWords(`${parts[i]} ${id[i]}`);
+  if (!useHeader) {
+    return text;
+  }
   const header = findSectionById(id, work.root)?.header;
   const subtitle = header === undefined ? "" : ` (${header})`;
-  const text = capitalizeWords(`${parts[i]} ${id[i]}`);
   return text + subtitle;
 }
 
@@ -449,7 +456,7 @@ function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
     return <></>;
   }
   const id = props.work.pages[props.page].id;
-  return <InfoText text={labelForId(id, props.work)} />;
+  return <InfoText text={labelForId(id, props.work, false)} />;
 }
 
 function WorkNavigationBar(props: {
@@ -514,18 +521,31 @@ export function WorkTextPage(props: {
 
   const gap = `${(props.textScale / 100) * 0.75}em`;
   const hasLines = props.work.textParts.slice(-1)[0].toLowerCase() === "line";
+  const hasHeader = section.header !== undefined;
 
   return (
     <div style={{ display: "inline-grid", columnGap: gap, marginTop: gap }}>
+      {hasHeader && (
+        <span
+          className="contentTextLight"
+          style={{
+            gridColumn: 2,
+            gridRow: 1,
+            fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
+          }}
+        >
+          {section.header}
+        </span>
+      )}
       {getWorkNodes(section).map((chunk, i) => (
         <WorkChunk
           key={chunk.id.join(".")}
           node={chunk}
           setDictWord={props.setDictWord}
           textScale={props.textScale}
-          i={i}
+          i={i + (hasHeader ? 1 : 0)}
           workName={capitalizeWords(props.work.info.title)}
-          mode={hasLines ? "Poem" : undefined}
+          hideHeader={hasLines && i !== 0 && (i + 1) % 5 !== 0}
         />
       ))}
     </div>
@@ -691,21 +711,19 @@ function WorkChunkHeader(props: {
   );
 }
 
-type WorkChunkMode = "Poem";
 function WorkChunk(props: {
   node: ProcessedWorkNode;
   setDictWord: (word: string | undefined) => any;
   textScale: number;
   i: number;
   workName: string;
-  mode?: WorkChunkMode;
+  hideHeader?: boolean;
 }) {
   const id = props.node.id.join(".");
   const row = props.i + 1;
   const content = props.node.children.filter(instanceOf(XmlNode));
   assertEqual(content.length, props.node.children.length);
-  assertEqual(content.length, 1);
-  const showHeader = props.mode !== "Poem" || row === 1 || row % 5 === 0;
+  const showHeader = props.hideHeader !== true;
   return (
     <>
       {showHeader && (
@@ -718,7 +736,9 @@ function WorkChunk(props: {
         </span>
       )}
       <span style={{ gridColumn: 2, gridRow: row }} id={id}>
-        {displayForLibraryChunk(content[0], props.setDictWord)}
+        {content.map((node, i) =>
+          displayForLibraryChunk(node, props.setDictWord, i)
+        )}
       </span>
     </>
   );
@@ -747,5 +767,8 @@ function displayForLibraryChunk(
     const word = XmlNode.assertIsString(root.children[0]);
     return <LatLink word={word} setDictWord={setDictWord} key={key} />;
   }
-  return React.createElement("span", {}, children);
+  if (root.getAttr("alt") === "gap") {
+    return React.createElement("span", { key: key }, [" [gap]"]);
+  }
+  return React.createElement("span", { key: key }, children);
 }

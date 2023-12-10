@@ -312,8 +312,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         borderRadius: "4px",
       },
       ".selectedSidePanelTab": {
-        backgroundColor:
-          (isDarkMode ? Solarized.base00 : Solarized.base1) + "30",
+        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
       },
       ".selectedSidePanelTab .menuIcon": {
         color: contentTextColor + "d0",
