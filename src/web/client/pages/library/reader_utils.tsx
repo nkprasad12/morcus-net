@@ -83,12 +83,14 @@ export function capitalizeWords(input: string): string {
 export function InfoText(props: {
   text: string;
   textScale?: number;
+  additionalClasses?: string[];
   style?: CSSProperties;
 }) {
+  const classes = (props.additionalClasses || []).concat("contentTextLight");
   return (
     <Typography
       component="span"
-      className="contentTextLight"
+      className={classes.join(" ")}
       fontSize={FontSizes.SECONDARY * ((props.textScale || 100) / 100)}
       style={{
         marginLeft: 8,
@@ -109,18 +111,22 @@ export function NavIcon(props: {
   Icon: JSX.Element;
   ref?: React.ForwardedRef<any>;
   disabled?: boolean;
+  extraClasses?: string[];
 }) {
+  const classes = (props.extraClasses || []).concat("readerNavIconContainer");
   return (
-    <IconButton
-      ref={props.ref}
-      size="small"
-      aria-label={props.label}
-      onClick={props.onClick}
-      disabled={props.disabled}
-      className="menuIcon"
-    >
-      {props.Icon}
-    </IconButton>
+    <span className={classes.join(" ")}>
+      <IconButton
+        ref={props.ref}
+        size="small"
+        aria-label={props.label}
+        onClick={props.onClick}
+        disabled={props.disabled}
+        className="menuIcon"
+      >
+        {props.Icon}
+      </IconButton>
+    </span>
   );
 }
 

@@ -202,16 +202,31 @@ export function ReadingPage() {
                 Icon={<Info />}
                 label="Work details"
                 onClick={() => setSidebar({ panel: "Info" })}
+                extraClasses={
+                  sidebar.panel === "Info"
+                    ? ["selectedSidePanelTab"]
+                    : undefined
+                }
               />
               <NavIcon
                 Icon={<MenuBook />}
                 label="Dictionary"
                 onClick={() => setSidebar({ panel: "Dict" })}
+                extraClasses={
+                  sidebar.panel === "Dict"
+                    ? ["selectedSidePanelTab"]
+                    : undefined
+                }
               />
               <NavIcon
                 Icon={<Settings />}
                 label="Reader settings"
                 onClick={() => setSidebar({ panel: "Settings" })}
+                extraClasses={
+                  sidebar.panel === "Settings"
+                    ? ["selectedSidePanelTab"]
+                    : undefined
+                }
               />
             </div>
             <div style={{ paddingRight: "8px" }}>
@@ -498,6 +513,7 @@ export function WorkTextPage(props: {
   }
 
   const gap = `${(props.textScale / 100) * 0.75}em`;
+  const hasLines = props.work.textParts.slice(-1)[0].toLowerCase() === "line";
 
   return (
     <div style={{ display: "inline-grid", columnGap: gap, marginTop: gap }}>
@@ -509,6 +525,7 @@ export function WorkTextPage(props: {
           textScale={props.textScale}
           i={i}
           workName={capitalizeWords(props.work.info.title)}
+          mode={hasLines ? "Poem" : undefined}
         />
       ))}
     </div>
@@ -650,6 +667,7 @@ function workSectionHeader(
         <InfoText
           text={text}
           style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
+          additionalClasses={["unselectable"]}
           textScale={textScale}
         />
       </span>
@@ -673,27 +691,32 @@ function WorkChunkHeader(props: {
   );
 }
 
+type WorkChunkMode = "Poem";
 function WorkChunk(props: {
   node: ProcessedWorkNode;
   setDictWord: (word: string | undefined) => any;
   textScale: number;
   i: number;
   workName: string;
+  mode?: WorkChunkMode;
 }) {
   const id = props.node.id.join(".");
   const row = props.i + 1;
   const content = props.node.children.filter(instanceOf(XmlNode));
   assertEqual(content.length, props.node.children.length);
   assertEqual(content.length, 1);
+  const showHeader = props.mode !== "Poem" || row === 1 || row % 5 === 0;
   return (
     <>
-      <span style={{ gridColumn: 1, gridRow: row }}>
-        <WorkChunkHeader
-          text={id}
-          textScale={props.textScale}
-          blurb={`${props.workName} ${id}`}
-        />
-      </span>
+      {showHeader && (
+        <span style={{ gridColumn: 1, gridRow: row }}>
+          <WorkChunkHeader
+            text={id}
+            textScale={props.textScale}
+            blurb={`${props.workName} ${id}`}
+          />
+        </span>
+      )}
       <span style={{ gridColumn: 2, gridRow: row }} id={id}>
         {displayForLibraryChunk(content[0], props.setDictWord)}
       </span>
