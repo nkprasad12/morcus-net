@@ -243,4 +243,69 @@ describe("Reading UI", () => {
     );
     await screen.findByText(/Gallia/);
   });
+
+  it("shows empty dict tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Dictionary")!);
+
+    await screen.findByText(/Click on a word/);
+  });
+
+  it("shows navigation tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Work details")!);
+
+    await screen.findByText(/Attribution/);
+    // One from the main column and one from navigation.
+    expect(await screen.findAllByText(/Chapter 1/)).toHaveLength(2);
+    await screen.findByText(/Chapter 2/);
+  });
+
+  it("shows settings tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Reader settings")!);
+
+    await screen.findByText(/Layout/);
+    await screen.findByText(/Main column/);
+    await screen.findByText(/Side column/);
+  });
 });
