@@ -1,59 +1,26 @@
-import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { assert, assertEqual } from "@/common/assert";
 import { LatinWords } from "@/common/lexica/latin_words";
-import { ProcessedWork } from "@/common/library/library_types";
+import {
+  ProcessedWork,
+  ProcessedWorkNode,
+} from "@/common/library/library_types";
 import { TEXT_BREAK_CHARACTERS } from "@/common/text_cleaning";
-import { TeiDocument } from "@/common/xml/xml_files";
+import {
+  ROOT_NODE_NAME,
+  TeiCtsDocument,
+  TeiNode,
+} from "@/common/xml/tei_utils";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
-import { TextNodeData, findTextNodes } from "@/common/xml/xml_utils";
+import { findTextNodes } from "@/common/xml/xml_utils";
+import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
-const DEFAULT_TEXT_NODES = ["p"];
-const KNOWN_ALT_NODES = ["add", "sic"];
-
-function signaturesEqual(
-  reference: string[],
-  other: (string | undefined)[]
-): boolean {
-  if (reference.length !== other.length) {
-    return false;
-  }
-  for (let i = 0; i < reference.length; i++) {
-    if (reference[i] !== other[i]) {
-      return false;
-    }
-  }
-  return true;
-}
-
-function compare(previous: number[], next: number[]): number {
-  assertEqual(previous.length, next.length);
-  for (let i = 0; i < previous.length; i++) {
-    if (previous[i] > next[i]) {
-      return -1;
-    }
-    if (next[i] > previous[i]) {
-      return 1;
-    }
-  }
-  return 0;
-}
-
-function extractChunkId(
-  data: TextNodeData,
-  expectedParts: string[]
-): number[] | undefined {
-  const textParts: [string | undefined, string | undefined][] = data.ancestors
-    .concat(data.parent)
-    .filter((node) => node.getAttr("type") === "textpart")
-    .map((node) => [node.getAttr("subtype"), node.getAttr("n")]);
-  const signature = textParts.map(([subtype, _n]) => subtype);
-  if (!signaturesEqual(expectedParts, signature)) {
-    console.debug(`Invalid signature ${signature} for ${data.text}`);
-    return undefined;
-  }
-  return textParts.map(([_subtype, n]) => parseInt(checkPresent(n)));
-}
+const DEFAULT_TEXT_NODES = ["p", "l"];
+const KNOWN_ALT_NODES = ["add", "sic", "del", "gap"];
 
 function markupText(text: string, parentName: string): XmlChild[] {
+  if (parentName === "#comment") {
+    return [];
+  }
   const isAlt = !DEFAULT_TEXT_NODES.includes(parentName);
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
   const words = text.split(TEXT_BREAK_CHARACTERS).map((word) => {
@@ -65,31 +32,81 @@ function markupText(text: string, parentName: string): XmlChild[] {
   return isAlt ? [new XmlNode("span", [["alt", parentName]], words)] : words;
 }
 
-/** Returns the processed content of a TEI XML file. */
-export function processTei(teiRoot: TeiDocument): ProcessedWork {
-  const chunks: [number[], XmlChild[]][] = [];
-  for (const textNode of findTextNodes(teiRoot.content)) {
-    const chunkId = extractChunkId(textNode, teiRoot.textParts);
-    if (chunkId === undefined) {
-      continue;
-    }
-    const newMarkup = markupText(textNode.text, textNode.parent.name);
-    if (chunks.length === 0) {
-      chunks.push([chunkId, newMarkup]);
-      continue;
-    }
-    const idComparison = compare(chunks[chunks.length - 1][0], chunkId);
-    assert(idComparison >= 0);
-    if (idComparison > 0) {
-      chunks.push([chunkId, newMarkup]);
-    } else {
-      chunks[chunks.length - 1][1] =
-        chunks[chunks.length - 1][1].concat(newMarkup);
-    }
+function markupTextInNode(node: XmlNode): XmlNode {
+  const children = findTextNodes(node).flatMap((textNode) =>
+    markupText(textNode.text, textNode.parent.name)
+  );
+  if (children.length === 0) {
+    return new XmlNode("span", [["alt", "gap"]]);
   }
+  return new XmlNode("span", [], children);
+}
+
+function attachStringChildren(root: TeiNode): (XmlChild | TeiNode)[] {
+  if (root.selfNode.name === ROOT_NODE_NAME) {
+    return root.children;
+  }
+  const directChildren = root.selfNode.children;
+  let i = 0; // Index for directChildren
+  const teiChildren = root.children;
+  let j = 0; // Index for teiChildren
+  assertEqual(
+    directChildren.filter(instanceOf(XmlNode)).length,
+    teiChildren.length,
+    "Found non-direct node children of the root"
+  );
+  const result: (XmlChild | TeiNode)[] = [];
+  while (i < directChildren.length || j < teiChildren.length) {
+    const dChild = directChildren[i];
+    if (isString(dChild)) {
+      result.push(dChild);
+      i++;
+      continue;
+    }
+    const tChild = teiChildren[j];
+    if (tChild instanceof XmlNode) {
+      assert(dChild === tChild);
+      result.push(dChild);
+      i++;
+      j++;
+      continue;
+    }
+    assert(dChild === tChild.selfNode);
+    result.push(tChild);
+    i++;
+    j++;
+  }
+  return result;
+}
+
+function processForDisplay(root: TeiNode): ProcessedWorkNode {
+  const allChildren = attachStringChildren(root);
+  const firstChild = allChildren[0];
+  const isFirstHead =
+    firstChild !== undefined &&
+    firstChild instanceof XmlNode &&
+    firstChild.name === "head";
+  const children = allChildren
+    .slice(isFirstHead ? 1 : 0)
+    .map((child) =>
+      isString(child)
+        ? new XmlNode("span", [], markupText(child, root.selfNode.name))
+        : child instanceof XmlNode
+        ? markupTextInNode(child)
+        : processForDisplay(child)
+    );
+  return {
+    id: root.id,
+    header: isFirstHead ? XmlNode.getSoleText(firstChild) : undefined,
+    children,
+  };
+}
+
+/** Returns the processed content of a TEI XML file. */
+export function processTei(teiRoot: TeiCtsDocument): ProcessedWork {
   return {
     info: teiRoot.info,
     textParts: teiRoot.textParts,
-    chunks: chunks.map(([s, n]) => [s, new XmlNode("div", [], n)]),
+    root: processForDisplay(teiRoot.content),
   };
 }

@@ -3,6 +3,7 @@ import {
   TargetMatch,
   XmlOperations,
   findTextNodes,
+  findXmlNodes,
   modifyInTree,
   parseRawXml,
   removeTextNode,
@@ -85,6 +86,23 @@ describe("findTextNode", () => {
     expect(result[1].ancestors).toStrictEqual([D, B]);
     expect(result[2].ancestors).toStrictEqual([D]);
     expect(result[3].ancestors).toStrictEqual([D]);
+  });
+});
+
+describe("findXmlNodes", () => {
+  it("returns expected results", () => {
+    const A = new XmlNode("a");
+    const B = new XmlNode("b", [], ["b"]);
+    const C = new XmlNode("c", [], [A]);
+    const D = new XmlNode("d", [], [C, "d", B]);
+
+    const result = findXmlNodes(D);
+
+    expect(result).toHaveLength(4);
+    expect(result[0]).toStrictEqual([D, []]);
+    expect(result[1]).toStrictEqual([C, [D]]);
+    expect(result[2]).toStrictEqual([A, [D, C]]);
+    expect(result[3]).toStrictEqual([B, [D]]);
   });
 });
 

@@ -13,20 +13,21 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
   const nav = useContext(RouteContext);
 
   return (
-    <div style={{ marginTop: 4 }}>
+    <div style={{ marginTop: 4, display: "flex", flexDirection: "column" }}>
       {props.works === undefined ? (
         <span>Loading titles ...</span>
       ) : (
         props.works.map((work) => (
-          <span
-            key={work.id}
-            className="latWork"
-            onClick={() => Navigation.to(nav, `${WORK_PAGE}/${work.id}`)}
-            role="button"
-          >
-            <span>{work.name}</span>{" "}
-            <span className="contentTextLight">{work.author}</span>
-          </span>
+          <div key={work.id}>
+            <span
+              className="latWork"
+              onClick={() => Navigation.to(nav, `${WORK_PAGE}/${work.id}`)}
+              role="button"
+            >
+              <span>{work.name}</span>{" "}
+              <span className="contentTextLight">{work.author}</span>
+            </span>
+          </div>
         ))
       )}
     </div>

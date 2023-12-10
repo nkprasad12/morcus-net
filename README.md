@@ -92,3 +92,8 @@ as the default formatter for Python. This will also turn on format on save.
 
 After initial setup, install the [Jest Runner VS Code plugin](https://marketplace.visualstudio.com/items?itemName=firsttris.vscode-jest-runner) by pressing Ctrl+P and entering `ext install firsttris.vscode-jest-runner`.
 This will allow you to run and debug unit tests from within the VS Code UI when browsing a test file.
+
+### ESLint Plugin
+
+Install the [ESLint plugin](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint). This will add
+warnings within VSCode for any ESLint errors in the code.

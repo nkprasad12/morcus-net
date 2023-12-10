@@ -52,6 +52,10 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
     marginRight: 3,
     fontSize: 40,
   };
+  const contentTextLightColor = isDarkMode
+    ? Solarized.base00
+    : Solarized.base01;
+  const contentTextColor = isDarkMode ? Solarized.base1 : Solarized.base015;
 
   return {
     styles: {
@@ -69,6 +73,18 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: isDarkMode ? Solarized.blue : undefined,
       },
       pre: { margin: "0" },
+      summary: {
+        cursor: "pointer",
+        color: contentTextLightColor + "80",
+      },
+      ".unselectable": {
+        WebkitTouchCallout: "none",
+        WebkitTouchSelect: "none",
+        KhtmlUserSelect: "none",
+        MozUserSelect: "none",
+        msUserSelect: "none",
+        userSelect: "none",
+      },
 
       /** Tooltip styling */
       ".MuiTooltip-arrow": {
@@ -87,10 +103,10 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
       },
       ".contentText": {
-        color: isDarkMode ? Solarized.base1 : Solarized.base015,
+        color: contentTextColor,
       },
       ".contentTextLight": {
-        color: isDarkMode ? Solarized.base00 : Solarized.base01,
+        color: contentTextLightColor,
       },
 
       /** Menu and menu items */
@@ -267,11 +283,39 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         borderRadius: "4px",
         marginLeft: "8px",
         padding: "8px",
+        backgroundColor: Solarized.base1 + "28",
+        marginTop: "8px",
+        display: "inline-block",
+        textTransform: "capitalize",
       },
       ".latWork:hover": {
         color: Solarized.blue,
-        backgroundColor: Solarized.base1 + "20",
+        backgroundColor: Solarized.base1 + "40",
         cursor: "pointer",
+      },
+      ".terminalNavItem": {
+        color: contentTextLightColor,
+        textTransform: "capitalize",
+        backgroundColor: Solarized.base1 + "10",
+        borderRadius: "4px",
+        padding: "2px",
+      },
+      ".terminalNavItem:hover": {
+        color: Solarized.blue,
+        backgroundColor: Solarized.base1 + "40",
+        cursor: "pointer",
+      },
+      ".readerNavIconContainer": {
+        marginTop: "2px",
+        paddingBottom: "4px",
+        paddingTop: "2px",
+        borderRadius: "4px",
+      },
+      ".selectedSidePanelTab": {
+        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+      },
+      ".selectedSidePanelTab .menuIcon": {
+        color: contentTextColor + "d0",
       },
 
       /** Search box */

@@ -7,7 +7,7 @@ import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 export namespace SinglePageApp {
   export interface Page extends ResponsiveAppBar.Page {
-    content: () => JSX.Element;
+    content: (props: Partial<Record<string, any>>) => JSX.Element;
     experimental?: true;
     hasSubpages?: true;
   }

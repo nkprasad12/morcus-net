@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-// import { parseTeiXml } from "@/common/xml/xml_files";
+// import { parseTeiXml } from "@/common/xml/tei_utils";
 import { parse } from "@/common/lewis_and_short/ls_parser";
 import { LS_PATH } from "@/common/lewis_and_short/ls_scripts";
 import { Tally } from "@/common/misc_utils";

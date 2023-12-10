@@ -519,7 +519,7 @@ function TableOfContents(props: {
   );
 }
 
-export function DictionaryViewV2(props?: {
+export function DictionaryViewV2(props: {
   /** Whether the dictionary is embedded in another view. */
   embedded?: boolean;
   /** An initial query, if any. */
@@ -533,6 +533,9 @@ export function DictionaryViewV2(props?: {
     SearchSettings.retrieve()
   );
 
+  const theme = useTheme();
+  const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+
   const sectionRef = React.useRef<HTMLElement>(null);
   const tocRef = React.useRef<HTMLElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
@@ -541,15 +544,20 @@ export function DictionaryViewV2(props?: {
   const settings = React.useContext(GlobalSettingsContext);
   const nav = React.useContext(RouteContext);
   const title = React.useContext(TitleContext);
-  const theme = useTheme();
+
   const isEmbedded = props?.embedded === true;
-  const isSmall =
-    isEmbedded || useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const isSmall = isEmbedded || isScreenSmall;
   const scale = (props?.textScale || 100) / 100;
   const textScale = props?.textScale;
   const idSearch = nav.route.idSearch === true;
 
-  function fetchAndDisplay(query: string) {
+  const { initial } = props;
+  const query = isEmbedded ? initial : nav.route.query;
+
+  React.useEffect(() => {
+    if (query === undefined) {
+      return;
+    }
     setState("Loading");
     const serverResult = fetchEntry(
       query,
@@ -586,15 +594,15 @@ export function DictionaryViewV2(props?: {
           : SCROLL_JUMP;
       scrollElement?.scrollIntoView(scrollType);
     });
-  }
-
-  React.useEffect(() => {
-    const query = props?.embedded === true ? props?.initial : nav.route.query;
-    if (query === undefined) {
-      return;
-    }
-    fetchAndDisplay(query);
-  }, [nav.route.query, props?.initial]);
+  }, [
+    query,
+    nav.route.hash,
+    nav.route.experimentalSearch,
+    nav.route.internalSource,
+    idSearch,
+    isEmbedded,
+    settings.data.experimentalMode,
+  ]);
 
   React.useEffect(() => {
     const filteredEntries = entries.filter(
@@ -605,7 +613,7 @@ export function DictionaryViewV2(props?: {
     } else {
       title.setCurrentDictWord(filteredEntries[0].outlines[0].mainKey);
     }
-  }, [state, entries]);
+  }, [state, entries, title]);
 
   if (state === "Landing") {
     return (

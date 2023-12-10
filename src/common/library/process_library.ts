@@ -3,8 +3,9 @@ import {
   ProcessedWork,
 } from "@/common/library/library_types";
 import { processTei } from "@/common/library/process_work";
-import { parseTeiXml } from "@/common/xml/xml_files";
+import { parseCtsTeiXml } from "@/common/xml/tei_utils";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { parseRawXml } from "@/common/xml/xml_utils";
 import { parseMessage, stringifyMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";
 import { readFile } from "fs/promises";
@@ -14,6 +15,7 @@ const LIBRARY_INDEX = "morcus_library_index.json";
 // TODO: We should just crawl some root.
 const ALL_WORKS = [
   "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
+  "texts/latin/perseus/data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
 ];
 
 interface LibraryIndex {
@@ -31,7 +33,7 @@ export function processLibrary(
       .split("/")
       .slice(-1)[0]
       .replace(/\.[^/.]+$/, "");
-    const tei = parseTeiXml(workPath);
+    const tei = parseCtsTeiXml(parseRawXml(fs.readFileSync(workPath)));
     const metadata: LibraryWorkMetadata = {
       id: workId,
       author: tei.info.author,
@@ -42,6 +44,7 @@ export function processLibrary(
     const outputPath = `${outputDir}/${workId}`;
     index[workId] = [outputPath, metadata];
     fs.writeFileSync(outputPath, encoded);
+    console.log("Wrote processed file to %s", outputPath);
   }
   fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));
 }

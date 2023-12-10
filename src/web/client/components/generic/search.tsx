@@ -35,18 +35,20 @@ export function SearchBox<T>(props: {
   const [loading, setLoading] = useState<boolean>(false);
   const [options, setOptions] = useState<T[]>([]);
 
+  const { toKey } = props;
+
   useEffect(() => {
     if (cursor < 0 || options.length === 0) {
       return;
     }
-    const id = props.toKey(options[cursor]);
+    const id = toKey(options[cursor]);
     const element = document.getElementById(id);
     if (element === null) {
       return;
     }
     // @ts-ignore
     element.scrollIntoView({ behavior: "instant", block: "nearest" });
-  }, [cursor]);
+  }, [cursor, toKey, options]);
 
   const smallScreen = props.smallScreen === true;
   const interactingWithPopup = mouseOnPopup;

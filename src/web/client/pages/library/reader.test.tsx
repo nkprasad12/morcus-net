@@ -20,10 +20,52 @@ const mockCallApi: jest.Mock<any, any, any> = callApi;
 const PROCESSED_WORK: ProcessedWork = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
-  chunks: [
-    [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
-    [[1, 2], new XmlNode("span", [], [" divisa in partes tres"])],
-  ],
+  root: {
+    id: [],
+    children: [
+      {
+        id: ["1"],
+        children: [
+          {
+            id: ["1", "1"],
+            children: [new XmlNode("span", [], ["Gallia est omnis"])],
+          },
+          {
+            id: ["1", "2"],
+            children: [new XmlNode("span", [], [" divisa in partes tres"])],
+          },
+        ],
+      },
+    ],
+  },
+};
+
+const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork = {
+  info: { title: "DBG", author: "Caesar" },
+  textParts: ["chapter", "section"],
+  root: {
+    id: [],
+    children: [
+      {
+        id: ["1"],
+        children: [
+          {
+            id: ["1", "1"],
+            children: [new XmlNode("span", [], ["Gallia est omnis"])],
+          },
+        ],
+      },
+      {
+        id: ["2"],
+        children: [
+          {
+            id: ["2", "1"],
+            children: [new XmlNode("span", [], [" divisa in partes tres"])],
+          },
+        ],
+      },
+    ],
+  },
 };
 
 describe("Reading UI", () => {
@@ -85,15 +127,7 @@ describe("Reading UI", () => {
   });
 
   it("shows work contents on success", async () => {
-    const result: ProcessedWork = {
-      info: { title: "DBG", author: "Caesar" },
-      textParts: ["chapter", "section"],
-      chunks: [
-        [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
-        [[1, 2], new XmlNode("span", [], [" divisa in partes tres"])],
-      ],
-    };
-    mockCallApi.mockResolvedValue(result);
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
 
     render(
       <RouteContext.Provider
@@ -109,21 +143,13 @@ describe("Reading UI", () => {
     await screen.findByText(/Caesar/);
   });
 
-  it("shows next and previous page contents", async () => {
-    const result: ProcessedWork = {
-      info: { title: "DBG", author: "Caesar" },
-      textParts: ["chapter", "section"],
-      chunks: [
-        [[1, 1], new XmlNode("span", [], ["Gallia est omnis"])],
-        [[2, 1], new XmlNode("span", [], [" divisa in partes tres"])],
-      ],
-    };
-    mockCallApi.mockResolvedValue(result);
+  it("shows correct contents for page", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: `${WORK_PAGE}/dbg`, query: "2" },
           navigateTo: () => {},
         }}
       >
@@ -132,35 +158,54 @@ describe("Reading UI", () => {
     );
     await screen.findByText(/DBG/);
 
-    // We should see only the second chunk.
-    await user.click(screen.queryByLabelText("next section")!);
     expect(screen.queryByText(/Gallia/)).toBeNull();
     expect(screen.queryByText(/divisa/)).not.toBeNull();
-
-    // We should see only the first chunk.
-    await user.click(screen.queryByLabelText("previous section")!);
-    expect(screen.queryByText(/Gallia/)).not.toBeNull();
-    expect(screen.queryByText(/divisa/)).toBeNull();
   });
 
-  it("uses correct nav updates", async () => {
-    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+  it("uses correct nav updates on next page", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path },
           navigateTo: mockNav,
         }}
       >
         <ReadingPage />
       </RouteContext.Provider>
     );
+    await screen.findByText(/DBG/);
 
     await user.click(screen.queryByLabelText("next section")!);
 
-    expect(mockNav).not.toHaveBeenCalled();
-    expect(window.location.href.includes("q=1")).toBe(true);
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "2" })
+    );
+  });
+
+  it("uses correct nav updates on previous page", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path, query: "2" },
+          navigateTo: mockNav,
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/DBG/);
+
+    await user.click(screen.queryByLabelText("previous section")!);
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "1" })
+    );
   });
 
   // TODO: Figure out why this test doesn't work.
@@ -197,5 +242,70 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
     await screen.findByText(/Gallia/);
+  });
+
+  it("shows empty dict tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Dictionary")!);
+
+    await screen.findByText(/Click on a word/);
+  });
+
+  it("shows navigation tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Work details")!);
+
+    await screen.findByText(/Attribution/);
+    // One from the main column and one from navigation.
+    expect(await screen.findAllByText(/Chapter 1/)).toHaveLength(2);
+    await screen.findByText(/Chapter 2/);
+  });
+
+  it("shows settings tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Reader settings")!);
+
+    await screen.findByText(/Layout/);
+    await screen.findByText(/Main column/);
+    await screen.findByText(/Side column/);
   });
 });
