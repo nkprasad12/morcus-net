@@ -15,6 +15,7 @@ const LIBRARY_INDEX = "morcus_library_index.json";
 // TODO: We should just crawl some root.
 const ALL_WORKS = [
   "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
+  "texts/latin/perseus/data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
 ];
 
 interface LibraryIndex {

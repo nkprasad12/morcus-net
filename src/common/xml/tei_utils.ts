@@ -9,6 +9,8 @@ import { DescendantNode, findXmlNodes } from "@/common/xml/xml_utils";
 const XPATH_START = "#xpath(";
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
 
+export const ROOT_NODE_NAME = "__@ROOT";
+
 export interface TeiDocument {
   /** Basic information about this document like title, author, and so on. */
   info: DocumentInfo;
@@ -30,6 +32,7 @@ export interface TeiCtsDocument {
 export interface TeiNode {
   id: string[];
   children: (TeiNode | XmlNode)[];
+  selfNode: XmlNode;
 }
 
 export interface CtsPathData {
@@ -224,7 +227,10 @@ function extractTeiContent(
 
 function assembleTeiTree(
   rootKey: string,
-  nodeLookup: Map<string, { id: string[]; children: RawTeiData[] }>
+  nodeLookup: Map<
+    string,
+    { id: string[]; children: RawTeiData[]; selfNode: XmlNode }
+  >
 ): TeiNode {
   const rawData = checkPresent(nodeLookup.get(rootKey));
   const children = [...rawData.children]
@@ -234,7 +240,7 @@ function assembleTeiTree(
         ? child.node
         : assembleTeiTree(child.id.join(","), nodeLookup)
     );
-  return { id: rawData.id, children };
+  return { id: rawData.id, children, selfNode: rawData.selfNode };
 }
 
 function assembleTeiData(
@@ -253,11 +259,15 @@ function assembleTeiData(
   const extrasById = new Map<string, RawTeiData[]>();
   const nodeLookup = new Map<
     string,
-    { id: string[]; children: RawTeiData[] }
+    { id: string[]; children: RawTeiData[]; selfNode: XmlNode }
   >();
   // We verify above that every pattern has a non-empty id list.
   // Use this as the root element.
-  nodeLookup.set("", { id: [], children: [] });
+  nodeLookup.set("", {
+    id: [],
+    children: [],
+    selfNode: new XmlNode(ROOT_NODE_NAME),
+  });
   for (const data of rawData) {
     const combinedId = data.id.join(",");
     if (data.ofParent === true) {
@@ -269,7 +279,11 @@ function assembleTeiData(
     }
     mains.push(data);
     assert(!nodeLookup.has(combinedId));
-    nodeLookup.set(combinedId, { id: data.id, children: [] });
+    nodeLookup.set(combinedId, {
+      id: data.id,
+      children: [],
+      selfNode: data.node,
+    });
   }
   for (const [combinedId, extras] of extrasById) {
     const parent = checkPresent(nodeLookup.get(combinedId));

@@ -144,9 +144,14 @@ describe("extractTeiContent", () => {
     expect(result.content.id).toEqual([]);
   });
 
-  it("has expected content", () => {
+  it("has expected content and structure", () => {
     const firstBook = <TeiNode>result.content.children[0];
     expect(firstBook.id).toEqual(["1"]);
+    expect(
+      firstBook.selfNode
+        .toString()
+        .startsWith("<div><head>COMMENTARIUS PRIMUS</head>")
+    );
     const firstChild = <XmlNode>firstBook.children[0];
     expect(firstChild).toBeInstanceOf(XmlNode);
     expect(firstChild.toString()).toBe("<head>COMMENTARIUS PRIMUS</head>");
