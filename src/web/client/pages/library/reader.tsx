@@ -63,6 +63,7 @@ const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | false)[] = [
   "xxl",
   false,
 ];
+const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
 interface WorkPage {
   id: string[];
@@ -442,6 +443,9 @@ function labelForId(
 ): string {
   const parts = work.textParts;
   const i = id.length - 1;
+  if (SPECIAL_ID_PARTS.has(id[i].toLowerCase())) {
+    return capitalizeWords(id[i]);
+  }
   const text = capitalizeWords(`${parts[i]} ${id[i]}`);
   if (!useHeader) {
     return text;
@@ -738,7 +742,13 @@ function WorkChunk(props: {
   workName: string;
   hideHeader?: boolean;
 }) {
-  const id = props.node.id.join(".");
+  const id = props.node.id
+    .map((idPart) =>
+      safeParseInt(idPart) !== undefined
+        ? idPart
+        : capitalizeWords(idPart.substring(0, 3))
+    )
+    .join(".");
   const row = props.i + 1;
   const content = props.node.children.filter(instanceOf(XmlNode));
   assertEqual(content.length, props.node.children.length);
