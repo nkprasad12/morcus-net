@@ -50,6 +50,7 @@ function DrawerMenu(props: {
   open: boolean;
   isCurrentPage: (page: string) => boolean;
 }) {
+  const pages = props.pages.concat([{ name: "Settings", path: "/settings" }]);
   return (
     <Drawer
       anchor="left"
@@ -60,7 +61,7 @@ function DrawerMenu(props: {
       }}
     >
       <Box role="navigation" onClick={props.onClose} id="menu-appbar">
-        {props.pages.map((page) => (
+        {pages.map((page) => (
           <div key={page.name}>
             <Button
               key={page.name}
@@ -97,6 +98,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
   const globalSettings = React.useContext(GlobalSettingsContext);
   const darkModeOn = globalSettings.data.darkMode === true;
+  const iconSize = isSmall ? "small" : "medium";
 
   const nav = React.useContext(RouteContext);
   const [drawerVisible, setDrawerVisible] = React.useState<boolean>(false);
@@ -133,7 +135,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
 
           <Box sx={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}>
             <IconButton
-              size="medium"
+              size={iconSize}
               aria-label="site pages"
               aria-controls="menu-appbar"
               aria-haspopup="true"
@@ -189,7 +191,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
           </Box>
           <Box>
             <IconButton
-              size="medium"
+              size={iconSize}
               aria-label={darkModeOn ? "light mode" : "dark mode"}
               onClick={() =>
                 globalSettings.setData({
@@ -202,7 +204,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               {darkModeOn ? <LightMode /> : <DarkMode />}
             </IconButton>
             <IconButton
-              size="medium"
+              size={iconSize}
               aria-label="report an issue"
               aria-haspopup="true"
               onClick={props.openIssueDialog}
@@ -210,15 +212,17 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             >
               <FlagIcon />
             </IconButton>
-            <IconButton
-              size="medium"
-              aria-label="site settings"
-              // TODO: Find a better way to configure this.
-              onClick={handlePageClick("/settings")}
-              className="menuIcon"
-            >
-              <BuildIcon />
-            </IconButton>
+            {!isSmall && (
+              <IconButton
+                size={iconSize}
+                aria-label="site settings"
+                // TODO: Find a better way to configure this.
+                onClick={handlePageClick("/settings")}
+                className="menuIcon"
+              >
+                <BuildIcon />
+              </IconButton>
+            )}
           </Box>
         </Toolbar>
       </Container>
