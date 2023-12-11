@@ -45,6 +45,7 @@ import ReactDOM, { flushSync } from "react-dom";
 import { TitleContext } from "../../components/title";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { FontSizes } from "@/web/client/styles";
+import { DictContext } from "@/web/client/pages/dictionary/dict_context";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -162,8 +163,6 @@ interface EntriesByDict {
 
 interface PassthroughSearchBarProps {
   className?: string;
-  isEmbedded: boolean;
-  isSmall: boolean;
   dictsToUse: DictInfo[];
   setDictsToUse: (dicts: DictInfo[]) => any;
   scrollTopRef: React.RefObject<HTMLDivElement>;
@@ -174,7 +173,8 @@ interface SearchBarProps extends PassthroughSearchBarProps {
   id?: string;
 }
 function SearchBar(props: SearchBarProps) {
-  if (props.isEmbedded) {
+  const { isEmbedded, isSmall } = React.useContext(DictContext);
+  if (isEmbedded) {
     return <></>;
   }
   return (
@@ -187,7 +187,7 @@ function SearchBar(props: SearchBarProps) {
       className={props.className}
     >
       <DictionarySearch
-        smallScreen={props.isSmall}
+        smallScreen={isSmall}
         dicts={props.dictsToUse}
         setDicts={(newDicts) => {
           SearchSettings.store(newDicts);
@@ -225,14 +225,8 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
   );
 }
 
-function HelpSection(props: {
-  id?: string;
-  className?: string;
-  scale: number;
-  isSmall: boolean;
-  isEmbedded: boolean;
-}) {
-  const { scale, isSmall } = props;
+function HelpSection(props: { id?: string; className?: string }) {
+  const { isEmbedded, isSmall, scale } = React.useContext(DictContext);
   const MainContent = (
     <div
       style={{
@@ -250,7 +244,7 @@ function HelpSection(props: {
       id={props.id}
       className={props.className}
     >
-      {props.isEmbedded ? (
+      {isEmbedded ? (
         <details>
           <summary>
             <span
@@ -279,13 +273,13 @@ function LoadingMessage(props: { isSmall: boolean; textScale?: number }) {
 
 function ResponsiveLayout(
   props: {
-    isSmall: boolean;
     oneCol?: JSX.Element;
     twoColSide?: JSX.Element;
     twoColMain?: JSX.Element;
   } & PassthroughSearchBarProps
 ) {
-  return props.isSmall ? (
+  const { isSmall } = React.useContext(DictContext);
+  return isSmall ? (
     <OneColumnLayout {...props} Content={props.oneCol || <></>} />
   ) : (
     <TwoColumnLayout
@@ -299,16 +293,14 @@ function ResponsiveLayout(
 function OneColumnLayout(
   props: { Content: JSX.Element } & PassthroughSearchBarProps
 ) {
-  const { isEmbedded, isSmall, dictsToUse, setDictsToUse, scrollTopRef } =
-    props;
+  const { isEmbedded } = React.useContext(DictContext);
+  const { dictsToUse, setDictsToUse, scrollTopRef } = props;
   return (
     <Container maxWidth="lg" disableGutters={isEmbedded}>
       <SearchBar
         maxWidth="lg"
         id={"SearchBox"}
         className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-        isEmbedded={isEmbedded}
-        isSmall={isSmall}
         dictsToUse={dictsToUse}
         setDictsToUse={setDictsToUse}
         scrollTopRef={scrollTopRef}
@@ -328,8 +320,7 @@ function TwoColumnLayout(
     MainContent: JSX.Element;
   } & PassthroughSearchBarProps
 ) {
-  const { isEmbedded, isSmall, dictsToUse, setDictsToUse, scrollTopRef } =
-    props;
+  const { dictsToUse, setDictsToUse, scrollTopRef } = props;
   return (
     <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
       <Stack direction="row" spacing={0} justifyContent="left">
@@ -338,8 +329,6 @@ function TwoColumnLayout(
           <SearchBar
             maxWidth="md"
             marginLeft="0"
-            isEmbedded={isEmbedded}
-            isSmall={isSmall}
             dictsToUse={dictsToUse}
             setDictsToUse={setDictsToUse}
             scrollTopRef={scrollTopRef}
@@ -354,23 +343,13 @@ function TwoColumnLayout(
 }
 
 function SummarySection(props: {
-  isSmall: boolean;
-  textScale?: number;
   idSearch: boolean;
-  isEmbedded: boolean;
   entries: EntriesByDict[];
-  scale: number;
   scrollTopRef: React.RefObject<HTMLDivElement>;
 }) {
-  const {
-    isSmall,
-    textScale,
-    idSearch,
-    isEmbedded,
-    entries,
-    scale,
-    scrollTopRef,
-  } = props;
+  const { isEmbedded, isSmall, textScale, scale } =
+    React.useContext(DictContext);
+  const { idSearch, entries, scrollTopRef } = props;
   if (idSearch) {
     return <></>;
   }
@@ -441,21 +420,17 @@ function articleLinkButton(text: string, scale: number) {
   return React.forwardRef<HTMLElement>(senseForwardedNode);
 }
 
-function DictionaryEntries(props: {
-  entries: EntriesByDict[];
-  isSmall: boolean;
-  textScale?: number;
-  scale: number;
-}) {
+function DictionaryEntries(props: { entries: EntriesByDict[] }) {
+  const { isSmall, textScale, scale } = React.useContext(DictContext);
   return (
     <>
       {props.entries.map((entry) => (
         <SingleDictSection
           data={entry}
           key={`${entry.dictKey}EntrySection`}
-          isSmall={props.isSmall}
-          textScale={props.textScale}
-          scale={props.scale}
+          isSmall={isSmall}
+          textScale={textScale}
+          scale={scale}
         />
       ))}
     </>
@@ -516,21 +491,19 @@ function SingleDictSection(props: {
 
 function TableOfContents(props: {
   entries: EntriesByDict[];
-  isSmall: boolean;
-  textScale?: number;
-  scale: number;
   tocRef: React.RefObject<HTMLElement>;
 }) {
+  const { isSmall, textScale } = React.useContext(DictContext);
   return (
     <>
       {props.entries.map((entry) => (
         <TableOfContentsV2
           dictKey={entry.dictKey}
           outlines={entry.outlines}
-          isSmall={props.isSmall}
+          isSmall={isSmall}
           tocRef={props.tocRef}
           key={entry.dictKey + "ToC"}
-          textScale={props.textScale}
+          textScale={textScale}
         />
       ))}
     </>
@@ -635,135 +608,114 @@ export function DictionaryViewV2(props: {
 
   if (state === "Landing") {
     return (
-      <ResponsiveLayout
-        isSmall={isSmall}
-        isEmbedded={isEmbedded}
-        dictsToUse={dictsToUse}
-        setDictsToUse={setDictsToUse}
-        scrollTopRef={scrollTopRef}
-      />
+      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+        <ResponsiveLayout
+          dictsToUse={dictsToUse}
+          setDictsToUse={setDictsToUse}
+          scrollTopRef={scrollTopRef}
+        />
+      </DictContext.Provider>
     );
   }
 
   if (state === "Error") {
     return (
-      <ResponsiveLayout
-        oneCol={<ErrorContent isSmall={isSmall} />}
-        twoColMain={<ErrorContent isSmall={isSmall} />}
-        isSmall={isSmall}
-        isEmbedded={isEmbedded}
-        dictsToUse={dictsToUse}
-        setDictsToUse={setDictsToUse}
-        scrollTopRef={scrollTopRef}
-      />
+      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+        <ResponsiveLayout
+          oneCol={<ErrorContent isSmall={isSmall} />}
+          twoColMain={<ErrorContent isSmall={isSmall} />}
+          dictsToUse={dictsToUse}
+          setDictsToUse={setDictsToUse}
+          scrollTopRef={scrollTopRef}
+        />
+      </DictContext.Provider>
     );
   }
 
   if (state === "No Results") {
     const noResults = <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />;
     return (
-      <ResponsiveLayout
-        oneCol={noResults}
-        twoColMain={noResults}
-        isSmall={isSmall}
-        isEmbedded={isEmbedded}
-        dictsToUse={dictsToUse}
-        setDictsToUse={setDictsToUse}
-        scrollTopRef={scrollTopRef}
-      />
+      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+        <ResponsiveLayout
+          oneCol={noResults}
+          twoColMain={noResults}
+          dictsToUse={dictsToUse}
+          setDictsToUse={setDictsToUse}
+          scrollTopRef={scrollTopRef}
+        />
+      </DictContext.Provider>
     );
   }
 
   if (state === "Loading") {
     return (
-      <ResponsiveLayout
-        isSmall={isSmall}
-        isEmbedded={isEmbedded}
-        dictsToUse={dictsToUse}
-        setDictsToUse={setDictsToUse}
-        scrollTopRef={scrollTopRef}
-        oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
-        twoColMain={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
-      />
+      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+        <ResponsiveLayout
+          dictsToUse={dictsToUse}
+          setDictsToUse={setDictsToUse}
+          scrollTopRef={scrollTopRef}
+          oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
+          twoColMain={
+            <LoadingMessage isSmall={isSmall} textScale={textScale} />
+          }
+        />
+      </DictContext.Provider>
     );
   }
 
   return (
-    <ResponsiveLayout
-      isSmall={isSmall}
-      isEmbedded={isEmbedded}
-      dictsToUse={dictsToUse}
-      setDictsToUse={setDictsToUse}
-      scrollTopRef={scrollTopRef}
-      oneCol={
-        <>
-          {!isEmbedded &&
-            ReactDOM.createPortal(<QuickNavMenu />, document.body)}
-          <HelpSection
-            id={"HelpSection"}
-            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-            scale={scale}
-            isSmall={isSmall}
-            isEmbedded={isEmbedded}
-          />
-          <div
-            id={"Toc"}
-            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+    <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+      <ResponsiveLayout
+        dictsToUse={dictsToUse}
+        setDictsToUse={setDictsToUse}
+        scrollTopRef={scrollTopRef}
+        oneCol={
+          <DictContext.Provider
+            value={{ isEmbedded, isSmall, scale, textScale }}
           >
+            {!isEmbedded &&
+              ReactDOM.createPortal(<QuickNavMenu />, document.body)}
+            <HelpSection
+              id={"HelpSection"}
+              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+            />
+            <div
+              id={"Toc"}
+              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+            >
+              <SummarySection
+                scrollTopRef={scrollTopRef}
+                idSearch={idSearch}
+                entries={entries}
+              />
+              <TableOfContents entries={entries} tocRef={tocRef} />
+            </div>
+            <div ref={entriesRef}>
+              <DictionaryEntries entries={entries} />
+            </div>
+          </DictContext.Provider>
+        }
+        twoColSide={
+          <DictContext.Provider
+            value={{ isEmbedded, isSmall, scale, textScale }}
+          >
+            <TableOfContents entries={entries} tocRef={tocRef} />
+          </DictContext.Provider>
+        }
+        twoColMain={
+          <DictContext.Provider
+            value={{ isEmbedded, isSmall, scale, textScale }}
+          >
+            <HelpSection />
             <SummarySection
-              isSmall={isSmall}
-              isEmbedded={isEmbedded}
               scrollTopRef={scrollTopRef}
               idSearch={idSearch}
               entries={entries}
-              scale={scale}
             />
-            <TableOfContents
-              isSmall={isSmall}
-              entries={entries}
-              scale={scale}
-              tocRef={tocRef}
-            />
-          </div>
-          <div ref={entriesRef}>
-            <DictionaryEntries
-              isSmall={isSmall}
-              entries={entries}
-              scale={scale}
-            />
-          </div>
-        </>
-      }
-      twoColSide={
-        <TableOfContents
-          isSmall={isSmall}
-          entries={entries}
-          scale={scale}
-          tocRef={tocRef}
-        />
-      }
-      twoColMain={
-        <>
-          <HelpSection
-            scale={scale}
-            isSmall={isSmall}
-            isEmbedded={isEmbedded}
-          />
-          <SummarySection
-            isSmall={isSmall}
-            isEmbedded={isEmbedded}
-            scrollTopRef={scrollTopRef}
-            idSearch={idSearch}
-            entries={entries}
-            scale={scale}
-          />
-          <DictionaryEntries
-            isSmall={isSmall}
-            entries={entries}
-            scale={scale}
-          />
-        </>
-      }
-    />
+            <DictionaryEntries entries={entries} />
+          </DictContext.Provider>
+        }
+      />
+    </DictContext.Provider>
   );
 }
