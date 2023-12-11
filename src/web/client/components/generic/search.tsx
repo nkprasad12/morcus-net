@@ -93,18 +93,15 @@ export function SearchBox<T>(props: {
         marginRight: spacing(smallScreen ? 0 : 3),
         marginTop: spacing(2),
         marginBottom: spacing(1),
-      }}
-    >
+      }}>
       <div
         className={containerClasses.join(" ")}
         style={{ display: "flex", alignItems: "center" }}
-        ref={containerRef}
-      >
+        ref={containerRef}>
         <Popper
           open={popperOpen}
           anchorEl={containerRef.current}
-          placement="bottom"
-        >
+          placement="bottom">
           <div
             className="customSearchPopup"
             style={{
@@ -112,8 +109,7 @@ export function SearchBox<T>(props: {
               maxHeight: window.innerHeight * 0.4,
             }}
             onMouseOver={() => setMouseOnPopup(true)}
-            onMouseOut={() => setMouseOnPopup(false)}
-          >
+            onMouseOut={() => setMouseOnPopup(false)}>
             {loading && options.length === 0 && (
               <div className="customSearchPopupOption">Loading options</div>
             )}
@@ -128,8 +124,7 @@ export function SearchBox<T>(props: {
                   id={props.toKey(t)}
                   onClick={() => onOptionChosen(t)}
                   onTouchStart={() => setCursor(i)}
-                  onMouseOver={() => setCursor(i)}
-                >
+                  onMouseOver={() => setCursor(i)}>
                   <props.RenderOption option={t} />
                 </div>
               ))}
@@ -198,8 +193,7 @@ export function SearchBox<T>(props: {
             aria-haspopup="true"
             sx={{ marginRight: 0.5 }}
             onClick={props.onOpenSettings}
-            id="DictSearchSettingsButton"
-          >
+            id="DictSearchSettingsButton">
             <SettingsIcon fontSize="medium" className="menuIcon" />
           </IconButton>
         )}

@@ -81,8 +81,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -99,8 +98,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -117,8 +115,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -134,8 +131,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -151,8 +147,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg`, query: "2" },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -171,8 +166,7 @@ describe("Reading UI", () => {
         value={{
           route: { path },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -194,8 +188,7 @@ describe("Reading UI", () => {
         value={{
           route: { path },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -217,8 +210,7 @@ describe("Reading UI", () => {
         value={{
           route: { path, query: "2" },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -240,8 +232,7 @@ describe("Reading UI", () => {
         value={{
           route: { path, query: "2" },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -263,8 +254,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg`, query: "1" },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -282,8 +272,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg`, query: "1" },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -298,8 +287,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -318,8 +306,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -341,8 +328,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );

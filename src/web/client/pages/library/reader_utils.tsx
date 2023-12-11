@@ -24,8 +24,7 @@ export function SettingSlider(props: {
       style={{
         alignItems: "center",
         display: "flex",
-      }}
-    >
+      }}>
       <SettingsText
         message={props.label}
         size={FontSizes.SECONDARY}
@@ -68,8 +67,7 @@ export function SettingsText(props: {
       className="contentTextLight"
       fontSize={
         (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
-      }
-    >
+      }>
       {props.message}
     </Typography>
   );
@@ -102,8 +100,7 @@ export function InfoText(props: {
         whiteSpace: "nowrap",
         display: "inline-block",
         ...props.style,
-      }}
-    >
+      }}>
       {props.text}
     </Typography>
   );
@@ -126,8 +123,7 @@ export function NavIcon(props: {
         aria-label={props.label}
         onClick={props.onClick}
         disabled={props.disabled}
-        className="menuIcon"
-      >
+        className="menuIcon">
         {props.Icon}
       </IconButton>
     </span>

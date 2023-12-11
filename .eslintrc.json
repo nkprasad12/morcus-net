@@ -47,6 +47,8 @@
     "react/jsx-boolean-value": "error",
     "react/hook-use-state": "error",
     "react/jsx-fragments": "error",
+    // We handle this with Prettier instead.
+    "react/jsx-closing-bracket-location": "off",
     // Not required with new JSX transform.
     "react/jsx-uses-react": "off",
     "react/react-in-jsx-scope": "off"

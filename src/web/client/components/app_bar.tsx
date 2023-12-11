@@ -58,8 +58,7 @@ function DrawerMenu(props: {
       onClose={props.onClose}
       PaperProps={{
         className: "menu",
-      }}
-    >
+      }}>
       <Box role="navigation" onClick={props.onClose} id="menu-appbar">
         {pages.map((page) => (
           <div key={page.name}>
@@ -76,8 +75,7 @@ function DrawerMenu(props: {
                 mx: 2,
                 display: "block",
                 justifyContent: "center",
-              }}
-            >
+              }}>
               <b>{page.name}</b>
             </Button>
             <Divider
@@ -128,8 +126,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               display: isSmall ? "none" : "flex",
               color: "inherit",
               textDecoration: "none",
-            }}
-          >
+            }}>
             <LogoImage />
           </Typography>
 
@@ -140,8 +137,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={() => setDrawerVisible(true)}
-              className="menuIcon"
-            >
+              className="menuIcon">
               <MenuIcon />
             </IconButton>
             <DrawerMenu
@@ -166,8 +162,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               letterSpacing: ".3rem",
               color: "inherit",
               textDecoration: "none",
-            }}
-          >
+            }}>
             <LogoImage />
           </Typography>
           <Box sx={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
@@ -183,8 +178,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 sx={{
                   mx: 1,
                   display: "block",
-                }}
-              >
+                }}>
                 <b>{page.name}</b>
               </Button>
             ))}
@@ -199,8 +193,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                   darkMode: !darkModeOn,
                 })
               }
-              className="menuIcon"
-            >
+              className="menuIcon">
               {darkModeOn ? <LightMode /> : <DarkMode />}
             </IconButton>
             <IconButton
@@ -208,8 +201,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-label="report an issue"
               aria-haspopup="true"
               onClick={props.openIssueDialog}
-              className="menuIcon"
-            >
+              className="menuIcon">
               <FlagIcon />
             </IconButton>
             {!isSmall && (
@@ -218,8 +210,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 aria-label="site settings"
                 // TODO: Find a better way to configure this.
                 onClick={handlePageClick("/settings")}
-                className="menuIcon"
-              >
+                className="menuIcon">
                 <BuildIcon />
               </IconButton>
             )}

@@ -189,8 +189,7 @@ function SearchBar(props: SearchBarProps) {
       ref={props.scrollTopRef}
       sx={{ marginLeft: props.marginLeft || "auto" }}
       id={props.id}
-      className={props.className}
-    >
+      className={props.className}>
       <DictionarySearch
         smallScreen={isSmall}
         dicts={props.dictsToUse}
@@ -215,8 +214,7 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
         whiteSpace: "nowrap",
         fontWeight: "normal",
       }}
-      onClick={() => jumpToSection(props.outline.mainSection.sectionId)}
-    >
+      onClick={() => jumpToSection(props.outline.mainSection.sectionId)}>
       <OpenInNewIcon
         sx={{
           marginBottom: `${-0.1 * scale}em`,
@@ -237,8 +235,7 @@ function HelpSection(props: { id?: string; className?: string }) {
       style={{
         fontSize: FontSizes.TERTIARY * scale,
         lineHeight: "normal",
-      }}
-    >
+      }}>
       {xmlNodeToJsx(HELP_ENTRY)}
     </div>
   );
@@ -249,15 +246,13 @@ function HelpSection(props: { id?: string; className?: string }) {
       id={props.id}
       className={props.className}
       noDivider={isEmbedded}
-      isEmbedded={isEmbedded}
-    >
+      isEmbedded={isEmbedded}>
       {isEmbedded ? (
         <details>
           <summary>
             <span
               className="contentTextLight"
-              style={{ fontSize: FontSizes.SECONDARY * scale }}
-            >
+              style={{ fontSize: FontSizes.SECONDARY * scale }}>
               Markup guide
             </span>
           </summary>
@@ -373,15 +368,13 @@ function SummarySection(props: {
         textScale={textScale}
         isEmbedded={isEmbedded}
         noDivider={isEmbedded}
-        mt={0}
-      >
+        mt={0}>
         <>
           <div
             ref={isEmbedded ? scrollTopRef : undefined}
             style={{
               fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
-            }}
-          >
+            }}>
             Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
           </div>
           {numEntries > 1 &&
@@ -422,8 +415,7 @@ function articleLinkButton(text: string, scale: number) {
           paddingTop: 1,
           paddingBottom: 1,
           paddingRight: 4,
-        }}
-      >
+        }}>
         <LinkIcon
           sx={{
             marginBottom: `${-0.2 * scale}em`,
@@ -474,8 +466,7 @@ function SingleDictSection(props: {
           key={entry.key}
           isSmall={isSmall}
           id={entry.key}
-          textScale={textScale}
-        >
+          textScale={textScale}>
           <>
             {entry.inflections && (
               <InflectionDataSection
@@ -535,8 +526,7 @@ function HideableTableOfContents(props: TableOfContentsProps) {
         <summary>
           <span
             className="contentTextLight"
-            style={{ fontSize: FontSizes.BIG_SCREEN * scale }}
-          >
+            style={{ fontSize: FontSizes.BIG_SCREEN * scale }}>
             Outline
           </span>
         </summary>
@@ -730,8 +720,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
             />
             <div
               id={"Toc"}
-              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-            >
+              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>
               <SummarySection
                 scrollTopRef={scrollTopRef}
                 idSearch={idSearch}

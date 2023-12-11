@@ -16,8 +16,7 @@ export function DictChip(props: { label: string; textScale?: number }) {
         paddingRight: 3,
         fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
         fontFamily: "monospace",
-      }}
-    >
+      }}>
       {props.label}
     </span>
   );
@@ -48,8 +47,7 @@ export function FullDictChip(props: { label: string; textScale?: number }) {
         fontSize: props.textScale
           ? FontSizes.BIG_SCREEN * (props.textScale / 100)
           : undefined,
-      }}
-    >
+      }}>
       {displayText(props.label)}
     </Typography>
   );

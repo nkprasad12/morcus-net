@@ -31,8 +31,7 @@ function BaseTooltip(props: TooltipProps) {
     <ClickAwayListener
       onClickAway={() => {
         props.onClickAway();
-      }}
-    >
+      }}>
       <div role="presentation" style={{ display: "inline" }}>
         <Tooltip
           title={<Typography component={"div"}>{props.titleText}</Typography>}
@@ -52,8 +51,7 @@ function BaseTooltip(props: TooltipProps) {
             arrow: {
               sx: props.arrowSx,
             },
-          }}
-        >
+          }}>
           <props.ChildFactory
             onClick={() => {
               props.onChildClick(props.open);
@@ -104,14 +102,12 @@ function TextWithIcon(props: {
     <Typography component="div">
       <div
         onClick={onClick}
-        style={{ cursor: "pointer", display: "inline-block" }}
-      >
+        style={{ cursor: "pointer", display: "inline-block" }}>
         <IconButton
           size="small"
           aria-label="copy link"
           aria-haspopup="false"
-          color="success"
-        >
+          color="success">
           <LinkIcon />
         </IconButton>
         <span>{props.message}</span>

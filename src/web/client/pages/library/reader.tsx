@@ -179,8 +179,7 @@ export function ReadingPage() {
         style={{
           ...COLUMN_STYLE,
           width: `${mainWidth}%`,
-        }}
-      >
+        }}>
         <WorkColumn
           setSidebar={(newSidebar) => {
             // @ts-ignore
@@ -194,8 +193,7 @@ export function ReadingPage() {
       </div>
       <div
         style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}
-        ref={sidebarRef}
-      >
+        ref={sidebarRef}>
         <ContentBox isSmall>
           <>
             <div className="readerIconBar">
@@ -555,8 +553,7 @@ export function WorkTextPage(props: {
             gridColumn: 2,
             gridRow: 1,
             fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
-          }}
-        >
+          }}>
           {section.header}
         </span>
       )}
@@ -605,8 +602,7 @@ function WorkNavigation(props: {
       {ofLevel.map((childRoot) => (
         <div
           key={childRoot.id.join(".")}
-          style={{ marginLeft: `${props.level * 8}px` }}
-        >
+          style={{ marginLeft: `${props.level * 8}px` }}>
           {isTerminal ? (
             <div style={{ paddingLeft: "8px" }}>
               <Typography
@@ -621,8 +617,7 @@ function WorkNavigation(props: {
                       Navigation.query(nav, `${i + 1}`);
                     }
                   }
-                }}
-              >
+                }}>
                 {labelForId(childRoot.id, props.work)}
               </Typography>
             </div>

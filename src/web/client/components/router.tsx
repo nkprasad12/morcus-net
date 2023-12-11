@@ -121,8 +121,7 @@ export namespace Router {
         value={{
           route: route,
           navigateTo: setRoute,
-        }}
-      >
+        }}>
         {props.children}
       </RouteContext.Provider>
     );

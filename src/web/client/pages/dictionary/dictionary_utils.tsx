@@ -103,8 +103,7 @@ function ShLink(props: { text: string; query: string }) {
           internalSource: true,
           canonicalPath: "/dicts",
         })
-      }
-    >
+      }>
       {props.text}
     </span>
   );
@@ -121,8 +120,7 @@ function LatLink(props: { word: string; orig?: string }) {
           internalSource: true,
           canonicalPath: "/dicts",
         })
-      }
-    >
+      }>
       {props.orig || props.word}
     </span>
   );
@@ -288,8 +286,7 @@ export function InflectionDataSection(props: {
             fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
             paddingBottom: 3,
           }}
-          key={form}
-        >
+          key={form}>
           <span className="lsOrth">{form}</span>:
           {inflections.length === 1 ? (
             ` ${inflections[0]}`

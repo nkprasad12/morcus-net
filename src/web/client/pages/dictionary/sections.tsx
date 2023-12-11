@@ -38,8 +38,7 @@ export function ContentBox(props: {
       key={props.contentKey}
       ref={props.contentRef}
       id={props.id}
-      className={props.className}
-    >
+      className={props.className}>
       <Typography
         component={"div"}
         className="contentText"
@@ -48,8 +47,7 @@ export function ContentBox(props: {
           fontSize: props.textScale
             ? FontSizes.BIG_SCREEN * (props.textScale / 100)
             : undefined,
-        }}
-      >
+        }}>
         {props.children}
       </Typography>
       {props.noDivider !== true && (
@@ -113,8 +111,7 @@ export function DictAttribution(props: {
         style={{
           fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
           lineHeight: "normal",
-        }}
-      >
+        }}>
         <AttributionContent dictKey={props.dictKey} />
       </div>
     </ContentBox>

@@ -39,8 +39,7 @@ export function Editor() {
                 await getNext("")
               ).toString()
             );
-          }}
-        >
+          }}>
           Start
         </button>
       </div>
@@ -60,8 +59,7 @@ export function Editor() {
             const editedValue = e.value;
             e.value = "Waiting for next entry...";
             e.value = await getNext(editedValue);
-          }}
-        >
+          }}>
           Next
         </button>
       </div>

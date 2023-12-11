@@ -53,8 +53,7 @@ describe("App Bar View", () => {
     const mockSetPage = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}
-      >
+        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}>
         <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
       </RouteContext.Provider>
     );
@@ -69,8 +68,7 @@ describe("App Bar View", () => {
     const mockSetPage = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}
-      >
+        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}>
         <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
       </RouteContext.Provider>
     );

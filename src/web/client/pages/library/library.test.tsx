@@ -29,8 +29,7 @@ describe("library view", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <Library />
       </RouteContext.Provider>
     );
