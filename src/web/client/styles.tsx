@@ -25,6 +25,12 @@ export function getBackgroundColor(settings: GlobalSettings): string {
   return settings.darkMode === true ? "#212022" : Solarized.base3;
 }
 
+export function getAppBarColor(settings: GlobalSettings): string {
+  return settings.darkMode === true
+    ? Solarized.darkarkModeMint
+    : Solarized.base2;
+}
+
 export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
   const modifier =
     (settings.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH) /
@@ -117,9 +123,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: (isDarkMode ? Solarized.base00 : Solarized.base1) + 40,
       },
       ".menu": {
-        backgroundColor: isDarkMode
-          ? Solarized.darkarkModeMint
-          : Solarized.base2,
+        backgroundColor: getAppBarColor(settings),
       },
       ".menuItemActive": {
         color: menuItemBaseColor + (isDarkMode ? "D8" : ""),

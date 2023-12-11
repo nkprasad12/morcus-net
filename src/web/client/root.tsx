@@ -22,6 +22,7 @@ import {
   getGlobalStyles,
   FontSizes,
   TEXT_STYLE,
+  getAppBarColor,
 } from "@/web/client/styles";
 
 declare module "@mui/material/styles" {
@@ -105,6 +106,9 @@ const root = ReactDOM.createRoot(
 function ConfigurableStyles() {
   const settings = useContext(GlobalSettingsContext);
   document.body.style.backgroundColor = getBackgroundColor(settings.data);
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", getAppBarColor(settings.data));
   return <GlobalStyles {...getGlobalStyles(settings.data)} />;
 }
 
