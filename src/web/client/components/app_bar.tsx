@@ -6,7 +6,9 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
-import DisplaySettings from "@mui/icons-material/DisplaySettings";
+import BuildIcon from "@mui/icons-material/Build";
+import DarkMode from "@mui/icons-material/DarkMode";
+import LightMode from "@mui/icons-material/LightMode";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
@@ -14,6 +16,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -92,6 +95,8 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const noSsr = { noSsr: true };
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const globalSettings = React.useContext(GlobalSettingsContext);
+  const darkModeOn = globalSettings.data.darkMode === true;
 
   const nav = React.useContext(RouteContext);
   const [drawerVisible, setDrawerVisible] = React.useState<boolean>(false);
@@ -185,12 +190,16 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
           <Box>
             <IconButton
               size="medium"
-              aria-label="site settings"
-              // TODO: Find a better way to configure this.
-              onClick={handlePageClick("/settings")}
+              aria-label={darkModeOn ? "light mode" : "dark mode"}
+              onClick={() =>
+                globalSettings.setData({
+                  ...globalSettings.data,
+                  darkMode: !darkModeOn,
+                })
+              }
               className="menuIcon"
             >
-              <DisplaySettings />
+              {darkModeOn ? <LightMode /> : <DarkMode />}
             </IconButton>
             <IconButton
               size="medium"
@@ -200,6 +209,15 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               className="menuIcon"
             >
               <FlagIcon />
+            </IconButton>
+            <IconButton
+              size="medium"
+              aria-label="site settings"
+              // TODO: Find a better way to configure this.
+              onClick={handlePageClick("/settings")}
+              className="menuIcon"
+            >
+              <BuildIcon />
             </IconButton>
           </Box>
         </Toolbar>

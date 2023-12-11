@@ -15,6 +15,10 @@ jest.mock("@mui/material/useMediaQuery", () => {
   };
 });
 import useMediaQuery from "@mui/material/useMediaQuery";
+import {
+  SettingsHandler,
+  getGlobalSettings,
+} from "@/web/client/components/global_flags";
 
 describe("App Bar View", () => {
   const pages: ResponsiveAppBar.Page[] = [
@@ -86,6 +90,21 @@ describe("App Bar View", () => {
     await user.click(screen.getByLabelText("report an issue"));
 
     expect(mockReportIssue).toBeCalledTimes(1);
+  });
+
+  test("handles dark mode clicks", async () => {
+    localStorage.setItem("GlobalSettings", JSON.stringify({}));
+    render(
+      <SettingsHandler>
+        <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
+      </SettingsHandler>
+    );
+
+    await user.click(screen.getByLabelText("dark mode"));
+    expect(getGlobalSettings().darkMode).toBe(true);
+
+    await user.click(screen.getByLabelText("light mode"));
+    expect(getGlobalSettings().darkMode).toBe(false);
   });
 
   test("shows drawer on click", async () => {
