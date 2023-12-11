@@ -230,8 +230,19 @@ function HelpSection(props: {
   className?: string;
   scale: number;
   isSmall: boolean;
+  isEmbedded: boolean;
 }) {
   const { scale, isSmall } = props;
+  const MainContent = (
+    <div
+      style={{
+        fontSize: FontSizes.TERTIARY * scale,
+        lineHeight: "normal",
+      }}
+    >
+      {xmlNodeToJsx(HELP_ENTRY)}
+    </div>
+  );
   return (
     <ContentBox
       key="helpSection"
@@ -239,14 +250,21 @@ function HelpSection(props: {
       id={props.id}
       className={props.className}
     >
-      <div
-        style={{
-          fontSize: FontSizes.TERTIARY * scale,
-          lineHeight: "normal",
-        }}
-      >
-        {xmlNodeToJsx(HELP_ENTRY)}
-      </div>
+      {props.isEmbedded ? (
+        <details>
+          <summary>
+            <span
+              className="contentTextLight"
+              style={{ fontSize: FontSizes.SECONDARY * scale }}
+            >
+              Markup guide
+            </span>
+          </summary>
+          {MainContent}
+        </details>
+      ) : (
+        MainContent
+      )}
     </ContentBox>
   );
 }
@@ -679,13 +697,14 @@ export function DictionaryViewV2(props: {
       scrollTopRef={scrollTopRef}
       oneCol={
         <>
-          {!props?.embedded &&
+          {!isEmbedded &&
             ReactDOM.createPortal(<QuickNavMenu />, document.body)}
           <HelpSection
             id={"HelpSection"}
             className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
             scale={scale}
             isSmall={isSmall}
+            isEmbedded={isEmbedded}
           />
           <div
             id={"Toc"}
@@ -725,7 +744,11 @@ export function DictionaryViewV2(props: {
       }
       twoColMain={
         <>
-          <HelpSection scale={scale} isSmall={isSmall} />
+          <HelpSection
+            scale={scale}
+            isSmall={isSmall}
+            isEmbedded={isEmbedded}
+          />
           <SummarySection
             isSmall={isSmall}
             isEmbedded={isEmbedded}

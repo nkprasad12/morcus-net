@@ -268,7 +268,6 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         position: "sticky",
         top: 0,
         width: "100%",
-        // borderRadius: "4px",
         boxShadow: `0 2px 3px 1px ${
           isDarkMode ? Solarized.base015 : Solarized.base15
         }`,
