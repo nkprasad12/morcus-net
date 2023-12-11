@@ -45,7 +45,12 @@ import ReactDOM, { flushSync } from "react-dom";
 import { TitleContext } from "../../components/title";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { FontSizes } from "@/web/client/styles";
-import { DictContext } from "@/web/client/pages/dictionary/dict_context";
+import {
+  DictContext,
+  DictContextOptions,
+  DictionaryV2Props,
+} from "@/web/client/pages/dictionary/dict_context";
+import Divider from "@mui/material/Divider";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -243,6 +248,8 @@ function HelpSection(props: { id?: string; className?: string }) {
       isSmall={isSmall}
       id={props.id}
       className={props.className}
+      noDivider={isEmbedded}
+      isEmbedded={isEmbedded}
     >
       {isEmbedded ? (
         <details>
@@ -257,7 +264,10 @@ function HelpSection(props: { id?: string; className?: string }) {
           {MainContent}
         </details>
       ) : (
-        MainContent
+        <>
+          {MainContent}
+          {isEmbedded && <Divider className="contentDivider" />}
+        </>
       )}
     </ContentBox>
   );
@@ -356,36 +366,46 @@ function SummarySection(props: {
 
   const numEntries = entries.reduce((s, c) => s + c.entries.length, 0);
   return (
-    <ContentBox isSmall={isSmall} id="DictResultsSummary" textScale={textScale}>
-      <>
-        <div
-          ref={isEmbedded ? scrollTopRef : undefined}
-          style={{
-            fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
-          }}
-        >
-          Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
-        </div>
-        {numEntries > 1 &&
-          entries
-            .filter((entry) => entry.outlines.length > 0)
-            .map((entry) => (
-              <div key={entry.dictKey + "SummarySection"}>
-                <FullDictChip label={entry.name} textScale={textScale} />
-                {entry.outlines.map((outline) => (
-                  <span key={outline.mainSection.sectionId}>
-                    {" "}
-                    <ToEntryButton
-                      outline={outline}
-                      key={outline.mainSection.sectionId}
-                      scale={scale}
-                    />
-                  </span>
-                ))}
-              </div>
-            ))}
-      </>
-    </ContentBox>
+    <>
+      <ContentBox
+        isSmall={isSmall}
+        id="DictResultsSummary"
+        textScale={textScale}
+        isEmbedded={isEmbedded}
+        noDivider={isEmbedded}
+        mt={0}
+      >
+        <>
+          <div
+            ref={isEmbedded ? scrollTopRef : undefined}
+            style={{
+              fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
+            }}
+          >
+            Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
+          </div>
+          {numEntries > 1 &&
+            entries
+              .filter((entry) => entry.outlines.length > 0)
+              .map((entry) => (
+                <div key={entry.dictKey + "SummarySection"}>
+                  <FullDictChip label={entry.name} textScale={textScale} />
+                  {entry.outlines.map((outline) => (
+                    <span key={outline.mainSection.sectionId}>
+                      {" "}
+                      <ToEntryButton
+                        outline={outline}
+                        key={outline.mainSection.sectionId}
+                        scale={scale}
+                      />
+                    </span>
+                  ))}
+                </div>
+              ))}
+        </>
+      </ContentBox>
+      {isEmbedded && <Divider className="contentDivider" />}
+    </>
   );
 }
 
@@ -489,10 +509,7 @@ function SingleDictSection(props: {
   );
 }
 
-function TableOfContents(props: {
-  entries: EntriesByDict[];
-  tocRef: React.RefObject<HTMLElement>;
-}) {
+function DefaultTableOfContents(props: TableOfContentsProps) {
   const { isSmall, textScale } = React.useContext(DictContext);
   return (
     <>
@@ -509,15 +526,41 @@ function TableOfContents(props: {
     </>
   );
 }
+function HideableTableOfContents(props: TableOfContentsProps) {
+  const [open, setOpen] = React.useState(false);
+  const { scale } = React.useContext(DictContext);
+  return (
+    <>
+      <details open={open} onToggle={() => setOpen(!open)}>
+        <summary>
+          <span
+            className="contentTextLight"
+            style={{ fontSize: FontSizes.BIG_SCREEN * scale }}
+          >
+            Outline
+          </span>
+        </summary>
+        <DefaultTableOfContents {...props} />
+      </details>
+      {!open && <Divider className="contentDivider" sx={{ mt: 1 }} />}
+    </>
+  );
+}
 
-export function DictionaryViewV2(props: {
-  /** Whether the dictionary is embedded in another view. */
-  embedded?: boolean;
-  /** An initial query, if any. */
-  initial?: string;
-  /** The scale of the text size to use. 100 uses default text values */
-  textScale?: number;
-}) {
+interface TableOfContentsProps {
+  entries: EntriesByDict[];
+  tocRef: React.RefObject<HTMLElement>;
+}
+function TableOfContents(props: TableOfContentsProps) {
+  const { embeddedOptions } = React.useContext(DictContext);
+  return embeddedOptions?.hideableOutline === true ? (
+    <HideableTableOfContents {...props} />
+  ) : (
+    <DefaultTableOfContents {...props} />
+  );
+}
+
+export function DictionaryViewV2(props: DictionaryV2Props) {
   const [state, setState] = React.useState<DictState>("Landing");
   const [entries, setEntries] = React.useState<EntriesByDict[]>([]);
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
@@ -606,9 +649,17 @@ export function DictionaryViewV2(props: {
     }
   }, [state, entries, title]);
 
+  const contextValues: DictContextOptions = {
+    isEmbedded,
+    isSmall,
+    scale,
+    textScale,
+    embeddedOptions: props.embeddedOptions,
+  };
+
   if (state === "Landing") {
     return (
-      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+      <DictContext.Provider value={contextValues}>
         <ResponsiveLayout
           dictsToUse={dictsToUse}
           setDictsToUse={setDictsToUse}
@@ -620,7 +671,7 @@ export function DictionaryViewV2(props: {
 
   if (state === "Error") {
     return (
-      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+      <DictContext.Provider value={contextValues}>
         <ResponsiveLayout
           oneCol={<ErrorContent isSmall={isSmall} />}
           twoColMain={<ErrorContent isSmall={isSmall} />}
@@ -635,7 +686,7 @@ export function DictionaryViewV2(props: {
   if (state === "No Results") {
     const noResults = <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />;
     return (
-      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+      <DictContext.Provider value={contextValues}>
         <ResponsiveLayout
           oneCol={noResults}
           twoColMain={noResults}
@@ -649,7 +700,7 @@ export function DictionaryViewV2(props: {
 
   if (state === "Loading") {
     return (
-      <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+      <DictContext.Provider value={contextValues}>
         <ResponsiveLayout
           dictsToUse={dictsToUse}
           setDictsToUse={setDictsToUse}
@@ -664,15 +715,13 @@ export function DictionaryViewV2(props: {
   }
 
   return (
-    <DictContext.Provider value={{ isEmbedded, isSmall, scale, textScale }}>
+    <DictContext.Provider value={contextValues}>
       <ResponsiveLayout
         dictsToUse={dictsToUse}
         setDictsToUse={setDictsToUse}
         scrollTopRef={scrollTopRef}
         oneCol={
-          <DictContext.Provider
-            value={{ isEmbedded, isSmall, scale, textScale }}
-          >
+          <DictContext.Provider value={contextValues}>
             {!isEmbedded &&
               ReactDOM.createPortal(<QuickNavMenu />, document.body)}
             <HelpSection
@@ -696,16 +745,12 @@ export function DictionaryViewV2(props: {
           </DictContext.Provider>
         }
         twoColSide={
-          <DictContext.Provider
-            value={{ isEmbedded, isSmall, scale, textScale }}
-          >
+          <DictContext.Provider value={contextValues}>
             <TableOfContents entries={entries} tocRef={tocRef} />
           </DictContext.Provider>
         }
         twoColMain={
-          <DictContext.Provider
-            value={{ isEmbedded, isSmall, scale, textScale }}
-          >
+          <DictContext.Provider value={contextValues}>
             <HelpSection />
             <SummarySection
               scrollTopRef={scrollTopRef}

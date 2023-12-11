@@ -339,6 +339,7 @@ function Sidebar(props: {
           embedded
           initial={sidebar.dictWord}
           textScale={props.dictScale}
+          embeddedOptions={{ hideableOutline: true }}
         />
       );
     case "Info":

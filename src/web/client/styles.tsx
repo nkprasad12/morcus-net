@@ -260,7 +260,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         cursor: "pointer",
       },
       ".QNAEmbedded": {
-        scrollMarginTop: "36px",
+        scrollMarginTop: "40px",
       },
 
       /** Reader specific */
