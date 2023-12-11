@@ -466,10 +466,30 @@ function WorkNavigationBar(props: {
   textScale?: number;
 }) {
   const nav = useContext(RouteContext);
-  function setPage(newPage: number) {
+
+  const setPage = React.useCallback(
     // Nav pages are 1-indexed.
-    Navigation.query(nav, `${newPage + 1}`);
-  }
+    (newPage: number) => Navigation.query(nav, `${newPage + 1}`),
+    [nav]
+  );
+  const previousPage = React.useCallback(() => {
+    setPage(Math.max(0, props.page - 1));
+  }, [props.page, setPage]);
+  const nextPage = React.useCallback(() => {
+    setPage(Math.min(props.page + 1, props.work.pages.length));
+  }, [props.page, setPage, props.work]);
+
+  React.useEffect(() => {
+    const keyListener = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        previousPage();
+      } else if (e.key === "ArrowRight") {
+        nextPage();
+      }
+    };
+    window.addEventListener("keyup", keyListener);
+    return () => window.removeEventListener("keyup", keyListener);
+  }, [previousPage, nextPage]);
 
   return (
     <>
@@ -478,16 +498,14 @@ function WorkNavigationBar(props: {
           Icon={<ArrowBack />}
           label="previous section"
           disabled={props.page <= 0}
-          onClick={() => setPage(Math.max(0, props.page - 1))}
+          onClick={previousPage}
         />
         <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
           disabled={props.page >= props.work.pages.length - 1}
-          onClick={() =>
-            setPage(Math.min(props.page + 1, props.work.pages.length))
-          }
+          onClick={nextPage}
         />
         <CopyLinkTooltip
           forwarded={TooltipNavIcon}

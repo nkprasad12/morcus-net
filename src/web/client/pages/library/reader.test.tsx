@@ -162,7 +162,7 @@ describe("Reading UI", () => {
     expect(screen.queryByText(/divisa/)).not.toBeNull();
   });
 
-  it("uses correct nav updates on next page", async () => {
+  it("uses correct nav updates on next page button", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
@@ -185,7 +185,53 @@ describe("Reading UI", () => {
     );
   });
 
-  it("uses correct nav updates on previous page", async () => {
+  it("uses correct nav updates on next page key", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path },
+          navigateTo: mockNav,
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/DBG/);
+
+    await user.keyboard("[ArrowRight]");
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "2" })
+    );
+  });
+
+  it("uses correct nav updates on previous page button", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path, query: "2" },
+          navigateTo: mockNav,
+        }}
+      >
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/DBG/);
+
+    await user.keyboard("[ArrowLeft]");
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "1" })
+    );
+  });
+
+  it("uses correct nav updates on previous page key", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
