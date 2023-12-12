@@ -1,0 +1,9 @@
+node_modules
+npm-debug.log
+Dockerfile
+.dockerignore
+morpheus
+src/libs
+.env
+venv
+__pycache__
