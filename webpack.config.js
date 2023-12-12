@@ -24,7 +24,7 @@ module.exports = (env) => {
   const isProduction = env.production === true;
   const shouldMinimize = isProduction;
   const hash = getHash().trim();
-  console.log(`Client commit hash: "${hash}"`)
+  console.log(`Client commit hash: "${hash}"`);
 
   const plugins = [
     new CleanWebpackPlugin(),
