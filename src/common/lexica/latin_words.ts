@@ -58,7 +58,7 @@ function getLineData(line: string, key: string): string | undefined {
 }
 
 function loadMorpheusOutput(
-  rawPath: string = checkPresent(process.env.RAW_LATIN_WORDS),
+  rawPath: string = envVar("RAW_LATIN_WORDS"),
   obsoleteRowsRemoved: boolean = true
 ) {
   return processMorpheusRaw(readFileSync(rawPath, "utf8"), true);
@@ -166,9 +166,7 @@ let wordsOnly: Set<string> | undefined = undefined;
 export namespace LatinWords {
   function getDb(): Database {
     if (db === undefined) {
-      db = ReadOnlyDb.getDatabase(
-        checkPresent(process.env.LATIN_INFLECTION_DB)
-      );
+      db = ReadOnlyDb.getDatabase(envVar("LATIN_INFLECTION_DB"));
     }
     return db;
   }

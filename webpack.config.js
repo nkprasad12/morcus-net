@@ -23,11 +23,13 @@ module.exports = (env) => {
   const transpileOnly = env.transpileOnly === true;
   const isProduction = env.production === true;
   const shouldMinimize = isProduction;
+  const hash = getHash().trim();
+  console.log(`Client commit hash: "${hash}"`);
 
   const plugins = [
     new CleanWebpackPlugin(),
     new DefinePlugin({
-      COMMIT_HASH: JSON.stringify(getHash()),
+      COMMIT_HASH: JSON.stringify(hash),
       BUILD_DATE: JSON.stringify(new Date().toString()),
       DEFAULT_EXPERIMENTAL_MODE: JSON.stringify(!isProduction),
     }),

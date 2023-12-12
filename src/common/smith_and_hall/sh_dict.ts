@@ -1,4 +1,4 @@
-import { checkPresent } from "@/common/assert";
+import { envVar } from "@/common/assert";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 import { Dictionary } from "@/common/dictionaries/dictionaries";
@@ -33,7 +33,7 @@ export class SmithAndHall implements Dictionary {
 
   private readonly sqlDict: SqlDict;
 
-  constructor(dbPath: string = checkPresent(process.env.SH_PROCESSED_PATH)) {
+  constructor(dbPath: string = envVar("SH_PROCESSED_PATH")) {
     this.sqlDict = new SqlDict(dbPath, "@");
   }
 

@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { checkPresent } from "@/common/assert";
+import { envVar } from "@/common/assert";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 // import { unmatched } from "@/common/smith_and_hall/sh_abbreviations";
 import { shListToRaw } from "@/common/smith_and_hall/sh_dict";
@@ -10,7 +10,7 @@ dotenv.config();
 
 const startTime = performance.now();
 
-const dbPath = checkPresent(process.env.SH_PROCESSED_PATH);
+const dbPath = envVar("SH_PROCESSED_PATH");
 
 processSmithHall().then((data) => {
   const rawData: RawDictEntry[] = shListToRaw(data);

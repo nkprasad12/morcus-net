@@ -7,8 +7,9 @@
     "node": "20.x"
   },
   "scripts": {
-    "build": "npm run build-client -- --env production && npm run make-sh && npm run make-lat-infl-db && npm run make-ls && npm run make-lat-lib && echo SOURCE_VERSION=$SOURCE_VERSION >> .env",
+    "build": "npm run build-client -- --env production && npm run make-data-files && npm run ts-node src/scripts/write_source_version.ts",
     "start": "node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only src/start_server.ts",
+    "make-data-files": "npm run make-sh && npm run make-lat-infl-db && npm run make-ls && npm run make-lat-lib",
     "download-ls": "curl --compressed https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml > ls.xml",
     "make-ls": "npm run download-ls && npm run ts-node src/scripts/process_ls.ts && rm ls.xml",
     "download-sh": "curl --compressed https://raw.githubusercontent.com/nkprasad12/smithandhall/v1edits/sh_F2_latest.txt > sh_raw.txt",
