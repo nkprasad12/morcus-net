@@ -1,5 +1,5 @@
 import React from "react";
-import { FontSizes } from "@/web/client/styles";
+import { AllowedFontSizes, FontSizes } from "@/web/client/styles";
 import { debounce } from "@mui/material/utils";
 import Slider from "@mui/material/Slider";
 import LinkIcon from "@mui/icons-material/Link";
@@ -53,6 +53,27 @@ export function SettingSlider(props: {
         }}
       />
     </div>
+  );
+}
+
+export function AppText(
+  props: React.PropsWithChildren<{
+    light?: boolean;
+    size?: AllowedFontSizes;
+    scale: number;
+    compact?: boolean;
+  }>
+) {
+  return (
+    <Typography
+      component="span"
+      className="contentTextLight"
+      style={{ lineHeight: props.compact ? 1 : undefined }}
+      fontSize={
+        (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
+      }>
+      {props.children}
+    </Typography>
   );
 }
 

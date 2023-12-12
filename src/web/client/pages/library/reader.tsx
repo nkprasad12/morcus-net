@@ -13,6 +13,7 @@ import ArrowForward from "@mui/icons-material/ArrowForward";
 import Settings from "@mui/icons-material/Settings";
 import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
+import Toc from "@mui/icons-material/Toc";
 import { CSSProperties, useContext, useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
@@ -27,6 +28,7 @@ import {
   capitalizeWords,
   NavIcon,
   TooltipNavIcon,
+  AppText,
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
@@ -198,11 +200,11 @@ export function ReadingPage() {
           <>
             <div className="readerIconBar">
               <NavIcon
-                Icon={<Info />}
-                label="Work details"
-                onClick={() => setSidebar({ panel: "Info" })}
+                Icon={<Toc />}
+                label="Outline"
+                onClick={() => setSidebar({ panel: "Outline" })}
                 extraClasses={
-                  sidebar.panel === "Info"
+                  sidebar.panel === "Outline"
                     ? ["selectedSidePanelTab"]
                     : undefined
                 }
@@ -223,6 +225,16 @@ export function ReadingPage() {
                 onClick={() => setSidebar({ panel: "Settings" })}
                 extraClasses={
                   sidebar.panel === "Settings"
+                    ? ["selectedSidePanelTab"]
+                    : undefined
+                }
+              />
+              <NavIcon
+                Icon={<Info />}
+                label="Attribution"
+                onClick={() => setSidebar({ panel: "Attribution" })}
+                extraClasses={
+                  sidebar.panel === "Attribution"
                     ? ["selectedSidePanelTab"]
                     : undefined
                 }
@@ -252,7 +264,7 @@ export function ReadingPage() {
 
 interface SidebarState {
   dictWord?: string;
-  panel: "Info" | "Dict" | "Settings";
+  panel: "Outline" | "Dict" | "Settings" | "Attribution";
 }
 
 function Sidebar(props: {
@@ -341,14 +353,19 @@ function Sidebar(props: {
           embeddedOptions={{ hideableOutline: true }}
         />
       );
-    case "Info":
+    case "Outline":
+      return (
+        <>
+          {props.work && (
+            <WorkNavigationSection work={props.work} scale={props.scale} />
+          )}
+        </>
+      );
+    case "Attribution":
       return (
         <>
           {props.work?.info && (
             <WorkInfo workInfo={props.work?.info} scale={props.scale} />
-          )}
-          {props.work && (
-            <WorkNavigationSection work={props.work} scale={props.scale} />
           )}
         </>
       );
@@ -661,37 +678,50 @@ function WorkNavigationSection(props: { work: PaginatedWork; scale: number }) {
 
 function WorkInfo(props: { workInfo: DocumentInfo; scale: number }) {
   return (
-    <details>
-      <summary>
-        <SettingsText scale={props.scale} message={"Attribution"} />
-      </summary>
-      <InfoLine
-        label="Author"
-        value={props.workInfo.author}
-        scale={props.scale}
-      />
-      {props.workInfo.editor && (
+    <>
+      <div>
         <InfoLine
-          label="Editor"
-          value={props.workInfo.editor}
+          label="Author"
+          value={props.workInfo.author}
           scale={props.scale}
         />
-      )}
-      {props.workInfo.funder && (
-        <InfoLine
-          label="Funder"
-          value={props.workInfo.funder}
-          scale={props.scale}
-        />
-      )}
-      {props.workInfo.sponsor && (
-        <InfoLine
-          label="Sponsor"
-          value={props.workInfo.sponsor}
-          scale={props.scale}
-        />
-      )}
-    </details>
+        {props.workInfo.editor && (
+          <InfoLine
+            label="Editor"
+            value={props.workInfo.editor}
+            scale={props.scale}
+          />
+        )}
+        {props.workInfo.funder && (
+          <InfoLine
+            label="Funder"
+            value={props.workInfo.funder}
+            scale={props.scale}
+          />
+        )}
+        {props.workInfo.sponsor && (
+          <InfoLine
+            label="Sponsor"
+            value={props.workInfo.sponsor}
+            scale={props.scale}
+          />
+        )}
+      </div>
+      <div style={{ lineHeight: 1, marginTop: "8px" }}>
+        <AppText light scale={props.scale} size={FontSizes.SECONDARY}>
+          The raw text was provided by the Perseus Digital Library and was
+          accessed originally from{" "}
+          <a href="https://github.com/PerseusDL/canonical-latinLit">
+            https://github.com/PerseusDL/canonical-latinLit
+          </a>
+          . It is provided under Perseus&apos; conditions of the{" "}
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+            CC-BY-SA-4.0
+          </a>{" "}
+          license, and you must offer Perseus any modifications you make.
+        </AppText>
+      </div>
+    </>
   );
 }
 

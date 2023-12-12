@@ -312,12 +312,31 @@ describe("Reading UI", () => {
     );
     await screen.findByText(/Gallia/);
 
-    await user.click(screen.queryByLabelText("Work details")!);
+    await user.click(screen.queryByLabelText("Outline")!);
 
-    await screen.findByText(/Attribution/);
     // One from the main column and one from navigation.
     expect(await screen.findAllByText(/Chapter 1/)).toHaveLength(2);
     await screen.findByText(/Chapter 2/);
+  });
+
+  it("shows attribution tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Attribution")!);
+
+    await screen.findByText(/Author/);
+    await screen.findByText(/CC-BY-SA-4.0/);
   });
 
   it("shows settings tab", async () => {

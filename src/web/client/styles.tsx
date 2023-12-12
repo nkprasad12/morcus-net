@@ -6,6 +6,12 @@ import {
 import { GlobalStylesProps } from "@mui/material";
 import { CSSProperties } from "react";
 
+export type AllowedFontSizes =
+  | typeof FontSizes.BIG_SCREEN
+  | typeof FontSizes.SMALL_SCREEN
+  | typeof FontSizes.SECONDARY
+  | typeof FontSizes.TERTIARY;
+
 export namespace FontSizes {
   export const BIG_SCREEN = 20;
   export const SMALL_SCREEN = 19;
