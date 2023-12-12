@@ -3,7 +3,7 @@
  */
 
 import user from "@testing-library/user-event";
-import { callApi } from "@/web/utils/rpc/client_rpc";
+import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { RouteContext } from "@/web/client/components/router";
 import { render, screen } from "@testing-library/react";
 import { ReadingPage } from "@/web/client/pages/library/reader";
@@ -13,9 +13,13 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 
 jest.mock("@/web/utils/rpc/client_rpc");
+window.HTMLElement.prototype.scrollIntoView = jest.fn();
+window.HTMLElement.prototype.scroll = jest.fn();
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
+// @ts-ignore
+const mockCallApiFull: jest.Mock<any, any, any> = callApiFull;
 
 const PROCESSED_WORK: ProcessedWork = {
   info: { title: "DBG", author: "Caesar" },
@@ -68,9 +72,56 @@ const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork = {
   },
 };
 
+const PROCESSED_WORK_VARIANTS: ProcessedWork = {
+  info: { title: "DBG", author: "Caesar" },
+  textParts: ["chapter", "section"],
+  root: {
+    id: [],
+    children: [
+      {
+        id: ["1"],
+        children: [
+          {
+            id: ["1", "1"],
+            children: [
+              new XmlNode(
+                "span",
+                [],
+                [new XmlNode("libLat", [["target", "omnis"]], ["Omnis"])]
+              ),
+            ],
+          },
+          {
+            id: ["1", "2"],
+            children: [
+              new XmlNode("span", [], [new XmlNode("libLat", [], ["est"])]),
+            ],
+          },
+          {
+            id: ["1", "3"],
+            children: [
+              new XmlNode(
+                "span",
+                [],
+                [new XmlNode("latLink", [["alt", "gap"]])]
+              ),
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 describe("Reading UI", () => {
-  beforeAll(invalidateWorkCache);
-  afterEach(invalidateWorkCache);
+  beforeAll(() => {
+    invalidateWorkCache();
+    mockCallApiFull.mockResolvedValue({ data: { LS: [] } });
+  });
+  afterEach(() => {
+    invalidateWorkCache();
+    mockCallApiFull.mockClear();
+  });
 
   it("fetches the expected resource", () => {
     mockCallApi.mockReturnValue(new Promise(() => {}));
@@ -138,6 +189,33 @@ describe("Reading UI", () => {
 
     await screen.findByText(/DBG/);
     await screen.findByText(/Gallia est omnis/);
+  });
+
+  it("shows marked up contents", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_VARIANTS);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findByText(/\[gap\]/);
+    await user.click(await screen.findByText(/Omnis/));
+    // Note the lower case, since the target is omnis.
+    expect(mockCallApiFull).toHaveBeenLastCalledWith(
+      expect.objectContaining({ path: "/api/dicts/fused" }),
+      expect.objectContaining({ query: "omnis" })
+    );
+    await user.click(await screen.findByText(/est/));
+    expect(mockCallApiFull).toHaveBeenLastCalledWith(
+      expect.objectContaining({ path: "/api/dicts/fused" }),
+      expect.objectContaining({ query: "est" })
+    );
   });
 
   it("shows correct contents for page", async () => {

@@ -800,9 +800,15 @@ function WorkChunk(props: {
   );
 }
 
-function LatLink(props: { word: string; setDictWord: (input: string) => any }) {
+function LatLink(props: {
+  word: string;
+  setDictWord: (input: string) => any;
+  target?: string;
+}) {
   return (
-    <span className="workLatWord" onClick={() => props.setDictWord(props.word)}>
+    <span
+      className="workLatWord"
+      onClick={() => props.setDictWord(props.target || props.word)}>
       {props.word}
     </span>
   );
@@ -821,7 +827,14 @@ function displayForLibraryChunk(
   });
   if (root.name === "libLat") {
     const word = XmlNode.assertIsString(root.children[0]);
-    return <LatLink word={word} setDictWord={setDictWord} key={key} />;
+    return (
+      <LatLink
+        word={word}
+        setDictWord={setDictWord}
+        key={key}
+        target={root.getAttr("target")}
+      />
+    );
   }
   if (root.getAttr("alt") === "gap") {
     return React.createElement("span", { key: key }, [" [gap]"]);
