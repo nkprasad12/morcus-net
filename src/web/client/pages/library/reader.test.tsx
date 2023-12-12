@@ -135,8 +135,9 @@ describe("Reading UI", () => {
         <ReadingPage />
       </RouteContext.Provider>
     );
+
     await screen.findByText(/DBG/);
-    await screen.findByText(/Caesar/);
+    await screen.findByText(/Gallia est omnis/);
   });
 
   it("shows correct contents for page", async () => {
