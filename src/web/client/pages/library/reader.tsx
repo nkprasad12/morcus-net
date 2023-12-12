@@ -141,7 +141,9 @@ function findWorksByLevel(
 }
 
 export function ReadingPage() {
-  const [sidebar, setSidebar] = React.useState<SidebarState>({ panel: "Dict" });
+  const [sidebar, setSidebar] = React.useState<SidebarState>({
+    panel: "Attribution",
+  });
   const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
   const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
   const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");

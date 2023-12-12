@@ -84,6 +84,9 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       a: {
         color: isDarkMode ? Solarized.blue : undefined,
       },
+      "a:visited": {
+        color: isDarkMode ? Solarized.violet : undefined,
+      },
       pre: { margin: "0" },
       summary: {
         cursor: "pointer",
