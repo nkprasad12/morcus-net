@@ -1,5 +1,5 @@
 import React from "react";
-import { FontSizes } from "@/web/client/styles";
+import { AllowedFontSizes, FontSizes } from "@/web/client/styles";
 import { debounce } from "@mui/material/utils";
 import Slider from "@mui/material/Slider";
 import LinkIcon from "@mui/icons-material/Link";
@@ -24,8 +24,7 @@ export function SettingSlider(props: {
       style={{
         alignItems: "center",
         display: "flex",
-      }}
-    >
+      }}>
       <SettingsText
         message={props.label}
         size={FontSizes.SECONDARY}
@@ -57,6 +56,27 @@ export function SettingSlider(props: {
   );
 }
 
+export function AppText(
+  props: React.PropsWithChildren<{
+    light?: boolean;
+    size?: AllowedFontSizes;
+    scale: number;
+    compact?: boolean;
+  }>
+) {
+  return (
+    <Typography
+      component="span"
+      className="contentTextLight"
+      style={{ lineHeight: props.compact ? 1 : undefined }}
+      fontSize={
+        (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
+      }>
+      {props.children}
+    </Typography>
+  );
+}
+
 export function SettingsText(props: {
   message: string;
   size?: number;
@@ -68,8 +88,7 @@ export function SettingsText(props: {
       className="contentTextLight"
       fontSize={
         (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
-      }
-    >
+      }>
       {props.message}
     </Typography>
   );
@@ -102,8 +121,7 @@ export function InfoText(props: {
         whiteSpace: "nowrap",
         display: "inline-block",
         ...props.style,
-      }}
-    >
+      }}>
       {props.text}
     </Typography>
   );
@@ -126,8 +144,7 @@ export function NavIcon(props: {
         aria-label={props.label}
         onClick={props.onClick}
         disabled={props.disabled}
-        className="menuIcon"
-      >
+        className="menuIcon">
         {props.Icon}
       </IconButton>
     </span>

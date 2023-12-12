@@ -30,8 +30,7 @@ export function TitleHandler(props: TitleHandlerProps) {
     <TitleContext.Provider
       value={{
         setCurrentDictWord: setCurrentDictWord,
-      }}
-    >
+      }}>
       {props.children}
     </TitleContext.Provider>
   );

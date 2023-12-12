@@ -56,8 +56,7 @@ describe("DictionarySearch", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
@@ -81,8 +80,7 @@ describe("DictionarySearch", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
@@ -106,8 +104,7 @@ describe("DictionarySearch", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
@@ -133,8 +130,7 @@ describe("DictionarySearch", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}

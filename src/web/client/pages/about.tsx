@@ -16,8 +16,7 @@ function Section(props: SectionProps) {
       <h4>
         <a
           style={{ textDecoration: "none", color: "inherit" }}
-          href={`#${props.name}`}
-        >
+          href={`#${props.name}`}>
           {props.name}
         </a>
       </h4>
@@ -112,8 +111,7 @@ export function About() {
             <p>
               Built at{" "}
               <a
-                href={`https://github.com/nkprasad12/morcus-net/commit/${commitHash}`}
-              >
+                href={`https://github.com/nkprasad12/morcus-net/commit/${commitHash}`}>
                 {commitHash.substring(0, 8)}
               </a>
               {"."}

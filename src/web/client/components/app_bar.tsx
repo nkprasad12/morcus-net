@@ -6,7 +6,9 @@ import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
-import DisplaySettings from "@mui/icons-material/DisplaySettings";
+import BuildIcon from "@mui/icons-material/Build";
+import DarkMode from "@mui/icons-material/DarkMode";
+import LightMode from "@mui/icons-material/LightMode";
 import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
@@ -14,6 +16,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -47,6 +50,7 @@ function DrawerMenu(props: {
   open: boolean;
   isCurrentPage: (page: string) => boolean;
 }) {
+  const pages = props.pages.concat([{ name: "Settings", path: "/settings" }]);
   return (
     <Drawer
       anchor="left"
@@ -54,10 +58,9 @@ function DrawerMenu(props: {
       onClose={props.onClose}
       PaperProps={{
         className: "menu",
-      }}
-    >
+      }}>
       <Box role="navigation" onClick={props.onClose} id="menu-appbar">
-        {props.pages.map((page) => (
+        {pages.map((page) => (
           <div key={page.name}>
             <Button
               key={page.name}
@@ -72,8 +75,7 @@ function DrawerMenu(props: {
                 mx: 2,
                 display: "block",
                 justifyContent: "center",
-              }}
-            >
+              }}>
               <b>{page.name}</b>
             </Button>
             <Divider
@@ -92,6 +94,9 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const noSsr = { noSsr: true };
   const theme = useTheme();
   const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const globalSettings = React.useContext(GlobalSettingsContext);
+  const darkModeOn = globalSettings.data.darkMode === true;
+  const iconSize = isSmall ? "small" : "medium";
 
   const nav = React.useContext(RouteContext);
   const [drawerVisible, setDrawerVisible] = React.useState<boolean>(false);
@@ -121,20 +126,18 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               display: isSmall ? "none" : "flex",
               color: "inherit",
               textDecoration: "none",
-            }}
-          >
+            }}>
             <LogoImage />
           </Typography>
 
           <Box sx={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}>
             <IconButton
-              size="medium"
+              size={iconSize}
               aria-label="site pages"
               aria-controls="menu-appbar"
               aria-haspopup="true"
               onClick={() => setDrawerVisible(true)}
-              className="menuIcon"
-            >
+              className="menuIcon">
               <MenuIcon />
             </IconButton>
             <DrawerMenu
@@ -159,8 +162,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               letterSpacing: ".3rem",
               color: "inherit",
               textDecoration: "none",
-            }}
-          >
+            }}>
             <LogoImage />
           </Typography>
           <Box sx={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
@@ -176,31 +178,42 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 sx={{
                   mx: 1,
                   display: "block",
-                }}
-              >
+                }}>
                 <b>{page.name}</b>
               </Button>
             ))}
           </Box>
           <Box>
             <IconButton
-              size="medium"
-              aria-label="site settings"
-              // TODO: Find a better way to configure this.
-              onClick={handlePageClick("/settings")}
-              className="menuIcon"
-            >
-              <DisplaySettings />
+              size={iconSize}
+              aria-label={darkModeOn ? "light mode" : "dark mode"}
+              onClick={() =>
+                globalSettings.setData({
+                  ...globalSettings.data,
+                  darkMode: !darkModeOn,
+                })
+              }
+              className="menuIcon">
+              {darkModeOn ? <LightMode /> : <DarkMode />}
             </IconButton>
             <IconButton
-              size="medium"
+              size={iconSize}
               aria-label="report an issue"
               aria-haspopup="true"
               onClick={props.openIssueDialog}
-              className="menuIcon"
-            >
+              className="menuIcon">
               <FlagIcon />
             </IconButton>
+            {!isSmall && (
+              <IconButton
+                size={iconSize}
+                aria-label="site settings"
+                // TODO: Find a better way to configure this.
+                onClick={handlePageClick("/settings")}
+                className="menuIcon">
+                <BuildIcon />
+              </IconButton>
+            )}
           </Box>
         </Toolbar>
       </Container>

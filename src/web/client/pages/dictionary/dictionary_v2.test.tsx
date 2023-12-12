@@ -53,8 +53,7 @@ describe("New Dictionary View", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionaryViewV2 />
       </RouteContext.Provider>
     );
@@ -73,8 +72,10 @@ describe("New Dictionary View", () => {
     mockCallApi.mockRejectedValue(new Error("Failure for test"));
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/", query: "Gallia" }, navigateTo: jest.fn() }}
-      >
+        value={{
+          route: { path: "/", query: "Gallia" },
+          navigateTo: jest.fn(),
+        }}>
         <DictionaryViewV2 />
       </RouteContext.Provider>
     );
@@ -118,8 +119,10 @@ describe("New Dictionary View", () => {
     });
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
-      >
+        value={{
+          route: { path: "/", query: "Belgae" },
+          navigateTo: jest.fn(),
+        }}>
         <DictionaryViewV2 />
       </RouteContext.Provider>
     );
@@ -160,8 +163,10 @@ describe("New Dictionary View", () => {
     mockCallApiMockResolvedValue({ LS: [] });
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
-      >
+        value={{
+          route: { path: "/", query: "Belgae" },
+          navigateTo: jest.fn(),
+        }}>
         <DictionaryViewV2 />
       </RouteContext.Provider>
     );
@@ -201,8 +206,10 @@ describe("New Dictionary View", () => {
     });
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
-      >
+        value={{
+          route: { path: "/", query: "Belgae" },
+          navigateTo: jest.fn(),
+        }}>
         <DictionaryViewV2 />
       </RouteContext.Provider>
     );
@@ -256,8 +263,10 @@ describe("New Dictionary View", () => {
     });
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/", query: "Belgae" }, navigateTo: jest.fn() }}
-      >
+        value={{
+          route: { path: "/", query: "Belgae" },
+          navigateTo: jest.fn(),
+        }}>
         <DictionaryViewV2 />
       </RouteContext.Provider>
     );

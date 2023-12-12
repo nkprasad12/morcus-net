@@ -106,8 +106,7 @@ describe("xmlNodeToJsx", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
       </RouteContext.Provider>
     );
@@ -132,8 +131,7 @@ describe("xmlNodeToJsx", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
       </RouteContext.Provider>
     );
@@ -159,8 +157,7 @@ describe("xmlNodeToJsx", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
       </RouteContext.Provider>
     );

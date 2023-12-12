@@ -63,8 +63,7 @@ export function SettingsHandler(props: PropsWithChildren<Record<string, any>>) {
           );
           setSettings(newSettings);
         },
-      }}
-    >
+      }}>
       {props.children}
     </GlobalSettingsContext.Provider>
   );

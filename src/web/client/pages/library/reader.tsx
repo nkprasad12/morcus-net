@@ -13,6 +13,7 @@ import ArrowForward from "@mui/icons-material/ArrowForward";
 import Settings from "@mui/icons-material/Settings";
 import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
+import Toc from "@mui/icons-material/Toc";
 import { CSSProperties, useContext, useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
@@ -27,6 +28,7 @@ import {
   capitalizeWords,
   NavIcon,
   TooltipNavIcon,
+  AppText,
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
@@ -63,6 +65,7 @@ const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | false)[] = [
   "xxl",
   false,
 ];
+const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
 interface WorkPage {
   id: string[];
@@ -138,7 +141,9 @@ function findWorksByLevel(
 }
 
 export function ReadingPage() {
-  const [sidebar, setSidebar] = React.useState<SidebarState>({ panel: "Dict" });
+  const [sidebar, setSidebar] = React.useState<SidebarState>({
+    panel: "Attribution",
+  });
   const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
   const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
   const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
@@ -178,8 +183,7 @@ export function ReadingPage() {
         style={{
           ...COLUMN_STYLE,
           width: `${mainWidth}%`,
-        }}
-      >
+        }}>
         <WorkColumn
           setSidebar={(newSidebar) => {
             // @ts-ignore
@@ -193,17 +197,16 @@ export function ReadingPage() {
       </div>
       <div
         style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}
-        ref={sidebarRef}
-      >
+        ref={sidebarRef}>
         <ContentBox isSmall>
           <>
             <div className="readerIconBar">
               <NavIcon
-                Icon={<Info />}
-                label="Work details"
-                onClick={() => setSidebar({ panel: "Info" })}
+                Icon={<Toc />}
+                label="Outline"
+                onClick={() => setSidebar({ panel: "Outline" })}
                 extraClasses={
-                  sidebar.panel === "Info"
+                  sidebar.panel === "Outline"
                     ? ["selectedSidePanelTab"]
                     : undefined
                 }
@@ -224,6 +227,16 @@ export function ReadingPage() {
                 onClick={() => setSidebar({ panel: "Settings" })}
                 extraClasses={
                   sidebar.panel === "Settings"
+                    ? ["selectedSidePanelTab"]
+                    : undefined
+                }
+              />
+              <NavIcon
+                Icon={<Info />}
+                label="Attribution"
+                onClick={() => setSidebar({ panel: "Attribution" })}
+                extraClasses={
+                  sidebar.panel === "Attribution"
                     ? ["selectedSidePanelTab"]
                     : undefined
                 }
@@ -253,7 +266,7 @@ export function ReadingPage() {
 
 interface SidebarState {
   dictWord?: string;
-  panel: "Info" | "Dict" | "Settings";
+  panel: "Outline" | "Dict" | "Settings" | "Attribution";
 }
 
 function Sidebar(props: {
@@ -339,16 +352,22 @@ function Sidebar(props: {
           embedded
           initial={sidebar.dictWord}
           textScale={props.dictScale}
+          embeddedOptions={{ hideableOutline: true }}
         />
       );
-    case "Info":
+    case "Outline":
+      return (
+        <>
+          {props.work && (
+            <WorkNavigationSection work={props.work} scale={props.scale} />
+          )}
+        </>
+      );
+    case "Attribution":
       return (
         <>
           {props.work?.info && (
             <WorkInfo workInfo={props.work?.info} scale={props.scale} />
-          )}
-          {props.work && (
-            <WorkNavigationSection work={props.work} scale={props.scale} />
           )}
         </>
       );
@@ -441,6 +460,9 @@ function labelForId(
 ): string {
   const parts = work.textParts;
   const i = id.length - 1;
+  if (SPECIAL_ID_PARTS.has(id[i].toLowerCase())) {
+    return capitalizeWords(id[i]);
+  }
   const text = capitalizeWords(`${parts[i]} ${id[i]}`);
   if (!useHeader) {
     return text;
@@ -465,10 +487,30 @@ function WorkNavigationBar(props: {
   textScale?: number;
 }) {
   const nav = useContext(RouteContext);
-  function setPage(newPage: number) {
+
+  const setPage = React.useCallback(
     // Nav pages are 1-indexed.
-    Navigation.query(nav, `${newPage + 1}`);
-  }
+    (newPage: number) => Navigation.query(nav, `${newPage + 1}`),
+    [nav]
+  );
+  const previousPage = React.useCallback(() => {
+    setPage(Math.max(0, props.page - 1));
+  }, [props.page, setPage]);
+  const nextPage = React.useCallback(() => {
+    setPage(Math.min(props.page + 1, props.work.pages.length));
+  }, [props.page, setPage, props.work]);
+
+  React.useEffect(() => {
+    const keyListener = (e: KeyboardEvent) => {
+      if (e.key === "ArrowLeft") {
+        previousPage();
+      } else if (e.key === "ArrowRight") {
+        nextPage();
+      }
+    };
+    window.addEventListener("keyup", keyListener);
+    return () => window.removeEventListener("keyup", keyListener);
+  }, [previousPage, nextPage]);
 
   return (
     <>
@@ -477,16 +519,14 @@ function WorkNavigationBar(props: {
           Icon={<ArrowBack />}
           label="previous section"
           disabled={props.page <= 0}
-          onClick={() => setPage(Math.max(0, props.page - 1))}
+          onClick={previousPage}
         />
         <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
           disabled={props.page >= props.work.pages.length - 1}
-          onClick={() =>
-            setPage(Math.min(props.page + 1, props.work.pages.length))
-          }
+          onClick={nextPage}
         />
         <CopyLinkTooltip
           forwarded={TooltipNavIcon}
@@ -532,8 +572,7 @@ export function WorkTextPage(props: {
             gridColumn: 2,
             gridRow: 1,
             fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
-          }}
-        >
+          }}>
           {section.header}
         </span>
       )}
@@ -582,8 +621,7 @@ function WorkNavigation(props: {
       {ofLevel.map((childRoot) => (
         <div
           key={childRoot.id.join(".")}
-          style={{ marginLeft: `${props.level * 8}px` }}
-        >
+          style={{ marginLeft: `${props.level * 8}px` }}>
           {isTerminal ? (
             <div style={{ paddingLeft: "8px" }}>
               <Typography
@@ -598,8 +636,7 @@ function WorkNavigation(props: {
                       Navigation.query(nav, `${i + 1}`);
                     }
                   }
-                }}
-              >
+                }}>
                 {labelForId(childRoot.id, props.work)}
               </Typography>
             </div>
@@ -643,37 +680,50 @@ function WorkNavigationSection(props: { work: PaginatedWork; scale: number }) {
 
 function WorkInfo(props: { workInfo: DocumentInfo; scale: number }) {
   return (
-    <details>
-      <summary>
-        <SettingsText scale={props.scale} message={"Attribution"} />
-      </summary>
-      <InfoLine
-        label="Author"
-        value={props.workInfo.author}
-        scale={props.scale}
-      />
-      {props.workInfo.editor && (
+    <>
+      <div>
         <InfoLine
-          label="Editor"
-          value={props.workInfo.editor}
+          label="Author"
+          value={props.workInfo.author}
           scale={props.scale}
         />
-      )}
-      {props.workInfo.funder && (
-        <InfoLine
-          label="Funder"
-          value={props.workInfo.funder}
-          scale={props.scale}
-        />
-      )}
-      {props.workInfo.sponsor && (
-        <InfoLine
-          label="Sponsor"
-          value={props.workInfo.sponsor}
-          scale={props.scale}
-        />
-      )}
-    </details>
+        {props.workInfo.editor && (
+          <InfoLine
+            label="Editor"
+            value={props.workInfo.editor}
+            scale={props.scale}
+          />
+        )}
+        {props.workInfo.funder && (
+          <InfoLine
+            label="Funder"
+            value={props.workInfo.funder}
+            scale={props.scale}
+          />
+        )}
+        {props.workInfo.sponsor && (
+          <InfoLine
+            label="Sponsor"
+            value={props.workInfo.sponsor}
+            scale={props.scale}
+          />
+        )}
+      </div>
+      <div style={{ lineHeight: 1, marginTop: "8px" }}>
+        <AppText light scale={props.scale} size={FontSizes.SECONDARY}>
+          The raw text was provided by the Perseus Digital Library and was
+          accessed originally from{" "}
+          <a href="https://github.com/PerseusDL/canonical-latinLit">
+            https://github.com/PerseusDL/canonical-latinLit
+          </a>
+          . It is provided under Perseus&apos; conditions of the{" "}
+          <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+            CC-BY-SA-4.0
+          </a>{" "}
+          license, and you must offer Perseus any modifications you make.
+        </AppText>
+      </div>
+    </>
   );
 }
 
@@ -719,7 +769,13 @@ function WorkChunk(props: {
   workName: string;
   hideHeader?: boolean;
 }) {
-  const id = props.node.id.join(".");
+  const id = props.node.id
+    .map((idPart) =>
+      safeParseInt(idPart) !== undefined
+        ? idPart
+        : capitalizeWords(idPart.substring(0, 3))
+    )
+    .join(".");
   const row = props.i + 1;
   const content = props.node.children.filter(instanceOf(XmlNode));
   assertEqual(content.length, props.node.children.length);
@@ -744,9 +800,15 @@ function WorkChunk(props: {
   );
 }
 
-function LatLink(props: { word: string; setDictWord: (input: string) => any }) {
+function LatLink(props: {
+  word: string;
+  setDictWord: (input: string) => any;
+  target?: string;
+}) {
   return (
-    <span className="workLatWord" onClick={() => props.setDictWord(props.word)}>
+    <span
+      className="workLatWord"
+      onClick={() => props.setDictWord(props.target || props.word)}>
       {props.word}
     </span>
   );
@@ -765,7 +827,14 @@ function displayForLibraryChunk(
   });
   if (root.name === "libLat") {
     const word = XmlNode.assertIsString(root.children[0]);
-    return <LatLink word={word} setDictWord={setDictWord} key={key} />;
+    return (
+      <LatLink
+        word={word}
+        setDictWord={setDictWord}
+        key={key}
+        target={root.getAttr("target")}
+      />
+    );
   }
   if (root.getAttr("alt") === "gap") {
     return React.createElement("span", { key: key }, [" [gap]"]);

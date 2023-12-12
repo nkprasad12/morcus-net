@@ -24,10 +24,18 @@ function markupText(text: string, parentName: string): XmlChild[] {
   const isAlt = !DEFAULT_TEXT_NODES.includes(parentName);
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
   const words = text.split(TEXT_BREAK_CHARACTERS).map((word) => {
-    if (!LatinWords.allWords().has(word)) {
+    const target = LatinWords.allWords().has(word)
+      ? word
+      : LatinWords.allWords().has(word.toLowerCase())
+      ? word.toLowerCase()
+      : undefined;
+
+    if (target === undefined) {
       return word;
     }
-    return new XmlNode("libLat", [], [word]);
+    return new XmlNode("libLat", target === word ? [] : [["target", target]], [
+      word,
+    ]);
   });
   return isAlt ? [new XmlNode("span", [["alt", parentName]], words)] : words;
 }

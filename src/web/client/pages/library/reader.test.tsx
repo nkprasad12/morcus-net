@@ -3,7 +3,7 @@
  */
 
 import user from "@testing-library/user-event";
-import { callApi } from "@/web/utils/rpc/client_rpc";
+import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { RouteContext } from "@/web/client/components/router";
 import { render, screen } from "@testing-library/react";
 import { ReadingPage } from "@/web/client/pages/library/reader";
@@ -13,9 +13,13 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 
 jest.mock("@/web/utils/rpc/client_rpc");
+window.HTMLElement.prototype.scrollIntoView = jest.fn();
+window.HTMLElement.prototype.scroll = jest.fn();
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
+// @ts-ignore
+const mockCallApiFull: jest.Mock<any, any, any> = callApiFull;
 
 const PROCESSED_WORK: ProcessedWork = {
   info: { title: "DBG", author: "Caesar" },
@@ -68,9 +72,56 @@ const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork = {
   },
 };
 
+const PROCESSED_WORK_VARIANTS: ProcessedWork = {
+  info: { title: "DBG", author: "Caesar" },
+  textParts: ["chapter", "section"],
+  root: {
+    id: [],
+    children: [
+      {
+        id: ["1"],
+        children: [
+          {
+            id: ["1", "1"],
+            children: [
+              new XmlNode(
+                "span",
+                [],
+                [new XmlNode("libLat", [["target", "omnis"]], ["Omnis"])]
+              ),
+            ],
+          },
+          {
+            id: ["1", "2"],
+            children: [
+              new XmlNode("span", [], [new XmlNode("libLat", [], ["est"])]),
+            ],
+          },
+          {
+            id: ["1", "3"],
+            children: [
+              new XmlNode(
+                "span",
+                [],
+                [new XmlNode("latLink", [["alt", "gap"]])]
+              ),
+            ],
+          },
+        ],
+      },
+    ],
+  },
+};
+
 describe("Reading UI", () => {
-  beforeAll(invalidateWorkCache);
-  afterEach(invalidateWorkCache);
+  beforeAll(() => {
+    invalidateWorkCache();
+    mockCallApiFull.mockResolvedValue({ data: { LS: [] } });
+  });
+  afterEach(() => {
+    invalidateWorkCache();
+    mockCallApiFull.mockClear();
+  });
 
   it("fetches the expected resource", () => {
     mockCallApi.mockReturnValue(new Promise(() => {}));
@@ -81,8 +132,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -99,8 +149,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -117,8 +166,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -134,13 +182,40 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
+
     await screen.findByText(/DBG/);
-    await screen.findByText(/Caesar/);
+    await screen.findByText(/Gallia est omnis/);
+  });
+
+  it("shows marked up contents", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_VARIANTS);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findByText(/\[gap\]/);
+    await user.click(await screen.findByText(/Omnis/));
+    // Note the lower case, since the target is omnis.
+    expect(mockCallApiFull).toHaveBeenLastCalledWith(
+      expect.objectContaining({ path: "/api/dicts/fused" }),
+      expect.objectContaining({ query: "omnis" })
+    );
+    await user.click(await screen.findByText(/est/));
+    expect(mockCallApiFull).toHaveBeenLastCalledWith(
+      expect.objectContaining({ path: "/api/dicts/fused" }),
+      expect.objectContaining({ query: "est" })
+    );
   });
 
   it("shows correct contents for page", async () => {
@@ -151,8 +226,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg`, query: "2" },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -162,7 +236,7 @@ describe("Reading UI", () => {
     expect(screen.queryByText(/divisa/)).not.toBeNull();
   });
 
-  it("uses correct nav updates on next page", async () => {
+  it("uses correct nav updates on next page button", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
@@ -171,8 +245,7 @@ describe("Reading UI", () => {
         value={{
           route: { path },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -185,7 +258,29 @@ describe("Reading UI", () => {
     );
   });
 
-  it("uses correct nav updates on previous page", async () => {
+  it("uses correct nav updates on next page key", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path },
+          navigateTo: mockNav,
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/DBG/);
+
+    await user.keyboard("[ArrowRight]");
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "2" })
+    );
+  });
+
+  it("uses correct nav updates on previous page button", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
@@ -194,8 +289,29 @@ describe("Reading UI", () => {
         value={{
           route: { path, query: "2" },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/DBG/);
+
+    await user.keyboard("[ArrowLeft]");
+
+    expect(mockNav).toHaveBeenCalledWith(
+      expect.objectContaining({ path, query: "1" })
+    );
+  });
+
+  it("uses correct nav updates on previous page key", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = `${WORK_PAGE}/dbg`;
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path, query: "2" },
+          navigateTo: mockNav,
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -217,8 +333,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg`, query: "1" },
           navigateTo: mockNav,
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -236,8 +351,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg`, query: "1" },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -252,8 +366,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
@@ -272,19 +385,37 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );
     await screen.findByText(/Gallia/);
 
-    await user.click(screen.queryByLabelText("Work details")!);
+    await user.click(screen.queryByLabelText("Outline")!);
 
-    await screen.findByText(/Attribution/);
     // One from the main column and one from navigation.
     expect(await screen.findAllByText(/Chapter 1/)).toHaveLength(2);
     await screen.findByText(/Chapter 2/);
+  });
+
+  it("shows attribution tab", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: `${WORK_PAGE}/dbg` },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Attribution")!);
+
+    await screen.findByText(/Author/);
+    await screen.findByText(/CC-BY-SA-4.0/);
   });
 
   it("shows settings tab", async () => {
@@ -295,8 +426,7 @@ describe("Reading UI", () => {
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
-        }}
-      >
+        }}>
         <ReadingPage />
       </RouteContext.Provider>
     );

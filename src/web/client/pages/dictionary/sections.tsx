@@ -14,10 +14,12 @@ export function ContentBox(props: {
   contentRef?: React.RefObject<HTMLElement>;
   ml?: string;
   mr?: string;
-  noDivider?: true;
+  mt?: number;
+  noDivider?: boolean;
   id?: string;
   className?: string;
   textScale?: number;
+  isEmbedded?: boolean;
 }) {
   const isSmall = props.isSmall;
 
@@ -30,14 +32,13 @@ export function ContentBox(props: {
         paddingRight: isSmall ? 0 : 1,
         ml: props.ml || (isSmall ? 0 : 3),
         mr: props.mr || (isSmall ? 0 : 3),
-        mt: 1,
-        mb: 2,
+        mt: props.mt !== undefined ? props.mt : 1,
+        mb: props.isEmbedded ? 1 : 2,
       }}
       key={props.contentKey}
       ref={props.contentRef}
       id={props.id}
-      className={props.className}
-    >
+      className={props.className}>
       <Typography
         component={"div"}
         className="contentText"
@@ -46,11 +47,10 @@ export function ContentBox(props: {
           fontSize: props.textScale
             ? FontSizes.BIG_SCREEN * (props.textScale / 100)
             : undefined,
-        }}
-      >
+        }}>
         {props.children}
       </Typography>
-      {props.noDivider === undefined && (
+      {props.noDivider !== true && (
         <Divider className="contentDivider" sx={{ mt: "16px" }} />
       )}
     </Box>
@@ -111,8 +111,7 @@ export function DictAttribution(props: {
         style={{
           fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
           lineHeight: "normal",
-        }}
-      >
+        }}>
         <AttributionContent dictKey={props.dictKey} />
       </div>
     </ContentBox>

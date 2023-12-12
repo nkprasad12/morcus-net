@@ -24,8 +24,7 @@ export function ReportIssueDialog(props: {
       onClose={props.onClose}
       PaperProps={{
         className: "menu",
-      }}
-    >
+      }}>
       <DialogTitle style={{ fontSize: 19, lineHeight: "normal" }}>
         <b>Report an issue</b>
       </DialogTitle>
@@ -61,8 +60,7 @@ export function ReportIssueDialog(props: {
             callApi(ReportApi, request).catch(() => {});
             props.onClose();
           }}
-          variant="contained"
-        >
+          variant="contained">
           <b>Submit</b>
         </Button>
       </DialogActions>

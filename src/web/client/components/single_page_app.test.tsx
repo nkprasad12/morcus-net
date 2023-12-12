@@ -34,8 +34,7 @@ describe("Single Page App View", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/gallia" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
         <SinglePageApp pages={pages} />
       </RouteContext.Provider>
     );
@@ -55,8 +54,7 @@ describe("Single Page App View", () => {
     render(
       <SettingsHandler>
         <RouteContext.Provider
-          value={{ route: { path: "/gallia" }, navigateTo: mockNav }}
-        >
+          value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
           <SinglePageApp pages={experimentPages} />
         </RouteContext.Provider>
       </SettingsHandler>
@@ -71,8 +69,7 @@ describe("Single Page App View", () => {
     render(
       <SettingsHandler>
         <RouteContext.Provider
-          value={{ route: { path: "/gallia/bar" }, navigateTo: mockNav }}
-        >
+          value={{ route: { path: "/gallia/bar" }, navigateTo: mockNav }}>
           <SinglePageApp pages={pagesWithSubpages} />
         </RouteContext.Provider>
       </SettingsHandler>
@@ -92,8 +89,7 @@ describe("Single Page App View", () => {
     render(
       <SettingsHandler>
         <RouteContext.Provider
-          value={{ route: { path: "/gallia" }, navigateTo: mockNav }}
-        >
+          value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
           <SinglePageApp pages={experimentPages} />
         </RouteContext.Provider>
       </SettingsHandler>
@@ -107,8 +103,7 @@ describe("Single Page App View", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/g" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/g" }, navigateTo: mockNav }}>
         <SinglePageApp pages={pages} />
       </RouteContext.Provider>
     );
@@ -121,8 +116,7 @@ describe("Single Page App View", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ route: { path: "/gallia" }, navigateTo: mockNav }}
-      >
+        value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
         <SinglePageApp pages={pages} />
       </RouteContext.Provider>
     );

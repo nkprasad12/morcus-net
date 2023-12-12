@@ -6,6 +6,12 @@ import {
 import { GlobalStylesProps } from "@mui/material";
 import { CSSProperties } from "react";
 
+export type AllowedFontSizes =
+  | typeof FontSizes.BIG_SCREEN
+  | typeof FontSizes.SMALL_SCREEN
+  | typeof FontSizes.SECONDARY
+  | typeof FontSizes.TERTIARY;
+
 export namespace FontSizes {
   export const BIG_SCREEN = 20;
   export const SMALL_SCREEN = 19;
@@ -23,6 +29,12 @@ export const TEXT_STYLE: CSSProperties = {
 
 export function getBackgroundColor(settings: GlobalSettings): string {
   return settings.darkMode === true ? "#212022" : Solarized.base3;
+}
+
+export function getAppBarColor(settings: GlobalSettings): string {
+  return settings.darkMode === true
+    ? Solarized.darkarkModeMint
+    : Solarized.base2;
 }
 
 export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
@@ -72,6 +84,9 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       a: {
         color: isDarkMode ? Solarized.blue : undefined,
       },
+      "a:visited": {
+        color: isDarkMode ? Solarized.violet : undefined,
+      },
       pre: { margin: "0" },
       summary: {
         cursor: "pointer",
@@ -117,9 +132,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         color: (isDarkMode ? Solarized.base00 : Solarized.base1) + 40,
       },
       ".menu": {
-        backgroundColor: isDarkMode
-          ? Solarized.darkarkModeMint
-          : Solarized.base2,
+        backgroundColor: getAppBarColor(settings),
       },
       ".menuItemActive": {
         color: menuItemBaseColor + (isDarkMode ? "D8" : ""),
@@ -260,7 +273,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         cursor: "pointer",
       },
       ".QNAEmbedded": {
-        scrollMarginTop: "36px",
+        scrollMarginTop: "40px",
       },
 
       /** Reader specific */
@@ -268,7 +281,6 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         position: "sticky",
         top: 0,
         width: "100%",
-        // borderRadius: "4px",
         boxShadow: `0 2px 3px 1px ${
           isDarkMode ? Solarized.base015 : Solarized.base15
         }`,

@@ -9,8 +9,7 @@ export function Footer(props: { id?: string; className?: string }) {
         component={"div"}
         className="footer"
         style={{ marginTop: window.innerHeight }}
-        fontSize={12}
-      >
+        fontSize={12}>
         <p>
           This program is free software: you can redistribute it and/or modify
           it under the terms of the GNU General Public License as published by

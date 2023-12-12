@@ -32,14 +32,12 @@ export function TableOfContentsV2(props: {
       isSmall={isSmall}
       ml="0px"
       mr="0px"
-      noDivider
-    >
+      noDivider>
       <div
         style={{
           fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
           lineHeight: "normal",
-        }}
-      >
+        }}>
         {outlines.map((outline, index) => (
           <OutlineSection
             key={outline?.mainSection.sectionId || `undefined${index}`}
@@ -69,8 +67,7 @@ function OutlineSection(props: {
       <div
         onClick={() => props.onClick(outline.mainSection.sectionId)}
         style={{ cursor: "pointer" }}
-        className="clickableOutlineSection"
-      >
+        className="clickableOutlineSection">
         <DictChip label={props.dictKey} textScale={props.textScale} />
         <span className="outlineHead" style={{ marginLeft: 2 }}>
           <OpenInNewIcon
@@ -101,12 +98,10 @@ function OutlineSection(props: {
                   marginLeft: `${(sense.level - 1) / 2}em`,
                 }}
                 onClick={() => props.onClick(sense.sectionId)}
-                className="clickableOutlineSection"
-              >
+                className="clickableOutlineSection">
                 <span
                   className="outlineHead"
-                  style={{ fontSize: FontSizes.SECONDARY * scale }}
-                >
+                  style={{ fontSize: FontSizes.SECONDARY * scale }}>
                   <OpenInNewIcon
                     sx={{
                       marginBottom: `${-0.1 * scale}em`,

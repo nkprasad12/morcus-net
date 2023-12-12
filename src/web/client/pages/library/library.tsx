@@ -22,8 +22,7 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
             <span
               className="latWork"
               onClick={() => Navigation.to(nav, `${WORK_PAGE}/${work.id}`)}
-              role="button"
-            >
+              role="button">
               <span>{work.name}</span>{" "}
               <span className="contentTextLight">{work.author}</span>
             </span>
@@ -53,8 +52,7 @@ export function Library() {
           <div className="contentText">Welcome to the library</div>
           <div
             className="contentTextLight"
-            style={{ fontSize: FontSizes.SECONDARY }}
-          >
+            style={{ fontSize: FontSizes.SECONDARY }}>
             Select a work from the list below
           </div>
           <WorksList works={works} />

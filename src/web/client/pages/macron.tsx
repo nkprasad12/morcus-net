@@ -34,8 +34,7 @@ export function Macronizer() {
           border: 2,
           borderRadius: 1,
         }}
-        className="macronBox"
-      >
+        className="macronBox">
         <TextField
           label="Enter text to macronize"
           multiline
@@ -54,8 +53,7 @@ export function Macronizer() {
           onClick={handleClick}
           variant="contained"
           className="nonDictText"
-          sx={{ mt: 2, display: "block" }}
-        >
+          sx={{ mt: 2, display: "block" }}>
           {"Macronize"}
         </Button>
       </Box>
@@ -70,8 +68,7 @@ export function Macronizer() {
             border: 2,
             borderRadius: 1,
           }}
-          className="macronBox"
-        >
+          className="macronBox">
           <div style={{ whiteSpace: "pre-wrap" }}>{processed}</div>
         </Box>
       )}

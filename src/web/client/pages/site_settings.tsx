@@ -43,10 +43,6 @@ export function SiteSettings() {
             label="Enable Experimental features (inflected dictionary lookups, macronizer)"
             settingKey="experimentalMode"
           />
-          <GlobalSettingsCheckbox
-            label="Dark Mode (beta)"
-            settingKey="darkMode"
-          />
         </Typography>
       </Box>
     </Container>
