@@ -28,8 +28,23 @@ export function checkPresent<T>(
   return input;
 }
 
-export function envVar(name: string): string {
-  return checkPresent(process.env[name], `Trying to read env var ${name}`);
+const DEFAULT_ENV_VARS = new Map<string, string>([
+  ["LATIN_INFLECTION_DB", "lat_infl.db"],
+  ["LS_PATH", "ls.xml"],
+  ["LS_PROCESSED_PATH", "lsp.json"],
+  ["RAW_LATIN_WORDS", "lat_raw.txt"],
+  ["SH_PROCESSED_PATH", "shp.db"],
+  ["SH_RAW_PATH", "sh_raw.txt"],
+]);
+
+export function envVar(name: string, unsafe: "unsafe"): string | undefined;
+export function envVar(name: string): string;
+export function envVar(name: string, unsafe?: "unsafe"): string | undefined {
+  const candidate = process.env[name] || DEFAULT_ENV_VARS.get(name);
+  if (unsafe === "unsafe") {
+    return candidate;
+  }
+  return checkPresent(candidate, `Envirement variable ${name} not set!`);
 }
 
 export function checkSatisfies<T>(

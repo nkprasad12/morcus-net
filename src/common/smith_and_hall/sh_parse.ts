@@ -1,4 +1,4 @@
-import { assert } from "@/common/assert";
+import { assert, envVar } from "@/common/assert";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { handleEditorNotes } from "@/common/smith_and_hall/sh_preprocessing";
 import {
@@ -126,7 +126,7 @@ function processSingleLine(
 }
 
 export async function getArticles(
-  fileName: string = process.env.SH_RAW_PATH!
+  fileName: string = envVar("SH_RAW_PATH")
 ): Promise<string[][]> {
   const fileStream = fs.createReadStream(fileName);
   const rl = readline.createInterface({

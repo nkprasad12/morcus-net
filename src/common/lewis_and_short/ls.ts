@@ -87,7 +87,7 @@ export class LewisAndShort implements Dictionary {
 
   private readonly sqlDict: SqlDict;
 
-  constructor(dbFile: string = checkPresent(process.env.LS_PROCESSED_PATH)) {
+  constructor(dbFile: string = envVar("LS_PROCESSED_PATH")) {
     this.sqlDict = new SqlDict(dbFile, ",");
   }
 
@@ -109,7 +109,7 @@ export class LewisAndShort implements Dictionary {
       .map(StoredEntryData.fromEncoded);
     if (
       options?.handleInflections !== true ||
-      process.env.LATIN_INFLECTION_DB === undefined
+      envVar("LATIN_INFLECTION_DB", "unsafe") === undefined
     ) {
       return exactMatches.map(StoredEntryData.toEntryResult);
     }

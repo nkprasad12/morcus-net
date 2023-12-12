@@ -6,10 +6,10 @@ dotenv.config();
 import { parse } from "@/common/lewis_and_short/ls_parser";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
-import { checkPresent } from "@/common/assert";
+import { checkPresent, envVar } from "@/common/assert";
 import { getOrths, isRegularOrth } from "@/common/lewis_and_short/ls_orths";
 
-export const LS_PATH = checkPresent(process.env.LS_PATH);
+export const LS_PATH = envVar("LS_PATH");
 
 interface Schema {
   entry: string;
@@ -178,7 +178,7 @@ export function printUnhandledOrths() {
   let unhandled = 0;
   const starts: [string[], string[]][] = [];
   const ends: [string[], string[]][] = [];
-  for (const entry of parse(checkPresent(process.env.LS_PATH))) {
+  for (const entry of parse(LS_PATH)) {
     const orths = getOrths(entry);
     if (orths.filter((orth) => !isRegularOrth(orth)).length === 0) {
       continue;
