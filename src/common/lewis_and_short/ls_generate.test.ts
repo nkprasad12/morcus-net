@@ -1,12 +1,16 @@
 import fs from "fs";
 
-import { LewisAndShort, StoredEntryData } from "@/common/lewis_and_short/ls";
 import { XmlNode } from "@/common/xml/xml_node";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
 import { makeMorpheusDb } from "@/common/lexica/latin_words";
+import {
+  LewisAndShort,
+  StoredEntryData,
+} from "@/common/lewis_and_short/ls_dict";
+import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 
 console.debug = jest.fn();
 
@@ -105,7 +109,7 @@ describe("LewisAndShort", () => {
   });
 
   test("processPerseusXml writes element contents", () => {
-    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
+    const lewisAndShort = GenerateLs.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
       entry.keys.includes("cāmus")
@@ -116,7 +120,7 @@ describe("LewisAndShort", () => {
   });
 
   test("processPerseusXml handles elements with alts", () => {
-    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
+    const lewisAndShort = GenerateLs.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
       entry.keys.includes("attango")
@@ -130,7 +134,7 @@ describe("LewisAndShort", () => {
   });
 
   test("processPerseusXml handles elements with only alts", () => {
-    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
+    const lewisAndShort = GenerateLs.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) => entry.keys.includes("abs-"));
 
@@ -141,7 +145,7 @@ describe("LewisAndShort", () => {
   });
 
   test("processPerseusXml removes alts if full orths are present", () => {
-    const lewisAndShort = LewisAndShort.processPerseusXml(LS_SUBSET);
+    const lewisAndShort = GenerateLs.processPerseusXml(LS_SUBSET);
 
     const result = lewisAndShort.filter((entry) =>
       entry.keys.includes("arruo")

@@ -8,6 +8,13 @@ import {
 } from "@/common/smith_and_hall/sh_preprocessing";
 import { RawSense, ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { removeDiacritics } from "@/common/text_cleaning";
+import { RawDictEntry } from "@/common/dictionaries/dict_storage";
+import {
+  ShLinkResolver,
+  displayShEntry,
+} from "@/common/smith_and_hall/sh_display";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { getOutline } from "@/common/smith_and_hall/sh_outline";
 
 type ProcessState = "In Blurb" | "In Sense" | "None";
 
@@ -45,6 +52,22 @@ function processArticle(rawArticle: NormalizedArticle): ShEntry {
     }
   }
   return result;
+}
+
+export function shListToRaw(entries: ShEntry[]): RawDictEntry[] {
+  const resolver = new ShLinkResolver(entries);
+  return entries.map((entry, i) => {
+    const displayEntry = displayShEntry(entry, i, resolver);
+    const processedEntry = {
+      entry: XmlNodeSerialization.DEFAULT.serialize(displayEntry),
+      outline: getOutline(entry, i),
+    };
+    return {
+      id: `sh${i}`,
+      keys: entry.keys.join("@"),
+      entry: JSON.stringify(processedEntry),
+    };
+  });
 }
 
 export async function processSmithHall(): Promise<ShEntry[]> {

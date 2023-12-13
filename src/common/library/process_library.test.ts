@@ -1,10 +1,10 @@
 import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
 import {
-  processLibrary,
   retrieveWork,
   retrieveWorksList,
-} from "@/common/library/process_library";
+} from "@/common/library/library_lookup";
+import { processLibrary } from "@/common/library/process_library";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import fs from "fs";
 

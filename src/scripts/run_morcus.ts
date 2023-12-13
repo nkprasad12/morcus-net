@@ -217,7 +217,8 @@ function setupAndStartWebServer(args: any) {
 async function setupStartWebServer(args: any) {
   const serverEnv = { ...process.env };
   const commitHash = spawnSync("git", ["rev-parse", "HEAD"]);
-  serverEnv.SOURCE_VERSION = commitHash.stdout.toString();
+  serverEnv.SOURCE_VERSION = commitHash.stdout.toString().trim();
+  console.log(`Server commit hash: "${serverEnv.SOURCE_VERSION}"`);
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
   } else if (args.dev === true) {

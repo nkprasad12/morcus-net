@@ -1,26 +1,18 @@
-import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, assertEqual, checkPresent, envVar } from "@/common/assert";
-import { XmlNode } from "@/common/xml/xml_node";
-import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
-import {
-  getOrths,
-  isRegularOrth,
-  mergeVowelMarkers,
-} from "@/common/lewis_and_short/ls_orths";
-import { extractOutline } from "@/common/lewis_and_short/ls_outline";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
+import { envVar, assertEqual } from "@/common/assert";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
-import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
+import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { LatinWords } from "@/common/lexica/latin_words";
 import { removeDiacritics } from "@/common/text_cleaning";
+import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 const REGISTRY = [XmlNodeSerialization.DEFAULT];
 
-interface StoredEntryData {
+export interface StoredEntryData {
   /** The disambiguation number for this entry, if applicable. */
   n?: string;
   /** The outline for this entry. */
@@ -55,30 +47,6 @@ export namespace StoredEntryData {
 
   export function toEntryResult(entry: StoredEntryData): EntryResult {
     return { outline: entry.outline, entry: entry.entry };
-  }
-}
-
-function* extractEntryData(rawFile: string): Generator<RawDictEntry> {
-  let numHandled = 0;
-  for (const root of parse(rawFile)) {
-    if (numHandled % 1000 === 0) {
-      console.debug(`Processed ${numHandled}`);
-    }
-    const orths = getOrths(root).map(mergeVowelMarkers);
-    assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
-    const regulars = orths.filter(isRegularOrth);
-    const keys = regulars.length > 0 ? regulars : orths;
-    const data: StoredEntryData = {
-      entry: displayEntryFree(root),
-      outline: extractOutline(root),
-      n: root.getAttr("n"),
-    };
-    yield StoredEntryData.toRawDictEntry(
-      checkPresent(root.getAttr("id")),
-      keys,
-      data
-    );
-    numHandled += 1;
   }
 }
 
@@ -176,17 +144,6 @@ export class LewisAndShort implements Dictionary {
 }
 
 export namespace LewisAndShort {
-  export function processPerseusXml(rawFile: string): RawDictEntry[] {
-    return [...extractEntryData(rawFile)];
-  }
-
-  export function saveToDb(
-    dbPath: string = envVar("LS_PROCESSED_PATH"),
-    rawFile: string = envVar("LS_PATH")
-  ) {
-    SqlDict.save(processPerseusXml(rawFile), dbPath);
-  }
-
   export function create(
     processedFile: string = envVar("LS_PROCESSED_PATH")
   ): LewisAndShort {

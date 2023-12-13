@@ -1,0 +1,48 @@
+import { parse } from "@/common/lewis_and_short/ls_parser";
+import { assert, checkPresent, envVar } from "@/common/assert";
+import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
+import {
+  getOrths,
+  isRegularOrth,
+  mergeVowelMarkers,
+} from "@/common/lewis_and_short/ls_orths";
+import { extractOutline } from "@/common/lewis_and_short/ls_outline";
+import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
+import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
+
+function* extractEntryData(rawFile: string): Generator<RawDictEntry> {
+  let numHandled = 0;
+  for (const root of parse(rawFile)) {
+    if (numHandled % 1000 === 0) {
+      console.debug(`Processed ${numHandled}`);
+    }
+    const orths = getOrths(root).map(mergeVowelMarkers);
+    assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
+    const regulars = orths.filter(isRegularOrth);
+    const keys = regulars.length > 0 ? regulars : orths;
+    const data: StoredEntryData = {
+      entry: displayEntryFree(root),
+      outline: extractOutline(root),
+      n: root.getAttr("n"),
+    };
+    yield StoredEntryData.toRawDictEntry(
+      checkPresent(root.getAttr("id")),
+      keys,
+      data
+    );
+    numHandled += 1;
+  }
+}
+
+export namespace GenerateLs {
+  export function processPerseusXml(rawFile: string): RawDictEntry[] {
+    return [...extractEntryData(rawFile)];
+  }
+
+  export function saveToDb(
+    dbPath: string = envVar("LS_PROCESSED_PATH"),
+    rawFile: string = envVar("LS_PATH")
+  ) {
+    SqlDict.save(processPerseusXml(rawFile), dbPath);
+  }
+}

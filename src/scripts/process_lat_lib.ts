@@ -2,10 +2,8 @@
 
 import fs from "fs";
 import * as dotenv from "dotenv";
-import {
-  LIB_DEFAULT_DIR,
-  processLibrary,
-} from "@/common/library/process_library";
+import { processLibrary } from "@/common/library/process_library";
+import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 dotenv.config();
 
 const startTime = performance.now();
