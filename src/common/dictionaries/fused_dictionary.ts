@@ -54,7 +54,7 @@ export class FusedDictionary {
     const callable = async (dict: Dictionary, query: string) => {
       const mode = request.mode || 0;
       if (mode === 2) {
-        const result = await dict.getEntryById(request.query);
+        const result = await dict.getEntryById(request.query, extras);
         return result === undefined ? [] : [result];
       }
       return dict.getEntry(

@@ -156,6 +156,6 @@ describe("FusedDictionary", () => {
 
     await dict.getEntry(request);
 
-    expect(fakeLs.getEntryById).toHaveBeenCalledWith("test");
+    expect(fakeLs.getEntryById).toHaveBeenCalledWith("test", undefined);
   });
 });

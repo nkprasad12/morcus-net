@@ -59,17 +59,25 @@ export class LewisAndShort implements Dictionary {
     this.sqlDict = new SqlDict(dbFile, ",");
   }
 
-  async getEntryById(id: string): Promise<EntryResult | undefined> {
+  async getEntryById(
+    id: string,
+    extras?: ServerExtras
+  ): Promise<EntryResult | undefined> {
     const raw = this.sqlDict.getById(id);
+    extras?.log("getById_sqlLookup");
     if (raw === undefined) {
       return undefined;
     }
-    return StoredEntryData.toEntryResult(StoredEntryData.fromEncoded(raw));
+    const result = StoredEntryData.toEntryResult(
+      StoredEntryData.fromEncoded(raw)
+    );
+    extras?.log("getById_resultConversion");
+    return result;
   }
 
   async getEntry(
     input: string,
-    extras?: ServerExtras | undefined,
+    extras?: ServerExtras,
     options?: DictOptions
   ): Promise<EntryResult[]> {
     const exactMatches: StoredEntryData[] = this.sqlDict
@@ -83,13 +91,14 @@ export class LewisAndShort implements Dictionary {
     }
 
     const analyses = LatinWords.analysesFor(input);
+    extras?.log("inflectionAnalysis");
     const inflectedResults: EntryResult[] = [];
     const exactResults: EntryResult[] = [];
     for (const analysis of analyses) {
       const lemmaChunks = analysis.lemma.split("#");
       const lemmaBase = lemmaChunks[0];
 
-      const rawResults = this.sqlDict.getRawEntry(lemmaBase);
+      const rawResults = this.sqlDict.getRawEntry(lemmaBase, extras);
       const results: EntryResult[] = rawResults
         .map(StoredEntryData.fromEncoded)
         .filter((data) => {
@@ -110,6 +119,7 @@ export class LewisAndShort implements Dictionary {
             }))
           ),
         }));
+      extras?.log("inflectionResultComputed");
       // TODO: Currently, getRawEntry will ignore case, i.e
       // canis will also return inputs for Canis. Ignore this for
       // now but we should fix it later and handle case difference explicitly.
@@ -132,6 +142,7 @@ export class LewisAndShort implements Dictionary {
       idsSoFar.add(id);
       results.push(candidate);
     }
+    extras?.log("resultsFiltered");
     return results;
   }
 
