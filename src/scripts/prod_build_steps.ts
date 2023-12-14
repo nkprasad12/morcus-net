@@ -10,6 +10,7 @@ import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
+import { writeCommitId } from "@/scripts/write_source_version";
 
 function syncProc(command: string): number | null {
   console.log(`Executing: '${command}'`);
@@ -158,14 +159,24 @@ const MAKE_BUNDLE: StepConfig = {
   operation: () => simpleStep("npx webpack -- --env production"),
   options: { label: "Building client bundle" },
 };
+const WRITE_COMMIT_ID: StepConfig = {
+  operation: writeCommitId,
+  options: { label: "Writing commit hash" },
+};
 
 const overallStart = performance.now();
-runSteps([MAKE_BUNDLE, MAKE_INFL_DB, MAKE_SH, MAKE_LS, PROCESS_LAT_LIB]).then(
-  (status) => {
-    console.log(
-      status ? "\x1b[32m" : "\x1b[31m",
-      "Setup " + (status ? "complete!" : "failed.")
-    );
-    runtimeMessage(overallStart, status);
-  }
-);
+runSteps([
+  WRITE_COMMIT_ID,
+  MAKE_BUNDLE,
+  MAKE_INFL_DB,
+  MAKE_SH,
+  MAKE_LS,
+  PROCESS_LAT_LIB,
+]).then((status) => {
+  console.log(
+    status ? "\x1b[32m" : "\x1b[31m",
+    "Setup " + (status ? "complete!" : "failed.")
+  );
+  runtimeMessage(overallStart, status);
+  assertEqual(status, true);
+});
