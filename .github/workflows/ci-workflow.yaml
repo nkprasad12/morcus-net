@@ -52,6 +52,7 @@ jobs:
             ls.db
             sh.db
             lat_infl.db
+            morcusnet.commit.txt
 
   integration-checks:
     runs-on: ubuntu-latest

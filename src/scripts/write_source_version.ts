@@ -1,14 +1,25 @@
-import { spawnSync } from "child_process";
-import * as dotenv from "dotenv";
-dotenv.config();
+/* istanbul ignore file */
 
-function getCommitId(): string {
+import { spawnSync } from "child_process";
+import { rmSync, writeFileSync } from "fs";
+
+const COMMIT_ID_FILE = "morcusnet.commit.txt";
+
+function calculateCommitId(): string {
+  // The Heroku build environment removes git metadata, but provides
+  // commit information via environment variable instead.
   if (process.env.SOURCE_VERSION !== undefined) {
     return process.env.SOURCE_VERSION.trim();
   }
   const { stdout } = spawnSync("git", ["rev-parse", "HEAD"]);
   return stdout.toString().trim();
 }
-const hash = getCommitId();
-console.log(`Server commit hash: "${hash}"`);
-spawnSync(`echo SOURCE_VERSION=${hash} >> .env`, { shell: true });
+
+export function writeCommitId() {
+  const id = calculateCommitId();
+  try {
+    rmSync(COMMIT_ID_FILE);
+  } catch {}
+  console.log(`Storing commit hash: "${id}"`);
+  writeFileSync(COMMIT_ID_FILE, id);
+}

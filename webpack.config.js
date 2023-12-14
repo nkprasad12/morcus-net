@@ -1,20 +1,10 @@
 const path = require("path");
-const cp = require("child_process");
+const fs = require("fs");
 
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const { DefinePlugin } = require("webpack");
-
-function getHash() {
-  // The Heroku build environment removes git metadata, but provides
-  // commit information via environment variable instead.
-  if (process.env.SOURCE_VERSION !== undefined) {
-    return process.env.SOURCE_VERSION;
-  }
-  const { stdout } = cp.spawnSync("git", ["rev-parse", "HEAD"]);
-  return stdout.toString();
-}
 
 module.exports = (env) => {
   console.log(env);
@@ -22,7 +12,7 @@ module.exports = (env) => {
   const transpileOnly = env.transpileOnly === true;
   const isProduction = env.production === true;
   const shouldMinimize = isProduction;
-  const hash = getHash().trim();
+  const hash = fs.readFileSync("morcusnet.commit.txt").toString();
   console.log(`Client commit hash: "${hash}"`);
 
   const plugins = [

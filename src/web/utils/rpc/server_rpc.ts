@@ -44,7 +44,7 @@ class Timer {
 function serverMessage<T>(t: T): ServerMessage<T> {
   return {
     data: t,
-    metadata: { commit: process.env.SOURCE_VERSION?.trim() },
+    metadata: { commit: process.env.COMMIT_ID },
   };
 }
 

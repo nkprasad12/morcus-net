@@ -6,6 +6,7 @@ import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { ChildProcess, spawn } from "child_process";
 import fs from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { writeCommitId } from "@/scripts/write_source_version";
 
 // @ts-ignore
 global.location = {
@@ -104,6 +105,7 @@ async function runCommand(
 }
 
 export async function setUpEnvironment() {
+  writeCommitId();
   const buildClient = runCommand(BUILD_CLIENT);
   const downloadLs = runCommand(DownloadCommand.forLs());
   const downloadSh = runCommand(DownloadCommand.forSh());

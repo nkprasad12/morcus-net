@@ -46,6 +46,7 @@ import {
   retrieveWorkStringified,
   retrieveWorksList,
 } from "@/common/library/library_lookup";
+import { readFileSync } from "fs";
 
 dotenv.config();
 
@@ -90,6 +91,7 @@ const host = "localhost";
 const port = parseInt(
   checkPresent(process.env.PORT, "PORT environment variable")
 );
+process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
 
 const app = express();
 const server = http.createServer(app);

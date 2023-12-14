@@ -133,3 +133,5 @@ latin_inflect.db*
 
 library_processed/
 lat_raw.txt
+
+morcusnet.commit.txt

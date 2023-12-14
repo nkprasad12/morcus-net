@@ -1,8 +1,9 @@
 /* istanbul ignore file */
 
 import { makeLatinInflectionDb } from "@/scripts/latin_inflections_export";
+import { writeCommitId } from "@/scripts/write_source_version";
 import { ArgumentParser } from "argparse";
-import { ChildProcess, spawn, spawnSync } from "child_process";
+import { ChildProcess, spawn } from "child_process";
 import dotenv from "dotenv";
 
 dotenv.config();
@@ -172,6 +173,7 @@ function setupAndStartWebServer(args: any) {
 
   // We use the hot dev server, so we don't need to pre-build;
   if (args.no_build_client === false && args.dev !== true) {
+    writeCommitId();
     const buildCommand: string[] = ["npm", "run", "build-client"];
     const extraArgs: string[] = [];
     if (args.prod || args.staging) {
@@ -216,9 +218,6 @@ function setupAndStartWebServer(args: any) {
 
 async function setupStartWebServer(args: any) {
   const serverEnv = { ...process.env };
-  const commitHash = spawnSync("git", ["rev-parse", "HEAD"]);
-  serverEnv.SOURCE_VERSION = commitHash.stdout.toString().trim();
-  console.log(`Server commit hash: "${serverEnv.SOURCE_VERSION}"`);
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
   } else if (args.dev === true) {
