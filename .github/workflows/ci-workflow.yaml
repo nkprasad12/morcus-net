@@ -45,8 +45,13 @@ jobs:
         run: npm run build
       - uses: actions/upload-artifact@v3
         with:
-          name: genfiles_static
-          path: genfiles_static/
+          name: build_outputs
+          path: |
+            genfiles_static/
+            library_processed/
+            ls.db
+            sh.db
+            lat_infl.db
 
   integration-checks:
     runs-on: ubuntu-latest
