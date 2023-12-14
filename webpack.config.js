@@ -3,7 +3,6 @@ const cp = require("child_process");
 
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const CompressionPlugin = require("compression-webpack-plugin");
 const TerserPlugin = require("terser-webpack-plugin");
 const { DefinePlugin } = require("webpack");
 
@@ -41,9 +40,6 @@ module.exports = (env) => {
       publicPath: "/",
     }),
   ];
-  if (isProduction) {
-    plugins.push(new CompressionPlugin());
-  }
   const productionOptimization = {
     minimize: shouldMinimize,
     minimizer: [
