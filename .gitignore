@@ -123,13 +123,16 @@ ls_dump.txt
 
 ls.xml
 lsp.txt*
+ls.db*
 lsp.data*
 
 ls_logs/
 
 sh_out.txt
 shp.db*
+sh.db*
 latin_inflect.db*
+lat_infl.db*
 
 library_processed/
 lat_raw.txt
