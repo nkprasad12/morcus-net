@@ -33,6 +33,21 @@ jobs:
       - name: Checking formatting
         run: npm run format-check
 
+  prod-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Installing npm dependencies
+        run: npm install
+      - name: Running prod build step
+        run: npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: genfiles_static
+          path: genfiles_static/
+
   integration-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 6
