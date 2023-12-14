@@ -59,7 +59,7 @@ const FAKE_DICT = [
     ),
   },
   {
-    id: "n6",
+    id: "n7",
     keys: ["quīs"].join(","),
     entry: serialize(
       new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
@@ -136,13 +136,11 @@ describe("SqlDict", () => {
       id: "n1",
       keys: data[0].keys,
       entry: data[0].entry,
-      n: 0,
     });
     expect(contents[1]).toEqual({
       id: "n2",
       keys: data[1].keys,
       entry: data[1].entry,
-      n: 1,
     });
   });
 

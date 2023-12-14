@@ -2,7 +2,7 @@ import Database from "better-sqlite3";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
-import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
+import { ReadOnlyDb } from "@/common/sql_helper";
 
 export interface RawDictEntry {
   /** The serialized list of keys for this entry. */
@@ -17,7 +17,7 @@ export interface RawDictEntry {
 export class SqlDict {
   /** Saves the given entries to a SQLite table. */
   static save(entries: RawDictEntry[], destination: string): void {
-    ReadOnlyDb.saveToSql(destination, entries, ARRAY_INDEX);
+    ReadOnlyDb.saveToSql(destination, entries, "id");
   }
 
   private readonly keyToEntries = new Map<string, [number, number, number][]>();
@@ -27,7 +27,7 @@ export class SqlDict {
 
   constructor(dbFile: string, keyDelimiter: string) {
     this.db = ReadOnlyDb.getDatabase(dbFile);
-    const read = this.db.prepare("SELECT keys, n FROM data");
+    const read = this.db.prepare("SELECT keys, rowid AS n FROM data");
     // @ts-ignore
     const result: { keys: string; n: number }[] = read.all();
     result.sort((a, b) => a.n - b.n);
@@ -58,6 +58,7 @@ export class SqlDict {
   getRawEntry(input: string, extras?: ServerExtras): string[] {
     const request = removeDiacritics(input).toLowerCase();
     const indices = this.keyToEntries.get(request);
+    extras?.log(`${request}_sqlIndices`);
     if (indices === undefined) {
       return [];
     }
@@ -76,14 +77,15 @@ export class SqlDict {
     });
 
     const resultIndices = [...new Set(allMatches.map(([_i, _j, n]) => n))];
-    extras?.log("foundMatches");
+    extras?.log(`${request}_foundMatches`);
     const entryStrings = resultIndices.map(
       (n) =>
         // @ts-ignore
-        this.db.prepare(`SELECT entry FROM data WHERE n=${n} LIMIT 1`).all()[0]
-          .entry
+        this.db
+          .prepare(`SELECT entry FROM data WHERE rowid=${n} LIMIT 1`)
+          .all()[0].entry
     );
-    extras?.log("entriesFetched");
+    extras?.log(`${request}_entriesFetches`);
     return entryStrings;
   }
 

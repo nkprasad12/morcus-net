@@ -14,7 +14,7 @@ function createTableCommand<T extends object>(
     "Invalid primary key."
   );
   const columns: string[] = allKeys.map(
-    (key) => `'${key}' TEXT` + (key === primaryKey ? " PRIMARY KEY" : "")
+    (key) => `'${key}' TEXT` + (key === primaryKey ? " PRIMARY KEY ASC" : "")
   );
   if (primaryKey === ARRAY_INDEX) {
     columns.push("'n' INTEGER PRIMARY KEY ASC");

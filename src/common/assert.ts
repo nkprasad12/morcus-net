@@ -30,10 +30,10 @@ export function checkPresent<T>(
 
 const DEFAULT_ENV_VARS = new Map<string, string>([
   ["LATIN_INFLECTION_DB", "lat_infl.db"],
-  ["LS_PATH", "ls.xml"],
-  ["LS_PROCESSED_PATH", "lsp.json"],
+  ["LS_PATH", "ls_raw.xml"],
+  ["LS_PROCESSED_PATH", "ls.db"],
   ["RAW_LATIN_WORDS", "lat_raw.txt"],
-  ["SH_PROCESSED_PATH", "shp.db"],
+  ["SH_PROCESSED_PATH", "sh.db"],
   ["SH_RAW_PATH", "sh_raw.txt"],
 ]);
 

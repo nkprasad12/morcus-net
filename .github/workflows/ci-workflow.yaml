@@ -33,6 +33,27 @@ jobs:
       - name: Checking formatting
         run: npm run format-check
 
+  prod-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - uses: actions/checkout@v3
+      - name: Installing npm dependencies
+        run: npm install
+      - name: Running prod build step
+        run: npm run build
+      - uses: actions/upload-artifact@v3
+        with:
+          name: build_outputs
+          path: |
+            genfiles_static/
+            library_processed/
+            ls.db
+            sh.db
+            lat_infl.db
+            morcusnet.commit.txt
+
   integration-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 6

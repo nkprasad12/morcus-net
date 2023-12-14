@@ -24,7 +24,7 @@ import { WorkRequest } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { randomInt } from "crypto";
 import { checkPresent } from "@/common/assert";
-import { LewisAndShort } from "@/common/lewis_and_short/ls";
+import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import path from "path";
 import { GitHub } from "@/web/utils/github";
 import { MongoLogger } from "@/web/telemetry/mongo_logger";
@@ -45,7 +45,8 @@ import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import {
   retrieveWorkStringified,
   retrieveWorksList,
-} from "@/common/library/process_library";
+} from "@/common/library/library_lookup";
+import { readFileSync } from "fs";
 
 dotenv.config();
 
@@ -90,6 +91,7 @@ const host = "localhost";
 const port = parseInt(
   checkPresent(process.env.PORT, "PORT environment variable")
 );
+process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
 
 const app = express();
 const server = http.createServer(app);

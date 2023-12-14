@@ -1,26 +1,18 @@
-import { parse } from "@/common/lewis_and_short/ls_parser";
-import { assert, assertEqual, checkPresent, envVar } from "@/common/assert";
-import { XmlNode } from "@/common/xml/xml_node";
-import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
-import {
-  getOrths,
-  isRegularOrth,
-  mergeVowelMarkers,
-} from "@/common/lewis_and_short/ls_orths";
-import { extractOutline } from "@/common/lewis_and_short/ls_outline";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
+import { envVar, assertEqual } from "@/common/assert";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
-import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
+import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { LatinWords } from "@/common/lexica/latin_words";
 import { removeDiacritics } from "@/common/text_cleaning";
+import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
+import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 const REGISTRY = [XmlNodeSerialization.DEFAULT];
 
-interface StoredEntryData {
+export interface StoredEntryData {
   /** The disambiguation number for this entry, if applicable. */
   n?: string;
   /** The outline for this entry. */
@@ -58,30 +50,6 @@ export namespace StoredEntryData {
   }
 }
 
-function* extractEntryData(rawFile: string): Generator<RawDictEntry> {
-  let numHandled = 0;
-  for (const root of parse(rawFile)) {
-    if (numHandled % 1000 === 0) {
-      console.debug(`Processed ${numHandled}`);
-    }
-    const orths = getOrths(root).map(mergeVowelMarkers);
-    assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
-    const regulars = orths.filter(isRegularOrth);
-    const keys = regulars.length > 0 ? regulars : orths;
-    const data: StoredEntryData = {
-      entry: displayEntryFree(root),
-      outline: extractOutline(root),
-      n: root.getAttr("n"),
-    };
-    yield StoredEntryData.toRawDictEntry(
-      checkPresent(root.getAttr("id")),
-      keys,
-      data
-    );
-    numHandled += 1;
-  }
-}
-
 export class LewisAndShort implements Dictionary {
   readonly info = LatinDict.LewisAndShort;
 
@@ -91,17 +59,25 @@ export class LewisAndShort implements Dictionary {
     this.sqlDict = new SqlDict(dbFile, ",");
   }
 
-  async getEntryById(id: string): Promise<EntryResult | undefined> {
+  async getEntryById(
+    id: string,
+    extras?: ServerExtras
+  ): Promise<EntryResult | undefined> {
     const raw = this.sqlDict.getById(id);
+    extras?.log("getById_sqlLookup");
     if (raw === undefined) {
       return undefined;
     }
-    return StoredEntryData.toEntryResult(StoredEntryData.fromEncoded(raw));
+    const result = StoredEntryData.toEntryResult(
+      StoredEntryData.fromEncoded(raw)
+    );
+    extras?.log("getById_resultConversion");
+    return result;
   }
 
   async getEntry(
     input: string,
-    extras?: ServerExtras | undefined,
+    extras?: ServerExtras,
     options?: DictOptions
   ): Promise<EntryResult[]> {
     const exactMatches: StoredEntryData[] = this.sqlDict
@@ -115,13 +91,14 @@ export class LewisAndShort implements Dictionary {
     }
 
     const analyses = LatinWords.analysesFor(input);
+    extras?.log("inflectionAnalysis");
     const inflectedResults: EntryResult[] = [];
     const exactResults: EntryResult[] = [];
     for (const analysis of analyses) {
       const lemmaChunks = analysis.lemma.split("#");
       const lemmaBase = lemmaChunks[0];
 
-      const rawResults = this.sqlDict.getRawEntry(lemmaBase);
+      const rawResults = this.sqlDict.getRawEntry(lemmaBase, extras);
       const results: EntryResult[] = rawResults
         .map(StoredEntryData.fromEncoded)
         .filter((data) => {
@@ -142,6 +119,7 @@ export class LewisAndShort implements Dictionary {
             }))
           ),
         }));
+      extras?.log("inflectionResultComputed");
       // TODO: Currently, getRawEntry will ignore case, i.e
       // canis will also return inputs for Canis. Ignore this for
       // now but we should fix it later and handle case difference explicitly.
@@ -164,6 +142,7 @@ export class LewisAndShort implements Dictionary {
       idsSoFar.add(id);
       results.push(candidate);
     }
+    extras?.log("resultsFiltered");
     return results;
   }
 
@@ -176,17 +155,6 @@ export class LewisAndShort implements Dictionary {
 }
 
 export namespace LewisAndShort {
-  export function processPerseusXml(rawFile: string): RawDictEntry[] {
-    return [...extractEntryData(rawFile)];
-  }
-
-  export function saveToDb(
-    dbPath: string = envVar("LS_PROCESSED_PATH"),
-    rawFile: string = envVar("LS_PATH")
-  ) {
-    SqlDict.save(processPerseusXml(rawFile), dbPath);
-  }
-
   export function create(
     processedFile: string = envVar("LS_PROCESSED_PATH")
   ): LewisAndShort {

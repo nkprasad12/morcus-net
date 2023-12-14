@@ -3,8 +3,10 @@
 import { envVar } from "@/common/assert";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 // import { unmatched } from "@/common/smith_and_hall/sh_abbreviations";
-import { shListToRaw } from "@/common/smith_and_hall/sh_dict";
-import { processSmithHall } from "@/common/smith_and_hall/sh_process";
+import {
+  shListToRaw,
+  processSmithHall,
+} from "@/common/smith_and_hall/sh_process";
 import * as dotenv from "dotenv";
 dotenv.config();
 

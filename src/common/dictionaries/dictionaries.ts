@@ -44,7 +44,10 @@ export interface Dictionary {
     options?: DictOptions
   ): Promise<EntryResult[]>;
   /** Returns the entry, if any, with the given id. */
-  getEntryById(id: string): Promise<EntryResult | undefined>;
+  getEntryById(
+    id: string,
+    extras?: ServerExtras
+  ): Promise<EntryResult | undefined>;
   /** Returns all entry keys matching the input prefix. */
   getCompletions(input: string, extras?: ServerExtras): Promise<string[]>;
 }
