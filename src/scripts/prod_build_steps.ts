@@ -62,14 +62,9 @@ function safeCreateDir(path: string) {
 
 function syncProc(command: string): number | null {
   console.log(`Executing: '${command}'`);
-  const result = spawnSync(command, { shell: true });
-  for (const outputLine of result.output) {
-    console.log(outputLine?.toString());
-  }
-  console.log(result.stdout.toString());
+  const result = spawnSync(command, { shell: true, stdio: "inherit" });
   if (result.status !== 0) {
     console.log(result.error?.message);
-    console.log(result.stderr.toString());
   }
   return result.status;
 }
