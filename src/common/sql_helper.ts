@@ -55,9 +55,14 @@ export namespace ReadOnlyDb {
 
     const insertAll = db.transaction(() => {
       records.forEach((record, index) => {
-        insert.run(
-          primaryKey === ARRAY_INDEX ? { ...record, n: index } : record
-        );
+        const row: Record<string, any> = {};
+        for (const key in record) {
+          row[`${key}`] = record[key];
+        }
+        if (primaryKey === ARRAY_INDEX) {
+          row["n"] = index;
+        }
+        insert.run(row);
       });
     });
     insertAll();
