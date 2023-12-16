@@ -3,6 +3,8 @@ import { RouteContext } from "@/web/client/components/router";
 import { ReactNode } from "react";
 import * as React from "react";
 
+const MORCUS_TITLE = "Morcus Latin Tools";
+
 export interface TitleContext {
   setCurrentDictWord: (word: string) => void;
 }
@@ -20,9 +22,9 @@ export function TitleHandler(props: TitleHandlerProps) {
   const nav = React.useContext(RouteContext);
 
   React.useEffect(() => {
-    document.title = "Morcus Latin Tools";
+    document.title = MORCUS_TITLE;
     if (nav.route.path === DICT_PAGE.path && currentDictWord) {
-      document.title += ` | ${currentDictWord}`;
+      document.title = `${currentDictWord} | ${MORCUS_TITLE}`;
     }
   }, [nav.route.path, currentDictWord]);
 
