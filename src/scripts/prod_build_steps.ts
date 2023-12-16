@@ -205,9 +205,7 @@ const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   options: { label: "Writing commit hash" },
 };
-
-const overallStart = performance.now();
-runSteps([
+const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
   MAKE_BUNDLE,
@@ -215,11 +213,20 @@ runSteps([
   MAKE_SH,
   MAKE_LS,
   PROCESS_LAT_LIB,
-]).then((status) => {
-  console.log(
-    status ? "\x1b[32m" : "\x1b[31m",
-    "Setup " + (status ? "complete!" : "failed.")
+];
+
+export async function prodBuildSteps(): Promise<boolean> {
+  const overallStart = performance.now();
+  const success = await runSteps(ALL_STEPS);
+  runtimeMessage(overallStart, success);
+  return success;
+}
+
+if (require.main === module) {
+  prodBuildSteps().then((status) =>
+    console.log(
+      status ? "\x1b[32m" : "\x1b[31m",
+      "Setup " + (status ? "complete!" : "failed.")
+    )
   );
-  runtimeMessage(overallStart, status);
-  assertEqual(status, true);
-});
+}
