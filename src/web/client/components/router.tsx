@@ -103,7 +103,7 @@ export const RouteContext: React.Context<Navigation> = createContext({
 });
 
 export namespace Router {
-  export function Handler(props: PropsWithChildren<Record<string, any>>) {
+  export function Handler(props: PropsWithChildren<object>) {
     const [route, setRoute] = React.useState<RouteInfo>(extractRouteInfo());
 
     useEffect(() => {

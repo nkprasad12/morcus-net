@@ -582,6 +582,9 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     if (query === undefined) {
       return;
     }
+    if (!isEmbedded) {
+      title.setCurrentDictWord(query);
+    }
     setState("Loading");
     const serverResult = fetchEntry(
       query,
@@ -626,18 +629,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     idSearch,
     isEmbedded,
     settings.data.experimentalMode,
+    title,
   ]);
-
-  React.useEffect(() => {
-    const filteredEntries = entries.filter(
-      (entry) => entry.outlines.length > 0
-    );
-    if (!(state === "Results" && filteredEntries.length > 0)) {
-      title.setCurrentDictWord("");
-    } else {
-      title.setCurrentDictWord(filteredEntries[0].outlines[0].mainKey);
-    }
-  }, [state, entries, title]);
 
   const contextValues: DictContextOptions = {
     isEmbedded,

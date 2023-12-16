@@ -60,13 +60,6 @@ export namespace AbbreviationTrieOld {
   }
 }
 
-// type Partition = { min: number; max: number; items: Set<TextExpansion> };
-
-// export function clusterExpansions(expansions: TextExpansion[]) {
-//   const partitions: Partition[] = [];
-//   const newItem =
-// }
-
 function areIntervalsDisjoint(intervals: [number, number][]): boolean {
   intervals.sort((a, b) => a[0] - b[0]);
   for (let i = 0; i < intervals.length - 1; i++) {

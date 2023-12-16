@@ -48,8 +48,6 @@ import {
 } from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
 
-dotenv.config();
-
 function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   let delegate: Dictionary | null = null;
   const cachedProvider = () => {
@@ -87,37 +85,10 @@ function logMemoryUsage(telemetry: TelemetryLogger): void {
   });
 }
 
-const host = "localhost";
-const port = parseInt(
-  checkPresent(process.env.PORT, "PORT environment variable")
-);
-process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
-
-const app = express();
-const server = http.createServer(app);
-
-const lewisAndShort = delayedInit(
-  () => LewisAndShort.create(),
-  LatinDict.LewisAndShort
-);
-const smithAndHall = delayedInit(() => {
-  const start = performance.now();
-  const result = new SmithAndHall();
-  const elapsed = (performance.now() - start).toFixed(3);
-  console.debug(`SmithAndHall init: ${elapsed} ms`);
-  return result;
-}, LatinDict.SmithAndHall);
-const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
-
-const workServer = new SocketWorkServer(new Server(server));
-const telemetry =
-  process.env.CONSOLE_TELEMETRY !== "yes"
-    ? MongoLogger.create()
-    : Promise.resolve(TelemetryLogger.NoOp);
-
 async function callWorker(
   category: Workers.Category,
-  input: string
+  input: string,
+  workServer: SocketWorkServer
 ): Promise<string> {
   const request: WorkRequest<string> = {
     category: category,
@@ -127,54 +98,98 @@ async function callWorker(
   const result = await workServer.process(request);
   return result.content;
 }
-const buildDir = path.join(__dirname, "../genfiles_static");
-if (process.env.NODE_ENV === "dev") {
-  /* eslint-disable @typescript-eslint/no-var-requires */
-  const webpack = require("webpack");
-  /* eslint-disable @typescript-eslint/no-var-requires */
-  const webpackDevMiddleware = require("webpack-dev-middleware");
-  const compiler = webpack(
+
+export function startMorcusServer(): Promise<http.Server> {
+  const host = "localhost";
+  const port = parseInt(
+    checkPresent(process.env.PORT, "PORT environment variable")
+  );
+  process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
+
+  const app = express();
+  const server = http.createServer(app);
+
+  const lewisAndShort = delayedInit(
+    () => LewisAndShort.create(),
+    LatinDict.LewisAndShort
+  );
+  const smithAndHall = delayedInit(() => {
+    const start = performance.now();
+    const result = new SmithAndHall();
+    const elapsed = (performance.now() - start).toFixed(3);
+    console.debug(`SmithAndHall init: ${elapsed} ms`);
+    return result;
+  }, LatinDict.SmithAndHall);
+  const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
+
+  const workServer = new SocketWorkServer(new Server(server));
+  const telemetry =
+    process.env.CONSOLE_TELEMETRY !== "yes"
+      ? MongoLogger.create()
+      : Promise.resolve(TelemetryLogger.NoOp);
+
+  const buildDir = path.join(__dirname, "../genfiles_static");
+  if (process.env.NODE_ENV === "dev") {
     /* eslint-disable @typescript-eslint/no-var-requires */
-    require("../webpack.config")({ transpileOnly: true, production: false })
-  );
-  app.use(
-    webpackDevMiddleware(compiler, {
-      publicPath: buildDir,
-      writeToDisk: () => true,
-    })
-  );
+    const webpack = require("webpack");
+    /* eslint-disable @typescript-eslint/no-var-requires */
+    const webpackDevMiddleware = require("webpack-dev-middleware");
+    const compiler = webpack(
+      /* eslint-disable @typescript-eslint/no-var-requires */
+      require("../webpack.config")({ transpileOnly: true, production: false })
+    );
+    app.use(
+      webpackDevMiddleware(compiler, {
+        publicPath: buildDir,
+        writeToDisk: () => true,
+      })
+    );
+  }
+
+  const params: WebServerParams = {
+    webApp: app,
+    routes: [
+      RouteDefinition.create(MacronizeApi, (input) =>
+        callWorker(Workers.MACRONIZER, input, workServer)
+      ),
+      RouteDefinition.create(ReportApi, (request) =>
+        GitHub.reportIssue(request.reportText, request.commit)
+      ),
+      RouteDefinition.create(DictsFusedApi, (input, extras) =>
+        fusedDict.getEntry(input, extras)
+      ),
+      RouteDefinition.create(CompletionsFusedApi, (input, extras) =>
+        fusedDict.getCompletions(input, extras)
+      ),
+      RouteDefinition.create(
+        GetWork,
+        (workId) => retrieveWorkStringified(workId),
+        true
+      ),
+      RouteDefinition.create(ListLibraryWorks, (_unused) =>
+        retrieveWorksList()
+      ),
+    ],
+    telemetry: telemetry,
+    buildDir,
+  };
+
+  setupServer(params);
+
+  return new Promise((resolve) => {
+    server.listen(port, () => {
+      const memoryLogId = setInterval(
+        () => telemetry.then(logMemoryUsage),
+        1000 * 60 * 15
+      );
+      server.on("close", () => clearInterval(memoryLogId));
+      resolve(server);
+      log(`Running on http://${host}:${port}/`);
+    });
+  });
 }
 
-const params: WebServerParams = {
-  webApp: app,
-  routes: [
-    RouteDefinition.create(MacronizeApi, (input) =>
-      callWorker(Workers.MACRONIZER, input)
-    ),
-    RouteDefinition.create(ReportApi, (request) =>
-      GitHub.reportIssue(request.reportText, request.commit)
-    ),
-    RouteDefinition.create(DictsFusedApi, (input, extras) =>
-      fusedDict.getEntry(input, extras)
-    ),
-    RouteDefinition.create(CompletionsFusedApi, (input, extras) =>
-      fusedDict.getCompletions(input, extras)
-    ),
-    RouteDefinition.create(
-      GetWork,
-      (workId) => retrieveWorkStringified(workId),
-      true
-    ),
-    RouteDefinition.create(ListLibraryWorks, (_unused) => retrieveWorksList()),
-  ],
-  telemetry: telemetry,
-  buildDir,
-};
-
-setupServer(params);
-
-server.listen(port, () => {
-  log(`Local server running! Go to http://${host}:${port}/`);
-  log("Press Ctrl+C to exit.");
-  setInterval(() => telemetry.then(logMemoryUsage), 1000 * 60 * 15);
-});
+if (require.main === module) {
+  dotenv.config();
+  startMorcusServer().then(() => log("Server started! Press Ctrl+C to exit."));
+}

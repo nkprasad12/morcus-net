@@ -3,7 +3,7 @@ const fs = require("fs");
 
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
-const TerserPlugin = require("terser-webpack-plugin");
+const { SwcMinifyWebpackPlugin } = require("swc-minify-webpack-plugin");
 const { DefinePlugin } = require("webpack");
 
 module.exports = (env) => {
@@ -32,11 +32,7 @@ module.exports = (env) => {
   ];
   const productionOptimization = {
     minimize: shouldMinimize,
-    minimizer: [
-      new TerserPlugin({
-        include: ["vendorBundle", "Root"],
-      }),
-    ],
+    minimizer: [new SwcMinifyWebpackPlugin()],
     splitChunks: {
       chunks: "all",
       minSize: 300000,

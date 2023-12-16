@@ -12,16 +12,59 @@ import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
 
+const RAW_LAT_LIB_DIR = "latin_works_raw";
+const PERSEUS_CLL_TAG = "0.0.6853394170";
+const PERSEUS_CLL_ROOT =
+  "https://raw.githubusercontent.com/PerseusDL/canonical-latinLit";
+
+const PERSEUS_DOWNLOADS = [
+  // Remove these next two for now, since it has strange optional
+  // nested elements that are not marked in the CTS header
+  // "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
+  // "data/phi0893/phi001/phi0893.phi001.perseus-lat2.xml",
+
+  // Remove this for now, since it has whitespace between elements.
+  // "data/phi1318/phi001/phi1318.phi001.perseus-lat1.xml",
+
+  "data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
+  "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
+].map(perseusDownloadConfig);
+
+interface DownloadConfig {
+  url: string;
+  path: string;
+}
+
+interface StepConfig {
+  operation: () => Promise<void> | void;
+  options?: {
+    label?: string;
+    dlInfo?: DownloadConfig | DownloadConfig[];
+  };
+}
+
+function perseusUrl(resource: string): string {
+  return `${PERSEUS_CLL_ROOT}/${PERSEUS_CLL_TAG}/${resource}`;
+}
+
+function perseusDownloadConfig(resource: string): DownloadConfig {
+  const url = perseusUrl(resource);
+  const name = url.split("/").slice(-1)[0];
+  return { url, path: `${RAW_LAT_LIB_DIR}/${name}` };
+}
+
+function safeCreateDir(path: string) {
+  try {
+    rmSync(path, { recursive: true, force: true });
+  } catch {}
+  mkdirSync(path, { recursive: true });
+}
+
 function syncProc(command: string): number | null {
   console.log(`Executing: '${command}'`);
-  const result = spawnSync(command, { shell: true });
-  for (const outputLine of result.output) {
-    console.log(outputLine?.toString());
-  }
-  console.log(result.stdout.toString());
+  const result = spawnSync(command, { shell: true, stdio: "inherit" });
   if (result.status !== 0) {
     console.log(result.error?.message);
-    console.log(result.stderr.toString());
   }
   return result.status;
 }
@@ -30,12 +73,13 @@ function download(url: string, path: string): number | null {
   return syncProc(`curl --compressed ${url} > ${path}`);
 }
 
-function cleanupDownload(path: string): void {
-  console.log(`Attempting to clean up ${path}`);
-  try {
-    rmSync(path);
-  } catch (error) {
-    console.log(`Error cleaning up failed download: ${path}`);
+function cleanupDownloads(files: DownloadConfig[]): void {
+  for (const dlFile of files) {
+    const path = dlFile.path;
+    console.log(`Attempting to clean up ${path}`);
+    try {
+      rmSync(path);
+    } catch {}
   }
 }
 
@@ -44,25 +88,25 @@ function simpleStep(command: string): void {
   assertEqual(status, 0, "Command had nonzero status!");
 }
 
-interface StepConfig {
-  operation: () => Promise<void> | void;
-  options?: {
-    label?: string;
-    dlInfo?: {
-      url: string;
-      path: string;
-    };
-  };
+function resolveDowloads(config: StepConfig): DownloadConfig[] {
+  const info = config.options?.dlInfo;
+  if (info === undefined) {
+    return [];
+  }
+  if (Array.isArray(info)) {
+    return info;
+  }
+  return [info];
 }
 
 async function runStep(config: StepConfig): Promise<boolean> {
   const label = config.options?.label || "operation";
-  const dlInfo = config.options?.dlInfo;
+  const dlInfos = resolveDowloads(config);
 
-  if (dlInfo) {
+  for (const dlInfo of dlInfos) {
     const dlStatus = download(dlInfo.url, dlInfo.path);
     if (dlStatus !== 0) {
-      cleanupDownload(dlInfo.path);
+      cleanupDownloads(dlInfos);
       return false;
     }
   }
@@ -78,9 +122,7 @@ async function runStep(config: StepConfig): Promise<boolean> {
     success = false;
   }
 
-  if (dlInfo) {
-    cleanupDownload(dlInfo.path);
-  }
+  cleanupDownloads(dlInfos);
 
   return success;
 }
@@ -106,11 +148,13 @@ async function runSteps(configs: StepConfig[]): Promise<boolean> {
   return true;
 }
 
-// "make-data-files": "npm run make-sh && npm run make-lat-infl-db && npm run make-ls && npm run make-lat-lib",
-// "download-lat-infl-raw": "curl --compressed https://raw.githubusercontent.com/nkprasad12/morcus-raw-data/main/morpheus_out_aug1_suff_removed.txt > lat_raw.txt",
-// "make-lat-infl-db": "npm run download-lat-infl-raw && npm run tsnp src/scripts/latin_inflections.ts && rm lat_raw.txt",
-// "make-lat-lib": "npm run tsnp src/scripts/process_lat_lib.ts",
-
+const SETUP_DIRS: StepConfig = {
+  operation: () => {
+    safeCreateDir(LIB_DEFAULT_DIR);
+    safeCreateDir(RAW_LAT_LIB_DIR);
+  },
+  options: { label: "Setting up directories" },
+};
 const MAKE_LS: StepConfig = {
   operation: GenerateLs.saveToDb,
   options: {
@@ -146,14 +190,12 @@ const MAKE_INFL_DB: StepConfig = {
   },
 };
 const PROCESS_LAT_LIB: StepConfig = {
-  operation: () => {
-    try {
-      rmSync(LIB_DEFAULT_DIR, { recursive: true, force: true });
-    } catch {}
-    mkdirSync(LIB_DEFAULT_DIR, { recursive: true });
-    processLibrary(LIB_DEFAULT_DIR);
-  },
-  options: { label: "Latin library processing" },
+  operation: () =>
+    processLibrary(
+      LIB_DEFAULT_DIR,
+      PERSEUS_DOWNLOADS.map((dl) => dl.path)
+    ),
+  options: { label: "Latin library processing", dlInfo: PERSEUS_DOWNLOADS },
 };
 const MAKE_BUNDLE: StepConfig = {
   operation: () => simpleStep("npx webpack -- --env production"),
@@ -163,20 +205,28 @@ const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   options: { label: "Writing commit hash" },
 };
-
-const overallStart = performance.now();
-runSteps([
+const ALL_STEPS = [
+  SETUP_DIRS,
   WRITE_COMMIT_ID,
   MAKE_BUNDLE,
   MAKE_INFL_DB,
   MAKE_SH,
   MAKE_LS,
   PROCESS_LAT_LIB,
-]).then((status) => {
-  console.log(
-    status ? "\x1b[32m" : "\x1b[31m",
-    "Setup " + (status ? "complete!" : "failed.")
+];
+
+export async function prodBuildSteps(): Promise<boolean> {
+  const overallStart = performance.now();
+  const success = await runSteps(ALL_STEPS);
+  runtimeMessage(overallStart, success);
+  return success;
+}
+
+if (require.main === module) {
+  prodBuildSteps().then((status) =>
+    console.log(
+      status ? "\x1b[32m" : "\x1b[31m",
+      "Setup " + (status ? "complete!" : "failed.")
+    )
   );
-  runtimeMessage(overallStart, status);
-  assertEqual(status, true);
-});
+}
