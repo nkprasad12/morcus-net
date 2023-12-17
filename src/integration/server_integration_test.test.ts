@@ -1,9 +1,14 @@
 /* istanbul ignore file */
 
-const PORT = "5757";
+const PORT = "1337";
 const TEST_TMP_DIR = "tmp_server_integration_test";
+// This should always be set to false when checked in,
+// but is available as flag to speed up development of the
+// tests themselves.
+const REUSE_DEV = false;
 setEnv();
 
+import puppeteer, { Browser, Page } from "puppeteer";
 import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
@@ -11,19 +16,23 @@ import fs from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
+import { checkPresent } from "@/common/assert";
 
 // @ts-ignore
 global.location = {
-  origin: "http://localhost:5757",
+  origin: "http://localhost:1337",
 };
 
-function setEnv() {
+function setEnv(reuseDev: boolean = REUSE_DEV) {
+  process.env["PORT"] = PORT;
+  process.env["CONSOLE_TELEMETRY"] = "yes";
+  if (reuseDev === true) {
+    return;
+  }
   process.env["LS_PATH"] = `${TEST_TMP_DIR}/ls.xml`;
   process.env["LS_PROCESSED_PATH"] = `${TEST_TMP_DIR}/lsp.txt`;
   process.env["SH_RAW_PATH"] = `${TEST_TMP_DIR}/sh_raw.txt`;
   process.env["SH_PROCESSED_PATH"] = `${TEST_TMP_DIR}/shp.db`;
-  process.env["PORT"] = PORT;
-  process.env["CONSOLE_TELEMETRY"] = "yes";
   process.env["RAW_LATIN_WORDS"] = `${TEST_TMP_DIR}/lat_raw.txt`;
   process.env["LATIN_INFLECTION_DB"] = `${TEST_TMP_DIR}/latin_inflect.db`;
 }
@@ -34,23 +43,28 @@ function closeServer(server: Server): Promise<void> {
   });
 }
 
-describe("morcus.net backend integration", () => {
-  let morcus: Server | undefined = undefined;
-
-  beforeAll(async () => {
-    fs.mkdirSync(TEST_TMP_DIR, { recursive: true });
-    setEnv();
+async function setupMorcus(reuseDev: boolean = REUSE_DEV): Promise<Server> {
+  fs.mkdirSync(TEST_TMP_DIR, { recursive: true });
+  setEnv(reuseDev);
+  if (!reuseDev) {
     expect(await prodBuildSteps()).toBe(true);
-    morcus = await startMorcusServer();
-  }, 180000);
+  }
+  return startMorcusServer();
+}
 
-  afterAll(async () => {
-    if (morcus !== undefined) {
-      await closeServer(morcus);
-    }
-    fs.rmSync(TEST_TMP_DIR, { recursive: true });
-  }, 10000);
+let morcus: Server | undefined = undefined;
+beforeAll(async () => {
+  morcus = await setupMorcus(REUSE_DEV);
+}, 180000);
 
+afterAll(async () => {
+  if (morcus !== undefined) {
+    await closeServer(morcus);
+  }
+  fs.rmSync(TEST_TMP_DIR, { recursive: true });
+}, 10000);
+
+describe("morcus.net backend integration", () => {
   test("returns LS results in uninflected mode", async () => {
     const result = await callApiFull(DictsFusedApi, {
       query: "canaba",
@@ -122,5 +136,43 @@ describe("morcus.net backend integration", () => {
   test("returns DBG on request", async () => {
     const result = await callApiFull(GetWork, "phi0448.phi001.perseus-lat2");
     expect(result.data.info.title).toBe("De bello Gallico");
+  });
+});
+
+describe("E2E Puppeteer tests", () => {
+  let browser: Browser | undefined = undefined;
+  // @ts-ignore - this is always set by beforeEach
+  let page: Page = undefined;
+
+  beforeAll(async () => {
+    browser = await puppeteer.launch({ headless: "new" });
+  });
+
+  beforeEach(async () => {
+    await page?.close();
+    page = await checkPresent(browser).newPage();
+  });
+
+  afterAll(async () => {
+    await browser?.close();
+  });
+
+  it("should load the Morcus dict page by default", async () => {
+    await page.goto(global.location.origin);
+
+    expect(await page.title()).toBe("Morcus Latin Tools");
+    expect(page.url()).toMatch(/\/dicts$/);
+  });
+
+  it("should load dictionary results", async () => {
+    await page.goto(global.location.origin);
+
+    // TODO: Specifically select the dictionary tab here.
+
+    await page.keyboard.type("canaba");
+    await page.keyboard.press("Enter");
+
+    expect(await page.title()).toBe("canaba | Morcus Latin Tools");
+    expect(await page.$x('//*[contains(text(), "hovel")]')).not.toHaveLength(0);
   });
 });

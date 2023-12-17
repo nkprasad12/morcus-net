@@ -21,7 +21,7 @@ jobs:
         with:
           python-version: "3.8"
       - name: Installing npm dependencies
-        run: npm ci
+        run: npm ci --omit optional
       - name: Installing Python dependencies
         run: pip install -r requirements.txt
       - name: Running unit tests
@@ -40,7 +40,7 @@ jobs:
     steps:
       - uses: actions/checkout@v3
       - name: Installing npm dependencies
-        run: npm install
+        run: npm ci --omit optional
       - name: Running prod build step
         run: npm run build
       - uses: actions/upload-artifact@v3
