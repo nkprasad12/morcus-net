@@ -8,6 +8,7 @@ const TEST_TMP_DIR = "tmp_server_integration_test";
 const REUSE_DEV = false;
 setEnv();
 
+// @ts-ignore - puppeteer is an optional dependency.
 import puppeteer, { Browser, Page } from "puppeteer";
 import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
