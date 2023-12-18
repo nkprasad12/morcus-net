@@ -20,6 +20,10 @@ jobs:
         uses: actions/setup-python@v4
         with:
           python-version: "3.8"
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
       - name: Installing npm dependencies
         run: npm ci --omit optional
       - name: Installing Python dependencies
@@ -39,6 +43,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
       - name: Installing npm dependencies
         run: npm ci --omit optional
       - name: Running prod build step
@@ -60,6 +68,10 @@ jobs:
 
     steps:
       - uses: actions/checkout@v3
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
       - name: Installing npm dependencies
         run: npm ci
       - name: Running integration checks
