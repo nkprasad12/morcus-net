@@ -3,7 +3,6 @@ import {
   Validator,
   instanceOf,
   isArray,
-  isOneOf,
   isString,
   matches,
   maybeUndefined,
@@ -36,7 +35,13 @@ export interface ProcessedWorkNode {
    * The data for this node. Any recursive children are themselves versioned sections,
    * while raw `XmlNode` children are data attached to this node.
    */
-  children: (XmlNode | ProcessedWorkNode)[];
+  children: ProcessedWorkNode[];
+  /**
+   * The display structure of the children of this node. This must comprise
+   * XML which has <placeholder> elements, which contain the index of the
+   * TEI node in `children`. All `children` must be used exactly once.
+   */
+  structure: XmlNode;
 }
 
 export namespace ProcessedWorkNode {
@@ -45,7 +50,8 @@ export namespace ProcessedWorkNode {
     ["header", maybeUndefined(isString)],
     // Apparently it doesn't work resursively, so just check that it's
     // a JSON object.
-    ["children", isArray(isOneOf(instanceOf(XmlNode), matches([])))],
+    ["children", isArray(matches([]))],
+    ["structure", instanceOf(XmlNode)],
   ]);
 }
 

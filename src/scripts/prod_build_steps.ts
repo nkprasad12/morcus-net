@@ -20,7 +20,7 @@ const PERSEUS_CLL_ROOT =
 const PERSEUS_DOWNLOADS = [
   // Remove these next two for now, since it has strange optional
   // nested elements that are not marked in the CTS header
-  // "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
+  "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
   // "data/phi0893/phi001/phi0893.phi001.perseus-lat2.xml",
 
   // Remove this for now, since it has whitespace between elements.
