@@ -51,6 +51,7 @@ import {
   DictionaryV2Props,
 } from "@/web/client/pages/dictionary/dict_context";
 import Divider from "@mui/material/Divider";
+import { assert } from "@/common/assert";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -274,23 +275,27 @@ function LoadingMessage(props: { isSmall: boolean; textScale?: number }) {
 }
 
 function ResponsiveLayout(props: {
-  oneCol?: JSX.Element;
-  twoColSide?: JSX.Element;
-  twoColMain?: JSX.Element;
+  oneCol?: React.ReactNode;
+  twoColSide?: React.ReactNode;
+  twoColMain?: React.ReactNode;
+  contextValues: DictContextOptions;
 }) {
-  const { isSmall } = React.useContext(DictContext);
-  return isSmall ? (
-    <OneColumnLayout {...props} Content={props.oneCol || <></>} />
-  ) : (
-    <TwoColumnLayout
-      {...props}
-      SidebarContent={props.twoColSide || <></>}
-      MainContent={props.twoColMain || <></>}
-    />
+  const { isSmall } = props.contextValues;
+  return (
+    <DictContext.Provider value={props.contextValues}>
+      {isSmall ? (
+        <OneColumnLayout>{props.oneCol || <></>}</OneColumnLayout>
+      ) : (
+        <TwoColumnLayout>
+          {props.twoColSide || <></>}
+          {props.twoColMain || <></>}
+        </TwoColumnLayout>
+      )}
+    </DictContext.Provider>
   );
 }
 
-function OneColumnLayout(props: { Content: JSX.Element }) {
+function OneColumnLayout(props: { children: React.ReactNode }) {
   const { isEmbedded } = React.useContext(DictContext);
   return (
     <Container maxWidth="lg" disableGutters={isEmbedded}>
@@ -299,7 +304,7 @@ function OneColumnLayout(props: { Content: JSX.Element }) {
         id={"SearchBox"}
         className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
       />
-      {props.Content}
+      {props.children}
       <Footer
         id={"Footer"}
         className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
@@ -308,17 +313,19 @@ function OneColumnLayout(props: { Content: JSX.Element }) {
   );
 }
 
-function TwoColumnLayout(props: {
-  SidebarContent: JSX.Element;
-  MainContent: JSX.Element;
-}) {
+function TwoColumnLayout(props: { children: React.ReactNode }) {
+  const children = React.Children.toArray(props.children);
+  assert(children.length <= 2);
+  const sidebarContent = children[0] || <></>;
+  const mainContent = children[1] || <></>;
+
   return (
     <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
       <Stack direction="row" spacing={0} justifyContent="left">
-        <div style={TOC_SIDEBAR_STYLE}>{props.SidebarContent}</div>
+        <div style={TOC_SIDEBAR_STYLE}>{sidebarContent}</div>
         <div style={{ maxWidth: "10000px" }}>
           <SearchBar maxWidth="md" marginLeft="0" />
-          {props.MainContent}
+          {mainContent}
           <HorizontalPlaceholder />
           <Footer />
         </div>
@@ -612,101 +619,102 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     title,
   ]);
 
-  const contextValues: DictContextOptions = {
-    isEmbedded,
-    isSmall,
-    scale,
-    textScale,
-    embeddedOptions: props.embeddedOptions,
-    dictsToUse,
-    setDictsToUse,
-    scrollTopRef,
-  };
+  const contextValues: DictContextOptions = React.useMemo(
+    () => ({
+      isEmbedded,
+      isSmall,
+      scale,
+      textScale,
+      embeddedOptions: props.embeddedOptions,
+      dictsToUse,
+      setDictsToUse,
+      scrollTopRef,
+    }),
+    [
+      isEmbedded,
+      isSmall,
+      scale,
+      textScale,
+      props.embeddedOptions,
+      dictsToUse,
+      setDictsToUse,
+      scrollTopRef,
+    ]
+  );
 
   if (state === "Landing") {
-    return (
-      <DictContext.Provider value={contextValues}>
-        <ResponsiveLayout />
-      </DictContext.Provider>
-    );
+    return <ResponsiveLayout contextValues={contextValues} />;
   }
 
   if (state === "Error") {
     return (
-      <DictContext.Provider value={contextValues}>
-        <ResponsiveLayout
-          oneCol={<ErrorContent isSmall={isSmall} />}
-          twoColMain={<ErrorContent isSmall={isSmall} />}
-        />
-      </DictContext.Provider>
+      <ResponsiveLayout
+        contextValues={contextValues}
+        oneCol={<ErrorContent isSmall={isSmall} />}
+        twoColMain={<ErrorContent isSmall={isSmall} />}
+      />
     );
   }
 
   if (state === "No Results") {
     const noResults = <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />;
     return (
-      <DictContext.Provider value={contextValues}>
-        <ResponsiveLayout oneCol={noResults} twoColMain={noResults} />
-      </DictContext.Provider>
+      <ResponsiveLayout
+        oneCol={noResults}
+        twoColMain={noResults}
+        contextValues={contextValues}
+      />
     );
   }
 
   if (state === "Loading") {
     return (
-      <DictContext.Provider value={contextValues}>
-        <ResponsiveLayout
-          oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
-          twoColMain={
-            <LoadingMessage isSmall={isSmall} textScale={textScale} />
-          }
-        />
-      </DictContext.Provider>
+      <ResponsiveLayout
+        contextValues={contextValues}
+        oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
+        twoColMain={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
+      />
     );
   }
 
   return (
-    <DictContext.Provider value={contextValues}>
-      <ResponsiveLayout
-        oneCol={
-          <DictContext.Provider value={contextValues}>
-            {!isEmbedded &&
-              ReactDOM.createPortal(<QuickNavMenu />, document.body)}
-            <HelpSection
-              id={"HelpSection"}
-              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-            />
-            <div
-              id={"Toc"}
-              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>
-              <SummarySection
-                scrollTopRef={scrollTopRef}
-                idSearch={idSearch}
-                entries={entries}
-              />
-              <TableOfContents entries={entries} tocRef={tocRef} />
-            </div>
-            <div ref={entriesRef}>
-              <DictionaryEntries entries={entries} />
-            </div>
-          </DictContext.Provider>
-        }
-        twoColSide={
-          <DictContext.Provider value={contextValues}>
-            <TableOfContents entries={entries} tocRef={tocRef} />
-          </DictContext.Provider>
-        }
-        twoColMain={
-          <DictContext.Provider value={contextValues}>
-            <HelpSection />
+    <ResponsiveLayout
+      contextValues={contextValues}
+      oneCol={
+        <>
+          {!isEmbedded &&
+            ReactDOM.createPortal(<QuickNavMenu />, document.body)}
+          <HelpSection
+            id={"HelpSection"}
+            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+          />
+          <div
+            id={"Toc"}
+            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>
             <SummarySection
               scrollTopRef={scrollTopRef}
               idSearch={idSearch}
               entries={entries}
             />
+            <TableOfContents entries={entries} tocRef={tocRef} />
+          </div>
+          <div ref={entriesRef}>
             <DictionaryEntries entries={entries} />
-          </DictContext.Provider>
-        }
-      />
-    </DictContext.Provider>
+          </div>
+        </>
+      }
+      twoColSide={<TableOfContents entries={entries} tocRef={tocRef} />}
+      twoColMain={
+        <>
+          <HelpSection />
+          <SummarySection
+            scrollTopRef={scrollTopRef}
+            idSearch={idSearch}
+            entries={entries}
+          />
+          <DictionaryEntries entries={entries} />
+        </>
+      }
+    />
   );
 }
