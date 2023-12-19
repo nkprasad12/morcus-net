@@ -166,19 +166,16 @@ interface EntriesByDict {
   outlines: EntryOutline[];
 }
 
-interface PassthroughSearchBarProps {
-  className?: string;
-  dictsToUse: DictInfo[];
-  setDictsToUse: (dicts: DictInfo[]) => any;
-  scrollTopRef: React.RefObject<HTMLDivElement>;
-}
-interface SearchBarProps extends PassthroughSearchBarProps {
+interface SearchBarProps {
   maxWidth: "md" | "lg" | "xl";
   marginLeft?: "auto" | "0";
   id?: string;
+  className?: string;
 }
 function SearchBar(props: SearchBarProps) {
-  const { isEmbedded, isSmall } = React.useContext(DictContext);
+  const { isEmbedded, isSmall, dictsToUse, setDictsToUse, scrollTopRef } =
+    React.useContext(DictContext);
+
   if (isEmbedded) {
     return <></>;
   }
@@ -186,16 +183,16 @@ function SearchBar(props: SearchBarProps) {
     <Container
       maxWidth={props.maxWidth}
       disableGutters
-      ref={props.scrollTopRef}
+      ref={scrollTopRef}
       sx={{ marginLeft: props.marginLeft || "auto" }}
       id={props.id}
       className={props.className}>
       <DictionarySearch
         smallScreen={isSmall}
-        dicts={props.dictsToUse}
+        dicts={dictsToUse}
         setDicts={(newDicts) => {
           SearchSettings.store(newDicts);
-          props.setDictsToUse(newDicts);
+          setDictsToUse(newDicts);
         }}
       />
     </Container>
@@ -276,13 +273,11 @@ function LoadingMessage(props: { isSmall: boolean; textScale?: number }) {
   );
 }
 
-function ResponsiveLayout(
-  props: {
-    oneCol?: JSX.Element;
-    twoColSide?: JSX.Element;
-    twoColMain?: JSX.Element;
-  } & PassthroughSearchBarProps
-) {
+function ResponsiveLayout(props: {
+  oneCol?: JSX.Element;
+  twoColSide?: JSX.Element;
+  twoColMain?: JSX.Element;
+}) {
   const { isSmall } = React.useContext(DictContext);
   return isSmall ? (
     <OneColumnLayout {...props} Content={props.oneCol || <></>} />
@@ -295,20 +290,14 @@ function ResponsiveLayout(
   );
 }
 
-function OneColumnLayout(
-  props: { Content: JSX.Element } & PassthroughSearchBarProps
-) {
+function OneColumnLayout(props: { Content: JSX.Element }) {
   const { isEmbedded } = React.useContext(DictContext);
-  const { dictsToUse, setDictsToUse, scrollTopRef } = props;
   return (
     <Container maxWidth="lg" disableGutters={isEmbedded}>
       <SearchBar
         maxWidth="lg"
         id={"SearchBox"}
         className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-        dictsToUse={dictsToUse}
-        setDictsToUse={setDictsToUse}
-        scrollTopRef={scrollTopRef}
       />
       {props.Content}
       <Footer
@@ -319,25 +308,16 @@ function OneColumnLayout(
   );
 }
 
-function TwoColumnLayout(
-  props: {
-    SidebarContent: JSX.Element;
-    MainContent: JSX.Element;
-  } & PassthroughSearchBarProps
-) {
-  const { dictsToUse, setDictsToUse, scrollTopRef } = props;
+function TwoColumnLayout(props: {
+  SidebarContent: JSX.Element;
+  MainContent: JSX.Element;
+}) {
   return (
     <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
       <Stack direction="row" spacing={0} justifyContent="left">
         <div style={TOC_SIDEBAR_STYLE}>{props.SidebarContent}</div>
         <div style={{ maxWidth: "10000px" }}>
-          <SearchBar
-            maxWidth="md"
-            marginLeft="0"
-            dictsToUse={dictsToUse}
-            setDictsToUse={setDictsToUse}
-            scrollTopRef={scrollTopRef}
-          />
+          <SearchBar maxWidth="md" marginLeft="0" />
           {props.MainContent}
           <HorizontalPlaceholder />
           <Footer />
@@ -638,16 +618,15 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     scale,
     textScale,
     embeddedOptions: props.embeddedOptions,
+    dictsToUse,
+    setDictsToUse,
+    scrollTopRef,
   };
 
   if (state === "Landing") {
     return (
       <DictContext.Provider value={contextValues}>
-        <ResponsiveLayout
-          dictsToUse={dictsToUse}
-          setDictsToUse={setDictsToUse}
-          scrollTopRef={scrollTopRef}
-        />
+        <ResponsiveLayout />
       </DictContext.Provider>
     );
   }
@@ -658,9 +637,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         <ResponsiveLayout
           oneCol={<ErrorContent isSmall={isSmall} />}
           twoColMain={<ErrorContent isSmall={isSmall} />}
-          dictsToUse={dictsToUse}
-          setDictsToUse={setDictsToUse}
-          scrollTopRef={scrollTopRef}
         />
       </DictContext.Provider>
     );
@@ -670,13 +646,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     const noResults = <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />;
     return (
       <DictContext.Provider value={contextValues}>
-        <ResponsiveLayout
-          oneCol={noResults}
-          twoColMain={noResults}
-          dictsToUse={dictsToUse}
-          setDictsToUse={setDictsToUse}
-          scrollTopRef={scrollTopRef}
-        />
+        <ResponsiveLayout oneCol={noResults} twoColMain={noResults} />
       </DictContext.Provider>
     );
   }
@@ -685,9 +655,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     return (
       <DictContext.Provider value={contextValues}>
         <ResponsiveLayout
-          dictsToUse={dictsToUse}
-          setDictsToUse={setDictsToUse}
-          scrollTopRef={scrollTopRef}
           oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
           twoColMain={
             <LoadingMessage isSmall={isSmall} textScale={textScale} />
@@ -700,9 +667,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   return (
     <DictContext.Provider value={contextValues}>
       <ResponsiveLayout
-        dictsToUse={dictsToUse}
-        setDictsToUse={setDictsToUse}
-        scrollTopRef={scrollTopRef}
         oneCol={
           <DictContext.Provider value={contextValues}>
             {!isEmbedded &&

@@ -1,3 +1,4 @@
+import { DictInfo } from "@/common/dictionaries/dictionaries";
 import React from "react";
 
 const DEFAULT_DICT_OPTIONS: DictContextOptions = {
@@ -5,6 +6,9 @@ const DEFAULT_DICT_OPTIONS: DictContextOptions = {
   isSmall: false,
   scale: 1,
   textScale: 100,
+  dictsToUse: [],
+  setDictsToUse: () => {},
+  scrollTopRef: React.createRef(),
 };
 
 export interface DictContextOptions {
@@ -13,6 +17,9 @@ export interface DictContextOptions {
   isSmall: boolean;
   scale: number;
   textScale?: number;
+  dictsToUse: DictInfo[];
+  setDictsToUse: (dicts: DictInfo[]) => any;
+  scrollTopRef: React.RefObject<HTMLDivElement>;
 }
 export const DictContext: React.Context<DictContextOptions> =
   React.createContext(DEFAULT_DICT_OPTIONS);
