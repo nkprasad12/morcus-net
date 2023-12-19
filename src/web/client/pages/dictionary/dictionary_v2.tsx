@@ -629,6 +629,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       dictsToUse,
       setDictsToUse,
       scrollTopRef,
+      setInitial: props.setInitial,
     }),
     [
       isEmbedded,
@@ -639,6 +640,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       dictsToUse,
       setDictsToUse,
       scrollTopRef,
+      props.setInitial,
     ]
   );
 
