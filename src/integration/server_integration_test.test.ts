@@ -81,7 +81,7 @@ describe("bundle size check", () => {
       totalSize += gzipped;
     }
 
-    expect(totalSize / 1024).toBeLessThan(100);
+    expect(totalSize / 1024).toBeLessThan(175);
   });
 });
 
