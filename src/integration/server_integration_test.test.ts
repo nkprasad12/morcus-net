@@ -2,14 +2,11 @@
 
 const PORT = "1337";
 const TEST_TMP_DIR = "tmp_server_integration_test";
-// This should always be set to false when checked in,
-// but is available as flag to speed up development of the
-// tests themselves.
-const REUSE_DEV = false;
+const REUSE_DEV = process.env.REUSE_DEV === "1" || false;
 setEnv();
 
 // @ts-ignore - puppeteer is an optional dependency.
-import puppeteer, { Browser, Page } from "puppeteer";
+import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
@@ -17,7 +14,7 @@ import fs from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
-import { checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 
 // @ts-ignore
 global.location = {
@@ -140,9 +137,88 @@ describe("morcus.net backend integration", () => {
   });
 });
 
+type ScreenSize = "small" | "large";
+const SMALL_SCREEN: ScreenSize = "small";
+const LARGE_SCREEN: ScreenSize = "large";
+
+async function setSize(size: ScreenSize, page: Page) {
+  const isSmall = size === "small";
+  await page.setViewport({
+    width: isSmall ? 600 : 1900,
+    height: isSmall ? 900 : 1080,
+    deviceScaleFactor: 1,
+  });
+}
+
+async function getButtonByAriaLabel(
+  label: string,
+  page: Page
+): Promise<ElementHandle<HTMLButtonElement>> {
+  const results = await page.$$(`button[aria-label="${label}"]`);
+  assertEqual(
+    results.length,
+    1,
+    `Found ${results.length} buttons with label ${label}`
+  );
+  const button = results[0];
+  assert(await button.isVisible());
+  return results[0] as ElementHandle<HTMLButtonElement>;
+}
+
+async function filterNonVisible<
+  T extends { isVisible: () => Promise<boolean> }
+>(items: T[]): Promise<T[]> {
+  const results: T[] = [];
+  for (const item of items) {
+    if (await item.isVisible()) {
+      results.push(item);
+    }
+  }
+  return results;
+}
+
+async function getButtonByLabel(
+  label: string,
+  page: Page
+): Promise<ElementHandle<HTMLButtonElement>> {
+  const allResults = await page.$x(`//button[contains(., '${label}')]`);
+  const visibleResults = await filterNonVisible(allResults);
+  assertEqual(
+    visibleResults.length,
+    1,
+    `Found ${visibleResults.length} visible buttons with label ${label}`
+  );
+  return visibleResults[0] as ElementHandle<HTMLButtonElement>;
+}
+
+function wait(timeMs: number): Promise<void> {
+  return new Promise((r) => setTimeout(r, timeMs));
+}
+
+async function openTab(label: string, size: ScreenSize, page: Page) {
+  const isSmall = size === "small";
+  if (isSmall) {
+    const hamburger = await getButtonByAriaLabel("site pages", page);
+    await hamburger.click();
+    // Wait for the drawer entry transition, which is 150 ms
+    await wait(200);
+  }
+  const tabButton = await getButtonByLabel(label, page);
+  await tabButton.click();
+  if (isSmall) {
+    // Wait for the drawer exit transition, which is 150 ms
+    await wait(200);
+  }
+}
+
+async function assertHasText(text: string, page: Page) {
+  const results = await page.$x(`//*[contains(text(), "${text}")]`);
+  expect(results).not.toHaveLength(0);
+}
+
 describe("E2E Puppeteer tests", () => {
   let browser: Browser | undefined = undefined;
-  // @ts-ignore - this is always set by beforeEach
+  // @ts-expect-error - this is always set by beforeEach so leave it for convenience.
   let page: Page = undefined;
 
   beforeAll(async () => {
@@ -150,30 +226,63 @@ describe("E2E Puppeteer tests", () => {
   });
 
   beforeEach(async () => {
-    await page?.close();
     page = await checkPresent(browser).newPage();
+  });
+
+  afterEach(async () => {
+    await page?.close();
   });
 
   afterAll(async () => {
     await browser?.close();
   });
 
-  it("should load the Morcus dict page by default", async () => {
-    await page.goto(global.location.origin);
+  it.each([SMALL_SCREEN, LARGE_SCREEN])(
+    "should load the landing page on %s screen",
+    async (screenSize) => {
+      await setSize(screenSize, page);
+      await page.goto(global.location.origin);
 
-    expect(await page.title()).toBe("Morcus Latin Tools");
-    expect(page.url()).toMatch(/\/dicts$/);
-  });
+      expect(await page.title()).toBe("Morcus Latin Tools");
+      expect(page.url()).toMatch(/\/dicts$/);
+    }
+  );
 
-  it("should load dictionary results", async () => {
-    await page.goto(global.location.origin);
+  it.each([SMALL_SCREEN, LARGE_SCREEN])(
+    "should have working tab navigation on %s screen",
+    async (screenSize) => {
+      await setSize(screenSize, page);
+      await page.goto(global.location.origin);
 
-    // TODO: Specifically select the dictionary tab here.
+      await openTab("About", screenSize, page);
+      await assertHasText("GPL-3.0", page);
+      await assertHasText("CC BY-SA 4.0", page);
+    }
+  );
 
-    await page.keyboard.type("canaba");
-    await page.keyboard.press("Enter");
+  it.each([SMALL_SCREEN, LARGE_SCREEN])(
+    "should load dictionary results on %s screen",
+    async (screenSize) => {
+      await setSize(screenSize, page);
+      await page.goto(global.location.origin + "/dicts");
 
-    expect(await page.title()).toBe("canaba | Morcus Latin Tools");
-    expect(await page.$x('//*[contains(text(), "hovel")]')).not.toHaveLength(0);
-  });
+      await page.click(`[aria-label="Dictionary search box"]`);
+      await page.keyboard.type("canaba");
+      await page.keyboard.press("Enter");
+
+      expect(await page.title()).toBe("canaba | Morcus Latin Tools");
+      await assertHasText("hovel", page);
+    }
+  );
+
+  it.each([SMALL_SCREEN, LARGE_SCREEN])(
+    "should load about page on %s screen",
+    async (screenSize) => {
+      await setSize(screenSize, page);
+      await page.goto(global.location.origin + "/about");
+
+      await assertHasText("GPL-3.0", page);
+      await assertHasText("CC BY-SA 4.0", page);
+    }
+  );
 });

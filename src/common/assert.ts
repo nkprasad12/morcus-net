@@ -15,15 +15,22 @@ export function assertEqual(expected: any, actual: any, details?: string) {
   }
 }
 
+function appendMessage(base: string, message?: string): string {
+  if (message === undefined) {
+    return base;
+  }
+  return `${base} Message: ${message}`;
+}
+
 export function checkPresent<T>(
   input: T | undefined | null,
   message?: string
 ): T {
   if (input === undefined) {
-    throw new Error(`Input was undefined. Message: "${message}"`);
+    throw new Error(appendMessage("Input was undefined.", message));
   }
   if (input === null) {
-    throw new Error(`Input was null. Message: "${message}"`);
+    throw new Error(appendMessage("Input was null.", message));
   }
   return input;
 }
