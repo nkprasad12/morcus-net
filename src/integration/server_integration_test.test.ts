@@ -15,6 +15,8 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
 import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { ServerMessage } from "@/web/utils/rpc/rpc";
+import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 
 // @ts-ignore
 global.location = {
@@ -135,7 +137,30 @@ describe("morcus.net backend integration", () => {
     const result = await callApiFull(GetWork, "phi0448.phi001.perseus-lat2");
     expect(result.data.info.title).toBe("De bello Gallico");
   });
+
+  test("handles concurrent requests", async () => {
+    const fetchHabeo = () =>
+      callApiFull(DictsFusedApi, {
+        query: "habeo",
+        dicts: [LatinDict.LewisAndShort.key],
+      });
+
+    const requests: Promise<ServerMessage<DictsFusedResponse>>[] = [];
+    for (const _ of Array(10).fill(0)) {
+      requests.push(fetchHabeo());
+    }
+    await Promise.all(requests);
+
+    for (const result of requests) {
+      const articles = (await result).data[LatinDict.LewisAndShort.key];
+      expect(articles).toHaveLength(1);
+      expect(articles[0].entry.toString().includes("to have")).toBe(true);
+    }
+  });
 });
+
+type BrowserProduct = "chrome" | "firefox";
+const BROWSERS: BrowserProduct[] = ["chrome"];
 
 type ScreenSize = "small" | "large";
 const SMALL_SCREEN: ScreenSize = "small";
@@ -216,32 +241,35 @@ async function assertHasText(text: string, page: Page) {
   expect(results).not.toHaveLength(0);
 }
 
-describe("E2E Puppeteer tests", () => {
+// Just on chrome for now, but we should add firefox later.
+// It requires some extra setup steps to install the browser.
+describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
   let browser: Browser | undefined = undefined;
-  // @ts-expect-error - this is always set by beforeEach so leave it for convenience.
-  let page: Page = undefined;
+  let currentPage: Page | undefined = undefined;
 
   beforeAll(async () => {
-    browser = await puppeteer.launch({ headless: "new" });
-  });
-
-  beforeEach(async () => {
-    page = await checkPresent(browser).newPage();
+    browser = await puppeteer.launch({ headless: "new", product });
   });
 
   afterEach(async () => {
-    await page?.close();
+    await currentPage?.close();
   });
 
   afterAll(async () => {
     await browser?.close();
   });
 
+  async function getPage(size: ScreenSize, morcusPage?: string): Promise<Page> {
+    currentPage = await checkPresent(browser).newPage();
+    await setSize(size, currentPage);
+    await currentPage.goto(global.location.origin + (morcusPage || ""));
+    return currentPage;
+  }
+
   it.each([SMALL_SCREEN, LARGE_SCREEN])(
     "should load the landing page on %s screen",
     async (screenSize) => {
-      await setSize(screenSize, page);
-      await page.goto(global.location.origin);
+      const page = await getPage(screenSize);
 
       expect(await page.title()).toBe("Morcus Latin Tools");
       expect(page.url()).toMatch(/\/dicts$/);
@@ -251,8 +279,7 @@ describe("E2E Puppeteer tests", () => {
   it.each([SMALL_SCREEN, LARGE_SCREEN])(
     "should have working tab navigation on %s screen",
     async (screenSize) => {
-      await setSize(screenSize, page);
-      await page.goto(global.location.origin);
+      const page = await getPage(screenSize);
 
       await openTab("About", screenSize, page);
       await assertHasText("GPL-3.0", page);
@@ -263,8 +290,7 @@ describe("E2E Puppeteer tests", () => {
   it.each([SMALL_SCREEN, LARGE_SCREEN])(
     "should load dictionary results on %s screen",
     async (screenSize) => {
-      await setSize(screenSize, page);
-      await page.goto(global.location.origin + "/dicts");
+      const page = await getPage(screenSize, "/dicts");
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("canaba");
@@ -278,8 +304,7 @@ describe("E2E Puppeteer tests", () => {
   it.each([SMALL_SCREEN, LARGE_SCREEN])(
     "should load about page on %s screen",
     async (screenSize) => {
-      await setSize(screenSize, page);
-      await page.goto(global.location.origin + "/about");
+      const page = await getPage(screenSize, "/about");
 
       await assertHasText("GPL-3.0", page);
       await assertHasText("CC BY-SA 4.0", page);
