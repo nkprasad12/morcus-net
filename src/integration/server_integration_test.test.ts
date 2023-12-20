@@ -5,12 +5,13 @@ const TEST_TMP_DIR = "tmp_server_integration_test";
 const REUSE_DEV = process.env.REUSE_DEV === "1" || false;
 setEnv();
 
+import { gzipSync } from "zlib";
 // @ts-ignore - puppeteer is an optional dependency.
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import fs from "fs";
+import fs, { readFileSync, readdirSync } from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
@@ -63,6 +64,26 @@ afterAll(async () => {
   }
   fs.rmSync(TEST_TMP_DIR, { recursive: true });
 }, 10000);
+
+describe("bundle size check", () => {
+  const GENFILES_ROOT = "genfiles_static";
+
+  test("bundle size is within limit", () => {
+    const bundleFiles = readdirSync(GENFILES_ROOT);
+    let totalSize = 0;
+    for (const genfile of bundleFiles) {
+      if (!genfile.endsWith(".client-bundle.js")) {
+        continue;
+      }
+      const fileData = readFileSync(`${GENFILES_ROOT}/${genfile}`);
+      const gzipped = gzipSync(fileData).byteLength;
+      console.debug(`${genfile}: ${gzipped / 1024}`);
+      totalSize += gzipped;
+    }
+
+    expect(totalSize / 1024).toBeLessThan(100);
+  });
+});
 
 describe("morcus.net backend integration", () => {
   test("returns LS results in uninflected mode", async () => {
