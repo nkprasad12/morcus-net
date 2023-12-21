@@ -53,14 +53,15 @@ export namespace ReadOnlyDb {
         .join(", ")})`
     );
 
+    const isBun = process.env.BUN === "1";
     const insertAll = db.transaction(() => {
       records.forEach((record, index) => {
         const row: Record<string, any> = {};
         for (const key in record) {
-          row[`${key}`] = record[key];
+          row[isBun ? `@${key}` : key] = record[key];
         }
         if (primaryKey === ARRAY_INDEX) {
-          row["n"] = index;
+          row[isBun ? `@n` : "n"] = index;
         }
         insert.run(row);
       });
