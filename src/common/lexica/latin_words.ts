@@ -1,9 +1,9 @@
-import { Database } from "better-sqlite3";
 import { readFileSync } from "fs";
 import { assert, assertEqual, checkPresent, envVar } from "@/common/assert";
 import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { execSync } from "child_process";
+import { SqliteDb } from "@/common/sqlite/sql_db";
 
 // To generate Latin works with inflections, run the raw words list through morpheus.
 // That is, from the Morpheus directory:
@@ -160,11 +160,11 @@ export function makeMorpheusDb(
   ReadOnlyDb.saveToSql(outputPath, rows, ARRAY_INDEX, [["word"], ["lemma"]]);
 }
 
-let db: Database | undefined = undefined;
+let db: SqliteDb | undefined = undefined;
 let wordsOnly: Set<string> | undefined = undefined;
 
 export namespace LatinWords {
-  function getDb(): Database {
+  function getDb(): SqliteDb {
     if (db === undefined) {
       db = ReadOnlyDb.getDatabase(envVar("LATIN_INFLECTION_DB"));
     }

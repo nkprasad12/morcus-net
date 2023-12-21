@@ -1,9 +1,9 @@
 import fs from "fs";
 
-import Database from "better-sqlite3";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { SqliteDb } from "@/common/sqlite/sql_db";
 
 console.debug = jest.fn();
 
@@ -128,7 +128,7 @@ describe("SqlDict", () => {
     ];
     SqlDict.save(data, TEMP_FILE);
 
-    const db = new Database(TEMP_FILE, { readonly: true });
+    const db = SqliteDb.create(TEMP_FILE, { readonly: true });
     const contents = db.prepare("SELECT * FROM data").all();
 
     expect(contents).toHaveLength(2);

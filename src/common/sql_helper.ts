@@ -1,6 +1,6 @@
 import fs from "fs";
-import Database from "better-sqlite3";
 import { assert } from "@/common/assert";
+import { SqliteDb } from "@/common/sqlite/sql_db";
 
 export const ARRAY_INDEX = "@INDEX";
 
@@ -34,7 +34,7 @@ export namespace ReadOnlyDb {
     if (fs.existsSync(destination)) {
       fs.unlinkSync(destination);
     }
-    const db = new Database(destination);
+    const db = SqliteDb.create(destination);
     db.pragma("journal_mode = WAL");
     const [createTable, columnNames] = createTableCommand(
       records[0],
@@ -74,9 +74,9 @@ export namespace ReadOnlyDb {
     );
   }
 
-  export function getDatabase(dbPath: string): Database.Database {
+  export function getDatabase(dbPath: string): SqliteDb {
     try {
-      const db = new Database(dbPath, { readonly: true });
+      const db = SqliteDb.create(dbPath, { readonly: true });
       db.pragma("journal_mode = WAL");
       return db;
     } catch (e) {

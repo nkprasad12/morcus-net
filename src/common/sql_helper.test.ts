@@ -1,8 +1,8 @@
 import fs from "fs";
 
-import Database from "better-sqlite3";
 import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
+import { SqliteDb } from "@/common/sqlite/sql_db";
 
 console.debug = jest.fn();
 
@@ -20,7 +20,7 @@ function makeTable(
   ReadOnlyDb.saveToSql(TEMP_FILE, records, primaryKey, indices);
 }
 
-function getIndices(db: Database.Database): string[] {
+function getIndices(db: SqliteDb): string[] {
   return (
     db
       .prepare("SELECT name FROM sqlite_master WHERE type = 'index'")
@@ -62,7 +62,7 @@ describe("SqlDict", () => {
     ];
     makeTable(data);
 
-    const db = new Database(TEMP_FILE, { readonly: true });
+    const db = SqliteDb.create(TEMP_FILE, { readonly: true });
     const contents = db.prepare("SELECT * FROM data").all();
 
     expect(getIndices(db)).toEqual([]);
@@ -89,7 +89,7 @@ describe("SqlDict", () => {
     ];
     makeTable(data, "entry");
 
-    const db = new Database(TEMP_FILE, { readonly: true });
+    const db = SqliteDb.create(TEMP_FILE, { readonly: true });
     const contents = db.prepare("SELECT * FROM data").all();
 
     expect(getIndices(db)).toHaveLength(1);
@@ -114,7 +114,7 @@ describe("SqlDict", () => {
     ];
     makeTable(data, "entry", [["keys"]]);
 
-    const db = new Database(TEMP_FILE, { readonly: true });
+    const db = SqliteDb.create(TEMP_FILE, { readonly: true });
 
     expect(getIndices(db)).toHaveLength(2);
   });
