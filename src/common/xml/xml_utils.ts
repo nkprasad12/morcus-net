@@ -119,16 +119,20 @@ export function parseRawXml(
  *
  * @param serializedXml - A list of strings. Each string should be one XML document.
  * @param validate - Whether to validate each document.
+ * @param start - The start index to begin processing, inclusive.
+ * @param end - The end index to begin processing, exclusive.
  *
  * @yields A sequence of parsed XML nodes, one for each input.
  */
 export function* parseXmlStringsInline(
   serializedXml: string[],
-  validate: boolean = false
+  validate: boolean = false,
+  start?: number,
+  end?: number
 ): Generator<XmlNode> {
   const parser = new XMLParser(PARSE_KEEP_WHITESPACE);
-  for (const entry of serializedXml) {
-    const entryFree = parser.parse(entry)[0];
+  for (let i = start || 0; i < (end || serializedXml.length); i++) {
+    const entryFree = parser.parse(serializedXml[i])[0];
     if (validate) {
       validateXml(entryFree);
     }
