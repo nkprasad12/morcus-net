@@ -35,6 +35,12 @@ describe("SqlDict", () => {
     cleanupSqlTableFiles(TEMP_FILE);
   });
 
+  test("getDatabase throws with useful message", async () => {
+    expect(() => ReadOnlyDb.getDatabase("unknown.db")).toThrow(
+      /Unable to read.*unknown\.db/
+    );
+  });
+
   test("save removes existing contents if present", async () => {
     writeFile("foo");
 

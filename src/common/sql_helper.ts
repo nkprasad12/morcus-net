@@ -75,8 +75,12 @@ export namespace ReadOnlyDb {
   }
 
   export function getDatabase(dbPath: string): Database.Database {
-    const db = new Database(dbPath, { readonly: true });
-    db.pragma("journal_mode = WAL");
-    return db;
+    try {
+      const db = new Database(dbPath, { readonly: true });
+      db.pragma("journal_mode = WAL");
+      return db;
+    } catch (e) {
+      throw new Error(`Unable to read DB file ${dbPath}`);
+    }
   }
 }
