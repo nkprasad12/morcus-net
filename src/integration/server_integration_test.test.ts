@@ -186,6 +186,11 @@ const BROWSERS: BrowserProduct[] = ["chrome"];
 type ScreenSize = "small" | "large";
 const SMALL_SCREEN: ScreenSize = "small";
 const LARGE_SCREEN: ScreenSize = "large";
+const SIZE_VARIANTS: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
+const SCREEN_VARIANTS: (iterations: number) => [ScreenSize, number][] = (n) =>
+  [...Array(n).keys()].flatMap((i) =>
+    SIZE_VARIANTS.map((v) => [v, i + 1] as [ScreenSize, number])
+  );
 
 async function setSize(size: ScreenSize, page: Page) {
   const isSmall = size === "small";
@@ -257,6 +262,12 @@ async function openTab(label: string, size: ScreenSize, page: Page) {
   }
 }
 
+async function findText(text: string, page: Page, parentType: string = "*") {
+  const results = await page.$x(`//${parentType}[contains(text(), "${text}")]`);
+  expect(results).toHaveLength(1);
+  return results[0] as ElementHandle<Element>;
+}
+
 async function assertHasText(text: string, page: Page) {
   const results = await page.$x(`//*[contains(text(), "${text}")]`);
   expect(results).not.toHaveLength(0);
@@ -270,25 +281,23 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
   beforeAll(async () => {
     browser = await puppeteer.launch({ headless: "new", product });
-  });
-
-  afterEach(async () => {
-    await currentPage?.close();
+    currentPage = await checkPresent(browser).newPage();
   });
 
   afterAll(async () => {
+    await currentPage?.close();
     await browser?.close();
   });
 
   async function getPage(size: ScreenSize, morcusPage?: string): Promise<Page> {
-    currentPage = await checkPresent(browser).newPage();
-    await setSize(size, currentPage);
-    await currentPage.goto(global.location.origin + (morcusPage || ""));
-    return currentPage;
+    const page = checkPresent(currentPage);
+    await setSize(size, page);
+    await page.goto(global.location.origin + (morcusPage || ""));
+    return page;
   }
 
-  it.each([SMALL_SCREEN, LARGE_SCREEN])(
-    "should load the landing page on %s screen",
+  it.each(SCREEN_VARIANTS(1))(
+    "should load the landing page on %s screen #%s",
     async (screenSize) => {
       const page = await getPage(screenSize);
 
@@ -297,8 +306,8 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each([SMALL_SCREEN, LARGE_SCREEN])(
-    "should have working tab navigation on %s screen",
+  it.each(SCREEN_VARIANTS(3))(
+    "should have working tab navigation on %s screen #%s",
     async (screenSize) => {
       const page = await getPage(screenSize);
 
@@ -308,8 +317,8 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each([SMALL_SCREEN, LARGE_SCREEN])(
-    "should load dictionary results on %s screen",
+  it.each(SCREEN_VARIANTS(5))(
+    "should load dictionary results on %s screen by typing and enter #%s",
     async (screenSize) => {
       const page = await getPage(screenSize, "/dicts");
 
@@ -322,8 +331,40 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each([SMALL_SCREEN, LARGE_SCREEN])(
-    "should load about page on %s screen",
+  it.each(SCREEN_VARIANTS(5))(
+    "should load dictionary results on %s screen by arrows and autocomplete #%s",
+    async (screenSize) => {
+      const page = await getPage(screenSize, "/dicts");
+
+      await page.click(`[aria-label="Dictionary search box"]`);
+      await page.keyboard.type("can");
+      await assertHasText("cānăba", page);
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("ArrowDown");
+      await page.keyboard.press("Enter");
+
+      expect(await page.title()).toBe("cānăba | Morcus Latin Tools");
+      await assertHasText("hovel", page);
+    }
+  );
+
+  it.each(SCREEN_VARIANTS(5))(
+    "should load dictionary results on %s screen by click and autocomplete #%s",
+    async (screenSize) => {
+      const page = await getPage(screenSize, "/dicts");
+
+      await page.click(`[aria-label="Dictionary search box"]`);
+      await page.keyboard.type("can");
+      await (await findText("cānăba", page, "span")).click();
+
+      expect(await page.title()).toBe("cānăba | Morcus Latin Tools");
+      await assertHasText("hovel", page);
+    }
+  );
+
+  it.each(SCREEN_VARIANTS(1))(
+    "should load about page on %s screen #%s",
     async (screenSize) => {
       const page = await getPage(screenSize, "/about");
 
