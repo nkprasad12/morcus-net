@@ -356,6 +356,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can");
+      await assertHasText("cānăba", page);
       await (await findText("cānăba", page, "span")).click();
 
       expect(await page.title()).toBe("cānăba | Morcus Latin Tools");
