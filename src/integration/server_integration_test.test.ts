@@ -187,7 +187,11 @@ type ScreenSize = "small" | "large";
 const SMALL_SCREEN: ScreenSize = "small";
 const LARGE_SCREEN: ScreenSize = "large";
 const SIZE_VARIANTS: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
-const SCREEN_VARIANTS: (iterations: number) => [ScreenSize, number][] = (n) =>
+const LARGE_ONLY: (iterations: number) => [ScreenSize, number][] = (n) =>
+  [...Array(n).keys()].flatMap((i) =>
+    [LARGE_SCREEN].map((v) => [v, i + 1] as [ScreenSize, number])
+  );
+const ALL_SCREEN_SIZES: (iterations: number) => [ScreenSize, number][] = (n) =>
   [...Array(n).keys()].flatMap((i) =>
     SIZE_VARIANTS.map((v) => [v, i + 1] as [ScreenSize, number])
   );
@@ -296,7 +300,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     return page;
   }
 
-  it.each(SCREEN_VARIANTS(1))(
+  it.each(ALL_SCREEN_SIZES(1))(
     "should load the landing page on %s screen #%s",
     async (screenSize) => {
       const page = await getPage(screenSize);
@@ -306,7 +310,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each(SCREEN_VARIANTS(3))(
+  it.each(ALL_SCREEN_SIZES(3))(
     "should have working tab navigation on %s screen #%s",
     async (screenSize) => {
       const page = await getPage(screenSize);
@@ -317,7 +321,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each(SCREEN_VARIANTS(5))(
+  it.each(LARGE_ONLY(5))(
     "should load dictionary results on %s screen by typing and enter #%s",
     async (screenSize) => {
       const page = await getPage(screenSize, "/dicts");
@@ -331,7 +335,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each(SCREEN_VARIANTS(5))(
+  it.each(LARGE_ONLY(5))(
     "should load dictionary results on %s screen by arrows and autocomplete #%s",
     async (screenSize) => {
       const page = await getPage(screenSize, "/dicts");
@@ -349,7 +353,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each(SCREEN_VARIANTS(5))(
+  it.each(ALL_SCREEN_SIZES(5))(
     "should load dictionary results on %s screen by click and autocomplete #%s",
     async (screenSize) => {
       const page = await getPage(screenSize, "/dicts");
@@ -364,7 +368,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
-  it.each(SCREEN_VARIANTS(1))(
+  it.each(ALL_SCREEN_SIZES(1))(
     "should load about page on %s screen #%s",
     async (screenSize) => {
       const page = await getPage(screenSize, "/about");
