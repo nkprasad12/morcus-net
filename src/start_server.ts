@@ -189,7 +189,7 @@ export function startMorcusServer(): Promise<http.Server> {
   });
 }
 
-if (require.main === module) {
+if (process.env.MAIN === "start") {
   dotenv.config();
   startMorcusServer().then(() => log("Server started! Press Ctrl+C to exit."));
 }

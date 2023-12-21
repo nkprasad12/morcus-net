@@ -229,9 +229,11 @@ async function setupStartWebServer(args: any) {
   let baseCommand: string[] = ["npm", "run", "ts-node"];
   if (args.bun === true) {
     baseCommand = ["bun", "run"];
+    serverEnv.BUN = "1";
   } else if (args.transpile_only === true) {
     baseCommand.push("--", "--transpile-only");
   }
+  serverEnv.MAIN = "start";
   baseCommand.push("src/start_server.ts");
   spawnChild(baseCommand, serverEnv);
 }

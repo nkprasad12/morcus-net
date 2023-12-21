@@ -226,6 +226,6 @@ export async function prodBuildSteps(): Promise<boolean> {
   return success;
 }
 
-if (require.main === module) {
+if (process.env.MAIN === "build") {
   prodBuildSteps().then((success) => assert(success));
 }
