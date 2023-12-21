@@ -19,12 +19,9 @@ interface Bounds {
 
 async function writeFileAndWaitUntilExists(path: string, contents: string) {
   writeFileSync(path, contents, { flag: "w" });
-  await new Promise<void>(async (resolve) => {
-    while (!existsSync(path)) {
-      await new Promise<void>((r) => setTimeout(r, 50));
-    }
-    resolve();
-  });
+  while (!existsSync(path)) {
+    await new Promise<void>((r) => setTimeout(r, 50));
+  }
 }
 
 function startWorker<WorkerData, $O>(
