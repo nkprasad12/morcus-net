@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import type { Database, Options } from "better-sqlite3";
 
 export type SqliteDb = Database;

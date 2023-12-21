@@ -72,21 +72,26 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   minWidth: "min(29%, 300px)",
 };
 
+function parseQuery(query: string, isEmbedded: boolean): [string, DictInfo[]] {
+  const parts = query.split(",");
+  const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
+  const dicts = isEmbedded
+    ? LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La")
+    : parts.length > 1
+    ? LatinDict.AVAILABLE.filter((dict) => dictParts.includes(dict.key))
+    : LatinDict.AVAILABLE;
+  return [parts[0], dicts];
+}
+
 async function fetchEntry(
   input: string,
   experimentalMode: boolean,
   singleArticle: boolean,
   embedded: boolean
 ) {
-  const parts = input.split(",");
-  const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
-  const dicts = embedded
-    ? LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La")
-    : parts.length > 1
-    ? LatinDict.AVAILABLE.filter((dict) => dictParts.includes(dict.key))
-    : LatinDict.AVAILABLE;
+  const [query, dicts] = parseQuery(input, embedded);
   const result = callApiFull(DictsFusedApi, {
-    query: parts[0],
+    query,
     dicts: dicts.map((dict) => dict.key),
     mode: singleArticle ? 2 : experimentalMode || embedded ? 1 : 0,
   });
@@ -570,7 +575,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       return;
     }
     if (!isEmbedded) {
-      title.setCurrentDictWord(query);
+      title.setCurrentDictWord(parseQuery(query, isEmbedded)[0]);
     }
     setState("Loading");
     const serverResult = fetchEntry(
