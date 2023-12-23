@@ -11,7 +11,7 @@ import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import fs, { readFileSync, readdirSync } from "fs";
+import fs, { mkdirSync, readFileSync, readdirSync, rmSync } from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
@@ -23,6 +23,8 @@ import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 global.location = {
   origin: "http://localhost:1337",
 };
+
+const SCREENSHOTS_DIR = "puppeteer_screenshots";
 
 function setEnv(reuseDev: boolean = REUSE_DEV) {
   process.env["PORT"] = PORT;
@@ -282,8 +284,17 @@ async function assertHasText(text: string, page: Page) {
 describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
   let browser: Browser | undefined = undefined;
   let currentPage: Page | undefined = undefined;
+  let testName: string | undefined = undefined;
+  let screenSize: ScreenSize | undefined = undefined;
+  let iteration: number | undefined = undefined;
 
   beforeAll(async () => {
+    try {
+      rmSync(SCREENSHOTS_DIR, { recursive: true, force: true });
+    } catch {}
+    try {
+      mkdirSync(SCREENSHOTS_DIR);
+    } catch {}
     browser = await puppeteer.launch({ headless: "new", product });
     currentPage = await checkPresent(browser).newPage();
   });
@@ -292,6 +303,33 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     await currentPage?.close();
     await browser?.close();
   });
+
+  async function takeScreenshot(): Promise<void> {
+    const page = checkPresent(currentPage);
+    const tag = `${testName}.${screenSize}.n${iteration}.png`;
+    await page.screenshot({ path: `${SCREENSHOTS_DIR}/${tag}` });
+  }
+
+  function writeContext(tag: string, size: ScreenSize, i: number) {
+    testName = tag;
+    screenSize = size;
+    iteration = i;
+  }
+
+  async function checkTitleIs(expected: string): Promise<void> {
+    const page = checkPresent(currentPage);
+    let title: string | undefined = undefined;
+    for (let i = 0; i < 3; i++) {
+      title = await page.title();
+      if (title === expected) {
+        break;
+      }
+    }
+    if (title !== expected) {
+      await takeScreenshot();
+    }
+    expect(title).toBe(expected);
+  }
 
   async function getPage(size: ScreenSize, morcusPage?: string): Promise<Page> {
     const page = checkPresent(currentPage);
@@ -302,18 +340,20 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
   it.each(ALL_SCREEN_SIZES(1))(
     "should load the landing page on %s screen #%s",
-    async (screenSize) => {
+    async (screenSize, i) => {
       const page = await getPage(screenSize);
+      writeContext("loadLanding", screenSize, i);
 
-      expect(await page.title()).toBe("Morcus Latin Tools");
+      await checkTitleIs("Morcus Latin Tools");
       expect(page.url()).toMatch(/\/dicts$/);
     }
   );
 
   it.each(ALL_SCREEN_SIZES(3))(
     "should have working tab navigation on %s screen #%s",
-    async (screenSize) => {
+    async (screenSize, i) => {
       const page = await getPage(screenSize);
+      writeContext("tabNav", screenSize, i);
 
       await openTab("About", screenSize, page);
       await assertHasText("GPL-3.0", page);
@@ -323,22 +363,24 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
   it.each(LARGE_ONLY(5))(
     "should load dictionary results on %s screen by typing and enter #%s",
-    async (screenSize) => {
+    async (screenSize, i) => {
       const page = await getPage(screenSize, "/dicts");
+      writeContext("dictSearchTypeEnter", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("canaba");
       await page.keyboard.press("Enter");
 
-      expect(await page.title()).toBe("canaba | Morcus Latin Tools");
+      await checkTitleIs("canaba | Morcus Latin Tools");
       await assertHasText("hovel", page);
     }
   );
 
   it.each(LARGE_ONLY(5))(
     "should load dictionary results on %s screen by arrows and autocomplete #%s",
-    async (screenSize) => {
+    async (screenSize, i) => {
       const page = await getPage(screenSize, "/dicts");
+      writeContext("dictSearchArrowEnter", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can");
@@ -348,33 +390,51 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
 
-      expect(await page.title()).toBe("cānăba | Morcus Latin Tools");
+      await checkTitleIs("cānăba | Morcus Latin Tools");
       await assertHasText("hovel", page);
     }
   );
 
   it.each(ALL_SCREEN_SIZES(5))(
     "should load dictionary results on %s screen by click and autocomplete #%s",
-    async (screenSize) => {
+    async (screenSize, i) => {
       const page = await getPage(screenSize, "/dicts");
+      writeContext("dictSearchClick", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can");
       await assertHasText("cānăba", page);
       await (await findText("cānăba", page, "span")).click();
 
-      expect(await page.title()).toBe("cānăba | Morcus Latin Tools");
+      await checkTitleIs("cānăba | Morcus Latin Tools");
       await assertHasText("hovel", page);
     }
   );
 
   it.each(ALL_SCREEN_SIZES(1))(
     "should load about page on %s screen #%s",
-    async (screenSize) => {
+    async (screenSize, i) => {
       const page = await getPage(screenSize, "/about");
+      writeContext("aboutPage", screenSize, i);
 
       await assertHasText("GPL-3.0", page);
       await assertHasText("CC BY-SA 4.0", page);
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow linkified latin words in SH %s screen #%s",
+    async (screenSize, i) => {
+      const page = await getPage(screenSize, "/dicts");
+      writeContext("linkLatInSH", screenSize, i);
+
+      await page.keyboard.type("influence");
+      await page.keyboard.press("Enter");
+
+      await assertHasText("cohortandum", page);
+      await (await findText("cohortandum", page)).click();
+
+      expect(page.url()).toContain("/dicts?q=cohortandum");
     }
   );
 });
