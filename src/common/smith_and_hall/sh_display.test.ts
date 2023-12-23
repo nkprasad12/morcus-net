@@ -1,8 +1,28 @@
+import { makeMorpheusDb } from "@/common/lexica/latin_words";
+import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
 import {
   ShLinkResolver,
   displayShEntry,
 } from "@/common/smith_and_hall/sh_display";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
+import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
+import { unlinkSync, writeFileSync } from "fs";
+
+const MORPH_FILE = "sh_display.test.ts.tmp.morph.txt";
+const INFL_DB_FILE = "sh_display.test.ts.tmp.lat.db";
+
+beforeAll(() => {
+  process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
+  writeFileSync(MORPH_FILE, SAMPLE_MORPHEUS_OUTPUT);
+  makeMorpheusDb(MORPH_FILE, INFL_DB_FILE);
+});
+
+afterAll(() => {
+  try {
+    unlinkSync(MORPH_FILE);
+  } catch {}
+  cleanupSqlTableFiles(INFL_DB_FILE);
+});
 
 const TEST_ENTRY: ShEntry = {
   keys: ["Hi", "Hello"],
@@ -12,6 +32,12 @@ const TEST_ENTRY: ShEntry = {
     { level: 2, bullet: "1", text: "heeelo" },
     { level: 1, bullet: "II", text: "<sc>suup</sc>" },
   ],
+};
+
+const ENTRY_WITH_LAT_LINKS: ShEntry = {
+  keys: ["Hi"],
+  blurb: "<b>Greetings</b>",
+  senses: [{ level: 1, bullet: "I", text: "Salutations excibat" }],
 };
 
 const ENTRY_WITH_LINKS: ShEntry = {
@@ -75,6 +101,18 @@ describe("displayShEntry", () => {
         `</li></ol>`,
         `</div>`,
       ].join("")
+    );
+  });
+
+  it("adds links for Latin words", () => {
+    const result = displayShEntry(
+      ENTRY_WITH_LAT_LINKS,
+      57,
+      new ShLinkResolver([])
+    );
+
+    expect(result.toString()).toContain(
+      `<span class="latWord" to="excibat"></span>`
     );
   });
 

@@ -4,6 +4,7 @@ import { parseXmlStrings } from "../xml/xml_utils";
 import { assertEqual } from "@/common/assert";
 import { LINK_EDGE_CASES, SH_SKIPS } from "@/common/smith_and_hall/sh_links";
 import { expandShAbbreviationsIn } from "@/common/smith_and_hall/sh_abbreviations";
+import { LatinWords } from "@/common/lexica/latin_words";
 
 const FILLER_WORDS = new Set<string>([
   "OF",
@@ -324,10 +325,9 @@ export function displayShEntry(
     ],
     mainBlurbButton.concat(...getMarkedUpText([entry.blurb], resolver))
   );
-
-  return new XmlNode(
-    "div",
-    [],
-    [blurbText, formatSenseList(entry.senses, id, resolver)]
-  );
+  const children = [
+    LatinWords.attachLatinLinks(blurbText),
+    LatinWords.attachLatinLinks(formatSenseList(entry.senses, id, resolver)),
+  ];
+  return new XmlNode("div", [], children);
 }

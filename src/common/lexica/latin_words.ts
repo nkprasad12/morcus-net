@@ -4,6 +4,30 @@ import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { execSync } from "child_process";
 import { SqliteDb } from "@/common/sqlite/sql_db";
+import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+import { processWords, removeDiacritics } from "@/common/text_cleaning";
+
+const EXTENDED_COMMON_ENGLISH_WORDS = ["di", "sum", "simple"];
+const COMMON_ENGLISH_WORDS = new Set(
+  [
+    "a",
+    "an",
+    "as",
+    "at",
+    "i",
+    "in",
+    "is",
+    "it",
+    "do",
+    "has",
+    "his",
+    "me",
+    "of",
+    "on",
+    "the",
+    "this",
+  ].concat(...EXTENDED_COMMON_ENGLISH_WORDS)
+);
 
 // To generate Latin works with inflections, run the raw words list through morpheus.
 // That is, from the Morpheus directory:
@@ -229,5 +253,59 @@ export namespace LatinWords {
     // @ts-ignore
     const rows: LatinWordRow[] = read.all(term);
     return processMorpheusRows(rows);
+  }
+
+  function linkifyLatinWords(input: string): XmlChild[] {
+    const latinWords = allWords();
+    const fragments = processWords(input, (word) => {
+      if (COMMON_ENGLISH_WORDS.has(word)) {
+        return word;
+      }
+      const noDiacritics = removeDiacritics(word);
+      if (latinWords.has(noDiacritics)) {
+        return new XmlNode("span", [
+          ["class", "latWord"],
+          ["to", word],
+        ]);
+      }
+      const lowerCase = noDiacritics.toLowerCase();
+      if (latinWords.has(lowerCase)) {
+        return new XmlNode("span", [
+          ["class", "latWord"],
+          ["to", word.toLowerCase()],
+          ["orig", word],
+        ]);
+      }
+      return word;
+    });
+    // Combine strings that are immediately next to each other.
+    const result: XmlChild[] = [];
+    for (const fragment of fragments) {
+      const topIndex = result.length - 1;
+      const topChild = result[topIndex];
+      if (typeof fragment !== "string" || typeof topChild !== "string") {
+        result.push(fragment);
+        continue;
+      }
+      result[topIndex] = topChild + fragment;
+    }
+    return result;
+  }
+
+  export function attachLatinLinks(root: XmlNode): XmlNode {
+    const className = root.getAttr("class");
+    if (
+      className?.includes("lsHover") ||
+      className?.includes("lsSenseBullet")
+    ) {
+      return root;
+    }
+    const linkified = root.children.flatMap((child) => {
+      if (typeof child !== "string") {
+        return attachLatinLinks(child);
+      }
+      return linkifyLatinWords(child);
+    });
+    return new XmlNode(root.name, root.attrs, linkified);
   }
 }
