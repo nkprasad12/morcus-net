@@ -25,10 +25,7 @@ import { sanitizeTree } from "@/common/lewis_and_short/ls_outline";
 import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 import { LatinWords } from "@/common/lexica/latin_words";
-import {
-  TEXT_BREAK_CHARACTERS,
-  removeDiacritics,
-} from "@/common/text_cleaning";
+import { processWords, removeDiacritics } from "@/common/text_cleaning";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -988,13 +985,12 @@ export function attachLatinLinks(root: XmlNode): XmlNode {
   if (className?.includes("lsHover") || className?.includes("lsSenseBullet")) {
     return root;
   }
+  const latinWords = LatinWords.allWords();
   const linkified = root.children.flatMap((child) => {
     if (typeof child !== "string") {
       return attachLatinLinks(child);
     }
-    const latinWords = LatinWords.allWords();
-    const words = child.split(TEXT_BREAK_CHARACTERS);
-    const fragments = words.map((word) => {
+    const fragments = processWords(child, (word) => {
       if (COMMON_ENGLISH_WORDS.has(word)) {
         return word;
       }
