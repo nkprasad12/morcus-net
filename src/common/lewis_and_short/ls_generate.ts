@@ -1,4 +1,4 @@
-import { parse } from "@/common/lewis_and_short/ls_parser";
+import { getRawLsXml } from "@/common/lewis_and_short/ls_parser";
 import { assert, checkPresent, envVar } from "@/common/assert";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
@@ -9,12 +9,18 @@ import {
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
+import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 
-function* extractEntryData(rawFile: string): Generator<RawDictEntry> {
+function* extractEntryData(
+  rawFile: string,
+  start?: number,
+  end?: number
+): Generator<RawDictEntry> {
   let numHandled = 0;
-  for (const root of parse(rawFile)) {
+  const rawLsXml = getRawLsXml(rawFile);
+  for (const root of parseXmlStringsInline(rawLsXml, false, start, end)) {
     if (numHandled % 1000 === 0) {
-      console.debug(`Processed ${numHandled}`);
+      console.debug(`Processed ${numHandled + (start || 0)}`);
     }
     const orths = getOrths(root).map(mergeVowelMarkers);
     assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
@@ -35,8 +41,12 @@ function* extractEntryData(rawFile: string): Generator<RawDictEntry> {
 }
 
 export namespace GenerateLs {
-  export function processPerseusXml(rawFile: string): RawDictEntry[] {
-    return [...extractEntryData(rawFile)];
+  export function processPerseusXml(
+    rawFile: string,
+    start?: number,
+    end?: number
+  ): RawDictEntry[] {
+    return [...extractEntryData(rawFile, start, end)];
   }
 
   export function saveToDb(

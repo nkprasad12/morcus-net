@@ -154,6 +154,7 @@ export function DictionarySearch(props: {
     <>
       <SearchBox
         placeholderText="Search for a word"
+        ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
         smallScreen={props.smallScreen}
         autoFocused={nav.route.query === undefined}

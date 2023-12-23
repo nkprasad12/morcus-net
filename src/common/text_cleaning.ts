@@ -39,6 +39,38 @@ const DIACRITICS = new Map<string, string>([
   ["Ŭ", "U"],
 ]);
 
+const TEXT_BREAK_CHAR_SET = new Set(" ()[];:.,?");
+export function isTextBreakChar(c: string): boolean {
+  return TEXT_BREAK_CHAR_SET.has(c);
+}
+
+export function processWords<T>(
+  input: string,
+  handler: (word: string) => T
+): (string | T)[] {
+  if (input.length === 0) {
+    return [];
+  }
+  const results: (string | T)[] = [];
+  let lastChunkStart = 0;
+  let isInWord = !isTextBreakChar(input[0]);
+  for (let i = 0; i < input.length; i++) {
+    const isBreak = isTextBreakChar(input[i]);
+    if (isInWord && isBreak) {
+      results.push(handler(input.substring(lastChunkStart, i)));
+      isInWord = false;
+      lastChunkStart = i;
+    } else if (!isInWord && !isBreak) {
+      results.push(input.substring(lastChunkStart, i));
+      isInWord = true;
+      lastChunkStart = i;
+    }
+  }
+  const finalChunk = input.substring(lastChunkStart);
+  results.push(isInWord ? handler(finalChunk) : finalChunk);
+  return results;
+}
+
 export const TEXT_BREAK_CHARACTERS = /([ ()[\];:.,?])/;
 
 export function removeDiacritics(input: string): string {

@@ -4,6 +4,7 @@ import {
   parseCtsTeiXml,
   findCtsEncoding,
   TeiNode,
+  parseXPath,
 } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { DescendantNode, parseRawXml } from "@/common/xml/xml_utils";
@@ -27,6 +28,28 @@ describe("CtsPathData test", () => {
       { name: "B", idInfo: { key: "y", index: 0 } },
       { name: "C" },
       { name: "D", idInfo: { key: "z", index: 1 } },
+    ];
+
+    const result = CtsPathData.test(descendantNode, path);
+
+    expect(result).toStrictEqual(["1", "2"]);
+  });
+
+  it("returns expected on descendant selector without chunks", () => {
+    const path: CtsPathData[] = [
+      { name: "A" },
+      { name: "D", relation: "descendant" },
+    ];
+
+    const result = CtsPathData.test(descendantNode, path);
+
+    expect(result).toStrictEqual([]);
+  });
+
+  it("returns expected on descendant selector with chunks", () => {
+    const path: CtsPathData[] = [
+      { name: "B", relation: "descendant", idInfo: { key: "y", index: 0 } },
+      { name: "D", relation: "descendant", idInfo: { key: "z", index: 1 } },
     ];
 
     const result = CtsPathData.test(descendantNode, path);
@@ -83,6 +106,22 @@ describe("CtsPathData test", () => {
     const result = CtsPathData.test(descendantNode, path);
 
     expect(result).toBe(undefined);
+  });
+});
+
+describe("parseXPath", () => {
+  it("handles descendant paths", () => {
+    const expected: CtsPathData[] = [
+      { name: "div" },
+      { name: "div", idInfo: { key: "n", index: 1 } },
+      { name: "l", idInfo: { key: "n", index: 2 }, relation: "descendant" },
+    ];
+
+    const path = parseXPath(
+      "#xpath(/tei:div/tei:div[@n='$1']//tei:l[@n='$2'])"
+    );
+
+    expect(path).toEqual(expected);
   });
 });
 

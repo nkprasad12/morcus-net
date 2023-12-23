@@ -56,6 +56,7 @@ function DrawerMenu(props: {
       anchor="left"
       open={props.open}
       onClose={props.onClose}
+      transitionDuration={150}
       PaperProps={{
         className: "menu",
       }}>

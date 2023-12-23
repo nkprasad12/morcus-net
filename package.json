@@ -7,14 +7,16 @@
     "node": "20.x"
   },
   "scripts": {
-    "build": "npm run tsnp src/scripts/prod_build_steps.ts",
-    "start": "node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only src/start_server.ts",
+    "build": "MAIN=build npm run tsnp src/scripts/prod_build_steps.ts",
+    "start": "MAIN=start node --max-old-space-size=460 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only src/start_server.ts",
     "format": "npx eslint . && npx prettier . --write && python -m black .",
     "format-check": "npx eslint . && npx prettier . --check && python -m black . --check",
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
-    "ts-tests": "npx jest",
+    "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
+    "ts-tests": "npx jest --maxWorkers=4",
     "integration-tests": "npx jest server_integration_test --testPathIgnorePatterns=node_modules",
+    "integration-tests-dev": "REUSE_DEV=1 npx jest server_integration_test --testPathIgnorePatterns=node_modules",
     "py-tests": "python -m unittest discover",
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",
     "ts-coverage": "npx jest --coverage",
@@ -60,7 +62,7 @@
     "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "mongodb": "^5.6.0",
-    "node-fetch": "^2.6.9",
+    "node-fetch": "2.6.9",
     "socket.io": "^4.6.1",
     "ts-lib": "^0.0.5",
     "ts-loader": "^9.4.2",
@@ -87,7 +89,6 @@
     "argparse": "^2.0.1",
     "beta-code-js": "^3.0.0",
     "clean-webpack-plugin": "^4.0.0",
-    "css-loader": "^6.7.3",
     "eslint": "^8.40.0",
     "eslint-plugin-react": "^7.32.2",
     "eslint-plugin-react-hooks": "^4.6.0",
@@ -109,5 +110,8 @@
     "webpack": "^5.75.0",
     "webpack-cli": "^5.0.1",
     "webpack-dev-middleware": "^6.1.1"
+  },
+  "optionalDependencies": {
+    "puppeteer": "^21.6.1"
   }
 }

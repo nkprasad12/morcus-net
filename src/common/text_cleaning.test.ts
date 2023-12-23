@@ -1,4 +1,4 @@
-import { removeDiacritics } from "@/common/text_cleaning";
+import { processWords, removeDiacritics } from "@/common/text_cleaning";
 
 describe("removeDiacritics", () => {
   it("does not modify text without diacritics", () => {
@@ -12,5 +12,59 @@ describe("removeDiacritics", () => {
   it("handles weird tilde characters in o", () => {
     const result = removeDiacritics("Ōărĭon").toLowerCase();
     expect(result).toBe("oarion");
+  });
+});
+
+describe("processWords", () => {
+  it("splits across punctiation initial word final word", () => {
+    expect(processWords("hello darkness. (my) old", (s) => s)).toStrictEqual([
+      "hello",
+      " ",
+      "darkness",
+      ". (",
+      "my",
+      ") ",
+      "old",
+    ]);
+  });
+
+  it("splits across punctuation initial other final word", () => {
+    expect(processWords("[hello darkness. (my) old", (s) => s)).toStrictEqual([
+      "[",
+      "hello",
+      " ",
+      "darkness",
+      ". (",
+      "my",
+      ") ",
+      "old",
+    ]);
+  });
+
+  it("splits across punctuation initial word final other", () => {
+    expect(processWords("hello darkness. (my) old]", (s) => s)).toStrictEqual([
+      "hello",
+      " ",
+      "darkness",
+      ". (",
+      "my",
+      ") ",
+      "old",
+      "]",
+    ]);
+  });
+
+  it("splits across punctuation initial other final other", () => {
+    expect(processWords("[hello darkness. (my) old]", (s) => s)).toStrictEqual([
+      "[",
+      "hello",
+      " ",
+      "darkness",
+      ". (",
+      "my",
+      ") ",
+      "old",
+      "]",
+    ]);
   });
 });

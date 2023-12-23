@@ -1,8 +1,8 @@
-import Database from "better-sqlite3";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
 import { ReadOnlyDb } from "@/common/sql_helper";
+import { SqliteDb } from "@/common/sqlite/sql_db";
 
 export interface RawDictEntry {
   /** The serialized list of keys for this entry. */
@@ -23,7 +23,7 @@ export class SqlDict {
   private readonly keyToEntries = new Map<string, [number, number, number][]>();
   private readonly keys: string[];
   private readonly rawKeys: string[][];
-  private readonly db: Database.Database;
+  private readonly db: SqliteDb;
 
   constructor(dbFile: string, keyDelimiter: string) {
     this.db = ReadOnlyDb.getDatabase(dbFile);

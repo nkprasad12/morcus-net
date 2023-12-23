@@ -1,3 +1,4 @@
+import { DictInfo } from "@/common/dictionaries/dictionaries";
 import React from "react";
 
 const DEFAULT_DICT_OPTIONS: DictContextOptions = {
@@ -5,6 +6,9 @@ const DEFAULT_DICT_OPTIONS: DictContextOptions = {
   isSmall: false,
   scale: 1,
   textScale: 100,
+  dictsToUse: [],
+  setDictsToUse: () => {},
+  scrollTopRef: React.createRef(),
 };
 
 export interface DictContextOptions {
@@ -13,7 +17,12 @@ export interface DictContextOptions {
   isSmall: boolean;
   scale: number;
   textScale?: number;
+  dictsToUse: DictInfo[];
+  setDictsToUse: (dicts: DictInfo[]) => any;
+  scrollTopRef: React.RefObject<HTMLDivElement>;
+  setInitial?: (target: string) => any;
 }
+
 export const DictContext: React.Context<DictContextOptions> =
   React.createContext(DEFAULT_DICT_OPTIONS);
 
@@ -26,6 +35,8 @@ export interface DictionaryV2Props {
   embeddedOptions?: EmbeddedDictOptions;
   /** An initial query, if any. */
   initial?: string;
+  /** A setter for the new initial value, if any. */
+  setInitial?: (target: string) => any;
   /** The scale of the text size to use. 100 uses default text values */
   textScale?: number;
 }

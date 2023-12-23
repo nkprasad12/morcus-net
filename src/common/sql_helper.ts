@@ -1,6 +1,6 @@
 import fs from "fs";
-import Database from "better-sqlite3";
 import { assert } from "@/common/assert";
+import { SqliteDb } from "@/common/sqlite/sql_db";
 
 export const ARRAY_INDEX = "@INDEX";
 
@@ -34,7 +34,7 @@ export namespace ReadOnlyDb {
     if (fs.existsSync(destination)) {
       fs.unlinkSync(destination);
     }
-    const db = new Database(destination);
+    const db = SqliteDb.create(destination);
     db.pragma("journal_mode = WAL");
     const [createTable, columnNames] = createTableCommand(
       records[0],
@@ -53,14 +53,15 @@ export namespace ReadOnlyDb {
         .join(", ")})`
     );
 
+    const isBun = process.env.BUN === "1";
     const insertAll = db.transaction(() => {
       records.forEach((record, index) => {
         const row: Record<string, any> = {};
         for (const key in record) {
-          row[`${key}`] = record[key];
+          row[isBun ? `@${key}` : key] = record[key];
         }
         if (primaryKey === ARRAY_INDEX) {
-          row["n"] = index;
+          row[isBun ? `@n` : "n"] = index;
         }
         insert.run(row);
       });
@@ -74,9 +75,13 @@ export namespace ReadOnlyDb {
     );
   }
 
-  export function getDatabase(dbPath: string): Database.Database {
-    const db = new Database(dbPath, { readonly: true });
-    db.pragma("journal_mode = WAL");
-    return db;
+  export function getDatabase(dbPath: string): SqliteDb {
+    try {
+      const db = SqliteDb.create(dbPath, { readonly: true });
+      db.pragma("journal_mode = WAL");
+      return db;
+    } catch (e) {
+      throw new Error(`Unable to read DB file ${dbPath}`);
+    }
   }
 }

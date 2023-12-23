@@ -1,13 +1,12 @@
 /* istanbul ignore file */
 
 // import { parseTeiXml } from "@/common/xml/tei_utils";
-import { parse } from "@/common/lewis_and_short/ls_parser";
-import { LS_PATH } from "@/common/lewis_and_short/ls_scripts";
 import { Tally } from "@/common/misc_utils";
 import * as dotenv from "dotenv";
 import { XmlNode } from "@/common/xml/xml_node";
 import { findTextNodes } from "@/common/xml/xml_utils";
 import { LatinWords } from "@/common/lexica/latin_words";
+import { parseLsXml } from "@/common/lewis_and_short/ls_scripts";
 // import { LewisAndShort } from "@/common/lewis_and_short/ls";
 // import { LatinWords } from "@/common/lexica/latin_words";
 // import { removeDiacritics } from "@/common/text_cleaning";
@@ -23,7 +22,7 @@ const startTime = performance.now();
 
 export function schemataCounts() {
   const words = new Tally<string>();
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml()) {
     const bold: XmlNode[] = [];
     const queue: XmlNode[] = [entry];
     while (queue.length > 0) {
@@ -58,7 +57,7 @@ export function schemataCounts() {
 export function printLsSchema(): void {
   let pbs = 1;
   let cbs = 1;
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml()) {
     const queue: XmlNode[] = [entry];
     while (queue.length > 0) {
       const current = queue.pop()!;

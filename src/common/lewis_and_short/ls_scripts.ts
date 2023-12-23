@@ -3,11 +3,12 @@
 import * as dotenv from "dotenv";
 dotenv.config();
 
-import { parse } from "@/common/lewis_and_short/ls_parser";
+import { getRawLsXml } from "@/common/lewis_and_short/ls_parser";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
 import { checkPresent, envVar } from "@/common/assert";
 import { getOrths, isRegularOrth } from "@/common/lewis_and_short/ls_orths";
+import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 
 export const LS_PATH = envVar("LS_PATH");
 
@@ -17,6 +18,12 @@ interface Schema {
 }
 
 const schemaMap = new Map<string, Schema>();
+
+export function parseLsXml(
+  path: string = envVar("LS_PATH")
+): Generator<XmlNode> {
+  return parseXmlStringsInline(getRawLsXml(path));
+}
 
 export function absorb(node: XmlNode) {
   const entryType = node.name;
@@ -35,7 +42,7 @@ export function absorb(node: XmlNode) {
 }
 
 export function printLsSchema(): void {
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     absorb(entry);
   }
 
@@ -57,7 +64,7 @@ export function printAuthorAbbrevs() {
 
 export function printElementValues(name: string) {
   const valueSet = new Set<string>();
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     const matchNodes = entry.findDescendants(name);
     for (const node of matchNodes) {
       valueSet.add(XmlNode.getSoleText(node));
@@ -70,7 +77,7 @@ export function printElementsMatching(
   test: (node: XmlNode) => boolean,
   limit: number = 1000000
 ) {
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     let printed = 0;
     const unprocessed = [entry];
     while (unprocessed.length > 0) {
@@ -93,7 +100,7 @@ export function printElementsMatching(
 
 export function printUniqueElementsMatching(test: (node: XmlNode) => boolean) {
   const reported = new Set<string>();
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     const unprocessed = [entry];
     while (unprocessed.length > 0) {
       const current = checkPresent(unprocessed.pop());
@@ -115,7 +122,7 @@ export function printUniqueElementsMatching(test: (node: XmlNode) => boolean) {
 
 export function printElementAttributeTypes(name: string) {
   const valueSet = new Set<string>();
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     const matchNodes = entry.findDescendants(name);
     for (const node of matchNodes) {
       node.attrs.forEach((attribute) => valueSet.add(attribute[0]));
@@ -126,7 +133,7 @@ export function printElementAttributeTypes(name: string) {
 
 export function printElementAttributeValues(name: string, attrName: string) {
   const valueSet = new Set<string>();
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     const matchNodes = entry.findDescendants(name);
     for (const node of matchNodes) {
       const attrValue = new Map(node.attrs).get(attrName);
@@ -161,7 +168,7 @@ export function toSchemaString(
 
 export function schemataCounts(name: string, terminals: string[] = []) {
   const schemata = new Map<string, number>();
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     for (const match of entry.findDescendants(name)) {
       const schema = toSchemaString(match, terminals);
       schemata.set(schema, (schemata.get(schema) || 0) + 1);
@@ -178,7 +185,7 @@ export function printUnhandledOrths() {
   let unhandled = 0;
   const starts: [string[], string[]][] = [];
   const ends: [string[], string[]][] = [];
-  for (const entry of parse(LS_PATH)) {
+  for (const entry of parseLsXml(LS_PATH)) {
     const orths = getOrths(entry);
     if (orths.filter((orth) => !isRegularOrth(orth)).length === 0) {
       continue;

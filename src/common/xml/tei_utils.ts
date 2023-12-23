@@ -45,33 +45,61 @@ export interface CtsPathData {
     /** Which part of the match pattern is associated with this. */
     index: number;
   };
+  /** The relation this node has to the parent. */
+  relation?: "descendant";
 }
 export namespace CtsPathData {
+  function testRecursive(
+    chain: XmlNode[],
+    ctsPath: CtsPathData[]
+  ): [number, string][] | undefined {
+    if (ctsPath.length === 0 && chain.length === 0) {
+      // Both have been consumed, so return a success.
+      return [];
+    }
+    if (ctsPath.length === 0) {
+      // The entire path has been matched, so some ancestor matches, but not this node.
+      return undefined;
+    }
+    if (chain.length === 0) {
+      // The entire chain has been consumed but the xpath was not matched.
+      return undefined;
+    }
+    const nameMatches =
+      checkPresent(chain[0], "No chain").name === ctsPath[0].name;
+    const idInfo = ctsPath[0].idInfo;
+    let matchPart: [number, string] | undefined = undefined;
+    if (idInfo !== undefined) {
+      const key = chain[0].getAttr(idInfo.key);
+      if (key !== undefined) {
+        matchPart = [idInfo.index, key];
+      }
+    }
+    const attrMatches = matchPart !== undefined;
+    const isMatch = nameMatches && (idInfo === undefined || attrMatches);
+
+    if (!isMatch && ctsPath[0].relation !== "descendant") {
+      return undefined;
+    }
+    const tailResult = isMatch
+      ? testRecursive(chain.slice(1), ctsPath.slice(1))
+      : testRecursive(chain.slice(1), ctsPath);
+    if (tailResult === undefined) {
+      return undefined;
+    }
+    return matchPart === undefined
+      ? tailResult
+      : [matchPart].concat(tailResult);
+  }
+
   export function test(
     descendantNode: DescendantNode,
     ctsPath: CtsPathData[]
   ): string[] | undefined {
     const chain = [...descendantNode[1], descendantNode[0]];
-    if (chain.length !== ctsPath.length) {
-      return undefined;
-    }
-    const idParts: [number, string][] = [];
-    for (let i = 0; i < chain.length; i++) {
-      if (chain[i].name !== ctsPath[i].name) {
-        return undefined;
-      }
-      const idInfo = ctsPath[i].idInfo;
-      if (idInfo === undefined) {
-        continue;
-      }
-      const keyAttr = chain[i].getAttr(idInfo.key);
-      if (keyAttr === undefined) {
-        return undefined;
-      }
-      idParts.push([idInfo.index, keyAttr]);
-    }
-    idParts.sort((a, b) => a[0] - b[0]);
-    return idParts.map(([_, v]) => v);
+    return testRecursive(chain, ctsPath)
+      ?.sort((a, b) => a[0] - b[0])
+      ?.map(([_, v]) => v);
   }
 }
 
@@ -128,29 +156,45 @@ function extractInfo(teiRoot: XmlNode) {
   };
 }
 
-function parseXPath(xPath: string): CtsPathData[] {
+export function parseXPath(xPath: string): CtsPathData[] {
   assert(xPath.startsWith(XPATH_START));
   assert(xPath.endsWith(")"));
   const path = xPath.slice(XPATH_START.length, -1);
-  return path
-    .split("/tei:")
-    .filter((c) => c.length > 0)
-    .map((c) => {
-      const chunks = c.split("[@");
-      if (chunks.length === 1) {
-        return { name: c };
-      }
+  const pathParts = path.split("/");
+  assert(pathParts[0].length === 0);
+
+  const result: CtsPathData[] = [];
+  let nextIsDescendant = false;
+  for (const pathPart of pathParts.slice(1)) {
+    if (pathPart.length === 0) {
+      nextIsDescendant = true;
+      continue;
+    }
+    assert(pathPart.startsWith("tei:"));
+    const part = pathPart.substring(4);
+    const chunks = part.split("[@");
+
+    if (chunks.length === 1) {
+      result.push({ name: part });
+    } else {
       assert(chunks.length === 2);
       assert(chunks[1].endsWith("]"));
       const matches = checkPresent(chunks[1].match(/^(\w+)='\$(\d+)'\]$/));
-      return {
+      result.push({
         name: chunks[0],
         idInfo: {
           key: checkPresent(matches[1]),
           index: checkPresent(safeParseInt(matches[2])),
         },
-      };
-    });
+      });
+    }
+
+    if (nextIsDescendant) {
+      result[result.length - 1].relation = "descendant";
+      nextIsDescendant = false;
+    }
+  }
+  return result;
 }
 
 export function findCtsEncoding(teiRoot: XmlNode): CtsRefPattern[] {
@@ -209,6 +253,9 @@ function extractTeiContent(
       continue;
     }
     const ancestors = descendants[i][1];
+    if (ancestors.length === 0) {
+      continue;
+    }
     const parentId = CtsRefPattern.match(
       [ancestors[ancestors.length - 1], ancestors.slice(0, -1)],
       ctsPatterns

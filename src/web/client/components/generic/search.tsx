@@ -24,6 +24,7 @@ export function SearchBox<T>(props: {
   RenderOption: (props: { option: T }) => JSX.Element;
   toKey: (t: T) => string;
   toInputDisplay: (t: T) => string;
+  ariaLabel?: string;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -142,6 +143,7 @@ export function SearchBox<T>(props: {
           spellCheck="false"
           autoCapitalize="none"
           autoComplete="off"
+          aria-label={props.ariaLabel}
           value={input}
           onChange={async (e) => {
             const newInput = e.target.value;

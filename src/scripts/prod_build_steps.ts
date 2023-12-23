@@ -3,7 +3,7 @@
 import { spawnSync } from "child_process";
 import { mkdirSync, rmSync } from "fs";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
-import { assertEqual, envVar } from "@/common/assert";
+import { assert, assertEqual, envVar } from "@/common/assert";
 import { processSmithHall } from "@/common/smith_and_hall/sh_process";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
@@ -219,14 +219,13 @@ export async function prodBuildSteps(): Promise<boolean> {
   const overallStart = performance.now();
   const success = await runSteps(ALL_STEPS);
   runtimeMessage(overallStart, success);
+  console.log(
+    success ? "\x1b[32m" : "\x1b[31m",
+    "Setup " + (success ? "complete!" : "failed.")
+  );
   return success;
 }
 
-if (require.main === module) {
-  prodBuildSteps().then((status) =>
-    console.log(
-      status ? "\x1b[32m" : "\x1b[31m",
-      "Setup " + (status ? "complete!" : "failed.")
-    )
-  );
+if (process.env.MAIN === "build") {
+  prodBuildSteps().then((success) => assert(success));
 }

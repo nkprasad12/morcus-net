@@ -25,10 +25,6 @@ import { sanitizeTree } from "@/common/lewis_and_short/ls_outline";
 import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 import { LatinWords } from "@/common/lexica/latin_words";
-import {
-  TEXT_BREAK_CHARACTERS,
-  removeDiacritics,
-} from "@/common/text_cleaning";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -37,24 +33,6 @@ const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
 export interface DisplayContext {
   lastAuthor?: string;
 }
-
-const COMMON_ENGLISH_WORDS = new Set([
-  "a",
-  "an",
-  "as",
-  "at",
-  "i",
-  "in",
-  "is",
-  "it",
-  "do",
-  "has",
-  "his",
-  "me",
-  "of",
-  "on",
-  "the",
-]);
 
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
@@ -983,53 +961,6 @@ export function displayNote(
   return new XmlNode("span");
 }
 
-export function attachLatinLinks(root: XmlNode): XmlNode {
-  const className = root.getAttr("class");
-  if (className?.includes("lsHover") || className?.includes("lsSenseBullet")) {
-    return root;
-  }
-  const linkified = root.children.flatMap((child) => {
-    if (typeof child !== "string") {
-      return attachLatinLinks(child);
-    }
-    const latinWords = LatinWords.allWords();
-    const words = child.split(TEXT_BREAK_CHARACTERS);
-    const fragments = words.map((word) => {
-      if (COMMON_ENGLISH_WORDS.has(word)) {
-        return word;
-      }
-      const noDiacritics = removeDiacritics(word);
-      if (latinWords.has(noDiacritics)) {
-        return new XmlNode("span", [
-          ["class", "latWord"],
-          ["to", word],
-        ]);
-      }
-      const lowerCase = noDiacritics.toLowerCase();
-      if (latinWords.has(lowerCase)) {
-        return new XmlNode("span", [
-          ["class", "latWord"],
-          ["to", word.toLowerCase()],
-          ["orig", word],
-        ]);
-      }
-      return word;
-    });
-    const result: XmlChild[] = [];
-    for (const fragment of fragments) {
-      const topIndex = result.length - 1;
-      const topChild = result[topIndex];
-      if (typeof fragment !== "string" || typeof topChild !== "string") {
-        result.push(fragment);
-        continue;
-      }
-      result[topIndex] = topChild + fragment;
-    }
-    return result;
-  });
-  return new XmlNode(root.name, root.attrs, linkified);
-}
-
 export function formatSenseList(
   senseNodes: XmlNode[],
   context: DisplayContext
@@ -1181,5 +1112,5 @@ export function displayEntryFree(
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
   result = handleAbbreviations(result, GENERIC_EXPANSIONS, true);
   result = handleAbbreviations(result, GENERIC_HOVERS, false);
-  return attachLatinLinks(result);
+  return LatinWords.attachLatinLinks(result);
 }

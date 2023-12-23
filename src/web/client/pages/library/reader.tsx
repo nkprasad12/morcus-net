@@ -247,6 +247,7 @@ export function ReadingPage() {
                 work={typeof work === "string" ? undefined : work}
                 scale={dictScale}
                 sidebar={sidebar}
+                setSidebar={setSidebar}
                 mainWidth={mainWidth}
                 setMainWidth={setMainWidth}
                 dictScale={dictScale}
@@ -273,6 +274,7 @@ function Sidebar(props: {
   work?: PaginatedWork;
   scale: number;
   sidebar: SidebarState;
+  setSidebar: (state: SidebarState) => any;
   mainWidth: number;
   setMainWidth: (x: number) => any;
   workScale: number;
@@ -353,6 +355,9 @@ function Sidebar(props: {
           initial={sidebar.dictWord}
           textScale={props.dictScale}
           embeddedOptions={{ hideableOutline: true }}
+          setInitial={(target) =>
+            props.setSidebar({ panel: "Dict", dictWord: target })
+          }
         />
       );
     case "Outline":

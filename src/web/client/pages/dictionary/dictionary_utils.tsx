@@ -12,6 +12,10 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { InflectionData } from "@/common/dictionaries/dict_result";
 import { FontSizes } from "@/web/client/styles";
+import {
+  DictContext,
+  DictContextOptions,
+} from "@/web/client/pages/dictionary/dict_context";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -109,18 +113,30 @@ function ShLink(props: { text: string; query: string }) {
   );
 }
 
+function onLatinWordClick(
+  nav: Navigation,
+  dictContext: DictContextOptions,
+  word: string
+) {
+  if (dictContext.setInitial !== undefined) {
+    dictContext.setInitial(word);
+  } else {
+    Navigation.query(nav, `${word},LnS`, {
+      experimentalSearch: true,
+      internalSource: true,
+      canonicalPath: "/dicts",
+    });
+  }
+}
+
 function LatLink(props: { word: string; orig?: string }) {
   const nav = React.useContext(RouteContext);
+  const dictContext = React.useContext(DictContext);
+
   return (
     <span
       className="latWord"
-      onClick={() =>
-        Navigation.query(nav, `${props.word},LnS`, {
-          experimentalSearch: true,
-          internalSource: true,
-          canonicalPath: "/dicts",
-        })
-      }>
+      onClick={() => onLatinWordClick(nav, dictContext, props.word)}>
       {props.orig || props.word}
     </span>
   );

@@ -57,6 +57,9 @@ function processArticle(rawArticle: NormalizedArticle): ShEntry {
 export function shListToRaw(entries: ShEntry[]): RawDictEntry[] {
   const resolver = new ShLinkResolver(entries);
   return entries.map((entry, i) => {
+    if (i % 1000 === 0) {
+      console.debug("Processed " + i);
+    }
     const displayEntry = displayShEntry(entry, i, resolver);
     const processedEntry = {
       entry: XmlNodeSerialization.DEFAULT.serialize(displayEntry),

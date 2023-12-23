@@ -156,14 +156,9 @@ async function awaitAll(workers: Promise<void>[]) {
 }
 
 function spawnChild(command: string[], env?: NodeJS.ProcessEnv): ChildProcess {
-  const child = spawn(command[0], command.slice(1), { env: env });
-  child.stdout.on("data", (data) => {
-    const message: string = data.toString();
-    console.log(message.replace(/\n$/, ""));
-  });
-  child.stderr.on("data", (data) => {
-    const message: string = data.toString();
-    console.log(message.replace(/\n$/, ""));
+  const child = spawn(command[0], command.slice(1), {
+    env: env,
+    stdio: "inherit",
   });
   return child;
 }
@@ -197,8 +192,14 @@ function setupAndStartWebServer(args: any) {
     makeLatinInflectionDb();
   }
   if (args.build_ls === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_ls.ts"];
-    setupSteps.push([command, spawnChild(command)]);
+    const childEnv = { ...process.env };
+    let baseCommand = ["npm", "run", "tsnp"];
+    if (args.bun === true) {
+      baseCommand = ["bun", "run"];
+      childEnv.BUN = "1";
+    }
+    const command = baseCommand.concat(["src/scripts/process_ls.ts"]);
+    setupSteps.push([command, spawnChild(command, childEnv)]);
   }
   if (args.build_latin_library === true) {
     const command = ["npm", "run", "ts-node", "src/scripts/process_lat_lib.ts"];
@@ -229,9 +230,11 @@ async function setupStartWebServer(args: any) {
   let baseCommand: string[] = ["npm", "run", "ts-node"];
   if (args.bun === true) {
     baseCommand = ["bun", "run"];
+    serverEnv.BUN = "1";
   } else if (args.transpile_only === true) {
     baseCommand.push("--", "--transpile-only");
   }
+  serverEnv.MAIN = "start";
   baseCommand.push("src/start_server.ts");
   spawnChild(baseCommand, serverEnv);
 }
