@@ -548,7 +548,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
     SearchSettings.retrieve()
   );
-
   const theme = useTheme();
   const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
 
@@ -569,19 +568,18 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
 
   const { initial } = props;
   const query = isEmbedded ? initial : nav.route.query;
+  const experimentalMode =
+    settings.data.experimentalMode === true ||
+    nav.route.experimentalSearch === true;
 
   React.useEffect(() => {
     if (query === undefined) {
       return;
     }
-    if (!isEmbedded) {
-      title.setCurrentDictWord(parseQuery(query, isEmbedded)[0]);
-    }
     setState("Loading");
     const serverResult = fetchEntry(
       query,
-      settings.data.experimentalMode === true ||
-        nav.route.experimentalSearch === true,
+      experimentalMode,
       idSearch,
       isEmbedded
     );
@@ -616,13 +614,17 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   }, [
     query,
     nav.route.hash,
-    nav.route.experimentalSearch,
+    experimentalMode,
     nav.route.internalSource,
     idSearch,
     isEmbedded,
-    settings.data.experimentalMode,
-    title,
   ]);
+
+  React.useEffect(() => {
+    if (!isEmbedded && query !== undefined) {
+      title.setCurrentDictWord(parseQuery(query, isEmbedded)[0]);
+    }
+  }, [title, isEmbedded, query]);
 
   const contextValues: DictContextOptions = React.useMemo(
     () => ({
