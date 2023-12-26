@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 
+import chalk from "chalk";
 import { spawn } from "child_process";
 import { assert, assertEqual } from "@/common/assert";
 import { mkdir, rm } from "fs/promises";
@@ -13,6 +14,7 @@ export interface StepConfig {
   operation: () => Promise<void> | void;
   label?: string;
   dlInfo?: DownloadConfig | DownloadConfig[];
+  priority?: number;
 }
 
 export async function safeCreateDir(path: string): Promise<void> {
@@ -68,49 +70,104 @@ function resolveDownloads(config: StepConfig): DownloadConfig[] {
   return [info];
 }
 
-async function runStep(config: StepConfig): Promise<boolean> {
-  const label = config.label || "operation";
-  const dlInfos = resolveDownloads(config);
-
-  for (const dlInfo of dlInfos) {
+async function downloadAll(configs: DownloadConfig[]): Promise<boolean> {
+  if (configs.length === 0) {
+    return true;
+  }
+  console.log(chalk.blue("Downloading dependencies"));
+  const start = performance.now();
+  let success = true;
+  for (const dlInfo of configs) {
     try {
       await download(dlInfo.url, dlInfo.path);
     } catch (err) {
-      await cleanupDownloads(dlInfos);
-      return false;
+      success = false;
+      await cleanupDownloads(configs);
+      break;
     }
+  }
+  runtimeMessage(start, success, "Downloading");
+  return success;
+}
+
+async function runStep(config: StepConfig): Promise<boolean> {
+  const label = config.label || "operation";
+  const dlInfos = resolveDownloads(config);
+  const downloadResult = await downloadAll(dlInfos);
+  if (!downloadResult) {
+    return false;
   }
 
   let success = true;
+  const start = performance.now();
   try {
-    console.log("\x1b[32m", `Beginning ${label}`);
-    console.log("\x1b[0m", "");
+    console.log(chalk.green(`Beginning ${label}`));
     await config.operation();
   } catch (error) {
-    console.log(`${label} failed!`);
-    console.log(error);
+    console.log(chalk.red(`${label} failed!`));
+    console.log(chalk.red(error));
     success = false;
   }
+  runtimeMessage(start, success, label);
 
   await cleanupDownloads(dlInfos);
 
   return success;
 }
 
-function runtimeMessage(start: number, success: boolean): void {
+export function runtimeMessage(
+  start: number,
+  success: boolean,
+  label?: string
+): void {
   const totalMs = performance.now() - start;
   const totalSecs = (totalMs / 1000).toFixed(2);
   const message =
     (success ? "Succeeded in" : "Failed after") + ` ${totalSecs} seconds.`;
-  console.log("\x1b[34m", message);
-  console.log("\x1b[0m", "");
+  const prefix = label === undefined ? "" : `[${label}] `;
+  console.log((success ? chalk.blue : chalk.red)(prefix + message));
 }
 
-export async function runSteps(configs: StepConfig[]): Promise<boolean> {
-  for (const config of configs) {
-    const start = performance.now();
-    const success = await runStep(config);
-    runtimeMessage(start, success);
+function groupByPriority(
+  configs: StepConfig[],
+  parallel?: boolean
+): StepConfig[][] {
+  const stepMap = new Map<number, StepConfig[]>();
+  for (let i = 0; i < configs.length; i++) {
+    const config = configs[i];
+    const priority =
+      parallel && config.priority !== undefined ? config.priority : i;
+    if (!stepMap.has(priority)) {
+      stepMap.set(priority, []);
+    }
+    stepMap.get(priority)!.push(config);
+  }
+  return Array.from(stepMap.entries())
+    .sort((a, b) => a[0] - b[0])
+    .map((a) => a[1]);
+}
+
+async function runStage(steps: StepConfig[], i: number): Promise<boolean> {
+  console.log(chalk.bgGreen(`\nBeginning stage ${i + 1}\n`));
+  const stepResults = await Promise.all(steps.map(runStep));
+  let allGood = stepResults.reduce((prev, curr) => prev && curr, true);
+  if (!allGood) {
+    console.log(chalk.bgRed(`\nStage ${i + 1} failed!\n`));
+  }
+  return allGood;
+}
+
+export interface PipelineOptions {
+  parallel?: boolean;
+}
+
+export async function runPipeline(
+  configs: StepConfig[],
+  options?: PipelineOptions
+): Promise<boolean> {
+  const stages = groupByPriority(configs, options?.parallel);
+  for (let i = 0; i < stages.length; i++) {
+    const success = await runStage(stages[i], i);
     if (!success) {
       return false;
     }

@@ -1,5 +1,6 @@
 /* istanbul ignore file */
 
+import chalk from "chalk";
 import { mkdirSync, rmSync } from "fs";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { assert, envVar } from "@/common/assert";
@@ -13,7 +14,8 @@ import { writeCommitId } from "@/scripts/write_source_version";
 import {
   DownloadConfig,
   StepConfig,
-  runSteps,
+  runPipeline,
+  runtimeMessage,
   simpleStep,
 } from "@/scripts/script_utils";
 
@@ -50,15 +52,6 @@ function safeCreateDir(path: string) {
     rmSync(path, { recursive: true, force: true });
   } catch {}
   mkdirSync(path, { recursive: true });
-}
-
-function runtimeMessage(start: number, success: boolean): void {
-  const totalMs = performance.now() - start;
-  const totalSecs = (totalMs / 1000).toFixed(2);
-  const message =
-    (success ? "Succeeded in" : "Failed after") + ` ${totalSecs} seconds.`;
-  console.log("\x1b[34m", message);
-  console.log("\x1b[0m", "");
 }
 
 const SETUP_DIRS: StepConfig = {
@@ -125,11 +118,12 @@ const ALL_STEPS = [
 
 export async function prodBuildSteps(): Promise<boolean> {
   const overallStart = performance.now();
-  const success = await runSteps(ALL_STEPS);
-  runtimeMessage(overallStart, success);
+  const success = await runPipeline(ALL_STEPS);
+  runtimeMessage(overallStart, success, "Prod Build Steps");
   console.log(
-    success ? "\x1b[32m" : "\x1b[31m",
-    "Setup " + (success ? "complete!" : "failed.")
+    (success ? chalk.bgGreen : chalk.bgRed)(
+      `\nSetup ${success ? "complete!" : "failed."}\n`
+    )
   );
   return success;
 }
