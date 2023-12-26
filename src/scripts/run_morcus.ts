@@ -1,6 +1,13 @@
 /* istanbul ignore file */
 
-import { makeLatinInflectionDb } from "@/scripts/latin_inflections_export";
+import { assert } from "@/common/assert";
+import { makeMorpheusDb } from "@/common/lexica/latin_words";
+import {
+  StepConfig,
+  runCommand,
+  runPipeline,
+  shellStep,
+} from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
 import { ArgumentParser } from "argparse";
 import { ChildProcess, spawn } from "child_process";
@@ -18,7 +25,7 @@ const cleanupOperations: (() => any)[] = [];
 registerCleanup();
 const args = parseArguments();
 if (args.command === WEB_SERVER) {
-  setupAndStartWebServer(args).then(() => console.log("Kicked off server!"));
+  setupAndStartWebServer(args).then((success) => assert(success));
 } else if (args.command === WORKER) {
   awaitAll([startWorker(args, args.workerType)]);
 } else if (args.command === EDITOR) {
@@ -163,8 +170,8 @@ function spawnChild(command: string[], env?: NodeJS.ProcessEnv): ChildProcess {
   return child;
 }
 
-function setupAndStartWebServer(args: any) {
-  const setupSteps: [string[], ChildProcess][] = [];
+async function setupAndStartWebServer(args: any) {
+  const setupSteps: StepConfig[] = [];
 
   // We use the hot dev server, so we don't need to pre-build;
   if (args.no_build_client === false && args.dev !== true) {
@@ -181,15 +188,26 @@ function setupAndStartWebServer(args: any) {
       buildCommand.push("--");
     }
     buildCommand.push(...extraArgs);
-    setupSteps.push([buildCommand, spawnChild(buildCommand)]);
+    setupSteps.push({
+      operation: () => shellStep(buildCommand.join(" ")),
+      label: "Building bundle",
+      priority: 1,
+    });
+  }
+  if (args.build_latin_inflections === true) {
+    setupSteps.push({
+      operation: makeMorpheusDb,
+      label: "Building Latin inflection DB",
+      priority: 1,
+    });
   }
   if (args.build_sh === true) {
     const command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"];
-    setupSteps.push([command, spawnChild(command)]);
-  }
-
-  if (args.build_latin_inflections === true) {
-    makeLatinInflectionDb();
+    setupSteps.push({
+      operation: () => shellStep(command.join(" ")),
+      label: "Processing SH",
+      priority: 2,
+    });
   }
   if (args.build_ls === true) {
     const childEnv = { ...process.env };
@@ -199,25 +217,30 @@ function setupAndStartWebServer(args: any) {
       childEnv.BUN = "1";
     }
     const command = baseCommand.concat(["src/scripts/process_ls.ts"]);
-    setupSteps.push([command, spawnChild(command, childEnv)]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Processing LS",
+      priority: 2,
+    });
   }
   if (args.build_latin_library === true) {
     const command = ["npm", "run", "ts-node", "src/scripts/process_lat_lib.ts"];
-    setupSteps.push([command, spawnChild(command)]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" ")),
+      label: "Building Latin library",
+      priority: 2,
+    });
   }
 
-  const setupPromises = setupSteps.map(async ([command, setupStep]) => {
-    await processComplete(setupStep);
-    console.log(`Setup process completed: "${command.join(" ")}"`);
-    if (setupStep.exitCode !== 0) {
-      throw new Error(`${command.join(" ")} failed.`);
-    }
-  });
-
-  return Promise.all(setupPromises).then(() => setupStartWebServer(args));
+  const setupSuccess = await runPipeline(setupSteps, { parallel: true });
+  if (!setupSuccess) {
+    return false;
+  }
+  startWebServer(args);
+  return true;
 }
 
-async function setupStartWebServer(args: any) {
+function startWebServer(args: any) {
   const serverEnv = { ...process.env };
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
@@ -236,13 +259,18 @@ async function setupStartWebServer(args: any) {
   }
   serverEnv.MAIN = "start";
   baseCommand.push("src/start_server.ts");
-  spawnChild(baseCommand, serverEnv);
+  runCommand(baseCommand.join(" "), serverEnv);
 }
 
 async function startLsEditor() {
   const editorRoot = "src/common/lewis_and_short/editor";
-  await processComplete(
-    spawnChild(["npx", "webpack", "--config", `webpack.editor.config.js`])
-  );
-  spawnChild(["npm", "run", "ts-node", `${editorRoot}/ls_interactive.ts`]);
+  const steps: StepConfig[] = [
+    {
+      operation: () =>
+        shellStep("npx webpack --config webpack.editor.config.js"),
+      label: "Building bundle",
+    },
+  ];
+  assert(await runPipeline(steps));
+  runCommand(`npm run ts-node ${editorRoot}/ls_interactive.ts`);
 }

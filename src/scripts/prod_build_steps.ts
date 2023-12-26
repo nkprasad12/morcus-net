@@ -16,7 +16,7 @@ import {
   StepConfig,
   runPipeline,
   runtimeMessage,
-  simpleStep,
+  shellStep,
 } from "@/scripts/script_utils";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
@@ -99,7 +99,7 @@ const PROCESS_LAT_LIB: StepConfig = {
   dlInfo: PERSEUS_DOWNLOADS,
 };
 const MAKE_BUNDLE: StepConfig = {
-  operation: () => simpleStep("npx webpack -- --env production"),
+  operation: () => shellStep("npx webpack -- --env production"),
   label: "Building client bundle",
 };
 const WRITE_COMMIT_ID: StepConfig = {

@@ -24,10 +24,13 @@ export async function safeCreateDir(path: string): Promise<void> {
   await mkdir(path, { recursive: true });
 }
 
-export async function runCommand(command: string): Promise<number | null> {
+export function runCommand(
+  command: string,
+  env?: Record<string, string | undefined>
+): Promise<number | null> {
   return new Promise((resolve, reject) => {
     console.log(`Executing: '${command}'`);
-    const result = spawn(command, { shell: true, stdio: "inherit" });
+    const result = spawn(command, { shell: true, stdio: "inherit", env: env });
     result.on("error", (err) => reject(err));
     result.on("exit", () => resolve(result.exitCode));
   });
@@ -54,8 +57,11 @@ export async function cleanupDownloads(files: DownloadConfig[]): Promise<void> {
   await Promise.allSettled(removals);
 }
 
-export async function simpleStep(command: string): Promise<void> {
-  const status = await runCommand(command);
+export async function shellStep(
+  command: string,
+  env?: Record<string, string | undefined>
+): Promise<void> {
+  const status = await runCommand(command, env);
   assertEqual(status, 0, "Command had nonzero status!");
 }
 
@@ -147,10 +153,14 @@ function groupByPriority(
     .map((a) => a[1]);
 }
 
-async function runStage(steps: StepConfig[], i: number): Promise<boolean> {
-  console.log(chalk.bgGreen(`\nBeginning stage ${i + 1}\n`));
+async function runStage(
+  steps: StepConfig[],
+  i: number,
+  totalStages: number
+): Promise<boolean> {
+  console.log(chalk.bgGreen(`\nBeginning stage ${i + 1} of ${totalStages}\n`));
   const stepResults = await Promise.all(steps.map(runStep));
-  let allGood = stepResults.reduce((prev, curr) => prev && curr, true);
+  const allGood = stepResults.reduce((prev, curr) => prev && curr, true);
   if (!allGood) {
     console.log(chalk.bgRed(`\nStage ${i + 1} failed!\n`));
   }
@@ -167,7 +177,7 @@ export async function runPipeline(
 ): Promise<boolean> {
   const stages = groupByPriority(configs, options?.parallel);
   for (let i = 0; i < stages.length; i++) {
-    const success = await runStage(stages[i], i);
+    const success = await runStage(stages[i], i, stages.length);
     if (!success) {
       return false;
     }
