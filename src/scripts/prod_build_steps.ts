@@ -1,9 +1,8 @@
 /* istanbul ignore file */
 
-import { spawnSync } from "child_process";
 import { mkdirSync, rmSync } from "fs";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
-import { assert, assertEqual, envVar } from "@/common/assert";
+import { assert, envVar } from "@/common/assert";
 import { processSmithHall } from "@/common/smith_and_hall/sh_process";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
@@ -11,6 +10,12 @@ import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
+import {
+  DownloadConfig,
+  StepConfig,
+  runSteps,
+  simpleStep,
+} from "@/scripts/script_utils";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const PERSEUS_CLL_TAG = "0.0.6853394170";
@@ -30,19 +35,6 @@ const PERSEUS_DOWNLOADS = [
   "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
 ].map(perseusDownloadConfig);
 
-interface DownloadConfig {
-  url: string;
-  path: string;
-}
-
-interface StepConfig {
-  operation: () => Promise<void> | void;
-  options?: {
-    label?: string;
-    dlInfo?: DownloadConfig | DownloadConfig[];
-  };
-}
-
 function perseusUrl(resource: string): string {
   return `${PERSEUS_CLL_ROOT}/${PERSEUS_CLL_TAG}/${resource}`;
 }
@@ -60,73 +52,6 @@ function safeCreateDir(path: string) {
   mkdirSync(path, { recursive: true });
 }
 
-function syncProc(command: string): number | null {
-  console.log(`Executing: '${command}'`);
-  const result = spawnSync(command, { shell: true, stdio: "inherit" });
-  if (result.status !== 0) {
-    console.log(result.error?.message);
-  }
-  return result.status;
-}
-
-function download(url: string, path: string): number | null {
-  return syncProc(`curl --compressed ${url} > ${path}`);
-}
-
-function cleanupDownloads(files: DownloadConfig[]): void {
-  for (const dlFile of files) {
-    const path = dlFile.path;
-    console.log(`Attempting to clean up ${path}`);
-    try {
-      rmSync(path);
-    } catch {}
-  }
-}
-
-function simpleStep(command: string): void {
-  const status = syncProc(command);
-  assertEqual(status, 0, "Command had nonzero status!");
-}
-
-function resolveDowloads(config: StepConfig): DownloadConfig[] {
-  const info = config.options?.dlInfo;
-  if (info === undefined) {
-    return [];
-  }
-  if (Array.isArray(info)) {
-    return info;
-  }
-  return [info];
-}
-
-async function runStep(config: StepConfig): Promise<boolean> {
-  const label = config.options?.label || "operation";
-  const dlInfos = resolveDowloads(config);
-
-  for (const dlInfo of dlInfos) {
-    const dlStatus = download(dlInfo.url, dlInfo.path);
-    if (dlStatus !== 0) {
-      cleanupDownloads(dlInfos);
-      return false;
-    }
-  }
-
-  let success = true;
-  try {
-    console.log("\x1b[32m", `Beginning ${label}`);
-    console.log("\x1b[0m", "");
-    await config.operation();
-  } catch (error) {
-    console.log(`${label} failed!`);
-    console.log(error);
-    success = false;
-  }
-
-  cleanupDownloads(dlInfos);
-
-  return success;
-}
-
 function runtimeMessage(start: number, success: boolean): void {
   const totalMs = performance.now() - start;
   const totalSecs = (totalMs / 1000).toFixed(2);
@@ -136,33 +61,19 @@ function runtimeMessage(start: number, success: boolean): void {
   console.log("\x1b[0m", "");
 }
 
-async function runSteps(configs: StepConfig[]): Promise<boolean> {
-  for (const config of configs) {
-    const start = performance.now();
-    const success = await runStep(config);
-    runtimeMessage(start, success);
-    if (!success) {
-      return false;
-    }
-  }
-  return true;
-}
-
 const SETUP_DIRS: StepConfig = {
   operation: () => {
     safeCreateDir(LIB_DEFAULT_DIR);
     safeCreateDir(RAW_LAT_LIB_DIR);
   },
-  options: { label: "Setting up directories" },
+  label: "Setting up directories",
 };
 const MAKE_LS: StepConfig = {
   operation: GenerateLs.saveToDb,
-  options: {
-    label: "Lewis and Short DB creation",
-    dlInfo: {
-      url: "https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml",
-      path: envVar("LS_PATH"),
-    },
+  label: "Lewis and Short DB creation",
+  dlInfo: {
+    url: "https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml",
+    path: envVar("LS_PATH"),
   },
 };
 const MAKE_SH: StepConfig = {
@@ -171,22 +82,18 @@ const MAKE_SH: StepConfig = {
     const dbReady = shListToRaw(unprocessed);
     SqlDict.save(dbReady, envVar("SH_PROCESSED_PATH"));
   },
-  options: {
-    label: "Smith and Hall DB creation",
-    dlInfo: {
-      url: "https://raw.githubusercontent.com/nkprasad12/smithandhall/v1edits/sh_F2_latest.txt",
-      path: envVar("SH_RAW_PATH"),
-    },
+  label: "Smith and Hall DB creation",
+  dlInfo: {
+    url: "https://raw.githubusercontent.com/nkprasad12/smithandhall/v1edits/sh_F2_latest.txt",
+    path: envVar("SH_RAW_PATH"),
   },
 };
 const MAKE_INFL_DB: StepConfig = {
   operation: makeMorpheusDb,
-  options: {
-    label: "Inflection DB creation",
-    dlInfo: {
-      url: "https://raw.githubusercontent.com/nkprasad12/morcus-raw-data/main/morpheus_out_aug1_suff_removed.txt",
-      path: envVar("RAW_LATIN_WORDS"),
-    },
+  label: "Inflection DB creation",
+  dlInfo: {
+    url: "https://raw.githubusercontent.com/nkprasad12/morcus-raw-data/main/morpheus_out_aug1_suff_removed.txt",
+    path: envVar("RAW_LATIN_WORDS"),
   },
 };
 const PROCESS_LAT_LIB: StepConfig = {
@@ -195,15 +102,16 @@ const PROCESS_LAT_LIB: StepConfig = {
       LIB_DEFAULT_DIR,
       PERSEUS_DOWNLOADS.map((dl) => dl.path)
     ),
-  options: { label: "Latin library processing", dlInfo: PERSEUS_DOWNLOADS },
+  label: "Latin library processing",
+  dlInfo: PERSEUS_DOWNLOADS,
 };
 const MAKE_BUNDLE: StepConfig = {
   operation: () => simpleStep("npx webpack -- --env production"),
-  options: { label: "Building client bundle" },
+  label: "Building client bundle",
 };
 const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
-  options: { label: "Writing commit hash" },
+  label: "Writing commit hash",
 };
 const ALL_STEPS = [
   SETUP_DIRS,
