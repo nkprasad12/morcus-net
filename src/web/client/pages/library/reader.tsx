@@ -24,7 +24,6 @@ import { usePersistedNumber } from "@/web/client/pages/library/persisted_setting
 import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
   SettingsText,
-  SettingSlider,
   InfoText,
   capitalizeWords,
   NavIcon,
@@ -36,6 +35,10 @@ import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
 import Typography from "@mui/material/Typography";
 import { FontSizes } from "@/web/client/styles";
+import {
+  ReaderSettings,
+  ReaderSettingsProps,
+} from "@/web/client/pages/library/reader_settings";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -207,10 +210,10 @@ export function ReadingPage() {
         setSidebar={setSidebar}
         mainWidth={mainWidth}
         setMainWidth={setMainWidth}
-        dictScale={dictScale}
-        setDictScale={setDictScale}
-        workScale={workScale}
-        setWorkScale={setWorkScale}
+        sideScale={dictScale}
+        setSideScale={setDictScale}
+        mainScale={workScale}
+        setMainScale={setWorkScale}
         totalWidth={totalWidth}
         setTotalWidth={setTotalWidth}
       />
@@ -223,82 +226,16 @@ interface SidebarState {
   panel: "Outline" | "Dict" | "Settings" | "Attribution";
 }
 
-function Sidebar(props: {
+interface SidebarProps extends ReaderSettingsProps {
   work?: PaginatedWork;
-  scale: number;
   sidebar: SidebarState;
   setSidebar: (state: SidebarState) => any;
-  mainWidth: number;
-  setMainWidth: (x: number) => any;
-  workScale: number;
-  setWorkScale: (x: number) => any;
-  dictScale: number;
-  setDictScale: (x: number) => any;
-  totalWidth: number;
-  setTotalWidth: (x: number) => any;
-}) {
-  const scale = props.scale;
+}
+function Sidebar(props: SidebarProps) {
   const sidebar = props.sidebar;
   switch (sidebar.panel) {
     case "Settings":
-      return (
-        <>
-          <details>
-            <summary>
-              <SettingsText message="Layout settings" scale={scale} />
-            </summary>
-            <SettingSlider
-              value={props.totalWidth}
-              setValue={props.setTotalWidth}
-              label="Total width"
-              min={0}
-              max={3}
-              step={1}
-              scale={scale}
-              disableLabels
-            />
-            <SettingSlider
-              value={props.mainWidth}
-              setValue={props.setMainWidth}
-              label="Main width"
-              min={32}
-              max={80}
-              step={8}
-              scale={scale}
-            />
-          </details>
-          <details>
-            <summary>
-              <SettingsText message="Main column settings" scale={scale} />
-            </summary>
-            <SettingSlider
-              value={props.workScale}
-              setValue={props.setWorkScale}
-              label="Text size"
-              tag="Main column"
-              min={50}
-              max={150}
-              step={10}
-              scale={scale}
-            />
-          </details>
-          <details>
-            <summary>
-              <SettingsText message="Side column settings" scale={scale} />
-            </summary>
-            <SettingSlider
-              value={props.dictScale}
-              setValue={props.setDictScale}
-              label="Text size"
-              tag="Side column"
-              min={50}
-              max={150}
-              step={10}
-              scale={scale}
-            />
-          </details>
-        </>
-      );
+      return <ReaderSettings {...props} />;
     case "Dict":
       return sidebar.dictWord === undefined ? (
         <InfoText text="Click on a word for dictionary and inflection lookups." />
@@ -306,7 +243,7 @@ function Sidebar(props: {
         <DictionaryViewV2
           embedded
           initial={sidebar.dictWord}
-          textScale={props.dictScale}
+          textScale={props.mainScale}
           embeddedOptions={{ hideableOutline: true }}
           setInitial={(target) =>
             props.setSidebar({ panel: "Dict", dictWord: target })
