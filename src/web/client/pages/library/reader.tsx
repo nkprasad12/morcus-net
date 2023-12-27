@@ -1,3 +1,5 @@
+/** @jsxImportSource @emotion/react */
+
 import {
   DocumentInfo,
   ProcessedWork,
@@ -14,12 +16,11 @@ import Settings from "@mui/icons-material/Settings";
 import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
 import Toc from "@mui/icons-material/Toc";
-import { CSSProperties, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
-import Container from "@mui/material/Container";
 import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
   SettingsText,
@@ -29,42 +30,13 @@ import {
   NavIcon,
   TooltipNavIcon,
   AppText,
+  BaseReaderLayout,
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
 import Typography from "@mui/material/Typography";
 import { FontSizes } from "@/web/client/styles";
 
-// We need to come up a with a better way to deal with this, since
-// Experimentally for large screen mode this is 64 but honestly who knows
-// about the true range.
-const APP_BAR_MAX_HEIGHT = 64;
-const COLUMN_TOP_MARGIN = 8;
-const COLUMN_BOTTON_MARGIN = 8;
-const CONTAINER_STYLE: CSSProperties = {
-  height:
-    window.innerHeight -
-    APP_BAR_MAX_HEIGHT -
-    COLUMN_TOP_MARGIN -
-    COLUMN_BOTTON_MARGIN,
-};
-const COLUMN_STYLE: CSSProperties = {
-  height: "100%",
-  float: "left",
-  width: "48%",
-  overflow: "auto",
-  boxSizing: "border-box",
-  marginTop: COLUMN_TOP_MARGIN,
-  marginBottom: COLUMN_BOTTON_MARGIN,
-  marginLeft: "1%",
-  marginRight: "1%",
-};
-const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | false)[] = [
-  "lg",
-  "xl",
-  "xxl",
-  false,
-];
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
 interface WorkPage {
@@ -178,90 +150,71 @@ export function ReadingPage() {
   }, [nav.route.query]);
 
   return (
-    <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
-      <div
-        style={{
-          ...COLUMN_STYLE,
-          width: `${mainWidth}%`,
-        }}>
-        <WorkColumn
-          setSidebar={(newSidebar) => {
-            // @ts-ignore
-            sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
-            setSidebar(newSidebar);
-          }}
-          textScale={workScale}
-          work={work}
-          currentPage={currentPage}
+    <BaseReaderLayout
+      mainWidth={mainWidth}
+      totalWidth={totalWidth}
+      sidebarRef={sidebarRef}>
+      <WorkColumn
+        setSidebar={(newSidebar) => {
+          // @ts-ignore
+          sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
+          setSidebar(newSidebar);
+        }}
+        textScale={workScale}
+        work={work}
+        currentPage={currentPage}
+      />
+      <>
+        <NavIcon
+          Icon={<Toc />}
+          label="Outline"
+          onClick={() => setSidebar({ panel: "Outline" })}
+          extraClasses={
+            sidebar.panel === "Outline" ? ["selectedSidePanelTab"] : undefined
+          }
         />
-      </div>
-      <div
-        style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}
-        ref={sidebarRef}>
-        <ContentBox isSmall>
-          <>
-            <div className="readerIconBar">
-              <NavIcon
-                Icon={<Toc />}
-                label="Outline"
-                onClick={() => setSidebar({ panel: "Outline" })}
-                extraClasses={
-                  sidebar.panel === "Outline"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-              <NavIcon
-                Icon={<MenuBook />}
-                label="Dictionary"
-                onClick={() => setSidebar({ panel: "Dict" })}
-                extraClasses={
-                  sidebar.panel === "Dict"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-              <NavIcon
-                Icon={<Settings />}
-                label="Reader settings"
-                onClick={() => setSidebar({ panel: "Settings" })}
-                extraClasses={
-                  sidebar.panel === "Settings"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-              <NavIcon
-                Icon={<Info />}
-                label="Attribution"
-                onClick={() => setSidebar({ panel: "Attribution" })}
-                extraClasses={
-                  sidebar.panel === "Attribution"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-            </div>
-            <div style={{ paddingRight: "8px" }}>
-              <Sidebar
-                work={typeof work === "string" ? undefined : work}
-                scale={dictScale}
-                sidebar={sidebar}
-                setSidebar={setSidebar}
-                mainWidth={mainWidth}
-                setMainWidth={setMainWidth}
-                dictScale={dictScale}
-                setDictScale={setDictScale}
-                workScale={workScale}
-                setWorkScale={setWorkScale}
-                totalWidth={totalWidth}
-                setTotalWidth={setTotalWidth}
-              />
-            </div>
-          </>
-        </ContentBox>
-      </div>
-    </Container>
+        <NavIcon
+          Icon={<MenuBook />}
+          label="Dictionary"
+          onClick={() => setSidebar({ panel: "Dict" })}
+          extraClasses={
+            sidebar.panel === "Dict" ? ["selectedSidePanelTab"] : undefined
+          }
+        />
+        <NavIcon
+          Icon={<Settings />}
+          label="Reader settings"
+          onClick={() => setSidebar({ panel: "Settings" })}
+          extraClasses={
+            sidebar.panel === "Settings" ? ["selectedSidePanelTab"] : undefined
+          }
+        />
+        <NavIcon
+          Icon={<Info />}
+          label="Attribution"
+          onClick={() => setSidebar({ panel: "Attribution" })}
+          extraClasses={
+            sidebar.panel === "Attribution"
+              ? ["selectedSidePanelTab"]
+              : undefined
+          }
+        />
+      </>
+      <Sidebar
+        work={typeof work === "string" ? undefined : work}
+        scale={dictScale}
+        sidebar={sidebar}
+        setSidebar={setSidebar}
+        mainWidth={mainWidth}
+        setMainWidth={setMainWidth}
+        dictScale={dictScale}
+        setDictScale={setDictScale}
+        workScale={workScale}
+        setWorkScale={setWorkScale}
+        totalWidth={totalWidth}
+        setTotalWidth={setTotalWidth}
+      />
+    </BaseReaderLayout>
   );
 }
 
