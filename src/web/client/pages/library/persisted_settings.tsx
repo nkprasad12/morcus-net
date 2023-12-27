@@ -4,7 +4,7 @@ import {
   encodeMessage,
   isNumber,
 } from "@/web/utils/rpc/parsing";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 function getStored<T>(key: string, validator: Validator<T>): T | undefined {
   const stored = localStorage.getItem(key);
@@ -25,10 +25,13 @@ export function usePersistedState<T>(
 ): [T, (t: T) => any] {
   const stored = getStored(storageKey, validator);
   const [value, setValue] = useState<T>(stored || defaultValue);
-  const wrappedSetter = (t: T) => {
-    localStorage.setItem(storageKey, encodeMessage(t));
-    setValue(t);
-  };
+  const wrappedSetter = useCallback(
+    (t: T) => {
+      localStorage.setItem(storageKey, encodeMessage(t));
+      setValue(t);
+    },
+    [storageKey]
+  );
   return [value, wrappedSetter];
 }
 
