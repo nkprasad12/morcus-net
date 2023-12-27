@@ -7,13 +7,10 @@ import {
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { Navigation, RouteContext } from "@/web/client/components/router";
-import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { WORK_PAGE } from "@/web/client/pages/library/common";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
-import Settings from "@mui/icons-material/Settings";
-import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
 import Toc from "@mui/icons-material/Toc";
 import { useContext, useEffect, useState } from "react";
@@ -36,9 +33,13 @@ import { assertEqual } from "@/common/assert";
 import Typography from "@mui/material/Typography";
 import { FontSizes } from "@/web/client/styles";
 import {
+  DEFAULT_SIDEBAR_TAB_CONFIGS,
+  DefaultSidebarTab,
   EmbeddedDictionary,
   ReaderSettings,
   ReaderSettingsProps,
+  ReaderSideNavbar,
+  ReaderSideTabConfig,
 } from "@/web/client/pages/library/reader_sidebar_components";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
@@ -168,42 +169,11 @@ export function ReadingPage() {
         work={work}
         currentPage={currentPage}
       />
-      <>
-        <NavIcon
-          Icon={<Toc />}
-          label="Outline"
-          onClick={() => setSidebar({ panel: "Outline" })}
-          extraClasses={
-            sidebar.panel === "Outline" ? ["selectedSidePanelTab"] : undefined
-          }
-        />
-        <NavIcon
-          Icon={<MenuBook />}
-          label="Dictionary"
-          onClick={() => setSidebar({ panel: "Dict" })}
-          extraClasses={
-            sidebar.panel === "Dict" ? ["selectedSidePanelTab"] : undefined
-          }
-        />
-        <NavIcon
-          Icon={<Settings />}
-          label="Reader settings"
-          onClick={() => setSidebar({ panel: "Settings" })}
-          extraClasses={
-            sidebar.panel === "Settings" ? ["selectedSidePanelTab"] : undefined
-          }
-        />
-        <NavIcon
-          Icon={<Info />}
-          label="Attribution"
-          onClick={() => setSidebar({ panel: "Attribution" })}
-          extraClasses={
-            sidebar.panel === "Attribution"
-              ? ["selectedSidePanelTab"]
-              : undefined
-          }
-        />
-      </>
+      <ReaderSideNavbar
+        currentTab={sidebar.panel}
+        setCurrentTab={(panel) => setSidebar({ panel })}
+        tabs={SIDEBAR_PANEL_ICONS}
+      />
       <Sidebar
         work={typeof work === "string" ? undefined : work}
         scale={dictScale}
@@ -222,10 +192,17 @@ export function ReadingPage() {
   );
 }
 
+type SidebarPanel = "Outline" | "Attribution" | DefaultSidebarTab;
 interface SidebarState {
   dictWord?: string;
-  panel: "Outline" | "Dict" | "Settings" | "Attribution";
+  panel: SidebarPanel;
 }
+
+const SIDEBAR_PANEL_ICONS: ReaderSideTabConfig<SidebarPanel>[] = [
+  { tab: "Outline", Icon: <Toc /> },
+  ...DEFAULT_SIDEBAR_TAB_CONFIGS,
+  { tab: "Attribution", Icon: <Info /> },
+];
 
 interface SidebarProps extends ReaderSettingsProps {
   work?: PaginatedWork;

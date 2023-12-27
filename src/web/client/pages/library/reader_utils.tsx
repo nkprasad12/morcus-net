@@ -70,7 +70,7 @@ export function BaseReaderLayout(
         ref={sidebarRef}>
         <ContentBox isSmall>
           <>
-            <div className="readerIconBar">{sidebarBar}</div>
+            {sidebarBar}
             <div style={{ paddingRight: "8px" }}>{sidebarContent}</div>
           </>
         </ContentBox>

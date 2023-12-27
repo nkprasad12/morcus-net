@@ -1,6 +1,9 @@
+import Settings from "@mui/icons-material/Settings";
+import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import {
   InfoText,
+  NavIcon,
   SettingSlider,
   SettingsText,
 } from "@/web/client/pages/library/reader_utils";
@@ -122,5 +125,64 @@ export function ReaderSettings(props: ReaderSettingsProps) {
         />
       </details>
     </>
+  );
+}
+
+export type SideTabType = string;
+interface ReaderSideNavIconProps<T> {
+  Icon: JSX.Element;
+  tab: T;
+  onTabClicked: (t: T) => any;
+  currentlySelected: T;
+}
+function ReaderSideNavIcon<T extends SideTabType>(
+  props: ReaderSideNavIconProps<T>
+) {
+  const isSelected = props.currentlySelected === props.tab;
+  return (
+    <NavIcon
+      Icon={props.Icon}
+      label="Outline"
+      onClick={() => props.onTabClicked(props.tab)}
+      extraClasses={isSelected ? ["selectedSidePanelTab"] : undefined}
+    />
+  );
+}
+
+export const DEFAULT_SIDEBAR_TAB_CONFIGS: ReaderSideTabConfig<DefaultSidebarTab>[] =
+  [
+    { tab: "Dict", Icon: <MenuBook /> },
+    { tab: "Settings", Icon: <Settings /> },
+  ];
+export type DefaultSidebarTab = "Dict" | "Settings";
+export interface ReaderSideTabConfig<T> {
+  /** The icon to display in the tab. */
+  Icon: JSX.Element;
+  /** The identifier for this tab. */
+  tab: T;
+}
+export interface ReaderSideNavbarProps<T> {
+  /** The tabs to display in the bar. */
+  tabs: ReaderSideTabConfig<T>[];
+  /** The currently selected tab. */
+  currentTab: T;
+  /** The callback invoked to set the currently selected tab. */
+  setCurrentTab: (t: T) => any;
+}
+export function ReaderSideNavbar<T extends SideTabType>(
+  props: ReaderSideNavbarProps<T>
+) {
+  return (
+    <div className="readerIconBar">
+      {props.tabs.map((tab) => (
+        <ReaderSideNavIcon
+          Icon={tab.Icon}
+          tab={tab.tab}
+          key={tab.tab}
+          onTabClicked={props.setCurrentTab}
+          currentlySelected={props.currentTab}
+        />
+      ))}
+    </div>
   );
 }
