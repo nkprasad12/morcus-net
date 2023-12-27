@@ -1,7 +1,37 @@
+import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import {
+  InfoText,
   SettingSlider,
   SettingsText,
 } from "@/web/client/pages/library/reader_utils";
+
+export interface EmbeddedDictionaryProps {
+  /** The word to look up in the dictionary, if any. */
+  dictWord?: string;
+  /**
+   * The setter to use for `dictWord`. This is called if interactions
+   * within the embedded dictionary request a new word.
+   */
+  setDictWord: (word: string) => any;
+  /** The scale (for display size) to use for the dictionary. */
+  scale: number;
+}
+
+export function EmbeddedDictionary(
+  props: EmbeddedDictionaryProps
+): JSX.Element {
+  return props.dictWord === undefined ? (
+    <InfoText text="Click on a word for dictionary and inflection lookups." />
+  ) : (
+    <DictionaryViewV2
+      embedded
+      initial={props.dictWord}
+      textScale={props.scale}
+      embeddedOptions={{ hideableOutline: true }}
+      setInitial={props.setDictWord}
+    />
+  );
+}
 
 export interface ReaderSettingsProps {
   /** The scale to use for the elements in the reader. */

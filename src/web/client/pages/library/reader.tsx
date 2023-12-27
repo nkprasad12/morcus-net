@@ -36,9 +36,10 @@ import { assertEqual } from "@/common/assert";
 import Typography from "@mui/material/Typography";
 import { FontSizes } from "@/web/client/styles";
 import {
+  EmbeddedDictionary,
   ReaderSettings,
   ReaderSettingsProps,
-} from "@/web/client/pages/library/reader_settings";
+} from "@/web/client/pages/library/reader_sidebar_components";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -237,17 +238,13 @@ function Sidebar(props: SidebarProps) {
     case "Settings":
       return <ReaderSettings {...props} />;
     case "Dict":
-      return sidebar.dictWord === undefined ? (
-        <InfoText text="Click on a word for dictionary and inflection lookups." />
-      ) : (
-        <DictionaryViewV2
-          embedded
-          initial={sidebar.dictWord}
-          textScale={props.mainScale}
-          embeddedOptions={{ hideableOutline: true }}
-          setInitial={(target) =>
+      return (
+        <EmbeddedDictionary
+          dictWord={sidebar.dictWord}
+          setDictWord={(target) =>
             props.setSidebar({ panel: "Dict", dictWord: target })
           }
+          scale={props.sideScale}
         />
       );
     case "Outline":
@@ -367,13 +364,22 @@ function labelForId(
   return text + subtitle;
 }
 
-function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
+function PenulimateLabel(props: {
+  page: number;
+  work: PaginatedWork;
+  textScale: number | undefined;
+}) {
   const parts = props.work.textParts;
   if (props.page < 0 || parts.length <= 1) {
     return <></>;
   }
   const id = props.work.pages[props.page].id;
-  return <InfoText text={labelForId(id, props.work, false)} />;
+  return (
+    <InfoText
+      text={labelForId(id, props.work, false)}
+      textScale={props.textScale}
+    />
+  );
 }
 
 function WorkNavigationBar(props: {
@@ -416,7 +422,11 @@ function WorkNavigationBar(props: {
           disabled={props.page <= 0}
           onClick={previousPage}
         />
-        <PenulimateLabel page={props.page} work={props.work} />
+        <PenulimateLabel
+          page={props.page}
+          work={props.work}
+          textScale={props.textScale}
+        />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
