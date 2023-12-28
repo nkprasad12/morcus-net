@@ -139,7 +139,7 @@ export function AppText(
   return (
     <Typography
       component="span"
-      className="contentTextLight"
+      className={props.light ? "contentTextLight" : "contentText"}
       style={{ lineHeight: props.compact ? 1 : undefined }}
       fontSize={
         (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)

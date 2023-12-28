@@ -13,6 +13,10 @@ import { useEffect, useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
+import { AppText } from "@/web/client/pages/library/reader_utils";
+import { FontSizes } from "@/web/client/styles";
+import TextField from "@mui/material/TextField";
+import Button from "@mui/material/Button";
 
 export function ExternalContentReader() {
   return (
@@ -24,12 +28,16 @@ export function ExternalContentReader() {
 }
 
 interface InternalReaderState {
-  hasText: boolean;
-  setHasText: (has: boolean) => any;
+  text: string;
+  setText: (has: string) => any;
+  scale: number;
+  setCurrentTab: (tab: MainTab) => any;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
-  hasText: false,
-  setHasText: () => {},
+  text: "",
+  setText: () => {},
+  scale: 100,
+  setCurrentTab: () => {},
 };
 const InternalReaderContext: React.Context<InternalReaderState> =
   React.createContext(DEFAULT_INTERNAL_STATE);
@@ -49,7 +57,7 @@ const LOADED_ICONS = [LOAD_ICON, READER_ICON];
 interface MainColumnProps {}
 function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
-  const [hasText, setHasText] = useState(false);
+  const [text, setText] = useState("");
 
   const { onWordSelected } = props;
 
@@ -70,22 +78,15 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   }, [onWordSelected]);
 
   return (
-    // <>
-    //   <iframe
-    //     width="100%"
-    //     height="90%"
-    //     src="https://www.thelatinlibrary.com/apuleius/apuleius1.shtml"
-    //   />
-    //   <span>Gallia est omnis divisa.</span>
-    // </>
     <ContentBox isSmall textScale={props.scale}>
       <>
         <ReaderInternalNavbar
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
-          tabs={hasText ? LOADED_ICONS : BASE_ICONS}
+          tabs={text.length > 0 ? LOADED_ICONS : BASE_ICONS}
         />
-        <InternalReaderContext.Provider value={{ hasText, setHasText }}>
+        <InternalReaderContext.Provider
+          value={{ text, setText, scale: props.scale, setCurrentTab }}>
           <RenderTab current={currentTab} />
         </InternalReaderContext.Provider>
       </>
@@ -94,14 +95,70 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
 }
 
 function RenderTab(props: { current: MainTab }) {
-  const { hasText, setHasText } = React.useContext(InternalReaderContext);
+  const { text, scale } = React.useContext(InternalReaderContext);
   const tab = props.current;
   switch (tab) {
     case "Load text":
-      return <span onClick={() => setHasText(!hasText)}>Toggle</span>;
+      return (
+        <div>
+          <div>
+            <AppText light size={FontSizes.SECONDARY} scale={scale}>
+              In progress: other import types coming soon.
+            </AppText>
+          </div>
+          <div>
+            <AppText scale={scale}>Enter text below and click submit.</AppText>
+          </div>
+          <InputContentBox />
+        </div>
+      );
     case "Text reader":
-      return <span>Gallia est omnis</span>;
+      return (
+        <div>
+          <div style={{ paddingTop: "8px", paddingBottom: "8px" }}>
+            <AppText scale={scale} light size={FontSizes.SECONDARY}>
+              Reading imported text
+            </AppText>
+          </div>
+          <AppText scale={scale}>{text}</AppText>
+        </div>
+      );
     default:
       exhaustiveGuard(tab);
   }
+}
+
+function InputContentBox() {
+  const { setText, setCurrentTab } = React.useContext(InternalReaderContext);
+
+  const [pendingText, setPendingText] = React.useState("");
+
+  return (
+    <>
+      <TextField
+        label="Enter text to import"
+        multiline
+        fullWidth
+        rows={10}
+        variant="filled"
+        inputProps={{ spellCheck: "false" }}
+        InputLabelProps={{
+          className: "macronLabel",
+        }}
+        onChange={(e) => {
+          setPendingText(e.target.value);
+        }}
+      />
+      <Button
+        onClick={() => {
+          setText(pendingText);
+          setCurrentTab("Text reader");
+        }}
+        variant="contained"
+        className="nonDictText"
+        sx={{ mt: 2, display: "block" }}>
+        {"Import"}
+      </Button>
+    </>
+  );
 }
