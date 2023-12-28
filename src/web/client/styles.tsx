@@ -87,6 +87,11 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       "a:visited": {
         color: isDarkMode ? Solarized.violet : undefined,
       },
+      ".jsLink": {
+        color: Solarized.navy,
+        borderBottom: `1px solid ${Solarized.navy}`,
+        cursor: "pointer",
+      },
       pre: { margin: "0" },
       summary: {
         cursor: "pointer",

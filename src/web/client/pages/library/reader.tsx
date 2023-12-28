@@ -1,3 +1,5 @@
+/** @jsxImportSource @emotion/react */
+
 import {
   DocumentInfo,
   ProcessedWork,
@@ -5,25 +7,19 @@ import {
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { Navigation, RouteContext } from "@/web/client/components/router";
-import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { WORK_PAGE } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/pages/library/common";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
-import Settings from "@mui/icons-material/Settings";
-import MenuBook from "@mui/icons-material/MenuBookOutlined";
 import Info from "@mui/icons-material/Info";
 import Toc from "@mui/icons-material/Toc";
-import { CSSProperties, useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
-import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
-import Container from "@mui/material/Container";
 import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
   SettingsText,
-  SettingSlider,
   InfoText,
   capitalizeWords,
   NavIcon,
@@ -34,37 +30,17 @@ import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
 import Typography from "@mui/material/Typography";
 import { FontSizes } from "@/web/client/styles";
+import {
+  DEFAULT_SIDEBAR_TAB_CONFIGS,
+  DefaultSidebarTab,
+  ReaderInternalTabConfig,
+} from "@/web/client/pages/library/reader_sidebar_components";
+import {
+  BaseExtraSidebarTabProps,
+  BaseMainColumnProps,
+  BaseReader,
+} from "@/web/client/pages/library/base_reader";
 
-// We need to come up a with a better way to deal with this, since
-// Experimentally for large screen mode this is 64 but honestly who knows
-// about the true range.
-const APP_BAR_MAX_HEIGHT = 64;
-const COLUMN_TOP_MARGIN = 8;
-const COLUMN_BOTTON_MARGIN = 8;
-const CONTAINER_STYLE: CSSProperties = {
-  height:
-    window.innerHeight -
-    APP_BAR_MAX_HEIGHT -
-    COLUMN_TOP_MARGIN -
-    COLUMN_BOTTON_MARGIN,
-};
-const COLUMN_STYLE: CSSProperties = {
-  height: "100%",
-  float: "left",
-  width: "48%",
-  overflow: "auto",
-  boxSizing: "border-box",
-  marginTop: COLUMN_TOP_MARGIN,
-  marginBottom: COLUMN_BOTTON_MARGIN,
-  marginLeft: "1%",
-  marginRight: "1%",
-};
-const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | false)[] = [
-  "lg",
-  "xl",
-  "xxl",
-  false,
-];
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
 interface WorkPage {
@@ -141,22 +117,13 @@ function findWorksByLevel(
 }
 
 export function ReadingPage() {
-  const [sidebar, setSidebar] = React.useState<SidebarState>({
-    panel: "Attribution",
-  });
-  const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
-  const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
-  const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
-  const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
-
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
 
-  const sidebarRef = React.useRef<HTMLDivElement>(null);
   const nav = useContext(RouteContext);
 
   useEffect(() => {
-    const id = nav.route.path.substring(WORK_PAGE.length + 1);
+    const id = nav.route.path.substring(ClientPaths.WORK_PAGE.length + 1);
     fetchWork(id)
       .then((work) =>
         setWork({
@@ -178,220 +145,57 @@ export function ReadingPage() {
   }, [nav.route.query]);
 
   return (
-    <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
-      <div
-        style={{
-          ...COLUMN_STYLE,
-          width: `${mainWidth}%`,
-        }}>
-        <WorkColumn
-          setSidebar={(newSidebar) => {
-            // @ts-ignore
-            sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
-            setSidebar(newSidebar);
-          }}
-          textScale={workScale}
-          work={work}
-          currentPage={currentPage}
-        />
-      </div>
-      <div
-        style={{ ...COLUMN_STYLE, width: `${96 - mainWidth}%` }}
-        ref={sidebarRef}>
-        <ContentBox isSmall>
-          <>
-            <div className="readerIconBar">
-              <NavIcon
-                Icon={<Toc />}
-                label="Outline"
-                onClick={() => setSidebar({ panel: "Outline" })}
-                extraClasses={
-                  sidebar.panel === "Outline"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-              <NavIcon
-                Icon={<MenuBook />}
-                label="Dictionary"
-                onClick={() => setSidebar({ panel: "Dict" })}
-                extraClasses={
-                  sidebar.panel === "Dict"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-              <NavIcon
-                Icon={<Settings />}
-                label="Reader settings"
-                onClick={() => setSidebar({ panel: "Settings" })}
-                extraClasses={
-                  sidebar.panel === "Settings"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-              <NavIcon
-                Icon={<Info />}
-                label="Attribution"
-                onClick={() => setSidebar({ panel: "Attribution" })}
-                extraClasses={
-                  sidebar.panel === "Attribution"
-                    ? ["selectedSidePanelTab"]
-                    : undefined
-                }
-              />
-            </div>
-            <div style={{ paddingRight: "8px" }}>
-              <Sidebar
-                work={typeof work === "string" ? undefined : work}
-                scale={dictScale}
-                sidebar={sidebar}
-                setSidebar={setSidebar}
-                mainWidth={mainWidth}
-                setMainWidth={setMainWidth}
-                dictScale={dictScale}
-                setDictScale={setDictScale}
-                workScale={workScale}
-                setWorkScale={setWorkScale}
-                totalWidth={totalWidth}
-                setTotalWidth={setTotalWidth}
-              />
-            </div>
-          </>
-        </ContentBox>
-      </div>
-    </Container>
+    <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
+      MainColumn={WorkColumn}
+      ExtraSidebarContent={Sidebar}
+      initialSidebarTab="Attribution"
+      sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
+      work={work}
+      currentPage={currentPage}
+    />
   );
 }
 
-interface SidebarState {
-  dictWord?: string;
-  panel: "Outline" | "Dict" | "Settings" | "Attribution";
-}
+type CustomTabs = "Outline" | "Attribution";
+type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
-function Sidebar(props: {
-  work?: PaginatedWork;
-  scale: number;
-  sidebar: SidebarState;
-  setSidebar: (state: SidebarState) => any;
-  mainWidth: number;
-  setMainWidth: (x: number) => any;
-  workScale: number;
-  setWorkScale: (x: number) => any;
-  dictScale: number;
-  setDictScale: (x: number) => any;
-  totalWidth: number;
-  setTotalWidth: (x: number) => any;
-}) {
-  const scale = props.scale;
-  const sidebar = props.sidebar;
-  switch (sidebar.panel) {
-    case "Settings":
-      return (
-        <>
-          <details>
-            <summary>
-              <SettingsText message="Layout settings" scale={scale} />
-            </summary>
-            <SettingSlider
-              value={props.totalWidth}
-              setValue={props.setTotalWidth}
-              label="Total width"
-              min={0}
-              max={3}
-              step={1}
-              scale={scale}
-              disableLabels
-            />
-            <SettingSlider
-              value={props.mainWidth}
-              setValue={props.setMainWidth}
-              label="Main width"
-              min={32}
-              max={80}
-              step={8}
-              scale={scale}
-            />
-          </details>
-          <details>
-            <summary>
-              <SettingsText message="Main column settings" scale={scale} />
-            </summary>
-            <SettingSlider
-              value={props.workScale}
-              setValue={props.setWorkScale}
-              label="Text size"
-              tag="Main column"
-              min={50}
-              max={150}
-              step={10}
-              scale={scale}
-            />
-          </details>
-          <details>
-            <summary>
-              <SettingsText message="Side column settings" scale={scale} />
-            </summary>
-            <SettingSlider
-              value={props.dictScale}
-              setValue={props.setDictScale}
-              label="Text size"
-              tag="Side column"
-              min={50}
-              max={150}
-              step={10}
-              scale={scale}
-            />
-          </details>
-        </>
-      );
-    case "Dict":
-      return sidebar.dictWord === undefined ? (
-        <InfoText text="Click on a word for dictionary and inflection lookups." />
-      ) : (
-        <DictionaryViewV2
-          embedded
-          initial={sidebar.dictWord}
-          textScale={props.dictScale}
-          embeddedOptions={{ hideableOutline: true }}
-          setInitial={(target) =>
-            props.setSidebar({ panel: "Dict", dictWord: target })
-          }
-        />
-      );
+const SIDEBAR_PANEL_ICONS: ReaderInternalTabConfig<SidebarPanel>[] = [
+  { tab: "Outline", Icon: <Toc /> },
+  ...DEFAULT_SIDEBAR_TAB_CONFIGS,
+  { tab: "Attribution", Icon: <Info /> },
+];
+
+interface SidebarProps {
+  work: WorkState;
+}
+function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
+  const tab = props.tab;
+  const work = typeof props.work === "string" ? undefined : props.work;
+  switch (tab) {
     case "Outline":
       return (
-        <>
-          {props.work && (
-            <WorkNavigationSection work={props.work} scale={props.scale} />
-          )}
-        </>
+        <>{work && <WorkNavigationSection work={work} scale={props.scale} />}</>
       );
     case "Attribution":
       return (
         <>
-          {props.work?.info && (
-            <WorkInfo workInfo={props.work?.info} scale={props.scale} />
-          )}
+          {work?.info && <WorkInfo workInfo={work?.info} scale={props.scale} />}
         </>
       );
     default:
-      exhaustiveGuard(sidebar.panel);
+      exhaustiveGuard(tab);
   }
 }
 
-function WorkColumn(props: {
-  setSidebar: (state: SidebarState) => any;
-  textScale: number;
+interface WorkColumnProps {
   work: WorkState;
   currentPage: number;
-}) {
-  const currentPage = props.currentPage;
-  const work = props.work;
+}
+function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
+  const { work, currentPage } = props;
 
   return (
-    <ContentBox isSmall textScale={props.textScale}>
+    <ContentBox isSmall textScale={props.scale}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
@@ -404,16 +208,14 @@ function WorkColumn(props: {
           <WorkNavigationBar
             page={currentPage}
             work={work}
-            textScale={props.textScale}
+            textScale={props.scale}
           />
           <div style={{ paddingRight: "8px" }}>
             <WorkTextPage
               work={work}
-              setDictWord={(dictWord) =>
-                props.setSidebar({ panel: "Dict", dictWord })
-              }
+              setDictWord={props.onWordSelected}
               page={currentPage}
-              textScale={props.textScale}
+              textScale={props.scale}
             />
           </div>
         </>
@@ -477,13 +279,22 @@ function labelForId(
   return text + subtitle;
 }
 
-function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
+function PenulimateLabel(props: {
+  page: number;
+  work: PaginatedWork;
+  textScale: number | undefined;
+}) {
   const parts = props.work.textParts;
   if (props.page < 0 || parts.length <= 1) {
     return <></>;
   }
   const id = props.work.pages[props.page].id;
-  return <InfoText text={labelForId(id, props.work, false)} />;
+  return (
+    <InfoText
+      text={labelForId(id, props.work, false)}
+      textScale={props.textScale}
+    />
+  );
 }
 
 function WorkNavigationBar(props: {
@@ -526,7 +337,11 @@ function WorkNavigationBar(props: {
           disabled={props.page <= 0}
           onClick={previousPage}
         />
-        <PenulimateLabel page={props.page} work={props.work} />
+        <PenulimateLabel
+          page={props.page}
+          work={props.work}
+          textScale={props.textScale}
+        />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
@@ -552,7 +367,7 @@ function WorkNavigationBar(props: {
 
 export function WorkTextPage(props: {
   work: PaginatedWork;
-  setDictWord: (word: string | undefined) => any;
+  setDictWord: (word: string) => any;
   page: number;
   textScale: number;
 }) {
@@ -768,7 +583,7 @@ function WorkChunkHeader(props: {
 
 function WorkChunk(props: {
   node: ProcessedWorkNode;
-  setDictWord: (word: string | undefined) => any;
+  setDictWord: (word: string) => any;
   textScale: number;
   i: number;
   workName: string;
@@ -821,7 +636,7 @@ function LatLink(props: {
 
 function displayForLibraryChunk(
   root: XmlNode,
-  setDictWord: (word: string | undefined) => any,
+  setDictWord: (word: string) => any,
   key?: number
 ): JSX.Element {
   const children = root.children.map((child, i) => {

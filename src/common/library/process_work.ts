@@ -4,7 +4,7 @@ import {
   ProcessedWork,
   ProcessedWorkNode,
 } from "@/common/library/library_types";
-import { TEXT_BREAK_CHARACTERS } from "@/common/text_cleaning";
+import { processWords } from "@/common/text_cleaning";
 import {
   ROOT_NODE_NAME,
   TeiCtsDocument,
@@ -23,7 +23,7 @@ function markupText(text: string, parentName: string): XmlChild[] {
   }
   const isAlt = !DEFAULT_TEXT_NODES.includes(parentName);
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
-  const words = text.split(TEXT_BREAK_CHARACTERS).map((word) => {
+  const words = processWords(text, (word) => {
     const target = LatinWords.allWords().has(word)
       ? word
       : LatinWords.allWords().has(word.toLowerCase())

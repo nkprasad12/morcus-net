@@ -614,6 +614,7 @@ export const GRAMMAR_TERMS = new Set([
   "subj. perf.",
   "subj. pluperf.",
   "subj. pres.",
+  "subj. praes.",
   "subj.-acc.",
   "subj.-clause",
   "subj.;",

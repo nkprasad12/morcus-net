@@ -7,7 +7,7 @@ import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { RouteContext } from "@/web/client/components/router";
 import { render, screen } from "@testing-library/react";
 import { ReadingPage } from "@/web/client/pages/library/reader";
-import { WORK_PAGE } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/pages/library/common";
 import { ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
@@ -16,6 +16,7 @@ jest.mock("@/web/utils/rpc/client_rpc");
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 window.HTMLElement.prototype.scroll = jest.fn();
 
+const WORK_PAGE = ClientPaths.WORK_PAGE;
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
 // @ts-ignore
