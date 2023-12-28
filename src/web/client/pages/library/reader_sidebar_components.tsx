@@ -7,6 +7,7 @@ import {
   SettingSlider,
   SettingsText,
 } from "@/web/client/pages/library/reader_utils";
+import { exhaustiveGuard } from "@/common/misc_utils";
 
 export interface EmbeddedDictionaryProps {
   /** The word to look up in the dictionary, if any. */
@@ -142,19 +143,24 @@ function ReaderSideNavIcon<T extends SideTabType>(
   return (
     <NavIcon
       Icon={props.Icon}
-      label="Outline"
+      label={props.tab}
       onClick={() => props.onTabClicked(props.tab)}
       extraClasses={isSelected ? ["selectedSidePanelTab"] : undefined}
     />
   );
 }
 
+const TAB_DICT = "Dictionary";
+const TAB_SETTINGS = "Reader settings";
 export const DEFAULT_SIDEBAR_TAB_CONFIGS: ReaderSideTabConfig<DefaultSidebarTab>[] =
   [
-    { tab: "Dict", Icon: <MenuBook /> },
-    { tab: "Settings", Icon: <Settings /> },
+    { tab: TAB_DICT, Icon: <MenuBook /> },
+    { tab: TAB_SETTINGS, Icon: <Settings /> },
   ];
-export type DefaultSidebarTab = "Dict" | "Settings";
+export type DefaultSidebarTab = typeof TAB_DICT | typeof TAB_SETTINGS;
+export function isDefaultSidebarTab(x: unknown): x is DefaultSidebarTab {
+  return x === TAB_DICT || x === TAB_SETTINGS;
+}
 export interface ReaderSideTabConfig<T> {
   /** The icon to display in the tab. */
   Icon: JSX.Element;
@@ -185,4 +191,34 @@ export function ReaderSideNavbar<T extends SideTabType>(
       ))}
     </div>
   );
+}
+
+export interface DefaultReaderSidebarContentProps<T>
+  extends ReaderSettingsProps {
+  currentTab: DefaultSidebarTab | T;
+  setCurrentTab: (tab: DefaultSidebarTab | T) => any;
+  dictWord?: string;
+  setDictWord: (word: string) => any;
+}
+export function DefaultReaderSidebarContent(
+  props: DefaultReaderSidebarContentProps<never>
+) {
+  const tab = props.currentTab;
+  switch (tab) {
+    case "Reader settings":
+      return <ReaderSettings {...props} />;
+    case "Dictionary":
+      return (
+        <EmbeddedDictionary
+          dictWord={props.dictWord}
+          setDictWord={(target) => {
+            props.setCurrentTab("Dictionary");
+            props.setDictWord(target);
+          }}
+          scale={props.sideScale}
+        />
+      );
+    default:
+      return exhaustiveGuard(tab);
+  }
 }

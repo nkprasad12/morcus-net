@@ -17,7 +17,6 @@ import { useContext, useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
-import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
 import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
   SettingsText,
@@ -26,7 +25,6 @@ import {
   NavIcon,
   TooltipNavIcon,
   AppText,
-  BaseReaderLayout,
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
@@ -35,12 +33,13 @@ import { FontSizes } from "@/web/client/styles";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,
-  EmbeddedDictionary,
-  ReaderSettings,
-  ReaderSettingsProps,
-  ReaderSideNavbar,
   ReaderSideTabConfig,
 } from "@/web/client/pages/library/reader_sidebar_components";
+import {
+  BaseExtraSidebarTabProps,
+  BaseMainColumnProps,
+  BaseReader,
+} from "@/web/client/pages/library/base_reader";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -118,18 +117,9 @@ function findWorksByLevel(
 }
 
 export function ReadingPage() {
-  const [sidebar, setSidebar] = React.useState<SidebarState>({
-    panel: "Attribution",
-  });
-  const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
-  const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
-  const [workScale, setWorkScale] = usePersistedNumber(100, "RD_WORK_SCALE");
-  const [dictScale, setDictScale] = usePersistedNumber(90, "RD_DICT_SCALE");
-
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
 
-  const sidebarRef = React.useRef<HTMLDivElement>(null);
   const nav = useContext(RouteContext);
 
   useEffect(() => {
@@ -155,48 +145,19 @@ export function ReadingPage() {
   }, [nav.route.query]);
 
   return (
-    <BaseReaderLayout
-      mainWidth={mainWidth}
-      totalWidth={totalWidth}
-      sidebarRef={sidebarRef}>
-      <WorkColumn
-        setSidebar={(newSidebar) => {
-          // @ts-ignore
-          sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
-          setSidebar(newSidebar);
-        }}
-        textScale={workScale}
-        work={work}
-        currentPage={currentPage}
-      />
-      <ReaderSideNavbar
-        currentTab={sidebar.panel}
-        setCurrentTab={(panel) => setSidebar({ panel })}
-        tabs={SIDEBAR_PANEL_ICONS}
-      />
-      <Sidebar
-        work={typeof work === "string" ? undefined : work}
-        scale={dictScale}
-        sidebar={sidebar}
-        setSidebar={setSidebar}
-        mainWidth={mainWidth}
-        setMainWidth={setMainWidth}
-        sideScale={dictScale}
-        setSideScale={setDictScale}
-        mainScale={workScale}
-        setMainScale={setWorkScale}
-        totalWidth={totalWidth}
-        setTotalWidth={setTotalWidth}
-      />
-    </BaseReaderLayout>
+    <BaseReader<CustomTabs, WorkColumnProps, SidebarProps>
+      initialSidebarTab="Attribution"
+      sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
+      MainColumn={WorkColumn}
+      ExtraSidebarContent={Sidebar}
+      work={work}
+      currentPage={currentPage}
+    />
   );
 }
 
-type SidebarPanel = "Outline" | "Attribution" | DefaultSidebarTab;
-interface SidebarState {
-  dictWord?: string;
-  panel: SidebarPanel;
-}
+type CustomTabs = "Outline" | "Attribution";
+type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
 const SIDEBAR_PANEL_ICONS: ReaderSideTabConfig<SidebarPanel>[] = [
   { tab: "Outline", Icon: <Toc /> },
@@ -204,58 +165,37 @@ const SIDEBAR_PANEL_ICONS: ReaderSideTabConfig<SidebarPanel>[] = [
   { tab: "Attribution", Icon: <Info /> },
 ];
 
-interface SidebarProps extends ReaderSettingsProps {
-  work?: PaginatedWork;
-  sidebar: SidebarState;
-  setSidebar: (state: SidebarState) => any;
+interface SidebarProps {
+  work: WorkState;
 }
-function Sidebar(props: SidebarProps) {
-  const sidebar = props.sidebar;
-  switch (sidebar.panel) {
-    case "Settings":
-      return <ReaderSettings {...props} />;
-    case "Dict":
-      return (
-        <EmbeddedDictionary
-          dictWord={sidebar.dictWord}
-          setDictWord={(target) =>
-            props.setSidebar({ panel: "Dict", dictWord: target })
-          }
-          scale={props.sideScale}
-        />
-      );
+function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
+  const tab = props.tab;
+  const work = typeof props.work === "string" ? undefined : props.work;
+  switch (tab) {
     case "Outline":
       return (
-        <>
-          {props.work && (
-            <WorkNavigationSection work={props.work} scale={props.scale} />
-          )}
-        </>
+        <>{work && <WorkNavigationSection work={work} scale={props.scale} />}</>
       );
     case "Attribution":
       return (
         <>
-          {props.work?.info && (
-            <WorkInfo workInfo={props.work?.info} scale={props.scale} />
-          )}
+          {work?.info && <WorkInfo workInfo={work?.info} scale={props.scale} />}
         </>
       );
     default:
-      exhaustiveGuard(sidebar.panel);
+      exhaustiveGuard(tab);
   }
 }
 
-function WorkColumn(props: {
-  setSidebar: (state: SidebarState) => any;
-  textScale: number;
+interface WorkColumnProps {
   work: WorkState;
   currentPage: number;
-}) {
-  const currentPage = props.currentPage;
-  const work = props.work;
+}
+function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
+  const { work, currentPage } = props;
 
   return (
-    <ContentBox isSmall textScale={props.textScale}>
+    <ContentBox isSmall textScale={props.scale}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
@@ -268,16 +208,14 @@ function WorkColumn(props: {
           <WorkNavigationBar
             page={currentPage}
             work={work}
-            textScale={props.textScale}
+            textScale={props.scale}
           />
           <div style={{ paddingRight: "8px" }}>
             <WorkTextPage
               work={work}
-              setDictWord={(dictWord) =>
-                props.setSidebar({ panel: "Dict", dictWord })
-              }
+              setDictWord={props.onWordSelected}
               page={currentPage}
-              textScale={props.textScale}
+              textScale={props.scale}
             />
           </div>
         </>
@@ -429,7 +367,7 @@ function WorkNavigationBar(props: {
 
 export function WorkTextPage(props: {
   work: PaginatedWork;
-  setDictWord: (word: string | undefined) => any;
+  setDictWord: (word: string) => any;
   page: number;
   textScale: number;
 }) {
@@ -645,7 +583,7 @@ function WorkChunkHeader(props: {
 
 function WorkChunk(props: {
   node: ProcessedWorkNode;
-  setDictWord: (word: string | undefined) => any;
+  setDictWord: (word: string) => any;
   textScale: number;
   i: number;
   workName: string;
@@ -698,7 +636,7 @@ function LatLink(props: {
 
 function displayForLibraryChunk(
   root: XmlNode,
-  setDictWord: (word: string | undefined) => any,
+  setDictWord: (word: string) => any,
   key?: number
 ): JSX.Element {
   const children = root.children.map((child, i) => {
