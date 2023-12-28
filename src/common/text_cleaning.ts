@@ -71,7 +71,7 @@ export function processWords<T>(
   return results;
 }
 
-export const TEXT_BREAK_CHARACTERS = /([ ()[\];:.,?])/;
+export const TEXT_BREAK_CHARACTERS = /([ ()[\];:.,?!])/;
 
 export function removeDiacritics(input: string): string {
   let result = "";
