@@ -19,13 +19,22 @@ export interface EmbeddedDictionaryProps {
   setDictWord: (word: string) => any;
   /** The scale (for display size) to use for the dictionary. */
   scale: number;
+  /**
+   * The message to display in the instruction text for the dictionary.
+   * This should instruct the user what action to perform on a word in
+   * the main panel to get a dictionary lookup.
+   */
+  dictActionMessage?: string;
 }
 
 export function EmbeddedDictionary(
   props: EmbeddedDictionaryProps
 ): JSX.Element {
+  const action = props.dictActionMessage || "Click on";
   return props.dictWord === undefined ? (
-    <InfoText text="Click on a word for dictionary and inflection lookups." />
+    <InfoText
+      text={`${action} a word for dictionary and inflection lookups.`}
+    />
   ) : (
     <DictionaryViewV2
       embedded
@@ -152,7 +161,7 @@ function ReaderSideNavIcon<T extends SideTabType>(
 
 const TAB_DICT = "Dictionary";
 const TAB_SETTINGS = "Reader settings";
-export const DEFAULT_SIDEBAR_TAB_CONFIGS: ReaderSideTabConfig<DefaultSidebarTab>[] =
+export const DEFAULT_SIDEBAR_TAB_CONFIGS: ReaderInternalTabConfig<DefaultSidebarTab>[] =
   [
     { tab: TAB_DICT, Icon: <MenuBook /> },
     { tab: TAB_SETTINGS, Icon: <Settings /> },
@@ -161,22 +170,22 @@ export type DefaultSidebarTab = typeof TAB_DICT | typeof TAB_SETTINGS;
 export function isDefaultSidebarTab(x: unknown): x is DefaultSidebarTab {
   return x === TAB_DICT || x === TAB_SETTINGS;
 }
-export interface ReaderSideTabConfig<T> {
+export interface ReaderInternalTabConfig<T> {
   /** The icon to display in the tab. */
   Icon: JSX.Element;
   /** The identifier for this tab. */
   tab: T;
 }
-export interface ReaderSideNavbarProps<T> {
+export interface ReaderInternalNavbarProps<T> {
   /** The tabs to display in the bar. */
-  tabs: ReaderSideTabConfig<T>[];
+  tabs: ReaderInternalTabConfig<T>[];
   /** The currently selected tab. */
   currentTab: T;
   /** The callback invoked to set the currently selected tab. */
   setCurrentTab: (t: T) => any;
 }
-export function ReaderSideNavbar<T extends SideTabType>(
-  props: ReaderSideNavbarProps<T>
+export function ReaderInternalNavbar<T extends SideTabType>(
+  props: ReaderInternalNavbarProps<T>
 ) {
   return (
     <div className="readerIconBar">
@@ -199,6 +208,7 @@ export interface DefaultReaderSidebarContentProps<T>
   setCurrentTab: (tab: DefaultSidebarTab | T) => any;
   dictWord?: string;
   setDictWord: (word: string) => any;
+  dictActionMessage?: string;
 }
 export function DefaultReaderSidebarContent(
   props: DefaultReaderSidebarContentProps<never>
@@ -216,6 +226,7 @@ export function DefaultReaderSidebarContent(
             props.setDictWord(target);
           }}
           scale={props.sideScale}
+          dictActionMessage={props.dictActionMessage}
         />
       );
     default:

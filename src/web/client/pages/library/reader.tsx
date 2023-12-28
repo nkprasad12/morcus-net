@@ -33,7 +33,7 @@ import { FontSizes } from "@/web/client/styles";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,
-  ReaderSideTabConfig,
+  ReaderInternalTabConfig,
 } from "@/web/client/pages/library/reader_sidebar_components";
 import {
   BaseExtraSidebarTabProps,
@@ -145,11 +145,11 @@ export function ReadingPage() {
   }, [nav.route.query]);
 
   return (
-    <BaseReader<CustomTabs, WorkColumnProps, SidebarProps>
-      initialSidebarTab="Attribution"
-      sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
+    <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
       MainColumn={WorkColumn}
       ExtraSidebarContent={Sidebar}
+      initialSidebarTab="Attribution"
+      sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
       work={work}
       currentPage={currentPage}
     />
@@ -159,7 +159,7 @@ export function ReadingPage() {
 type CustomTabs = "Outline" | "Attribution";
 type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
-const SIDEBAR_PANEL_ICONS: ReaderSideTabConfig<SidebarPanel>[] = [
+const SIDEBAR_PANEL_ICONS: ReaderInternalTabConfig<SidebarPanel>[] = [
   { tab: "Outline", Icon: <Toc /> },
   ...DEFAULT_SIDEBAR_TAB_CONFIGS,
   { tab: "Attribution", Icon: <Info /> },
