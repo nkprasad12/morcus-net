@@ -1,5 +1,5 @@
-import { DICT_PAGE } from "@/web/client/active_pages";
 import { RouteContext } from "@/web/client/components/router";
+import { ClientPaths } from "@/web/client/pages/library/common";
 import { ReactNode } from "react";
 import * as React from "react";
 
@@ -23,7 +23,7 @@ export function TitleHandler(props: TitleHandlerProps) {
 
   React.useEffect(() => {
     document.title = MORCUS_TITLE;
-    if (nav.route.path === DICT_PAGE.path && currentDictWord) {
+    if (nav.route.path === ClientPaths.DICT_PAGE && currentDictWord) {
       document.title = `${currentDictWord} | ${MORCUS_TITLE}`;
     }
   }, [nav.route.path, currentDictWord]);

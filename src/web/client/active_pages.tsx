@@ -3,10 +3,7 @@
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
-import {
-  EXTERNAL_CONTENT_READER,
-  WORK_PAGE,
-} from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/pages/library/common";
 import { ExternalContentReader } from "@/web/client/pages/library/external_content_reader";
 import { Library } from "@/web/client/pages/library/library";
 import { ReadingPage } from "@/web/client/pages/library/reader";
@@ -21,7 +18,7 @@ export const ABOUT_PAGE: SinglePageApp.Page = {
 
 export const DICT_PAGE: SinglePageApp.Page = {
   name: "Dictionary",
-  path: "/dicts",
+  path: ClientPaths.DICT_PAGE,
   content: DictionaryViewV2,
 };
 
@@ -47,7 +44,7 @@ export const SETTINGS_PAGE: SinglePageApp.Page = {
 
 export const READING_PAGE: SinglePageApp.Page = {
   name: "Reading",
-  path: WORK_PAGE,
+  path: ClientPaths.WORK_PAGE,
   content: ReadingPage,
   notInMainSection: true,
   hasSubpages: true,
@@ -55,7 +52,7 @@ export const READING_PAGE: SinglePageApp.Page = {
 
 export const EXTERNAL_CONTENT_READER_PAGE: SinglePageApp.Page = {
   name: "External Content Reader",
-  path: EXTERNAL_CONTENT_READER,
+  path: ClientPaths.EXTERNAL_CONTENT_READER,
   content: ExternalContentReader,
   notInMainSection: true,
 };

@@ -107,7 +107,9 @@ function RenderTab(props: { current: MainTab }) {
             </AppText>
           </div>
           <div>
-            <AppText scale={scale}>Enter text below and click submit.</AppText>
+            <AppText scale={scale}>
+              Enter text below and click submit to import.
+            </AppText>
           </div>
           <InputContentBox />
         </div>
@@ -156,6 +158,7 @@ function InputContentBox() {
         }}
         variant="contained"
         className="nonDictText"
+        aria-label="Import text"
         sx={{ mt: 2, display: "block" }}>
         {"Import"}
       </Button>

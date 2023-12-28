@@ -8,7 +8,7 @@ import {
 import { XmlNode } from "@/common/xml/xml_node";
 import { Navigation, RouteContext } from "@/web/client/components/router";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { WORK_PAGE } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/pages/library/common";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import Info from "@mui/icons-material/Info";
@@ -123,7 +123,7 @@ export function ReadingPage() {
   const nav = useContext(RouteContext);
 
   useEffect(() => {
-    const id = nav.route.path.substring(WORK_PAGE.length + 1);
+    const id = nav.route.path.substring(ClientPaths.WORK_PAGE.length + 1);
     fetchWork(id)
       .then((work) =>
         setWork({

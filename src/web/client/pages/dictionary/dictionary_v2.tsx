@@ -42,7 +42,6 @@ import {
 import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import ReactDOM, { flushSync } from "react-dom";
-import { TitleContext } from "../../components/title";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { FontSizes } from "@/web/client/styles";
 import {
@@ -52,6 +51,7 @@ import {
 } from "@/web/client/pages/dictionary/dict_context";
 import Divider from "@mui/material/Divider";
 import { assert } from "@/common/assert";
+import { TitleContext } from "@/web/client/components/title";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
