@@ -32,12 +32,14 @@ interface InternalReaderState {
   setText: (has: string) => any;
   scale: number;
   setCurrentTab: (tab: MainTab) => any;
+  readerRef: React.RefObject<HTMLDivElement>;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
   text: "",
   setText: () => {},
   scale: 100,
   setCurrentTab: () => {},
+  readerRef: React.createRef<HTMLDivElement>(),
 };
 const InternalReaderContext: React.Context<InternalReaderState> =
   React.createContext(DEFAULT_INTERNAL_STATE);
@@ -58,24 +60,41 @@ interface MainColumnProps {}
 function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
   const [text, setText] = useState("");
+  const readerRef = React.useRef<HTMLDivElement>(null);
 
   const { onWordSelected } = props;
 
   useEffect(() => {
-    const doubleClickListener = () => {
+    const selectListener = () => {
       const selection = document.getSelection();
       if (selection === null) {
         return;
       }
       const selectedText = selection.toString();
+      if (selectedText.length === 0) {
+        return;
+      }
       const words: string[] = [];
       processWords(selectedText, (word) => words.push(word));
-      document.getSelection()?.empty();
+      if (words.length === 0 || words[0].length === 0) {
+        return;
+      }
       onWordSelected(words[0]);
+      document.getSelection()?.empty();
     };
-    document.addEventListener("dblclick", doubleClickListener);
-    return () => document.removeEventListener("dblclick", doubleClickListener);
-  }, [onWordSelected]);
+    const contextMenuBlocker = (e: Event) => {
+      e.preventDefault();
+      return false;
+    };
+    const target = document;
+    target?.addEventListener("selectionchange", selectListener);
+    target?.addEventListener("contextmenu", contextMenuBlocker);
+    const cleanup = () => {
+      target?.removeEventListener("selectionchange", selectListener);
+      target?.removeEventListener("contextmenu", contextMenuBlocker);
+    };
+    return cleanup;
+  }, [onWordSelected, text]);
 
   return (
     <ContentBox isSmall textScale={props.scale}>
@@ -86,7 +105,13 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
           tabs={text.length > 0 ? LOADED_ICONS : BASE_ICONS}
         />
         <InternalReaderContext.Provider
-          value={{ text, setText, scale: props.scale, setCurrentTab }}>
+          value={{
+            text,
+            setText,
+            scale: props.scale,
+            setCurrentTab,
+            readerRef,
+          }}>
           <RenderTab current={currentTab} />
         </InternalReaderContext.Provider>
       </>
@@ -95,7 +120,7 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
 }
 
 function RenderTab(props: { current: MainTab }) {
-  const { text, scale } = React.useContext(InternalReaderContext);
+  const { text, scale, readerRef } = React.useContext(InternalReaderContext);
   const tab = props.current;
   switch (tab) {
     case "Load text":
@@ -122,7 +147,9 @@ function RenderTab(props: { current: MainTab }) {
               Reading imported text
             </AppText>
           </div>
-          <AppText scale={scale}>{text}</AppText>
+          <div ref={readerRef}>
+            <AppText scale={scale}>{text}</AppText>
+          </div>
         </div>
       );
     default:
