@@ -161,7 +161,7 @@ export function DictionarySearch(props: {
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
         smallScreen={props.smallScreen}
-        autoFocused={route.query && route.query.q !== undefined}
+        autoFocused={route.query?.q === undefined}
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(toQuery(t))}
         optionsForInput={(input) =>
