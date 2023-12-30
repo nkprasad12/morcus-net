@@ -109,7 +109,7 @@ function ShLink(props: { text: string; query: string }) {
         if (fromInternalLink) {
           fromInternalLink.current = true;
         }
-        nav.to({ path: ClientPaths.DICT_PAGE, query: { q: props.query } });
+        nav.to({ path: ClientPaths.DICT_PAGE, params: { q: props.query } });
       }}>
       {props.text}
     </span>
@@ -129,7 +129,7 @@ function onLatinWordClick(
     }
     nav.to({
       path: ClientPaths.DICT_PAGE,
-      query: { q: `${word},LnS`, o: "1" },
+      params: { q: `${word},LnS`, o: "1" },
     });
   }
 }

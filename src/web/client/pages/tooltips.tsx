@@ -209,16 +209,16 @@ export function SectionLinkTooltip(props: {
   function getLink(): string {
     const after: RouteInfoV2 = {
       path: "/dicts",
-      query: {},
+      params: {},
     };
     if (isArticle) {
-      after.query!.q = props.id;
+      after.params!.q = props.id;
     } else {
       const coreId = props.id.split(".")[0];
-      after.query!.q = coreId;
+      after.params!.q = coreId;
       after.hash = props.id;
     }
-    after.query!.o = "2";
+    after.params!.o = "2";
     return `${window.location.origin}${RouteInfoV2.toLink(after)}`;
   }
 

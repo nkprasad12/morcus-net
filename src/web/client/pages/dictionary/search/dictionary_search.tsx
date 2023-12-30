@@ -151,7 +151,7 @@ export function DictionarySearch(props: {
     if (settings.data.experimentalMode === true) {
       query.o = "1";
     }
-    nav.to({ path: route.path, query });
+    nav.to({ path: route.path, params: query });
   }
 
   return (
@@ -161,7 +161,7 @@ export function DictionarySearch(props: {
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
         smallScreen={props.smallScreen}
-        autoFocused={route.query?.q === undefined}
+        autoFocused={route.params?.q === undefined}
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(toQuery(t))}
         optionsForInput={(input) =>

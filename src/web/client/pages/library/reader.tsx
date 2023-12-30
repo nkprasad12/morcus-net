@@ -121,7 +121,7 @@ export function ReadingPage() {
   const [work, setWork] = useState<WorkState>("Loading");
 
   const { route } = RouterV2.useRouter();
-  const queryPage = route.query?.q;
+  const queryPage = route.params?.q;
 
   useEffect(() => {
     const id = route.path.substring(ClientPaths.WORK_PAGE.length + 1);
@@ -308,7 +308,7 @@ function WorkNavigationBar(props: {
   const setPage = React.useCallback(
     // Nav pages are 1-indexed.
     (newPage: number) =>
-      nav.to((old) => ({ path: old.path, query: { q: `${newPage + 1}` } })),
+      nav.to((old) => ({ path: old.path, params: { q: `${newPage + 1}` } })),
     [nav]
   );
   const previousPage = React.useCallback(() => {
@@ -457,7 +457,7 @@ function WorkNavigation(props: {
                       // Nav pages are 1-indexed.
                       nav.to((old) => ({
                         path: old.path,
-                        query: { q: `${i + 1}` },
+                        params: { q: `${i + 1}` },
                       }));
                     }
                   }

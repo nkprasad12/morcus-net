@@ -66,7 +66,7 @@ describe("New Dictionary View", () => {
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/",
-        query: expect.objectContaining({ q: "G" }),
+        params: expect.objectContaining({ q: "G" }),
       })
     );
   });
@@ -76,7 +76,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: { q: "Gallia" } },
+          route: { path: "/", params: { q: "Gallia" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -123,7 +123,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: { q: "Belgae" } },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -167,7 +167,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: { q: "Belgae" } },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -210,7 +210,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: { q: "Belgae" } },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -267,7 +267,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: { q: "Belgae" } },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />

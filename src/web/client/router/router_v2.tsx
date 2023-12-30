@@ -4,7 +4,7 @@ import { createContext } from "react";
 
 export interface RouteInfoV2 {
   path: string;
-  query?: Record<string, string>;
+  params?: Record<string, string>;
   hash?: string;
 }
 
@@ -22,7 +22,7 @@ export namespace RouteInfoV2 {
     const rawHash = window.location.hash;
     return {
       path,
-      query: hasParams ? query : undefined,
+      params: hasParams ? query : undefined,
       hash:
         rawHash.length === 0
           ? undefined
@@ -33,7 +33,7 @@ export namespace RouteInfoV2 {
   /** Transforms this route information back into a URL. */
   export function toLink(info: RouteInfoV2): string {
     let result = info.path;
-    const query = info.query || {};
+    const query = info.params || {};
     const queryKeys = Object.keys(query);
     if (queryKeys.length > 0) {
       result += "?";

@@ -225,7 +225,7 @@ describe("Reading UI", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, query: { q: "2" } },
+          route: { path: `${WORK_PAGE}/dbg`, params: { q: "2" } },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -251,7 +251,7 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("next section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: { q: "2" } })
+      expect.objectContaining({ path, params: { q: "2" } })
     );
   });
 
@@ -269,7 +269,7 @@ describe("Reading UI", () => {
     await user.keyboard("[ArrowRight]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: { q: "2" } })
+      expect.objectContaining({ path, params: { q: "2" } })
     );
   });
 
@@ -279,7 +279,7 @@ describe("Reading UI", () => {
     const path = `${WORK_PAGE}/dbg`;
     render(
       <RouterV2.TestRoot
-        initial={{ path, query: { q: "2" } }}
+        initial={{ path, params: { q: "2" } }}
         updateListener={mockNav}>
         <ReadingPage />
       </RouterV2.TestRoot>
@@ -289,7 +289,7 @@ describe("Reading UI", () => {
     await user.keyboard("[ArrowLeft]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: { q: "1" } })
+      expect.objectContaining({ path, params: { q: "1" } })
     );
   });
 
@@ -299,7 +299,7 @@ describe("Reading UI", () => {
     const path = `${WORK_PAGE}/dbg`;
     render(
       <RouterV2.TestRoot
-        initial={{ path, query: { q: "2" } }}
+        initial={{ path, params: { q: "2" } }}
         updateListener={mockNav}>
         <ReadingPage />
       </RouterV2.TestRoot>
@@ -309,7 +309,7 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("previous section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: { q: "1" } })
+      expect.objectContaining({ path, params: { q: "1" } })
     );
   });
 
@@ -320,7 +320,7 @@ describe("Reading UI", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, query: { q: "1" } },
+          route: { path: `${WORK_PAGE}/dbg`, params: { q: "1" } },
           navigateTo: mockNav,
         }}>
         <ReadingPage />
@@ -338,7 +338,7 @@ describe("Reading UI", () => {
     render(
       <RouteContextV2.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, query: { q: "1" } },
+          route: { path: `${WORK_PAGE}/dbg`, params: { q: "1" } },
           navigateTo: () => {},
         }}>
         <ReadingPage />
