@@ -4,9 +4,9 @@
 
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SettingsHandler } from "@/web/client/components/global_flags";
-import { RouteContext } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
+import { RouteContextV2 } from "@/web/client/router/router_v2";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 
@@ -55,14 +55,14 @@ describe("DictionarySearch", () => {
   it("handles navigation on input box enter", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={() => {}}
         />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     const search = screen.getByRole("combobox");
     await user.click(search);
@@ -72,21 +72,21 @@ describe("DictionarySearch", () => {
     expect(mockNav).not.toHaveBeenCalled();
     await user.type(search, "a{enter}");
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "a" })
+      expect.objectContaining({ path: "/", query: { q: "a" } })
     );
   });
 
   it("handles navigation on option click", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={() => {}}
         />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     const search = screen.getByRole("combobox");
     await user.click(search);
@@ -96,21 +96,24 @@ describe("DictionarySearch", () => {
     await user.click(screen.getByText("ab"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "ab,LnS" })
+      expect.objectContaining({
+        path: "/",
+        query: expect.objectContaining({ q: "ab,LnS" }),
+      })
     );
   });
 
   it("handles navigation on option enter", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={() => {}}
         />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     const search = screen.getByRole("combobox");
     await user.click(search);
@@ -121,7 +124,10 @@ describe("DictionarySearch", () => {
     await user.type(search, "{enter}");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "ack,SnH" })
+      expect.objectContaining({
+        path: "/",
+        query: expect.objectContaining({ q: "ack,SnH" }),
+      })
     );
   });
 
@@ -129,14 +135,14 @@ describe("DictionarySearch", () => {
     const mockSetDicts = jest.fn();
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={mockSetDicts}
         />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     expect(screen.queryByText("Dictionary Options")).toBeNull();
     const settings = screen.getByLabelText("search settings");

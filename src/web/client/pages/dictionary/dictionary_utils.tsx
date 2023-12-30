@@ -9,13 +9,14 @@ import {
 } from "@/web/client/pages/tooltips";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { Navigation, RouteContext } from "@/web/client/components/router";
 import { InflectionData } from "@/common/dictionaries/dict_result";
 import { FontSizes } from "@/web/client/styles";
 import {
   DictContext,
   DictContextOptions,
 } from "@/web/client/pages/dictionary/dict_context";
+import { Navigator, RouterV2 } from "@/web/client/router/router_v2";
+import { ClientPaths } from "@/web/client/pages/library/common";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -98,14 +99,14 @@ export const HELP_ENTRY = new XmlNode(
 );
 
 function ShLink(props: { text: string; query: string }) {
-  const nav = React.useContext(RouteContext);
+  const { nav } = RouterV2.useRouter();
   return (
     <span
       className="dLink"
       onClick={() =>
-        Navigation.query(nav, props.query, {
-          internalSource: true,
-          canonicalPath: "/dicts",
+        nav.to({
+          path: ClientPaths.DICT_PAGE,
+          query: { q: props.query },
         })
       }>
       {props.text}
@@ -114,23 +115,22 @@ function ShLink(props: { text: string; query: string }) {
 }
 
 function onLatinWordClick(
-  nav: Navigation,
+  nav: Navigator,
   dictContext: DictContextOptions,
   word: string
 ) {
   if (dictContext.setInitial !== undefined) {
     dictContext.setInitial(word);
   } else {
-    Navigation.query(nav, `${word},LnS`, {
-      experimentalSearch: true,
-      internalSource: true,
-      canonicalPath: "/dicts",
+    nav.to({
+      path: ClientPaths.DICT_PAGE,
+      query: { q: `${word},LnS`, o: "1" },
     });
   }
 }
 
 function LatLink(props: { word: string; orig?: string }) {
-  const nav = React.useContext(RouteContext);
+  const { nav } = RouterV2.useRouter();
   const dictContext = React.useContext(DictContext);
 
   return (

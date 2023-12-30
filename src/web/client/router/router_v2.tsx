@@ -52,24 +52,45 @@ export namespace RouteInfoV2 {
 }
 
 function pushRouteInfo(info: RouteInfoV2): void {
-  window.history.pushState({}, "", RouteInfoV2.toLink(info));
+  const oldLink = RouteInfoV2.toLink(RouteInfoV2.extract());
+  const newLink = RouteInfoV2.toLink(info);
+  if (oldLink !== newLink) {
+    window.history.pushState({}, "", newLink);
+  }
 }
 
+function onRouteUpdate(
+  action: React.SetStateAction<RouteInfoV2>,
+  setRouteState: React.Dispatch<React.SetStateAction<RouteInfoV2>>
+): void {
+  if (typeof action === "function") {
+    setRouteState((prev) => {
+      const next = action(prev);
+      pushRouteInfo(next);
+      return next;
+    });
+  } else {
+    pushRouteInfo(action);
+    setRouteState(action);
+  }
+}
 export interface Navigator {
-  to: (newRoute: RouteInfoV2) => void;
+  to: React.Dispatch<React.SetStateAction<RouteInfoV2>>;
+  toPath: (newPath: string) => void;
 }
 
 export function getNavigator(
-  navigateTo: (info: RouteInfoV2) => any
+  navigateTo: React.Dispatch<React.SetStateAction<RouteInfoV2>>
 ): Navigator {
   return {
     to: navigateTo,
+    toPath: (path: string) => navigateTo({ path }),
   };
 }
 
 type RouteAndSetter = {
   route: RouteInfoV2;
-  navigateTo: (info: RouteInfoV2) => any;
+  navigateTo: React.Dispatch<React.SetStateAction<RouteInfoV2>>;
 };
 export const RouteContextV2 = createContext<RouteAndSetter>({
   route: { path: "" },
@@ -77,14 +98,27 @@ export const RouteContextV2 = createContext<RouteAndSetter>({
 });
 
 export namespace RouterV2 {
-  /** Parent component to use at the application root. */
-  export function Root(props: PropsWithChildren<object>) {
-    const [route, setRoute] = React.useState(RouteInfoV2.extract());
+  interface RootProps {
+    /**
+     * The initial route value.
+     *
+     * If empty, it will compute this from the browser URL. This
+     * should generally only be set for unit tests.
+     */
+    initial?: RouteInfoV2;
+  }
 
-    const navigateTo = React.useCallback((info: RouteInfoV2) => {
-      pushRouteInfo(info);
-      setRoute(info);
-    }, []);
+  /** Parent component to use at the application root. */
+  export function Root(props: PropsWithChildren<RootProps>) {
+    const [route, setRoute] = React.useState(
+      props.initial || RouteInfoV2.extract()
+    );
+
+    const navigateTo = React.useCallback(
+      (action: React.SetStateAction<RouteInfoV2>) =>
+        onRouteUpdate(action, setRoute),
+      [setRoute]
+    );
 
     useEffect(() => {
       const popstateListener = () => {
@@ -101,13 +135,36 @@ export namespace RouterV2 {
     );
   }
 
-  /** Hook to use in components that need routing. */
-  export function useRouter(): [RouteInfoV2, Navigator] {
-    const { route, navigateTo } = React.useContext(RouteContextV2);
-    const navigator = React.useMemo(
-      () => getNavigator(navigateTo),
-      [navigateTo]
+  interface TestRootProps extends RootProps {
+    updateListener?: (route: RouteInfoV2) => any;
+  }
+
+  function TestRootHelper(props: TestRootProps) {
+    const { initial, updateListener } = props;
+    const { route } = useRouter();
+    useEffect(() => {
+      if (updateListener !== undefined && route !== initial) {
+        updateListener(route);
+      }
+    }, [route, updateListener, initial]);
+
+    return null;
+  }
+
+  /** Parent component to use at the application root for tests. */
+  export function TestRoot(props: PropsWithChildren<TestRootProps>) {
+    return (
+      <Root initial={props.initial}>
+        {props.children}
+        <TestRootHelper {...props} />
+      </Root>
     );
-    return [route, navigator];
+  }
+
+  /** Hook to use in components that need routing. */
+  export function useRouter(): { route: RouteInfoV2; nav: Navigator } {
+    const { route, navigateTo } = React.useContext(RouteContextV2);
+    const nav = React.useMemo(() => getNavigator(navigateTo), [navigateTo]);
+    return { route, nav };
   }
 }

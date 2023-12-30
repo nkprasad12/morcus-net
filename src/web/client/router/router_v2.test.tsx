@@ -11,7 +11,7 @@ function TestApp(props: {
   navSpy: (info: RouteInfoV2) => any;
   target?: RouteInfoV2;
 }) {
-  const [route, nav] = RouterV2.useRouter();
+  const { route, nav } = RouterV2.useRouter();
   const { navSpy } = props;
 
   useEffect(() => {

@@ -16,7 +16,6 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DictsFusedApi } from "@/web/api_routes";
 import { Footer } from "@/web/client/components/footer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
-import { RouteContext } from "@/web/client/components/router";
 import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   ElementAndKey,
@@ -52,6 +51,8 @@ import {
 import Divider from "@mui/material/Divider";
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
+import { RouterV2 } from "@/web/client/router/router_v2";
+import { RouteInfo } from "@/web/client/components/router";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -557,20 +558,21 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
   const settings = React.useContext(GlobalSettingsContext);
-  const nav = React.useContext(RouteContext);
+  const { route } = RouterV2.useRouter();
+  const routeV1 = RouteInfo.fromV2(route);
   const title = React.useContext(TitleContext);
 
   const isEmbedded = props?.embedded === true;
   const isSmall = isEmbedded || isScreenSmall;
   const scale = (props?.textScale || 100) / 100;
   const textScale = props?.textScale;
-  const idSearch = nav.route.idSearch === true;
+  const idSearch = routeV1.idSearch === true;
 
   const { initial } = props;
-  const query = isEmbedded ? initial : nav.route.query;
+  const query = isEmbedded ? initial : routeV1.query;
   const experimentalMode =
     settings.data.experimentalMode === true ||
-    nav.route.experimentalSearch === true;
+    routeV1.experimentalSearch === true;
 
   React.useEffect(() => {
     if (query === undefined) {
@@ -593,7 +595,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       const allEntries = getEntriesByDict(
         newResults.data,
         sectionRef,
-        nav.route.hash,
+        routeV1.hash,
         isEmbedded
       );
       flushSync(() => {
@@ -604,7 +606,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       const scrollElement =
         sectionRef.current || (isEmbedded ? null : scrollTopRef.current);
       const scrollType =
-        nav.route.internalSource === true || isEmbedded
+        routeV1.internalSource === true || isEmbedded
           ? SCROLL_JUMP
           : scrollElement === scrollTopRef.current
           ? SCROLL_SMOOTH
@@ -613,9 +615,9 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     });
   }, [
     query,
-    nav.route.hash,
+    routeV1.hash,
     experimentalMode,
-    nav.route.internalSource,
+    routeV1.internalSource,
     idSearch,
     isEmbedded,
   ]);

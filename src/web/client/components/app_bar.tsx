@@ -13,10 +13,10 @@ import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { Navigation, RouteContext } from "@/web/client/components/router";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { RouterV2 } from "@/web/client/router/router_v2";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -99,17 +99,17 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const darkModeOn = globalSettings.data.darkMode === true;
   const iconSize = isSmall ? "small" : "medium";
 
-  const nav = React.useContext(RouteContext);
+  const { route, nav } = RouterV2.useRouter();
   const [drawerVisible, setDrawerVisible] = React.useState<boolean>(false);
 
   const handlePageClick = (path: string) => {
     return () => {
       setDrawerVisible(false);
-      Navigation.to(nav, path);
+      nav.to({ path });
     };
   };
 
-  const isCurrentPage = (path: string) => nav.route.path === path;
+  const isCurrentPage = (path: string) => route.path === path;
   const mainPages = props.pages.filter(
     (page) => page.notInMainSection !== true
   );

@@ -8,13 +8,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 
 import { assertEqual } from "@/common/assert";
-import { RouteContext } from "@/web/client/components/router";
 import {
   DictionaryViewV2,
   ERROR_STATE_MESSAGE,
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { RouteContextV2 } from "@/web/client/router/router_v2";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -52,10 +52,10 @@ describe("New Dictionary View", () => {
     mockCallApiMockResolvedValue([]);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionaryViewV2 />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     const searchBar = screen.getByRole("combobox");
 
@@ -64,20 +64,23 @@ describe("New Dictionary View", () => {
     await user.type(searchBar, "{enter}");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "G" })
+      expect.objectContaining({
+        path: "/",
+        query: expect.objectContaining({ q: "G" }),
+      })
     );
   });
 
   it("calls shows error on failure", async () => {
     mockCallApi.mockRejectedValue(new Error("Failure for test"));
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: "Gallia" },
+          route: { path: "/", query: { q: "Gallia" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await waitFor(() => {
@@ -118,13 +121,13 @@ describe("New Dictionary View", () => {
       ],
     });
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", query: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
@@ -162,13 +165,13 @@ describe("New Dictionary View", () => {
     HTMLElement.prototype.scrollIntoView = spyScrollTo;
     mockCallApiMockResolvedValue({ LS: [] });
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", query: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
@@ -205,13 +208,13 @@ describe("New Dictionary View", () => {
       ],
     });
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", query: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
@@ -262,13 +265,13 @@ describe("New Dictionary View", () => {
       ],
     });
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", query: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);

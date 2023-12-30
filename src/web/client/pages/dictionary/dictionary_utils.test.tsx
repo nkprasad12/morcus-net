@@ -18,7 +18,7 @@ import {
   InflectionDataSection,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { RouteContext } from "@/web/client/components/router";
+import { RouteContextV2 } from "@/web/client/router/router_v2";
 
 console.log = jest.fn();
 console.debug = jest.fn();
@@ -105,16 +105,19 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, undefined);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await user.click(screen.getByText("Gallia"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/dicts", query: "omnis,SnH" })
+      expect.objectContaining({
+        path: "/dicts",
+        query: expect.objectContaining({ q: "omnis,SnH" }),
+      })
     );
   });
 
@@ -130,16 +133,19 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, undefined);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await user.click(screen.getByText("omnis"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/dicts", query: "omnis,LnS" })
+      expect.objectContaining({
+        path: "/dicts",
+        query: expect.objectContaining({ q: "omnis,LnS" }),
+      })
     );
   });
 
@@ -156,16 +162,19 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, undefined);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await user.click(screen.getByText("blah"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/dicts", query: "omnis,LnS" })
+      expect.objectContaining({
+        path: "/dicts",
+        query: expect.objectContaining({ q: "omnis,LnS" }),
+      })
     );
   });
 });

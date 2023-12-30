@@ -1,6 +1,4 @@
-import { PropsWithChildren, useEffect } from "react";
-import * as React from "react";
-import { createContext } from "react";
+import { RouteInfoV2 } from "@/web/client/router/router_v2";
 
 const QUERY_KEY = "q";
 const OPTIONS_KEY = "o";
@@ -17,113 +15,43 @@ export interface RouteInfo {
   idSearch?: boolean;
 }
 
-export function extractRouteInfo(): RouteInfo {
-  const path = window.location.pathname;
-  const params = new URLSearchParams(window.location.search);
-  const hash = window.location.hash;
-  const option = params.get(OPTIONS_KEY);
-  return {
-    path: path,
-    query: params.get(QUERY_KEY) || undefined,
-    experimentalSearch: option === EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED,
-    hash: hash.length === 0 ? undefined : decodeURI(hash.substring(1)),
-    idSearch: option === ID_SEARCH_ENABLED,
-  };
-}
-
-export function linkForInfo(info: RouteInfo): string {
-  let state = info.path;
-  if (info.query !== undefined) {
-    state += `?${QUERY_KEY}=${encodeURI(info.query)}`;
+export namespace RouteInfo {
+  export function toV2(info: RouteInfo): RouteInfoV2 {
+    const result: RouteInfoV2 = {
+      path: info.path,
+      hash: info.hash,
+    };
     const optionMode =
       info.experimentalSearch === true
         ? EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED
         : info.idSearch === true
         ? ID_SEARCH_ENABLED
         : undefined;
+    const query = info.query;
+    if (optionMode !== undefined || query !== undefined) {
+      result.query = {};
+    }
     if (optionMode !== undefined) {
-      state += `&${OPTIONS_KEY}=${optionMode}`;
+      result.query![OPTIONS_KEY] = optionMode;
     }
-  }
-  if (info.hash !== undefined) {
-    state += `#${encodeURI(info.hash)}`;
-  }
-  return state;
-}
-
-function pushRouteInfo(info: RouteInfo): void {
-  window.history.pushState({}, "", linkForInfo(info));
-}
-
-export interface Navigation {
-  route: RouteInfo;
-  navigateTo: (target: RouteInfo) => any;
-}
-
-export namespace Navigation {
-  export function redirect(nav: Navigation, target: string): void {
-    toRouteInfo(nav, {
-      path: target,
-      query: nav.route.query,
-      hash: nav.route.hash,
-    });
-  }
-
-  export function to(nav: Navigation, target: string): void {
-    toRouteInfo(nav, { path: target });
-  }
-
-  export function query(
-    nav: Navigation,
-    query: string,
-    options?: {
-      experimentalSearch?: boolean;
-      internalSource?: boolean;
-      // This is a hack, remove it later.
-      canonicalPath?: string;
+    if (query !== undefined) {
+      result.query![QUERY_KEY] = query;
     }
-  ): void {
-    toRouteInfo(nav, {
-      path: options?.canonicalPath || nav.route.path,
-      query: query,
-      experimentalSearch: options?.experimentalSearch,
-      internalSource: options?.internalSource,
-    });
+    return result;
   }
 
-  function toRouteInfo(nav: Navigation, newInfo: RouteInfo) {
-    pushRouteInfo(newInfo);
-    nav.navigateTo(newInfo);
-  }
-}
-
-export const RouteContext: React.Context<Navigation> = createContext({
-  route: { path: "" },
-  navigateTo: (_) => {},
-});
-
-export namespace Router {
-  export function Handler(props: PropsWithChildren<object>) {
-    const [route, setRoute] = React.useState<RouteInfo>(extractRouteInfo());
-
-    useEffect(() => {
-      const popstateListener = () => {
-        setRoute(extractRouteInfo());
-      };
-      window.addEventListener("popstate", popstateListener);
-      return () => {
-        window.removeEventListener("popstate", popstateListener);
-      };
-    }, []);
-
-    return (
-      <RouteContext.Provider
-        value={{
-          route: route,
-          navigateTo: setRoute,
-        }}>
-        {props.children}
-      </RouteContext.Provider>
-    );
+  export function fromV2(info: RouteInfoV2): RouteInfo {
+    const result: RouteInfo = {
+      path: info.path,
+      hash: info.hash,
+    };
+    if (info.query !== undefined) {
+      const option = info.query[OPTIONS_KEY];
+      result.experimentalSearch =
+        option === EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED;
+      result.idSearch = option === ID_SEARCH_ENABLED;
+      result.query = info.query[QUERY_KEY];
+    }
+    return result;
   }
 }

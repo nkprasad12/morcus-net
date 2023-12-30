@@ -2,8 +2,8 @@ import { useState, useContext } from "react";
 
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";
-import { RouteContext } from "@/web/client/components/router";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { RouterV2 } from "@/web/client/router/router_v2";
 
 export namespace SinglePageApp {
   export interface Page extends ResponsiveAppBar.Page {
@@ -18,13 +18,13 @@ export namespace SinglePageApp {
 }
 
 function Content(props: { usedPages: SinglePageApp.Page[] }) {
-  const nav = useContext(RouteContext);
+  const { route } = RouterV2.useRouter();
 
   for (const page of props.usedPages) {
     const subpages = page.hasSubpages === true;
     if (
-      (subpages && nav.route.path.startsWith(page.path)) ||
-      page.path === nav.route.path
+      (subpages && route.path.startsWith(page.path)) ||
+      page.path === route.path
     ) {
       return <page.content />;
     }

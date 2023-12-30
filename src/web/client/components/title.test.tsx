@@ -2,25 +2,21 @@
  * @jest-environment jsdom
  */
 
-import {
-  Navigation,
-  RouteContext,
-  Router,
-} from "@/web/client/components/router";
 import { TitleContext, TitleHandler } from "@/web/client/components/title";
+import { RouterV2 } from "@/web/client/router/router_v2";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { useContext } from "react";
 
 function TestApp() {
-  const nav = useContext(RouteContext);
+  const { nav } = RouterV2.useRouter();
   const title = useContext(TitleContext);
 
   return (
     <div
       onClick={() => {
         title.setCurrentDictWord("dumtaxat");
-        Navigation.to(nav, "/dicts");
+        nav.toPath("/dicts");
       }}>
       Click
     </div>
@@ -30,11 +26,11 @@ function TestApp() {
 describe("TitleHandler", () => {
   it("sets default title at start", () => {
     render(
-      <Router.Handler>
+      <RouterV2.Root>
         <TitleHandler>
           <TestApp />
         </TitleHandler>
-      </Router.Handler>
+      </RouterV2.Root>
     );
 
     expect(document.title).toBe("Morcus Latin Tools");
@@ -42,11 +38,11 @@ describe("TitleHandler", () => {
 
   it("sets dictionary title", async () => {
     render(
-      <Router.Handler>
+      <RouterV2.Root>
         <TitleHandler>
           <TestApp />
         </TitleHandler>
-      </Router.Handler>
+      </RouterV2.Root>
     );
 
     await user.click(screen.getByText("Click"));

@@ -4,13 +4,13 @@
 
 import user from "@testing-library/user-event";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
-import { RouteContext } from "@/web/client/components/router";
 import { render, screen } from "@testing-library/react";
 import { ReadingPage } from "@/web/client/pages/library/reader";
 import { ClientPaths } from "@/web/client/pages/library/common";
 import { ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
+import { RouteContextV2, RouterV2 } from "@/web/client/router/router_v2";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
@@ -129,13 +129,13 @@ describe("Reading UI", () => {
     const testId = "caesar";
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledWith(expect.anything(), testId);
@@ -146,13 +146,13 @@ describe("Reading UI", () => {
     const testId = "caesar";
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await screen.findByText(/Loading/);
@@ -163,13 +163,13 @@ describe("Reading UI", () => {
     const testId = "caesar";
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/${testId}` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await screen.findByText(/error/);
@@ -179,13 +179,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await screen.findByText(/DBG/);
@@ -196,13 +196,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_VARIANTS);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await screen.findByText(/\[gap\]/);
@@ -223,13 +223,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, query: "2" },
+          route: { path: `${WORK_PAGE}/dbg`, query: { q: "2" } },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     await screen.findByText(/DBG/);
 
@@ -242,20 +242,16 @@ describe("Reading UI", () => {
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
     render(
-      <RouteContext.Provider
-        value={{
-          route: { path },
-          navigateTo: mockNav,
-        }}>
+      <RouterV2.TestRoot initial={{ path }} updateListener={mockNav}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouterV2.TestRoot>
     );
     await screen.findByText(/DBG/);
 
     await user.click(screen.queryByLabelText("next section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: "2" })
+      expect.objectContaining({ path, query: { q: "2" } })
     );
   });
 
@@ -264,20 +260,16 @@ describe("Reading UI", () => {
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
     render(
-      <RouteContext.Provider
-        value={{
-          route: { path },
-          navigateTo: mockNav,
-        }}>
+      <RouterV2.TestRoot initial={{ path }} updateListener={mockNav}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouterV2.TestRoot>
     );
     await screen.findByText(/DBG/);
 
     await user.keyboard("[ArrowRight]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: "2" })
+      expect.objectContaining({ path, query: { q: "2" } })
     );
   });
 
@@ -286,20 +278,18 @@ describe("Reading UI", () => {
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
     render(
-      <RouteContext.Provider
-        value={{
-          route: { path, query: "2" },
-          navigateTo: mockNav,
-        }}>
+      <RouterV2.TestRoot
+        initial={{ path, query: { q: "2" } }}
+        updateListener={mockNav}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouterV2.TestRoot>
     );
     await screen.findByText(/DBG/);
 
     await user.keyboard("[ArrowLeft]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: "1" })
+      expect.objectContaining({ path, query: { q: "1" } })
     );
   });
 
@@ -308,20 +298,18 @@ describe("Reading UI", () => {
     const mockNav = jest.fn();
     const path = `${WORK_PAGE}/dbg`;
     render(
-      <RouteContext.Provider
-        value={{
-          route: { path, query: "2" },
-          navigateTo: mockNav,
-        }}>
+      <RouterV2.TestRoot
+        initial={{ path, query: { q: "2" } }}
+        updateListener={mockNav}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouterV2.TestRoot>
     );
     await screen.findByText(/DBG/);
 
     await user.click(screen.queryByLabelText("previous section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, query: "1" })
+      expect.objectContaining({ path, query: { q: "1" } })
     );
   });
 
@@ -330,13 +318,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
     const mockNav = jest.fn();
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, query: "1" },
+          route: { path: `${WORK_PAGE}/dbg`, query: { q: "1" } },
           navigateTo: mockNav,
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await user.click(screen.queryByLabelText("Reader settings")!);
@@ -348,13 +336,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, query: "1" },
+          route: { path: `${WORK_PAGE}/dbg`, query: { q: "1" } },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     await screen.findByText(/Gallia/);
   });
@@ -363,13 +351,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     await screen.findByText(/Gallia/);
 
@@ -382,13 +370,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     await screen.findByText(/Gallia/);
 
@@ -403,13 +391,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     await screen.findByText(/Gallia/);
 
@@ -423,13 +411,13 @@ describe("Reading UI", () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{
           route: { path: `${WORK_PAGE}/dbg` },
           navigateTo: () => {},
         }}>
         <ReadingPage />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
     await screen.findByText(/Gallia/);
 

@@ -1,6 +1,5 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { RouteContext, Navigation } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
@@ -19,6 +18,7 @@ import {
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
 import { SearchBox } from "@/web/client/components/generic/search";
+import { RouterV2 } from "@/web/client/router/router_v2";
 
 function toQuery(info: [DictInfo, string]): string {
   return `${info[1]},${info[0].key.replace("&", "n")}`;
@@ -136,7 +136,7 @@ export function DictionarySearch(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
-  const nav = useContext(RouteContext);
+  const { route, nav } = RouterV2.useRouter();
   const settings = useContext(GlobalSettingsContext);
 
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
@@ -145,9 +145,13 @@ export function DictionarySearch(props: {
     if (searchTerm.length === 0) {
       return;
     }
-    Navigation.query(nav, searchTerm, {
-      experimentalSearch: settings.data.experimentalMode === true,
-    });
+    const query: Record<string, string> = {
+      q: searchTerm,
+    };
+    if (settings.data.experimentalMode === true) {
+      query.o = "1";
+    }
+    nav.to({ path: route.path, query });
   }
 
   return (
@@ -157,7 +161,7 @@ export function DictionarySearch(props: {
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
         smallScreen={props.smallScreen}
-        autoFocused={nav.route.query === undefined}
+        autoFocused={route.query && route.query.q !== undefined}
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(toQuery(t))}
         optionsForInput={(input) =>

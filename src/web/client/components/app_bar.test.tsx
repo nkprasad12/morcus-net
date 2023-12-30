@@ -6,7 +6,6 @@ import { describe, expect, test } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
-import { RouteContext } from "@/web/client/components/router";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -19,6 +18,7 @@ import {
   SettingsHandler,
   getGlobalSettings,
 } from "@/web/client/components/global_flags";
+import { RouteContextV2 } from "@/web/client/router/router_v2";
 
 describe("App Bar View", () => {
   const pages: ResponsiveAppBar.Page[] = [
@@ -52,10 +52,10 @@ describe("App Bar View", () => {
   test("handles menu clicks", async () => {
     const mockSetPage = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}>
         <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await user.click(screen.getAllByText(pages[0].name)[0]);
@@ -67,10 +67,10 @@ describe("App Bar View", () => {
   test("icon menu clicks", async () => {
     const mockSetPage = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}>
         <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     await user.click(screen.getByLabelText("site settings"));

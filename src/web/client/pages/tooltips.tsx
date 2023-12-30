@@ -1,4 +1,3 @@
-import { RouteInfo, linkForInfo } from "@/web/client/components/router";
 import LinkIcon from "@mui/icons-material/Link";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
@@ -7,6 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import * as React from "react";
 import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
+import { RouteInfoV2 } from "@/web/client/router/router_v2";
 
 export type TooltipPlacement = "top-start" | "right";
 
@@ -207,19 +207,19 @@ export function SectionLinkTooltip(props: {
   const message = `Copy ${isArticle ? "article" : "section"} link`;
 
   function getLink(): string {
-    const after: RouteInfo = {
+    const after: RouteInfoV2 = {
       path: "/dicts",
+      query: {},
     };
     if (isArticle) {
-      after.query = props.id;
+      after.query!.q = props.id;
     } else {
       const coreId = props.id.split(".")[0];
-      after.query = coreId;
+      after.query!.q = coreId;
       after.hash = props.id;
     }
-    after.experimentalSearch = false;
-    after.idSearch = true;
-    return `${window.location.origin}${linkForInfo(after)}`;
+    after.query!.o = "2";
+    return `${window.location.origin}${RouteInfoV2.toLink(after)}`;
   }
 
   return (

@@ -6,7 +6,7 @@ import { Library } from "@/web/client/pages/library/library";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import { RouteContext } from "@/web/client/components/router";
+import { RouteContextV2 } from "@/web/client/router/router_v2";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 
@@ -28,10 +28,10 @@ describe("library view", () => {
   it("shows items", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContext.Provider
+      <RouteContextV2.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <Library />
-      </RouteContext.Provider>
+      </RouteContextV2.Provider>
     );
 
     const dbgWork = await screen.findByText(/Caesar/);

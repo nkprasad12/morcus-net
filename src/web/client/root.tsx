@@ -10,7 +10,6 @@ import ThemeProvider from "@mui/material/styles/ThemeProvider";
 
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { Solarized } from "@/web/client/colors";
-import { Router } from "@/web/client/components/router";
 import {
   GlobalSettingsContext,
   SettingsHandler,
@@ -24,6 +23,7 @@ import {
   TEXT_STYLE,
   getAppBarColor,
 } from "@/web/client/styles";
+import { RouterV2 } from "@/web/client/router/router_v2";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -118,11 +118,11 @@ root.render(
       <CustomThemeProvider>
         <ConfigurableStyles />
         <StyledEngineProvider injectFirst>
-          <Router.Handler>
+          <RouterV2.Root>
             <TitleHandler>
               <SinglePageApp {...props} />
             </TitleHandler>
-          </Router.Handler>
+          </RouterV2.Root>
         </StyledEngineProvider>
       </CustomThemeProvider>
     </SettingsHandler>
