@@ -337,6 +337,13 @@ export const GENERIC_HOVERS = AbbreviationTrieOld.forMap(
       "Pregn.",
       "pregnant, -ly. (Obsolete, = unresistingly; openly; hence, clearly, evidently )",
     ],
+    ...relaxedAbbrev(
+      [
+        "praegn.",
+        "pregnant, -ly. (Obsolete, = unresistingly; openly; hence, clearly, evidently )",
+      ],
+      "Case"
+    ),
     ["prop.", "proper, -ly, in a proper sense."],
     ["prov.", "proverb, or proverbial(ly)."],
     ["proverb.", "proverb, or proverbial(ly)."],
