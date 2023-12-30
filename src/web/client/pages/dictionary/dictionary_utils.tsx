@@ -100,15 +100,17 @@ export const HELP_ENTRY = new XmlNode(
 
 function ShLink(props: { text: string; query: string }) {
   const { nav } = RouterV2.useRouter();
+  const { fromInternalLink } = React.useContext(DictContext);
+
   return (
     <span
       className="dLink"
-      onClick={() =>
-        nav.to({
-          path: ClientPaths.DICT_PAGE,
-          query: { q: props.query },
-        })
-      }>
+      onClick={() => {
+        if (fromInternalLink) {
+          fromInternalLink.current = true;
+        }
+        nav.to({ path: ClientPaths.DICT_PAGE, query: { q: props.query } });
+      }}>
       {props.text}
     </span>
   );
@@ -122,6 +124,9 @@ function onLatinWordClick(
   if (dictContext.setInitial !== undefined) {
     dictContext.setInitial(word);
   } else {
+    if (dictContext.fromInternalLink) {
+      dictContext.fromInternalLink.current = true;
+    }
     nav.to({
       path: ClientPaths.DICT_PAGE,
       query: { q: `${word},LnS`, o: "1" },

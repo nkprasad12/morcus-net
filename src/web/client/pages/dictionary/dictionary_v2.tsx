@@ -561,6 +561,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const { route } = RouterV2.useRouter();
   const routeV1 = RouteInfo.fromV2(route);
   const title = React.useContext(TitleContext);
+  const fromInternalLink = React.useRef<boolean>(false);
 
   const isEmbedded = props?.embedded === true;
   const isSmall = isEmbedded || isScreenSmall;
@@ -606,21 +607,15 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       const scrollElement =
         sectionRef.current || (isEmbedded ? null : scrollTopRef.current);
       const scrollType =
-        routeV1.internalSource === true || isEmbedded
+        fromInternalLink.current || isEmbedded
           ? SCROLL_JUMP
           : scrollElement === scrollTopRef.current
           ? SCROLL_SMOOTH
           : SCROLL_JUMP;
       scrollElement?.scrollIntoView(scrollType);
+      fromInternalLink.current = false;
     });
-  }, [
-    query,
-    routeV1.hash,
-    experimentalMode,
-    routeV1.internalSource,
-    idSearch,
-    isEmbedded,
-  ]);
+  }, [query, routeV1.hash, experimentalMode, idSearch, isEmbedded]);
 
   React.useEffect(() => {
     if (!isEmbedded && query !== undefined) {
@@ -639,6 +634,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       setDictsToUse,
       scrollTopRef,
       setInitial: props.setInitial,
+      fromInternalLink,
     }),
     [
       isEmbedded,
@@ -650,6 +646,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       setDictsToUse,
       scrollTopRef,
       props.setInitial,
+      fromInternalLink,
     ]
   );
 
