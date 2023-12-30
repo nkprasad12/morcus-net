@@ -274,11 +274,6 @@ async function findText(text: string, page: Page, parentType: string = "*") {
   return results[0] as ElementHandle<Element>;
 }
 
-async function assertHasText(text: string, page: Page) {
-  const results = await page.$x(`//*[contains(text(), "${text}")]`);
-  expect(results).not.toHaveLength(0);
-}
-
 // Just on chrome for now, but we should add firefox later.
 // It requires some extra setup steps to install the browser.
 describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
@@ -331,6 +326,15 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     expect(title).toBe(expected);
   }
 
+  async function checkHasText(text: string): Promise<void> {
+    const page = checkPresent(currentPage);
+    const results = await page.$x(`//*[contains(text(), "${text}")]`);
+    if (results.length === 0) {
+      await takeScreenshot();
+    }
+    expect(results).not.toHaveLength(0);
+  }
+
   async function getPage(size: ScreenSize, morcusPage?: string): Promise<Page> {
     const page = checkPresent(currentPage);
     await setSize(size, page);
@@ -356,8 +360,8 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("tabNav", screenSize, i);
 
       await openTab("About", screenSize, page);
-      await assertHasText("GPL-3.0", page);
-      await assertHasText("CC BY-SA 4.0", page);
+      await checkHasText("GPL-3.0");
+      await checkHasText("CC BY-SA 4.0");
     }
   );
 
@@ -372,7 +376,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       await page.keyboard.press("Enter");
 
       await checkTitleIs("canaba | Morcus Latin Tools");
-      await assertHasText("hovel", page);
+      await checkHasText("hovel");
     }
   );
 
@@ -384,14 +388,14 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can");
-      await assertHasText("cānăba", page);
+      await checkHasText("cānăba");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
 
       await checkTitleIs("cānăba | Morcus Latin Tools");
-      await assertHasText("hovel", page);
+      await checkHasText("hovel");
     }
   );
 
@@ -403,22 +407,22 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can");
-      await assertHasText("cānăba", page);
+      await checkHasText("cānăba");
       await (await findText("cānăba", page, "span")).click();
 
       await checkTitleIs("cānăba | Morcus Latin Tools");
-      await assertHasText("hovel", page);
+      await checkHasText("hovel");
     }
   );
 
   it.each(ALL_SCREEN_SIZES(1))(
     "should load about page on %s screen #%s",
     async (screenSize, i) => {
-      const page = await getPage(screenSize, "/about");
+      await getPage(screenSize, "/about");
       writeContext("aboutPage", screenSize, i);
 
-      await assertHasText("GPL-3.0", page);
-      await assertHasText("CC BY-SA 4.0", page);
+      await checkHasText("GPL-3.0");
+      await checkHasText("CC BY-SA 4.0");
     }
   );
 
@@ -431,7 +435,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       await page.keyboard.type("influence");
       await page.keyboard.press("Enter");
 
-      await assertHasText("cohortandum", page);
+      await checkHasText("cohortandum");
       await (await findText("cohortandum", page)).click();
 
       expect(page.url()).toContain("/dicts?q=cohortandum");
