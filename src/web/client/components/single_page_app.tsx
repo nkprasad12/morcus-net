@@ -4,12 +4,13 @@ import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
+import { ContentPage, matchesPage } from "@/web/client/router/paths";
+import { checkPresent } from "@/common/assert";
 
 export namespace SinglePageApp {
-  export interface Page extends ResponsiveAppBar.Page {
-    content: (props: Partial<Record<string, any>>) => JSX.Element;
+  export interface Page extends ContentPage {
     experimental?: true;
-    hasSubpages?: true;
+    appBarConfig?: ResponsiveAppBar.Page;
   }
 
   export interface Props {
@@ -21,12 +22,8 @@ function Content(props: { usedPages: SinglePageApp.Page[] }) {
   const { route } = Router.useRouter();
 
   for (const page of props.usedPages) {
-    const subpages = page.hasSubpages === true;
-    if (
-      (subpages && route.path.startsWith(page.path)) ||
-      page.path === route.path
-    ) {
-      return <page.content />;
+    if (matchesPage(route.path, page)) {
+      return <page.Content />;
     }
   }
   return <></>;
@@ -40,11 +37,14 @@ export function SinglePageApp(props: SinglePageApp.Props) {
   const usedPages = props.pages.filter(
     (page) => showExperimental || page.experimental !== true
   );
+  const appBarPages = usedPages
+    .filter((page) => page.appBarConfig !== undefined)
+    .map((page) => checkPresent(page.appBarConfig));
 
   return (
     <>
       <ResponsiveAppBar
-        pages={usedPages}
+        pages={appBarPages}
         openIssueDialog={() => setShowIssueDialog(true)}
       />
       <Content usedPages={usedPages} />

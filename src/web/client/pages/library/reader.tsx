@@ -40,6 +40,7 @@ import {
   BaseReader,
 } from "@/web/client/pages/library/base_reader";
 import { Router } from "@/web/client/router/router_v2";
+import { PagePath } from "@/web/client/router/paths";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -124,8 +125,13 @@ export function ReadingPage() {
   const queryPage = route.params?.q;
 
   useEffect(() => {
-    const id = route.path.substring(ClientPaths.WORK_PAGE.length + 1);
-    fetchWork(id)
+    const id = PagePath.parseParams(ClientPaths.WORK_PAGE, route.path);
+    const workId = id?.workId;
+    if (workId === undefined) {
+      setWork("Error");
+      return;
+    }
+    fetchWork(workId)
       .then((work) =>
         setWork({
           info: work.info,

@@ -21,7 +21,7 @@ import { Router } from "@/web/client/router/router_v2";
 export namespace ResponsiveAppBar {
   export interface Page {
     name: string;
-    path: string;
+    targetPath: string;
     notInMainSection?: true;
   }
 
@@ -50,7 +50,9 @@ function DrawerMenu(props: {
   open: boolean;
   isCurrentPage: (page: string) => boolean;
 }) {
-  const pages = props.pages.concat([{ name: "Settings", path: "/settings" }]);
+  const pages = props.pages.concat([
+    { name: "Settings", targetPath: "/settings" },
+  ]);
   return (
     <Drawer
       anchor="left"
@@ -65,9 +67,9 @@ function DrawerMenu(props: {
           <div key={page.name}>
             <Button
               key={page.name}
-              onClick={props.onPageClick(page.path)}
+              onClick={props.onPageClick(page.targetPath)}
               className={
-                props.isCurrentPage(page.path)
+                props.isCurrentPage(page.targetPath)
                   ? "menuItemActive"
                   : "menuItemInactive"
               }
@@ -153,7 +155,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             variant="h5"
             noWrap
             component="a"
-            onClick={handlePageClick(mainPages.slice(-1)[0].path)}
+            onClick={handlePageClick(mainPages.slice(-1)[0].targetPath)}
             sx={{
               ml: 3,
               display: isSmall ? "flex" : "none",
@@ -170,9 +172,9 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             {mainPages.map((page) => (
               <Button
                 key={page.name}
-                onClick={handlePageClick(page.path)}
+                onClick={handlePageClick(page.targetPath)}
                 className={
-                  isCurrentPage(page.path)
+                  isCurrentPage(page.targetPath)
                     ? "menuItemActive"
                     : "menuItemInactive"
                 }

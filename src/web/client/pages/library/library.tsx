@@ -2,6 +2,7 @@ import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
+import { PagePath } from "@/web/client/router/paths";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { FontSizes } from "@/web/client/styles";
@@ -21,7 +22,13 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
           <div key={work.id}>
             <span
               className="latWork"
-              onClick={() => nav.toPath(`${ClientPaths.WORK_PAGE}/${work.id}`)}
+              onClick={() => {
+                const params = { workId: work.id };
+                const path = PagePath.toUrlPath(ClientPaths.WORK_PAGE, params);
+                if (path !== null) {
+                  nav.toPath(path);
+                }
+              }}
               role="button">
               <span>{work.name}</span>{" "}
               <span className="contentTextLight">{work.author}</span>
@@ -39,7 +46,7 @@ function ExternalReaderButton() {
   return (
     <span
       className="jsLink"
-      onClick={() => nav.toPath(ClientPaths.EXTERNAL_CONTENT_READER)}>
+      onClick={() => nav.toPath(ClientPaths.EXTERNAL_CONTENT_READER.path)}>
       here
     </span>
   );

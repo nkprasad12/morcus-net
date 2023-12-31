@@ -1,7 +1,16 @@
-// import { SinglePageApp } from "@/web/client/components/single_page_app";
+export interface ContentPage {
+  /** The content to display for this page. */
+  Content: (props: Partial<Record<string, any>>) => JSX.Element;
+  /** The paths to match for this content. */
+  paths: PagePath[];
+}
 
 type PagePathTemplate = `/${string}`;
 export interface PagePath {
+  /**
+   * The path template for this page. This should start with `/`,
+   * and may contain parameters prefixed by `:`.
+   */
   path: PagePathTemplate;
 }
 
@@ -64,24 +73,12 @@ export namespace PagePath {
   }
 }
 
-// function matchesPage(path: string, page: SinglePageApp.Page): boolean {
-//   if (path === page.path) {
-//     return true;
-//   }
-//   const pathParts = path.split("/").slice(1);
-//   for (const subpage of page.subpages || []) {
-//     const subpageParts = subpage.split("/").slice(1);
-//     if (pathParts.length !== subpageParts.length) {
-//       return false;
-//     }
-//     for (let i = 0; i < pathParts.length; i++) {
-//       if (subpageParts[i][0] === ":") {
-//         continue;
-//       }
-//       if (subpageParts[i] !== pathParts[i]) {
-//         return false;
-//       }
-//     }
-//   }
-//   return false;
-// }
+export function matchesPage(urlPath: string, page: ContentPage): boolean {
+  for (const path of page.paths) {
+    const params = PagePath.parseParams(path, urlPath);
+    if (params !== null) {
+      return true;
+    }
+  }
+  return false;
+}

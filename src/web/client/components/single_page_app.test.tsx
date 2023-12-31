@@ -8,16 +8,23 @@ import user from "@testing-library/user-event";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { RouteContext } from "@/web/client/router/router_v2";
+import { PagePath } from "@/web/client/router/paths";
 
 const GALLIA_PAGE: SinglePageApp.Page = {
-  name: "Gallia",
-  path: "/gallia",
-  content: () => <div>GalliaPage</div>,
+  appBarConfig: {
+    name: "Gallia",
+    targetPath: "/gallia",
+  },
+  paths: [PagePath.of("/gallia")!],
+  Content: () => <div>GalliaPage</div>,
 };
 const OMNIS_PAGE: SinglePageApp.Page = {
-  name: "Omnis",
-  path: "/omnis",
-  content: () => <div>OmnisPage</div>,
+  appBarConfig: {
+    name: "Omnis",
+    targetPath: "/omnis",
+  },
+  paths: [PagePath.of("/omnis")!],
+  Content: () => <div>OmnisPage</div>,
 };
 
 describe("Single Page App View", () => {
@@ -27,7 +34,7 @@ describe("Single Page App View", () => {
     OMNIS_PAGE,
   ];
   const pagesWithSubpages: SinglePageApp.Page[] = [
-    { ...GALLIA_PAGE, hasSubpages: true },
+    { ...GALLIA_PAGE, paths: [PagePath.of("/gallia/:est")!] },
   ];
 
   it("shows correct initial content", () => {

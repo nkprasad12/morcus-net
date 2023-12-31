@@ -114,7 +114,7 @@ function ShLink(props: { text: string; query: string }) {
           fromInternalLink.current = true;
         }
         nav.to({
-          path: ClientPaths.DICT_PAGE,
+          path: ClientPaths.DICT_PAGE.path,
           query: props.query,
           dicts: LatinDict.SmithAndHall,
         });
@@ -136,7 +136,7 @@ function onLatinWordClick(
       dictContext.fromInternalLink.current = true;
     }
     nav.to({
-      path: ClientPaths.DICT_PAGE,
+      path: ClientPaths.DICT_PAGE.path,
       query: word,
       dicts: LatinDict.LewisAndShort,
       experimentalSearch: true,

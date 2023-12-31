@@ -15,7 +15,7 @@ import {
   SettingsHandler,
 } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
-import { ACTIVE_PAGES } from "@/web/client/routing/active_pages";
+import { ACTIVE_PAGES, DICT_PAGE } from "@/web/client/routing/active_pages";
 import {
   getBackgroundColor,
   getGlobalStyles,
@@ -96,7 +96,7 @@ const props: SinglePageApp.Props = {
   pages: [...ACTIVE_PAGES],
 };
 if (window.location.pathname === "/") {
-  window.history.replaceState({}, "", props.pages[0].path);
+  window.history.replaceState({}, "", DICT_PAGE.appBarConfig!.targetPath);
 }
 
 const root = ReactDOM.createRoot(

@@ -23,7 +23,7 @@ export function TitleHandler(props: TitleHandlerProps) {
 
   React.useEffect(() => {
     document.title = MORCUS_TITLE;
-    if (route.path === ClientPaths.DICT_PAGE && currentDictWord) {
+    if (route.path === ClientPaths.DICT_PAGE.path && currentDictWord) {
       document.title = `${currentDictWord} | ${MORCUS_TITLE}`;
     }
   }, [route.path, currentDictWord]);

@@ -11,6 +11,8 @@ import { ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import { RouteContext, Router } from "@/web/client/router/router_v2";
+import { checkPresent } from "@/common/assert";
+import { PagePath } from "@/web/client/router/paths";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
@@ -22,6 +24,8 @@ const mockCallApi: jest.Mock<any, any, any> = callApi;
 // @ts-ignore
 const mockCallApiFull: jest.Mock<any, any, any> = callApiFull;
 
+const urlFor = (id: string) =>
+  checkPresent(PagePath.toUrlPath(WORK_PAGE, { workId: id }));
 const PROCESSED_WORK: ProcessedWork = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
@@ -131,7 +135,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/${testId}` },
+          route: { path: urlFor(testId) },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -165,7 +169,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/${testId}` },
+          route: { path: urlFor(testId) },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -181,7 +185,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: urlFor("dbg") },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -198,7 +202,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: urlFor("dbg") },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -225,7 +229,10 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, params: { q: "2" } },
+          route: {
+            path: urlFor("dbg"),
+            params: { q: "2" },
+          },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -240,7 +247,7 @@ describe("Reading UI", () => {
   it("uses correct nav updates on next page button", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
-    const path = `${WORK_PAGE}/dbg`;
+    const path = urlFor("dbg");
     render(
       <Router.TestRoot initial={{ path }} updateListener={mockNav}>
         <ReadingPage />
@@ -258,7 +265,7 @@ describe("Reading UI", () => {
   it("uses correct nav updates on next page key", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
-    const path = `${WORK_PAGE}/dbg`;
+    const path = urlFor("dbg");
     render(
       <Router.TestRoot initial={{ path }} updateListener={mockNav}>
         <ReadingPage />
@@ -276,7 +283,7 @@ describe("Reading UI", () => {
   it("uses correct nav updates on previous page button", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
-    const path = `${WORK_PAGE}/dbg`;
+    const path = urlFor("dbg");
     render(
       <Router.TestRoot
         initial={{ path, params: { q: "2" } }}
@@ -296,7 +303,7 @@ describe("Reading UI", () => {
   it("uses correct nav updates on previous page key", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
-    const path = `${WORK_PAGE}/dbg`;
+    const path = urlFor("dbg");
     render(
       <Router.TestRoot
         initial={{ path, params: { q: "2" } }}
@@ -320,7 +327,10 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, params: { q: "1" } },
+          route: {
+            path: urlFor("dbg"),
+            params: { q: "1" },
+          },
           navigateTo: mockNav,
         }}>
         <ReadingPage />
@@ -338,7 +348,10 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg`, params: { q: "1" } },
+          route: {
+            path: urlFor("dbg"),
+            params: { q: "1" },
+          },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -353,7 +366,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: urlFor("dbg") },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -372,7 +385,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: urlFor("dbg") },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -393,7 +406,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: urlFor("dbg") },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -413,7 +426,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/dbg` },
+          route: { path: urlFor("dbg") },
           navigateTo: () => {},
         }}>
         <ReadingPage />
