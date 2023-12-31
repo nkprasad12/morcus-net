@@ -23,7 +23,7 @@ import {
   TEXT_STYLE,
   getAppBarColor,
 } from "@/web/client/styles";
-import { RouterV2 } from "@/web/client/router/router_v2";
+import { Router } from "@/web/client/router/router_v2";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -118,11 +118,11 @@ root.render(
       <CustomThemeProvider>
         <ConfigurableStyles />
         <StyledEngineProvider injectFirst>
-          <RouterV2.Root>
+          <Router.Root>
             <TitleHandler>
               <SinglePageApp {...props} />
             </TitleHandler>
-          </RouterV2.Root>
+          </Router.Root>
         </StyledEngineProvider>
       </CustomThemeProvider>
     </SettingsHandler>

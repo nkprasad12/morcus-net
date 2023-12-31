@@ -39,7 +39,7 @@ import {
   BaseMainColumnProps,
   BaseReader,
 } from "@/web/client/pages/library/base_reader";
-import { RouterV2 } from "@/web/client/router/router_v2";
+import { Router } from "@/web/client/router/router_v2";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -120,7 +120,7 @@ export function ReadingPage() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
 
-  const { route } = RouterV2.useRouter();
+  const { route } = Router.useRouter();
   const queryPage = route.params?.q;
 
   useEffect(() => {
@@ -303,7 +303,7 @@ function WorkNavigationBar(props: {
   work: PaginatedWork;
   textScale?: number;
 }) {
-  const { nav } = RouterV2.useRouter();
+  const { nav } = Router.useRouter();
 
   const setPage = React.useCallback(
     // Nav pages are 1-indexed.
@@ -430,7 +430,7 @@ function WorkNavigation(props: {
   scale: number;
   level: number;
 }) {
-  const { nav } = RouterV2.useRouter();
+  const { nav } = Router.useRouter();
   const ofLevel = findWorksByLevel(props.level, props.root);
 
   if (ofLevel.length === 0) {

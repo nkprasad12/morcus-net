@@ -14,7 +14,7 @@ import {
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
 import useMediaQuery from "@mui/material/useMediaQuery";
-import { RouteContextV2 } from "@/web/client/router/router_v2";
+import { RouteContext } from "@/web/client/router/router_v2";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -52,10 +52,10 @@ describe("New Dictionary View", () => {
     mockCallApiMockResolvedValue([]);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionaryViewV2 />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
     const searchBar = screen.getByRole("combobox");
 
@@ -74,13 +74,13 @@ describe("New Dictionary View", () => {
   it("calls shows error on failure", async () => {
     mockCallApi.mockRejectedValue(new Error("Failure for test"));
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{
           route: { path: "/", params: { q: "Gallia" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     await waitFor(() => {
@@ -121,13 +121,13 @@ describe("New Dictionary View", () => {
       ],
     });
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{
           route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
@@ -165,13 +165,13 @@ describe("New Dictionary View", () => {
     HTMLElement.prototype.scrollIntoView = spyScrollTo;
     mockCallApiMockResolvedValue({ LS: [] });
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{
           route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
@@ -208,13 +208,13 @@ describe("New Dictionary View", () => {
       ],
     });
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{
           route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
@@ -265,13 +265,13 @@ describe("New Dictionary View", () => {
       ],
     });
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{
           route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);

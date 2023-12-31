@@ -2,16 +2,16 @@
  * @jest-environment jsdom
  */
 
-import { RouteInfoV2, RouterV2 } from "@/web/client/router/router_v2";
+import { RouteInfo, Router } from "@/web/client/router/router_v2";
 import { act, screen, render } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { useEffect } from "react";
 
 function TestApp(props: {
-  navSpy: (info: RouteInfoV2) => any;
-  target?: RouteInfoV2;
+  navSpy: (info: RouteInfo) => any;
+  target?: RouteInfo;
 }) {
-  const { route, nav } = RouterV2.useRouter();
+  const { route, nav } = Router.useRouter();
   const { navSpy } = props;
 
   useEffect(() => {
@@ -21,24 +21,24 @@ function TestApp(props: {
   return <span onClick={() => nav.to(props.target || route)}>Button</span>;
 }
 
-describe("RouteInfoV2", () => {
+describe("RouteInfo", () => {
   test("toLink handles bare path", () => {
-    const url = RouteInfoV2.toLink({ path: "/foo" });
+    const url = RouteInfo.toLink({ path: "/foo" });
     expect(url).toBe("/foo");
   });
 
   test("toLink handles bare path with hash", () => {
-    const url = RouteInfoV2.toLink({ path: "/foo", hash: "hash" });
+    const url = RouteInfo.toLink({ path: "/foo", hash: "hash" });
     expect(url).toBe("/foo#hash");
   });
 
   test("toLink handles path with single query", () => {
-    const url = RouteInfoV2.toLink({ path: "/foo", params: { bar: "baz" } });
+    const url = RouteInfo.toLink({ path: "/foo", params: { bar: "baz" } });
     expect(url).toBe("/foo?bar=baz");
   });
 
   test("toLink handles path with multiple queries", () => {
-    const url = RouteInfoV2.toLink({
+    const url = RouteInfo.toLink({
       path: "/foo",
       params: { bar: "baz", Gallia: "omnis" },
     });
@@ -46,7 +46,7 @@ describe("RouteInfoV2", () => {
   });
 
   test("toLink handles path with query and hash", () => {
-    const url = RouteInfoV2.toLink({
+    const url = RouteInfo.toLink({
       path: "/foo",
       params: { bar: "baz", Gallia: "omnis" },
       hash: "hash",
@@ -55,7 +55,7 @@ describe("RouteInfoV2", () => {
   });
 });
 
-describe("RouterV2", () => {
+describe("Router", () => {
   test("Router handles window popstate updates", async () => {
     const mockAddEventListener = jest.fn();
     window.addEventListener = mockAddEventListener;
@@ -63,9 +63,9 @@ describe("RouterV2", () => {
 
     const navSpy = jest.fn();
     render(
-      <RouterV2.Root>
+      <Router.Root>
         <TestApp navSpy={navSpy} />
-      </RouterV2.Root>
+      </Router.Root>
     );
 
     act(() => {
@@ -81,13 +81,13 @@ describe("RouterV2", () => {
   test("Router handles navigation updates", async () => {
     const pushState = jest.fn();
     window.history.pushState = pushState;
-    const target: RouteInfoV2 = { path: "/newPath", params: { hi: "hello" } };
+    const target: RouteInfo = { path: "/newPath", params: { hi: "hello" } };
     const navSpy = jest.fn();
 
     render(
-      <RouterV2.Root>
+      <Router.Root>
         <TestApp navSpy={navSpy} target={target} />
-      </RouterV2.Root>
+      </Router.Root>
     );
     navSpy.mockClear();
     pushState.mockClear();

@@ -18,7 +18,7 @@ import {
   InflectionDataSection,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { RouteContextV2 } from "@/web/client/router/router_v2";
+import { RouteContext } from "@/web/client/router/router_v2";
 
 console.log = jest.fn();
 console.debug = jest.fn();
@@ -105,10 +105,10 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, undefined);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     await user.click(screen.getByText("Gallia"));
@@ -133,10 +133,10 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, undefined);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     await user.click(screen.getByText("omnis"));
@@ -162,10 +162,10 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, undefined);
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <div>{result}</div>
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     await user.click(screen.getByText("blah"));

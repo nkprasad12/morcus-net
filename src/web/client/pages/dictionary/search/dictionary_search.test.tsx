@@ -6,7 +6,7 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
-import { RouteContextV2 } from "@/web/client/router/router_v2";
+import { RouteContext } from "@/web/client/router/router_v2";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 
@@ -55,14 +55,14 @@ describe("DictionarySearch", () => {
   it("handles navigation on input box enter", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={() => {}}
         />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
     const search = screen.getByRole("combobox");
     await user.click(search);
@@ -79,14 +79,14 @@ describe("DictionarySearch", () => {
   it("handles navigation on option click", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={() => {}}
         />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
     const search = screen.getByRole("combobox");
     await user.click(search);
@@ -106,14 +106,14 @@ describe("DictionarySearch", () => {
   it("handles navigation on option enter", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={() => {}}
         />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
     const search = screen.getByRole("combobox");
     await user.click(search);
@@ -135,14 +135,14 @@ describe("DictionarySearch", () => {
     const mockSetDicts = jest.fn();
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/" }, navigateTo: mockNav }}>
         <DictionarySearch
           smallScreen={false}
           dicts={BOTH_DICTS}
           setDicts={mockSetDicts}
         />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
     expect(screen.queryByText("Dictionary Options")).toBeNull();
     const settings = screen.getByLabelText("search settings");

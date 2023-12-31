@@ -2,15 +2,15 @@ import { PropsWithChildren, useEffect } from "react";
 import * as React from "react";
 import { createContext } from "react";
 
-export interface RouteInfoV2 {
+export interface RouteInfo {
   path: string;
   params?: Record<string, string>;
   hash?: string;
 }
 
-export namespace RouteInfoV2 {
+export namespace RouteInfo {
   /** Extracts route information from the Browser URL. */
-  export function extract(): RouteInfoV2 {
+  export function extract(): RouteInfo {
     const path = window.location.pathname;
     const query: Record<string, string> = {};
     const urlSearchParams = new URLSearchParams(window.location.search);
@@ -31,7 +31,7 @@ export namespace RouteInfoV2 {
   }
 
   /** Transforms this route information back into a URL. */
-  export function toLink(info: RouteInfoV2): string {
+  export function toLink(info: RouteInfo): string {
     let result = info.path;
     const query = info.params || {};
     const queryKeys = Object.keys(query);
@@ -51,17 +51,17 @@ export namespace RouteInfoV2 {
   }
 }
 
-function pushRouteInfo(info: RouteInfoV2): void {
-  const oldLink = RouteInfoV2.toLink(RouteInfoV2.extract());
-  const newLink = RouteInfoV2.toLink(info);
+function pushRouteInfo(info: RouteInfo): void {
+  const oldLink = RouteInfo.toLink(RouteInfo.extract());
+  const newLink = RouteInfo.toLink(info);
   if (oldLink !== newLink) {
     window.history.pushState({}, "", newLink);
   }
 }
 
 function onRouteUpdate(
-  action: React.SetStateAction<RouteInfoV2>,
-  setRouteState: React.Dispatch<React.SetStateAction<RouteInfoV2>>
+  action: React.SetStateAction<RouteInfo>,
+  setRouteState: React.Dispatch<React.SetStateAction<RouteInfo>>
 ): void {
   if (typeof action === "function") {
     setRouteState((prev) => {
@@ -81,8 +81,8 @@ export interface NavHelper<T> {
 }
 
 function getNavigator(
-  navigateTo: React.Dispatch<React.SetStateAction<RouteInfoV2>>
-): NavHelper<RouteInfoV2> {
+  navigateTo: React.Dispatch<React.SetStateAction<RouteInfo>>
+): NavHelper<RouteInfo> {
   return {
     to: navigateTo,
     toPath: (path: string) => navigateTo({ path }),
@@ -90,9 +90,9 @@ function getNavigator(
 }
 
 function convertNavigator<T extends object | boolean | number>(
-  fromRoute: (route: RouteInfoV2) => T,
-  toRoute: (t: T) => RouteInfoV2,
-  nav: NavHelper<RouteInfoV2>
+  fromRoute: (route: RouteInfo) => T,
+  toRoute: (t: T) => RouteInfo,
+  nav: NavHelper<RouteInfo>
 ): NavHelper<T> {
   return {
     to: (value) => {
@@ -107,15 +107,15 @@ function convertNavigator<T extends object | boolean | number>(
 }
 
 type RouteAndSetter = {
-  route: RouteInfoV2;
-  navigateTo: React.Dispatch<React.SetStateAction<RouteInfoV2>>;
+  route: RouteInfo;
+  navigateTo: React.Dispatch<React.SetStateAction<RouteInfo>>;
 };
-export const RouteContextV2 = createContext<RouteAndSetter>({
+export const RouteContext = createContext<RouteAndSetter>({
   route: { path: "" },
   navigateTo: () => {},
 });
 
-export namespace RouterV2 {
+export namespace Router {
   interface RootProps {
     /**
      * The initial route value.
@@ -123,38 +123,38 @@ export namespace RouterV2 {
      * If empty, it will compute this from the browser URL. This
      * should generally only be set for unit tests.
      */
-    initial?: RouteInfoV2;
+    initial?: RouteInfo;
   }
 
   /** Parent component to use at the application root. */
   export function Root(props: PropsWithChildren<RootProps>) {
     const [route, setRoute] = React.useState(
-      props.initial || RouteInfoV2.extract()
+      props.initial || RouteInfo.extract()
     );
 
     const navigateTo = React.useCallback(
-      (action: React.SetStateAction<RouteInfoV2>) =>
+      (action: React.SetStateAction<RouteInfo>) =>
         onRouteUpdate(action, setRoute),
       [setRoute]
     );
 
     useEffect(() => {
       const popstateListener = () => {
-        setRoute(RouteInfoV2.extract());
+        setRoute(RouteInfo.extract());
       };
       window.addEventListener("popstate", popstateListener);
       return () => window.removeEventListener("popstate", popstateListener);
     }, []);
 
     return (
-      <RouteContextV2.Provider value={{ route, navigateTo }}>
+      <RouteContext.Provider value={{ route, navigateTo }}>
         {props.children}
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
   }
 
   interface TestRootProps extends RootProps {
-    updateListener?: (route: RouteInfoV2) => any;
+    updateListener?: (route: RouteInfo) => any;
   }
 
   function TestRootHelper(props: TestRootProps) {
@@ -185,15 +185,15 @@ export namespace RouterV2 {
   }
 
   /** Hook to use in components that need routing. */
-  export function useRouter(): RouterType<RouteInfoV2> {
-    const { route, navigateTo } = React.useContext(RouteContextV2);
+  export function useRouter(): RouterType<RouteInfo> {
+    const { route, navigateTo } = React.useContext(RouteContext);
     const nav = React.useMemo(() => getNavigator(navigateTo), [navigateTo]);
     return { route, nav };
   }
 
   export function useConvertedRouter<T extends object | boolean | number>(
-    fromRoute: (route: RouteInfoV2) => T,
-    toRoute: (t: T) => RouteInfoV2
+    fromRoute: (route: RouteInfo) => T,
+    toRoute: (t: T) => RouteInfo
   ): RouterType<T> {
     const { route, nav } = useRouter();
     const convertedNav = React.useMemo(

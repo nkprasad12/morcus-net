@@ -6,7 +6,7 @@ import IconButton from "@mui/material/IconButton";
 import * as React from "react";
 import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
-import { RouteInfoV2 } from "@/web/client/router/router_v2";
+import { RouteInfo } from "@/web/client/router/router_v2";
 
 export type TooltipPlacement = "top-start" | "right";
 
@@ -207,7 +207,7 @@ export function SectionLinkTooltip(props: {
   const message = `Copy ${isArticle ? "article" : "section"} link`;
 
   function getLink(): string {
-    const after: RouteInfoV2 = {
+    const after: RouteInfo = {
       path: "/dicts",
       params: {},
     };
@@ -219,7 +219,7 @@ export function SectionLinkTooltip(props: {
       after.hash = props.id;
     }
     after.params!.o = "2";
-    return `${window.location.origin}${RouteInfoV2.toLink(after)}`;
+    return `${window.location.origin}${RouteInfo.toLink(after)}`;
   }
 
   return (

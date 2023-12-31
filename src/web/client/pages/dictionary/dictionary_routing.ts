@@ -1,4 +1,4 @@
-import { RouteInfoV2, RouterV2 } from "@/web/client/router/router_v2";
+import { RouteInfo, Router } from "@/web/client/router/router_v2";
 
 const QUERY_KEY = "q";
 const OPTIONS_KEY = "o";
@@ -14,8 +14,8 @@ export interface DictRoute {
   idSearch?: boolean;
 }
 
-function toRoute(info: DictRoute): RouteInfoV2 {
-  const result: RouteInfoV2 = {
+function toRoute(info: DictRoute): RouteInfo {
+  const result: RouteInfo = {
     path: info.path,
     hash: info.hash,
   };
@@ -38,7 +38,7 @@ function toRoute(info: DictRoute): RouteInfoV2 {
   return result;
 }
 
-function fromRoute(info: RouteInfoV2): DictRoute {
+function fromRoute(info: RouteInfo): DictRoute {
   const result: DictRoute = {
     path: info.path,
     hash: info.hash,
@@ -54,4 +54,4 @@ function fromRoute(info: RouteInfoV2): DictRoute {
 }
 
 export const useDictRouter = () =>
-  RouterV2.useConvertedRouter(fromRoute, toRoute);
+  Router.useConvertedRouter(fromRoute, toRoute);

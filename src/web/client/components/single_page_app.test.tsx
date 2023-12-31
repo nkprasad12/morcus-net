@@ -7,7 +7,7 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { SettingsHandler } from "@/web/client/components/global_flags";
-import { RouteContextV2 } from "@/web/client/router/router_v2";
+import { RouteContext } from "@/web/client/router/router_v2";
 
 const GALLIA_PAGE: SinglePageApp.Page = {
   name: "Gallia",
@@ -33,10 +33,10 @@ describe("Single Page App View", () => {
   it("shows correct initial content", () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
         <SinglePageApp pages={pages} />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     expect(screen.queryByText("GalliaPage")).not.toBeNull();
@@ -53,10 +53,10 @@ describe("Single Page App View", () => {
     const mockNav = jest.fn(() => {});
     render(
       <SettingsHandler>
-        <RouteContextV2.Provider
+        <RouteContext.Provider
           value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
           <SinglePageApp pages={experimentPages} />
-        </RouteContextV2.Provider>
+        </RouteContext.Provider>
       </SettingsHandler>
     );
 
@@ -68,10 +68,10 @@ describe("Single Page App View", () => {
     const mockNav = jest.fn(() => {});
     render(
       <SettingsHandler>
-        <RouteContextV2.Provider
+        <RouteContext.Provider
           value={{ route: { path: "/gallia/bar" }, navigateTo: mockNav }}>
           <SinglePageApp pages={pagesWithSubpages} />
-        </RouteContextV2.Provider>
+        </RouteContext.Provider>
       </SettingsHandler>
     );
 
@@ -88,10 +88,10 @@ describe("Single Page App View", () => {
     const mockNav = jest.fn(() => {});
     render(
       <SettingsHandler>
-        <RouteContextV2.Provider
+        <RouteContext.Provider
           value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
           <SinglePageApp pages={experimentPages} />
-        </RouteContextV2.Provider>
+        </RouteContext.Provider>
       </SettingsHandler>
     );
 
@@ -102,10 +102,10 @@ describe("Single Page App View", () => {
   it("shows navigation on bad path", () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/g" }, navigateTo: mockNav }}>
         <SinglePageApp pages={pages} />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     expect(screen.queryAllByText("Gallia")).not.toHaveLength(0);
@@ -115,10 +115,10 @@ describe("Single Page App View", () => {
   test("updates context on navigation", async () => {
     const mockNav = jest.fn(() => {});
     render(
-      <RouteContextV2.Provider
+      <RouteContext.Provider
         value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
         <SinglePageApp pages={pages} />
-      </RouteContextV2.Provider>
+      </RouteContext.Provider>
     );
 
     await user.click(screen.getAllByText("Omnis")[0]);

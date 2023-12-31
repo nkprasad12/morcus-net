@@ -1,5 +1,5 @@
 import { ClientPaths } from "@/web/client/pages/library/common";
-import { RouterV2 } from "@/web/client/router/router_v2";
+import { Router } from "@/web/client/router/router_v2";
 import { ReactNode } from "react";
 import * as React from "react";
 
@@ -19,7 +19,7 @@ type TitleHandlerProps = {
 
 export function TitleHandler(props: TitleHandlerProps) {
   const [currentDictWord, setCurrentDictWord] = React.useState("");
-  const { route } = RouterV2.useRouter();
+  const { route } = Router.useRouter();
 
   React.useEffect(() => {
     document.title = MORCUS_TITLE;

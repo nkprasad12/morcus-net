@@ -16,7 +16,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import Drawer from "@mui/material/Drawer";
 import Divider from "@mui/material/Divider";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
-import { RouterV2 } from "@/web/client/router/router_v2";
+import { Router } from "@/web/client/router/router_v2";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -99,7 +99,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const darkModeOn = globalSettings.data.darkMode === true;
   const iconSize = isSmall ? "small" : "medium";
 
-  const { route, nav } = RouterV2.useRouter();
+  const { route, nav } = Router.useRouter();
   const [drawerVisible, setDrawerVisible] = React.useState<boolean>(false);
 
   const handlePageClick = (path: string) => {

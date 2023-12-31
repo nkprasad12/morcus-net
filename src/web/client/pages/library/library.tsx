@@ -3,14 +3,14 @@ import { ListLibraryWorks } from "@/web/api_routes";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { ClientPaths } from "@/web/client/pages/library/common";
-import { RouterV2 } from "@/web/client/router/router_v2";
+import { Router } from "@/web/client/router/router_v2";
 import { FontSizes } from "@/web/client/styles";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import Container from "@mui/material/Container";
 import { useState, useEffect } from "react";
 
 function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
-  const { nav } = RouterV2.useRouter();
+  const { nav } = Router.useRouter();
 
   return (
     <div style={{ marginTop: 4, display: "flex", flexDirection: "column" }}>
@@ -34,7 +34,7 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
 }
 
 function ExternalReaderButton() {
-  const { nav } = RouterV2.useRouter();
+  const { nav } = Router.useRouter();
 
   return (
     <span
