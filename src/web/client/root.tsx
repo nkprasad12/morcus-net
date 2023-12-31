@@ -15,7 +15,7 @@ import {
   SettingsHandler,
 } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
-import { ACTIVE_PAGES } from "@/web/client/active_pages";
+import { ACTIVE_PAGES } from "@/web/client/routing/active_pages";
 import {
   getBackgroundColor,
   getGlobalStyles,

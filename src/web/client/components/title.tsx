@@ -1,4 +1,4 @@
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 import { Router } from "@/web/client/router/router_v2";
 import { ReactNode } from "react";
 import * as React from "react";

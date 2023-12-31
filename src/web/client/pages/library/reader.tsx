@@ -7,7 +7,7 @@ import {
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import Info from "@mui/icons-material/Info";

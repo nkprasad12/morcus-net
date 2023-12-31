@@ -16,7 +16,7 @@ import {
   DictContextOptions,
 } from "@/web/client/pages/dictionary/dict_context";
 import { NavHelper } from "@/web/client/router/router_v2";
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 import {
   DictRoute,
   useDictRouter,

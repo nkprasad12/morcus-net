@@ -6,7 +6,7 @@ import user from "@testing-library/user-event";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen } from "@testing-library/react";
 import { ReadingPage } from "@/web/client/pages/library/reader";
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 import { ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
