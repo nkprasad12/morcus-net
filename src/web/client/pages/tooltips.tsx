@@ -7,6 +7,9 @@ import * as React from "react";
 import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
+import { ClientPaths } from "@/web/client/routing/client_paths";
+import { PagePath } from "@/web/client/router/paths";
+import { checkPresent } from "@/common/assert";
 
 export type TooltipPlacement = "top-start" | "right";
 
@@ -207,20 +210,11 @@ export function SectionLinkTooltip(props: {
   const message = `Copy ${isArticle ? "article" : "section"} link`;
 
   function getLink(): string {
-    const after: RouteInfo = {
-      path: "/dicts",
-      params: {},
-    };
-    // TODO: Use the new path
-    if (isArticle) {
-      after.params!.q = props.id;
-    } else {
-      const coreId = props.id.split(".")[0];
-      after.params!.q = coreId;
-      after.hash = props.id;
-    }
-    after.params!.o = "2";
-    return `${window.location.origin}${RouteInfo.toLink(after)}`;
+    const coreId = isArticle ? props.id : props.id.split(".")[0];
+    const path = PagePath.toUrlPath(ClientPaths.DICT_BY_ID, { id: coreId });
+    const hash = isArticle ? undefined : props.id;
+    const url = RouteInfo.toLink({ path: checkPresent(path), hash });
+    return `${window.location.origin}${url}`;
   }
 
   return (

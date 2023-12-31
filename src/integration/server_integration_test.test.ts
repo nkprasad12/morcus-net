@@ -268,8 +268,17 @@ async function openTab(label: string, size: ScreenSize, page: Page) {
   }
 }
 
-async function findText(text: string, page: Page, parentType: string = "*") {
-  const results = await page.$x(`//${parentType}[contains(text(), "${text}")]`);
+async function findText(
+  text: string,
+  page: Page,
+  parentType: string = "*",
+  className?: string
+) {
+  const classString =
+    className === undefined ? "" : `and @class="${className}"`;
+  const results = await page.$x(
+    `//${parentType}[contains(text(), "${text}")${classString}]`
+  );
   expect(results).toHaveLength(1);
   return results[0] as ElementHandle<Element>;
 }
@@ -291,6 +300,11 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       mkdirSync(SCREENSHOTS_DIR);
     } catch {}
     browser = await puppeteer.launch({ headless: "new", product });
+    const context = browser.defaultBrowserContext();
+    await context.overridePermissions(global.location.origin, [
+      "clipboard-read",
+      "clipboard-write",
+    ]);
     currentPage = await checkPresent(browser).newPage();
   });
 
@@ -489,6 +503,23 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("shEntryById", screenSize, i);
       await checkHasText("habiliment");
       await checkHasText("garment");
+    }
+  );
+
+  it.skip.each(ALL_SCREEN_SIZES(1))(
+    "allows copying id links via tooltip %s screen #%s",
+    async (screenSize, i) => {
+      const page = await getPage(screenSize, "/dicts?q=pondus");
+      writeContext("copyArticleLink", screenSize, i);
+
+      const button = await findText("pondus", page, "span", "lsSenseBullet");
+      await button.click();
+      const tooltip = await findText("Copy article link", page);
+      await tooltip.click();
+
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toEqual(
+        "Some text"
+      );
     }
   );
 });

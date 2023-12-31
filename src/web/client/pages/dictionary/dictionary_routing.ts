@@ -47,12 +47,13 @@ function dictsFromParam(param?: string): DictInfo[] | DictInfo | undefined {
 }
 
 function toRoute(info: DictRoute): RouteInfo {
+  if (info.idSearch) {
+    return { path: info.path };
+  }
   const params: Record<string, string | undefined> = {};
   const optionMode =
     info.experimentalSearch === true
       ? EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED
-      : info.idSearch === true
-      ? ID_SEARCH_ENABLED
       : undefined;
   params[QUERY_KEY] = info.query;
   params[DICTS_KEY] = dictsToParam(info.dicts);
