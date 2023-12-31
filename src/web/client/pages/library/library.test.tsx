@@ -37,6 +37,6 @@ describe("library view", () => {
     const dbgWork = await screen.findByText(/Caesar/);
     await user.click(dbgWork);
 
-    expect(mockNav).toHaveBeenCalledWith({ path: "/work/DBG" });
+    expect(mockNav).toHaveBeenCalledWith({ path: "/work/DBG", params: {} });
   });
 });

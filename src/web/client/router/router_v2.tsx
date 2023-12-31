@@ -4,7 +4,7 @@ import { createContext } from "react";
 
 export interface RouteInfo {
   path: string;
-  params?: Record<string, string>;
+  params?: Record<string, string | undefined>;
   hash?: string;
 }
 
@@ -12,17 +12,15 @@ export namespace RouteInfo {
   /** Extracts route information from the Browser URL. */
   export function extract(): RouteInfo {
     const path = window.location.pathname;
-    const query: Record<string, string> = {};
+    const params: Record<string, string> = {};
     const urlSearchParams = new URLSearchParams(window.location.search);
-    let hasParams = false;
     for (const [key, value] of urlSearchParams) {
-      hasParams = true;
-      query[decodeURIComponent(key)] = decodeURIComponent(value);
+      params[decodeURIComponent(key)] = decodeURIComponent(value);
     }
     const rawHash = window.location.hash;
     return {
       path,
-      params: hasParams ? query : undefined,
+      params,
       hash:
         rawHash.length === 0
           ? undefined
@@ -38,9 +36,11 @@ export namespace RouteInfo {
     if (queryKeys.length > 0) {
       result += "?";
       result += queryKeys
+        .map((key) => [key, query[key]])
+        .filter((x): x is [string, string] => x[1] !== undefined)
         .map(
-          (key) =>
-            `${encodeURIComponent(key)}=${encodeURIComponent(query[key])}`
+          ([key, value]) =>
+            `${encodeURIComponent(key)}=${encodeURIComponent(value)}`
         )
         .join("&");
     }
@@ -85,7 +85,7 @@ function getNavigator(
 ): NavHelper<RouteInfo> {
   return {
     to: navigateTo,
-    toPath: (path: string) => navigateTo({ path }),
+    toPath: (path: string) => navigateTo({ path, params: {} }),
   };
 }
 
