@@ -18,7 +18,7 @@ import {
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
 import { SearchBox } from "@/web/client/components/generic/search";
-import { RouterV2 } from "@/web/client/router/router_v2";
+import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 
 function toQuery(info: [DictInfo, string]): string {
   return `${info[1]},${info[0].key.replace("&", "n")}`;
@@ -136,7 +136,7 @@ export function DictionarySearch(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
-  const { route, nav } = RouterV2.useRouter();
+  const { route, nav } = useDictRouter();
   const settings = useContext(GlobalSettingsContext);
 
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
@@ -145,13 +145,11 @@ export function DictionarySearch(props: {
     if (searchTerm.length === 0) {
       return;
     }
-    const query: Record<string, string> = {
-      q: searchTerm,
-    };
-    if (settings.data.experimentalMode === true) {
-      query.o = "1";
-    }
-    nav.to({ path: route.path, params: query });
+    nav.to({
+      path: route.path,
+      query: searchTerm,
+      experimentalSearch: settings.data.experimentalMode === true,
+    });
   }
 
   return (
@@ -161,7 +159,7 @@ export function DictionarySearch(props: {
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
         smallScreen={props.smallScreen}
-        autoFocused={route.params?.q === undefined}
+        autoFocused={route.query === undefined}
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(toQuery(t))}
         optionsForInput={(input) =>

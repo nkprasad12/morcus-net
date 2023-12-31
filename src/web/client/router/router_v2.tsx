@@ -74,17 +74,35 @@ function onRouteUpdate(
     setRouteState(action);
   }
 }
-export interface Navigator {
-  to: React.Dispatch<React.SetStateAction<RouteInfoV2>>;
+
+export interface NavHelper<T> {
+  to: React.Dispatch<React.SetStateAction<T>>;
   toPath: (newPath: string) => void;
 }
 
-export function getNavigator(
+function getNavigator(
   navigateTo: React.Dispatch<React.SetStateAction<RouteInfoV2>>
-): Navigator {
+): NavHelper<RouteInfoV2> {
   return {
     to: navigateTo,
     toPath: (path: string) => navigateTo({ path }),
+  };
+}
+
+function convertNavigator<T extends object | boolean | number>(
+  fromRoute: (route: RouteInfoV2) => T,
+  toRoute: (t: T) => RouteInfoV2,
+  nav: NavHelper<RouteInfoV2>
+): NavHelper<T> {
+  return {
+    to: (value) => {
+      if (typeof value === "function") {
+        nav.to((prev) => toRoute(value(fromRoute(prev))));
+      } else {
+        nav.to(toRoute(value));
+      }
+    },
+    toPath: nav.toPath,
   };
 }
 
@@ -161,10 +179,27 @@ export namespace RouterV2 {
     );
   }
 
+  interface RouterType<T> {
+    route: T;
+    nav: NavHelper<T>;
+  }
+
   /** Hook to use in components that need routing. */
-  export function useRouter(): { route: RouteInfoV2; nav: Navigator } {
+  export function useRouter(): RouterType<RouteInfoV2> {
     const { route, navigateTo } = React.useContext(RouteContextV2);
     const nav = React.useMemo(() => getNavigator(navigateTo), [navigateTo]);
     return { route, nav };
+  }
+
+  export function useConvertedRouter<T extends object | boolean | number>(
+    fromRoute: (route: RouteInfoV2) => T,
+    toRoute: (t: T) => RouteInfoV2
+  ): RouterType<T> {
+    const { route, nav } = useRouter();
+    const convertedNav = React.useMemo(
+      () => convertNavigator(fromRoute, toRoute, nav),
+      [fromRoute, toRoute, nav]
+    );
+    return { route: fromRoute(route), nav: convertedNav };
   }
 }

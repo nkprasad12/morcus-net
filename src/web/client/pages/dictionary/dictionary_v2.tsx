@@ -51,8 +51,7 @@ import {
 import Divider from "@mui/material/Divider";
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
-import { RouterV2 } from "@/web/client/router/router_v2";
-import { RouteInfo } from "@/web/client/components/router";
+import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -558,8 +557,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
   const settings = React.useContext(GlobalSettingsContext);
-  const { route } = RouterV2.useRouter();
-  const routeV1 = RouteInfo.fromV2(route);
+  const { route } = useDictRouter();
   const title = React.useContext(TitleContext);
   const fromInternalLink = React.useRef<boolean>(false);
 
@@ -567,13 +565,13 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const isSmall = isEmbedded || isScreenSmall;
   const scale = (props?.textScale || 100) / 100;
   const textScale = props?.textScale;
-  const idSearch = routeV1.idSearch === true;
+  const idSearch = route.idSearch === true;
 
   const { initial } = props;
-  const query = isEmbedded ? initial : routeV1.query;
+  const query = isEmbedded ? initial : route.query;
   const experimentalMode =
     settings.data.experimentalMode === true ||
-    routeV1.experimentalSearch === true;
+    route.experimentalSearch === true;
 
   React.useEffect(() => {
     if (query === undefined) {
@@ -596,7 +594,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       const allEntries = getEntriesByDict(
         newResults.data,
         sectionRef,
-        routeV1.hash,
+        route.hash,
         isEmbedded
       );
       flushSync(() => {
@@ -615,7 +613,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       scrollElement?.scrollIntoView(scrollType);
       fromInternalLink.current = false;
     });
-  }, [query, routeV1.hash, experimentalMode, idSearch, isEmbedded]);
+  }, [query, route.hash, experimentalMode, idSearch, isEmbedded]);
 
   React.useEffect(() => {
     if (!isEmbedded && query !== undefined) {

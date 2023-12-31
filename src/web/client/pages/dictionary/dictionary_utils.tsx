@@ -15,8 +15,12 @@ import {
   DictContext,
   DictContextOptions,
 } from "@/web/client/pages/dictionary/dict_context";
-import { Navigator, RouterV2 } from "@/web/client/router/router_v2";
+import { NavHelper } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/pages/library/common";
+import {
+  DictRoute,
+  useDictRouter,
+} from "@/web/client/pages/dictionary/dictionary_routing";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -99,7 +103,7 @@ export const HELP_ENTRY = new XmlNode(
 );
 
 function ShLink(props: { text: string; query: string }) {
-  const { nav } = RouterV2.useRouter();
+  const { nav } = useDictRouter();
   const { fromInternalLink } = React.useContext(DictContext);
 
   return (
@@ -109,7 +113,7 @@ function ShLink(props: { text: string; query: string }) {
         if (fromInternalLink) {
           fromInternalLink.current = true;
         }
-        nav.to({ path: ClientPaths.DICT_PAGE, params: { q: props.query } });
+        nav.to({ path: ClientPaths.DICT_PAGE, query: props.query });
       }}>
       {props.text}
     </span>
@@ -117,7 +121,7 @@ function ShLink(props: { text: string; query: string }) {
 }
 
 function onLatinWordClick(
-  nav: Navigator,
+  nav: NavHelper<DictRoute>,
   dictContext: DictContextOptions,
   word: string
 ) {
@@ -129,13 +133,14 @@ function onLatinWordClick(
     }
     nav.to({
       path: ClientPaths.DICT_PAGE,
-      params: { q: `${word},LnS`, o: "1" },
+      query: `${word},LnS`,
+      experimentalSearch: true,
     });
   }
 }
 
 function LatLink(props: { word: string; orig?: string }) {
-  const { nav } = RouterV2.useRouter();
+  const { nav } = useDictRouter();
   const dictContext = React.useContext(DictContext);
 
   return (
