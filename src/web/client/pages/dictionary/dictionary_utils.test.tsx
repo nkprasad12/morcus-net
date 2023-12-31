@@ -116,7 +116,7 @@ describe("xmlNodeToJsx", () => {
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/dicts",
-        params: expect.objectContaining({ q: "omnis,SnH" }),
+        params: expect.objectContaining({ q: "omnis", in: "SnH" }),
       })
     );
   });
@@ -144,7 +144,7 @@ describe("xmlNodeToJsx", () => {
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/dicts",
-        params: expect.objectContaining({ q: "omnis,LnS" }),
+        params: expect.objectContaining({ q: "omnis", in: "LnS" }),
       })
     );
   });
@@ -173,7 +173,7 @@ describe("xmlNodeToJsx", () => {
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/dicts",
-        params: expect.objectContaining({ q: "omnis,LnS" }),
+        params: expect.objectContaining({ q: "omnis", in: "LnS" }),
       })
     );
   });

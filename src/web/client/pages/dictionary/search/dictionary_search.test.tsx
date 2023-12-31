@@ -98,7 +98,7 @@ describe("DictionarySearch", () => {
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/",
-        params: expect.objectContaining({ q: "ab,LnS" }),
+        params: expect.objectContaining({ q: "ab", in: "LnS" }),
       })
     );
   });
@@ -126,7 +126,7 @@ describe("DictionarySearch", () => {
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/",
-        params: expect.objectContaining({ q: "ack,SnH" }),
+        params: expect.objectContaining({ q: "ack", in: "SnH" }),
       })
     );
   });

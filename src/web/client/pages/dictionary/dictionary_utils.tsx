@@ -113,7 +113,11 @@ function ShLink(props: { text: string; query: string }) {
         if (fromInternalLink) {
           fromInternalLink.current = true;
         }
-        nav.to({ path: ClientPaths.DICT_PAGE, query: props.query });
+        nav.to({
+          path: ClientPaths.DICT_PAGE,
+          query: props.query,
+          dicts: LatinDict.SmithAndHall,
+        });
       }}>
       {props.text}
     </span>
@@ -133,7 +137,8 @@ function onLatinWordClick(
     }
     nav.to({
       path: ClientPaths.DICT_PAGE,
-      query: `${word},LnS`,
+      query: word,
+      dicts: LatinDict.LewisAndShort,
       experimentalSearch: true,
     });
   }
@@ -238,9 +243,12 @@ export function xmlNodeToJsx(
   } else if (className === "dLink") {
     const target = root.getAttr("to");
     const text = root.getAttr("text");
-    const query = [target || "undefined", "SnH"];
     return (
-      <ShLink query={query.join(",")} text={text || "undefined"} key={key} />
+      <ShLink
+        query={target || "undefined"}
+        text={text || "undefined"}
+        key={key}
+      />
     );
   } else if (className === "latWord") {
     const word = root.getAttr("to")!;

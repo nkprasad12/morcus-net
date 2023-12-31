@@ -20,10 +20,6 @@ import {
 import { SearchBox } from "@/web/client/components/generic/search";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 
-function toQuery(info: [DictInfo, string]): string {
-  return `${info[1]},${info[0].key.replace("&", "n")}`;
-}
-
 function HighlightSlider(props: {
   highlightStrength: number;
   setHighlightStrength: (newValue: number) => any;
@@ -141,13 +137,14 @@ export function DictionarySearch(props: {
 
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
-  async function onEnter(searchTerm: string) {
+  async function onEnter(searchTerm: string, dict?: DictInfo) {
     if (searchTerm.length === 0) {
       return;
     }
     nav.to({
       path: route.path,
       query: searchTerm,
+      dicts: dict,
       experimentalSearch: settings.data.experimentalMode === true,
     });
   }
@@ -161,12 +158,12 @@ export function DictionarySearch(props: {
         smallScreen={props.smallScreen}
         autoFocused={route.query === undefined}
         onRawEnter={(v) => onEnter(v)}
-        onOptionSelected={(t) => onEnter(toQuery(t))}
+        onOptionSelected={(t) => onEnter(t[1], t[0])}
         optionsForInput={(input) =>
           autocompleteOptions(input, props.dicts, 200)
         }
         RenderOption={AutocompleteOption}
-        toKey={toQuery}
+        toKey={(t) => `${t[1]},${t[0].key}`}
         toInputDisplay={(t) => t[1]}
       />
       <SearchSettingsDialog
