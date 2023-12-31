@@ -21,7 +21,7 @@ export const ABOUT_PAGE: SinglePageApp.Page = {
 
 export const DICT_PAGE: SinglePageApp.Page = {
   Content: DictionaryViewV2,
-  paths: [ClientPaths.DICT_PAGE],
+  paths: [ClientPaths.DICT_PAGE, ClientPaths.DICT_BY_ID],
   appBarConfig: {
     name: "Dictionary",
     targetPath: ClientPaths.DICT_PAGE.path,

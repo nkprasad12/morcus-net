@@ -72,24 +72,29 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   minWidth: "min(29%, 300px)",
 };
 
-function parseQuery(query: string, isEmbedded: boolean): [string, DictInfo[]] {
-  const parts = query.split(",");
-  const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
-  const dicts = isEmbedded
-    ? LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La")
-    : parts.length > 1
-    ? LatinDict.AVAILABLE.filter((dict) => dictParts.includes(dict.key))
-    : LatinDict.AVAILABLE;
-  return [parts[0], dicts];
+function chooseDicts(
+  dicts: undefined | DictInfo | DictInfo[],
+  isEmbedded: boolean
+): DictInfo[] {
+  if (isEmbedded) {
+    return LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La");
+  }
+  if (dicts === undefined) {
+    return LatinDict.AVAILABLE;
+  }
+  if (Array.isArray(dicts)) {
+    return dicts;
+  }
+  return [dicts];
 }
 
 async function fetchEntry(
-  input: string,
+  query: string,
   experimentalMode: boolean,
   singleArticle: boolean,
-  embedded: boolean
+  embedded: boolean,
+  dicts: DictInfo[]
 ) {
-  const [query, dicts] = parseQuery(input, embedded);
   const result = callApiFull(DictsFusedApi, {
     query,
     dicts: dicts.map((dict) => dict.key),
@@ -572,6 +577,10 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const experimentalMode =
     settings.data.experimentalMode === true ||
     route.experimentalSearch === true;
+  const queryDicts = React.useMemo(
+    () => chooseDicts(route.dicts, isEmbedded),
+    [route.dicts, isEmbedded]
+  );
 
   React.useEffect(() => {
     if (query === undefined) {
@@ -582,7 +591,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       query,
       experimentalMode,
       idSearch,
-      isEmbedded
+      isEmbedded,
+      queryDicts
     );
     serverResult.then((newResults) => {
       if (newResults === null) {
@@ -613,11 +623,11 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       scrollElement?.scrollIntoView(scrollType);
       fromInternalLink.current = false;
     });
-  }, [query, route.hash, experimentalMode, idSearch, isEmbedded]);
+  }, [query, route.hash, experimentalMode, idSearch, isEmbedded, queryDicts]);
 
   React.useEffect(() => {
     if (!isEmbedded && query !== undefined) {
-      title.setCurrentDictWord(parseQuery(query, isEmbedded)[0]);
+      title.setCurrentDictWord(query);
     }
   }, [title, isEmbedded, query]);
 

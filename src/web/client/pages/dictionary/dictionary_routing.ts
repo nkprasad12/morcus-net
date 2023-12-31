@@ -1,6 +1,8 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { PagePath } from "@/web/client/router/paths";
 import { RouteInfo, Router } from "@/web/client/router/router_v2";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 
 const QUERY_KEY = "q";
 const OPTIONS_KEY = "o";
@@ -59,6 +61,14 @@ function toRoute(info: DictRoute): RouteInfo {
 }
 
 function fromRoute(info: RouteInfo): DictRoute {
+  const idParams = PagePath.parseParams(ClientPaths.DICT_BY_ID, info.path);
+  if (idParams !== null) {
+    return {
+      path: info.path,
+      query: idParams.id,
+      idSearch: true,
+    };
+  }
   const params = info.params || {};
   const option = params[OPTIONS_KEY];
   return {

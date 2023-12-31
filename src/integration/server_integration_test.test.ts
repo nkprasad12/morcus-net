@@ -441,4 +441,54 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       expect(page.url()).toContain("/dicts?q=cohortandum");
     }
   );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading entries by old id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts?q=n37007&o=2");
+      writeContext("dictEntryByOldId", screenSize, i);
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading LS entries by name on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts?q=pondus");
+      writeContext("lsEntryByName", screenSize, i);
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading LS entries by new id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts/id/n37007");
+      writeContext("lsEntryById", screenSize, i);
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading SH entries by name on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts?q=habiliment");
+      writeContext("shEntryByOldId", screenSize, i);
+      await checkHasText("habiliment");
+      await checkHasText("garment");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading SH entries by new id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts/id/sh11673");
+      writeContext("shEntryById", screenSize, i);
+      await checkHasText("habiliment");
+      await checkHasText("garment");
+    }
+  );
 });

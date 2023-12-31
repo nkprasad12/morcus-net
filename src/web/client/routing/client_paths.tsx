@@ -7,6 +7,7 @@ export namespace ClientPaths {
     PagePath.of("/externalReader")
   );
   export const DICT_PAGE = checkPresent(PagePath.of("/dicts"));
+  export const DICT_BY_ID = checkPresent(PagePath.of("/dicts/id/:id"));
   export const ABOUT_PATH = checkPresent(PagePath.of("/about"));
   export const MACRONIZER_PATH = checkPresent(PagePath.of("/macronizer"));
   export const LIBRARY_PATH = checkPresent(PagePath.of("/library"));

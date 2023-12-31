@@ -7,6 +7,7 @@ import * as React from "react";
 import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 
 export type TooltipPlacement = "top-start" | "right";
 
@@ -211,6 +212,7 @@ export function SectionLinkTooltip(props: {
       path: "/dicts",
       params: {},
     };
+    // TODO: Use the new path
     if (isArticle) {
       after.params!.q = props.id;
     } else {

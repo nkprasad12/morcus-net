@@ -152,7 +152,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: `${WORK_PAGE}/${testId}` },
+          route: { path: urlFor(testId) },
           navigateTo: () => {},
         }}>
         <ReadingPage />
