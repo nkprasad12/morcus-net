@@ -12,7 +12,6 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import { RouteContext, Router } from "@/web/client/router/router_v2";
 import { checkPresent } from "@/common/assert";
-import { PagePath } from "@/web/client/router/paths";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
@@ -24,8 +23,8 @@ const mockCallApi: jest.Mock<any, any, any> = callApi;
 // @ts-ignore
 const mockCallApiFull: jest.Mock<any, any, any> = callApiFull;
 
-const urlFor = (id: string) =>
-  checkPresent(PagePath.toUrlPath(WORK_PAGE, { workId: id }));
+const urlFor = (workId: string) =>
+  checkPresent(WORK_PAGE.toUrlPath({ workId }));
 const PROCESSED_WORK: ProcessedWork = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],

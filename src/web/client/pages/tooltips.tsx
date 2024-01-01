@@ -8,7 +8,6 @@ import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
-import { PagePath } from "@/web/client/router/paths";
 import { checkPresent } from "@/common/assert";
 
 export type TooltipPlacement = "top-start" | "right";
@@ -211,7 +210,7 @@ export function SectionLinkTooltip(props: {
 
   function getLink(): string {
     const coreId = isArticle ? props.id : props.id.split(".")[0];
-    const path = PagePath.toUrlPath(ClientPaths.DICT_BY_ID, { id: coreId });
+    const path = ClientPaths.DICT_BY_ID.toUrlPath({ id: coreId });
     const hash = isArticle ? undefined : props.id;
     const url = RouteInfo.toLink({ path: checkPresent(path), hash });
     return `${window.location.origin}${url}`;

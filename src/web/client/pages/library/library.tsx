@@ -2,7 +2,6 @@ import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { PagePath } from "@/web/client/router/paths";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { FontSizes } from "@/web/client/styles";
@@ -24,7 +23,7 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
               className="latWork"
               onClick={() => {
                 const params = { workId: work.id };
-                const path = PagePath.toUrlPath(ClientPaths.WORK_PAGE, params);
+                const path = ClientPaths.WORK_PAGE.toUrlPath(params);
                 if (path !== null) {
                   nav.toPath(path);
                 }

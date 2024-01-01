@@ -20,54 +20,65 @@ describe("PagePath", () => {
 
   test("factory returns object on valid", () => {
     const path = "/dicts/:foo";
-    expect(PagePath.of(path)).toStrictEqual({ path });
+
+    const result = PagePath.of(path);
+
+    expect(result?.path).toBe(path);
+    expect(result).toBeInstanceOf(PagePath);
   });
 
   test("parseParams with no params returns empty", () => {
     const path = "/hello/darkness/my/old/friend";
     const pagePath = checkPresent(PagePath.of(path));
-    expect(PagePath.parseParams(pagePath, path));
+    expect(pagePath.parseParams(path));
   });
 
   test("parseParams with non-matching size returns null", () => {
     const path = "/hello/darkness/my/old/friend";
     const pagePath = checkPresent(PagePath.of(path));
-    expect(PagePath.parseParams(pagePath, "/hello/darkness")).toBe(null);
+    expect(pagePath.parseParams("/hello/darkness")).toBe(null);
   });
 
   test("parseParams with non-matching chunk returns null", () => {
     const path = "/hello/darkness/my/old/friend";
     const pagePath = checkPresent(PagePath.of(path));
-    expect(
-      PagePath.parseParams(pagePath, "/hello/darkness/my/new/friend")
-    ).toBe(null);
+    expect(pagePath.parseParams("/hello/darkness/my/new/friend")).toBe(null);
   });
 
   test("parseParams with params returns expected", () => {
     const path = "/hello/:darkness/my/:old/friend";
     const pagePath = checkPresent(PagePath.of(path));
-    expect(
-      PagePath.parseParams(pagePath, "/hello/Gallia/my/est/friend")
-    ).toStrictEqual({ darkness: "Gallia", old: "est" });
+    expect(pagePath.parseParams("/hello/Gallia/my/est/friend")).toStrictEqual({
+      darkness: "Gallia",
+      old: "est",
+    });
   });
 
   test("toUrlPath with params required but not passed returns empty", () => {
     const path = "/hello/:darkness/my/:old/friend";
     const pagePath = checkPresent(PagePath.of(path));
-    expect(PagePath.toUrlPath(pagePath, { darkness: "Gallia" })).toBe(null);
+    expect(pagePath.toUrlPath({ darkness: "Gallia" })).toBe(null);
   });
 
   test("toUrlPath with params not required returns path", () => {
     const path = "/hello/darkness/my/old/friend";
     const pagePath = checkPresent(PagePath.of(path));
-    expect(PagePath.toUrlPath(pagePath)).toBe(path);
+    expect(pagePath.toUrlPath()).toBe(path);
   });
 
   test("toUrlPath with params required and passed returns expected", () => {
     const path = "/hello/:darkness/my/:old/friend";
     const pagePath = checkPresent(PagePath.of(path));
+    expect(pagePath.toUrlPath({ darkness: "Gallia", old: "est" })).toBe(
+      "/hello/Gallia/my/est/friend"
+    );
+  });
+
+  test("toUrlPath with extraneous params returns null", () => {
+    const path = "/hello/:darkness/my/:old/friend";
+    const pagePath = checkPresent(PagePath.of(path));
     expect(
-      PagePath.toUrlPath(pagePath, { darkness: "Gallia", old: "est" })
-    ).toBe("/hello/Gallia/my/est/friend");
+      pagePath.toUrlPath({ darkness: "Gallia", old: "est", youve: "omnis" })
+    ).toBe(null);
   });
 });
