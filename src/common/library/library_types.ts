@@ -77,6 +77,10 @@ export interface LibraryWorkMetadata {
   name: string;
   /** The id by which to obtain the full work. */
   id: string;
+  /** The representation of the author in a URL. */
+  urlAuthor: string;
+  /** The representation of the work name in a URL. */
+  urlName: string;
 }
 
 export namespace LibraryWorkMetadata {
@@ -84,6 +88,8 @@ export namespace LibraryWorkMetadata {
     ["author", isString],
     ["name", isString],
     ["id", isString],
+    ["urlAuthor", isString],
+    ["urlName", isString],
   ]);
 }
 
