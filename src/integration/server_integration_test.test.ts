@@ -506,6 +506,21 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     }
   );
 
+  it.each(ALL_SCREEN_SIZES(1))(
+    "allows queries from the new ID page on %s screen #%s",
+    async (screenSize, i) => {
+      const page = await getPage(screenSize, "/dicts/id/sh11673");
+      writeContext("queryFromNewIdPage", screenSize, i);
+
+      await page.click(`[aria-label="Dictionary search box"]`);
+      await page.keyboard.type("canaba");
+      await page.keyboard.press("Enter");
+
+      await checkTitleIs("canaba | Morcus Latin Tools");
+      await checkHasText("hovel");
+    }
+  );
+
   it.skip.each(ALL_SCREEN_SIZES(1))(
     "allows copying id links via tooltip %s screen #%s",
     async (screenSize, i) => {

@@ -65,7 +65,7 @@ describe("New Dictionary View", () => {
 
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: "/",
+        path: "/dicts",
         params: expect.objectContaining({ q: "G" }),
       })
     );

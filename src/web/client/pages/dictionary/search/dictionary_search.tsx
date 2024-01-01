@@ -19,6 +19,7 @@ import {
 } from "@/web/client/components/global_flags";
 import { SearchBox } from "@/web/client/components/generic/search";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 
 function HighlightSlider(props: {
   highlightStrength: number;
@@ -142,7 +143,7 @@ export function DictionarySearch(props: {
       return;
     }
     nav.to({
-      path: route.path,
+      path: ClientPaths.DICT_PAGE.path,
       query: searchTerm,
       dicts: dict,
       experimentalSearch: settings.data.experimentalMode === true,

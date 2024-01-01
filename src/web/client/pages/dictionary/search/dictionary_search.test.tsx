@@ -72,7 +72,7 @@ describe("DictionarySearch", () => {
     expect(mockNav).not.toHaveBeenCalled();
     await user.type(search, "a{enter}");
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", params: { q: "a" } })
+      expect.objectContaining({ path: "/dicts", params: { q: "a" } })
     );
   });
 
@@ -97,7 +97,7 @@ describe("DictionarySearch", () => {
 
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: "/",
+        path: "/dicts",
         params: expect.objectContaining({ q: "ab", in: "LnS" }),
       })
     );
@@ -125,7 +125,7 @@ describe("DictionarySearch", () => {
 
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
-        path: "/",
+        path: "/dicts",
         params: expect.objectContaining({ q: "ack", in: "SnH" }),
       })
     );
