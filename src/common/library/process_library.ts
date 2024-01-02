@@ -13,12 +13,15 @@ import fs from "fs";
 
 // TODO: We should just crawl some root.
 const ALL_WORKS = [
+  // Ovid's Amores.
+  // "texts/latin/perseus/data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml",
   "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
   "texts/latin/perseus/data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
 ];
 
 const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["Julius Caesar", "caesar"],
+  ["P. Ovidius Naso", "ovid"],
 ]);
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>();
