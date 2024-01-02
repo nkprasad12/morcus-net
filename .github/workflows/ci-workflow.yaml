@@ -76,6 +76,11 @@ jobs:
         run: npm ci
       - name: Running integration checks
         run: npm run integration-tests
+      - uses: actions/upload-artifact@v3
+        with:
+          name: puppeteer_screenshots
+          path: |
+            puppeteer_screenshots/
 
   pytype-checks:
     runs-on: ubuntu-latest

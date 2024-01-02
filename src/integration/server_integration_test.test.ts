@@ -478,6 +478,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       const page = await getPage(screenSize, "/dicts");
       writeContext("linkLatInSH", screenSize, i);
 
+      await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("influence");
       await page.keyboard.press("Enter");
 
