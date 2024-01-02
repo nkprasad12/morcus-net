@@ -1,9 +1,9 @@
 import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
 import * as React from "react";
 import { getCommitHash } from "@/web/client/define_vars";
+import { Container } from "@/web/client/components/generic/container";
 
 const INSTALL_GUIDE =
   "https://www.cdc.gov/niosh/mining/content/hearingloss/installPWA.html";

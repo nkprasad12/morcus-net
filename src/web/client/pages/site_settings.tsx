@@ -1,5 +1,4 @@
 import Box from "@mui/material/Box";
-import Container from "@mui/material/Container";
 import Typography from "@mui/material/Typography";
 
 import { useContext } from "react";
@@ -7,6 +6,7 @@ import {
   GlobalBooleans,
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
+import { Container } from "@/web/client/components/generic/container";
 
 function GlobalSettingsCheckbox(props: {
   label: string;

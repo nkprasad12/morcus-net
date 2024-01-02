@@ -1,12 +1,12 @@
 import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
+import { Container } from "@/web/client/components/generic/container";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { FontSizes } from "@/web/client/styles";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import Container from "@mui/material/Container";
 import { useState, useEffect } from "react";
 
 function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
@@ -64,7 +64,7 @@ export function Library() {
   }, []);
 
   return (
-    <Container maxWidth="xxl" sx={{ paddingTop: 3 }}>
+    <Container maxWidth="xxl" style={{ paddingTop: "24px" }}>
       <ContentBox isSmall={false}>
         <>
           <div className="contentText">Welcome to the library</div>

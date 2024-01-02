@@ -1,3 +1,4 @@
+import { exhaustiveGuard } from "@/common/misc_utils";
 import { Solarized } from "@/web/client/colors";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
@@ -17,6 +18,28 @@ export namespace FontSizes {
   export const SMALL_SCREEN = 19;
   export const SECONDARY = 16;
   export const TERTIARY = 14;
+}
+
+export type BoxWidth = "xxs" | "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
+export function getWidth(width: BoxWidth): number {
+  switch (width) {
+    case "xxs":
+      return 275;
+    case "xs":
+      return 400;
+    case "sm":
+      return 600;
+    case "md":
+      return 900;
+    case "lg":
+      return 1200;
+    case "xl":
+      return 1500;
+    case "xxl":
+      return 2000;
+    default:
+      exhaustiveGuard(width);
+  }
 }
 
 const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
@@ -131,6 +154,14 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       },
       ".contentTextLight": {
         color: contentTextLightColor,
+      },
+      ".Container": {
+        boxSizing: "border-box",
+        marginLeft: "auto",
+        marginRight: "auto",
+        display: "block",
+        paddingLeft: "16px",
+        paddingRight: "16px",
       },
 
       /** Menu and menu items */
@@ -427,6 +458,14 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       },
       ".macronLabel": {
         color: Solarized.base1,
+      },
+
+      /** Size specific */
+      "@media (min-width: 600px)": {
+        ".Container": {
+          paddingLeft: "24px",
+          paddingRight: "24px",
+        },
       },
     },
   };

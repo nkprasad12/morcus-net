@@ -7,7 +7,6 @@ import FlagIcon from "@mui/icons-material/Flag";
 import BuildIcon from "@mui/icons-material/Build";
 import DarkMode from "@mui/icons-material/DarkMode";
 import LightMode from "@mui/icons-material/LightMode";
-import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -15,6 +14,7 @@ import Drawer from "@mui/material/Drawer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
 import { Divider } from "@/web/client/components/generic/divider";
+import { Container } from "@/web/client/components/generic/container";
 
 export namespace ResponsiveAppBar {
   export interface Page {

@@ -6,9 +6,9 @@ import LinkIcon from "@mui/icons-material/Link";
 import Typography from "@mui/material/Typography";
 import { CSSProperties } from "react";
 import IconButton from "@mui/material/IconButton";
-import Container from "@mui/material/Container";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { assert } from "@/common/assert";
+import { Container } from "@/web/client/components/generic/container";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows
@@ -34,11 +34,11 @@ const COLUMN_STYLE: CSSProperties = {
   marginLeft: "1%",
   marginRight: "1%",
 };
-const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | false)[] = [
+const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | undefined)[] = [
   "lg",
   "xl",
   "xxl",
-  false,
+  undefined,
 ];
 
 export function BaseReaderLayout(

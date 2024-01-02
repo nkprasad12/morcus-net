@@ -22,6 +22,7 @@ import {
   FontSizes,
   TEXT_STYLE,
   getAppBarColor,
+  getWidth,
 } from "@/web/client/styles";
 import { Router } from "@/web/client/router/router_v2";
 
@@ -47,13 +48,13 @@ function appTheme(isDarkMode: boolean) {
     breakpoints: {
       values: {
         xxxs: 0,
-        xxs: 275,
-        xs: 400,
-        sm: 600,
-        md: 900,
-        lg: 1200,
-        xl: 1500,
-        xxl: 2000,
+        xxs: getWidth("xxs"),
+        xs: getWidth("xs"),
+        sm: getWidth("sm"),
+        md: getWidth("md"),
+        lg: getWidth("lg"),
+        xl: getWidth("xl"),
+        xxl: getWidth("xxl"),
       },
     },
   });
