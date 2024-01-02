@@ -21,6 +21,7 @@ export interface DictContextOptions {
   setDictsToUse: (dicts: DictInfo[]) => any;
   scrollTopRef: React.RefObject<HTMLDivElement>;
   setInitial?: (target: string) => any;
+  fromInternalLink?: React.MutableRefObject<boolean>;
 }
 
 export const DictContext: React.Context<DictContextOptions> =

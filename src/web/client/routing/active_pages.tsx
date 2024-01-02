@@ -3,7 +3,7 @@
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { About } from "@/web/client/pages/about";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 import { ExternalContentReader } from "@/web/client/pages/library/external_content_reader";
 import { Library } from "@/web/client/pages/library/library";
 import { ReadingPage } from "@/web/client/pages/library/reader";
@@ -11,50 +11,55 @@ import { Macronizer } from "@/web/client/pages/macron";
 import { SiteSettings } from "@/web/client/pages/site_settings";
 
 export const ABOUT_PAGE: SinglePageApp.Page = {
-  name: "About",
-  path: "/about",
-  content: About,
+  Content: About,
+  paths: [ClientPaths.ABOUT_PATH],
+  appBarConfig: {
+    name: "About",
+    targetPath: ClientPaths.ABOUT_PATH.path,
+  },
 };
 
 export const DICT_PAGE: SinglePageApp.Page = {
-  name: "Dictionary",
-  path: ClientPaths.DICT_PAGE,
-  content: DictionaryViewV2,
+  Content: DictionaryViewV2,
+  paths: [ClientPaths.DICT_PAGE, ClientPaths.DICT_BY_ID],
+  appBarConfig: {
+    name: "Dictionary",
+    targetPath: ClientPaths.DICT_PAGE.path,
+  },
 };
 
 export const MACRONIZER_PAGE: SinglePageApp.Page = {
-  name: "Macronizer",
-  path: "/macronizer",
-  content: Macronizer,
+  Content: Macronizer,
+  paths: [ClientPaths.MACRONIZER_PATH],
+  appBarConfig: {
+    name: "Macronizer",
+    targetPath: ClientPaths.MACRONIZER_PATH.path,
+  },
   experimental: true,
 };
 
 export const LIBRARY_PAGE: SinglePageApp.Page = {
-  name: "Library",
-  path: "/library",
-  content: Library,
+  Content: Library,
+  paths: [ClientPaths.LIBRARY_PATH],
+  appBarConfig: {
+    name: "Library",
+    targetPath: ClientPaths.LIBRARY_PATH.path,
+  },
 };
 
 export const SETTINGS_PAGE: SinglePageApp.Page = {
-  name: "Settings",
-  path: "/settings",
-  content: SiteSettings,
-  notInMainSection: true,
+  Content: SiteSettings,
+  paths: [ClientPaths.SETTINGS_PATH],
 };
 
 export const READING_PAGE: SinglePageApp.Page = {
-  name: "Reading",
-  path: ClientPaths.WORK_PAGE,
-  content: ReadingPage,
-  notInMainSection: true,
-  hasSubpages: true,
+  Content: ReadingPage,
+  paths: [ClientPaths.WORK_PAGE, ClientPaths.WORK_BY_NAME],
 };
 
 export const EXTERNAL_CONTENT_READER_PAGE: SinglePageApp.Page = {
-  name: "External Content Reader",
-  path: ClientPaths.EXTERNAL_CONTENT_READER,
-  content: ExternalContentReader,
-  notInMainSection: true,
+  Content: ExternalContentReader,
+  paths: [ClientPaths.EXTERNAL_CONTENT_READER],
 };
 
 export const ACTIVE_PAGES = [

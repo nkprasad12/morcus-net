@@ -1,6 +1,5 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { RouteContext, Navigation } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
@@ -19,10 +18,8 @@ import {
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
 import { SearchBox } from "@/web/client/components/generic/search";
-
-function toQuery(info: [DictInfo, string]): string {
-  return `${info[1]},${info[0].key.replace("&", "n")}`;
-}
+import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 
 function HighlightSlider(props: {
   highlightStrength: number;
@@ -136,16 +133,19 @@ export function DictionarySearch(props: {
   dicts: DictInfo[];
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
-  const nav = useContext(RouteContext);
+  const { route, nav } = useDictRouter();
   const settings = useContext(GlobalSettingsContext);
 
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
-  async function onEnter(searchTerm: string) {
+  async function onEnter(searchTerm: string, dict?: DictInfo) {
     if (searchTerm.length === 0) {
       return;
     }
-    Navigation.query(nav, searchTerm, {
+    nav.to({
+      path: ClientPaths.DICT_PAGE.path,
+      query: searchTerm,
+      dicts: dict,
       experimentalSearch: settings.data.experimentalMode === true,
     });
   }
@@ -157,14 +157,14 @@ export function DictionarySearch(props: {
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
         smallScreen={props.smallScreen}
-        autoFocused={nav.route.query === undefined}
+        autoFocused={route.query === undefined}
         onRawEnter={(v) => onEnter(v)}
-        onOptionSelected={(t) => onEnter(toQuery(t))}
+        onOptionSelected={(t) => onEnter(t[1], t[0])}
         optionsForInput={(input) =>
           autocompleteOptions(input, props.dicts, 200)
         }
         RenderOption={AutocompleteOption}
-        toKey={toQuery}
+        toKey={(t) => `${t[1]},${t[0].key}`}
         toInputDisplay={(t) => t[1]}
       />
       <SearchSettingsDialog

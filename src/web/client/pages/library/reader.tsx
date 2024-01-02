@@ -4,16 +4,16 @@ import {
   DocumentInfo,
   ProcessedWork,
   ProcessedWorkNode,
+  WorkId,
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
-import { Navigation, RouteContext } from "@/web/client/components/router";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 import ArrowBack from "@mui/icons-material/ArrowBack";
 import ArrowForward from "@mui/icons-material/ArrowForward";
 import Info from "@mui/icons-material/Info";
 import Toc from "@mui/icons-material/Toc";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
@@ -40,6 +40,7 @@ import {
   BaseMainColumnProps,
   BaseReader,
 } from "@/web/client/pages/library/base_reader";
+import { Router } from "@/web/client/router/router_v2";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -116,15 +117,36 @@ function findWorksByLevel(
   return results;
 }
 
+function resolveWorkId(path: string): WorkId | undefined {
+  console.log(path);
+  const byNameParams = ClientPaths.WORK_BY_NAME.parseParams(path);
+  const urlAuthor = byNameParams?.author;
+  const urlName = byNameParams?.name;
+  if (urlAuthor !== undefined && urlName !== undefined) {
+    return { nameAndAuthor: { urlAuthor, urlName } };
+  }
+  const byIdParams = ClientPaths.WORK_PAGE.parseParams(path);
+  const id = byIdParams?.workId;
+  if (id !== undefined) {
+    return { id };
+  }
+  return undefined;
+}
+
 export function ReadingPage() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
 
-  const nav = useContext(RouteContext);
+  const { route } = Router.useRouter();
+  const queryPage = route.params?.q || route.params?.pg;
 
   useEffect(() => {
-    const id = nav.route.path.substring(ClientPaths.WORK_PAGE.length + 1);
-    fetchWork(id)
+    const workId = resolveWorkId(route.path);
+    if (workId === undefined) {
+      setWork("Error");
+      return;
+    }
+    fetchWork(workId)
       .then((work) =>
         setWork({
           info: work.info,
@@ -137,12 +159,12 @@ export function ReadingPage() {
         console.debug(reason);
         setWork("Error");
       });
-  }, [setWork, nav.route.path]);
+  }, [setWork, route.path]);
 
   useEffect(() => {
-    const urlPage = safeParseInt(nav.route.query);
+    const urlPage = safeParseInt(queryPage);
     setCurrentPage(urlPage === undefined ? 0 : urlPage - 1);
-  }, [nav.route.query]);
+  }, [queryPage]);
 
   return (
     <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
@@ -302,11 +324,12 @@ function WorkNavigationBar(props: {
   work: PaginatedWork;
   textScale?: number;
 }) {
-  const nav = useContext(RouteContext);
+  const { nav } = Router.useRouter();
 
   const setPage = React.useCallback(
     // Nav pages are 1-indexed.
-    (newPage: number) => Navigation.query(nav, `${newPage + 1}`),
+    (newPage: number) =>
+      nav.to((old) => ({ path: old.path, params: { pg: `${newPage + 1}` } })),
     [nav]
   );
   const previousPage = React.useCallback(() => {
@@ -428,7 +451,7 @@ function WorkNavigation(props: {
   scale: number;
   level: number;
 }) {
-  const nav = useContext(RouteContext);
+  const { nav } = Router.useRouter();
   const ofLevel = findWorksByLevel(props.level, props.root);
 
   if (ofLevel.length === 0) {
@@ -453,7 +476,10 @@ function WorkNavigation(props: {
                     const page = props.work.pages[i];
                     if (page.id.join(".") === childRoot.id.join(".")) {
                       // Nav pages are 1-indexed.
-                      Navigation.query(nav, `${i + 1}`);
+                      nav.to((old) => ({
+                        path: old.path,
+                        params: { q: `${i + 1}` },
+                      }));
                     }
                   }
                 }}>

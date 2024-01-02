@@ -36,16 +36,28 @@ afterAll(() => {
 });
 
 describe("Library Processing", () => {
-  test("stores and retrieves correctly", async () => {
+  test("stores and retrieves by id correctly", async () => {
     processLibrary(LIB_DIR, [DBG_PATH]);
-    const result = await retrieveWork("phi0448.phi001.perseus-lat2", LIB_DIR);
+    const result = await retrieveWork(
+      { id: "phi0448.phi001.perseus-lat2" },
+      LIB_DIR
+    );
+    expect(result.info.author).toBe("Julius Caesar");
+  });
+
+  test("stores and retrieves by name and author correctly", async () => {
+    processLibrary(LIB_DIR, [DBG_PATH]);
+    const result = await retrieveWork(
+      { nameAndAuthor: { urlName: "de_bello_gallico", urlAuthor: "caesar" } },
+      LIB_DIR
+    );
     expect(result.info.author).toBe("Julius Caesar");
   });
 
   test("handles invalid request correctly", async () => {
     processLibrary(LIB_DIR, [DBG_PATH]);
     expect(
-      retrieveWork("phi0448.phi001.perseus-lat", LIB_DIR)
+      retrieveWork({ id: "phi0448.phi001.perseus-lat" }, LIB_DIR)
     ).rejects.toHaveProperty("status", 404);
   });
 

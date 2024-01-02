@@ -9,13 +9,18 @@ import {
 } from "@/web/client/pages/tooltips";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { Navigation, RouteContext } from "@/web/client/components/router";
 import { InflectionData } from "@/common/dictionaries/dict_result";
 import { FontSizes } from "@/web/client/styles";
 import {
   DictContext,
   DictContextOptions,
 } from "@/web/client/pages/dictionary/dict_context";
+import { NavHelper } from "@/web/client/router/router_v2";
+import { ClientPaths } from "@/web/client/routing/client_paths";
+import {
+  DictRoute,
+  useDictRouter,
+} from "@/web/client/pages/dictionary/dictionary_routing";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -98,39 +103,49 @@ export const HELP_ENTRY = new XmlNode(
 );
 
 function ShLink(props: { text: string; query: string }) {
-  const nav = React.useContext(RouteContext);
+  const { nav } = useDictRouter();
+  const { fromInternalLink } = React.useContext(DictContext);
+
   return (
     <span
       className="dLink"
-      onClick={() =>
-        Navigation.query(nav, props.query, {
-          internalSource: true,
-          canonicalPath: "/dicts",
-        })
-      }>
+      onClick={() => {
+        if (fromInternalLink) {
+          fromInternalLink.current = true;
+        }
+        nav.to({
+          path: ClientPaths.DICT_PAGE.path,
+          query: props.query,
+          dicts: LatinDict.SmithAndHall,
+        });
+      }}>
       {props.text}
     </span>
   );
 }
 
 function onLatinWordClick(
-  nav: Navigation,
+  nav: NavHelper<DictRoute>,
   dictContext: DictContextOptions,
   word: string
 ) {
   if (dictContext.setInitial !== undefined) {
     dictContext.setInitial(word);
   } else {
-    Navigation.query(nav, `${word},LnS`, {
+    if (dictContext.fromInternalLink) {
+      dictContext.fromInternalLink.current = true;
+    }
+    nav.to({
+      path: ClientPaths.DICT_PAGE.path,
+      query: word,
+      dicts: LatinDict.LewisAndShort,
       experimentalSearch: true,
-      internalSource: true,
-      canonicalPath: "/dicts",
     });
   }
 }
 
 function LatLink(props: { word: string; orig?: string }) {
-  const nav = React.useContext(RouteContext);
+  const { nav } = useDictRouter();
   const dictContext = React.useContext(DictContext);
 
   return (
@@ -228,9 +243,12 @@ export function xmlNodeToJsx(
   } else if (className === "dLink") {
     const target = root.getAttr("to");
     const text = root.getAttr("text");
-    const query = [target || "undefined", "SnH"];
     return (
-      <ShLink query={query.join(",")} text={text || "undefined"} key={key} />
+      <ShLink
+        query={target || "undefined"}
+        text={text || "undefined"}
+        key={key}
+      />
     );
   } else if (className === "latWord") {
     const word = root.getAttr("to")!;

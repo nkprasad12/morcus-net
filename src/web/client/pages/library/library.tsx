@@ -1,16 +1,16 @@
 import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
-import { Navigation, RouteContext } from "@/web/client/components/router";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { Router } from "@/web/client/router/router_v2";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 import { FontSizes } from "@/web/client/styles";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import Container from "@mui/material/Container";
-import { useContext, useState, useEffect } from "react";
+import { useState, useEffect } from "react";
 
 function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
-  const nav = useContext(RouteContext);
+  const { nav } = Router.useRouter();
 
   return (
     <div style={{ marginTop: 4, display: "flex", flexDirection: "column" }}>
@@ -21,9 +21,13 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
           <div key={work.id}>
             <span
               className="latWork"
-              onClick={() =>
-                Navigation.to(nav, `${ClientPaths.WORK_PAGE}/${work.id}`)
-              }
+              onClick={() => {
+                const params = { author: work.urlAuthor, name: work.urlName };
+                const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
+                if (path !== null) {
+                  nav.toPath(path);
+                }
+              }}
               role="button">
               <span>{work.name}</span>{" "}
               <span className="contentTextLight">{work.author}</span>
@@ -36,12 +40,12 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
 }
 
 function ExternalReaderButton() {
-  const nav = useContext(RouteContext);
+  const { nav } = Router.useRouter();
 
   return (
     <span
       className="jsLink"
-      onClick={() => Navigation.to(nav, ClientPaths.EXTERNAL_CONTENT_READER)}>
+      onClick={() => nav.toPath(ClientPaths.EXTERNAL_CONTENT_READER.path)}>
       here
     </span>
   );

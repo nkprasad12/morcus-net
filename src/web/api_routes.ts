@@ -10,6 +10,7 @@ import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import {
   ListLibraryWorksResponse,
   ProcessedWork,
+  WorkId,
 } from "@/common/library/library_types";
 
 export const MacronizeApi: ApiRoute<string, string> = {
@@ -59,10 +60,10 @@ export const ListLibraryWorks: ApiRoute<any, ListLibraryWorksResponse> = {
   outputValidator: ListLibraryWorksResponse.isMatch,
 };
 
-export const GetWork: ApiRoute<string, ProcessedWork> = {
+export const GetWork: ApiRoute<WorkId, ProcessedWork> = {
   path: "/api/library/work",
   method: "GET",
-  inputValidator: isString,
+  inputValidator: WorkId.isMatch,
   outputValidator: ProcessedWork.isMatch,
   registry: [XmlNodeSerialization.DEFAULT],
 };

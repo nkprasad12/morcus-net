@@ -156,8 +156,20 @@ describe("morcus.net backend integration", () => {
     ).toHaveLength(1);
   });
 
-  test("returns DBG on request", async () => {
-    const result = await callApiFull(GetWork, "phi0448.phi001.perseus-lat2");
+  test("returns DBG by id", async () => {
+    const result = await callApiFull(GetWork, {
+      id: "phi0448.phi001.perseus-lat2",
+    });
+    expect(result.data.info.title).toBe("De bello Gallico");
+  });
+
+  test("returns DBG by name and author ", async () => {
+    const result = await callApiFull(GetWork, {
+      nameAndAuthor: {
+        urlAuthor: "caesar",
+        urlName: "de_bello_gallico",
+      },
+    });
     expect(result.data.info.title).toBe("De bello Gallico");
   });
 
@@ -268,15 +280,19 @@ async function openTab(label: string, size: ScreenSize, page: Page) {
   }
 }
 
-async function findText(text: string, page: Page, parentType: string = "*") {
-  const results = await page.$x(`//${parentType}[contains(text(), "${text}")]`);
+async function findText(
+  text: string,
+  page: Page,
+  parentType: string = "*",
+  className?: string
+) {
+  const classString =
+    className === undefined ? "" : `and @class="${className}"`;
+  const results = await page.$x(
+    `//${parentType}[contains(text(), "${text}")${classString}]`
+  );
   expect(results).toHaveLength(1);
   return results[0] as ElementHandle<Element>;
-}
-
-async function assertHasText(text: string, page: Page) {
-  const results = await page.$x(`//*[contains(text(), "${text}")]`);
-  expect(results).not.toHaveLength(0);
 }
 
 // Just on chrome for now, but we should add firefox later.
@@ -296,6 +312,11 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       mkdirSync(SCREENSHOTS_DIR);
     } catch {}
     browser = await puppeteer.launch({ headless: "new", product });
+    const context = browser.defaultBrowserContext();
+    await context.overridePermissions(global.location.origin, [
+      "clipboard-read",
+      "clipboard-write",
+    ]);
     currentPage = await checkPresent(browser).newPage();
   });
 
@@ -331,6 +352,35 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     expect(title).toBe(expected);
   }
 
+  async function checkHasText(text: string): Promise<void> {
+    const page = checkPresent(currentPage);
+    const results = await page.$x(`//*[contains(text(), "${text}")]`);
+    if (results.length === 0) {
+      await takeScreenshot();
+    }
+    expect(results).not.toHaveLength(0);
+  }
+
+  async function waitForText(
+    text: string,
+    parentType: string = "*",
+    className?: string
+  ): Promise<void> {
+    const page = checkPresent(currentPage);
+    const classString =
+      className === undefined ? "" : `and @class="${className}"`;
+    try {
+      const results = await page.waitForXPath(
+        `//${parentType}[contains(text(), "${text}")${classString}]`,
+        { timeout: 3000 }
+      );
+      expect(results).not.toBeNull();
+    } catch (err) {
+      await takeScreenshot();
+      throw err;
+    }
+  }
+
   async function getPage(size: ScreenSize, morcusPage?: string): Promise<Page> {
     const page = checkPresent(currentPage);
     await setSize(size, page);
@@ -356,8 +406,8 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("tabNav", screenSize, i);
 
       await openTab("About", screenSize, page);
-      await assertHasText("GPL-3.0", page);
-      await assertHasText("CC BY-SA 4.0", page);
+      await checkHasText("GPL-3.0");
+      await checkHasText("CC BY-SA 4.0");
     }
   );
 
@@ -372,7 +422,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       await page.keyboard.press("Enter");
 
       await checkTitleIs("canaba | Morcus Latin Tools");
-      await assertHasText("hovel", page);
+      await checkHasText("hovel");
     }
   );
 
@@ -384,14 +434,14 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can");
-      await assertHasText("cānăba", page);
+      await checkHasText("cānăba");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
 
       await checkTitleIs("cānăba | Morcus Latin Tools");
-      await assertHasText("hovel", page);
+      await checkHasText("hovel");
     }
   );
 
@@ -403,22 +453,22 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can");
-      await assertHasText("cānăba", page);
+      await checkHasText("cānăba");
       await (await findText("cānăba", page, "span")).click();
 
       await checkTitleIs("cānăba | Morcus Latin Tools");
-      await assertHasText("hovel", page);
+      await checkHasText("hovel");
     }
   );
 
   it.each(ALL_SCREEN_SIZES(1))(
     "should load about page on %s screen #%s",
     async (screenSize, i) => {
-      const page = await getPage(screenSize, "/about");
+      await getPage(screenSize, "/about");
       writeContext("aboutPage", screenSize, i);
 
-      await assertHasText("GPL-3.0", page);
-      await assertHasText("CC BY-SA 4.0", page);
+      await checkHasText("GPL-3.0");
+      await checkHasText("CC BY-SA 4.0");
     }
   );
 
@@ -431,10 +481,128 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       await page.keyboard.type("influence");
       await page.keyboard.press("Enter");
 
-      await assertHasText("cohortandum", page);
+      await checkHasText("cohortandum");
       await (await findText("cohortandum", page)).click();
 
       expect(page.url()).toContain("/dicts?q=cohortandum");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading entries by old id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts?q=n37007&o=2");
+      writeContext("dictEntryByOldId", screenSize, i);
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading LS entries by name on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts?q=pondus");
+      writeContext("lsEntryByName", screenSize, i);
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading LS entries by new id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts/id/n37007");
+      writeContext("lsEntryById", screenSize, i);
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading SH entries by name on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts?q=habiliment");
+      writeContext("shEntryByOldId", screenSize, i);
+      await checkHasText("habiliment");
+      await checkHasText("garment");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "should allow loading SH entries by new id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/dicts/id/sh11673");
+      writeContext("shEntryById", screenSize, i);
+      await checkHasText("habiliment");
+      await checkHasText("garment");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "allows queries from the new ID page on %s screen #%s",
+    async (screenSize, i) => {
+      const page = await getPage(screenSize, "/dicts/id/sh11673");
+      writeContext("queryFromNewIdPage", screenSize, i);
+
+      await page.click(`[aria-label="Dictionary search box"]`);
+      await page.keyboard.type("abagio");
+      await page.keyboard.press("Enter");
+
+      await checkTitleIs("abagio | Morcus Latin Tools");
+      await checkHasText("supposed etymology of adagio");
+    }
+  );
+
+  it.skip.each(ALL_SCREEN_SIZES(1))(
+    "allows copying id links via tooltip %s screen #%s",
+    async (screenSize, i) => {
+      const page = await getPage(screenSize, "/dicts?q=pondus");
+      writeContext("copyArticleLink", screenSize, i);
+
+      const button = await findText("pondus", page, "span", "lsSenseBullet");
+      await button.click();
+      const tooltip = await findText("Copy article link", page);
+      await tooltip.click();
+
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toEqual(
+        "Some text"
+      );
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by legacy id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2");
+      writeContext("workById", screenSize, i);
+      await waitForText("Gallia");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by legacy id and q page %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2?q=3");
+      writeContext("workByIdAndPage", screenSize, i);
+      await waitForText("Orgetorix");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by name and author on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2");
+      writeContext("workByNameAndAuthor", screenSize, i);
+      await waitForText("Gallia");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by name and author and page %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/caesar/de_bello_gallico?pg=3");
+      writeContext("workByNameAndAuthorWithPage", screenSize, i);
+      await waitForText("Orgetorix");
     }
   );
 });

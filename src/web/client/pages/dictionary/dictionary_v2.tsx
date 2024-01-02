@@ -16,7 +16,6 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DictsFusedApi } from "@/web/api_routes";
 import { Footer } from "@/web/client/components/footer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
-import { RouteContext } from "@/web/client/components/router";
 import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   ElementAndKey,
@@ -52,6 +51,7 @@ import {
 import Divider from "@mui/material/Divider";
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
+import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -72,24 +72,29 @@ const TOC_SIDEBAR_STYLE: CSSProperties = {
   minWidth: "min(29%, 300px)",
 };
 
-function parseQuery(query: string, isEmbedded: boolean): [string, DictInfo[]] {
-  const parts = query.split(",");
-  const dictParts = parts.slice(1).map((part) => part.replace("n", "&"));
-  const dicts = isEmbedded
-    ? LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La")
-    : parts.length > 1
-    ? LatinDict.AVAILABLE.filter((dict) => dictParts.includes(dict.key))
-    : LatinDict.AVAILABLE;
-  return [parts[0], dicts];
+function chooseDicts(
+  dicts: undefined | DictInfo | DictInfo[],
+  isEmbedded: boolean
+): DictInfo[] {
+  if (isEmbedded) {
+    return LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La");
+  }
+  if (dicts === undefined) {
+    return LatinDict.AVAILABLE;
+  }
+  if (Array.isArray(dicts)) {
+    return dicts;
+  }
+  return [dicts];
 }
 
 async function fetchEntry(
-  input: string,
+  query: string,
   experimentalMode: boolean,
   singleArticle: boolean,
-  embedded: boolean
+  embedded: boolean,
+  dicts: DictInfo[]
 ) {
-  const [query, dicts] = parseQuery(input, embedded);
   const result = callApiFull(DictsFusedApi, {
     query,
     dicts: dicts.map((dict) => dict.key),
@@ -557,20 +562,25 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
   const settings = React.useContext(GlobalSettingsContext);
-  const nav = React.useContext(RouteContext);
+  const { route } = useDictRouter();
   const title = React.useContext(TitleContext);
+  const fromInternalLink = React.useRef<boolean>(false);
 
   const isEmbedded = props?.embedded === true;
   const isSmall = isEmbedded || isScreenSmall;
   const scale = (props?.textScale || 100) / 100;
   const textScale = props?.textScale;
-  const idSearch = nav.route.idSearch === true;
+  const idSearch = route.idSearch === true;
 
   const { initial } = props;
-  const query = isEmbedded ? initial : nav.route.query;
+  const query = isEmbedded ? initial : route.query;
   const experimentalMode =
     settings.data.experimentalMode === true ||
-    nav.route.experimentalSearch === true;
+    route.experimentalSearch === true;
+  const queryDicts = React.useMemo(
+    () => chooseDicts(route.dicts, isEmbedded),
+    [route.dicts, isEmbedded]
+  );
 
   React.useEffect(() => {
     if (query === undefined) {
@@ -581,7 +591,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       query,
       experimentalMode,
       idSearch,
-      isEmbedded
+      isEmbedded,
+      queryDicts
     );
     serverResult.then((newResults) => {
       if (newResults === null) {
@@ -593,7 +604,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       const allEntries = getEntriesByDict(
         newResults.data,
         sectionRef,
-        nav.route.hash,
+        route.hash,
         isEmbedded
       );
       flushSync(() => {
@@ -604,25 +615,19 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       const scrollElement =
         sectionRef.current || (isEmbedded ? null : scrollTopRef.current);
       const scrollType =
-        nav.route.internalSource === true || isEmbedded
+        fromInternalLink.current || isEmbedded
           ? SCROLL_JUMP
           : scrollElement === scrollTopRef.current
           ? SCROLL_SMOOTH
           : SCROLL_JUMP;
       scrollElement?.scrollIntoView(scrollType);
+      fromInternalLink.current = false;
     });
-  }, [
-    query,
-    nav.route.hash,
-    experimentalMode,
-    nav.route.internalSource,
-    idSearch,
-    isEmbedded,
-  ]);
+  }, [query, route.hash, experimentalMode, idSearch, isEmbedded, queryDicts]);
 
   React.useEffect(() => {
     if (!isEmbedded && query !== undefined) {
-      title.setCurrentDictWord(parseQuery(query, isEmbedded)[0]);
+      title.setCurrentDictWord(query);
     }
   }, [title, isEmbedded, query]);
 
@@ -637,6 +642,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       setDictsToUse,
       scrollTopRef,
       setInitial: props.setInitial,
+      fromInternalLink,
     }),
     [
       isEmbedded,
@@ -648,6 +654,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       setDictsToUse,
       scrollTopRef,
       props.setInitial,
+      fromInternalLink,
     ]
   );
 

@@ -77,6 +77,10 @@ export interface LibraryWorkMetadata {
   name: string;
   /** The id by which to obtain the full work. */
   id: string;
+  /** The representation of the author in a URL. */
+  urlAuthor: string;
+  /** The representation of the work name in a URL. */
+  urlName: string;
 }
 
 export namespace LibraryWorkMetadata {
@@ -84,6 +88,8 @@ export namespace LibraryWorkMetadata {
     ["author", isString],
     ["name", isString],
     ["id", isString],
+    ["urlAuthor", isString],
+    ["urlName", isString],
   ]);
 }
 
@@ -92,4 +98,27 @@ export type ListLibraryWorksResponse = LibraryWorkMetadata[];
 export namespace ListLibraryWorksResponse {
   export const isMatch: Validator<ListLibraryWorksResponse> =
     isArray<LibraryWorkMetadata>(LibraryWorkMetadata.isMatch);
+}
+
+export interface WorkId {
+  id?: string;
+  nameAndAuthor?: {
+    urlName: string;
+    urlAuthor: string;
+  };
+}
+
+export namespace WorkId {
+  export const isMatch: Validator<WorkId> = matches([
+    ["id", maybeUndefined(isString)],
+    [
+      "nameAndAuthor",
+      maybeUndefined(
+        matches([
+          ["urlName", isString],
+          ["urlAuthor", isString],
+        ])
+      ),
+    ],
+  ]);
 }

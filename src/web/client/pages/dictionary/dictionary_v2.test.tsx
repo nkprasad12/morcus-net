@@ -8,13 +8,13 @@ import { render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 
 import { assertEqual } from "@/common/assert";
-import { RouteContext } from "@/web/client/components/router";
 import {
   DictionaryViewV2,
   ERROR_STATE_MESSAGE,
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
 import useMediaQuery from "@mui/material/useMediaQuery";
+import { RouteContext } from "@/web/client/router/router_v2";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -64,7 +64,10 @@ describe("New Dictionary View", () => {
     await user.type(searchBar, "{enter}");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "G" })
+      expect.objectContaining({
+        path: "/dicts",
+        params: expect.objectContaining({ q: "G" }),
+      })
     );
   });
 
@@ -73,7 +76,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: "/", query: "Gallia" },
+          route: { path: "/", params: { q: "Gallia" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -120,7 +123,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -164,7 +167,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -207,7 +210,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />
@@ -264,7 +267,7 @@ describe("New Dictionary View", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: "/", query: "Belgae" },
+          route: { path: "/", params: { q: "Belgae" } },
           navigateTo: jest.fn(),
         }}>
         <DictionaryViewV2 />

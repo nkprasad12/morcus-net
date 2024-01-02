@@ -23,11 +23,20 @@ describe("WorkCache", () => {
   beforeAll(cleanup);
   afterEach(cleanup);
 
-  it("returns same result on successive calls", async () => {
+  it("returns same result on successive calls with id", async () => {
     mockCallApi.mockResolvedValue("");
 
-    await fetchWork("foo");
-    await fetchWork("foo");
+    await fetchWork({ id: "foo" });
+    await fetchWork({ id: "foo" });
+
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+  });
+
+  it("returns same result on successive calls with name and author", async () => {
+    mockCallApi.mockResolvedValue("");
+
+    await fetchWork({ nameAndAuthor: { urlAuthor: "foo", urlName: "bar" } });
+    await fetchWork({ nameAndAuthor: { urlAuthor: "foo", urlName: "bar" } });
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
   });
@@ -35,8 +44,17 @@ describe("WorkCache", () => {
   it("returns different results on different calls", async () => {
     mockCallApi.mockResolvedValue("");
 
-    await fetchWork("foo");
-    await fetchWork("bar");
+    await fetchWork({ id: "foo" });
+    await fetchWork({ id: "bar" });
+
+    expect(mockCallApi).toHaveBeenCalledTimes(2);
+  });
+
+  it("returns different results on id then url and name", async () => {
+    mockCallApi.mockResolvedValue("");
+
+    await fetchWork({ id: "foo" });
+    await fetchWork({ nameAndAuthor: { urlAuthor: "foo", urlName: "bar" } });
 
     expect(mockCallApi).toHaveBeenCalledTimes(2);
   });
@@ -44,14 +62,14 @@ describe("WorkCache", () => {
   it("retries on failed call", async () => {
     mockCallApi.mockRejectedValue("fail");
 
-    const failed = fetchWork("foo");
+    const failed = fetchWork({ id: "foo" });
     expect(failed).rejects.toBe("fail");
     try {
       await failed;
     } catch {}
 
     mockCallApi.mockResolvedValue("success");
-    const succeeded = fetchWork("foo");
+    const succeeded = fetchWork({ id: "foo" });
 
     expect(succeeded).resolves.toBe("success");
     expect(mockCallApi).toHaveBeenCalledTimes(2);

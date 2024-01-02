@@ -6,7 +6,6 @@ import { describe, expect, test } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
-import { RouteContext } from "@/web/client/components/router";
 
 jest.mock("@mui/material/useMediaQuery", () => {
   return {
@@ -19,20 +18,21 @@ import {
   SettingsHandler,
   getGlobalSettings,
 } from "@/web/client/components/global_flags";
+import { RouteContext } from "@/web/client/router/router_v2";
 
 describe("App Bar View", () => {
   const pages: ResponsiveAppBar.Page[] = [
     {
       name: "Gallia",
-      path: "/gallia",
+      targetPath: "/gallia",
     },
     {
       name: "Omnis",
-      path: "/omnis",
+      targetPath: "/omnis",
     },
     {
       name: "IconPage",
-      path: "/settings",
+      targetPath: "/settings",
       notInMainSection: true,
     },
   ];
@@ -53,7 +53,10 @@ describe("App Bar View", () => {
     const mockSetPage = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}>
+        value={{
+          navigateTo: mockSetPage,
+          route: { path: pages[0].targetPath },
+        }}>
         <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
       </RouteContext.Provider>
     );
@@ -61,14 +64,17 @@ describe("App Bar View", () => {
     await user.click(screen.getAllByText(pages[0].name)[0]);
 
     expect(mockSetPage).toBeCalledTimes(1);
-    expect(mockSetPage).toBeCalledWith({ path: pages[0].path });
+    expect(mockSetPage).toBeCalledWith({ path: pages[0].targetPath });
   });
 
   test("icon menu clicks", async () => {
     const mockSetPage = jest.fn(() => {});
     render(
       <RouteContext.Provider
-        value={{ navigateTo: mockSetPage, route: { path: pages[0].path } }}>
+        value={{
+          navigateTo: mockSetPage,
+          route: { path: pages[0].targetPath },
+        }}>
         <ResponsiveAppBar pages={pages} openIssueDialog={() => {}} />
       </RouteContext.Provider>
     );

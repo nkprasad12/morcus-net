@@ -4,9 +4,9 @@
 
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SettingsHandler } from "@/web/client/components/global_flags";
-import { RouteContext } from "@/web/client/components/router";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
+import { RouteContext } from "@/web/client/router/router_v2";
 import { act, fireEvent, render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 
@@ -72,7 +72,7 @@ describe("DictionarySearch", () => {
     expect(mockNav).not.toHaveBeenCalled();
     await user.type(search, "a{enter}");
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "a" })
+      expect.objectContaining({ path: "/dicts", params: { q: "a" } })
     );
   });
 
@@ -96,7 +96,10 @@ describe("DictionarySearch", () => {
     await user.click(screen.getByText("ab"));
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "ab,LnS" })
+      expect.objectContaining({
+        path: "/dicts",
+        params: expect.objectContaining({ q: "ab", in: "LnS" }),
+      })
     );
   });
 
@@ -121,7 +124,10 @@ describe("DictionarySearch", () => {
     await user.type(search, "{enter}");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path: "/", query: "ack,SnH" })
+      expect.objectContaining({
+        path: "/dicts",
+        params: expect.objectContaining({ q: "ack", in: "SnH" }),
+      })
     );
   });
 

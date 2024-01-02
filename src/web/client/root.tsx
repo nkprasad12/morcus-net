@@ -10,13 +10,12 @@ import ThemeProvider from "@mui/material/styles/ThemeProvider";
 
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { Solarized } from "@/web/client/colors";
-import { Router } from "@/web/client/components/router";
 import {
   GlobalSettingsContext,
   SettingsHandler,
 } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
-import { ACTIVE_PAGES } from "@/web/client/active_pages";
+import { ACTIVE_PAGES, DICT_PAGE } from "@/web/client/routing/active_pages";
 import {
   getBackgroundColor,
   getGlobalStyles,
@@ -24,6 +23,7 @@ import {
   TEXT_STYLE,
   getAppBarColor,
 } from "@/web/client/styles";
+import { Router } from "@/web/client/router/router_v2";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -96,7 +96,7 @@ const props: SinglePageApp.Props = {
   pages: [...ACTIVE_PAGES],
 };
 if (window.location.pathname === "/") {
-  window.history.replaceState({}, "", props.pages[0].path);
+  window.history.replaceState({}, "", DICT_PAGE.appBarConfig!.targetPath);
 }
 
 const root = ReactDOM.createRoot(
@@ -118,11 +118,11 @@ root.render(
       <CustomThemeProvider>
         <ConfigurableStyles />
         <StyledEngineProvider injectFirst>
-          <Router.Handler>
+          <Router.Root>
             <TitleHandler>
               <SinglePageApp {...props} />
             </TitleHandler>
-          </Router.Handler>
+          </Router.Root>
         </StyledEngineProvider>
       </CustomThemeProvider>
     </SettingsHandler>

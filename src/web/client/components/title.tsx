@@ -1,5 +1,5 @@
-import { RouteContext } from "@/web/client/components/router";
-import { ClientPaths } from "@/web/client/pages/library/common";
+import { ClientPaths } from "@/web/client/routing/client_paths";
+import { Router } from "@/web/client/router/router_v2";
 import { ReactNode } from "react";
 import * as React from "react";
 
@@ -19,14 +19,14 @@ type TitleHandlerProps = {
 
 export function TitleHandler(props: TitleHandlerProps) {
   const [currentDictWord, setCurrentDictWord] = React.useState("");
-  const nav = React.useContext(RouteContext);
+  const { route } = Router.useRouter();
 
   React.useEffect(() => {
     document.title = MORCUS_TITLE;
-    if (nav.route.path === ClientPaths.DICT_PAGE && currentDictWord) {
+    if (route.path === ClientPaths.DICT_PAGE.path && currentDictWord) {
       document.title = `${currentDictWord} | ${MORCUS_TITLE}`;
     }
-  }, [nav.route.path, currentDictWord]);
+  }, [route.path, currentDictWord]);
 
   return (
     <TitleContext.Provider
