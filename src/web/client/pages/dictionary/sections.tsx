@@ -3,9 +3,9 @@ import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
-import Divider from "@mui/material/Divider";
 import * as React from "react";
 import { FontSizes } from "@/web/client/styles";
+import { Divider } from "@/web/client/components/generic/divider";
 
 export function ContentBox(props: {
   children: JSX.Element;
@@ -50,9 +50,7 @@ export function ContentBox(props: {
         }}>
         {props.children}
       </Typography>
-      {props.noDivider !== true && (
-        <Divider className="contentDivider" sx={{ mt: "16px" }} />
-      )}
+      {props.noDivider !== true && <Divider style={{ marginTop: "16px" }} />}
     </Box>
   );
 }

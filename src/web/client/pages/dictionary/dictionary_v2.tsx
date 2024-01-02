@@ -48,10 +48,10 @@ import {
   DictContextOptions,
   DictionaryV2Props,
 } from "@/web/client/pages/dictionary/dict_context";
-import Divider from "@mui/material/Divider";
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
+import { Divider } from "@/web/client/components/generic/divider";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -269,7 +269,7 @@ function HelpSection(props: { id?: string; className?: string }) {
       ) : (
         <>
           {MainContent}
-          {isEmbedded && <Divider className="contentDivider" />}
+          {isEmbedded && <Divider />}
         </>
       )}
     </ContentBox>
@@ -394,7 +394,7 @@ function SummarySection(props: {
               ))}
         </>
       </ContentBox>
-      {isEmbedded && <Divider className="contentDivider" />}
+      {isEmbedded && <Divider />}
     </>
   );
 }
@@ -529,7 +529,7 @@ function HideableTableOfContents(props: TableOfContentsProps) {
         </summary>
         <DefaultTableOfContents {...props} />
       </details>
-      {!open && <Divider className="contentDivider" sx={{ mt: 1 }} />}
+      {!open && <Divider style={{ marginTop: "8px" }} />}
     </>
   );
 }

@@ -12,9 +12,9 @@ import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Drawer from "@mui/material/Drawer";
-import Divider from "@mui/material/Divider";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
+import { Divider } from "@/web/client/components/generic/divider";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -79,11 +79,7 @@ function DrawerMenu(props: {
               }}>
               <b>{page.name}</b>
             </Button>
-            <Divider
-              key={page.name + "_divider"}
-              className="contentDivider"
-              variant="middle"
-            />
+            <Divider key={page.name + "_divider"} />
           </div>
         ))}
       </Box>

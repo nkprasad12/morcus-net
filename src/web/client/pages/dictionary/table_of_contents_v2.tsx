@@ -1,11 +1,11 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
+import { Divider } from "@/web/client/components/generic/divider";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { FontSizes } from "@/web/client/styles";
 
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import Divider from "@mui/material/Divider";
 
 import * as React from "react";
 
@@ -121,7 +121,7 @@ function OutlineSection(props: {
           })}
         </ol>
       )}
-      <Divider className="contentDivider" sx={{ margin: 0, padding: 0 }} />
+      <Divider style={{ margin: 0, padding: 0 }} />
     </div>
   );
 }

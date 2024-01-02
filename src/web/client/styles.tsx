@@ -121,6 +121,10 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       /** Basic content primitives */
       ".contentDivider": {
         borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
+        flexShrink: 0,
+        borderWidth: "0px 0px thin;",
+        borderStyle: "solid",
+        margin: "0px 16px;",
       },
       ".contentText": {
         color: contentTextColor,
