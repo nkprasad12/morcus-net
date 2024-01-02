@@ -4,6 +4,7 @@ import {
   DocumentInfo,
   ProcessedWork,
   ProcessedWorkNode,
+  WorkId,
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
@@ -116,21 +117,36 @@ function findWorksByLevel(
   return results;
 }
 
+function resolveWorkId(path: string): WorkId | undefined {
+  console.log(path);
+  const byNameParams = ClientPaths.WORK_BY_NAME.parseParams(path);
+  const urlAuthor = byNameParams?.author;
+  const urlName = byNameParams?.name;
+  if (urlAuthor !== undefined && urlName !== undefined) {
+    return { nameAndAuthor: { urlAuthor, urlName } };
+  }
+  const byIdParams = ClientPaths.WORK_PAGE.parseParams(path);
+  const id = byIdParams?.workId;
+  if (id !== undefined) {
+    return { id };
+  }
+  return undefined;
+}
+
 export function ReadingPage() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
 
   const { route } = Router.useRouter();
-  const queryPage = route.params?.q;
+  const queryPage = route.params?.q || route.params?.pg;
 
   useEffect(() => {
-    const id = ClientPaths.WORK_PAGE.parseParams(route.path);
-    const workId = id?.workId;
+    const workId = resolveWorkId(route.path);
     if (workId === undefined) {
       setWork("Error");
       return;
     }
-    fetchWork({ id: workId })
+    fetchWork(workId)
       .then((work) =>
         setWork({
           info: work.info,

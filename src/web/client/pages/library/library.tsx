@@ -22,8 +22,8 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
             <span
               className="latWork"
               onClick={() => {
-                const params = { workId: work.id };
-                const path = ClientPaths.WORK_PAGE.toUrlPath(params);
+                const params = { author: work.urlAuthor, name: work.urlName };
+                const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
                 if (path !== null) {
                   nav.toPath(path);
                 }

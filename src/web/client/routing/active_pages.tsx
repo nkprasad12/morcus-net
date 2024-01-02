@@ -54,7 +54,7 @@ export const SETTINGS_PAGE: SinglePageApp.Page = {
 
 export const READING_PAGE: SinglePageApp.Page = {
   Content: ReadingPage,
-  paths: [ClientPaths.WORK_PAGE],
+  paths: [ClientPaths.WORK_PAGE, ClientPaths.WORK_BY_NAME],
 };
 
 export const EXTERNAL_CONTENT_READER_PAGE: SinglePageApp.Page = {

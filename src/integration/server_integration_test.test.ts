@@ -361,6 +361,26 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     expect(results).not.toHaveLength(0);
   }
 
+  async function waitForText(
+    text: string,
+    parentType: string = "*",
+    className?: string
+  ): Promise<void> {
+    const page = checkPresent(currentPage);
+    const classString =
+      className === undefined ? "" : `and @class="${className}"`;
+    try {
+      const results = await page.waitForXPath(
+        `//${parentType}[contains(text(), "${text}")${classString}]`,
+        { timeout: 3000 }
+      );
+      expect(results).not.toBeNull();
+    } catch (err) {
+      await takeScreenshot();
+      throw err;
+    }
+  }
+
   async function getPage(size: ScreenSize, morcusPage?: string): Promise<Page> {
     const page = checkPresent(currentPage);
     await setSize(size, page);
@@ -547,6 +567,42 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       expect(await page.evaluate(() => navigator.clipboard.readText())).toEqual(
         "Some text"
       );
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by legacy id on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2");
+      writeContext("workById", screenSize, i);
+      await waitForText("Gallia");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by legacy id and q page %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2?q=3");
+      writeContext("workByIdAndPage", screenSize, i);
+      await waitForText("Orgetorix");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by name and author on %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2");
+      writeContext("workByNameAndAuthor", screenSize, i);
+      await waitForText("Gallia");
+    }
+  );
+
+  it.each(ALL_SCREEN_SIZES(1))(
+    "shows works by name and author and page %s screen #%s",
+    async (screenSize, i) => {
+      await getPage(screenSize, "/work/caesar/de_bello_gallico?pg=3");
+      writeContext("workByNameAndAuthorWithPage", screenSize, i);
+      await waitForText("Orgetorix");
     }
   );
 });

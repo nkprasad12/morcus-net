@@ -13,7 +13,15 @@ jest.mock("@/web/utils/rpc/client_rpc");
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApiFull;
 mockCallApi.mockResolvedValue({
-  data: [{ author: "Caesar", name: "DBG", id: "DBG" }],
+  data: [
+    {
+      author: "Caesar",
+      name: "DBG",
+      id: "DBG",
+      urlAuthor: "caesar",
+      urlName: "dbg",
+    },
+  ],
 });
 
 describe("library view", () => {
@@ -25,7 +33,7 @@ describe("library view", () => {
     await screen.findByText(/Caesar/);
   });
 
-  it("shows items", async () => {
+  it("handles item click", async () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -37,6 +45,9 @@ describe("library view", () => {
     const dbgWork = await screen.findByText(/Caesar/);
     await user.click(dbgWork);
 
-    expect(mockNav).toHaveBeenCalledWith({ path: "/work/DBG", params: {} });
+    expect(mockNav).toHaveBeenCalledWith({
+      path: "/work/caesar/dbg",
+      params: {},
+    });
   });
 });

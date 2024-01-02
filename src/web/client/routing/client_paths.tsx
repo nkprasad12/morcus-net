@@ -3,6 +3,7 @@ import { PagePath } from "@/web/client/router/paths";
 
 export namespace ClientPaths {
   export const WORK_PAGE = checkPresent(PagePath.of("/work/:workId"));
+  export const WORK_BY_NAME = checkPresent(PagePath.of("/work/:author/:name"));
   export const EXTERNAL_CONTENT_READER = checkPresent(
     PagePath.of("/externalReader")
   );
