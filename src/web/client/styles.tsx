@@ -139,6 +139,18 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       ".menu": {
         backgroundColor: getAppBarColor(settings),
       },
+      ".AppBar": {
+        width: "100%",
+        maxHeight: "74px",
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box",
+        flexShrink: 0,
+        position: "static",
+        transition: "box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;",
+        boxShadow:
+          "rgba(0, 0, 0, 0.2) 0px 2px 4px -1px, rgba(0, 0, 0, 0.14) 0px 4px 5px 0px, rgba(0, 0, 0, 0.12) 0px 1px 10px 0px;",
+      },
       ".menuItemActive": {
         color: menuItemBaseColor + (isDarkMode ? "D8" : ""),
       },

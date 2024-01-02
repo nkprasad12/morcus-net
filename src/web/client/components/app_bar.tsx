@@ -1,5 +1,4 @@
 import * as React from "react";
-import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
@@ -117,7 +116,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   );
 
   return (
-    <AppBar position="static" className="menu" style={{ maxHeight: 74 }}>
+    <div className="menu AppBar">
       <Container maxWidth="xl">
         <Toolbar disableGutters>
           <Typography
@@ -220,6 +219,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
           </Box>
         </Toolbar>
       </Container>
-    </AppBar>
+    </div>
   );
 }
