@@ -103,6 +103,12 @@ function processForDisplay(root: TeiNode): ProcessedWorkNode {
         ? markupTextInNode(child)
         : processForDisplay(child)
     );
+  // A hack for Amores. This should be removed and handled correctly
+  // when we do the refactor to handle milestone, line groups, etc...
+  const rend = root.selfNode.getAttr("rend");
+  if (rend === "indent") {
+    children.unshift(new XmlNode("span", [], ["   "]));
+  }
   return {
     id: root.id,
     header: isFirstHead ? XmlNode.getSoleText(firstChild) : undefined,
