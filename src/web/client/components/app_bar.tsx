@@ -1,6 +1,5 @@
 import * as React from "react";
 import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -118,7 +117,14 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   return (
     <div className="menu AppBar">
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            MozBoxAlign: "center",
+            minHeight: isSmall ? "56px" : "64px",
+          }}>
           <Typography
             variant="h6"
             noWrap
@@ -217,7 +223,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               </IconButton>
             )}
           </Box>
-        </Toolbar>
+        </div>
       </Container>
     </div>
   );
