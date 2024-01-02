@@ -1,6 +1,6 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
-import { Divider } from "@/web/client/components/generic/divider";
+import { Divider } from "@/web/client/components/generic/basics";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { FontSizes } from "@/web/client/styles";

@@ -8,7 +8,7 @@ import { CSSProperties } from "react";
 import IconButton from "@mui/material/IconButton";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { assert } from "@/common/assert";
-import { Container } from "@/web/client/components/generic/container";
+import { Container } from "@/web/client/components/generic/basics";
 
 // We need to come up a with a better way to deal with this, since
 // Experimentally for large screen mode this is 64 but honestly who knows

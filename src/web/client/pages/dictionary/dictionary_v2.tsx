@@ -50,8 +50,7 @@ import {
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
-import { Divider } from "@/web/client/components/generic/divider";
-import { Container } from "@/web/client/components/generic/container";
+import { Container, Divider } from "@/web/client/components/generic/basics";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +

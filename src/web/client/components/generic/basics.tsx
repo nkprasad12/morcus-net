@@ -28,3 +28,7 @@ export function Container(props: PropsWithChildren<ContainerProps>) {
     </div>
   );
 }
+
+export function Divider(props?: { style?: CSSProperties }) {
+  return <hr className="contentDivider" style={props?.style} />;
+}

@@ -3,7 +3,7 @@ import Typography from "@mui/material/Typography";
 
 import * as React from "react";
 import { getCommitHash } from "@/web/client/define_vars";
-import { Container } from "@/web/client/components/generic/container";
+import { Container } from "@/web/client/components/generic/basics";
 
 const INSTALL_GUIDE =
   "https://www.cdc.gov/niosh/mining/content/hearingloss/installPWA.html";

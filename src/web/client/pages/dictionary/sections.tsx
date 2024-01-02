@@ -5,7 +5,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import * as React from "react";
 import { FontSizes } from "@/web/client/styles";
-import { Divider } from "@/web/client/components/generic/divider";
+import { Divider } from "@/web/client/components/generic/basics";
 
 export function ContentBox(props: {
   children: JSX.Element;

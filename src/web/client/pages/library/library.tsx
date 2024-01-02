@@ -1,6 +1,6 @@
 import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
-import { Container } from "@/web/client/components/generic/container";
+import { Container } from "@/web/client/components/generic/basics";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Router } from "@/web/client/router/router_v2";

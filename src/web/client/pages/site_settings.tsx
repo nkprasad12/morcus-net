@@ -6,7 +6,7 @@ import {
   GlobalBooleans,
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
-import { Container } from "@/web/client/components/generic/container";
+import { Container } from "@/web/client/components/generic/basics";
 
 function GlobalSettingsCheckbox(props: {
   label: string;
