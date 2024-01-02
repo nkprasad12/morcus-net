@@ -32,7 +32,7 @@ const PERSEUS_DOWNLOADS = [
 
   // Remove this for now, since it has whitespace between elements.
   // "data/phi1318/phi001/phi1318.phi001.perseus-lat1.xml",
-
+  "data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml",
   "data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
   "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
 ].map(perseusDownloadConfig);

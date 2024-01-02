@@ -35,16 +35,18 @@ export interface TeiNode {
   selfNode: XmlNode;
 }
 
+interface CtsIdInfo {
+  /** The name of the attribute key to which the data is attched. */
+  key: string;
+  /** Which part of the match pattern is associated with this. */
+  index: number;
+}
+
 export interface CtsPathData {
   /** The name of the XML node. */
   name: string;
   /** The data for the subpart of the identifier attached to this node, if present. */
-  idInfo?: {
-    /** The name of the attribute key to which the data is attched. */
-    key: string;
-    /** Which part of the match pattern is associated with this. */
-    index: number;
-  };
+  idInfo?: CtsIdInfo;
   /** The relation this node has to the parent. */
   relation?: "descendant";
 }
@@ -179,14 +181,21 @@ export function parseXPath(xPath: string): CtsPathData[] {
     } else {
       assert(chunks.length === 2);
       assert(chunks[1].endsWith("]"));
-      const matches = checkPresent(chunks[1].match(/^(\w+)='\$(\d+)'\]$/));
-      result.push({
-        name: chunks[0],
-        idInfo: {
-          key: checkPresent(matches[1]),
-          index: checkPresent(safeParseInt(matches[2])),
-        },
-      });
+      const matches = checkPresent(
+        chunks[1].match(/^(?<key>\w+)='(?<value>[^']+)'\]$/),
+        part
+      );
+      const value = matches.groups?.value;
+      let idInfo: CtsIdInfo | undefined = undefined;
+      if (value && value.startsWith("$")) {
+        // TODO: We should respect properties even if they aren't part
+        // of the CTS identifier.
+        idInfo = {
+          key: checkPresent(matches.groups?.key),
+          index: checkPresent(safeParseInt(value.substring(1))),
+        };
+      }
+      result.push({ name: chunks[0], idInfo });
     }
 
     if (nextIsDescendant) {
