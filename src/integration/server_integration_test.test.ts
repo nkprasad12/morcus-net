@@ -545,11 +545,11 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("queryFromNewIdPage", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
-      await page.keyboard.type("canaba");
+      await page.keyboard.type("abagio");
       await page.keyboard.press("Enter");
 
-      await checkTitleIs("canaba | Morcus Latin Tools");
-      await checkHasText("hovel");
+      await checkTitleIs("abagio | Morcus Latin Tools");
+      await checkHasText("supposed etymology of adagio");
     }
   );
 
