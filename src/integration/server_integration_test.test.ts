@@ -156,8 +156,20 @@ describe("morcus.net backend integration", () => {
     ).toHaveLength(1);
   });
 
-  test("returns DBG on request", async () => {
-    const result = await callApiFull(GetWork, "phi0448.phi001.perseus-lat2");
+  test("returns DBG by id", async () => {
+    const result = await callApiFull(GetWork, {
+      id: "phi0448.phi001.perseus-lat2",
+    });
+    expect(result.data.info.title).toBe("De bello Gallico");
+  });
+
+  test("returns DBG by name and author ", async () => {
+    const result = await callApiFull(GetWork, {
+      nameAndAuthor: {
+        urlAuthor: "caesar",
+        urlName: "de_bello_gallico",
+      },
+    });
     expect(result.data.info.title).toBe("De bello Gallico");
   });
 

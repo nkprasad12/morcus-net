@@ -1,6 +1,7 @@
 import {
   LibraryWorkMetadata,
   ProcessedWork,
+  WorkId,
 } from "@/common/library/library_types";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseMessage } from "@/web/utils/rpc/parsing";
@@ -36,20 +37,43 @@ export async function retrieveWorksList(
   return Object.values(index).map(([_k, v]) => v);
 }
 
+async function resolveWork(
+  workId: WorkId,
+  resultDir: string
+): Promise<string | undefined> {
+  const index = await getIndex(resultDir);
+  if (workId.id !== undefined) {
+    return index[workId.id]?.[0];
+  }
+  if (workId.nameAndAuthor !== undefined) {
+    for (const [path, data] of Object.values(index)) {
+      if (
+        data.urlAuthor === workId.nameAndAuthor.urlAuthor &&
+        data.urlName === workId.nameAndAuthor.urlName
+      ) {
+        return path;
+      }
+    }
+  }
+  return undefined;
+}
+
 export async function retrieveWorkStringified(
-  workId: string,
+  workId: WorkId,
   resultDir: string = LIB_DEFAULT_DIR
 ): Promise<string> {
-  const index = await getIndex(resultDir);
-  const workPath = index[workId];
+  const workPath = await resolveWork(workId, resultDir);
   if (workPath === undefined) {
-    return Promise.reject({ status: 404, message: `Invalid id: ${workId}` });
+    return Promise.reject({
+      status: 404,
+      message: `Invalid id: ${JSON.stringify(workId)}`,
+    });
   }
-  return (await readFile(workPath[0])).toString();
+  return (await readFile(workPath)).toString();
 }
 
 export async function retrieveWork(
-  workId: string,
+  workId: WorkId,
   resultDir: string = LIB_DEFAULT_DIR
 ): Promise<ProcessedWork> {
   return parseMessage(

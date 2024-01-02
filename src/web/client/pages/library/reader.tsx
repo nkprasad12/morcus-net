@@ -130,7 +130,7 @@ export function ReadingPage() {
       setWork("Error");
       return;
     }
-    fetchWork(workId)
+    fetchWork({ id: workId })
       .then((work) =>
         setWork({
           info: work.info,

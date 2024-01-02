@@ -99,3 +99,26 @@ export namespace ListLibraryWorksResponse {
   export const isMatch: Validator<ListLibraryWorksResponse> =
     isArray<LibraryWorkMetadata>(LibraryWorkMetadata.isMatch);
 }
+
+export interface WorkId {
+  id?: string;
+  nameAndAuthor?: {
+    urlName: string;
+    urlAuthor: string;
+  };
+}
+
+export namespace WorkId {
+  export const isMatch: Validator<WorkId> = matches([
+    ["id", maybeUndefined(isString)],
+    [
+      "nameAndAuthor",
+      maybeUndefined(
+        matches([
+          ["urlName", isString],
+          ["urlAuthor", isString],
+        ])
+      ),
+    ],
+  ]);
+}

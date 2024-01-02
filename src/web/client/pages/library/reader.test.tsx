@@ -141,7 +141,10 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
 
-    expect(mockCallApi).toHaveBeenCalledWith(expect.anything(), testId);
+    expect(mockCallApi).toHaveBeenCalledWith(
+      expect.anything(),
+      expect.objectContaining({ id: testId })
+    );
   });
 
   it("shows an initial loading message", async () => {
