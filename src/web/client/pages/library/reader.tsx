@@ -329,7 +329,7 @@ function WorkNavigationBar(props: {
   const setPage = React.useCallback(
     // Nav pages are 1-indexed.
     (newPage: number) =>
-      nav.to((old) => ({ path: old.path, params: { q: `${newPage + 1}` } })),
+      nav.to((old) => ({ path: old.path, params: { pg: `${newPage + 1}` } })),
     [nav]
   );
   const previousPage = React.useCallback(() => {

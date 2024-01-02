@@ -303,7 +303,7 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("next section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { q: "2" } })
+      expect.objectContaining({ path, params: { pg: "2" } })
     );
   });
 
@@ -321,7 +321,7 @@ describe("Reading UI", () => {
     await user.keyboard("[ArrowRight]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { q: "2" } })
+      expect.objectContaining({ path, params: { pg: "2" } })
     );
   });
 
@@ -341,7 +341,7 @@ describe("Reading UI", () => {
     await user.keyboard("[ArrowLeft]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { q: "1" } })
+      expect.objectContaining({ path, params: { pg: "1" } })
     );
   });
 
@@ -361,7 +361,7 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("previous section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { q: "1" } })
+      expect.objectContaining({ path, params: { pg: "1" } })
     );
   });
 
