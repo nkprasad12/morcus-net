@@ -18,7 +18,8 @@ dotenv.config();
 const WEB_SERVER = "web";
 const WORKER = "worker";
 const EDITOR = "editor";
-const COMMANDS = [WEB_SERVER, WORKER, EDITOR];
+const BUNDLE = "bundle";
+const COMMANDS = [WEB_SERVER, WORKER, EDITOR, BUNDLE];
 
 const cleanupOperations: (() => any)[] = [];
 
@@ -30,6 +31,8 @@ if (args.command === WEB_SERVER) {
   awaitAll([startWorker(args, args.workerType)]);
 } else if (args.command === EDITOR) {
   startLsEditor();
+} else if (args.command === BUNDLE) {
+  buildBundle(args).then(assert);
 }
 
 function parseArguments() {
@@ -170,29 +173,41 @@ function spawnChild(command: string[], env?: NodeJS.ProcessEnv): ChildProcess {
   return child;
 }
 
+function buildBundle(args: any): Promise<boolean> {
+  return runPipeline([
+    { operation: writeCommitId, label: "writeCommitId" },
+    bundleConfig(args),
+  ]);
+}
+
+function bundleConfig(args: any, priority?: number): StepConfig {
+  const executor = args.bun ? "bunx" : "npx";
+  const buildCommand: string[] = [executor, "webpack"];
+  const extraArgs: string[] = [];
+  if (args.prod || args.staging) {
+    extraArgs.push("--env", "production");
+  }
+  if (args.transpile_only) {
+    extraArgs.push("--env", "transpileOnly");
+  }
+  if (extraArgs.length > 0) {
+    buildCommand.push("--");
+  }
+  buildCommand.push(...extraArgs);
+  return {
+    operation: () => shellStep(buildCommand.join(" ")),
+    label: "Building bundle",
+    priority,
+  };
+}
+
 async function setupAndStartWebServer(args: any) {
   const setupSteps: StepConfig[] = [];
 
   // We use the hot dev server, so we don't need to pre-build;
   if (args.no_build_client === false && args.dev !== true) {
     writeCommitId();
-    const buildCommand: string[] = ["npm", "run", "build-client"];
-    const extraArgs: string[] = [];
-    if (args.prod || args.staging) {
-      extraArgs.push("--env", "production");
-    }
-    if (args.transpile_only) {
-      extraArgs.push("--env", "transpileOnly");
-    }
-    if (extraArgs.length > 0) {
-      buildCommand.push("--");
-    }
-    buildCommand.push(...extraArgs);
-    setupSteps.push({
-      operation: () => shellStep(buildCommand.join(" ")),
-      label: "Building bundle",
-      priority: 1,
-    });
+    setupSteps.push(bundleConfig(args, 1));
   }
   if (args.build_latin_inflections === true) {
     setupSteps.push({

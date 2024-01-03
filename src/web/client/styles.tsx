@@ -1,3 +1,4 @@
+import { exhaustiveGuard } from "@/common/misc_utils";
 import { Solarized } from "@/web/client/colors";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
@@ -17,6 +18,28 @@ export namespace FontSizes {
   export const SMALL_SCREEN = 19;
   export const SECONDARY = 16;
   export const TERTIARY = 14;
+}
+
+export type BoxWidth = "xxs" | "xs" | "sm" | "md" | "lg" | "xl" | "xxl";
+export function getWidth(width: BoxWidth): number {
+  switch (width) {
+    case "xxs":
+      return 275;
+    case "xs":
+      return 400;
+    case "sm":
+      return 600;
+    case "md":
+      return 900;
+    case "lg":
+      return 1200;
+    case "xl":
+      return 1500;
+    case "xxl":
+      return 2000;
+    default:
+      exhaustiveGuard(width);
+  }
 }
 
 const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
@@ -121,12 +144,24 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       /** Basic content primitives */
       ".contentDivider": {
         borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
+        flexShrink: 0,
+        borderWidth: "0px 0px thin;",
+        borderStyle: "solid",
+        margin: "0px 16px;",
       },
       ".contentText": {
         color: contentTextColor,
       },
       ".contentTextLight": {
         color: contentTextLightColor,
+      },
+      ".Container": {
+        boxSizing: "border-box",
+        marginLeft: "auto",
+        marginRight: "auto",
+        display: "block",
+        paddingLeft: "16px",
+        paddingRight: "16px",
       },
 
       /** Menu and menu items */
@@ -138,6 +173,18 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       },
       ".menu": {
         backgroundColor: getAppBarColor(settings),
+      },
+      ".AppBar": {
+        width: "100%",
+        maxHeight: "74px",
+        display: "flex",
+        flexDirection: "column",
+        boxSizing: "border-box",
+        flexShrink: 0,
+        position: "static",
+        transition: "box-shadow 300ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;",
+        boxShadow:
+          "rgba(0, 0, 0, 0.2) 0px 2px 4px -1px, rgba(0, 0, 0, 0.14) 0px 4px 5px 0px, rgba(0, 0, 0, 0.12) 0px 1px 10px 0px;",
       },
       ".menuItemActive": {
         color: menuItemBaseColor + (isDarkMode ? "D8" : ""),
@@ -411,6 +458,14 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       },
       ".macronLabel": {
         color: Solarized.base1,
+      },
+
+      /** Size specific */
+      "@media (min-width: 600px)": {
+        ".Container": {
+          paddingLeft: "24px",
+          paddingRight: "24px",
+        },
       },
     },
   };

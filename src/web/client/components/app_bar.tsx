@@ -1,7 +1,5 @@
 import * as React from "react";
-import AppBar from "@mui/material/AppBar";
 import Box from "@mui/material/Box";
-import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -9,14 +7,13 @@ import FlagIcon from "@mui/icons-material/Flag";
 import BuildIcon from "@mui/icons-material/Build";
 import DarkMode from "@mui/icons-material/DarkMode";
 import LightMode from "@mui/icons-material/LightMode";
-import Container from "@mui/material/Container";
 import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Drawer from "@mui/material/Drawer";
-import Divider from "@mui/material/Divider";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
+import { Container, Divider } from "@/web/client/components/generic/basics";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -81,11 +78,7 @@ function DrawerMenu(props: {
               }}>
               <b>{page.name}</b>
             </Button>
-            <Divider
-              key={page.name + "_divider"}
-              className="contentDivider"
-              variant="middle"
-            />
+            <Divider key={page.name + "_divider"} />
           </div>
         ))}
       </Box>
@@ -117,9 +110,16 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   );
 
   return (
-    <AppBar position="static" className="menu" style={{ maxHeight: 74 }}>
+    <div className="menu AppBar">
       <Container maxWidth="xl">
-        <Toolbar disableGutters>
+        <div
+          style={{
+            position: "relative",
+            display: "flex",
+            alignItems: "center",
+            MozBoxAlign: "center",
+            minHeight: isSmall ? "56px" : "64px",
+          }}>
           <Typography
             variant="h6"
             noWrap
@@ -218,8 +218,8 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               </IconButton>
             )}
           </Box>
-        </Toolbar>
+        </div>
       </Container>
-    </AppBar>
+    </div>
   );
 }

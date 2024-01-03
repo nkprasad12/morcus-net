@@ -1,6 +1,5 @@
 import LinkIcon from "@mui/icons-material/Link";
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import Container from "@mui/material/Container";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -48,10 +47,10 @@ import {
   DictContextOptions,
   DictionaryV2Props,
 } from "@/web/client/pages/dictionary/dict_context";
-import Divider from "@mui/material/Divider";
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
+import { Container, Divider } from "@/web/client/components/generic/basics";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -194,8 +193,8 @@ function SearchBar(props: SearchBarProps) {
     <Container
       maxWidth={props.maxWidth}
       disableGutters
-      ref={scrollTopRef}
-      sx={{ marginLeft: props.marginLeft || "auto" }}
+      innerRef={scrollTopRef}
+      style={{ marginLeft: props.marginLeft || "auto" }}
       id={props.id}
       className={props.className}>
       <DictionarySearch
@@ -269,7 +268,7 @@ function HelpSection(props: { id?: string; className?: string }) {
       ) : (
         <>
           {MainContent}
-          {isEmbedded && <Divider className="contentDivider" />}
+          {isEmbedded && <Divider />}
         </>
       )}
     </ContentBox>
@@ -330,7 +329,7 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
   const mainContent = children[1] || <></>;
 
   return (
-    <Container maxWidth="xl" sx={{ minHeight: window.innerHeight }}>
+    <Container maxWidth="xl" style={{ minHeight: window.innerHeight }}>
       <Stack direction="row" spacing={0} justifyContent="left">
         <div style={TOC_SIDEBAR_STYLE}>{sidebarContent}</div>
         <div style={{ maxWidth: "10000px" }}>
@@ -394,7 +393,7 @@ function SummarySection(props: {
               ))}
         </>
       </ContentBox>
-      {isEmbedded && <Divider className="contentDivider" />}
+      {isEmbedded && <Divider />}
     </>
   );
 }
@@ -529,7 +528,7 @@ function HideableTableOfContents(props: TableOfContentsProps) {
         </summary>
         <DefaultTableOfContents {...props} />
       </details>
-      {!open && <Divider className="contentDivider" sx={{ mt: 1 }} />}
+      {!open && <Divider style={{ marginTop: "8px" }} />}
     </>
   );
 }

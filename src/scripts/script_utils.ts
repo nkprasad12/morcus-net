@@ -29,7 +29,7 @@ export function runCommand(
   env?: Record<string, string | undefined>
 ): Promise<number | null> {
   return new Promise((resolve, reject) => {
-    console.log(`Executing: '${command}'`);
+    console.log(`Executing: '${chalk.yellow(command)}'`);
     const result = spawn(command, { shell: true, stdio: "inherit", env: env });
     result.on("error", (err) => reject(err));
     result.on("exit", () => resolve(result.exitCode));
@@ -107,7 +107,7 @@ async function runStep(config: StepConfig): Promise<boolean> {
   let success = true;
   const start = performance.now();
   try {
-    console.log(chalk.green(`Beginning ${label}`));
+    console.log(chalk.bgGreen(`Beginning ${label}`));
     await config.operation();
   } catch (error) {
     console.log(chalk.red(`${label} failed!`));
@@ -131,7 +131,7 @@ export function runtimeMessage(
   const message =
     (success ? "Succeeded in" : "Failed after") + ` ${totalSecs} seconds.`;
   const prefix = label === undefined ? "" : `[${label}] `;
-  console.log((success ? chalk.blue : chalk.red)(prefix + message));
+  console.log((success ? chalk.blue : chalk.red)(prefix + message + "\n"));
 }
 
 function groupByPriority(
@@ -158,7 +158,9 @@ async function runStage(
   i: number,
   totalStages: number
 ): Promise<boolean> {
-  console.log(chalk.bgGreen(`\nBeginning stage ${i + 1} of ${totalStages}\n`));
+  console.log(
+    chalk.green.underline(`\nBeginning stage ${i + 1} of ${totalStages}\n`)
+  );
   const stepResults = await Promise.all(steps.map(runStep));
   const allGood = stepResults.reduce((prev, curr) => prev && curr, true);
   if (!allGood) {
