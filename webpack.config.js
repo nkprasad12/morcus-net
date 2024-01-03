@@ -32,7 +32,7 @@ module.exports = (env) => {
   ];
   const productionOptimization = {
     minimize: shouldMinimize,
-    minimizer: [new SwcMinifyWebpackPlugin()],
+    minimizer: [new SwcMinifyWebpackPlugin({ecma: "2016"})],
     splitChunks: {
       chunks: "all",
       minSize: 300000,

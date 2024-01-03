@@ -118,7 +118,6 @@ function findWorksByLevel(
 }
 
 function resolveWorkId(path: string): WorkId | undefined {
-  console.log(path);
   const byNameParams = ClientPaths.WORK_BY_NAME.parseParams(path);
   const urlAuthor = byNameParams?.author;
   const urlName = byNameParams?.name;
