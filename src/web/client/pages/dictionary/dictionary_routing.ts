@@ -67,6 +67,7 @@ function fromRoute(info: RouteInfo): DictRoute {
       path: info.path,
       query: idParams.id,
       idSearch: true,
+      hash: info.hash,
     };
   }
   const params = info.params || {};
