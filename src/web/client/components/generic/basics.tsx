@@ -32,3 +32,47 @@ export function Container(props: PropsWithChildren<ContainerProps>) {
 export function Divider(props?: { style?: CSSProperties }) {
   return <hr className="contentDivider" style={props?.style} />;
 }
+
+export function SpanLink(
+  props: PropsWithChildren<{
+    onClick: () => any;
+    className?: string;
+    id: string;
+  }>
+) {
+  return (
+    <span
+      id={props.id}
+      className={props.className}
+      onClick={props.onClick}
+      onKeyUp={(e) => {
+        if (e.key === "Enter") {
+          props.onClick();
+        }
+      }}
+      tabIndex={0}
+      aria-labelledby={props.id}
+      role="link">
+      {props.children}
+    </span>
+  );
+}
+
+export function SpanButton(
+  props: PropsWithChildren<{ onClick: () => any; className?: string }>
+) {
+  return (
+    <span
+      className={props.className}
+      onClick={props.onClick}
+      onKeyUp={(e) => {
+        if (e.key === " " || e.key === "Enter") {
+          props.onClick();
+        }
+      }}
+      tabIndex={0}
+      role="button">
+      {props.children}
+    </span>
+  );
+}

@@ -1,6 +1,6 @@
 import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
-import { Container } from "@/web/client/components/generic/basics";
+import { Container, SpanLink } from "@/web/client/components/generic/basics";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Router } from "@/web/client/router/router_v2";
@@ -12,6 +12,14 @@ import { useState, useEffect } from "react";
 function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
   const { nav } = Router.useRouter();
 
+  function onWorkSelected(work: LibraryWorkMetadata) {
+    const params = { author: work.urlAuthor, name: work.urlName };
+    const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
+    if (path !== null) {
+      nav.toPath(path);
+    }
+  }
+
   return (
     <div style={{ marginTop: 4, display: "flex", flexDirection: "column" }}>
       {props.works === undefined ? (
@@ -19,19 +27,13 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
       ) : (
         props.works.map((work) => (
           <div key={work.id}>
-            <span
+            <SpanLink
+              id={work.id}
               className="latWork"
-              onClick={() => {
-                const params = { author: work.urlAuthor, name: work.urlName };
-                const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
-                if (path !== null) {
-                  nav.toPath(path);
-                }
-              }}
-              role="button">
+              onClick={() => onWorkSelected(work)}>
               <span>{work.name}</span>{" "}
               <span className="contentTextLight">{work.author}</span>
-            </span>
+            </SpanLink>
           </div>
         ))
       )}
@@ -39,15 +41,16 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
   );
 }
 
-function ExternalReaderButton() {
+function ExternalReaderLink() {
   const { nav } = Router.useRouter();
 
   return (
-    <span
+    <SpanLink
       className="jsLink"
-      onClick={() => nav.toPath(ClientPaths.EXTERNAL_CONTENT_READER.path)}>
-      here
-    </span>
+      onClick={() => nav.toPath(ClientPaths.EXTERNAL_CONTENT_READER.path)}
+      id="externalReaderLink">
+      {"input your own text"}
+    </SpanLink>
   );
 }
 
@@ -71,8 +74,7 @@ export function Library() {
           <div
             className="contentTextLight"
             style={{ fontSize: FontSizes.SECONDARY }}>
-            Select a work from the list below, or click <ExternalReaderButton />{" "}
-            to read custom content in the reader.
+            Select a work from the list below, or <ExternalReaderLink />.
           </div>
           <WorksList works={works} />
         </>
