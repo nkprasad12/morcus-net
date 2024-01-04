@@ -9,6 +9,7 @@ import {
   isDefaultSidebarTab,
 } from "@/web/client/pages/library/reader_sidebar_components";
 import { BaseReaderLayout } from "@/web/client/pages/library/reader_utils";
+import { StyleContext } from "@/web/client/styling/style_context";
 import React from "react";
 
 type SidebarTab<T> = T | DefaultSidebarTab;
@@ -51,11 +52,13 @@ export function BaseReader<
   const [dictWord, setDictWord] = React.useState<string | undefined>(undefined);
   const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
   const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
-  const [mainScale, setMainScale] = usePersistedNumber(100, "RD_WORK_SCALE");
-  const [sidebarScale, setSidebarScale] = usePersistedNumber(
-    90,
-    "RD_DICT_SCALE"
-  );
+  const {
+    readerMainScale,
+    setReaderMainScale,
+    readerSideScale,
+    setReaderSideScale,
+  } = React.useContext(StyleContext);
+
   const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   const showDefaultTab = isDefaultSidebarTab(sidebarTab);
@@ -73,7 +76,7 @@ export function BaseReader<
       sidebarRef={sidebarRef}>
       <props.MainColumn
         {...props}
-        scale={mainScale}
+        scale={readerMainScale}
         onWordSelected={(word) => {
           sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
           setSidebarTab("Dictionary");
@@ -87,11 +90,11 @@ export function BaseReader<
       />
       {showDefaultTab ? (
         <DefaultReaderSidebarContent
-          scale={sidebarScale}
-          mainScale={mainScale}
-          setMainScale={setMainScale}
-          sideScale={sidebarScale}
-          setSideScale={setSidebarScale}
+          scale={readerSideScale}
+          mainScale={readerMainScale}
+          setMainScale={setReaderMainScale}
+          sideScale={readerSideScale}
+          setSideScale={setReaderSideScale}
           totalWidth={totalWidth}
           setTotalWidth={setTotalWidth}
           mainWidth={mainWidth}
@@ -108,7 +111,7 @@ export function BaseReader<
         <props.ExtraSidebarContent
           {...props}
           tab={sidebarTab}
-          scale={sidebarScale}
+          scale={readerSideScale}
         />
       )}
     </BaseReaderLayout>

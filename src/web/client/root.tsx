@@ -25,6 +25,7 @@ import {
   getWidth,
 } from "@/web/client/styling/styles";
 import { Router } from "@/web/client/router/router_v2";
+import { StyleContextProvider } from "@/web/client/styling/style_context";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -116,16 +117,18 @@ function ConfigurableStyles() {
 root.render(
   <StrictMode>
     <SettingsHandler>
-      <CustomThemeProvider>
-        <ConfigurableStyles />
-        <StyledEngineProvider injectFirst>
-          <Router.Root>
-            <TitleHandler>
-              <SinglePageApp {...props} />
-            </TitleHandler>
-          </Router.Root>
-        </StyledEngineProvider>
-      </CustomThemeProvider>
+      <StyleContextProvider>
+        <CustomThemeProvider>
+          <ConfigurableStyles />
+          <StyledEngineProvider injectFirst>
+            <Router.Root>
+              <TitleHandler>
+                <SinglePageApp {...props} />
+              </TitleHandler>
+            </Router.Root>
+          </StyledEngineProvider>
+        </CustomThemeProvider>
+      </StyleContextProvider>
     </SettingsHandler>
   </StrictMode>
 );
