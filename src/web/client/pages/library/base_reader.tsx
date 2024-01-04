@@ -142,7 +142,7 @@ function DragHelper(
 ) {
   const children = React.Children.toArray(props.children);
   assert(children.length === 1);
-  const pendingHeight = React.useRef<number>(window.innerHeight * 0.05);
+  const pendingHeight = React.useRef<number>(window.innerHeight * 0.1);
   const { currentHeight, setCurrentHeight } = props;
 
   return (
@@ -182,7 +182,9 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
   const [mainContent, sidebarBar, sidebarContent] = children;
   const { sidebarRef } = props;
   const drawerTopRef = React.useRef<HTMLDivElement>(null);
-  const [drawerHeight, setDrawerHeight] = useState<number>(0);
+  const [drawerHeight, setDrawerHeight] = useState<number>(
+    window.innerHeight * 0.1
+  );
 
   return (
     <div>
