@@ -1,5 +1,5 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import Typography from "@mui/material/Typography";
 
 export function DictChip(props: { label: string; textScale?: number }) {

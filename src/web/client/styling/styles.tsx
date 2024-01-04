@@ -1,5 +1,5 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
-import { Solarized } from "@/web/client/colors";
+import { Solarized } from "@/web/client/styling/colors";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
   GlobalSettings,

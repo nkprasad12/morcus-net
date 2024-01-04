@@ -14,7 +14,7 @@ import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { AppText } from "@/web/client/pages/library/reader_utils";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 

@@ -1,4 +1,4 @@
-import { BoxWidth, getWidth } from "@/web/client/styles";
+import { BoxWidth, getWidth } from "@/web/client/styling/styles";
 import type { RefObject, CSSProperties, PropsWithChildren } from "react";
 
 export interface ContainerProps {

@@ -41,7 +41,7 @@ import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import ReactDOM, { flushSync } from "react-dom";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import {
   DictContext,
   DictContextOptions,

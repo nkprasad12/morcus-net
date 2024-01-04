@@ -29,7 +29,7 @@ import {
 import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
 import Typography from "@mui/material/Typography";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,

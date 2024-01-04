@@ -9,7 +9,7 @@ import createTheme from "@mui/material/styles/createTheme";
 import ThemeProvider from "@mui/material/styles/ThemeProvider";
 
 import { SinglePageApp } from "@/web/client/components/single_page_app";
-import { Solarized } from "@/web/client/colors";
+import { Solarized } from "@/web/client/styling/colors";
 import {
   GlobalSettingsContext,
   SettingsHandler,
@@ -23,7 +23,7 @@ import {
   TEXT_STYLE,
   getAppBarColor,
   getWidth,
-} from "@/web/client/styles";
+} from "@/web/client/styling/styles";
 import { Router } from "@/web/client/router/router_v2";
 
 declare module "@mui/material/styles" {

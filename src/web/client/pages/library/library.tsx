@@ -5,7 +5,7 @@ import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { useState, useEffect } from "react";
 

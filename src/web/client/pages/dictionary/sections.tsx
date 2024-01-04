@@ -4,7 +4,7 @@ import { getBuildDate } from "@/web/client/define_vars";
 import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import * as React from "react";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import { Divider } from "@/web/client/components/generic/basics";
 
 export function ContentBox(props: {

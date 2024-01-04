@@ -1,5 +1,8 @@
 import { GlobalSettings } from "@/web/client/components/global_flags";
-import { getBackgroundColor, getGlobalStyles } from "@/web/client/styles";
+import {
+  getBackgroundColor,
+  getGlobalStyles,
+} from "@/web/client/styling/styles";
 
 const LIGHT_MODE: GlobalSettings = { darkMode: false };
 const DARK_MODE: GlobalSettings = { darkMode: true };

@@ -10,7 +10,7 @@ import {
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { InflectionData } from "@/common/dictionaries/dict_result";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import {
   DictContext,
   DictContextOptions,

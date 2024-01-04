@@ -1,5 +1,5 @@
 import React, { PropsWithChildren } from "react";
-import { AllowedFontSizes, FontSizes } from "@/web/client/styles";
+import { AllowedFontSizes, FontSizes } from "@/web/client/styling/styles";
 import { debounce } from "@mui/material/utils";
 import Slider from "@mui/material/Slider";
 import LinkIcon from "@mui/icons-material/Link";
