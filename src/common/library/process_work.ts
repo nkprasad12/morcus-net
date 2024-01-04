@@ -103,17 +103,18 @@ function processForDisplay(root: TeiNode): ProcessedWorkNode {
         ? markupTextInNode(child)
         : processForDisplay(child)
     );
-  // A hack for Amores. This should be removed and handled correctly
-  // when we do the refactor to handle milestone, line groups, etc...
+
+  const result: ProcessedWorkNode = { id: root.id, children };
+  if (isFirstHead) {
+    result.header = XmlNode.getSoleText(firstChild);
+  }
   const rend = root.selfNode.getAttr("rend");
   if (rend === "indent") {
-    children.unshift(new XmlNode("span", [], ["   "]));
+    // A hack for Amores. This should be removed and handled correctly
+    // when we do the refactor to handle milestone, line groups, etc...
+    result.rendNote = "indent";
   }
-  return {
-    id: root.id,
-    header: isFirstHead ? XmlNode.getSoleText(firstChild) : undefined,
-    children,
-  };
+  return result;
 }
 
 /** Returns the processed content of a TEI XML file. */

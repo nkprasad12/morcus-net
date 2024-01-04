@@ -306,9 +306,11 @@ function WorkNavigationBar(props: {
   );
   const previousPage = React.useCallback(() => {
     setPage(Math.max(0, props.page - 1));
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, [props.page, setPage]);
   const nextPage = React.useCallback(() => {
     setPage(Math.min(props.page + 1, props.work.pages.length));
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, [props.page, setPage, props.work]);
 
   React.useEffect(() => {
@@ -559,6 +561,7 @@ function WorkChunk(props: {
   const content = props.node.children.filter(instanceOf(XmlNode));
   assertEqual(content.length, props.node.children.length);
   const showHeader = props.hideHeader !== true;
+  const indent = node.rendNote === "indent";
   return (
     <>
       {showHeader && (
@@ -571,7 +574,13 @@ function WorkChunk(props: {
           />
         </span>
       )}
-      <span style={{ gridColumn: 2, gridRow: row }} id={id}>
+      <span
+        style={{
+          gridColumn: 2,
+          gridRow: row,
+          paddingLeft: indent ? "16px" : undefined,
+        }}
+        id={id}>
         {content.map((node, i) =>
           displayForLibraryChunk(node, props.setDictWord, i)
         )}

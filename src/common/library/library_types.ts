@@ -37,6 +37,8 @@ export interface ProcessedWorkNode {
    * while raw `XmlNode` children are data attached to this node.
    */
   children: (XmlNode | ProcessedWorkNode)[];
+  /** Notes for rendering this node and all its children. */
+  rendNote?: string;
 }
 
 export namespace ProcessedWorkNode {
@@ -46,6 +48,7 @@ export namespace ProcessedWorkNode {
     // Apparently it doesn't work resursively, so just check that it's
     // a JSON object.
     ["children", isArray(isOneOf(instanceOf(XmlNode), matches([])))],
+    ["rendNotes", maybeUndefined(isString)],
   ]);
 }
 
