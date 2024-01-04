@@ -100,6 +100,7 @@
     "prettier": "2.8.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "react-draggable": "^4.4.6",
     "socket.io-client": "^4.6.1",
     "supertest": "^6.3.3",
     "swc-minify-webpack-plugin": "^2.1.1",
