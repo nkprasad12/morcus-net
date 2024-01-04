@@ -50,13 +50,13 @@ export interface ReaderSettingsProps {
   /** The scale to use for the elements in the reader. */
   scale: number;
   /** The total width setting for the reader. */
-  totalWidth: number;
+  totalWidth?: number;
   /** A setter for the total width of the reader. */
-  setTotalWidth: (width: number) => any;
+  setTotalWidth?: (width: number) => any;
   /** The width of the main column of the reader. */
-  mainWidth: number;
+  mainWidth?: number;
   /** A setter for the width of the main column of the reader. */
-  setMainWidth: (width: number) => any;
+  setMainWidth?: (width: number) => any;
   /** The scale of the main column of the reader. */
   mainScale: number;
   /** A setter for the scale of the main column of the reader. */
@@ -78,32 +78,41 @@ export function ReaderSettings(props: ReaderSettingsProps) {
     sideScale,
     setSideScale,
   } = props;
+  const hasTotalWidth = totalWidth !== undefined && setTotalWidth !== undefined;
+  const hasMainWidth = mainWidth !== undefined && setMainWidth !== undefined;
+  const hasLayoutSettings = hasTotalWidth || hasMainWidth;
   return (
     <>
-      <details>
-        <summary>
-          <SettingsText message="Layout settings" />
-        </summary>
-        <SettingSlider
-          value={totalWidth}
-          setValue={setTotalWidth}
-          label="Total width"
-          min={0}
-          max={3}
-          step={1}
-          scale={scale}
-          disableLabels
-        />
-        <SettingSlider
-          value={mainWidth}
-          setValue={setMainWidth}
-          label="Main width"
-          min={32}
-          max={80}
-          step={8}
-          scale={scale}
-        />
-      </details>
+      {hasLayoutSettings && (
+        <details>
+          <summary>
+            <SettingsText message="Layout settings" />
+          </summary>
+          {hasTotalWidth && (
+            <SettingSlider
+              value={totalWidth}
+              setValue={setTotalWidth}
+              label="Total width"
+              min={0}
+              max={3}
+              step={1}
+              scale={scale}
+              disableLabels
+            />
+          )}
+          {hasMainWidth && (
+            <SettingSlider
+              value={mainWidth}
+              setValue={setMainWidth}
+              label="Main width"
+              min={32}
+              max={80}
+              step={8}
+              scale={scale}
+            />
+          )}
+        </details>
+      )}
       <details>
         <summary>
           <SettingsText message="Main column settings" />
@@ -183,12 +192,14 @@ export interface ReaderInternalNavbarProps<T> {
   currentTab: T;
   /** The callback invoked to set the currently selected tab. */
   setCurrentTab: (t: T) => any;
+  /** Whether the UX is mobile. */
+  isMobile: boolean;
 }
 export function ReaderInternalNavbar<T extends SideTabType>(
   props: ReaderInternalNavbarProps<T>
 ) {
   return (
-    <div className="readerIconBar">
+    <div className={props.isMobile ? "readerMobileBottomBar" : "readerIconBar"}>
       {props.tabs.map((tab) => (
         <ReaderSideNavIcon
           Icon={tab.Icon}

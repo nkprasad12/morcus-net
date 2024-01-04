@@ -1,3 +1,7 @@
+/**
+ * @jest-environment jsdom
+ */
+
 import {
   DEFAULT_STYLE_CONFIG,
   StyleConfig,

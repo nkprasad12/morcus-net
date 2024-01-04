@@ -363,6 +363,15 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         marginBottom: "3px",
         backgroundColor: backgroundColor,
       },
+      ".readerMobileBottomBar": {
+        width: document.body.clientWidth,
+        boxShadow: `0 -3px 3px -1px ${
+          isDarkMode ? Solarized.base015 : Solarized.base15
+        }`,
+        borderTopLeftRadius: "8px",
+        borderTopRightRadius: "8px",
+        backgroundColor: backgroundColor,
+      },
       ".workLatWord:hover": {
         borderBottom: `1px solid`,
         cursor: "pointer",
@@ -398,6 +407,12 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         paddingBottom: "4px",
         paddingTop: "2px",
         borderRadius: "4px",
+      },
+      ".readerMobileBottomBar .readerNavIconContainer": {
+        borderRadius: "8px",
+        marginTop: "4px",
+        paddingTop: "4px",
+        paddingBottom: "6px",
       },
       ".selectedSidePanelTab": {
         backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,

@@ -80,6 +80,7 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
           tabs={text.length > 0 ? LOADED_ICONS : BASE_ICONS}
+          isMobile={props.isMobile}
         />
         <InternalReaderContext.Provider
           value={{ text, setText, setCurrentTab }}>

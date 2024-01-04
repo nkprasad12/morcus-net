@@ -204,10 +204,10 @@ interface WorkColumnProps {
   currentPage: number;
 }
 function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
-  const { work, currentPage } = props;
+  const { work, currentPage, isMobile } = props;
 
   return (
-    <ContentBox isSmall>
+    <ContentBox isSmall mt={isMobile ? 0 : undefined}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
@@ -217,13 +217,22 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
         </span>
       ) : (
         <>
-          <WorkNavigationBar page={currentPage} work={work} />
-          <div style={{ paddingRight: "8px" }}>
+          <WorkNavigationBar
+            page={currentPage}
+            work={work}
+            isMobile={isMobile}
+          />
+          <div
+            style={{
+              paddingLeft: isMobile ? "12px" : undefined,
+              paddingRight: isMobile ? "12px" : "8px",
+            }}>
             <WorkTextPage
               work={work}
               setDictWord={props.onWordSelected}
               page={currentPage}
               textScale={props.scale}
+              isMobile={isMobile}
             />
           </div>
         </>
@@ -282,7 +291,11 @@ function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
   return <InfoText text={labelForId(id, props.work, false)} />;
 }
 
-function WorkNavigationBar(props: { page: number; work: PaginatedWork }) {
+function WorkNavigationBar(props: {
+  page: number;
+  work: PaginatedWork;
+  isMobile: boolean;
+}) {
   const { nav } = Router.useRouter();
 
   const setPage = React.useCallback(
@@ -332,7 +345,11 @@ function WorkNavigationBar(props: { page: number; work: PaginatedWork }) {
           link={window.location.href}
         />
       </div>
-      <div>
+      <div
+        style={{
+          lineHeight: props.isMobile ? 1 : undefined,
+          paddingTop: props.isMobile ? "8px" : undefined,
+        }}>
         <HeaderText data={props.work} page={props.page} />
       </div>
     </>
@@ -344,21 +361,26 @@ export function WorkTextPage(props: {
   setDictWord: (word: string) => any;
   page: number;
   textScale: number;
+  isMobile: boolean;
 }) {
-  const section = findSectionById(
-    props.work.pages[props.page].id,
-    props.work.root
-  );
+  const { textScale, isMobile, work } = props;
+  const section = findSectionById(work.pages[props.page].id, work.root);
   if (section === undefined) {
     return <InfoText text="Invalid page!" />;
   }
 
-  const gap = `${(props.textScale / 100) * 0.75}em`;
-  const hasLines = props.work.textParts.slice(-1)[0].toLowerCase() === "line";
+  const gapSize = (textScale / 100) * 0.75;
+  const gap = `${gapSize}em`;
+  const hasLines = work.textParts.slice(-1)[0].toLowerCase() === "line";
   const hasHeader = section.header !== undefined;
 
   return (
-    <div style={{ display: "inline-grid", columnGap: gap, marginTop: gap }}>
+    <div
+      style={{
+        display: "inline-grid",
+        columnGap: gap,
+        marginTop: isMobile ? `${gapSize / 2}em` : gap,
+      }}>
       {hasHeader && (
         <span className="text sm light" style={{ gridColumn: 2, gridRow: 1 }}>
           {section.header}
@@ -371,7 +393,10 @@ export function WorkTextPage(props: {
           setDictWord={props.setDictWord}
           i={i + (hasHeader ? 1 : 0)}
           workName={capitalizeWords(props.work.info.title)}
-          hideHeader={hasLines && i !== 0 && (i + 1) % 5 !== 0}
+          hideHeader={
+            hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0)
+          }
+          isMobile={isMobile}
         />
       ))}
     </div>
@@ -520,12 +545,15 @@ function WorkChunk(props: {
   i: number;
   workName: string;
   hideHeader?: boolean;
+  isMobile: boolean;
 }) {
-  const id = props.node.id
+  const { isMobile, node } = props;
+  const id = node.id
+    .slice(isMobile && node.id.length > 2 ? 2 : 0)
     .map((idPart) =>
       safeParseInt(idPart) !== undefined
         ? idPart
-        : capitalizeWords(idPart.substring(0, 3))
+        : capitalizeWords(idPart.substring(0, isMobile ? 2 : 3))
     )
     .join(".");
   const row = props.i + 1;
