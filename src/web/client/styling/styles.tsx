@@ -86,6 +86,8 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
     ? Solarized.base00
     : Solarized.base01;
   const contentTextColor = isDarkMode ? Solarized.base1 : Solarized.base015;
+  const readerMainScale = settings.readerMainScale / 100;
+  const readerSideScale = settings.readerSideScale / 100;
 
   return {
     styles: {
@@ -143,6 +145,33 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         borderWidth: "0px 0px thin;",
         borderStyle: "solid",
         margin: "0px 16px;",
+      },
+      ".text": {
+        ...TEXT_STYLE,
+        color: contentTextColor,
+      },
+      ".text.light": { color: contentTextLightColor },
+      ".text.compact": { lineHeight: 1 },
+      ".text.md": { fontSize: FontSizes.SMALL_SCREEN },
+      ".text.sm": { fontSize: FontSizes.SECONDARY },
+      ".text.xs": { fontSize: FontSizes.TERTIARY },
+      ".readerMain .text.md": {
+        fontSize: FontSizes.SMALL_SCREEN * readerMainScale,
+      },
+      ".readerMain .text.sm": {
+        fontSize: FontSizes.SECONDARY * readerMainScale,
+      },
+      ".readerMain .text.xs": {
+        fontSize: FontSizes.TERTIARY * readerMainScale,
+      },
+      ".readerSide .text.md": {
+        fontSize: FontSizes.SMALL_SCREEN * readerSideScale,
+      },
+      ".readerSide .text.sm": {
+        fontSize: FontSizes.SECONDARY * readerSideScale,
+      },
+      ".readerSide .text.xs": {
+        fontSize: FontSizes.TERTIARY * readerSideScale,
       },
       ".contentText": {
         color: contentTextColor,
@@ -460,6 +489,15 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         ".Container": {
           paddingLeft: "24px",
           paddingRight: "24px",
+        },
+        ".text.md": {
+          fontSize: FontSizes.BIG_SCREEN,
+        },
+        ".readerMain .text.md": {
+          fontSize: FontSizes.BIG_SCREEN * readerMainScale,
+        },
+        ".readerSide .text.md": {
+          fontSize: FontSizes.BIG_SCREEN * readerSideScale,
         },
       },
     },

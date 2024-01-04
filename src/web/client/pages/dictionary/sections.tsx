@@ -2,7 +2,6 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import * as React from "react";
 import { FontSizes } from "@/web/client/styling/styles";
 import { Divider } from "@/web/client/components/generic/basics";
@@ -18,7 +17,6 @@ export function ContentBox(props: {
   noDivider?: boolean;
   id?: string;
   className?: string;
-  textScale?: number;
   isEmbedded?: boolean;
 }) {
   const isSmall = props.isSmall;
@@ -39,17 +37,9 @@ export function ContentBox(props: {
       ref={props.contentRef}
       id={props.id}
       className={props.className}>
-      <Typography
-        component={"div"}
-        className="contentText"
-        style={{
-          whiteSpace: "pre-wrap",
-          fontSize: props.textScale
-            ? FontSizes.BIG_SCREEN * (props.textScale / 100)
-            : undefined,
-        }}>
+      <div className="text md" style={{ whiteSpace: "pre-wrap" }}>
         {props.children}
-      </Typography>
+      </div>
       {props.noDivider !== true && <Divider style={{ marginTop: "16px" }} />}
     </Box>
   );

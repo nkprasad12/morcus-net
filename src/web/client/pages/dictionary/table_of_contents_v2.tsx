@@ -68,7 +68,7 @@ function OutlineSection(props: {
         onClick={() => props.onClick(outline.mainSection.sectionId)}
         style={{ cursor: "pointer" }}
         className="clickableOutlineSection">
-        <DictChip label={props.dictKey} textScale={props.textScale} />
+        <DictChip label={props.dictKey} />
         <span className="outlineHead" style={{ marginLeft: 2 }}>
           <OpenInNewIcon
             sx={{

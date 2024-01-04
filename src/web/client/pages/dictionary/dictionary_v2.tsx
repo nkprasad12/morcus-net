@@ -236,13 +236,9 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
 }
 
 function HelpSection(props: { id?: string; className?: string }) {
-  const { isEmbedded, isSmall, scale } = React.useContext(DictContext);
+  const { isEmbedded, isSmall } = React.useContext(DictContext);
   const MainContent = (
-    <div
-      style={{
-        fontSize: FontSizes.TERTIARY * scale,
-        lineHeight: "normal",
-      }}>
+    <div className="text xs" style={{ lineHeight: "normal" }}>
       {xmlNodeToJsx(HELP_ENTRY)}
     </div>
   );
@@ -257,11 +253,7 @@ function HelpSection(props: { id?: string; className?: string }) {
       {isEmbedded ? (
         <details>
           <summary>
-            <span
-              className="contentTextLight"
-              style={{ fontSize: FontSizes.SECONDARY * scale }}>
-              Markup guide
-            </span>
+            <span className="text sm light">Markup guide</span>
           </summary>
           {MainContent}
         </details>
@@ -275,9 +267,9 @@ function HelpSection(props: { id?: string; className?: string }) {
   );
 }
 
-function LoadingMessage(props: { isSmall: boolean; textScale?: number }) {
+function LoadingMessage(props: { isSmall: boolean }) {
   return (
-    <ContentBox isSmall={props.isSmall} textScale={props?.textScale}>
+    <ContentBox isSmall={props.isSmall}>
       <span>Loading entries, please wait ... </span>
     </ContentBox>
   );
@@ -348,8 +340,7 @@ function SummarySection(props: {
   entries: EntriesByDict[];
   scrollTopRef: React.RefObject<HTMLDivElement>;
 }) {
-  const { isEmbedded, isSmall, textScale, scale } =
-    React.useContext(DictContext);
+  const { isEmbedded, isSmall, scale } = React.useContext(DictContext);
   const { idSearch, entries, scrollTopRef } = props;
   if (idSearch) {
     return <></>;
@@ -361,7 +352,6 @@ function SummarySection(props: {
       <ContentBox
         isSmall={isSmall}
         id="DictResultsSummary"
-        textScale={textScale}
         isEmbedded={isEmbedded}
         noDivider={isEmbedded}
         mt={0}>
@@ -378,7 +368,7 @@ function SummarySection(props: {
               .filter((entry) => entry.outlines.length > 0)
               .map((entry) => (
                 <div key={entry.dictKey + "SummarySection"}>
-                  <FullDictChip label={entry.name} textScale={textScale} />
+                  <FullDictChip label={entry.name} />
                   {entry.outlines.map((outline) => (
                     <span key={outline.mainSection.sectionId}>
                       {" "}
@@ -458,11 +448,7 @@ function SingleDictSection(props: {
   return (
     <>
       {props.data.entries.map((entry, i) => (
-        <ContentBox
-          key={entry.key}
-          isSmall={isSmall}
-          id={entry.key}
-          textScale={textScale}>
+        <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
           <>
             {entry.inflections && (
               <InflectionDataSection
@@ -480,7 +466,7 @@ function SingleDictSection(props: {
                   id={props.data.outlines[i].mainSection.sectionId}
                   forArticle
                 />
-                <FullDictChip label={props.data.name} textScale={textScale} />
+                <FullDictChip label={props.data.name} />
               </span>
             </div>
             {entry.element}
@@ -515,16 +501,11 @@ function DefaultTableOfContents(props: TableOfContentsProps) {
 }
 function HideableTableOfContents(props: TableOfContentsProps) {
   const [open, setOpen] = React.useState(false);
-  const { scale } = React.useContext(DictContext);
   return (
     <>
       <details open={open} onToggle={() => setOpen(!open)}>
         <summary>
-          <span
-            className="contentTextLight"
-            style={{ fontSize: FontSizes.BIG_SCREEN * scale }}>
-            Outline
-          </span>
+          <span className="text md light">Outline</span>
         </summary>
         <DefaultTableOfContents {...props} />
       </details>
@@ -686,8 +667,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     return (
       <ResponsiveLayout
         contextValues={contextValues}
-        oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
-        twoColMain={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
+        oneCol={<LoadingMessage isSmall={isSmall} />}
+        twoColMain={<LoadingMessage isSmall={isSmall} />}
       />
     );
   }

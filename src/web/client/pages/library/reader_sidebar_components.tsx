@@ -82,7 +82,7 @@ export function ReaderSettings(props: ReaderSettingsProps) {
     <>
       <details>
         <summary>
-          <SettingsText message="Layout settings" scale={scale} />
+          <SettingsText message="Layout settings" />
         </summary>
         <SettingSlider
           value={totalWidth}
@@ -106,7 +106,7 @@ export function ReaderSettings(props: ReaderSettingsProps) {
       </details>
       <details>
         <summary>
-          <SettingsText message="Main column settings" scale={scale} />
+          <SettingsText message="Main column settings" />
         </summary>
         <SettingSlider
           value={mainScale}
@@ -121,7 +121,7 @@ export function ReaderSettings(props: ReaderSettingsProps) {
       </details>
       <details>
         <summary>
-          <SettingsText message="Side column settings" scale={scale} />
+          <SettingsText message="Side column settings" />
         </summary>
         <SettingSlider
           value={sideScale}
