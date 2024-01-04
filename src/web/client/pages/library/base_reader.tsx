@@ -155,7 +155,10 @@ function DragHelper(
         const newHeight =
           proposed > max ? max : proposed < min ? min : proposed;
         pendingHeight.current = newHeight;
-        if (Math.abs(currentHeight - pendingHeight.current) < 5) {
+        if (
+          Math.abs(currentHeight - pendingHeight.current) < 5 &&
+          newHeight !== min
+        ) {
           return;
         }
         if (Math.abs(currentHeight - pendingHeight.current) < 10) {
@@ -179,9 +182,7 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
   const [mainContent, sidebarBar, sidebarContent] = children;
   const { sidebarRef } = props;
   const drawerTopRef = React.useRef<HTMLDivElement>(null);
-  const [drawerHeight, setDrawerHeight] = useState<number>(
-    window.innerHeight * 0.05
-  );
+  const [drawerHeight, setDrawerHeight] = useState<number>(0);
 
   return (
     <div>
@@ -202,14 +203,17 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
           currentHeight={drawerHeight}
           setCurrentHeight={setDrawerHeight}>
           <div
+            className="readerMobileDragger"
             ref={drawerTopRef}
             style={{
               borderTopLeftRadius: 8,
               borderTopRightRadius: 8,
+              height: "30px",
             }}>
-            {sidebarBar}
+            <div className="draggerPuller" />
           </div>
         </DragHelper>
+        {sidebarBar}
         <Container
           innerRef={sidebarRef}
           style={{

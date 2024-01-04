@@ -88,6 +88,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
   const contentTextColor = isDarkMode ? Solarized.base1 : Solarized.base015;
   const readerMainScale = settings.readerMainScale / 100;
   const readerSideScale = settings.readerSideScale / 100;
+  const bgColorAlt = isDarkMode ? Solarized.base015 : Solarized.base15;
 
   return {
     styles: {
@@ -358,20 +359,29 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         position: "sticky",
         top: 0,
         width: "100%",
-        boxShadow: `0 2px 3px 1px ${
-          isDarkMode ? Solarized.base015 : Solarized.base15
-        }`,
+        boxShadow: `0 2px 3px 1px ${bgColorAlt}`,
         marginBottom: "3px",
         backgroundColor: backgroundColor,
       },
       ".readerMobileBottomBar": {
         width: document.body.clientWidth,
-        boxShadow: `0 -3px 3px -1px ${
-          isDarkMode ? Solarized.base015 : Solarized.base15
-        }`,
+        backgroundColor: bgColorAlt,
+      },
+      ".readerMobileDragger": {
+        width: document.body.clientWidth,
+        boxShadow: `0 -4px 3px -1px ${bgColorAlt}`,
         borderTopLeftRadius: "8px",
         borderTopRightRadius: "8px",
         backgroundColor: backgroundColor,
+      },
+      ".draggerPuller": {
+        width: 30,
+        height: 6,
+        borderRadius: 3,
+        position: "absolute",
+        top: 8,
+        left: "calc(50% - 15px)",
+        backgroundColor: bgColorAlt,
       },
       ".workLatWord:hover": {
         borderBottom: `1px solid`,
@@ -416,7 +426,10 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         paddingBottom: "6px",
       },
       ".selectedSidePanelTab": {
-        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+        backgroundColor: bgColorAlt,
+      },
+      ".readerMobileBottomBar .selectedSidePanelTab": {
+        backgroundColor,
       },
       ".selectedSidePanelTab .menuIcon": {
         color: contentTextColor + "d0",
@@ -481,7 +494,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         width: "9px",
       },
       "::-webkit-scrollbar-track": {
-        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+        backgroundColor: bgColorAlt,
         borderRadius: "4px",
       },
       "::-webkit-scrollbar-thumb": {
