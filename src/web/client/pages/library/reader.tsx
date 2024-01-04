@@ -549,7 +549,6 @@ function WorkChunk(props: {
 }) {
   const { isMobile, node } = props;
   const id = node.id
-    .slice(isMobile && node.id.length > 2 ? 2 : 0)
     .map((idPart) =>
       safeParseInt(idPart) !== undefined
         ? idPart
@@ -564,7 +563,12 @@ function WorkChunk(props: {
     <>
       {showHeader && (
         <span style={{ gridColumn: 1, gridRow: row }}>
-          <WorkChunkHeader text={id} blurb={`${props.workName} ${id}`} />
+          <WorkChunkHeader
+            text={node.id
+              .slice(isMobile && node.id.length > 2 ? 2 : 0)
+              .join(".")}
+            blurb={`${props.workName} ${id}`}
+          />
         </span>
       )}
       <span style={{ gridColumn: 2, gridRow: row }} id={id}>
