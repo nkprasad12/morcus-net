@@ -1,11 +1,8 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { Solarized } from "@/web/client/styling/colors";
-import {
-  DEFAULT_HIGHLIGHT_STRENGTH,
-  GlobalSettings,
-} from "@/web/client/components/global_flags";
-import { GlobalStylesProps } from "@mui/material";
-import { CSSProperties } from "react";
+import { StyleConfig } from "@/web/client/styling/style_context";
+import type { GlobalStylesProps } from "@mui/material";
+import type { CSSProperties } from "react";
 
 export type AllowedFontSizes =
   | typeof FontSizes.BIG_SCREEN
@@ -50,20 +47,18 @@ export const TEXT_STYLE: CSSProperties = {
   letterSpacing: "0.00938em",
 };
 
-export function getBackgroundColor(settings: GlobalSettings): string {
+export function getBackgroundColor(settings: Partial<StyleConfig>): string {
   return settings.darkMode === true ? "#212022" : Solarized.base3;
 }
 
-export function getAppBarColor(settings: GlobalSettings): string {
+export function getAppBarColor(settings: Partial<StyleConfig>): string {
   return settings.darkMode === true
     ? Solarized.darkarkModeMint
     : Solarized.base2;
 }
 
-export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
-  const modifier =
-    (settings.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH) /
-    DEFAULT_HIGHLIGHT_STRENGTH;
+export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
+  const modifier = settings.dictHighlightScale;
 
   function modifiedStrength(baseStrength: number): string {
     const decimalBase = (baseStrength / 160) * 100;
@@ -72,7 +67,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
     return `${Math.round(hexModified)}`;
   }
 
-  const isDarkMode = settings.darkMode === true;
+  const isDarkMode = settings.darkMode;
   const backgroundColor = getBackgroundColor(settings);
   const bulletColor = isDarkMode ? Solarized.base2 : Solarized.base01;
   const dictChipTextColor = isDarkMode

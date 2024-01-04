@@ -1,6 +1,9 @@
 /* istanbul ignore file */
 
-import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import {
+  DEFAULT_HIGHLIGHT_STRENGTH,
+  GlobalSettingsContext,
+} from "@/web/client/components/global_flags";
 import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
 import React from "react";
 
@@ -14,16 +17,22 @@ export interface ReaderStyleConfig {
   readerSideScale: number;
 }
 
+export interface DictStyleConfig {
+  dictHighlightScale: number;
+}
+
 export interface GlobalStyleConfig {
   darkMode: boolean;
 }
 
 export type StyleConfig = ReaderStyleConfigSetter &
   ReaderStyleConfig &
+  DictStyleConfig &
   GlobalStyleConfig;
 
 export const DEFAULT_STYLE_CONFIG: StyleConfig = {
   darkMode: false,
+  dictHighlightScale: 1,
   readerMainScale: 100,
   readerSideScale: 100,
   setReaderMainScale: () => {},
@@ -57,6 +66,9 @@ export function StyleContextProvider(props: React.PropsWithChildren) {
     <StyleContext.Provider
       value={{
         darkMode: globalSettings.data.darkMode === true,
+        dictHighlightScale:
+          (globalSettings.data.highlightStrength ||
+            DEFAULT_HIGHLIGHT_STRENGTH) / DEFAULT_HIGHLIGHT_STRENGTH,
         readerMainScale,
         readerSideScale,
         setReaderMainScale,

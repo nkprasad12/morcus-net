@@ -25,7 +25,10 @@ import {
   getWidth,
 } from "@/web/client/styling/styles";
 import { Router } from "@/web/client/router/router_v2";
-import { StyleContextProvider } from "@/web/client/styling/style_context";
+import {
+  StyleContext,
+  StyleContextProvider,
+} from "@/web/client/styling/style_context";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -106,12 +109,12 @@ const root = ReactDOM.createRoot(
 );
 
 function ConfigurableStyles() {
-  const settings = useContext(GlobalSettingsContext);
-  document.body.style.backgroundColor = getBackgroundColor(settings.data);
+  const styleConfig = useContext(StyleContext);
+  document.body.style.backgroundColor = getBackgroundColor(styleConfig);
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", getAppBarColor(settings.data));
-  return <GlobalStyles {...getGlobalStyles(settings.data)} />;
+    ?.setAttribute("content", getAppBarColor(styleConfig));
+  return <GlobalStyles {...getGlobalStyles(styleConfig)} />;
 }
 
 root.render(
