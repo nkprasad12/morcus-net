@@ -156,19 +156,19 @@ function DragHelper(
           proposed > max ? max : proposed < min ? min : proposed;
         pendingHeight.current = newHeight;
         if (
-          Math.abs(currentHeight - pendingHeight.current) < 10 &&
+          Math.abs(currentHeight - pendingHeight.current) < 5 &&
           newHeight !== min
         ) {
           return;
         }
-        if (Math.abs(currentHeight - pendingHeight.current) < 20) {
+        if (Math.abs(currentHeight - pendingHeight.current) < 8) {
           setCurrentHeight(pendingHeight.current);
           return;
         }
         setCurrentHeight(
           pendingHeight.current > currentHeight
-            ? currentHeight + 20
-            : currentHeight - 20
+            ? currentHeight + 8
+            : currentHeight - 8
         );
       }}>
       {children[0]}
