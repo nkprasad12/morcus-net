@@ -4,6 +4,7 @@ import type { RefObject, CSSProperties, PropsWithChildren } from "react";
 export interface ContainerProps {
   maxWidth?: BoxWidth;
   disableGutters?: boolean;
+  gutterSize?: number;
   style?: CSSProperties;
   innerRef?: RefObject<HTMLDivElement>;
   id?: string;
@@ -12,6 +13,7 @@ export interface ContainerProps {
 
 export function Container(props: PropsWithChildren<ContainerProps>) {
   const extraClass = props.className ? ` ${props.className}` : "";
+  const gutterSize = props.disableGutters ? 0 : props.gutterSize;
   return (
     <div
       id={props.id}
@@ -20,8 +22,8 @@ export function Container(props: PropsWithChildren<ContainerProps>) {
       style={{
         width: "100%",
         maxWidth: props.maxWidth ? `${getWidth(props.maxWidth)}px` : "100%",
-        paddingLeft: props.disableGutters ? 0 : undefined,
-        paddingRight: props.disableGutters ? 0 : undefined,
+        paddingLeft: gutterSize,
+        paddingRight: gutterSize,
         ...props.style,
       }}>
       {props.children}

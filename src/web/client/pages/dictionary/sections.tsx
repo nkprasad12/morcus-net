@@ -6,19 +6,20 @@ import * as React from "react";
 import { FontSizes } from "@/web/client/styling/styles";
 import { Divider } from "@/web/client/components/generic/basics";
 
-export function ContentBox(props: {
-  children: JSX.Element;
-  isSmall: boolean;
-  contentKey?: string;
-  contentRef?: React.RefObject<HTMLElement>;
-  ml?: string;
-  mr?: string;
-  mt?: number;
-  noDivider?: boolean;
-  id?: string;
-  className?: string;
-  isEmbedded?: boolean;
-}) {
+export function ContentBox(
+  props: React.PropsWithChildren<{
+    isSmall: boolean;
+    contentKey?: string;
+    contentRef?: React.RefObject<HTMLElement>;
+    ml?: string;
+    mr?: string;
+    mt?: number;
+    noDivider?: boolean;
+    id?: string;
+    className?: string;
+    isEmbedded?: boolean;
+  }>
+) {
   const isSmall = props.isSmall;
 
   return (

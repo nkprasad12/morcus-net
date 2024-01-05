@@ -141,6 +141,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
 
       /** Basic content primitives */
       ".bgColor": { backgroundColor },
+      ".bgColorAlt": { backgroundColor: bgColorAlt },
       ".contentDivider": {
         borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
         flexShrink: 0,

@@ -19,6 +19,7 @@ import React, {
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
+import { Footer } from "@/web/client/components/footer";
 
 const noSsr = { noSsr: true };
 
@@ -137,6 +138,9 @@ export function BaseReader<
   );
 }
 
+// The maximum size of the drawer as a ratio of the screen height.
+const DRAWER_MAX_SIZE = 0.6;
+
 function DragHelper(
   props: PropsWithChildren<{
     currentHeight: number;
@@ -158,7 +162,7 @@ function DragHelper(
     }
     const offset = dragStartY.current - currentY;
     const proposed = dragStartHeight.current + offset;
-    const max = window.innerHeight * 0.5;
+    const max = window.innerHeight * DRAWER_MAX_SIZE;
     const newHeight = proposed > max ? max : proposed < 0 ? 0 : proposed;
     if (newHeight === 0 || Math.abs(currentHeight - newHeight) >= 5) {
       setCurrentHeight(newHeight);
@@ -192,18 +196,14 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
   const [mainContent, sidebarBar, sidebarContent] = children;
   const { sidebarRef } = props;
   const [drawerHeight, setDrawerHeight] = useState<number>(
-    window.innerHeight * 0.1
+    window.innerHeight * 0.15
   );
 
   return (
     <div>
       <Container className="readerMain" disableGutters>
         {mainContent}
-        <div
-          style={{
-            height: window.innerHeight * 0.5,
-          }}
-        />
+        <Footer marginRatio={DRAWER_MAX_SIZE} />
       </Container>
       <Container
         className="readerSide bgColor"
@@ -220,15 +220,15 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
           </div>
         </DragHelper>
         <Container
+          className="bgColorAlt"
+          gutterSize={6}
           innerRef={sidebarRef}
           style={{
             overflowY: "auto",
             height: drawerHeight,
           }}>
-          <ContentBox isSmall>
-            <div style={{ paddingRight: "8px" }} onClick={() => {}}>
-              {sidebarContent}
-            </div>
+          <ContentBox isSmall className="bgColor" mt={0}>
+            {sidebarContent}
           </ContentBox>
         </Container>
       </Container>
