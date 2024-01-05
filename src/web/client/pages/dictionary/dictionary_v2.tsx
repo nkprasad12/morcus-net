@@ -514,7 +514,7 @@ function HideableTableOfContents(props: TableOfContentsProps) {
 
 interface TableOfContentsProps {
   entries: EntriesByDict[];
-  tocRef: React.RefObject<HTMLElement>;
+  tocRef: React.RefObject<HTMLDivElement>;
 }
 function TableOfContents(props: TableOfContentsProps) {
   const { embeddedOptions } = React.useContext(DictContext);
@@ -535,7 +535,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
 
   const sectionRef = React.useRef<HTMLElement>(null);
-  const tocRef = React.useRef<HTMLElement>(null);
+  const tocRef = React.useRef<HTMLDivElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 

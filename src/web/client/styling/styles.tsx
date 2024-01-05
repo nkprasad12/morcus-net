@@ -422,6 +422,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
       ".readerMobileBottomBar .readerNavIconContainer": {
         borderRadius: "8px",
+        marginLeft: "4px",
         paddingBottom: "6px",
       },
       ".selectedSidePanelTab": {
@@ -490,15 +491,15 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
 
       /** Custom scrollbar styles */
       "::-webkit-scrollbar": {
-        width: "9px",
+        width: "6px",
       },
       "::-webkit-scrollbar-track": {
         backgroundColor: bgColorAlt,
-        borderRadius: "4px",
+        borderRadius: "3px",
       },
       "::-webkit-scrollbar-thumb": {
         background: "#888",
-        borderRadius: "4px",
+        borderRadius: "3px",
       },
       "::-webkit-scrollbar-thumb:hover": {
         background: "#555",
@@ -526,6 +527,15 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         },
         ".readerSide .text.md": {
           fontSize: FontSizes.BIG_SCREEN * readerSideScale,
+        },
+        "::-webkit-scrollbar": {
+          width: "9px",
+        },
+        "::-webkit-scrollbar-track": {
+          borderRadius: "4px",
+        },
+        "::-webkit-scrollbar-thumb": {
+          borderRadius: "4px",
         },
       },
     },

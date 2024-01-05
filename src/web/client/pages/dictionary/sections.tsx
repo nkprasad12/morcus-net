@@ -1,7 +1,6 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
-import Box from "@mui/material/Box";
 import * as React from "react";
 import { FontSizes } from "@/web/client/styling/styles";
 import { Divider } from "@/web/client/components/generic/basics";
@@ -10,7 +9,7 @@ export function ContentBox(
   props: React.PropsWithChildren<{
     isSmall: boolean;
     contentKey?: string;
-    contentRef?: React.RefObject<HTMLElement>;
+    contentRef?: React.RefObject<HTMLDivElement>;
     ml?: string;
     mr?: string;
     mt?: number;
@@ -18,21 +17,23 @@ export function ContentBox(
     id?: string;
     className?: string;
     isEmbedded?: boolean;
+    styles?: React.CSSProperties;
   }>
 ) {
   const isSmall = props.isSmall;
 
   return (
-    <Box
-      sx={{
+    <div
+      style={{
         paddingTop: 0,
         paddingBottom: 0,
-        paddingLeft: isSmall ? 0 : 1,
-        paddingRight: isSmall ? 0 : 1,
-        ml: props.ml || (isSmall ? 0 : 3),
-        mr: props.mr || (isSmall ? 0 : 3),
-        mt: props.mt !== undefined ? props.mt : 1,
-        mb: props.isEmbedded ? 1 : 2,
+        paddingLeft: isSmall ? 0 : "8px",
+        paddingRight: isSmall ? 0 : "8px",
+        marginLeft: props.ml || (isSmall ? 0 : "24px"),
+        marginRight: props.mr || (isSmall ? 0 : "24px"),
+        marginTop: props.mt !== undefined ? props.mt : "8px",
+        marginBottom: props.isEmbedded ? "8px" : "16px",
+        ...props.styles,
       }}
       key={props.contentKey}
       ref={props.contentRef}
@@ -42,7 +43,7 @@ export function ContentBox(
         {props.children}
       </div>
       {props.noDivider !== true && <Divider style={{ marginTop: "16px" }} />}
-    </Box>
+    </div>
   );
 }
 

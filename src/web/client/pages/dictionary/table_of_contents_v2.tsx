@@ -19,7 +19,7 @@ export function TableOfContentsV2(props: {
   outlines: EntryOutline[];
   dictKey: string;
   isSmall: boolean;
-  tocRef: React.RefObject<HTMLElement>;
+  tocRef: React.RefObject<HTMLDivElement>;
   textScale?: number;
 }) {
   const isSmall = props.isSmall;
