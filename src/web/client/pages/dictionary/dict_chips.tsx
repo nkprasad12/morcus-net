@@ -1,20 +1,17 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { FontSizes } from "@/web/client/styles";
-import Typography from "@mui/material/Typography";
 
-export function DictChip(props: { label: string; textScale?: number }) {
+export function DictChip(props: { label: string }) {
   function getClassName(label: string): string {
     return label === LatinDict.SmithAndHall.key ? "shChip" : "lsChip";
   }
 
   return (
     <span
-      className={getClassName(props.label)}
+      className={getClassName(props.label) + " text xs"}
       style={{
         borderRadius: 4,
         paddingLeft: 3,
         paddingRight: 3,
-        fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
         fontFamily: "monospace",
       }}>
       {props.label}
@@ -22,7 +19,7 @@ export function DictChip(props: { label: string; textScale?: number }) {
   );
 }
 
-export function FullDictChip(props: { label: string; textScale?: number }) {
+export function FullDictChip(props: { label: string }) {
   function getClassName(label: string): string {
     return label === LatinDict.SmithAndHall.displayName ? "shChip" : "lsChip";
   }
@@ -34,9 +31,8 @@ export function FullDictChip(props: { label: string; textScale?: number }) {
   }
 
   return (
-    <Typography
-      component={"span"}
-      className={getClassName(props.label)}
+    <span
+      className={getClassName(props.label) + " text md"}
       style={{
         whiteSpace: "pre-wrap",
         borderRadius: 4,
@@ -44,11 +40,8 @@ export function FullDictChip(props: { label: string; textScale?: number }) {
         padding: 2,
         paddingLeft: 6,
         paddingRight: 6,
-        fontSize: props.textScale
-          ? FontSizes.BIG_SCREEN * (props.textScale / 100)
-          : undefined,
       }}>
       {displayText(props.label)}
-    </Typography>
+    </span>
   );
 }

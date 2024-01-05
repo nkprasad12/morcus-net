@@ -9,7 +9,7 @@ import createTheme from "@mui/material/styles/createTheme";
 import ThemeProvider from "@mui/material/styles/ThemeProvider";
 
 import { SinglePageApp } from "@/web/client/components/single_page_app";
-import { Solarized } from "@/web/client/colors";
+import { Solarized } from "@/web/client/styling/colors";
 import {
   GlobalSettingsContext,
   SettingsHandler,
@@ -23,8 +23,12 @@ import {
   TEXT_STYLE,
   getAppBarColor,
   getWidth,
-} from "@/web/client/styles";
+} from "@/web/client/styling/styles";
 import { Router } from "@/web/client/router/router_v2";
+import {
+  StyleContext,
+  StyleContextProvider,
+} from "@/web/client/styling/style_context";
 
 declare module "@mui/material/styles" {
   interface BreakpointOverrides {
@@ -105,27 +109,29 @@ const root = ReactDOM.createRoot(
 );
 
 function ConfigurableStyles() {
-  const settings = useContext(GlobalSettingsContext);
-  document.body.style.backgroundColor = getBackgroundColor(settings.data);
+  const styleConfig = useContext(StyleContext);
+  document.body.style.backgroundColor = getBackgroundColor(styleConfig);
   document
     .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", getAppBarColor(settings.data));
-  return <GlobalStyles {...getGlobalStyles(settings.data)} />;
+    ?.setAttribute("content", getAppBarColor(styleConfig));
+  return <GlobalStyles {...getGlobalStyles(styleConfig)} />;
 }
 
 root.render(
   <StrictMode>
     <SettingsHandler>
-      <CustomThemeProvider>
-        <ConfigurableStyles />
-        <StyledEngineProvider injectFirst>
-          <Router.Root>
-            <TitleHandler>
-              <SinglePageApp {...props} />
-            </TitleHandler>
-          </Router.Root>
-        </StyledEngineProvider>
-      </CustomThemeProvider>
+      <StyleContextProvider>
+        <CustomThemeProvider>
+          <ConfigurableStyles />
+          <StyledEngineProvider injectFirst>
+            <Router.Root>
+              <TitleHandler>
+                <SinglePageApp {...props} />
+              </TitleHandler>
+            </Router.Root>
+          </StyledEngineProvider>
+        </CustomThemeProvider>
+      </StyleContextProvider>
     </SettingsHandler>
   </StrictMode>
 );

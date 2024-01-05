@@ -10,6 +10,8 @@ import {
 } from "@/common/lewis_and_short/ls_orths";
 import { XmlNode } from "@/common/xml/xml_node";
 
+console.debug = jest.fn();
+
 describe("rawOrths", () => {
   it("returns only expected orths", () => {
     const root = new XmlNode(

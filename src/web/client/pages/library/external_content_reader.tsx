@@ -13,8 +13,6 @@ import { useEffect, useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { AppText } from "@/web/client/pages/library/reader_utils";
-import { FontSizes } from "@/web/client/styles";
 import TextField from "@mui/material/TextField";
 import Button from "@mui/material/Button";
 
@@ -30,13 +28,11 @@ export function ExternalContentReader() {
 interface InternalReaderState {
   text: string;
   setText: (has: string) => any;
-  scale: number;
   setCurrentTab: (tab: MainTab) => any;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
   text: "",
   setText: () => {},
-  scale: 100,
   setCurrentTab: () => {},
 };
 const InternalReaderContext: React.Context<InternalReaderState> =
@@ -78,15 +74,16 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   }, [onWordSelected]);
 
   return (
-    <ContentBox isSmall textScale={props.scale}>
+    <ContentBox isSmall>
       <>
         <ReaderInternalNavbar
           currentTab={currentTab}
           setCurrentTab={setCurrentTab}
           tabs={text.length > 0 ? LOADED_ICONS : BASE_ICONS}
+          isMobile={props.isMobile}
         />
         <InternalReaderContext.Provider
-          value={{ text, setText, scale: props.scale, setCurrentTab }}>
+          value={{ text, setText, setCurrentTab }}>
           <RenderTab current={currentTab} />
         </InternalReaderContext.Provider>
       </>
@@ -95,21 +92,21 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
 }
 
 function RenderTab(props: { current: MainTab }) {
-  const { text, scale } = React.useContext(InternalReaderContext);
+  const { text } = React.useContext(InternalReaderContext);
   const tab = props.current;
   switch (tab) {
     case "Load text":
       return (
         <div>
           <div>
-            <AppText light size={FontSizes.SECONDARY} scale={scale}>
+            <span className="text sm light">
               In progress: other import types coming soon.
-            </AppText>
+            </span>
           </div>
           <div>
-            <AppText scale={scale}>
+            <span className="text md">
               Enter text below and click submit to import.
-            </AppText>
+            </span>
           </div>
           <InputContentBox />
         </div>
@@ -118,11 +115,9 @@ function RenderTab(props: { current: MainTab }) {
       return (
         <div>
           <div style={{ paddingTop: "8px", paddingBottom: "8px" }}>
-            <AppText scale={scale} light size={FontSizes.SECONDARY}>
-              Reading imported text
-            </AppText>
+            <span className="text sm light">Reading imported text</span>
           </div>
-          <AppText scale={scale}>{text}</AppText>
+          <span className="text md">{text}</span>
         </div>
       );
     default:

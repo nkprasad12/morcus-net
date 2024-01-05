@@ -9,6 +9,7 @@ import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import fs from "fs";
 
 console.debug = jest.fn();
+console.log = jest.fn();
 
 const MORPH_FILE = "process_library.test.ts.tmp.morph.txt";
 const INFL_DB_FILE = "process_library.test.ts.tmp.lat.db";

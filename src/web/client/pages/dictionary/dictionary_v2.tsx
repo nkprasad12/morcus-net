@@ -41,7 +41,7 @@ import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import ReactDOM, { flushSync } from "react-dom";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 import {
   DictContext,
   DictContextOptions,
@@ -236,13 +236,9 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
 }
 
 function HelpSection(props: { id?: string; className?: string }) {
-  const { isEmbedded, isSmall, scale } = React.useContext(DictContext);
+  const { isEmbedded, isSmall } = React.useContext(DictContext);
   const MainContent = (
-    <div
-      style={{
-        fontSize: FontSizes.TERTIARY * scale,
-        lineHeight: "normal",
-      }}>
+    <div className="text xs" style={{ lineHeight: "normal" }}>
       {xmlNodeToJsx(HELP_ENTRY)}
     </div>
   );
@@ -257,27 +253,22 @@ function HelpSection(props: { id?: string; className?: string }) {
       {isEmbedded ? (
         <details>
           <summary>
-            <span
-              className="contentTextLight"
-              style={{ fontSize: FontSizes.SECONDARY * scale }}>
-              Markup guide
-            </span>
+            <span className="text sm light">Markup guide</span>
           </summary>
           {MainContent}
         </details>
       ) : (
-        <>
-          {MainContent}
-          {isEmbedded && <Divider />}
-        </>
+        MainContent
       )}
     </ContentBox>
   );
 }
 
-function LoadingMessage(props: { isSmall: boolean; textScale?: number }) {
+function LoadingMessage() {
+  const { isSmall, isEmbedded } = React.useContext(DictContext);
+
   return (
-    <ContentBox isSmall={props.isSmall} textScale={props?.textScale}>
+    <ContentBox isSmall={isSmall} noDivider={isEmbedded}>
       <span>Loading entries, please wait ... </span>
     </ContentBox>
   );
@@ -314,10 +305,12 @@ function OneColumnLayout(props: { children: React.ReactNode }) {
         className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
       />
       {props.children}
-      <Footer
-        id={"Footer"}
-        className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-      />
+      {!isEmbedded && (
+        <Footer
+          id={"Footer"}
+          className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+        />
+      )}
     </Container>
   );
 }
@@ -348,8 +341,7 @@ function SummarySection(props: {
   entries: EntriesByDict[];
   scrollTopRef: React.RefObject<HTMLDivElement>;
 }) {
-  const { isEmbedded, isSmall, textScale, scale } =
-    React.useContext(DictContext);
+  const { isEmbedded, isSmall, scale } = React.useContext(DictContext);
   const { idSearch, entries, scrollTopRef } = props;
   if (idSearch) {
     return <></>;
@@ -357,44 +349,40 @@ function SummarySection(props: {
 
   const numEntries = entries.reduce((s, c) => s + c.entries.length, 0);
   return (
-    <>
-      <ContentBox
-        isSmall={isSmall}
-        id="DictResultsSummary"
-        textScale={textScale}
-        isEmbedded={isEmbedded}
-        noDivider={isEmbedded}
-        mt={0}>
-        <>
-          <div
-            ref={isEmbedded ? scrollTopRef : undefined}
-            style={{
-              fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
-            }}>
-            Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
-          </div>
-          {numEntries > 1 &&
-            entries
-              .filter((entry) => entry.outlines.length > 0)
-              .map((entry) => (
-                <div key={entry.dictKey + "SummarySection"}>
-                  <FullDictChip label={entry.name} textScale={textScale} />
-                  {entry.outlines.map((outline) => (
-                    <span key={outline.mainSection.sectionId}>
-                      {" "}
-                      <ToEntryButton
-                        outline={outline}
-                        key={outline.mainSection.sectionId}
-                        scale={scale}
-                      />
-                    </span>
-                  ))}
-                </div>
-              ))}
-        </>
-      </ContentBox>
-      {isEmbedded && <Divider />}
-    </>
+    <ContentBox
+      isSmall={isSmall}
+      id="DictResultsSummary"
+      isEmbedded={isEmbedded}
+      noDivider={isEmbedded}
+      mt={0}>
+      <>
+        <div
+          ref={isEmbedded ? scrollTopRef : undefined}
+          style={{
+            fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
+          }}>
+          Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
+        </div>
+        {numEntries > 1 &&
+          entries
+            .filter((entry) => entry.outlines.length > 0)
+            .map((entry) => (
+              <div key={entry.dictKey + "SummarySection"}>
+                <FullDictChip label={entry.name} />
+                {entry.outlines.map((outline) => (
+                  <span key={outline.mainSection.sectionId}>
+                    {" "}
+                    <ToEntryButton
+                      outline={outline}
+                      key={outline.mainSection.sectionId}
+                      scale={scale}
+                    />
+                  </span>
+                ))}
+              </div>
+            ))}
+      </>
+    </ContentBox>
   );
 }
 
@@ -458,11 +446,7 @@ function SingleDictSection(props: {
   return (
     <>
       {props.data.entries.map((entry, i) => (
-        <ContentBox
-          key={entry.key}
-          isSmall={isSmall}
-          id={entry.key}
-          textScale={textScale}>
+        <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
           <>
             {entry.inflections && (
               <InflectionDataSection
@@ -480,7 +464,7 @@ function SingleDictSection(props: {
                   id={props.data.outlines[i].mainSection.sectionId}
                   forArticle
                 />
-                <FullDictChip label={props.data.name} textScale={textScale} />
+                <FullDictChip label={props.data.name} />
               </span>
             </div>
             {entry.element}
@@ -515,16 +499,11 @@ function DefaultTableOfContents(props: TableOfContentsProps) {
 }
 function HideableTableOfContents(props: TableOfContentsProps) {
   const [open, setOpen] = React.useState(false);
-  const { scale } = React.useContext(DictContext);
   return (
     <>
       <details open={open} onToggle={() => setOpen(!open)}>
         <summary>
-          <span
-            className="contentTextLight"
-            style={{ fontSize: FontSizes.BIG_SCREEN * scale }}>
-            Outline
-          </span>
+          <span className="text md light">Outline</span>
         </summary>
         <DefaultTableOfContents {...props} />
       </details>
@@ -535,7 +514,7 @@ function HideableTableOfContents(props: TableOfContentsProps) {
 
 interface TableOfContentsProps {
   entries: EntriesByDict[];
-  tocRef: React.RefObject<HTMLElement>;
+  tocRef: React.RefObject<HTMLDivElement>;
 }
 function TableOfContents(props: TableOfContentsProps) {
   const { embeddedOptions } = React.useContext(DictContext);
@@ -556,7 +535,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
 
   const sectionRef = React.useRef<HTMLElement>(null);
-  const tocRef = React.useRef<HTMLElement>(null);
+  const tocRef = React.useRef<HTMLDivElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
@@ -686,8 +665,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     return (
       <ResponsiveLayout
         contextValues={contextValues}
-        oneCol={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
-        twoColMain={<LoadingMessage isSmall={isSmall} textScale={textScale} />}
+        oneCol={<LoadingMessage />}
+        twoColMain={<LoadingMessage />}
       />
     );
   }
@@ -699,10 +678,12 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         <>
           {!isEmbedded &&
             ReactDOM.createPortal(<QuickNavMenu />, document.body)}
-          <HelpSection
-            id={"HelpSection"}
-            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-          />
+          {!(isEmbedded && isSmall) && (
+            <HelpSection
+              id={"HelpSection"}
+              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+            />
+          )}
           <div
             id={"Toc"}
             className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>

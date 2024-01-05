@@ -24,12 +24,9 @@ import {
   capitalizeWords,
   NavIcon,
   TooltipNavIcon,
-  AppText,
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
 import { assertEqual } from "@/common/assert";
-import Typography from "@mui/material/Typography";
-import { FontSizes } from "@/web/client/styles";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,
@@ -194,15 +191,9 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
   const work = typeof props.work === "string" ? undefined : props.work;
   switch (tab) {
     case "Outline":
-      return (
-        <>{work && <WorkNavigationSection work={work} scale={props.scale} />}</>
-      );
+      return <>{work && <WorkNavigationSection work={work} />}</>;
     case "Attribution":
-      return (
-        <>
-          {work?.info && <WorkInfo workInfo={work?.info} scale={props.scale} />}
-        </>
-      );
+      return <>{work?.info && <WorkInfo workInfo={work?.info} />}</>;
     default:
       exhaustiveGuard(tab);
   }
@@ -213,10 +204,10 @@ interface WorkColumnProps {
   currentPage: number;
 }
 function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
-  const { work, currentPage } = props;
+  const { work, currentPage, isMobile } = props;
 
   return (
-    <ContentBox isSmall textScale={props.scale}>
+    <ContentBox isSmall mt={isMobile ? 0 : undefined}>
       {work === "Loading" ? (
         <span>{`Loading, please wait`}</span>
       ) : work === "Error" ? (
@@ -229,14 +220,19 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
           <WorkNavigationBar
             page={currentPage}
             work={work}
-            textScale={props.scale}
+            isMobile={isMobile}
           />
-          <div style={{ paddingRight: "8px" }}>
+          <div
+            style={{
+              paddingLeft: isMobile ? "12px" : undefined,
+              paddingRight: isMobile ? "12px" : "8px",
+            }}>
             <WorkTextPage
               work={work}
               setDictWord={props.onWordSelected}
               page={currentPage}
               textScale={props.scale}
+              isMobile={isMobile}
             />
           </div>
         </>
@@ -245,11 +241,7 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
   );
 }
 
-function HeaderText(props: {
-  data: PaginatedWork;
-  page: number;
-  textScale?: number;
-}) {
+function HeaderText(props: { data: PaginatedWork; page: number }) {
   if (props.page < 0) {
     return <></>;
   }
@@ -263,20 +255,10 @@ function HeaderText(props: {
   return (
     <>
       {idLabels.map((idPart) => (
-        <InfoText
-          text={capitalizeWords(idPart)}
-          key={idPart}
-          textScale={props.textScale}
-        />
+        <InfoText text={capitalizeWords(idPart)} key={idPart} />
       ))}
-      <InfoText
-        text={capitalizeWords(props.data.info.title)}
-        textScale={props.textScale}
-      />
-      <InfoText
-        text={capitalizeWords(props.data.info.author)}
-        textScale={props.textScale}
-      />
+      <InfoText text={capitalizeWords(props.data.info.title)} />
+      <InfoText text={capitalizeWords(props.data.info.author)} />
     </>
   );
 }
@@ -300,36 +282,33 @@ function labelForId(
   return text + subtitle;
 }
 
-function PenulimateLabel(props: {
-  page: number;
-  work: PaginatedWork;
-  textScale: number | undefined;
-}) {
+function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
   const parts = props.work.textParts;
   if (props.page < 0 || parts.length <= 1) {
     return <></>;
   }
   const id = props.work.pages[props.page].id;
-  return (
-    <InfoText
-      text={labelForId(id, props.work, false)}
-      textScale={props.textScale}
-    />
-  );
+  return <InfoText text={labelForId(id, props.work, false)} />;
 }
 
 function WorkNavigationBar(props: {
   page: number;
   work: PaginatedWork;
-  textScale?: number;
+  isMobile: boolean;
 }) {
   const { nav } = Router.useRouter();
+  const navBarRef = React.useRef<HTMLDivElement>(null);
+  const { isMobile } = props;
 
   const setPage = React.useCallback(
     // Nav pages are 1-indexed.
-    (newPage: number) =>
-      nav.to((old) => ({ path: old.path, params: { pg: `${newPage + 1}` } })),
-    [nav]
+    (newPage: number) => {
+      nav.to((old) => ({ path: old.path, params: { pg: `${newPage + 1}` } }));
+      if (isMobile) {
+        window.scrollTo({ top: 64, behavior: "smooth" });
+      }
+    },
+    [nav, isMobile]
   );
   const previousPage = React.useCallback(() => {
     setPage(Math.max(0, props.page - 1));
@@ -352,18 +331,14 @@ function WorkNavigationBar(props: {
 
   return (
     <>
-      <div className="readerIconBar">
+      <div className="readerIconBar" ref={navBarRef}>
         <NavIcon
           Icon={<ArrowBack />}
           label="previous section"
           disabled={props.page <= 0}
           onClick={previousPage}
         />
-        <PenulimateLabel
-          page={props.page}
-          work={props.work}
-          textScale={props.textScale}
-        />
+        <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
@@ -376,12 +351,12 @@ function WorkNavigationBar(props: {
           link={window.location.href}
         />
       </div>
-      <div>
-        <HeaderText
-          data={props.work}
-          page={props.page}
-          textScale={props.textScale}
-        />
+      <div
+        style={{
+          lineHeight: props.isMobile ? 1 : undefined,
+          paddingTop: props.isMobile ? "8px" : undefined,
+        }}>
+        <HeaderText data={props.work} page={props.page} />
       </div>
     </>
   );
@@ -392,29 +367,28 @@ export function WorkTextPage(props: {
   setDictWord: (word: string) => any;
   page: number;
   textScale: number;
+  isMobile: boolean;
 }) {
-  const section = findSectionById(
-    props.work.pages[props.page].id,
-    props.work.root
-  );
+  const { textScale, isMobile, work } = props;
+  const section = findSectionById(work.pages[props.page].id, work.root);
   if (section === undefined) {
-    return <InfoText text="Invalid page!" textScale={props.textScale} />;
+    return <InfoText text="Invalid page!" />;
   }
 
-  const gap = `${(props.textScale / 100) * 0.75}em`;
-  const hasLines = props.work.textParts.slice(-1)[0].toLowerCase() === "line";
+  const gapSize = (textScale / 100) * 0.75;
+  const gap = `${gapSize}em`;
+  const hasLines = work.textParts.slice(-1)[0].toLowerCase() === "line";
   const hasHeader = section.header !== undefined;
 
   return (
-    <div style={{ display: "inline-grid", columnGap: gap, marginTop: gap }}>
+    <div
+      style={{
+        display: "inline-grid",
+        columnGap: gap,
+        marginTop: isMobile ? `${gapSize / 2}em` : gap,
+      }}>
       {hasHeader && (
-        <span
-          className="contentTextLight"
-          style={{
-            gridColumn: 2,
-            gridRow: 1,
-            fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
-          }}>
+        <span className="text sm light" style={{ gridColumn: 2, gridRow: 1 }}>
           {section.header}
         </span>
       )}
@@ -423,23 +397,22 @@ export function WorkTextPage(props: {
           key={chunk.id.join(".")}
           node={chunk}
           setDictWord={props.setDictWord}
-          textScale={props.textScale}
           i={i + (hasHeader ? 1 : 0)}
           workName={capitalizeWords(props.work.info.title)}
-          hideHeader={hasLines && i !== 0 && (i + 1) % 5 !== 0}
+          hideHeader={
+            hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0)
+          }
+          isMobile={isMobile}
         />
       ))}
     </div>
   );
 }
 
-function InfoLine(props: { value: string; label: string; scale: number }) {
+function InfoLine(props: { value: string; label: string }) {
   return (
     <div>
-      <SettingsText
-        scale={props.scale}
-        message={`${props.label}: ${props.value}`}
-      />
+      <SettingsText message={`${props.label}: ${props.value}`} />
     </div>
   );
 }
@@ -447,7 +420,6 @@ function InfoLine(props: { value: string; label: string; scale: number }) {
 function WorkNavigation(props: {
   work: PaginatedWork;
   root: ProcessedWorkNode;
-  scale: number;
   level: number;
 }) {
   const { nav } = Router.useRouter();
@@ -466,10 +438,8 @@ function WorkNavigation(props: {
           style={{ marginLeft: `${props.level * 8}px` }}>
           {isTerminal ? (
             <div style={{ paddingLeft: "8px" }}>
-              <Typography
-                component="span"
-                className="terminalNavItem"
-                fontSize={FontSizes.BIG_SCREEN * ((props.scale || 100) / 100)}
+              <span
+                className="text md terminalNavItem"
                 onClick={() => {
                   for (let i = 0; i < props.work.pages.length; i++) {
                     const page = props.work.pages[i];
@@ -483,20 +453,16 @@ function WorkNavigation(props: {
                   }
                 }}>
                 {labelForId(childRoot.id, props.work)}
-              </Typography>
+              </span>
             </div>
           ) : (
             <details>
               <summary>
-                <SettingsText
-                  scale={props.scale}
-                  message={labelForId(childRoot.id, props.work)}
-                />
+                <SettingsText message={labelForId(childRoot.id, props.work)} />
               </summary>
               <WorkNavigation
                 work={props.work}
                 root={childRoot}
-                scale={props.scale}
                 level={props.level + 1}
               />
             </details>
@@ -507,55 +473,34 @@ function WorkNavigation(props: {
   );
 }
 
-function WorkNavigationSection(props: { work: PaginatedWork; scale: number }) {
+function WorkNavigationSection(props: { work: PaginatedWork }) {
   return (
     <details open>
       <summary>
-        <SettingsText scale={props.scale} message={props.work.info.title} />
+        <SettingsText message={props.work.info.title} />
       </summary>
-      <WorkNavigation
-        root={props.work.root}
-        scale={props.scale}
-        work={props.work}
-        level={1}
-      />
+      <WorkNavigation root={props.work.root} work={props.work} level={1} />
     </details>
   );
 }
 
-function WorkInfo(props: { workInfo: DocumentInfo; scale: number }) {
+function WorkInfo(props: { workInfo: DocumentInfo }) {
   return (
     <>
       <div>
-        <InfoLine
-          label="Author"
-          value={props.workInfo.author}
-          scale={props.scale}
-        />
+        <InfoLine label="Author" value={props.workInfo.author} />
         {props.workInfo.editor && (
-          <InfoLine
-            label="Editor"
-            value={props.workInfo.editor}
-            scale={props.scale}
-          />
+          <InfoLine label="Editor" value={props.workInfo.editor} />
         )}
         {props.workInfo.funder && (
-          <InfoLine
-            label="Funder"
-            value={props.workInfo.funder}
-            scale={props.scale}
-          />
+          <InfoLine label="Funder" value={props.workInfo.funder} />
         )}
         {props.workInfo.sponsor && (
-          <InfoLine
-            label="Sponsor"
-            value={props.workInfo.sponsor}
-            scale={props.scale}
-          />
+          <InfoLine label="Sponsor" value={props.workInfo.sponsor} />
         )}
       </div>
       <div style={{ lineHeight: 1, marginTop: "8px" }}>
-        <AppText light scale={props.scale} size={FontSizes.SECONDARY}>
+        <span className="text sm light">
           The raw text was provided by the Perseus Digital Library and was
           accessed originally from{" "}
           <a href="https://github.com/PerseusDL/canonical-latinLit">
@@ -566,15 +511,14 @@ function WorkInfo(props: { workInfo: DocumentInfo; scale: number }) {
             CC-BY-SA-4.0
           </a>{" "}
           license, and you must offer Perseus any modifications you make.
-        </AppText>
+        </span>
       </div>
     </>
   );
 }
 
 function workSectionHeader(
-  text: string,
-  textScale: number
+  text: string
 ): React.ForwardRefRenderFunction<HTMLSpanElement, object> {
   return function InternalWorkSectionHeader(fProps, fRef) {
     return (
@@ -583,22 +527,17 @@ function workSectionHeader(
           text={text}
           style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
           additionalClasses={["unselectable"]}
-          textScale={textScale}
         />
       </span>
     );
   };
 }
 
-function WorkChunkHeader(props: {
-  text: string;
-  textScale: number;
-  blurb: string;
-}) {
+function WorkChunkHeader(props: { text: string; blurb: string }) {
   return (
     <CopyLinkTooltip
       forwarded={React.forwardRef<HTMLSpanElement>(
-        workSectionHeader(props.text, props.textScale)
+        workSectionHeader(props.text)
       )}
       message={props.blurb}
       link={`${props.blurb}\n${window.location.href}`}
@@ -609,34 +548,43 @@ function WorkChunkHeader(props: {
 function WorkChunk(props: {
   node: ProcessedWorkNode;
   setDictWord: (word: string) => any;
-  textScale: number;
   i: number;
   workName: string;
   hideHeader?: boolean;
+  isMobile: boolean;
 }) {
-  const id = props.node.id
+  const { isMobile, node } = props;
+  const id = node.id
     .map((idPart) =>
       safeParseInt(idPart) !== undefined
         ? idPart
-        : capitalizeWords(idPart.substring(0, 3))
+        : capitalizeWords(idPart.substring(0, isMobile ? 2 : 3))
     )
     .join(".");
   const row = props.i + 1;
   const content = props.node.children.filter(instanceOf(XmlNode));
   assertEqual(content.length, props.node.children.length);
   const showHeader = props.hideHeader !== true;
+  const indent = node.rendNote === "indent";
   return (
     <>
       {showHeader && (
         <span style={{ gridColumn: 1, gridRow: row }}>
           <WorkChunkHeader
-            text={id}
-            textScale={props.textScale}
+            text={node.id
+              .slice(isMobile && node.id.length > 2 ? 2 : 0)
+              .join(".")}
             blurb={`${props.workName} ${id}`}
           />
         </span>
       )}
-      <span style={{ gridColumn: 2, gridRow: row }} id={id}>
+      <span
+        style={{
+          gridColumn: 2,
+          gridRow: row,
+          paddingLeft: indent ? "16px" : undefined,
+        }}
+        id={id}>
         {content.map((node, i) =>
           displayForLibraryChunk(node, props.setDictWord, i)
         )}

@@ -1,15 +1,20 @@
 import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
 import { SelfLink } from "@/web/client/components/misc";
 
-export function Footer(props: { id?: string; className?: string }) {
+export function Footer(props: {
+  id?: string;
+  className?: string;
+  marginRatio?: number;
+}) {
   return (
     <Box padding="2em" id={props.id} className={props.className}>
-      <Typography
-        component={"div"}
-        className="footer"
-        style={{ marginTop: window.innerHeight }}
-        fontSize={12}>
+      <div
+        className="footer text xs compact"
+        style={{
+          marginTop: window.innerHeight * (props.marginRatio || 1),
+          // For the drawer on mobile reader.
+          marginBottom: "20px",
+        }}>
         <p>
           This program is free software: you can redistribute it and/or modify
           it under the terms of the GNU General Public License as published by
@@ -22,9 +27,9 @@ export function Footer(props: { id?: string; className?: string }) {
           MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
           General Public License for more details.
         </p>
-        See <SelfLink to="https://www.gnu.org/licenses/gpl-3.0.en.html" />
-        for a copy of the GNU General Public License.
-      </Typography>
+        See <SelfLink to="https://www.gnu.org/licenses/gpl-3.0.en.html" /> for a
+        copy of the GNU General Public License.
+      </div>
     </Box>
   );
 }

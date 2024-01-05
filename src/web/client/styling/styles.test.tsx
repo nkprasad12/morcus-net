@@ -1,8 +1,18 @@
-import { GlobalSettings } from "@/web/client/components/global_flags";
-import { getBackgroundColor, getGlobalStyles } from "@/web/client/styles";
+/**
+ * @jest-environment jsdom
+ */
 
-const LIGHT_MODE: GlobalSettings = { darkMode: false };
-const DARK_MODE: GlobalSettings = { darkMode: true };
+import {
+  DEFAULT_STYLE_CONFIG,
+  StyleConfig,
+} from "@/web/client/styling/style_context";
+import {
+  getBackgroundColor,
+  getGlobalStyles,
+} from "@/web/client/styling/styles";
+
+const LIGHT_MODE: StyleConfig = { ...DEFAULT_STYLE_CONFIG, darkMode: false };
+const DARK_MODE: StyleConfig = { ...DEFAULT_STYLE_CONFIG, darkMode: true };
 
 function isDarker(first: string, second: string): boolean {
   return (
@@ -17,8 +27,8 @@ function expectDarker(first: string, second: string) {
 }
 
 function expectDarkerInStyle(
-  first: GlobalSettings,
-  second: GlobalSettings,
+  first: StyleConfig,
+  second: StyleConfig,
   cssClass: string,
   property: string
 ) {

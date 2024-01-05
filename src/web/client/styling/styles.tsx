@@ -1,11 +1,8 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
-import { Solarized } from "@/web/client/colors";
-import {
-  DEFAULT_HIGHLIGHT_STRENGTH,
-  GlobalSettings,
-} from "@/web/client/components/global_flags";
-import { GlobalStylesProps } from "@mui/material";
-import { CSSProperties } from "react";
+import { Solarized } from "@/web/client/styling/colors";
+import { StyleConfig } from "@/web/client/styling/style_context";
+import type { GlobalStylesProps } from "@mui/material";
+import type { CSSProperties } from "react";
 
 export type AllowedFontSizes =
   | typeof FontSizes.BIG_SCREEN
@@ -50,20 +47,18 @@ export const TEXT_STYLE: CSSProperties = {
   letterSpacing: "0.00938em",
 };
 
-export function getBackgroundColor(settings: GlobalSettings): string {
+export function getBackgroundColor(settings: Partial<StyleConfig>): string {
   return settings.darkMode === true ? "#212022" : Solarized.base3;
 }
 
-export function getAppBarColor(settings: GlobalSettings): string {
+export function getAppBarColor(settings: Partial<StyleConfig>): string {
   return settings.darkMode === true
     ? Solarized.darkarkModeMint
     : Solarized.base2;
 }
 
-export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
-  const modifier =
-    (settings.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH) /
-    DEFAULT_HIGHLIGHT_STRENGTH;
+export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
+  const modifier = settings.dictHighlightScale;
 
   function modifiedStrength(baseStrength: number): string {
     const decimalBase = (baseStrength / 160) * 100;
@@ -72,7 +67,7 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
     return `${Math.round(hexModified)}`;
   }
 
-  const isDarkMode = settings.darkMode === true;
+  const isDarkMode = settings.darkMode;
   const backgroundColor = getBackgroundColor(settings);
   const bulletColor = isDarkMode ? Solarized.base2 : Solarized.base01;
   const dictChipTextColor = isDarkMode
@@ -91,6 +86,9 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
     ? Solarized.base00
     : Solarized.base01;
   const contentTextColor = isDarkMode ? Solarized.base1 : Solarized.base015;
+  const readerMainScale = settings.readerMainScale / 100;
+  const readerSideScale = settings.readerSideScale / 100;
+  const bgColorAlt = isDarkMode ? Solarized.base015 : Solarized.base15;
 
   return {
     styles: {
@@ -142,12 +140,41 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
       },
 
       /** Basic content primitives */
+      ".bgColor": { backgroundColor },
+      ".bgColorAlt": { backgroundColor: bgColorAlt },
       ".contentDivider": {
         borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
         flexShrink: 0,
         borderWidth: "0px 0px thin;",
         borderStyle: "solid",
         margin: "0px 16px;",
+      },
+      ".text": {
+        ...TEXT_STYLE,
+        color: contentTextColor,
+      },
+      ".text.light": { color: contentTextLightColor },
+      ".text.compact": { lineHeight: 1 },
+      ".text.md": { fontSize: FontSizes.SMALL_SCREEN },
+      ".text.sm": { fontSize: FontSizes.SECONDARY },
+      ".text.xs": { fontSize: FontSizes.TERTIARY },
+      ".readerMain .text.md": {
+        fontSize: FontSizes.SMALL_SCREEN * readerMainScale,
+      },
+      ".readerMain .text.sm": {
+        fontSize: FontSizes.SECONDARY * readerMainScale,
+      },
+      ".readerMain .text.xs": {
+        fontSize: FontSizes.TERTIARY * readerMainScale,
+      },
+      ".readerSide .text.md": {
+        fontSize: FontSizes.SMALL_SCREEN * readerSideScale,
+      },
+      ".readerSide .text.sm": {
+        fontSize: FontSizes.SECONDARY * readerSideScale,
+      },
+      ".readerSide .text.xs": {
+        fontSize: FontSizes.TERTIARY * readerSideScale,
       },
       ".contentText": {
         color: contentTextColor,
@@ -333,11 +360,33 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         position: "sticky",
         top: 0,
         width: "100%",
-        boxShadow: `0 2px 3px 1px ${
-          isDarkMode ? Solarized.base015 : Solarized.base15
-        }`,
+        boxShadow: `0 2px 3px 1px ${bgColorAlt}`,
         marginBottom: "3px",
         backgroundColor: backgroundColor,
+      },
+      ".readerMobileBottomBar": {
+        width: document.body.clientWidth,
+        backgroundColor: bgColorAlt,
+      },
+      ".readerMobileDragger": {
+        width: document.body.clientWidth,
+        borderTopLeftRadius: "12px",
+        borderTopRightRadius: "12px",
+        backgroundColor: bgColorAlt,
+        height: "15px",
+      },
+      ".readerDrawerContainer": {
+        backgroundClip: "content-box, padding-box;",
+        backgroundImage: `linear-gradient(to bottom, ${backgroundColor} 0%, ${backgroundColor} 100%), linear-gradient(to bottom, ${bgColorAlt} 0%, ${bgColorAlt} 100%);`,
+      },
+      ".draggerPuller": {
+        width: 30,
+        height: 6,
+        borderRadius: 3,
+        position: "absolute",
+        top: 6,
+        left: "calc(50% - 15px)",
+        backgroundColor,
       },
       ".workLatWord:hover": {
         borderBottom: `1px solid`,
@@ -375,8 +424,16 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         paddingTop: "2px",
         borderRadius: "4px",
       },
+      ".readerMobileBottomBar .readerNavIconContainer": {
+        borderRadius: "8px",
+        marginLeft: "4px",
+        paddingBottom: "6px",
+      },
       ".selectedSidePanelTab": {
-        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
+        backgroundColor: bgColorAlt,
+      },
+      ".readerMobileBottomBar .selectedSidePanelTab": {
+        backgroundColor,
       },
       ".selectedSidePanelTab .menuIcon": {
         color: contentTextColor + "d0",
@@ -438,15 +495,15 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
 
       /** Custom scrollbar styles */
       "::-webkit-scrollbar": {
-        width: "9px",
+        width: "6px",
       },
       "::-webkit-scrollbar-track": {
-        backgroundColor: isDarkMode ? Solarized.base015 : Solarized.base15,
-        borderRadius: "4px",
+        backgroundColor: bgColorAlt,
+        borderRadius: "3px",
       },
       "::-webkit-scrollbar-thumb": {
         background: "#888",
-        borderRadius: "4px",
+        borderRadius: "3px",
       },
       "::-webkit-scrollbar-thumb:hover": {
         background: "#555",
@@ -465,6 +522,24 @@ export function getGlobalStyles(settings: GlobalSettings): GlobalStylesProps {
         ".Container": {
           paddingLeft: "24px",
           paddingRight: "24px",
+        },
+        ".text.md": {
+          fontSize: FontSizes.BIG_SCREEN,
+        },
+        ".readerMain .text.md": {
+          fontSize: FontSizes.BIG_SCREEN * readerMainScale,
+        },
+        ".readerSide .text.md": {
+          fontSize: FontSizes.BIG_SCREEN * readerSideScale,
+        },
+        "::-webkit-scrollbar": {
+          width: "9px",
+        },
+        "::-webkit-scrollbar-track": {
+          borderRadius: "4px",
+        },
+        "::-webkit-scrollbar-thumb": {
+          borderRadius: "4px",
         },
       },
     },

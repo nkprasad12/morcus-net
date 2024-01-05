@@ -12,10 +12,20 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import { RouteContext, Router } from "@/web/client/router/router_v2";
 import { checkPresent } from "@/common/assert";
+import useMediaQuery from "@mui/material/useMediaQuery";
 
+jest.mock("@mui/material/useMediaQuery", () => {
+  return {
+    __esModule: true,
+    default: jest.fn(() => false),
+  };
+});
 jest.mock("@/web/utils/rpc/client_rpc");
+
+console.debug = jest.fn();
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 window.HTMLElement.prototype.scroll = jest.fn();
+window.scrollTo = jest.fn();
 
 const WORK_PAGE = ClientPaths.WORK_PAGE;
 const WORK_BY_NAME = ClientPaths.WORK_BY_NAME;
@@ -129,6 +139,8 @@ describe("Reading UI", () => {
   afterEach(() => {
     invalidateWorkCache();
     mockCallApiFull.mockClear();
+    // @ts-ignore
+    useMediaQuery.mockImplementation(() => false);
   });
 
   it("fetches the expected resource by id", () => {
@@ -224,7 +236,26 @@ describe("Reading UI", () => {
     await screen.findByText(/error/);
   });
 
-  it("shows work contents on success", async () => {
+  it("shows work contents on success on large screen", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("dbg") },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findByText(/DBG/);
+    await screen.findByText(/Gallia est omnis/);
+  });
+
+  it("shows work contents on success on mobile", async () => {
+    // @ts-ignore
+    useMediaQuery.mockImplementation(() => true);
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
 
     render(
@@ -465,7 +496,7 @@ describe("Reading UI", () => {
     await screen.findByText(/CC-BY-SA-4.0/);
   });
 
-  it("shows settings tab", async () => {
+  it("shows settings tab on desktop", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
 
     render(
@@ -484,5 +515,27 @@ describe("Reading UI", () => {
     await screen.findByText(/Layout/);
     await screen.findByText(/Main column/);
     await screen.findByText(/Side column/);
+  });
+
+  it("shows settings tab on mobile", async () => {
+    // @ts-ignore
+    useMediaQuery.mockImplementation(() => true);
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("dbg") },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Reader settings")!);
+
+    await screen.findByText(/Main panel/);
+    await screen.findByText(/Drawer/);
   });
 });

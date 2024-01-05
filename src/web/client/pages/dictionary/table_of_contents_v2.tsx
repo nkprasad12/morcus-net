@@ -3,7 +3,7 @@ import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 import { Divider } from "@/web/client/components/generic/basics";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { FontSizes } from "@/web/client/styles";
+import { FontSizes } from "@/web/client/styling/styles";
 
 import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
@@ -19,7 +19,7 @@ export function TableOfContentsV2(props: {
   outlines: EntryOutline[];
   dictKey: string;
   isSmall: boolean;
-  tocRef: React.RefObject<HTMLElement>;
+  tocRef: React.RefObject<HTMLDivElement>;
   textScale?: number;
 }) {
   const isSmall = props.isSmall;
@@ -68,7 +68,7 @@ function OutlineSection(props: {
         onClick={() => props.onClick(outline.mainSection.sectionId)}
         style={{ cursor: "pointer" }}
         className="clickableOutlineSection">
-        <DictChip label={props.dictKey} textScale={props.textScale} />
+        <DictChip label={props.dictKey} />
         <span className="outlineHead" style={{ marginLeft: 2 }}>
           <OpenInNewIcon
             sx={{

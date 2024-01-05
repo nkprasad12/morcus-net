@@ -5,7 +5,6 @@ import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
-import { FontSizes } from "@/web/client/styles";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { useState, useEffect } from "react";
 
@@ -32,7 +31,7 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
               className="latWork"
               onClick={() => onWorkSelected(work)}>
               <span>{work.name}</span>{" "}
-              <span className="contentTextLight">{work.author}</span>
+              <span className="text md light">{work.author}</span>
             </SpanLink>
           </div>
         ))
@@ -70,10 +69,8 @@ export function Library() {
     <Container maxWidth="xxl" style={{ paddingTop: "24px" }}>
       <ContentBox isSmall={false}>
         <>
-          <div className="contentText">Welcome to the library</div>
-          <div
-            className="contentTextLight"
-            style={{ fontSize: FontSizes.SECONDARY }}>
+          <div className="text md">Welcome to the library</div>
+          <div className="text md light">
             Select a work from the list below, or <ExternalReaderLink />.
           </div>
           <WorksList works={works} />

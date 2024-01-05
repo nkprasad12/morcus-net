@@ -1,83 +1,9 @@
-import React, { PropsWithChildren } from "react";
-import { AllowedFontSizes, FontSizes } from "@/web/client/styles";
+import React from "react";
 import { debounce } from "@mui/material/utils";
 import Slider from "@mui/material/Slider";
 import LinkIcon from "@mui/icons-material/Link";
-import Typography from "@mui/material/Typography";
 import { CSSProperties } from "react";
 import IconButton from "@mui/material/IconButton";
-import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { assert } from "@/common/assert";
-import { Container } from "@/web/client/components/generic/basics";
-
-// We need to come up a with a better way to deal with this, since
-// Experimentally for large screen mode this is 64 but honestly who knows
-// about the true range.
-const APP_BAR_MAX_HEIGHT = 64;
-const COLUMN_TOP_MARGIN = 8;
-const COLUMN_BOTTON_MARGIN = 8;
-const CONTAINER_STYLE: CSSProperties = {
-  height:
-    window.innerHeight -
-    APP_BAR_MAX_HEIGHT -
-    COLUMN_TOP_MARGIN -
-    COLUMN_BOTTON_MARGIN,
-};
-const COLUMN_STYLE: CSSProperties = {
-  height: "100%",
-  float: "left",
-  width: "48%",
-  overflow: "auto",
-  boxSizing: "border-box",
-  marginTop: COLUMN_TOP_MARGIN,
-  marginBottom: COLUMN_BOTTON_MARGIN,
-  marginLeft: "1%",
-  marginRight: "1%",
-};
-const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | undefined)[] = [
-  "lg",
-  "xl",
-  "xxl",
-  undefined,
-];
-
-export function BaseReaderLayout(
-  props: PropsWithChildren<{
-    mainWidth: number;
-    totalWidth: number;
-    sidebarRef?: React.RefObject<HTMLDivElement>;
-  }>
-): JSX.Element {
-  const children = React.Children.toArray(props.children);
-  assert(children.length === 3);
-  const [mainContent, sidebarBar, sidebarContent] = children;
-  const { mainWidth, totalWidth, sidebarRef } = props;
-
-  return (
-    <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
-      <div
-        style={{
-          ...COLUMN_STYLE,
-          width: `${mainWidth}%`,
-        }}>
-        {mainContent}
-      </div>
-      <div
-        style={{
-          ...COLUMN_STYLE,
-          width: `${96 - mainWidth}%`,
-        }}
-        ref={sidebarRef}>
-        <ContentBox isSmall>
-          <>
-            {sidebarBar}
-            <div style={{ paddingRight: "8px" }}>{sidebarContent}</div>
-          </>
-        </ContentBox>
-      </div>
-    </Container>
-  );
-}
 
 export function SettingSlider(props: {
   value: number;
@@ -97,11 +23,7 @@ export function SettingSlider(props: {
         alignItems: "center",
         display: "flex",
       }}>
-      <SettingsText
-        message={props.label}
-        size={FontSizes.SECONDARY}
-        scale={props.scale}
-      />
+      <span className="text sm light">{props.label}</span>
       <Slider
         aria-label={(props.tag || "") + " " + props.label}
         size="small"
@@ -128,42 +50,8 @@ export function SettingSlider(props: {
   );
 }
 
-export function AppText(
-  props: React.PropsWithChildren<{
-    light?: boolean;
-    size?: AllowedFontSizes;
-    scale: number;
-    compact?: boolean;
-  }>
-) {
-  return (
-    <Typography
-      component="span"
-      className={props.light ? "contentTextLight" : "contentText"}
-      style={{ lineHeight: props.compact ? 1 : undefined }}
-      fontSize={
-        (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
-      }>
-      {props.children}
-    </Typography>
-  );
-}
-
-export function SettingsText(props: {
-  message: string;
-  size?: number;
-  scale: number;
-}) {
-  return (
-    <Typography
-      component="span"
-      className="contentTextLight"
-      fontSize={
-        (props.size || FontSizes.BIG_SCREEN) * ((props.scale || 100) / 100)
-      }>
-      {props.message}
-    </Typography>
-  );
+export function SettingsText(props: { message: string }) {
+  return <span className="text md light">{props.message}</span>;
 }
 
 export function capitalizeWords(input: string): string {
@@ -177,25 +65,22 @@ export function capitalizeWords(input: string): string {
 
 export function InfoText(props: {
   text: string;
-  textScale?: number;
   additionalClasses?: string[];
   style?: CSSProperties;
 }) {
-  const classes = (props.additionalClasses || []).concat("contentTextLight");
+  const classes = (props.additionalClasses || []).concat("text sm light");
   return (
-    <Typography
-      component="span"
+    <span
       className={classes.join(" ")}
-      fontSize={FontSizes.SECONDARY * ((props.textScale || 100) / 100)}
       style={{
         marginLeft: 8,
         marginRight: 8,
-        whiteSpace: "nowrap",
+        whiteSpace: "normal",
         display: "inline-block",
         ...props.style,
       }}>
       {props.text}
-    </Typography>
+    </span>
   );
 }
 
