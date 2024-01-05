@@ -369,19 +369,19 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
       ".readerMobileDragger": {
         width: document.body.clientWidth,
-        boxShadow: `0 -4px 3px -1px ${bgColorAlt}`,
-        borderTopLeftRadius: "8px",
-        borderTopRightRadius: "8px",
-        backgroundColor: backgroundColor,
+        borderTopLeftRadius: "12px",
+        borderTopRightRadius: "12px",
+        backgroundColor: bgColorAlt,
+        height: "15px",
       },
       ".draggerPuller": {
         width: 30,
         height: 6,
         borderRadius: 3,
         position: "absolute",
-        top: 8,
+        top: 6,
         left: "calc(50% - 15px)",
-        backgroundColor: bgColorAlt,
+        backgroundColor,
       },
       ".workLatWord:hover": {
         borderBottom: `1px solid`,
@@ -421,8 +421,6 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
       ".readerMobileBottomBar .readerNavIconContainer": {
         borderRadius: "8px",
-        marginTop: "4px",
-        paddingTop: "4px",
         paddingBottom: "6px",
       },
       ".selectedSidePanelTab": {

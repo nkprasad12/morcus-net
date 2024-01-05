@@ -10,11 +10,15 @@ import {
   isDefaultSidebarTab,
 } from "@/web/client/pages/library/reader_sidebar_components";
 import { StyleContext } from "@/web/client/styling/style_context";
-import React, { CSSProperties, PropsWithChildren, useState } from "react";
+import React, {
+  CSSProperties,
+  PropsWithChildren,
+  TouchEventHandler,
+  useState,
+} from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { DraggableCore } from "react-draggable";
 
 const noSsr = { noSsr: true };
 
@@ -135,44 +139,50 @@ export function BaseReader<
 
 function DragHelper(
   props: PropsWithChildren<{
-    childRef: React.RefObject<HTMLDivElement>;
     currentHeight: number;
-    setCurrentHeight: (h: number) => any;
+    setCurrentHeight: React.Dispatch<React.SetStateAction<number>>;
   }>
 ) {
-  const children = React.Children.toArray(props.children);
-  assert(children.length === 1);
-  const pendingHeight = React.useRef<number>(window.innerHeight * 0.1);
   const { currentHeight, setCurrentHeight } = props;
+  const dragStartY = React.useRef<number | undefined>(undefined);
+  const dragStartHeight = React.useRef<number | undefined>(undefined);
+
+  const onDrag: TouchEventHandler = (e) => {
+    const currentY = e.targetTouches[0].clientY;
+    if (dragStartY.current === undefined) {
+      dragStartY.current = currentY;
+    }
+    if (dragStartHeight.current === undefined) {
+      // We didn't get the onTouchStart callback yet, so wait for it.
+      return;
+    }
+    const offset = dragStartY.current - currentY;
+    const proposed = dragStartHeight.current + offset;
+    const max = window.innerHeight * 0.5;
+    const newHeight = proposed > max ? max : proposed < 0 ? 0 : proposed;
+    if (newHeight === 0 || Math.abs(currentHeight - newHeight) >= 5) {
+      setCurrentHeight(newHeight);
+    }
+  };
+
+  const onDragStart = () => {
+    dragStartHeight.current = currentHeight;
+  };
+
+  function onDragEnd() {
+    dragStartY.current = undefined;
+    // dragCurrentY.current = undefined;
+    dragStartHeight.current = undefined;
+  }
 
   return (
-    <DraggableCore
-      nodeRef={props.childRef}
-      onDrag={(_, data) => {
-        const proposed = pendingHeight.current - data.deltaY;
-        const max = window.innerHeight * 0.5;
-        const min = 0;
-        const newHeight =
-          proposed > max ? max : proposed < min ? min : proposed;
-        pendingHeight.current = newHeight;
-        if (
-          Math.abs(currentHeight - pendingHeight.current) < 5 &&
-          newHeight !== min
-        ) {
-          return;
-        }
-        if (Math.abs(currentHeight - pendingHeight.current) < 8) {
-          setCurrentHeight(pendingHeight.current);
-          return;
-        }
-        setCurrentHeight(
-          pendingHeight.current > currentHeight
-            ? currentHeight + 8
-            : currentHeight - 8
-        );
-      }}>
-      {children[0]}
-    </DraggableCore>
+    <div
+      style={{ touchAction: "none" }}
+      onTouchStart={onDragStart}
+      onTouchEnd={onDragEnd}
+      onTouchMove={onDrag}>
+      {props.children}
+    </div>
   );
 }
 
@@ -181,7 +191,6 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
   const { sidebarRef } = props;
-  const drawerTopRef = React.useRef<HTMLDivElement>(null);
   const [drawerHeight, setDrawerHeight] = useState<number>(
     window.innerHeight * 0.1
   );
@@ -201,21 +210,15 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
         disableGutters
         style={{ position: "fixed", bottom: 0, zIndex: 1 }}>
         <DragHelper
-          childRef={drawerTopRef}
           currentHeight={drawerHeight}
           setCurrentHeight={setDrawerHeight}>
-          <div
-            className="readerMobileDragger"
-            ref={drawerTopRef}
-            style={{
-              borderTopLeftRadius: 8,
-              borderTopRightRadius: 8,
-              height: "30px",
-            }}>
-            <div className="draggerPuller" />
+          <div>
+            <div className="readerMobileDragger">
+              <div className="draggerPuller" />
+            </div>
+            {sidebarBar}
           </div>
         </DragHelper>
-        {sidebarBar}
         <Container
           innerRef={sidebarRef}
           style={{
