@@ -8,6 +8,9 @@ import fs from "fs";
 import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
 import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
+
+console.debug = jest.fn();
+
 // import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 // const LEGACY: Serialization<XmlNode> = {

@@ -8,6 +8,8 @@ import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import { unlinkSync, writeFileSync } from "fs";
 
+console.debug = jest.fn();
+
 const MORPH_FILE = "sh_display.test.ts.tmp.morph.txt";
 const INFL_DB_FILE = "sh_display.test.ts.tmp.lat.db";
 

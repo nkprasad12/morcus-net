@@ -14,8 +14,11 @@ import { RouteContext, Router } from "@/web/client/router/router_v2";
 import { checkPresent } from "@/common/assert";
 
 jest.mock("@/web/utils/rpc/client_rpc");
+
+console.debug = jest.fn();
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 window.HTMLElement.prototype.scroll = jest.fn();
+window.scrollTo = jest.fn();
 
 const WORK_PAGE = ClientPaths.WORK_PAGE;
 const WORK_BY_NAME = ClientPaths.WORK_BY_NAME;

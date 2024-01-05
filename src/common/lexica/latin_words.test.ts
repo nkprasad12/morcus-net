@@ -3,6 +3,8 @@ import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import fs from "fs";
 
+console.debug = jest.fn();
+
 const TEMP_INFILE = "latin_words.test.ts.tmp";
 const TEMP_DB_FILE = "latin_words.test.ts.tmp.db";
 
