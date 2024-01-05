@@ -375,6 +375,10 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         backgroundColor: bgColorAlt,
         height: "15px",
       },
+      ".readerDrawerContainer": {
+        backgroundClip: "content-box, padding-box;",
+        backgroundImage: `linear-gradient(to bottom, ${backgroundColor} 0%, ${backgroundColor} 100%), linear-gradient(to bottom, ${bgColorAlt} 0%, ${bgColorAlt} 100%);`,
+      },
       ".draggerPuller": {
         width: 30,
         height: 6,

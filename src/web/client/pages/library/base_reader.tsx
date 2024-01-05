@@ -175,7 +175,6 @@ function DragHelper(
 
   function onDragEnd() {
     dragStartY.current = undefined;
-    // dragCurrentY.current = undefined;
     dragStartHeight.current = undefined;
   }
 
@@ -220,14 +219,22 @@ export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
           </div>
         </DragHelper>
         <Container
-          className="bgColorAlt"
+          className="bgColor readerDrawerContainer"
           gutterSize={6}
           innerRef={sidebarRef}
           style={{
             overflowY: "auto",
             height: drawerHeight,
           }}>
-          <ContentBox isSmall className="bgColor" mt={0}>
+          <ContentBox
+            isSmall
+            styles={{
+              marginTop: "0px",
+              height: "100%",
+              paddingLeft: "6px",
+              paddingRight: "6px",
+              paddingTop: "2px",
+            }}>
             {sidebarContent}
           </ContentBox>
         </Container>

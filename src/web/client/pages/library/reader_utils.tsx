@@ -75,7 +75,7 @@ export function InfoText(props: {
       style={{
         marginLeft: 8,
         marginRight: 8,
-        whiteSpace: "nowrap",
+        whiteSpace: "normal",
         display: "inline-block",
         ...props.style,
       }}>
