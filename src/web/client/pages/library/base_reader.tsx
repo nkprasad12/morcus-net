@@ -66,6 +66,10 @@ export function BaseReader<
   const [dictWord, setDictWord] = React.useState<string | undefined>(undefined);
   const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
   const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
+  const [drawerHeight, setDrawerHeight] = useState<number>(
+    window.innerHeight * 0.15
+  );
+
   const theme = useTheme();
   const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
   const BaseLayout = isScreenSmall ? BaseMobileReaderLayout : BaseReaderLayout;
@@ -87,18 +91,27 @@ export function BaseReader<
     "Without `sidebarTabConfigs`, the `BaseReader` won't surface navigation icons for custom tabs."
   );
 
+  function onDictWord(word: string) {
+    setDictWord(word);
+    if (isScreenSmall && drawerHeight < window.innerHeight * 0.15) {
+      setDrawerHeight(window.innerHeight * 0.15);
+    }
+  }
+
   return (
     <BaseLayout
       mainWidth={mainWidth}
       totalWidth={totalWidth}
-      sidebarRef={sidebarRef}>
+      sidebarRef={sidebarRef}
+      drawerHeight={drawerHeight}
+      setDrawerHeight={setDrawerHeight}>
       <props.MainColumn
         {...props}
         scale={readerMainScale}
         onWordSelected={(word) => {
           sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
           setSidebarTab("Dictionary");
-          setDictWord(word);
+          onDictWord(word);
         }}
         isMobile={isScreenSmall}
       />
@@ -122,7 +135,7 @@ export function BaseReader<
           currentTab={sidebarTab}
           setCurrentTab={setSidebarTab}
           dictWord={dictWord}
-          setDictWord={setDictWord}
+          setDictWord={onDictWord}
           dictActionMessage={props.dictActionMessage}
         />
       ) : props.ExtraSidebarContent === undefined ? (
@@ -189,14 +202,16 @@ function DragHelper(
   );
 }
 
-export function BaseMobileReaderLayout(props: BaseReaderLayoutProps) {
+interface MobileReaderLayoutProps extends BaseReaderLayoutProps {
+  drawerHeight: number;
+  setDrawerHeight: React.Dispatch<React.SetStateAction<number>>;
+}
+
+export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
   const children = React.Children.toArray(props.children);
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
-  const { sidebarRef } = props;
-  const [drawerHeight, setDrawerHeight] = useState<number>(
-    window.innerHeight * 0.15
-  );
+  const { sidebarRef, drawerHeight, setDrawerHeight } = props;
 
   return (
     <div>
