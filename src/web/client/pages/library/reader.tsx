@@ -297,20 +297,24 @@ function WorkNavigationBar(props: {
   isMobile: boolean;
 }) {
   const { nav } = Router.useRouter();
+  const navBarRef = React.useRef<HTMLDivElement>(null);
+  const { isMobile } = props;
 
   const setPage = React.useCallback(
     // Nav pages are 1-indexed.
-    (newPage: number) =>
-      nav.to((old) => ({ path: old.path, params: { pg: `${newPage + 1}` } })),
-    [nav]
+    (newPage: number) => {
+      nav.to((old) => ({ path: old.path, params: { pg: `${newPage + 1}` } }));
+      if (isMobile) {
+        window.scrollTo({ top: 64, behavior: "smooth" });
+      }
+    },
+    [nav, isMobile]
   );
   const previousPage = React.useCallback(() => {
     setPage(Math.max(0, props.page - 1));
-    window.scrollTo({ top: 0, behavior: "instant" });
   }, [props.page, setPage]);
   const nextPage = React.useCallback(() => {
     setPage(Math.min(props.page + 1, props.work.pages.length));
-    window.scrollTo({ top: 0, behavior: "instant" });
   }, [props.page, setPage, props.work]);
 
   React.useEffect(() => {
@@ -327,7 +331,7 @@ function WorkNavigationBar(props: {
 
   return (
     <>
-      <div className="readerIconBar">
+      <div className="readerIconBar" ref={navBarRef}>
         <NavIcon
           Icon={<ArrowBack />}
           label="previous section"
