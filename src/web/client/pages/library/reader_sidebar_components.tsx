@@ -81,6 +81,8 @@ export function ReaderSettings(props: ReaderSettingsProps) {
   const hasTotalWidth = totalWidth !== undefined && setTotalWidth !== undefined;
   const hasMainWidth = mainWidth !== undefined && setMainWidth !== undefined;
   const hasLayoutSettings = hasTotalWidth || hasMainWidth;
+  const mainLabel = hasLayoutSettings ? "Main column" : "Main panel";
+  const sideLabel = hasLayoutSettings ? "Side column" : "Drawer";
   return (
     <>
       {hasLayoutSettings && (
@@ -115,13 +117,13 @@ export function ReaderSettings(props: ReaderSettingsProps) {
       )}
       <details>
         <summary>
-          <SettingsText message="Main column settings" />
+          <SettingsText message={`${mainLabel} settings`} />
         </summary>
         <SettingSlider
           value={mainScale}
           setValue={setMainScale}
           label="Text size"
-          tag="Main column"
+          tag={mainLabel}
           min={50}
           max={150}
           step={10}
@@ -130,13 +132,13 @@ export function ReaderSettings(props: ReaderSettingsProps) {
       </details>
       <details>
         <summary>
-          <SettingsText message="Side column settings" />
+          <SettingsText message={`${sideLabel} settings`} />
         </summary>
         <SettingSlider
           value={sideScale}
           setValue={setSideScale}
           label="Text size"
-          tag="Side column"
+          tag={sideLabel}
           min={50}
           max={150}
           step={10}
