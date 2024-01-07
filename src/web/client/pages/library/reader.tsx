@@ -39,6 +39,7 @@ import {
 } from "@/web/client/pages/library/base_reader";
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
 import { GestureListener } from "@/web/client/mobile/gestures";
+import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -144,6 +145,8 @@ function updatePage(
   if (isMobile) {
     window.scrollTo({ top: 64, behavior: "smooth" });
   }
+  const id = [work.info.title, work.info.author].join("@");
+  LibrarySavedSpot.set(id, newPage);
 }
 
 export function ReadingPage() {

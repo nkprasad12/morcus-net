@@ -3,6 +3,7 @@ import { ListLibraryWorks } from "@/web/api_routes";
 import { Container, SpanLink } from "@/web/client/components/generic/basics";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
+import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
@@ -15,7 +16,9 @@ function WorksList(props: { works: undefined | LibraryWorkMetadata[] }) {
     const params = { author: work.urlAuthor, name: work.urlName };
     const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
     if (path !== null) {
-      nav.toPath(path);
+      const id = [work.name, work.author].join("@");
+      const page = LibrarySavedSpot.get(id) || 1;
+      nav.to({ path, params: { pg: `${page}` } });
     }
   }
 

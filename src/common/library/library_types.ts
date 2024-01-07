@@ -15,6 +15,7 @@ export interface DocumentInfo {
   editor?: string;
   sponsor?: string;
   funder?: string;
+  workId?: string;
 }
 
 export namespace DocumentInfo {
@@ -24,6 +25,7 @@ export namespace DocumentInfo {
     ["editor", maybeUndefined(isString)],
     ["sponsor", maybeUndefined(isString)],
     ["funder", maybeUndefined(isString)],
+    ["workId", maybeUndefined(isString)],
   ]);
 }
 
