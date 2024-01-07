@@ -37,7 +37,9 @@ import {
   BaseMainColumnProps,
   BaseReader,
 } from "@/web/client/pages/library/base_reader";
-import { Router } from "@/web/client/router/router_v2";
+import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
+import { GestureListener } from "@/web/client/mobile/gestures";
+import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -129,11 +131,29 @@ function resolveWorkId(path: string): WorkId | undefined {
   return undefined;
 }
 
+function updatePage(
+  offset: number,
+  currentPage: number,
+  nav: NavHelper<RouteInfo>,
+  work: PaginatedWork,
+  isMobile: boolean
+) {
+  const proposed = offset + currentPage;
+  // Nav pages are 1-indexed.
+  const newPage = Math.min(Math.max(0, proposed), work.pages.length - 1) + 1;
+  nav.to((old) => ({ path: old.path, params: { pg: `${newPage}` } }));
+  if (isMobile) {
+    window.scrollTo({ top: 64, behavior: "smooth" });
+  }
+  const id = [work.info.title, work.info.author].join("@");
+  LibrarySavedSpot.set(id, newPage);
+}
+
 export function ReadingPage() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
 
-  const { route } = Router.useRouter();
+  const { nav, route } = Router.useRouter();
   const queryPage = route.params?.q || route.params?.pg;
 
   useEffect(() => {
@@ -170,6 +190,16 @@ export function ReadingPage() {
       sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
       work={work}
       currentPage={currentPage}
+      onSwipe={(direction) => {
+        typeof work !== "string" &&
+          updatePage(
+            direction === "Right" ? -1 : 1,
+            currentPage,
+            nav,
+            work,
+            true
+          );
+      }}
     />
   );
 }
@@ -207,37 +237,39 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
   const { work, currentPage, isMobile } = props;
 
   return (
-    <ContentBox isSmall mt={isMobile ? 0 : undefined}>
-      {work === "Loading" ? (
-        <span>{`Loading, please wait`}</span>
-      ) : work === "Error" ? (
-        <span>
-          An error occurred - either the work is invalid or there could be a
-          server error
-        </span>
-      ) : (
-        <>
-          <WorkNavigationBar
-            page={currentPage}
-            work={work}
-            isMobile={isMobile}
-          />
-          <div
-            style={{
-              paddingLeft: isMobile ? "12px" : undefined,
-              paddingRight: isMobile ? "12px" : "8px",
-            }}>
-            <WorkTextPage
-              work={work}
-              setDictWord={props.onWordSelected}
+    <GestureListener>
+      <ContentBox isSmall mt={isMobile ? 0 : undefined}>
+        {work === "Loading" ? (
+          <span>{`Loading, please wait`}</span>
+        ) : work === "Error" ? (
+          <span>
+            An error occurred - either the work is invalid or there could be a
+            server error
+          </span>
+        ) : (
+          <>
+            <WorkNavigationBar
               page={currentPage}
-              textScale={props.scale}
+              work={work}
               isMobile={isMobile}
             />
-          </div>
-        </>
-      )}
-    </ContentBox>
+            <div
+              style={{
+                paddingLeft: isMobile ? "12px" : undefined,
+                paddingRight: isMobile ? "12px" : "8px",
+              }}>
+              <WorkTextPage
+                work={work}
+                setDictWord={props.onWordSelected}
+                page={currentPage}
+                textScale={props.scale}
+                isMobile={isMobile}
+              />
+            </div>
+          </>
+        )}
+      </ContentBox>
+    </GestureListener>
   );
 }
 
@@ -298,36 +330,26 @@ function WorkNavigationBar(props: {
 }) {
   const { nav } = Router.useRouter();
   const navBarRef = React.useRef<HTMLDivElement>(null);
-  const { isMobile } = props;
+  const { isMobile, page, work } = props;
 
-  const setPage = React.useCallback(
-    // Nav pages are 1-indexed.
-    (newPage: number) => {
-      nav.to((old) => ({ path: old.path, params: { pg: `${newPage + 1}` } }));
-      if (isMobile) {
-        window.scrollTo({ top: 64, behavior: "smooth" });
-      }
+  const changePage = React.useCallback(
+    (offset: number) => {
+      updatePage(offset, page, nav, work, isMobile);
     },
-    [nav, isMobile]
+    [page, nav, work, isMobile]
   );
-  const previousPage = React.useCallback(() => {
-    setPage(Math.max(0, props.page - 1));
-  }, [props.page, setPage]);
-  const nextPage = React.useCallback(() => {
-    setPage(Math.min(props.page + 1, props.work.pages.length));
-  }, [props.page, setPage, props.work]);
 
   React.useEffect(() => {
     const keyListener = (e: KeyboardEvent) => {
       if (e.key === "ArrowLeft") {
-        previousPage();
+        changePage(-1);
       } else if (e.key === "ArrowRight") {
-        nextPage();
+        changePage(1);
       }
     };
     window.addEventListener("keyup", keyListener);
     return () => window.removeEventListener("keyup", keyListener);
-  }, [previousPage, nextPage]);
+  }, [changePage]);
 
   return (
     <>
@@ -336,14 +358,14 @@ function WorkNavigationBar(props: {
           Icon={<ArrowBack />}
           label="previous section"
           disabled={props.page <= 0}
-          onClick={previousPage}
+          onClick={() => changePage(-1)}
         />
         <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
           Icon={<ArrowForward />}
           label="next section"
           disabled={props.page >= props.work.pages.length - 1}
-          onClick={nextPage}
+          onClick={() => changePage(1)}
         />
         <CopyLinkTooltip
           forwarded={TooltipNavIcon}

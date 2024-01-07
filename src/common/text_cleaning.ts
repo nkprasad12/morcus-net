@@ -39,7 +39,7 @@ const DIACRITICS = new Map<string, string>([
   ["Ŭ", "U"],
 ]);
 
-const TEXT_BREAK_CHAR_SET = new Set(" ()[];:.,?!");
+const TEXT_BREAK_CHAR_SET = new Set(" ()[];:.,?!'");
 function isTextBreakChar(c: string): boolean {
   return TEXT_BREAK_CHAR_SET.has(c);
 }

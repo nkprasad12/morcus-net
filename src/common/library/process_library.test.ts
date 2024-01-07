@@ -5,6 +5,7 @@ import {
   retrieveWorksList,
 } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
+import { getLinkTargetWord } from "@/common/library/process_work";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import fs from "fs";
 
@@ -67,5 +68,37 @@ describe("Library Processing", () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].id).toBe("phi0448.phi001.perseus-lat2");
+  });
+});
+
+describe("getLinkTargetWord", () => {
+  it("handles base word", () => {
+    const table = new Set(["Habeo", "habeo"]);
+    expect(getLinkTargetWord("habeo", table)).toBe("habeo");
+  });
+
+  it("handles capitalized word", () => {
+    const table = new Set(["habeo"]);
+    expect(getLinkTargetWord("Habeo", table)).toBe("habeo");
+  });
+
+  it("handles lower cased word word", () => {
+    const table = new Set(["Habeo"]);
+    expect(getLinkTargetWord("habeo", table)).toBe("Habeo");
+  });
+
+  it("handles word with enclitic", () => {
+    const table = new Set(["habeo"]);
+    expect(getLinkTargetWord("habeoque", table)).toBe("habeo");
+  });
+
+  it("handles word with enclitic and capitalization", () => {
+    const table = new Set(["habeo"]);
+    expect(getLinkTargetWord("Habeoque", table)).toBe("habeo");
+  });
+
+  it("handles all upper case with enclitic", () => {
+    const table = new Set(["habeo"]);
+    expect(getLinkTargetWord("HABEOQUE", table)).toBe("habeo");
   });
 });

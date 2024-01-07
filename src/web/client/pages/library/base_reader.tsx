@@ -20,6 +20,7 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Footer } from "@/web/client/components/footer";
+import { GestureListener, SwipeListener } from "@/web/client/mobile/gestures";
 
 const noSsr = { noSsr: true };
 
@@ -49,6 +50,7 @@ export interface BaseReaderProps<
   ExtraSidebarContent?: React.ComponentType<
     BaseExtraSidebarTabProps<CustomSidebarTab> & SidebarProps
   >;
+  onSwipe?: SwipeListener;
 }
 export function BaseReader<
   MainColumnProps = object,
@@ -104,7 +106,8 @@ export function BaseReader<
       totalWidth={totalWidth}
       sidebarRef={sidebarRef}
       drawerHeight={drawerHeight}
-      setDrawerHeight={setDrawerHeight}>
+      setDrawerHeight={setDrawerHeight}
+      onSwipe={props.onSwipe}>
       <props.MainColumn
         {...props}
         scale={readerMainScale}
@@ -177,7 +180,7 @@ function DragHelper(
     const proposed = dragStartHeight.current + offset;
     const max = window.innerHeight * DRAWER_MAX_SIZE;
     const newHeight = proposed > max ? max : proposed < 0 ? 0 : proposed;
-    if (newHeight === 0 || Math.abs(currentHeight - newHeight) >= 5) {
+    if (newHeight === 0 || Math.abs(currentHeight - newHeight) >= 3) {
       setCurrentHeight(newHeight);
     }
   };
@@ -205,6 +208,7 @@ function DragHelper(
 interface MobileReaderLayoutProps extends BaseReaderLayoutProps {
   drawerHeight: number;
   setDrawerHeight: React.Dispatch<React.SetStateAction<number>>;
+  onSwipe?: SwipeListener;
 }
 
 export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
@@ -216,8 +220,10 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
   return (
     <div>
       <Container className="readerMain" disableGutters>
-        {mainContent}
-        <Footer marginRatio={DRAWER_MAX_SIZE} />
+        <GestureListener onSwipe={props.onSwipe}>
+          {mainContent}
+          <Footer marginRatio={DRAWER_MAX_SIZE} />
+        </GestureListener>
       </Container>
       <Container
         className="readerSide bgColor"
