@@ -18,6 +18,7 @@ import { startMorcusServer } from "@/start_server";
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { ServerMessage } from "@/web/utils/rpc/rpc";
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
+import fetch from "node-fetch";
 
 // @ts-ignore
 global.location = {
@@ -88,6 +89,13 @@ describe("bundle size check", () => {
 });
 
 describe("morcus.net backend integration", () => {
+  test("serves PWA manifest", async () => {
+    const req = await fetch(`${global.location.origin}/public/pwa.webmanifest`);
+    const manifest = await req.json();
+    expect(manifest.name).toBe("Morcus Latin Tools");
+    expect(manifest.short_name).toBe("Morcus");
+  });
+
   test("returns LS results in uninflected mode", async () => {
     const result = await callApiFull(DictsFusedApi, {
       query: "canaba",
