@@ -7,7 +7,7 @@ import { SettingsHandler } from "@/web/client/components/global_flags";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import { RouteContext } from "@/web/client/router/router_v2";
-import { act, fireEvent, render, screen } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 
 console.debug = jest.fn();
@@ -168,27 +168,11 @@ describe("DictionarySearch", () => {
     const settings = screen.getByLabelText("search settings");
     await user.click(settings);
 
-    const slider = screen.queryByLabelText("Highlight Strength");
-    expect(slider).not.toBeNull();
-    // mock the getBoundingClientRect. This isn't handled by JSdom
-    // @ts-ignore
-    slider.getBoundingClientRect = jest.fn(() => {
-      return {
-        bottom: 286.22918701171875,
-        height: 28,
-        left: 19.572917938232422,
-        right: 583.0937919616699,
-        top: 258.22918701171875,
-        width: 563.5208740234375,
-        x: 19.572917938232422,
-        y: 258.22918701171875,
-      };
-    });
-    act(() => {
-      fireEvent.mouseDown(slider!, { clientX: 162, clientY: 302 });
-    });
+    const increment = screen.queryByLabelText("Increase Highlight Strength");
+    await user.click(increment!);
+    await user.click(increment!);
 
     const storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
-    expect(storage.highlightStrength).toBe(90);
+    expect(storage.highlightStrength).toBe(70);
   });
 });

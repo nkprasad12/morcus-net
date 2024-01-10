@@ -11,7 +11,6 @@ import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
-import Slider from "@mui/material/Slider";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
@@ -20,36 +19,21 @@ import {
 import { SearchBox } from "@/web/client/components/generic/search";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { ClientPaths } from "@/web/client/routing/client_paths";
+import { NumberSelector } from "@/web/client/components/generic/selectors";
 
-function HighlightSlider(props: {
+function HighlightStrengthSelector(props: {
   highlightStrength: number;
   setHighlightStrength: (newValue: number) => any;
 }) {
-  const [value, setValue] = useState<number>(props.highlightStrength);
-
   return (
-    <div>
-      <DialogContentText sx={{ marginTop: 2 }}>
-        Highlight Strength
-      </DialogContentText>
-      <Slider
-        aria-label="Highlight Strength"
-        getAriaValueText={(v) => `${v} %`}
-        value={value}
-        onChange={(_, newValue) => {
-          if (typeof newValue !== "number") {
-            return;
-          }
-          props.setHighlightStrength(newValue);
-          setValue(newValue);
-        }}
-        valueLabelDisplay="off"
-        step={10}
-        marks
-        min={10}
-        max={90}
-      />
-    </div>
+    <NumberSelector
+      label="Highlight Strength"
+      value={props.highlightStrength}
+      setValue={props.setHighlightStrength}
+      step={10}
+      min={10}
+      max={90}
+    />
   );
 }
 
@@ -98,7 +82,7 @@ function SearchSettingsDialog(props: {
             />
           ))}
         </FormGroup>
-        <HighlightSlider
+        <HighlightStrengthSelector
           highlightStrength={
             globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
           }
