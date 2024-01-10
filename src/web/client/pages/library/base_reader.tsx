@@ -1,6 +1,9 @@
 import { assert } from "@/common/assert";
 import { Container } from "@/web/client/components/generic/basics";
-import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
+import {
+  usePersistedBool,
+  usePersistedNumber,
+} from "@/web/client/pages/library/persisted_settings";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultReaderSidebarContent,
@@ -48,6 +51,8 @@ export interface BaseMainColumnProps extends Responsive {
 }
 interface ReaderExternalLayoutProps {
   swipeListeners?: SwipeListeners;
+  swipeNavigation?: boolean;
+  tapNavigation?: boolean;
 }
 export interface BaseReaderProps<
   CustomSidebarTab,
@@ -75,6 +80,14 @@ export function BaseReader<
   const [dictWord, setDictWord] = React.useState<string | undefined>(undefined);
   const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
   const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
+  const [swipeNavigation, setSwipeNavigation] = usePersistedBool(
+    true,
+    "RD_MB_NAV_SWIPE"
+  );
+  const [tapNavigation, setTapNavigation] = usePersistedBool(
+    false,
+    "RD_MB_NAV_SIDE_TAP"
+  );
   const [drawerHeight, setDrawerHeight] = useState<number>(
     window.innerHeight * 0.15
   );
@@ -123,6 +136,8 @@ export function BaseReader<
       sidebarRef={sidebarRef}
       drawerHeight={drawerHeight}
       setDrawerHeight={setDrawerHeight}
+      swipeNavigation={swipeNavigation}
+      tapNavigation={tapNavigation}
       swipeListeners={swipeListeners}>
       <props.MainColumn
         {...props}
@@ -151,6 +166,14 @@ export function BaseReader<
           setTotalWidth={isScreenSmall ? undefined : setTotalWidth}
           mainWidth={isScreenSmall ? undefined : mainWidth}
           setMainWidth={isScreenSmall ? undefined : setMainWidth}
+          {...(isScreenSmall
+            ? {
+                swipeNavigation,
+                setSwipeNavigation,
+                tapNavigation,
+                setTapNavigation,
+              }
+            : {})}
           currentTab={sidebarTab}
           setCurrentTab={setSidebarTab}
           dictWord={dictWord}
@@ -238,7 +261,26 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
   return (
     <div>
       <Container className="readerMain" disableGutters>
-        <div {...listeners}>
+        <div
+          {...(props.swipeNavigation ? listeners : {})}
+          onClick={
+            props.tapNavigation === true
+              ? (e) => {
+                  const position = e.clientX / window.innerWidth;
+                  const edgeDistance = Math.min(
+                    position,
+                    Math.abs(1 - position)
+                  );
+                  if (
+                    edgeDistance < 0.075 &&
+                    props.swipeListeners?.onSwipeEnd
+                  ) {
+                    const direction = position < 0.5 ? "Right" : "Left";
+                    props.swipeListeners?.onSwipeEnd(direction, 0.5);
+                  }
+                }
+              : undefined
+          }>
           {mainContent}
           <Footer marginRatio={DRAWER_MAX_SIZE} />
         </div>

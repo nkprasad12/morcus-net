@@ -46,9 +46,70 @@ export function EmbeddedDictionary(
   );
 }
 
-export interface ReaderSettingsProps {
-  /** The scale to use for the elements in the reader. */
-  scale: number;
+export interface MobileReaderSettings {
+  /** Whether swipe navigation is enabled. */
+  swipeNavigation?: boolean;
+  /** A setter for swipe nagivation */
+  setSwipeNavigation?: (v: boolean) => any;
+  /** Whether side tap navigation is enabled. */
+  tapNavigation?: boolean;
+  /** A setter for side tab nagivation */
+  setTapNavigation?: (v: boolean) => any;
+}
+export function MobileReaderSettingsSections(props: MobileReaderSettings) {
+  const {
+    swipeNavigation,
+    setSwipeNavigation,
+    tapNavigation,
+    setTapNavigation,
+  } = props;
+  const hasSwipeNav =
+    swipeNavigation !== undefined && setSwipeNavigation !== undefined;
+  const hasTapNav =
+    tapNavigation !== undefined && setTapNavigation !== undefined;
+  const hasNavSettings = hasSwipeNav || hasTapNav;
+  if (!hasNavSettings) {
+    return null;
+  }
+
+  return (
+    <details open>
+      <summary>
+        <SettingsText message="Navigation" />
+      </summary>
+      {hasSwipeNav && (
+        <div>
+          <input
+            type="checkbox"
+            id="swipeNav"
+            name="swipeNav"
+            checked={swipeNavigation}
+            onChange={(e) => setSwipeNavigation(e.target.checked)}
+          />
+          <label htmlFor="swipeNav" className="text md">
+            Swipe to change page
+          </label>
+        </div>
+      )}
+      {hasTapNav && (
+        <div>
+          <input
+            type="checkbox"
+            id="tapNav"
+            name="tapNav"
+            checked={tapNavigation}
+            onChange={(e) => setTapNavigation(e.target.checked)}
+          />
+          <label htmlFor="tapNav" className="text md">
+            Tap side of screen to change page
+          </label>
+        </div>
+      )}
+    </details>
+  );
+}
+
+export interface DesktopReaderSettings {
   /** The total width setting for the reader. */
   totalWidth?: number;
   /** A setter for the total width of the reader. */
@@ -57,6 +118,12 @@ export interface ReaderSettingsProps {
   mainWidth?: number;
   /** A setter for the width of the main column of the reader. */
   setMainWidth?: (width: number) => any;
+}
+export interface ReaderSettingsProps
+  extends DesktopReaderSettings,
+    MobileReaderSettings {
+  /** The scale to use for the elements in the reader. */
+  scale: number;
   /** The scale of the main column of the reader. */
   mainScale: number;
   /** A setter for the scale of the main column of the reader. */
@@ -85,7 +152,7 @@ export function ReaderSettings(props: ReaderSettingsProps) {
   return (
     <>
       {hasLayoutSettings && (
-        <details>
+        <details open>
           <summary>
             <SettingsText message="Layout settings" />
           </summary>
@@ -111,7 +178,8 @@ export function ReaderSettings(props: ReaderSettingsProps) {
           )}
         </details>
       )}
-      <details>
+      <MobileReaderSettingsSections {...props} />
+      <details open>
         <summary>
           <SettingsText message={`${mainLabel} settings`} />
         </summary>
@@ -125,7 +193,7 @@ export function ReaderSettings(props: ReaderSettingsProps) {
           step={10}
         />
       </details>
-      <details>
+      <details open>
         <summary>
           <SettingsText message={`${sideLabel} settings`} />
         </summary>
