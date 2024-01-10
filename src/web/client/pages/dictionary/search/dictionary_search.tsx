@@ -3,7 +3,6 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
-import DialogContentText from "@mui/material/DialogContentText";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
 import Switch from "@mui/material/Switch";
@@ -50,12 +49,13 @@ function SearchSettingsDialog(props: {
       open={props.open}
       onClose={props.onClose}
       sx={{ top: "-40%" }}
+      PaperProps={{ className: "bgColor" }}
       disableScrollLock>
       <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
       <DialogContent>
-        <DialogContentText sx={{ marginTop: 2 }}>
+        <div className="text md light" style={{ marginTop: "16px" }}>
           Enabled Dictionaries
-        </DialogContentText>
+        </div>
         <FormGroup>
           {LatinDict.AVAILABLE.map((dict) => (
             <FormControlLabel

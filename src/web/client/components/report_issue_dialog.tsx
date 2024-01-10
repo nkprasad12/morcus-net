@@ -23,7 +23,7 @@ export function ReportIssueDialog(props: {
       open={props.show}
       onClose={props.onClose}
       PaperProps={{
-        className: "menu",
+        className: "bgColor",
       }}>
       <DialogTitle style={{ fontSize: 19, lineHeight: "normal" }}>
         <b>Report an issue</b>
