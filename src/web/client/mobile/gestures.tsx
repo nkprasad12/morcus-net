@@ -13,25 +13,20 @@ export interface SwipeListeners {
   onSwipeCancel?: () => any;
   onSwipeEnd?: SwipeListener;
 }
-
-export function GestureListener(
-  props: React.PropsWithChildren<{
-    className?: string;
-    style?: React.CSSProperties;
-    listeners?: SwipeListeners;
-  }>
-) {
-  const { listeners } = props;
+type GestureCallbacks = {
+  onTouchMove: React.TouchEventHandler<HTMLElement>;
+  onTouchEnd: React.TouchEventHandler<HTMLElement>;
+};
+export function useGestureListener(
+  listeners?: SwipeListeners
+): GestureCallbacks {
   const touchData = useRef<TouchEndData>(null);
   const isSwiping = useRef(false);
 
-  return (
-    <div
-      onTouchMove={(e) => handleTouchMove(e, touchData, isSwiping, listeners)}
-      onTouchEnd={() => handleTouchEnd(touchData, isSwiping, listeners)}>
-      {props.children}
-    </div>
-  );
+  return {
+    onTouchMove: (e) => handleTouchMove(e, touchData, isSwiping, listeners),
+    onTouchEnd: () => handleTouchEnd(touchData, isSwiping, listeners),
+  };
 }
 
 export function handleTouchMove(

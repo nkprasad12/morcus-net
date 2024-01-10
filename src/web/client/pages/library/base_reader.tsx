@@ -21,7 +21,10 @@ import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Footer } from "@/web/client/components/footer";
-import { GestureListener, SwipeListeners } from "@/web/client/mobile/gestures";
+import {
+  SwipeListeners,
+  useGestureListener,
+} from "@/web/client/mobile/gestures";
 import { useWakeLock } from "@/web/client/mobile/wake_lock";
 
 const noSsr = { noSsr: true };
@@ -230,14 +233,15 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
   const { sidebarRef, drawerHeight, setDrawerHeight } = props;
+  const listeners = useGestureListener(props.swipeListeners);
 
   return (
     <div>
       <Container className="readerMain" disableGutters>
-        <GestureListener listeners={props.swipeListeners}>
+        <div {...listeners}>
           {mainContent}
           <Footer marginRatio={DRAWER_MAX_SIZE} />
-        </GestureListener>
+        </div>
       </Container>
       <Container
         className="readerSide bgColor"
