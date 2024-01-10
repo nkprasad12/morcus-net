@@ -1,5 +1,6 @@
 import { useRef } from "react";
 
+export const MIN_SWIPE_SIZE = 0.04;
 type TouchData = { p: Position; t: number };
 type Position = { x: number; y: number };
 /** Exported only for testing. Do not use externally. */
@@ -20,15 +21,14 @@ export function GestureListener(
     listeners?: SwipeListeners;
   }>
 ) {
+  const { listeners } = props;
   const touchData = useRef<TouchEndData>(null);
   const isSwiping = useRef(false);
 
   return (
     <div
-      onTouchMove={(e) =>
-        handleTouchMove(e, touchData, isSwiping, props.listeners)
-      }
-      onTouchEnd={() => handleTouchEnd(touchData, isSwiping, props.listeners)}>
+      onTouchMove={(e) => handleTouchMove(e, touchData, isSwiping, listeners)}
+      onTouchEnd={() => handleTouchEnd(touchData, isSwiping, listeners)}>
       {props.children}
     </div>
   );
@@ -43,11 +43,11 @@ export function handleTouchMove(
   const lastPos = { x: e.touches[0].clientX, y: e.touches[0].clientY };
   const last = { p: lastPos, t: Date.now() };
   touchData.current = [touchData.current?.[0] || last, last];
-  const swipe = computeSwipeDetails(touchData.current);
-  if (swipe) {
+  const [swipeDir, size] = computeSwipeDetails(touchData.current);
+  if (swipeDir) {
     isSwiping.current = true;
     const onProgress = listeners?.onSwipeProgress;
-    onProgress && onProgress(swipe[0], swipe[1]);
+    onProgress && onProgress(swipeDir, size);
   } else if (isSwiping.current) {
     isSwiping.current = false;
     const onCancel = listeners?.onSwipeCancel;
@@ -57,7 +57,7 @@ export function handleTouchMove(
 
 function computeSwipeDetails(
   data: NonNullable<TouchEndData>
-): [SwipeDirection, number] | undefined {
+): [SwipeDirection | undefined, number] {
   const dx = data[1].p.x - data[0].p.x;
   // The origin is the bottom left corner.
   const dy = data[0].p.y - data[1].p.y;
@@ -71,13 +71,14 @@ function computeSwipeDetails(
   const maxAbs = Math.max(absDx, absDy);
   const minAbs = Math.min(absDx, absDy);
 
-  const isHorizontal = maxAbs > minAbs * 2 && absDx > absDy;
-  const isFastEnough = speed > 0.1;
-  const isLongEnough = relLength > 0.06;
+  const isHorizontal = maxAbs > minAbs * 1.5 && absDx > absDy;
+  const isFastEnough = speed > 0.07;
+  const isLongEnough = relLength > MIN_SWIPE_SIZE;
+  let dir: SwipeDirection | undefined = undefined;
   if (isFastEnough && isHorizontal && isLongEnough) {
-    const dir: SwipeDirection = dx > 0 ? "Right" : "Left";
-    return [dir, relLength];
+    dir = dx > 0 ? "Right" : "Left";
   }
+  return [dir, relLength];
 }
 
 export function handleTouchEnd(
@@ -92,10 +93,10 @@ export function handleTouchEnd(
   if (data === null || !isSwiping) {
     return;
   }
-  const swipe = computeSwipeDetails(data);
-  if (swipe) {
+  const [swipeDir, size] = computeSwipeDetails(data);
+  if (swipeDir) {
     const onSwipe = listeners?.onSwipeEnd;
-    onSwipe && onSwipe(swipe?.[0] || "Right", swipe?.[1] || 0);
+    onSwipe && onSwipe(swipeDir, size);
   } else {
     const onCancel = listeners?.onSwipeCancel;
     onCancel && onCancel();

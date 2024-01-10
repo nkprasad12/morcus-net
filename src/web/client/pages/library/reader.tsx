@@ -38,7 +38,7 @@ import {
   BaseReader,
 } from "@/web/client/pages/library/base_reader";
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
-import { GestureListener, SwipeDirection } from "@/web/client/mobile/gestures";
+import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
@@ -207,7 +207,7 @@ export function ReadingPage() {
             return;
           }
           setSwipeDir(direction);
-          const progress = (size - 0.06) / 0.24;
+          const progress = (size - MIN_SWIPE_SIZE) / 0.16;
           setOverlayOpacity(Math.min(progress * progress, 1));
         },
         onSwipeEnd: (direction, size) => {
@@ -215,7 +215,7 @@ export function ReadingPage() {
             return;
           }
           setOverlayOpacity(0);
-          if (size >= 0.3) {
+          if (size >= MIN_SWIPE_SIZE + 0.16) {
             const offset = direction === "Right" ? -1 : 1;
             updatePage(offset, currentPage, nav, work, true);
           }
@@ -260,7 +260,7 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
   const { work, currentPage, isMobile, overlayOpacity } = props;
 
   return (
-    <GestureListener>
+    <>
       <div
         className="unselectable text md bgColorAlt"
         style={{
@@ -310,7 +310,7 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
           </>
         )}
       </ContentBox>
-    </GestureListener>
+    </>
   );
 }
 
