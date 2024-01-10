@@ -231,6 +231,9 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   if (args.transpile_only) {
     extraArgs.push("--env", "transpileOnly");
   }
+  if (args.analyze) {
+    extraArgs.push("--env", "analyze");
+  }
   if (extraArgs.length > 0) {
     buildCommand.push("--");
   }
