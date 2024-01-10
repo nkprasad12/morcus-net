@@ -20,7 +20,6 @@ const WEB_SERVER = "web";
 const WORKER = "worker";
 const EDITOR = "editor";
 const BUNDLE = "bundle";
-const COMMANDS = [WEB_SERVER, WORKER, EDITOR, BUNDLE];
 
 const cleanupOperations: (() => any)[] = [];
 
@@ -40,66 +39,107 @@ function parseArguments() {
   const parser = new ArgumentParser({
     description: "Helper scripts to start the Morcus Latin Tools",
   });
-  parser.add_argument("command", {
-    help: "The high level command to run.",
-    choices: COMMANDS,
+  const subparsers = parser.add_subparsers({
+    title: "Command list",
+    dest: "command",
+    required: true,
   });
-  parser.add_argument("-no_bc", "--no_build_client", {
-    help: "If set, the client bundle will not be built.",
+
+  const bundle = subparsers.add_parser(BUNDLE, {
+    help: "Builds the client bundle.",
+  });
+  bundle.add_argument("-a", "--analyze", {
+    help: "Runs analysis on the generated bundle.",
     action: "store_true",
   });
-  parser.add_argument("-b_ls", "--build_ls", {
-    help: "If set, re-processes LS.",
+  bundle.add_argument("-to", "--transpile_only", {
+    help: "Skips type checking for the bundle.",
     action: "store_true",
   });
-  parser.add_argument("-b_sh", "--build_sh", {
-    help: "If set, re-processes SH and saves to DB.",
+  bundle.add_argument("-p", "--prod", {
+    help: "Builds a minimized and gzipped bundle.",
     action: "store_true",
   });
-  parser.add_argument("-b_li", "--build_latin_inflections", {
-    help: "If set, re-processes Latin Inflections and saves to DB.",
+
+  const web = subparsers.add_parser(WEB_SERVER, {
+    help: "Builds artifacts and starts the web server.",
+  });
+  web.add_argument("-no_bc", "--no_build_client", {
+    help: "The client bundle will not be built.",
     action: "store_true",
   });
-  parser.add_argument("-b_ll", "--build_latin_library", {
-    help: "If set, processing and stores the Latin library contents.",
+  web.add_argument("-b_ls", "--build_ls", {
+    help: "Re-processes LS.",
     action: "store_true",
   });
-  parser.add_argument("-to", "--transpile_only", {
-    help: "If set, skips type checking for the client and server.",
+  web.add_argument("-b_sh", "--build_sh", {
+    help: "Re-processes SH and saves to DB.",
     action: "store_true",
   });
-  parser.add_argument("-r_db", "--real_database", {
-    help: "If set, uses the real telemetry database.",
+  web.add_argument("-b_li", "--build_latin_inflections", {
+    help: "Re-processes Latin Inflections and saves to DB.",
     action: "store_true",
   });
-  parser.add_argument("-d", "--dev", {
-    help: "If set, runs a dev server for local iteration.",
+  web.add_argument("-b_ll", "--build_latin_library", {
+    help: "Processing and stores the Latin library contents.",
     action: "store_true",
   });
-  parser.add_argument("-p", "--prod", {
-    help: "If set, runs setup suitable for production.",
+  web.add_argument("-r_db", "--real_database", {
+    help: "Uses the real telemetry database.",
     action: "store_true",
   });
-  parser.add_argument("--staging", {
-    help: "If set, runs setup suitable for staging.",
+  web.add_argument("-d", "--dev", {
+    help: "Runs a dev server for local iteration.",
     action: "store_true",
   });
-  parser.add_argument("--bun", {
-    help: "If set, start the server using bun.",
+  web.add_argument("-p", "--prod", {
+    help: "Runs setup suitable for production.",
     action: "store_true",
   });
-  parser.add_argument("-k", "--keep", {
-    help: "If set, keeps the worker on disconnect.",
+  web.add_argument("-to", "--transpile_only", {
+    help: "Skips type checking for the client and server.",
     action: "store_true",
   });
-  parser.add_argument("--gpu", {
-    help: "If set, allows GPU acceleration.",
+
+  const worker = subparsers.add_parser(WORKER, {
+    help: "Starts a worker process.",
+  });
+  worker.add_argument("--staging", {
+    help: "Connects to the staging (`dev.morcus.net`) instance.",
     action: "store_true",
   });
-  parser.add_argument("-wt", "--workerType", {
+  worker.add_argument("-p", "--prod", {
+    help: "Connects to the production (`morcus.net`) instance.",
+    action: "store_true",
+  });
+  worker.add_argument("-k", "--keep", {
+    help: "Keeps the worker on disconnect.",
+    action: "store_true",
+  });
+  worker.add_argument("--gpu", {
+    help: "Allows GPU acceleration.",
+    action: "store_true",
+  });
+  worker.add_argument("-wt", "--workerType", {
     help: "The worker type to start.",
     choices: ["mac", "ls"],
   });
+  worker.add_argument("-to", "--transpile_only", {
+    help: "Skips type checking for the worker.",
+    action: "store_true",
+  });
+
+  const editor = subparsers.add_parser(EDITOR, {
+    help: "Starts the LS web editor.",
+  });
+
+  for (const subcommand of [editor, worker, bundle, web]) {
+    subcommand.add_argument("--bun", {
+      help: "Runs supported commands with bun.",
+      action: "store_true",
+    });
+  }
+
   return parser.parse_args();
 }
 
