@@ -438,6 +438,9 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".selectedSidePanelTab .menuIcon": {
         color: contentTextColor + "d0",
       },
+      ".Mui-disabled .MuiSvgIcon-root": {
+        color: contentTextColor + "20",
+      },
 
       /** Search box */
       ".customSearchContainer": {

@@ -4,10 +4,10 @@ import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import {
   InfoText,
   NavIcon,
-  SettingSlider,
   SettingsText,
 } from "@/web/client/pages/library/reader_utils";
 import { exhaustiveGuard } from "@/common/misc_utils";
+import { NumberSelector } from "@/web/client/components/generic/selectors";
 
 export interface EmbeddedDictionaryProps {
   /** The word to look up in the dictionary, if any. */
@@ -68,7 +68,6 @@ export interface ReaderSettingsProps {
 }
 export function ReaderSettings(props: ReaderSettingsProps) {
   const {
-    scale,
     totalWidth,
     setTotalWidth,
     mainWidth,
@@ -91,26 +90,23 @@ export function ReaderSettings(props: ReaderSettingsProps) {
             <SettingsText message="Layout settings" />
           </summary>
           {hasTotalWidth && (
-            <SettingSlider
+            <NumberSelector
               value={totalWidth}
               setValue={setTotalWidth}
               label="Total width"
               min={0}
               max={3}
               step={1}
-              scale={scale}
-              disableLabels
             />
           )}
           {hasMainWidth && (
-            <SettingSlider
+            <NumberSelector
               value={mainWidth}
               setValue={setMainWidth}
               label="Main width"
               min={32}
               max={80}
               step={8}
-              scale={scale}
             />
           )}
         </details>
@@ -119,7 +115,7 @@ export function ReaderSettings(props: ReaderSettingsProps) {
         <summary>
           <SettingsText message={`${mainLabel} settings`} />
         </summary>
-        <SettingSlider
+        <NumberSelector
           value={mainScale}
           setValue={setMainScale}
           label="Text size"
@@ -127,14 +123,13 @@ export function ReaderSettings(props: ReaderSettingsProps) {
           min={50}
           max={150}
           step={10}
-          scale={scale}
         />
       </details>
       <details>
         <summary>
           <SettingsText message={`${sideLabel} settings`} />
         </summary>
-        <SettingSlider
+        <NumberSelector
           value={sideScale}
           setValue={setSideScale}
           label="Text size"
@@ -142,7 +137,6 @@ export function ReaderSettings(props: ReaderSettingsProps) {
           min={50}
           max={150}
           step={10}
-          scale={scale}
         />
       </details>
     </>

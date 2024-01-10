@@ -31,137 +31,198 @@ afterAll(() => {
 
 describe("handleTouchMove", () => {
   it("adds touch data as start and current on initial", () => {
+    const isSwiping = { current: false };
     const ref = { current: null };
     const event = getEvent(5, 7);
     mockDate.mockReturnValue(57);
 
-    handleTouchMove(event, ref);
+    handleTouchMove(event, ref, isSwiping);
 
     const touchData = { p: { x: 5, y: 7 }, t: 57 };
     expect(ref.current).toEqual([touchData, touchData]);
+    expect(isSwiping.current).toBe(false);
   });
 
   it("adds touch data as start and current on initial", () => {
+    const isSwiping = { current: false };
     const ref = { current: null };
     const event1 = getEvent(5, 7);
     const event2 = getEvent(57, 57);
 
     mockDate.mockReturnValue(57);
-    handleTouchMove(event1, ref);
+    handleTouchMove(event1, ref, isSwiping);
     mockDate.mockReturnValue(5757);
-    handleTouchMove(event2, ref);
+    handleTouchMove(event2, ref, isSwiping);
 
     const touchData1 = { p: { x: 5, y: 7 }, t: 57 };
     const touchData2 = { p: { x: 57, y: 57 }, t: 5757 };
     expect(ref.current).toEqual([touchData1, touchData2]);
   });
+
+  it("invokes on swipe progress if needed", () => {
+    const isSwiping = { current: false };
+    const ref = { current: null };
+    const onSwipeProgress = jest.fn();
+
+    mockDate.mockReturnValue(57);
+    handleTouchMove(getEvent(5, 7), ref, isSwiping, { onSwipeProgress });
+    mockDate.mockReturnValue(58);
+    handleTouchMove(getEvent(150, 7), ref, isSwiping, { onSwipeProgress });
+    mockDate.mockReturnValue(59);
+    handleTouchMove(getEvent(300, 7), ref, isSwiping, { onSwipeProgress });
+
+    expect(isSwiping.current).toBe(true);
+    expect(onSwipeProgress).toHaveBeenCalledTimes(2);
+  });
+
+  it("invokes on swipe cancel if needed", () => {
+    const isSwiping = { current: false };
+    const ref = { current: null };
+    const onSwipeCancel = jest.fn();
+
+    mockDate.mockReturnValue(57);
+    handleTouchMove(getEvent(5, 7), ref, isSwiping, { onSwipeCancel });
+    mockDate.mockReturnValue(58);
+    handleTouchMove(getEvent(150, 7), ref, isSwiping, { onSwipeCancel });
+    mockDate.mockReturnValue(59);
+    handleTouchMove(getEvent(300, 7), ref, isSwiping, { onSwipeCancel });
+    handleTouchMove(getEvent(300, 300), ref, isSwiping, { onSwipeCancel });
+
+    expect(isSwiping.current).toBe(false);
+    expect(onSwipeCancel).toHaveBeenCalled();
+  });
 });
 
 describe("handleTouchEnd", () => {
   it("handles null touchData", () => {
-    const onSwipe = jest.fn();
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
     const ref = { current: null };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).not.toHaveBeenCalled();
+    expect(isSwiping.current).toBe(false);
+    expect(onSwipeEnd).not.toHaveBeenCalled();
   });
 
-  it("detects left swipe gesture", () => {
-    const onSwipe = jest.fn();
+  it("handles swipe no longer in progress", () => {
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: false };
     const touchData: TouchEndData = [
-      { p: { x: 400, y: 7 }, t: 57 },
+      { p: { x: 215, y: 7 }, t: 57 },
       { p: { x: 5, y: 7 }, t: 58 },
     ];
     const ref = { current: touchData };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).toHaveBeenCalledWith("Left");
+    expect(isSwiping.current).toBe(false);
+    expect(onSwipeEnd).not.toHaveBeenCalled();
+    expect(ref.current).toBeNull();
+  });
+
+  it("detects left swipe gesture", () => {
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
+    const touchData: TouchEndData = [
+      { p: { x: 215, y: 7 }, t: 57 },
+      { p: { x: 5, y: 7 }, t: 58 },
+    ];
+    const ref = { current: touchData };
+
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
+
+    expect(onSwipeEnd).toHaveBeenCalledWith("Left", 0.5);
     expect(ref.current).toBeNull();
   });
 
   it("detects swipe gesture with angle", () => {
-    const onSwipe = jest.fn();
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
     const touchData: TouchEndData = [
       { p: { x: 400, y: 57 }, t: 57 },
       { p: { x: 5, y: 7 }, t: 58 },
     ];
     const ref = { current: touchData };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).toHaveBeenCalledWith("Left");
+    expect(onSwipeEnd).toHaveBeenCalledWith("Left", expect.closeTo(0.94798));
     expect(ref.current).toBeNull();
   });
 
   it("detects right swipe gesture", () => {
-    const onSwipe = jest.fn();
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
     const touchData: TouchEndData = [
       { p: { x: 5, y: 7 }, t: 57 },
-      { p: { x: 400, y: 7 }, t: 58 },
+      { p: { x: 215, y: 7 }, t: 58 },
     ];
     const ref = { current: touchData };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).toHaveBeenCalledWith("Right");
+    expect(onSwipeEnd).toHaveBeenCalledWith("Right", 0.5);
     expect(ref.current).toBeNull();
   });
 
   it("does not call back on small gesture", () => {
-    const onSwipe = jest.fn();
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
     const touchData: TouchEndData = [
       { p: { x: 5, y: 7 }, t: 57 },
-      { p: { x: 100, y: 7 }, t: 58 },
+      { p: { x: 10, y: 7 }, t: 58 },
     ];
     const ref = { current: touchData };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).not.toHaveBeenCalled();
+    expect(onSwipeEnd).not.toHaveBeenCalled();
     expect(ref.current).toBeNull();
   });
 
   it("does not call back on slow gesture", () => {
-    const onSwipe = jest.fn();
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
     const touchData: TouchEndData = [
       { p: { x: 5, y: 7 }, t: 57 },
       { p: { x: 400, y: 7 }, t: 6666658 },
     ];
     const ref = { current: touchData };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).not.toHaveBeenCalled();
+    expect(onSwipeEnd).not.toHaveBeenCalled();
     expect(ref.current).toBeNull();
   });
 
   it("does not call back on angular gesture", () => {
-    const onSwipe = jest.fn();
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
     const touchData: TouchEndData = [
       { p: { x: 5, y: 7 }, t: 57 },
       { p: { x: 400, y: 407 }, t: 58 },
     ];
     const ref = { current: touchData };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).not.toHaveBeenCalled();
+    expect(onSwipeEnd).not.toHaveBeenCalled();
     expect(ref.current).toBeNull();
   });
 
   it("does not call back on vertical swipe", () => {
-    const onSwipe = jest.fn();
+    const onSwipeEnd = jest.fn();
+    const isSwiping = { current: true };
     const touchData: TouchEndData = [
       { p: { x: 400, y: 500 }, t: 57 },
       { p: { x: 400, y: 7 }, t: 58 },
     ];
     const ref = { current: touchData };
 
-    handleTouchEnd(ref, onSwipe);
+    handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipe).not.toHaveBeenCalled();
+    expect(onSwipeEnd).not.toHaveBeenCalled();
     expect(ref.current).toBeNull();
   });
 });

@@ -1,54 +1,7 @@
 import React from "react";
-import { debounce } from "@mui/material/utils";
-import Slider from "@mui/material/Slider";
 import LinkIcon from "@mui/icons-material/Link";
 import { CSSProperties } from "react";
 import IconButton from "@mui/material/IconButton";
-
-export function SettingSlider(props: {
-  value: number;
-  setValue: (w: number) => any;
-  label: string;
-  min: number;
-  max: number;
-  step: number;
-  tag?: string;
-  scale: number;
-  disableLabels?: boolean;
-}) {
-  const scale = props.scale / 100;
-  return (
-    <div
-      style={{
-        alignItems: "center",
-        display: "flex",
-      }}>
-      <span className="text sm light">{props.label}</span>
-      <Slider
-        aria-label={(props.tag || "") + " " + props.label}
-        size="small"
-        getAriaValueText={(v) => `${v}`}
-        value={props.value}
-        onChange={debounce((_, newValue) => {
-          if (typeof newValue !== "number") {
-            return;
-          }
-          props.setValue(newValue);
-        })}
-        valueLabelDisplay={props.disableLabels ? "off" : "auto"}
-        step={props.step}
-        marks
-        min={props.min}
-        max={props.max}
-        style={{
-          width: 250 * scale,
-          marginLeft: 12 * scale,
-          marginRight: 12 * scale,
-        }}
-      />
-    </div>
-  );
-}
 
 export function SettingsText(props: { message: string }) {
   return <span className="text md light">{props.message}</span>;

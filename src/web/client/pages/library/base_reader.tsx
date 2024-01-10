@@ -14,13 +14,15 @@ import React, {
   CSSProperties,
   PropsWithChildren,
   TouchEventHandler,
+  useEffect,
   useState,
 } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Footer } from "@/web/client/components/footer";
-import { GestureListener, SwipeListener } from "@/web/client/mobile/gestures";
+import { GestureListener, SwipeListeners } from "@/web/client/mobile/gestures";
+import { useWakeLock } from "@/web/client/mobile/wake_lock";
 
 const noSsr = { noSsr: true };
 
@@ -41,16 +43,18 @@ export interface BaseMainColumnProps extends Responsive {
   onWordSelected: (word: string) => any;
   scale: number;
 }
+interface ReaderExternalLayoutProps {
+  swipeListeners?: SwipeListeners;
+}
 export interface BaseReaderProps<
   CustomSidebarTab,
   MainColumnProps,
   SidebarProps
-> {
+> extends ReaderExternalLayoutProps {
   MainColumn: React.ComponentType<MainColumnProps & BaseMainColumnProps>;
   ExtraSidebarContent?: React.ComponentType<
     BaseExtraSidebarTabProps<CustomSidebarTab> & SidebarProps
   >;
-  onSwipe?: SwipeListener;
 }
 export function BaseReader<
   MainColumnProps = object,
@@ -93,12 +97,21 @@ export function BaseReader<
     "Without `sidebarTabConfigs`, the `BaseReader` won't surface navigation icons for custom tabs."
   );
 
+  const { swipeListeners } = props;
+
   function onDictWord(word: string) {
     setDictWord(word);
     if (isScreenSmall && drawerHeight < window.innerHeight * 0.15) {
       setDrawerHeight(window.innerHeight * 0.15);
     }
   }
+
+  const extendWakeLock = useWakeLock();
+
+  useEffect(
+    () => extendWakeLock && extendWakeLock(),
+    [extendWakeLock, dictWord, drawerHeight, sidebarTab]
+  );
 
   return (
     <BaseLayout
@@ -107,7 +120,7 @@ export function BaseReader<
       sidebarRef={sidebarRef}
       drawerHeight={drawerHeight}
       setDrawerHeight={setDrawerHeight}
-      onSwipe={props.onSwipe}>
+      swipeListeners={swipeListeners}>
       <props.MainColumn
         {...props}
         scale={readerMainScale}
@@ -205,10 +218,11 @@ function DragHelper(
   );
 }
 
-interface MobileReaderLayoutProps extends BaseReaderLayoutProps {
+interface MobileReaderLayoutProps
+  extends BaseReaderLayoutProps,
+    ReaderExternalLayoutProps {
   drawerHeight: number;
   setDrawerHeight: React.Dispatch<React.SetStateAction<number>>;
-  onSwipe?: SwipeListener;
 }
 
 export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
@@ -220,7 +234,7 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
   return (
     <div>
       <Container className="readerMain" disableGutters>
-        <GestureListener onSwipe={props.onSwipe}>
+        <GestureListener listeners={props.swipeListeners}>
           {mainContent}
           <Footer marginRatio={DRAWER_MAX_SIZE} />
         </GestureListener>

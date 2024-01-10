@@ -38,7 +38,7 @@ import {
   BaseReader,
 } from "@/web/client/pages/library/base_reader";
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
-import { GestureListener } from "@/web/client/mobile/gestures";
+import { GestureListener, SwipeDirection } from "@/web/client/mobile/gestures";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
@@ -152,9 +152,17 @@ function updatePage(
 export function ReadingPage() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
+  const [overlayOpacity, setOverlayOpacity] = useState(0);
+  const [swipeDir, setSwipeDir] = useState<SwipeDirection>("Left");
 
   const { nav, route } = Router.useRouter();
   const queryPage = route.params?.q || route.params?.pg;
+
+  // function setSwipePopupOpacity(opacity: number) {
+  //   document
+  //     .getElementById("SWIPE_FEEDBACK")
+  //     ?.style.setProperty("opacity", opacity.toString());
+  // }
 
   useEffect(() => {
     const workId = resolveWorkId(route.path);
@@ -190,15 +198,28 @@ export function ReadingPage() {
       sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
       work={work}
       currentPage={currentPage}
-      onSwipe={(direction) => {
-        typeof work !== "string" &&
-          updatePage(
-            direction === "Right" ? -1 : 1,
-            currentPage,
-            nav,
-            work,
-            true
-          );
+      overlayOpacity={overlayOpacity}
+      swipeDir={swipeDir}
+      swipeListeners={{
+        onSwipeCancel: () => setOverlayOpacity(0),
+        onSwipeProgress: (direction, size) => {
+          if (typeof work === "string") {
+            return;
+          }
+          setSwipeDir(direction);
+          const progress = (size - 0.06) / 0.24;
+          setOverlayOpacity(Math.min(progress * progress, 1));
+        },
+        onSwipeEnd: (direction, size) => {
+          if (typeof work === "string") {
+            return;
+          }
+          setOverlayOpacity(0);
+          if (size >= 0.3) {
+            const offset = direction === "Right" ? -1 : 1;
+            updatePage(offset, currentPage, nav, work, true);
+          }
+        },
       }}
     />
   );
@@ -232,12 +253,32 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
 interface WorkColumnProps {
   work: WorkState;
   currentPage: number;
+  overlayOpacity: number;
+  swipeDir: SwipeDirection;
 }
 function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
-  const { work, currentPage, isMobile } = props;
+  const { work, currentPage, isMobile, overlayOpacity } = props;
 
   return (
     <GestureListener>
+      <div
+        className="unselectable text md bgColorAlt"
+        style={{
+          position: "fixed",
+          top: 150,
+          left: props.swipeDir === "Right" ? 10 : undefined,
+          right: props.swipeDir === "Left" ? 10 : undefined,
+          opacity: overlayOpacity,
+          paddingTop: "8px",
+          paddingLeft: "8px",
+          paddingRight: "8px",
+          borderRadius: 8,
+          borderStyle: "solid",
+          borderWidth: 4,
+          borderColor: overlayOpacity === 1 ? "green" : undefined,
+        }}>
+        {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
+      </div>
       <ContentBox isSmall mt={isMobile ? 0 : undefined}>
         {work === "Loading" ? (
           <span>{`Loading, please wait`}</span>

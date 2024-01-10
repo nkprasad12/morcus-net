@@ -9,6 +9,7 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
+import { writePwaManifestStep } from "@/scripts/write_webmanifest";
 import { ArgumentParser } from "argparse";
 import { ChildProcess, spawn } from "child_process";
 import dotenv from "dotenv";
@@ -209,6 +210,7 @@ async function setupAndStartWebServer(args: any) {
     writeCommitId();
     setupSteps.push(bundleConfig(args, 1));
   }
+  setupSteps.push(writePwaManifestStep(1));
   if (args.build_latin_inflections === true) {
     setupSteps.push({
       operation: makeMorpheusDb,

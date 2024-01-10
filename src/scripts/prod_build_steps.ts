@@ -18,6 +18,7 @@ import {
   runtimeMessage,
   shellStep,
 } from "@/scripts/script_utils";
+import { writePwaManifestStep } from "@/scripts/write_webmanifest";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const PERSEUS_CLL_TAG = "0.0.6853394170";
@@ -109,6 +110,7 @@ const WRITE_COMMIT_ID: StepConfig = {
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
+  writePwaManifestStep(),
   MAKE_BUNDLE,
   MAKE_INFL_DB,
   MAKE_SH,
