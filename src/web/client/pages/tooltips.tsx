@@ -14,7 +14,7 @@ export type TooltipPlacement = "top-start" | "right";
 
 export type TooltipChild = React.ForwardRefExoticComponent<
   Omit<any, "ref"> & React.RefAttributes<any>
->;
+> & { onClick?: React.MouseEventHandler };
 
 export interface TooltipProps {
   titleText: string | JSX.Element;
@@ -30,10 +30,7 @@ export interface TooltipProps {
 
 function BaseTooltip(props: TooltipProps) {
   return (
-    <ClickAwayListener
-      onClickAway={() => {
-        props.onClickAway();
-      }}>
+    <ClickAwayListener onClickAway={() => props.onClickAway()}>
       <div role="presentation" style={{ display: "inline" }}>
         <Tooltip
           title={<Typography component={"div"}>{props.titleText}</Typography>}
@@ -55,8 +52,9 @@ function BaseTooltip(props: TooltipProps) {
             },
           }}>
           <props.ChildFactory
-            onClick={() => {
+            onClick={(e: React.MouseEvent) => {
               props.onChildClick(props.open);
+              e.stopPropagation();
             }}
           />
         </Tooltip>

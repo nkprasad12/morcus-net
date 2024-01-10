@@ -261,24 +261,26 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
 
   return (
     <>
-      <div
-        className="unselectable text md bgColorAlt"
-        style={{
-          position: "fixed",
-          top: 150,
-          left: props.swipeDir === "Right" ? 10 : undefined,
-          right: props.swipeDir === "Left" ? 10 : undefined,
-          opacity: overlayOpacity,
-          paddingTop: "8px",
-          paddingLeft: "8px",
-          paddingRight: "8px",
-          borderRadius: 8,
-          borderStyle: "solid",
-          borderWidth: 4,
-          borderColor: overlayOpacity === 1 ? "green" : undefined,
-        }}>
-        {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
-      </div>
+      {overlayOpacity > 0 && (
+        <div
+          className="unselectable text md bgColorAlt"
+          style={{
+            position: "fixed",
+            top: 150,
+            left: props.swipeDir === "Right" ? 10 : undefined,
+            right: props.swipeDir === "Left" ? 10 : undefined,
+            opacity: overlayOpacity,
+            paddingTop: "8px",
+            paddingLeft: "8px",
+            paddingRight: "8px",
+            borderRadius: 8,
+            borderStyle: "solid",
+            borderWidth: 4,
+            borderColor: overlayOpacity === 1 ? "green" : undefined,
+          }}>
+          {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
+        </div>
+      )}
       <ContentBox isSmall mt={isMobile ? 0 : undefined}>
         {work === "Loading" ? (
           <span>{`Loading, please wait`}</span>
@@ -664,7 +666,10 @@ function LatLink(props: {
   return (
     <span
       className="workLatWord"
-      onClick={() => props.setDictWord(props.target || props.word)}>
+      onClick={(e) => {
+        props.setDictWord(props.target || props.word);
+        e.stopPropagation();
+      }}>
       {props.word}
     </span>
   );
