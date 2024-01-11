@@ -10,7 +10,7 @@ import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { checkPresent } from "@/common/assert";
 
-export type TooltipPlacement = "top-start" | "right";
+export type TooltipPlacement = "top-start" | "right" | "bottom";
 
 export type TooltipChild = React.ForwardRefExoticComponent<
   Omit<any, "ref"> & React.RefAttributes<any>
@@ -30,7 +30,9 @@ export interface TooltipProps {
 
 function BaseTooltip(props: TooltipProps) {
   return (
-    <ClickAwayListener onClickAway={() => props.onClickAway()}>
+    <ClickAwayListener
+      onClickAway={() => props.onClickAway()}
+      touchEvent={false}>
       <div role="presentation" style={{ display: "inline" }}>
         <Tooltip
           title={<Typography component={"div"}>{props.titleText}</Typography>}
@@ -166,6 +168,7 @@ export function CopyLinkTooltip(props: {
   message: string;
   link: string;
   visibleListener?: (visible: boolean) => any;
+  placement?: TooltipPlacement;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
   const [state, setState] = React.useState<CopyLinkTooltipState>("Closed");
@@ -188,7 +191,7 @@ export function CopyLinkTooltip(props: {
       }
       className={props.className}
       ChildFactory={props.forwarded}
-      placement="top-start"
+      placement={props.placement || "top-start"}
       open={visible}
       onChildClick={(isOpen) => {
         if (isOpen) {

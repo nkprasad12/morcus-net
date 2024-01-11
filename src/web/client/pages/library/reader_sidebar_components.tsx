@@ -101,7 +101,7 @@ export function MobileReaderSettingsSections(props: MobileReaderSettings) {
             onChange={(e) => setTapNavigation(e.target.checked)}
           />
           <label htmlFor="tapNav" className="text md">
-            Tap side of screen to change page
+            Tap edge to change page [Beta]
           </label>
         </div>
       )}
