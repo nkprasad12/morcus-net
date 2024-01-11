@@ -165,9 +165,15 @@ export function CopyLinkTooltip(props: {
   forwarded: TooltipChild;
   message: string;
   link: string;
+  visibleListener?: (visible: boolean) => any;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
   const [state, setState] = React.useState<CopyLinkTooltipState>("Closed");
+
+  function setTooltipVisible(isVisible: boolean) {
+    props.visibleListener && props.visibleListener(isVisible);
+    setVisible(isVisible);
+  }
 
   return (
     <BaseTooltip
@@ -177,7 +183,7 @@ export function CopyLinkTooltip(props: {
           setState={setState}
           mainMessage={props.message}
           link={props.link}
-          dismissTooltip={() => setVisible(false)}
+          dismissTooltip={() => setTooltipVisible(false)}
         />
       }
       className={props.className}
@@ -190,9 +196,9 @@ export function CopyLinkTooltip(props: {
           return;
         }
         setState("ClickToCopy");
-        setVisible(true);
+        setTooltipVisible(true);
       }}
-      onClickAway={() => setVisible(false)}
+      onClickAway={() => setTooltipVisible(false)}
     />
   );
 }
