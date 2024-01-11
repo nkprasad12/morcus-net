@@ -25,6 +25,7 @@ import { useTheme } from "@mui/material/styles";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Footer } from "@/web/client/components/footer";
 import {
+  SwipeListener,
   SwipeListeners,
   useGestureListener,
 } from "@/web/client/mobile/gestures";
@@ -244,6 +245,19 @@ function DragHelper(
   );
 }
 
+/** Exported only for testing. Do not use externally. */
+export function handleSideTap(
+  e: { clientX: number },
+  listener?: SwipeListener
+) {
+  const position = e.clientX / window.innerWidth;
+  const edgeDistance = Math.min(position, Math.abs(1 - position));
+  if (edgeDistance < 0.075 && listener) {
+    const direction = position < 0.5 ? "Right" : "Left";
+    listener(direction, 1);
+  }
+}
+
 interface MobileReaderLayoutProps
   extends BaseReaderLayoutProps,
     ReaderExternalLayoutProps {
@@ -265,20 +279,7 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
           {...(props.swipeNavigation ? listeners : {})}
           onClick={
             props.tapNavigation === true
-              ? (e) => {
-                  const position = e.clientX / window.innerWidth;
-                  const edgeDistance = Math.min(
-                    position,
-                    Math.abs(1 - position)
-                  );
-                  if (
-                    edgeDistance < 0.075 &&
-                    props.swipeListeners?.onSwipeEnd
-                  ) {
-                    const direction = position < 0.5 ? "Right" : "Left";
-                    props.swipeListeners?.onSwipeEnd(direction, 0.5);
-                  }
-                }
+              ? (e) => handleSideTap(e, props.swipeListeners?.onSwipeEnd)
               : undefined
           }>
           {mainContent}

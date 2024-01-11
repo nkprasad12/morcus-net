@@ -158,12 +158,6 @@ export function ReadingPage() {
   const { nav, route } = Router.useRouter();
   const queryPage = route.params?.q || route.params?.pg;
 
-  // function setSwipePopupOpacity(opacity: number) {
-  //   document
-  //     .getElementById("SWIPE_FEEDBACK")
-  //     ?.style.setProperty("opacity", opacity.toString());
-  // }
-
   useEffect(() => {
     const workId = resolveWorkId(route.path);
     if (workId === undefined) {
@@ -250,6 +244,41 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
   }
 }
 
+export function SwipeFeedback(props: {
+  overlayOpacity: number;
+  swipeDir: SwipeDirection;
+}) {
+  const { overlayOpacity, swipeDir } = props;
+  if (overlayOpacity === 0) {
+    return null;
+  }
+
+  const dir = swipeDir === "Right" ? "previous" : "next";
+  const action = overlayOpacity === 1 ? "Release" : "Swipe";
+
+  return (
+    <div
+      className="unselectable text md bgColorAlt"
+      aria-label={`${action} for ${dir} page`}
+      style={{
+        position: "fixed",
+        top: 150,
+        left: swipeDir === "Right" ? 10 : undefined,
+        right: swipeDir === "Left" ? 10 : undefined,
+        opacity: overlayOpacity,
+        paddingTop: "8px",
+        paddingLeft: "8px",
+        paddingRight: "8px",
+        borderRadius: 8,
+        borderStyle: "solid",
+        borderWidth: 4,
+        borderColor: overlayOpacity === 1 ? "green" : undefined,
+      }}>
+      {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
+    </div>
+  );
+}
+
 interface WorkColumnProps {
   work: WorkState;
   currentPage: number;
@@ -261,26 +290,10 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
 
   return (
     <>
-      {overlayOpacity > 0 && (
-        <div
-          className="unselectable text md bgColorAlt"
-          style={{
-            position: "fixed",
-            top: 150,
-            left: props.swipeDir === "Right" ? 10 : undefined,
-            right: props.swipeDir === "Left" ? 10 : undefined,
-            opacity: overlayOpacity,
-            paddingTop: "8px",
-            paddingLeft: "8px",
-            paddingRight: "8px",
-            borderRadius: 8,
-            borderStyle: "solid",
-            borderWidth: 4,
-            borderColor: overlayOpacity === 1 ? "green" : undefined,
-          }}>
-          {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
-        </div>
-      )}
+      <SwipeFeedback
+        overlayOpacity={overlayOpacity}
+        swipeDir={props.swipeDir}
+      />
       <ContentBox isSmall mt={isMobile ? 0 : undefined}>
         {work === "Loading" ? (
           <span>{`Loading, please wait`}</span>
