@@ -89,6 +89,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
   const readerMainScale = settings.readerMainScale / 100;
   const readerSideScale = settings.readerSideScale / 100;
   const bgColorAlt = isDarkMode ? Solarized.base015 : Solarized.base15;
+  const topBarColor = getAppBarColor(settings);
 
   return {
     styles: {
@@ -126,6 +127,31 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         msUserSelect: "none",
         userSelect: "none",
       },
+      ".text": {
+        ...TEXT_STYLE,
+        color: contentTextColor,
+      },
+      ".text.light": { color: contentTextLightColor },
+      ".text.compact": { lineHeight: 1 },
+      ".text.md": { fontSize: FontSizes.SMALL_SCREEN },
+      ".text.sm": { fontSize: FontSizes.SECONDARY },
+      ".text.xs": { fontSize: FontSizes.TERTIARY },
+      ".button": {
+        borderRadius: 4,
+        cursor: "pointer",
+        border: "none",
+        padding: "6px",
+        paddingLeft: "12px",
+        paddingRight: "12px",
+        backgroundColor: topBarColor,
+        color: isDarkMode ? Solarized.base01 : Solarized.base015,
+      },
+      ".button:hover": {
+        backgroundColor: topBarColor + "A0",
+      },
+      ".button:focus": {
+        backgroundColor: topBarColor + "A0",
+      },
 
       /** Tooltip styling */
       ".MuiTooltip-arrow": {
@@ -149,15 +175,6 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         borderStyle: "solid",
         margin: "0px 16px;",
       },
-      ".text": {
-        ...TEXT_STYLE,
-        color: contentTextColor,
-      },
-      ".text.light": { color: contentTextLightColor },
-      ".text.compact": { lineHeight: 1 },
-      ".text.md": { fontSize: FontSizes.SMALL_SCREEN },
-      ".text.sm": { fontSize: FontSizes.SECONDARY },
-      ".text.xs": { fontSize: FontSizes.TERTIARY },
       ".readerMain .text.md": {
         fontSize: FontSizes.SMALL_SCREEN * readerMainScale,
       },
@@ -199,7 +216,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         color: (isDarkMode ? Solarized.base00 : Solarized.base1) + 40,
       },
       ".menu": {
-        backgroundColor: getAppBarColor(settings),
+        backgroundColor: topBarColor,
       },
       ".AppBar": {
         width: "100%",
@@ -363,6 +380,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         boxShadow: `0 2px 3px 1px ${bgColorAlt}`,
         marginBottom: "3px",
         backgroundColor: backgroundColor,
+        zIndex: 5,
       },
       ".readerMobileBottomBar": {
         width: document.body.clientWidth,
@@ -423,6 +441,11 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         paddingBottom: "4px",
         paddingTop: "2px",
         borderRadius: "4px",
+      },
+      ".extReaderMobile .readerNavIconContainer": {
+        borderRadius: "8px",
+        margin: "4px",
+        paddingBottom: "4px",
       },
       ".readerMobileBottomBar .readerNavIconContainer": {
         borderRadius: "8px",

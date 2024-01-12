@@ -9,7 +9,7 @@ import user from "@testing-library/user-event";
 describe("external reader", () => {
   it("shows items", async () => {
     render(<ExternalContentReader />);
-    await screen.findByText(/Enter text below/);
+    await screen.findByText(/Enter raw text below/);
   });
 
   it("allows import on click", async () => {
@@ -20,6 +20,8 @@ describe("external reader", () => {
     await user.click(screen.getByLabelText("Import text"));
 
     await screen.findByText(/Reading imported/);
-    await screen.findByText(/Gallia est omnis/);
+    await screen.findByText("Gallia");
+    await screen.findByText("est");
+    await screen.findByText("omnis");
   });
 });

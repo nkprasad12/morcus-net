@@ -37,15 +37,20 @@ type SidebarTab<T> = T | DefaultSidebarTab;
 interface Responsive {
   isMobile: boolean;
 }
+
+/** Configuration for the sidebar or drawer */
 interface SidebarConfig<CustomTabs> {
   initialSidebarTab?: SidebarTab<CustomTabs>;
   sidebarTabConfigs?: ReaderInternalTabConfig<SidebarTab<CustomTabs>>[];
   dictActionMessage?: string;
+  showMobileNavSettings?: boolean;
 }
+/** Configuration for extra tabs to add to the sidebar or drawer. */
 export interface BaseExtraSidebarTabProps<CustomSidebarTab> {
   tab: CustomSidebarTab;
   scale: number;
 }
+/** Properties for the main column. */
 export interface BaseMainColumnProps extends Responsive {
   onWordSelected: (word: string) => any;
   scale: number;
@@ -154,7 +159,7 @@ export function BaseReader<
         currentTab={sidebarTab}
         setCurrentTab={setSidebarTab}
         tabs={props.sidebarTabConfigs || DEFAULT_SIDEBAR_TAB_CONFIGS}
-        isMobile={isScreenSmall}
+        location={isScreenSmall ? "Drawer" : undefined}
       />
       {showDefaultTab ? (
         <DefaultReaderSidebarContent
@@ -167,7 +172,7 @@ export function BaseReader<
           setTotalWidth={isScreenSmall ? undefined : setTotalWidth}
           mainWidth={isScreenSmall ? undefined : mainWidth}
           setMainWidth={isScreenSmall ? undefined : setMainWidth}
-          {...(isScreenSmall
+          {...(isScreenSmall && props.showMobileNavSettings
             ? {
                 swipeNavigation,
                 setSwipeNavigation,

@@ -256,14 +256,17 @@ export interface ReaderInternalNavbarProps<T> {
   currentTab: T;
   /** The callback invoked to set the currently selected tab. */
   setCurrentTab: (t: T) => any;
-  /** Whether the UX is mobile. */
-  isMobile: boolean;
+  /** Which special component the navbar is nested in. */
+  location?: "Drawer";
 }
 export function ReaderInternalNavbar<T extends SideTabType>(
   props: ReaderInternalNavbarProps<T>
 ) {
   return (
-    <div className={props.isMobile ? "readerMobileBottomBar" : "readerIconBar"}>
+    <div
+      className={
+        props.location === "Drawer" ? "readerMobileBottomBar" : "readerIconBar"
+      }>
       {props.tabs.map((tab) => (
         <ReaderSideNavIcon
           Icon={tab.Icon}

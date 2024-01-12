@@ -9,31 +9,32 @@ import {
 } from "@/web/client/pages/library/reader_sidebar_components";
 import EditIcon from "@mui/icons-material/Edit";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import TextField from "@mui/material/TextField";
-import Button from "@mui/material/Button";
 
 export function ExternalContentReader() {
   return (
     <BaseReader<MainColumnProps>
       MainColumn={MainColumn}
-      dictActionMessage="Double click"
+      dictActionMessage="Click on"
     />
   );
 }
 
 interface InternalReaderState {
-  text: string;
-  setText: (has: string) => any;
+  text: JSX.Element | null;
+  setText: (data: JSX.Element) => any;
   setCurrentTab: (tab: MainTab) => any;
+  onWordSelected: (word: string) => any;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
-  text: "",
+  text: null,
   setText: () => {},
   setCurrentTab: () => {},
+  onWordSelected: () => {},
 };
 const InternalReaderContext: React.Context<InternalReaderState> =
   React.createContext(DEFAULT_INTERNAL_STATE);
@@ -53,40 +54,30 @@ const LOADED_ICONS = [LOAD_ICON, READER_ICON];
 interface MainColumnProps {}
 function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
-  const [text, setText] = useState("");
+  const [text, setText] = useState<JSX.Element | null>(null);
 
   const { onWordSelected } = props;
 
-  useEffect(() => {
-    const doubleClickListener = () => {
-      const selection = document.getSelection();
-      if (selection === null) {
-        return;
-      }
-      const selectedText = selection.toString();
-      const words: string[] = [];
-      processWords(selectedText, (word) => words.push(word));
-      document.getSelection()?.empty();
-      onWordSelected(words[0]);
-    };
-    document.addEventListener("dblclick", doubleClickListener);
-    return () => document.removeEventListener("dblclick", doubleClickListener);
-  }, [onWordSelected]);
-
   return (
-    <ContentBox isSmall>
-      <>
-        <ReaderInternalNavbar
-          currentTab={currentTab}
-          setCurrentTab={setCurrentTab}
-          tabs={text.length > 0 ? LOADED_ICONS : BASE_ICONS}
-          isMobile={props.isMobile}
-        />
+    <ContentBox
+      isSmall
+      mt={props.isMobile ? 0 : undefined}
+      className={props.isMobile ? "extReaderMobile" : undefined}>
+      <ReaderInternalNavbar
+        currentTab={currentTab}
+        setCurrentTab={setCurrentTab}
+        tabs={text !== null ? LOADED_ICONS : BASE_ICONS}
+      />
+      <div
+        style={{
+          paddingLeft: props.isMobile ? "12px" : undefined,
+          paddingRight: props.isMobile ? "12px" : undefined,
+        }}>
         <InternalReaderContext.Provider
-          value={{ text, setText, setCurrentTab }}>
+          value={{ text, setText, setCurrentTab, onWordSelected }}>
           <RenderTab current={currentTab} />
         </InternalReaderContext.Provider>
-      </>
+      </div>
     </ContentBox>
   );
 }
@@ -98,16 +89,8 @@ function RenderTab(props: { current: MainTab }) {
     case "Load text":
       return (
         <div>
-          <div>
-            <span className="text sm light">
-              In progress: other import types coming soon.
-            </span>
-          </div>
-          <div>
-            <span className="text md">
-              Enter text below and click submit to import.
-            </span>
-          </div>
+          <div className="text md">Enter raw text below.</div>
+          <div className="text sm light">Other import types coming soon.</div>
           <InputContentBox />
         </div>
       );
@@ -126,14 +109,15 @@ function RenderTab(props: { current: MainTab }) {
 }
 
 function InputContentBox() {
-  const { setText, setCurrentTab } = React.useContext(InternalReaderContext);
+  const { setText, setCurrentTab, onWordSelected } = React.useContext(
+    InternalReaderContext
+  );
 
   const [pendingText, setPendingText] = React.useState("");
 
   return (
-    <>
+    <div style={{ marginTop: "8px" }}>
       <TextField
-        label="Enter text to import"
         multiline
         fullWidth
         rows={10}
@@ -146,17 +130,32 @@ function InputContentBox() {
           setPendingText(e.target.value);
         }}
       />
-      <Button
+      <button
+        aria-label="Import text"
+        className="button text md"
         onClick={() => {
-          setText(pendingText);
+          setText(processedTextComponent(pendingText, onWordSelected));
           setCurrentTab("Text reader");
         }}
-        variant="contained"
-        className="nonDictText"
-        aria-label="Import text"
-        sx={{ mt: 2, display: "block" }}>
-        {"Import"}
-      </Button>
-    </>
+        style={{ marginTop: "16px" }}>
+        Import
+      </button>
+    </div>
   );
+}
+
+function processedTextComponent(
+  input: string,
+  onWordSelected: (word: string) => any
+) {
+  let key = 0;
+  const children = processWords(input, (word) => {
+    key += 1;
+    return (
+      <span key={key} className="latLink" onClick={() => onWordSelected(word)}>
+        {word}
+      </span>
+    );
+  });
+  return <span>{children}</span>;
 }

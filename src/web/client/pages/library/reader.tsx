@@ -215,6 +215,7 @@ export function ReadingPage() {
         work={work}
         currentPage={currentPage}
         overlayOpacity={overlayOpacity}
+        showMobileNavSettings
         swipeDir={swipeDir}
         swipeListeners={{
           onSwipeCancel: () => setOverlayOpacity(0),
