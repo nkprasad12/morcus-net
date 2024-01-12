@@ -2,6 +2,7 @@ import {
   Validator,
   decodeMessage,
   encodeMessage,
+  isBoolean,
   isNumber,
 } from "@/web/utils/rpc/parsing";
 import { useCallback, useState } from "react";
@@ -37,4 +38,8 @@ export function usePersistedState<T>(
 
 export function usePersistedNumber(defaultValue: number, storageKey: string) {
   return usePersistedState(defaultValue, storageKey, isNumber);
+}
+
+export function usePersistedBool(defaultValue: boolean, storageKey: string) {
+  return usePersistedState(defaultValue, storageKey, isBoolean);
 }

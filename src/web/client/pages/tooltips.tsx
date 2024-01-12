@@ -10,11 +10,11 @@ import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { checkPresent } from "@/common/assert";
 
-export type TooltipPlacement = "top-start" | "right";
+export type TooltipPlacement = "top-start" | "right" | "bottom";
 
 export type TooltipChild = React.ForwardRefExoticComponent<
   Omit<any, "ref"> & React.RefAttributes<any>
->;
+> & { onClick?: React.MouseEventHandler };
 
 export interface TooltipProps {
   titleText: string | JSX.Element;
@@ -31,9 +31,8 @@ export interface TooltipProps {
 function BaseTooltip(props: TooltipProps) {
   return (
     <ClickAwayListener
-      onClickAway={() => {
-        props.onClickAway();
-      }}>
+      onClickAway={() => props.onClickAway()}
+      touchEvent={false}>
       <div role="presentation" style={{ display: "inline" }}>
         <Tooltip
           title={<Typography component={"div"}>{props.titleText}</Typography>}
@@ -55,8 +54,9 @@ function BaseTooltip(props: TooltipProps) {
             },
           }}>
           <props.ChildFactory
-            onClick={() => {
+            onClick={(e: React.MouseEvent) => {
               props.onChildClick(props.open);
+              e.stopPropagation();
             }}
           />
         </Tooltip>
@@ -167,9 +167,16 @@ export function CopyLinkTooltip(props: {
   forwarded: TooltipChild;
   message: string;
   link: string;
+  visibleListener?: (visible: boolean) => any;
+  placement?: TooltipPlacement;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
   const [state, setState] = React.useState<CopyLinkTooltipState>("Closed");
+
+  function setTooltipVisible(isVisible: boolean) {
+    props.visibleListener && props.visibleListener(isVisible);
+    setVisible(isVisible);
+  }
 
   return (
     <BaseTooltip
@@ -179,12 +186,12 @@ export function CopyLinkTooltip(props: {
           setState={setState}
           mainMessage={props.message}
           link={props.link}
-          dismissTooltip={() => setVisible(false)}
+          dismissTooltip={() => setTooltipVisible(false)}
         />
       }
       className={props.className}
       ChildFactory={props.forwarded}
-      placement="top-start"
+      placement={props.placement || "top-start"}
       open={visible}
       onChildClick={(isOpen) => {
         if (isOpen) {
@@ -192,9 +199,9 @@ export function CopyLinkTooltip(props: {
           return;
         }
         setState("ClickToCopy");
-        setVisible(true);
+        setTooltipVisible(true);
       }}
-      onClickAway={() => setVisible(false)}
+      onClickAway={() => setTooltipVisible(false)}
     />
   );
 }

@@ -4,6 +4,7 @@ const fs = require("fs");
 const HtmlWebpackPlugin = require("html-webpack-plugin");
 const { CleanWebpackPlugin } = require("clean-webpack-plugin");
 const { SwcMinifyWebpackPlugin } = require("swc-minify-webpack-plugin");
+const { BundleAnalyzerPlugin } = require("webpack-bundle-analyzer");
 const { DefinePlugin } = require("webpack");
 
 module.exports = (env) => {
@@ -11,6 +12,7 @@ module.exports = (env) => {
 
   const transpileOnly = env.transpileOnly === true;
   const isProduction = env.production === true;
+  const analyze = env.analyze === true;
   const shouldMinimize = isProduction;
   const hash = fs.readFileSync("morcusnet.commit.txt").toString();
   console.log(`Client commit hash: "${hash}"`);
@@ -30,6 +32,9 @@ module.exports = (env) => {
       publicPath: "/",
     }),
   ];
+  if (analyze) {
+    plugins.push(new BundleAnalyzerPlugin({ defaultSizes: "gzip" }));
+  }
   const productionOptimization = {
     minimize: shouldMinimize,
     minimizer: [new SwcMinifyWebpackPlugin({ ecma: "2016" })],

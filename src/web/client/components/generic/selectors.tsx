@@ -20,7 +20,7 @@ export function NumberSelector(props: {
       style={{ marginTop: "4px", marginBottom: "4px" }}>
       <span
         className={`text ${props.labelSize || "md"}${
-          props.light ? "" : " light"
+          props.light !== true ? "" : " light"
         }`}
         style={{ paddingRight: "8px" }}>
         {props.label}

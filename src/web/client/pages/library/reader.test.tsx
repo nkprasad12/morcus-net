@@ -5,7 +5,7 @@
 import user from "@testing-library/user-event";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen } from "@testing-library/react";
-import { ReadingPage } from "@/web/client/pages/library/reader";
+import { ReadingPage, SwipeFeedback } from "@/web/client/pages/library/reader";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { ProcessedWork } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -537,5 +537,17 @@ describe("Reading UI", () => {
 
     await screen.findByText(/Main panel/);
     await screen.findByText(/Drawer/);
+  });
+});
+
+describe("SwipeFeedback", () => {
+  it("Shows expected on full swipe", async () => {
+    render(<SwipeFeedback overlayOpacity={1} swipeDir="Left" />);
+    await screen.findByLabelText("Release for next page");
+  });
+
+  it("Shows expected on partial swipe", async () => {
+    render(<SwipeFeedback overlayOpacity={0.57} swipeDir="Right" />);
+    await screen.findByLabelText("Swipe for previous page");
   });
 });

@@ -1,5 +1,3 @@
-/** @jsxImportSource @emotion/react */
-
 import {
   DocumentInfo,
   ProcessedWork,
@@ -38,7 +36,7 @@ import {
   BaseReader,
 } from "@/web/client/pages/library/base_reader";
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
-import { GestureListener, SwipeDirection } from "@/web/client/mobile/gestures";
+import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
@@ -149,20 +147,32 @@ function updatePage(
   LibrarySavedSpot.set(id, newPage);
 }
 
+interface ReaderState {
+  hasTooltip: React.MutableRefObject<boolean[]>;
+  section: ProcessedWorkNode | undefined;
+}
+
+const ReaderContext = React.createContext<ReaderState>({
+  hasTooltip: { current: [] },
+  section: undefined,
+});
+
 export function ReadingPage() {
   const [currentPage, setCurrentPage] = useState<number>(0);
   const [work, setWork] = useState<WorkState>("Loading");
   const [overlayOpacity, setOverlayOpacity] = useState(0);
   const [swipeDir, setSwipeDir] = useState<SwipeDirection>("Left");
+  const hasTooltip = React.useRef<boolean[]>([]);
 
   const { nav, route } = Router.useRouter();
   const queryPage = route.params?.q || route.params?.pg;
-
-  // function setSwipePopupOpacity(opacity: number) {
-  //   document
-  //     .getElementById("SWIPE_FEEDBACK")
-  //     ?.style.setProperty("opacity", opacity.toString());
-  // }
+  const section = React.useMemo(
+    () =>
+      typeof work === "string"
+        ? undefined
+        : findSectionById(work.pages[currentPage].id, work.root),
+    [work, currentPage]
+  );
 
   useEffect(() => {
     const workId = resolveWorkId(route.path);
@@ -171,14 +181,11 @@ export function ReadingPage() {
       return;
     }
     fetchWork(workId)
-      .then((work) =>
-        setWork({
-          info: work.info,
-          root: work.root,
-          textParts: work.textParts,
-          pages: divideWork(work),
-        })
-      )
+      .then((data) => {
+        const pages = divideWork(data);
+        const paginated = { ...data, pages };
+        setWork(paginated);
+      })
       .catch((reason) => {
         console.debug(reason);
         setWork("Error");
@@ -190,38 +197,49 @@ export function ReadingPage() {
     setCurrentPage(urlPage === undefined ? 0 : urlPage - 1);
   }, [queryPage]);
 
+  useEffect(() => {
+    if (section === undefined) {
+      hasTooltip.current = [];
+      return;
+    }
+    hasTooltip.current = getWorkNodes(section).map((_) => false);
+  }, [section]);
+
   return (
-    <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
-      MainColumn={WorkColumn}
-      ExtraSidebarContent={Sidebar}
-      initialSidebarTab="Attribution"
-      sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
-      work={work}
-      currentPage={currentPage}
-      overlayOpacity={overlayOpacity}
-      swipeDir={swipeDir}
-      swipeListeners={{
-        onSwipeCancel: () => setOverlayOpacity(0),
-        onSwipeProgress: (direction, size) => {
-          if (typeof work === "string") {
-            return;
-          }
-          setSwipeDir(direction);
-          const progress = (size - 0.06) / 0.24;
-          setOverlayOpacity(Math.min(progress * progress, 1));
-        },
-        onSwipeEnd: (direction, size) => {
-          if (typeof work === "string") {
-            return;
-          }
-          setOverlayOpacity(0);
-          if (size >= 0.3) {
-            const offset = direction === "Right" ? -1 : 1;
-            updatePage(offset, currentPage, nav, work, true);
-          }
-        },
-      }}
-    />
+    <ReaderContext.Provider value={{ hasTooltip, section }}>
+      <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
+        MainColumn={WorkColumn}
+        ExtraSidebarContent={Sidebar}
+        initialSidebarTab="Attribution"
+        sidebarTabConfigs={SIDEBAR_PANEL_ICONS}
+        work={work}
+        currentPage={currentPage}
+        overlayOpacity={overlayOpacity}
+        showMobileNavSettings
+        swipeDir={swipeDir}
+        swipeListeners={{
+          onSwipeCancel: () => setOverlayOpacity(0),
+          onSwipeProgress: (direction, size) => {
+            if (typeof work === "string" || hasTooltip.current.some((v) => v)) {
+              return;
+            }
+            setSwipeDir(direction);
+            const progress = (size - MIN_SWIPE_SIZE) / 0.16;
+            setOverlayOpacity(Math.min(progress * progress, 1));
+          },
+          onSwipeEnd: (direction, size) => {
+            if (typeof work === "string" || hasTooltip.current.some((v) => v)) {
+              return;
+            }
+            setOverlayOpacity(0);
+            if (size >= MIN_SWIPE_SIZE + 0.16) {
+              const offset = direction === "Right" ? -1 : 1;
+              updatePage(offset, currentPage, nav, work, true);
+            }
+          },
+        }}
+      />
+    </ReaderContext.Provider>
   );
 }
 
@@ -250,6 +268,41 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
   }
 }
 
+export function SwipeFeedback(props: {
+  overlayOpacity: number;
+  swipeDir: SwipeDirection;
+}) {
+  const { overlayOpacity, swipeDir } = props;
+  if (overlayOpacity === 0) {
+    return null;
+  }
+
+  const dir = swipeDir === "Right" ? "previous" : "next";
+  const action = overlayOpacity === 1 ? "Release" : "Swipe";
+
+  return (
+    <div
+      className="unselectable text md bgColorAlt"
+      aria-label={`${action} for ${dir} page`}
+      style={{
+        position: "fixed",
+        top: 150,
+        left: swipeDir === "Right" ? 10 : undefined,
+        right: swipeDir === "Left" ? 10 : undefined,
+        opacity: overlayOpacity,
+        paddingTop: "8px",
+        paddingLeft: "8px",
+        paddingRight: "8px",
+        borderRadius: 8,
+        borderStyle: "solid",
+        borderWidth: 4,
+        borderColor: overlayOpacity === 1 ? "green" : undefined,
+      }}>
+      {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
+    </div>
+  );
+}
+
 interface WorkColumnProps {
   work: WorkState;
   currentPage: number;
@@ -260,25 +313,11 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
   const { work, currentPage, isMobile, overlayOpacity } = props;
 
   return (
-    <GestureListener>
-      <div
-        className="unselectable text md bgColorAlt"
-        style={{
-          position: "fixed",
-          top: 150,
-          left: props.swipeDir === "Right" ? 10 : undefined,
-          right: props.swipeDir === "Left" ? 10 : undefined,
-          opacity: overlayOpacity,
-          paddingTop: "8px",
-          paddingLeft: "8px",
-          paddingRight: "8px",
-          borderRadius: 8,
-          borderStyle: "solid",
-          borderWidth: 4,
-          borderColor: overlayOpacity === 1 ? "green" : undefined,
-        }}>
-        {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
-      </div>
+    <>
+      <SwipeFeedback
+        overlayOpacity={overlayOpacity}
+        swipeDir={props.swipeDir}
+      />
       <ContentBox isSmall mt={isMobile ? 0 : undefined}>
         {work === "Loading" ? (
           <span>{`Loading, please wait`}</span>
@@ -310,7 +349,7 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
           </>
         )}
       </ContentBox>
-    </GestureListener>
+    </>
   );
 }
 
@@ -412,6 +451,7 @@ function WorkNavigationBar(props: {
           forwarded={TooltipNavIcon}
           message="Copy link to page"
           link={window.location.href}
+          placement="bottom"
         />
       </div>
       <div
@@ -433,7 +473,7 @@ export function WorkTextPage(props: {
   isMobile: boolean;
 }) {
   const { textScale, isMobile, work } = props;
-  const section = findSectionById(work.pages[props.page].id, work.root);
+  const { section } = React.useContext(ReaderContext);
   if (section === undefined) {
     return <InfoText text="Invalid page!" />;
   }
@@ -461,6 +501,7 @@ export function WorkTextPage(props: {
           node={chunk}
           setDictWord={props.setDictWord}
           i={i + (hasHeader ? 1 : 0)}
+          chunkArrayIndex={i}
           workName={capitalizeWords(props.work.info.title)}
           hideHeader={
             hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0)
@@ -596,14 +637,24 @@ function workSectionHeader(
   };
 }
 
-function WorkChunkHeader(props: { text: string; blurb: string }) {
+function WorkChunkHeader(props: {
+  text: string;
+  blurb: string;
+  chunkArrayIndex: number;
+}) {
+  const { hasTooltip } = React.useContext(ReaderContext);
+
   return (
     <CopyLinkTooltip
       forwarded={React.forwardRef<HTMLSpanElement>(
         workSectionHeader(props.text)
       )}
       message={props.blurb}
+      placement="right"
       link={`${props.blurb}\n${window.location.href}`}
+      visibleListener={(visible) => {
+        hasTooltip.current[props.chunkArrayIndex] = visible;
+      }}
     />
   );
 }
@@ -612,6 +663,7 @@ function WorkChunk(props: {
   node: ProcessedWorkNode;
   setDictWord: (word: string) => any;
   i: number;
+  chunkArrayIndex: number;
   workName: string;
   hideHeader?: boolean;
   isMobile: boolean;
@@ -637,6 +689,7 @@ function WorkChunk(props: {
             text={node.id
               .slice(isMobile && node.id.length > 2 ? 2 : 0)
               .join(".")}
+            chunkArrayIndex={props.chunkArrayIndex}
             blurb={`${props.workName} ${id}`}
           />
         </span>
@@ -661,10 +714,17 @@ function LatLink(props: {
   setDictWord: (input: string) => any;
   target?: string;
 }) {
+  const { hasTooltip } = React.useContext(ReaderContext);
   return (
     <span
       className="workLatWord"
-      onClick={() => props.setDictWord(props.target || props.word)}>
+      onClick={(e) => {
+        if (hasTooltip.current.some((v) => v)) {
+          return;
+        }
+        props.setDictWord(props.target || props.word);
+        e.stopPropagation();
+      }}>
       {props.word}
     </span>
   );
