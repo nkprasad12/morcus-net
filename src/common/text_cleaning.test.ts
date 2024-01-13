@@ -28,6 +28,16 @@ describe("processWords", () => {
     ]);
   });
 
+  it("splits words with newlines and tabs", () => {
+    expect(processWords("hello\ndarkness\tmy", (s) => s)).toStrictEqual([
+      "hello",
+      "\n",
+      "darkness",
+      "\t",
+      "my",
+    ]);
+  });
+
   it("splits across punctuation initial other final word", () => {
     expect(processWords("[hello darkness. (my) old", (s) => s)).toStrictEqual([
       "[",

@@ -152,7 +152,10 @@ function processedTextComponent(
   const children = processWords(input, (word) => {
     key += 1;
     return (
-      <span key={key} className="latLink" onClick={() => onWordSelected(word)}>
+      <span
+        key={key}
+        className="workLatWord"
+        onClick={() => onWordSelected(word)}>
         {word}
       </span>
     );
