@@ -6,6 +6,8 @@ import ClearIcon from "@mui/icons-material/Clear";
 import IconButton from "@mui/material/IconButton";
 import Popper from "@mui/material/Popper";
 
+const CLEAR_QUERY = "Clear query";
+
 function spacing(input: number): string {
   return `${input * 8}px`;
 }
@@ -187,7 +189,12 @@ export function SearchBox<T>(props: {
             }}
             autoFocus={props.autoFocused}
             onFocus={() => setFocused(true)}
-            onBlur={() => {
+            onBlur={(e) => {
+              // If this is due to a click of the clear button, just reset the cursor and return.
+              if (e.relatedTarget?.ariaLabel === CLEAR_QUERY) {
+                setCursor(-1);
+                return;
+              }
               setTimeout(() => {
                 setFocused(false);
                 setCursor(-1);
@@ -197,7 +204,7 @@ export function SearchBox<T>(props: {
             role="combobox"
           />
           <IconButton
-            aria-label="clear query"
+            aria-label={CLEAR_QUERY}
             sx={{ marginRight: 0.5 }}
             onClick={() => {
               inputRef.current?.focus();
