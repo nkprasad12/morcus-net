@@ -19,6 +19,7 @@ import { SearchBox } from "@/web/client/components/generic/search";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
+import { Solarized } from "@/web/client/styling/colors";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -43,6 +44,7 @@ function SearchSettingsDialog(props: {
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
+  const inflectedSearch = globalSettings.data.inflectedSearch === true;
 
   return (
     <Dialog
@@ -53,8 +55,8 @@ function SearchSettingsDialog(props: {
       disableScrollLock>
       <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
       <DialogContent>
-        <div className="text md light" style={{ marginTop: "16px" }}>
-          Enabled Dictionaries
+        <div className="text md light" style={{ marginTop: "8px" }}>
+          Dictionaries
         </div>
         <FormGroup>
           {LatinDict.AVAILABLE.map((dict) => (
@@ -81,6 +83,25 @@ function SearchSettingsDialog(props: {
               }
             />
           ))}
+        </FormGroup>
+        <div className="text md light" style={{ marginTop: "8px" }}>
+          Settings
+        </div>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={inflectedSearch}
+                onChange={() =>
+                  globalSettings.setData({
+                    ...globalSettings.data,
+                    inflectedSearch: !inflectedSearch,
+                  })
+                }
+              />
+            }
+            label={<span>Search inflected forms (Beta)</span>}
+          />
         </FormGroup>
         <HighlightStrengthSelector
           highlightStrength={
@@ -130,7 +151,7 @@ export function DictionarySearch(props: {
       path: ClientPaths.DICT_PAGE.path,
       query: searchTerm,
       dicts: dict,
-      experimentalSearch: settings.data.experimentalMode === true,
+      inflectedSearch: settings.data.inflectedSearch === true,
     });
   }
 
@@ -140,6 +161,7 @@ export function DictionarySearch(props: {
         placeholderText="Search for a word"
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
+        settingsPreview={<SettingsPreview dicts={props.dicts} />}
         smallScreen={props.smallScreen}
         autoFocused={route.query === undefined}
         onRawEnter={(v) => onEnter(v)}
@@ -157,6 +179,47 @@ export function DictionarySearch(props: {
         dicts={props.dicts}
         setDicts={props.setDicts}
       />
+    </>
+  );
+}
+
+function SettingsPreview(props: { dicts: DictInfo[] }) {
+  const globalSettings = useContext(GlobalSettingsContext);
+  const inflectionMode = globalSettings.data.inflectedSearch === true;
+
+  return (
+    <>
+      <span
+        className="text light xxs compact"
+        style={{
+          marginLeft: "6px",
+          fontFamily: "monospace",
+          letterSpacing: "0",
+          marginRight: "12px",
+        }}>
+        In{" "}
+        {props.dicts.map((dict) => (
+          <span key={dict.key} style={{ marginRight: "2px" }}>
+            <DictChip label={dict.key} />
+          </span>
+        ))}
+      </span>
+      <span
+        className="text light xxs compact"
+        style={{
+          fontFamily: "monospace",
+          letterSpacing: "0",
+        }}>
+        Inflection{" "}
+        <span
+          className="text xs smallChip"
+          style={{
+            backgroundColor:
+              (inflectionMode ? Solarized.cyan : Solarized.red) + 30,
+          }}>
+          {inflectionMode ? "On" : "Off"}
+        </span>
+      </span>
     </>
   );
 }

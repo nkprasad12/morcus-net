@@ -136,6 +136,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".text.md": { fontSize: FontSizes.SMALL_SCREEN },
       ".text.sm": { fontSize: FontSizes.SECONDARY },
       ".text.xs": { fontSize: FontSizes.TERTIARY },
+      ".text.xxs": { fontSize: "12" },
       ".button": {
         borderRadius: 4,
         cursor: "pointer",
@@ -251,6 +252,13 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".shChip": {
         color: dictChipTextColor,
         backgroundColor: "#9d42cf" + (isDarkMode ? "60" : "30"),
+      },
+      ".smallChip": {
+        borderRadius: 4,
+        paddingLeft: 3,
+        paddingRight: 3,
+        fontFamily: "monospace",
+        color: dictChipTextColor,
       },
       ".lsTopSense": {
         paddingLeft: "0em",
@@ -479,6 +487,12 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         border: `2px solid ${
           isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
         }`,
+      },
+      ".searchSettingsBar": {
+        borderRadius: 4,
+        backgroundColor: bgColorAlt + 40,
+        display: "flex",
+        alignItems: "center",
       },
       ".customSearchBox": {
         backgroundColor: backgroundColor,

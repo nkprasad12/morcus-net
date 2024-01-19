@@ -13,6 +13,7 @@ export interface GlobalBooleans {
 
 export interface GlobalSettings extends GlobalBooleans {
   highlightStrength?: number;
+  inflectedSearch?: boolean;
 }
 
 function toGlobalSettings(input: unknown): GlobalSettings {

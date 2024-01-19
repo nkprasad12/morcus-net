@@ -7,7 +7,7 @@ const QUERY_KEY = "q";
 const OPTIONS_KEY = "o";
 const DICTS_KEY = "in";
 
-const EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED = "1";
+const INFLECTED_SEARCH_COMPATIBILITY_ENABLED = "1";
 const ID_SEARCH_ENABLED = "2";
 
 export interface DictRoute {
@@ -17,8 +17,8 @@ export interface DictRoute {
   query?: string;
   /** The browser hash. */
   hash?: string;
-  /** Whether experimental search features are enabled. */
-  experimentalSearch?: boolean;
+  /** Whether inflected search features are enabled. */
+  inflectedSearch?: boolean;
   /** Whether the search query is by id. */
   idSearch?: boolean;
   /**
@@ -51,8 +51,8 @@ function toRoute(info: DictRoute): RouteInfo {
   }
   const params: Record<string, string | undefined> = {};
   const optionMode =
-    info.experimentalSearch === true
-      ? EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED
+    info.inflectedSearch === true
+      ? INFLECTED_SEARCH_COMPATIBILITY_ENABLED
       : undefined;
   params[QUERY_KEY] = info.query;
   params[DICTS_KEY] = dictsToParam(info.dicts);
@@ -75,7 +75,7 @@ function fromRoute(info: RouteInfo): DictRoute {
   return {
     path: info.path,
     query: params[QUERY_KEY],
-    experimentalSearch: option === EXPERIMENTAL_SEARCH_COMPATIBILITY_ENABLED,
+    inflectedSearch: option === INFLECTED_SEARCH_COMPATIBILITY_ENABLED,
     idSearch: option === ID_SEARCH_ENABLED,
     dicts: dictsFromParam(params[DICTS_KEY]),
     hash: info.hash,

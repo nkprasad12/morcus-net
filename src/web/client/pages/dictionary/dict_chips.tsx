@@ -6,14 +6,7 @@ export function DictChip(props: { label: string }) {
   }
 
   return (
-    <span
-      className={getClassName(props.label) + " text xs"}
-      style={{
-        borderRadius: 4,
-        paddingLeft: 3,
-        paddingRight: 3,
-        fontFamily: "monospace",
-      }}>
+    <span className={getClassName(props.label) + " text xs smallChip"}>
       {props.label}
     </span>
   );

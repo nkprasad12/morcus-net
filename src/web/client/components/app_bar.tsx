@@ -155,7 +155,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             variant="h5"
             noWrap
             component="a"
-            onClick={handlePageClick(mainPages.slice(-1)[0].targetPath)}
             sx={{
               ml: 3,
               display: isSmall ? "flex" : "none",

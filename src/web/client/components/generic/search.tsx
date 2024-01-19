@@ -2,8 +2,11 @@ import { useRef, useState, useEffect } from "react";
 
 import SettingsIcon from "@mui/icons-material/Settings";
 import SearchIcon from "@mui/icons-material/Search";
+import ClearIcon from "@mui/icons-material/Clear";
 import IconButton from "@mui/material/IconButton";
 import Popper from "@mui/material/Popper";
+
+const CLEAR_QUERY = "Clear query";
 
 function spacing(input: number): string {
   return `${input * 8}px`;
@@ -18,6 +21,7 @@ export function SearchBox<T>(props: {
   autoFocused?: boolean;
   placeholderText?: string;
   onOpenSettings?: () => any;
+  settingsPreview?: JSX.Element;
   onRawEnter: (input: string) => any;
   optionsForInput: (input: string) => T[] | Promise<T[]>;
   onOptionSelected: (t: T) => any;
@@ -84,6 +88,18 @@ export function SearchBox<T>(props: {
     inputRef.current?.blur();
   }
 
+  async function onInput(value: string) {
+    setInput(value);
+    if (props.optionsForInput === undefined) {
+      return;
+    }
+    inputRef.current?.selectionStart;
+    setLoading(true);
+    setOptions(await props.optionsForInput(value));
+    setCursor(-1);
+    setLoading(false);
+  }
+
   return (
     <div
       style={{
@@ -97,107 +113,119 @@ export function SearchBox<T>(props: {
       }}>
       <div
         className={containerClasses.join(" ")}
-        style={{ display: "flex", alignItems: "center" }}
+        style={{
+          display: "flex",
+          flexDirection: "column",
+        }}
         ref={containerRef}>
-        <Popper
-          open={popperOpen}
-          anchorEl={containerRef.current}
-          placement="bottom">
-          <div
-            className="customSearchPopup"
-            style={{
-              width: containerRef.current?.offsetWidth,
-              maxHeight: window.innerHeight * 0.4,
+        <div style={{ display: "flex", alignItems: "center" }}>
+          <Popper
+            open={popperOpen}
+            anchorEl={containerRef.current}
+            placement="bottom">
+            <div
+              className="customSearchPopup"
+              style={{
+                width: containerRef.current?.offsetWidth,
+                maxHeight: window.innerHeight * 0.4,
+              }}
+              onMouseOver={() => setMouseOnPopup(true)}
+              onMouseOut={() => setMouseOnPopup(false)}>
+              {loading && options.length === 0 && (
+                <div className="customSearchPopupOption">Loading options</div>
+              )}
+              {options.length > 0 &&
+                options.map((t, i) => (
+                  <div
+                    className={
+                      "customSearchPopupOption" +
+                      (cursor === i ? " customSearchPopupOptionSelected" : "")
+                    }
+                    key={props.toKey(t)}
+                    id={props.toKey(t)}
+                    onClick={() => onOptionChosen(t)}
+                    onTouchStart={() => setCursor(i)}
+                    onMouseOver={() => setCursor(i)}>
+                    <props.RenderOption option={t} />
+                  </div>
+                ))}
+            </div>
+          </Popper>
+          <SearchIcon
+            fontSize="medium"
+            className="menuIconFaded"
+            sx={{ marginLeft: 1.4 }}
+          />
+          <input
+            ref={inputRef}
+            type="text"
+            className="customSearchBox"
+            spellCheck="false"
+            autoCapitalize="none"
+            autoComplete="off"
+            aria-label={props.ariaLabel}
+            value={input}
+            onChange={async (e) => onInput(e.target.value)}
+            onKeyUp={(event) => {
+              if (event.key !== "Enter") {
+                return;
+              }
+              if (cursor > -1) {
+                onOptionChosen(options[cursor]);
+              } else if (input.trim().length > 0) {
+                props.onRawEnter(input);
+                setFocused(false);
+                setCursor(-1);
+                setMouseOnPopup(false);
+                inputRef.current?.blur();
+                return;
+              }
             }}
-            onMouseOver={() => setMouseOnPopup(true)}
-            onMouseOut={() => setMouseOnPopup(false)}>
-            {loading && options.length === 0 && (
-              <div className="customSearchPopupOption">Loading options</div>
-            )}
-            {options.length > 0 &&
-              options.map((t, i) => (
-                <div
-                  className={
-                    "customSearchPopupOption" +
-                    (cursor === i ? " customSearchPopupOptionSelected" : "")
-                  }
-                  key={props.toKey(t)}
-                  id={props.toKey(t)}
-                  onClick={() => onOptionChosen(t)}
-                  onTouchStart={() => setCursor(i)}
-                  onMouseOver={() => setCursor(i)}>
-                  <props.RenderOption option={t} />
-                </div>
-              ))}
-          </div>
-        </Popper>
-        <SearchIcon
-          fontSize="medium"
-          className="menuIconFaded"
-          sx={{ marginLeft: 1.4 }}
-        />
-        <input
-          ref={inputRef}
-          type="text"
-          className="customSearchBox"
-          spellCheck="false"
-          autoCapitalize="none"
-          autoComplete="off"
-          aria-label={props.ariaLabel}
-          value={input}
-          onChange={async (e) => {
-            const newInput = e.target.value;
-            setInput(newInput);
-            if (props.optionsForInput === undefined) {
-              return;
-            }
-            inputRef.current?.selectionStart;
-            setLoading(true);
-            setOptions(await props.optionsForInput(newInput));
-            setCursor(-1);
-            setLoading(false);
-          }}
-          onKeyUp={(event) => {
-            if (event.key !== "Enter") {
-              return;
-            }
-            if (cursor > -1) {
-              onOptionChosen(options[cursor]);
-            } else if (input.trim().length > 0) {
-              props.onRawEnter(input);
-              setFocused(false);
-              setCursor(-1);
-              setMouseOnPopup(false);
-              inputRef.current?.blur();
-              return;
-            }
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowDown" || event.key === "ArrowUp") {
-              handleArrow(event.key);
-              event.preventDefault();
-            }
-          }}
-          autoFocus={props.autoFocused}
-          onFocus={() => setFocused(true)}
-          onBlur={() => {
-            setTimeout(() => {
-              setFocused(false);
-              setCursor(-1);
-            }, 16);
-          }}
-          placeholder={props.placeholderText}
-          role="combobox"
-        />
-        {props.onOpenSettings && (
+            onKeyDown={(event) => {
+              if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+                handleArrow(event.key);
+                event.preventDefault();
+              }
+            }}
+            autoFocus={props.autoFocused}
+            onFocus={() => setFocused(true)}
+            onBlur={(e) => {
+              // If this is due to a click of the clear button, just reset the cursor and return.
+              if (e.relatedTarget?.ariaLabel === CLEAR_QUERY) {
+                setCursor(-1);
+                return;
+              }
+              setTimeout(() => {
+                setFocused(false);
+                setCursor(-1);
+              }, 16);
+            }}
+            placeholder={props.placeholderText}
+            role="combobox"
+          />
           <IconButton
-            aria-label="search settings"
-            aria-haspopup="true"
+            aria-label={CLEAR_QUERY}
             sx={{ marginRight: 0.5 }}
-            onClick={props.onOpenSettings}
-            id="DictSearchSettingsButton">
-            <SettingsIcon fontSize="medium" className="menuIcon" />
+            onClick={() => {
+              inputRef.current?.focus();
+              onInput("");
+            }}>
+            <ClearIcon fontSize="medium" className="menuIcon" />
           </IconButton>
+        </div>
+        {props.onOpenSettings && (
+          <div className="searchSettingsBar">
+            <div style={{ width: "100%", maxWidth: "100%" }}>
+              {props.settingsPreview}
+            </div>
+            <IconButton
+              aria-label="search settings"
+              aria-haspopup="true"
+              sx={{ marginRight: 0.65 }}
+              onClick={props.onOpenSettings}>
+              <SettingsIcon fontSize="small" className="menuIcon" />
+            </IconButton>
+          </div>
         )}
       </div>
     </div>

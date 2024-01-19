@@ -139,7 +139,7 @@ function onLatinWordClick(
       path: ClientPaths.DICT_PAGE.path,
       query: word,
       dicts: LatinDict.LewisAndShort,
-      experimentalSearch: true,
+      inflectedSearch: true,
     });
   }
 }
