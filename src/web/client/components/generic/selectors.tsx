@@ -31,6 +31,7 @@ export function NumberSelector(props: {
           borderRadius: "4px",
           paddingTop: "8px",
           paddingBottom: "8px",
+          whiteSpace: "nowrap",
         }}>
         <IconButton
           aria-label={`Decrease ${taggedLabel}`}
