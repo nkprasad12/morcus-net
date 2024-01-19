@@ -19,6 +19,7 @@ import { SearchBox } from "@/web/client/components/generic/search";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
+import { Solarized } from "@/web/client/styling/colors";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -140,6 +141,7 @@ export function DictionarySearch(props: {
         placeholderText="Search for a word"
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
+        settingsPreview={<SettingsPreview dicts={props.dicts} />}
         smallScreen={props.smallScreen}
         autoFocused={route.query === undefined}
         onRawEnter={(v) => onEnter(v)}
@@ -157,6 +159,47 @@ export function DictionarySearch(props: {
         dicts={props.dicts}
         setDicts={props.setDicts}
       />
+    </>
+  );
+}
+
+function SettingsPreview(props: { dicts: DictInfo[] }) {
+  const globalSettings = useContext(GlobalSettingsContext);
+  const inflectionMode = globalSettings.data.experimentalMode === true;
+
+  return (
+    <>
+      <span
+        className="text light xxs compact"
+        style={{
+          marginLeft: "6px",
+          fontFamily: "monospace",
+          letterSpacing: "0",
+          marginRight: "12px",
+        }}>
+        In{" "}
+        {props.dicts.map((dict) => (
+          <span key={dict.key} style={{ marginRight: "2px" }}>
+            <DictChip label={dict.key} />
+          </span>
+        ))}
+      </span>
+      <span
+        className="text light xxs compact"
+        style={{
+          fontFamily: "monospace",
+          letterSpacing: "0",
+        }}>
+        Inflection{" "}
+        <span
+          className="text xs smallChip"
+          style={{
+            backgroundColor:
+              (inflectionMode ? Solarized.cyan : Solarized.red) + 30,
+          }}>
+          {inflectionMode ? "On" : "Off"}
+        </span>
+      </span>
     </>
   );
 }
