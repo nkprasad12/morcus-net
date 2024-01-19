@@ -40,7 +40,7 @@ export function SiteSettings() {
       <Box sx={{ padding: 3 }}>
         <Typography component={"div"} className="nonDictText">
           <GlobalSettingsCheckbox
-            label="Enable Experimental features (inflected dictionary lookups, macronizer)"
+            label="Enable Experimental features"
             settingKey="experimentalMode"
           />
         </Typography>

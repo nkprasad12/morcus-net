@@ -44,6 +44,7 @@ function SearchSettingsDialog(props: {
   setDicts: (newDicts: DictInfo[]) => any;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
+  const inflectedSearch = globalSettings.data.inflectedSearch === true;
 
   return (
     <Dialog
@@ -54,8 +55,8 @@ function SearchSettingsDialog(props: {
       disableScrollLock>
       <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
       <DialogContent>
-        <div className="text md light" style={{ marginTop: "16px" }}>
-          Enabled Dictionaries
+        <div className="text md light" style={{ marginTop: "8px" }}>
+          Dictionaries
         </div>
         <FormGroup>
           {LatinDict.AVAILABLE.map((dict) => (
@@ -82,6 +83,25 @@ function SearchSettingsDialog(props: {
               }
             />
           ))}
+        </FormGroup>
+        <div className="text md light" style={{ marginTop: "8px" }}>
+          Settings
+        </div>
+        <FormGroup>
+          <FormControlLabel
+            control={
+              <Switch
+                checked={inflectedSearch}
+                onChange={() =>
+                  globalSettings.setData({
+                    ...globalSettings.data,
+                    inflectedSearch: !inflectedSearch,
+                  })
+                }
+              />
+            }
+            label={<span>Search inflected forms (Beta)</span>}
+          />
         </FormGroup>
         <HighlightStrengthSelector
           highlightStrength={
@@ -131,7 +151,7 @@ export function DictionarySearch(props: {
       path: ClientPaths.DICT_PAGE.path,
       query: searchTerm,
       dicts: dict,
-      experimentalSearch: settings.data.experimentalMode === true,
+      inflectedSearch: settings.data.inflectedSearch === true,
     });
   }
 
@@ -165,7 +185,7 @@ export function DictionarySearch(props: {
 
 function SettingsPreview(props: { dicts: DictInfo[] }) {
   const globalSettings = useContext(GlobalSettingsContext);
-  const inflectionMode = globalSettings.data.experimentalMode === true;
+  const inflectionMode = globalSettings.data.inflectedSearch === true;
 
   return (
     <>

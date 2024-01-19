@@ -89,7 +89,7 @@ function chooseDicts(
 
 async function fetchEntry(
   query: string,
-  experimentalMode: boolean,
+  inflections: boolean,
   singleArticle: boolean,
   embedded: boolean,
   dicts: DictInfo[]
@@ -97,7 +97,7 @@ async function fetchEntry(
   const result = callApiFull(DictsFusedApi, {
     query,
     dicts: dicts.map((dict) => dict.key),
-    mode: singleArticle ? 2 : experimentalMode || embedded ? 1 : 0,
+    mode: singleArticle ? 2 : inflections || embedded ? 1 : 0,
   });
   try {
     return await result;
@@ -552,9 +552,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
 
   const { initial } = props;
   const query = isEmbedded ? initial : route.query;
-  const experimentalMode =
-    settings.data.experimentalMode === true ||
-    route.experimentalSearch === true;
+  const inflectedSearch =
+    settings.data.inflectedSearch === true || route.inflectedSearch === true;
   const queryDicts = React.useMemo(
     () => chooseDicts(route.dicts, isEmbedded),
     [route.dicts, isEmbedded]
@@ -567,7 +566,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     setState("Loading");
     const serverResult = fetchEntry(
       query,
-      experimentalMode,
+      inflectedSearch,
       idSearch,
       isEmbedded,
       queryDicts
@@ -601,7 +600,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       scrollElement?.scrollIntoView(scrollType);
       fromInternalLink.current = false;
     });
-  }, [query, route.hash, experimentalMode, idSearch, isEmbedded, queryDicts]);
+  }, [query, route.hash, inflectedSearch, idSearch, isEmbedded, queryDicts]);
 
   React.useEffect(() => {
     if (!isEmbedded && query !== undefined) {
