@@ -161,7 +161,12 @@ export function DictionarySearch(props: {
         placeholderText="Search for a word"
         ariaLabel="Dictionary search box"
         onOpenSettings={() => setDialogOpen(true)}
-        settingsPreview={<SettingsPreview dicts={props.dicts} />}
+        settingsPreview={
+          <SettingsPreview
+            dicts={props.dicts}
+            openDialog={() => setDialogOpen(true)}
+          />
+        }
         smallScreen={props.smallScreen}
         autoFocused={route.query === undefined}
         onRawEnter={(v) => onEnter(v)}
@@ -183,7 +188,7 @@ export function DictionarySearch(props: {
   );
 }
 
-function SettingsPreview(props: { dicts: DictInfo[] }) {
+function SettingsPreview(props: { dicts: DictInfo[]; openDialog: () => any }) {
   const globalSettings = useContext(GlobalSettingsContext);
   const inflectionMode = globalSettings.data.inflectedSearch === true;
 
@@ -199,7 +204,10 @@ function SettingsPreview(props: { dicts: DictInfo[] }) {
         }}>
         In{" "}
         {props.dicts.map((dict) => (
-          <span key={dict.key} style={{ marginRight: "2px" }}>
+          <span
+            key={dict.key}
+            style={{ marginRight: "2px" }}
+            onClick={props.openDialog}>
             <DictChip label={dict.key} />
           </span>
         ))}
@@ -213,6 +221,7 @@ function SettingsPreview(props: { dicts: DictInfo[] }) {
         Inflection{" "}
         <span
           className="text xs smallChip"
+          onClick={props.openDialog}
           style={{
             backgroundColor:
               (inflectionMode ? Solarized.cyan : Solarized.red) + 30,
