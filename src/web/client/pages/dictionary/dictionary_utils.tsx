@@ -33,74 +33,98 @@ export const SCROLL_SMOOTH: ScrollIntoViewOptions = {
   behavior: "smooth",
   block: "start",
 };
-const HOVER_HELP = new XmlNode(
-  "div",
-  [["className", "lsHelpText"]],
+
+interface HelpRowConfig {
+  left: XmlNode;
+  right: string;
+}
+const SAMPLE_HOVER_NODE = new XmlNode(
+  "span",
   [
-    "Click on ",
-    new XmlNode(
-      "span",
-      [
-        ["class", "lsHover"],
-        ["title", "Click to dismiss"],
-      ],
-      ["underlined"]
-    ),
-    " text for more details. ",
-  ]
+    ["class", "lsHover"],
+    ["title", "Click away to dismiss"],
+  ],
+  ["Underlined"]
 );
-const HIGHLIGHT_HELP = new XmlNode(
-  "div",
-  [["className", "lsHelpText"]],
+const SAMPLE_HEADWORD = new XmlNode(
+  "span",
+  [["class", "lsOrth"]],
+  ["Headword"]
+);
+const SAMPLE_GRAMMAR = new XmlNode("span", [["class", "lsGrammar"]], ["Usage"]);
+const SAMPLE_QUOTE = new XmlNode("span", [["class", "lsQuote"]], ["Quote"]);
+const SAMPLE_AUTHOR = new XmlNode(
+  "span",
+  [["class", "lsBibl"]],
+  [new XmlNode("span", [["class", "lsAuthor"]], ["Author"]), " Work"]
+);
+const SAMPLE_SECTION_HEADER = new XmlNode(
+  "span",
   [
-    "Key for highlights: ",
-    new XmlNode("span", [["class", "lsOrth"]], ["headword"]),
-    ", ",
-    new XmlNode("span", [["class", "lsGrammar"]], ["grammar or usage term"]),
-    ", ",
-    new XmlNode("span", [["class", "lsQuote"]], ["latin quote"]),
-    ", ",
-    new XmlNode(
-      "span",
-      [["class", "lsBibl"]],
-      [
-        new XmlNode("span", [["class", "lsAuthor"]], ["Author Name."]),
-        " Work Name. location",
-      ]
-    ),
-  ]
+    ["class", "lsSenseBullet"],
+    ["senseid", "tutorialExample"],
+  ],
+  [" A. "]
 );
-const BUG_HELP = new XmlNode(
-  "div",
-  // This is displayed last, so do not apply the help text style to
-  // avoid an extra margin. Yes, this is gross and hacky.
-  [],
-  [
-    "Please report typos or other bugs " +
-      "by clicking on the flag icon in the top bar.",
-  ]
-);
-const BULLET_HELP = new XmlNode(
-  "div",
-  [["className", "lsHelpText"]],
-  [
-    "Click on sections (like ",
-    new XmlNode(
-      "span",
-      [
-        ["class", "lsSenseBullet"],
-        ["senseid", "tutorialExample"],
-      ],
-      [" A. "]
-    ),
-    ") to link directly to that section.",
-  ]
-);
-export const HELP_ENTRY = new XmlNode(
-  "div",
-  [],
-  [HOVER_HELP, HIGHLIGHT_HELP, BULLET_HELP, BUG_HELP]
-);
+const HELP_ROWS: HelpRowConfig[] = [
+  {
+    left: SAMPLE_HOVER_NODE,
+    right:
+      "You can click on underlined words to open a tooltip with more information. Try clicking on this one!",
+  },
+  {
+    left: SAMPLE_HEADWORD,
+    right: "The headwords or main entries in the dictionary.",
+  },
+  { left: SAMPLE_GRAMMAR, right: "Technical notes on grammar or usage" },
+  {
+    left: SAMPLE_QUOTE,
+    right: "A quote, usually showing an example of the word in a real text.",
+  },
+  {
+    left: SAMPLE_AUTHOR,
+    right:
+      "A citation showing the author, work, or passage from which an example is taken.",
+  },
+  {
+    left: SAMPLE_SECTION_HEADER,
+    right:
+      "Click on grey section headers to copy links directly to a particular section of a long article.",
+  },
+];
+
+function HelpSectionRow(props: { row: number } & HelpRowConfig) {
+  const gridRow = props.row + 1;
+  return (
+    <>
+      <span style={{ gridRow, gridColumn: 1 }}>{xmlNodeToJsx(props.left)}</span>
+      <span style={{ gridRow, gridColumn: 2 }}>{props.right}</span>
+    </>
+  );
+}
+function HelpSectionRows(props: { configs: HelpRowConfig[] }) {
+  return (
+    <>
+      {props.configs.map(({ left, right }, i) => (
+        <HelpSectionRow key={i} row={i} left={left} right={right} />
+      ))}
+    </>
+  );
+}
+
+export function DictHelpSection() {
+  return (
+    <>
+      <div style={{ display: "grid", columnGap: "8px", rowGap: "8px" }}>
+        <HelpSectionRows configs={HELP_ROWS} />
+      </div>
+      <div style={{ marginTop: "12px" }}>
+        Please report typos or other bugs by clicking on the flag icon in the
+        top bar.
+      </div>
+    </>
+  );
+}
 
 function ShLink(props: { text: string; query: string }) {
   const { nav } = useDictRouter();
