@@ -65,15 +65,7 @@ export class SqlDict {
 
     const allMatches = indices.filter(([i, j]) => {
       const candidate = this.rawKeys[i][j];
-      for (let k = 0; k < input.length; k++) {
-        const inputCharLength = Vowels.getLength(input[k]);
-        const candidateCharLength = Vowels.getLength(candidate[k]);
-        const lengths = [inputCharLength, candidateCharLength];
-        if (lengths.includes("Long") && lengths.includes("Short")) {
-          return false;
-        }
-      }
-      return true;
+      return Vowels.haveCompatibleLength(input, candidate);
     });
 
     const resultIndices = [...new Set(allMatches.map(([_i, _j, n]) => n))];

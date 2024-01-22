@@ -1,4 +1,5 @@
 import { envVar, assertEqual } from "@/common/assert";
+import { Vowels } from "@/common/character_utils";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
@@ -102,7 +103,17 @@ export class LewisAndShort implements Dictionary {
       return exactMatches.map(StoredEntryData.toEntryResult);
     }
 
-    const analyses = LatinWords.analysesFor(input);
+    const cleanInput = removeDiacritics(input)
+      .replaceAll("\u0304", "")
+      .replaceAll("\u0306", "");
+    const analyses = LatinWords.analysesFor(cleanInput)
+      .map((inflection) => ({
+        ...inflection,
+        inflectedForms: inflection.inflectedForms.filter((form) =>
+          Vowels.haveCompatibleLength(input, form.form)
+        ),
+      }))
+      .filter((inflection) => inflection.inflectedForms.length > 0);
     extras?.log("inflectionAnalysis");
     const inflectedResults: EntryResult[] = [];
     const exactResults: EntryResult[] = [];
