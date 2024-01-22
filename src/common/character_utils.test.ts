@@ -22,6 +22,10 @@ describe("Vowels haveCompatibleLength", () => {
     expect(Vowels.haveCompatibleLength("quĭs", "quis")).toBe(true);
   });
 
+  it("returns false on differing length", () => {
+    expect(Vowels.haveCompatibleLength("quiis", "quis")).toBe(false);
+  });
+
   it("returns false on breve and macron", () => {
     expect(Vowels.haveCompatibleLength("quĭs", "quīs")).toBe(false);
   });

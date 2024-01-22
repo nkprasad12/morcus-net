@@ -47,7 +47,9 @@ export namespace Vowels {
   ): boolean {
     const [first, firstLongs, firstShorts] = stripCombiners(firstRaw);
     const [second, secondLongs, secondShorts] = stripCombiners(secondRaw);
-    assertEqual(first.length, second.length);
+    if (first.length !== second.length) {
+      return false;
+    }
     for (let k = 0; k < first.length; k++) {
       const firstLength = Vowels.getLength(first[k]);
       const secondLength = Vowels.getLength(second[k]);

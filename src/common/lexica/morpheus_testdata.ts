@@ -4,7 +4,7 @@
 export const SAMPLE_MORPHEUS_OUTPUT = `
 :raw excibat
 
-:workw exsci_bat
+:workw exci_bat
 :lem ex-scio
 :prvb ex			raw_preverb	
 :stem sc				conj4
