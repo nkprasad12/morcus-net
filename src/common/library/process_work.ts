@@ -17,42 +17,6 @@ import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 const DEFAULT_TEXT_NODES = ["p", "l"];
 const KNOWN_ALT_NODES = ["add", "sic", "del", "gap"];
 
-const ENCLITICS = ["que", "ve", "ne"];
-
-/**
- * Exported only for testing.
- *
- * Eventually the dictionary should also use this when looking up.
- */
-export function getLinkTargetWord(
-  input: string,
-  table: Set<string>,
-  checkedEnclitic = false
-): string | undefined {
-  if (input.length === 0) {
-    return undefined;
-  }
-  if (table.has(input)) {
-    return input;
-  }
-  const lowerCase = input.toLowerCase();
-  if (table.has(lowerCase)) {
-    return lowerCase;
-  }
-  const initialUpper = lowerCase[0].toUpperCase() + lowerCase.slice(1);
-  if (table.has(initialUpper)) {
-    return initialUpper;
-  }
-  if (!checkedEnclitic) {
-    for (const enclitic of ENCLITICS) {
-      if (lowerCase.endsWith(enclitic)) {
-        return getLinkTargetWord(input.slice(0, -enclitic.length), table, true);
-      }
-    }
-  }
-  return undefined;
-}
-
 function markupText(text: string, parentName: string): XmlChild[] {
   if (parentName === "#comment") {
     return [];
@@ -61,11 +25,15 @@ function markupText(text: string, parentName: string): XmlChild[] {
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
   const words = processWords(text, (word) => {
     // Even if we can't resolve it in the Morpheus table, LS may have it.
-    const target =
-      getLinkTargetWord(word, LatinWords.allWords()) || word.toLowerCase();
-    return new XmlNode("libLat", target === word ? [] : [["target", target]], [
-      word,
-    ]);
+    const target = LatinWords.resolveLatinWord(word, (w) => [
+      LatinWords.allWords().has(w),
+      undefined,
+    ]) || [word.toLowerCase(), true];
+    return new XmlNode(
+      "libLat",
+      target[0] === word ? [] : [["target", target[0]]],
+      [word]
+    );
   });
   return isAlt ? [new XmlNode("span", [["alt", parentName]], words)] : words;
 }
