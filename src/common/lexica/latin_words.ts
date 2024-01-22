@@ -253,13 +253,11 @@ export namespace LatinWords {
     }
     const lowerCase = input.toLowerCase();
     [match, result] = resolver(lowerCase);
-    console.log(match);
     if (match) {
       return [lowerCase, result];
     }
     const initialUpper = lowerCase[0].toUpperCase() + lowerCase.slice(1);
     [match, result] = resolver(initialUpper);
-    console.log(match);
     if (match) {
       return [initialUpper, result];
     }
@@ -291,7 +289,6 @@ export namespace LatinWords {
 
   export function analysesFor(term: string): LatinWordAnalysis[] {
     const result = resolveLatinWord(term, (w) => {
-      console.log("checking " + w);
       const read = getDb().prepare("SELECT * FROM data WHERE word = ?");
       // @ts-ignore
       const rows: LatinWordRow[] = read.all(w);

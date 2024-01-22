@@ -10,6 +10,14 @@ import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
+const REPLACED_CHARS = new Map<string, string>([
+  ["ſ", "s"],
+  ["æ", "ae"],
+  ["Æ", "Ae"],
+  ["œ", "oe"],
+  ["Œ", "Oe"],
+]);
+
 const REGISTRY = [XmlNodeSerialization.DEFAULT];
 
 export interface StoredEntryData {
@@ -76,10 +84,14 @@ export class LewisAndShort implements Dictionary {
   }
 
   async getEntry(
-    input: string,
+    rawInput: string,
     extras?: ServerExtras,
     options?: DictOptions
   ): Promise<EntryResult[]> {
+    const input = rawInput
+      .split("")
+      .map((c) => REPLACED_CHARS.get(c) || c)
+      .join("");
     const exactMatches: StoredEntryData[] = this.sqlDict
       .getRawEntry(input, extras)
       .map(StoredEntryData.fromEncoded);
