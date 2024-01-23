@@ -163,6 +163,7 @@ function PreviouslyEnteredSection() {
         <React.Fragment key={item.storageKey}>
           <span style={{ gridRow: i + 1, gridColumn: 1 }}>
             <SpanButton
+              className="latWork"
               onClick={() => {
                 loadContent(item.storageKey).then((result) =>
                   processAndLoadText(result.content)
@@ -171,9 +172,9 @@ function PreviouslyEnteredSection() {
               {item.title}
             </SpanButton>
           </span>
-          <span style={{ gridRow: i + 1, gridColumn: 2 }}>
+          <span style={{ gridRow: i + 1, gridColumn: 2, marginTop: "14px" }}>
             <SpanButton
-              className="text sm light"
+              className="text sm light button warn"
               onClick={() => deleteContent(item.storageKey)}>
               Delete
             </SpanButton>

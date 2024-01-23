@@ -153,6 +153,15 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".button:focus": {
         backgroundColor: topBarColor + "A0",
       },
+      ".button.warn": {
+        backgroundColor: Solarized.red + "40",
+      },
+      ".button.warn:hover": {
+        backgroundColor: Solarized.red + "20",
+      },
+      ".button.warn:focus": {
+        backgroundColor: Solarized.red + "20",
+      },
 
       /** Tooltip styling */
       ".MuiTooltip-arrow": {
@@ -422,14 +431,14 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         borderRadius: "4px",
         marginLeft: "8px",
         padding: "8px",
-        backgroundColor: Solarized.base1 + "28",
+        backgroundColor: Solarized.base1 + "32",
         marginTop: "8px",
         display: "inline-block",
         textTransform: "capitalize",
       },
       ".latWork:hover": {
         color: Solarized.blue,
-        backgroundColor: Solarized.base1 + "40",
+        backgroundColor: Solarized.base1 + "48",
         cursor: "pointer",
       },
       ".terminalNavItem": {
