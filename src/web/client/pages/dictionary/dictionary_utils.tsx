@@ -115,7 +115,13 @@ function HelpSectionRows(props: { configs: HelpRowConfig[] }) {
 export function DictHelpSection() {
   return (
     <>
-      <div style={{ display: "grid", columnGap: "8px", rowGap: "8px" }}>
+      <div
+        style={{
+          display: "grid",
+          columnGap: "8px",
+          rowGap: "8px",
+          marginTop: "12px",
+        }}>
         <HelpSectionRows configs={HELP_ROWS} />
       </div>
       <div style={{ marginTop: "12px" }}>

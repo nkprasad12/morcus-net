@@ -224,7 +224,7 @@ function SettingsPreview(props: { dicts: DictInfo[]; openDialog: () => any }) {
           onClick={props.openDialog}
           style={{
             backgroundColor:
-              (inflectionMode ? Solarized.cyan : Solarized.red) + 30,
+              (inflectionMode ? Solarized.cyan : Solarized.red) + 40,
           }}>
           {inflectionMode ? "On" : "Off"}
         </span>
