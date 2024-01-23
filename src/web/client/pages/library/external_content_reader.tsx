@@ -9,11 +9,15 @@ import {
 } from "@/web/client/pages/library/reader_sidebar_components";
 import EditIcon from "@mui/icons-material/Edit";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
-import { useState } from "react";
+import { PropsWithChildren, useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import TextField from "@mui/material/TextField";
+import { SpanButton } from "@/web/client/components/generic/basics";
+import {
+  SavedContentHandler,
+  useSavedExternalContent,
+} from "@/web/client/pages/library/external_content_storage";
 
 export function ExternalContentReader() {
   return (
@@ -24,17 +28,17 @@ export function ExternalContentReader() {
   );
 }
 
-interface InternalReaderState {
+interface InternalReaderState extends SavedContentHandler {
   text: JSX.Element | null;
-  setText: (data: JSX.Element) => any;
-  setCurrentTab: (tab: MainTab) => any;
-  onWordSelected: (word: string) => any;
+  processAndLoadText: (text: string) => any;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
   text: null,
-  setText: () => {},
-  setCurrentTab: () => {},
-  onWordSelected: () => {},
+  processAndLoadText: () => {},
+  contentIndex: undefined,
+  deleteContent: () => Promise.reject(),
+  saveContent: () => Promise.reject(),
+  loadContent: () => Promise.reject(),
 };
 const InternalReaderContext: React.Context<InternalReaderState> =
   React.createContext(DEFAULT_INTERNAL_STATE);
@@ -55,8 +59,17 @@ interface MainColumnProps {}
 function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
   const [text, setText] = useState<JSX.Element | null>(null);
+  const savedContentHandler = useSavedExternalContent();
 
   const { onWordSelected } = props;
+
+  const processAndLoadText = React.useCallback(
+    (input: string) => {
+      setText(processedTextComponent(input, onWordSelected));
+      setCurrentTab("Text reader");
+    },
+    [setText, setCurrentTab, onWordSelected]
+  );
 
   return (
     <ContentBox
@@ -74,7 +87,7 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
           paddingRight: props.isMobile ? "12px" : undefined,
         }}>
         <InternalReaderContext.Provider
-          value={{ text, setText, setCurrentTab, onWordSelected }}>
+          value={{ text, processAndLoadText, ...savedContentHandler }}>
           <RenderTab current={currentTab} />
         </InternalReaderContext.Provider>
       </div>
@@ -89,9 +102,20 @@ function RenderTab(props: { current: MainTab }) {
     case "Load text":
       return (
         <div>
-          <div className="text md">Enter raw text below.</div>
+          <div className="text md" style={{ marginTop: "12px" }}>
+            [Beta] External Content Reader
+          </div>
+          <div className="text sm light">
+            Import Latin text and read it with definitions and inflection
+            lookups provided upon click.
+          </div>
           <div className="text sm light">Other import types coming soon.</div>
-          <InputContentBox />
+          <ExternalContentSection header="Load Previous Import" open>
+            <PreviouslyEnteredSection />
+          </ExternalContentSection>
+          <ExternalContentSection header="Import Raw Text">
+            <InputContentBox />
+          </ExternalContentSection>
         </div>
       );
     case "Text reader":
@@ -108,20 +132,106 @@ function RenderTab(props: { current: MainTab }) {
   }
 }
 
+function ExternalContentSection(
+  props: PropsWithChildren<{ header: string; open?: boolean }>
+) {
+  return (
+    <div style={{ marginTop: "8px" }}>
+      <details open={props.open}>
+        <summary className="text md light">{props.header}</summary>
+        {props.children}
+      </details>
+    </div>
+  );
+}
+
+function PreviouslyEnteredSection() {
+  const { processAndLoadText, contentIndex, deleteContent, loadContent } =
+    React.useContext(InternalReaderContext);
+
+  if (contentIndex === undefined) {
+    return <div className="text sm">Loading saved imports</div>;
+  }
+
+  if (contentIndex.length === 0) {
+    return <div className="text sm">No saved imports</div>;
+  }
+
+  return (
+    <div style={{ display: "grid" }} className="text md">
+      {contentIndex.map((item, i) => (
+        <React.Fragment key={item.storageKey}>
+          <span style={{ gridRow: i + 1, gridColumn: 1 }}>
+            <SpanButton
+              onClick={() => {
+                loadContent(item.storageKey).then((result) =>
+                  processAndLoadText(result.content)
+                );
+              }}>
+              {item.title}
+            </SpanButton>
+          </span>
+          <span style={{ gridRow: i + 1, gridColumn: 2 }}>
+            <SpanButton
+              className="text sm light"
+              onClick={() => deleteContent(item.storageKey)}>
+              Delete
+            </SpanButton>
+          </span>
+        </React.Fragment>
+      ))}
+    </div>
+  );
+}
+
 function InputContentBox() {
-  const { setText, setCurrentTab, onWordSelected } = React.useContext(
+  const { processAndLoadText, saveContent } = React.useContext(
     InternalReaderContext
   );
 
+  const [titleText, setTitleText] = React.useState("");
   const [pendingText, setPendingText] = React.useState("");
 
   return (
-    <div style={{ marginTop: "8px" }}>
-      <TextField
+    <>
+      <div
+        className="text sm light"
+        style={{ marginTop: "8px", marginBottom: "8px" }}>
+        Title
+      </div>
+      <input
+        type="text"
+        spellCheck="false"
+        aria-label="Title entry"
+        onChange={(e) => setTitleText(e.target.value)}
+      />
+      {/* <TextField
+        fullWidth
+        variant="filled"
+        inputProps={{ spellCheck: "false" }}
+        aria-label="Title entry"
+        InputLabelProps={{
+          className: "macronLabel",
+        }}
+        onChange={(e) => setTitleText(e.target.value)}
+      /> */}
+      <div
+        className="text sm light"
+        style={{ marginTop: "8px", marginBottom: "8px" }}>
+        Text to import
+      </div>
+      <input
+        type="text"
+        spellCheck="false"
+        aria-label="Latin content entry"
+        onChange={(e) => setPendingText(e.target.value)}
+      />
+      {/* <TextField
         multiline
         fullWidth
         rows={10}
         variant="filled"
+        aria-label="Latin content entry"
         inputProps={{ spellCheck: "false" }}
         InputLabelProps={{
           className: "macronLabel",
@@ -129,18 +239,19 @@ function InputContentBox() {
         onChange={(e) => {
           setPendingText(e.target.value);
         }}
-      />
+      /> */}
       <button
         aria-label="Import text"
         className="button text md"
+        disabled={titleText.length === 0}
         onClick={() => {
-          setText(processedTextComponent(pendingText, onWordSelected));
-          setCurrentTab("Text reader");
+          processAndLoadText(pendingText);
+          saveContent({ title: titleText, content: pendingText });
         }}
         style={{ marginTop: "16px" }}>
         Import
       </button>
-    </div>
+    </>
   );
 }
 

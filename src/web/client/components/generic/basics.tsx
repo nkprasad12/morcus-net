@@ -66,6 +66,7 @@ export function SpanButton(
   return (
     <span
       className={props.className}
+      style={{ cursor: "pointer" }}
       onClick={props.onClick}
       onKeyUp={(e) => {
         if (e.key === " " || e.key === "Enter") {
