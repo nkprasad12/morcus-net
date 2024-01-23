@@ -1,10 +1,10 @@
 import { useState } from "react";
-import Box from "@mui/system/Box";
+import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { MacronizeApi } from "@/web/api_routes";
+import { TextField } from "@/web/client/components/generic/basics";
 
 export function Macronizer() {
   const [rawInput, setRawInput] = useState<string | undefined>(undefined);
@@ -24,30 +24,16 @@ export function Macronizer() {
 
   return (
     <>
-      <Box
-        sx={{
-          padding: 3,
-          ml: 3,
-          mr: 3,
-          mt: 3,
-          mb: 3,
-          border: 2,
-          borderRadius: 1,
-        }}
-        className="macronBox">
+      <div style={{ padding: "24px" }} className="macronBox">
+        <label className="text sm light" htmlFor="inputBox">
+          Enter text to macronize
+        </label>
         <TextField
-          label="Enter text to macronize"
+          id="inputBox"
           multiline
           fullWidth
           minRows={10}
-          variant="filled"
-          inputProps={{ spellCheck: "false" }}
-          InputLabelProps={{
-            className: "macronLabel",
-          }}
-          onChange={(e) => {
-            setRawInput(e.target.value);
-          }}
+          onNewValue={setRawInput}
         />
         <Button
           onClick={handleClick}
@@ -56,7 +42,7 @@ export function Macronizer() {
           sx={{ mt: 2, display: "block" }}>
           {"Macronize"}
         </Button>
-      </Box>
+      </div>
       {processed && (
         <Box
           sx={{

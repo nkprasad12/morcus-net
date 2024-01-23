@@ -89,12 +89,12 @@ describe("external reader", () => {
     renderReader();
 
     await user.click(screen.getByText(/Import Raw Text/));
-    await user.click(screen.getByLabelText("Title entry"));
-    await user.type(screen.getByLabelText("Title entry"), "DBG");
+    await user.click(screen.getByLabelText("Title"));
+    await user.type(screen.getByLabelText("Title"), "DBG");
 
-    await user.click(screen.getByLabelText("Latin content entry"));
+    await user.click(screen.getByLabelText("Text to import"));
     await user.type(
-      screen.getByLabelText("Latin content entry"),
+      screen.getByLabelText("Text to import"),
       "Gallia est omnis"
     );
     await user.click(screen.getByLabelText("Import text"));

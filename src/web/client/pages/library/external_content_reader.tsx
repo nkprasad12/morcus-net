@@ -13,7 +13,7 @@ import { PropsWithChildren, useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
-import { SpanButton } from "@/web/client/components/generic/basics";
+import { SpanButton, TextField } from "@/web/client/components/generic/basics";
 import {
   SavedContentHandler,
   useSavedExternalContent,
@@ -197,49 +197,21 @@ function InputContentBox() {
       <div
         className="text sm light"
         style={{ marginTop: "8px", marginBottom: "8px" }}>
-        Title
+        <label htmlFor="title-input">Title</label>
       </div>
-      <input
-        type="text"
-        spellCheck="false"
-        aria-label="Title entry"
-        onChange={(e) => setTitleText(e.target.value)}
-      />
-      {/* <TextField
-        fullWidth
-        variant="filled"
-        inputProps={{ spellCheck: "false" }}
-        aria-label="Title entry"
-        InputLabelProps={{
-          className: "macronLabel",
-        }}
-        onChange={(e) => setTitleText(e.target.value)}
-      /> */}
+      <TextField onNewValue={setTitleText} id="title-input" />
       <div
         className="text sm light"
         style={{ marginTop: "8px", marginBottom: "8px" }}>
-        Text to import
+        <label htmlFor="text-input">Text to import</label>
       </div>
-      <input
-        type="text"
-        spellCheck="false"
-        aria-label="Latin content entry"
-        onChange={(e) => setPendingText(e.target.value)}
-      />
-      {/* <TextField
-        multiline
+      <TextField
         fullWidth
-        rows={10}
-        variant="filled"
-        aria-label="Latin content entry"
-        inputProps={{ spellCheck: "false" }}
-        InputLabelProps={{
-          className: "macronLabel",
-        }}
-        onChange={(e) => {
-          setPendingText(e.target.value);
-        }}
-      /> */}
+        multiline
+        minRows={10}
+        onNewValue={setPendingText}
+        id="text-input"
+      />
       <button
         aria-label="Import text"
         className="button text md"

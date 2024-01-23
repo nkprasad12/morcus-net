@@ -474,8 +474,26 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
 
       /** Search box */
+      ".textField": {
+        backgroundColor: bgColorAlt + "60",
+        borderRadius: "4px",
+        border: `2px solid ${
+          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
+        }`,
+        padding: "8px",
+        outline: "none",
+        paddingTop: "4px",
+        boxSizing: "border-box",
+        marginTop: "4px",
+        marginBottom: "4px",
+      },
+      ".textField:focus": {
+        border: `2px solid ${
+          isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
+        }`,
+      },
       ".customSearchContainer": {
-        backgroundColor: backgroundColor,
+        backgroundColor,
         width: "100%",
         maxWidth: "100%",
         borderRadius: 4,
