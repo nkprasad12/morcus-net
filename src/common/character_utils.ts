@@ -23,8 +23,8 @@ export namespace Vowels {
 
   function stripCombiners(input: string): [string, number[], number[]] {
     let resultString = "";
-    let long: number[] = [];
-    let short: number[] = [];
+    const long: number[] = [];
+    const short: number[] = [];
     for (let i = 0; i < input.length; i++) {
       if (input[i] === MACRON_COMBINER) {
         long.push(resultString.length - 1);
