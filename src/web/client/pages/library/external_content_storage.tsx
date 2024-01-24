@@ -1,50 +1,129 @@
+import { singletonOf } from "@/common/misc_utils";
 import React, { useCallback, useContext, createContext } from "react";
 
-const SAVED_ITEMS_LIST_KEY = "EXTERNAL_CONTENT_READER_SAVED_LIST";
-const UNKNOWN_TEXT: SavedContent = { title: "Title", content: "Unknown" };
-
-namespace LocalStorageBackend {
-  export async function getContentIndex(): Promise<ContentIndex[]> {
-    const result = localStorage.getItem(SAVED_ITEMS_LIST_KEY);
-    if (result === null) {
-      return [];
-    }
-    return JSON.parse(result);
+namespace IndexDbWrapper {
+  export interface DbConfig {
+    dbName: string;
+    version: number;
+    stores: {
+      name: string;
+      keyPath: string;
+    }[];
   }
 
-  async function addToIndex(item: ContentIndex): Promise<ContentIndex[]> {
-    const previous = await getContentIndex();
-    previous.push(item);
-    localStorage.setItem(SAVED_ITEMS_LIST_KEY, JSON.stringify(previous));
-    return previous;
+  export function openDb(config: DbConfig): Promise<IDBDatabase> {
+    return new Promise((resolve, reject) => {
+      const openRequest = indexedDB.open(config.dbName, config.version);
+      openRequest.onsuccess = () => resolve(openRequest.result);
+      openRequest.onerror = () => reject("Error opening database");
+      openRequest.onupgradeneeded = () => {
+        const db = openRequest.result;
+        for (const store of config.stores) {
+          if (!db.objectStoreNames.contains(store.name)) {
+            db.createObjectStore(store.name, { keyPath: store.keyPath });
+          }
+        }
+      };
+    });
+  }
+}
+
+namespace IndexDbBackend {
+  const CONTENT_STORE = "savedContent";
+  const DB_CONFIG: IndexDbWrapper.DbConfig = {
+    dbName: "externalContent.db",
+    version: 1,
+    stores: [
+      {
+        name: CONTENT_STORE,
+        keyPath: "storageKey",
+      },
+    ],
+  };
+
+  const db = singletonOf(() => IndexDbWrapper.openDb(DB_CONFIG));
+
+  async function saveContent(text: SavedContent): Promise<ContentIndex[]> {
+    const storageKey = `${text.title}_${Date.now()}`;
+    const transaction = (await db.get()).transaction(
+      CONTENT_STORE,
+      "readwrite"
+    );
+    return new Promise((resolve, reject) => {
+      const rows = transaction.objectStore(CONTENT_STORE);
+      const request = rows.add({ ...text, storageKey });
+      request.onerror = () => reject("Error saving content");
+      request.onsuccess = () => {
+        // TODO: Figure out how to check the titles only
+        const allRequest = rows.getAll();
+        allRequest.onerror = () => reject("Error getting index");
+        allRequest.onsuccess = () =>
+          resolve(
+            allRequest.result.map((x) => ({
+              storageKey: x.storageKey,
+              title: x.title,
+            }))
+          );
+      };
+    });
   }
 
-  export async function deleteContent(key: string): Promise<ContentIndex[]> {
-    localStorage.removeItem(key);
-    const previous = await getContentIndex();
-    const purgedList = previous.filter((item) => item.storageKey !== key);
-    localStorage.setItem(SAVED_ITEMS_LIST_KEY, JSON.stringify(purgedList));
-    return purgedList;
+  async function deleteContent(key: string): Promise<ContentIndex[]> {
+    const transaction = (await db.get()).transaction(
+      CONTENT_STORE,
+      "readwrite"
+    );
+    return new Promise((resolve, reject) => {
+      const rows = transaction.objectStore(CONTENT_STORE);
+      const request = rows.delete(key);
+      request.onerror = () => reject("Error deleting content");
+      request.onsuccess = () => {
+        // TODO: Figure out how to check the titles only
+        const allRequest = rows.getAll();
+        allRequest.onerror = () => reject("Error getting index");
+        allRequest.onsuccess = () =>
+          resolve(
+            allRequest.result.map((x) => ({
+              storageKey: x.storageKey,
+              title: x.title,
+            }))
+          );
+      };
+    });
   }
 
-  export function saveContent(text: SavedContent): Promise<ContentIndex[]> {
-    const storageKey = `EXTERNAL_CONTENT_${text.title}_${Date.now()}`;
-    localStorage.setItem(storageKey, text.content);
-    return addToIndex({ title: text.title, storageKey });
+  async function loadContent(key: string): Promise<SavedContent> {
+    const transaction = (await db.get()).transaction(CONTENT_STORE);
+    return new Promise((resolve, reject) => {
+      const rows = transaction.objectStore(CONTENT_STORE);
+      const request = rows.get(key);
+      request.onerror = () => reject("Error retrieving content");
+      request.onsuccess = () => resolve(request.result);
+    });
   }
 
-  export async function loadContent(key: string): Promise<SavedContent> {
-    const savedList = await getContentIndex();
-    const savedItem = savedList.filter((item) => item.storageKey === key)[0];
-    if (savedItem === undefined) {
-      return UNKNOWN_TEXT;
-    }
-    const candidate = localStorage.getItem(savedItem.storageKey);
-    if (candidate === null) {
-      return UNKNOWN_TEXT;
-    }
-    return { title: savedItem.title, content: candidate };
+  async function getContentIndex(): Promise<ContentIndex[]> {
+    const transaction = (await db.get()).transaction(CONTENT_STORE);
+    return new Promise((resolve, reject) => {
+      const rows = transaction.objectStore(CONTENT_STORE);
+      const request = rows.getAll();
+      request.onerror = () => reject("Error retrieving content");
+      request.onsuccess = () =>
+        resolve(
+          request.result.map((x) => ({
+            storageKey: x.storageKey,
+            title: x.title,
+          }))
+        );
+    });
   }
+
+  export const BACKEND: SavedContentBackend = {
+    getContentIndex,
+    deleteContent,
+    saveContent,
+    loadContent,
+  };
 }
 
 export interface ContentIndex {
@@ -79,12 +158,7 @@ export interface SavedContentBackend {
   /** Retrieves the external content with the given key. */
   loadContent: (key: string) => Promise<SavedContent>;
 }
-const DEFAULT_BACKEND: SavedContentBackend = {
-  getContentIndex: LocalStorageBackend.getContentIndex,
-  deleteContent: LocalStorageBackend.deleteContent,
-  saveContent: LocalStorageBackend.saveContent,
-  loadContent: LocalStorageBackend.loadContent,
-};
+const DEFAULT_BACKEND: SavedContentBackend = IndexDbBackend.BACKEND;
 export const SavedContentBackendContext =
   createContext<SavedContentBackend>(DEFAULT_BACKEND);
 
