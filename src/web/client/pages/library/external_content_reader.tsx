@@ -60,19 +60,25 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
   const [text, setText] = useState<JSX.Element | null>(null);
   const savedContentHandler = useSavedExternalContent();
+  const mainColumnRef = React.useRef<HTMLDivElement>(null);
 
-  const { onWordSelected } = props;
+  const { onWordSelected, isMobile } = props;
 
   const processAndLoadText = React.useCallback(
     (input: string) => {
       setText(processedTextComponent(input, onWordSelected));
       setCurrentTab("Text reader");
+      if (isMobile) {
+        window.scrollTo({ top: 0, behavior: "instant" });
+        window.scrollTo({ top: 64, behavior: "instant" });
+      }
     },
-    [setText, setCurrentTab, onWordSelected]
+    [setText, setCurrentTab, onWordSelected, isMobile]
   );
 
   return (
     <ContentBox
+      contentRef={mainColumnRef}
       isSmall
       mt={props.isMobile ? 0 : undefined}
       className={props.isMobile ? "extReaderMobile" : undefined}>
