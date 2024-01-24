@@ -205,12 +205,14 @@ function InputContentBox() {
         className="text sm light"
         style={{ marginTop: "8px", marginBottom: "8px" }}>
         <label htmlFor="title-input">Title</label>
+        <span className="text red">*</span>
       </div>
       <TextField onNewValue={setTitleText} id="title-input" />
       <div
         className="text sm light"
         style={{ marginTop: "8px", marginBottom: "8px" }}>
         <label htmlFor="text-input">Text to import</label>
+        <span className="text red">*</span>
       </div>
       <TextField
         fullWidth
@@ -222,7 +224,7 @@ function InputContentBox() {
       <button
         aria-label="Import text"
         className="button text md"
-        disabled={titleText.length === 0}
+        disabled={titleText.length === 0 || pendingText.length === 0}
         onClick={() => {
           processAndLoadText(pendingText);
           saveContent({ title: titleText, content: pendingText });

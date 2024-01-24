@@ -137,6 +137,9 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".text.sm": { fontSize: FontSizes.SECONDARY },
       ".text.xs": { fontSize: FontSizes.TERTIARY },
       ".text.xxs": { fontSize: "12" },
+      ".text.red": {
+        color: Solarized.red + "A0",
+      },
       ".button": {
         borderRadius: 4,
         cursor: "pointer",
@@ -161,6 +164,11 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
       ".button.warn:focus": {
         backgroundColor: Solarized.red + "20",
+      },
+      ".button:disabled": {
+        cursor: "not-allowed",
+        backgroundColor: Solarized.base1 + "48",
+        color: Solarized.base1 + "96",
       },
 
       /** Tooltip styling */
