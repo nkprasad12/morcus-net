@@ -237,6 +237,45 @@ export namespace LatinWords {
     });
   }
 
+  const ENCLITICS = ["que", "ve", "ne"];
+
+  export function resolveLatinWord<T>(
+    input: string,
+    resolver: (input: string) => [boolean, T],
+    checkedEnclitic = false
+  ): [string, T] | undefined {
+    if (input.length === 0) {
+      return undefined;
+    }
+    let [match, result] = resolver(input);
+    if (match) {
+      return [input, result];
+    }
+    const lowerCase = input.toLowerCase();
+    [match, result] = resolver(lowerCase);
+    if (match) {
+      return [lowerCase, result];
+    }
+    const initialUpper = lowerCase[0].toUpperCase() + lowerCase.slice(1);
+    [match, result] = resolver(initialUpper);
+    if (match) {
+      return [initialUpper, result];
+    }
+
+    if (!checkedEnclitic) {
+      for (const enclitic of ENCLITICS) {
+        if (lowerCase.endsWith(enclitic)) {
+          return resolveLatinWord(
+            input.slice(0, -enclitic.length),
+            resolver,
+            true
+          );
+        }
+      }
+    }
+    return undefined;
+  }
+
   export function callMorpheus(term: string): LatinWordAnalysis[] {
     const output = execSync("bin/cruncher -Ld", {
       env: { MORPHLIB: "stemlib" },
@@ -249,10 +288,13 @@ export namespace LatinWords {
   }
 
   export function analysesFor(term: string): LatinWordAnalysis[] {
-    const read = getDb().prepare("SELECT * FROM data WHERE word = ?");
-    // @ts-ignore
-    const rows: LatinWordRow[] = read.all(term);
-    return processMorpheusRows(rows);
+    const result = resolveLatinWord(term, (w) => {
+      const read = getDb().prepare("SELECT * FROM data WHERE word = ?");
+      // @ts-ignore
+      const rows: LatinWordRow[] = read.all(w);
+      return [rows.length > 0, rows];
+    });
+    return result === undefined ? [] : processMorpheusRows(result[1]);
   }
 
   function linkifyLatinWords(input: string): XmlChild[] {

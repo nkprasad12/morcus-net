@@ -1,4 +1,5 @@
 import { envVar, assertEqual } from "@/common/assert";
+import { Vowels } from "@/common/character_utils";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
@@ -9,6 +10,14 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+
+const REPLACED_CHARS = new Map<string, string>([
+  ["ſ", "s"],
+  ["æ", "ae"],
+  ["Æ", "Ae"],
+  ["œ", "oe"],
+  ["Œ", "Oe"],
+]);
 
 const REGISTRY = [XmlNodeSerialization.DEFAULT];
 
@@ -76,10 +85,14 @@ export class LewisAndShort implements Dictionary {
   }
 
   async getEntry(
-    input: string,
+    rawInput: string,
     extras?: ServerExtras,
     options?: DictOptions
   ): Promise<EntryResult[]> {
+    const input = rawInput
+      .split("")
+      .map((c) => REPLACED_CHARS.get(c) || c)
+      .join("");
     const exactMatches: StoredEntryData[] = this.sqlDict
       .getRawEntry(input, extras)
       .map(StoredEntryData.fromEncoded);
@@ -90,7 +103,17 @@ export class LewisAndShort implements Dictionary {
       return exactMatches.map(StoredEntryData.toEntryResult);
     }
 
-    const analyses = LatinWords.analysesFor(input);
+    const cleanInput = removeDiacritics(input)
+      .replaceAll("\u0304", "")
+      .replaceAll("\u0306", "");
+    const analyses = LatinWords.analysesFor(cleanInput)
+      .map((inflection) => ({
+        ...inflection,
+        inflectedForms: inflection.inflectedForms.filter((form) =>
+          Vowels.haveCompatibleLength(input, form.form)
+        ),
+      }))
+      .filter((inflection) => inflection.inflectedForms.length > 0);
     extras?.log("inflectionAnalysis");
     const inflectedResults: EntryResult[] = [];
     const exactResults: EntryResult[] = [];

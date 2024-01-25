@@ -137,6 +137,9 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".text.sm": { fontSize: FontSizes.SECONDARY },
       ".text.xs": { fontSize: FontSizes.TERTIARY },
       ".text.xxs": { fontSize: "12" },
+      ".text.red": {
+        color: Solarized.red + "A0",
+      },
       ".button": {
         borderRadius: 4,
         cursor: "pointer",
@@ -152,6 +155,20 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
       ".button:focus": {
         backgroundColor: topBarColor + "A0",
+      },
+      ".button.warn": {
+        backgroundColor: Solarized.red + "40",
+      },
+      ".button.warn:hover": {
+        backgroundColor: Solarized.red + "20",
+      },
+      ".button.warn:focus": {
+        backgroundColor: Solarized.red + "20",
+      },
+      ".button:disabled": {
+        cursor: "not-allowed",
+        backgroundColor: Solarized.base1 + "48",
+        color: Solarized.base1 + "96",
       },
 
       /** Tooltip styling */
@@ -422,14 +439,14 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         borderRadius: "4px",
         marginLeft: "8px",
         padding: "8px",
-        backgroundColor: Solarized.base1 + "28",
+        backgroundColor: Solarized.base1 + "32",
         marginTop: "8px",
         display: "inline-block",
         textTransform: "capitalize",
       },
       ".latWork:hover": {
         color: Solarized.blue,
-        backgroundColor: Solarized.base1 + "40",
+        backgroundColor: Solarized.base1 + "48",
         cursor: "pointer",
       },
       ".terminalNavItem": {
@@ -474,8 +491,26 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
 
       /** Search box */
+      ".textField": {
+        backgroundColor: bgColorAlt + "60",
+        borderRadius: "4px",
+        border: `2px solid ${
+          isDarkMode ? Solarized.base01 + "80" : Solarized.base15
+        }`,
+        padding: "8px",
+        outline: "none",
+        paddingTop: "4px",
+        boxSizing: "border-box",
+        marginTop: "4px",
+        marginBottom: "4px",
+      },
+      ".textField:focus": {
+        border: `2px solid ${
+          isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
+        }`,
+      },
       ".customSearchContainer": {
-        backgroundColor: backgroundColor,
+        backgroundColor,
         width: "100%",
         maxWidth: "100%",
         borderRadius: 4,

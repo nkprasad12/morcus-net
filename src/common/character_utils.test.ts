@@ -16,3 +16,41 @@ describe("Vowels getLength", () => {
     expect(Vowels.getLength("Ă")).toBe("Short");
   });
 });
+
+describe("Vowels haveCompatibleLength", () => {
+  it("returns true on breve and unmarked", () => {
+    expect(Vowels.haveCompatibleLength("quĭs", "quis")).toBe(true);
+  });
+
+  it("returns false on differing length", () => {
+    expect(Vowels.haveCompatibleLength("quiis", "quis")).toBe(false);
+  });
+
+  it("returns false on breve and macron", () => {
+    expect(Vowels.haveCompatibleLength("quĭs", "quīs")).toBe(false);
+  });
+
+  it("returns true on macron and unmarked", () => {
+    expect(Vowels.haveCompatibleLength("quis", "quīs")).toBe(true);
+  });
+
+  it("returns true on macron and macron combiner", () => {
+    expect(Vowels.haveCompatibleLength("quīs", "quīs")).toBe(true);
+  });
+
+  it("returns true on unmarked and macron combiner", () => {
+    expect(Vowels.haveCompatibleLength("quīs", "quis")).toBe(true);
+  });
+
+  it("returns true on breve and breve combiner", () => {
+    expect(Vowels.haveCompatibleLength("quĭs", "quĭs")).toBe(true);
+  });
+
+  it("returns true on unmarked and breve combiner", () => {
+    expect(Vowels.haveCompatibleLength("quĭs", "quis")).toBe(true);
+  });
+
+  it("returns true with mix", () => {
+    expect(Vowels.haveCompatibleLength("qĭŭs", "qĭŭs")).toBe(true);
+  });
+});

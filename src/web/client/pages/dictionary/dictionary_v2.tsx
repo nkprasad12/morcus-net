@@ -18,7 +18,6 @@ import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   ElementAndKey,
-  HELP_ENTRY,
   InflectionDataSection,
   QUICK_NAV_ANCHOR,
   QNA_EMBEDDED,
@@ -26,6 +25,7 @@ import {
   SCROLL_SMOOTH,
   SearchSettings,
   xmlNodeToJsx,
+  DictHelpSection,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
@@ -237,11 +237,6 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
 
 function HelpSection(props: { id?: string; className?: string }) {
   const { isEmbedded, isSmall } = React.useContext(DictContext);
-  const MainContent = (
-    <div className="text xs" style={{ lineHeight: "normal" }}>
-      {xmlNodeToJsx(HELP_ENTRY)}
-    </div>
-  );
   return (
     <ContentBox
       key="helpSection"
@@ -250,16 +245,14 @@ function HelpSection(props: { id?: string; className?: string }) {
       className={props.className}
       noDivider={isEmbedded}
       isEmbedded={isEmbedded}>
-      {isEmbedded ? (
-        <details>
-          <summary>
-            <span className="text sm light">Markup guide</span>
-          </summary>
-          {MainContent}
-        </details>
-      ) : (
-        MainContent
-      )}
+      <details>
+        <summary>
+          <span className="text sm light">Usage guide ⓘ</span>
+        </summary>
+        <div className="text sm" style={{ lineHeight: "1.2" }}>
+          <DictHelpSection />
+        </div>
+      </details>
     </ContentBox>
   );
 }
@@ -677,12 +670,10 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         <>
           {!isEmbedded &&
             ReactDOM.createPortal(<QuickNavMenu />, document.body)}
-          {!(isEmbedded && isSmall) && (
-            <HelpSection
-              id={"HelpSection"}
-              className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-            />
-          )}
+          <HelpSection
+            id={"HelpSection"}
+            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
+          />
           <div
             id={"Toc"}
             className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>

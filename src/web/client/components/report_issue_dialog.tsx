@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import Button from "@mui/material/Button";
-import TextField from "@mui/material/TextField";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -11,6 +10,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
 import { getCommitHash } from "@/web/client/define_vars";
+import { TextField } from "@/web/client/components/generic/basics";
 
 export function ReportIssueDialog(props: {
   show: boolean;
@@ -26,7 +26,9 @@ export function ReportIssueDialog(props: {
         className: "bgColor",
       }}>
       <DialogTitle style={{ fontSize: 19, lineHeight: "normal" }}>
-        <b>Report an issue</b>
+        <label htmlFor="Report issue box">
+          <b>Report an issue</b>
+        </label>
       </DialogTitle>
       <DialogContent>
         <DialogContentText style={{ fontSize: 16, lineHeight: "normal" }}>
@@ -34,17 +36,13 @@ export function ReportIssueDialog(props: {
           see? <i>Do not enter personal information</i>.
         </DialogContentText>
         <TextField
+          id="Report issue box"
           autoFocus
-          margin="dense"
-          onChange={(e) => {
-            setReportText(e.target.value);
-          }}
+          onNewValue={setReportText}
           defaultValue={`${window.location.href}\n`}
           fullWidth
           multiline
           minRows={8}
-          variant="filled"
-          inputProps={{ style: { fontSize: 16, lineHeight: "normal" } }}
         />
       </DialogContent>
       <DialogActions>

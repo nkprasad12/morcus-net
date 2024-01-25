@@ -66,6 +66,7 @@ export function SpanButton(
   return (
     <span
       className={props.className}
+      style={{ cursor: "pointer" }}
       onClick={props.onClick}
       onKeyUp={(e) => {
         if (e.key === " " || e.key === "Enter") {
@@ -76,5 +77,49 @@ export function SpanButton(
       role="button">
       {props.children}
     </span>
+  );
+}
+
+export function TextField(props: {
+  id?: string;
+  styles?: CSSProperties;
+  value?: string;
+  onNewValue?: (value: string) => any;
+  placeholder?: string;
+  fullWidth?: boolean;
+  multiline?: boolean;
+  minRows?: number;
+  autoFocus?: boolean;
+  defaultValue?: string;
+}) {
+  const onNewValue = props.onNewValue;
+  const onChange =
+    onNewValue === undefined
+      ? undefined
+      : (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
+          onNewValue(e.target.value);
+  const width = "calc(100% - 12px)";
+  const baseProps = {
+    id: props.id,
+    className: "text md textField",
+    spellCheck: false,
+    autoCapitalize: "none",
+    autoComplete: "off",
+    defaultValue: props.defaultValue,
+    autoFocus: props.autoFocus,
+    rows: props.minRows,
+    value: props.value,
+    onChange,
+    placeholder: props.placeholder,
+    style: {
+      ...(props.fullWidth ? { width, maxWidth: width } : {}),
+      ...props.styles,
+    },
+  };
+
+  return props.multiline ? (
+    <textarea {...baseProps} />
+  ) : (
+    <input type="text" {...baseProps} />
   );
 }

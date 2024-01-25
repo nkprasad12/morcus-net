@@ -119,6 +119,43 @@ describe("morcus.net backend integration", () => {
     expect(articles[0].entry.toString().includes("billow")).toBe(true);
   });
 
+  test("returns LS results in inflected mode with diacritics", async () => {
+    const result = await callApiFull(DictsFusedApi, {
+      query: "occīdit",
+      dicts: [LatinDict.LewisAndShort.key],
+      mode: 1,
+    });
+
+    const articles = result.data[LatinDict.LewisAndShort.key];
+    expect(articles).toHaveLength(1);
+    expect(articles[0].entry.toString().includes("occīdo")).toBe(true);
+    expect(articles[0].entry.toString().includes("occĭdo")).toBe(false);
+  });
+
+  test("returns LS results in inflected mode with capitals", async () => {
+    const result = await callApiFull(DictsFusedApi, {
+      query: "Undarum",
+      dicts: [LatinDict.LewisAndShort.key],
+      mode: 1,
+    });
+
+    const articles = result.data[LatinDict.LewisAndShort.key];
+    expect(articles).toHaveLength(1);
+    expect(articles[0].entry.toString().includes("wave")).toBe(true);
+  });
+
+  test("returns LS results in inflected mode with weird characters", async () => {
+    const result = await callApiFull(DictsFusedApi, {
+      query: "Ægyptus",
+      dicts: [LatinDict.LewisAndShort.key],
+      mode: 1,
+    });
+
+    const articles = result.data[LatinDict.LewisAndShort.key];
+    expect(articles).not.toHaveLength(0);
+    expect(articles[0].entry.toString().includes("Aegyptus")).toBe(true);
+  });
+
   test("returns LS results in id mode", async () => {
     const result = await callApiFull(DictsFusedApi, {
       query: "n1153",
