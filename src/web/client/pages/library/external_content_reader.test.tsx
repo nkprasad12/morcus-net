@@ -6,7 +6,7 @@ import { ExternalContentReader } from "@/web/client/pages/library/external_conte
 import {
   ContentIndex,
   SavedContent,
-  SavedContentBackendContext,
+  BackendProviderContext,
 } from "@/web/client/pages/library/external_content_storage";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
@@ -28,10 +28,17 @@ function prepareReader() {
     loadContent,
     renderReader: () => {
       render(
-        <SavedContentBackendContext.Provider
-          value={{ getContentIndex, deleteContent, saveContent, loadContent }}>
+        <BackendProviderContext.Provider
+          value={{
+            useBackend: () => ({
+              getContentIndex,
+              deleteContent,
+              saveContent,
+              loadContent,
+            }),
+          }}>
           <ExternalContentReader />
-        </SavedContentBackendContext.Provider>
+        </BackendProviderContext.Provider>
       );
     },
   };

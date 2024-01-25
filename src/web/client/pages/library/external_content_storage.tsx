@@ -1,129 +1,52 @@
-import { singletonOf } from "@/common/misc_utils";
+import { useCloseable } from "@/web/client/utils/indexdb/hooks";
+import {
+  ObjectStore,
+  SingleStoreDbConfig,
+  Store,
+} from "@/web/client/utils/indexdb/types";
+import { simpleIndexDbStore } from "@/web/client/utils/indexdb/wrappers";
 import React, { useCallback, useContext, createContext } from "react";
 
-namespace IndexDbWrapper {
-  export interface DbConfig {
-    dbName: string;
-    version: number;
-    stores: {
-      name: string;
-      keyPath: string;
-    }[];
-  }
-
-  export function openDb(config: DbConfig): Promise<IDBDatabase> {
-    return new Promise((resolve, reject) => {
-      const openRequest = indexedDB.open(config.dbName, config.version);
-      openRequest.onsuccess = () => resolve(openRequest.result);
-      openRequest.onerror = () => reject("Error opening database");
-      openRequest.onupgradeneeded = () => {
-        const db = openRequest.result;
-        for (const store of config.stores) {
-          if (!db.objectStoreNames.contains(store.name)) {
-            db.createObjectStore(store.name, { keyPath: store.keyPath });
-          }
-        }
-      };
-    });
-  }
-}
-
 namespace IndexDbBackend {
-  const CONTENT_STORE = "savedContent";
-  const DB_CONFIG: IndexDbWrapper.DbConfig = {
+  type Row = ContentIndex & SavedContent;
+  type RowStore = ObjectStore<Row, "readwrite">;
+  const CONTENT_STORE: Store<Row> = {
+    name: "savedContent",
+    keyPath: "storageKey",
+  };
+  const DB_CONFIG: SingleStoreDbConfig<Row> = {
     dbName: "externalContent.db",
     version: 1,
-    stores: [
-      {
-        name: CONTENT_STORE,
-        keyPath: "storageKey",
-      },
-    ],
+    stores: [CONTENT_STORE],
   };
 
-  const db = singletonOf(() => IndexDbWrapper.openDb(DB_CONFIG));
-
-  async function saveContent(text: SavedContent): Promise<ContentIndex[]> {
-    const storageKey = `${text.title}_${Date.now()}`;
-    const transaction = (await db.get()).transaction(
-      CONTENT_STORE,
-      "readwrite"
-    );
-    return new Promise((resolve, reject) => {
-      const rows = transaction.objectStore(CONTENT_STORE);
-      const request = rows.add({ ...text, storageKey });
-      request.onerror = () => reject("Error saving content");
-      request.onsuccess = () => {
-        // TODO: Figure out how to check the titles only
-        const allRequest = rows.getAll();
-        allRequest.onerror = () => reject("Error getting index");
-        allRequest.onsuccess = () =>
-          resolve(
-            allRequest.result.map((x) => ({
-              storageKey: x.storageKey,
-              title: x.title,
-            }))
-          );
-      };
-    });
-  }
-
-  async function deleteContent(key: string): Promise<ContentIndex[]> {
-    const transaction = (await db.get()).transaction(
-      CONTENT_STORE,
-      "readwrite"
-    );
-    return new Promise((resolve, reject) => {
-      const rows = transaction.objectStore(CONTENT_STORE);
-      const request = rows.delete(key);
-      request.onerror = () => reject("Error deleting content");
-      request.onsuccess = () => {
-        // TODO: Figure out how to check the titles only
-        const allRequest = rows.getAll();
-        allRequest.onerror = () => reject("Error getting index");
-        allRequest.onsuccess = () =>
-          resolve(
-            allRequest.result.map((x) => ({
-              storageKey: x.storageKey,
-              title: x.title,
-            }))
-          );
-      };
-    });
-  }
-
-  async function loadContent(key: string): Promise<SavedContent> {
-    const transaction = (await db.get()).transaction(CONTENT_STORE);
-    return new Promise((resolve, reject) => {
-      const rows = transaction.objectStore(CONTENT_STORE);
-      const request = rows.get(key);
-      request.onerror = () => reject("Error retrieving content");
-      request.onsuccess = () => resolve(request.result);
-    });
-  }
-
-  async function getContentIndex(): Promise<ContentIndex[]> {
-    const transaction = (await db.get()).transaction(CONTENT_STORE);
-    return new Promise((resolve, reject) => {
-      const rows = transaction.objectStore(CONTENT_STORE);
-      const request = rows.getAll();
-      request.onerror = () => reject("Error retrieving content");
-      request.onsuccess = () =>
-        resolve(
-          request.result.map((x) => ({
-            storageKey: x.storageKey,
-            title: x.title,
-          }))
+  function backend(store: RowStore): SavedContentBackend {
+    const getContentIndex = () =>
+      store
+        .getAll()
+        .then((rows) =>
+          rows.map((row) => ({ storageKey: row.storageKey, title: row.title }))
         );
-    });
+    return {
+      getContentIndex,
+      loadContent: (k) => store.get(k),
+      deleteContent: async (key) => {
+        await store.delete(key);
+        return getContentIndex();
+      },
+      saveContent: async (text: SavedContent) => {
+        const storageKey = `${text.title}_${Date.now()}`;
+        await store.add({ ...text, storageKey });
+        return getContentIndex();
+      },
+    };
   }
 
-  export const BACKEND: SavedContentBackend = {
-    getContentIndex,
-    deleteContent,
-    saveContent,
-    loadContent,
-  };
+  export function useBackend(): SavedContentBackend {
+    const store = useCloseable(() => simpleIndexDbStore(DB_CONFIG));
+    const memoizedBacked = React.useMemo(() => backend(store), [store]);
+    return memoizedBacked;
+  }
 }
 
 export interface ContentIndex {
@@ -158,13 +81,16 @@ export interface SavedContentBackend {
   /** Retrieves the external content with the given key. */
   loadContent: (key: string) => Promise<SavedContent>;
 }
-const DEFAULT_BACKEND: SavedContentBackend = IndexDbBackend.BACKEND;
-export const SavedContentBackendContext =
-  createContext<SavedContentBackend>(DEFAULT_BACKEND);
+export const BackendProviderContext = createContext<{
+  useBackend: () => SavedContentBackend;
+}>({
+  useBackend: IndexDbBackend.useBackend,
+});
 
 export function useSavedExternalContent(): SavedContentHandler {
   const [list, setList] = React.useState<ContentIndex[] | undefined>(undefined);
-  const backend = useContext(SavedContentBackendContext);
+  const { useBackend } = useContext(BackendProviderContext);
+  const backend = useBackend();
 
   React.useEffect(() => {
     backend.getContentIndex().then(setList);
