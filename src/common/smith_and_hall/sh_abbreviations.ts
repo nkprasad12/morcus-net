@@ -171,7 +171,6 @@ const SH_EXPANSIONS: AbbreviationData[] = [
   ["trans.", "transitive."],
   ["transf.", "transferred."],
   ["Tursell.", "Tursellinus."],
-  ["usu.", "usually."],
   ["voc.", "vocative."],
   ["Vulg.", "Vulgate."],
   ["Wahl", "Wahl's New Test. Lexicon."],
@@ -255,6 +254,7 @@ const GENERIC_SH_HOVERS: AbbreviationData[] = [
   ["subject.", "subjective, -ly."],
   ["subj.", "subjective, OR subjunctive."],
   ["sup.", "superlative or supine."],
+  ["usu.", "usual(ly)."],
 ];
 
 const SH_COMBINED_EXPANSIONS = AbbreviationTrie.from(
