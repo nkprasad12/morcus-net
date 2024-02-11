@@ -5,6 +5,7 @@ import {
   instanceOf,
   isAny,
   isArray,
+  isBoth,
   isNumber,
   isOneOf,
   isPair,
@@ -99,6 +100,18 @@ describe("matchesInterface", () => {
 describe("isPrimitives", () => {
   test("isAny returns true", () => {
     expect(isAny(null)).toBe(true);
+  });
+});
+
+describe("is combinations", () => {
+  const aString = matches([["a", isString]]);
+  const bNumber = matches([["b", isNumber]]);
+  const bothMatcher = isBoth(aString, bNumber);
+
+  test("isBoth returns expected", () => {
+    expect(bothMatcher({ a: "a" })).toBe(false);
+    expect(bothMatcher({ b: 1 })).toBe(false);
+    expect(bothMatcher({ a: "a", b: 1 })).toBe(true);
   });
 });
 
