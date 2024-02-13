@@ -443,6 +443,11 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         marginTop: "8px",
         display: "inline-block",
         textTransform: "capitalize",
+        overflowWrap: "break-word",
+        wordBreak: "break-all",
+      },
+      ".latWork.fromUrl": {
+        textTransform: "none",
       },
       ".latWork:hover": {
         color: Solarized.blue,

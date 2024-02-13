@@ -18,6 +18,8 @@ import {
   SavedContentHandler,
   useSavedExternalContent,
 } from "@/web/client/pages/library/external_content_storage";
+import { callApi } from "@/web/utils/rpc/client_rpc";
+import { ScrapeUrlApi } from "@/web/api_routes";
 
 export function ExternalContentReader() {
   return (
@@ -122,6 +124,9 @@ function RenderTab(props: { current: MainTab }) {
           <ExternalContentSection header="Import Raw Text">
             <InputContentBox />
           </ExternalContentSection>
+          <ExternalContentSection header="Import From URL">
+            <LinkImportSection />
+          </ExternalContentSection>
         </div>
       );
     case "Text reader":
@@ -167,9 +172,11 @@ function PreviouslyEnteredSection() {
     <div style={{ display: "grid" }} className="text md">
       {contentIndex.map((item, i) => (
         <React.Fragment key={item.storageKey}>
-          <span style={{ gridRow: i + 1, gridColumn: 1 }}>
+          <span style={{ gridRow: i + 1, gridColumn: 1, maxWidth: "80%" }}>
             <SpanButton
-              className="latWork"
+              className={
+                item.title.startsWith("http") ? "latWork fromUrl" : "latWork"
+              }
               onClick={() => {
                 loadContent(item.storageKey).then((result) =>
                   processAndLoadText(result.content)
@@ -232,6 +239,65 @@ function InputContentBox() {
         style={{ marginTop: "16px" }}>
         Import
       </button>
+    </>
+  );
+}
+
+type LinkProcessState = "Processing" | "Error" | "None";
+
+function LinkImportSection() {
+  const { processAndLoadText, saveContent } = React.useContext(
+    InternalReaderContext
+  );
+
+  const [sourceLink, setSourceLink] = useState<string>("");
+  const [processState, setProcessState] = useState<LinkProcessState>("None");
+
+  return (
+    <>
+      <div className="text sm">
+        Import Latin text from another website. Works best for simple sites with
+        mostly plain text.
+      </div>
+      <div className="text sm">
+        These imports can be shared with other users!
+      </div>
+      <div
+        style={{
+          marginTop: "8px",
+          marginBottom: "8px",
+        }}>
+        <div className="text sm light">
+          <label htmlFor="link-input">Page URL</label>
+          <span className="text red">*</span>
+        </div>
+        <TextField onNewValue={setSourceLink} id="link-input" />
+        <div>
+          <button
+            aria-label="Import from link"
+            className="button text md"
+            disabled={sourceLink.length < 3 || !sourceLink.includes(".")}
+            style={{ marginTop: "4px" }}
+            onClick={async () => {
+              setProcessState("Processing");
+              try {
+                const scraped = await callApi(ScrapeUrlApi, sourceLink);
+                processAndLoadText(scraped);
+                saveContent({ title: sourceLink, content: scraped });
+                setProcessState("None");
+              } catch {
+                setProcessState("Error");
+              }
+            }}>
+            Import
+          </button>
+          {processState !== "None" && (
+            <span className="text md" style={{ marginLeft: "12px" }}>
+              {processState}
+            </span>
+          )}
+        </div>
+      </div>
     </>
   );
 }

@@ -20,6 +20,9 @@ const ALL_TAGS = new Set(
     "span",
     "b",
     "i",
+    "table",
+    "tr",
+    "td",
   ])
 );
 

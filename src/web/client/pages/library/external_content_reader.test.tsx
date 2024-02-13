@@ -10,6 +10,17 @@ import {
 } from "@/web/client/pages/library/external_content_storage";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
+import { callApi } from "@/web/utils/rpc/client_rpc";
+
+jest.mock("@/web/utils/rpc/client_rpc");
+
+// @ts-ignore
+const mockCallApi: jest.Mock<any, any, any> = callApi;
+
+beforeEach(() => {
+  mockCallApi.mockReset();
+  mockCallApi.mockResolvedValue("");
+});
 
 function prepareReader() {
   const getContentIndex = jest.fn<Promise<ContentIndex[]>, any>(() =>
@@ -115,5 +126,27 @@ describe("external reader", () => {
     await screen.findByText("Gallia");
     await screen.findByText("est");
     await screen.findByText("omnis");
+  });
+
+  it("allows import via link", async () => {
+    mockCallApi.mockResolvedValue("Arma virumque");
+    const { renderReader, saveContent } = prepareReader();
+    renderReader();
+
+    await user.click(screen.getByText(/Import From URL/));
+
+    await user.click(screen.getByLabelText("Page URL"));
+    await user.type(screen.getByLabelText("Page URL"), "foo.bar");
+    await user.click(screen.getByLabelText("Import from link"));
+
+    screen.debug();
+    expect(saveContent).toHaveBeenCalledTimes(1);
+    expect(saveContent).toHaveBeenCalledWith({
+      title: "foo.bar",
+      content: "Arma virumque",
+    });
+    await screen.findByText(/Reading imported/);
+    await screen.findByText("Arma");
+    await screen.findByText("virumque");
   });
 });
