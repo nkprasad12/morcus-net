@@ -1,4 +1,3 @@
-import { Stream } from "stream";
 import fs from "fs";
 import {
   ObjectStorage,
@@ -38,20 +37,12 @@ describe("ObjectStorage", () => {
   afterAll(cleanup);
 
   test("Default impl handles simple read and write", async () => {
+    const storage = ObjectStorage.local(TEMP_DIR);
     const fileName = "foo.txt";
     const content = "Gallia est omnis";
-    const readable = Stream.Readable.from(content);
-    let result = "";
-    const writeable = Stream.Writable.fromWeb(
-      new WritableStream({
-        write(chunk) {
-          result += chunk;
-        },
-      })
-    );
 
-    await ObjectStorage.LOCAL.upload(TEMP_DIR, fileName, readable);
-    await ObjectStorage.LOCAL.download(TEMP_DIR, fileName, writeable);
+    await storage.upload(fileName, content);
+    const result = await storage.download(fileName);
     expect(result).toBe(content);
   });
 });

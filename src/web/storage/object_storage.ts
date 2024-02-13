@@ -43,31 +43,20 @@ export namespace StorageBlob {
 }
 
 export interface ObjectStorage {
-  download(
-    bucket: string,
-    file: string,
-    destination: NodeJS.WritableStream
-  ): Promise<void>;
-
-  upload(
-    bucket: string,
-    file: string,
-    content: NodeJS.ReadableStream
-  ): Promise<void>;
+  download(file: string): Promise<string>;
+  upload(file: string, content: string): Promise<void>;
 }
 
 export namespace ObjectStorage {
-  export const LOCAL: ObjectStorage = {
-    async download(bucket, file, destination): Promise<void> {
-      const data = await fs.readFile(path.join(bucket, file));
-      return new Promise((res, rej) => {
-        destination.write(data, (err) => (err === null ? res() : rej(err)));
-        destination.on("close", res);
-      });
-    },
-    async upload(bucket, file, content): Promise<void> {
-      await fs.mkdir(bucket, { recursive: true });
-      return fs.writeFile(path.join(bucket, file), content.read());
-    },
-  };
+  export function local(dir: string): ObjectStorage {
+    return {
+      download: (file) =>
+        fs.readFile(path.join(dir, file), { encoding: "utf8" }),
+      upload: async (file, content) => {
+        await fs.mkdir(dir, { recursive: true });
+        const target = path.join(dir, file);
+        await fs.writeFile(target, content, { encoding: "utf8" });
+      },
+    };
+  }
 }
