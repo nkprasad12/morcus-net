@@ -5,7 +5,23 @@ import { isString } from "@/web/utils/rpc/parsing";
 import fetch from "node-fetch";
 
 const BLOCK_STARTS = new Set(["p", "div"]);
-const ALL_TAGS = new Set([...BLOCK_STARTS].concat(["font", "body", "a", "br"]));
+const ALL_TAGS = new Set(
+  [...BLOCK_STARTS].concat([
+    "font",
+    "body",
+    "a",
+    "br",
+    "h1",
+    "h2",
+    "h3",
+    "h4",
+    "h5",
+    "h6",
+    "span",
+    "b",
+    "i",
+  ])
+);
 
 function normalizeUrl(url: string): string {
   if (!url.startsWith("https:") && !url.startsWith("http:")) {
@@ -14,7 +30,7 @@ function normalizeUrl(url: string): string {
   return url;
 }
 
-export async function scrapeUrlText(url: string) {
+export async function scrapeUrlText(url: string): Promise<string> {
   const response = await fetch(normalizeUrl(url));
   assert(response.ok, `Status ${response.status} on ${url}`);
   const rawText = await response.text();
@@ -27,7 +43,7 @@ export async function scrapeUrlText(url: string) {
 
 function htmlToText(root: XmlNode): string {
   const tag = root.name.toLowerCase();
-  assert(ALL_TAGS.has(tag));
+  assert(ALL_TAGS.has(tag), tag);
   const result: string[] = [];
   // Include br here since fast-xml-parser doesn't handle it correctly and
   // includes text inside.

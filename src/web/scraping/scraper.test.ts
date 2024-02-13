@@ -19,20 +19,20 @@ function setFetchPage(text: string) {
   );
 }
 
-describe("scrapeUrlText", () => {
-  test("happy path", async () => {
+describe("Scraper", () => {
+  test("scrapeUrlText happy path", async () => {
     setFetchPage("<html><body>Hello<br>Hi</body></html>");
     const result = await scrapeUrlText(PAGE_URL);
     expect(result).toBe("Hello\nHi");
   });
 
-  it("url without protocol corrects", async () => {
+  test("scrapeUrlText url without protocol corrects", async () => {
     setFetchPage("<html><body>Hello<br>Hi</body></html>");
     const result = await scrapeUrlText("foo.bar");
     expect(result).toBe("Hello\nHi");
   });
 
-  it("handles text with divs and br", async () => {
+  test("scrapeUrlText handles text with divs and br", async () => {
     setFetchPage("<html><body>Hello<br><div>Hi</div></body></html>");
     const result = await scrapeUrlText("foo.bar");
     expect(result).toBe("Hello\n\nHi\n");
