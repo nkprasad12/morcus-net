@@ -6,6 +6,7 @@ import {
   type ObjectStorage,
 } from "@/web/storage/object_storage";
 import type { ApiRoute } from "@/web/utils/rpc/rpc";
+import { RouteDefinition } from "@/web/utils/rpc/server_rpc";
 import { randomUUID } from "crypto";
 
 export const CreateBlob: ApiRoute<StorageBlobData, StorageBlobId> = {
@@ -22,12 +23,12 @@ export const GetBlob: ApiRoute<StorageBlobId, StorageBlob> = {
   outputValidator: StorageBlob.isMatch,
 };
 
-export interface BlobHandler {
+interface BlobHandler {
   create(data: StorageBlobData): Promise<StorageBlobId>;
   get(id: StorageBlobId): Promise<StorageBlob>;
 }
 
-export namespace BlobHandler {
+namespace BlobHandler {
   export function forStorage(storage: ObjectStorage): BlobHandler {
     return {
       async create(data) {
@@ -44,4 +45,17 @@ export namespace BlobHandler {
       },
     };
   }
+}
+
+export function storageRoutes(
+  storage: ObjectStorage
+): [
+  RouteDefinition<StorageBlobData, StorageBlobId>,
+  RouteDefinition<StorageBlobId, StorageBlob>
+] {
+  const handler = BlobHandler.forStorage(storage);
+  return [
+    RouteDefinition.create(CreateBlob, handler.create),
+    RouteDefinition.create(GetBlob, handler.get),
+  ];
 }

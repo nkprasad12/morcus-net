@@ -1,5 +1,5 @@
 import { ObjectStorage } from "@/web/storage/object_storage";
-import { BlobHandler } from "@/web/storage/storage_routes";
+import { storageRoutes } from "@/web/storage/storage_routes";
 import fs from "fs";
 
 const TEMP_DIR = "storage_routes.ts.tmp.txt";
@@ -14,11 +14,11 @@ describe("Storage Routes", () => {
   afterAll(cleanup);
 
   it("Handles create and get", async () => {
-    const storage = BlobHandler.forStorage(ObjectStorage.local(TEMP_DIR));
+    const [create, get] = storageRoutes(ObjectStorage.local(TEMP_DIR));
     const data = { data: "Foo", metadata: { bar: "baz" } };
 
-    const id = await storage.create(data);
-    const stored = await storage.get(id);
+    const id = await create.handler(data);
+    const stored = await get.handler(id);
 
     expect(stored).toEqual(expect.objectContaining(data));
     expect(stored).toEqual(expect.objectContaining(id));
