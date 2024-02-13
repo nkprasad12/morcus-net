@@ -10,6 +10,7 @@ const BASE_XML_PARSER_OPTIONS = {
   alwaysCreateTextNode: true,
   preserveOrder: true,
   commentPropName: COMMENT_NODE,
+  unpairedTags: undefined,
 };
 
 const PARSE_TRIM_WHITESPACE = {
@@ -91,18 +92,22 @@ function validateXml(input: any): void {
  * - `rootName`: is the content root name to search for, if the root contains
  *    multiple elements.
  * - `validate`: Whether to validate the XML before returning.
+ * - `unpairedTags`: Tags to accept as unpaired.
  *
  * @returns An XML node representation of the input data.
  */
 export function parseRawXml(
   rawXml: string | Buffer,
-  options?: { keepWhitespace?: true; validate?: true }
+  options?: { keepWhitespace?: true; validate?: true; unpairedTags?: string[] }
 ): XmlNode {
-  const parser = new XMLParser(
+  const parseConfig =
     options?.keepWhitespace === true
       ? PARSE_KEEP_WHITESPACE
-      : PARSE_TRIM_WHITESPACE
-  );
+      : PARSE_TRIM_WHITESPACE;
+  const parser = new XMLParser({
+    ...parseConfig,
+    unpairedTags: options?.unpairedTags,
+  });
   if (options?.validate === true) {
     validateXml(rawXml);
   }
