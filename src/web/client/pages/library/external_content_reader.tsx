@@ -8,6 +8,7 @@ import {
   ReaderInternalTabConfig,
 } from "@/web/client/pages/library/reader_sidebar_components";
 import EditIcon from "@mui/icons-material/Edit";
+import LinkIcon from "@mui/icons-material/Link";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
 import { PropsWithChildren, useEffect, useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
@@ -21,6 +22,8 @@ import {
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ScrapeUrlApi } from "@/web/api_routes";
 import { Router } from "@/web/client/router/router_v2";
+import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
+import { NavIcon } from "@/web/client/pages/library/reader_utils";
 
 export function ExternalContentReader() {
   return (
@@ -31,8 +34,9 @@ export function ExternalContentReader() {
   );
 }
 
+type ReaderTextState = JSX.Element | null | "Loading" | "Error";
 interface InternalReaderState extends SavedContentHandler {
-  text: JSX.Element | null;
+  text: ReaderTextState;
   processAndLoadText: (text: string) => any;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
@@ -65,7 +69,7 @@ interface MainColumnProps {}
 function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   const { route } = Router.useRouter();
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
-  const [text, setText] = useState<JSX.Element | null>(null);
+  const [text, setText] = useState<ReaderTextState>(null);
   const savedContentHandler = useSavedExternalContent();
   const mainColumnRef = React.useRef<HTMLDivElement>(null);
 
@@ -92,7 +96,7 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
       return;
     }
     setCurrentTab("Text reader");
-    setText(LOAD_PENDING);
+    setText("Loading");
     loadContent(fromUrl)
       .then((content) => processAndLoadText(content.content))
       .catch(() => {
@@ -105,7 +109,7 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
             });
             processAndLoadText(scraped);
           })
-          .catch(() => setText(LOAD_ERROR));
+          .catch(() => setText("Error"));
       });
   }, [fromUrl, processAndLoadText, loadContent, saveContent]);
 
@@ -134,9 +138,24 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   );
 }
 
+const ShareScrapedContentIcon = React.forwardRef<any>(
+  function ShareScrapedContentIcon(fProps, fRef) {
+    return (
+      <span {...fProps} ref={fRef} style={{ marginLeft: "4px" }}>
+        <NavIcon Icon={<LinkIcon />} label="share page link" />
+      </span>
+    );
+  }
+);
+
 function RenderTab(props: { current: MainTab }) {
+  const { route } = Router.useRouter();
   const { text } = React.useContext(InternalReaderContext);
+
   const tab = props.current;
+  const fromUrl = route.params?.fromUrl;
+  const validText = text !== "Error" && text !== "Loading" && text !== null;
+
   switch (tab) {
     case "Load text":
       return (
@@ -165,8 +184,22 @@ function RenderTab(props: { current: MainTab }) {
         <div>
           <div style={{ paddingTop: "8px", paddingBottom: "8px" }}>
             <span className="text sm light">Reading imported text</span>
+            {validText && fromUrl && (
+              <CopyLinkTooltip
+                forwarded={ShareScrapedContentIcon}
+                message="Copy link"
+                link={window.location.href}
+                placement="bottom"
+              />
+            )}
           </div>
-          <span className="text md">{text}</span>
+          <span className="text md">
+            {text === "Error"
+              ? LOAD_ERROR
+              : text === "Loading"
+              ? LOAD_PENDING
+              : text}
+          </span>
         </div>
       );
     default:

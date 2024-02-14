@@ -1,4 +1,4 @@
-import { XMLParser, XMLValidator } from "fast-xml-parser";
+import { XMLParser, XMLValidator, type X2jOptions } from "fast-xml-parser";
 import { assert } from "@/common/assert";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
 
@@ -10,7 +10,6 @@ const BASE_XML_PARSER_OPTIONS = {
   alwaysCreateTextNode: true,
   preserveOrder: true,
   commentPropName: COMMENT_NODE,
-  unpairedTags: undefined,
 };
 
 const PARSE_TRIM_WHITESPACE = {
@@ -100,14 +99,15 @@ export function parseRawXml(
   rawXml: string | Buffer,
   options?: { keepWhitespace?: true; validate?: true; unpairedTags?: string[] }
 ): XmlNode {
-  const parseConfig =
-    options?.keepWhitespace === true
+  const parseConfig: X2jOptions = {
+    ...(options?.keepWhitespace === true
       ? PARSE_KEEP_WHITESPACE
-      : PARSE_TRIM_WHITESPACE;
-  const parser = new XMLParser({
-    ...parseConfig,
-    unpairedTags: options?.unpairedTags,
-  });
+      : PARSE_TRIM_WHITESPACE),
+  };
+  if (options?.unpairedTags !== undefined) {
+    parseConfig.unpairedTags = options?.unpairedTags;
+  }
+  const parser = new XMLParser(parseConfig);
   if (options?.validate === true) {
     validateXml(rawXml);
   }
