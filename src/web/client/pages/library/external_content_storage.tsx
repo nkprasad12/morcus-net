@@ -22,15 +22,13 @@ namespace IndexDbBackend {
 
   function backend(store: RowStore): SavedContentBackend {
     const getContentIndex = () =>
-      store
-        .getAll()
-        .then((rows) =>
-          rows.map((row) => ({
-            storageKey: row.storageKey,
-            title: row.title,
-            source: row.source,
-          }))
-        );
+      store.getAll().then((rows) =>
+        rows.map((row) => ({
+          storageKey: row.storageKey,
+          title: row.title,
+          source: row.source,
+        }))
+      );
     return {
       getContentIndex,
       loadContent: (k) => store.get(k),
