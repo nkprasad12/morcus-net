@@ -266,14 +266,14 @@ function PreviouslyEnteredSection() {
                 item.title.startsWith("http") ? "latWork fromUrl" : "latWork"
               }
               onClick={async () => {
-                const result = await loadContent(item.storageKey);
-                setText(result.content);
-                if (result.source === "fromUrl") {
+                if (item.source === "fromUrl") {
                   nav.to((old) => ({
                     path: old.path,
-                    params: { fromUrl: result.title },
+                    params: { fromUrl: item.title },
                   }));
                 } else {
+                  const result = await loadContent(item.storageKey);
+                  setText(result.content);
                   nav.to((old) => ({ path: old.path }));
                 }
               }}>

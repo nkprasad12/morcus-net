@@ -25,7 +25,11 @@ namespace IndexDbBackend {
       store
         .getAll()
         .then((rows) =>
-          rows.map((row) => ({ storageKey: row.storageKey, title: row.title }))
+          rows.map((row) => ({
+            storageKey: row.storageKey,
+            title: row.title,
+            source: row.source,
+          }))
         );
     return {
       getContentIndex,
@@ -57,6 +61,8 @@ export interface ContentIndex {
   title: string;
   /** The key by which the indexed content is saved. */
   storageKey: string;
+  /** The type of input that produced this content. */
+  source?: SavedContentSource;
 }
 export type SavedContentSource = "fromUrl";
 export interface SavedContent {
