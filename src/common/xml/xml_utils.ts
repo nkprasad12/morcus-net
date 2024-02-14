@@ -99,7 +99,7 @@ export function parseRawXml(
   rawXml: string | Buffer,
   options?: { keepWhitespace?: true; validate?: true; unpairedTags?: string[] }
 ): XmlNode {
-  const parseConfig: X2jOptions = {
+  const parseConfig: Partial<X2jOptions> = {
     ...(options?.keepWhitespace === true
       ? PARSE_KEEP_WHITESPACE
       : PARSE_TRIM_WHITESPACE),
