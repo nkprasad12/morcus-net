@@ -19,6 +19,7 @@ import React, {
   TouchEventHandler,
   useEffect,
   useState,
+  useCallback,
 } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -130,6 +131,12 @@ export function BaseReader<
 
   const extendWakeLock = useWakeLock();
 
+  const onWordSelected = useCallback( (word) => {
+          sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
+          setSidebarTab("Dictionary");
+          onDictWord(word);
+        } , [sidebarRef, setSidebarTab, onDictWord]);
+
   useEffect(
     () => extendWakeLock && extendWakeLock(),
     [extendWakeLock, dictWord, drawerHeight, sidebarTab]
@@ -148,11 +155,7 @@ export function BaseReader<
       <props.MainColumn
         {...props}
         scale={readerMainScale}
-        onWordSelected={(word) => {
-          sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
-          setSidebarTab("Dictionary");
-          onDictWord(word);
-        }}
+        onWordSelected={onWordSelected}
         isMobile={isScreenSmall}
       />
       <ReaderInternalNavbar
