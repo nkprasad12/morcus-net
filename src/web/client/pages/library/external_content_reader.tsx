@@ -45,11 +45,13 @@ interface InternalReaderState extends SavedContentHandler {
   processedText: JSX.Element | null;
   text: ReaderTextState;
   setText: (state: ReaderTextState) => any;
+  setCurrentTab: (tab: MainTab) => any;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
   processedText: null,
   text: null,
   setText: () => {},
+  setCurrentTab: () => {},
   contentIndex: undefined,
   deleteContent: () => Promise.reject(),
   saveContent: () => Promise.reject(),
@@ -151,6 +153,7 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
           value={{
             text,
             processedText,
+            setCurrentTab,
             setText: onNewTextState,
             ...savedContentHandler,
           }}>
@@ -244,7 +247,7 @@ function ExternalContentSection(
 }
 
 function PreviouslyEnteredSection() {
-  const { setText, contentIndex, deleteContent, loadContent } =
+  const { setText, contentIndex, deleteContent, loadContent, setCurrentTab } =
     React.useContext(InternalReaderContext);
   const { nav } = Router.useRouter();
 
@@ -271,6 +274,7 @@ function PreviouslyEnteredSection() {
                     path: old.path,
                     params: { fromUrl: item.title },
                   }));
+                  setCurrentTab("Text reader");
                 } else {
                   const result = await loadContent(item.storageKey);
                   setText(result.content);
