@@ -34,14 +34,22 @@ export function ExternalContentReader() {
   );
 }
 
-type ReaderTextState = JSX.Element | null | "Loading" | "Error";
+const READER_LOADING = 1;
+const READER_ERROR = 2;
+type ReaderTextState =
+  | string
+  | null
+  | typeof READER_LOADING
+  | typeof READER_ERROR;
 interface InternalReaderState extends SavedContentHandler {
+  processedText: JSX.Element | null;
   text: ReaderTextState;
-  processAndLoadText: (text: string) => any;
+  setText: (state: ReaderTextState) => any;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
+  processedText: null,
   text: null,
-  processAndLoadText: () => {},
+  setText: () => {},
   contentIndex: undefined,
   deleteContent: () => Promise.reject(),
   saveContent: () => Promise.reject(),
@@ -79,16 +87,26 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   const loadContent = savedContentHandler.loadContent;
   const saveContent = savedContentHandler.saveContent;
 
-  const processAndLoadText = React.useCallback(
-    (input: string) => {
-      setText(processedTextComponent(input, onWordSelected));
+  const processedText = React.useMemo(() => {
+    if (text === null || text === READER_LOADING || text === READER_ERROR) {
+      return null;
+    }
+    return processedTextComponent(text, onWordSelected);
+  }, [text, onWordSelected]);
+
+  const onNewTextState = React.useCallback(
+    (input: ReaderTextState) => {
+      setText(input);
+      if (typeof input !== "string") {
+        return;
+      }
       setCurrentTab("Text reader");
       if (isMobile) {
         window.scrollTo({ top: 0, behavior: "instant" });
         window.scrollTo({ top: 64, behavior: "instant" });
       }
     },
-    [setText, setCurrentTab, onWordSelected, isMobile]
+    [setText, setCurrentTab, isMobile]
   );
 
   useEffect(() => {
@@ -96,9 +114,9 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
       return;
     }
     setCurrentTab("Text reader");
-    setText("Loading");
+    setText(READER_LOADING);
     loadContent(fromUrl)
-      .then((content) => processAndLoadText(content.content))
+      .then((content) => onNewTextState(content.content))
       .catch(() => {
         callApi(ScrapeUrlApi, fromUrl)
           .then((scraped) => {
@@ -107,11 +125,11 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
               content: scraped,
               source: "fromUrl",
             });
-            processAndLoadText(scraped);
+            onNewTextState(scraped);
           })
-          .catch(() => setText("Error"));
+          .catch(() => setText(READER_ERROR));
       });
-  }, [fromUrl, processAndLoadText, loadContent, saveContent]);
+  }, [fromUrl, onNewTextState, loadContent, saveContent]);
 
   return (
     <ContentBox
@@ -130,7 +148,12 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
           paddingRight: props.isMobile ? "12px" : undefined,
         }}>
         <InternalReaderContext.Provider
-          value={{ text, processAndLoadText, ...savedContentHandler }}>
+          value={{
+            text,
+            processedText,
+            setText: onNewTextState,
+            ...savedContentHandler,
+          }}>
           <RenderTab current={currentTab} />
         </InternalReaderContext.Provider>
       </div>
@@ -150,11 +173,11 @@ const ShareScrapedContentIcon = React.forwardRef<any>(
 
 function RenderTab(props: { current: MainTab }) {
   const { route } = Router.useRouter();
-  const { text } = React.useContext(InternalReaderContext);
+  const { text, processedText } = React.useContext(InternalReaderContext);
 
   const tab = props.current;
   const fromUrl = route.params?.fromUrl;
-  const validText = text !== "Error" && text !== "Loading" && text !== null;
+  const validText = processedText !== null;
 
   switch (tab) {
     case "Load text":
@@ -198,7 +221,7 @@ function RenderTab(props: { current: MainTab }) {
               ? LOAD_ERROR
               : text === "Loading"
               ? LOAD_PENDING
-              : text}
+              : processedText}
           </span>
         </div>
       );
@@ -221,7 +244,7 @@ function ExternalContentSection(
 }
 
 function PreviouslyEnteredSection() {
-  const { processAndLoadText, contentIndex, deleteContent, loadContent } =
+  const { setText, contentIndex, deleteContent, loadContent } =
     React.useContext(InternalReaderContext);
   const { nav } = Router.useRouter();
 
@@ -244,7 +267,7 @@ function PreviouslyEnteredSection() {
               }
               onClick={async () => {
                 const result = await loadContent(item.storageKey);
-                processAndLoadText(result.content);
+                setText(result.content);
                 if (result.source === "fromUrl") {
                   nav.to((old) => ({
                     path: old.path,
@@ -271,9 +294,7 @@ function PreviouslyEnteredSection() {
 }
 
 function InputContentBox() {
-  const { processAndLoadText, saveContent } = React.useContext(
-    InternalReaderContext
-  );
+  const { setText, saveContent } = React.useContext(InternalReaderContext);
   const { nav } = Router.useRouter();
 
   const [titleText, setTitleText] = React.useState("");
@@ -306,7 +327,7 @@ function InputContentBox() {
         className="button text md"
         disabled={titleText.length === 0 || pendingText.length === 0}
         onClick={() => {
-          processAndLoadText(pendingText);
+          setText(pendingText);
           saveContent({ title: titleText, content: pendingText });
           nav.to((old) => ({ path: old.path }));
         }}

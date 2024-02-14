@@ -122,20 +122,28 @@ export function BaseReader<
 
   const { swipeListeners } = props;
 
-  function onDictWord(word: string) {
-    setDictWord(word);
-    if (isScreenSmall && drawerHeight < window.innerHeight * 0.15) {
-      setDrawerHeight(window.innerHeight * 0.15);
-    }
-  }
+  const onDictWord = useCallback(
+    (word: string) => {
+      setDictWord(word);
+      setDrawerHeight((height) => {
+        const minHeight = window.innerHeight * 0.15;
+        const increaseSize = isScreenSmall && height < minHeight;
+        return increaseSize ? minHeight : height;
+      });
+    },
+    [isScreenSmall]
+  );
 
   const extendWakeLock = useWakeLock();
 
-  const onWordSelected = useCallback( (word) => {
-          sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
-          setSidebarTab("Dictionary");
-          onDictWord(word);
-        } , [sidebarRef, setSidebarTab, onDictWord]);
+  const onWordSelected = useCallback(
+    (word: string) => {
+      sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
+      setSidebarTab("Dictionary");
+      onDictWord(word);
+    },
+    [onDictWord]
+  );
 
   useEffect(
     () => extendWakeLock && extendWakeLock(),
