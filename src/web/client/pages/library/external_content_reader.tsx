@@ -9,7 +9,7 @@ import {
 } from "@/web/client/pages/library/reader_sidebar_components";
 import EditIcon from "@mui/icons-material/Edit";
 import AutoStoriesIcon from "@mui/icons-material/AutoStories";
-import { PropsWithChildren, useState } from "react";
+import { PropsWithChildren, useEffect, useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
@@ -20,6 +20,7 @@ import {
 } from "@/web/client/pages/library/external_content_storage";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ScrapeUrlApi } from "@/web/api_routes";
+import { Router } from "@/web/client/router/router_v2";
 
 export function ExternalContentReader() {
   return (
@@ -57,14 +58,22 @@ const READER_ICON: ReaderInternalTabConfig<MainTab> = {
 const BASE_ICONS = [LOAD_ICON];
 const LOADED_ICONS = [LOAD_ICON, READER_ICON];
 
+const LOAD_PENDING = <span>Loading text from URL ...</span>;
+const LOAD_ERROR = <span>Error loading from URL!</span>;
+
 interface MainColumnProps {}
 function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
+  const { route } = Router.useRouter();
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
   const [text, setText] = useState<JSX.Element | null>(null);
   const savedContentHandler = useSavedExternalContent();
   const mainColumnRef = React.useRef<HTMLDivElement>(null);
 
   const { onWordSelected, isMobile } = props;
+
+  const fromUrl = route.params?.fromUrl;
+  const loadContent = savedContentHandler.loadContent;
+  const saveContent = savedContentHandler.saveContent;
 
   const processAndLoadText = React.useCallback(
     (input: string) => {
@@ -77,6 +86,28 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
     },
     [setText, setCurrentTab, onWordSelected, isMobile]
   );
+
+  useEffect(() => {
+    if (fromUrl === undefined) {
+      return;
+    }
+    setCurrentTab("Text reader");
+    setText(LOAD_PENDING);
+    loadContent(fromUrl)
+      .then((content) => processAndLoadText(content.content))
+      .catch(() => {
+        callApi(ScrapeUrlApi, fromUrl)
+          .then((scraped) => {
+            saveContent({
+              title: fromUrl,
+              content: scraped,
+              source: "fromUrl",
+            });
+            processAndLoadText(scraped);
+          })
+          .catch(() => setText(LOAD_ERROR));
+      });
+  }, [fromUrl, processAndLoadText, loadContent, saveContent]);
 
   return (
     <ContentBox
@@ -159,6 +190,7 @@ function ExternalContentSection(
 function PreviouslyEnteredSection() {
   const { processAndLoadText, contentIndex, deleteContent, loadContent } =
     React.useContext(InternalReaderContext);
+  const { nav } = Router.useRouter();
 
   if (contentIndex === undefined) {
     return <div className="text sm">Loading saved imports</div>;
@@ -177,10 +209,17 @@ function PreviouslyEnteredSection() {
               className={
                 item.title.startsWith("http") ? "latWork fromUrl" : "latWork"
               }
-              onClick={() => {
-                loadContent(item.storageKey).then((result) =>
-                  processAndLoadText(result.content)
-                );
+              onClick={async () => {
+                const result = await loadContent(item.storageKey);
+                processAndLoadText(result.content);
+                if (result.source === "fromUrl") {
+                  nav.to((old) => ({
+                    path: old.path,
+                    params: { fromUrl: result.title },
+                  }));
+                } else {
+                  nav.to((old) => ({ path: old.path }));
+                }
               }}>
               {item.title}
             </SpanButton>
@@ -202,6 +241,7 @@ function InputContentBox() {
   const { processAndLoadText, saveContent } = React.useContext(
     InternalReaderContext
   );
+  const { nav } = Router.useRouter();
 
   const [titleText, setTitleText] = React.useState("");
   const [pendingText, setPendingText] = React.useState("");
@@ -235,6 +275,7 @@ function InputContentBox() {
         onClick={() => {
           processAndLoadText(pendingText);
           saveContent({ title: titleText, content: pendingText });
+          nav.to((old) => ({ path: old.path }));
         }}
         style={{ marginTop: "16px" }}>
         Import
@@ -246,9 +287,8 @@ function InputContentBox() {
 type LinkProcessState = "Processing" | "Error" | "None";
 
 function LinkImportSection() {
-  const { processAndLoadText, saveContent } = React.useContext(
-    InternalReaderContext
-  );
+  const { saveContent } = React.useContext(InternalReaderContext);
+  const { nav } = Router.useRouter();
 
   const [sourceLink, setSourceLink] = useState<string>("");
   const [processState, setProcessState] = useState<LinkProcessState>("None");
@@ -280,10 +320,18 @@ function LinkImportSection() {
             style={{ marginTop: "4px" }}
             onClick={async () => {
               setProcessState("Processing");
+              const currentLink = sourceLink;
               try {
-                const scraped = await callApi(ScrapeUrlApi, sourceLink);
-                processAndLoadText(scraped);
-                saveContent({ title: sourceLink, content: scraped });
+                const scraped = await callApi(ScrapeUrlApi, currentLink);
+                await saveContent({
+                  title: currentLink,
+                  content: scraped,
+                  source: "fromUrl",
+                });
+                nav.to((old) => ({
+                  path: old.path,
+                  params: { fromUrl: currentLink },
+                }));
                 setProcessState("None");
               } catch {
                 setProcessState("Error");

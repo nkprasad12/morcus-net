@@ -7,10 +7,12 @@ import {
   ContentIndex,
   SavedContent,
   BackendProviderContext,
+  type SavedContentBackend,
 } from "@/web/client/pages/library/external_content_storage";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { callApi } from "@/web/utils/rpc/client_rpc";
+import { Router, type RouteInfo } from "@/web/client/router/router_v2";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 
@@ -22,7 +24,7 @@ beforeEach(() => {
   mockCallApi.mockResolvedValue("");
 });
 
-function prepareReader() {
+function prepareReader(options?: { initialRoute?: RouteInfo }) {
   const getContentIndex = jest.fn<Promise<ContentIndex[]>, any>(() =>
     Promise.resolve([])
   );
@@ -31,25 +33,32 @@ function prepareReader() {
   const loadContent = jest.fn<Promise<SavedContent>, any>(() =>
     Promise.reject()
   );
+  const backend: SavedContentBackend = {
+    getContentIndex,
+    deleteContent,
+    saveContent,
+    loadContent,
+  };
+  const routeListener = jest.fn();
 
   return {
     getContentIndex,
     deleteContent,
     saveContent,
     loadContent,
+    routeListener,
     renderReader: () => {
       render(
-        <BackendProviderContext.Provider
-          value={{
-            useBackend: () => ({
-              getContentIndex,
-              deleteContent,
-              saveContent,
-              loadContent,
-            }),
-          }}>
-          <ExternalContentReader />
-        </BackendProviderContext.Provider>
+        <Router.TestRoot
+          updateListener={routeListener}
+          initial={options?.initialRoute}>
+          <BackendProviderContext.Provider
+            value={{
+              useBackend: () => backend,
+            }}>
+            <ExternalContentReader />
+          </BackendProviderContext.Provider>
+        </Router.TestRoot>
       );
     },
   };
@@ -130,7 +139,7 @@ describe("external reader", () => {
 
   it("allows import via link", async () => {
     mockCallApi.mockResolvedValue("Arma virumque");
-    const { renderReader, saveContent } = prepareReader();
+    const { renderReader, saveContent, routeListener } = prepareReader();
     renderReader();
 
     await user.click(screen.getByText(/Import From URL/));
@@ -139,14 +148,33 @@ describe("external reader", () => {
     await user.type(screen.getByLabelText("Page URL"), "foo.bar");
     await user.click(screen.getByLabelText("Import from link"));
 
-    screen.debug();
-    expect(saveContent).toHaveBeenCalledTimes(1);
     expect(saveContent).toHaveBeenCalledWith({
       title: "foo.bar",
       content: "Arma virumque",
+      source: "fromUrl",
     });
+    expect(routeListener).toHaveBeenCalledWith(
+      expect.objectContaining({ params: { fromUrl: "foo.bar" } })
+    );
     await screen.findByText(/Reading imported/);
     await screen.findByText("Arma");
     await screen.findByText("virumque");
+  });
+
+  it("loads URL content from params", async () => {
+    mockCallApi.mockResolvedValue("Arma virumque");
+    const { renderReader, saveContent } = prepareReader({
+      initialRoute: { path: "/", params: { fromUrl: "foo.baz" } },
+    });
+    renderReader();
+
+    await screen.findByText(/Reading imported/);
+    await screen.findByText("Arma");
+    await screen.findByText("virumque");
+    expect(saveContent).toHaveBeenCalledWith({
+      title: "foo.baz",
+      content: "Arma virumque",
+      source: "fromUrl",
+    });
   });
 });
