@@ -200,7 +200,7 @@ function RenderTab(props: { current: MainTab }) {
           <ExternalContentSection header="Import Raw Text">
             <InputContentBox />
           </ExternalContentSection>
-          <ExternalContentSection header="Import From URL">
+          <ExternalContentSection header="Import From URL [Beta]">
             <LinkImportSection />
           </ExternalContentSection>
         </div>

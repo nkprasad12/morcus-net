@@ -150,6 +150,8 @@ function updatePage(
 interface ReaderState {
   hasTooltip: React.MutableRefObject<boolean[]>;
   section: ProcessedWorkNode | undefined;
+  queryLine?: number;
+  highlightRef?: React.RefObject<HTMLSpanElement>;
 }
 
 const ReaderContext = React.createContext<ReaderState>({
@@ -163,9 +165,12 @@ export function ReadingPage() {
   const [overlayOpacity, setOverlayOpacity] = useState(0);
   const [swipeDir, setSwipeDir] = useState<SwipeDirection>("Left");
   const hasTooltip = React.useRef<boolean[]>([]);
+  const highlightRef = React.useRef<HTMLSpanElement>(null);
 
   const { nav, route } = Router.useRouter();
-  const queryPage = route.params?.q || route.params?.pg;
+  const queryPage = safeParseInt(route.params?.q || route.params?.pg);
+  const queryLine = safeParseInt(route.params?.l);
+
   const section = React.useMemo(
     () =>
       typeof work === "string"
@@ -193,9 +198,26 @@ export function ReadingPage() {
   }, [setWork, route.path]);
 
   useEffect(() => {
-    const urlPage = safeParseInt(queryPage);
-    setCurrentPage(urlPage === undefined ? 0 : urlPage - 1);
+    setCurrentPage(queryPage === undefined ? 0 : queryPage - 1);
   }, [queryPage]);
+
+  useEffect(() => {
+    if (queryLine === undefined) {
+      return;
+    }
+    const pollingInterval = 16;
+    const tryToScroll = () => {
+      if (highlightRef.current === null) {
+        setTimeout(tryToScroll, pollingInterval);
+      } else {
+        highlightRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
+      }
+    };
+    tryToScroll();
+  }, [queryLine]);
 
   useEffect(() => {
     if (section === undefined) {
@@ -206,7 +228,8 @@ export function ReadingPage() {
   }, [section]);
 
   return (
-    <ReaderContext.Provider value={{ hasTooltip, section }}>
+    <ReaderContext.Provider
+      value={{ hasTooltip, section, queryLine, highlightRef }}>
       <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
         MainColumn={WorkColumn}
         ExtraSidebarContent={Sidebar}
@@ -473,7 +496,7 @@ export function WorkTextPage(props: {
   isMobile: boolean;
 }) {
   const { textScale, isMobile, work } = props;
-  const { section } = React.useContext(ReaderContext);
+  const { section, queryLine } = React.useContext(ReaderContext);
   if (section === undefined) {
     return <InfoText text="Invalid page!" />;
   }
@@ -507,6 +530,7 @@ export function WorkTextPage(props: {
             hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0)
           }
           isMobile={isMobile}
+          highlight={queryLine === i}
         />
       ))}
     </div>
@@ -622,15 +646,17 @@ function WorkInfo(props: { workInfo: DocumentInfo }) {
 }
 
 function workSectionHeader(
-  text: string
+  text: string,
+  latent?: boolean
 ): React.ForwardRefRenderFunction<HTMLSpanElement, object> {
+  const classes = latent ? ["unselectable", "latent"] : ["unselectable"];
   return function InternalWorkSectionHeader(fProps, fRef) {
     return (
       <span {...fProps} ref={fRef}>
         <InfoText
           text={text}
           style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
-          additionalClasses={["unselectable"]}
+          additionalClasses={classes}
         />
       </span>
     );
@@ -641,17 +667,25 @@ function WorkChunkHeader(props: {
   text: string;
   blurb: string;
   chunkArrayIndex: number;
+  latent?: boolean;
 }) {
   const { hasTooltip } = React.useContext(ReaderContext);
+  const { route } = Router.useRouter();
+
+  const subPath = RouteInfo.toLink({
+    path: route.path,
+    params: { ...route.params, l: props.chunkArrayIndex.toString() },
+  });
+  const url = `${window.location.origin}${subPath}`;
 
   return (
     <CopyLinkTooltip
       forwarded={React.forwardRef<HTMLSpanElement>(
-        workSectionHeader(props.text)
+        workSectionHeader(props.text, props.latent)
       )}
       message={props.blurb}
       placement="right"
-      link={`${props.blurb}\n${window.location.href}`}
+      link={url}
       visibleListener={(visible) => {
         hasTooltip.current[props.chunkArrayIndex] = visible;
       }}
@@ -667,7 +701,9 @@ function WorkChunk(props: {
   workName: string;
   hideHeader?: boolean;
   isMobile: boolean;
+  highlight?: boolean;
 }) {
+  const { highlightRef } = React.useContext(ReaderContext);
   const { isMobile, node } = props;
   const id = node.id
     .map((idPart) =>
@@ -683,18 +719,17 @@ function WorkChunk(props: {
   const indent = node.rendNote === "indent";
   return (
     <>
-      {showHeader && (
-        <span style={{ gridColumn: 1, gridRow: row }}>
-          <WorkChunkHeader
-            text={node.id
-              .slice(isMobile && node.id.length > 2 ? 2 : 0)
-              .join(".")}
-            chunkArrayIndex={props.chunkArrayIndex}
-            blurb={`${props.workName} ${id}`}
-          />
-        </span>
-      )}
+      <span style={{ gridColumn: 1, gridRow: row }}>
+        <WorkChunkHeader
+          text={node.id.slice(isMobile && node.id.length > 2 ? 2 : 0).join(".")}
+          chunkArrayIndex={props.chunkArrayIndex}
+          blurb={`${props.workName} ${id}`}
+          latent={!showHeader}
+        />
+      </span>
       <span
+        ref={highlightRef}
+        className={props.highlight ? "highlighted" : undefined}
         style={{
           gridColumn: 2,
           gridRow: row,
