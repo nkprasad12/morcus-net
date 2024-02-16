@@ -53,4 +53,23 @@ describe("useBackend from indexDb", () => {
     expect(postDeleteItems).toHaveLength(0);
     expect(await backend.getContentIndex()).toHaveLength(0);
   });
+
+  test("URL backed saved content", async () => {
+    const wrapper = { item: undefined };
+    render(<TestComponent wrapper={wrapper} />);
+    // @ts-ignore
+    const backend: SavedContentBackend = wrapper.item;
+    expect(await backend.getContentIndex()).toHaveLength(0);
+
+    const item: SavedContent = {
+      title: "Foo",
+      content: "Bar",
+      source: "fromUrl",
+    };
+    const storedItems = await backend.saveContent(item);
+    expect(storedItems).toHaveLength(1);
+    const storedItem = storedItems[0];
+    expect(storedItem.title).toBe(item.title);
+    expect(storedItem.storageKey).toBe(item.title);
+  });
 });

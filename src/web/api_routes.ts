@@ -67,3 +67,10 @@ export const GetWork: ApiRoute<WorkId, ProcessedWork> = {
   outputValidator: ProcessedWork.isMatch,
   registry: [XmlNodeSerialization.DEFAULT],
 };
+
+export const ScrapeUrlApi: ApiRoute<string, string> = {
+  path: "/api/scrapeUrl",
+  method: "GET",
+  inputValidator: isString,
+  outputValidator: isString,
+};

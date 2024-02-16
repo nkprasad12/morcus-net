@@ -36,6 +36,7 @@ import {
   ListLibraryWorks,
   MacronizeApi,
   ReportApi,
+  ScrapeUrlApi,
 } from "@/web/api_routes";
 import { RouteDefinition } from "@/web/utils/rpc/server_rpc";
 import { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
@@ -47,6 +48,7 @@ import {
   retrieveWorksList,
 } from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
+import { scrapeUrlText } from "@/web/scraping/scraper";
 
 function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   let delegate: Dictionary | null = null;
@@ -169,6 +171,7 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(ListLibraryWorks, (_unused) =>
         retrieveWorksList()
       ),
+      RouteDefinition.create(ScrapeUrlApi, scrapeUrlText),
     ],
     telemetry: telemetry,
     buildDir,

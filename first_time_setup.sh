@@ -21,6 +21,7 @@ git clone https://github.com/nkprasad12/morcus-net.git
 
 echo "Installing JS / TS dependencies from NPM."
 cd morcus-net
+git checkout dev
 npm install
 # Return to the $MORCUS_DIR directory.
 cd ..

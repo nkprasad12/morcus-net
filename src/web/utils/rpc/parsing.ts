@@ -228,3 +228,10 @@ export function matches<T>(
     return true;
   };
 }
+
+export function isBoth<T, U>(
+  tChecker: Validator<T>,
+  uChecker: Validator<U>
+): Validator<T & U> {
+  return (x: unknown): x is T & U => tChecker(x) && uChecker(x);
+}

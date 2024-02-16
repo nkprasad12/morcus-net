@@ -132,6 +132,8 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         color: contentTextColor,
       },
       ".text.light": { color: contentTextLightColor },
+      ".text.latent": { color: contentTextLightColor + "00" },
+      ".text.latent:hover": { color: contentTextLightColor },
       ".text.compact": { lineHeight: 1 },
       ".text.md": { fontSize: FontSizes.SMALL_SCREEN },
       ".text.sm": { fontSize: FontSizes.SECONDARY },
@@ -443,6 +445,11 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         marginTop: "8px",
         display: "inline-block",
         textTransform: "capitalize",
+        overflowWrap: "break-word",
+        wordBreak: "break-all",
+      },
+      ".latWork.fromUrl": {
+        textTransform: "none",
       },
       ".latWork:hover": {
         color: Solarized.blue,

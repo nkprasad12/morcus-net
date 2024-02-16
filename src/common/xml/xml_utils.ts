@@ -1,4 +1,4 @@
-import { XMLParser, XMLValidator } from "fast-xml-parser";
+import { XMLParser, XMLValidator, type X2jOptions } from "fast-xml-parser";
 import { assert } from "@/common/assert";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
 
@@ -91,18 +91,23 @@ function validateXml(input: any): void {
  * - `rootName`: is the content root name to search for, if the root contains
  *    multiple elements.
  * - `validate`: Whether to validate the XML before returning.
+ * - `unpairedTags`: Tags to accept as unpaired.
  *
  * @returns An XML node representation of the input data.
  */
 export function parseRawXml(
   rawXml: string | Buffer,
-  options?: { keepWhitespace?: true; validate?: true }
+  options?: { keepWhitespace?: true; validate?: true; unpairedTags?: string[] }
 ): XmlNode {
-  const parser = new XMLParser(
-    options?.keepWhitespace === true
+  const parseConfig: Partial<X2jOptions> = {
+    ...(options?.keepWhitespace === true
       ? PARSE_KEEP_WHITESPACE
-      : PARSE_TRIM_WHITESPACE
-  );
+      : PARSE_TRIM_WHITESPACE),
+  };
+  if (options?.unpairedTags !== undefined) {
+    parseConfig.unpairedTags = options?.unpairedTags;
+  }
+  const parser = new XMLParser(parseConfig);
   if (options?.validate === true) {
     validateXml(rawXml);
   }

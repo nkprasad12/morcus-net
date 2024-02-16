@@ -19,6 +19,7 @@ import React, {
   TouchEventHandler,
   useEffect,
   useState,
+  useCallback,
 } from "react";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import { useTheme } from "@mui/material/styles";
@@ -121,14 +122,28 @@ export function BaseReader<
 
   const { swipeListeners } = props;
 
-  function onDictWord(word: string) {
-    setDictWord(word);
-    if (isScreenSmall && drawerHeight < window.innerHeight * 0.15) {
-      setDrawerHeight(window.innerHeight * 0.15);
-    }
-  }
+  const onDictWord = useCallback(
+    (word: string) => {
+      setDictWord(word);
+      setDrawerHeight((height) => {
+        const minHeight = window.innerHeight * 0.15;
+        const increaseSize = isScreenSmall && height < minHeight;
+        return increaseSize ? minHeight : height;
+      });
+    },
+    [isScreenSmall]
+  );
 
   const extendWakeLock = useWakeLock();
+
+  const onWordSelected = useCallback(
+    (word: string) => {
+      sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
+      setSidebarTab("Dictionary");
+      onDictWord(word);
+    },
+    [onDictWord]
+  );
 
   useEffect(
     () => extendWakeLock && extendWakeLock(),
@@ -148,11 +163,7 @@ export function BaseReader<
       <props.MainColumn
         {...props}
         scale={readerMainScale}
-        onWordSelected={(word) => {
-          sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
-          setSidebarTab("Dictionary");
-          onDictWord(word);
-        }}
+        onWordSelected={onWordSelected}
         isMobile={isScreenSmall}
       />
       <ReaderInternalNavbar

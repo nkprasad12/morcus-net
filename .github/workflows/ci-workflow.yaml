@@ -15,9 +15,9 @@ jobs:
     timeout-minutes: 6
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Set up Node
@@ -31,7 +31,7 @@ jobs:
       - name: Running unit tests
         run: npm run coverage
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v3
+        uses: codecov/codecov-action@v4
         with:
           directory: ./coverage
       - name: Checking formatting
@@ -42,7 +42,7 @@ jobs:
     timeout-minutes: 6
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -67,7 +67,7 @@ jobs:
     timeout-minutes: 6
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Node
         uses: actions/setup-node@v4
         with:
@@ -89,9 +89,9 @@ jobs:
     timeout-minutes: 6
 
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v4
       - name: Set up Python 3.8
-        uses: actions/setup-python@v4
+        uses: actions/setup-python@v5
         with:
           python-version: "3.8"
       - name: Installing Python dependencies

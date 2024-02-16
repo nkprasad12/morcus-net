@@ -22,11 +22,13 @@ namespace IndexDbBackend {
 
   function backend(store: RowStore): SavedContentBackend {
     const getContentIndex = () =>
-      store
-        .getAll()
-        .then((rows) =>
-          rows.map((row) => ({ storageKey: row.storageKey, title: row.title }))
-        );
+      store.getAll().then((rows) =>
+        rows.map((row) => ({
+          storageKey: row.storageKey,
+          title: row.title,
+          source: row.source,
+        }))
+      );
     return {
       getContentIndex,
       loadContent: (k) => store.get(k),
@@ -35,7 +37,10 @@ namespace IndexDbBackend {
         return getContentIndex();
       },
       saveContent: async (text: SavedContent) => {
-        const storageKey = `${text.title}_${Date.now()}`;
+        const storageKey =
+          text.source === "fromUrl"
+            ? text.title
+            : `${text.title}_${Date.now()}`;
         await store.add({ ...text, storageKey });
         return getContentIndex();
       },
@@ -54,12 +59,17 @@ export interface ContentIndex {
   title: string;
   /** The key by which the indexed content is saved. */
   storageKey: string;
+  /** The type of input that produced this content. */
+  source?: SavedContentSource;
 }
+export type SavedContentSource = "fromUrl";
 export interface SavedContent {
   /** The title of the indexed content. */
   title: string;
   /** The raw text of the content. */
   content: string;
+  /** The type of input that produced this content. */
+  source?: SavedContentSource;
 }
 export interface SavedContentHandler {
   /** A list of the stored content, or undefined if not yet loaded. */
