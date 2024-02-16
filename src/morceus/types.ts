@@ -89,6 +89,6 @@ export interface AnalyzerOptions {
 }
 
 export type Analyzer = (
-  token: string,
+  tokens: string[],
   options?: AnalyzerOptions
-) => TokenAnalysis[];
+) => TokenAnalysis[][];

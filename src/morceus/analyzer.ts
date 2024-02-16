@@ -1,9 +1,9 @@
 import { decomposeToken } from "@/morceus/decompose_token";
 import { Analyzer } from "@/morceus/types";
 
-export const analyzeLatin: Analyzer = (input: string) => {
+export const analyzeLatin: Analyzer = (input: string[]) => {
   // @ts-ignore
-  const possibleSplits = decomposeToken(input);
+  const possibleSplits = input.map(decomposeToken);
   // Before decomp:
   // TODO: Handle removing / converting accents
   // TODO: Handle trailing apostrophe (and similar) characters.
