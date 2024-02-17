@@ -38,14 +38,20 @@ interface InflectionTemplate {
   templates?: TemplateDependency[];
 }
 
+function printMorpheusInflection(table: InflectionTable): string {
+  const lines = table.endings.map((ending) => {
+    const words = [ending.ending, table.name].concat(
+      ending.grammaticalData,
+      ending.tags || []
+    );
+    return words.join(" ");
+  });
+  return lines.join("\n") + "\n";
+}
+
 function writeTable(table: InflectionTable, outputDir: string): void {
   const savePath = path.join(outputDir, `${table.name}.table`);
-  const result = table.endings
-    .map((ending) =>
-      `${ending.ending}  ${ending.grammaticalData}  ${ending.tags || ""}`.trim()
-    )
-    .join("\n");
-  fs.writeFileSync(savePath, result);
+  fs.writeFileSync(savePath, printMorpheusInflection(table));
 }
 
 /** Exported for testing. Do not use. */
