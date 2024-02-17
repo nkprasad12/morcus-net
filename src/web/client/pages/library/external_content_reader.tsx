@@ -7,9 +7,7 @@ import {
   ReaderInternalNavbar,
   ReaderInternalTabConfig,
 } from "@/web/client/pages/library/reader_sidebar_components";
-import EditIcon from "@mui/icons-material/Edit";
-import LinkIcon from "@mui/icons-material/Link";
-import AutoStoriesIcon from "@mui/icons-material/AutoStories";
+
 import { PropsWithChildren, useEffect, useState } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
@@ -24,6 +22,7 @@ import { ScrapeUrlApi } from "@/web/api_routes";
 import { Router } from "@/web/client/router/router_v2";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { NavIcon } from "@/web/client/pages/library/reader_utils";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 
 export function ExternalContentReader() {
   return (
@@ -62,11 +61,11 @@ const InternalReaderContext: React.Context<InternalReaderState> =
 
 type MainTab = "Load text" | "Text reader";
 const LOAD_ICON: ReaderInternalTabConfig<MainTab> = {
-  Icon: <EditIcon />,
+  Icon: <SvgIcon pathD={SvgIcons.Edit} />,
   tab: "Load text",
 };
 const READER_ICON: ReaderInternalTabConfig<MainTab> = {
-  Icon: <AutoStoriesIcon />,
+  Icon: <SvgIcon pathD={SvgIcons.AutoStories} />,
   tab: "Text reader",
 };
 const BASE_ICONS = [LOAD_ICON];
@@ -168,7 +167,10 @@ const ShareScrapedContentIcon = React.forwardRef<any>(
   function ShareScrapedContentIcon(fProps, fRef) {
     return (
       <span {...fProps} ref={fRef} style={{ marginLeft: "4px" }}>
-        <NavIcon Icon={<LinkIcon />} label="share page link" />
+        <NavIcon
+          Icon={<SvgIcon pathD={SvgIcons.Link} />}
+          label="share page link"
+        />
       </span>
     );
   }

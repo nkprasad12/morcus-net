@@ -1,5 +1,4 @@
-import RemoveIcon from "@mui/icons-material/Remove";
-import AddIcon from "@mui/icons-material/Add";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 import IconButton from "@mui/material/IconButton";
 
 export function NumberSelector(props: {
@@ -38,7 +37,7 @@ export function NumberSelector(props: {
           onClick={() =>
             props.setValue(Math.max(props.min, props.value - props.step))
           }>
-          <RemoveIcon fontSize="small" />
+          <SvgIcon pathD={SvgIcons.Remove} fontSize="small" />
         </IconButton>
         <span className="bgColor" style={{ padding: "4px" }}>
           {props.value}
@@ -48,7 +47,7 @@ export function NumberSelector(props: {
           onClick={() =>
             props.setValue(Math.min(props.max, props.value + props.step))
           }>
-          <AddIcon fontSize="small" />
+          <SvgIcon pathD={SvgIcons.Add} fontSize="small" />
         </IconButton>
       </span>
     </div>

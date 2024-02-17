@@ -1,5 +1,3 @@
-import LinkIcon from "@mui/icons-material/Link";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 import Stack from "@mui/material/Stack";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
@@ -51,6 +49,7 @@ import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { Container, Divider } from "@/web/client/components/generic/basics";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -222,13 +221,14 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
         fontWeight: "normal",
       }}
       onClick={() => jumpToSection(props.outline.mainSection.sectionId)}>
-      <OpenInNewIcon
-        sx={{
+      <SvgIcon
+        style={{
           marginBottom: `${-0.1 * scale}em`,
           marginRight: `${-0.1 * scale}em`,
           fontSize: `${0.8 * scale}em`,
           paddingLeft: `${0.1 * scale}em`,
         }}
+        pathD={SvgIcons.OpenInNew}
       />
       <span dangerouslySetInnerHTML={{ __html: label }} />
     </span>
@@ -393,8 +393,9 @@ function articleLinkButton(text: string, scale: number) {
           paddingBottom: 1,
           paddingRight: 4,
         }}>
-        <LinkIcon
-          sx={{
+        <SvgIcon
+          pathD={SvgIcons.Link}
+          style={{
             marginBottom: `${-0.2 * scale}em`,
             marginRight: `${-0.2 * scale}em`,
             fontSize: `${1 * scale}em`,

@@ -1,16 +1,13 @@
 /* istanbul ignore file */
 
 import { useState, useRef, useEffect } from "react";
-import TocIcon from "@mui/icons-material/Toc";
-import KeyboardArrowDown from "@mui/icons-material/KeyboardArrowDown";
-import KeyboardArrowUp from "@mui/icons-material/KeyboardArrowUp";
-import MenuOpenIcon from "@mui/icons-material/MenuOpen";
-import CloseIcon from "@mui/icons-material/Close";
+
 import {
   QUICK_NAV_ANCHOR,
   SCROLL_JUMP,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { assertEqual } from "@/common/assert";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 
 class NavHelper {
   private readonly observer: IntersectionObserver;
@@ -79,17 +76,19 @@ function OpenMenu(props: {
   const { navHelper, setOpen } = props;
   return (
     <div className="mobileNavOpen">
-      <KeyboardArrowUp
+      <SvgIcon
         onClick={() => navHelper?.scrollToPrevious()}
         className="mobileNavButton"
         aria-label="jump to previous section"
+        pathD={SvgIcons.KeyboardArrowUp}
       />
-      <KeyboardArrowDown
+      <SvgIcon
         onClick={() => navHelper?.scrollToNext()}
         className="mobileNavButton"
         aria-label="jump to next section"
+        pathD={SvgIcons.KeyboardArrowDown}
       />
-      <TocIcon
+      <SvgIcon
         onClick={() =>
           document
             .getElementById("DictResultsSummary")
@@ -97,11 +96,13 @@ function OpenMenu(props: {
         }
         className="mobileNavButton"
         aria-label="jump to entry"
+        pathD={SvgIcons.Toc}
       />
-      <CloseIcon
+      <SvgIcon
         onClick={() => setOpen(false)}
         className="mobileNavButton"
         aria-label="close quick navigation"
+        pathD={SvgIcons.Close}
       />
     </div>
   );
@@ -121,7 +122,8 @@ export function QuickNavMenu() {
       {open ? (
         <OpenMenu navHelper={navHelper.current} setOpen={setOpen} />
       ) : (
-        <MenuOpenIcon
+        <SvgIcon
+          pathD={SvgIcons.MenuOpen}
           onClick={() => setOpen(true)}
           className="mobileNavButtonCollapsed"
           aria-label="expand quick navigation"

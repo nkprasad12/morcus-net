@@ -1,10 +1,8 @@
 import { useRef, useState, useEffect } from "react";
 
-import SettingsIcon from "@mui/icons-material/Settings";
-import SearchIcon from "@mui/icons-material/Search";
-import ClearIcon from "@mui/icons-material/Clear";
 import IconButton from "@mui/material/IconButton";
 import Popper from "@mui/material/Popper";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 
 const CLEAR_QUERY = "Clear query";
 
@@ -151,10 +149,10 @@ export function SearchBox<T>(props: {
                 ))}
             </div>
           </Popper>
-          <SearchIcon
-            fontSize="medium"
+          <SvgIcon
+            pathD={SvgIcons.Search}
             className="menuIconFaded"
-            sx={{ marginLeft: 1.4 }}
+            style={{ marginLeft: "11.2px" }}
           />
           <input
             ref={inputRef}
@@ -210,7 +208,7 @@ export function SearchBox<T>(props: {
               inputRef.current?.focus();
               onInput("");
             }}>
-            <ClearIcon fontSize="medium" className="menuIcon" />
+            <SvgIcon pathD={SvgIcons.Clear} className="menuIcon" />
           </IconButton>
         </div>
         {props.onOpenSettings && (
@@ -223,7 +221,11 @@ export function SearchBox<T>(props: {
               aria-haspopup="true"
               sx={{ marginRight: 0.65 }}
               onClick={props.onOpenSettings}>
-              <SettingsIcon fontSize="small" className="menuIcon" />
+              <SvgIcon
+                pathD={SvgIcons.Settings}
+                fontSize="small"
+                className="menuIcon"
+              />
             </IconButton>
           </div>
         )}

@@ -1,10 +1,6 @@
 import * as React from "react";
 import IconButton from "@mui/material/IconButton";
-import MenuIcon from "@mui/icons-material/Menu";
-import FlagIcon from "@mui/icons-material/Flag";
-import BuildIcon from "@mui/icons-material/Build";
-import DarkMode from "@mui/icons-material/DarkMode";
-import LightMode from "@mui/icons-material/LightMode";
+
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Drawer from "@mui/material/Drawer";
@@ -15,6 +11,7 @@ import {
   Divider,
   SpanButton,
 } from "@/web/client/components/generic/basics";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -145,7 +142,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-haspopup="true"
               onClick={() => setDrawerVisible(true)}
               className="menuIcon">
-              <MenuIcon />
+              <SvgIcon pathD={SvgIcons.Menu} />
             </IconButton>
             <DrawerMenu
               pages={mainPages}
@@ -195,7 +192,9 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 })
               }
               className="menuIcon">
-              {darkModeOn ? <LightMode /> : <DarkMode />}
+              <SvgIcon
+                pathD={darkModeOn ? SvgIcons.LightMode : SvgIcons.DarkMode}
+              />
             </IconButton>
             <IconButton
               size={iconSize}
@@ -203,7 +202,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-haspopup="true"
               onClick={props.openIssueDialog}
               className="menuIcon">
-              <FlagIcon />
+              <SvgIcon pathD={SvgIcons.Flag} />
             </IconButton>
             {!isSmall && (
               <IconButton
@@ -212,7 +211,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 // TODO: Find a better way to configure this.
                 onClick={handlePageClick("/settings")}
                 className="menuIcon">
-                <BuildIcon />
+                <SvgIcon pathD={SvgIcons.Build} />
               </IconButton>
             )}
           </div>

@@ -1,4 +1,3 @@
-import LinkIcon from "@mui/icons-material/Link";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
@@ -8,6 +7,7 @@ import { exhaustiveGuard } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { checkPresent } from "@/common/assert";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 
 export type TooltipPlacement = "top-start" | "right" | "bottom";
 
@@ -109,7 +109,7 @@ function TextWithIcon(props: {
           aria-label="copy link"
           aria-haspopup="false"
           color="success">
-          <LinkIcon />
+          <SvgIcon pathD={SvgIcons.Link} />
         </IconButton>
         <span>{props.message}</span>
       </div>

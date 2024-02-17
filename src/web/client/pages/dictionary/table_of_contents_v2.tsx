@@ -1,11 +1,10 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 import { Divider } from "@/web/client/components/generic/basics";
+import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { FontSizes } from "@/web/client/styling/styles";
-
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
 
 import * as React from "react";
 
@@ -70,8 +69,9 @@ function OutlineSection(props: {
         className="clickableOutlineSection">
         <DictChip label={props.dictKey} />
         <span className="outlineHead" style={{ marginLeft: 2 }}>
-          <OpenInNewIcon
-            sx={{
+          <SvgIcon
+            pathD={SvgIcons.OpenInNew}
+            style={{
               marginBottom: `${-0.1 * scale}em`,
               marginRight: `${-0.1 * scale}em`,
               fontSize: `${0.8 * scale}em`,
@@ -102,8 +102,9 @@ function OutlineSection(props: {
                 <span
                   className="outlineHead"
                   style={{ fontSize: FontSizes.SECONDARY * scale }}>
-                  <OpenInNewIcon
-                    sx={{
+                  <SvgIcon
+                    pathD={SvgIcons.OpenInNew}
+                    style={{
                       marginBottom: `${-0.1 * scale}em`,
                       marginRight: `${-0.1 * scale}em`,
                       fontSize: `${0.8 * scale}em`,

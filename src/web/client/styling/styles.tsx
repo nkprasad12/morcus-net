@@ -39,6 +39,16 @@ export function getWidth(width: BoxWidth): number {
   }
 }
 
+const UNSELECTABLE: CSSProperties = {
+  WebkitTouchCallout: "none",
+  // @ts-ignore
+  WebkitTouchSelect: "none",
+  KhtmlUserSelect: "none",
+  MozUserSelect: "none",
+  msUserSelect: "none",
+  userSelect: "none",
+};
+
 const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
 export const TEXT_STYLE: CSSProperties = {
   fontFamily: ALLOWED_FONTS,
@@ -119,13 +129,13 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         cursor: "pointer",
         color: contentTextLightColor + "80",
       },
-      ".unselectable": {
-        WebkitTouchCallout: "none",
-        WebkitTouchSelect: "none",
-        KhtmlUserSelect: "none",
-        MozUserSelect: "none",
-        msUserSelect: "none",
-        userSelect: "none",
+      ".unselectable": { ...UNSELECTABLE },
+      ".svgIcon": {
+        ...UNSELECTABLE,
+        fill: "currentcolor",
+        width: "1em",
+        height: "1em",
+        flexShrink: "0",
       },
       ".text": {
         ...TEXT_STYLE,

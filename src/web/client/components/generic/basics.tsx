@@ -1,14 +1,19 @@
 import { BoxWidth, getWidth } from "@/web/client/styling/styles";
 import type { RefObject, CSSProperties, PropsWithChildren } from "react";
 
-export interface ContainerProps {
+export interface CoreProps {
+  style?: CSSProperties;
+  id?: string;
+  className?: string;
+  "aria-label"?: string;
+  onClick?: () => any;
+}
+
+export interface ContainerProps extends CoreProps {
   maxWidth?: BoxWidth;
   disableGutters?: boolean;
   gutterSize?: number;
-  style?: CSSProperties;
   innerRef?: RefObject<HTMLDivElement>;
-  id?: string;
-  className?: string;
 }
 
 export function Container(props: PropsWithChildren<ContainerProps>) {
