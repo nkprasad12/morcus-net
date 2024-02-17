@@ -1,13 +1,13 @@
 /* istanbul ignore file */
 
-import { expandTemplates } from "@/morceus/tables/templates";
+import { expandTemplatesAndSave } from "@/morceus/tables/templates";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
 const startTime = performance.now();
 
-expandTemplates();
+expandTemplatesAndSave();
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);
