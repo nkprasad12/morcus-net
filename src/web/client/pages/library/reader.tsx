@@ -212,7 +212,7 @@ export function ReadingPage() {
       } else {
         highlightRef.current.scrollIntoView({
           behavior: "smooth",
-          block: "start",
+          block: "center",
         });
       }
     };
@@ -728,7 +728,7 @@ function WorkChunk(props: {
         />
       </span>
       <span
-        ref={highlightRef}
+        ref={props.highlight ? highlightRef : undefined}
         className={props.highlight ? "highlighted" : undefined}
         style={{
           gridColumn: 2,
