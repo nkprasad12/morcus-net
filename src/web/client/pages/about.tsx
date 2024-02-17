@@ -1,4 +1,3 @@
-import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 
 import * as React from "react";
@@ -30,7 +29,7 @@ export function About() {
 
   return (
     <Container maxWidth="lg">
-      <Box sx={{ padding: 3 }}>
+      <div style={{ padding: "24px" }}>
         <Typography component={"div"} className="nonDictText">
           <Section name="Site">
             <p>
@@ -118,7 +117,7 @@ export function About() {
             </p>
           </Section>
         </Typography>
-      </Box>
+      </div>
     </Container>
   );
 }

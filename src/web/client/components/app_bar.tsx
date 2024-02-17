@@ -1,5 +1,4 @@
 import * as React from "react";
-import Box from "@mui/material/Box";
 import IconButton from "@mui/material/IconButton";
 import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -59,7 +58,7 @@ function DrawerMenu(props: {
       PaperProps={{
         className: "menu",
       }}>
-      <Box role="navigation" onClick={props.onClose} id="menu-appbar">
+      <div role="navigation" onClick={props.onClose} id="menu-appbar">
         {pages.map((page) => (
           <div key={page.name}>
             <Button
@@ -81,7 +80,7 @@ function DrawerMenu(props: {
             <Divider key={page.name + "_divider"} />
           </div>
         ))}
-      </Box>
+      </div>
     </Drawer>
   );
 }
@@ -133,7 +132,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             <LogoImage />
           </Typography>
 
-          <Box sx={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}>
+          <div style={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}>
             <IconButton
               size={iconSize}
               aria-label="site pages"
@@ -150,7 +149,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               open={drawerVisible}
               isCurrentPage={isCurrentPage}
             />
-          </Box>
+          </div>
           <Typography
             variant="h5"
             noWrap
@@ -167,7 +166,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             }}>
             <LogoImage />
           </Typography>
-          <Box sx={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
+          <div style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
             {mainPages.map((page) => (
               <Button
                 key={page.name}
@@ -184,8 +183,8 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 <b>{page.name}</b>
               </Button>
             ))}
-          </Box>
-          <Box>
+          </div>
+          <div>
             <IconButton
               size={iconSize}
               aria-label={darkModeOn ? "light mode" : "dark mode"}
@@ -216,7 +215,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 <BuildIcon />
               </IconButton>
             )}
-          </Box>
+          </div>
         </div>
       </Container>
     </div>

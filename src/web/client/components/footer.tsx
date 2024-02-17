@@ -1,4 +1,3 @@
-import Box from "@mui/material/Box";
 import { SelfLink } from "@/web/client/components/misc";
 
 export function Footer(props: {
@@ -7,7 +6,7 @@ export function Footer(props: {
   marginRatio?: number;
 }) {
   return (
-    <Box padding="2em" id={props.id} className={props.className}>
+    <div style={{ padding: "2em" }} id={props.id} className={props.className}>
       <div
         className="footer text xs compact"
         style={{
@@ -30,6 +29,6 @@ export function Footer(props: {
         See <SelfLink to="https://www.gnu.org/licenses/gpl-3.0.en.html" /> for a
         copy of the GNU General Public License.
       </div>
-    </Box>
+    </div>
   );
 }

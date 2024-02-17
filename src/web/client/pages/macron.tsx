@@ -1,5 +1,4 @@
 import { useState } from "react";
-import Box from "@mui/material/Box";
 import Button from "@mui/material/Button";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
@@ -44,19 +43,16 @@ export function Macronizer() {
         </Button>
       </div>
       {processed && (
-        <Box
-          sx={{
-            padding: 3,
-            ml: 3,
-            mr: 3,
-            mt: 3,
-            mb: 3,
-            border: 2,
-            borderRadius: 1,
+        <div
+          style={{
+            padding: "24px",
+            margin: "24px",
+            border: "16px",
+            borderRadius: "8px",
           }}
           className="macronBox">
           <div style={{ whiteSpace: "pre-wrap" }}>{processed}</div>
-        </Box>
+        </div>
       )}
     </>
   );
