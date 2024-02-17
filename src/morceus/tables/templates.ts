@@ -39,10 +39,13 @@ interface InflectionTemplate {
 }
 
 function writeTable(table: InflectionTable, outputDir: string): void {
-  fs.writeFileSync(
-    path.join(outputDir, `${table.name}.table`),
-    JSON.stringify(table, undefined, 2)
-  );
+  const savePath = path.join(outputDir, `${table.name}.table`);
+  const result = table.endings
+    .map((ending) =>
+      `${ending.ending}  ${ending.grammaticalData}  ${ending.tags || ""}`.trim()
+    )
+    .join("\n");
+  fs.writeFileSync(savePath, result);
 }
 
 /** Exported for testing. Do not use. */
@@ -62,6 +65,22 @@ export function loadTemplate(filePath: string): InflectionTemplate {
       .filter((part) => part.length > 0)
       .map((part) => part.trim());
     assert(parts.length > 0, line);
+    const first = parts[0];
+
+    // This means it's invoking another template
+    if (first.includes("@")) {
+      const templateParts = first.split("@");
+      assert(templateParts.length === 2);
+      const result: TemplateDependency = { name: templateParts[1] };
+      if (templateParts[0].length > 0) {
+        result.prefix = templateParts[0];
+      }
+      if (parts.length > 1) {
+        result.args = parts.slice(1);
+      }
+      templates.push(result);
+      continue;
+    }
 
     const grammaticalData: string[] = [];
     const tags: string[] = [];
@@ -72,31 +91,15 @@ export function loadTemplate(filePath: string): InflectionTemplate {
         grammaticalData.push(part);
       }
     }
-
-    const first = parts[0];
-    if (first.includes("@")) {
-      const templateParts = first.split("@");
-      assert(templateParts.length === 2);
-      assert(tags.length === 0);
-      const result: TemplateDependency = { name: templateParts[1] };
-      if (templateParts[0].length > 0) {
-        result.prefix = templateParts[0];
-      }
-      if (grammaticalData.length > 0) {
-        result.args = grammaticalData;
-      }
-      templates.push(result);
-    } else {
-      assert(grammaticalData.length > 0);
-      const currentEnding: InflectionEnding = {
-        ending: first,
-        grammaticalData,
-      };
-      if (tags.length > 0) {
-        currentEnding.tags = tags;
-      }
-      endings.push(currentEnding);
+    assert(grammaticalData.length > 0);
+    const currentEnding: InflectionEnding = {
+      ending: first,
+      grammaticalData,
+    };
+    if (tags.length > 0) {
+      currentEnding.tags = tags;
     }
+    endings.push(currentEnding);
   }
 
   assert(endings.length > 0 || templates.length > 0);
@@ -126,13 +129,16 @@ function loadTemplates(inputDirs: string[]): Map<string, InflectionTemplate> {
 function expandTemplate(
   template: InflectionTemplate,
   rawRegistry: Map<string, InflectionTemplate>,
-  expandedRegistry: Map<string, InflectionTable>
+  expandedRegistry: Map<string, InflectionTable>,
+  isFromRegistry?: boolean
 ): InflectionTable {
   const requredTemplates = template.templates;
-  assert(
-    !expandedRegistry.has(template.name),
-    `Template ${template.name} has already been expanded!`
-  );
+  if (isFromRegistry) {
+    assert(
+      !expandedRegistry.has(template.name),
+      `Template ${template.name} has already been expanded!`
+    );
+  }
 
   if (requredTemplates === undefined) {
     const result: InflectionTable = {
@@ -142,7 +148,9 @@ function expandTemplate(
         `Template ${template.name} has no endings!`
       ),
     };
-    expandedRegistry.set(template.name, result);
+    if (isFromRegistry) {
+      expandedRegistry.set(template.name, result);
+    }
     return result;
   }
 
@@ -153,7 +161,7 @@ function expandTemplate(
         rawRegistry.get(subTemplate.name),
         `No raw template ${template.name} in registry!`
       );
-      expandTemplate(rawTemplate, rawRegistry, expandedRegistry);
+      expandTemplate(rawTemplate, rawRegistry, expandedRegistry, true);
     }
     const expanded = checkPresent(
       expandedRegistry.get(subTemplate.name),
@@ -182,7 +190,9 @@ function expandTemplate(
     name: template.name,
     endings,
   };
-  expandedRegistry.set(template.name, result);
+  if (isFromRegistry) {
+    expandedRegistry.set(template.name, result);
+  }
   return result;
 }
 
@@ -193,17 +203,16 @@ function expandTemplate(
  * @param outputDir the path where the outputs will be written to.
  */
 export function expandTemplates(
-  inputDirs: string[],
-  dependentTemplateDirs: string[],
-  outputDir: string
+  inputDirs: string[] = ["src/morceus/tables/lat/core/target"],
+  dependentTemplateDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
+  outputDir: string = "tables/lat/out"
 ): void {
   // TODO - make a more test friendly version that takes in files and returns tables.
+  fs.mkdirSync(outputDir, { recursive: true });
   const rawRegistry = loadTemplates(dependentTemplateDirs);
   const expandedRegistry = new Map<string, InflectionTable>();
   const targets = loadTemplates(inputDirs);
-  for (const [name, template] of targets.entries()) {
-    assert(!rawRegistry.has(name));
-    rawRegistry.set(name, template);
+  for (const [_, template] of targets.entries()) {
     const expanded = expandTemplate(template, rawRegistry, expandedRegistry);
     writeTable(expanded, outputDir);
   }

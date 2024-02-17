@@ -1,0 +1,15 @@
+@decl1 perf part pass fem
+@decl2 perf part pass masc
+@decl2 perf part pass neut
+us	perf part pass masc nom sg
+um	perf part pass neut nom sg
+um	supine neut nom sg
+e_	adverbial
+u_	supine neut dat sg
+u_r@decl1 fut part act fem
+u_r@decl2 fut part act masc
+u_r@decl2 fut part act neut
+u_rus	fut part act masc nom sg
+u_rum	fut part act neut nom sg
+@superl_adj superl
+@comp_adj comp
