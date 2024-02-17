@@ -295,7 +295,7 @@ async function getButtonByLabel(
   label: string,
   page: Page
 ): Promise<ElementHandle<HTMLButtonElement>> {
-  const allResults = await page.$x(`//button[contains(., '${label}')]`);
+  const allResults = await page.$x(`//span[contains(., '${label}')]`);
   const visibleResults = await filterNonVisible(allResults);
   assertEqual(
     visibleResults.length,
