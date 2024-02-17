@@ -4,7 +4,6 @@ import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autoco
 import DialogActions from "@mui/material/DialogActions";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
-import Switch from "@mui/material/Switch";
 import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -63,7 +62,8 @@ function SearchSettingsDialog(props: {
             <FormControlLabel
               key={dict.key}
               control={
-                <Switch
+                <input
+                  type="checkbox"
                   checked={props.dicts.includes(dict)}
                   onChange={(e) => {
                     const dicts = new Set(props.dicts);
@@ -90,7 +90,8 @@ function SearchSettingsDialog(props: {
         <FormGroup>
           <FormControlLabel
             control={
-              <Switch
+              <input
+                type="checkbox"
                 checked={inflectedSearch}
                 onChange={() =>
                   globalSettings.setData({
@@ -100,7 +101,7 @@ function SearchSettingsDialog(props: {
                 }
               />
             }
-            label={<span>Search inflected forms (Beta)</span>}
+            label={<span>Inflected forms (Beta)</span>}
           />
         </FormGroup>
         <HighlightStrengthSelector
