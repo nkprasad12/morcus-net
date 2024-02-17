@@ -152,6 +152,12 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         backgroundColor: topBarColor,
         color: isDarkMode ? Solarized.base01 : Solarized.base015,
       },
+      ".button.simple": {
+        backgroundColor,
+      },
+      ".button.simple:hover": {
+        backgroundColor,
+      },
       ".button:hover": {
         backgroundColor: topBarColor + "A0",
       },

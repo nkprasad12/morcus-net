@@ -1,7 +1,6 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
-import Button from "@mui/material/Button";
 import DialogActions from "@mui/material/DialogActions";
 import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
@@ -20,6 +19,7 @@ import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing"
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Solarized } from "@/web/client/styling/colors";
+import { SpanButton } from "@/web/client/components/generic/basics";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -116,9 +116,11 @@ function SearchSettingsDialog(props: {
         />
       </DialogContent>
       <DialogActions>
-        <Button autoFocus onClick={props.onClose} color="info">
+        <SpanButton
+          onClick={props.onClose}
+          className="text md light button simple">
           Close
-        </Button>
+        </SpanButton>
       </DialogActions>
     </Dialog>
   );

@@ -1,9 +1,8 @@
 import { useState } from "react";
-import Button from "@mui/material/Button";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { MacronizeApi } from "@/web/api_routes";
-import { TextField } from "@/web/client/components/generic/basics";
+import { SpanButton, TextField } from "@/web/client/components/generic/basics";
 
 export function Macronizer() {
   const [rawInput, setRawInput] = useState<string | undefined>(undefined);
@@ -34,13 +33,11 @@ export function Macronizer() {
           minRows={10}
           onNewValue={setRawInput}
         />
-        <Button
-          onClick={handleClick}
-          variant="contained"
-          className="nonDictText"
-          sx={{ mt: 2, display: "block" }}>
-          {"Macronize"}
-        </Button>
+        <div style={{ marginTop: "16px" }}>
+          <SpanButton onClick={handleClick} className="button text md light">
+            Macronize
+          </SpanButton>
+        </div>
       </div>
       {processed && (
         <div

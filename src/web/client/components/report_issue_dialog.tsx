@@ -1,6 +1,5 @@
 import { useState } from "react";
 
-import Button from "@mui/material/Button";
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
 import DialogContent from "@mui/material/DialogContent";
@@ -10,7 +9,7 @@ import DialogTitle from "@mui/material/DialogTitle";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
 import { getCommitHash } from "@/web/client/define_vars";
-import { TextField } from "@/web/client/components/generic/basics";
+import { SpanButton, TextField } from "@/web/client/components/generic/basics";
 
 export function ReportIssueDialog(props: {
   show: boolean;
@@ -45,11 +44,11 @@ export function ReportIssueDialog(props: {
           minRows={8}
         />
       </DialogContent>
-      <DialogActions>
-        <Button onClick={props.onClose} variant="text" color="info">
+      <DialogActions className="text md light">
+        <SpanButton onClick={props.onClose} className="button simple">
           Cancel
-        </Button>
-        <Button
+        </SpanButton>
+        <SpanButton
           onClick={() => {
             const request = {
               reportText,
@@ -58,9 +57,9 @@ export function ReportIssueDialog(props: {
             callApi(ReportApi, request).catch(() => {});
             props.onClose();
           }}
-          variant="contained">
+          className="button">
           <b>Submit</b>
-        </Button>
+        </SpanButton>
       </DialogActions>
     </Dialog>
   );

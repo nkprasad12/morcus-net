@@ -61,12 +61,16 @@ export function SpanLink(
 }
 
 export function SpanButton(
-  props: PropsWithChildren<{ onClick: () => any; className?: string }>
+  props: PropsWithChildren<{
+    onClick: () => any;
+    className?: string;
+    style?: CSSProperties;
+  }>
 ) {
   return (
     <span
       className={props.className}
-      style={{ cursor: "pointer" }}
+      style={{ cursor: "pointer", ...props.style }}
       onClick={props.onClick}
       onKeyUp={(e) => {
         if (e.key === " " || e.key === "Enter") {

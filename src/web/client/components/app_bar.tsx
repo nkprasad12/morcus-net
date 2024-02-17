@@ -6,13 +6,16 @@ import FlagIcon from "@mui/icons-material/Flag";
 import BuildIcon from "@mui/icons-material/Build";
 import DarkMode from "@mui/icons-material/DarkMode";
 import LightMode from "@mui/icons-material/LightMode";
-import Button from "@mui/material/Button";
 import { useTheme } from "@mui/material/styles";
 import useMediaQuery from "@mui/material/useMediaQuery";
 import Drawer from "@mui/material/Drawer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
-import { Container, Divider } from "@/web/client/components/generic/basics";
+import {
+  Container,
+  Divider,
+  SpanButton,
+} from "@/web/client/components/generic/basics";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -58,10 +61,14 @@ function DrawerMenu(props: {
       PaperProps={{
         className: "menu",
       }}>
-      <div role="navigation" onClick={props.onClose} id="menu-appbar">
+      <div
+        role="navigation"
+        onClick={props.onClose}
+        id="menu-appbar"
+        className="text md">
         {pages.map((page) => (
           <div key={page.name}>
-            <Button
+            <SpanButton
               key={page.name}
               onClick={props.onPageClick(page.targetPath)}
               className={
@@ -69,14 +76,16 @@ function DrawerMenu(props: {
                   ? "menuItemActive"
                   : "menuItemInactive"
               }
-              sx={{
-                my: 1,
-                mx: 2,
+              style={{
+                marginTop: "16px",
+                marginBottom: "16px",
+                marginLeft: "24px",
+                marginRight: "24px",
                 display: "block",
                 justifyContent: "center",
               }}>
               <b>{page.name}</b>
-            </Button>
+            </SpanButton>
             <Divider key={page.name + "_divider"} />
           </div>
         ))}
@@ -132,7 +141,9 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             <LogoImage />
           </Typography>
 
-          <div style={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}>
+          <div
+            style={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}
+            className="text md">
             <IconButton
               size={iconSize}
               aria-label="site pages"
@@ -166,9 +177,11 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             }}>
             <LogoImage />
           </Typography>
-          <div style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
+          <div
+            style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}
+            className="text md">
             {mainPages.map((page) => (
-              <Button
+              <SpanButton
                 key={page.name}
                 onClick={handlePageClick(page.targetPath)}
                 className={
@@ -176,12 +189,13 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                     ? "menuItemActive"
                     : "menuItemInactive"
                 }
-                sx={{
-                  mx: 1,
+                style={{
+                  marginLeft: "8px",
+                  marginRight: "8px",
                   display: "block",
                 }}>
                 <b>{page.name}</b>
-              </Button>
+              </SpanButton>
             ))}
           </div>
           <div>
