@@ -1,6 +1,5 @@
 import * as React from "react";
 import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
 import MenuIcon from "@mui/icons-material/Menu";
 import FlagIcon from "@mui/icons-material/Flag";
 import BuildIcon from "@mui/icons-material/Build";
@@ -128,18 +127,13 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             MozBoxAlign: "center",
             minHeight: isSmall ? "56px" : "64px",
           }}>
-          <Typography
-            variant="h6"
-            noWrap
-            component="a"
-            sx={{
-              mr: 2,
+          <div
+            style={{
+              marginRight: "16px",
               display: isSmall ? "none" : "flex",
-              color: "inherit",
-              textDecoration: "none",
             }}>
             <LogoImage />
-          </Typography>
+          </div>
 
           <div
             style={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}
@@ -161,22 +155,14 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               isCurrentPage={isCurrentPage}
             />
           </div>
-          <Typography
-            variant="h5"
-            noWrap
-            component="a"
-            sx={{
-              ml: 3,
+          <div
+            style={{
+              marginLeft: "24px",
               display: isSmall ? "flex" : "none",
               flexGrow: 1,
-              fontFamily: "monospace",
-              fontWeight: 700,
-              letterSpacing: ".3rem",
-              color: "inherit",
-              textDecoration: "none",
             }}>
             <LogoImage />
-          </Typography>
+          </div>
           <div
             style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}
             className="text md">

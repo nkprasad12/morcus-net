@@ -1,7 +1,6 @@
 import LinkIcon from "@mui/icons-material/Link";
 import ClickAwayListener from "@mui/material/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
-import Typography from "@mui/material/Typography";
 import IconButton from "@mui/material/IconButton";
 import * as React from "react";
 import type { SxProps } from "@mui/material";
@@ -35,7 +34,7 @@ function BaseTooltip(props: TooltipProps) {
       touchEvent={false}>
       <div role="presentation" style={{ display: "inline" }}>
         <Tooltip
-          title={<Typography component={"div"}>{props.titleText}</Typography>}
+          title={<div className="text md">{props.titleText}</div>}
           className={props.className}
           placement={props.placement || "top-start"}
           disableFocusListener
@@ -101,7 +100,7 @@ function TextWithIcon(props: {
   }
 
   return (
-    <Typography component="div">
+    <div className="text md">
       <div
         onClick={onClick}
         style={{ cursor: "pointer", display: "inline-block" }}>
@@ -114,7 +113,7 @@ function TextWithIcon(props: {
         </IconButton>
         <span>{props.message}</span>
       </div>
-    </Typography>
+    </div>
   );
 }
 
@@ -130,13 +129,13 @@ function TitleText(props: {
   }
   if (props.state === "Error") {
     return (
-      <Typography component="div">
+      <div className="text md">
         <span style={{ fontSize: 14, lineHeight: "normal" }}>
           Error: please copy manually:{" "}
         </span>
         <br />
         <span style={{ fontSize: 16, lineHeight: "normal" }}>{props.link}</span>
-      </Typography>
+      </div>
     );
   }
   if (props.state === "Success") {

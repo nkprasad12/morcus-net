@@ -1,5 +1,3 @@
-import Typography from "@mui/material/Typography";
-
 import * as React from "react";
 import { getCommitHash } from "@/web/client/define_vars";
 import { Container } from "@/web/client/components/generic/basics";
@@ -30,7 +28,7 @@ export function About() {
   return (
     <Container maxWidth="lg">
       <div style={{ padding: "24px" }}>
-        <Typography component={"div"} className="nonDictText">
+        <div className="nonDictText text md">
           <Section name="Site">
             <p>
               This website is a free collection of resources for Latin learners,
@@ -116,7 +114,7 @@ export function About() {
               {"."}
             </p>
           </Section>
-        </Typography>
+        </div>
       </div>
     </Container>
   );

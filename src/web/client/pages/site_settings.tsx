@@ -1,5 +1,3 @@
-import Typography from "@mui/material/Typography";
-
 import { useContext } from "react";
 import {
   GlobalBooleans,
@@ -37,12 +35,12 @@ export function SiteSettings() {
   return (
     <Container maxWidth="lg">
       <div style={{ padding: "24px" }}>
-        <Typography component={"div"} className="nonDictText">
+        <div className="nonDictText text md">
           <GlobalSettingsCheckbox
             label="Enable Experimental features"
             settingKey="experimentalMode"
           />
-        </Typography>
+        </div>
       </div>
     </Container>
   );
