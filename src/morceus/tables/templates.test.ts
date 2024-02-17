@@ -1,4 +1,8 @@
-import { expandTemplates, loadTemplate } from "@/morceus/tables/templates";
+import {
+  expandTemplates,
+  expandTemplatesAndSave,
+  loadTemplate,
+} from "@/morceus/tables/templates";
 import fs from "fs";
 
 const TESTDATA_DIR = "src/morceus/tables/lat/core/testdata/";
@@ -84,11 +88,10 @@ describe("Template Expansion", () => {
   afterAll(cleanup);
 
   test("handles simple expansion", () => {
-    expandTemplates([TARGET_TEMPLATES], [DEP_TEMPLATES], TEST_TMP_DIR);
+    const tables = [...expandTemplates([TARGET_TEMPLATES], [DEP_TEMPLATES])];
 
-    const table = JSON.parse(
-      fs.readFileSync(`${TEST_TMP_DIR}/a_ae.table`, "utf8")
-    );
+    expect(tables).toHaveLength(1);
+    const table = tables[0];
     expect(table.name).toBe("a_ae");
     expect(table.endings).toHaveLength(5);
     expect(table.endings![0]).toEqual({
@@ -112,5 +115,11 @@ describe("Template Expansion", () => {
       grammaticalData: ["gen", "sg"],
       tags: ["poetic"],
     });
+  });
+
+  test("writes to file", () => {
+    expandTemplatesAndSave([TARGET_TEMPLATES], [DEP_TEMPLATES], TEST_TMP_DIR);
+    const table = fs.readFileSync(`${TEST_TMP_DIR}/a_ae.table`, "utf8");
+    expect(table).toContain("a_rum");
   });
 });

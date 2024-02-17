@@ -196,24 +196,32 @@ function expandTemplate(
   return result;
 }
 
+export function* expandTemplates(
+  targetDirs: string[],
+  dependencyDirs: string[]
+): Generator<InflectionTable> {
+  const rawRegistry = loadTemplates(dependencyDirs);
+  const expandedRegistry = new Map<string, InflectionTable>();
+  const targets = loadTemplates(targetDirs);
+  for (const [_, template] of targets.entries()) {
+    yield expandTemplate(template, rawRegistry, expandedRegistry);
+  }
+}
+
 /**
  * Expands table templates into fully formed tables.
  *
- * @param inputDirs the list of directories where templates are located. These will be searched recursively.
- * @param outputDir the path where the outputs will be written to.
+ * @param targetDirs the list of directories where templates are located. These will be searched recursively.
+ * @param dependencyDirs the path where the outputs will be written to.
  */
-export function expandTemplates(
-  inputDirs: string[] = ["src/morceus/tables/lat/core/target"],
-  dependentTemplateDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
+export function expandTemplatesAndSave(
+  targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
+  dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
   outputDir: string = "tables/lat/out"
 ): void {
   // TODO - make a more test friendly version that takes in files and returns tables.
   fs.mkdirSync(outputDir, { recursive: true });
-  const rawRegistry = loadTemplates(dependentTemplateDirs);
-  const expandedRegistry = new Map<string, InflectionTable>();
-  const targets = loadTemplates(inputDirs);
-  for (const [_, template] of targets.entries()) {
-    const expanded = expandTemplate(template, rawRegistry, expandedRegistry);
+  for (const expanded of expandTemplates(targetDirs, dependencyDirs)) {
     writeTable(expanded, outputDir);
   }
 }
