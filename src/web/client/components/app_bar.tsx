@@ -1,8 +1,6 @@
 import * as React from "react";
 import IconButton from "@mui/material/IconButton";
 
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import Drawer from "@mui/material/Drawer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
@@ -12,6 +10,7 @@ import {
   SpanButton,
 } from "@/web/client/components/generic/basics";
 import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { useMediaQuery } from "@/web/client/utils/media_query";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -91,9 +90,7 @@ function DrawerMenu(props: {
 }
 
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
-  const noSsr = { noSsr: true };
-  const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const isSmall = useMediaQuery("(max-width: 900px)");
   const globalSettings = React.useContext(GlobalSettingsContext);
   const darkModeOn = globalSettings.data.darkMode === true;
   const iconSize = isSmall ? "small" : "medium";

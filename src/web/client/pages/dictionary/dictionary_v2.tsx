@@ -1,6 +1,4 @@
 import Stack from "@mui/material/Stack";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { CSSProperties } from "react";
 import * as React from "react";
 
@@ -50,6 +48,7 @@ import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { Container, Divider } from "@/web/client/components/generic/basics";
 import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { useMediaQuery } from "@/web/client/utils/media_query";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -105,8 +104,6 @@ async function fetchEntry(
     return null;
   }
 }
-
-const noSsr = { noSsr: true };
 
 type EdgeCaseState = "Landing" | "Error" | "No Results";
 type DictState = EdgeCaseState | "Loading" | "Results";
@@ -525,8 +522,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
     SearchSettings.retrieve()
   );
-  const theme = useTheme();
-  const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
   const sectionRef = React.useRef<HTMLElement>(null);
   const tocRef = React.useRef<HTMLDivElement>(null);

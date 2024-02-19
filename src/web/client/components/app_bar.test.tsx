@@ -7,13 +7,13 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 
-jest.mock("@mui/material/useMediaQuery", () => {
+jest.mock("@/web/client/utils/media_query", () => {
   return {
-    __esModule: true,
-    default: jest.fn(() => false),
+    ...jest.requireActual("@/web/client/utils/media_query"),
+    useMediaQuery: jest.fn(),
   };
 });
-import useMediaQuery from "@mui/material/useMediaQuery";
+import { useMediaQuery } from "@/web/client/utils/media_query";
 import {
   SettingsHandler,
   getGlobalSettings,

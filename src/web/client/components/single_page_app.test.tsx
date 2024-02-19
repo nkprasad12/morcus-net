@@ -10,6 +10,8 @@ import { SettingsHandler } from "@/web/client/components/global_flags";
 import { RouteContext } from "@/web/client/router/router_v2";
 import { PagePath } from "@/web/client/router/paths";
 
+jest.mock("@/web/client/utils/media_query");
+
 const GALLIA_PAGE: SinglePageApp.Page = {
   appBarConfig: {
     name: "Gallia",

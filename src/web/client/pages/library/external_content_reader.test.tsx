@@ -14,6 +14,7 @@ import user from "@testing-library/user-event";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { Router, type RouteInfo } from "@/web/client/router/router_v2";
 
+jest.mock("@/web/client/utils/media_query");
 jest.mock("@/web/utils/rpc/client_rpc");
 
 // @ts-ignore
