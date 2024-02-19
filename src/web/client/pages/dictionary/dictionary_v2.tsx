@@ -1,4 +1,3 @@
-import Stack from "@mui/material/Stack";
 import { CSSProperties } from "react";
 import * as React from "react";
 
@@ -313,7 +312,12 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
 
   return (
     <Container maxWidth="xl" style={{ minHeight: window.innerHeight }}>
-      <Stack direction="row" spacing={0} justifyContent="left">
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "left",
+        }}>
         <div style={TOC_SIDEBAR_STYLE}>{sidebarContent}</div>
         <div style={{ maxWidth: "10000px" }}>
           <SearchBar maxWidth="md" marginLeft="0" />
@@ -321,7 +325,7 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
           <HorizontalPlaceholder />
           <Footer />
         </div>
-      </Stack>
+      </div>
     </Container>
   );
 }
