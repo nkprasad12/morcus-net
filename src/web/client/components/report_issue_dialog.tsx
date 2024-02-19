@@ -2,8 +2,6 @@ import { useState } from "react";
 
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
@@ -20,14 +18,16 @@ export function ReportIssueDialog(props: {
     <Dialog
       open={props.show}
       onClose={props.onClose}
+      aria-labelledby="reportTitle"
       PaperProps={{
         className: "bgColor",
       }}>
-      <DialogTitle style={{ fontSize: 19, lineHeight: "normal" }}>
-        <label htmlFor="Report issue box">
-          <b>Report an issue</b>
-        </label>
-      </DialogTitle>
+      <div
+        id="reportTitle"
+        className="text md"
+        style={{ lineHeight: "normal", margin: 0, padding: "16px 24px" }}>
+        <b>Report an issue</b>
+      </div>
       <div style={{ padding: "0px 24px 20px" }}>
         <p className="text sm light" style={{ lineHeight: "normal" }}>
           What did you do, what did you expect to see, and what did you actually

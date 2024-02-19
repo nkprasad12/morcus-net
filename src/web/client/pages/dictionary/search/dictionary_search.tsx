@@ -4,7 +4,6 @@ import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autoco
 import DialogActions from "@mui/material/DialogActions";
 import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
-import DialogTitle from "@mui/material/DialogTitle";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
@@ -48,8 +47,14 @@ function SearchSettingsDialog(props: {
       onClose={props.onClose}
       sx={{ top: "-40%" }}
       PaperProps={{ className: "bgColor" }}
+      aria-labelledby="dictOptTitle"
       disableScrollLock>
-      <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
+      <div
+        id="dictOptTitle"
+        className="text md"
+        style={{ fontWeight: "bold", margin: 0, padding: "16px 24px" }}>
+        Dictionary Options
+      </div>
       <div style={{ padding: "0px 24px 20px" }}>
         <div className="text md light" style={{ marginTop: "8px" }}>
           Dictionaries
