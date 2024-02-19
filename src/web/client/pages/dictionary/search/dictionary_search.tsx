@@ -4,7 +4,6 @@ import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autoco
 import DialogActions from "@mui/material/DialogActions";
 import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
-import DialogContent from "@mui/material/DialogContent";
 import DialogTitle from "@mui/material/DialogTitle";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
@@ -51,7 +50,7 @@ function SearchSettingsDialog(props: {
       PaperProps={{ className: "bgColor" }}
       disableScrollLock>
       <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
-      <DialogContent>
+      <div style={{ padding: "0px 24px 20px" }}>
         <div className="text md light" style={{ marginTop: "8px" }}>
           Dictionaries
         </div>
@@ -112,7 +111,7 @@ function SearchSettingsDialog(props: {
             });
           }}
         />
-      </DialogContent>
+      </div>
       <DialogActions>
         <SpanButton
           onClick={props.onClose}

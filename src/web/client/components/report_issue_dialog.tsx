@@ -2,7 +2,6 @@ import { useState } from "react";
 
 import Dialog from "@mui/material/Dialog";
 import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
 import DialogContentText from "@mui/material/DialogContentText";
 import DialogTitle from "@mui/material/DialogTitle";
 
@@ -29,7 +28,7 @@ export function ReportIssueDialog(props: {
           <b>Report an issue</b>
         </label>
       </DialogTitle>
-      <DialogContent>
+      <div style={{ padding: "0px 24px 20px" }}>
         <DialogContentText style={{ fontSize: 16, lineHeight: "normal" }}>
           What did you do, what did you expect to see, and what did you actually
           see? <i>Do not enter personal information</i>.
@@ -43,7 +42,7 @@ export function ReportIssueDialog(props: {
           multiline
           minRows={8}
         />
-      </DialogContent>
+      </div>
       <DialogActions className="text md light">
         <SpanButton onClick={props.onClose} className="button simple">
           Cancel
