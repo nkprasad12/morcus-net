@@ -29,10 +29,10 @@ export function ReportIssueDialog(props: {
         </label>
       </DialogTitle>
       <div style={{ padding: "0px 24px 20px" }}>
-        <DialogContentText style={{ fontSize: 16, lineHeight: "normal" }}>
+        <p className="text sm light" style={{ lineHeight: "normal" }}>
           What did you do, what did you expect to see, and what did you actually
           see? <i>Do not enter personal information</i>.
-        </DialogContentText>
+        </p>
         <TextField
           id="Report issue box"
           autoFocus
