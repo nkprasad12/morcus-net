@@ -5,7 +5,13 @@ export interface OverlayProps {
   style?: CSSProperties;
 }
 
-export interface DrawerProps {
+interface ModalProps {
+  open: boolean;
+  onClose: () => any;
+  contentProps?: OverlayProps;
+}
+
+export interface DrawerProps extends ModalProps {
   anchor: "left";
   open: boolean;
   onClose: () => any;
@@ -21,7 +27,7 @@ export function Drawer(props: PropsWithChildren<DrawerProps>) {
   return (
     <div className="drawer">
       <div className={classes.join(" ")}>{props.children}</div>
-      <div className="overlay" onClick={props.onClose} />
+      <div className="modalOverlay" onClick={props.onClose} />
     </div>
   );
 }

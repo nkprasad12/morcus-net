@@ -193,8 +193,8 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         color: Solarized.base1 + "96",
       },
 
-      // Drawer
-      ".drawer .overlay": {
+      // Modals
+      ".modalOverlay": {
         display: "block",
         height: "100vh",
         width: "100%",
