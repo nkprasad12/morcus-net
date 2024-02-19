@@ -2,7 +2,6 @@ import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import DialogActions from "@mui/material/DialogActions";
-import FormControlLabel from "@mui/material/FormControlLabel";
 import FormGroup from "@mui/material/FormGroup";
 import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
@@ -59,50 +58,49 @@ function SearchSettingsDialog(props: {
         </div>
         <FormGroup>
           {LatinDict.AVAILABLE.map((dict) => (
-            <FormControlLabel
-              key={dict.key}
-              control={
-                <input
-                  type="checkbox"
-                  checked={props.dicts.includes(dict)}
-                  onChange={(e) => {
-                    const dicts = new Set(props.dicts);
-                    if (e.target.checked) {
-                      dicts.add(dict);
-                    } else {
-                      dicts.delete(dict);
-                    }
-                    props.setDicts([...dicts]);
-                  }}
-                />
-              }
-              label={
+            <div key={dict.key}>
+              <input
+                id={dict.key + "option"}
+                type="checkbox"
+                checked={props.dicts.includes(dict)}
+                onChange={(e) => {
+                  const dicts = new Set(props.dicts);
+                  if (e.target.checked) {
+                    dicts.add(dict);
+                  } else {
+                    dicts.delete(dict);
+                  }
+                  props.setDicts([...dicts]);
+                }}
+              />
+              <label htmlFor={dict.key + "option"}>
                 <span>
                   <DictChip label={dict.key} /> {dict.displayName}
                 </span>
-              }
-            />
+              </label>
+            </div>
           ))}
         </FormGroup>
         <div className="text md light" style={{ marginTop: "8px" }}>
           Settings
         </div>
         <FormGroup>
-          <FormControlLabel
-            control={
-              <input
-                type="checkbox"
-                checked={inflectedSearch}
-                onChange={() =>
-                  globalSettings.setData({
-                    ...globalSettings.data,
-                    inflectedSearch: !inflectedSearch,
-                  })
-                }
-              />
-            }
-            label={<span>Inflected forms (Beta)</span>}
-          />
+          <div>
+            <input
+              id="inflectionOption"
+              type="checkbox"
+              checked={inflectedSearch}
+              onChange={() =>
+                globalSettings.setData({
+                  ...globalSettings.data,
+                  inflectedSearch: !inflectedSearch,
+                })
+              }
+            />
+            <label htmlFor="inflectionOption">
+              <span>Inflected forms (Beta)</span>
+            </label>
+          </div>
         </FormGroup>
         <HighlightStrengthSelector
           highlightStrength={
