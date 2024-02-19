@@ -50,7 +50,7 @@ const UNSELECTABLE: CSSProperties = {
 };
 
 const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
-export const TEXT_STYLE: CSSProperties = {
+const TEXT_STYLE: CSSProperties = {
   fontFamily: ALLOWED_FONTS,
   fontWeight: 400,
   lineHeight: 1.5,
