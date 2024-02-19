@@ -7,7 +7,7 @@ import {
   SCROLL_JUMP,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { assertEqual } from "@/common/assert";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 class NavHelper {
   private readonly observer: IntersectionObserver;
@@ -80,13 +80,13 @@ function OpenMenu(props: {
         onClick={() => navHelper?.scrollToPrevious()}
         className="mobileNavButton"
         aria-label="jump to previous section"
-        pathD={SvgIcons.KeyboardArrowUp}
+        pathD={SvgIcon.KeyboardArrowUp}
       />
       <SvgIcon
         onClick={() => navHelper?.scrollToNext()}
         className="mobileNavButton"
         aria-label="jump to next section"
-        pathD={SvgIcons.KeyboardArrowDown}
+        pathD={SvgIcon.KeyboardArrowDown}
       />
       <SvgIcon
         onClick={() =>
@@ -96,13 +96,13 @@ function OpenMenu(props: {
         }
         className="mobileNavButton"
         aria-label="jump to entry"
-        pathD={SvgIcons.Toc}
+        pathD={SvgIcon.Toc}
       />
       <SvgIcon
         onClick={() => setOpen(false)}
         className="mobileNavButton"
         aria-label="close quick navigation"
-        pathD={SvgIcons.Close}
+        pathD={SvgIcon.Close}
       />
     </div>
   );
@@ -123,7 +123,7 @@ export function QuickNavMenu() {
         <OpenMenu navHelper={navHelper.current} setOpen={setOpen} />
       ) : (
         <SvgIcon
-          pathD={SvgIcons.MenuOpen}
+          pathD={SvgIcon.MenuOpen}
           onClick={() => setOpen(true)}
           className="mobileNavButtonCollapsed"
           aria-label="expand quick navigation"

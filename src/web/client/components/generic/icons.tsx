@@ -1,6 +1,28 @@
 import type { CoreProps } from "@/web/client/components/generic/basics";
 
-export namespace SvgIcons {
+interface SvgIconProps extends CoreProps {
+  pathD: string;
+  fontSize?: "small";
+}
+export function SvgIcon(props: SvgIconProps) {
+  const fontSize = props.fontSize === "small" ? "1.25rem" : "1.5rem";
+  const className = ["svgIcon"].concat(props.className || []).join(" ");
+  return (
+    <svg
+      className={className}
+      viewBox="0 0 24 24"
+      focusable="false"
+      fontSize={fontSize}
+      style={props.style}
+      onClick={props.onClick}
+      aria-hidden="true"
+      aria-label={props["aria-label"]}>
+      <path d={props.pathD} />
+    </svg>
+  );
+}
+
+export namespace SvgIcon {
   export const KeyboardArrowUp =
     "M7.41 15.41 12 10.83l4.59 4.58L18 14l-6-6-6 6z";
   export const KeyboardArrowDown =
@@ -43,26 +65,4 @@ export namespace SvgIcons {
     "m12 4-1.41 1.41L16.17 11H4v2h12.17l-5.58 5.59L12 20l8-8z";
   export const Info =
     "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
-}
-
-interface SvgIconProps extends CoreProps {
-  pathD: string;
-  fontSize?: "small";
-}
-export function SvgIcon(props: SvgIconProps) {
-  const fontSize = props.fontSize === "small" ? "1.25rem" : "1.5rem";
-  const className = ["svgIcon"].concat(props.className || []).join(" ");
-  return (
-    <svg
-      className={className}
-      viewBox="0 0 24 24"
-      focusable="false"
-      fontSize={fontSize}
-      style={props.style}
-      onClick={props.onClick}
-      aria-hidden="true"
-      aria-label={props["aria-label"]}>
-      <path d={props.pathD} />
-    </svg>
-  );
 }

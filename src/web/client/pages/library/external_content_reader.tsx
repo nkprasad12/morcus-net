@@ -22,7 +22,7 @@ import { ScrapeUrlApi } from "@/web/api_routes";
 import { Router } from "@/web/client/router/router_v2";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { NavIcon } from "@/web/client/pages/library/reader_utils";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 export function ExternalContentReader() {
   return (
@@ -61,11 +61,11 @@ const InternalReaderContext: React.Context<InternalReaderState> =
 
 type MainTab = "Load text" | "Text reader";
 const LOAD_ICON: ReaderInternalTabConfig<MainTab> = {
-  Icon: <SvgIcon pathD={SvgIcons.Edit} />,
+  Icon: <SvgIcon pathD={SvgIcon.Edit} />,
   tab: "Load text",
 };
 const READER_ICON: ReaderInternalTabConfig<MainTab> = {
-  Icon: <SvgIcon pathD={SvgIcons.AutoStories} />,
+  Icon: <SvgIcon pathD={SvgIcon.AutoStories} />,
   tab: "Text reader",
 };
 const BASE_ICONS = [LOAD_ICON];
@@ -168,7 +168,7 @@ const ShareScrapedContentIcon = React.forwardRef<any>(
     return (
       <span {...fProps} ref={fRef} style={{ marginLeft: "4px" }}>
         <NavIcon
-          Icon={<SvgIcon pathD={SvgIcons.Link} />}
+          Icon={<SvgIcon pathD={SvgIcon.Link} />}
           label="share page link"
         />
       </span>

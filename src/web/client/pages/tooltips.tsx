@@ -7,7 +7,7 @@ import { exhaustiveGuard } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { checkPresent } from "@/common/assert";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 export type TooltipPlacement = "top-start" | "right" | "bottom";
 
@@ -109,7 +109,7 @@ function TextWithIcon(props: {
           aria-label="copy link"
           aria-haspopup="false"
           color="success">
-          <SvgIcon pathD={SvgIcons.Link} />
+          <SvgIcon pathD={SvgIcon.Link} />
         </IconButton>
         <span>{props.message}</span>
       </div>

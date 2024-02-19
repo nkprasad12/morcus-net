@@ -35,7 +35,7 @@ import {
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
 import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -268,9 +268,9 @@ type CustomTabs = "Outline" | "Attribution";
 type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
 const SIDEBAR_PANEL_ICONS: ReaderInternalTabConfig<SidebarPanel>[] = [
-  { tab: "Outline", Icon: <SvgIcon pathD={SvgIcons.Toc} /> },
+  { tab: "Outline", Icon: <SvgIcon pathD={SvgIcon.Toc} /> },
   ...DEFAULT_SIDEBAR_TAB_CONFIGS,
-  { tab: "Attribution", Icon: <SvgIcon pathD={SvgIcons.Info} /> },
+  { tab: "Attribution", Icon: <SvgIcon pathD={SvgIcon.Info} /> },
 ];
 
 interface SidebarProps {
@@ -320,9 +320,9 @@ export function SwipeFeedback(props: {
         borderColor: overlayOpacity === 1 ? "green" : undefined,
       }}>
       {props.swipeDir === "Left" ? (
-        <SvgIcon pathD={SvgIcons.ArrowForward} />
+        <SvgIcon pathD={SvgIcon.ArrowForward} />
       ) : (
-        <SvgIcon pathD={SvgIcons.ArrowBack} />
+        <SvgIcon pathD={SvgIcon.ArrowBack} />
       )}
     </div>
   );
@@ -460,14 +460,14 @@ function WorkNavigationBar(props: {
     <>
       <div className="readerIconBar" ref={navBarRef}>
         <NavIcon
-          Icon={<SvgIcon pathD={SvgIcons.ArrowBack} />}
+          Icon={<SvgIcon pathD={SvgIcon.ArrowBack} />}
           label="previous section"
           disabled={props.page <= 0}
           onClick={() => changePage(-1)}
         />
         <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
-          Icon={<SvgIcon pathD={SvgIcons.ArrowForward} />}
+          Icon={<SvgIcon pathD={SvgIcon.ArrowForward} />}
           label="next section"
           disabled={props.page >= props.work.pages.length - 1}
           onClick={() => changePage(1)}

@@ -1,7 +1,7 @@
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 import { Divider } from "@/web/client/components/generic/basics";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { FontSizes } from "@/web/client/styling/styles";
@@ -70,7 +70,7 @@ function OutlineSection(props: {
         <DictChip label={props.dictKey} />
         <span className="outlineHead" style={{ marginLeft: 2 }}>
           <SvgIcon
-            pathD={SvgIcons.OpenInNew}
+            pathD={SvgIcon.OpenInNew}
             style={{
               marginBottom: `${-0.1 * scale}em`,
               marginRight: `${-0.1 * scale}em`,
@@ -103,7 +103,7 @@ function OutlineSection(props: {
                   className="outlineHead"
                   style={{ fontSize: FontSizes.SECONDARY * scale }}>
                   <SvgIcon
-                    pathD={SvgIcons.OpenInNew}
+                    pathD={SvgIcon.OpenInNew}
                     style={{
                       marginBottom: `${-0.1 * scale}em`,
                       marginRight: `${-0.1 * scale}em`,

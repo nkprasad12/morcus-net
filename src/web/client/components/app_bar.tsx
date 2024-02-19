@@ -8,7 +8,7 @@ import {
   Divider,
   SpanButton,
 } from "@/web/client/components/generic/basics";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { Drawer } from "@/web/client/components/generic/overlays";
 
@@ -139,7 +139,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-haspopup="true"
               onClick={() => setDrawerVisible(true)}
               className="menuIcon">
-              <SvgIcon pathD={SvgIcons.Menu} />
+              <SvgIcon pathD={SvgIcon.Menu} />
             </IconButton>
             <DrawerMenu
               pages={mainPages}
@@ -190,7 +190,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               }
               className="menuIcon">
               <SvgIcon
-                pathD={darkModeOn ? SvgIcons.LightMode : SvgIcons.DarkMode}
+                pathD={darkModeOn ? SvgIcon.LightMode : SvgIcon.DarkMode}
               />
             </IconButton>
             <IconButton
@@ -199,7 +199,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-haspopup="true"
               onClick={props.openIssueDialog}
               className="menuIcon">
-              <SvgIcon pathD={SvgIcons.Flag} />
+              <SvgIcon pathD={SvgIcon.Flag} />
             </IconButton>
             {!isSmall && (
               <IconButton
@@ -208,7 +208,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 // TODO: Find a better way to configure this.
                 onClick={handlePageClick("/settings")}
                 className="menuIcon">
-                <SvgIcon pathD={SvgIcons.Build} />
+                <SvgIcon pathD={SvgIcon.Build} />
               </IconButton>
             )}
           </div>

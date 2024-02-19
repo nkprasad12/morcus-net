@@ -2,7 +2,7 @@ import React from "react";
 
 import { CSSProperties } from "react";
 import IconButton from "@mui/material/IconButton";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 export function SettingsText(props: { message: string }) {
   return <span className="text md light">{props.message}</span>;
@@ -69,7 +69,7 @@ export const TooltipNavIcon = React.forwardRef<any>(function TooltipNavIcon(
   return (
     <span {...fProps} ref={fRef}>
       <NavIcon
-        Icon={<SvgIcon pathD={SvgIcons.Link} />}
+        Icon={<SvgIcon pathD={SvgIcon.Link} />}
         label="link to section"
       />
     </span>

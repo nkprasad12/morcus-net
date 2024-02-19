@@ -46,7 +46,7 @@ import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { Container, Divider } from "@/web/client/components/generic/basics";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 
 export const ERROR_STATE_MESSAGE =
@@ -224,7 +224,7 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
           fontSize: `${0.8 * scale}em`,
           paddingLeft: `${0.1 * scale}em`,
         }}
-        pathD={SvgIcons.OpenInNew}
+        pathD={SvgIcon.OpenInNew}
       />
       <span dangerouslySetInnerHTML={{ __html: label }} />
     </span>
@@ -395,7 +395,7 @@ function articleLinkButton(text: string, scale: number) {
           paddingRight: 4,
         }}>
         <SvgIcon
-          pathD={SvgIcons.Link}
+          pathD={SvgIcon.Link}
           style={{
             marginBottom: `${-0.2 * scale}em`,
             marginRight: `${-0.2 * scale}em`,

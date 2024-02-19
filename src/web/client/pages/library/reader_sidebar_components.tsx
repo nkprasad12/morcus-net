@@ -6,7 +6,7 @@ import {
 } from "@/web/client/pages/library/reader_utils";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
-import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 export interface EmbeddedDictionaryProps {
   /** The word to look up in the dictionary, if any. */
@@ -235,8 +235,8 @@ const TAB_DICT = "Dictionary";
 const TAB_SETTINGS = "Reader settings";
 export const DEFAULT_SIDEBAR_TAB_CONFIGS: ReaderInternalTabConfig<DefaultSidebarTab>[] =
   [
-    { tab: TAB_DICT, Icon: <SvgIcon pathD={SvgIcons.MenuBook} /> },
-    { tab: TAB_SETTINGS, Icon: <SvgIcon pathD={SvgIcons.Settings} /> },
+    { tab: TAB_DICT, Icon: <SvgIcon pathD={SvgIcon.MenuBook} /> },
+    { tab: TAB_SETTINGS, Icon: <SvgIcon pathD={SvgIcon.Settings} /> },
   ];
 export type DefaultSidebarTab = typeof TAB_DICT | typeof TAB_SETTINGS;
 export function isDefaultSidebarTab(x: unknown): x is DefaultSidebarTab {
