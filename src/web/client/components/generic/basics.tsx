@@ -1,11 +1,28 @@
 import { BoxWidth, getWidth } from "@/web/client/styling/styles";
-import type { RefObject, CSSProperties, PropsWithChildren } from "react";
+import type {
+  RefObject,
+  CSSProperties,
+  PropsWithChildren,
+  AriaAttributes,
+} from "react";
 
-export interface CoreProps {
+export namespace AriaProps {
+  export function extract<T extends AriaAttributes>(input: T): AriaAttributes {
+    const result: AriaAttributes = {};
+    for (const key in input) {
+      if (key.startsWith("aria-")) {
+        // @ts-ignore
+        result[key] = input[key];
+      }
+    }
+    return result;
+  }
+}
+
+export interface CoreProps extends AriaAttributes {
   style?: CSSProperties;
   id?: string;
   className?: string;
-  "aria-label"?: string;
   onClick?: () => any;
 }
 
