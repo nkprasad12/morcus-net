@@ -2,7 +2,6 @@ import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import DialogActions from "@mui/material/DialogActions";
-import FormGroup from "@mui/material/FormGroup";
 import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import DialogContent from "@mui/material/DialogContent";
@@ -56,7 +55,7 @@ function SearchSettingsDialog(props: {
         <div className="text md light" style={{ marginTop: "8px" }}>
           Dictionaries
         </div>
-        <FormGroup>
+        <div>
           {LatinDict.AVAILABLE.map((dict) => (
             <div key={dict.key}>
               <input
@@ -80,11 +79,11 @@ function SearchSettingsDialog(props: {
               </label>
             </div>
           ))}
-        </FormGroup>
+        </div>
         <div className="text md light" style={{ marginTop: "8px" }}>
           Settings
         </div>
-        <FormGroup>
+        <div>
           <div>
             <input
               id="inflectionOption"
@@ -101,7 +100,7 @@ function SearchSettingsDialog(props: {
               <span>Inflected forms (Beta)</span>
             </label>
           </div>
-        </FormGroup>
+        </div>
         <HighlightStrengthSelector
           highlightStrength={
             globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
