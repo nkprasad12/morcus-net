@@ -14,10 +14,12 @@ export interface DrawerProps {
 }
 
 export function Drawer(props: PropsWithChildren<DrawerProps>) {
-  const isOpen = props.open === true;
+  if (props.open !== true) {
+    return null;
+  }
   const classes = ["contentHolder"].concat(props.contentProps?.className || []);
   return (
-    <div className="drawer" style={{ display: !isOpen ? "none" : undefined }}>
+    <div className="drawer">
       <div className={classes.join(" ")}>{props.children}</div>
       <div className="overlay" onClick={props.onClose} />
     </div>
