@@ -1,7 +1,6 @@
 import * as React from "react";
 import IconButton from "@mui/material/IconButton";
 
-import Drawer from "@mui/material/Drawer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
 import {
@@ -11,6 +10,7 @@ import {
 } from "@/web/client/components/generic/basics";
 import { SvgIcon, SvgIcons } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
+import { Drawer } from "@/web/client/components/generic/overlays";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -53,7 +53,7 @@ function DrawerMenu(props: {
       open={props.open}
       onClose={props.onClose}
       transitionDuration={150}
-      PaperProps={{
+      contentProps={{
         className: "menu",
       }}>
       <div

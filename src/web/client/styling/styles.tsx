@@ -137,6 +137,8 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         height: "1em",
         flexShrink: "0",
       },
+
+      // Text
       ".text": {
         ...TEXT_STYLE,
         color: contentTextColor,
@@ -152,6 +154,8 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".text.red": {
         color: Solarized.red + "A0",
       },
+
+      // Buttons
       ".button": {
         borderRadius: 4,
         cursor: "pointer",
@@ -187,6 +191,25 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         cursor: "not-allowed",
         backgroundColor: Solarized.base1 + "48",
         color: Solarized.base1 + "96",
+      },
+
+      // Drawer
+      ".drawer .overlay": {
+        display: "block",
+        height: "100vh",
+        width: "100%",
+        left: 0,
+        top: 0,
+        backgroundColor: "#00000080",
+        position: "fixed",
+        zIndex: 100,
+      },
+      ".drawer .contentHolder ": {
+        height: "100vh",
+        left: 0,
+        top: 0,
+        position: "fixed",
+        zIndex: 101,
       },
 
       /** Tooltip styling */
