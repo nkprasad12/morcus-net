@@ -1,7 +1,6 @@
 import { useState } from "react";
 
 import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
@@ -43,7 +42,7 @@ export function ReportIssueDialog(props: {
           minRows={8}
         />
       </div>
-      <DialogActions className="text md light">
+      <div className="dialogActions text md light">
         <SpanButton onClick={props.onClose} className="button simple">
           Cancel
         </SpanButton>
@@ -59,7 +58,7 @@ export function ReportIssueDialog(props: {
           className="button">
           <b>Submit</b>
         </SpanButton>
-      </DialogActions>
+      </div>
     </Dialog>
   );
 }

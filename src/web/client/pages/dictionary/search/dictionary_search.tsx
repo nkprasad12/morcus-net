@@ -1,7 +1,6 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
-import DialogActions from "@mui/material/DialogActions";
 import { useState, useContext } from "react";
 import Dialog from "@mui/material/Dialog";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
@@ -117,13 +116,13 @@ function SearchSettingsDialog(props: {
           }}
         />
       </div>
-      <DialogActions>
+      <div className="dialogActions">
         <SpanButton
           onClick={props.onClose}
           className="text md light button simple">
           Close
         </SpanButton>
-      </DialogActions>
+      </div>
     </Dialog>
   );
 }

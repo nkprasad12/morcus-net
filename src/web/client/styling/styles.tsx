@@ -211,6 +211,13 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         position: "fixed",
         zIndex: 101,
       },
+      ".dialogActions": {
+        display: "flex",
+        alignItems: "center",
+        padding: 8,
+        justifyContent: "flex-end",
+        flex: "0 0 auto",
+      },
 
       /** Tooltip styling */
       ".MuiTooltip-arrow": {
