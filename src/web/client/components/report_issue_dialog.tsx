@@ -1,11 +1,10 @@
 import { useState } from "react";
 
-import Dialog from "@mui/material/Dialog";
-
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
 import { getCommitHash } from "@/web/client/define_vars";
 import { SpanButton, TextField } from "@/web/client/components/generic/basics";
+import { ModalDialog } from "@/web/client/components/generic/overlays";
 
 export function ReportIssueDialog(props: {
   show: boolean;
@@ -14,11 +13,11 @@ export function ReportIssueDialog(props: {
   const [reportText, setReportText] = useState<string>("");
 
   return (
-    <Dialog
+    <ModalDialog
       open={props.show}
       onClose={props.onClose}
       aria-labelledby="reportTitle"
-      PaperProps={{
+      contentProps={{
         className: "bgColor",
       }}>
       <div
@@ -59,6 +58,6 @@ export function ReportIssueDialog(props: {
           <b>Submit</b>
         </SpanButton>
       </div>
-    </Dialog>
+    </ModalDialog>
   );
 }

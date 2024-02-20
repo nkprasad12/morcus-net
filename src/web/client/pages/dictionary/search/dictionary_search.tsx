@@ -2,7 +2,6 @@ import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { useState, useContext } from "react";
-import Dialog from "@mui/material/Dialog";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
@@ -14,6 +13,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Solarized } from "@/web/client/styling/colors";
 import { SpanButton } from "@/web/client/components/generic/basics";
+import { ModalDialog } from "@/web/client/components/generic/overlays";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -41,13 +41,11 @@ function SearchSettingsDialog(props: {
   const inflectedSearch = globalSettings.data.inflectedSearch === true;
 
   return (
-    <Dialog
+    <ModalDialog
       open={props.open}
       onClose={props.onClose}
-      sx={{ top: "-40%" }}
-      PaperProps={{ className: "bgColor" }}
-      aria-labelledby="dictOptTitle"
-      disableScrollLock>
+      contentProps={{ className: "bgColor" }}
+      aria-labelledby="dictOptTitle">
       <div
         id="dictOptTitle"
         className="text md"
@@ -123,7 +121,7 @@ function SearchSettingsDialog(props: {
           Close
         </SpanButton>
       </div>
-    </Dialog>
+    </ModalDialog>
   );
 }
 

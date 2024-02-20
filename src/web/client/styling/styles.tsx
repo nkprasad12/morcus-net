@@ -211,6 +211,14 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         position: "fixed",
         zIndex: 101,
       },
+      ".dialogModal .contentHolder ": {
+        left: "50vw",
+        top: "50vh",
+        position: "fixed",
+        zIndex: 101,
+        borderRadius: "8px",
+        transform: "translate(-50%, -90%)",
+      },
       ".dialogActions": {
         display: "flex",
         alignItems: "center",

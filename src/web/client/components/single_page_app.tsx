@@ -43,15 +43,15 @@ export function SinglePageApp(props: SinglePageApp.Props) {
 
   return (
     <>
+      <ReportIssueDialog
+        show={showIssueDialog}
+        onClose={() => setShowIssueDialog(false)}
+      />
       <ResponsiveAppBar
         pages={appBarPages}
         openIssueDialog={() => setShowIssueDialog(true)}
       />
       <Content usedPages={usedPages} />
-      <ReportIssueDialog
-        show={showIssueDialog}
-        onClose={() => setShowIssueDialog(false)}
-      />
     </>
   );
 }
