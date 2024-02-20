@@ -1,3 +1,4 @@
+import FocusTrap from "@mui/base/FocusTrap";
 import { CSSProperties, PropsWithChildren } from "react";
 
 export interface OverlayProps {
@@ -25,9 +26,11 @@ export function Drawer(props: PropsWithChildren<DrawerProps>) {
   }
   const classes = ["contentHolder"].concat(props.contentProps?.className || []);
   return (
-    <div className="drawer">
-      <div className={classes.join(" ")}>{props.children}</div>
-      <div className="modalOverlay" onClick={props.onClose} />
-    </div>
+    <FocusTrap open>
+      <div className="drawer" tabIndex={-1}>
+        <div className={classes.join(" ")}>{props.children}</div>
+        <div className="modalOverlay" onClick={props.onClose} />
+      </div>
+    </FocusTrap>
   );
 }

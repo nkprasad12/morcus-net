@@ -72,10 +72,7 @@ function DrawerMenu(props: {
                   : "menuItemInactive"
               }
               style={{
-                paddingTop: "16px",
-                paddingBottom: "16px",
-                paddingLeft: "24px",
-                paddingRight: "24px",
+                padding: "16px 24px",
                 display: "block",
                 justifyContent: "center",
               }}>
