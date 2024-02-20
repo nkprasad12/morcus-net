@@ -1,7 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 
 import IconButton from "@mui/material/IconButton";
-import Popper from "@mui/material/Popper";
+import Popper from "@mui/base/PopperUnstyled";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 
 const CLEAR_QUERY = "Clear query";

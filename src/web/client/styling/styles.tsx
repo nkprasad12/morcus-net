@@ -1,7 +1,7 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { Solarized } from "@/web/client/styling/colors";
 import { StyleConfig } from "@/web/client/styling/style_context";
-import type { GlobalStylesProps } from "@mui/material";
+import type { GlobalProps } from "@emotion/react";
 import type { CSSProperties } from "react";
 
 export type AllowedFontSizes =
@@ -67,7 +67,7 @@ export function getAppBarColor(settings: Partial<StyleConfig>): string {
     : Solarized.base2;
 }
 
-export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
+export function getGlobalStyles(settings: StyleConfig): GlobalProps {
   const modifier = settings.dictHighlightScale;
 
   function modifiedStrength(baseStrength: number): string {

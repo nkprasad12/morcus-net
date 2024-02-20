@@ -1,4 +1,4 @@
-import ClickAwayListener from "@mui/material/ClickAwayListener";
+import ClickAwayListener from "@mui/base/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
 import IconButton from "@mui/material/IconButton";
 import * as React from "react";

@@ -3,9 +3,7 @@
 import { useContext, StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
-import GlobalStyles from "@mui/material/GlobalStyles";
-import StyledEngineProvider from "@mui/material/StyledEngineProvider";
-
+import { Global } from "@emotion/react";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
@@ -38,7 +36,7 @@ function ConfigurableStyles() {
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", getAppBarColor(styleConfig));
-  return <GlobalStyles {...getGlobalStyles(styleConfig)} />;
+  return <Global {...getGlobalStyles(styleConfig)} />;
 }
 
 root.render(
@@ -46,13 +44,11 @@ root.render(
     <SettingsHandler>
       <StyleContextProvider>
         <ConfigurableStyles />
-        <StyledEngineProvider injectFirst>
-          <Router.Root>
-            <TitleHandler>
-              <SinglePageApp {...props} />
-            </TitleHandler>
-          </Router.Root>
-        </StyledEngineProvider>
+        <Router.Root>
+          <TitleHandler>
+            <SinglePageApp {...props} />
+          </TitleHandler>
+        </Router.Root>
       </StyleContextProvider>
     </SettingsHandler>
   </StrictMode>
