@@ -3,7 +3,7 @@ import {
   type CoreProps,
 } from "@/web/client/components/generic/basics";
 import FocusTrap from "@mui/base/FocusTrap";
-import { CSSProperties, PropsWithChildren } from "react";
+import { CSSProperties, PropsWithChildren, useEffect } from "react";
 
 export interface OverlayProps extends CoreProps {
   className?: string;
@@ -19,18 +19,33 @@ interface ModalProps extends CoreProps {
 function BaseModal(
   props: PropsWithChildren<ModalProps & { className: string }>
 ) {
+  const { open, onClose } = props;
+
+  useEffect(() => {
+    if (!open) {
+      return;
+    }
+    const keyListener = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+      }
+    };
+    window.addEventListener("keyup", keyListener);
+    return () => window.removeEventListener("keyup", keyListener);
+  }, [open, onClose]);
+
   const classes = ["contentHolder"]
     .concat(props.contentProps?.className || [])
-    .concat(props.open ? "open" : []);
+    .concat(open ? "open" : []);
   return (
-    <FocusTrap open={props.open}>
+    <FocusTrap open={open}>
       <div
         className={props.className}
         tabIndex={-1}
         {...AriaProps.extract(props)}>
-        <div className={classes.join(" ")}>{props.open && props.children}</div>
-        {props.open && (
-          <div className="modalOverlay" onClick={props.onClose} tabIndex={-1} />
+        <div className={classes.join(" ")}>{open && props.children}</div>
+        {open && (
+          <div className="modalOverlay" onClick={onClose} tabIndex={-1} />
         )}
       </div>
     </FocusTrap>
