@@ -57,6 +57,26 @@ export function Divider(props?: { style?: CSSProperties }) {
   return <hr className="contentDivider" style={props?.style} />;
 }
 
+export interface ButtonLikeProps {
+  onClick: React.EventHandler<any>;
+  onKeyUp: React.KeyboardEventHandler<any>;
+  tabIndex: number;
+}
+export function buttonLikeProps(
+  onClick: React.EventHandler<any>,
+  triggerOnSpace: boolean = false
+): ButtonLikeProps {
+  return {
+    tabIndex: 0,
+    onClick: onClick,
+    onKeyUp: (e) => {
+      if (e.key === "Enter" || (triggerOnSpace && e.key === " ")) {
+        onClick(e);
+      }
+    },
+  };
+}
+
 export function SpanLink(
   props: PropsWithChildren<{
     onClick: () => any;
@@ -68,13 +88,7 @@ export function SpanLink(
     <span
       id={props.id}
       className={props.className}
-      onClick={props.onClick}
-      onKeyUp={(e) => {
-        if (e.key === "Enter") {
-          props.onClick();
-        }
-      }}
-      tabIndex={0}
+      {...buttonLikeProps(props.onClick)}
       aria-labelledby={props.id}
       role="link">
       {props.children}
@@ -93,13 +107,7 @@ export function SpanButton(
     <span
       className={props.className}
       style={{ cursor: "pointer", ...props.style }}
-      onClick={props.onClick}
-      onKeyUp={(e) => {
-        if (e.key === " " || e.key === "Enter") {
-          props.onClick();
-        }
-      }}
-      tabIndex={0}
+      {...buttonLikeProps(props.onClick, true)}
       role="button">
       {props.children}
     </span>

@@ -6,12 +6,18 @@ import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { checkPresent } from "@/common/assert";
 import { SvgIcon } from "@/web/client/components/generic/icons";
+import {
+  buttonLikeProps,
+  type ButtonLikeProps,
+} from "@/web/client/components/generic/basics";
 
 export type TooltipPlacement = "top-start" | "right" | "bottom";
 
-export type TooltipChild = React.ForwardRefExoticComponent<
-  Omit<any, "ref"> & React.RefAttributes<any>
-> & { onClick?: React.MouseEventHandler };
+export type TooltipChild = React.FC<
+  Partial<ButtonLikeProps> & { role?: "button" } & {
+    ref?: React.ForwardedRef<any>;
+  }
+>;
 
 export interface TooltipProps {
   titleText: string | JSX.Element;
@@ -41,10 +47,11 @@ function BaseTooltip(props: TooltipProps) {
           arrow
           slotProps={{ tooltip: { onClick: () => {} } }}>
           <props.ChildFactory
-            onClick={(e: React.MouseEvent) => {
+            role="button"
+            {...buttonLikeProps((e) => {
               props.onChildClick(props.open);
               e.stopPropagation();
-            }}
+            }, true)}
           />
         </Tooltip>
       </div>
