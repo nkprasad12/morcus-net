@@ -1,8 +1,7 @@
 import { useRef, useState, useEffect } from "react";
 
-import IconButton from "@mui/material/IconButton";
 import Popper from "@mui/base/PopperUnstyled";
-import { SvgIcon } from "@/web/client/components/generic/icons";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 
 const CLEAR_QUERY = "Clear query";
 
@@ -203,7 +202,7 @@ export function SearchBox<T>(props: {
           />
           <IconButton
             aria-label={CLEAR_QUERY}
-            sx={{ marginRight: 0.5 }}
+            style={{ marginRight: "4px" }}
             onClick={() => {
               inputRef.current?.focus();
               onInput("");
@@ -219,7 +218,7 @@ export function SearchBox<T>(props: {
             <IconButton
               aria-label="search settings"
               aria-haspopup="true"
-              sx={{ marginRight: 0.65 }}
+              style={{ marginRight: "5.2px" }}
               onClick={props.onOpenSettings}>
               <SvgIcon
                 pathD={SvgIcon.Settings}

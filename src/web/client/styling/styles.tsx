@@ -192,6 +192,41 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         backgroundColor: Solarized.base1 + "48",
         color: Solarized.base1 + "96",
       },
+      ".iconButton": {
+        display: "inline-flex",
+        WebkitBoxAlign: "center",
+        alignItems: "center",
+        WebkitBoxPack: "center",
+        justifyContent: "center",
+        position: "relative",
+        boxSizing: "border-box",
+        WebkitTapHighlightColor: "transparent",
+        outline: "0px",
+        border: "1px",
+        borderColor: "#00000000",
+        margin: "0px",
+        cursor: "pointer",
+        verticalAlign: "middle",
+        appearance: "none",
+        textDecoration: "none",
+        textAlign: "center",
+        fontSize: "1.5rem",
+        padding: "8px",
+        borderRadius: "50%",
+        overflow: "visible",
+        backgroundColor: "#00000000",
+        ...UNSELECTABLE,
+      },
+      ".iconButton.small": {
+        fontSize: "1.125rem",
+        padding: "5px",
+      },
+      ".iconButton:disabled": {
+        color: contentTextColor + "20",
+      },
+      ".iconButton:is(:hover, :focus-visible):not(:disabled)": {
+        backgroundColor: "rgba(0, 0, 0, 0.075)",
+      },
 
       // Modals
       ".modalOverlay": {
@@ -546,9 +581,6 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
       },
       ".selectedSidePanelTab .menuIcon": {
         color: contentTextColor + "d0",
-      },
-      ".Mui-disabled .MuiSvgIcon-root": {
-        color: contentTextColor + "20",
       },
 
       /** Search box */

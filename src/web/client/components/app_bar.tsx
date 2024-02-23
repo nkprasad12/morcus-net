@@ -1,5 +1,4 @@
 import * as React from "react";
-import IconButton from "@mui/material/IconButton";
 
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
@@ -8,7 +7,7 @@ import {
   Divider,
   SpanButton,
 } from "@/web/client/components/generic/basics";
-import { SvgIcon } from "@/web/client/components/generic/icons";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { Drawer } from "@/web/client/components/generic/overlays";
 

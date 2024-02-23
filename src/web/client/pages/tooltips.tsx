@@ -1,6 +1,5 @@
 import ClickAwayListener from "@mui/base/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
-import IconButton from "@mui/material/IconButton";
 import * as React from "react";
 import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
@@ -103,14 +102,12 @@ function TextWithIcon(props: {
     <div className="text md">
       <div
         onClick={onClick}
-        style={{ cursor: "pointer", display: "inline-block" }}>
-        <IconButton
-          size="small"
-          aria-label="copy link"
-          aria-haspopup="false"
-          color="success">
-          <SvgIcon pathD={SvgIcon.Link} />
-        </IconButton>
+        style={{
+          cursor: "pointer",
+          display: "flex",
+          alignItems: "center",
+        }}>
+        <SvgIcon pathD={SvgIcon.Link} style={{ marginRight: "4px" }} />
         <span>{props.message}</span>
       </div>
     </div>

@@ -1,8 +1,7 @@
 import React from "react";
 
 import { CSSProperties } from "react";
-import IconButton from "@mui/material/IconButton";
-import { SvgIcon } from "@/web/client/components/generic/icons";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 
 export function SettingsText(props: { message: string }) {
   return <span className="text md light">{props.message}</span>;
@@ -42,7 +41,6 @@ export function NavIcon(props: {
   label: string;
   onClick?: () => any;
   Icon: JSX.Element;
-  ref?: React.ForwardedRef<any>;
   disabled?: boolean;
   extraClasses?: string[];
 }) {
@@ -50,7 +48,6 @@ export function NavIcon(props: {
   return (
     <span className={classes.join(" ")}>
       <IconButton
-        ref={props.ref}
         size="small"
         aria-label={props.label}
         onClick={props.onClick}

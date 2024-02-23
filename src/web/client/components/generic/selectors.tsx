@@ -1,5 +1,4 @@
-import { SvgIcon } from "@/web/client/components/generic/icons";
-import IconButton from "@mui/material/IconButton";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 
 export function NumberSelector(props: {
   label: string;
@@ -33,6 +32,7 @@ export function NumberSelector(props: {
           whiteSpace: "nowrap",
         }}>
         <IconButton
+          style={{ color: "rgba(0,0,0,0.54)" }}
           aria-label={`Decrease ${taggedLabel}`}
           onClick={() =>
             props.setValue(Math.max(props.min, props.value - props.step))
@@ -43,6 +43,7 @@ export function NumberSelector(props: {
           {props.value}
         </span>
         <IconButton
+          style={{ color: "rgba(0,0,0,0.54)" }}
           aria-label={`Increase ${taggedLabel}`}
           onClick={() =>
             props.setValue(Math.min(props.max, props.value + props.step))
