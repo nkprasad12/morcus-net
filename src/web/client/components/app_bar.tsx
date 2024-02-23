@@ -48,10 +48,8 @@ function DrawerMenu(props: {
   ]);
   return (
     <Drawer
-      anchor="left"
       open={props.open}
       onClose={props.onClose}
-      transitionDuration={150}
       contentProps={{
         className: "menu",
       }}>

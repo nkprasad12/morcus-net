@@ -16,18 +16,18 @@ interface ModalProps extends CoreProps {
   contentProps?: OverlayProps;
 }
 
-export interface DrawerProps extends ModalProps {
-  anchor: "left";
-  transitionDuration?: number;
-}
-
-export function Drawer(props: PropsWithChildren<DrawerProps>) {
+function BaseModal(
+  props: PropsWithChildren<ModalProps & { className: string }>
+) {
   const classes = ["contentHolder"]
     .concat(props.contentProps?.className || [])
     .concat(props.open ? "open" : []);
   return (
     <FocusTrap open={props.open}>
-      <div className="drawer" tabIndex={-1}>
+      <div
+        className={props.className}
+        tabIndex={-1}
+        {...AriaProps.extract(props)}>
         <div className={classes.join(" ")}>{props.open && props.children}</div>
         {props.open && (
           <div className="modalOverlay" onClick={props.onClose} tabIndex={-1} />
@@ -37,18 +37,12 @@ export function Drawer(props: PropsWithChildren<DrawerProps>) {
   );
 }
 
+export interface DrawerProps extends ModalProps {}
+export function Drawer(props: PropsWithChildren<DrawerProps>) {
+  return <BaseModal {...props} className="drawer" />;
+}
+
 export interface DialogProps extends ModalProps {}
 export function ModalDialog(props: PropsWithChildren<DialogProps>) {
-  if (props.open !== true) {
-    return null;
-  }
-  const classes = ["contentHolder"].concat(props.contentProps?.className || []);
-  return (
-    <FocusTrap open>
-      <div className="dialogModal" tabIndex={-1} {...AriaProps.extract(props)}>
-        <div className={classes.join(" ")}>{props.children}</div>
-        <div className="modalOverlay" onClick={props.onClose} />
-      </div>
-    </FocusTrap>
-  );
+  return <BaseModal {...props} className="dialogModal" />;
 }

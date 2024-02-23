@@ -252,12 +252,19 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         transform: "translateX(0);",
       },
       ".dialogModal .contentHolder ": {
-        left: "50vw",
-        top: "50vh",
         position: "fixed",
+        maxWidth: "80vw",
+        top: "50vh",
+        left: "50vw",
         zIndex: 101,
         borderRadius: "8px",
-        transform: "translate(-50%, -90%)",
+        transform: "translate(-50%, -60%)",
+        transition: "opacity 0.25s ease-out;",
+        width: "400px",
+        opacity: 0,
+      },
+      ".dialogModal .contentHolder.open": {
+        opacity: 1,
       },
       ".dialogActions": {
         display: "flex",
