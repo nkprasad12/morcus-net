@@ -98,6 +98,7 @@ export function SpanLink(
 
 export function SpanButton(
   props: PropsWithChildren<{
+    onAuxClick?: () => any;
     onClick: () => any;
     className?: string;
     style?: CSSProperties;
@@ -106,6 +107,7 @@ export function SpanButton(
   return (
     <span
       className={props.className}
+      onAuxClick={props.onAuxClick}
       style={{ cursor: "pointer", ...props.style }}
       {...buttonLikeProps(props.onClick, true)}
       role="button">

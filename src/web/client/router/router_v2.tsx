@@ -8,6 +8,8 @@ export interface RouteInfo {
   hash?: string;
 }
 
+type ToLinkFunction<T> = (t: T, full?: boolean) => string;
+
 export namespace RouteInfo {
   /** Extracts route information from the Browser URL. */
   export function extract(): RouteInfo {
@@ -29,7 +31,7 @@ export namespace RouteInfo {
   }
 
   /** Transforms this route information back into a URL. */
-  export function toLink(info: RouteInfo): string {
+  export function toLink(info: RouteInfo, full?: boolean): string {
     let result = info.path;
     const query = info.params || {};
     const queryKeys = Object.keys(query);
@@ -47,7 +49,7 @@ export namespace RouteInfo {
     if (info.hash !== undefined) {
       result += `#${encodeURIComponent(info.hash)}`;
     }
-    return result;
+    return `${full ? window.location.origin : ""}${result}`;
   }
 }
 
@@ -78,6 +80,8 @@ function onRouteUpdate(
 export interface NavHelper<T> {
   to: React.Dispatch<React.SetStateAction<T>>;
   toPath: (newPath: string) => void;
+  toLink: ToLinkFunction<T>;
+  inNewTab: (t: T) => void;
 }
 
 function getNavigator(
@@ -86,6 +90,8 @@ function getNavigator(
   return {
     to: navigateTo,
     toPath: (path: string) => navigateTo({ path, params: {} }),
+    toLink: RouteInfo.toLink,
+    inNewTab: (t) => window.open(RouteInfo.toLink(t)),
   };
 }
 
@@ -103,6 +109,8 @@ function convertNavigator<T extends object | boolean | number>(
       }
     },
     toPath: nav.toPath,
+    toLink: (t) => nav.toLink(toRoute(t)),
+    inNewTab: (t) => nav.inNewTab(toRoute(t)),
   };
 }
 

@@ -157,6 +157,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             {mainPages.map((page) => (
               <SpanButton
                 key={page.name}
+                onAuxClick={() => window.open(page.targetPath)}
                 onClick={handlePageClick(page.targetPath)}
                 className={
                   isCurrentPage(page.targetPath)

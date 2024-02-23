@@ -139,6 +139,13 @@ function ShLink(props: { text: string; query: string }) {
   return (
     <span
       className="dLink"
+      onAuxClick={() =>
+        nav.inNewTab({
+          path: ClientPaths.DICT_PAGE.path,
+          query: props.query,
+          dicts: LatinDict.SmithAndHall,
+        })
+      }
       onClick={() => {
         if (fromInternalLink) {
           fromInternalLink.current = true;
@@ -181,6 +188,14 @@ function LatLink(props: { word: string; orig?: string }) {
   return (
     <span
       className="latWord"
+      onAuxClick={() =>
+        nav.inNewTab({
+          path: ClientPaths.DICT_PAGE.path,
+          query: props.word,
+          dicts: LatinDict.LewisAndShort,
+          inflectedSearch: true,
+        })
+      }
       onClick={() => onLatinWordClick(nav, dictContext, props.word)}>
       {props.orig || props.word}
     </span>

@@ -215,8 +215,7 @@ export function SectionLinkTooltip(props: {
     const coreId = isArticle ? props.id : props.id.split(".")[0];
     const path = ClientPaths.DICT_BY_ID.toUrlPath({ id: coreId });
     const hash = isArticle ? undefined : props.id;
-    const url = RouteInfo.toLink({ path: checkPresent(path), hash });
-    return `${window.location.origin}${url}`;
+    return RouteInfo.toLink({ path: checkPresent(path), hash }, true);
   }
 
   return (

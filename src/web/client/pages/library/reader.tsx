@@ -674,11 +674,13 @@ function WorkChunkHeader(props: {
   const { hasTooltip } = React.useContext(ReaderContext);
   const { route } = Router.useRouter();
 
-  const subPath = RouteInfo.toLink({
-    path: route.path,
-    params: { ...route.params, l: props.chunkArrayIndex.toString() },
-  });
-  const url = `${window.location.origin}${subPath}`;
+  const url = RouteInfo.toLink(
+    {
+      path: route.path,
+      params: { ...route.params, l: props.chunkArrayIndex.toString() },
+    },
+    true
+  );
 
   return (
     <CopyLinkTooltip
