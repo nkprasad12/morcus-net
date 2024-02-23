@@ -29,13 +29,13 @@ export function ReportIssueDialog(props: {
       <div style={{ padding: "0px 24px 20px" }}>
         <p className="text sm light" style={{ lineHeight: "normal" }}>
           What did you do, what did you expect to see, and what did you actually
-          see? <i>Do not enter personal information</i>.
+          see? <i>This report will be visible to the general public</i>.
         </p>
         <TextField
           id="Report issue box"
           autoFocus
           onNewValue={setReportText}
-          defaultValue={`${window.location.href}\n`}
+          defaultValue={`\n\nReporter: Anonymous (change this to be notified when your issue is fixed)\n${window.location.href}`}
           fullWidth
           multiline
           minRows={8}
