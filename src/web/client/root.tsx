@@ -18,6 +18,7 @@ import {
   StyleContext,
   StyleContextProvider,
 } from "@/web/client/styling/style_context";
+import { StyledEngineProvider } from "@mui/styled-engine";
 
 const props: SinglePageApp.Props = {
   pages: [...ACTIVE_PAGES],
@@ -44,11 +45,13 @@ root.render(
     <SettingsHandler>
       <StyleContextProvider>
         <ConfigurableStyles />
-        <Router.Root>
-          <TitleHandler>
-            <SinglePageApp {...props} />
-          </TitleHandler>
-        </Router.Root>
+        <StyledEngineProvider injectFirst>
+          <Router.Root>
+            <TitleHandler>
+              <SinglePageApp {...props} />
+            </TitleHandler>
+          </Router.Root>
+        </StyledEngineProvider>
       </StyleContextProvider>
     </SettingsHandler>
   </StrictMode>

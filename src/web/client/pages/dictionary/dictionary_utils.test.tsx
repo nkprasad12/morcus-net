@@ -233,12 +233,8 @@ describe("SectionLinkTooltip", () => {
       <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
+    await user.click(screen.queryByText(/link/)!);
 
-    expect(screen.queryByText(/link/)).toBeVisible();
-    const iconButton = screen.queryByLabelText("copy link");
-    expect(iconButton).toBeVisible();
-
-    await user.click(iconButton!);
     expect(writeText.mock.lastCall![0].endsWith("#bar")).toBe(true);
   });
 
@@ -254,12 +250,8 @@ describe("SectionLinkTooltip", () => {
       <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
     );
     await user.click(screen.getByText("Gallia"));
+    await user.click(screen.queryByText(/link/)!);
 
-    expect(screen.queryByText(/link/)).toBeVisible();
-    const iconButton = screen.queryByLabelText("copy link");
-    expect(iconButton).toBeVisible();
-
-    await user.click(iconButton!);
     expect(screen.queryByText(/copy manually/)).toBeVisible();
   });
 

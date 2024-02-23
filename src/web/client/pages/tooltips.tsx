@@ -1,7 +1,6 @@
 import ClickAwayListener from "@mui/base/ClickAwayListener";
 import Tooltip from "@mui/material/Tooltip";
 import * as React from "react";
-import type { SxProps } from "@mui/material";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
@@ -19,8 +18,6 @@ export interface TooltipProps {
   className?: string | undefined;
   ChildFactory: TooltipChild;
   placement?: TooltipPlacement;
-  tooltipSx?: SxProps;
-  arrowSx?: SxProps;
   open: boolean;
   onClickAway: () => any;
   onChildClick: (isOpen: boolean) => any;
@@ -42,15 +39,7 @@ function BaseTooltip(props: TooltipProps) {
           describeChild={false}
           open={props.open}
           arrow
-          slotProps={{
-            tooltip: {
-              onClick: () => {},
-              sx: props.tooltipSx,
-            },
-            arrow: {
-              sx: props.arrowSx,
-            },
-          }}>
+          slotProps={{ tooltip: { onClick: () => {} } }}>
           <props.ChildFactory
             onClick={(e: React.MouseEvent) => {
               props.onChildClick(props.open);
@@ -99,7 +88,7 @@ function TextWithIcon(props: {
   }
 
   return (
-    <div className="text md">
+    <div className="text md light">
       <div
         onClick={onClick}
         style={{
@@ -107,7 +96,11 @@ function TextWithIcon(props: {
           display: "flex",
           alignItems: "center",
         }}>
-        <SvgIcon pathD={SvgIcon.Link} style={{ marginRight: "4px" }} />
+        <SvgIcon
+          pathD={SvgIcon.Link}
+          style={{ marginRight: "4px" }}
+          aria-hidden
+        />
         <span>{props.message}</span>
       </div>
     </div>
