@@ -239,12 +239,17 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         position: "fixed",
         zIndex: 100,
       },
-      ".drawer .contentHolder ": {
-        height: "100vh",
-        left: 0,
-        top: 0,
+      ".drawer .contentHolder": {
         position: "fixed",
+        height: "100vh",
+        top: 0,
+        left: 0,
         zIndex: 101,
+        transform: "translateX(-100%);",
+        transition: "transform 0.1s ease-out;",
+      },
+      ".drawer .contentHolder.open": {
+        transform: "translateX(0);",
       },
       ".dialogModal .contentHolder ": {
         left: "50vw",

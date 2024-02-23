@@ -22,15 +22,16 @@ export interface DrawerProps extends ModalProps {
 }
 
 export function Drawer(props: PropsWithChildren<DrawerProps>) {
-  if (props.open !== true) {
-    return null;
-  }
-  const classes = ["contentHolder"].concat(props.contentProps?.className || []);
+  const classes = ["contentHolder"]
+    .concat(props.contentProps?.className || [])
+    .concat(props.open ? "open" : []);
   return (
-    <FocusTrap open>
+    <FocusTrap open={props.open}>
       <div className="drawer" tabIndex={-1}>
-        <div className={classes.join(" ")}>{props.children}</div>
-        <div className="modalOverlay" onClick={props.onClose} />
+        <div className={classes.join(" ")}>{props.open && props.children}</div>
+        {props.open && (
+          <div className="modalOverlay" onClick={props.onClose} tabIndex={-1} />
+        )}
       </div>
     </FocusTrap>
   );
