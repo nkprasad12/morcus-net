@@ -75,7 +75,8 @@ function SearchSettingsDialog(props: {
               />
               <label htmlFor={dict.key + "option"}>
                 <span>
-                  <DictChip label={dict.key} /> {dict.displayName}
+                  <DictChip label={dict.key} />{" "}
+                  <span className="text sm">{dict.displayName}</span>
                 </span>
               </label>
             </div>
@@ -98,7 +99,7 @@ function SearchSettingsDialog(props: {
               }
             />
             <label htmlFor="inflectionOption">
-              <span>Inflected forms (Beta)</span>
+              <span className="text sm">Inflected forms (Beta)</span>
             </label>
           </div>
         </div>

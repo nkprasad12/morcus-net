@@ -12,34 +12,36 @@ export function NumberSelector(props: {
   step: number;
 }) {
   const taggedLabel = (props.tag ? props.tag + " " : "") + props.label;
+  const labelSize = props.labelSize || "sm";
   return (
     <div
       aria-label={taggedLabel}
       style={{ marginTop: "4px", marginBottom: "4px" }}>
       <span
-        className={`text ${props.labelSize || "md"}${
-          props.light !== true ? "" : " light"
-        }`}
+        className={`text ${labelSize}${props.light !== true ? "" : " light"}`}
         style={{ paddingRight: "8px" }}>
         {props.label}
       </span>
       <span
         className="bgColorAlt"
         style={{
-          borderRadius: "4px",
-          paddingTop: "8px",
-          paddingBottom: "8px",
+          borderRadius: "3px",
+          paddingTop: "4px",
+          paddingBottom: "6px",
           whiteSpace: "nowrap",
         }}>
         <IconButton
           style={{ color: "rgba(0,0,0,0.54)" }}
+          size="small"
           aria-label={`Decrease ${taggedLabel}`}
           onClick={() =>
             props.setValue(Math.max(props.min, props.value - props.step))
           }>
           <SvgIcon pathD={SvgIcon.Remove} fontSize="small" />
         </IconButton>
-        <span className="bgColor" style={{ padding: "4px" }}>
+        <span
+          className={`bgColor text ${labelSize}`}
+          style={{ padding: "4px" }}>
           {props.value}
         </span>
         <IconButton
