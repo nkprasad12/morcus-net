@@ -16,7 +16,7 @@ interface InflectionEnding {
   tags?: string[];
 }
 
-interface InflectionTable {
+export interface InflectionTable {
   name: string;
   endings: InflectionEnding[];
 }
@@ -223,9 +223,8 @@ export function* expandTemplates(
 export function expandTemplatesAndSave(
   targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
   dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
-  outputDir: string = "tables/lat/out"
+  outputDir: string = "gen/morceus/tables/lat/out"
 ): void {
-  // TODO - make a more test friendly version that takes in files and returns tables.
   fs.mkdirSync(outputDir, { recursive: true });
   for (const expanded of expandTemplates(targetDirs, dependencyDirs)) {
     writeTable(expanded, outputDir);

@@ -7,6 +7,7 @@ import {
   StringTrie,
 } from "@/common/abbreviations/abbreviations";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 const UNKNOWN_REF_WORK = "morcus.net note: Reference work, unclear which.";
 const POET_LAT_REL =
@@ -602,15 +603,12 @@ export namespace LsAuthorAbbreviations {
     worksTrie: StringTrie;
   }
 
-  const authorMap = new Map<string, LsAuthorData[]>();
+  const authorMap = arrayMap<string, LsAuthorData>();
 
   function populateMaps() {
-    if (authorMap.size === 0) {
+    if (authorMap.map.size === 0) {
       const data = parseAuthorAbbreviations();
       for (const datum of data) {
-        if (!authorMap.has(datum.key)) {
-          authorMap.set(datum.key, []);
-        }
         const root = new StringTrie();
         for (const [key, value] of datum.works.entries()) {
           root.add(key, value);
@@ -621,13 +619,13 @@ export namespace LsAuthorAbbreviations {
           expanded: datum.expanded,
           works: datum.works,
         };
-        authorMap.get(datum.key)!.push(result);
+        authorMap.add(datum.key, result);
       }
     }
   }
 
   export function authors(): Map<string, LsAuthorData[]> {
     populateMaps();
-    return authorMap;
+    return authorMap.map;
   }
 }

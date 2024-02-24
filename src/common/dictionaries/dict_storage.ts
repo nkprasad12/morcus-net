@@ -3,6 +3,7 @@ import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
 import { ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 export interface RawDictEntry {
   /** The serialized list of keys for this entry. */
@@ -20,7 +21,7 @@ export class SqlDict {
     ReadOnlyDb.saveToSql(destination, entries, "id");
   }
 
-  private readonly keyToEntries = new Map<string, [number, number, number][]>();
+  private readonly keyToEntries = arrayMap<string, [number, number, number]>();
   private readonly keys: string[];
   private readonly rawKeys: string[][];
   private readonly db: SqliteDb;
@@ -37,13 +38,10 @@ export class SqlDict {
     for (let i = 0; i < this.rawKeys.length; i++) {
       for (let j = 0; j < this.rawKeys[i].length; j++) {
         const cleanKey = removeDiacritics(this.rawKeys[i][j]).toLowerCase();
-        if (!this.keyToEntries.has(cleanKey)) {
-          this.keyToEntries.set(cleanKey, []);
-        }
-        this.keyToEntries.get(cleanKey)!.push([i, j, result[i].n]);
+        this.keyToEntries.add(cleanKey, [i, j, result[i].n]);
       }
     }
-    this.keys = [...this.keyToEntries.keys()].sort((a, b) =>
+    this.keys = [...this.keyToEntries.map.keys()].sort((a, b) =>
       a.localeCompare(b)
     );
   }

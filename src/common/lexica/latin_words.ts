@@ -6,6 +6,7 @@ import { execSync } from "child_process";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import { processWords, removeDiacritics } from "@/common/text_cleaning";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 const EXTENDED_COMMON_ENGLISH_WORDS = ["di", "sum", "simple"];
 const COMMON_ENGLISH_WORDS = new Set(
@@ -90,7 +91,7 @@ function loadMorpheusOutput(
 
 function processMorpheusRaw(rawOutput: string, obsoleteRowsRemoved: boolean) {
   const dbLines = rawOutput.split("\n");
-  const result = new Map<string, MorpheusAnalysis[]>();
+  const result = arrayMap<string, MorpheusAnalysis>();
   // Normally, the Morpheus output has 10 lines per raw input but
   // we remove two always empty lines to keep the total file size under
   // the GitHub limit.
@@ -112,12 +113,9 @@ function processMorpheusRaw(rawOutput: string, obsoleteRowsRemoved: boolean) {
       stem: checkPresent(getLineData(dbLines[i + stemOffset], "stem")),
       end: checkPresent(getLineData(dbLines[i + endOffset], "end")),
     };
-    if (!result.has(raw)) {
-      result.set(raw, []);
-    }
-    result.get(raw)!.push(analysis);
+    result.add(raw, analysis);
   }
-  return result;
+  return result.map;
 }
 
 function removeInternalDashes(word: string): string {
@@ -206,15 +204,12 @@ export namespace LatinWords {
   }
 
   function processMorpheusRows(rows: LatinWordRow[]): LatinWordAnalysis[] {
-    const byLemma = new Map<string, LatinWordRow[]>();
+    const byLemma = arrayMap<string, LatinWordRow>();
     for (const row of rows) {
       const undashed = removeInternalDashes(row.lemma);
-      if (!byLemma.has(undashed)) {
-        byLemma.set(undashed, []);
-      }
-      byLemma.get(undashed)!.push(row);
+      byLemma.add(undashed, row);
     }
-    return Array.from(byLemma.entries()).map(([lemma, rows]) => {
+    return Array.from(byLemma.map.entries()).map(([lemma, rows]) => {
       const byLengthMarked = new Map<string, Set<LatinWordRow>>();
       for (const row of rows) {
         if (!byLengthMarked.has(row.lengthMarked)) {

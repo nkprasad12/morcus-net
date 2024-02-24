@@ -11,6 +11,7 @@ import {
 import { SH_AUTHORS_PROCESSED } from "@/common/smith_and_hall/sh_authors_processed";
 import { assert } from "@/common/assert";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 const CITATION_CHARS = /^[A-Za-z0-9., ]$/;
 const CITATION_TRIMS = /^[A-Za-z ]$/;
@@ -366,7 +367,7 @@ function findCitations(
   return results;
 }
 
-export const unmatched = new Map<AuthorData, string[]>();
+export const unmatched = arrayMap<AuthorData, string>();
 
 function matchedWorks(
   citation: string,
@@ -386,10 +387,7 @@ function matchedWorks(
     }
   }
   if (matches.length === 0 && !/^[ ]*[0-9,.]+/.test(citation)) {
-    if (!unmatched.has(authors[0])) {
-      unmatched.set(authors[0], []);
-    }
-    unmatched.get(authors[0])!.push(citation);
+    unmatched.add(authors[0], citation);
   }
   const longest = Math.max(...matches.map((match) => match[0].length));
   return matches.filter((match) => match[0].length === longest);

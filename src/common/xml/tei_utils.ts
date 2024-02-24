@@ -1,6 +1,7 @@
 // // @ts-ignore
 // import { betaCodeToGreek } from "beta-code-js";
 import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { arrayMap } from "@/common/data_structures/collect_map";
 import { DocumentInfo } from "@/common/library/library_types";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -312,7 +313,7 @@ function assembleTeiData(
     data.id.forEach((part) => assert(!part.includes(",")))
   );
   const mains: RawTeiData[] = [];
-  const extrasById = new Map<string, RawTeiData[]>();
+  const extrasById = arrayMap<string, RawTeiData>();
   const nodeLookup = new Map<
     string,
     { id: string[]; children: RawTeiData[]; selfNode: XmlNode }
@@ -327,10 +328,7 @@ function assembleTeiData(
   for (const data of rawData) {
     const combinedId = data.id.join(",");
     if (data.ofParent === true) {
-      if (!extrasById.has(combinedId)) {
-        extrasById.set(combinedId, []);
-      }
-      extrasById.get(combinedId)!.push(data);
+      extrasById.add(combinedId, data);
       continue;
     }
     mains.push(data);
@@ -341,7 +339,7 @@ function assembleTeiData(
       selfNode: data.node,
     });
   }
-  for (const [combinedId, extras] of extrasById) {
+  for (const [combinedId, extras] of extrasById.map) {
     const parent = checkPresent(nodeLookup.get(combinedId));
     parent.children.push(...extras);
   }

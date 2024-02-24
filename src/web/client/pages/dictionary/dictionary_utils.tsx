@@ -21,6 +21,7 @@ import {
   DictRoute,
   useDictRouter,
 } from "@/web/client/pages/dictionary/dictionary_routing";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -336,14 +337,11 @@ export function InflectionDataSection(props: {
   inflections: InflectionData[];
   textScale?: number;
 }) {
-  const byForm = new Map<string, [string, string | undefined][]>();
+  const byForm = arrayMap<string, [string, string | undefined]>();
   for (const data of props.inflections) {
-    if (!byForm.has(data.form)) {
-      byForm.set(data.form, []);
-    }
-    byForm.get(data.form)!.push([data.data, data.usageNote]);
+    byForm.add(data.form, [data.data, data.usageNote]);
   }
-  const formatted: [string, string[]][] = Array.from(byForm.entries()).map(
+  const formatted: [string, string[]][] = Array.from(byForm.map.entries()).map(
     ([form, data]) => [
       form,
       data
