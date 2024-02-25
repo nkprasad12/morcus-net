@@ -5,10 +5,10 @@ const TEST_TMP_DIR = "tmp_server_integration_test";
 const REUSE_DEV = process.env.REUSE_DEV === "1" || false;
 setEnv();
 
+import { type FastifyInstance as Server } from "fastify";
 import { gzipSync } from "zlib";
 // @ts-ignore - puppeteer is an optional dependency.
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
-import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import fs, { mkdirSync, readFileSync, readdirSync, rmSync } from "fs";

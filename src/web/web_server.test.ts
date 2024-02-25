@@ -1,5 +1,5 @@
 import { describe, expect, test } from "@jest/globals";
-import express from "express";
+import fastify from "fastify";
 import fs from "fs";
 import request from "supertest";
 
@@ -9,14 +9,17 @@ import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import { encodeMessage, isNumber } from "@/web/utils/rpc/parsing";
 import { PreStringifiedRpc, RouteDefinition } from "@/web/utils/rpc/server_rpc";
 
+console.log = jest.fn();
 console.debug = jest.fn();
 
 const TEMP_DIR = "web_server_test_ts";
+const TEMP_DIR_PUBLIC = "web_server_test_ts_public";
 const TEMP_FILE = `${TEMP_DIR}/sample.html`;
 const TEMP_INDEX_FILE = `${TEMP_DIR}/index.html`;
 
 beforeAll(() => {
   fs.mkdirSync(TEMP_DIR);
+  fs.mkdirSync(TEMP_DIR_PUBLIC);
   fs.writeFileSync(TEMP_FILE, "<!DOCTYPE html>\n<html></html>");
   fs.writeFileSync(TEMP_INDEX_FILE, "<!DOCTYPE html>\n<html></html>");
 });
@@ -30,6 +33,9 @@ afterAll(() => {
   } catch (e) {}
   try {
     fs.rmdirSync(TEMP_DIR);
+  } catch (e) {}
+  try {
+    fs.rmdirSync(TEMP_DIR_PUBLIC);
   } catch (e) {}
 });
 
@@ -68,23 +74,30 @@ const NumberGetPreStringified: RouteDefinition<
   preStringified: true,
 };
 
-function getServer(): express.Express {
-  const app = express();
+async function getServer() {
+  const app = fastify({ logger: false });
   const params: WebServerParams = {
     webApp: app,
     routes: [NumberGet, NumberPost, NumberGetPreStringified],
     buildDir: path.resolve(TEMP_DIR),
+    publicDir: path.resolve(TEMP_DIR_PUBLIC),
     telemetry: Promise.resolve(TelemetryLogger.NoOp),
   };
-  setupServer(params);
+  await setupServer(params);
+  await app.listen();
   return app;
 }
 
 describe("WebServer", () => {
   const app = getServer();
 
+  afterAll(async () => {
+    await (await app).close();
+  });
+
   test("handles post route with good data", async () => {
-    const response = await request(app)
+    const server = (await app).server;
+    const response = await request(server)
       .post(NumberPost.route.path)
       .send(encodeMessage(57))
       .set("Content-Type", "text/plain; charset=utf-8");
@@ -94,7 +107,8 @@ describe("WebServer", () => {
   });
 
   test("handles post route with bad data", async () => {
-    const response = await request(app)
+    const server = (await app).server;
+    const response = await request(server)
       .post(NumberPost.route.path)
       .send(encodeMessage({ data: 57 }))
       .set("Content-Type", "application/json");
@@ -105,7 +119,8 @@ describe("WebServer", () => {
 
   test("handles get route", async () => {
     const path = `${NumberGet.route.path}/${encodeMessage(57)}`;
-    const response = await request(app).get(path);
+    const server = (await app).server;
+    const response = await request(server).get(path);
 
     expect(response.status).toBe(200);
     expect(response.text).toContain("171");
@@ -113,14 +128,16 @@ describe("WebServer", () => {
 
   test("handles pre-stringified get route", async () => {
     const path = `${NumberGetPreStringified.route.path}/${encodeMessage(57)}`;
-    const response = await request(app).get(path);
+    const server = (await app).server;
+    const response = await request(server).get(path);
 
     expect(response.status).toBe(200);
     expect(response.text).toContain("171");
   });
 
   test("sends  unknown requests to index", async () => {
-    const response = await request(app).get("/notEvenRemotelyReal");
+    const server = (await app).server;
+    const response = await request(server).get("/notEvenRemotelyReal");
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("text/html");
@@ -130,7 +147,8 @@ describe("WebServer", () => {
   });
 
   test("sends out index without cache", async () => {
-    const response = await request(app).get("/index.html");
+    const server = (await app).server;
+    const response = await request(server).get("/index.html");
 
     expect(response.status).toBe(200);
     expect(response.type).toBe("text/html");

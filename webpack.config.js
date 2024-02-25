@@ -29,7 +29,7 @@ module.exports = (env) => {
       filename: "index.html",
       template: "./src/web/client/root.html",
       minify: shouldMinimize,
-      publicPath: "/",
+      publicPath: "/public/",
     }),
   ];
   if (analyze) {

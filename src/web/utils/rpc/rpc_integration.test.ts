@@ -1,6 +1,5 @@
-import bodyParser from "body-parser";
-import express from "express";
 import http from "http";
+import fastify from "fastify";
 import {
   PreStringifiedRpc,
   RouteDefinition,
@@ -76,8 +75,7 @@ function isTestType(x: unknown): x is TestType {
 }
 
 function appBundle() {
-  const app = express();
-  app.use(bodyParser.text());
+  const app = fastify();
   const telemetryLogger: TelemetryLogger = {
     logApiCall: (d) => Promise.resolve(),
     teardown: () => Promise.resolve(),
@@ -283,16 +281,11 @@ const handlers: RouteDefinition<any, any, any>[] = [
   ClassObjectRoutePreStringified,
 ];
 
-function setupApp(): Promise<http.Server> {
-  return new Promise((resolve) => {
-    const bundle = appBundle();
-    bundle.webApp.use(bodyParser.text());
-    const server = http.createServer(bundle.webApp);
-    handlers.forEach((h) => addApi(bundle, h));
-    server.listen(PORT, () => {
-      resolve(server);
-    });
-  });
+async function setupApp(): Promise<http.Server> {
+  const bundle = appBundle();
+  handlers.forEach((h) => addApi(bundle, h));
+  await bundle.webApp.listen({ port: PORT });
+  return bundle.webApp.server;
 }
 
 describe("RPC library", () => {

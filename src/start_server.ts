@@ -14,8 +14,7 @@
 // Based on local testing, this saves ~30-40 MB memory.
 
 import * as dotenv from "dotenv";
-import fastify from "fastify";
-import http from "http";
+import fastify, { type FastifyInstance } from "fastify";
 import { Server } from "socket.io";
 
 import { setupServer, WebServerParams } from "@/web/web_server";
@@ -101,15 +100,14 @@ async function callWorker(
   return result.content;
 }
 
-export function startMorcusServer(): Promise<http.Server> {
+export async function startMorcusServer(): Promise<FastifyInstance> {
   const host = "localhost";
   const port = parseInt(
     checkPresent(process.env.PORT, "PORT environment variable")
   );
   process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
 
-  const app = fastify();
-  const server = http.createServer(app);
+  const app = fastify({ logger: process.env.NODE_ENV === "dev" });
 
   const lewisAndShort = delayedInit(
     () => LewisAndShort.create(),
@@ -124,13 +122,14 @@ export function startMorcusServer(): Promise<http.Server> {
   }, LatinDict.SmithAndHall);
   const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
 
-  const workServer = new SocketWorkServer(new Server(server));
+  const workServer = new SocketWorkServer(new Server(app.server));
   const telemetry =
     process.env.CONSOLE_TELEMETRY !== "yes"
       ? MongoLogger.create()
       : Promise.resolve(TelemetryLogger.NoOp);
 
   const buildDir = path.join(__dirname, "../genfiles_static");
+  const publicDir = path.join(__dirname, "../public");
   if (process.env.NODE_ENV === "dev") {
     /* eslint-disable @typescript-eslint/no-var-requires */
     const webpack = require("webpack");
@@ -140,6 +139,8 @@ export function startMorcusServer(): Promise<http.Server> {
       /* eslint-disable @typescript-eslint/no-var-requires */
       require("../webpack.config")({ transpileOnly: true, production: false })
     );
+    await app.register(require("@fastify/express"));
+    // @ts-ignore
     app.use(
       webpackDevMiddleware(compiler, {
         publicPath: buildDir,
@@ -175,21 +176,18 @@ export function startMorcusServer(): Promise<http.Server> {
     ],
     telemetry: telemetry,
     buildDir,
+    publicDir,
   };
 
-  setupServer(params);
-
-  return new Promise((resolve) => {
-    server.listen(port, () => {
-      const memoryLogId = setInterval(
-        () => telemetry.then(logMemoryUsage),
-        1000 * 60 * 15
-      );
-      server.on("close", () => clearInterval(memoryLogId));
-      resolve(server);
-      log(`Running on http://${host}:${port}/`);
-    });
-  });
+  await setupServer(params);
+  await app.listen({ port });
+  const memoryLogId = setInterval(
+    () => telemetry.then(logMemoryUsage),
+    1000 * 60 * 15
+  );
+  app.server.on("close", () => clearInterval(memoryLogId));
+  log(`Running on http://${host}:${port}/`);
+  return app;
 }
 
 if (process.env.MAIN === "start") {
