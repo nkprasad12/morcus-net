@@ -14,7 +14,7 @@
 // Based on local testing, this saves ~30-40 MB memory.
 
 import * as dotenv from "dotenv";
-import express from "express";
+import fastify from "fastify";
 import http from "http";
 import { Server } from "socket.io";
 
@@ -108,7 +108,7 @@ export function startMorcusServer(): Promise<http.Server> {
   );
   process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
 
-  const app = express();
+  const app = fastify();
   const server = http.createServer(app);
 
   const lewisAndShort = delayedInit(

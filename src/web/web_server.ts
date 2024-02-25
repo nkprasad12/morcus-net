@@ -1,5 +1,4 @@
 import compression from "compression";
-import express, { Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
@@ -9,11 +8,12 @@ import {
   RouteDefinitionType,
   addApi,
 } from "@/web/utils/rpc/server_rpc";
+import type { FastifyInstance, FastifyReply } from "fastify";
 
 const MAX_AGE = 100 * 365 * 24 * 3600 * 100;
 
 export interface WebServerParams {
-  webApp: express.Express;
+  webApp: FastifyInstance;
   routes: RouteDefinition<any, Data, RouteDefinitionType>[];
   telemetry: Promise<TelemetryLogger>;
   buildDir: string;
@@ -25,7 +25,7 @@ export function setupServer(params: WebServerParams): void {
   app.use(compression());
   const staticOptions = {
     maxAge: MAX_AGE,
-    setHeaders: (res: Response, path: string) => {
+    setHeaders: (res: FastifyReply, path: string) => {
       // Force users to always fetch the index from the server so that they
       // always get the latest Javascript bundles.
       if (path.endsWith("index.html")) {

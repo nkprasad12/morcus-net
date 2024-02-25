@@ -2,7 +2,11 @@ import { exhaustiveGuard } from "@/common/misc_utils";
 import { ApiCallData, TelemetryLogger } from "@/web/telemetry/telemetry";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ApiRoute, ServerMessage } from "@/web/utils/rpc/rpc";
-import express, { Request, Response } from "express";
+import {
+  type FastifyInstance,
+  type FastifyReply,
+  type FastifyRequest,
+} from "fastify";
 
 export type Data = boolean | string | number | object;
 
@@ -61,8 +65,9 @@ async function logApi(
   (await telemetry).logApiCall(finalData);
 }
 
-function findInput<I, O>(req: Request, route: ApiRoute<I, O>): string {
+function findInput<I, O>(req: FastifyRequest, route: ApiRoute<I, O>): string {
   if (route.method === "GET") {
+    // @ts-ignore
     return req.params.input;
   } else if (route.method === "POST") {
     const body: unknown = req.body;
@@ -78,7 +83,7 @@ function findInput<I, O>(req: Request, route: ApiRoute<I, O>): string {
 }
 
 function extractInput<I, O>(
-  req: Request,
+  req: FastifyRequest,
   route: ApiRoute<I, O>
 ): [I, number] | Error {
   try {
@@ -99,10 +104,10 @@ function extractInput<I, O>(
   }
 }
 
-type ExpressApiHandler = (req: Request, res: Response) => void;
+type ExpressApiHandler = (req: FastifyRequest, res: FastifyReply) => void;
 
 function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
-  app: { webApp: express.Express; telemetry: Promise<TelemetryLogger> },
+  app: { webApp: FastifyInstance; telemetry: Promise<TelemetryLogger> },
   routeDefinition: RouteDefinition<I, O, T>
 ): ExpressApiHandler {
   const route = routeDefinition.route;
@@ -215,7 +220,7 @@ export namespace RouteDefinition {
  *                        handler rejects, it should reject with a `HandlerError`.
  */
 export function addApi<I, O extends Data, T extends RouteDefinitionType>(
-  app: { webApp: express.Express; telemetry: Promise<TelemetryLogger> },
+  app: { webApp: FastifyInstance; telemetry: Promise<TelemetryLogger> },
   routeDefinition: RouteDefinition<I, O, T>
 ): void {
   const route = routeDefinition.route;
