@@ -51,19 +51,19 @@ jobs:
         run: npm ci --omit optional
       - name: Running prod build step
         run: npm run build
-      - name: Pruning dependencies
-        run: npm prune --omit=dev
       - uses: actions/upload-artifact@v4
         with:
           name: build_outputs
           path: |
-            node_modules/
             genfiles_static/
             library_processed/
             ls.db
             sh.db
             lat_infl.db
             morcusnet.commit.txt
+            package.json
+            package-lock.json
+            tsconfig.json
             src/
             !src/libs
             !src/morceus
