@@ -51,10 +51,13 @@ jobs:
         run: npm ci --omit optional
       - name: Running prod build step
         run: npm run build
+      - name: Pruning dependencies
+        run: npm prune --omit=dev --omit=optional
       - uses: actions/upload-artifact@v4
         with:
           name: build_outputs
           path: |
+            node_modules/
             genfiles_static/
             library_processed/
             ls.db
