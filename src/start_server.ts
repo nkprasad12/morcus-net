@@ -23,7 +23,7 @@ import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { randomInt } from "crypto";
-import { checkPresent, envVar } from "@/common/assert";
+import { envVar } from "@/common/assert";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import path from "path";
 import { GitHub } from "@/web/utils/github";
@@ -102,10 +102,6 @@ async function callWorker(
 }
 
 export function startMorcusServer(): Promise<http.Server> {
-  const host = "localhost";
-  const port = parseInt(
-    checkPresent(process.env.PORT, "PORT environment variable")
-  );
   process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
 
   const app = express();
@@ -128,7 +124,7 @@ export function startMorcusServer(): Promise<http.Server> {
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;
   if (mongodbUri === undefined && !consoleTelemetry) {
-    console.warn("No `MONGODB_URI` environment variable. Logging to console.");
+    log("No `MONGODB_URI` environment variable set. Logging to console.");
   }
   const telemetry =
     mongodbUri !== undefined && !consoleTelemetry
@@ -184,6 +180,12 @@ export function startMorcusServer(): Promise<http.Server> {
 
   setupServer(params);
 
+  const host = "localhost";
+  const portVar = envVar("PORT", "unsafe");
+  if (portVar === undefined) {
+    log("No `PORT` environment variable set. Using any open port.");
+  }
+  const port = portVar === undefined ? 0 : parseInt(portVar);
   return new Promise((resolve) => {
     server.listen(port, () => {
       const memoryLogId = setInterval(
@@ -192,7 +194,10 @@ export function startMorcusServer(): Promise<http.Server> {
       );
       server.on("close", () => clearInterval(memoryLogId));
       resolve(server);
-      log(`Running on http://${host}:${port}/`);
+      const address = server.address();
+      const realPort =
+        typeof address === "string" || address === null ? port : address.port;
+      log(`Running on http://${host}:${realPort}/`);
     });
   });
 }
