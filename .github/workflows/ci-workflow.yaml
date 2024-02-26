@@ -52,7 +52,7 @@ jobs:
       - name: Running prod build step
         run: npm run build
       - name: Pruning dependencies
-        run: npm prune --omit=dev --omit=optional
+        run: npm prune --omit=dev
       - uses: actions/upload-artifact@v4
         with:
           name: build_outputs
@@ -64,6 +64,12 @@ jobs:
             sh.db
             lat_infl.db
             morcusnet.commit.txt
+            src/
+            !src/libs
+            !src/morceus
+            !src/py
+            !src/web/client
+          compression-level: 9
 
   integration-checks:
     runs-on: ubuntu-latest
