@@ -57,6 +57,7 @@ jobs:
           path: |
             genfiles_static/
             library_processed/
+            public/
             ls.db
             sh.db
             lat_infl.db
