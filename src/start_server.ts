@@ -23,7 +23,7 @@ import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { randomInt } from "crypto";
-import { checkPresent } from "@/common/assert";
+import { checkPresent, envVar } from "@/common/assert";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import path from "path";
 import { GitHub } from "@/web/utils/github";
@@ -125,9 +125,14 @@ export function startMorcusServer(): Promise<http.Server> {
   const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
 
   const workServer = new SocketWorkServer(new Server(server));
+  const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
+  const mongodbUri = process.env.MONGODB_URI;
+  if (mongodbUri === undefined && !consoleTelemetry) {
+    console.warn("No `MONGODB_URI` environment variable. Logging to console.");
+  }
   const telemetry =
-    process.env.CONSOLE_TELEMETRY !== "yes"
-      ? MongoLogger.create()
+    mongodbUri !== undefined && !consoleTelemetry
+      ? MongoLogger.create(mongodbUri, envVar("DB_SOURCE"))
       : Promise.resolve(TelemetryLogger.NoOp);
 
   const buildDir = path.join(__dirname, "../genfiles_static");
