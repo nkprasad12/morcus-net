@@ -139,4 +139,6 @@ lat_raw.txt
 
 morcusnet.commit.txt
 public/pwa.webmanifest
-tables/lat/out/*
+
+android/*
+morceus-out/*

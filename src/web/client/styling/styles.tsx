@@ -246,7 +246,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         left: 0,
         zIndex: 101,
         transform: "translateX(-100%);",
-        transition: "transform 0.1s ease-out;",
+        transition: "transform 0.14s ease-out;",
       },
       ".drawer .contentHolder.open": {
         transform: "translateX(0);",
