@@ -223,7 +223,7 @@ export function* expandTemplates(
 export function expandTemplatesAndSave(
   targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
   dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
-  outputDir: string = "gen/morceus/tables/lat/out"
+  outputDir: string = "morceus-out/tables/lat"
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   for (const expanded of expandTemplates(targetDirs, dependencyDirs)) {
