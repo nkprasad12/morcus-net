@@ -1,7 +1,9 @@
 if echo $* | grep -e "--bun" -q
 then
-  COMMAND="bun run"
+  COMMAND="bun"
+  BUN_FLAG="1"
 else
   COMMAND="npm run ts-node --transpile_only"
+  BUN_FLAG="0"
 fi
-$COMMAND src/scripts/run_morcus.ts -- "$@"
+export BUN=$BUN_FLAG && $COMMAND src/scripts/run_morcus.ts -- "$@"

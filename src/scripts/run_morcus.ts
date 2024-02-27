@@ -261,8 +261,14 @@ async function setupAndStartWebServer(args: any) {
       priority: 1,
     });
   }
+  const childEnv = { ...process.env };
+  let baseCommand = ["npm", "run", "tsnp"];
+  if (args.bun === true) {
+    baseCommand = ["bun"];
+    childEnv.BUN = "1";
+  }
   if (args.build_sh === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"];
+    const command = baseCommand.concat(["src/scripts/process_sh.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" ")),
       label: "Processing SH",
@@ -270,12 +276,6 @@ async function setupAndStartWebServer(args: any) {
     });
   }
   if (args.build_ls === true) {
-    const childEnv = { ...process.env };
-    let baseCommand = ["npm", "run", "tsnp"];
-    if (args.bun === true) {
-      baseCommand = ["bun", "run"];
-      childEnv.BUN = "1";
-    }
     const command = baseCommand.concat(["src/scripts/process_ls.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
@@ -284,9 +284,9 @@ async function setupAndStartWebServer(args: any) {
     });
   }
   if (args.build_latin_library === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_lat_lib.ts"];
+    const command = baseCommand.concat(["src/scripts/process_lat_lib.ts"]);
     setupSteps.push({
-      operation: () => shellStep(command.join(" ")),
+      operation: () => shellStep(command.join(" "), childEnv),
       label: "Building Latin library",
       priority: 2,
     });
@@ -312,7 +312,7 @@ function startWebServer(args: any) {
   }
   let baseCommand: string[] = ["npm", "run", "ts-node"];
   if (args.bun === true) {
-    baseCommand = ["bun", "run"];
+    baseCommand = ["bun"];
     serverEnv.BUN = "1";
   } else if (args.transpile_only === true) {
     baseCommand.push("--", "--transpile-only");
