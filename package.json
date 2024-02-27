@@ -117,14 +117,20 @@
   },
   "bundlewatch": {
     "files": [
-        {
-            "path": "genfiles_static/Root*.js",
-            "maxSize": "42kB"
-        },
-        {
-          "path": "genfiles_static/vendor*.js",
-          "maxSize": "84kB"
+      {
+        "path": "genfiles_static/Root*.js",
+        "maxSize": "42kB"
+      },
+      {
+        "path": "genfiles_static/vendor*.js",
+        "maxSize": "84kB"
       }
-    ]
-}
+    ],
+    "ci": {
+      "trackBranches": [
+        "main",
+        "dev"
+      ]
+    }
+  }
 }
