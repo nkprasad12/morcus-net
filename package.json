@@ -86,6 +86,7 @@
     "@typescript-eslint/parser": "^6.13.1",
     "argparse": "^2.0.1",
     "beta-code-js": "^3.0.0",
+    "bundlewatch": "^0.3.3",
     "chalk": "^4.1.2",
     "clean-webpack-plugin": "^4.0.0",
     "eslint": "^8.40.0",
@@ -113,5 +114,17 @@
   },
   "optionalDependencies": {
     "puppeteer": "^21.6.1"
-  }
+  },
+  "bundlewatch": {
+    "files": [
+        {
+            "path": "genfiles_static/Root*.js",
+            "maxSize": "42kB"
+        },
+        {
+          "path": "genfiles_static/vendor*.js",
+          "maxSize": "84kB"
+      }
+    ]
+}
 }

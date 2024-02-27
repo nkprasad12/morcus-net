@@ -51,6 +51,10 @@ jobs:
         run: npm ci --omit optional
       - name: Running prod build step
         run: npm run build
+      - name: Bundlewatch
+        run: npx bundlewatch
+        env:
+          BUNDLEWATCH_GITHUB_TOKEN: ${{ secrets.BUNDLEWATCH_GITHUB_TOKEN }}
       - uses: actions/upload-artifact@v4
         with:
           name: build_outputs
