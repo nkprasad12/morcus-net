@@ -100,7 +100,7 @@ const PROCESS_LAT_LIB: StepConfig = {
   dlInfo: PERSEUS_DOWNLOADS,
 };
 const MAKE_BUNDLE: StepConfig = {
-  operation: () => shellStep("npx webpack -- --env production"),
+  operation: () => shellStep("npm run tsnp esbuild.config.ts"),
   label: "Building client bundle",
 };
 const WRITE_COMMIT_ID: StepConfig = {

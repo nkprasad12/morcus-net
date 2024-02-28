@@ -88,7 +88,7 @@ function parseArguments() {
     help: "Uses the real telemetry database.",
     action: "store_true",
   });
-  web.add_argument("-d", "--dev", {
+  web.add_argument("-w", "--watch", {
     help: "Runs a dev server for local iteration.",
     action: "store_true",
   });
@@ -222,24 +222,20 @@ function buildBundle(args: any): Promise<boolean> {
 }
 
 function bundleConfig(args: any, priority?: number): StepConfig {
-  const executor = args.bun ? "bunx" : "npx";
-  const buildCommand: string[] = [executor, "webpack"];
-  const extraArgs: string[] = [];
+  const executor = args.bun ? ["bun"] : ["npm", "run", "ts-node"];
+  const buildCommand: string[] = executor.concat(["esbuild.config.ts"]);
+  const childEnv = { ...process.env };
   if (args.prod || args.staging) {
-    extraArgs.push("--env", "production");
+    childEnv.NODE_ENV = "production";
   }
-  if (args.transpile_only) {
-    extraArgs.push("--env", "transpileOnly");
+  if (args.watch) {
+    childEnv.WATCH = "1";
   }
   if (args.analyze) {
-    extraArgs.push("--env", "analyze");
+    childEnv.ANALYZE_BUNDLE = "1";
   }
-  if (extraArgs.length > 0) {
-    buildCommand.push("--");
-  }
-  buildCommand.push(...extraArgs);
   return {
-    operation: () => shellStep(buildCommand.join(" ")),
+    operation: () => shellStep(buildCommand.join(" "), childEnv),
     label: "Building bundle",
     priority,
   };
@@ -247,9 +243,8 @@ function bundleConfig(args: any, priority?: number): StepConfig {
 
 async function setupAndStartWebServer(args: any) {
   const setupSteps: StepConfig[] = [];
-
-  // We use the hot dev server, so we don't need to pre-build;
-  if (args.no_build_client === false && args.dev !== true) {
+  // It's a long running process in watch mode.
+  if (args.no_build_client === false && !args.watch) {
     writeCommitId();
     setupSteps.push(bundleConfig(args, 1));
   }
@@ -304,8 +299,9 @@ function startWebServer(args: any) {
   const serverEnv = { ...process.env };
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
-  } else if (args.dev === true) {
-    serverEnv.NODE_ENV = "dev";
+  }
+  if (args.watch) {
+    bundleConfig(args).operation();
   }
   if (args.real_database === false) {
     serverEnv.CONSOLE_TELEMETRY = "yes";
@@ -326,8 +322,7 @@ async function startLsEditor() {
   const editorRoot = "src/common/lewis_and_short/editor";
   const steps: StepConfig[] = [
     {
-      operation: () =>
-        shellStep("npx webpack --config webpack.editor.config.js"),
+      operation: () => shellStep("npm run tsnp esbuild.editor.config.ts"),
       label: "Building bundle",
     },
   ];

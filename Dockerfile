@@ -8,7 +8,7 @@ COPY --chown=node:node texts texts
 COPY --chown=node:node tsconfig.json tsconfig.json
 COPY --chown=node:node package.json package.json
 COPY --chown=node:node package-lock.json package-lock.json
-COPY --chown=node:node webpack.config.js webpack.config.js
+COPY --chown=node:node esbuild.config.ts esbuild.config.ts
 COPY --chown=node:node .git .git
 RUN chown -R node:node /home/node/morcus
 

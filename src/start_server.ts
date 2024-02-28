@@ -132,23 +132,6 @@ export function startMorcusServer(): Promise<http.Server> {
       : Promise.resolve(TelemetryLogger.NoOp);
 
   const buildDir = path.join(__dirname, "../genfiles_static");
-  if (process.env.NODE_ENV === "dev") {
-    /* eslint-disable @typescript-eslint/no-var-requires */
-    const webpack = require("webpack");
-    /* eslint-disable @typescript-eslint/no-var-requires */
-    const webpackDevMiddleware = require("webpack-dev-middleware");
-    const compiler = webpack(
-      /* eslint-disable @typescript-eslint/no-var-requires */
-      require("../webpack.config")({ transpileOnly: true, production: false })
-    );
-    app.use(
-      webpackDevMiddleware(compiler, {
-        publicPath: buildDir,
-        writeToDisk: () => true,
-      })
-    );
-  }
-
   const params: WebServerParams = {
     webApp: app,
     routes: [
