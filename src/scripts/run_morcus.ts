@@ -313,6 +313,9 @@ function startWebServer(args: any) {
   if (args.bun === true) {
     baseCommand = ["bun"];
     serverEnv.BUN = "1";
+    if (args.watch) {
+      baseCommand.push("--watch");
+    }
   } else if (args.transpile_only === true) {
     baseCommand.push("--", "--transpile-only");
   }
