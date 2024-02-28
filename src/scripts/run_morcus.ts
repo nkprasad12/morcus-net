@@ -223,7 +223,7 @@ function buildBundle(args: any): Promise<boolean> {
 
 function bundleConfig(args: any, priority?: number): StepConfig {
   const executor = args.bun ? ["bun"] : ["npm", "run", "ts-node"];
-  const buildCommand: string[] = executor.concat(["esbuild.config.ts"]);
+  const buildCommand = executor.concat(["src/esbuild/morcus-net.esbuild.ts"]);
   const childEnv = { ...process.env };
   if (args.prod || args.staging) {
     childEnv.NODE_ENV = "production";
@@ -233,6 +233,9 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   }
   if (args.analyze) {
     childEnv.ANALYZE_BUNDLE = "1";
+  }
+  if (!args.transpile_only) {
+    childEnv.RUN_TSC = "1";
   }
   return {
     operation: () => shellStep(buildCommand.join(" "), childEnv),
@@ -322,7 +325,8 @@ async function startLsEditor() {
   const editorRoot = "src/common/lewis_and_short/editor";
   const steps: StepConfig[] = [
     {
-      operation: () => shellStep("npm run tsnp esbuild.editor.config.ts"),
+      operation: () =>
+        shellStep(`npm run tsnp ${editorRoot}/editor.esbuild.ts`),
       label: "Building bundle",
     },
   ];
