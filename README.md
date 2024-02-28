@@ -60,6 +60,7 @@ From the `morcus-net` root directory, set up a `Python` virtual environment and 
 | `RAW_LATIN_WORDS`         | Path to a raw list of Latin words. Used for some processing.                                                                        |
 | `RAW_ENGLISH_WORDS`       | Path to a raw list of English words. Used for some processing.                                                                      |
 | `LATIN_INFLECTION_DB`     | An optional file name of the processed database of Latin inflection data. Used for some processing.db`                              |
+
 ---
 
 ## Contribution Guidelines
