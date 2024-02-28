@@ -10,3 +10,4 @@ libs
 venv
 genfiles_static
 morpheus/**/*
+android/

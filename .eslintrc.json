@@ -21,7 +21,8 @@
     "jest.config.js",
     "genfiles_static/",
     "src/py/",
-    "venv/"
+    "venv/",
+    "android/"
   ],
   "settings": {
     "react": {
