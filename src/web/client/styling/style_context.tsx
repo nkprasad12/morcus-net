@@ -4,7 +4,7 @@ import {
   DEFAULT_HIGHLIGHT_STRENGTH,
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
-import { usePersistedNumber } from "@/web/client/pages/library/persisted_settings";
+import { usePersistedNumber } from "@/web/client/utils/hooks/persisted_state";
 import React from "react";
 
 export interface ReaderStyleConfigSetter {

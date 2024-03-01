@@ -27,6 +27,11 @@ describe("RouteInfo", () => {
     expect(url).toBe("/foo");
   });
 
+  test("toLink handles full path", () => {
+    const url = RouteInfo.toLink({ path: "/foo" }, true);
+    expect(url).toBe("http://localhost/foo");
+  });
+
   test("toLink handles bare path with hash", () => {
     const url = RouteInfo.toLink({ path: "/foo", hash: "hash" });
     expect(url).toBe("/foo#hash");

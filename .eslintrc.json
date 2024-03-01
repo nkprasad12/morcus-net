@@ -18,12 +18,11 @@
   },
   "plugins": ["react", "@typescript-eslint"],
   "ignorePatterns": [
-    "webpack.config.js",
-    "webpack.editor.config.js",
     "jest.config.js",
     "genfiles_static/",
     "src/py/",
-    "venv/"
+    "venv/",
+    "android/"
   ],
   "settings": {
     "react": {

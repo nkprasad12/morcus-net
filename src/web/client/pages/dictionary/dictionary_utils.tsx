@@ -21,6 +21,7 @@ import {
   DictRoute,
   useDictRouter,
 } from "@/web/client/pages/dictionary/dictionary_routing";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -139,6 +140,13 @@ function ShLink(props: { text: string; query: string }) {
   return (
     <span
       className="dLink"
+      onAuxClick={() =>
+        nav.inNewTab({
+          path: ClientPaths.DICT_PAGE.path,
+          query: props.query,
+          dicts: LatinDict.SmithAndHall,
+        })
+      }
       onClick={() => {
         if (fromInternalLink) {
           fromInternalLink.current = true;
@@ -181,6 +189,14 @@ function LatLink(props: { word: string; orig?: string }) {
   return (
     <span
       className="latWord"
+      onAuxClick={() =>
+        nav.inNewTab({
+          path: ClientPaths.DICT_PAGE.path,
+          query: props.word,
+          dicts: LatinDict.LewisAndShort,
+          inflectedSearch: true,
+        })
+      }
       onClick={() => onLatinWordClick(nav, dictContext, props.word)}>
       {props.orig || props.word}
     </span>
@@ -247,7 +263,6 @@ export function xmlNodeToJsx(
     return (
       <ClickableTooltip
         titleText={titleText}
-        className={className}
         ChildFactory={ForwardedNode}
         key={key}
       />
@@ -262,7 +277,6 @@ export function xmlNodeToJsx(
     return (
       <SectionLinkTooltip
         forwarded={ForwardedNode}
-        className={className}
         id={checkPresent(
           root.getAttr("senseid"),
           "lsSenseBullet must have senseid!"
@@ -321,14 +335,11 @@ export function InflectionDataSection(props: {
   inflections: InflectionData[];
   textScale?: number;
 }) {
-  const byForm = new Map<string, [string, string | undefined][]>();
+  const byForm = arrayMap<string, [string, string | undefined]>();
   for (const data of props.inflections) {
-    if (!byForm.has(data.form)) {
-      byForm.set(data.form, []);
-    }
-    byForm.get(data.form)!.push([data.data, data.usageNote]);
+    byForm.add(data.form, [data.data, data.usageNote]);
   }
-  const formatted: [string, string[]][] = Array.from(byForm.entries()).map(
+  const formatted: [string, string[]][] = Array.from(byForm.map.entries()).map(
     ([form, data]) => [
       form,
       data

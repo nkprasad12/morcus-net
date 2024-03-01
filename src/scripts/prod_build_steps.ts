@@ -100,7 +100,13 @@ const PROCESS_LAT_LIB: StepConfig = {
   dlInfo: PERSEUS_DOWNLOADS,
 };
 const MAKE_BUNDLE: StepConfig = {
-  operation: () => shellStep("npx webpack -- --env production"),
+  operation: () => {
+    const childEnv = { ...process.env, RUN_TSC: "1" };
+    return shellStep(
+      "npm run tsnp src/esbuild/morcus-net.esbuild.ts",
+      childEnv
+    );
+  },
   label: "Building client bundle",
 };
 const WRITE_COMMIT_ID: StepConfig = {

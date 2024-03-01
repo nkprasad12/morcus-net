@@ -1,4 +1,9 @@
 import {
+  useWrappedSetter,
+  type NotFunction,
+  type SetStateType,
+} from "@/web/client/utils/hooks/common";
+import {
   Validator,
   decodeMessage,
   encodeMessage,
@@ -19,21 +24,20 @@ function getStored<T>(key: string, validator: Validator<T>): T | undefined {
   }
 }
 
-export function usePersistedState<T>(
+export function usePersistedState<T extends NotFunction>(
   defaultValue: T,
   storageKey: string,
   validator: Validator<T>
-): [T, (t: T) => any] {
+): [T, SetStateType<T>] {
   const stored = getStored(storageKey, validator);
   const [value, setValue] = useState<T>(stored || defaultValue);
-  const wrappedSetter = useCallback(
+  const action = useCallback(
     (t: T) => {
       localStorage.setItem(storageKey, encodeMessage(t));
-      setValue(t);
     },
     [storageKey]
   );
-  return [value, wrappedSetter];
+  return [value, useWrappedSetter(setValue, action)];
 }
 
 export function usePersistedNumber(defaultValue: number, storageKey: string) {

@@ -3,7 +3,7 @@ import { Container } from "@/web/client/components/generic/basics";
 import {
   usePersistedBool,
   usePersistedNumber,
-} from "@/web/client/pages/library/persisted_settings";
+} from "@/web/client/utils/hooks/persisted_state";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultReaderSidebarContent,
@@ -21,8 +21,6 @@ import React, {
   useState,
   useCallback,
 } from "react";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { useTheme } from "@mui/material/styles";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Footer } from "@/web/client/components/footer";
 import {
@@ -31,8 +29,7 @@ import {
   useGestureListener,
 } from "@/web/client/mobile/gestures";
 import { useWakeLock } from "@/web/client/mobile/wake_lock";
-
-const noSsr = { noSsr: true };
+import { useMediaQuery } from "@/web/client/utils/media_query";
 
 type SidebarTab<T> = T | DefaultSidebarTab;
 interface Responsive {
@@ -99,8 +96,13 @@ export function BaseReader<
     window.innerHeight * 0.15
   );
 
-  const theme = useTheme();
-  const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  useEffect(() => {
+    const resetDrawer = () => setDrawerHeight(window.innerHeight * 0.15);
+    window.addEventListener("orientationchange", resetDrawer);
+    window.removeEventListener("orientationchange", resetDrawer);
+  }, [setDrawerHeight]);
+
+  const isScreenSmall = useMediaQuery("(max-width: 900px)");
   const BaseLayout = isScreenSmall ? BaseMobileReaderLayout : BaseReaderLayout;
 
   const {

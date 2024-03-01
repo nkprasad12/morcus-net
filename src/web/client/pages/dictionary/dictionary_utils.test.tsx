@@ -183,13 +183,7 @@ describe("ClickableTooltip", () => {
   const DivWithRef = forwardRef<HTMLDivElement>(GalliaRef);
 
   it("shows base text on initial load", async () => {
-    render(
-      <ClickableTooltip
-        titleText="Caesar"
-        className=""
-        ChildFactory={DivWithRef}
-      />
-    );
+    render(<ClickableTooltip titleText="Caesar" ChildFactory={DivWithRef} />);
 
     expect(screen.queryByText("Caesar")).toBeNull();
     expect(screen.queryByText("Gallia")).toBeVisible();
@@ -198,11 +192,7 @@ describe("ClickableTooltip", () => {
   it("shows tooltip on click and clears on click away", async () => {
     render(
       <div>
-        <ClickableTooltip
-          titleText="Caesar"
-          className=""
-          ChildFactory={DivWithRef}
-        />
+        <ClickableTooltip titleText="Caesar" ChildFactory={DivWithRef} />
         <span>Other</span>
       </div>
     );
@@ -214,7 +204,7 @@ describe("ClickableTooltip", () => {
 
     await user.click(screen.getByText("Other"));
     expect(screen.queryByText("Gallia")).toBeVisible();
-    expect(screen.queryByText("Caesar")).not.toBeVisible();
+    expect(screen.queryByText("Caesar")).toBeNull();
   });
 });
 
@@ -229,16 +219,10 @@ describe("SectionLinkTooltip", () => {
       },
     });
 
-    render(
-      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
-    );
+    render(<SectionLinkTooltip forwarded={DivWithRef} id="bar" />);
     await user.click(screen.getByText("Gallia"));
+    await user.click(screen.queryByText(/link/)!);
 
-    expect(screen.queryByText(/link/)).toBeVisible();
-    const iconButton = screen.queryByLabelText("copy link");
-    expect(iconButton).toBeVisible();
-
-    await user.click(iconButton!);
     expect(writeText.mock.lastCall![0].endsWith("#bar")).toBe(true);
   });
 
@@ -250,23 +234,17 @@ describe("SectionLinkTooltip", () => {
       },
     });
 
-    render(
-      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
-    );
+    render(<SectionLinkTooltip forwarded={DivWithRef} id="bar" />);
     await user.click(screen.getByText("Gallia"));
+    await user.click(screen.queryByText(/link/)!);
 
-    expect(screen.queryByText(/link/)).toBeVisible();
-    const iconButton = screen.queryByLabelText("copy link");
-    expect(iconButton).toBeVisible();
-
-    await user.click(iconButton!);
     expect(screen.queryByText(/copy manually/)).toBeVisible();
   });
 
   it("closes on click away", async () => {
     render(
       <>
-        <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
+        <SectionLinkTooltip forwarded={DivWithRef} id="bar" />
         <div>Other elem</div>
       </>
     );
@@ -274,19 +252,17 @@ describe("SectionLinkTooltip", () => {
 
     await user.click(screen.queryByText("Other elem")!);
     expect(screen.queryByText(/copy manually/)).toBeNull();
-    expect(screen.queryByText(/section link/)).not.toBeVisible();
+    expect(screen.queryByText(/section link/)).toBeNull();
   });
 
   it("closes on origin element click", async () => {
-    render(
-      <SectionLinkTooltip forwarded={DivWithRef} className="foo" id="bar" />
-    );
+    render(<SectionLinkTooltip forwarded={DivWithRef} id="bar" />);
     await user.click(screen.getByText("Gallia"));
 
     await user.click(screen.getByText("Gallia"));
 
     expect(screen.queryByText(/copy manually/)).toBeNull();
-    expect(screen.queryByText(/section link/)).not.toBeVisible();
+    expect(screen.queryByText(/section link/)).toBeNull();
   });
 });
 

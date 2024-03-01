@@ -1,14 +1,36 @@
 import { BoxWidth, getWidth } from "@/web/client/styling/styles";
-import type { RefObject, CSSProperties, PropsWithChildren } from "react";
+import type {
+  RefObject,
+  CSSProperties,
+  PropsWithChildren,
+  AriaAttributes,
+} from "react";
 
-export interface ContainerProps {
+export namespace AriaProps {
+  export function extract<T extends AriaAttributes>(input: T): AriaAttributes {
+    const result: AriaAttributes = {};
+    for (const key in input) {
+      if (key.startsWith("aria-")) {
+        // @ts-ignore
+        result[key] = input[key];
+      }
+    }
+    return result;
+  }
+}
+
+export interface CoreProps extends AriaAttributes {
+  style?: CSSProperties;
+  id?: string;
+  className?: string;
+  onClick?: () => any;
+}
+
+export interface ContainerProps extends CoreProps {
   maxWidth?: BoxWidth;
   disableGutters?: boolean;
   gutterSize?: number;
-  style?: CSSProperties;
   innerRef?: RefObject<HTMLDivElement>;
-  id?: string;
-  className?: string;
 }
 
 export function Container(props: PropsWithChildren<ContainerProps>) {
@@ -35,6 +57,26 @@ export function Divider(props?: { style?: CSSProperties }) {
   return <hr className="contentDivider" style={props?.style} />;
 }
 
+export interface ButtonLikeProps {
+  onClick: React.EventHandler<any>;
+  onKeyUp: React.KeyboardEventHandler<any>;
+  tabIndex: number;
+}
+export function buttonLikeProps(
+  onClick: React.EventHandler<any>,
+  triggerOnSpace: boolean = false
+): ButtonLikeProps {
+  return {
+    tabIndex: 0,
+    onClick: onClick,
+    onKeyUp: (e) => {
+      if (e.key === "Enter" || (triggerOnSpace && e.key === " ")) {
+        onClick(e);
+      }
+    },
+  };
+}
+
 export function SpanLink(
   props: PropsWithChildren<{
     onClick: () => any;
@@ -46,13 +88,7 @@ export function SpanLink(
     <span
       id={props.id}
       className={props.className}
-      onClick={props.onClick}
-      onKeyUp={(e) => {
-        if (e.key === "Enter") {
-          props.onClick();
-        }
-      }}
-      tabIndex={0}
+      {...buttonLikeProps(props.onClick)}
       aria-labelledby={props.id}
       role="link">
       {props.children}
@@ -61,19 +97,19 @@ export function SpanLink(
 }
 
 export function SpanButton(
-  props: PropsWithChildren<{ onClick: () => any; className?: string }>
+  props: PropsWithChildren<{
+    onAuxClick?: () => any;
+    onClick: () => any;
+    className?: string;
+    style?: CSSProperties;
+  }>
 ) {
   return (
     <span
       className={props.className}
-      style={{ cursor: "pointer" }}
-      onClick={props.onClick}
-      onKeyUp={(e) => {
-        if (e.key === " " || e.key === "Enter") {
-          props.onClick();
-        }
-      }}
-      tabIndex={0}
+      onAuxClick={props.onAuxClick}
+      style={{ cursor: "pointer", ...props.style }}
+      {...buttonLikeProps(props.onClick, true)}
       role="button">
       {props.children}
     </span>

@@ -1,7 +1,7 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { Solarized } from "@/web/client/styling/colors";
 import { StyleConfig } from "@/web/client/styling/style_context";
-import type { GlobalStylesProps } from "@mui/material";
+import type { GlobalProps } from "@emotion/react";
 import type { CSSProperties } from "react";
 
 export type AllowedFontSizes =
@@ -39,8 +39,18 @@ export function getWidth(width: BoxWidth): number {
   }
 }
 
+const UNSELECTABLE: CSSProperties = {
+  WebkitTouchCallout: "none",
+  // @ts-ignore
+  WebkitTouchSelect: "none",
+  KhtmlUserSelect: "none",
+  MozUserSelect: "none",
+  msUserSelect: "none",
+  userSelect: "none",
+};
+
 const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
-export const TEXT_STYLE: CSSProperties = {
+const TEXT_STYLE: CSSProperties = {
   fontFamily: ALLOWED_FONTS,
   fontWeight: 400,
   lineHeight: 1.5,
@@ -57,7 +67,7 @@ export function getAppBarColor(settings: Partial<StyleConfig>): string {
     : Solarized.base2;
 }
 
-export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
+export function getGlobalStyles(settings: StyleConfig): GlobalProps {
   const modifier = settings.dictHighlightScale;
 
   function modifiedStrength(baseStrength: number): string {
@@ -119,14 +129,16 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         cursor: "pointer",
         color: contentTextLightColor + "80",
       },
-      ".unselectable": {
-        WebkitTouchCallout: "none",
-        WebkitTouchSelect: "none",
-        KhtmlUserSelect: "none",
-        MozUserSelect: "none",
-        msUserSelect: "none",
-        userSelect: "none",
+      ".unselectable": { ...UNSELECTABLE },
+      ".svgIcon": {
+        ...UNSELECTABLE,
+        fill: "currentcolor",
+        width: "1em",
+        height: "1em",
+        flexShrink: "0",
       },
+
+      // Text
       ".text": {
         ...TEXT_STYLE,
         color: contentTextColor,
@@ -142,6 +154,8 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       ".text.red": {
         color: Solarized.red + "A0",
       },
+
+      // Buttons
       ".button": {
         borderRadius: 4,
         cursor: "pointer",
@@ -151,6 +165,12 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         paddingRight: "12px",
         backgroundColor: topBarColor,
         color: isDarkMode ? Solarized.base01 : Solarized.base015,
+      },
+      ".button.simple": {
+        backgroundColor,
+      },
+      ".button.simple:hover": {
+        backgroundColor,
       },
       ".button:hover": {
         backgroundColor: topBarColor + "A0",
@@ -172,17 +192,95 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         backgroundColor: Solarized.base1 + "48",
         color: Solarized.base1 + "96",
       },
+      ".iconButton": {
+        display: "inline-flex",
+        WebkitBoxAlign: "center",
+        alignItems: "center",
+        WebkitBoxPack: "center",
+        justifyContent: "center",
+        position: "relative",
+        boxSizing: "border-box",
+        WebkitTapHighlightColor: "transparent",
+        outline: "0px",
+        border: "1px",
+        borderColor: "#00000000",
+        margin: "0px",
+        cursor: "pointer",
+        verticalAlign: "middle",
+        appearance: "none",
+        textDecoration: "none",
+        textAlign: "center",
+        fontSize: "1.5rem",
+        padding: "8px",
+        borderRadius: "50%",
+        overflow: "visible",
+        backgroundColor: "#00000000",
+        ...UNSELECTABLE,
+      },
+      ".iconButton.small": {
+        fontSize: "1.125rem",
+        padding: "5px",
+      },
+      ".iconButton:disabled": {
+        color: contentTextColor + "20",
+      },
+      ".iconButton:is(:hover, :focus-visible):not(:disabled)": {
+        backgroundColor: "rgba(0, 0, 0, 0.075)",
+      },
+
+      // Modals
+      ".modalOverlay": {
+        display: "block",
+        height: "100vh",
+        width: "100%",
+        left: 0,
+        top: 0,
+        backgroundColor: "#00000080",
+        position: "fixed",
+        zIndex: 100,
+      },
+      ".drawer .contentHolder": {
+        position: "fixed",
+        height: "100vh",
+        top: 0,
+        left: 0,
+        zIndex: 101,
+        transform: "translateX(-100%);",
+        transition: "transform 0.14s ease-out;",
+      },
+      ".drawer .contentHolder.open": {
+        transform: "translateX(0);",
+      },
+      ".dialogModal .contentHolder ": {
+        position: "fixed",
+        maxWidth: "80vw",
+        top: "50vh",
+        left: "50vw",
+        zIndex: 101,
+        borderRadius: "8px",
+        transform: "translate(-50%, -60%)",
+        transition: "opacity 0.25s ease-out;",
+        width: "400px",
+        opacity: 0,
+      },
+      ".dialogModal .contentHolder.open": {
+        opacity: 1,
+      },
+      ".dialogActions": {
+        display: "flex",
+        alignItems: "center",
+        padding: 8,
+        justifyContent: "flex-end",
+        flex: "0 0 auto",
+      },
 
       /** Tooltip styling */
-      ".MuiTooltip-arrow": {
-        color: isDarkMode ? Solarized.darkarkModeMint : Solarized.base01,
-      },
-      ".MuiTooltip-tooltipArrow": {
-        backgroundColor: isDarkMode
-          ? Solarized.darkarkModeMint
-          : Solarized.mint,
-        color: Solarized.base01,
-        border: `2px solid ${isDarkMode ? Solarized.base02 : Solarized.base01}`,
+      ".tooltip": {
+        backgroundColor: isDarkMode ? backgroundColor : Solarized.mint,
+        border: `2px solid ${isDarkMode ? Solarized.base1 : Solarized.base01}`,
+        padding: "4px 8px",
+        borderRadius: "4px",
+        margin: "8px",
       },
 
       /** Basic content primitives */
@@ -258,6 +356,16 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
 
       /** Dictionary specific */
+      ".tocSidebar": {
+        position: "sticky",
+        zIndex: 1,
+        top: 0,
+        left: 0,
+        marginTop: 10,
+        overflow: "auto",
+        maxHeight: "calc(100vh - 40px)",
+        minWidth: "min(29%, 300px)",
+      },
       ".nonDictText": {
         color: isDarkMode ? Solarized.base1 : Solarized.base00,
       },
@@ -410,11 +518,11 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
         zIndex: 5,
       },
       ".readerMobileBottomBar": {
-        width: document.body.clientWidth,
+        width: "100vw",
         backgroundColor: bgColorAlt,
       },
       ".readerMobileDragger": {
-        width: document.body.clientWidth,
+        width: "100vw",
         borderTopLeftRadius: "12px",
         borderTopRightRadius: "12px",
         backgroundColor: bgColorAlt,
@@ -492,9 +600,6 @@ export function getGlobalStyles(settings: StyleConfig): GlobalStylesProps {
       },
       ".selectedSidePanelTab .menuIcon": {
         color: contentTextColor + "d0",
-      },
-      ".Mui-disabled .MuiSvgIcon-root": {
-        color: contentTextColor + "20",
       },
 
       /** Search box */

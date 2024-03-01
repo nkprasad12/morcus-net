@@ -1,9 +1,3 @@
-import LinkIcon from "@mui/icons-material/Link";
-import OpenInNewIcon from "@mui/icons-material/OpenInNew";
-import Stack from "@mui/material/Stack";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import { CSSProperties } from "react";
 import * as React from "react";
 
 import { EntryOutline } from "@/common/dictionaries/dict_result";
@@ -51,6 +45,8 @@ import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { Container, Divider } from "@/web/client/components/generic/basics";
+import { SvgIcon } from "@/web/client/components/generic/icons";
+import { useMediaQuery } from "@/web/client/utils/media_query";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -59,17 +55,6 @@ export const ERROR_STATE_MESSAGE =
 export const NO_RESULTS_MESSAGE =
   "No results found. If applicable, try enabling another " +
   "dictionary in settings.";
-
-const TOC_SIDEBAR_STYLE: CSSProperties = {
-  position: "sticky",
-  zIndex: 1,
-  top: 0,
-  left: 0,
-  marginTop: 10,
-  overflow: "auto",
-  maxHeight: window.innerHeight - 40,
-  minWidth: "min(29%, 300px)",
-};
 
 function chooseDicts(
   dicts: undefined | DictInfo | DictInfo[],
@@ -106,8 +91,6 @@ async function fetchEntry(
     return null;
   }
 }
-
-const noSsr = { noSsr: true };
 
 type EdgeCaseState = "Landing" | "Error" | "No Results";
 type DictState = EdgeCaseState | "Loading" | "Results";
@@ -222,13 +205,14 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
         fontWeight: "normal",
       }}
       onClick={() => jumpToSection(props.outline.mainSection.sectionId)}>
-      <OpenInNewIcon
-        sx={{
+      <SvgIcon
+        style={{
           marginBottom: `${-0.1 * scale}em`,
           marginRight: `${-0.1 * scale}em`,
           fontSize: `${0.8 * scale}em`,
           paddingLeft: `${0.1 * scale}em`,
         }}
+        pathD={SvgIcon.OpenInNew}
       />
       <span dangerouslySetInnerHTML={{ __html: label }} />
     </span>
@@ -315,16 +299,21 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
   const mainContent = children[1] || <></>;
 
   return (
-    <Container maxWidth="xl" style={{ minHeight: window.innerHeight }}>
-      <Stack direction="row" spacing={0} justifyContent="left">
-        <div style={TOC_SIDEBAR_STYLE}>{sidebarContent}</div>
+    <Container maxWidth="xl" style={{ minHeight: "100vh" }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "row",
+          justifyContent: "left",
+        }}>
+        <div className="tocSidebar">{sidebarContent}</div>
         <div style={{ maxWidth: "10000px" }}>
           <SearchBar maxWidth="md" marginLeft="0" />
           {mainContent}
           <HorizontalPlaceholder />
           <Footer />
         </div>
-      </Stack>
+      </div>
     </Container>
   );
 }
@@ -393,8 +382,9 @@ function articleLinkButton(text: string, scale: number) {
           paddingBottom: 1,
           paddingRight: 4,
         }}>
-        <LinkIcon
-          sx={{
+        <SvgIcon
+          pathD={SvgIcon.Link}
+          style={{
             marginBottom: `${-0.2 * scale}em`,
             marginRight: `${-0.2 * scale}em`,
             fontSize: `${1 * scale}em`,
@@ -524,8 +514,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
     SearchSettings.retrieve()
   );
-  const theme = useTheme();
-  const isScreenSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
   const sectionRef = React.useRef<HTMLElement>(null);
   const tocRef = React.useRef<HTMLDivElement>(null);

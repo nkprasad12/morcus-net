@@ -12,14 +12,15 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import { RouteContext, Router } from "@/web/client/router/router_v2";
 import { checkPresent } from "@/common/assert";
-import useMediaQuery from "@mui/material/useMediaQuery";
 
-jest.mock("@mui/material/useMediaQuery", () => {
+jest.mock("@/web/client/utils/media_query", () => {
   return {
-    __esModule: true,
-    default: jest.fn(() => false),
+    ...jest.requireActual("@/web/client/utils/media_query"),
+    useMediaQuery: jest.fn(),
   };
 });
+import { useMediaQuery } from "@/web/client/utils/media_query";
+
 jest.mock("@/web/utils/rpc/client_rpc");
 
 console.debug = jest.fn();

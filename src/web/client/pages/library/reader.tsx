@@ -7,10 +7,7 @@ import {
 import { XmlNode } from "@/common/xml/xml_node";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { ClientPaths } from "@/web/client/routing/client_paths";
-import ArrowBack from "@mui/icons-material/ArrowBack";
-import ArrowForward from "@mui/icons-material/ArrowForward";
-import Info from "@mui/icons-material/Info";
-import Toc from "@mui/icons-material/Toc";
+
 import { useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
@@ -38,6 +35,7 @@ import {
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
 import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -212,7 +210,7 @@ export function ReadingPage() {
       } else {
         highlightRef.current.scrollIntoView({
           behavior: "smooth",
-          block: "start",
+          block: "center",
         });
       }
     };
@@ -270,9 +268,9 @@ type CustomTabs = "Outline" | "Attribution";
 type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
 const SIDEBAR_PANEL_ICONS: ReaderInternalTabConfig<SidebarPanel>[] = [
-  { tab: "Outline", Icon: <Toc /> },
+  { tab: "Outline", Icon: <SvgIcon pathD={SvgIcon.Toc} /> },
   ...DEFAULT_SIDEBAR_TAB_CONFIGS,
-  { tab: "Attribution", Icon: <Info /> },
+  { tab: "Attribution", Icon: <SvgIcon pathD={SvgIcon.Info} /> },
 ];
 
 interface SidebarProps {
@@ -321,7 +319,11 @@ export function SwipeFeedback(props: {
         borderWidth: 4,
         borderColor: overlayOpacity === 1 ? "green" : undefined,
       }}>
-      {props.swipeDir === "Left" ? <ArrowForward /> : <ArrowBack />}
+      {props.swipeDir === "Left" ? (
+        <SvgIcon pathD={SvgIcon.ArrowForward} />
+      ) : (
+        <SvgIcon pathD={SvgIcon.ArrowBack} />
+      )}
     </div>
   );
 }
@@ -458,14 +460,14 @@ function WorkNavigationBar(props: {
     <>
       <div className="readerIconBar" ref={navBarRef}>
         <NavIcon
-          Icon={<ArrowBack />}
+          Icon={<SvgIcon pathD={SvgIcon.ArrowBack} />}
           label="previous section"
           disabled={props.page <= 0}
           onClick={() => changePage(-1)}
         />
         <PenulimateLabel page={props.page} work={props.work} />
         <NavIcon
-          Icon={<ArrowForward />}
+          Icon={<SvgIcon pathD={SvgIcon.ArrowForward} />}
           label="next section"
           disabled={props.page >= props.work.pages.length - 1}
           onClick={() => changePage(1)}
@@ -672,11 +674,13 @@ function WorkChunkHeader(props: {
   const { hasTooltip } = React.useContext(ReaderContext);
   const { route } = Router.useRouter();
 
-  const subPath = RouteInfo.toLink({
-    path: route.path,
-    params: { ...route.params, l: props.chunkArrayIndex.toString() },
-  });
-  const url = `${window.location.origin}${subPath}`;
+  const url = RouteInfo.toLink(
+    {
+      path: route.path,
+      params: { ...route.params, l: props.chunkArrayIndex.toString() },
+    },
+    true
+  );
 
   return (
     <CopyLinkTooltip
@@ -728,7 +732,7 @@ function WorkChunk(props: {
         />
       </span>
       <span
-        ref={highlightRef}
+        ref={props.highlight ? highlightRef : undefined}
         className={props.highlight ? "highlighted" : undefined}
         style={{
           gridColumn: 2,

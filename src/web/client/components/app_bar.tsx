@@ -1,19 +1,15 @@
 import * as React from "react";
-import Box from "@mui/material/Box";
-import IconButton from "@mui/material/IconButton";
-import Typography from "@mui/material/Typography";
-import MenuIcon from "@mui/icons-material/Menu";
-import FlagIcon from "@mui/icons-material/Flag";
-import BuildIcon from "@mui/icons-material/Build";
-import DarkMode from "@mui/icons-material/DarkMode";
-import LightMode from "@mui/icons-material/LightMode";
-import Button from "@mui/material/Button";
-import { useTheme } from "@mui/material/styles";
-import useMediaQuery from "@mui/material/useMediaQuery";
-import Drawer from "@mui/material/Drawer";
+
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
-import { Container, Divider } from "@/web/client/components/generic/basics";
+import {
+  Container,
+  Divider,
+  SpanButton,
+} from "@/web/client/components/generic/basics";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
+import { useMediaQuery } from "@/web/client/utils/media_query";
+import { Drawer } from "@/web/client/components/generic/overlays";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -52,17 +48,19 @@ function DrawerMenu(props: {
   ]);
   return (
     <Drawer
-      anchor="left"
       open={props.open}
       onClose={props.onClose}
-      transitionDuration={150}
-      PaperProps={{
+      contentProps={{
         className: "menu",
       }}>
-      <Box role="navigation" onClick={props.onClose} id="menu-appbar">
+      <div
+        role="navigation"
+        onClick={props.onClose}
+        id="menu-appbar"
+        className="text md">
         {pages.map((page) => (
           <div key={page.name}>
-            <Button
+            <SpanButton
               key={page.name}
               onClick={props.onPageClick(page.targetPath)}
               className={
@@ -70,26 +68,23 @@ function DrawerMenu(props: {
                   ? "menuItemActive"
                   : "menuItemInactive"
               }
-              sx={{
-                my: 1,
-                mx: 2,
+              style={{
+                padding: "16px 24px",
                 display: "block",
                 justifyContent: "center",
               }}>
               <b>{page.name}</b>
-            </Button>
+            </SpanButton>
             <Divider key={page.name + "_divider"} />
           </div>
         ))}
-      </Box>
+      </div>
     </Drawer>
   );
 }
 
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
-  const noSsr = { noSsr: true };
-  const theme = useTheme();
-  const isSmall = useMediaQuery(theme.breakpoints.down("md"), noSsr);
+  const isSmall = useMediaQuery("(max-width: 900px)");
   const globalSettings = React.useContext(GlobalSettingsContext);
   const darkModeOn = globalSettings.data.darkMode === true;
   const iconSize = isSmall ? "small" : "medium";
@@ -120,20 +115,17 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             MozBoxAlign: "center",
             minHeight: isSmall ? "56px" : "64px",
           }}>
-          <Typography
-            variant="h6"
-            noWrap
-            component="a"
-            sx={{
-              mr: 2,
+          <div
+            style={{
+              marginRight: "16px",
               display: isSmall ? "none" : "flex",
-              color: "inherit",
-              textDecoration: "none",
             }}>
             <LogoImage />
-          </Typography>
+          </div>
 
-          <Box sx={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}>
+          <div
+            style={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}
+            className="text md">
             <IconButton
               size={iconSize}
               aria-label="site pages"
@@ -141,7 +133,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-haspopup="true"
               onClick={() => setDrawerVisible(true)}
               className="menuIcon">
-              <MenuIcon />
+              <SvgIcon pathD={SvgIcon.Menu} />
             </IconButton>
             <DrawerMenu
               pages={mainPages}
@@ -150,42 +142,38 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               open={drawerVisible}
               isCurrentPage={isCurrentPage}
             />
-          </Box>
-          <Typography
-            variant="h5"
-            noWrap
-            component="a"
-            sx={{
-              ml: 3,
+          </div>
+          <div
+            style={{
+              marginLeft: "24px",
               display: isSmall ? "flex" : "none",
               flexGrow: 1,
-              fontFamily: "monospace",
-              fontWeight: 700,
-              letterSpacing: ".3rem",
-              color: "inherit",
-              textDecoration: "none",
             }}>
             <LogoImage />
-          </Typography>
-          <Box sx={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
+          </div>
+          <div
+            style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}
+            className="text md">
             {mainPages.map((page) => (
-              <Button
+              <SpanButton
                 key={page.name}
+                onAuxClick={() => window.open(page.targetPath)}
                 onClick={handlePageClick(page.targetPath)}
                 className={
                   isCurrentPage(page.targetPath)
                     ? "menuItemActive"
                     : "menuItemInactive"
                 }
-                sx={{
-                  mx: 1,
+                style={{
+                  marginLeft: "8px",
+                  marginRight: "8px",
                   display: "block",
                 }}>
                 <b>{page.name}</b>
-              </Button>
+              </SpanButton>
             ))}
-          </Box>
-          <Box>
+          </div>
+          <div>
             <IconButton
               size={iconSize}
               aria-label={darkModeOn ? "light mode" : "dark mode"}
@@ -196,7 +184,9 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 })
               }
               className="menuIcon">
-              {darkModeOn ? <LightMode /> : <DarkMode />}
+              <SvgIcon
+                pathD={darkModeOn ? SvgIcon.LightMode : SvgIcon.DarkMode}
+              />
             </IconButton>
             <IconButton
               size={iconSize}
@@ -204,7 +194,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               aria-haspopup="true"
               onClick={props.openIssueDialog}
               className="menuIcon">
-              <FlagIcon />
+              <SvgIcon pathD={SvgIcon.Flag} />
             </IconButton>
             {!isSmall && (
               <IconButton
@@ -213,10 +203,10 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 // TODO: Find a better way to configure this.
                 onClick={handlePageClick("/settings")}
                 className="menuIcon">
-                <BuildIcon />
+                <SvgIcon pathD={SvgIcon.Build} />
               </IconButton>
             )}
-          </Box>
+          </div>
         </div>
       </Container>
     </div>

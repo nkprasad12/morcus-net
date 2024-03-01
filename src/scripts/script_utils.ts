@@ -4,6 +4,7 @@ import chalk from "chalk";
 import { spawn } from "child_process";
 import { assert, assertEqual } from "@/common/assert";
 import { mkdir, rm } from "fs/promises";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 export interface DownloadConfig {
   url: string;
@@ -138,17 +139,14 @@ function groupByPriority(
   configs: StepConfig[],
   parallel?: boolean
 ): StepConfig[][] {
-  const stepMap = new Map<number, StepConfig[]>();
+  const stepMap = arrayMap<number, StepConfig>();
   for (let i = 0; i < configs.length; i++) {
     const config = configs[i];
     const priority =
       parallel && config.priority !== undefined ? config.priority : i;
-    if (!stepMap.has(priority)) {
-      stepMap.set(priority, []);
-    }
-    stepMap.get(priority)!.push(config);
+    stepMap.add(priority, config);
   }
-  return Array.from(stepMap.entries())
+  return Array.from(stepMap.map.entries())
     .sort((a, b) => a[0] - b[0])
     .map((a) => a[1]);
 }

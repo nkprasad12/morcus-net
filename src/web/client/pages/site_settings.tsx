@@ -1,6 +1,3 @@
-import Box from "@mui/material/Box";
-import Typography from "@mui/material/Typography";
-
 import { useContext } from "react";
 import {
   GlobalBooleans,
@@ -37,14 +34,14 @@ function GlobalSettingsCheckbox(props: {
 export function SiteSettings() {
   return (
     <Container maxWidth="lg">
-      <Box sx={{ padding: 3 }}>
-        <Typography component={"div"} className="nonDictText">
+      <div style={{ padding: "24px" }}>
+        <div className="nonDictText text md">
           <GlobalSettingsCheckbox
             label="Enable Experimental features"
             settingKey="experimentalMode"
           />
-        </Typography>
-      </Box>
+        </div>
+      </div>
     </Container>
   );
 }

@@ -31,7 +31,7 @@ jobs:
       - name: Running unit tests
         run: npm run coverage
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v3
         with:
           directory: ./coverage
       - name: Checking formatting
@@ -51,16 +51,26 @@ jobs:
         run: npm ci --omit optional
       - name: Running prod build step
         run: npm run build
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: build_outputs
           path: |
             genfiles_static/
             library_processed/
+            public/
             ls.db
             sh.db
             lat_infl.db
             morcusnet.commit.txt
+            package.json
+            package-lock.json
+            tsconfig.json
+            src/
+            !src/libs
+            !src/morceus
+            !src/py
+            !src/web/client
+          compression-level: 9
 
   integration-checks:
     runs-on: ubuntu-latest

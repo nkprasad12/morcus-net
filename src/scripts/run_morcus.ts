@@ -88,7 +88,7 @@ function parseArguments() {
     help: "Uses the real telemetry database.",
     action: "store_true",
   });
-  web.add_argument("-d", "--dev", {
+  web.add_argument("-w", "--watch", {
     help: "Runs a dev server for local iteration.",
     action: "store_true",
   });
@@ -222,24 +222,23 @@ function buildBundle(args: any): Promise<boolean> {
 }
 
 function bundleConfig(args: any, priority?: number): StepConfig {
-  const executor = args.bun ? "bunx" : "npx";
-  const buildCommand: string[] = [executor, "webpack"];
-  const extraArgs: string[] = [];
+  const executor = args.bun ? ["bun"] : ["npm", "run", "ts-node"];
+  const buildCommand = executor.concat(["src/esbuild/morcus-net.esbuild.ts"]);
+  const childEnv = { ...process.env };
   if (args.prod || args.staging) {
-    extraArgs.push("--env", "production");
+    childEnv.NODE_ENV = "production";
   }
-  if (args.transpile_only) {
-    extraArgs.push("--env", "transpileOnly");
+  if (args.watch) {
+    childEnv.WATCH = "1";
   }
   if (args.analyze) {
-    extraArgs.push("--env", "analyze");
+    childEnv.ANALYZE_BUNDLE = "1";
   }
-  if (extraArgs.length > 0) {
-    buildCommand.push("--");
+  if (!args.transpile_only) {
+    childEnv.RUN_TSC = "1";
   }
-  buildCommand.push(...extraArgs);
   return {
-    operation: () => shellStep(buildCommand.join(" ")),
+    operation: () => shellStep(buildCommand.join(" "), childEnv),
     label: "Building bundle",
     priority,
   };
@@ -247,9 +246,8 @@ function bundleConfig(args: any, priority?: number): StepConfig {
 
 async function setupAndStartWebServer(args: any) {
   const setupSteps: StepConfig[] = [];
-
-  // We use the hot dev server, so we don't need to pre-build;
-  if (args.no_build_client === false && args.dev !== true) {
+  // It's a long running process in watch mode.
+  if (args.no_build_client === false && !args.watch) {
     writeCommitId();
     setupSteps.push(bundleConfig(args, 1));
   }
@@ -261,8 +259,14 @@ async function setupAndStartWebServer(args: any) {
       priority: 1,
     });
   }
+  const childEnv = { ...process.env };
+  let baseCommand = ["npm", "run", "tsnp"];
+  if (args.bun === true) {
+    baseCommand = ["bun"];
+    childEnv.BUN = "1";
+  }
   if (args.build_sh === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_sh.ts"];
+    const command = baseCommand.concat(["src/scripts/process_sh.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" ")),
       label: "Processing SH",
@@ -270,12 +274,6 @@ async function setupAndStartWebServer(args: any) {
     });
   }
   if (args.build_ls === true) {
-    const childEnv = { ...process.env };
-    let baseCommand = ["npm", "run", "tsnp"];
-    if (args.bun === true) {
-      baseCommand = ["bun", "run"];
-      childEnv.BUN = "1";
-    }
     const command = baseCommand.concat(["src/scripts/process_ls.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
@@ -284,9 +282,9 @@ async function setupAndStartWebServer(args: any) {
     });
   }
   if (args.build_latin_library === true) {
-    const command = ["npm", "run", "ts-node", "src/scripts/process_lat_lib.ts"];
+    const command = baseCommand.concat(["src/scripts/process_lat_lib.ts"]);
     setupSteps.push({
-      operation: () => shellStep(command.join(" ")),
+      operation: () => shellStep(command.join(" "), childEnv),
       label: "Building Latin library",
       priority: 2,
     });
@@ -304,16 +302,20 @@ function startWebServer(args: any) {
   const serverEnv = { ...process.env };
   if (args.prod === true) {
     serverEnv.NODE_ENV = "production";
-  } else if (args.dev === true) {
-    serverEnv.NODE_ENV = "dev";
+  }
+  if (args.watch) {
+    bundleConfig(args).operation();
   }
   if (args.real_database === false) {
     serverEnv.CONSOLE_TELEMETRY = "yes";
   }
   let baseCommand: string[] = ["npm", "run", "ts-node"];
   if (args.bun === true) {
-    baseCommand = ["bun", "run"];
+    baseCommand = ["bun"];
     serverEnv.BUN = "1";
+    if (args.watch) {
+      baseCommand.push("--watch");
+    }
   } else if (args.transpile_only === true) {
     baseCommand.push("--", "--transpile-only");
   }
@@ -327,7 +329,7 @@ async function startLsEditor() {
   const steps: StepConfig[] = [
     {
       operation: () =>
-        shellStep("npx webpack --config webpack.editor.config.js"),
+        shellStep(`npm run tsnp ${editorRoot}/editor.esbuild.ts`),
       label: "Building bundle",
     },
   ];

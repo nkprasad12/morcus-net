@@ -1,16 +1,10 @@
 import { useState } from "react";
 
-import Button from "@mui/material/Button";
-import Dialog from "@mui/material/Dialog";
-import DialogActions from "@mui/material/DialogActions";
-import DialogContent from "@mui/material/DialogContent";
-import DialogContentText from "@mui/material/DialogContentText";
-import DialogTitle from "@mui/material/DialogTitle";
-
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { ReportApi } from "@/web/api_routes";
 import { getCommitHash } from "@/web/client/define_vars";
-import { TextField } from "@/web/client/components/generic/basics";
+import { SpanButton, TextField } from "@/web/client/components/generic/basics";
+import { ModalDialog } from "@/web/client/components/generic/overlays";
 
 export function ReportIssueDialog(props: {
   show: boolean;
@@ -19,37 +13,39 @@ export function ReportIssueDialog(props: {
   const [reportText, setReportText] = useState<string>("");
 
   return (
-    <Dialog
+    <ModalDialog
       open={props.show}
       onClose={props.onClose}
-      PaperProps={{
+      aria-labelledby="reportTitle"
+      contentProps={{
         className: "bgColor",
       }}>
-      <DialogTitle style={{ fontSize: 19, lineHeight: "normal" }}>
-        <label htmlFor="Report issue box">
-          <b>Report an issue</b>
-        </label>
-      </DialogTitle>
-      <DialogContent>
-        <DialogContentText style={{ fontSize: 16, lineHeight: "normal" }}>
+      <div
+        id="reportTitle"
+        className="text md"
+        style={{ lineHeight: "normal", margin: 0, padding: "16px 24px" }}>
+        <b>Report an issue</b>
+      </div>
+      <div style={{ padding: "0px 24px 20px" }}>
+        <p className="text sm light" style={{ lineHeight: "normal" }}>
           What did you do, what did you expect to see, and what did you actually
-          see? <i>Do not enter personal information</i>.
-        </DialogContentText>
+          see? <i>This report will be visible to the general public</i>.
+        </p>
         <TextField
           id="Report issue box"
           autoFocus
           onNewValue={setReportText}
-          defaultValue={`${window.location.href}\n`}
+          defaultValue={`\n\nReporter: Anonymous (change this to be notified when your issue is fixed)\n${window.location.href}`}
           fullWidth
           multiline
           minRows={8}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button onClick={props.onClose} variant="text" color="info">
+      </div>
+      <div className="dialogActions text md light">
+        <SpanButton onClick={props.onClose} className="button simple">
           Cancel
-        </Button>
-        <Button
+        </SpanButton>
+        <SpanButton
           onClick={() => {
             const request = {
               reportText,
@@ -58,10 +54,10 @@ export function ReportIssueDialog(props: {
             callApi(ReportApi, request).catch(() => {});
             props.onClose();
           }}
-          variant="contained">
+          className="button">
           <b>Submit</b>
-        </Button>
-      </DialogActions>
-    </Dialog>
+        </SpanButton>
+      </div>
+    </ModalDialog>
   );
 }

@@ -42,6 +42,7 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["RAW_LATIN_WORDS", "lat_raw.txt"],
   ["SH_PROCESSED_PATH", "sh.db"],
   ["SH_RAW_PATH", "sh_raw.txt"],
+  ["DB_SOURCE", "unspecified"],
 ]);
 
 export function envVar(name: string, unsafe: "unsafe"): string | undefined;
@@ -51,7 +52,7 @@ export function envVar(name: string, unsafe?: "unsafe"): string | undefined {
   if (unsafe === "unsafe") {
     return candidate;
   }
-  return checkPresent(candidate, `Envirement variable ${name} not set!`);
+  return checkPresent(candidate, `Environment variable ${name} not set!`);
 }
 
 export function checkSatisfies<T>(

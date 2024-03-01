@@ -1,6 +1,7 @@
 import { XMLParser, XMLValidator, type X2jOptions } from "fast-xml-parser";
 import { assert } from "@/common/assert";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 const ATTRIBUTES_KEY = ":@";
 const TEXT_NODE = "#text";
@@ -189,14 +190,13 @@ export interface TextNodeData extends SingleTextNode {
  */
 export function findTextNodes(root: XmlNode): TextNodeData[] {
   const allNodes = findTextNodesInternal(root, []);
-  const registry = new Map<XmlNode, SingleTextNode[]>();
+  const registry = arrayMap<XmlNode, SingleTextNode>();
   for (const node of allNodes) {
-    if (!registry.has(node.parent)) {
-      registry.set(node.parent, []);
-    }
-    registry.get(node.parent)!.push(node);
+    registry.add(node.parent, node);
   }
-  return allNodes.map((node) => Object.assign(node, { registry: registry }));
+  return allNodes.map((node) =>
+    Object.assign(node, { registry: registry.map })
+  );
 }
 
 function findTextNodesInternal(

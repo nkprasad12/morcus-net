@@ -1,15 +1,7 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
-import Button from "@mui/material/Button";
-import DialogActions from "@mui/material/DialogActions";
-import FormControlLabel from "@mui/material/FormControlLabel";
-import FormGroup from "@mui/material/FormGroup";
-import Switch from "@mui/material/Switch";
 import { useState, useContext } from "react";
-import Dialog from "@mui/material/Dialog";
-import DialogContent from "@mui/material/DialogContent";
-import DialogTitle from "@mui/material/DialogTitle";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
@@ -20,6 +12,8 @@ import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing"
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Solarized } from "@/web/client/styling/colors";
+import { SpanButton } from "@/web/client/components/generic/basics";
+import { ModalDialog } from "@/web/client/components/generic/overlays";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -47,62 +41,68 @@ function SearchSettingsDialog(props: {
   const inflectedSearch = globalSettings.data.inflectedSearch === true;
 
   return (
-    <Dialog
+    <ModalDialog
       open={props.open}
       onClose={props.onClose}
-      sx={{ top: "-40%" }}
-      PaperProps={{ className: "bgColor" }}
-      disableScrollLock>
-      <DialogTitle sx={{ fontWeight: "bold" }}>Dictionary Options</DialogTitle>
-      <DialogContent>
+      contentProps={{ className: "bgColor" }}
+      aria-labelledby="dictOptTitle">
+      <div
+        id="dictOptTitle"
+        className="text md"
+        style={{ fontWeight: "bold", margin: 0, padding: "16px 24px" }}>
+        Dictionary Options
+      </div>
+      <div style={{ padding: "0px 24px 20px" }}>
         <div className="text md light" style={{ marginTop: "8px" }}>
           Dictionaries
         </div>
-        <FormGroup>
+        <div>
           {LatinDict.AVAILABLE.map((dict) => (
-            <FormControlLabel
-              key={dict.key}
-              control={
-                <Switch
-                  checked={props.dicts.includes(dict)}
-                  onChange={(e) => {
-                    const dicts = new Set(props.dicts);
-                    if (e.target.checked) {
-                      dicts.add(dict);
-                    } else {
-                      dicts.delete(dict);
-                    }
-                    props.setDicts([...dicts]);
-                  }}
-                />
-              }
-              label={
+            <div key={dict.key}>
+              <input
+                id={dict.key + "option"}
+                type="checkbox"
+                checked={props.dicts.includes(dict)}
+                onChange={(e) => {
+                  const dicts = new Set(props.dicts);
+                  if (e.target.checked) {
+                    dicts.add(dict);
+                  } else {
+                    dicts.delete(dict);
+                  }
+                  props.setDicts([...dicts]);
+                }}
+              />
+              <label htmlFor={dict.key + "option"}>
                 <span>
-                  <DictChip label={dict.key} /> {dict.displayName}
+                  <DictChip label={dict.key} />{" "}
+                  <span className="text sm">{dict.displayName}</span>
                 </span>
-              }
-            />
+              </label>
+            </div>
           ))}
-        </FormGroup>
+        </div>
         <div className="text md light" style={{ marginTop: "8px" }}>
           Settings
         </div>
-        <FormGroup>
-          <FormControlLabel
-            control={
-              <Switch
-                checked={inflectedSearch}
-                onChange={() =>
-                  globalSettings.setData({
-                    ...globalSettings.data,
-                    inflectedSearch: !inflectedSearch,
-                  })
-                }
-              />
-            }
-            label={<span>Search inflected forms (Beta)</span>}
-          />
-        </FormGroup>
+        <div>
+          <div>
+            <input
+              id="inflectionOption"
+              type="checkbox"
+              checked={inflectedSearch}
+              onChange={() =>
+                globalSettings.setData({
+                  ...globalSettings.data,
+                  inflectedSearch: !inflectedSearch,
+                })
+              }
+            />
+            <label htmlFor="inflectionOption">
+              <span className="text sm">Inflected forms (Beta)</span>
+            </label>
+          </div>
+        </div>
         <HighlightStrengthSelector
           highlightStrength={
             globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
@@ -114,13 +114,15 @@ function SearchSettingsDialog(props: {
             });
           }}
         />
-      </DialogContent>
-      <DialogActions>
-        <Button autoFocus onClick={props.onClose} color="info">
+      </div>
+      <div className="dialogActions">
+        <SpanButton
+          onClick={props.onClose}
+          className="text md light button simple">
           Close
-        </Button>
-      </DialogActions>
-    </Dialog>
+        </SpanButton>
+      </div>
+    </ModalDialog>
   );
 }
 

@@ -13,15 +13,15 @@ import {
   ERROR_STATE_MESSAGE,
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
-import useMediaQuery from "@mui/material/useMediaQuery";
 import { RouteContext } from "@/web/client/router/router_v2";
 
-jest.mock("@mui/material/useMediaQuery", () => {
+jest.mock("@/web/client/utils/media_query", () => {
   return {
-    __esModule: true,
-    default: jest.fn(() => false),
+    ...jest.requireActual("@/web/client/utils/media_query"),
+    useMediaQuery: jest.fn(),
   };
 });
+import { useMediaQuery } from "@/web/client/utils/media_query";
 
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
