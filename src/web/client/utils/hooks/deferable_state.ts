@@ -6,7 +6,7 @@ import {
   useWrappedSetter,
 } from "@/web/client/utils/hooks/common";
 
-export function useDeferrableState<T extends NotFunction>(
+export function useDeferableState<T extends NotFunction>(
   defaultValue: T
 ): [T, SetStateType<T>, React.RefObject<T>] {
   const [ref, setRef] = useUpdateableRef<T>(defaultValue);
