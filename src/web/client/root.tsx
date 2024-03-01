@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { useContext, StrictMode } from "react";
+import { useContext, StrictMode, useEffect } from "react";
 import ReactDOM from "react-dom/client";
 
 import { Global } from "@emotion/react";
@@ -20,9 +20,6 @@ import {
 } from "@/web/client/styling/style_context";
 import { StyledEngineProvider } from "@mui/styled-engine";
 
-const props: SinglePageApp.Props = {
-  pages: [...ACTIVE_PAGES],
-};
 if (window.location.pathname === "/") {
   window.history.replaceState({}, "", DICT_PAGE.appBarConfig!.targetPath);
 }
@@ -31,12 +28,23 @@ const root = ReactDOM.createRoot(
   document.querySelector("#placeholder") as HTMLElement
 );
 
+const props: SinglePageApp.Props = {
+  pages: [...ACTIVE_PAGES],
+};
+
 function ConfigurableStyles() {
   const styleConfig = useContext(StyleContext);
-  document.body.style.backgroundColor = getBackgroundColor(styleConfig);
-  document
-    .querySelector('meta[name="theme-color"]')
-    ?.setAttribute("content", getAppBarColor(styleConfig));
+
+  const backgroundColor = getBackgroundColor(styleConfig);
+  const appBarColor = getAppBarColor(styleConfig);
+
+  useEffect(() => {
+    document.body.style.backgroundColor = backgroundColor;
+    document
+      .querySelector('meta[name="theme-color"]')
+      ?.setAttribute("content", appBarColor);
+  }, [backgroundColor, appBarColor]);
+
   return <Global {...getGlobalStyles(styleConfig)} />;
 }
 

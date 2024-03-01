@@ -1,4 +1,3 @@
-import { CSSProperties } from "react";
 import * as React from "react";
 
 import { EntryOutline } from "@/common/dictionaries/dict_result";
@@ -56,17 +55,6 @@ export const ERROR_STATE_MESSAGE =
 export const NO_RESULTS_MESSAGE =
   "No results found. If applicable, try enabling another " +
   "dictionary in settings.";
-
-const TOC_SIDEBAR_STYLE: CSSProperties = {
-  position: "sticky",
-  zIndex: 1,
-  top: 0,
-  left: 0,
-  marginTop: 10,
-  overflow: "auto",
-  maxHeight: window.innerHeight - 40,
-  minWidth: "min(29%, 300px)",
-};
 
 function chooseDicts(
   dicts: undefined | DictInfo | DictInfo[],
@@ -318,7 +306,7 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
           flexDirection: "row",
           justifyContent: "left",
         }}>
-        <div style={TOC_SIDEBAR_STYLE}>{sidebarContent}</div>
+        <div className="tocSidebar">{sidebarContent}</div>
         <div style={{ maxWidth: "10000px" }}>
           <SearchBar maxWidth="md" marginLeft="0" />
           {mainContent}

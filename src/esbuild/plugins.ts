@@ -60,7 +60,7 @@ function printBuildResult(
   }
   for (const output in metafile.outputs) {
     const data = metafile.outputs[output];
-    const size = (data.bytes / 1024).toFixed(1);
+    const size = (data.bytes / 1024).toFixed(2);
     console.log("entryPoint: " + data.entryPoint);
     console.log(`output: ${output} [${size} kB]\n`);
     if (options?.analyzeBundle) {

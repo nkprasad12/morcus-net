@@ -359,6 +359,16 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
       },
 
       /** Dictionary specific */
+      ".tocSidebar": {
+        position: "sticky",
+        zIndex: 1,
+        top: 0,
+        left: 0,
+        marginTop: 10,
+        overflow: "auto",
+        maxHeight: window.innerHeight - 40,
+        minWidth: "min(29%, 300px)",
+      },
       ".nonDictText": {
         color: isDarkMode ? Solarized.base1 : Solarized.base00,
       },
