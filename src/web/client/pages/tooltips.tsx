@@ -1,7 +1,6 @@
-import ClickAwayListener from "@mui/base/ClickAwayListener";
-import Tooltip from "@mui/material/Tooltip";
-import * as React from "react";
-import { exhaustiveGuard } from "@/common/misc_utils";
+import Popper from "@mui/base/PopperUnstyled";
+import React, { RefObject } from "react";
+import { exhaustiveGuard, singletonOf } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { checkPresent } from "@/common/assert";
@@ -11,7 +10,7 @@ import {
   type ButtonLikeProps,
 } from "@/web/client/components/generic/basics";
 
-export type TooltipPlacement = "top-start" | "right" | "bottom";
+export type TooltipPlacement = "top" | "right" | "bottom";
 
 export type TooltipChild = React.FC<
   Partial<ButtonLikeProps> & { role?: "button" } & {
@@ -21,47 +20,105 @@ export type TooltipChild = React.FC<
 
 export interface TooltipProps {
   titleText: string | JSX.Element;
-  className?: string | undefined;
   ChildFactory: TooltipChild;
   placement?: TooltipPlacement;
   open: boolean;
   onClickAway: () => any;
-  onChildClick: (isOpen: boolean) => any;
+  onChildClick: () => any;
+}
+
+type HtmlRef = RefObject<HTMLElement>;
+
+class TooltipManager {
+  static get = singletonOf(() => new TooltipManager()).get;
+
+  private readonly trackedRefs: Map<HtmlRef, () => any>;
+  private readonly tooltips: Map<HtmlRef, HtmlRef>;
+  private readonly callback: (ev: MouseEvent) => any = (e) => {
+    const clickedRef = this.findClickedRef(e);
+    for (const [ref, listener] of this.trackedRefs.entries()) {
+      if (ref !== clickedRef) {
+        listener();
+      }
+    }
+  };
+
+  constructor() {
+    this.trackedRefs = new Map();
+    this.tooltips = new Map();
+    window.addEventListener("click", this.callback);
+  }
+
+  private findClickedRef(e: MouseEvent): HtmlRef | undefined {
+    if (!(e.target instanceof Element)) {
+      return;
+    }
+    // Crawl up the tree until we find a match.
+    let current: Element | ParentNode | null = e.target;
+    while (current !== null && current instanceof Element) {
+      for (const base of this.trackedRefs) {
+        // Consider the tooltip as a part of the element.
+        const tooltip = this.tooltips.get(base[0])?.current;
+        if (base[0].current === current || tooltip === current) {
+          return base[0];
+        }
+      }
+      current = current.parentNode;
+    }
+  }
+
+  register(
+    ref: React.RefObject<HTMLElement>,
+    tooltip: React.RefObject<HTMLElement>,
+    listener: () => any
+  ) {
+    this.trackedRefs.set(ref, listener);
+    this.tooltips.set(ref, tooltip);
+  }
+
+  unregister(ref: React.RefObject<HTMLElement>) {
+    this.trackedRefs.delete(ref);
+    this.tooltips.delete(ref);
+  }
+}
+
+function useTooltipManager(
+  ref: React.RefObject<HTMLElement>,
+  tooltip: React.RefObject<HTMLElement>,
+  listener: () => any
+) {
+  React.useEffect(() => {
+    TooltipManager.get().register(ref, tooltip, listener);
+    return () => TooltipManager.get().unregister(ref);
+  }, [ref, tooltip, listener]);
 }
 
 function BaseTooltip(props: TooltipProps) {
+  const ref = React.useRef<HTMLDivElement>(null);
+  const tooltipRef = React.useRef<HTMLDivElement>(null);
+
+  useTooltipManager(ref, tooltipRef, props.onClickAway);
   return (
-    <ClickAwayListener
-      onClickAway={() => props.onClickAway()}
-      touchEvent={false}>
-      <div role="presentation" style={{ display: "inline" }}>
-        <Tooltip
-          title={<div className="text md">{props.titleText}</div>}
-          className={props.className}
-          placement={props.placement || "top-start"}
-          disableFocusListener
-          disableHoverListener
-          disableTouchListener
-          describeChild={false}
-          open={props.open}
-          arrow
-          slotProps={{ tooltip: { onClick: () => {} } }}>
-          <props.ChildFactory
-            role="button"
-            {...buttonLikeProps((e) => {
-              props.onChildClick(props.open);
-              e.stopPropagation();
-            }, true)}
-          />
-        </Tooltip>
-      </div>
-    </ClickAwayListener>
+    <>
+      <props.ChildFactory
+        ref={ref}
+        role="button"
+        {...buttonLikeProps(() => props.onChildClick(), true)}
+      />
+      <Popper
+        anchorEl={ref.current}
+        placement={props.placement || "top"}
+        open={props.open}>
+        <div className="text md tooltip" ref={tooltipRef}>
+          {props.titleText}
+        </div>
+      </Popper>
+    </>
   );
 }
 
 export function ClickableTooltip(props: {
   titleText: string | JSX.Element;
-  className?: string | undefined;
   ChildFactory: TooltipChild;
 }) {
   const [open, setOpen] = React.useState(false);
@@ -70,7 +127,7 @@ export function ClickableTooltip(props: {
     <BaseTooltip
       {...props}
       open={open}
-      onChildClick={(isOpen) => setOpen(!isOpen)}
+      onChildClick={() => setOpen(!open)}
       onClickAway={() => setOpen(false)}
     />
   );
@@ -95,7 +152,7 @@ function TextWithIcon(props: {
   }
 
   return (
-    <div className="text md light">
+    <div className="text md">
       <div
         onClick={onClick}
         style={{
@@ -159,7 +216,6 @@ function TitleText(props: {
 }
 
 export function CopyLinkTooltip(props: {
-  className?: string;
   forwarded: TooltipChild;
   message: string;
   link: string;
@@ -185,12 +241,11 @@ export function CopyLinkTooltip(props: {
           dismissTooltip={() => setTooltipVisible(false)}
         />
       }
-      className={props.className}
       ChildFactory={props.forwarded}
-      placement={props.placement || "top-start"}
+      placement={props.placement || "top"}
       open={visible}
-      onChildClick={(isOpen) => {
-        if (isOpen) {
+      onChildClick={() => {
+        if (visible) {
           setVisible(false);
           return;
         }
@@ -203,7 +258,6 @@ export function CopyLinkTooltip(props: {
 }
 
 export function SectionLinkTooltip(props: {
-  className?: string;
   forwarded: TooltipChild;
   id: string;
   forArticle?: boolean;
@@ -220,7 +274,7 @@ export function SectionLinkTooltip(props: {
 
   return (
     <CopyLinkTooltip
-      className={props.className}
+      placement="right"
       forwarded={props.forwarded}
       message={message}
       link={getLink()}

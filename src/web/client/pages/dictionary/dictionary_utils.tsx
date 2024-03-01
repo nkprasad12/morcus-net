@@ -263,7 +263,6 @@ export function xmlNodeToJsx(
     return (
       <ClickableTooltip
         titleText={titleText}
-        className={className}
         ChildFactory={ForwardedNode}
         key={key}
       />
@@ -278,7 +277,6 @@ export function xmlNodeToJsx(
     return (
       <SectionLinkTooltip
         forwarded={ForwardedNode}
-        className={className}
         id={checkPresent(
           root.getAttr("senseid"),
           "lsSenseBullet must have senseid!"

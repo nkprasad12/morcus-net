@@ -275,15 +275,12 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
       },
 
       /** Tooltip styling */
-      ".MuiTooltip-arrow": {
-        color: isDarkMode ? Solarized.darkarkModeMint : Solarized.base01,
-      },
-      ".MuiTooltip-tooltipArrow": {
-        backgroundColor: isDarkMode
-          ? Solarized.darkarkModeMint
-          : Solarized.mint,
-        color: Solarized.base01,
-        border: `2px solid ${isDarkMode ? Solarized.base02 : Solarized.base01}`,
+      ".tooltip": {
+        backgroundColor: isDarkMode ? backgroundColor : Solarized.mint,
+        border: `2px solid ${isDarkMode ? Solarized.base1 : Solarized.base01}`,
+        padding: "4px 8px",
+        borderRadius: "4px",
+        margin: "8px",
       },
 
       /** Basic content primitives */

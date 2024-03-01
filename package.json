@@ -72,7 +72,6 @@
     "@emotion/react": "^11.10.6",
     "@emotion/styled": "^11.10.6",
     "@jest/globals": "^29.4.2",
-    "@mui/icons-material": "^5.11.11",
     "@mui/material": "^5.11.12",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^14.0.0",

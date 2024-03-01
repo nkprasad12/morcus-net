@@ -18,7 +18,6 @@ import {
   StyleContext,
   StyleContextProvider,
 } from "@/web/client/styling/style_context";
-import { StyledEngineProvider } from "@mui/styled-engine";
 
 if (window.location.pathname === "/") {
   window.history.replaceState({}, "", DICT_PAGE.appBarConfig!.targetPath);
@@ -48,13 +47,11 @@ root.render(
     <SettingsHandler>
       <StyleContextProvider>
         <ConfigurableStyles />
-        <StyledEngineProvider injectFirst>
-          <Router.Root>
-            <TitleHandler>
-              <SinglePageApp {...props} />
-            </TitleHandler>
-          </Router.Root>
-        </StyledEngineProvider>
+        <Router.Root>
+          <TitleHandler>
+            <SinglePageApp {...props} />
+          </TitleHandler>
+        </Router.Root>
       </StyleContextProvider>
     </SettingsHandler>
   </StrictMode>
