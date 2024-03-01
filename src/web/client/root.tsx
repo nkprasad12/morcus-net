@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { useContext, StrictMode, useEffect } from "react";
+import { useContext, StrictMode } from "react";
 import ReactDOM from "react-dom/client";
 
 import { Global } from "@emotion/react";
@@ -35,15 +35,10 @@ const props: SinglePageApp.Props = {
 function ConfigurableStyles() {
   const styleConfig = useContext(StyleContext);
 
-  const backgroundColor = getBackgroundColor(styleConfig);
-  const appBarColor = getAppBarColor(styleConfig);
-
-  useEffect(() => {
-    document.body.style.backgroundColor = backgroundColor;
-    document
-      .querySelector('meta[name="theme-color"]')
-      ?.setAttribute("content", appBarColor);
-  }, [backgroundColor, appBarColor]);
+  document.body.style.backgroundColor = getBackgroundColor(styleConfig);
+  document
+    .querySelector('meta[name="theme-color"]')
+    ?.setAttribute("content", getAppBarColor(styleConfig));
 
   return <Global {...getGlobalStyles(styleConfig)} />;
 }

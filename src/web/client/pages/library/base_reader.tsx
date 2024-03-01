@@ -3,7 +3,7 @@ import { Container } from "@/web/client/components/generic/basics";
 import {
   usePersistedBool,
   usePersistedNumber,
-} from "@/web/client/pages/library/persisted_settings";
+} from "@/web/client/utils/hooks/persisted_state";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultReaderSidebarContent,
@@ -95,6 +95,12 @@ export function BaseReader<
   const [drawerHeight, setDrawerHeight] = useState<number>(
     window.innerHeight * 0.15
   );
+
+  useEffect(() => {
+    const resetDrawer = () => setDrawerHeight(window.innerHeight * 0.15);
+    window.addEventListener("orientationchange", resetDrawer);
+    window.removeEventListener("orientationchange", resetDrawer);
+  }, [setDrawerHeight]);
 
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
   const BaseLayout = isScreenSmall ? BaseMobileReaderLayout : BaseReaderLayout;

@@ -299,7 +299,7 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
   const mainContent = children[1] || <></>;
 
   return (
-    <Container maxWidth="xl" style={{ minHeight: window.innerHeight }}>
+    <Container maxWidth="xl" style={{ minHeight: "100vh" }}>
       <div
         style={{
           display: "flex",

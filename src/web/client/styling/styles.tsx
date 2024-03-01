@@ -366,7 +366,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         left: 0,
         marginTop: 10,
         overflow: "auto",
-        maxHeight: window.innerHeight - 40,
+        maxHeight: "calc(100vh - 40px)",
         minWidth: "min(29%, 300px)",
       },
       ".nonDictText": {
@@ -521,11 +521,11 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         zIndex: 5,
       },
       ".readerMobileBottomBar": {
-        width: document.body.clientWidth,
+        width: "100vw",
         backgroundColor: bgColorAlt,
       },
       ".readerMobileDragger": {
-        width: document.body.clientWidth,
+        width: "100vw",
         borderTopLeftRadius: "12px",
         borderTopRightRadius: "12px",
         backgroundColor: bgColorAlt,
