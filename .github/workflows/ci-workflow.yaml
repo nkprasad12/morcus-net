@@ -54,7 +54,7 @@ jobs:
       - name: Preparing server bundle
         run: |
           mkdir build
-          npx esbuild src/start_server.ts --bundle --platform=node --external:bun:sqlite --outfile=build/server.js
+          npm run tsnp src/esbuild/server.esbuild.ts
           mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
       - uses: actions/upload-artifact@v4
         with:
