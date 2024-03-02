@@ -1,7 +1,7 @@
 FROM node:20-alpine3.18
-
-RUN apk add git && apk add curl && mkdir -p /home/node/morcus/node_modules
-WORKDIR /home/node/morcus
+RUN apk add git && apk add curl && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
+WORKDIR /morcus
+COPY --chown=node:node templates templates
 COPY --chown=node:node src src
 COPY --chown=node:node public public
 COPY --chown=node:node texts texts
@@ -9,19 +9,30 @@ COPY --chown=node:node tsconfig.json tsconfig.json
 COPY --chown=node:node package.json package.json
 COPY --chown=node:node package-lock.json package-lock.json
 COPY --chown=node:node .git .git
-RUN chown -R node:node /home/node/morcus
+RUN chown -R node:node /morcus
 
 USER node
-RUN npm install
+RUN npm ci --omit optional
 RUN npm run build
-RUN npm prune --production
-RUN rm -rf .git
+RUN npm run tsnp src/esbuild/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
 
 FROM node:20-alpine3.18
-ENV CONSOLE_TELEMETRY="yes" PORT="5656"
-COPY --from=0 /home/node/morcus /home/node/morcus
-WORKDIR /home/node/morcus
-EXPOSE 5656
-RUN chown -R node:node .
+WORKDIR /morcus
+COPY --from=0 /morcus/genfiles_static genfiles_static
+COPY --from=0 /morcus/library_processed library_processed
+COPY --from=0 /morcus/public public
+COPY --from=0 /morcus/build build
+COPY --from=0 /morcus/ls.db ls.db
+COPY --from=0 /morcus/sh.db sh.db
+COPY --from=0 /morcus/lat_infl.db lat_infl.db
+COPY --from=0 /morcus/morcusnet.commit.txt morcusnet.commit.txt
+COPY --from=0 /morcus/package.json package.json
+RUN chown -R node:node /morcus
+
+FROM node:20-alpine3.18
+COPY --chown=node:node --from=1 /morcus /morcus
+WORKDIR /morcus
+ENV PORT="5757"
+EXPOSE 5757
 USER node
-CMD [ "npm", "start" ]
+CMD [ "node", "build/server.js" ]
