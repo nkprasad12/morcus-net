@@ -187,5 +187,11 @@ export function startMorcusServer(): Promise<http.Server> {
 
 if (process.env.MAIN === "start") {
   dotenv.config();
-  startMorcusServer().then(() => log("Server started! Press Ctrl+C to exit."));
+  startMorcusServer().then((server) => {
+    log("Server started! Press Ctrl+C to exit.");
+    process.on("SIGTERM", () => {
+      log("SIGTERM received, closing server.");
+      server.close();
+    });
+  });
 }
