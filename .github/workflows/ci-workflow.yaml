@@ -51,6 +51,11 @@ jobs:
         run: npm ci --omit optional
       - name: Running prod build step
         run: npm run build
+      - name: Preparing server bundle
+        run: |
+          mkdir build
+          npx esbuild src/start_server.ts --bundle --platform=node --external:bun:sqlite --outfile=build/server.js
+          mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
       - uses: actions/upload-artifact@v4
         with:
           name: build_outputs
@@ -58,18 +63,11 @@ jobs:
             genfiles_static/
             library_processed/
             public/
+            build/
             ls.db
             sh.db
             lat_infl.db
             morcusnet.commit.txt
-            package.json
-            package-lock.json
-            tsconfig.json
-            src/
-            !src/libs
-            !src/morceus
-            !src/py
-            !src/web/client
           compression-level: 9
 
   integration-checks:

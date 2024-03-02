@@ -81,7 +81,7 @@ export namespace ReadOnlyDb {
       db.pragma("journal_mode = WAL");
       return db;
     } catch (e) {
-      throw new Error(`Unable to read DB file ${dbPath}`);
+      throw new Error(`Unable to read DB file ${dbPath}`, { cause: e });
     }
   }
 }
