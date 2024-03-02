@@ -282,6 +282,9 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         borderRadius: "4px",
         margin: "8px",
       },
+      ".MuiPopper-root": {
+        zIndex: 102,
+      },
 
       /** Basic content primitives */
       ".bgColor": { backgroundColor },

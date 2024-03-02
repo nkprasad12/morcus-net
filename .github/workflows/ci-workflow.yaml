@@ -68,6 +68,7 @@ jobs:
             sh.db
             lat_infl.db
             morcusnet.commit.txt
+            package.json
           compression-level: 9
 
   integration-checks:
