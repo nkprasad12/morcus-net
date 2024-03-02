@@ -79,7 +79,9 @@ jobs:
       - uses: actions/checkout@v4
       - name: Build image
         uses: docker/build-push-action@v5
-        with: type=tar,dest=morcus.tar
+        with:
+          outputs: |
+            type=tar,dest=morcus.tar
       - uses: actions/upload-artifact@v4
         with:
           name: docker_image
