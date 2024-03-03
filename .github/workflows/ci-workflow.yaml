@@ -84,11 +84,13 @@ jobs:
           file: ./Dockerfile
           outputs: |
             type=tar,dest=morcus.tar
+      - name: Compressing image
+        run: xz -c2 morcus.tar > morcus.tar.xz
       - uses: actions/upload-artifact@v4
         with:
           name: docker_image
-          path: morcus.tar
-          compression-level: 9
+          path: morcus.tar.xz
+          compression-level: 0
 
   integration-checks:
     runs-on: ubuntu-latest
