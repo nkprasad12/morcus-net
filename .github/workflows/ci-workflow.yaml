@@ -82,14 +82,16 @@ jobs:
         with:
           context: ./
           file: ./Dockerfile
-          outputs: |
-            type=tar,dest=morcus.tar
-      - name: Compressing image
-        run: xz -c2 morcus.tar > morcus.tar.xz
+          tags: morcus
+          load: true
+      - name: Write image
+        run: docker image save morcus -o morcus.image
+      - name: Compress image
+        run: xz -c2 morcus.image > morcus.image.xz
       - uses: actions/upload-artifact@v4
         with:
           name: docker_image
-          path: morcus.tar.xz
+          path: morcus.image.xz
           compression-level: 0
 
   integration-checks:

@@ -105,6 +105,6 @@ warnings within VSCode for any ESLint errors in the code.
 Docker images are generated for each push to `dev` and `main`. These can be downloaded from the `Actions` page. Once downloaded:
 
 1. `unzip docker_image.zip && rm docker_image.zip`
-2. `xz -d morcus.tar.xz`
-3. `docker image import morcus.tar`
-4. `docker container run -i -t -p localhost:5757:5757 --name morcus sha-from-previous-command`
+2. `xz -cd morcus.image.xz | sudo docker image load`
+3. `rm morcus.image.xz`
+4. `docker container run -i -t -p 127.0.0.1:5757:5757 --name morcus morcus`
