@@ -6,11 +6,13 @@ import { getCommitHash } from "@/web/client/define_vars";
 import { SpanButton, TextField } from "@/web/client/components/generic/basics";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
 
+const DEFAULT_TEXT = `\n\nReporter: Anonymous`;
+
 export function ReportIssueDialog(props: {
   show: boolean;
   onClose: () => any;
 }) {
-  const [reportText, setReportText] = useState<string>("");
+  const [reportText, setReportText] = useState<string>(DEFAULT_TEXT);
 
   return (
     <ModalDialog
@@ -24,18 +26,20 @@ export function ReportIssueDialog(props: {
         id="reportTitle"
         className="text md"
         style={{ lineHeight: "normal", margin: 0, padding: "16px 24px" }}>
-        <b>Report an issue</b>
+        <b>Issues / Feedback</b>
       </div>
       <div style={{ padding: "0px 24px 20px" }}>
         <p className="text sm light" style={{ lineHeight: "normal" }}>
-          What did you do, what did you expect to see, and what did you actually
-          see? <i>This report will be visible to the general public</i>.
+          Report an issue or share any feedback about the site.{" "}
+          <b>This report will be visible to the general public</b>. Update the
+          `Reporter` if you want to be contacted for further clarification or
+          updates in this issue.
         </p>
         <TextField
           id="Report issue box"
           autoFocus
           onNewValue={setReportText}
-          defaultValue={`\n\nReporter: Anonymous (change this to be notified when your issue is fixed)\n${window.location.href}`}
+          defaultValue={DEFAULT_TEXT}
           fullWidth
           multiline
           minRows={8}
@@ -50,6 +54,7 @@ export function ReportIssueDialog(props: {
             const request = {
               reportText,
               commit: getCommitHash(),
+              url: window.location.href,
             };
             callApi(ReportApi, request).catch(() => {});
             props.onClose();

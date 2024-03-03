@@ -126,11 +126,19 @@ export function startMorcusServer(): Promise<http.Server> {
   if (mongodbUri === undefined && !consoleTelemetry) {
     log("No `MONGODB_URI` environment variable set. Logging to console.");
   }
+  if (mongodbUri !== undefined && consoleTelemetry) {
+    log("`MONGODB_URI` set but logging to console due to `CONSOLE_TELEMETRY`.");
+  }
   const telemetry =
     mongodbUri !== undefined && !consoleTelemetry
       ? MongoLogger.create(mongodbUri, envVar("DB_SOURCE"))
       : Promise.resolve(TelemetryLogger.NoOp);
-
+  const githubToken = process.env.GITHUB_TOKEN;
+  if (githubToken === undefined) {
+    log(
+      "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
+    );
+  }
   const buildDir = path.join(__dirname, "../genfiles_static");
   const params: WebServerParams = {
     webApp: app,
@@ -139,7 +147,9 @@ export function startMorcusServer(): Promise<http.Server> {
         callWorker(Workers.MACRONIZER, input, workServer)
       ),
       RouteDefinition.create(ReportApi, (request) =>
-        GitHub.reportIssue(request.reportText, request.commit)
+        githubToken === undefined
+          ? Promise.resolve(log(GitHub.createIssueBody(request)))
+          : GitHub.reportIssue(request, githubToken)
       ),
       RouteDefinition.create(DictsFusedApi, (input, extras) =>
         fusedDict.getEntry(input, extras)

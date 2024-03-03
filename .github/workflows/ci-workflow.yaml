@@ -80,6 +80,8 @@ jobs:
       - name: Build image
         uses: docker/build-push-action@v5
         with:
+          context: ./
+          file: ./Dockerfile
           outputs: |
             type=tar,dest=morcus.tar
       - uses: actions/upload-artifact@v4
