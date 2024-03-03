@@ -97,3 +97,14 @@ This will allow you to run and debug unit tests from within the VS Code UI when 
 
 Install the [ESLint plugin](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint). This will add
 warnings within VSCode for any ESLint errors in the code.
+
+---
+
+## Docker Image
+
+Docker images are generated for each push to `dev` and `main`. These can be downloaded from the `Actions` page. Once downloaded:
+
+1. `unzip docker_image.zip && rm docker_image.zip`
+2. `xz -d morcus.tar.xz`
+3. `docker image import morcus.tar`
+4. `docker container run -i -t -p localhost:5757:5757 --name morcus sha-from-previous-command`
