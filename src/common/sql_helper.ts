@@ -1,4 +1,5 @@
 import fs from "fs";
+import path from "path";
 import { assert } from "@/common/assert";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 
@@ -31,6 +32,9 @@ export namespace ReadOnlyDb {
     indices: string[][] = []
   ) {
     const start = performance.now();
+    if (!fs.existsSync(path.dirname(destination))) {
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+    }
     if (fs.existsSync(destination)) {
       fs.unlinkSync(destination);
     }

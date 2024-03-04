@@ -62,9 +62,6 @@ jobs:
           path: |
             public/
             build/
-            ls.db
-            sh.db
-            lat_infl.db
             morcusnet.commit.txt
             package.json
           compression-level: 9
