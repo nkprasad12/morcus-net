@@ -60,7 +60,6 @@ jobs:
         with:
           name: build_outputs
           path: |
-            library_processed/
             public/
             build/
             ls.db

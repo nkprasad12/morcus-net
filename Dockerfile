@@ -18,7 +18,6 @@ RUN npm run tsnp src/esbuild/server.esbuild.ts && mv node_modules/better-sqlite3
 
 FROM node:20-alpine3.18
 WORKDIR /morcus
-COPY --from=0 /morcus/library_processed library_processed
 COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
 COPY --from=0 /morcus/ls.db ls.db
