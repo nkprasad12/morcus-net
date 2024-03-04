@@ -1,14 +1,7 @@
 FROM node:20-alpine3.18
 RUN apk add git && apk add curl && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
 WORKDIR /morcus
-COPY --chown=node:node templates templates
-COPY --chown=node:node src src
-COPY --chown=node:node public public
-COPY --chown=node:node texts texts
-COPY --chown=node:node tsconfig.json tsconfig.json
-COPY --chown=node:node package.json package.json
-COPY --chown=node:node package-lock.json package-lock.json
-COPY --chown=node:node .git .git
+COPY --chown=node:node ./ ./
 RUN chown -R node:node /morcus
 
 USER node

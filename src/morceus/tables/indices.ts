@@ -59,7 +59,7 @@ export function makeEndIndex(
 export function makeEndIndexAndSave(
   targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
   dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
-  outputDir: string = "v2morceus-out/indices/"
+  outputDir: string = "build/morceus/indices/"
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(

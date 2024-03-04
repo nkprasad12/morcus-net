@@ -53,7 +53,7 @@ jobs:
         run: npm run build
       - name: Preparing server bundle
         run: |
-          mkdir build
+          mkdir build -p
           npm run tsnp src/esbuild/server.esbuild.ts
           mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
       - uses: actions/upload-artifact@v4
