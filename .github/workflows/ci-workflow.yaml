@@ -68,25 +68,26 @@ jobs:
   docker-image:
     runs-on: ubuntu-latest
     timeout-minutes: 6
+    env:
+      IMAGE_NAME: morcus
 
     steps:
       - uses: actions/checkout@v4
       - name: Build image
-        uses: docker/build-push-action@v5
-        with:
-          context: ./
-          file: ./Dockerfile
-          tags: morcus
-          load: true
-      - name: Write image
-        run: docker image save morcus -o morcus.image
-      - name: Compress image
-        run: xz -c2 morcus.image > morcus.image.xz
-      - uses: actions/upload-artifact@v4
-        with:
-          name: docker_image
-          path: morcus.image.xz
-          compression-level: 0
+        run: docker build . --tag $IMAGE_NAME --label "runnumber=${GITHUB_RUN_ID}"
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Push image
+        run: |
+          IMAGE_ID=ghcr.io/${{ github.repository_owner }}/$IMAGE_NAME
+          IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
+          VERSION=$(echo "${{ github.ref }}" | sed -e 's,.*/\(.*\),\1,')
+          [[ "${{ github.ref }}" == "refs/tags/"* ]] && VERSION=$(echo $VERSION | sed -e 's/^v//')
+          [ "$VERSION" == "main" ] && VERSION=latest
+          echo IMAGE_ID=$IMAGE_ID
+          echo VERSION=$VERSION
+          docker tag $IMAGE_NAME $IMAGE_ID:$VERSION
+          docker push $IMAGE_ID:$VERSION
 
   integration-checks:
     runs-on: ubuntu-latest
