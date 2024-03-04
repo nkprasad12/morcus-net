@@ -1,9 +1,9 @@
 /* istanbul ignore file */
 
 import { spawnSync } from "child_process";
-import { rmSync, writeFileSync } from "fs";
+import { rmSync, writeFileSync, existsSync, mkdirSync } from "fs";
 
-const COMMIT_ID_FILE = "morcusnet.commit.txt";
+const COMMIT_ID_FILE = "build/morcusnet.commit.txt";
 
 function calculateCommitId(): string {
   // The Heroku build environment removes git metadata, but provides
@@ -20,6 +20,9 @@ export function writeCommitId() {
   try {
     rmSync(COMMIT_ID_FILE);
   } catch {}
+  if (!existsSync("build")) {
+    mkdirSync("build");
+  }
   console.log(`Storing commit hash: "${id}"`);
   writeFileSync(COMMIT_ID_FILE, id);
 }

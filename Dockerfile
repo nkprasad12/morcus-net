@@ -20,7 +20,6 @@ FROM node:20-alpine3.18
 WORKDIR /morcus
 COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
-COPY --from=0 /morcus/morcusnet.commit.txt morcusnet.commit.txt
 COPY --from=0 /morcus/package.json package.json
 RUN chown -R node:node /morcus
 

@@ -102,7 +102,7 @@ async function callWorker(
 }
 
 export function startMorcusServer(): Promise<http.Server> {
-  process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
+  process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
   const app = express();
   const server = http.createServer(app);

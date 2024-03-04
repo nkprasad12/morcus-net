@@ -13,7 +13,7 @@ const ENTRY_POINT = "src/web/client/root.tsx";
 const envOptions = BundleOptions.get();
 
 function getHash(): string {
-  const hash = fs.readFileSync("morcusnet.commit.txt").toString();
+  const hash = fs.readFileSync("build/morcusnet.commit.txt").toString();
   console.log(`Client commit hash: "${hash}"`);
   return hash;
 }

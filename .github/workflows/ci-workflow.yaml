@@ -62,7 +62,6 @@ jobs:
           path: |
             public/
             build/
-            morcusnet.commit.txt
             package.json
           compression-level: 9
 
