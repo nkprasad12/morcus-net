@@ -7,7 +7,7 @@ import clear from "esbuild-plugin-output-reset";
 import { BundleOptions, runBundler } from "@/esbuild/utils";
 import { printStatsPlugin, typeCheckPlugin } from "@/esbuild/plugins";
 
-const OUT_DIR = "genfiles_static/";
+const OUT_DIR = "build/client";
 const ENTRY_POINT = "src/web/client/root.tsx";
 
 const envOptions = BundleOptions.get();

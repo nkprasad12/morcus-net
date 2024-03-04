@@ -60,7 +60,6 @@ jobs:
         with:
           name: build_outputs
           path: |
-            genfiles_static/
             library_processed/
             public/
             build/

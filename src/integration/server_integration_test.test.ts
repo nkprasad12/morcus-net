@@ -69,7 +69,7 @@ afterAll(async () => {
 }, 10000);
 
 describe("bundle size check", () => {
-  const GENFILES_ROOT = "genfiles_static";
+  const GENFILES_ROOT = "build/client";
 
   test("bundle size is within limit", () => {
     const bundleFiles = readdirSync(GENFILES_ROOT);

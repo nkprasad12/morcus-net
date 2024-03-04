@@ -139,7 +139,7 @@ export function startMorcusServer(): Promise<http.Server> {
       "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
     );
   }
-  const buildDir = path.join(__dirname, "../genfiles_static");
+  const buildDir = path.join(process.cwd(), "build", "client");
   const params: WebServerParams = {
     webApp: app,
     routes: [
