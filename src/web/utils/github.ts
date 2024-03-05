@@ -8,9 +8,12 @@ export namespace GitHub {
   export function createIssueBody(request: ReportApiRequest): string {
     const { commit, reportText, url } = request;
     const commitLink = `https://github.com/nkprasad12/morcus-net/commit/${commit}`;
-    return [`Built at: ${commitLink}`, reportText, url ?? "URL Missing"].join(
-      "\n"
-    );
+    return [
+      reportText,
+      `Built at: ${commitLink}`,
+      url ?? "URL Missing",
+      request.userAgent ?? "UserAgent Missing",
+    ].join("\n");
   }
 
   export async function reportIssue(

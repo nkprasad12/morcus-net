@@ -47,6 +47,7 @@ export interface ReportApiRequest {
   reportText: string;
   commit: string;
   url?: string;
+  userAgent?: string;
 }
 
 export const ReportApi: ApiRoute<ReportApiRequest, any> = {
@@ -56,6 +57,7 @@ export const ReportApi: ApiRoute<ReportApiRequest, any> = {
     ["reportText", isString],
     ["commit", isString],
     ["url", maybeUndefined(isString)],
+    ["userAgent", maybeUndefined(isString)],
   ]),
   outputValidator: isAny,
 };
