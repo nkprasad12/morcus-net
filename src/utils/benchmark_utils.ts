@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-interface BenchamarkConfig {
+export interface BenchmarkConfig {
   call: () => any;
   name: string;
 }
@@ -23,17 +23,26 @@ async function benchmarkCall(
   return runtimes;
 }
 
-function printBenchmark(data: BenchmarkData) {
-  const runtimes = data.results;
-  const mean = runtimes.reduce((sum, x) => sum + x, 0) / runtimes.length;
-  const max = Math.max(...runtimes);
-  console.log(
-    `${data.name}: Mean ${mean.toFixed(2)} ms, Max ${max.toFixed(2)} ms`
+function standardDeviation(array: number[]) {
+  const n = array.length;
+  const mean = array.reduce((a, b) => a + b) / n;
+  return Math.sqrt(
+    array.map((x) => Math.pow(x - mean, 2)).reduce((a, b) => a + b) / n
   );
 }
 
+function printBenchmark(data: BenchmarkData) {
+  const runtimes = data.results;
+  const mean = (
+    runtimes.reduce((sum, x) => sum + x, 0) / runtimes.length
+  ).toFixed(2);
+  const max = Math.max(...runtimes).toFixed(2);
+  const stdev = standardDeviation(runtimes).toFixed(2);
+  console.log(`${data.name}: Mean ${mean} ms, StDev ${stdev}, Max ${max} ms`);
+}
+
 export async function runBenchmarks(
-  configs: BenchamarkConfig[],
+  configs: BenchmarkConfig[],
   iterations: number,
   cold?: boolean
 ) {
