@@ -127,7 +127,7 @@ describe("LewisAndShort", () => {
     );
 
     expect(result).toHaveLength(1);
-    const keys = result[0].keys.split(",");
+    const keys = result[0].keys;
     expect(keys).toHaveLength(2);
     expect(keys).toContain("adtango");
     expect(keys).toContain("attango");
@@ -139,7 +139,7 @@ describe("LewisAndShort", () => {
     const result = lewisAndShort.filter((entry) => entry.keys.includes("abs-"));
 
     expect(result).toHaveLength(1);
-    const keys = result[0].keys.split(",");
+    const keys = result[0].keys;
     expect(keys).toHaveLength(1);
     expect(keys).toContain("abs-");
   });
@@ -152,7 +152,7 @@ describe("LewisAndShort", () => {
     );
 
     expect(result).toHaveLength(1);
-    expect(result[0].keys).toBe("arruo");
+    expect(result[0].keys).toStrictEqual(["arruo"]);
   });
 
   test("getEntryById returns expected entries", async () => {

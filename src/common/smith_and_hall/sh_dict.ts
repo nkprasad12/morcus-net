@@ -12,7 +12,7 @@ export class SmithAndHall implements Dictionary {
   private readonly sqlDict: SqlDict;
 
   constructor(dbPath: string = envVar("SH_PROCESSED_PATH")) {
-    this.sqlDict = new SqlDict(dbPath, "@");
+    this.sqlDict = new SqlDict(dbPath);
   }
 
   private reviveRaw(input: string) {

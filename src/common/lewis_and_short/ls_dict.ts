@@ -46,9 +46,8 @@ export namespace StoredEntryData {
     keys: string[],
     entry: StoredEntryData
   ): RawDictEntry {
-    assertEqual(keys.filter((k) => k.includes(",")).length, 0);
     return {
-      keys: keys.join(","),
+      keys: keys,
       entry: encodeMessage(entry, REGISTRY),
       id,
     };
@@ -65,7 +64,7 @@ export class LewisAndShort implements Dictionary {
   private readonly sqlDict: SqlDict;
 
   constructor(dbFile: string = envVar("LS_PROCESSED_PATH")) {
-    this.sqlDict = new SqlDict(dbFile, ",");
+    this.sqlDict = new SqlDict(dbFile);
   }
 
   async getEntryById(
