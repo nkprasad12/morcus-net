@@ -4,16 +4,7 @@ MORCUS_DIR="morcus"
 APP_NAME="Morcus Latin Tools"
 PORT="5757"
 
-echo "This script will set up $APP_NAME in a new '$MORCUS_DIR' subdirectory of current directory."
-read -p "Enter y to continue, or any key to exit: " -n 1 -r
-echo
-if [[ ! $REPLY =~ ^[y]$ ]]
-then
-    # return 1 from a function. We can check via
-    # [[ "$0" = "$BASH_SOURCE" ]]
-    exit 1
-fi
-
+echo "This script will set up $APP_NAME in a '$MORCUS_DIR' subdirectory of current directory."
 echo "Cloning the repo in a new '$MORCUS_DIR' directory."
 mkdir $MORCUS_DIR
 cd $MORCUS_DIR
