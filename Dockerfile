@@ -16,11 +16,13 @@ COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
 COPY --from=0 /morcus/package.json package.json
 RUN mv build/dbs/ /morcus_dbs/
-RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
 RUN chown -R node:node /morcus
+RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
 
 FROM node:20-alpine3.18
-COPY --chown=node:node --from=1 /morcus_dbs /morcus/build/dbs
+COPY --chown=node:node --from=1 /morcus_dbs/ls.db /morcus/build/dbs/ls.db
+COPY --chown=node:node --from=1 /morcus_dbs/sh.db /morcus/build/dbs/sh.db
+COPY --chown=node:node --from=1 /morcus_dbs/lat_infl.db /morcus/build/dbs/lat_info.db
 COPY --chown=node:node --from=1 /morcus /morcus
 WORKDIR /morcus
 ENV PORT="5757"
