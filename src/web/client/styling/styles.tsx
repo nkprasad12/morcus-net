@@ -280,7 +280,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         border: `2px solid ${isDarkMode ? Solarized.base1 : Solarized.base01}`,
         padding: "4px 8px",
         borderRadius: "4px",
-        margin: "8px",
+        margin: "6px",
       },
       ".MuiPopper-root": {
         zIndex: 102,
