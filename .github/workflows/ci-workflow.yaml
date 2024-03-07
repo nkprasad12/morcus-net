@@ -111,9 +111,7 @@ jobs:
 
   docker-image-main:
     if: github.ref == 'refs/heads/main'
-    needs: |
-      presubmit-checks
-      integration-checks
+    needs: [presubmit-checks, integration-checks]
     uses: ./.github/workflows/build-docker-image.yaml
     secrets: inherit
     with:
