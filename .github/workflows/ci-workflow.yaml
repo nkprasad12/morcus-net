@@ -107,7 +107,7 @@ jobs:
         run: npm run pytype
 
   docker-image-dev:
-    if: github.base_ref == 'refs/heads/dev'
+    if: github.base_ref == 'dev'
     uses: ./.github/workflows/build-docker-image.yaml
     secrets: inherit
     with:
