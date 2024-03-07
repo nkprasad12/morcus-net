@@ -17,6 +17,7 @@ COPY --from=0 /morcus/package.json package.json
 RUN chown -R node:node /morcus
 
 FROM node:20-alpine3.18
+COPY --exclude=/morcus/build --chown=node:node --from=1 /morcus /morcus
 COPY --chown=node:node --from=1 /morcus /morcus
 WORKDIR /morcus
 ENV PORT="5757"
