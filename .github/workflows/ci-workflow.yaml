@@ -92,6 +92,9 @@ jobs:
     timeout-minutes: 6
 
     steps:
+      - name: Fooo
+        run: echo "${{ github.ref }}"
+        run: echo "${{ github.base_ref }}"
       - uses: actions/checkout@v4
       - name: Set up Python 3.8
         uses: actions/setup-python@v5
