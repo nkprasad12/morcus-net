@@ -1,3 +1,4 @@
+# syntax=docker/dockerfile:1.7-labs
 FROM node:20-alpine3.18
 RUN apk add git && apk add curl && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
 WORKDIR /morcus
@@ -14,9 +15,11 @@ WORKDIR /morcus
 COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
 COPY --from=0 /morcus/package.json package.json
+RUN mv build/dbs/ /morcus_dbs/
 RUN chown -R node:node /morcus
 
 FROM node:20-alpine3.18
+COPY --chown=node:node --from=1 /morcus_dbs /morcus/build/dbs
 COPY --chown=node:node --from=1 /morcus /morcus
 WORKDIR /morcus
 ENV PORT="5757"
