@@ -95,6 +95,7 @@ jobs:
       - uses: actions/checkout@v4
       - name: Fooo
         run: echo "${{ github.ref }}"
+      - name: Foooo
         run: echo "${{ github.base_ref }}"
       - name: Set up Python 3.8
         uses: actions/setup-python@v5
