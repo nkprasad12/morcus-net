@@ -1,5 +1,13 @@
 import { assert } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import fs from "fs";
+
+const STEM_FILES: string[] = [
+  "stemlib/Latin/stemsrc/ls.nom",
+  "stemlib/Latin/stemsrc/nom.livy",
+  // We need to generate the nom.irreg (expand irregular.nom.src using the templates.)
+  // And we want to use the rest of the nom.*
+];
 
 export type PosType = "no" | "aj" | "wd";
 export interface Stem {
@@ -80,4 +88,10 @@ function processStem(lines: string[]): Lemma {
     lemma: lines[0].substring(4),
     stems,
   };
+}
+
+export function allStems(): Lemma[] {
+  const root = envVar("MORPHEUS_ROOT");
+  const stemFiles = STEM_FILES.map((f) => root + "/" + f);
+  return stemFiles.flatMap(parseStemFile);
 }
