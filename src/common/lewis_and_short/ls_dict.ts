@@ -1,4 +1,5 @@
-import { envVar, assertEqual } from "@/common/assert";
+import { assertEqual } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { Vowels } from "@/common/character_utils";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";

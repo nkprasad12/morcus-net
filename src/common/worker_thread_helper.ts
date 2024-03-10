@@ -4,7 +4,7 @@
 
 import { Worker, parentPort, workerData } from "node:worker_threads";
 
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { writeFileSync, existsSync } from "fs";

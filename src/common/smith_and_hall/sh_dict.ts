@@ -1,4 +1,4 @@
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { Dictionary } from "@/common/dictionaries/dictionaries";

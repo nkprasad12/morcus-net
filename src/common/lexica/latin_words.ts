@@ -1,5 +1,6 @@
 import { readFileSync } from "fs";
-import { assert, assertEqual, checkPresent, envVar } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { ARRAY_INDEX, DbConfig, ReadOnlyDb } from "@/common/sql_helper";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { execSync } from "child_process";

@@ -23,7 +23,7 @@ import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { randomInt } from "crypto";
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import path from "path";
 import { GitHub } from "@/web/utils/github";

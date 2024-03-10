@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
 // import { unmatched } from "@/common/smith_and_hall/sh_abbreviations";
 import {

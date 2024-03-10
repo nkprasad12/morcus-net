@@ -1,5 +1,6 @@
 import { getRawLsXml } from "@/common/lewis_and_short/ls_parser";
-import { assert, checkPresent, envVar } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
   getOrths,
@@ -20,7 +21,8 @@ function* extractEntryData(
   const rawLsXml = getRawLsXml(rawFile);
   for (const root of parseXmlStringsInline(rawLsXml, false, start, end)) {
     if (numHandled % 1000 === 0) {
-      console.debug(`Processed ${numHandled + (start || 0)}`);
+      break;
+      // console.debug(`Processed ${numHandled + (start || 0)}`);
     }
     const orths = getOrths(root).map(mergeVowelMarkers);
     assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);

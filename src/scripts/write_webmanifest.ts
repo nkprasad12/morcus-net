@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { StepConfig } from "@/scripts/script_utils";
 import { readFile, writeFile } from "fs/promises";
 

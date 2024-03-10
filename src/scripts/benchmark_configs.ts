@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { type BenchmarkConfig } from "@/utils/benchmark_utils";
 
