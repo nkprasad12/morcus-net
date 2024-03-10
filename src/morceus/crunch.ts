@@ -49,3 +49,12 @@ export function crunchWord(
   }
   return results;
 }
+
+export function crunch(word: string) {
+  const endings = makeEndIndex(
+    ["src/morceus/tables/lat/core/target"],
+    ["src/morceus/tables/lat/core/dependency"]
+  );
+  const lemmata = allStems();
+  return crunchWord(endings, lemmata, word);
+}
