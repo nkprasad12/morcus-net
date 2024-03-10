@@ -20,12 +20,11 @@ RUN chown -R node:node /morcus
 RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
 
 FROM node:20-alpine3.18
-COPY --chown=node:node --from=1 /morcus_dbs/ls.db /morcus/build/dbs/ls.db
-COPY --chown=node:node --from=1 /morcus_dbs/sh.db /morcus/build/dbs/sh.db
-COPY --chown=node:node --from=1 /morcus_dbs/lat_infl.db /morcus/build/dbs/lat_info.db
+COPY --chown=node:node --from=1 --link /morcus_dbs/*.db /
+RUN mkdir -p /morcus/build/dbs && chown -R node:node /morcus/build/dbs
 COPY --chown=node:node --from=1 /morcus /morcus
 WORKDIR /morcus
 ENV PORT="5757"
 EXPOSE 5757
 USER node
-CMD [ "node", "build/server.js" ]
+CMD mv ../*.db build/dbs && node build/server.js
