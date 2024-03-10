@@ -20,11 +20,15 @@ RUN chown -R node:node /morcus
 RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
 
 FROM node:20-alpine3.18
+# We have to do this elaborate dance because Docker annoyingly has
+# no way to copy the database files without invalidating the layer cache,
+# (even the the `.db` hash is exactly the same) except to the root directory.
 COPY --chown=node:node --from=1 --link /morcus_dbs/*.db /
-RUN mkdir -p /morcus/build/dbs && chown -R node:node /morcus/build/dbs
+RUN mkdir -p /morcus/build/dbs
 COPY --chown=node:node --from=1 /morcus /morcus
 WORKDIR /morcus
-ENV PORT="5757"
 EXPOSE 5757
-USER node
-CMD mv ../*.db build/dbs && node build/server.js
+CMD mv /*.db build/dbs/ \
+      &&  chown -R node:node build/dbs \
+      || echo "No databases to move."; \ 
+    su - node -c 'cd /morcus && PORT=5757 node build/server.js'
