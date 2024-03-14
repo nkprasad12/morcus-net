@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  proxy:
+    image: "${CONTAINER_REGISTRY}morcus-proxy:latest"
+    ports:
+      - "0.0.0.0:443:443"
+    volumes:
+      - "${SSL_CERT_DIR}/origin_cert.pem:/morcus/cf.crt:ro"
+      - "${SSL_CERT_DIR}/private_key.pem:/morcus/cf.key:ro"
+      - "${LOGS_DIR}/access.log:/morcus/access.log:rw"
+      - "${LOGS_DIR}/error.log:/morcus/error.log:rw"
+
+  dev:
+    image: "${CONTAINER_REGISTRY}morcus-dev:latest"
+    ports:
+      - "127.0.0.1:58585:5757"
+
+  prod:
+    image: "${CONTAINER_REGISTRY}morcus:latest"
+    ports:
+      - "127.0.0.1:57575:5757"

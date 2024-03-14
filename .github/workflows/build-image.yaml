@@ -24,4 +24,6 @@ jobs:
           IMAGE_ID=$(echo $IMAGE_ID | tr '[A-Z]' '[a-z]')
           echo IMAGE_ID=$IMAGE_ID
           docker tag $IMAGE_NAME $IMAGE_ID:${{ github.sha }}
+          docker tag $IMAGE_NAME $IMAGE_ID:latest
           docker push $IMAGE_ID:${{ github.sha }}
+          docker push $IMAGE_ID:latest
