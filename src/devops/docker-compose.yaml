@@ -6,17 +6,32 @@ services:
     ports:
       - "0.0.0.0:443:443"
     volumes:
-      - "${SSL_CERT_DIR}/origin_cert.pem:/morcus/cf.crt:ro"
-      - "${SSL_CERT_DIR}/private_key.pem:/morcus/cf.key:ro"
       - "${LOGS_DIR}/access.log:/morcus/access.log:rw"
       - "${LOGS_DIR}/error.log:/morcus/error.log:rw"
+    secrets:
+      - ssl_cert
+      - ssl_private_key
 
   dev:
     image: "${CONTAINER_REGISTRY}morcus-dev:latest"
     ports:
       - "127.0.0.1:58585:5757"
+    environment:
+      DB_SOURCE: dev-hz
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      MONGODB_URI: "${MONGODB_URI}"
 
   prod:
     image: "${CONTAINER_REGISTRY}morcus:latest"
     ports:
       - "127.0.0.1:57575:5757"
+    environment:
+      DB_SOURCE: hz
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      MONGODB_URI: "${MONGODB_URI}"
+
+secrets:
+  ssl_cert:
+    file: "${SSL_CERT_DIR}/origin_cert.pem"
+  ssl_private_key:
+    file: "${SSL_CERT_DIR}/private_key.pem"

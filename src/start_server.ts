@@ -185,7 +185,10 @@ export function startMorcusServer(): Promise<http.Server> {
         () => telemetry.then(logMemoryUsage),
         1000 * 60 * 15
       );
-      server.on("close", () => clearInterval(memoryLogId));
+      server.on("close", () => {
+        clearInterval(memoryLogId);
+        telemetry.then((t) => t.teardown());
+      });
       resolve(server);
       const address = server.address();
       const realPort =

@@ -30,5 +30,5 @@ WORKDIR /morcus
 EXPOSE 5757
 CMD mv /*.db build/dbs/ \
       &&  chown -R node:node build/dbs \
-      || echo "No databases to move."; \ 
-    su - node -c 'cd /morcus && PORT=5757 node build/server.js'
+      || echo "No databases to move."; \
+    su node -c 'cd /morcus && PORT=5757 node build/server.js'

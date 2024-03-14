@@ -2,8 +2,8 @@
 
 # Schedule this script via `crontab`
 # Run: `crontab -e`, then add:
-# * * * * * cd /root/morcus2 && ./update_container.sh &>> update_log.txt
-# @reboot cd /root/morcus2 && ./update_container.sh &>> update_log.txt
+# * * * * * cd /root/morcus2 && ./update_container.sh
+# @reboot cd /root/morcus2 && ./update_container.sh
 
 echo -e "\n==== Checking for updates ===="
 docker compose pull
