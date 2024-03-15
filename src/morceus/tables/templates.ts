@@ -7,7 +7,7 @@ import { filesInPaths } from "@/utils/file_utils";
 const ALL_TAGS: string[] = ["poetic", "early", "contr"];
 
 /** An entry in an inflection table that shows an ending and when to use it. */
-interface InflectionEnding {
+export interface InflectionEnding {
   /** The grammatical categories - case, number, and so on. */
   grammaticalData: string[];
   /** The ending corresponding to the given `grammaticalData`. */

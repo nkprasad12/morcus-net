@@ -1,12 +1,30 @@
+import { checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { allStems, type Lemma, type Stem } from "@/morceus/stem_parsing";
-import { makeEndIndex, type EndIndexRow } from "@/morceus/tables/indices";
+import {
+  makeEndIndex,
+  type EndIndexRow,
+  type EndsResult,
+  type InflectionLookup,
+} from "@/morceus/tables/indices";
 
 export interface CrunchResult {
   lemma: string;
   ending: string;
   stem: Stem;
 }
+interface InflectedFormData {
+  inflection: string;
+  usageNote?: string;
+}
+interface LatinWordAnalysis {
+  lemma: string;
+  inflectedForms: {
+    form: string;
+    inflectionData: InflectedFormData[];
+  }[];
+}
+export type Cruncher = (word: string) => LatinWordAnalysis[];
 
 export function crunchWord(
   endings: EndIndexRow[],
@@ -50,11 +68,49 @@ export function crunchWord(
   return results;
 }
 
-export function crunch(word: string) {
-  const endings = makeEndIndex(
-    ["src/morceus/tables/lat/core/target"],
-    ["src/morceus/tables/lat/core/dependency"]
-  );
-  const lemmata = allStems();
-  return crunchWord(endings, lemmata, word);
+export namespace MorceusCruncher {
+  export function make(endsResult?: EndsResult, lemmata?: Lemma[]): Cruncher {
+    const [endIndices, endTables] =
+      endsResult ??
+      makeEndIndex(
+        ["src/morceus/tables/lat/core/target"],
+        ["src/morceus/tables/lat/core/dependency"]
+      );
+    const cachedLemmata = lemmata ?? allStems();
+    return (word) =>
+      convert(crunchWord(endIndices, cachedLemmata, word), endTables);
+  }
+
+  function convert(
+    crunchResults: CrunchResult[],
+    inflectionLookup: InflectionLookup
+  ): LatinWordAnalysis[] {
+    const byLemma = arrayMap<string, CrunchResult>();
+    for (const result of crunchResults) {
+      byLemma.add(result.lemma, result);
+    }
+    const analyses: LatinWordAnalysis[] = [];
+    for (const [lemma, results] of byLemma.map.entries()) {
+      const byForm = arrayMap<string, InflectedFormData>();
+      for (const result of results) {
+        const form = result.stem.stem + result.ending;
+        const inflectionEndings = checkPresent(
+          inflectionLookup.get(result.stem.inflection)?.get(result.ending)
+        );
+        for (const inflection of inflectionEndings) {
+          byForm.add(form, {
+            inflection: inflection.grammaticalData.join(" "),
+            usageNote: inflection.tags?.join(" "),
+          });
+        }
+      }
+      analyses.push({
+        lemma,
+        inflectedForms: [...byForm.map.entries()].map(
+          ([form, inflectionData]) => ({ form, inflectionData })
+        ),
+      });
+    }
+    return analyses;
+  }
 }
