@@ -18,7 +18,7 @@ services:
     ports:
       - "127.0.0.1:58585:5757"
     environment:
-      DB_SOURCE: dev-hz
+      DB_SOURCE: "dev-${DB_TAG}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
@@ -28,7 +28,7 @@ services:
     ports:
       - "127.0.0.1:57575:5757"
     environment:
-      DB_SOURCE: hz
+      DB_SOURCE: "${DB_TAG}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
     labels: ["com.centurylinklabs.watchtower.enable=true"]

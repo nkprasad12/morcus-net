@@ -32,11 +32,13 @@ touch logs/access.log
 touch logs/error.log
 
 read -p "Enter container registry from which to pull images: " CONTAINER_REGISTRY
+read -p "Enter machine tag for identifying system health results: " DB_TAG
 
 echo "Populating .env file."
 touch .env
 echo "SSL_CERT_DIR=${SSL_DIR}" >> .env
 echo "CONTAINER_REGISTRY=${CONTAINER_REGISTRY}" >> .env
+echo "DB_TAG=${DB_TAG}" >> .env
 echo "LOGS_DIR=${LOGS_DIR}" >> .env
 
 echo "Starting services with 'docker compose up -d'."
