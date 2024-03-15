@@ -39,5 +39,5 @@ echo "SSL_CERT_DIR=${SSL_DIR}" >> .env
 echo "CONTAINER_REGISTRY=${CONTAINER_REGISTRY}" >> .env
 echo "LOGS_DIR=${LOGS_DIR}" >> .env
 
-echo "Starting services with 'docker compose up'."
-docker compose up
+echo "Starting services with 'docker compose up -d'."
+docker compose up -d

@@ -186,6 +186,7 @@ export function startMorcusServer(): Promise<http.Server> {
         1000 * 60 * 15
       );
       server.on("close", () => {
+        log("Cleaning up resources.");
         clearInterval(memoryLogId);
         telemetry.then((t) => t.teardown());
       });
@@ -202,9 +203,11 @@ if (process.env.MAIN === "start") {
   dotenv.config();
   startMorcusServer().then((server) => {
     log("Server started! Press Ctrl+C to exit.");
-    process.on("SIGTERM", () => {
-      log("SIGTERM received, closing server.");
+    const cleanup = (signal: string) => {
+      log(`${signal} received, closing server.`);
       server.close();
-    });
+    };
+    process.on("SIGTERM", () => cleanup("SIGTERM"));
+    process.on("SIGINT", () => cleanup("SIGINT"));
   });
 }
