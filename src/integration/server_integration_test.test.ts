@@ -13,7 +13,7 @@ import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import fs, { mkdirSync, readFileSync, readdirSync, rmSync } from "fs";
+import fs, { mkdirSync, rmSync } from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
@@ -117,22 +117,25 @@ afterAll(async () => {
 }, 10000);
 
 describe("bundle size check", () => {
-  const GENFILES_ROOT = "build/client";
+  test("bundle size is within limit", async () => {
+    const req = await fetch(`${global.location.origin}/`);
+    const rootHtml = await req.text();
 
-  test("bundle size is within limit", () => {
-    const bundleFiles = readdirSync(GENFILES_ROOT);
+    const pattern = /script src="\/([\w0-9.]+\.js)"/g;
+    const matches = [...rootHtml.matchAll(pattern)];
+    const bundleFiles = matches.map((matchArray) => matchArray[1]);
+
     let totalSize = 0;
     for (const genfile of bundleFiles) {
-      if (!genfile.endsWith(".client-bundle.js")) {
-        continue;
-      }
-      const fileData = readFileSync(`${GENFILES_ROOT}/${genfile}`);
-      const gzipped = gzipSync(fileData).byteLength;
-      console.debug(`${genfile}: ${gzipped / 1024}`);
+      const jsReq = await fetch(`${global.location.origin}/${genfile}`);
+      const contents = await jsReq.buffer();
+      const gzipped = gzipSync(contents).byteLength;
+      console.debug(`${genfile}: ${gzipped / 1024} KB`);
       totalSize += gzipped;
     }
 
-    expect(totalSize / 1024).toBeLessThan(175);
+    expect(totalSize).toBeGreaterThan(0);
+    expect(totalSize / 1024).toBeLessThan(100);
   });
 });
 
