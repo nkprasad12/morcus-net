@@ -93,10 +93,6 @@ jobs:
 
     steps:
       - uses: actions/checkout@v4
-      - name: Fooo
-        run: echo "${{ github.ref }}"
-      - name: Foooo
-        run: echo "${{ github.base_ref }}"
       - name: Set up Python 3.8
         uses: actions/setup-python@v5
         with:
@@ -112,6 +108,31 @@ jobs:
     secrets: inherit
     with:
       image-name: morcus-dev
+
+  validate-image:
+    needs: [image-dev]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Pulling docker image
+        run: docker pull ghcr.io/nkprasad12/morcus-dev:latest
+      - name: Running integration checks
+        run: npm run integration-tests-docker
+      - name: Upload Puppeteer Screenshots
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: puppeteer_screenshots_docker
+          path: |
+            puppeteer_screenshots/
 
   image-main:
     if: github.ref == 'refs/heads/main'
