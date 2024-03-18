@@ -12,6 +12,7 @@ services:
       - ssl_cert
       - ssl_private_key
     labels: ["com.centurylinklabs.watchtower.enable=true"]
+    restart: unless-stopped
 
   dev:
     image: "${CONTAINER_REGISTRY}morcus-dev:latest"
@@ -22,6 +23,7 @@ services:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
+    restart: unless-stopped
 
   prod:
     image: "${CONTAINER_REGISTRY}morcus:latest"
@@ -32,6 +34,7 @@ services:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
+    restart: unless-stopped
 
   watchtower:
     image: containrrr/watchtower
