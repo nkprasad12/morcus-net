@@ -17,6 +17,7 @@
     "ts-tests": "npx jest --maxWorkers=4",
     "integration-tests": "npx jest server_integration_test --testPathIgnorePatterns=node_modules",
     "integration-tests-dev": "REUSE_DEV=1 npx jest server_integration_test --testPathIgnorePatterns=node_modules",
+    "integration-tests-docker": "FROM_DOCKER=1 npx jest server_integration_test --testPathIgnorePatterns=node_modules",
     "py-tests": "python -m unittest discover",
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",
     "ts-coverage": "npx jest --coverage",
