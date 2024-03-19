@@ -3,6 +3,7 @@ import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
 import { DbConfig, ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
+import { setMap } from "@/common/data_structures/collect_map";
 
 // TODO: Add Lemma and disambig number to this table
 export interface RawDictEntry {
@@ -43,9 +44,21 @@ export class SqlDict {
   }
 
   private readonly db: SqliteDb;
+  private readonly table: Map<string, string[]>;
 
   constructor(dbFile: string) {
     this.db = ReadOnlyDb.getDatabase(dbFile);
+    const lookup = setMap<string, string>();
+    this.db
+      .prepare(`SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`)
+      .all()
+      // @ts-ignore
+      .forEach(({ orth, cleanOrth }) =>
+        lookup.add(cleanOrth[0].toLowerCase(), orth)
+      );
+    this.table = new Map(
+      [...lookup.map.entries()].map((e) => [e[0], [...e[1]]])
+    );
   }
 
   /**
@@ -57,10 +70,6 @@ export class SqlDict {
    */
   getRawEntry(input: string, extras?: ServerExtras): string[] {
     const request = removeDiacritics(input).toLowerCase();
-    // 3. getRawEntry -> ($INPUT)
-    //    SELECT id, lemma, disamb, entry
-    //    FROM TABLE1 INNER JOIN TABLE2 ON Table1.row = Table2.row
-    //    WHERE Table2.cleanKey = clean($INPUT) AND Table2.key = $INPUT
     // @ts-ignore
     const candidates: { id: string; orth: string }[] = this.db
       .prepare(`SELECT id, orth FROM orths WHERE cleanOrth = '${request}'`)
@@ -75,7 +84,6 @@ export class SqlDict {
       .map(({ id }) => id);
     const filter = allIds.map(() => `id=?`).join(" OR ");
     // @ts-ignore
-
     const entryStrings: { entry: string }[] = this.db
       .prepare(`SELECT entry FROM entries WHERE ${filter}`)
       .all(allIds);
@@ -95,9 +103,13 @@ export class SqlDict {
     return result[0].entry;
   }
 
-  /** Returns the possible completations for the given prefix. */
+  /** Returns the possible completions for the given prefix. */
   getCompletions(input: string): string[] {
     const prefix = removeDiacritics(input).toLowerCase();
+    const precomputed = this.table.get(prefix);
+    if (precomputed !== undefined) {
+      return precomputed;
+    }
     // @ts-ignore
     const rows: { orth: string }[] = this.db
       .prepare(
