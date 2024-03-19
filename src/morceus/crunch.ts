@@ -44,7 +44,7 @@ export function crunchWord(
   const endsMap = new Map<string, string[]>(
     endings.map((e) => [e.ending, e.tableNames])
   );
-  for (let i = 1; i < word.length; i++) {
+  for (let i = 1; i <= word.length; i++) {
     const maybeStem = word.slice(0, i);
     const candidates = stemMap.get(maybeStem);
     if (candidates === undefined) {
@@ -52,11 +52,15 @@ export function crunchWord(
     }
     const maybeEnd = word.slice(i) || "*";
     const possibleEnds = endsMap.get(maybeEnd);
-    if (possibleEnds === undefined) {
+    const indeclinables =
+      maybeEnd === "*" ? candidates.filter((s) => s[0].pos === "wd") : [];
+    if (possibleEnds === undefined && indeclinables.length === 0) {
       continue;
     }
     for (const [candidate, lemma] of candidates) {
-      if (possibleEnds.includes(candidate.inflection)) {
+      if (candidate.pos === "wd" && maybeEnd === "*") {
+        results.push({ lemma, stem: candidate, ending: maybeEnd });
+      } else if (possibleEnds && possibleEnds.includes(candidate.inflection)) {
         results.push({
           lemma,
           stem: candidate,
@@ -114,3 +118,5 @@ export namespace MorceusCruncher {
     return analyses;
   }
 }
+
+// console.log(MorceusCruncher.make()("topper"));

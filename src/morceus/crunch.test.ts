@@ -12,6 +12,16 @@ describe("crunchWord", () => {
 
     expect(result).toStrictEqual([{ lemma: "morcus", ending: "o", stem }]);
   });
+
+  it("handles indeclinable", () => {
+    const stem: Stem = { pos: "wd", stem: "topper", inflection: "adverb" };
+    const endings: EndIndexRow[] = [{ ending: "o", tableNames: ["us"] }];
+    const lemmata: Lemma[] = [{ lemma: "topper", stems: [stem] }];
+
+    const result = crunchWord(endings, lemmata, "topper");
+
+    expect(result).toStrictEqual([{ lemma: "topper", ending: "*", stem }]);
+  });
 });
 
 describe("MorceusCruncher", () => {
