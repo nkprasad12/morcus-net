@@ -15,7 +15,7 @@ services:
     restart: unless-stopped
 
   dev:
-    image: "${CONTAINER_REGISTRY}morcus-dev:latest"
+    image: "${CONTAINER_REGISTRY}morcus:dev-latest"
     ports:
       - "127.0.0.1:58585:5757"
     environment:
@@ -26,7 +26,7 @@ services:
     restart: unless-stopped
 
   prod:
-    image: "${CONTAINER_REGISTRY}morcus:latest"
+    image: "${CONTAINER_REGISTRY}morcus:main-latest"
     ports:
       - "127.0.0.1:57575:5757"
     environment:
