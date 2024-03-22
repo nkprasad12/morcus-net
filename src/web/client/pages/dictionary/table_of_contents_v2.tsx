@@ -6,8 +6,6 @@ import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { FontSizes } from "@/web/client/styling/styles";
 
-import * as React from "react";
-
 export function jumpToSection(sectionId: string) {
   const selected = document.getElementById(sectionId);
   // @ts-ignore
@@ -18,7 +16,6 @@ export function TableOfContentsV2(props: {
   outlines: EntryOutline[];
   dictKey: string;
   isSmall: boolean;
-  tocRef: React.RefObject<HTMLDivElement>;
   textScale?: number;
 }) {
   const isSmall = props.isSmall;
@@ -27,7 +24,6 @@ export function TableOfContentsV2(props: {
   return (
     <ContentBox
       key="tableOfContents"
-      contentRef={props.tocRef}
       isSmall={isSmall}
       ml="0px"
       mr="0px"

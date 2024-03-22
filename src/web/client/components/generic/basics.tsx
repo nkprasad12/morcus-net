@@ -119,7 +119,6 @@ export function SpanButton(
 export function TextField(props: {
   id?: string;
   styles?: CSSProperties;
-  value?: string;
   onNewValue?: (value: string) => any;
   placeholder?: string;
   fullWidth?: boolean;
@@ -144,7 +143,6 @@ export function TextField(props: {
     defaultValue: props.defaultValue,
     autoFocus: props.autoFocus,
     rows: props.minRows,
-    value: props.value,
     onChange,
     placeholder: props.placeholder,
     style: {
