@@ -14,14 +14,14 @@ const TEMP_FILE = "dict_storage.ts.tmp.txt";
 const FAKE_DICT = [
   {
     id: "n1",
-    keys: ["Julius"].join(","),
+    keys: ["Julius"],
     entry: serialize(
       new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"])
     ),
   },
   {
     id: "n2",
-    keys: ["Publius", "Naso"].join(","),
+    keys: ["Publius", "Naso"],
     entry: serialize(
       new XmlNode(
         "entryFree",
@@ -32,35 +32,35 @@ const FAKE_DICT = [
   },
   {
     id: "n3",
-    keys: ["Naso"].join(","),
+    keys: ["Naso"],
     entry: serialize(
       new XmlNode("entryFree", [["id", "Naso"]], ["Pennisque levatus"])
     ),
   },
   {
     id: "n4",
-    keys: ["īnō", "Ino"].join(","),
+    keys: ["īnō", "Ino"],
     entry: serialize(
       new XmlNode("entryFree", [["id", "Ino"]], ["Ino edge case"])
     ),
   },
   {
     id: "n5",
-    keys: ["quis"].join(","),
+    keys: ["quis"],
     entry: serialize(
       new XmlNode("entryFree", [["id", "quisNormal"]], ["quisUnspecified"])
     ),
   },
   {
     id: "n6",
-    keys: ["quĭs"].join(","),
+    keys: ["quĭs"],
     entry: serialize(
       new XmlNode("entryFree", [["id", "quisBreve"]], ["quisShort"])
     ),
   },
   {
     id: "n7",
-    keys: ["quīs"].join(","),
+    keys: ["quīs"],
     entry: serialize(
       new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"])
     ),
@@ -70,7 +70,7 @@ const FAKE_DICT = [
 function toDictData(keys: string[]) {
   return keys.map((key, i) => ({
     id: `n${i}`,
-    keys: [key + "_"].join(","),
+    keys: [key + "_"],
     entry: key,
   }));
 }
@@ -80,7 +80,7 @@ function writeFile(contents: string) {
 }
 
 function createSqlDict(): SqlDict {
-  return new SqlDict(TEMP_FILE, ",");
+  return new SqlDict(TEMP_FILE);
 }
 
 describe("SqlDict", () => {
@@ -106,10 +106,7 @@ describe("SqlDict", () => {
   test("save removes existing contents if present", async () => {
     writeFile("foo");
 
-    SqlDict.save(
-      [{ id: "n1", keys: ["bar"].join(","), entry: "baz" }],
-      TEMP_FILE
-    );
+    SqlDict.save([{ id: "n1", keys: ["bar"], entry: "baz" }], TEMP_FILE);
 
     const result = fs.readFileSync(TEMP_FILE).toString();
 
@@ -121,26 +118,37 @@ describe("SqlDict", () => {
     const data = [
       {
         id: "n1",
-        keys: "Julius",
+        keys: ["Julius"],
         entry: "Gallia est omnis divisa in partes tres",
       },
-      { id: "n2", keys: "Publius", entry: "Non iterum repetenda suo" },
+      { id: "n2", keys: ["Publius"], entry: "Non iterum repetenda suo" },
     ];
     SqlDict.save(data, TEMP_FILE);
 
     const db = SqliteDb.create(TEMP_FILE, { readonly: true });
-    const contents = db.prepare("SELECT * FROM data").all();
 
-    expect(contents).toHaveLength(2);
-    expect(contents[0]).toEqual({
+    const entries = db.prepare("SELECT * FROM entries").all();
+    expect(entries).toHaveLength(2);
+    expect(entries[0]).toEqual({
       id: "n1",
-      keys: data[0].keys,
       entry: data[0].entry,
     });
-    expect(contents[1]).toEqual({
+    expect(entries[1]).toEqual({
       id: "n2",
-      keys: data[1].keys,
       entry: data[1].entry,
+    });
+
+    const orths = db.prepare("SELECT * FROM orths").all();
+    expect(orths).toHaveLength(2);
+    expect(orths[0]).toEqual({
+      id: "n1",
+      orth: "Julius",
+      cleanOrth: "julius",
+    });
+    expect(orths[1]).toEqual({
+      id: "n2",
+      orth: "Publius",
+      cleanOrth: "publius",
     });
   });
 
@@ -223,8 +231,8 @@ describe("SqlDict", () => {
 
   test("getCompletions handles entries with multiple keys", async () => {
     const data = [
-      { id: "n1", keys: ["Julius", "Iulius"].join(","), entry: "" },
-      { id: "n2", keys: ["Julus"].join(","), entry: "" },
+      { id: "n1", keys: ["Julius", "Iulius"], entry: "" },
+      { id: "n2", keys: ["Julus"], entry: "" },
     ];
     SqlDict.save(data, TEMP_FILE);
     const dict = createSqlDict();

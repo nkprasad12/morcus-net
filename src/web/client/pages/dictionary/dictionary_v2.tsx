@@ -33,7 +33,7 @@ import {
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
 import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import ReactDOM, { flushSync } from "react-dom";
+import ReactDOM from "react-dom";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { FontSizes } from "@/web/client/styling/styles";
 import {
@@ -472,7 +472,6 @@ function DefaultTableOfContents(props: TableOfContentsProps) {
           dictKey={entry.dictKey}
           outlines={entry.outlines}
           isSmall={isSmall}
-          tocRef={props.tocRef}
           key={entry.dictKey + "ToC"}
           textScale={textScale}
         />
@@ -497,7 +496,6 @@ function HideableTableOfContents(props: TableOfContentsProps) {
 
 interface TableOfContentsProps {
   entries: EntriesByDict[];
-  tocRef: React.RefObject<HTMLDivElement>;
 }
 function TableOfContents(props: TableOfContentsProps) {
   const { embeddedOptions } = React.useContext(DictContext);
@@ -517,7 +515,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
   const sectionRef = React.useRef<HTMLElement>(null);
-  const tocRef = React.useRef<HTMLDivElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
@@ -566,21 +563,9 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         route.hash,
         isEmbedded
       );
-      flushSync(() => {
-        setEntries(allEntries);
-        const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
-        setState(numEntries === 0 ? "No Results" : "Results");
-      });
-      const scrollElement =
-        sectionRef.current || (isEmbedded ? null : scrollTopRef.current);
-      const scrollType =
-        fromInternalLink.current || isEmbedded
-          ? SCROLL_JUMP
-          : scrollElement === scrollTopRef.current
-          ? SCROLL_SMOOTH
-          : SCROLL_JUMP;
-      scrollElement?.scrollIntoView(scrollType);
-      fromInternalLink.current = false;
+      setEntries(allEntries);
+      const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
+      setState(numEntries === 0 ? "No Results" : "Results");
     });
   }, [query, route.hash, inflectedSearch, idSearch, isEmbedded, queryDicts]);
 
@@ -589,6 +574,22 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       title.setCurrentDictWord(query);
     }
   }, [title, isEmbedded, query]);
+
+  React.useEffect(() => {
+    if (state !== "Results") {
+      return;
+    }
+    const scrollElement =
+      sectionRef.current || (isEmbedded ? null : scrollTopRef.current);
+    const scrollType =
+      fromInternalLink.current || isEmbedded
+        ? SCROLL_JUMP
+        : scrollElement === scrollTopRef.current
+        ? SCROLL_SMOOTH
+        : SCROLL_JUMP;
+    scrollElement?.scrollIntoView(scrollType);
+    fromInternalLink.current = false;
+  }, [state, isEmbedded]);
 
   const contextValues: DictContextOptions = React.useMemo(
     () => ({
@@ -671,14 +672,14 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
               idSearch={idSearch}
               entries={entries}
             />
-            <TableOfContents entries={entries} tocRef={tocRef} />
+            <TableOfContents entries={entries} />
           </div>
           <div ref={entriesRef}>
             <DictionaryEntries entries={entries} />
           </div>
         </>
       }
-      twoColSide={<TableOfContents entries={entries} tocRef={tocRef} />}
+      twoColSide={<TableOfContents entries={entries} />}
       twoColMain={
         <>
           <HelpSection />

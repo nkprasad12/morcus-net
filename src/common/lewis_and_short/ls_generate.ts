@@ -1,5 +1,6 @@
 import { getRawLsXml } from "@/common/lewis_and_short/ls_parser";
-import { assert, checkPresent, envVar } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
   getOrths,

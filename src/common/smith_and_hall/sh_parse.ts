@@ -1,4 +1,5 @@
-import { assert, envVar } from "@/common/assert";
+import { assert } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { handleEditorNotes } from "@/common/smith_and_hall/sh_preprocessing";
 import {

@@ -3,15 +3,17 @@
 const PORT = "1337";
 const TEST_TMP_DIR = "tmp_server_integration_test";
 const REUSE_DEV = process.env.REUSE_DEV === "1" || false;
+const FROM_DOCKER = process.env.FROM_DOCKER === "1" || false;
 setEnv();
 
+import { spawnSync } from "child_process";
 import { gzipSync } from "zlib";
 // @ts-ignore - puppeteer is an optional dependency.
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import fs, { mkdirSync, readFileSync, readdirSync, rmSync } from "fs";
+import fs, { mkdirSync, rmSync } from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
@@ -25,7 +27,10 @@ global.location = {
   origin: "http://localhost:1337",
 };
 
+const CONTAINER_NAME = "server-integration-test-morcus-container";
 const SCREENSHOTS_DIR = "puppeteer_screenshots";
+
+type Closer = () => Promise<void>;
 
 function setEnv(reuseDev: boolean = REUSE_DEV) {
   process.env["PORT"] = PORT;
@@ -47,44 +52,90 @@ function closeServer(server: Server): Promise<void> {
   });
 }
 
-async function setupMorcus(reuseDev: boolean = REUSE_DEV): Promise<Server> {
+async function setupMorcus(reuseDev: boolean = REUSE_DEV): Promise<Closer> {
   fs.mkdirSync(TEST_TMP_DIR, { recursive: true });
   setEnv(reuseDev);
   if (!reuseDev) {
     expect(await prodBuildSteps()).toBe(true);
   }
-  return startMorcusServer();
+  const server = startMorcusServer();
+  return () =>
+    server.then((s) => {
+      fs.rmSync(TEST_TMP_DIR, { recursive: true });
+      return closeServer(s);
+    });
 }
 
-let morcus: Server | undefined = undefined;
+function startMorcusFromDocker(): Promise<Closer> {
+  const imageName = "ghcr.io/nkprasad12/morcus-dev:latest";
+  const container = `docker run -dp 127.0.0.1:1337:5757 --name ${CONTAINER_NAME} ${imageName}`;
+  const close: Closer = async () => {
+    try {
+      spawnSync("docker", ["stop", CONTAINER_NAME]);
+      spawnSync("docker", ["rm", CONTAINER_NAME]);
+    } catch {}
+  };
+  spawnSync(container, { shell: true, stdio: "inherit" });
+  const start = performance.now();
+  return new Promise((resolve, reject) => {
+    const callback = () => {
+      const logs = spawnSync("docker", ["logs", CONTAINER_NAME]);
+      if (logs.status !== 0) {
+        close();
+        reject(Error("Starting morcus from docker image failed."));
+        return;
+      }
+      const stdout = logs.stdout.toString();
+      if (stdout.includes(":5757")) {
+        resolve(close);
+        return;
+      }
+      if (performance.now() - start > 2000) {
+        close();
+        reject(Error("Timed out starting morcus server."));
+        return;
+      }
+      setTimeout(callback, 250);
+    };
+    callback();
+  });
+}
+
+let morcusCloser: Closer | undefined = undefined;
 beforeAll(async () => {
-  morcus = await setupMorcus(REUSE_DEV);
+  if (FROM_DOCKER) {
+    morcusCloser = await startMorcusFromDocker();
+    return;
+  }
+  morcusCloser = await setupMorcus(REUSE_DEV);
 }, 180000);
 
 afterAll(async () => {
-  if (morcus !== undefined) {
-    await closeServer(morcus);
+  if (morcusCloser !== undefined) {
+    await morcusCloser();
   }
-  fs.rmSync(TEST_TMP_DIR, { recursive: true });
 }, 10000);
 
 describe("bundle size check", () => {
-  const GENFILES_ROOT = "genfiles_static";
+  test("bundle size is within limit", async () => {
+    const req = await fetch(`${global.location.origin}/`);
+    const rootHtml = await req.text();
 
-  test("bundle size is within limit", () => {
-    const bundleFiles = readdirSync(GENFILES_ROOT);
+    const pattern = /script src="\/([\w0-9.]+\.js)"/g;
+    const matches = [...rootHtml.matchAll(pattern)];
+    const bundleFiles = matches.map((matchArray) => matchArray[1]);
+
     let totalSize = 0;
     for (const genfile of bundleFiles) {
-      if (!genfile.endsWith(".client-bundle.js")) {
-        continue;
-      }
-      const fileData = readFileSync(`${GENFILES_ROOT}/${genfile}`);
-      const gzipped = gzipSync(fileData).byteLength;
-      console.debug(`${genfile}: ${gzipped / 1024}`);
+      const jsReq = await fetch(`${global.location.origin}/${genfile}`);
+      const contents = await jsReq.buffer();
+      const gzipped = gzipSync(contents).byteLength;
+      console.debug(`${genfile}: ${gzipped / 1024} KB`);
       totalSize += gzipped;
     }
 
-    expect(totalSize / 1024).toBeLessThan(175);
+    expect(totalSize).toBeGreaterThan(0);
+    expect(totalSize / 1024).toBeLessThan(100);
   });
 });
 
@@ -402,8 +453,8 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
     const results = await page.$x(`//*[contains(text(), "${text}")]`);
     if (results.length === 0) {
       await takeScreenshot();
+      throw new Error(`Failed to find text: ${text}`);
     }
-    expect(results).not.toHaveLength(0);
   }
 
   async function waitForText(
@@ -419,7 +470,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
         `//${parentType}[contains(text(), "${text}")${classString}]`,
         { timeout: 3000 }
       );
-      expect(results).not.toBeNull();
+      assert(results !== null, `Failed to find text: ${text}`);
     } catch (err) {
       await takeScreenshot();
       throw err;
@@ -463,7 +514,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("dictSearchTypeEnter", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
-      await page.keyboard.type("canaba");
+      await page.keyboard.type("canaba", { delay: 20 });
       await page.keyboard.press("Enter");
 
       await checkTitleIs("canaba | Morcus Latin Tools");
@@ -478,7 +529,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("dictSearchArrowEnter", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
-      await page.keyboard.type("can");
+      await page.keyboard.type("can", { delay: 20 });
       await checkHasText("cānăba");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
@@ -497,7 +548,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("dictSearchClick", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
-      await page.keyboard.type("can");
+      await page.keyboard.type("can", { delay: 20 });
       await checkHasText("cānăba");
       await (await findText("cānăba", page, "span")).click();
 
@@ -524,10 +575,10 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("linkLatInSH", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
-      await page.keyboard.type("influence");
+      await page.keyboard.type("influence", { delay: 20 });
       await page.keyboard.press("Enter");
 
-      await checkHasText("cohortandum");
+      await waitForText("cohortandum");
       await (await findText("cohortandum", page)).click();
 
       expect(page.url()).toContain("/dicts?q=cohortandum");
@@ -591,7 +642,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
       writeContext("queryFromNewIdPage", screenSize, i);
 
       await page.click(`[aria-label="Dictionary search box"]`);
-      await page.keyboard.type("abagio");
+      await page.keyboard.type("abagio", { delay: 20 });
       await page.keyboard.press("Enter");
 
       await checkTitleIs("abagio | Morcus Latin Tools");

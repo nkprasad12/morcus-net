@@ -21,13 +21,13 @@ describe("Report Issue Dialog", () => {
   it("is not shown when closed", async () => {
     const mockOnClose = jest.fn(() => {});
     render(<ReportIssueDialog show={false} onClose={mockOnClose} />);
-    expect(screen.queryByText("Report an issue")).toBeNull();
+    expect(screen.queryByText("Issues / Feedback")).toBeNull();
   });
 
   it("is shown when open", async () => {
     const mockOnClose = jest.fn(() => {});
     render(<ReportIssueDialog show onClose={mockOnClose} />);
-    expect(screen.queryByText("Report an issue")).not.toBeNull();
+    expect(screen.queryByText("Issues / Feedback")).not.toBeNull();
   });
 
   it("calls close on cancel", async () => {

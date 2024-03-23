@@ -9,8 +9,8 @@ describe("parseStemFile", () => {
     const nullus = nom01.filter((s) => s.lemma === "nullus")[0];
     expect(nullus).toEqual({
       lemma: "nullus",
-      pos: "aj",
-      stems: [{ stem: "nu_ll", inflection: "us_ius_adj" }],
+
+      stems: [{ stem: "nu_ll", pos: "aj", inflection: "us_ius_adj" }],
     });
   });
 
@@ -18,11 +18,15 @@ describe("parseStemFile", () => {
     const bonus = nom01.filter((s) => s.lemma === "bonus")[0];
     expect(bonus).toEqual({
       lemma: "bonus",
-      pos: "aj",
       stems: [
-        { stem: "bon", inflection: "us_a_um", other: "no_comp" },
-        { stem: "mel", inflection: "ior_ius_comp" },
-        { stem: "optim", inflection: "us_a_um", other: "irreg_superl" },
+        { stem: "bon", inflection: "us_a_um", pos: "aj", other: "no_comp" },
+        { stem: "mel", pos: "aj", inflection: "ior_ius_comp" },
+        {
+          stem: "optim",
+          pos: "aj",
+          inflection: "us_a_um",
+          other: "irreg_superl",
+        },
       ],
     });
   });

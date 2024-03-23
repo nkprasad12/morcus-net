@@ -1,16 +1,20 @@
 import fs from "fs";
+import path from "path";
 import { assert } from "@/common/assert";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 
 export const ARRAY_INDEX = "@INDEX";
 
-function createTableCommand<T extends object>(
-  prototype: T,
-  primaryKey: string | typeof ARRAY_INDEX
+function createTableCommand(
+  prototype: object,
+  primaryKey: string | typeof ARRAY_INDEX | undefined,
+  tableName: string
 ): [string, string[]] {
   const allKeys = Object.keys(prototype);
   assert(
-    primaryKey === ARRAY_INDEX || allKeys.includes(primaryKey),
+    primaryKey === undefined ||
+      primaryKey === ARRAY_INDEX ||
+      allKeys.includes(primaryKey),
     "Invalid primary key."
   );
   const columns: string[] = allKeys.map(
@@ -20,59 +24,94 @@ function createTableCommand<T extends object>(
     columns.push("'n' INTEGER PRIMARY KEY ASC");
     allKeys.push("n");
   }
-  return [`CREATE TABLE data(${columns.join(", ")} );`, allKeys];
+  return [`CREATE TABLE ${tableName}(${columns.join(", ")} );`, allKeys];
+}
+
+export interface TableConfig {
+  records: object[];
+  primaryKey?: string | typeof ARRAY_INDEX;
+  indices?: string[][];
+  tableName: string;
+}
+
+export interface DbConfig {
+  destination: string;
+  tables: TableConfig[];
+}
+export namespace DbConfig {
+  export function of(
+    destination: string,
+    records: object[],
+    primaryKey: string | typeof ARRAY_INDEX,
+    indices: string[][] = [],
+    tableName: string = "data"
+  ): DbConfig {
+    return {
+      destination,
+      tables: [{ records, primaryKey, indices, tableName }],
+    };
+  }
 }
 
 export namespace ReadOnlyDb {
-  export function saveToSql<T extends object>(
-    destination: string,
-    records: T[],
-    primaryKey: string | typeof ARRAY_INDEX,
-    indices: string[][] = []
-  ) {
+  export function saveToSql(config: DbConfig): void {
+    const { destination, tables } = config;
     const start = performance.now();
+    if (!fs.existsSync(path.dirname(destination))) {
+      fs.mkdirSync(path.dirname(destination), { recursive: true });
+    }
     if (fs.existsSync(destination)) {
       fs.unlinkSync(destination);
     }
     const db = SqliteDb.create(destination);
     db.pragma("journal_mode = WAL");
-    const [createTable, columnNames] = createTableCommand(
-      records[0],
-      primaryKey
-    );
-    db.exec(createTable);
-    for (const index of indices) {
-      index.forEach((i) =>
-        assert(columnNames.includes(i), `Invalid index column: ${i}`)
+    for (const { records, primaryKey, tableName, indices } of tables) {
+      const [createTable, columnNames] = createTableCommand(
+        records[0],
+        primaryKey,
+        tableName
       );
-      db.exec(`CREATE INDEX ${index.join("_")} ON data(${index.join(", ")});`);
-    }
-    const insert = db.prepare(
-      `INSERT INTO data (${columnNames.join(", ")}) VALUES (${columnNames
-        .map((n) => "@" + n)
-        .join(", ")})`
-    );
+      db.exec(createTable);
+      for (const index of indices ?? []) {
+        index.forEach((i) =>
+          assert(columnNames.includes(i), `Invalid index column: ${i}`)
+        );
+        db.exec(
+          `CREATE INDEX ${index.join("_")} ON ${tableName}(${index.join(
+            ", "
+          )});`
+        );
+      }
+      const insert = db.prepare(
+        `INSERT INTO ${tableName} (${columnNames.join(
+          ", "
+        )}) VALUES (${columnNames.map((n) => "@" + n).join(", ")})`
+      );
 
-    const isBun = process.env.BUN === "1";
-    const insertAll = db.transaction(() => {
-      records.forEach((record, index) => {
-        const row: Record<string, any> = {};
-        for (const key in record) {
-          row[isBun ? `@${key}` : key] = record[key];
-        }
-        if (primaryKey === ARRAY_INDEX) {
-          row[isBun ? `@n` : "n"] = index;
-        }
-        insert.run(row);
+      const isBun = process.env.BUN === "1";
+      const insertAll = db.transaction(() => {
+        records.forEach((record, index) => {
+          const row: Record<string, any> = {};
+          for (const key in record) {
+            // @ts-expect-error
+            row[isBun ? `@${key}` : key] = record[key];
+          }
+          if (primaryKey === ARRAY_INDEX) {
+            row[isBun ? `@n` : "n"] = index;
+          }
+          insert.run(row);
+        });
       });
-    });
-    insertAll();
+      insertAll();
+      console.debug(
+        `Saved ${
+          records.length
+        } records to ${tableName} in ${destination} in ${Math.round(
+          performance.now() - start
+        )} ms`
+      );
+    }
     db.close();
-    console.debug(
-      `Saved ${records.length} records to ${destination} in ${Math.round(
-        performance.now() - start
-      )} ms`
-    );
   }
 
   export function getDatabase(dbPath: string): SqliteDb {
@@ -81,7 +120,7 @@ export namespace ReadOnlyDb {
       db.pragma("journal_mode = WAL");
       return db;
     } catch (e) {
-      throw new Error(`Unable to read DB file ${dbPath}`);
+      throw new Error(`Unable to read DB file ${dbPath}`, { cause: e });
     }
   }
 }

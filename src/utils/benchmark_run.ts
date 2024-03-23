@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { runBenchmarks } from "@/utils/benchmark_utils";
 import { DictsFusedApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";

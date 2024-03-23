@@ -1,6 +1,6 @@
 import fs from "fs";
 
-import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
+import { ARRAY_INDEX, DbConfig, ReadOnlyDb } from "@/common/sql_helper";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 
@@ -17,7 +17,7 @@ function makeTable(
   primaryKey: string = ARRAY_INDEX,
   indices: string[][] = []
 ) {
-  ReadOnlyDb.saveToSql(TEMP_FILE, records, primaryKey, indices);
+  ReadOnlyDb.saveToSql(DbConfig.of(TEMP_FILE, records, primaryKey, indices));
 }
 
 function getIndices(db: SqliteDb): string[] {

@@ -246,10 +246,11 @@ function bundleConfig(args: any, priority?: number): StepConfig {
 
 async function setupAndStartWebServer(args: any) {
   const setupSteps: StepConfig[] = [];
-  // It's a long running process in watch mode.
-  if (args.no_build_client === false && !args.watch) {
+  if (args.no_build_client === false) {
     writeCommitId();
-    setupSteps.push(bundleConfig(args, 1));
+    if (args.watch !== true) {
+      setupSteps.push(bundleConfig(args, 1));
+    }
   }
   setupSteps.push(writePwaManifestStep(1));
   if (args.build_latin_inflections === true) {

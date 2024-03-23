@@ -1,4 +1,5 @@
-import { envVar, assertEqual } from "@/common/assert";
+import { assertEqual } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { Vowels } from "@/common/character_utils";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
@@ -46,9 +47,8 @@ export namespace StoredEntryData {
     keys: string[],
     entry: StoredEntryData
   ): RawDictEntry {
-    assertEqual(keys.filter((k) => k.includes(",")).length, 0);
     return {
-      keys: keys.join(","),
+      keys: keys,
       entry: encodeMessage(entry, REGISTRY),
       id,
     };
@@ -65,7 +65,7 @@ export class LewisAndShort implements Dictionary {
   private readonly sqlDict: SqlDict;
 
   constructor(dbFile: string = envVar("LS_PROCESSED_PATH")) {
-    this.sqlDict = new SqlDict(dbFile, ",");
+    this.sqlDict = new SqlDict(dbFile);
   }
 
   async getEntryById(

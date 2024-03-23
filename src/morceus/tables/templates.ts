@@ -7,7 +7,7 @@ import { filesInPaths } from "@/utils/file_utils";
 const ALL_TAGS: string[] = ["poetic", "early", "contr"];
 
 /** An entry in an inflection table that shows an ending and when to use it. */
-interface InflectionEnding {
+export interface InflectionEnding {
   /** The grammatical categories - case, number, and so on. */
   grammaticalData: string[];
   /** The ending corresponding to the given `grammaticalData`. */
@@ -223,7 +223,7 @@ export function* expandTemplates(
 export function expandTemplatesAndSave(
   targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
   dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
-  outputDir: string = "v2morceus-out/tables/lat"
+  outputDir: string = "build/morceus/tables/lat"
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   for (const expanded of expandTemplates(targetDirs, dependencyDirs)) {

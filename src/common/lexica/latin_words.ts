@@ -1,6 +1,7 @@
 import { readFileSync } from "fs";
-import { assert, assertEqual, checkPresent, envVar } from "@/common/assert";
-import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
+import { ARRAY_INDEX, DbConfig, ReadOnlyDb } from "@/common/sql_helper";
 import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { execSync } from "child_process";
 import { SqliteDb } from "@/common/sqlite/sql_db";
@@ -179,7 +180,9 @@ export function makeMorpheusDb(
   const rows: LatinWordRow[] = rowsFromMorpheusAnalysis(
     Array.from(inflectionsDict.entries())
   );
-  ReadOnlyDb.saveToSql(outputPath, rows, ARRAY_INDEX, [["word"], ["lemma"]]);
+  ReadOnlyDb.saveToSql(
+    DbConfig.of(outputPath, rows, ARRAY_INDEX, [["word"], ["lemma"]])
+  );
 }
 
 let db: SqliteDb | undefined = undefined;

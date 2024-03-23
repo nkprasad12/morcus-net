@@ -3,7 +3,8 @@
 import chalk from "chalk";
 import { mkdirSync, rmSync } from "fs";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
-import { assert, envVar } from "@/common/assert";
+import { assert } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { processSmithHall } from "@/common/smith_and_hall/sh_process";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
 import { SqlDict } from "@/common/dictionaries/dict_storage";

@@ -67,7 +67,7 @@ export function shListToRaw(entries: ShEntry[]): RawDictEntry[] {
     };
     return {
       id: `sh${i}`,
-      keys: entry.keys.join("@"),
+      keys: entry.keys,
       entry: JSON.stringify(processedEntry),
     };
   });

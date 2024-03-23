@@ -1,0 +1,52 @@
+version: "3"
+
+services:
+  proxy:
+    image: "${CONTAINER_REGISTRY}morcus-proxy:latest"
+    ports:
+      - "0.0.0.0:443:443"
+    volumes:
+      - "${LOGS_DIR}/access.log:/morcus/access.log:rw"
+      - "${LOGS_DIR}/error.log:/morcus/error.log:rw"
+    secrets:
+      - ssl_cert
+      - ssl_private_key
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
+    restart: unless-stopped
+
+  dev:
+    image: "${CONTAINER_REGISTRY}morcus:dev-latest"
+    ports:
+      - "127.0.0.1:58585:5757"
+    environment:
+      DB_SOURCE: "dev-${DB_TAG}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      MONGODB_URI: "${MONGODB_URI}"
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
+    restart: unless-stopped
+
+  prod:
+    image: "${CONTAINER_REGISTRY}morcus:main-latest"
+    ports:
+      - "127.0.0.1:57575:5757"
+    environment:
+      DB_SOURCE: "${DB_TAG}"
+      GITHUB_TOKEN: "${GITHUB_TOKEN}"
+      MONGODB_URI: "${MONGODB_URI}"
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
+    restart: unless-stopped
+
+  watchtower:
+    image: containrrr/watchtower
+    volumes:
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      WATCHTOWER_POLL_INTERVAL: 60
+      WATCHTOWER_LABEL_ENABLE: true
+      WATCHTOWER_CLEANUP: true
+
+secrets:
+  ssl_cert:
+    file: "${SSL_CERT_DIR}/origin_cert.pem"
+  ssl_private_key:
+    file: "${SSL_CERT_DIR}/private_key.pem"

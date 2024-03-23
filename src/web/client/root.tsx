@@ -19,6 +19,7 @@ import {
   StyleContextProvider,
 } from "@/web/client/styling/style_context";
 
+document.querySelector("#initial")?.remove();
 if (window.location.pathname === "/") {
   window.history.replaceState({}, "", DICT_PAGE.appBarConfig!.targetPath);
 }

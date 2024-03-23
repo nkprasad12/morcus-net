@@ -1,5 +1,10 @@
 import { ApiRoute } from "@/web/utils/rpc/rpc";
-import { isAny, isString, matches } from "@/web/utils/rpc/parsing";
+import {
+  isAny,
+  isString,
+  matches,
+  maybeUndefined,
+} from "@/web/utils/rpc/parsing";
 import {
   CompletionsFusedRequest,
   CompletionsFusedResponse,
@@ -41,6 +46,8 @@ export const CompletionsFusedApi: ApiRoute<
 export interface ReportApiRequest {
   reportText: string;
   commit: string;
+  url?: string;
+  userAgent?: string;
 }
 
 export const ReportApi: ApiRoute<ReportApiRequest, any> = {
@@ -49,6 +56,8 @@ export const ReportApi: ApiRoute<ReportApiRequest, any> = {
   inputValidator: matches<ReportApiRequest>([
     ["reportText", isString],
     ["commit", isString],
+    ["url", maybeUndefined(isString)],
+    ["userAgent", maybeUndefined(isString)],
   ]),
   outputValidator: isAny,
 };

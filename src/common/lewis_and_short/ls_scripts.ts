@@ -6,7 +6,8 @@ dotenv.config();
 import { getRawLsXml } from "@/common/lewis_and_short/ls_parser";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
-import { checkPresent, envVar } from "@/common/assert";
+import { checkPresent } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { getOrths, isRegularOrth } from "@/common/lewis_and_short/ls_orths";
 import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 

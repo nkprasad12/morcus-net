@@ -85,7 +85,6 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
     : Solarized.base03 + "A1";
   const menuItemBaseColor = isDarkMode ? Solarized.base02 : Solarized.base01;
   const mobileNavButtonBase = {
-    backgroundColor: isDarkMode + "D0",
     borderRadius: 4,
     marginTop: 3,
     marginLeft: 3,
@@ -118,11 +117,6 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
       },
       "a:visited": {
         color: isDarkMode ? Solarized.violet : undefined,
-      },
-      ".jsLink": {
-        color: Solarized.navy,
-        borderBottom: `1px solid ${Solarized.navy}`,
-        cursor: "pointer",
       },
       pre: { margin: "0" },
       summary: {
@@ -280,7 +274,10 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         border: `2px solid ${isDarkMode ? Solarized.base1 : Solarized.base01}`,
         padding: "4px 8px",
         borderRadius: "4px",
-        margin: "8px",
+        margin: "6px",
+      },
+      ".MuiPopper-root": {
+        zIndex: 102,
       },
 
       /** Basic content primitives */
@@ -386,9 +383,6 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         paddingRight: 3,
         fontFamily: "monospace",
         color: dictChipTextColor,
-      },
-      ".lsTopSense": {
-        paddingLeft: "0em",
       },
       ".highlighted": {
         border: "2px solid",

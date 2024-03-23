@@ -51,30 +51,23 @@ jobs:
         run: npm ci --omit optional
       - name: Running prod build step
         run: npm run build
+      - name: Preparing server bundle
+        run: |
+          mkdir build -p
+          npm run tsnp src/esbuild/server.esbuild.ts
+          mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
       - uses: actions/upload-artifact@v4
         with:
           name: build_outputs
           path: |
-            genfiles_static/
-            library_processed/
             public/
-            ls.db
-            sh.db
-            lat_infl.db
-            morcusnet.commit.txt
+            build/
             package.json
-            package-lock.json
-            tsconfig.json
-            src/
-            !src/libs
-            !src/morceus
-            !src/py
-            !src/web/client
           compression-level: 9
 
   integration-checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 10
 
     steps:
       - uses: actions/checkout@v4
@@ -108,3 +101,59 @@ jobs:
         run: pip install -r requirements.txt
       - name: Checking Pytype
         run: npm run pytype
+
+  image-dev:
+    if: github.ref == 'refs/heads/dev'
+    uses: ./.github/workflows/build-image.yaml
+    secrets: inherit
+
+  validate-image:
+    needs: [image-dev]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Pulling docker image
+        run: docker pull ghcr.io/nkprasad12/morcus-dev:latest
+      - name: Running integration checks
+        run: npm run integration-tests-docker
+      - name: Upload Puppeteer Screenshots
+        if: ${{ failure() }}
+        uses: actions/upload-artifact@v3
+        with:
+          name: puppeteer_screenshots_docker
+          path: |
+            puppeteer_screenshots/
+
+  promote-image:
+    if: github.ref == 'refs/heads/main'
+    needs: [presubmit-checks, integration-checks]
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Fetch dev image
+        run: timeout 5m bash -c 'until docker pull ghcr.io/nkprasad12/morcus-dev:$(git rev-parse HEAD~1); do sleep 20; done'
+      - name: Backup current image
+        run: |
+          LATEST=ghcr.io/nkprasad12/morcus:main-latest
+          PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous
+          docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
+      - name: Promote dev image
+        run: |
+          LATEST=ghcr.io/nkprasad12/morcus:main-latest
+          CANDIDATE=ghcr.io/nkprasad12/morcus-dev:$(git rev-parse HEAD~1)
+          docker tag $CANDIDATE $LATEST
+          docker push $LATEST

@@ -7,7 +7,7 @@ import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseMessage } from "@/web/utils/rpc/parsing";
 import { readFile } from "fs/promises";
 
-export const LIB_DEFAULT_DIR = "library_processed";
+export const LIB_DEFAULT_DIR = "build/library_processed";
 export const LIBRARY_INDEX = "morcus_library_index.json";
 
 export interface LibraryIndex {

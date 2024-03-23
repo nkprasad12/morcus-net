@@ -1,27 +1,34 @@
+# syntax=docker/dockerfile:1.7-labs
 FROM node:20-alpine3.18
-
-RUN apk add git && apk add curl && mkdir -p /home/node/morcus/node_modules
-WORKDIR /home/node/morcus
-COPY --chown=node:node src src
-COPY --chown=node:node public public
-COPY --chown=node:node texts texts
-COPY --chown=node:node tsconfig.json tsconfig.json
-COPY --chown=node:node package.json package.json
-COPY --chown=node:node package-lock.json package-lock.json
-COPY --chown=node:node .git .git
-RUN chown -R node:node /home/node/morcus
+RUN apk add git && apk add curl && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
+WORKDIR /morcus
+COPY --chown=node:node ./ ./
+RUN chown -R node:node /morcus
 
 USER node
-RUN npm install
+RUN npm ci --omit optional
 RUN npm run build
-RUN npm prune --production
-RUN rm -rf .git
+RUN npm run tsnp src/esbuild/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
 
 FROM node:20-alpine3.18
-ENV CONSOLE_TELEMETRY="yes" PORT="5656"
-COPY --from=0 /home/node/morcus /home/node/morcus
-WORKDIR /home/node/morcus
-EXPOSE 5656
-RUN chown -R node:node .
-USER node
-CMD [ "npm", "start" ]
+WORKDIR /morcus
+COPY --from=0 /morcus/public public
+COPY --from=0 /morcus/build build
+COPY --from=0 /morcus/package.json package.json
+RUN mv build/dbs/ /morcus_dbs/
+RUN chown -R node:node /morcus
+RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
+
+FROM node:20-alpine3.18
+# We have to do this elaborate dance because Docker annoyingly has
+# no way to copy the database files without invalidating the layer cache,
+# (even the the `.db` hash is exactly the same) except to the root directory.
+COPY --chown=node:node --from=1 --link /morcus_dbs/*.db /
+RUN mkdir -p /morcus/build/dbs
+COPY --chown=node:node --from=1 /morcus /morcus
+WORKDIR /morcus
+EXPOSE 5757
+CMD mv /*.db build/dbs/ \
+      &&  chown -R node:node build/dbs \
+      || echo "No databases to move."; \
+    su node -c 'cd /morcus && PORT=5757 node build/server.js'

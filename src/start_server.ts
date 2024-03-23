@@ -23,7 +23,7 @@ import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
 import { WorkRequest } from "@/web/workers/requests";
 import { Workers } from "@/web/workers/worker_types";
 import { randomInt } from "crypto";
-import { envVar } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import path from "path";
 import { GitHub } from "@/web/utils/github";
@@ -102,7 +102,7 @@ async function callWorker(
 }
 
 export function startMorcusServer(): Promise<http.Server> {
-  process.env.COMMIT_ID = readFileSync("morcusnet.commit.txt").toString();
+  process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
   const app = express();
   const server = http.createServer(app);
@@ -126,12 +126,20 @@ export function startMorcusServer(): Promise<http.Server> {
   if (mongodbUri === undefined && !consoleTelemetry) {
     log("No `MONGODB_URI` environment variable set. Logging to console.");
   }
+  if (mongodbUri !== undefined && consoleTelemetry) {
+    log("`MONGODB_URI` set but logging to console due to `CONSOLE_TELEMETRY`.");
+  }
   const telemetry =
     mongodbUri !== undefined && !consoleTelemetry
       ? MongoLogger.create(mongodbUri, envVar("DB_SOURCE"))
       : Promise.resolve(TelemetryLogger.NoOp);
-
-  const buildDir = path.join(__dirname, "../genfiles_static");
+  const githubToken = process.env.GITHUB_TOKEN;
+  if (githubToken === undefined) {
+    log(
+      "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
+    );
+  }
+  const buildDir = path.join(process.cwd(), "build", "client");
   const params: WebServerParams = {
     webApp: app,
     routes: [
@@ -139,7 +147,9 @@ export function startMorcusServer(): Promise<http.Server> {
         callWorker(Workers.MACRONIZER, input, workServer)
       ),
       RouteDefinition.create(ReportApi, (request) =>
-        GitHub.reportIssue(request.reportText, request.commit)
+        githubToken === undefined
+          ? Promise.resolve(log(GitHub.createIssueBody(request)))
+          : GitHub.reportIssue(request, githubToken)
       ),
       RouteDefinition.create(DictsFusedApi, (input, extras) =>
         fusedDict.getEntry(input, extras)
@@ -175,7 +185,11 @@ export function startMorcusServer(): Promise<http.Server> {
         () => telemetry.then(logMemoryUsage),
         1000 * 60 * 15
       );
-      server.on("close", () => clearInterval(memoryLogId));
+      server.on("close", () => {
+        log("Cleaning up resources.");
+        clearInterval(memoryLogId);
+        telemetry.then((t) => t.teardown());
+      });
       resolve(server);
       const address = server.address();
       const realPort =
@@ -187,5 +201,13 @@ export function startMorcusServer(): Promise<http.Server> {
 
 if (process.env.MAIN === "start") {
   dotenv.config();
-  startMorcusServer().then(() => log("Server started! Press Ctrl+C to exit."));
+  startMorcusServer().then((server) => {
+    log("Server started! Press Ctrl+C to exit.");
+    const cleanup = (signal: string) => {
+      log(`${signal} received, closing server.`);
+      server.close();
+    };
+    process.on("SIGTERM", () => cleanup("SIGTERM"));
+    process.on("SIGINT", () => cleanup("SIGINT"));
+  });
 }

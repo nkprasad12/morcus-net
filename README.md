@@ -21,7 +21,7 @@ Before you get started, install `git` and:
 To start, download and run the setup script. This will clone all required repositories, perform all required setup, build the client, and start the server locally.
 
 ```
-curl https://raw.githubusercontent.com/nkprasad12/morcus-net/main/first_time_setup.sh >> setup_morc.sh && chmod +x setup_morc.sh && ./setup_morc.sh
+curl https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/first_time_setup.sh | bash
 ```
 
 In the future, you can run `./morcus.sh web` from `morcus-net` to build the client and start the server.
@@ -97,3 +97,14 @@ This will allow you to run and debug unit tests from within the VS Code UI when 
 
 Install the [ESLint plugin](https://marketplace.visualstudio.com/items?itemName=dbaeumer.vscode-eslint). This will add
 warnings within VSCode for any ESLint errors in the code.
+
+---
+
+## Docker Image
+
+Docker images are generated for each push to `dev` and `main`. These can be downloaded from the `Actions` page. Once downloaded:
+
+1. `unzip docker_image.zip && rm docker_image.zip`
+2. `xz -cd morcus.image.xz | sudo docker image load`
+3. `rm morcus.image.xz`
+4. `docker container run -i -t -p 127.0.0.1:5757:5757 --name morcus morcus`

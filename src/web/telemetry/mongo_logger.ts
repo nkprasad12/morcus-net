@@ -44,6 +44,7 @@ export class MongoLogger implements TelemetryLogger {
   async teardown(): Promise<void> {
     await this.client.close();
     this.initialized = false;
+    console.log("Closed MongoLogger");
   }
 
   async logApiCall(data: ApiCallData): Promise<void> {
