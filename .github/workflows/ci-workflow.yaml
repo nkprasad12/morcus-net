@@ -145,7 +145,7 @@ jobs:
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Fetch dev image
-        run: timeout 5m bash -c 'until docker pull ghcr.io/nkprasad12/morcus-dev:$(git rev-parse HEAD~1); do sleep 20; done'
+        run: timeout 5m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:$(git rev-parse HEAD~1); do sleep 20; done'
       - name: Backup current image
         run: |
           LATEST=ghcr.io/nkprasad12/morcus:main-latest
