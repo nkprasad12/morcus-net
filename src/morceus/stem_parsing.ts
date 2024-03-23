@@ -9,7 +9,16 @@ const STEM_FILES: string[] = [
   // And we want to use the rest of the nom.*
 ];
 
-export type PosType = "no" | "aj" | "wd";
+export type PosType =
+  | "no"
+  | "aj"
+  | "wd"
+  | "pron3"
+  | "numeral"
+  | "demonstr"
+  | "interrog"
+  | "indef"
+  | "rel_pron";
 export interface Stem {
   pos: PosType;
   stem: string;
