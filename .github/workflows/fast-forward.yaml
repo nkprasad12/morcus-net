@@ -1,7 +1,7 @@
 name: fast-forward
 on:
   issue_comment:
-    types: [created, edited]
+    types: [created]
 jobs:
   fast-forward:
     if: ${{ contains(github.event.comment.body, '/fast-forward')
@@ -19,3 +19,26 @@ jobs:
         with:
           merge: true
           comment: always
+
+  promote-image:
+    runs-on: ubuntu-latest
+    needs: [fast-forward]
+    timeout-minutes: 3
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Fetch dev image
+        run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:$(git rev-parse HEAD); do sleep 10; done'
+      - name: Backup current image
+        run: |
+          LATEST=ghcr.io/nkprasad12/morcus:main-latest
+          PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous
+          docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
+      - name: Promote dev image
+        run: |
+          LATEST=ghcr.io/nkprasad12/morcus:main-latest
+          CANDIDATE=ghcr.io/nkprasad12/morcus:$(git rev-parse HEAD)
+          docker tag $CANDIDATE $LATEST
+          docker push $LATEST
