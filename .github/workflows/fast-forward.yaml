@@ -30,7 +30,7 @@ jobs:
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Fetch dev image
-        run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:$(git rev-parse HEAD); do sleep 10; done'
+        run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}; do sleep 10; done'
       - name: Backup current image
         run: |
           LATEST=ghcr.io/nkprasad12/morcus:main-latest
@@ -39,6 +39,6 @@ jobs:
       - name: Promote dev image
         run: |
           LATEST=ghcr.io/nkprasad12/morcus:main-latest
-          CANDIDATE=ghcr.io/nkprasad12/morcus:$(git rev-parse HEAD)
+          CANDIDATE=ghcr.io/nkprasad12/morcus:${{ github.sha }}
           docker tag $CANDIDATE $LATEST
           docker push $LATEST
