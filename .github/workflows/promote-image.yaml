@@ -3,23 +3,24 @@ on:
     branches:
       - main
 
-  promote-image:
-    runs-on: ubuntu-latest
-    timeout-minutes: 3
+  jobs:
+    promote-image:
+      runs-on: ubuntu-latest
+      timeout-minutes: 3
 
-    steps:
-      - name: Log in to registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-      - name: Fetch dev image
-        run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}; do sleep 10; done'
-      - name: Backup current image
-        run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest
-          PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous
-          docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
-      - name: Promote dev image
-        run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest
-          CANDIDATE=ghcr.io/nkprasad12/morcus:${{ github.sha }}
-          docker tag $CANDIDATE $LATEST
-          docker push $LATEST
+      steps:
+        - name: Log in to registry
+          run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+        - name: Fetch dev image
+          run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}; do sleep 10; done'
+        - name: Backup current image
+          run: |
+            LATEST=ghcr.io/nkprasad12/morcus:main-latest
+            PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous
+            docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
+        - name: Promote dev image
+          run: |
+            LATEST=ghcr.io/nkprasad12/morcus:main-latest
+            CANDIDATE=ghcr.io/nkprasad12/morcus:${{ github.sha }}
+            docker tag $CANDIDATE $LATEST
+            docker push $LATEST
