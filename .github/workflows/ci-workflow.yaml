@@ -3,7 +3,6 @@ name: morcus.net CI
 on:
   push:
     branches:
-      - main
       - dev
   pull_request:
     branches:
@@ -103,7 +102,6 @@ jobs:
         run: npm run pytype
 
   image-dev:
-    if: github.ref == 'refs/heads/dev'
     uses: ./.github/workflows/build-image.yaml
     secrets: inherit
 
@@ -131,29 +129,3 @@ jobs:
           name: puppeteer_screenshots_docker
           path: |
             puppeteer_screenshots/
-
-  promote-image:
-    if: github.ref == 'refs/heads/main'
-    needs: [presubmit-checks, integration-checks]
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
-
-    steps:
-      - uses: actions/checkout@v4
-        with:
-          fetch-depth: 2
-      - name: Log in to registry
-        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-      - name: Fetch dev image
-        run: timeout 5m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:$(git rev-parse HEAD~1); do sleep 20; done'
-      - name: Backup current image
-        run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest
-          PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous
-          docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
-      - name: Promote dev image
-        run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest
-          CANDIDATE=ghcr.io/nkprasad12/morcus-dev:$(git rev-parse HEAD~1)
-          docker tag $CANDIDATE $LATEST
-          docker push $LATEST
