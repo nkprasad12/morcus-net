@@ -131,3 +131,4 @@ This guide assumes a Linux machine.
 3. Copy your SSL certificate and private key to the VM.
 4. Copy `vm_setup.sh` and `docker-compose.yaml` from `src/devops` into the target directory.
 5. Run `vm_setup.sh`. This will create some configuration files and start docker compose which will start a prod container, a dev container, a reverse proxy that routes traffic to the correct containers, and a job that handles updating the other containers from the registry.
+6. Ideally, you can now also set Morcus services to restart on boot. One way to do this is by running `crontab -e` and adding and entry for `@reboot cd /installation/directory && docker compose up -d`.
