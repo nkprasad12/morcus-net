@@ -16,4 +16,4 @@ jobs:
         uses: sequoia-pgp/fast-forward@v1
         with:
           merge: false
-          comment: always
+          comment: on-error
