@@ -100,11 +100,35 @@ warnings within VSCode for any ESLint errors in the code.
 
 ---
 
-## Docker Image
+## Deployment
 
-Docker images are generated for each push to `dev` and `main`. These can be downloaded from the `Actions` page. Once downloaded:
+### Heroku
 
-1. `unzip docker_image.zip && rm docker_image.zip`
-2. `xz -cd morcus.image.xz | sudo docker image load`
-3. `rm morcus.image.xz`
-4. `docker container run -i -t -p 127.0.0.1:5757:5757 --name morcus morcus`
+There is a `Procfile` in the root directory for use with Heroku. There are some environment variables that can be set, but all are optional.
+
+1. `MONGODB_URI` - The URI to a MongoDB database. If set, system health and usage metrics will be written to this database. Otherwise, they will be logged locally.
+2. `DB_SOURCE` - Only used if `MONGODB_URI` is present. If set, this will be used to disambiguate records from different deployments (e.g. use `dev` for staging).
+3. `GITHUB_TOKEN` - A GitHub token with Issue creation permissions. If set, issue reports will be written to GitHub Issues. Otherwise, they will be logged locally.
+4. `APPNAME` - set to `Dev` for a staging / dev deployment.
+5. `NPM_CONFIG_OMIT` - set to `optional` as an optimization to avoid installing integration test dependencies.
+
+### Docker Images
+
+Docker images are generated for each push. These can be downloaded from the registry at ghcr.io/nkprasad12/morcus. There are four tags of note:
+
+1. `main-latest` is the most up-to-date image of the `main` branch.
+2. `main-previous` is a backup of the previous `main-latest`.
+3. `dev-latest` is the most up-to-date image of the `dev` branch.
+4. `dev-previous` is a backup of the previous `dev-latest`.
+
+Note that the `latest` tag is not used.
+
+### Self-hosted Setup
+
+This guide assumes a Linux machine.
+
+1. Expose port `443`.
+2. Install the Docker CLI.
+3. Copy your SSL certificate and private key to the VM.
+4. Copy `vm_setup.sh` and `docker-compose.yaml` from `src/devops` into the target directory.
+5. Run `vm_setup.sh`. This will create some configuration files and start docker compose which will start a prod container, a dev container, a reverse proxy that routes traffic to the correct containers, and a job that handles updating the other containers from the registry.
