@@ -36,34 +36,6 @@ jobs:
       - name: Checking formatting
         run: npm run format-check
 
-  prod-build:
-    runs-on: ubuntu-latest
-    timeout-minutes: 6
-
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Node
-        uses: actions/setup-node@v4
-        with:
-          node-version-file: package.json
-      - name: Installing npm dependencies
-        run: npm ci --omit optional
-      - name: Running prod build step
-        run: npm run build
-      - name: Preparing server bundle
-        run: |
-          mkdir build -p
-          npm run tsnp src/esbuild/server.esbuild.ts
-          mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
-      - uses: actions/upload-artifact@v4
-        with:
-          name: build_outputs
-          path: |
-            public/
-            build/
-            package.json
-          compression-level: 9
-
   integration-checks:
     runs-on: ubuntu-latest
     timeout-minutes: 10
