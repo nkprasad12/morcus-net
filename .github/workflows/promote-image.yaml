@@ -1,3 +1,5 @@
+name: Promote Image
+
 on:
   push:
     branches:
