@@ -2,6 +2,12 @@ import { MorceusCruncher, crunchWord } from "@/morceus/crunch";
 import type { Lemma, Stem } from "@/morceus/stem_parsing";
 import type { EndIndexRow, InflectionLookup } from "@/morceus/tables/indices";
 
+const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
+const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
+
+beforeAll(() => (process.env.MORPHEUS_ROOT = FAKE_MORPHEUS_ROOT));
+afterAll(() => (process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT));
+
 describe("crunchWord", () => {
   it("should be able to crunch simple words", () => {
     const stem: Stem = { pos: "no", stem: "morc", inflection: "us" };
