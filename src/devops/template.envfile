@@ -1,0 +1,53 @@
+# To set up a self-hosted Morcus Latin tools:
+# 1. Ensure this file is in the same directory as your `docker-compose.yaml`.
+# 1. Ensure this file is in the same directory as your `./vm_setup.sh`.
+# 2. Ensure this file is named `.env`.
+# 3. Fill in the appropriate values for your configuration in this file.
+# 4. Run `./vm_setup.sh`.
+# 
+# This is a template `.env` file to be used with Docker compose.
+# See https://docs.docker.com/compose/environment-variables/env-file/#syntax for syntax reference.
+
+
+# # # # # # # # # # # #
+# Required variables  #
+# # # # # # # # # # # #
+
+
+# The absolute path of the SSL certificate.
+SSL_CERT=/foo/bar/cert.pem
+
+# The absolute path of the SSL private key.
+SSL_PRIVATE_KEY=/foo/bar/private-key.pem
+
+# The path to the directory to which some logs (currently `nginx` logs) will be written.
+# If it does not exist already, it will be created.
+# NOTE: If desired, you can keep this default value.
+LOGS_DIR=logs
+
+# The container registry that will be used for pulling images.
+# This must have the following images available:
+#   `morcus` - which is expected to have tags of `main-latest` and `dev-latest`.
+#   `morcus-proxy` - which is expected to have tags of `latest`.
+# NOTE: If desired, you can keep this default value.
+CONTAINER_REGISTRY=ghcr.io/nkprasad12/
+
+
+
+# # # # # # # # # # # #
+# Optional variables  #
+# # # # # # # # # # # #
+
+
+# A GitHub token that will be used to write issues to GitHub based on user feedback.
+# This must have the appropriate scopes to create issues. If not set, user feedback will
+# be logged locally.
+GITHUB_TOKEN=abc
+
+# The URI to a MongoDB database. If set, system health and usage metrics will be written to this database. 
+# Otherwise, they will be logged locally.
+MONGODB_URI=mongodb+srv://blah@blah.bazbaz
+
+# Only used if `MONGODB_URI` is present. If set, this will be used to disambiguate data records from different deployments.
+# NOTE: If desired, you can keep this default value.
+DB_TAG=morcus

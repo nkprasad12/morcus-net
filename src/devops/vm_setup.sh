@@ -1,45 +1,45 @@
 #!/bin/bash
 
-echo "This script will set up all services required for Morcus Latin Tools in the current directory."
+set -e
 
+function env_var() {
+  variable=$(grep ^"${1}"= "$(pwd)/.env" | xargs)
+  IFS="=" read -ra variable <<< "${variable}"
+  echo "${variable[1]}"
+}
 
-if [ -e ".env" ]
-then
-    echo "Error: '.env' file already exists and would be overwritten."
-    exit 1
-fi
-echo "Enter absolute path to directory with SSL certificate and private key."
-read -p "These must be named 'origin_cert.pem' and 'private_key.pem': " SSL_DIR
 if ! [ -x "$(command -v docker)" ]; then
   echo 'Error: docker is not installed.' >&2
   exit 1
 fi
-if [ ! -e "${SSL_DIR}/origin_cert.pem" ]
+
+if ! [ -e ".env" ]
 then
-    echo "Error: You must have an SSL certificate named 'origin_cert.pem' in the target directory."
-    exit 1
-fi
-if [ ! -e "${SSL_DIR}/private_key.pem" ]
-then
-    echo "Error: You must have a private key named 'private_key.pem' in the target directory."
+    echo "No .env file found! See 'src/devops/template.envfile' in the Morcus repo for instructions." >&2
     exit 1
 fi
 
+ENV_LOGS_DIR=$(env_var "LOGS_DIR")
+LOGS_DIR=$(readlink -f $ENV_LOGS_DIR)
+mkdir -p $LOGS_DIR
+touch $LOGS_DIR/access.log
+touch $LOGS_DIR/error.log
 
-mkdir -p logs
-LOGS_DIR=$(readlink -f logs)
-touch logs/access.log
-touch logs/error.log
-
-read -p "Enter container registry from which to pull images: " CONTAINER_REGISTRY
-read -p "Enter machine tag for identifying system health results: " DB_TAG
-
-echo "Populating .env file."
-touch .env
-echo "SSL_CERT_DIR=${SSL_DIR}" >> .env
-echo "CONTAINER_REGISTRY=${CONTAINER_REGISTRY}" >> .env
-echo "DB_TAG=${DB_TAG}" >> .env
-echo "LOGS_DIR=${LOGS_DIR}" >> .env
-
-echo "Starting services with 'docker compose up -d'."
 docker compose up -d
+echo -e "\nStarted services successfully with 'docker compose up -d'
+Use 'docker compose logs' to view logs, or 'docker compose down' to stop.\n"
+
+read -p "Automatically restart services on reboot? [Press y to confirm or any other key to skip]: " -n 1 -r
+echo
+if [[ $REPLY =~ ^[y]$ ]]
+then
+  echo "Attempting to add a crontab entry."
+  echo "You may see output like 'no crontab for username' - this is OK."
+  RESTART_ON_REBOOT="@reboot cd $(pwd) && docker compose up -d"
+  ! (crontab -l | grep -q "$RESTART_ON_REBOOT") && (crontab -l; echo "$RESTART_ON_REBOOT") | crontab
+  echo -e "Entry added! You can remove it by running 'crontab -e' and removing the line '$RESTART_ON_REBOOT'.\n"
+else
+  echo -e "Skipping automatic restarts on reboot.\n"
+fi
+
+echo "Setup complete!"

@@ -124,11 +124,23 @@ Note that the `latest` tag is not used.
 
 ### Self-hosted Setup
 
-This guide assumes a Linux machine.
+This guide assumes you are using a Linux machine with the following prerequisites:
 
-1. Expose port `443`.
-2. Install the Docker CLI.
-3. Copy your SSL certificate and private key to the VM.
-4. Copy `vm_setup.sh` and `docker-compose.yaml` from `src/devops` into the target directory.
-5. Run `vm_setup.sh`. This will create some configuration files and start docker compose which will start a prod container, a dev container, a reverse proxy that routes traffic to the correct containers, and a job that handles updating the other containers from the registry.
-6. Ideally, you can now also set Morcus services to restart on boot. One way to do this is by running `crontab -e` and adding and entry for `@reboot cd /installation/directory && docker compose up -d`.
+1. Port `443` is exposed.
+2. The Docker CLI has been installed.
+3. Your SSL certificate and private key files are on the machine.
+
+Run the following command and follow the resulting directions to:
+
+1. Create or download all required configuration files
+2. Start containers for a prod Morcus instance, a dev Morcus instance, a reverse proxy, and a job that updates all containers.
+3. (Optionally) add a cron job to restart all containers on reboot.
+
+```
+MORCUS_REPO=https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/src/devops && \
+curl $MORCUS_REPO/docker-compose.yaml -o docker-compose.yaml && \
+curl $MORCUS_REPO/vm_setup.sh -o vm_setup.sh && chmod +x vm_setup.sh && \
+curl $MORCUS_REPO/template.envfile -o .env && \
+echo -e "\n\nSetup files downloaded. Open '.env' and follow the instructions." ; \
+unset MORCUS_REPO
+```
