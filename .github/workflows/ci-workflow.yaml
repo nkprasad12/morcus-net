@@ -109,7 +109,7 @@ jobs:
       - name: Installing npm dependencies
         run: npm ci
       - name: Pulling docker image
-        run: docker pull ghcr.io/nkprasad12/morcus-dev:latest
+        run: docker pull ghcr.io/nkprasad12/morcus:dev-latest
       - name: Running integration checks
         run: npm run integration-tests-docker
       - name: Upload Puppeteer Screenshots

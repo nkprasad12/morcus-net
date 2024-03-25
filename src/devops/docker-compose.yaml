@@ -47,6 +47,6 @@ services:
 
 secrets:
   ssl_cert:
-    file: "${SSL_CERT_DIR}/origin_cert.pem"
+    file: "${SSL_CERT}"
   ssl_private_key:
-    file: "${SSL_CERT_DIR}/private_key.pem"
+    file: "${SSL_PRIVATE_KEY}"
