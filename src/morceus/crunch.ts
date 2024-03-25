@@ -1,4 +1,4 @@
-import { checkPresent } from "@/common/assert";
+import { assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { allStems, type Lemma, type Stem } from "@/morceus/stem_parsing";
 import {
@@ -81,6 +81,15 @@ export namespace MorceusCruncher {
         ["src/morceus/tables/lat/core/dependency"]
       );
     const cachedLemmata = lemmata ?? allStems();
+    // Special cases
+    endTables.set(
+      "adverb",
+      new Map([["*", [{ grammaticalData: ["adverb"], ending: "*" }]]])
+    );
+    endTables.set(
+      "N/A",
+      new Map([["*", [{ grammaticalData: [], ending: "*" }]]])
+    );
     return (word) =>
       convert(crunchWord(endIndices, cachedLemmata, word), endTables);
   }
@@ -97,13 +106,18 @@ export namespace MorceusCruncher {
     for (const [lemma, results] of byLemma.map.entries()) {
       const byForm = arrayMap<string, InflectedFormData>();
       for (const result of results) {
-        const form = result.stem.stem + result.ending;
+        const ending = result.ending === "*" ? "" : result.ending;
+        const form = result.stem.stem + ending;
         const inflectionEndings = checkPresent(
           inflectionLookup.get(result.stem.inflection)?.get(result.ending)
         );
         for (const inflection of inflectionEndings) {
+          assertEqual(inflection.ending, result.ending);
+          const grammaticalData = inflection.grammaticalData.concat(
+            result.stem.other ?? []
+          );
           byForm.add(form, {
-            inflection: inflection.grammaticalData.join(" "),
+            inflection: grammaticalData.join(" "),
             usageNote: inflection.tags?.join(" "),
           });
         }
@@ -119,4 +133,4 @@ export namespace MorceusCruncher {
   }
 }
 
-// console.log(MorceusCruncher.make()("topper"));
+// console.log(JSON.stringify(MorceusCruncher.make()("illic"), undefined, 2));
