@@ -23,7 +23,7 @@ SSL_PRIVATE_KEY=/foo/bar/private-key.pem
 # The path to the directory to which some logs (currently `nginx` logs) will be written.
 # If it does not exist already, it will be created.
 # NOTE: If desired, you can keep this default value.
-LOGS_DIR=logs
+LOGS_DIR=/var/log/morcus
 
 # The container registry that will be used for pulling images.
 # This must have the following images available:

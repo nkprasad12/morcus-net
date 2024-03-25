@@ -35,6 +35,7 @@ if [[ $REPLY =~ ^[y]$ ]]
 then
   echo "Attempting to add a crontab entry."
   echo "You may see output like 'no crontab for username' - this is OK."
+  crontab -l | crontab
   RESTART_ON_REBOOT="@reboot cd $(pwd) && docker compose up -d"
   ! (crontab -l | grep -q "$RESTART_ON_REBOOT") && (crontab -l; echo "$RESTART_ON_REBOOT") | crontab
   echo -e "Entry added! You can remove it by running 'crontab -e' and removing the line '$RESTART_ON_REBOOT'.\n"
