@@ -8,7 +8,6 @@ RUN chown -R node:node /morcus
 USER node
 RUN npm ci --omit optional
 RUN npm run build
-RUN npm run tsnp src/esbuild/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/
 
 FROM node:20-alpine3.18
 WORKDIR /morcus
