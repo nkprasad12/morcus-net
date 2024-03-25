@@ -67,7 +67,8 @@ async function setupMorcus(reuseDev: boolean = REUSE_DEV): Promise<Closer> {
 }
 
 function startMorcusFromDocker(): Promise<Closer> {
-  const imageName = "ghcr.io/nkprasad12/morcus:dev-latest";
+  const imageTag = checkPresent(process.env.IMAGE_TAG);
+  const imageName = `ghcr.io/nkprasad12/morcus:${imageTag}`;
   const container = `docker run -dp 127.0.0.1:1337:5757 --name ${CONTAINER_NAME} ${imageName}`;
   const close: Closer = async () => {
     try {
