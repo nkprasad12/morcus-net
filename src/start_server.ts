@@ -123,18 +123,21 @@ export function startMorcusServer(): Promise<http.Server> {
   const workServer = new SocketWorkServer(new Server(server));
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;
-  if (mongodbUri === undefined && !consoleTelemetry) {
+  const mongodbUriEmpty = mongodbUri === undefined || mongodbUri.length === 0;
+  if (mongodbUriEmpty && !consoleTelemetry) {
     log("No `MONGODB_URI` environment variable set. Logging to console.");
   }
-  if (mongodbUri !== undefined && consoleTelemetry) {
+  if (!mongodbUriEmpty && consoleTelemetry) {
     log("`MONGODB_URI` set but logging to console due to `CONSOLE_TELEMETRY`.");
   }
   const telemetry =
-    mongodbUri !== undefined && !consoleTelemetry
+    !mongodbUriEmpty && !consoleTelemetry
       ? MongoLogger.create(mongodbUri, envVar("DB_SOURCE"))
       : Promise.resolve(TelemetryLogger.NoOp);
   const githubToken = process.env.GITHUB_TOKEN;
-  if (githubToken === undefined) {
+  const githubTokenEmpty =
+    githubToken === undefined || githubToken.length === 0;
+  if (githubTokenEmpty) {
     log(
       "No `GITHUB_TOKEN` environment variable set. Logging issues to console."
     );
@@ -147,7 +150,7 @@ export function startMorcusServer(): Promise<http.Server> {
         callWorker(Workers.MACRONIZER, input, workServer)
       ),
       RouteDefinition.create(ReportApi, (request) =>
-        githubToken === undefined
+        githubTokenEmpty
           ? Promise.resolve(log(GitHub.createIssueBody(request)))
           : GitHub.reportIssue(request, githubToken)
       ),
