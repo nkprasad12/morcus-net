@@ -5,6 +5,10 @@ services:
     image: "${CONTAINER_REGISTRY}morcus-proxy:latest"
     ports:
       - "0.0.0.0:443:443"
+    environment:
+      DB_SOURCE: "${DB_TAG}"
+      PROD_HOST_NAMES: "${PROD_HOST_NAMES}"
+      DEV_HOST_NAMES: "${DEV_HOST_NAMES}"
     volumes:
       - "${LOGS_DIR}/access.log:/morcus/access.log:rw"
       - "${LOGS_DIR}/error.log:/morcus/error.log:rw"
@@ -13,6 +17,7 @@ services:
       - ssl_private_key
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
+    init: true
 
   dev:
     image: "${CONTAINER_REGISTRY}morcus:dev-latest"

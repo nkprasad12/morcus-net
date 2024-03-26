@@ -32,6 +32,10 @@ LOGS_DIR=/var/log/morcus
 # NOTE: If desired, you can keep this default value.
 CONTAINER_REGISTRY=ghcr.io/nkprasad12/
 
+# The host notes for the prod and dev instances respectively.
+# You can specify multiple host names (for example www.foo.com and foo.com) by separating with a single space.
+PROD_HOST_NAMES=morcus.net www.morcus.net
+DEV_HOST_NAMES=dev.morcus.net
 
 
 # # # # # # # # # # # #
