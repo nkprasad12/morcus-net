@@ -6,12 +6,11 @@ services:
     ports:
       - "0.0.0.0:443:443"
     environment:
-      DB_SOURCE: "${DB_TAG}"
-      PROD_HOST_NAMES: "${PROD_HOST_NAMES}"
-      DEV_HOST_NAMES: "${DEV_HOST_NAMES}"
+      PROD_HOST_NAMES: "${PROD_HOST_NAMES:?err}"
+      DEV_HOST_NAMES: "${DEV_HOST_NAMES:?err}"
     volumes:
-      - "${LOGS_DIR}/access.log:/morcus/access.log:rw"
-      - "${LOGS_DIR}/error.log:/morcus/error.log:rw"
+      - "${LOGS_DIR:?err}/access.log:/morcus/access.log:rw"
+      - "${LOGS_DIR:?err}/error.log:/morcus/error.log:rw"
     secrets:
       - ssl_cert
       - ssl_private_key
@@ -35,7 +34,7 @@ services:
     ports:
       - "127.0.0.1:57575:5757"
     environment:
-      DB_SOURCE: "${DB_TAG}"
+      DB_SOURCE: "${DB_TAG:-prod}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
@@ -52,6 +51,6 @@ services:
 
 secrets:
   ssl_cert:
-    file: "${SSL_CERT}"
+    file: "${SSL_CERT:?err}"
   ssl_private_key:
-    file: "${SSL_PRIVATE_KEY}"
+    file: "${SSL_PRIVATE_KEY:?err}"
