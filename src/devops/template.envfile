@@ -15,10 +15,10 @@
 
 
 # The absolute path of the SSL certificate.
-SSL_CERT=/foo/bar/cert.pem
+SSL_CERT=/var/www/morcus/origin_cert.pem
 
 # The absolute path of the SSL private key.
-SSL_PRIVATE_KEY=/foo/bar/private-key.pem
+SSL_PRIVATE_KEY=/var/www/morcus/private_key.pem
 
 # The path to the directory to which some logs (currently `nginx` logs) will be written.
 # If it does not exist already, it will be created.
@@ -29,10 +29,12 @@ LOGS_DIR=/var/log/morcus
 # This must have the following images available:
 #   `morcus` - which is expected to have tags of `main-latest` and `dev-latest`.
 #   `morcus-proxy` - which is expected to have tags of `latest`.
-# NOTE: If desired, you can keep this default value.
+#
+# NOTE: If desired, you can keep this default value to use the standard images.
 CONTAINER_REGISTRY=ghcr.io/nkprasad12/
 
-# The host notes for the prod and dev instances respectively.
+# The host names for the prod and dev instances respectively. Only traffic from these hosts will be
+# forwarded to the respective instances.
 # You can specify multiple host names (for example www.foo.com and foo.com) by separating with a single space.
 PROD_HOST_NAMES=morcus.net www.morcus.net
 DEV_HOST_NAMES=dev.morcus.net
@@ -43,14 +45,30 @@ DEV_HOST_NAMES=dev.morcus.net
 # # # # # # # # # # # #
 
 
+# Which port to use for traffic over `http`.
+#
+# NOTE: This is intentionally left blank, which means that only port 443 is sent to
+#       nginx and `http` traffic will not work. If you want to serve traffic over `http`,
+#       set this.
+#
+# NOTE: There is currently no way to serve only `http` and not `https` traffic. 
+#       (barring editing the `docker-compose.yaml`) directly - host port `443` will always
+#       be sent to the container and nginx will always expect to see a private key and certificate.
+#       If you just want to set things but don't have a cert and key, you can run
+#       `openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 3650 -nodes -subj "/CN=your.domain"`
+#       to generate these locally.
+#
+# NOTE: This currently only works if set to `80`.
+HTTP_PORT=
+
 # A GitHub token that will be used to write issues to GitHub based on user feedback.
 # This must have the appropriate scopes to create issues. If not set, user feedback will
 # be logged locally.
-GITHUB_TOKEN=abc
+GITHUB_TOKEN=
 
 # The URI to a MongoDB database. If set, system health and usage metrics will be written to this database. 
 # Otherwise, they will be logged locally.
-MONGODB_URI=mongodb+srv://blah@blah.bazbaz
+MONGODB_URI=
 
 # Only used if `MONGODB_URI` is present. If set, this will be used to disambiguate data records from different deployments.
 # NOTE: If desired, you can keep this default value.
