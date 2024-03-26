@@ -126,9 +126,8 @@ Note that the `latest` tag is not used.
 
 This guide assumes you are using a Linux machine with the following prerequisites:
 
-1. Port `443` is exposed.
-2. The Docker CLI has been installed.
-3. Your SSL certificate and private key files are on the machine.
+1. The Docker CLI has been installed.
+2. Your SSL certificate and private key files are on the machine.
 
 Run the following command and follow the resulting directions to:
 
@@ -143,4 +142,26 @@ curl $MORCUS_REPO/vm_setup.sh -o vm_setup.sh && chmod +x vm_setup.sh && \
 curl $MORCUS_REPO/template.envfile -o .env && \
 echo -e "\n\nSetup files downloaded. Open '.env' and follow the instructions." ; \
 unset MORCUS_REPO
+```
+
+#### Local testing
+
+If you don't have an SSL certificate and key, you can generate one for local testing with the following:
+
+```
+openssl req -x509 -newkey rsa:4096 -keyout key.pem -out cert.pem -sha256 -days 3650 -nodes -subj "/CN=your.domain"
+```
+
+By default, the reverse proxy will only proxy traffic coming from the hosts specified by `PROD_HOST_NAMES` and `DEV_HOST_NAMES` (as specified in the `.env` file - see instructions there for more details) and will error on all other requests. For local testing, you can map these hosts to the loopback address in your hosts file (generally `/etc/hosts` on a Unix-like OS). For example:
+
+in your `.env` file:
+
+```
+PROD_HOST_NAMES=foo.morcus.net
+```
+
+in your hosts file:
+
+```
+127.0.0.1 foo.morcus.net
 ```

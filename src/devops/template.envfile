@@ -21,7 +21,8 @@ SSL_CERT=/var/www/morcus/origin_cert.pem
 SSL_PRIVATE_KEY=/var/www/morcus/private_key.pem
 
 # The path to the directory to which some logs (currently `nginx` logs) will be written.
-# If it does not exist already, it will be created.
+# If it does not exist already, it will be created by `vm_setup.sh` but NOT by docker compose,
+# so if you modify this then run `vm_setup` again.
 # NOTE: If desired, you can keep this default value.
 LOGS_DIR=/var/log/morcus
 
