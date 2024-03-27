@@ -1,5 +1,3 @@
-version: "3"
-
 services:
   proxy:
     image: "${CONTAINER_REGISTRY}morcus-proxy:latest"
