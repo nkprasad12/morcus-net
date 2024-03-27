@@ -20,10 +20,10 @@ then
 fi
 
 ENV_LOGS_DIR=$(env_var "LOGS_DIR")
-LOGS_DIR=$(readlink -f $ENV_LOGS_DIR)
-mkdir -p $LOGS_DIR
-touch $LOGS_DIR/access.log
-touch $LOGS_DIR/error.log
+LOGS_DIR=$(readlink -f "$ENV_LOGS_DIR")
+mkdir -p "$LOGS_DIR"
+touch "$LOGS_DIR"/access.log
+touch "$LOGS_DIR"/error.log
 
 docker compose up -d
 echo -e "\nStarted services successfully with 'docker compose up -d'

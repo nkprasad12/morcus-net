@@ -7,11 +7,11 @@ PORT="5757"
 echo "This script will set up $APP_NAME in a '$MORCUS_DIR' subdirectory of current directory."
 echo "Cloning the repo in a new '$MORCUS_DIR' directory."
 mkdir $MORCUS_DIR
-cd $MORCUS_DIR
+cd $MORCUS_DIR || exit
 git clone https://github.com/nkprasad12/morcus-net.git
 
 echo "Installing JS / TS dependencies from NPM."
-cd morcus-net
+cd morcus-net || exit
 git checkout dev
 npm install
 # Return to the $MORCUS_DIR directory.
@@ -23,7 +23,7 @@ git clone https://github.com/nkprasad12/lexica.git
 
 echo "Downloading Smith and Hall."
 git clone https://github.com/nkprasad12/smithandhall.git
-cd smithandhall
+cd smithandhall || exit
 git checkout v1edits
 cd ..
 
@@ -39,5 +39,5 @@ echo "SH_RAW_PATH=$PWD/smithandhall/sh_F2_latest.txt" >> $dot_env
 echo "RAW_LATIN_WORDS=$PWD/morcus-raw-data/morpheus_out_aug1_suff_removed.txt" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."
-cd morcus-net
+cd morcus-net || exit
 ./morcus.sh web -b_ls -b_sh -b_li -b_ll --prod

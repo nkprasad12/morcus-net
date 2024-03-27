@@ -1,4 +1,6 @@
-if echo $* | grep -e "--bun" -q
+#!/bin/bash
+
+if echo "$*" | grep -e "--bun" -q
 then
   COMMAND="bun"
   BUN_FLAG="1"
