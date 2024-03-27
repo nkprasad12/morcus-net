@@ -25,6 +25,11 @@ services:
     restart: unless-stopped
     # Required so that SIGTERM and SIGINT are passed along to nginx.
     init: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "2"
 
   dev:
     image: "${CONTAINER_REGISTRY}morcus:dev-latest"
@@ -36,6 +41,11 @@ services:
       MONGODB_URI: "${MONGODB_URI}"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   prod:
     image: "${CONTAINER_REGISTRY}morcus:main-latest"
@@ -47,15 +57,25 @@ services:
       MONGODB_URI: "${MONGODB_URI}"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
 
   watchtower:
     image: containrrr/watchtower
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
-      WATCHTOWER_POLL_INTERVAL: 60
+      WATCHTOWER_POLL_INTERVAL: 75
       WATCHTOWER_LABEL_ENABLE: true
       WATCHTOWER_CLEANUP: true
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "500k"
+        max-file: "2"
 
 secrets:
   ssl_cert:
