@@ -62,4 +62,21 @@ describe("MorceusCruncher", () => {
       },
     ]);
   });
+
+  it("handles end to end case with relaxed vowel length", () => {
+    const cruncher = MorceusCruncher.make();
+    const result = cruncher("cavete", { vowelLength: "relaxed" });
+
+    expect(result).toEqual([
+      {
+        lemma: "caveo",
+        inflectedForms: [
+          {
+            form: "ca^ve_te",
+            inflectionData: [{ inflection: "pres imperat act 2nd pl" }],
+          },
+        ],
+      },
+    ]);
+  });
 });

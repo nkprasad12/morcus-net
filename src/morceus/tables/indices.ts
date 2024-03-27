@@ -54,7 +54,10 @@ export function makeEndIndex(
     const endingsMap = arrayMap<string, InflectionEnding>();
     for (const end of endings) {
       const ending = end.ending;
-      const cleanEnding = ending.replaceAll("_", "");
+      // Remove vowel length markings on the keys so that we can make lookups
+      // from un-macronized words. Note that we still preserve the lengths in
+      // the result itself.
+      const cleanEnding = ending.replaceAll("_", "").replaceAll("^", "");
       index.add(cleanEnding, name);
       endingsMap.add(cleanEnding, end);
     }

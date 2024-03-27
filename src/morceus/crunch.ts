@@ -1,6 +1,11 @@
-import { assertEqual, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import { allStems, type Lemma, type Stem } from "@/morceus/stem_parsing";
+import {
+  allNounStems,
+  allVerbStems,
+  type Lemma,
+  type Stem,
+} from "@/morceus/stem_parsing";
 import {
   makeEndIndex,
   type EndIndexRow,
@@ -24,7 +29,14 @@ interface LatinWordAnalysis {
     inflectionData: InflectedFormData[];
   }[];
 }
-export type Cruncher = (word: string) => LatinWordAnalysis[];
+
+export interface CruncherOptions {
+  vowelLength?: "strict" | "relaxed";
+}
+export type Cruncher = (
+  word: string,
+  options?: CruncherOptions
+) => LatinWordAnalysis[];
 
 export function crunchWord(
   endings: EndIndexRow[],
@@ -35,10 +47,10 @@ export function crunchWord(
   const stemMap = arrayMap<string, [Stem, string]>();
   for (const lemma of lemmata) {
     for (const stem of lemma.stems) {
-      stemMap.add(stem.stem.replaceAll("^", "").replaceAll("_", ""), [
-        stem,
-        lemma.lemma,
-      ]);
+      stemMap.add(
+        stem.stem.replaceAll("^", "").replaceAll("_", "").replaceAll("-", ""),
+        [stem, lemma.lemma]
+      );
     }
   }
   const endsMap = new Map<string, string[]>(
@@ -80,7 +92,7 @@ export namespace MorceusCruncher {
         ["src/morceus/tables/lat/core/target"],
         ["src/morceus/tables/lat/core/dependency"]
       );
-    const cachedLemmata = lemmata ?? allStems();
+    const cachedLemmata = lemmata ?? allNounStems().concat(allVerbStems());
     // Special cases
     endTables.set(
       "adverb",
@@ -90,14 +102,16 @@ export namespace MorceusCruncher {
       "N/A",
       new Map([["*", [{ grammaticalData: [], ending: "*" }]]])
     );
-    return (word) =>
-      convert(crunchWord(endIndices, cachedLemmata, word), endTables);
+    return (word, options) =>
+      convert(crunchWord(endIndices, cachedLemmata, word), endTables, options);
   }
 
   function convert(
     crunchResults: CrunchResult[],
-    inflectionLookup: InflectionLookup
+    inflectionLookup: InflectionLookup,
+    options?: CruncherOptions
   ): LatinWordAnalysis[] {
+    const strictLengths = options?.vowelLength !== "relaxed";
     const byLemma = arrayMap<string, CrunchResult>();
     for (const result of crunchResults) {
       byLemma.add(result.lemma, result);
@@ -106,31 +120,51 @@ export namespace MorceusCruncher {
     for (const [lemma, results] of byLemma.map.entries()) {
       const byForm = arrayMap<string, InflectedFormData>();
       for (const result of results) {
-        const ending = result.ending === "*" ? "" : result.ending;
-        const form = result.stem.stem + ending;
         const inflectionEndings = checkPresent(
           inflectionLookup.get(result.stem.inflection)?.get(result.ending)
         );
         for (const inflection of inflectionEndings) {
-          assertEqual(inflection.ending, result.ending);
+          // We can still differ here based on vowel length
+          if (inflection.ending !== result.ending && strictLengths) {
+            continue;
+          }
+          // We should probably replace this check later under a debug flag.
+          assertEqual(
+            inflection.ending.replaceAll("_", "").replaceAll("^", ""),
+            result.ending.replaceAll("_", "").replaceAll("^", "")
+          );
           const grammaticalData = inflection.grammaticalData.concat(
             result.stem.other ?? []
           );
+          const ending = inflection.ending === "*" ? "" : inflection.ending;
+          const form = result.stem.stem + ending;
           byForm.add(form, {
             inflection: grammaticalData.join(" "),
             usageNote: inflection.tags?.join(" "),
           });
         }
       }
+      const inflectedForms = [...byForm.map.entries()];
+      // This should only be if there was a vowel length mismatch
+      if (inflectedForms.length === 0) {
+        assert(strictLengths);
+        continue;
+      }
       analyses.push({
         lemma,
-        inflectedForms: [...byForm.map.entries()].map(
-          ([form, inflectionData]) => ({ form, inflectionData })
-        ),
+        inflectedForms: inflectedForms.map(([form, inflectionData]) => ({
+          form,
+          inflectionData,
+        })),
       });
     }
     return analyses;
   }
 }
 
-// console.log(JSON.stringify(MorceusCruncher.make()("illic"), undefined, 2));
+// const options: CruncherOptions = { vowelLength: "relaxed" };
+// const cruncher = MorceusCruncher.make();
+// const start = performance.now();
+// const result = cruncher("habeas", options);
+// console.log(`${performance.now() - start} ms`);
+// console.log(JSON.stringify(result, undefined, 2));
