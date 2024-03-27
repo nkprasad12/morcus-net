@@ -139,7 +139,7 @@ Run the following command and follow the resulting directions to:
 MORCUS_REPO=https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/src/devops && \
 curl $MORCUS_REPO/docker-compose.yaml -o docker-compose.yaml && \
 curl $MORCUS_REPO/vm_setup.sh -o vm_setup.sh && chmod +x vm_setup.sh && \
-curl $MORCUS_REPO/template.envfile -o .env && \
+curl $MORCUS_REPO/.env.template -o .env && \
 echo -e "\n\nSetup files downloaded. Open '.env' and follow the instructions." ; \
 unset MORCUS_REPO
 ```

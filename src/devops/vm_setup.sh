@@ -15,7 +15,7 @@ fi
 
 if ! [ -e ".env" ]
 then
-    echo "No .env file found! See 'src/devops/template.envfile' in the Morcus repo for instructions." >&2
+    echo "No .env file found! See 'src/devops/.env.template' in the Morcus repo for instructions." >&2
     exit 1
 fi
 

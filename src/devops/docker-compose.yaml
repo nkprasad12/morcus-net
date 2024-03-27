@@ -46,6 +46,7 @@ services:
       options:
         max-size: "5m"
         max-file: "2"
+    profiles: [dev]
 
   prod:
     image: "${CONTAINER_REGISTRY}morcus:main-latest"
