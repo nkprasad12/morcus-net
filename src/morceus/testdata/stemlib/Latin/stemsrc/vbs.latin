@@ -1,0 +1,18 @@
+:le:accipitro
+:de:acci^pi^tr	are_vb
+:le:acclamo
+
+ # I'm a comment
+:de:ac-cla_m	are_vb
+:le:acclaro
+:de:ac-cla_r	are_vb
+:de:ad-cla_r	are_vb
+
+:le:acclino
+:de:ac-cli_n	are_vb
+:de:ad-cli_n	are_vb
+:le:accognosco
+:vs:ac-cogno_sc	conj3
+:le:caveo
+:vs:ca^v	conj2
+:vb:ca^ve^	irreg_pp1 2nd sg pres imperat act

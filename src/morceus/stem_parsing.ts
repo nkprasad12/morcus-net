@@ -3,17 +3,32 @@ import { envVar } from "@/common/env_vars";
 import { processNomEntries } from "@/morceus/irregular_stems";
 import fs from "fs";
 
-const STEM_FILES: string[] = [
+const NOUN_STEM_FILES: string[] = [
   "stemlib/Latin/stemsrc/ls.nom",
   "stemlib/Latin/stemsrc/nom.livy",
-  // We need to generate the nom.irreg (expand irregular.nom.src using the templates.)
   // And we want to use the rest of the nom.*
 ];
 
+const VERB_STEM_FILES: string[] = [
+  "stemlib/Latin/stemsrc/vbs.latin",
+  // We need vbs.latin.irreg too, and all the rest.
+];
+
+// :le: 	lemma or headword
+// :wd: 	indeclinable form (preposition, adverb, interjection, etc.) or unanalyzed irregular form
+// :aj: 	adjective; must have an inflectional class
+// :no: 	noun; must have an inflectional class and a gender
+// :vb: 	verb form; for unanalyzed irregular forms
+// :de: 	derivable verb; must have an inflectional class
+// :vs: 	verb stem, one of the principal parts; must have an inflectional class
 export type PosType =
   | "no"
   | "aj"
   | "wd"
+  | "vs"
+  | "vb"
+  | "de"
+  // TODO: These should really be split off.
   | "pron3"
   | "numeral"
   | "demonstr"
@@ -31,7 +46,7 @@ export interface Lemma {
   stems: Stem[];
 }
 
-export function parseStemFile(filePath: string): Lemma[] {
+export function parseNounStemFile(filePath: string): Lemma[] {
   const content = fs.readFileSync(filePath).toString();
   const lines = content.split("\n");
   const results: string[][] = [];
@@ -65,6 +80,35 @@ export function parseStemFile(filePath: string): Lemma[] {
   return results.map(processStem);
 }
 
+export function parseVerbStemFile(filePath: string): Lemma[] {
+  const content = fs.readFileSync(filePath).toString();
+  const lines = content.split("\n");
+  const results: string[][] = [];
+  let current: string[] = [];
+
+  for (const rawLine of lines) {
+    const line = rawLine.trim();
+    if (line[0] === "#") {
+      continue;
+    }
+    if (line.length === 0) {
+      continue;
+    }
+    assert(line[0] === ":", line[0]);
+    if (line.startsWith(":le:")) {
+      if (current.length > 0) {
+        results.push(current);
+        current = [];
+      }
+    }
+    current.push(line);
+  }
+  if (current.length > 0) {
+    results.push(current);
+  }
+  return results.map(processStem);
+}
+
 function findPos(chunk: string): PosType {
   if (chunk.startsWith(":no:")) {
     return "no";
@@ -74,6 +118,15 @@ function findPos(chunk: string): PosType {
   }
   if (chunk.startsWith(":wd:")) {
     return "wd";
+  }
+  if (chunk.startsWith(":vs:")) {
+    return "vs";
+  }
+  if (chunk.startsWith(":vb:")) {
+    return "vb";
+  }
+  if (chunk.startsWith(":de:")) {
+    return "de";
   }
   throw Error("Unexpected chunk: " + chunk);
 }
@@ -100,8 +153,14 @@ function processStem(lines: string[]): Lemma {
   };
 }
 
-export function allStems(): Lemma[] {
+export function allNounStems(): Lemma[] {
   const root = envVar("MORPHEUS_ROOT");
-  const stemFiles = STEM_FILES.map((f) => root + "/" + f).concat();
-  return stemFiles.flatMap(parseStemFile).concat(processNomEntries());
+  const stemFiles = NOUN_STEM_FILES.map((f) => root + "/" + f).concat();
+  return stemFiles.flatMap(parseNounStemFile).concat(processNomEntries());
+}
+
+export function allVerbStems(): Lemma[] {
+  const root = envVar("MORPHEUS_ROOT");
+  const stemFiles = VERB_STEM_FILES.map((f) => root + "/" + f).concat();
+  return stemFiles.flatMap(parseVerbStemFile);
 }

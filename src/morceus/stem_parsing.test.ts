@@ -1,7 +1,7 @@
-import { parseStemFile } from "@/morceus/stem_parsing";
+import { parseNounStemFile, parseVerbStemFile } from "@/morceus/stem_parsing";
 
-describe("parseStemFile", () => {
-  const nom01 = parseStemFile("src/morceus/stems/nom.01");
+describe("parseNounStemFile", () => {
+  const nom01 = parseNounStemFile("src/morceus/stems/nom.01");
 
   it("has expected lemmata", () => expect(nom01).toHaveLength(30));
 
@@ -26,6 +26,39 @@ describe("parseStemFile", () => {
           pos: "aj",
           inflection: "us_a_um",
           other: "irreg_superl",
+        },
+      ],
+    });
+  });
+});
+
+describe("parseVerbStemFile", () => {
+  const verbs = parseVerbStemFile(
+    "src/morceus/testdata/stemlib/Latin/stemsrc/vbs.latin"
+  );
+
+  it("has expected lemmata", () => expect(verbs).toHaveLength(6));
+
+  it("parses line split lemma", () => {
+    const acclamo = verbs.filter((s) => s.lemma === "acclamo")[0];
+    expect(acclamo).toEqual({
+      lemma: "acclamo",
+      stems: [{ stem: "ac-cla_m", pos: "de", inflection: "are_vb" }],
+    });
+  });
+
+  it("parses vb lemma", () => {
+    const caveo = verbs.filter((s) => s.lemma === "caveo")[0];
+    expect(caveo).toEqual({
+      lemma: "caveo",
+      stems: [
+        { stem: "ca^v", inflection: "conj2", pos: "vs" },
+        {
+          stem: "ca^ve^",
+          pos: "vb",
+          // TODO: These are probably switched from what we expect!
+          inflection: "irreg_pp1",
+          other: "2nd sg pres imperat act",
         },
       ],
     });
