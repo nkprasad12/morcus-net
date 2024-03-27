@@ -1,28 +1,10 @@
 /* istanbul ignore file */
 
-// To run the server with node on javascript directly, uncomment this line:
-//```
-// require("module-alias/register");
-//```
-// and install `module-alias`. Then, add
-// "_moduleAliases": {
-//   "@": "build"
-// },
-//  to the `package.json`. This current fucks with the jest config.
-// Then, `npx tsc -p tsconfig.json` to build js, and
-// `node build/start_server.js` to start the server.
-// Based on local testing, this saves ~30-40 MB memory.
-
 import * as dotenv from "dotenv";
 import express from "express";
 import http from "http";
-import { Server } from "socket.io";
 
 import { setupServer, WebServerParams } from "@/web/web_server";
-import { SocketWorkServer } from "@/web/sockets/socket_worker_server";
-import { WorkRequest } from "@/web/workers/requests";
-import { Workers } from "@/web/workers/worker_types";
-import { randomInt } from "crypto";
 import { envVar } from "@/common/env_vars";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import path from "path";
@@ -34,7 +16,6 @@ import {
   DictsFusedApi,
   GetWork,
   ListLibraryWorks,
-  MacronizeApi,
   ReportApi,
   ScrapeUrlApi,
 } from "@/web/api_routes";
@@ -50,6 +31,10 @@ import {
 import { readFileSync } from "fs";
 import { scrapeUrlText } from "@/web/scraping/scraper";
 
+function randInRange(min: number, max: number): number {
+  return Math.random() * (max - min) + min;
+}
+
 function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   let delegate: Dictionary | null = null;
   const cachedProvider = () => {
@@ -58,7 +43,9 @@ function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
     }
     return delegate;
   };
-  setTimeout(() => cachedProvider(), 50);
+  // Allow some fuzz here so that when we start up dev and prod instances at the same time, we are
+  // not initializing all databases across all instances at the exact same time.
+  setTimeout(() => cachedProvider(), randInRange(25, 150));
   return {
     info: info,
     getEntry: (...args) => cachedProvider().getEntry(...args),
@@ -87,20 +74,6 @@ function logMemoryUsage(telemetry: TelemetryLogger): void {
   });
 }
 
-async function callWorker(
-  category: Workers.Category,
-  input: string,
-  workServer: SocketWorkServer
-): Promise<string> {
-  const request: WorkRequest<string> = {
-    category: category,
-    id: `${randomInt(1000000)}`,
-    content: input,
-  };
-  const result = await workServer.process(request);
-  return result.content;
-}
-
 export function startMorcusServer(): Promise<http.Server> {
   process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
@@ -120,7 +93,6 @@ export function startMorcusServer(): Promise<http.Server> {
   }, LatinDict.SmithAndHall);
   const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
 
-  const workServer = new SocketWorkServer(new Server(server));
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;
   const mongodbUriEmpty = mongodbUri === undefined || mongodbUri.length === 0;
@@ -146,9 +118,6 @@ export function startMorcusServer(): Promise<http.Server> {
   const params: WebServerParams = {
     webApp: app,
     routes: [
-      RouteDefinition.create(MacronizeApi, (input) =>
-        callWorker(Workers.MACRONIZER, input, workServer)
-      ),
       RouteDefinition.create(ReportApi, (request) =>
         githubTokenEmpty
           ? Promise.resolve(log(GitHub.createIssueBody(request)))
@@ -186,7 +155,7 @@ export function startMorcusServer(): Promise<http.Server> {
     server.listen(port, () => {
       const memoryLogId = setInterval(
         () => telemetry.then(logMemoryUsage),
-        1000 * 60 * 15
+        120 * randInRange(14.75, 15.25)
       );
       server.on("close", () => {
         log("Cleaning up resources.");
