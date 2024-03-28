@@ -3,6 +3,7 @@ import * as React from "react";
 import { EntryOutline } from "@/common/dictionaries/dict_result";
 import {
   DictInfo,
+  DictsFusedRequest,
   DictsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
@@ -32,9 +33,7 @@ import {
   jumpToSection,
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
 import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
-import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import ReactDOM from "react-dom";
-import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { FontSizes } from "@/web/client/styling/styles";
 import {
   DictContext,
@@ -47,6 +46,8 @@ import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing"
 import { Container, Divider } from "@/web/client/components/generic/basics";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
+import { useCallback } from "react";
+import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -70,26 +71,6 @@ function chooseDicts(
     return dicts;
   }
   return [dicts];
-}
-
-async function fetchEntry(
-  query: string,
-  inflections: boolean,
-  singleArticle: boolean,
-  embedded: boolean,
-  dicts: DictInfo[]
-) {
-  const result = callApiFull(DictsFusedApi, {
-    query,
-    dicts: dicts.map((dict) => dict.key),
-    mode: singleArticle ? 2 : inflections || embedded ? 1 : 0,
-  });
-  try {
-    return await result;
-  } catch (reason) {
-    console.debug(reason);
-    return null;
-  }
 }
 
 type EdgeCaseState = "Landing" | "Error" | "No Results";
@@ -531,43 +512,43 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
 
   const { initial } = props;
   const query = isEmbedded ? initial : route.query;
+  const hash = route.hash;
   const inflectedSearch =
     settings.data.inflectedSearch === true || route.inflectedSearch === true;
   const queryDicts = React.useMemo(
     () => chooseDicts(route.dicts, isEmbedded),
     [route.dicts, isEmbedded]
   );
-
-  React.useEffect(() => {
-    if (query === undefined) {
-      return;
-    }
-    setState("Loading");
-    const serverResult = fetchEntry(
-      query,
-      inflectedSearch,
-      idSearch,
-      isEmbedded,
-      queryDicts
-    );
-    serverResult.then((newResults) => {
-      if (newResults === null) {
-        setState("Error");
-        return;
-      }
-      reloadIfOldClient(newResults);
-
-      const allEntries = getEntriesByDict(
-        newResults.data,
-        sectionRef,
-        route.hash,
-        isEmbedded
-      );
-      setEntries(allEntries);
-      const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
-      setState(numEntries === 0 ? "No Results" : "Results");
-    });
-  }, [query, route.hash, inflectedSearch, idSearch, isEmbedded, queryDicts]);
+  const apiRequest: DictsFusedRequest | null = React.useMemo(
+    () =>
+      query === undefined
+        ? null
+        : {
+            query,
+            dicts: queryDicts.map((dict) => dict.key),
+            mode: idSearch ? 2 : inflectedSearch || isEmbedded ? 1 : 0,
+          },
+    [query, queryDicts, idSearch, inflectedSearch, isEmbedded]
+  );
+  useApiCall(DictsFusedApi, apiRequest, {
+    reloadOldClient: true,
+    onError: useCallback(() => setState("Error"), []),
+    onLoading: useCallback(() => setState("Loading"), []),
+    onResult: useCallback(
+      (result) => {
+        const allEntries = getEntriesByDict(
+          result,
+          sectionRef,
+          hash,
+          isEmbedded
+        );
+        setEntries(allEntries);
+        const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
+        setState(numEntries === 0 ? "No Results" : "Results");
+      },
+      [hash, isEmbedded]
+    ),
+  });
 
   React.useEffect(() => {
     if (!isEmbedded && query !== undefined) {

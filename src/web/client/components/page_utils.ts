@@ -6,7 +6,7 @@ import { ServerMessage } from "@/web/utils/rpc/rpc";
  *
  * @returns `true` if the page was reloaded and `false` otherwise.
  */
-export function reloadIfOldClient<T>(message: ServerMessage<T>): void {
+export function reloadIfOldClient(message: ServerMessage<unknown>): void {
   const serverCommit = message.metadata?.commit;
   const clientCommit = getCommitHash();
   if (
