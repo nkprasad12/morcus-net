@@ -114,7 +114,6 @@ function ErrorContent(props: { isSmall: boolean }) {
 
 function getEntriesByDict(
   response: DictsFusedResponse,
-  sectionRef: React.RefObject<HTMLElement>,
   hash: string | undefined,
   isEmbedded: boolean
 ): EntriesByDict[] {
@@ -122,7 +121,7 @@ function getEntriesByDict(
   for (const dictKey in response) {
     const rawEntries = response[dictKey];
     const entries = rawEntries.map((e, i) => ({
-      element: xmlNodeToJsx(e.entry, hash, sectionRef, undefined, isEmbedded),
+      element: xmlNodeToJsx(e.entry, hash, undefined, isEmbedded),
       key: e.entry.getAttr("id") || `${dictKey}${i}`,
       inflections: e.inflections,
     }));
@@ -495,7 +494,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
-  const sectionRef = React.useRef<HTMLElement>(null);
   const entriesRef = React.useRef<HTMLDivElement>(null);
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
@@ -536,12 +534,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     onLoading: useCallback(() => setState("Loading"), []),
     onResult: useCallback(
       (result) => {
-        const allEntries = getEntriesByDict(
-          result,
-          sectionRef,
-          hash,
-          isEmbedded
-        );
+        const allEntries = getEntriesByDict(result, hash, isEmbedded);
         setEntries(allEntries);
         const numEntries = allEntries.reduce((s, c) => s + c.entries.length, 0);
         setState(numEntries === 0 ? "No Results" : "Results");
@@ -560,8 +553,10 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     if (state !== "Results") {
       return;
     }
+    const highlighted =
+      hash === undefined ? null : document.getElementById(hash);
     const scrollElement =
-      sectionRef.current || (isEmbedded ? null : scrollTopRef.current);
+      highlighted || (isEmbedded ? null : scrollTopRef.current);
     const scrollType =
       fromInternalLink.current || isEmbedded
         ? SCROLL_JUMP
@@ -570,7 +565,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         : SCROLL_JUMP;
     scrollElement?.scrollIntoView(scrollType);
     fromInternalLink.current = false;
-  }, [state, isEmbedded]);
+  }, [state, isEmbedded, hash]);
 
   const contextValues: DictContextOptions = React.useMemo(
     () => ({

@@ -45,7 +45,7 @@ describe("xmlNodeToJsx", () => {
       [new XmlNode("span", [["class", "QNA"]])]
     );
 
-    const result = xmlNodeToJsx(root, undefined, undefined, undefined, true);
+    const result = xmlNodeToJsx(root, undefined, undefined, true);
     expect(result.props.className).toBe("Caesar QNAEmbedded");
     expect(result.props.children[0].props.className).toBe("QNAEmbedded");
   });

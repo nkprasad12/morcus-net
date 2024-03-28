@@ -1,4 +1,3 @@
-import { MutableRefObject } from "react";
 import * as React from "react";
 
 import { checkPresent } from "@/common/assert";
@@ -218,7 +217,6 @@ function transformClassAttr(value: string, isEmbedded: boolean) {
 export function xmlNodeToJsx(
   root: XmlNode,
   highlightId?: string,
-  sectionRef?: MutableRefObject<HTMLElement | null>,
   key?: string,
   isEmbedded?: boolean
 ): JSX.Element {
@@ -229,7 +227,6 @@ export function xmlNodeToJsx(
     return xmlNodeToJsx(
       child,
       highlightId,
-      sectionRef,
       child.getAttr("id") || `${i}`,
       isEmbedded
     );
@@ -301,7 +298,6 @@ export function xmlNodeToJsx(
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";
-      props["ref"] = sectionRef!;
     }
     return React.createElement(root.name, props, children);
   }
