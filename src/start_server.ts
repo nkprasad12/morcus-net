@@ -155,7 +155,7 @@ export function startMorcusServer(): Promise<http.Server> {
     server.listen(port, () => {
       const memoryLogId = setInterval(
         () => telemetry.then(logMemoryUsage),
-        120 * randInRange(14.75, 15.25)
+        1000 * 60 * randInRange(14.75, 15.25)
       );
       server.on("close", () => {
         log("Cleaning up resources.");
