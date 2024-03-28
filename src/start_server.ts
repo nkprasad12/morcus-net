@@ -45,7 +45,7 @@ function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   };
   // Allow some fuzz here so that when we start up dev and prod instances at the same time, we are
   // not initializing all databases across all instances at the exact same time.
-  setTimeout(() => cachedProvider(), randInRange(25, 150));
+  setTimeout(() => cachedProvider(), randInRange(25, 75));
   return {
     info: info,
     getEntry: (...args) => cachedProvider().getEntry(...args),

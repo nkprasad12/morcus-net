@@ -322,7 +322,7 @@ function startWebServer(args: any) {
   }
   serverEnv.MAIN = "start";
   baseCommand.push("src/start_server.ts");
-  runCommand(baseCommand.join(" "), serverEnv);
+  runCommand(baseCommand.join(" "), serverEnv).catch(console.log);
 }
 
 async function startLsEditor() {
