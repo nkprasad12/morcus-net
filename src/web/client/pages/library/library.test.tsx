@@ -8,6 +8,8 @@ import user from "@testing-library/user-event";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { RouteContext } from "@/web/client/router/router_v2";
 
+console.debug = jest.fn();
+
 jest.mock("@/web/utils/rpc/client_rpc");
 
 // @ts-ignore
@@ -49,5 +51,11 @@ describe("library view", () => {
       path: "/work/caesar/dbg",
       params: { pg: "1" },
     });
+  });
+
+  it("handles error", async () => {
+    mockCallApi.mockRejectedValue("Error");
+    render(<Library />);
+    await screen.findByText(/Error loading/);
   });
 });
