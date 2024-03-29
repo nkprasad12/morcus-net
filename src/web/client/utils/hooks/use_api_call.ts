@@ -2,7 +2,7 @@ import { assert } from "@/common/assert";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
-import { useMemo, useRef } from "react";
+import { useRef } from "react";
 
 function useUnchangeable<T>(
   candidate: NonNullable<T>,
@@ -14,13 +14,11 @@ function useUnchangeable<T>(
   } else {
     assert(
       candidate === ref.current,
-      `${tag} must be the same across renders. Use 'useMemo' or 'useCallback'.`
+      `${tag} must be the same across renders.`
     );
   }
   return candidate;
 }
-
-export type ApiCallState = "Empty" | "Loading" | "Error" | "Success";
 
 export interface UseApiCallArguments<O> {
   /**
@@ -34,42 +32,46 @@ export interface UseApiCallArguments<O> {
   onError: () => any;
 }
 export function useApiCall<I, O>(
-  route: ApiRoute<NonNullable<I>, NonNullable<O>>,
+  apiRoute: ApiRoute<NonNullable<I>, NonNullable<O>>,
   input: NonNullable<I> | null,
   args: UseApiCallArguments<O>
 ) {
-  const onLoading = useUnchangeable(args.onLoading, "args.onLoading");
-  const onResult = args.onResult;
-  const onError = args.onError;
+  const route = useUnchangeable(apiRoute, "apiRoute");
+  // Initialize to `null` so that if the user passes in a non-null initial input, we
+  // will still kick off the fetch.
   const currentInput = useRef<NonNullable<I> | null>(null);
+  // We don't need to track onLoading because it is invoked synchronously, but for
+  // the others we need to make sure that when the fetch completes, we are invoking
+  // the most up-to-date listener and *not* the previous ones,
+  const onResult = useRef(args.onResult);
+  const onError = useRef(args.onError);
+
+  // Even if the API input doesn't change and we don't need to re-fetch, the callbacks may have changed.
+  onResult.current = args.onResult;
+  onError.current = args.onError;
+  if (input === currentInput.current) {
+    return;
+  }
+  currentInput.current = input;
+  if (input === null) {
+    return;
+  }
+  args.onLoading();
 
   const reloadOldClient = args?.reloadOldClient === true;
-  const resultPromise = useMemo(() => {
-    if (input === null) {
-      return null;
-    }
-    currentInput.current = input;
-    onLoading();
-    return callApiFull(route, input);
-  }, [route, input, onLoading]);
-  return useMemo(async () => {
-    if (resultPromise === null) {
-      return;
-    }
-    const expectedInput = currentInput.current;
-    try {
-      const result = await resultPromise;
+  callApiFull(route, input)
+    .then((result) => {
       if (reloadOldClient) {
         reloadIfOldClient(result);
       }
-      if (currentInput.current === expectedInput) {
-        onResult(result.data);
+      if (input === currentInput.current) {
+        onResult.current(result.data);
       }
-    } catch (error) {
-      console.debug(error);
-      if (currentInput.current === expectedInput) {
-        onError();
+    })
+    .catch((reason) => {
+      console.debug(reason);
+      if (input === currentInput.current) {
+        onError.current();
       }
-    }
-  }, [resultPromise, reloadOldClient, onResult, onError]);
+    });
 }

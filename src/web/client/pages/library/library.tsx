@@ -10,7 +10,7 @@ import {
 } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
-import { useState, useCallback } from "react";
+import { useState } from "react";
 
 function onWorkSelected(work: LibraryWorkMetadata, nav: NavHelper<RouteInfo>) {
   const params = { author: work.urlAuthor, name: work.urlName };
@@ -71,8 +71,8 @@ export function Library() {
   useApiCall(ListLibraryWorks, true, {
     reloadOldClient: true,
     onResult: setWorks,
-    onLoading: useCallback(() => setWorks("Loading"), []),
-    onError: useCallback(() => setWorks("Error"), []),
+    onLoading: () => setWorks("Loading"),
+    onError: () => setWorks("Error"),
   });
 
   return (

@@ -530,8 +530,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   useApiCall(DictsFusedApi, apiRequest, {
     reloadOldClient: true,
-    onError: useCallback(() => setState("Error"), []),
-    onLoading: useCallback(() => setState("Loading"), []),
+    onError: () => setState("Error"),
+    onLoading: () => setState("Loading"),
     onResult: useCallback(
       (result) => {
         const allEntries = getEntriesByDict(result, hash, isEmbedded);
