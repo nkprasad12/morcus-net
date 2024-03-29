@@ -1,7 +1,7 @@
 import {
   parseEntries,
   processEntry,
-  processNomEntries,
+  processNomIrregEntries,
 } from "@/morceus/irregular_stems";
 import type { Lemma } from "@/morceus/stem_parsing";
 import fs from "fs";
@@ -301,7 +301,7 @@ describe("parsing", () => {
   });
 
   it("handles processing and parsing", () => {
-    const lemmata = processNomEntries(TEMP_FILE);
+    const lemmata = processNomIrregEntries(TEMP_FILE);
 
     expect(lemmata).toHaveLength(4);
     expect(lemmata[0].lemma).toEqual("dehinc");

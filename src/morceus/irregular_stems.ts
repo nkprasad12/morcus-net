@@ -133,7 +133,7 @@ export function processEntry(entry: string[]): Lemma {
   return { lemma, stems };
 }
 
-export function processNomEntries(
+export function processNomIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
 ): Lemma[] {
   return parseEntries(filePath).map(processEntry);
