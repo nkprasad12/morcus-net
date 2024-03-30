@@ -5,7 +5,6 @@ import { readFileSync } from "fs";
 import path from "path";
 
 const NOM_PATH = "stemlib/Latin/stemsrc/irreg.nom.src";
-// @ts-expect-error
 const VERB_PATH = "stemlib/Latin/stemsrc/irreg.vbs.src";
 
 export function parseEntries(filePath: string): string[][] {
@@ -54,7 +53,7 @@ function resolvePos(input: string): PosType {
   return checkPresent(exactMatch, `Could not parse input: ${input}`);
 }
 
-function splitNomIrregLine(line: string): string[] {
+function splitIrregLine(line: string): string[] {
   const tabChunks = line
     .split("\t")
     .map((c) => c.trim())
@@ -70,12 +69,74 @@ function splitNomIrregLine(line: string): string[] {
   return [line.substring(0, firstSpace), line.substring(firstSpace + 1)];
 }
 
-export function processEntry(entry: string[]): Lemma {
+export function processVerbEntry(entry: string[]): Lemma {
   assert(entry[0].startsWith(":le:"));
   const lemma = entry[0].substring(4);
   const stems: Stem[] = [];
   for (const line of entry.slice(1)) {
-    const lineChunks = splitNomIrregLine(line);
+    const lineChunks = splitIrregLine(line);
+    assertEqual(lineChunks.length, 2, `"Line: ${line}"`);
+    const [first, second] = lineChunks;
+    if (first.includes("@")) {
+      const pos = resolvePos(second);
+      assert(!first.startsWith(":"));
+      const chunks = first.split("@");
+      assertEqual(chunks.length, 2);
+      stems.push({
+        pos,
+        stem: chunks[0],
+        inflection: chunks[1],
+        other: second,
+      });
+    } else if (first.startsWith(":vb:")) {
+      const word = first.slice(4);
+      const chunks = second
+        .split(" ")
+        .map((c) => c.trim())
+        .filter((c) => c.length > 0);
+      assert(chunks.length === 1 || chunks.length === 2, second);
+      stems.push({
+        pos: "aj",
+        stem: word,
+        inflection: chunks[0],
+        other: chunks.length > 1 ? chunks[1] : undefined,
+      });
+    } else if (first.startsWith(":vs:")) {
+      const word = first.slice(4);
+      const chunks = second
+        .split(" ")
+        .map((c) => c.trim())
+        .filter((c) => c.length > 0);
+      if (chunks[0] === "irreg_nom2") {
+        chunks.shift();
+      }
+      assert(chunks.length >= 1, second);
+      stems.push({
+        pos: "no",
+        stem: word,
+        inflection: chunks[0],
+        other: chunks.length > 1 ? chunks.slice(1).join(" ") : undefined,
+      });
+    } else {
+      const hasPrefix = first.startsWith(":");
+      assert(!hasPrefix, first);
+      stems.push({
+        pos: "vb",
+        stem: first,
+        inflection: "N/A",
+        other: second,
+      });
+    }
+  }
+  return { lemma, stems };
+}
+
+export function processNomEntry(entry: string[]): Lemma {
+  assert(entry[0].startsWith(":le:"));
+  const lemma = entry[0].substring(4);
+  const stems: Stem[] = [];
+  for (const line of entry.slice(1)) {
+    const lineChunks = splitIrregLine(line);
     assertEqual(lineChunks.length, 2, `"Line: ${line}"`);
     const [first, second] = lineChunks;
     if (first.includes("@")) {
@@ -136,5 +197,11 @@ export function processEntry(entry: string[]): Lemma {
 export function processNomIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
 ): Lemma[] {
-  return parseEntries(filePath).map(processEntry);
+  return parseEntries(filePath).map(processNomEntry);
+}
+
+export function processVerbIrregEntries(
+  filePath: string = path.join(envVar("MORPHEUS_ROOT"), VERB_PATH)
+): Lemma[] {
+  return parseEntries(filePath).map(processVerbEntry);
 }
