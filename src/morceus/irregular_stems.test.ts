@@ -1,7 +1,8 @@
 import {
   parseEntries,
-  processEntry,
+  processNomEntry,
   processNomIrregEntries,
+  processVerbEntry,
 } from "@/morceus/irregular_stems";
 import type { Lemma } from "@/morceus/stem_parsing";
 import fs from "fs";
@@ -11,7 +12,7 @@ console.log = jest.fn();
 
 const TEMP_FILE = "irregular_stems.test.ts.tmp.txt";
 
-const SAMPLE_FILE = `:le:dehinc
+const SAMPLE_NOM_FILE = `:le:dehinc
 :wd:dehinc	adverb
 
 #:le:unus
@@ -68,9 +69,92 @@ const MULTUS = `:le:multus
 plu_s	irreg_adj3 nom/acc sg irreg_comp
 plu_r@decl3 irreg_adj3 neut gen sg irreg_comp`;
 
-describe("processEntry", () => {
+const AIO = `:le:aio
+ajo_	irreg_pp1 1st sg pres ind act
+aje_@imperf	irreg_pp1 ind act imperf`;
+
+const EO1 = `:le:eo#1
+:vs:i_v		perfstem
+:vs:it		pp4 supine`;
+
+const DO = `:le:do
+:vb:da^ri_	irreg_pp1 pres inf pass
+dui@basvb2	irreg_pp1 pres subj act early
+:vs:de^d perfstem no_comp`;
+
+describe("processVerbEntry", () => {
+  it("handles template", () => {
+    const lemma = processVerbEntry(AIO.split("\n"));
+    expect(lemma).toStrictEqual<Lemma>({
+      lemma: "aio",
+      stems: [
+        {
+          pos: "vb",
+          stem: "ajo_",
+          inflection: "N/A",
+          other: "irreg_pp1 1st sg pres ind act",
+        },
+        {
+          pos: "vs",
+          stem: "aje_",
+          inflection: "imperf",
+          other: "irreg_pp1 ind act imperf",
+        },
+      ],
+    });
+  });
+
+  it("handles multiple verb stems", () => {
+    const lemma = processVerbEntry(EO1.split("\n"));
+    expect(lemma).toEqual<Lemma>({
+      lemma: "eo#1",
+      stems: [
+        {
+          pos: "vs",
+          stem: "i_v",
+          inflection: "perfstem",
+        },
+        {
+          pos: "vs",
+          stem: "it",
+          inflection: "pp4",
+          other: "supine",
+        },
+      ],
+    });
+  });
+
+  it("handles explicit vb", () => {
+    const lemma = processVerbEntry(DO.split("\n"));
+    expect(lemma).toStrictEqual<Lemma>({
+      lemma: "do",
+      stems: [
+        {
+          pos: "vb",
+          stem: "da^ri_",
+          inflection: "N/A",
+          other: "irreg_pp1 pres inf pass",
+        },
+        {
+          pos: "vs",
+          stem: "dui",
+          inflection: "basvb2",
+          other: "irreg_pp1 pres subj act early",
+        },
+        {
+          pos: "vs",
+          stem: "de^d",
+          inflection: "perfstem",
+          other: "no_comp",
+        },
+      ],
+    });
+  });
+});
+
+describe("processNomEntry", () => {
   it("handles adverb", () => {
-    const lemma = processEntry(DEHINC.split("\n"));
+    const lemma = processNomEntry(DEHINC.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "dehinc",
       stems: [
@@ -85,7 +169,7 @@ describe("processEntry", () => {
   });
 
   it("handles :no: entry", () => {
-    const lemma = processEntry(FALX.split("\n"));
+    const lemma = processNomEntry(FALX.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "falx",
       stems: [
@@ -100,7 +184,7 @@ describe("processEntry", () => {
   });
 
   it("handles templates plus word", () => {
-    const lemma = processEntry(CERES.split("\n"));
+    const lemma = processNomEntry(CERES.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "Ceres",
       stems: [
@@ -121,7 +205,7 @@ describe("processEntry", () => {
   });
 
   it("handles mixed marked and unmarked word", () => {
-    const lemma = processEntry(COR.split("\n"));
+    const lemma = processNomEntry(COR.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "cor",
       stems: [
@@ -148,7 +232,7 @@ describe("processEntry", () => {
   });
 
   it("handles adjective without :adj:", () => {
-    const lemma = processEntry(MATURUS.split("\n"));
+    const lemma = processNomEntry(MATURUS.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "maturus",
       stems: [
@@ -163,7 +247,7 @@ describe("processEntry", () => {
   });
 
   it("handles adjective with tab", () => {
-    const lemma = processEntry(MATURUS.split("\n"));
+    const lemma = processNomEntry(MATURUS.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "maturus",
       stems: [
@@ -178,7 +262,7 @@ describe("processEntry", () => {
   });
 
   it("handles adjective without tab", () => {
-    const lemma = processEntry(MULTUS.split("\n"));
+    const lemma = processNomEntry(MULTUS.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "multus",
       stems: [
@@ -199,7 +283,7 @@ describe("processEntry", () => {
   });
 
   it("handles alius2 edge case", () => {
-    const lemma = processEntry(ALIUS2.split("\n"));
+    const lemma = processNomEntry(ALIUS2.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "alius#2",
       stems: [
@@ -232,7 +316,7 @@ describe("processEntry", () => {
   });
 
   it("handles interrog edge case", () => {
-    const lemma = processEntry(INTERROG.split("\n"));
+    const lemma = processNomEntry(INTERROG.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "ecquis",
       stems: [
@@ -253,7 +337,7 @@ describe("processEntry", () => {
   });
 
   it("handles extra tabs", () => {
-    const lemma = processEntry(MOS.split("\n"));
+    const lemma = processNomEntry(MOS.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "mos",
       stems: [
@@ -276,7 +360,7 @@ describe("processEntry", () => {
 
 describe("parsing", () => {
   beforeEach(() => {
-    fs.writeFileSync(TEMP_FILE, SAMPLE_FILE);
+    fs.writeFileSync(TEMP_FILE, SAMPLE_NOM_FILE);
   });
 
   afterEach(() => {

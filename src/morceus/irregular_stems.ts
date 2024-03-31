@@ -35,7 +35,7 @@ function includesAny(input: string, posList: PosType[]): PosType | undefined {
   }
 }
 
-function resolvePos(input: string): PosType {
+function resolveNounPos(input: string): PosType {
   if (input.includes("irreg_adj")) {
     return "aj";
   }
@@ -53,6 +53,16 @@ function resolvePos(input: string): PosType {
   return checkPresent(exactMatch, `Could not parse input: ${input}`);
 }
 
+function resolveVerbPos(input: string): PosType {
+  if (input.startsWith(":vs:")) {
+    return "vs";
+  }
+  if (input.startsWith(":vb:") || input.includes("irreg_pp")) {
+    return "vb";
+  }
+  throw new Error(`Could not parse input: ${input}`);
+}
+
 function splitIrregLine(line: string): string[] {
   const tabChunks = line
     .split("\t")
@@ -65,21 +75,22 @@ function splitIrregLine(line: string): string[] {
     return [tabChunks[0], tabChunks.slice(1).join(" ")];
   }
   const firstSpace = line.indexOf(" ");
-  assert(firstSpace !== -1);
+  assert(firstSpace !== -1, `line: "${line}"`);
   return [line.substring(0, firstSpace), line.substring(firstSpace + 1)];
 }
 
 export function processVerbEntry(entry: string[]): Lemma {
-  assert(entry[0].startsWith(":le:"));
+  assert(entry[0].startsWith(":le:"), JSON.stringify(entry));
   const lemma = entry[0].substring(4);
   const stems: Stem[] = [];
   for (const line of entry.slice(1)) {
-    const lineChunks = splitIrregLine(line);
+    const hasTag = line.startsWith(":");
+    const hasTemplate = line.includes("@");
+    const pos = hasTemplate ? "vs" : resolveVerbPos(line);
+    const lineChunks = splitIrregLine(line.slice(hasTag ? 4 : 0));
     assertEqual(lineChunks.length, 2, `"Line: ${line}"`);
     const [first, second] = lineChunks;
-    if (first.includes("@")) {
-      const pos = resolvePos(second);
-      assert(!first.startsWith(":"));
+    if (hasTemplate) {
       const chunks = first.split("@");
       assertEqual(chunks.length, 2);
       stems.push({
@@ -88,40 +99,24 @@ export function processVerbEntry(entry: string[]): Lemma {
         inflection: chunks[1],
         other: second,
       });
-    } else if (first.startsWith(":vb:")) {
-      const word = first.slice(4);
+    } else if (pos === "vs") {
       const chunks = second
         .split(" ")
         .map((c) => c.trim())
         .filter((c) => c.length > 0);
-      assert(chunks.length === 1 || chunks.length === 2, second);
-      stems.push({
-        pos: "aj",
-        stem: word,
-        inflection: chunks[0],
-        other: chunks.length > 1 ? chunks[1] : undefined,
-      });
-    } else if (first.startsWith(":vs:")) {
-      const word = first.slice(4);
-      const chunks = second
-        .split(" ")
-        .map((c) => c.trim())
-        .filter((c) => c.length > 0);
-      if (chunks[0] === "irreg_nom2") {
+      if (chunks[0].startsWith("irreg_")) {
         chunks.shift();
       }
       assert(chunks.length >= 1, second);
       stems.push({
-        pos: "no",
-        stem: word,
+        pos: "vs",
+        stem: first,
         inflection: chunks[0],
         other: chunks.length > 1 ? chunks.slice(1).join(" ") : undefined,
       });
     } else {
-      const hasPrefix = first.startsWith(":");
-      assert(!hasPrefix, first);
       stems.push({
-        pos: "vb",
+        pos: pos,
         stem: first,
         inflection: "N/A",
         other: second,
@@ -140,7 +135,7 @@ export function processNomEntry(entry: string[]): Lemma {
     assertEqual(lineChunks.length, 2, `"Line: ${line}"`);
     const [first, second] = lineChunks;
     if (first.includes("@")) {
-      const pos = resolvePos(second);
+      const pos = resolveNounPos(second);
       assert(!first.startsWith(":"));
       const chunks = first.split("@");
       assertEqual(chunks.length, 2);
@@ -205,3 +200,5 @@ export function processVerbIrregEntries(
 ): Lemma[] {
   return parseEntries(filePath).map(processVerbEntry);
 }
+
+// console.log(JSON.stringify(processVerbIrregEntries(), undefined, 2));
