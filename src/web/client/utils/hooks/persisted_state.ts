@@ -1,5 +1,4 @@
 import {
-  useWrappedSetter,
   type NotFunction,
   type SetStateType,
 } from "@/web/client/utils/hooks/common";
@@ -10,7 +9,7 @@ import {
   isBoolean,
   isNumber,
 } from "@/web/utils/rpc/parsing";
-import { useCallback, useState } from "react";
+import { useEffect, useState } from "react";
 
 function getStored<T>(key: string, validator: Validator<T>): T | undefined {
   const stored = localStorage.getItem(key);
@@ -29,15 +28,13 @@ export function usePersistedState<T extends NotFunction>(
   storageKey: string,
   validator: Validator<T>
 ): [T, SetStateType<T>] {
-  const stored = getStored(storageKey, validator);
-  const [value, setValue] = useState<T>(stored || defaultValue);
-  const action = useCallback(
-    (t: T) => {
-      localStorage.setItem(storageKey, encodeMessage(t));
-    },
-    [storageKey]
+  const [value, setValue] = useState<T>(
+    () => getStored(storageKey, validator) || defaultValue
   );
-  return [value, useWrappedSetter(setValue, action)];
+  useEffect(() => {
+    localStorage.setItem(storageKey, encodeMessage(value));
+  }, [value, storageKey]);
+  return [value, setValue];
 }
 
 export function usePersistedNumber(defaultValue: number, storageKey: string) {
