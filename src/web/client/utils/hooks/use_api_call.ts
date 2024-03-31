@@ -8,7 +8,7 @@ function useUnchangeable<T>(
   candidate: NonNullable<T>,
   tag: string
 ): NonNullable<T> {
-  const ref = useRef<T | undefined>(undefined);
+  const ref = useRef<T>();
   if (ref.current === undefined) {
     ref.current = candidate;
   } else {

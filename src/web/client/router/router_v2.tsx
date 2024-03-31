@@ -143,7 +143,7 @@ export namespace Router {
     const navigateTo = React.useCallback(
       (action: React.SetStateAction<RouteInfo>) =>
         onRouteUpdate(action, setRoute),
-      [setRoute]
+      []
     );
 
     useEffect(() => {
