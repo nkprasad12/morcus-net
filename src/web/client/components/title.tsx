@@ -1,7 +1,13 @@
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { Router } from "@/web/client/router/router_v2";
-import { ReactNode } from "react";
-import * as React from "react";
+import {
+  type Context,
+  type PropsWithChildren,
+  createContext,
+  useState,
+  useEffect,
+  useMemo,
+} from "react";
 
 const MORCUS_TITLE = "Morcus Latin Tools";
 
@@ -9,19 +15,15 @@ export interface TitleContext {
   setCurrentDictWord: (word: string) => void;
 }
 
-export const TitleContext: React.Context<TitleContext> = React.createContext({
+export const TitleContext: Context<TitleContext> = createContext({
   setCurrentDictWord: (_) => {},
 });
 
-type TitleHandlerProps = {
-  children: ReactNode;
-};
-
-export function TitleHandler(props: TitleHandlerProps) {
-  const [currentDictWord, setCurrentDictWord] = React.useState("");
+export function TitleHandler(props: PropsWithChildren) {
+  const [currentDictWord, setCurrentDictWord] = useState("");
   const { route } = Router.useRouter();
 
-  React.useEffect(() => {
+  useEffect(() => {
     document.title = MORCUS_TITLE;
     if (route.path === ClientPaths.DICT_PAGE.path && currentDictWord) {
       document.title = `${currentDictWord} | ${MORCUS_TITLE}`;
@@ -29,10 +31,7 @@ export function TitleHandler(props: TitleHandlerProps) {
   }, [route.path, currentDictWord]);
 
   return (
-    <TitleContext.Provider
-      value={{
-        setCurrentDictWord: setCurrentDictWord,
-      }}>
+    <TitleContext.Provider value={useMemo(() => ({ setCurrentDictWord }), [])}>
       {props.children}
     </TitleContext.Provider>
   );
