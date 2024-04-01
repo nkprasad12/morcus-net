@@ -3,7 +3,7 @@
 import { setEnv } from "@/integration/utils/set_test_env";
 
 const PORT = "1337";
-const TEST_TMP_DIR = "tmp_server_integration_test";
+const TEST_TMP_DIR = "tmp_all_functional_test";
 const REUSE_DEV = process.env.REUSE_DEV === "1" || false;
 const FROM_DOCKER = process.env.FROM_DOCKER === "1" || false;
 setEnv(REUSE_DEV, PORT, TEST_TMP_DIR);
