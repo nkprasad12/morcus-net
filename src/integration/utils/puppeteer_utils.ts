@@ -7,6 +7,22 @@ import { ElementHandle, Page } from "puppeteer";
 export type BrowserProduct = "chrome" | "firefox";
 export type ScreenSize = "small" | "large";
 
+const SMALL_SCREEN: ScreenSize = "small";
+const LARGE_SCREEN: ScreenSize = "large";
+const SIZE_VARIANTS: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
+
+export const BROWSERS: BrowserProduct[] = ["chrome"];
+export const LARGE_ONLY: (iterations: number) => [ScreenSize, number][] = (n) =>
+  [...Array(n).keys()].flatMap((i) =>
+    [LARGE_SCREEN].map((v) => [v, i + 1] as [ScreenSize, number])
+  );
+export const ALL_SCREEN_SIZES: (
+  iterations: number
+) => [ScreenSize, number][] = (n) =>
+  [...Array(n).keys()].flatMap((i) =>
+    SIZE_VARIANTS.map((v) => [v, i + 1] as [ScreenSize, number])
+  );
+
 export async function setSize(size: ScreenSize, page: Page) {
   const isSmall = size === "small";
   await page.setViewport({
