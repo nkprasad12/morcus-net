@@ -1,106 +1,37 @@
 /* istanbul ignore file */
 
+import { setEnv } from "@/integration/utils/set_test_env";
+
 const PORT = "1337";
 const TEST_TMP_DIR = "tmp_server_integration_test";
 const REUSE_DEV = process.env.REUSE_DEV === "1" || false;
 const FROM_DOCKER = process.env.FROM_DOCKER === "1" || false;
-setEnv();
+setEnv(REUSE_DEV, PORT, TEST_TMP_DIR);
 
-import { spawnSync } from "child_process";
 import { gzipSync } from "zlib";
 // @ts-ignore - puppeteer is an optional dependency.
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
-import { Server } from "http";
 import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
-import fs, { mkdirSync, rmSync } from "fs";
+import { mkdirSync, rmSync } from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { prodBuildSteps } from "@/scripts/prod_build_steps";
-import { startMorcusServer } from "@/start_server";
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { ServerMessage } from "@/web/utils/rpc/rpc";
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import fetch from "node-fetch";
+import {
+  startMorcusFromDocker,
+  setupMorcus,
+} from "@/integration/utils/morcus_integration_setup";
 
 // @ts-ignore
 global.location = {
   origin: "http://localhost:1337",
 };
 
-const CONTAINER_NAME = "server-integration-test-morcus-container";
 const SCREENSHOTS_DIR = "puppeteer_screenshots";
 
 type Closer = () => Promise<void>;
-
-function setEnv(reuseDev: boolean = REUSE_DEV) {
-  process.env["PORT"] = PORT;
-  process.env["CONSOLE_TELEMETRY"] = "yes";
-  if (reuseDev === true) {
-    return;
-  }
-  process.env["LS_PATH"] = `${TEST_TMP_DIR}/ls.xml`;
-  process.env["LS_PROCESSED_PATH"] = `${TEST_TMP_DIR}/lsp.txt`;
-  process.env["SH_RAW_PATH"] = `${TEST_TMP_DIR}/sh_raw.txt`;
-  process.env["SH_PROCESSED_PATH"] = `${TEST_TMP_DIR}/shp.db`;
-  process.env["RAW_LATIN_WORDS"] = `${TEST_TMP_DIR}/lat_raw.txt`;
-  process.env["LATIN_INFLECTION_DB"] = `${TEST_TMP_DIR}/latin_inflect.db`;
-}
-
-function closeServer(server: Server): Promise<void> {
-  return new Promise((resolve) => {
-    server.close(() => resolve());
-  });
-}
-
-async function setupMorcus(reuseDev: boolean = REUSE_DEV): Promise<Closer> {
-  fs.mkdirSync(TEST_TMP_DIR, { recursive: true });
-  setEnv(reuseDev);
-  if (!reuseDev) {
-    expect(await prodBuildSteps()).toBe(true);
-  }
-  const server = startMorcusServer();
-  return () =>
-    server.then((s) => {
-      fs.rmSync(TEST_TMP_DIR, { recursive: true });
-      return closeServer(s);
-    });
-}
-
-function startMorcusFromDocker(): Promise<Closer> {
-  const imageTag = checkPresent(process.env.IMAGE_TAG);
-  const imageName = `ghcr.io/nkprasad12/morcus:${imageTag}`;
-  const container = `docker run -dp 127.0.0.1:1337:5757 --name ${CONTAINER_NAME} ${imageName}`;
-  const close: Closer = async () => {
-    try {
-      spawnSync("docker", ["stop", CONTAINER_NAME]);
-      spawnSync("docker", ["rm", CONTAINER_NAME]);
-    } catch {}
-  };
-  spawnSync(container, { shell: true, stdio: "inherit" });
-  const start = performance.now();
-  return new Promise((resolve, reject) => {
-    const callback = () => {
-      const logs = spawnSync("docker", ["logs", CONTAINER_NAME]);
-      if (logs.status !== 0) {
-        close();
-        reject(Error("Starting morcus from docker image failed."));
-        return;
-      }
-      const stdout = logs.stdout.toString();
-      if (stdout.includes(":5757")) {
-        resolve(close);
-        return;
-      }
-      if (performance.now() - start > 2000) {
-        close();
-        reject(Error("Timed out starting morcus server."));
-        return;
-      }
-      setTimeout(callback, 250);
-    };
-    callback();
-  });
-}
 
 let morcusCloser: Closer | undefined = undefined;
 beforeAll(async () => {
@@ -108,7 +39,7 @@ beforeAll(async () => {
     morcusCloser = await startMorcusFromDocker();
     return;
   }
-  morcusCloser = await setupMorcus(REUSE_DEV);
+  morcusCloser = await setupMorcus(REUSE_DEV, PORT, TEST_TMP_DIR);
 }, 180000);
 
 afterAll(async () => {
