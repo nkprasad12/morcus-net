@@ -43,8 +43,8 @@ type ReaderTextState =
 interface InternalReaderState extends SavedContentHandler {
   processedText: JSX.Element | null;
   text: ReaderTextState;
-  setText: (state: ReaderTextState) => any;
-  setCurrentTab: (tab: MainTab) => any;
+  setText: (state: ReaderTextState) => unknown;
+  setCurrentTab: (tab: MainTab) => unknown;
 }
 const DEFAULT_INTERNAL_STATE: InternalReaderState = {
   processedText: null,
@@ -163,7 +163,7 @@ function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
   );
 }
 
-const ShareScrapedContentIcon = React.forwardRef<any>(
+const ShareScrapedContentIcon = React.forwardRef<HTMLSpanElement>(
   function ShareScrapedContentIcon(fProps, fRef) {
     return (
       <span {...fProps} ref={fRef} style={{ marginLeft: "4px" }}>
@@ -412,7 +412,7 @@ function LinkImportSection() {
 
 function processedTextComponent(
   input: string,
-  onWordSelected: (word: string) => any
+  onWordSelected: (word: string) => unknown
 ) {
   let key = 0;
   const children = processWords(input, (word) => {

@@ -23,7 +23,7 @@ export interface ApiCallData {
   /** The string length of the serialized output. */
   outputLength?: number;
   /** Any extra data to log. */
-  extras?: { [key: string]: any };
+  extras?: { [key: string]: unknown };
 }
 
 export interface ApiCallEvent extends TelemetryEvent, ApiCallData {}

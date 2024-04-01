@@ -13,7 +13,7 @@ function TestComponent(props: { provider: () => any }) {
   return <button onClick={() => setClicks(clicks + 1)}>Click me</button>;
 }
 
-function renderWithHook(provider: () => any) {
+function renderWithHook(provider: () => unknown) {
   const { unmount } = render(<TestComponent provider={provider} />);
   return unmount;
 }

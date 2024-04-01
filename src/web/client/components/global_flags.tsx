@@ -25,7 +25,7 @@ function toGlobalSettings(input: unknown): GlobalSettings {
 
 export interface DataAndSetter<T> {
   data: T;
-  setData: (newData: T) => any;
+  setData: (newData: T) => unknown;
 }
 
 const FALLBACK: DataAndSetter<GlobalSettings> = {

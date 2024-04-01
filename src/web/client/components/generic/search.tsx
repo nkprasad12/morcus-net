@@ -17,11 +17,11 @@ export function SearchBox<T>(props: {
   smallScreen?: boolean;
   autoFocused?: boolean;
   placeholderText?: string;
-  onOpenSettings?: () => any;
+  onOpenSettings?: () => unknown;
   settingsPreview?: JSX.Element;
-  onRawEnter: (input: string) => any;
+  onRawEnter: (input: string) => unknown;
   optionsForInput: (input: string) => T[] | Promise<T[]>;
-  onOptionSelected: (t: T) => any;
+  onOptionSelected: (t: T) => unknown;
   RenderOption: (props: { option: T }) => JSX.Element;
   toKey: (t: T) => string;
   toInputDisplay: (t: T) => string;

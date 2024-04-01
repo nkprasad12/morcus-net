@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 
 export interface BenchmarkConfig {
-  call: () => any;
+  call: () => unknown;
   name: string;
 }
 
@@ -11,7 +11,7 @@ interface BenchmarkData {
 }
 
 async function benchmarkCall(
-  call: () => any,
+  call: () => unknown,
   iterations: number
 ): Promise<number[]> {
   const runtimes: number[] = [];

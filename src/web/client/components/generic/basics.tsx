@@ -23,7 +23,7 @@ export interface CoreProps extends AriaAttributes {
   style?: CSSProperties;
   id?: string;
   className?: string;
-  onClick?: () => any;
+  onClick?: () => unknown;
 }
 
 export interface ContainerProps extends CoreProps {
@@ -79,7 +79,7 @@ export function buttonLikeProps(
 
 export function SpanLink(
   props: PropsWithChildren<{
-    onClick: () => any;
+    onClick: () => unknown;
     className?: string;
     id: string;
   }>
@@ -98,8 +98,8 @@ export function SpanLink(
 
 export function SpanButton(
   props: PropsWithChildren<{
-    onAuxClick?: () => any;
-    onClick: () => any;
+    onAuxClick?: () => unknown;
+    onClick: () => unknown;
     className?: string;
     style?: CSSProperties;
   }>
@@ -119,7 +119,7 @@ export function SpanButton(
 export function TextField(props: {
   id?: string;
   styles?: CSSProperties;
-  onNewValue?: (value: string) => any;
+  onNewValue?: (value: string) => unknown;
   placeholder?: string;
   fullWidth?: boolean;
   multiline?: boolean;

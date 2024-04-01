@@ -8,7 +8,7 @@ import user from "@testing-library/user-event";
 import { useEffect } from "react";
 
 function TestApp(props: {
-  navSpy: (info: RouteInfo) => any;
+  navSpy: (info: RouteInfo) => unknown;
   target?: RouteInfo;
 }) {
   const { route, nav } = Router.useRouter();

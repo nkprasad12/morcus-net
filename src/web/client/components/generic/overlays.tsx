@@ -12,7 +12,7 @@ export interface OverlayProps extends CoreProps {
 
 interface ModalProps extends CoreProps {
   open: boolean;
-  onClose: () => any;
+  onClose: () => unknown;
   contentProps?: OverlayProps;
 }
 

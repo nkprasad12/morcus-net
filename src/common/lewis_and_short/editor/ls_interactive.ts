@@ -28,7 +28,7 @@ export async function startInteractiveEditor() {
   const app = express();
   const server = http.createServer(app);
 
-  let pendingResolve: undefined | ((root: XmlNode) => any) = undefined;
+  let pendingResolve: undefined | ((root: XmlNode) => unknown) = undefined;
   let pendingResponse: undefined | Response;
   let editLsPromise: undefined | Promise<void>;
 

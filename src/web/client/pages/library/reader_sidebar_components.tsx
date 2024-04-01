@@ -15,7 +15,7 @@ export interface EmbeddedDictionaryProps {
    * The setter to use for `dictWord`. This is called if interactions
    * within the embedded dictionary request a new word.
    */
-  setDictWord: (word: string) => any;
+  setDictWord: (word: string) => unknown;
   /** The scale (for display size) to use for the dictionary. */
   scale: number;
   /**
@@ -49,11 +49,11 @@ export interface MobileReaderSettings {
   /** Whether swipe navigation is enabled. */
   swipeNavigation?: boolean;
   /** A setter for swipe nagivation */
-  setSwipeNavigation?: (v: boolean) => any;
+  setSwipeNavigation?: (v: boolean) => unknown;
   /** Whether side tap navigation is enabled. */
   tapNavigation?: boolean;
   /** A setter for side tab nagivation */
-  setTapNavigation?: (v: boolean) => any;
+  setTapNavigation?: (v: boolean) => unknown;
 }
 export function MobileReaderSettingsSections(props: MobileReaderSettings) {
   const {
@@ -112,11 +112,11 @@ export interface DesktopReaderSettings {
   /** The total width setting for the reader. */
   totalWidth?: number;
   /** A setter for the total width of the reader. */
-  setTotalWidth?: (width: number) => any;
+  setTotalWidth?: (width: number) => unknown;
   /** The width of the main column of the reader. */
   mainWidth?: number;
   /** A setter for the width of the main column of the reader. */
-  setMainWidth?: (width: number) => any;
+  setMainWidth?: (width: number) => unknown;
 }
 export interface ReaderSettingsProps
   extends DesktopReaderSettings,
@@ -126,11 +126,11 @@ export interface ReaderSettingsProps
   /** The scale of the main column of the reader. */
   mainScale: number;
   /** A setter for the scale of the main column of the reader. */
-  setMainScale: (width: number) => any;
+  setMainScale: (width: number) => unknown;
   /** The scale of the side column of the reader. */
   sideScale: number;
   /** A setter for the scale of the side column of the reader. */
-  setSideScale: (width: number) => any;
+  setSideScale: (width: number) => unknown;
 }
 export function ReaderSettings(props: ReaderSettingsProps) {
   const {
@@ -214,7 +214,7 @@ export type SideTabType = string;
 interface ReaderSideNavIconProps<T> {
   Icon: JSX.Element;
   tab: T;
-  onTabClicked: (t: T) => any;
+  onTabClicked: (t: T) => unknown;
   currentlySelected: T;
 }
 function ReaderSideNavIcon<T extends SideTabType>(
@@ -254,7 +254,7 @@ export interface ReaderInternalNavbarProps<T> {
   /** The currently selected tab. */
   currentTab: T;
   /** The callback invoked to set the currently selected tab. */
-  setCurrentTab: (t: T) => any;
+  setCurrentTab: (t: T) => unknown;
   /** Which special component the navbar is nested in. */
   location?: "Drawer";
 }
@@ -282,9 +282,9 @@ export function ReaderInternalNavbar<T extends SideTabType>(
 export interface DefaultReaderSidebarContentProps<T>
   extends ReaderSettingsProps {
   currentTab: DefaultSidebarTab | T;
-  setCurrentTab: (tab: DefaultSidebarTab | T) => any;
+  setCurrentTab: (tab: DefaultSidebarTab | T) => unknown;
   dictWord?: string;
-  setDictWord: (word: string) => any;
+  setDictWord: (word: string) => unknown;
   dictActionMessage?: string;
 }
 export function DefaultReaderSidebarContent(

@@ -71,7 +71,7 @@ class NavHelper {
 
 function OpenMenu(props: {
   navHelper: NavHelper | null;
-  setOpen: (isOpen: boolean) => any;
+  setOpen: (isOpen: boolean) => unknown;
 }) {
   const { navHelper, setOpen } = props;
   return (

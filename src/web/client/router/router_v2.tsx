@@ -162,7 +162,7 @@ export namespace Router {
   }
 
   interface TestRootProps extends RootProps {
-    updateListener?: (route: RouteInfo) => any;
+    updateListener?: (route: RouteInfo) => unknown;
   }
 
   function TestRootHelper(props: TestRootProps) {

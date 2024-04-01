@@ -167,7 +167,7 @@ export type HandlerError = {
   message: string;
 };
 export interface ServerExtras {
-  log: (tag: string) => any;
+  log: (tag: string) => unknown;
 }
 export type ApiHandler<I, O> = (input: I, extras?: ServerExtras) => Promise<O>;
 export type PreStringifiedRpc = "PreStringified";

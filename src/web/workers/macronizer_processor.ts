@@ -52,8 +52,8 @@ async function startNlpServer(): Promise<net.Socket> {
 }
 
 class NlpProcesser {
-  private currentResolver: undefined | ((data: string) => any) = undefined;
-  private queue: [string, (data: string) => any][] = [];
+  private currentResolver: undefined | ((data: string) => unknown) = undefined;
+  private queue: [string, (data: string) => unknown][] = [];
 
   constructor(private readonly client: net.Socket) {
     const callback = (data: Buffer) => {

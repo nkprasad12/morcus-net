@@ -5,7 +5,7 @@ export type NotFunction = boolean | string | number | object | null | undefined;
 
 export function useWrappedSetter<T extends NotFunction>(
   setter: SetStateType<T>,
-  consumer: (t: T) => any
+  consumer: (t: T) => unknown
 ): SetStateType<T> {
   return React.useCallback(
     (t: T | ((prev: T) => T)) => {
@@ -24,7 +24,9 @@ export function useWrappedSetter<T extends NotFunction>(
   );
 }
 
-export function useUpdateableRef<T>(initial: T): [RefObject<T>, (t: T) => any] {
+export function useUpdateableRef<T>(
+  initial: T
+): [RefObject<T>, (t: T) => unknown] {
   const ref = React.useRef<T>(initial);
   const setRef = React.useCallback((t: T) => {
     ref.current = t;

@@ -7,10 +7,13 @@ type Position = { x: number; y: number };
 export type TouchEndData = [TouchData, TouchData] | null;
 
 export type SwipeDirection = "Left" | "Right";
-export type SwipeListener = (direction: SwipeDirection, size: number) => any;
+export type SwipeListener = (
+  direction: SwipeDirection,
+  size: number
+) => unknown;
 export interface SwipeListeners {
   onSwipeProgress?: SwipeListener;
-  onSwipeCancel?: () => any;
+  onSwipeCancel?: () => unknown;
   onSwipeEnd?: SwipeListener;
 }
 type GestureCallbacks = {

@@ -7,7 +7,7 @@ export interface DbConfig {
   /** The version of the database. Must be a positive integer. */
   version: number;
   /** The stores that should be contained within this database. */
-  stores: Store<any>[];
+  stores: Store<object>[];
 }
 
 export type TransactionType = "readonly" | "readwrite";
@@ -65,7 +65,7 @@ export interface ObjectStoreFactory<U extends TransactionType> {
 
 export interface TransactionFactory {
   transaction<U extends TransactionType>(
-    stores: Store<any>[],
+    stores: Store<object>[],
     tType: U
   ): ObjectStoreFactory<U>;
 }

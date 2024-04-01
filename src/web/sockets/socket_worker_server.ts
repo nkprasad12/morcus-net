@@ -46,7 +46,7 @@ export function authenticate(
 }
 
 interface Resolvable<T> {
-  resolver: (output: T) => any;
+  resolver: (output: T) => unknown;
   startTime: number;
 }
 

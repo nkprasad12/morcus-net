@@ -492,7 +492,7 @@ function WorkNavigationBar(props: {
 
 export function WorkTextPage(props: {
   work: PaginatedWork;
-  setDictWord: (word: string) => any;
+  setDictWord: (word: string) => unknown;
   page: number;
   textScale: number;
   isMobile: boolean;
@@ -699,7 +699,7 @@ function WorkChunkHeader(props: {
 
 function WorkChunk(props: {
   node: ProcessedWorkNode;
-  setDictWord: (word: string) => any;
+  setDictWord: (word: string) => unknown;
   i: number;
   chunkArrayIndex: number;
   workName: string;
@@ -750,7 +750,7 @@ function WorkChunk(props: {
 
 function LatLink(props: {
   word: string;
-  setDictWord: (input: string) => any;
+  setDictWord: (input: string) => unknown;
   target?: string;
 }) {
   const { hasTooltip } = React.useContext(ReaderContext);
@@ -771,7 +771,7 @@ function LatLink(props: {
 
 function displayForLibraryChunk(
   root: XmlNode,
-  setDictWord: (word: string) => any,
+  setDictWord: (word: string) => unknown,
   key?: number
 ): JSX.Element {
   const children = root.children.map((child, i) => {

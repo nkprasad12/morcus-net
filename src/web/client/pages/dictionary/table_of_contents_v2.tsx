@@ -49,7 +49,7 @@ export function TableOfContentsV2(props: {
 
 function OutlineSection(props: {
   outline: EntryOutline;
-  onClick: (section: string) => any;
+  onClick: (section: string) => unknown;
   dictKey: string;
   textScale?: number;
 }) {

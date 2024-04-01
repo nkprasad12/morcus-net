@@ -4,7 +4,11 @@ export function assert(condition: boolean, message: string = "") {
   }
 }
 
-export function assertEqual(expected: any, actual: any, details?: string) {
+export function assertEqual(
+  expected: unknown,
+  actual: unknown,
+  details?: string
+) {
   const extra = details === undefined ? "" : `\n${details}`;
   if (expected !== actual) {
     throw new Error(

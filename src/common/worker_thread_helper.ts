@@ -42,7 +42,7 @@ function startWorker<WorkerData, $O>(
 }
 
 async function runMain<$O>(
-  consumer: (outputs: $O[]) => any,
+  consumer: (outputs: $O[]) => unknown,
   threads: number,
   rows: number,
   workerFile: string
@@ -58,7 +58,7 @@ async function runMain<$O>(
   return consumer(results.flatMap((x) => x));
 }
 
-const runWorker = (producer: (data: Bounds) => any[] = $PRODUCER) => {
+const runWorker = (producer: (data: Bounds) => unknown[] = $PRODUCER) => {
   const data: Bounds = workerData;
   console.log(data);
   parentPort?.postMessage(producer(data));
@@ -66,7 +66,7 @@ const runWorker = (producer: (data: Bounds) => any[] = $PRODUCER) => {
 
 export async function multithreadedComputation<$O>(
   producer: (data: Bounds) => $O[],
-  consumer: (input: $O[]) => any,
+  consumer: (input: $O[]) => unknown,
   options: { threads: number; rows: number }
 ) {
   const workerFile = `./worker.tmp.ts`;

@@ -39,7 +39,7 @@ export function InfoText(props: {
 
 export function NavIcon(props: {
   label: string;
-  onClick?: () => any;
+  onClick?: () => unknown;
   Icon: JSX.Element;
   disabled?: boolean;
   extraClasses?: string[];
@@ -59,16 +59,15 @@ export function NavIcon(props: {
   );
 }
 
-export const TooltipNavIcon = React.forwardRef<any>(function TooltipNavIcon(
-  fProps,
-  fRef
-) {
-  return (
-    <span {...fProps} ref={fRef}>
-      <NavIcon
-        Icon={<SvgIcon pathD={SvgIcon.Link} />}
-        label="link to section"
-      />
-    </span>
-  );
-});
+export const TooltipNavIcon = React.forwardRef<HTMLSpanElement>(
+  function TooltipNavIcon(fProps, fRef) {
+    return (
+      <span {...fProps} ref={fRef}>
+        <NavIcon
+          Icon={<SvgIcon pathD={SvgIcon.Link} />}
+          label="link to section"
+        />
+      </span>
+    );
+  }
+);

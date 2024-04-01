@@ -38,7 +38,7 @@ afterAll(() => {
   cleanupSqlTableFiles(INFL_DB_FILE);
 });
 
-function toRawDictEntry(keys: string[], entry: any) {
+function toRawDictEntry(keys: string[], entry: StoredEntryData) {
   return StoredEntryData.toRawDictEntry(keys[0], keys, entry);
 }
 

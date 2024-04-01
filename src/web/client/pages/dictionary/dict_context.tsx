@@ -18,9 +18,9 @@ export interface DictContextOptions {
   scale: number;
   textScale?: number;
   dictsToUse: DictInfo[];
-  setDictsToUse: (dicts: DictInfo[]) => any;
+  setDictsToUse: (dicts: DictInfo[]) => unknown;
   scrollTopRef: React.RefObject<HTMLDivElement>;
-  setInitial?: (target: string) => any;
+  setInitial?: (target: string) => unknown;
   fromInternalLink?: React.MutableRefObject<boolean>;
 }
 
@@ -37,7 +37,7 @@ export interface DictionaryV2Props {
   /** An initial query, if any. */
   initial?: string;
   /** A setter for the new initial value, if any. */
-  setInitial?: (target: string) => any;
+  setInitial?: (target: string) => unknown;
   /** The scale of the text size to use. 100 uses default text values */
   textScale?: number;
 }

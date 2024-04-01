@@ -48,7 +48,7 @@ export function relaxedAbbrev(
   return results;
 }
 
-function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => any) {
+function parseListItem(root: XmlNode, onUl: (ulNode: XmlNode) => unknown) {
   assertEqual(root.name, "li");
   let i = 0;
   const keys: string[] = [];

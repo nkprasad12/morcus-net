@@ -6,7 +6,7 @@ export function NumberSelector(props: {
   light?: boolean;
   labelSize?: "xs" | "sm" | "md";
   value: number;
-  setValue: (t: number) => any;
+  setValue: (t: number) => unknown;
   min: number;
   max: number;
   step: number;

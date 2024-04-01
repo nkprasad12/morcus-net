@@ -27,9 +27,9 @@ export interface UseApiCallArguments<O> {
    * is encoded in the URL.
    */
   reloadOldClient?: boolean;
-  onResult: (result: O) => any;
-  onLoading: () => any;
-  onError: () => any;
+  onResult: (result: O) => unknown;
+  onLoading: () => unknown;
+  onError: () => unknown;
 }
 export function useApiCall<I, O>(
   apiRoute: ApiRoute<NonNullable<I>, NonNullable<O>>,

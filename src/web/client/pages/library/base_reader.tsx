@@ -50,7 +50,7 @@ export interface BaseExtraSidebarTabProps<CustomSidebarTab> {
 }
 /** Properties for the main column. */
 export interface BaseMainColumnProps extends Responsive {
-  onWordSelected: (word: string) => any;
+  onWordSelected: (word: string) => unknown;
   scale: number;
 }
 interface ReaderExternalLayoutProps {

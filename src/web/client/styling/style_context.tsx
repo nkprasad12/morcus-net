@@ -8,8 +8,8 @@ import { usePersistedNumber } from "@/web/client/utils/hooks/persisted_state";
 import React from "react";
 
 export interface ReaderStyleConfigSetter {
-  setReaderMainScale: (x: number) => any;
-  setReaderSideScale: (x: number) => any;
+  setReaderMainScale: (x: number) => unknown;
+  setReaderSideScale: (x: number) => unknown;
 }
 
 export interface ReaderStyleConfig {

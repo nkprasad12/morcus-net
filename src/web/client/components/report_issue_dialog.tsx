@@ -10,7 +10,7 @@ const DEFAULT_TEXT = `\n\nReporter: Anonymous`;
 
 export function ReportIssueDialog(props: {
   show: boolean;
-  onClose: () => any;
+  onClose: () => unknown;
 }) {
   const [reportText, setReportText] = useState<string>(DEFAULT_TEXT);
 

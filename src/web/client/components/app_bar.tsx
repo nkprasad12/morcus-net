@@ -20,7 +20,7 @@ export namespace ResponsiveAppBar {
 
   export interface Props {
     pages: Page[];
-    openIssueDialog: () => any;
+    openIssueDialog: () => unknown;
   }
 }
 
@@ -38,8 +38,8 @@ function LogoImage() {
 
 function DrawerMenu(props: {
   pages: ResponsiveAppBar.Page[];
-  onPageClick: (path: string) => any;
-  onClose: () => any;
+  onPageClick: (path: string) => () => unknown;
+  onClose: () => unknown;
   open: boolean;
   isCurrentPage: (page: string) => boolean;
 }) {

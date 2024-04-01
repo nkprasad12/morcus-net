@@ -21,7 +21,7 @@ const WORKER = "worker";
 const EDITOR = "editor";
 const BUNDLE = "bundle";
 
-const cleanupOperations: (() => any)[] = [];
+const cleanupOperations: (() => unknown)[] = [];
 
 registerCleanup();
 const args = parseArguments();

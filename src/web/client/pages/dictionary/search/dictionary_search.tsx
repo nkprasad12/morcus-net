@@ -17,7 +17,7 @@ import { ModalDialog } from "@/web/client/components/generic/overlays";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
-  setHighlightStrength: (newValue: number) => any;
+  setHighlightStrength: (newValue: number) => unknown;
 }) {
   return (
     <NumberSelector
@@ -33,9 +33,9 @@ function HighlightStrengthSelector(props: {
 
 function SearchSettingsDialog(props: {
   open: boolean;
-  onClose: () => any;
+  onClose: () => unknown;
   dicts: DictInfo[];
-  setDicts: (newDicts: DictInfo[]) => any;
+  setDicts: (newDicts: DictInfo[]) => unknown;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
   const inflectedSearch = globalSettings.data.inflectedSearch === true;
@@ -138,7 +138,7 @@ function AutocompleteOption(props: { option: [DictInfo, string] }) {
 export function DictionarySearch(props: {
   smallScreen: boolean;
   dicts: DictInfo[];
-  setDicts: (newDicts: DictInfo[]) => any;
+  setDicts: (newDicts: DictInfo[]) => unknown;
 }) {
   const { route, nav } = useDictRouter();
   const settings = useContext(GlobalSettingsContext);
@@ -190,7 +190,10 @@ export function DictionarySearch(props: {
   );
 }
 
-function SettingsPreview(props: { dicts: DictInfo[]; openDialog: () => any }) {
+function SettingsPreview(props: {
+  dicts: DictInfo[];
+  openDialog: () => unknown;
+}) {
   const globalSettings = useContext(GlobalSettingsContext);
   const inflectionMode = globalSettings.data.inflectedSearch === true;
 

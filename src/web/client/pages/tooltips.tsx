@@ -23,8 +23,8 @@ export interface TooltipProps {
   ChildFactory: TooltipChild;
   placement?: TooltipPlacement;
   open: boolean;
-  onClickAway: () => any;
-  onChildClick: () => any;
+  onClickAway: () => unknown;
+  onChildClick: () => unknown;
 }
 
 type HtmlRef = RefObject<HTMLElement>;
@@ -32,9 +32,9 @@ type HtmlRef = RefObject<HTMLElement>;
 class TooltipManager {
   static get = singletonOf(() => new TooltipManager()).get;
 
-  private readonly trackedRefs: Map<HtmlRef, () => any>;
+  private readonly trackedRefs: Map<HtmlRef, () => unknown>;
   private readonly tooltips: Map<HtmlRef, HtmlRef>;
-  private readonly callback: (ev: MouseEvent) => any = (e) => {
+  private readonly callback: (ev: MouseEvent) => unknown = (e) => {
     const clickedRef = this.findClickedRef(e);
     for (const [ref, listener] of this.trackedRefs.entries()) {
       if (ref !== clickedRef) {
@@ -70,7 +70,7 @@ class TooltipManager {
   register(
     ref: React.RefObject<HTMLElement>,
     tooltip: React.RefObject<HTMLElement>,
-    listener: () => any
+    listener: () => unknown
   ) {
     this.trackedRefs.set(ref, listener);
     this.tooltips.set(ref, tooltip);
@@ -85,7 +85,7 @@ class TooltipManager {
 function useTooltipManager(
   ref: React.RefObject<HTMLElement>,
   tooltip: React.RefObject<HTMLElement>,
-  listener: () => any
+  listener: () => unknown
 ) {
   React.useEffect(() => {
     TooltipManager.get().register(ref, tooltip, listener);
@@ -138,8 +138,8 @@ type CopyLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
 function TextWithIcon(props: {
   message: string;
   link: string;
-  setState: (state: CopyLinkTooltipState) => any;
-  dismissTooltip: () => any;
+  setState: (state: CopyLinkTooltipState) => unknown;
+  dismissTooltip: () => unknown;
 }) {
   async function onClick() {
     try {
@@ -175,8 +175,8 @@ function TitleText(props: {
   state: CopyLinkTooltipState;
   mainMessage: string;
   link: string;
-  setState: (state: CopyLinkTooltipState) => any;
-  dismissTooltip: () => any;
+  setState: (state: CopyLinkTooltipState) => unknown;
+  dismissTooltip: () => unknown;
 }) {
   if (props.state === "Closed") {
     return <></>;
@@ -219,7 +219,7 @@ export function CopyLinkTooltip(props: {
   forwarded: TooltipChild;
   message: string;
   link: string;
-  visibleListener?: (visible: boolean) => any;
+  visibleListener?: (visible: boolean) => unknown;
   placement?: TooltipPlacement;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
