@@ -19,10 +19,7 @@ import { assert, checkPresent } from "@/common/assert";
 import { ServerMessage } from "@/web/utils/rpc/rpc";
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import fetch from "node-fetch";
-import {
-  startMorcusFromDocker,
-  setupMorcus,
-} from "@/integration/utils/morcus_integration_setup";
+import { setupMorcusBackendWithCleanup } from "@/integration/utils/morcus_integration_setup";
 import {
   findText,
   openTab,
@@ -38,22 +35,7 @@ global.location = {
 
 const SCREENSHOTS_DIR = "puppeteer_screenshots";
 
-type Closer = () => Promise<void>;
-
-let morcusCloser: Closer | undefined = undefined;
-beforeAll(async () => {
-  if (FROM_DOCKER) {
-    morcusCloser = await startMorcusFromDocker();
-    return;
-  }
-  morcusCloser = await setupMorcus(REUSE_DEV, PORT, TEST_TMP_DIR);
-}, 180000);
-
-afterAll(async () => {
-  if (morcusCloser !== undefined) {
-    await morcusCloser();
-  }
-}, 10000);
+setupMorcusBackendWithCleanup(FROM_DOCKER, REUSE_DEV, PORT, TEST_TMP_DIR);
 
 describe("bundle size check", () => {
   test("bundle size is within limit", async () => {
@@ -387,14 +369,14 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can", { delay: 20 });
-      await checkHasText("cānăba");
+      await waitForText("cānăba");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("ArrowDown");
       await page.keyboard.press("Enter");
 
+      await waitForText("hovel");
       await checkTitleIs("cānăba | Morcus Latin Tools");
-      await checkHasText("hovel");
     }
   );
 
@@ -406,7 +388,7 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
 
       await page.click(`[aria-label="Dictionary search box"]`);
       await page.keyboard.type("can", { delay: 20 });
-      await checkHasText("cānăba");
+      await waitForText("cānăba");
       await (await findText("cānăba", page, "span")).click();
 
       await checkTitleIs("cānăba | Morcus Latin Tools");

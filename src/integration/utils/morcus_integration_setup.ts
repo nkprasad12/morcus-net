@@ -1,11 +1,11 @@
 /* istanbul ignore file */
 
+import { setEnv } from "@/integration/utils/set_test_env";
 import { checkPresent } from "@/common/assert";
 import { spawnSync } from "child_process";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
 import fs from "fs";
-import { setEnv } from "@/integration/utils/set_test_env";
 
 type Closer = () => Promise<void>;
 
@@ -66,4 +66,26 @@ export async function setupMorcus(
         s.close(() => resolve());
       });
     });
+}
+
+export function setupMorcusBackendWithCleanup(
+  fromDocker: boolean,
+  reuseDev: boolean,
+  port: string,
+  testTmpDir: string
+) {
+  let morcusCloser: Closer | undefined = undefined;
+  beforeAll(async () => {
+    if (fromDocker) {
+      morcusCloser = await startMorcusFromDocker();
+      return;
+    }
+    morcusCloser = await setupMorcus(reuseDev, port, testTmpDir);
+  }, 180000);
+
+  afterAll(async () => {
+    if (morcusCloser !== undefined) {
+      await morcusCloser();
+    }
+  }, 10000);
 }
