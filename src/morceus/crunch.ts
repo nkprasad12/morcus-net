@@ -165,6 +165,6 @@ export namespace MorceusCruncher {
 // const options: CruncherOptions = { vowelLength: "relaxed" };
 // const cruncher = MorceusCruncher.make();
 // const start = performance.now();
-// const result = cruncher("habeas", options);
+// const result = cruncher("ite", options);
 // console.log(`${performance.now() - start} ms`);
 // console.log(JSON.stringify(result, undefined, 2));

@@ -1,6 +1,9 @@
 import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
-import { processNomIrregEntries } from "@/morceus/irregular_stems";
+import {
+  processNomIrregEntries,
+  processVerbIrregEntries,
+} from "@/morceus/irregular_stems";
 import fs from "fs";
 
 const NOUN_STEM_FILES: string[] = [
@@ -162,5 +165,5 @@ export function allNounStems(): Lemma[] {
 export function allVerbStems(): Lemma[] {
   const root = envVar("MORPHEUS_ROOT");
   const stemFiles = VERB_STEM_FILES.map((f) => root + "/" + f).concat();
-  return stemFiles.flatMap(parseVerbStemFile);
+  return stemFiles.flatMap(parseVerbStemFile).concat(processVerbIrregEntries());
 }
