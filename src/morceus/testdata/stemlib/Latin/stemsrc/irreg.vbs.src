@@ -1,0 +1,14 @@
+:le:aio
+ajo_	irreg_pp1 1st sg pres ind act
+a^is	irreg_pp1 2nd sg pres ind act
+a^it	irreg_pp1 3rd sg pres ind act
+ajunt	irreg_pp1 3rd pl pres ind act
+aja_s	irreg_pp1 2nd sg pres subj act
+ajat	irreg_pp1 3rd sg pres subj act
+ajant	irreg_pp1 3rd pl pres subj act
+aje_@imperf	irreg_pp1 ind act imperf
+ai@imperf	irreg_pp1 ind act imperf early
+
+:le:eo#1
+:vs:i		perfstem
+:vs:i_v		perfstem
