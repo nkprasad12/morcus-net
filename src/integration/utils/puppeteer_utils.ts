@@ -12,6 +12,10 @@ const LARGE_SCREEN: ScreenSize = "large";
 const SIZE_VARIANTS: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
 
 export const BROWSERS: BrowserProduct[] = ["chrome"];
+export const SMALL_ONLY: (iterations: number) => [ScreenSize, number][] = (n) =>
+  [...Array(n).keys()].flatMap((i) =>
+    [SMALL_SCREEN].map((v) => [v, i + 1] as [ScreenSize, number])
+  );
 export const LARGE_ONLY: (iterations: number) => [ScreenSize, number][] = (n) =>
   [...Array(n).keys()].flatMap((i) =>
     [LARGE_SCREEN].map((v) => [v, i + 1] as [ScreenSize, number])
@@ -106,4 +110,38 @@ export async function findText(
   );
   expect(results).toHaveLength(1);
   return results[0] as ElementHandle<Element>;
+}
+
+export async function checkTitleIs(
+  expected: string,
+  page: Page
+): Promise<void> {
+  let title: string | undefined = undefined;
+  for (let i = 0; i < 3; i++) {
+    title = await page.title();
+    if (title === expected) {
+      break;
+    }
+  }
+  expect(title).toBe(expected);
+}
+
+export async function checkHasText(text: string, page: Page): Promise<void> {
+  const results = await page.$x(`//*[contains(text(), "${text}")]`);
+  assert(results.length > 0);
+}
+
+export async function waitForText(
+  text: string,
+  page: Page,
+  parentType: string = "*",
+  className?: string
+): Promise<void> {
+  const classString =
+    className === undefined ? "" : `and @class="${className}"`;
+  const results = await page.waitForXPath(
+    `//${parentType}[contains(text(), "${text}")${classString}]`,
+    { timeout: 3000 }
+  );
+  assert(results !== null, `Failed to find text: ${text}`);
 }
