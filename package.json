@@ -20,7 +20,7 @@
     "integration-tests-docker": "FROM_DOCKER=1 npx jest src/integration/all_functional",
     "py-tests": "python -m unittest discover",
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",
-    "ts-coverage": "npx jest --coverage",
+    "ts-coverage": "npx jest --coverage --maxWorkers=4 --testPathIgnorePatterns src/integration/*",
     "coverage": "npm run ts-coverage && npm run py-coverage",
     "tsnl": "node -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register -r dotenv/config --transpile-only",
     "ts-node": "node --max-old-space-size=4096 -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register",
