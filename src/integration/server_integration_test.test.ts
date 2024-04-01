@@ -15,7 +15,7 @@ import { DictsFusedApi, GetWork, ListLibraryWorks } from "@/web/api_routes";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { mkdirSync, rmSync } from "fs";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import { ServerMessage } from "@/web/utils/rpc/rpc";
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import fetch from "node-fetch";
@@ -23,6 +23,13 @@ import {
   startMorcusFromDocker,
   setupMorcus,
 } from "@/integration/utils/morcus_integration_setup";
+import {
+  findText,
+  openTab,
+  setSize,
+  type BrowserProduct,
+  type ScreenSize,
+} from "@/integration/utils/puppeteer_utils";
 
 // @ts-ignore
 global.location = {
@@ -222,10 +229,8 @@ describe("morcus.net backend integration", () => {
   });
 });
 
-type BrowserProduct = "chrome" | "firefox";
 const BROWSERS: BrowserProduct[] = ["chrome"];
 
-type ScreenSize = "small" | "large";
 const SMALL_SCREEN: ScreenSize = "small";
 const LARGE_SCREEN: ScreenSize = "large";
 const SIZE_VARIANTS: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
@@ -237,91 +242,6 @@ const ALL_SCREEN_SIZES: (iterations: number) => [ScreenSize, number][] = (n) =>
   [...Array(n).keys()].flatMap((i) =>
     SIZE_VARIANTS.map((v) => [v, i + 1] as [ScreenSize, number])
   );
-
-async function setSize(size: ScreenSize, page: Page) {
-  const isSmall = size === "small";
-  await page.setViewport({
-    width: isSmall ? 600 : 1900,
-    height: isSmall ? 900 : 1080,
-    deviceScaleFactor: 1,
-  });
-}
-
-async function getButtonByAriaLabel(
-  label: string,
-  page: Page
-): Promise<ElementHandle<HTMLButtonElement>> {
-  const results = await page.$$(`button[aria-label="${label}"]`);
-  assertEqual(
-    results.length,
-    1,
-    `Found ${results.length} buttons with label ${label}`
-  );
-  const button = results[0];
-  assert(await button.isVisible());
-  return results[0] as ElementHandle<HTMLButtonElement>;
-}
-
-async function filterNonVisible<
-  T extends { isVisible: () => Promise<boolean> }
->(items: T[]): Promise<T[]> {
-  const results: T[] = [];
-  for (const item of items) {
-    if (await item.isVisible()) {
-      results.push(item);
-    }
-  }
-  return results;
-}
-
-async function getButtonByLabel(
-  label: string,
-  page: Page
-): Promise<ElementHandle<HTMLButtonElement>> {
-  const allResults = await page.$x(`//span[contains(., '${label}')]`);
-  const visibleResults = await filterNonVisible(allResults);
-  assertEqual(
-    visibleResults.length,
-    1,
-    `Found ${visibleResults.length} visible buttons with label ${label}`
-  );
-  return visibleResults[0] as ElementHandle<HTMLButtonElement>;
-}
-
-function wait(timeMs: number): Promise<void> {
-  return new Promise((r) => setTimeout(r, timeMs));
-}
-
-async function openTab(label: string, size: ScreenSize, page: Page) {
-  const isSmall = size === "small";
-  if (isSmall) {
-    const hamburger = await getButtonByAriaLabel("site pages", page);
-    await hamburger.click();
-    // Wait for the drawer entry transition, which is 150 ms
-    await wait(200);
-  }
-  const tabButton = await getButtonByLabel(label, page);
-  await tabButton.click();
-  if (isSmall) {
-    // Wait for the drawer exit transition, which is 150 ms
-    await wait(200);
-  }
-}
-
-async function findText(
-  text: string,
-  page: Page,
-  parentType: string = "*",
-  className?: string
-) {
-  const classString =
-    className === undefined ? "" : `and @class="${className}"`;
-  const results = await page.$x(
-    `//${parentType}[contains(text(), "${text}")${classString}]`
-  );
-  expect(results).toHaveLength(1);
-  return results[0] as ElementHandle<Element>;
-}
 
 // Just on chrome for now, but we should add firefox later.
 // It requires some extra setup steps to install the browser.
@@ -410,9 +330,14 @@ describe.each(BROWSERS)("E2E Puppeteer tests on %s", (product) => {
   }
 
   async function getPage(size: ScreenSize, morcusPage?: string): Promise<Page> {
+    const page = await getEmptyPage(size);
+    await page.goto(global.location.origin + (morcusPage || ""));
+    return page;
+  }
+
+  async function getEmptyPage(size: ScreenSize): Promise<Page> {
     const page = checkPresent(currentPage);
     await setSize(size, page);
-    await page.goto(global.location.origin + (morcusPage || ""));
     return page;
   }
 
