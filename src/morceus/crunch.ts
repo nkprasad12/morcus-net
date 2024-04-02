@@ -38,12 +38,7 @@ export type Cruncher = (
   options?: CruncherOptions
 ) => LatinWordAnalysis[];
 
-export function crunchWord(
-  endings: EndIndexRow[],
-  lemmata: Lemma[],
-  word: string
-): CrunchResult[] {
-  const results: CrunchResult[] = [];
+export function makeStemsMap(lemmata: Lemma[]): Map<string, [Stem, string][]> {
   const stemMap = arrayMap<string, [Stem, string]>();
   for (const lemma of lemmata) {
     for (const stem of lemma.stems) {
@@ -53,9 +48,21 @@ export function crunchWord(
       );
     }
   }
-  const endsMap = new Map<string, string[]>(
+  return stemMap.map;
+}
+
+export function makeEndsMap(endings: EndIndexRow[]): Map<string, string[]> {
+  return new Map<string, string[]>(
     endings.map((e) => [e.ending, e.tableNames])
   );
+}
+
+export function crunchWord(
+  endsMap: Map<string, string[]>,
+  stemMap: Map<string, [Stem, string][]>,
+  word: string
+): CrunchResult[] {
+  const results: CrunchResult[] = [];
   for (let i = 1; i <= word.length; i++) {
     const maybeStem = word.slice(0, i);
     const candidates = stemMap.get(maybeStem);
@@ -70,7 +77,10 @@ export function crunchWord(
       continue;
     }
     for (const [candidate, lemma] of candidates) {
-      if (candidate.pos === "wd" && maybeEnd === "*") {
+      if (
+        (candidate.pos === "wd" || candidate.pos === "vb") &&
+        maybeEnd === "*"
+      ) {
         results.push({ lemma, stem: candidate, ending: maybeEnd });
       } else if (possibleEnds && possibleEnds.includes(candidate.inflection)) {
         results.push({
@@ -102,8 +112,10 @@ export namespace MorceusCruncher {
       "N/A",
       new Map([["*", [{ grammaticalData: [], ending: "*" }]]])
     );
+    const endsMap = makeEndsMap(endIndices);
+    const stemsMap = makeStemsMap(cachedLemmata);
     return (word, options) =>
-      convert(crunchWord(endIndices, cachedLemmata, word), endTables, options);
+      convert(crunchWord(endsMap, stemsMap, word), endTables, options);
   }
 
   function convert(

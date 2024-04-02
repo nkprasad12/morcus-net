@@ -1,4 +1,9 @@
-import { MorceusCruncher, crunchWord } from "@/morceus/crunch";
+import {
+  MorceusCruncher,
+  crunchWord,
+  makeEndsMap,
+  makeStemsMap,
+} from "@/morceus/crunch";
 import type { Lemma, Stem } from "@/morceus/stem_parsing";
 import type { EndIndexRow, InflectionLookup } from "@/morceus/tables/indices";
 
@@ -14,7 +19,11 @@ describe("crunchWord", () => {
     const endings: EndIndexRow[] = [{ ending: "o", tableNames: ["us"] }];
     const lemmata: Lemma[] = [{ lemma: "morcus", stems: [stem] }];
 
-    const result = crunchWord(endings, lemmata, "morco");
+    const result = crunchWord(
+      makeEndsMap(endings),
+      makeStemsMap(lemmata),
+      "morco"
+    );
 
     expect(result).toStrictEqual([{ lemma: "morcus", ending: "o", stem }]);
   });
@@ -24,7 +33,11 @@ describe("crunchWord", () => {
     const endings: EndIndexRow[] = [{ ending: "o", tableNames: ["us"] }];
     const lemmata: Lemma[] = [{ lemma: "topper", stems: [stem] }];
 
-    const result = crunchWord(endings, lemmata, "topper");
+    const result = crunchWord(
+      makeEndsMap(endings),
+      makeStemsMap(lemmata),
+      "topper"
+    );
 
     expect(result).toStrictEqual([{ lemma: "topper", ending: "*", stem }]);
   });
