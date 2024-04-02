@@ -12,3 +12,65 @@ ai@imperf	irreg_pp1 ind act imperf early
 :le:eo#1
 :vs:i		perfstem
 :vs:i_v		perfstem
+:vs:it		pp4 supine
+:vs:it		pp4 fut part
+:vs:it		pp4 comp_only
+#
+:vb:eo_		irreg_pp1 1st sg pres ind act
+:vb:i_s		irreg_pp1 2nd sg pres ind act
+:vb:it		irreg_pp1 3rd sg pres ind act
+:vb:i_mus	irreg_pp1 1st pl pres ind act
+:vb:i_tis	irreg_pp1 2nd pl pres ind act
+:vb:eunt	irreg_pp1 3rd pl pres ind act
+#
+:vb:eor	irreg_pp1 1st sg pres ind pass comp_only
+:vb:i_ris	irreg_pp1 2nd sg pres ind pass comp_only
+:vb:i_tur	irreg_pp1 3rd sg pres ind pass
+:vb:i_mur	irreg_pp1 1st pl pres ind pass comp_only
+:vb:i_mini_	irreg_pp1 2nd pl pres ind pass comp_only
+:vb:euntur	irreg_pp1 3rd pl pres ind pass comp_only
+#
+ea@basvb2	irreg_pp1 pres subj act
+i_re@basvb2	irreg_pp1 imperf subj act
+#
+ea@basvb2	irreg_pp1 pres subj pass comp_only
+i_re@basvb2	irreg_pp1 imperf subj pass comp_only
+i_re_tur	irreg_pp1 3rd sg imperf subj pass
+#
+i_b@ofut	irreg_pp1 fut ind act
+i_ba@basvb2	irreg_pp1 imperf ind act
+#
+i_b@ofut	irreg_pp1 fut ind pass comp_only
+#i_ba@basvb2	irreg_pp1 imperf ind pass comp_only
+#ibatur shows up in Livy
+i_ba@basvb2	irreg_pp1 imperf ind pass 
+#
+:vb:i_		irreg_pp1 2nd sg pres imperat act
+:vb:i_te	irreg_pp1 2nd pl pres imperat act
+#
+:vb:i_to_	irreg_pp1 2nd sg fut imperat act
+:vb:i_to_	irreg_pp1 3rd sg fut imperat act
+:vb:i_to_te	irreg_pp1 2nd pl fut imperat act
+:vb:eunto_	irreg_pp1 3rd pl fut imperat act
+#
+:vb:i_re	irreg_pp1 pres inf act
+:vb:i_ri_	irreg_pp1 pres inf pass 
+:vb:i_rier	irreg_pp1 pres inf pass early
+:vb:i_sse	irreg_pp2 perf inf act syncop
+ieri@basvb2	irreg_pp2 perf subj act
+i_sse@basvb2	irreg_pp2 plup subj act
+#
+@perfind	perfstem perf indic act comp_only
+#
+:vb:iens	irreg_pp1 pres part act masc fem nom voc sg
+:vb:iens	irreg_pp1 pres part act neut nom voc acc sg
+eunt@decl3_i	irreg_pp1 pres part act 
+eunte		irreg_pp1 pres part act abl sg masc fem neut
+#
+eundus		irreg_pp1 gerundive masc nom sg
+eunda		irreg_pp1 gerundive fem nom sg
+eundum		irreg_pp1 gerundive neut nom sg
+eund@decl1	irreg_pp1 gerundive fem
+eund@decl2	irreg_pp1 gerundive masc neut
+iend@decl1	irreg_pp1 gerundive fem early
+iend@decl2	irreg_pp1 gerundive masc neut early

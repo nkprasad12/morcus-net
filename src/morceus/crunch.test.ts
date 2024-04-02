@@ -92,4 +92,17 @@ describe("MorceusCruncher", () => {
       },
     ]);
   });
+
+  it("handles ite", () => {
+    const cruncher = MorceusCruncher.make();
+    const result = cruncher("ite", { vowelLength: "relaxed" });
+
+    expect(result).toEqual([
+      {
+        lemma: "eo#1",
+        // TODO: Actually verify the inflection output
+        inflectedForms: expect.anything(),
+      },
+    ]);
+  });
 });
