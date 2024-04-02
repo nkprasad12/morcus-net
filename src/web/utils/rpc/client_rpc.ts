@@ -1,17 +1,10 @@
 import { ApiRoute, ServerMessage } from "@/web/utils/rpc/rpc";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
+import { timed } from "@/common/timing/timed_invocation";
 
 const POST_HEADERS = {
   "Content-Type": "text/plain; charset=utf-8",
 };
-
-function timed<T>(func: () => T, tag?: string): T {
-  const start = performance.now();
-  const result = func();
-  const runtime = (performance.now() - start).toFixed(2);
-  console.debug(`${tag || "Runtime"}: ${runtime} ms`);
-  return result;
-}
 
 /** Calls an API and returns the result and any response metadata. */
 export async function callApiFull<I, O>(
