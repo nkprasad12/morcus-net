@@ -211,7 +211,7 @@ function SettingsPreview(props: {
         {props.dicts.map((dict) => (
           <span
             key={dict.key}
-            style={{ marginRight: "2px" }}
+            style={{ marginRight: "2px", cursor: "pointer" }}
             onClick={props.openDialog}>
             <DictChip label={dict.key} />
           </span>
@@ -230,6 +230,7 @@ function SettingsPreview(props: {
           style={{
             backgroundColor:
               (inflectionMode ? Solarized.cyan : Solarized.red) + 40,
+            cursor: "pointer",
           }}>
           {inflectionMode ? "On" : "Off"}
         </span>
