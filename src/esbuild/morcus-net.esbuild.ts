@@ -6,6 +6,7 @@ import { definePlugin } from "esbuild-plugin-define";
 import clear from "esbuild-plugin-output-reset";
 import { BundleOptions, runBundler } from "@/esbuild/utils";
 import { printStatsPlugin, typeCheckPlugin } from "@/esbuild/plugins";
+import { type BuildOptions } from "esbuild";
 
 const OUT_DIR = "build/client";
 const ENTRY_POINT = "src/web/client/root.tsx";
@@ -18,7 +19,7 @@ function getHash(): string {
   return hash;
 }
 
-const options = {
+const options: BuildOptions = {
   entryPoints: [ENTRY_POINT],
   bundle: true,
   minify: envOptions.isProduction,
