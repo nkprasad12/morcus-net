@@ -1,20 +1,14 @@
 /* istanbul ignore file */
 
-import * as dotenv from "dotenv";
 import cp from "child_process";
 import net from "net";
 import nodeCleanup from "node-cleanup";
-
-import { Message, WorkProcessor } from "@/web/workers/requests";
-import { Workers } from "@/web/workers/worker_types";
-import { startRemoteWorker } from "@/web/sockets/socket_workers";
-import { checkPresent } from "@/common/assert";
 
 const ON_LISTEN = "NLP_SERVER:LISTEN";
 const SERVER_ARGS = ["main.py", "--server", ON_LISTEN];
 
 function log(message: string) {
-  console.log(`[macronizer_processor] ${message}`);
+  console.debug(`[macronizer_processor] ${message}`);
 }
 
 async function startNlpServer(): Promise<net.Socket> {
@@ -108,27 +102,7 @@ class NlpProcesser {
   }
 }
 
-async function nlpProcessor(): Promise<NlpProcesser> {
+export async function nlpProcessor(): Promise<NlpProcesser> {
   const client = await startNlpServer();
   return new NlpProcesser(client);
 }
-
-class MacronizerProcessor implements WorkProcessor<string, string> {
-  readonly category = Workers.MACRONIZER;
-  private processor: NlpProcesser | undefined = undefined;
-
-  async setup(): Promise<void> {
-    this.processor = await nlpProcessor();
-  }
-
-  process(input: Message<string>): Promise<string> {
-    return checkPresent(this.processor).process(input.content);
-  }
-
-  teardown(): void {
-    checkPresent(this.processor).close();
-  }
-}
-
-dotenv.config();
-startRemoteWorker(new MacronizerProcessor());
