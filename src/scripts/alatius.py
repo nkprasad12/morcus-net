@@ -26,9 +26,12 @@ def install_deps() -> None:
 def setup_macronizer_repo() -> None:
     check_root()
     os.chdir("src/libs")
-    subprocess.run(["git", "clone", "https://github.com/Alatius/latin-macronizer.git"])
+    subprocess.run(
+        ["git", "clone", "https://github.com/nkprasad12/latin-macronizer.git"]
+    )
     os.rename("latin-macronizer", "latin_macronizer")
     os.chdir("latin_macronizer")
+    subprocess.run(["git", "checkout", "morcus"])
     os.chdir("../../..")
     check_root()
 
