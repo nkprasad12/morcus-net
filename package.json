@@ -51,7 +51,6 @@
   "devDependencies": {
     "@craftamap/esbuild-plugin-html": "^0.6.1",
     "@emotion/react": "^11.10.6",
-    "@emotion/styled": "^11.10.6",
     "@jest/globals": "^29.7.0",
     "@mui/material": "^5.11.12",
     "@testing-library/jest-dom": "^5.16.5",
