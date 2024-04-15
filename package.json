@@ -99,7 +99,6 @@
     "react-dom": "^18.2.0",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.2",
-    "ts-loader": "^9.4.2",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.2",
     "typescript": "^5.1.3"
