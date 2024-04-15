@@ -101,7 +101,6 @@
     "socket.io-client": "^4.6.1",
     "supertest": "^6.3.3",
     "ts-jest": "^29.1.2",
-    "ts-lib": "^0.0.5",
     "ts-loader": "^9.4.2",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.2",
