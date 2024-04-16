@@ -33,8 +33,6 @@ services:
 
   dev:
     image: "${CONTAINER_REGISTRY}morcus:dev-latest"
-    expose:
-      - "5757"
     environment:
       DB_SOURCE: "dev-${DB_TAG}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
@@ -50,8 +48,6 @@ services:
 
   prod:
     image: "${CONTAINER_REGISTRY}morcus:main-latest"
-    expose:
-      - "5757"
     environment:
       DB_SOURCE: "${DB_TAG:-prod}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
