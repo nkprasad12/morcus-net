@@ -52,4 +52,14 @@ describe("filesInPaths", () => {
       "src/utils/file_utils/test/ts/b/b.txt",
     ]);
   });
+
+  it("handles files", () => {
+    const results = [...filesInPaths([`${SUBDIR_A}/a1.txt`, SUBDIR_B])];
+    results.sort();
+
+    expect(results).toEqual([
+      "src/utils/file_utils/test/ts/a/a1.txt",
+      "src/utils/file_utils/test/ts/b/b.txt",
+    ]);
+  });
 });
