@@ -3,6 +3,10 @@ import fs from "fs";
 
 import { assert, checkPresent } from "@/common/assert";
 import { filesInPaths } from "@/utils/file_utils";
+import {
+  areCompatible,
+  toInflectionData,
+} from "@/morceus/inflection_data_utils";
 
 const ALL_TAGS: string[] = ["poetic", "early", "contr"];
 
@@ -165,10 +169,11 @@ function expandTemplate(
     if (!expandedRegistry.has(subTemplate.name)) {
       const rawTemplate = checkPresent(
         rawRegistry.get(subTemplate.name),
-        `No raw template ${template.name} in registry!`
+        `No raw template ${subTemplate.name} in registry!`
       );
       expandTemplate(rawTemplate, rawRegistry, expandedRegistry, true);
     }
+    // In `ta_t@decl3_i	gen pl`, this would be the expanded @decl3_i table.
     const expanded = checkPresent(
       expandedRegistry.get(subTemplate.name),
       `No expanded template ${template.name} in registry!`
@@ -185,10 +190,22 @@ function expandTemplate(
         : subTemplate.prefix === "*"
         ? ""
         : subTemplate.prefix;
-    const prefixedEndings = expanded.endings.map((v) => ({
-      ...v,
-      ending: prefix + v.ending,
-    }));
+    const subTemplateWordThing = toInflectionData(subTemplate.args || []);
+    const prefixedEndings: InflectionEnding[] = [];
+    for (const inflectionEnding of expanded.endings) {
+      if (
+        !areCompatible(
+          toInflectionData(inflectionEnding.grammaticalData),
+          subTemplateWordThing
+        )
+      ) {
+        continue;
+      }
+      prefixedEndings.push({
+        ...inflectionEnding,
+        ending: prefix + inflectionEnding.ending,
+      });
+    }
     endings.push(...prefixedEndings);
   }
   assert(endings.length > 0, `Empty endings for ${template.name}`);

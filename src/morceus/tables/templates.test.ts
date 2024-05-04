@@ -9,6 +9,10 @@ const TESTDATA_DIR = "src/morceus/tables/lat/core/testdata/";
 const TEST_TEMPLATES = `${TESTDATA_DIR}testTemplates`;
 const DEP_TEMPLATES = `${TESTDATA_DIR}dependencyTemplates`;
 const TARGET_TEMPLATES = `${TESTDATA_DIR}targetTemplates`;
+const DECL3 = "src/morceus/tables/lat/core/dependency/decl3.end";
+const DECL3_I = "src/morceus/tables/lat/core/dependency/decl3_i.end";
+const A_AE = "src/morceus/tables/lat/core/target/a_ae.end";
+const TAS_TATIS = "src/morceus/tables/lat/core/target/tas_tatis.end";
 const TEST_TMP_DIR = "src/morceus/tables/templates/testts/out";
 
 function cleanup() {
@@ -88,7 +92,7 @@ describe("Template Expansion", () => {
   afterAll(cleanup);
 
   test("handles simple expansion", () => {
-    const tables = [...expandTemplates([TARGET_TEMPLATES], [DEP_TEMPLATES])];
+    const tables = [...expandTemplates([A_AE], [DEP_TEMPLATES])];
 
     expect(tables).toHaveLength(1);
     const table = tables[0];
@@ -115,6 +119,18 @@ describe("Template Expansion", () => {
       grammaticalData: ["gen", "sg"],
       tags: ["poetic"],
     });
+  });
+
+  // TODO: Remove `failing` once the implementation is done.
+  // Currently we are not handling some cases currently, and there are
+  // issues with nom / voc etc...
+  test.failing("handles expansion with filter", () => {
+    const tables = [...expandTemplates([TAS_TATIS], [DECL3_I, DECL3])];
+
+    expect(tables).toHaveLength(1);
+    const table = tables[0];
+    expect(table.name).toBe("tas_tatis");
+    expect(table.endings).toHaveLength(12);
   });
 
   test("writes to file", () => {
