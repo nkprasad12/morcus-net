@@ -17,32 +17,52 @@ export interface Lemma {
   variants?: string[];
 }
 
-export type LatinCase =
-  | "Nominative"
-  | "Accusative"
-  | "Dative"
-  | "Genitive"
-  | "Ablative"
-  | "Vocative"
-  | "Locative";
+export enum LatinCase {
+  Nominative = 1,
+  Accusative = 2,
+  Dative = 3,
+  Genitive = 4,
+  Ablative = 5,
+  Vocative = 6,
+  Locative = 7,
+}
 
-export type LatinNumber = "Singular" | "Plural";
+export enum LatinNumber {
+  Singular = 1,
+  Plural = 2,
+}
 
-export type LatinGender = "Masculine" | "Feminine" | "Neuter";
+export enum LatinGender {
+  Masculine = 1,
+  Feminine = 2,
+  Neuter = 3,
+}
 
-export type LatinPerson = "1st" | "2nd" | "3rd";
+export enum LatinPerson {
+  FIRST = 1,
+  SECOND = 2,
+  THIRD = 3,
+}
 
-export type LatinMood = "Indicative | Imperative | Subjunctive";
+export enum LatinMood {
+  Indicative = 1,
+  Imperative = 2,
+  Subjunctive = 3,
+}
 
-export type LatinVoice = "Active" | "Passive";
+export enum LatinVoice {
+  Active = 1,
+  Passive = 2,
+}
 
-export type LatinTense =
-  | "Present"
-  | "Imperfect"
-  | "Perfect"
-  | "Future Perfect"
-  | "Future"
-  | "Pluperfect";
+export enum LatinTense {
+  Present = 1,
+  Imperfect = 2,
+  Perfect = 3,
+  FuturePerfect = 4,
+  Future = 5,
+  Pluperfect = 6,
+}
 
 export interface NounInflection {
   case: LatinCase;
