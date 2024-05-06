@@ -165,3 +165,16 @@ in your hosts file:
 ```
 127.0.0.1 foo.morcus.net
 ```
+
+## Code Guide
+
+### Overview
+
+Morcus Latin Tools is a web application (it is also available in the Play Store, but this is just a packaged PWA). There are four high level components to the code:
+
+1. A _client_, which is developed in `Typescript`. This is currently a single page application written using vanilla `React`.
+2. A _backend_, which is also developed in `Typescript`. This is a `Node.js` based `HTTP` server that uses `Express`.
+3. _preprocessing_ code, which is also developed in `Typescript`. This is responsible for transforming raw files (often XML or plain text files) into structured data that can be served by the backend.
+4. _NLP_ code, which is developed in `Python`. This is currently used for the macronizer.
+
+TODO: add subsections for all of these, and explain the build step.
