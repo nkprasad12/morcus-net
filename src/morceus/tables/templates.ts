@@ -1,11 +1,12 @@
 import path from "path";
 import fs from "fs";
 
-import { assert, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { filesInPaths } from "@/utils/file_utils";
 import {
-  areCompatible,
+  mergeInflectionData,
   toInflectionData,
+  wordInflectionDataToArray,
 } from "@/morceus/inflection_data_utils";
 
 const ALL_TAGS: string[] = ["poetic", "early", "contr"];
@@ -190,20 +191,29 @@ function expandTemplate(
         : subTemplate.prefix === "*"
         ? ""
         : subTemplate.prefix;
-    const subTemplateWordThing = toInflectionData(subTemplate.args || []);
+    const [subTemplateInflectionData, subTemplateTags] = toInflectionData(
+      subTemplate.args || []
+    );
     const prefixedEndings: InflectionEnding[] = [];
     for (const inflectionEnding of expanded.endings) {
-      if (
-        !areCompatible(
-          toInflectionData(inflectionEnding.grammaticalData),
-          subTemplateWordThing
-        )
-      ) {
+      const [expandedEndingData, expandedEndingArgs] = toInflectionData(
+        inflectionEnding.grammaticalData
+      );
+      assertEqual(expandedEndingArgs.length, 0);
+      const mergedData = mergeInflectionData(
+        expandedEndingData,
+        subTemplateInflectionData
+      );
+      if (mergedData === null) {
         continue;
       }
+      const mergedTags = new Set<string>(inflectionEnding.tags || []);
+      subTemplateTags.forEach((tag) => mergedTags.add(tag));
+      const grammaticalData = wordInflectionDataToArray(mergedData);
       prefixedEndings.push({
-        ...inflectionEnding,
+        tags: mergedTags.size === 0 ? undefined : [...mergedTags],
         ending: prefix + inflectionEnding.ending,
+        grammaticalData,
       });
     }
     endings.push(...prefixedEndings);

@@ -124,7 +124,7 @@ describe("Template Expansion", () => {
   // TODO: Remove `failing` once the implementation is done.
   // Currently we are not handling some cases currently, and there are
   // issues with nom / voc etc...
-  test.failing("handles expansion with filter", () => {
+  test("handles expansion with filter", () => {
     const tables = [...expandTemplates([TAS_TATIS], [DECL3_I, DECL3])];
 
     expect(tables).toHaveLength(1);
