@@ -36,6 +36,7 @@ export enum LatinGender {
   Masculine = 1,
   Feminine = 2,
   Neuter = 3,
+  Adverbial = 4,
 }
 
 export enum LatinPerson {
@@ -48,6 +49,8 @@ export enum LatinMood {
   Indicative = 1,
   Imperative = 2,
   Subjunctive = 3,
+  Participle = 4,
+  Gerundive = 5,
 }
 
 export enum LatinVoice {
@@ -64,13 +67,20 @@ export enum LatinTense {
   Pluperfect = 6,
 }
 
+export enum LatinDegree {
+  Positive = 1,
+  Comparative = 2,
+  Superlative = 3,
+}
+
 export interface NounInflection {
   case: LatinCase;
   number: LatinNumber;
 }
 
 export interface AdjectiveInflection extends NounInflection {
-  gender: LatinCase;
+  gender: LatinGender;
+  degree: LatinDegree;
 }
 
 export interface VerbInflection {
@@ -79,6 +89,17 @@ export interface VerbInflection {
   voice: LatinVoice;
   mood: LatinMood;
   tense: LatinTense;
+}
+
+export interface WordInflectionData {
+  case?: LatinCase | LatinCase[];
+  number?: LatinNumber | LatinNumber[];
+  gender?: LatinGender | LatinGender[];
+  person?: LatinPerson | LatinPerson[];
+  voice?: LatinVoice | LatinVoice[];
+  mood?: LatinMood | LatinMood[];
+  tense?: LatinTense | LatinTense[];
+  degree?: LatinDegree | LatinDegree[];
 }
 
 export interface Word {

@@ -76,3 +76,8 @@ These are also explained in the doc and are something of a registry for all the 
 - Why do some of the `endtables` have `L` in the title? (A: I think because those mark long vowels)
 - Why do some of the `endtables` have `0`? (A: I think 0 is meant to be the empty or null string)
 - How exactly are `steminds` generated?
+
+### TODO
+
+Looking at output for ax_adj
+- `a_cissime ax_adj masc/neut voc superl sg` -> Surely this should not include neuter???
