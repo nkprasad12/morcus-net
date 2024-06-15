@@ -14,6 +14,7 @@ import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Solarized } from "@/web/client/styling/colors";
 import { SpanButton } from "@/web/client/components/generic/basics";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
+import { usePersistedBool } from "@/web/client/utils/hooks/persisted_state";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -39,6 +40,10 @@ function SearchSettingsDialog(props: {
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
   const inflectedSearch = globalSettings.data.inflectedSearch === true;
+  const [morceusEnabled, setMorceusEnabled] = usePersistedBool(
+    false,
+    "morceusEnabled"
+  );
 
   return (
     <ModalDialog
@@ -102,6 +107,21 @@ function SearchSettingsDialog(props: {
               <span className="text sm">Inflected forms (Beta)</span>
             </label>
           </div>
+          {inflectedSearch && (
+            <div>
+              <input
+                id="morceusEnabled"
+                type="checkbox"
+                checked={morceusEnabled}
+                onChange={() => setMorceusEnabled(!morceusEnabled)}
+              />
+              <label htmlFor="morceusEnabled">
+                <span className="text sm">
+                  Morceus Inflection Analyzer (Alpha)
+                </span>
+              </label>
+            </div>
+          )}
         </div>
         <HighlightStrengthSelector
           highlightStrength={
