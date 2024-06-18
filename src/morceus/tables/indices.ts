@@ -10,6 +10,24 @@ import {
 import { isArray, isString } from "@/web/utils/rpc/parsing";
 import { arrayMap, setMap } from "@/common/data_structures/collect_map";
 
+const VERB_TABLES = new Set([
+  "conj1",
+  "conj2",
+  "conj3",
+  "conj4",
+  "conj3_io",
+  "perfstem",
+  "ivperf",
+  "avperf",
+  "evperf",
+]);
+
+export enum IndexMode {
+  ALL = "all",
+  VERBS = "verbs",
+  NOUNS = "nouns",
+}
+
 export type InflectionLookup = Map<string, Map<string, InflectionEnding[]>>;
 export interface EndIndexRow {
   /** The ending, without diacritics, of this row. */
@@ -31,25 +49,37 @@ export namespace EndIndexRow {
   }
 
   export function stringify(row: EndIndexRow): string {
-    return [row.ending].concat(row.tableNames).join(" ");
+    return [row.ending].concat(row.tableNames.sort()).join(" ");
   }
 }
 
 export function makeEndIndex(
   targetDirs: string[],
-  dependencyDirs: string[]
+  dependencyDirs: string[],
+  indexMode?: IndexMode
 ): EndsResult;
 export function makeEndIndex(tables: InflectionTable[]): EndsResult;
 export function makeEndIndex(
   targetDirOrTables: string[] | InflectionTable[],
-  dependencyDirs?: string[]
+  dependencyDirs?: string[],
+  indexMode?: IndexMode
 ): EndsResult {
   const tables = isArray(isString)(targetDirOrTables)
     ? [...expandTemplates(targetDirOrTables, checkPresent(dependencyDirs))]
     : targetDirOrTables;
   const index = setMap<string, string>();
   const inflectionLookup: InflectionLookup = new Map();
+  const tableFilter: (table: string) => boolean =
+    indexMode === IndexMode.VERBS
+      ? // We want to include pp4 in both.
+        (table) => table === "pp4" || VERB_TABLES.has(table)
+      : indexMode === IndexMode.NOUNS
+      ? (table) => !VERB_TABLES.has(table)
+      : (_) => true;
   for (const { name, endings } of tables) {
+    if (!tableFilter(name)) {
+      continue;
+    }
     assert(!inflectionLookup.has(name));
     const endingsMap = arrayMap<string, InflectionEnding>();
     for (const end of endings) {
@@ -75,14 +105,15 @@ export function makeEndIndex(
 }
 
 export function makeEndIndexAndSave(
+  mode: IndexMode = IndexMode.ALL,
   targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
   dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
   outputDir: string = "build/morceus/indices/"
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(
-    path.join(outputDir, "indices.txt"),
-    makeEndIndex(targetDirs, dependencyDirs)[0]
+    path.join(outputDir, `${mode.toString()}.endindex`),
+    makeEndIndex(targetDirs, dependencyDirs, mode)[0]
       .map(EndIndexRow.stringify)
       .join("\n")
   );

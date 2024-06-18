@@ -3,10 +3,18 @@
 import { assert, assertEqual } from "@/common/assert";
 import fs from "fs";
 
-const MORPHEUS_ROOT =
-  "/home/nitin/Documents/code/morcus/morpheus/stemlib/Latin/endtables/ascii";
-const MORCEUS_ROOT =
-  "/home/nitin/Documents/code/morcus/morcus-net/build/morceus/tables/lat";
+const MORPHEUS_ROOT = "/home/nitin/Documents/code/morcus/morpheus";
+const MORCEUS_ROOT = "build/morceus";
+
+const MORPHEUS_ENDTABLE_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/endtables/ascii`;
+const MORCEUS_ENDTABLE_ROOT = `${MORCEUS_ROOT}/tables/lat`;
+
+const MORPHEUS_END_INDICES_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/endtables/indices`;
+const MORCEUS_END_INDICES_ROOT = `${MORCEUS_ROOT}/indices`;
+const MORPHEUS_NOUN_INDEX = `${MORPHEUS_END_INDICES_ROOT}/nendind`;
+const MORPHEUS_VERB_INDEX = `${MORPHEUS_END_INDICES_ROOT}/vbendind`;
+const MORCEUS_NOUN_INDEX = `${MORCEUS_END_INDICES_ROOT}/nouns.endindex`;
+const MORCEUS_VERB_INDEX = `${MORCEUS_END_INDICES_ROOT}/verbs.endindex`;
 
 /**
  * Returns the normalized value of an end table.
@@ -46,14 +54,14 @@ function normalizeEndTable(tablePath: string, tableName: string): string {
 
 function endTableNames() {
   const morceusTables = fs
-    .readdirSync(MORCEUS_ROOT)
+    .readdirSync(MORCEUS_ENDTABLE_ROOT)
     .map((table) => {
       assert(table.endsWith(".table"), table);
       return table.split(".table")[0];
     })
     .sort();
   const morpheusTables = fs
-    .readdirSync(MORPHEUS_ROOT)
+    .readdirSync(MORPHEUS_ENDTABLE_ROOT)
     .filter((fileName) => fileName !== ".cvsignore")
     .map((table) => {
       assert(table.endsWith(".asc"), table);
@@ -67,7 +75,7 @@ function endTableNames() {
   return morceusTables;
 }
 
-function tableDiffs(morceus: string, morpheus: string): string[] {
+function lineDiffs(morceus: string, morpheus: string): string[] {
   const linesMorc = morceus.split("\n");
   const linesMorph = morpheus.split("\n");
   const results: string[] = [];
@@ -92,17 +100,17 @@ function tableDiffs(morceus: string, morpheus: string): string[] {
  * - In `ex_icis_adj`: Morpheus has a typo of `able` instead of `abl`.
  * - In `tas_tatis`: This is just whitespace difference.
  */
-function compareEndTables() {
+export function compareEndTables() {
   const allEndTableNames = endTableNames();
   let matches = 0;
   let errors = 0;
   for (const tableName of allEndTableNames) {
-    const morpheusFile = `${MORPHEUS_ROOT}/${tableName}.asc`;
-    const morceusFile = `${MORCEUS_ROOT}/${tableName}.table`;
+    const morpheusFile = `${MORPHEUS_ENDTABLE_ROOT}/${tableName}.asc`;
+    const morceusFile = `${MORCEUS_ENDTABLE_ROOT}/${tableName}.table`;
     const morceusResult = normalizeEndTable(morceusFile, tableName);
     const morpheusResult = normalizeEndTable(morpheusFile, tableName);
 
-    const diffs = tableDiffs(morceusResult, morpheusResult);
+    const diffs = lineDiffs(morceusResult, morpheusResult);
     if (diffs.length === 0) {
       matches++;
       continue;
@@ -117,4 +125,49 @@ function compareEndTables() {
   console.log(`${errors} lines have errors.`);
 }
 
-compareEndTables();
+/** The normalized lines of an end index. */
+function normalizedEndIndex(indexPath: string): string {
+  const index = fs.readFileSync(indexPath).toString();
+  return index
+    .split("\n")
+    .map((x) => x.trim())
+    .filter((x) => x.length > 0)
+    .sort()
+    .join("\n");
+}
+
+/**
+ * Compares Morpheus and Morceus output after normalizing the indices
+ * from each.
+ *
+ * There are currently no differences.
+ */
+function compareEndIndex(
+  tag: string,
+  morceusFile: string,
+  morpheusFile: string
+): number {
+  const morpheus = normalizedEndIndex(morpheusFile);
+  const morceus = normalizedEndIndex(morceusFile);
+  const diffs = lineDiffs(morceus, morpheus);
+
+  console.log(tag);
+  console.log(diffs.join("\n"));
+  console.log("===\n");
+  return diffs.length;
+}
+
+export function compareEndIndices() {
+  const nounErrors = compareEndIndex(
+    "Nouns",
+    MORCEUS_NOUN_INDEX,
+    MORPHEUS_NOUN_INDEX
+  );
+  const verbsErrors = compareEndIndex(
+    "Verbs",
+    MORCEUS_VERB_INDEX,
+    MORPHEUS_VERB_INDEX
+  );
+  console.log(`${nounErrors} noun lines have errors.`);
+  console.log(`${verbsErrors} verb lines have errors.`);
+}

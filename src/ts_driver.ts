@@ -1,6 +1,5 @@
 /* istanbul ignore file */
 
-import { makeEndIndexAndSave } from "@/morceus/tables/indices";
 import * as dotenv from "dotenv";
 
 dotenv.config();
@@ -8,7 +7,6 @@ dotenv.config();
 const startTime = performance.now();
 
 // expandTemplatesAndSave();
-makeEndIndexAndSave();
 
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);

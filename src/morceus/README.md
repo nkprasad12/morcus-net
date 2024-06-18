@@ -60,7 +60,6 @@ These are also explained in the doc and are something of a registry for all the 
 
 ### Improvements
 
-- Morpheus only returns `dative` as an option for supine, though typically grammar books call it `ablative`
 - Morpheus doesn't ever say anything is `locative`
 - Morpheus doesn't have some of the orthographic variants in Lewis and Short (for example, `canaba` is there but not `cannaba`)
 - Morpheus probably doesn't have some of the entries that I split
@@ -71,14 +70,7 @@ These are also explained in the doc and are something of a registry for all the 
 - idem, quidam, etc... are stated to be "indeclinable".
 - the tables don't give any analysis for periphrastics (future active / passive infinitives, perfect passive conjugations)
 
-### Unknowns
+### Progress
 
-- Why do some of the `endtables` have `L` in the title? (A: I think because those mark long vowels)
-- Why do some of the `endtables` have `0`? (A: I think 0 is meant to be the empty or null string)
-- How exactly are `steminds` generated?
-
-### TODO
-
-Looking at output for ax_adj
-
-- `a_cissime ax_adj masc/neut voc superl sg` -> Surely this should not include neuter???
+- We have the end table generation done and verified to match Morpheus 100%
+- We have the end index generation done and verified to match Morpheus 100%
