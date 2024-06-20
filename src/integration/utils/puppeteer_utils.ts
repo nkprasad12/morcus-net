@@ -67,7 +67,7 @@ export async function getButtonByLabel(
   label: string,
   page: Page
 ): Promise<ElementHandle<HTMLButtonElement>> {
-  const allResults = await page.$x(`//span[contains(., '${label}')]`);
+  const allResults = await page.$$(`xpath/.//span[contains(., '${label}')]`);
   const visibleResults = await filterNonVisible(allResults);
   assertEqual(
     visibleResults.length,
@@ -105,8 +105,8 @@ export async function findText(
 ) {
   const classString =
     className === undefined ? "" : `and @class="${className}"`;
-  const results = await page.$x(
-    `//${parentType}[contains(text(), "${text}")${classString}]`
+  const results = await page.$$(
+    `xpath/.//${parentType}[contains(text(), "${text}")${classString}]`
   );
   expect(results).toHaveLength(1);
   return results[0] as ElementHandle<Element>;
@@ -127,7 +127,7 @@ export async function checkTitleIs(
 }
 
 export async function checkHasText(text: string, page: Page): Promise<void> {
-  const results = await page.$x(`//*[contains(text(), "${text}")]`);
+  const results = await page.$$(`xpath/.//*[contains(text(), "${text}")]`);
   assert(results.length > 0);
 }
 
@@ -139,8 +139,8 @@ export async function waitForText(
 ): Promise<void> {
   const classString =
     className === undefined ? "" : `and @class="${className}"`;
-  const results = await page.waitForXPath(
-    `//${parentType}[contains(text(), "${text}")${classString}]`,
+  const results = await page.waitForSelector(
+    `xpath/.//${parentType}[contains(text(), "${text}")${classString}]`,
     { timeout: 3000 }
   );
   assert(results !== null, `Failed to find text: ${text}`);

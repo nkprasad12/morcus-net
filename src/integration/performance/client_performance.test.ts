@@ -35,7 +35,7 @@ describe("Client Performance Tests", () => {
   const allMetrics = arrayMap<string, Metrics>();
 
   beforeAll(async () => {
-    browser = await puppeteer.launch({ headless: "new", product: "chrome" });
+    browser = await puppeteer.launch({ headless: true, product: "chrome" });
     const context = browser.defaultBrowserContext();
     await context.overridePermissions(global.location.origin, [
       "clipboard-read",

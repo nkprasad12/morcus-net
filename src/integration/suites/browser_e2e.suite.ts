@@ -31,7 +31,7 @@ export function defineBrowserE2eSuite() {
       try {
         mkdirSync(SCREENSHOTS_DIR);
       } catch {}
-      browser = await puppeteer.launch({ headless: "new", product });
+      browser = await puppeteer.launch({ headless: true, product });
       const context = browser.defaultBrowserContext();
       await context.overridePermissions(global.location.origin, [
         "clipboard-read",
@@ -74,7 +74,7 @@ export function defineBrowserE2eSuite() {
 
     async function checkHasText(text: string): Promise<void> {
       const page = checkPresent(currentPage);
-      const results = await page.$x(`//*[contains(text(), "${text}")]`);
+      const results = await page.$$(`xpath/.//*[contains(text(), "${text}")]`);
       if (results.length === 0) {
         await takeScreenshot();
         throw new Error(`Failed to find text: ${text}`);
@@ -90,8 +90,8 @@ export function defineBrowserE2eSuite() {
       const classString =
         className === undefined ? "" : `and @class="${className}"`;
       try {
-        const results = await page.waitForXPath(
-          `//${parentType}[contains(text(), "${text}")${classString}]`,
+        const results = await page.waitForSelector(
+          `xpath/.//${parentType}[contains(text(), "${text}")${classString}]`,
           { timeout: 3000 }
         );
         assert(results !== null, `Failed to find text: ${text}`);
