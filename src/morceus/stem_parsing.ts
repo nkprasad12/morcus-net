@@ -8,7 +8,7 @@ import fs from "fs";
 
 const NOUN_STEM_FILES: string[] = [
   "stemlib/Latin/stemsrc/ls.nom",
-  "stemlib/Latin/stemsrc/nom.livy",
+  // "stemlib/Latin/stemsrc/nom.livy",
   // And we want to use the rest of the nom.*
 ];
 

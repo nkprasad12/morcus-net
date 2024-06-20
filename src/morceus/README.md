@@ -72,5 +72,47 @@ These are also explained in the doc and are something of a registry for all the 
 
 ### Progress
 
-- We have the end table generation done and verified to match Morpheus 100%
-- We have the end index generation done and verified to match Morpheus 100%
+- End table generation done and verified to match Morpheus 100% (modulo some errors in Morpheus)
+- End index generation done and verified to match Morpheus 100%
+- Stem index generation is in progress.
+
+### Current work
+
+Current goal: Checking why Morpheus has `2zonatim` in its `nomind`.
+Morceus only has `zonatim` and the source file `ls.nom` has the following:
+
+```
+zo_na_tim
+:le:zonatim
+:wd:zo_na_tim	adverb
+```
+
+which doesn't make clear where the `2` comes from.
+
+Looking at the makefile, this is generated via:
+
+```
+stemind/nomind:	stemsrc/ls.nom ../Greek/getentities.pl
+	mkdir -p steminds
+	cat stemsrc/nom.* stemsrc/ls.nom > /tmp/nommorph
+	../Greek/getentities.pl /tmp/nommorph  > steminds/entitylist.txt
+	indexnoms -L
+```
+
+This calls into `index_noms` in `indexstems.c` with 3, 0, 0, 0.
+
+This calls into `index_stems`, which sets these prefixes as follows:
+
+1. :vb: -> 1
+2. :wd: -> 2
+3. :de: -> 3 (except pres_redupl, but this is Greek only so we can ignore it.)
+
+Note: there is another intermediate validation step we can do. `irregular_stems.ts` has
+some code that is used to process the source files `stemlib/Latin/stemsrc/irreg.nom.src` and
+`stemlib/Latin/stemsrc/irreg.vbs.src`. In Morpheus, these are processed and then turned into
+`nom.irreg` and `vbs.irreg`.
+
+We can make sure the parsing is correct by generating these intermediate files.
+
+Other big question!! - What is the actual function of these 1 / 2 / 3 prefixes later??
+How are they consumed by the later code?

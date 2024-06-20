@@ -1,9 +1,10 @@
 /* istanbul ignore file */
 
 import { assert, assertEqual } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import fs from "fs";
 
-const MORPHEUS_ROOT = "/home/nitin/Documents/code/morcus/morpheus";
+const MORPHEUS_ROOT = envVar("MORPHEUS_ROOT");
 const MORCEUS_ROOT = "build/morceus";
 
 const MORPHEUS_ENDTABLE_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/endtables/ascii`;
