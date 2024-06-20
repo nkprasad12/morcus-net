@@ -5,7 +5,11 @@ import { htmlPlugin } from "@craftamap/esbuild-plugin-html";
 import { definePlugin } from "esbuild-plugin-define";
 import clear from "esbuild-plugin-output-reset";
 import { BundleOptions, runBundler } from "@/esbuild/utils";
-import { printStatsPlugin, typeCheckPlugin } from "@/esbuild/plugins";
+import {
+  compressPlugin,
+  printStatsPlugin,
+  typeCheckPlugin,
+} from "@/esbuild/plugins";
 import { type BuildOptions } from "esbuild";
 
 const OUT_DIR = "build/client";
@@ -45,7 +49,9 @@ const options: BuildOptions = {
         },
       ],
     }),
-  ].concat(envOptions.typeCheck ? typeCheckPlugin(envOptions) : []),
+  ]
+    .concat(envOptions.typeCheck ? typeCheckPlugin(envOptions) : [])
+    .concat(envOptions.compress ? compressPlugin() : []),
 };
 
 runBundler(options, envOptions);

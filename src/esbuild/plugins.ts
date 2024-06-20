@@ -5,6 +5,7 @@ import type { BundleOptions } from "@/esbuild/utils";
 import { runCommand } from "@/scripts/script_utils";
 import esbuild from "esbuild";
 import fs from "fs";
+import { gzipSync } from "zlib";
 
 export function typeCheckPlugin(options?: BundleOptions): esbuild.Plugin {
   return {
@@ -50,6 +51,15 @@ export function printStatsPlugin(options?: BundleOptions): esbuild.Plugin {
   };
 }
 
+export function compressPlugin(): esbuild.Plugin {
+  return {
+    name: "compressJs",
+    setup(build) {
+      build.onEnd((result) => compressResults(result));
+    },
+  };
+}
+
 function printBuildResult(
   result: esbuild.BuildResult,
   options?: BundleOptions
@@ -68,5 +78,22 @@ function printBuildResult(
       const metaPath = `${data.entryPoint}.esbuild.meta.json`;
       fs.writeFileSync(metaPath, JSON.stringify(metafile));
     }
+  }
+}
+
+function compressResults(result: esbuild.BuildResult) {
+  const metafile = result.metafile;
+  if (metafile === undefined) {
+    return;
+  }
+  for (const output in metafile.outputs) {
+    if (!output.endsWith(".js")) {
+      continue;
+    }
+    const outFile = `${output}.gz`;
+    const compressed = gzipSync(fs.readFileSync(output));
+    const size = (compressed.byteLength / 1024).toFixed(2);
+    console.log(`compressed: ${outFile} [${size} kB]`);
+    fs.writeFileSync(outFile, compressed);
   }
 }

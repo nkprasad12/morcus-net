@@ -7,6 +7,7 @@ export interface BundleOptions {
   watch: boolean;
   analyzeBundle: boolean;
   typeCheck: boolean;
+  compress: boolean;
 }
 
 export namespace BundleOptions {
@@ -16,6 +17,7 @@ export namespace BundleOptions {
       watch: process.env.WATCH === "1",
       analyzeBundle: process.env.ANALYZE_BUNDLE === "1",
       typeCheck: process.env.RUN_TSC === "1",
+      compress: process.env.COMPRESS === "1",
     };
   }
 }

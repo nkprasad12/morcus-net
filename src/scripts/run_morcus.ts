@@ -57,7 +57,11 @@ function parseArguments() {
     action: "store_true",
   });
   bundle.add_argument("-p", "--prod", {
-    help: "Builds a minimized and gzipped bundle.",
+    help: "Builds a minimized bundle.",
+    action: "store_true",
+  });
+  bundle.add_argument("-c", "--compress", {
+    help: "Builds a gzipped bundle.",
     action: "store_true",
   });
 
@@ -233,6 +237,9 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   }
   if (args.analyze) {
     childEnv.ANALYZE_BUNDLE = "1";
+  }
+  if (args.compress) {
+    childEnv.COMPRESS = "1";
   }
   if (!args.transpile_only) {
     childEnv.RUN_TSC = "1";
