@@ -92,7 +92,8 @@ describe("Template Expansion", () => {
   afterAll(cleanup);
 
   test("handles simple expansion", () => {
-    const tables = [...expandTemplates([A_AE], [DEP_TEMPLATES])];
+    const [targets, _] = expandTemplates([A_AE], [DEP_TEMPLATES]);
+    const tables = [...targets.values()];
 
     expect(tables).toHaveLength(1);
     const table = tables[0];
@@ -125,7 +126,8 @@ describe("Template Expansion", () => {
   // Currently we are not handling some cases currently, and there are
   // issues with nom / voc etc...
   test("handles expansion with filter", () => {
-    const tables = [...expandTemplates([TAS_TATIS], [DECL3_I, DECL3])];
+    const [targets, _] = expandTemplates([TAS_TATIS], [DECL3_I, DECL3]);
+    const tables = [...targets.values()];
 
     expect(tables).toHaveLength(1);
     const table = tables[0];

@@ -65,7 +65,12 @@ export function makeEndIndex(
   indexMode?: IndexMode
 ): EndsResult {
   const tables = isArray(isString)(targetDirOrTables)
-    ? [...expandTemplates(targetDirOrTables, checkPresent(dependencyDirs))]
+    ? [
+        ...expandTemplates(
+          targetDirOrTables,
+          checkPresent(dependencyDirs)
+        )[0].values(),
+      ]
     : targetDirOrTables;
   const index = setMap<string, string>();
   const inflectionLookup: InflectionLookup = new Map();

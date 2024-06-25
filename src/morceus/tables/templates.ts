@@ -11,6 +11,9 @@ import {
 
 const ALL_TAGS: string[] = ["poetic", "early", "contr"];
 
+export const MORPHEUS_TARGETS = "src/morceus/tables/lat/core/target";
+export const MORPHEUS_DEPENDENCIES = "src/morceus/tables/lat/core/dependency";
+
 /** An entry in an inflection table that shows an ending and when to use it. */
 export interface InflectionEnding {
   /** The grammatical categories - case, number, and so on. */
@@ -137,20 +140,18 @@ function loadTemplates(inputDirs: string[]): Map<string, InflectionTemplate> {
   return result;
 }
 
+/**
+ * Expands the given template.
+ *
+ * @param template The template to expand.
+ * @param dependencies The registry of the processed (expanded) dependency templates.
+ * @returns The expanded template.
+ */
 function expandTemplate(
   template: InflectionTemplate,
-  rawRegistry: Map<string, InflectionTemplate>,
-  expandedRegistry: Map<string, InflectionTable>,
-  isFromRegistry?: boolean
+  dependencies: Map<string, InflectionTable>
 ): InflectionTable {
   const requredTemplates = template.templates;
-  if (isFromRegistry) {
-    assert(
-      !expandedRegistry.has(template.name),
-      `Template ${template.name} has already been expanded!`
-    );
-  }
-
   if (requredTemplates === undefined) {
     const result: InflectionTable = {
       name: template.name,
@@ -159,24 +160,14 @@ function expandTemplate(
         `Template ${template.name} has no endings!`
       ),
     };
-    if (isFromRegistry) {
-      expandedRegistry.set(template.name, result);
-    }
     return result;
   }
 
   const endings: InflectionEnding[] = template.endings || [];
   for (const subTemplate of requredTemplates) {
-    if (!expandedRegistry.has(subTemplate.name)) {
-      const rawTemplate = checkPresent(
-        rawRegistry.get(subTemplate.name),
-        `No raw template ${subTemplate.name} in registry!`
-      );
-      expandTemplate(rawTemplate, rawRegistry, expandedRegistry, true);
-    }
     // In `ta_t@decl3_i	gen pl`, this would be the expanded @decl3_i table.
     const expanded = checkPresent(
-      expandedRegistry.get(subTemplate.name),
+      dependencies.get(subTemplate.name),
       `No expanded template ${template.name} in registry!`
     );
     // We need to figure out the logic of exactly how grammatical data
@@ -223,22 +214,53 @@ function expandTemplate(
     name: template.name,
     endings,
   };
-  if (isFromRegistry) {
-    expandedRegistry.set(template.name, result);
+  return result;
+}
+
+function expandDependencyTemplates(templates: readonly InflectionTemplate[]) {
+  const toBeExpanded = new Set(templates);
+  const result = new Map<string, InflectionTable>();
+  while (toBeExpanded.size > 0) {
+    const startSize = toBeExpanded.size;
+    for (const template of toBeExpanded.values()) {
+      const dependencies = template.templates || [];
+      const unprocessedDeps = dependencies.filter((t) => !result.has(t.name));
+      if (unprocessedDeps.length > 0) {
+        continue;
+      }
+      toBeExpanded.delete(template);
+      result.set(template.name, expandTemplate(template, result));
+    }
+    assert(
+      toBeExpanded.size < startSize,
+      `Unprocessable: ${JSON.stringify([...toBeExpanded.values()])}`
+    );
   }
   return result;
 }
 
-export function* expandTemplates(
+/**
+ * Expands the templates specified in given directories.
+ *
+ * @param targetDirs Locations for target templates.
+ * @param dependencyDirs Locations for dependency templates.
+ *
+ * @returns Maps of target and dependency tables used in processing.
+ */
+export function expandTemplates(
   targetDirs: string[],
   dependencyDirs: string[]
-): Generator<InflectionTable> {
-  const rawRegistry = loadTemplates(dependencyDirs);
-  const expandedRegistry = new Map<string, InflectionTable>();
-  const targets = loadTemplates(targetDirs);
-  for (const [_, template] of targets.entries()) {
-    yield expandTemplate(template, rawRegistry, expandedRegistry);
+): [Map<string, InflectionTable>, Map<string, InflectionTable>] {
+  const dependencyTemplates = loadTemplates(dependencyDirs);
+  const dependencyTemplateList = [...dependencyTemplates.values()];
+  const dependencyTables = expandDependencyTemplates(dependencyTemplateList);
+
+  const targetTemplates = loadTemplates(targetDirs);
+  const targetTables = new Map<string, InflectionTable>();
+  for (const template of targetTemplates.values()) {
+    targetTables.set(template.name, expandTemplate(template, dependencyTables));
   }
+  return [targetTables, dependencyTables];
 }
 
 /**
@@ -248,12 +270,13 @@ export function* expandTemplates(
  * @param dependencyDirs the path where the outputs will be written to.
  */
 export function expandTemplatesAndSave(
-  targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
-  dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
+  targetDirs: string[] = [MORPHEUS_TARGETS],
+  dependencyDirs: string[] = [MORPHEUS_DEPENDENCIES],
   outputDir: string = "build/morceus/tables/lat"
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
-  for (const expanded of expandTemplates(targetDirs, dependencyDirs)) {
+  const [targets, _] = expandTemplates(targetDirs, dependencyDirs);
+  for (const expanded of targets.values()) {
     writeTable(expanded, outputDir);
   }
 }
