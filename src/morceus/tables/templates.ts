@@ -148,7 +148,7 @@ function loadTemplates(inputDirs: string[]): Map<string, InflectionTemplate> {
  * @param dependencies The registry of the processed (expanded) dependency templates.
  * @returns The expanded template.
  */
-function expandTemplate(
+export function expandTemplate(
   template: InflectionTemplate,
   dependencies: Map<string, InflectionTable>
 ): InflectionTable {
@@ -284,5 +284,5 @@ export function expandTemplatesAndSave(
 
 export const EXPANDED_TEMPLATES = singletonOf(() => {
   const t = expandTemplates([MORPHEUS_TARGETS], [MORPHEUS_DEPENDENCIES]);
-  return mergeMaps(t[0], t[1]);
+  return mergeMaps(t[0], t[1], true);
 });

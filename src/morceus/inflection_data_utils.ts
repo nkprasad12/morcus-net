@@ -12,7 +12,14 @@ import {
   type WordInflectionData,
 } from "@/morceus/types";
 
-const EXTRA_TAGS = new Set(["early", "poetic", "contr", "ire_vb", "are_vb"]);
+const EXTRA_TAGS = new Set([
+  "early",
+  "poetic",
+  "contr",
+  "ire_vb",
+  "are_vb",
+  "irreg_nom3",
+]);
 
 function mergeCompatible<T>(
   first?: T | T[],

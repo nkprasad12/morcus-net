@@ -7,7 +7,12 @@ import {
   processNomIrregEntries,
   processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
-import { allNounStems, allVerbStems, type Lemma } from "@/morceus/stem_parsing";
+import {
+  allNounStems,
+  allVerbStems,
+  expandLemma,
+  type Lemma,
+} from "@/morceus/stem_parsing";
 import { IndexMode, makeEndIndexAndSave } from "@/morceus/tables/indices";
 import { expandTemplatesAndSave } from "@/morceus/tables/templates";
 import { compareEndTables } from "@/scripts/compare_morceus_results";
@@ -16,6 +21,7 @@ import { compareEndIndices } from "@/scripts/compare_morceus_results";
 import fs from "fs";
 
 const INDEX_OUTPUT_DIR = "build/morceus/indices";
+const IRREGS_OUTPUT_DIR = "build/morceus/irregs";
 
 /** Creates a stem index in a format matching Morpheus. */
 function indexStems(lemmata: Lemma[]): Map<string, string[]> {
@@ -50,8 +56,33 @@ function writeStemIndex(lemmata: Lemma[], tag: string) {
   );
 }
 
+function debugIrregs() {
+  const lemmata = processNomIrregEntries();
+  expandLemma(lemmata[0]);
+  // This gives the expected output, but we should think about how we structure
+  // both the template output and `Lemma`ta that are generated from processing
+  // the irreg files.
+
+  // I suspect that we should have in the templates:
+  // - Types baked in when it's done
+  // - Separation of semantic data (early, contr, etc...) and other stuff
+  //
+  // Then in the irreg parsing, we can extend the template output
+  // The separation of semantic tags and other stuff gives us a natural
+  // home to put e.g. `irreg_nom3` that aren't naturally POS anyways.
+}
+
+function writeIrregsFile(lemmata: Lemma[], name: string) {
+  const result = lemmata
+    .map((lemma) => JSON.stringify(lemma, undefined, 2))
+    .join("\n\n");
+  fs.mkdirSync(IRREGS_OUTPUT_DIR, { recursive: true });
+  fs.writeFileSync(`${IRREGS_OUTPUT_DIR}/${name}.irreg`, result);
+}
+
 export namespace Stems {
-  export const makeNomIrregs = processNomIrregEntries;
+  export const makeNomIrregs = () =>
+    writeIrregsFile(processNomIrregEntries(), "nom");
   export const makeVerbIrregs = processVerbIrregEntries;
   export const createIndices = () => {
     fs.mkdirSync(INDEX_OUTPUT_DIR, { recursive: true });
@@ -73,4 +104,4 @@ export namespace Endings {
   export const compareIndices = compareEndIndices;
 }
 
-Stems.createIndices();
+debugIrregs();

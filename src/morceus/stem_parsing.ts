@@ -4,6 +4,12 @@ import {
   processNomIrregEntries,
   processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
+import {
+  EXPANDED_TEMPLATES,
+  expandTemplate,
+  type InflectionEnding,
+  type InflectionTable,
+} from "@/morceus/tables/templates";
 import fs from "fs";
 
 const NOUN_STEM_FILES: string[] = [
@@ -47,6 +53,33 @@ export interface Stem {
 export interface Lemma {
   lemma: string;
   stems: Stem[];
+}
+
+export function expandLemma(lemma: Lemma): InflectionTable {
+  const templates = EXPANDED_TEMPLATES.get();
+  const endings: InflectionEnding[] = [];
+  for (const stem of lemma.stems) {
+    console.log(stem);
+    if (stem.inflection === "N/A") {
+      continue;
+    }
+    console.log(
+      expandTemplate(
+        {
+          name: stem.stem,
+          templates: [
+            {
+              name: stem.inflection,
+              prefix: stem.stem,
+              args: stem.other?.split(" "),
+            },
+          ],
+        },
+        templates
+      )
+    );
+  }
+  return { name: lemma.lemma, endings };
 }
 
 export function parseNounStemFile(filePath: string): Lemma[] {
