@@ -3,6 +3,13 @@ import {
   expandTemplatesAndSave,
   loadTemplate,
 } from "@/morceus/tables/templates";
+import {
+  LatinCase,
+  LatinMood,
+  LatinNumber,
+  LatinTense,
+  LatinVoice,
+} from "@/morceus/types";
 import fs from "fs";
 
 const TESTDATA_DIR = "src/morceus/tables/lat/core/testdata/";
@@ -35,23 +42,38 @@ describe("Template Loading", () => {
     expect(result.endings).toHaveLength(5);
     expect(result.endings![0]).toEqual({
       ending: "a",
-      grammaticalData: ["nom/voc", "sg"],
+      grammaticalData: {
+        case: [LatinCase.Nominative, LatinCase.Vocative],
+        number: LatinNumber.Singular,
+      },
     });
     expect(result.endings![1]).toEqual({
       ending: "ae",
-      grammaticalData: ["gen", "sg"],
+      grammaticalData: {
+        case: LatinCase.Genitive,
+        number: LatinNumber.Singular,
+      },
     });
     expect(result.endings![2]).toEqual({
       ending: "ae",
-      grammaticalData: ["nom/voc", "pl"],
+      grammaticalData: {
+        case: [LatinCase.Nominative, LatinCase.Vocative],
+        number: LatinNumber.Plural,
+      },
     });
     expect(result.endings![3]).toEqual({
       ending: "a_rum",
-      grammaticalData: ["gen", "pl"],
+      grammaticalData: {
+        case: LatinCase.Genitive,
+        number: LatinNumber.Plural,
+      },
     });
     expect(result.endings![4]).toEqual({
       ending: "a_i_",
-      grammaticalData: ["gen", "sg"],
+      grammaticalData: {
+        case: LatinCase.Genitive,
+        number: LatinNumber.Singular,
+      },
       tags: ["poetic"],
     });
   });
@@ -72,11 +94,19 @@ describe("Template Loading", () => {
     expect(result.endings).toHaveLength(2);
     expect(result.endings![0]).toEqual({
       ending: "am",
-      grammaticalData: ["fut", "ind", "act"],
+      grammaticalData: {
+        tense: LatinTense.Future,
+        mood: LatinMood.Indicative,
+        voice: LatinVoice.Active,
+      },
     });
     expect(result.endings![1]).toEqual({
       ending: "a_s",
-      grammaticalData: ["fut", "ind", "act"],
+      grammaticalData: {
+        tense: LatinTense.Future,
+        mood: LatinMood.Indicative,
+        voice: LatinVoice.Active,
+      },
     });
     expect(result.templates).toHaveLength(1);
     expect(result.templates![0]).toEqual({
@@ -101,30 +131,42 @@ describe("Template Expansion", () => {
     expect(table.endings).toHaveLength(5);
     expect(table.endings![0]).toEqual({
       ending: "a",
-      grammaticalData: ["nom/voc", "sg"],
+      grammaticalData: {
+        case: [LatinCase.Nominative, LatinCase.Vocative],
+        number: LatinNumber.Singular,
+      },
     });
     expect(table.endings![1]).toEqual({
       ending: "ae",
-      grammaticalData: ["gen", "sg"],
+      grammaticalData: {
+        case: LatinCase.Genitive,
+        number: LatinNumber.Singular,
+      },
     });
     expect(table.endings![2]).toEqual({
       ending: "ae",
-      grammaticalData: ["nom/voc", "pl"],
+      grammaticalData: {
+        case: [LatinCase.Nominative, LatinCase.Vocative],
+        number: LatinNumber.Plural,
+      },
     });
     expect(table.endings![3]).toEqual({
       ending: "a_rum",
-      grammaticalData: ["gen", "pl"],
+      grammaticalData: {
+        case: LatinCase.Genitive,
+        number: LatinNumber.Plural,
+      },
     });
     expect(table.endings![4]).toEqual({
       ending: "a_i_",
-      grammaticalData: ["gen", "sg"],
+      grammaticalData: {
+        case: LatinCase.Genitive,
+        number: LatinNumber.Singular,
+      },
       tags: ["poetic"],
     });
   });
 
-  // TODO: Remove `failing` once the implementation is done.
-  // Currently we are not handling some cases currently, and there are
-  // issues with nom / voc etc...
   test("handles expansion with filter", () => {
     const [targets, _] = expandTemplates([TAS_TATIS], [DECL3_I, DECL3]);
     const tables = [...targets.values()];

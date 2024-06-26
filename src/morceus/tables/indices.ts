@@ -2,13 +2,10 @@ import fs from "fs";
 import path from "path";
 
 import { assert, checkPresent } from "@/common/assert";
-import {
-  InflectionTable,
-  expandTemplates,
-  type InflectionEnding,
-} from "@/morceus/tables/templates";
+import { InflectionTable, expandTemplates } from "@/morceus/tables/templates";
 import { isArray, isString } from "@/web/utils/rpc/parsing";
 import { arrayMap, setMap } from "@/common/data_structures/collect_map";
+import type { InflectionEnding } from "@/morceus/inflection_data_utils";
 
 const VERB_TABLES = new Set([
   "conj1",

@@ -1,5 +1,6 @@
 import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
+import type { InflectionEnding } from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
   processVerbIrregEntries,
@@ -7,7 +8,6 @@ import {
 import {
   EXPANDED_TEMPLATES,
   expandTemplate,
-  type InflectionEnding,
   type InflectionTable,
 } from "@/morceus/tables/templates";
 import fs from "fs";

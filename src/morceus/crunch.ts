@@ -1,5 +1,6 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
 import {
   allNounStems,
   allVerbStems,
@@ -106,11 +107,13 @@ export namespace MorceusCruncher {
     // Special cases
     endTables.set(
       "adverb",
-      new Map([["*", [{ grammaticalData: ["adverb"], ending: "*" }]]])
+      new Map([
+        ["*", [{ grammaticalData: {}, ending: "*", internalTags: ["adverb"] }]],
+      ])
     );
     endTables.set(
       "N/A",
-      new Map([["*", [{ grammaticalData: [], ending: "*" }]]])
+      new Map([["*", [{ grammaticalData: {}, ending: "*" }]]])
     );
     const endsMap = makeEndsMap(endIndices);
     const stemsMap = makeStemsMap(cachedLemmata);
@@ -145,9 +148,11 @@ export namespace MorceusCruncher {
             inflection.ending.replaceAll("_", "").replaceAll("^", ""),
             result.ending.replaceAll("_", "").replaceAll("^", "")
           );
-          const grammaticalData = inflection.grammaticalData.concat(
-            result.stem.other ?? []
-          );
+          // TODO: This is just a stopgap as we're moving over to the new
+          // parsed approach.
+          const grammaticalData = wordInflectionDataToArray(
+            inflection.grammaticalData
+          ).concat(result.stem.other ?? []);
           const ending = inflection.ending === "*" ? "" : inflection.ending;
           const form = result.stem.stem + ending;
           byForm.add(form, {

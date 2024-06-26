@@ -3,6 +3,7 @@ import {
   makeEndIndex,
   type EndsResult,
 } from "@/morceus/tables/indices";
+import { LatinCase, LatinNumber } from "@/morceus/types";
 
 const TESTDATA_DIR = "src/morceus/tables/lat/core/testdata/";
 const DEP_TEMPLATES = `${TESTDATA_DIR}dependencyTemplates`;
@@ -34,21 +35,58 @@ describe("makeEndIndex", () => {
         [
           "a_ae",
           new Map([
-            ["a", [{ ending: "a", grammaticalData: ["nom/voc", "sg"] }]],
+            [
+              "a",
+              [
+                {
+                  ending: "a",
+                  grammaticalData: {
+                    case: [LatinCase.Nominative, LatinCase.Vocative],
+                    number: LatinNumber.Singular,
+                  },
+                },
+              ],
+            ],
             [
               "ae",
               [
-                { ending: "ae", grammaticalData: ["gen", "sg"] },
-                { ending: "ae", grammaticalData: ["nom/voc", "pl"] },
+                {
+                  ending: "ae",
+                  grammaticalData: {
+                    case: LatinCase.Genitive,
+                    number: LatinNumber.Singular,
+                  },
+                },
+                {
+                  ending: "ae",
+                  grammaticalData: {
+                    case: [LatinCase.Nominative, LatinCase.Vocative],
+                    number: LatinNumber.Plural,
+                  },
+                },
               ],
             ],
-            ["arum", [{ ending: "a_rum", grammaticalData: ["gen", "pl"] }]],
+            [
+              "arum",
+              [
+                {
+                  ending: "a_rum",
+                  grammaticalData: {
+                    case: LatinCase.Genitive,
+                    number: LatinNumber.Plural,
+                  },
+                },
+              ],
+            ],
             [
               "ai",
               [
                 {
                   ending: "a_i_",
-                  grammaticalData: ["gen", "sg"],
+                  grammaticalData: {
+                    case: LatinCase.Genitive,
+                    number: LatinNumber.Singular,
+                  },
                   tags: ["poetic"],
                 },
               ],

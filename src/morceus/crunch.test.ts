@@ -6,6 +6,7 @@ import {
 } from "@/morceus/crunch";
 import type { Lemma, Stem } from "@/morceus/stem_parsing";
 import type { EndIndexRow, InflectionLookup } from "@/morceus/tables/indices";
+import { LatinCase } from "@/morceus/types";
 
 const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
 const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
@@ -54,7 +55,13 @@ describe("MorceusCruncher", () => {
         new Map([
           [
             "o",
-            [{ ending: "o", grammaticalData: ["ablative"], tags: ["archaic"] }],
+            [
+              {
+                ending: "o",
+                grammaticalData: { case: LatinCase.Ablative },
+                tags: ["archaic"],
+              },
+            ],
           ],
         ]),
       ],
@@ -69,7 +76,7 @@ describe("MorceusCruncher", () => {
         inflectedForms: [
           {
             form: "morco",
-            inflectionData: [{ inflection: "ablative", usageNote: "archaic" }],
+            inflectionData: [{ inflection: "abl", usageNote: "archaic" }],
           },
         ],
       },

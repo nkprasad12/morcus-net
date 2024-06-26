@@ -51,6 +51,8 @@ export enum LatinMood {
   Subjunctive = 3,
   Participle = 4,
   Gerundive = 5,
+  Infinitive = 6,
+  Supine = 7,
 }
 
 export enum LatinVoice {

@@ -104,4 +104,5 @@ export namespace Endings {
   export const compareIndices = compareEndIndices;
 }
 
-debugIrregs();
+Endings.createIndicesForComparison();
+Endings.compareIndices();

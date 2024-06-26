@@ -1,29 +1,19 @@
 import path from "path";
 import fs from "fs";
 
-import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import { filesInPaths } from "@/utils/file_utils";
 import {
+  isWordInflectionDataNonEmpty,
   mergeInflectionData,
   toInflectionData,
   wordInflectionDataToArray,
+  type InflectionEnding,
 } from "@/morceus/inflection_data_utils";
 import { mergeMaps, singletonOf } from "@/common/misc_utils";
 
-const ALL_TAGS: string[] = ["poetic", "early", "contr"];
-
 export const MORPHEUS_TARGETS = "src/morceus/tables/lat/core/target";
 export const MORPHEUS_DEPENDENCIES = "src/morceus/tables/lat/core/dependency";
-
-/** An entry in an inflection table that shows an ending and when to use it. */
-export interface InflectionEnding {
-  /** The grammatical categories - case, number, and so on. */
-  grammaticalData: string[];
-  /** The ending corresponding to the given `grammaticalData`. */
-  ending: string;
-  /** Tags indicating usage notes about the inflection. */
-  tags?: string[];
-}
 
 export interface InflectionTable {
   name: string;
@@ -50,8 +40,9 @@ interface InflectionTemplate {
 function printMorpheusInflection(table: InflectionTable): string {
   const lines = table.endings.map((ending) => {
     const words = [ending.ending, table.name].concat(
-      ending.grammaticalData,
-      ending.tags || []
+      wordInflectionDataToArray(ending.grammaticalData),
+      ending.tags || [],
+      ending.internalTags || []
     );
     return words.join(" ");
   });
@@ -97,24 +88,9 @@ export function loadTemplate(filePath: string): InflectionTemplate {
       continue;
     }
 
-    const grammaticalData: string[] = [];
-    const tags: string[] = [];
-    for (const part of parts.slice(1)) {
-      if (ALL_TAGS.includes(part)) {
-        tags.push(part);
-      } else {
-        grammaticalData.push(part);
-      }
-    }
-    assert(grammaticalData.length > 0);
-    const currentEnding: InflectionEnding = {
-      ending: first,
-      grammaticalData,
-    };
-    if (tags.length > 0) {
-      currentEnding.tags = tags;
-    }
-    endings.push(currentEnding);
+    const endingData = toInflectionData(parts.slice(1));
+    assert(isWordInflectionDataNonEmpty(endingData.grammaticalData));
+    endings.push({ ...endingData, ending: first });
   }
 
   assert(endings.length > 0 || templates.length > 0);
@@ -139,6 +115,14 @@ function loadTemplates(inputDirs: string[]): Map<string, InflectionTemplate> {
     result.set(template.name, template);
   }
   return result;
+}
+
+function mergeLists<T>(first?: T[], second?: T[]): T[] | undefined {
+  const merged = new Set<T>(first || []);
+  for (const item of second || []) {
+    merged.add(item);
+  }
+  return merged.size === 0 ? undefined : [...merged];
 }
 
 /**
@@ -183,29 +167,25 @@ export function expandTemplate(
         : subTemplate.prefix === "*"
         ? ""
         : subTemplate.prefix;
-    const [subTemplateInflectionData, subTemplateTags] = toInflectionData(
-      subTemplate.args || []
-    );
+    const subTemplateData = toInflectionData(subTemplate.args || []);
     const prefixedEndings: InflectionEnding[] = [];
     for (const inflectionEnding of expanded.endings) {
-      const [expandedEndingData, expandedEndingArgs] = toInflectionData(
-        inflectionEnding.grammaticalData
-      );
-      assertEqual(expandedEndingArgs.length, 0);
       const mergedData = mergeInflectionData(
-        expandedEndingData,
-        subTemplateInflectionData
+        inflectionEnding.grammaticalData,
+        subTemplateData.grammaticalData
       );
       if (mergedData === null) {
         continue;
       }
-      const mergedTags = new Set<string>(inflectionEnding.tags || []);
-      subTemplateTags.forEach((tag) => mergedTags.add(tag));
-      const grammaticalData = wordInflectionDataToArray(mergedData);
+
       prefixedEndings.push({
-        tags: mergedTags.size === 0 ? undefined : [...mergedTags],
+        tags: mergeLists(inflectionEnding.tags, subTemplateData.tags),
+        internalTags: mergeLists(
+          inflectionEnding.internalTags,
+          subTemplateData.internalTags
+        ),
         ending: prefix + inflectionEnding.ending,
-        grammaticalData,
+        grammaticalData: mergedData,
       });
     }
     endings.push(...prefixedEndings);

@@ -12,14 +12,30 @@ import {
   type WordInflectionData,
 } from "@/morceus/types";
 
-const EXTRA_TAGS = new Set([
-  "early",
-  "poetic",
-  "contr",
+export const SEMANTIC_TAGS = new Set(["early", "poetic", "contr", "old"]);
+export const INTERNAL_TAGS = new Set<string>([
+  "pron3",
+  "numeral",
+  "demonstr",
+  "interrog",
+  "indef",
+  "rel_pron",
   "ire_vb",
   "are_vb",
   "irreg_nom3",
 ]);
+
+/** An entry in an inflection table that shows an ending and when to use it. */
+export interface InflectionEnding {
+  /** The grammatical categories - case, number, and so on. */
+  grammaticalData: WordInflectionData;
+  /** The ending corresponding to the given `grammaticalData`. */
+  ending: string;
+  /** Tags indicating usage notes about the inflection. */
+  tags?: string[];
+  /** Tags only for internal (inflection-engine) use. */
+  internalTags?: string[];
+}
 
 function mergeCompatible<T>(
   first?: T | T[],
@@ -72,9 +88,10 @@ function updateInflectionData<T extends LatinCase | LatinGender>(
 
 export function toInflectionData(
   grammaticalData: string[]
-): [WordInflectionData, string[]] {
+): Omit<InflectionEnding, "ending"> {
   const result: WordInflectionData = {};
   const tags: string[] = [];
+  const internalTags: string[] = [];
   for (const data of grammaticalData) {
     // Cases
     if (data === "nom") {
@@ -95,6 +112,9 @@ export function toInflectionData(
     } else if (data === "nom/voc") {
       assertEqual(result.case, undefined);
       result.case = [LatinCase.Nominative, LatinCase.Vocative];
+    } else if (data === "nom/acc") {
+      assertEqual(result.case, undefined);
+      result.case = [LatinCase.Nominative, LatinCase.Accusative];
     } else if (data === "nom/voc/acc") {
       assertEqual(result.case, undefined);
       result.case = [
@@ -153,6 +173,13 @@ export function toInflectionData(
     } else if (data === "adverbial") {
       assertEqual(result.gender, undefined);
       result.gender = LatinGender.Adverbial;
+    } else if (data === "masc/fem/neut") {
+      assertEqual(result.gender, undefined);
+      result.gender = [
+        LatinGender.Masculine,
+        LatinGender.Feminine,
+        LatinGender.Neuter,
+      ];
     }
 
     // Degrees
@@ -201,16 +228,28 @@ export function toInflectionData(
     } else if (data === "imperat") {
       assertEqual(result.mood, undefined);
       result.mood = LatinMood.Imperative;
+    } else if (data === "inf") {
+      assertEqual(result.mood, undefined);
+      result.mood = LatinMood.Infinitive;
+    } else if (data === "supine") {
+      assertEqual(result.mood, undefined);
+      result.mood = LatinMood.Supine;
     }
 
     // Other data
-    else if (EXTRA_TAGS.has(data)) {
+    else if (SEMANTIC_TAGS.has(data)) {
       tags.push(data);
+    } else if (INTERNAL_TAGS.has(data)) {
+      internalTags.push(data);
     } else {
       throw new Error(`Unexpected: ${data} from [${grammaticalData}]`);
     }
   }
-  return [result, tags];
+  return {
+    grammaticalData: result,
+    tags: tags.length === 0 ? undefined : tags,
+    internalTags: internalTags.length === 0 ? undefined : tags,
+  };
 }
 
 /**
@@ -394,6 +433,10 @@ function toMorpheusMood(data: LatinMood): string {
       return "part";
     case LatinMood.Subjunctive:
       return "subj";
+    case LatinMood.Infinitive:
+      return "inf";
+    case LatinMood.Supine:
+      return "supine";
     default:
       exhaustiveGuard(data);
   }
@@ -415,4 +458,19 @@ export function wordInflectionDataToArray(data: WordInflectionData): string[] {
   ]
     .map((subArray) => subArray.join("/"))
     .filter((attribute) => attribute.length > 0);
+}
+
+export function isWordInflectionDataNonEmpty(
+  data: WordInflectionData
+): boolean {
+  return (
+    coerceToArray(data.tense).length > 0 ||
+    coerceToArray(data.mood).length > 0 ||
+    coerceToArray(data.voice).length > 0 ||
+    coerceToArray(data.person).length > 0 ||
+    coerceToArray(data.gender).length > 0 ||
+    coerceToArray(data.case).length > 0 ||
+    coerceToArray(data.degree).length > 0 ||
+    coerceToArray(data.number).length > 0
+  );
 }
