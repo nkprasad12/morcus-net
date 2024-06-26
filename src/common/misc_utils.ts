@@ -1,3 +1,5 @@
+import { assert } from "@/common/assert";
+
 export class Tally<T> {
   private readonly counts = new Map<T, number>();
 
@@ -47,4 +49,19 @@ export function safeParseInt(input: string | undefined): number | undefined {
     return undefined;
   }
   return parseInt(input);
+}
+
+export function mergeMaps<K, V>(
+  first: Map<K, V>,
+  second: Map<K, V>,
+  allowDuplicates: boolean = false
+): Map<K, V> {
+  const result = new Map<K, V>(first);
+  for (const [k, v] of second.entries()) {
+    if (!allowDuplicates) {
+      assert(!result.has(k), `Duplicate for ${k}`);
+    }
+    result.set(k, v);
+  }
+  return result;
 }

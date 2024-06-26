@@ -8,6 +8,7 @@ import {
   toInflectionData,
   wordInflectionDataToArray,
 } from "@/morceus/inflection_data_utils";
+import { mergeMaps, singletonOf } from "@/common/misc_utils";
 
 const ALL_TAGS: string[] = ["poetic", "early", "contr"];
 
@@ -280,3 +281,8 @@ export function expandTemplatesAndSave(
     writeTable(expanded, outputDir);
   }
 }
+
+export const EXPANDED_TEMPLATES = singletonOf(() => {
+  const t = expandTemplates([MORPHEUS_TARGETS], [MORPHEUS_DEPENDENCIES]);
+  return mergeMaps(t[0], t[1]);
+});

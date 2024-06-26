@@ -1,6 +1,7 @@
 import {
   Tally,
   exhaustiveGuard,
+  mergeMaps,
   safeParseInt,
   singletonOf,
 } from "@/common/misc_utils";
@@ -69,5 +70,55 @@ describe("safeParseInt", () => {
     expect(safeParseInt(undefined)).toBe(undefined);
     expect(safeParseInt("13e7")).toBe(undefined);
     expect(safeParseInt("3.14")).toBe(undefined);
+  });
+});
+
+describe("mergeMaps", () => {
+  it("merges disjoint maps", () => {
+    const first = new Map([
+      [1, "1"],
+      [2, "2"],
+    ]);
+    const second = new Map([
+      [3, "3"],
+      [4, "4"],
+    ]);
+
+    const merged = mergeMaps(first, second);
+    expect(merged.size).toBe(4);
+    expect(merged.get(1)).toBe("1");
+    expect(merged.get(2)).toBe("2");
+    expect(merged.get(3)).toBe("3");
+    expect(merged.get(4)).toBe("4");
+  });
+
+  it("merges overlapping maps if allowed", () => {
+    const first = new Map([
+      [1, "1"],
+      [2, "2"],
+    ]);
+    const second = new Map([
+      [2, "3"],
+      [4, "4"],
+    ]);
+
+    const merged = mergeMaps(first, second, true);
+    expect(merged.size).toBe(3);
+    expect(merged.get(1)).toBe("1");
+    expect(merged.get(2)).toBe("3");
+    expect(merged.get(4)).toBe("4");
+  });
+
+  it("raises error on overlapping maps if not allowed", () => {
+    const first = new Map([
+      [1, "1"],
+      [2, "2"],
+    ]);
+    const second = new Map([
+      [2, "3"],
+      [4, "4"],
+    ]);
+
+    expect(() => mergeMaps(first, second, false)).toThrowError(/Duplicate/);
   });
 });
