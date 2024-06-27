@@ -479,7 +479,7 @@ export function wordInflectionDataToArray(data: WordInflectionData): string[] {
     checkSatisfies(coerceToArray(data.degree).map(toMorpheusDegree), (arr) => {
       const numUndefined = arr.filter((x) => x === undefined).length;
       return numUndefined === 0 || (numUndefined === 1 && arr.length === 1);
-    }).filter((x): x is string => x !== undefined),
+    }).filter((x) => x !== undefined),
     coerceToArray(data.number).map(toMorpheusNumber),
   ]
     .map((subArray) => subArray.join("/"))
