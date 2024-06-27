@@ -12,29 +12,53 @@ import {
   type WordInflectionData,
 } from "@/morceus/types";
 
-export const SEMANTIC_TAGS = new Set(["early", "poetic", "contr", "old"]);
+export const SEMANTIC_TAGS = new Set([
+  "contr",
+  "early",
+  "late",
+  "old",
+  "orth",
+  "poetic",
+  "rare",
+]);
 export const INTERNAL_TAGS = new Set<string>([
-  "pron3",
-  "numeral",
-  "demonstr",
-  "interrog",
-  "indef",
-  "rel_pron",
-  "ire_vb",
+  "adverb",
   "are_vb",
+  "conj", // Is this conjunction or conjugation?
+  "demonstr",
+  "indecl",
+  "indef",
+  "interrog",
+  "ire_vb",
+  "irreg_adj2",
+  "irreg_adj3",
+  "irreg_comp",
+  "irreg_nom2",
   "irreg_nom3",
+  "irreg_superl",
+  "numeral",
+  "pp4",
+  "pron1",
+  "pron2",
+  "pron3",
+  "relative",
+  "rel_pron",
 ]);
 
-/** An entry in an inflection table that shows an ending and when to use it. */
-export interface InflectionEnding {
+/** Grammatical inflection data and context on usage. */
+export interface InflectionContext {
   /** The grammatical categories - case, number, and so on. */
   grammaticalData: WordInflectionData;
-  /** The ending corresponding to the given `grammaticalData`. */
-  ending: string;
   /** Tags indicating usage notes about the inflection. */
   tags?: string[];
   /** Tags only for internal (inflection-engine) use. */
   internalTags?: string[];
+}
+
+/** An entry in an inflection table that shows an ending and when to use it. */
+export interface InflectionEnding extends InflectionContext {
+  /** The ending corresponding to the given `grammaticalData`. */
+  ending: string;
 }
 
 function mergeCompatible<T>(
@@ -86,9 +110,7 @@ function updateInflectionData<T extends LatinCase | LatinGender>(
   }
 }
 
-export function toInflectionData(
-  grammaticalData: string[]
-): Omit<InflectionEnding, "ending"> {
+export function toInflectionData(grammaticalData: string[]): InflectionContext {
   const result: WordInflectionData = {};
   const tags: string[] = [];
   const internalTags: string[] = [];
@@ -99,19 +121,23 @@ export function toInflectionData(
     } else if (data === "acc") {
       result.case = updateInflectionData(result.case, LatinCase.Accusative);
     } else if (data === "abl") {
-      assertEqual(result.case, undefined);
-      result.case = LatinCase.Ablative;
+      result.case = updateInflectionData(result.case, LatinCase.Ablative);
     } else if (data === "gen") {
       assertEqual(result.case, undefined);
       result.case = LatinCase.Genitive;
     } else if (data === "dat") {
-      assertEqual(result.case, undefined);
-      result.case = LatinCase.Dative;
+      result.case = updateInflectionData(result.case, LatinCase.Dative);
     } else if (data === "voc") {
       result.case = updateInflectionData(result.case, LatinCase.Vocative);
-    } else if (data === "nom/voc") {
+    } else if (data === "abl/dat") {
       assertEqual(result.case, undefined);
-      result.case = [LatinCase.Nominative, LatinCase.Vocative];
+      result.case = [LatinCase.Ablative, LatinCase.Dative];
+    } else if (data === "dat/abl") {
+      assertEqual(result.case, undefined);
+      result.case = [LatinCase.Dative, LatinCase.Ablative];
+    } else if (data === "nom/voc") {
+      result.case = updateInflectionData(result.case, LatinCase.Nominative);
+      result.case = updateInflectionData(result.case, LatinCase.Vocative);
     } else if (data === "nom/acc") {
       assertEqual(result.case, undefined);
       result.case = [LatinCase.Nominative, LatinCase.Accusative];
@@ -248,7 +274,7 @@ export function toInflectionData(
   return {
     grammaticalData: result,
     tags: tags.length === 0 ? undefined : tags,
-    internalTags: internalTags.length === 0 ? undefined : tags,
+    internalTags: internalTags.length === 0 ? undefined : internalTags,
   };
 }
 

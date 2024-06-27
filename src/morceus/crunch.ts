@@ -73,13 +73,13 @@ export function crunchWord(
     const maybeEnd = word.slice(i) || "*";
     const possibleEnds = endsMap.get(maybeEnd);
     const indeclinables =
-      maybeEnd === "*" ? candidates.filter((s) => s[0].pos === "wd") : [];
+      maybeEnd === "*" ? candidates.filter((s) => s[0].code === "wd") : [];
     if (possibleEnds === undefined && indeclinables.length === 0) {
       continue;
     }
     for (const [candidate, lemma] of candidates) {
       if (
-        (candidate.pos === "wd" || candidate.pos === "vb") &&
+        (candidate.code === "wd" || candidate.code === "vb") &&
         maybeEnd === "*"
       ) {
         results.push({ lemma, stem: candidate, ending: maybeEnd });

@@ -1,6 +1,9 @@
-import { assert } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
-import type { InflectionEnding } from "@/morceus/inflection_data_utils";
+import type {
+  InflectionContext,
+  InflectionEnding,
+} from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
   processVerbIrregEntries,
@@ -30,29 +33,65 @@ const VERB_STEM_FILES: string[] = [
 // :vb: 	verb form; for unanalyzed irregular forms
 // :de: 	derivable verb; must have an inflectional class
 // :vs: 	verb stem, one of the principal parts; must have an inflectional class
-export type PosType =
-  | "no"
-  | "aj"
-  | "wd"
-  | "vs"
-  | "vb"
-  | "de"
-  // TODO: These should really be split off.
-  | "pron3"
-  | "numeral"
-  | "demonstr"
-  | "interrog"
-  | "indef"
-  | "rel_pron";
+export type StemCode = "no" | "aj" | "wd" | "vs" | "vb" | "de";
+export namespace StemCode {
+  export function parse(chunk: string): StemCode | undefined {
+    if (chunk.startsWith(":no:")) {
+      return "no";
+    }
+    if (chunk.startsWith(":aj:")) {
+      return "aj";
+    }
+    if (chunk.startsWith(":wd:")) {
+      return "wd";
+    }
+    if (chunk.startsWith(":vs:")) {
+      return "vs";
+    }
+    if (chunk.startsWith(":vb:")) {
+      return "vb";
+    }
+    if (chunk.startsWith(":de:")) {
+      return "de";
+    }
+    return undefined;
+  }
+
+  export function parseStrict(chunk: string): StemCode {
+    return checkPresent(parse(chunk), "Invalid stem code.");
+  }
+}
+
 export interface Stem {
-  pos: PosType;
+  code: StemCode;
   stem: string;
   inflection: string;
   other?: string;
 }
+
 export interface Lemma {
   lemma: string;
   stems: Stem[];
+}
+
+export interface IrregularForm extends InflectionContext {
+  code?: StemCode;
+  form: string;
+  index: number;
+}
+
+export interface RegularForm extends InflectionContext {
+  code?: StemCode;
+  stem: string;
+  template: string;
+  index: number;
+}
+
+// TODO: Consolidate IrregularStem with Stem
+export interface IrregularStem {
+  lemma: string;
+  irregularForms?: IrregularForm[];
+  regularForms?: RegularForm[];
 }
 
 export function expandLemma(lemma: Lemma): InflectionTable {
@@ -145,28 +184,6 @@ export function parseVerbStemFile(filePath: string): Lemma[] {
   return results.map(processStem);
 }
 
-function findPos(chunk: string): PosType {
-  if (chunk.startsWith(":no:")) {
-    return "no";
-  }
-  if (chunk.startsWith(":aj:")) {
-    return "aj";
-  }
-  if (chunk.startsWith(":wd:")) {
-    return "wd";
-  }
-  if (chunk.startsWith(":vs:")) {
-    return "vs";
-  }
-  if (chunk.startsWith(":vb:")) {
-    return "vb";
-  }
-  if (chunk.startsWith(":de:")) {
-    return "de";
-  }
-  throw Error("Unexpected chunk: " + chunk);
-}
-
 function processStem(lines: string[]): Lemma {
   assert(lines.length > 1, lines.join("\n"));
   assert(lines[0].startsWith(":le:"), lines.join("\n"));
@@ -177,7 +194,7 @@ function processStem(lines: string[]): Lemma {
     assert(parts.length >= 2, JSON.stringify(lines));
     stems.push({
       stem: parts[0].substring(4),
-      pos: findPos(parts[0]),
+      code: StemCode.parseStrict(parts[0]),
       inflection: parts[1],
       other: parts.length >= 3 ? parts.slice(2).join(" ") : undefined,
     });

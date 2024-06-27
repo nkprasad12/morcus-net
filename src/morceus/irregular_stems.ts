@@ -1,6 +1,15 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
-import type { Lemma, PosType, Stem } from "@/morceus/stem_parsing";
+import { toInflectionData } from "@/morceus/inflection_data_utils";
+import {
+  Lemma,
+  StemCode,
+  Stem,
+  type IrregularForm,
+  type IrregularStem,
+  type RegularForm,
+} from "@/morceus/stem_parsing";
+import { EXPANDED_TEMPLATES } from "@/morceus/tables/templates";
 import { readFileSync } from "fs";
 import path from "path";
 
@@ -27,33 +36,17 @@ export function parseEntries(filePath: string): string[][] {
   return results;
 }
 
-function includesAny(input: string, posList: PosType[]): PosType | undefined {
-  for (const pos of posList) {
-    if (input.includes(pos)) {
-      return pos;
-    }
-  }
-}
-
-function resolveNounPos(input: string): PosType {
+function resolveNounPos(input: string): StemCode {
   if (input.includes("irreg_adj")) {
     return "aj";
   }
   if (input.includes("irreg_nom")) {
     return "no";
   }
-  const exactMatch = includesAny(input, [
-    "pron3",
-    "numeral",
-    "demonstr",
-    "interrog",
-    "indef",
-    "rel_pron",
-  ]);
-  return checkPresent(exactMatch, `Could not parse input: ${input}`);
+  throw new Error(`Could not parse input: ${input}`);
 }
 
-function resolveVerbPos(input: string): PosType {
+function resolveVerbPos(input: string): StemCode {
   if (input.startsWith(":vs:")) {
     return "vs";
   }
@@ -94,7 +87,7 @@ export function processVerbEntry(entry: string[]): Lemma {
       const chunks = first.split("@");
       assertEqual(chunks.length, 2);
       stems.push({
-        pos,
+        code: pos,
         stem: chunks[0],
         inflection: chunks[1],
         other: second,
@@ -109,14 +102,14 @@ export function processVerbEntry(entry: string[]): Lemma {
       }
       assert(chunks.length >= 1, second);
       stems.push({
-        pos: "vs",
+        code: "vs",
         stem: first,
         inflection: chunks[0],
         other: chunks.length > 1 ? chunks.slice(1).join(" ") : undefined,
       });
     } else {
       stems.push({
-        pos: pos,
+        code: pos,
         stem: first,
         inflection: "N/A",
         other: second,
@@ -124,6 +117,78 @@ export function processVerbEntry(entry: string[]): Lemma {
     }
   }
   return { lemma, stems };
+}
+
+function parseInflectionClass(chunks: string[]): string | undefined {
+  const templates = EXPANDED_TEMPLATES.get();
+  for (const chunk of chunks) {
+    if (templates.has(chunk)) {
+      return chunk;
+    }
+  }
+  return undefined;
+}
+
+export function processIrregEntry(entry: string[]): IrregularStem {
+  const irregulars: IrregularForm[] = [];
+  const regulars: RegularForm[] = [];
+
+  assert(entry[0].startsWith(":le:"));
+  const lemma = entry[0].substring(4);
+
+  for (let i = 1; i < entry.length; i++) {
+    const line = entry[i];
+    const parts = line
+      .replaceAll(/\s/g, " ")
+      .split(" ")
+      .filter((x) => x.length > 0);
+
+    // If we have something that should be expanded by templates - e.g:
+    // `discord@decl3_i	irreg_adj3 masc fem neut`
+    if (parts[0].includes("@")) {
+      assert(!parts[0].startsWith(":"), parts[0]);
+      const templateData = parts[0].split("@");
+      assertEqual(templateData.length, 2, parts[0]);
+      regulars.push({
+        ...toInflectionData(parts.slice(1)),
+        stem: templateData[0],
+        template: templateData[1],
+        index: i,
+      });
+      continue;
+    }
+
+    // Analysis depends on the stem code. See the type definition for the
+    // requirements of each stem code.
+    const code = StemCode.parse(parts[0]);
+    if (code === "no" || code === "aj") {
+      const stem = parts[0].substring(4);
+      const theRest = parts.slice(1);
+      const template = checkPresent(parseInflectionClass(theRest));
+      const grammaticalData = theRest.filter((c) => c !== template);
+      // Nouns and Adjectives must have an inflectional class.
+      assertEqual(grammaticalData.length, theRest.length - 1);
+      const context = toInflectionData(grammaticalData);
+      if (code === "no") {
+        // Nouns must have a gender.
+        checkPresent(context.grammaticalData.gender);
+      }
+      regulars.push({ stem, template, index: i, ...context });
+      continue;
+    }
+
+    irregulars.push({
+      ...toInflectionData(parts.slice(1)),
+      code,
+      form: parts[0].substring(code === undefined ? 0 : 4),
+      index: i,
+    });
+  }
+  return {
+    lemma,
+    regularForms: regulars.length > 0 ? regulars : undefined,
+    irregularForms: irregulars.length > 0 ? irregulars : undefined,
+  };
 }
 
 export function processNomEntry(entry: string[]): Lemma {
@@ -140,7 +205,7 @@ export function processNomEntry(entry: string[]): Lemma {
       const chunks = first.split("@");
       assertEqual(chunks.length, 2);
       stems.push({
-        pos,
+        code: pos,
         stem: chunks[0],
         inflection: chunks[1],
         other: second,
@@ -153,7 +218,7 @@ export function processNomEntry(entry: string[]): Lemma {
         .filter((c) => c.length > 0);
       assert(chunks.length === 1 || chunks.length === 2, second);
       stems.push({
-        pos: "aj",
+        code: "aj",
         stem: word,
         inflection: chunks[0],
         other: chunks.length > 1 ? chunks[1] : undefined,
@@ -169,7 +234,7 @@ export function processNomEntry(entry: string[]): Lemma {
       }
       assert(chunks.length >= 1, second);
       stems.push({
-        pos: "no",
+        code: "no",
         stem: word,
         inflection: chunks[0],
         other: chunks.length > 1 ? chunks.slice(1).join(" ") : undefined,
@@ -179,7 +244,7 @@ export function processNomEntry(entry: string[]): Lemma {
       assert(!hasPrefix || first.startsWith(":wd:"), first);
       const word = first.slice(hasPrefix ? 4 : 0);
       stems.push({
-        pos: "wd",
+        code: "wd",
         stem: word,
         inflection: "N/A",
         other: second,
@@ -193,6 +258,12 @@ export function processNomIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
 ): Lemma[] {
   return parseEntries(filePath).map(processNomEntry);
+}
+
+export function processNomIrregEntries2(
+  filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
+) {
+  return parseEntries(filePath).map(processIrregEntry);
 }
 
 export function processVerbIrregEntries(

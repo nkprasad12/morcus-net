@@ -16,7 +16,7 @@ afterAll(() => (process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT));
 
 describe("crunchWord", () => {
   it("should be able to crunch simple words", () => {
-    const stem: Stem = { pos: "no", stem: "morc", inflection: "us" };
+    const stem: Stem = { code: "no", stem: "morc", inflection: "us" };
     const endings: EndIndexRow[] = [{ ending: "o", tableNames: ["us"] }];
     const lemmata: Lemma[] = [{ lemma: "morcus", stems: [stem] }];
 
@@ -30,7 +30,7 @@ describe("crunchWord", () => {
   });
 
   it("handles indeclinable", () => {
-    const stem: Stem = { pos: "wd", stem: "topper", inflection: "adverb" };
+    const stem: Stem = { code: "wd", stem: "topper", inflection: "adverb" };
     const endings: EndIndexRow[] = [{ ending: "o", tableNames: ["us"] }];
     const lemmata: Lemma[] = [{ lemma: "topper", stems: [stem] }];
 
@@ -46,7 +46,7 @@ describe("crunchWord", () => {
 
 describe("MorceusCruncher", () => {
   it("handles simple case with one option", () => {
-    const stem: Stem = { pos: "no", stem: "morc", inflection: "us" };
+    const stem: Stem = { code: "no", stem: "morc", inflection: "us" };
     const endings: EndIndexRow[] = [{ ending: "o", tableNames: ["us"] }];
     const lemmata: Lemma[] = [{ lemma: "morcus", stems: [stem] }];
     const lookup: InflectionLookup = new Map([

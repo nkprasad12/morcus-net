@@ -10,7 +10,7 @@ describe("parseNounStemFile", () => {
     expect(nullus).toEqual({
       lemma: "nullus",
 
-      stems: [{ stem: "nu_ll", pos: "aj", inflection: "us_ius_adj" }],
+      stems: [{ stem: "nu_ll", code: "aj", inflection: "us_ius_adj" }],
     });
   });
 
@@ -19,11 +19,11 @@ describe("parseNounStemFile", () => {
     expect(bonus).toEqual({
       lemma: "bonus",
       stems: [
-        { stem: "bon", inflection: "us_a_um", pos: "aj", other: "no_comp" },
-        { stem: "mel", pos: "aj", inflection: "ior_ius_comp" },
+        { stem: "bon", inflection: "us_a_um", code: "aj", other: "no_comp" },
+        { stem: "mel", code: "aj", inflection: "ior_ius_comp" },
         {
           stem: "optim",
-          pos: "aj",
+          code: "aj",
           inflection: "us_a_um",
           other: "irreg_superl",
         },
@@ -43,7 +43,7 @@ describe("parseVerbStemFile", () => {
     const acclamo = verbs.filter((s) => s.lemma === "acclamo")[0];
     expect(acclamo).toEqual({
       lemma: "acclamo",
-      stems: [{ stem: "ac-cla_m", pos: "de", inflection: "are_vb" }],
+      stems: [{ stem: "ac-cla_m", code: "de", inflection: "are_vb" }],
     });
   });
 
@@ -52,10 +52,10 @@ describe("parseVerbStemFile", () => {
     expect(caveo).toEqual({
       lemma: "caveo",
       stems: [
-        { stem: "ca^v", inflection: "conj2", pos: "vs" },
+        { stem: "ca^v", inflection: "conj2", code: "vs" },
         {
           stem: "ca^ve^",
-          pos: "vb",
+          code: "vb",
           // TODO: These are probably switched from what we expect!
           inflection: "irreg_pp1",
           other: "2nd sg pres imperat act",

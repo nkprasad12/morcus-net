@@ -5,14 +5,10 @@
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   processNomIrregEntries,
+  processNomIrregEntries2,
   processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
-import {
-  allNounStems,
-  allVerbStems,
-  expandLemma,
-  type Lemma,
-} from "@/morceus/stem_parsing";
+import { allNounStems, allVerbStems, type Lemma } from "@/morceus/stem_parsing";
 import { IndexMode, makeEndIndexAndSave } from "@/morceus/tables/indices";
 import { expandTemplatesAndSave } from "@/morceus/tables/templates";
 import { compareEndTables } from "@/scripts/compare_morceus_results";
@@ -33,7 +29,7 @@ function indexStems(lemmata: Lemma[]): Map<string, string[]> {
       if (stem.other !== undefined) {
         data.push(stem.other);
       }
-      const pos = stem.pos;
+      const pos = stem.code;
       console.log(pos);
       const prefix =
         pos === "vb" ? "1" : pos === "wd" ? "2" : pos === "de" ? "3" : "";
@@ -57,8 +53,11 @@ function writeStemIndex(lemmata: Lemma[], tag: string) {
 }
 
 function debugIrregs() {
-  const lemmata = processNomIrregEntries();
-  expandLemma(lemmata[0]);
+  const lemmata = processNomIrregEntries2();
+  fs.writeFileSync(
+    "nom.irregs.test.txt",
+    lemmata.map((l) => JSON.stringify(l, undefined, 2)).join("\n")
+  );
   // This gives the expected output, but we should think about how we structure
   // both the template output and `Lemma`ta that are generated from processing
   // the irreg files.
@@ -104,5 +103,4 @@ export namespace Endings {
   export const compareIndices = compareEndIndices;
 }
 
-Endings.createIndicesForComparison();
-Endings.compareIndices();
+debugIrregs();

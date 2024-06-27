@@ -75,8 +75,15 @@ These are also explained in the doc and are something of a registry for all the 
 - End table generation done and verified to match Morpheus 100% (modulo some errors in Morpheus)
 - End index generation done and verified to match Morpheus 100%
 - Stem index generation is in progress.
+- The ending generation enginges have been updated to parse grammatical data
+  rather than just leaving them as raw strings. The result has been validated
+  still to match 1:1 the Morpheus end index output.
 
 ### Current work
+
+Rewrite the irregulars parsing on top of the new ending generation.
+
+### Related thread
 
 Current goal: Checking why Morpheus has `2zonatim` in its `nomind`.
 Morceus only has `zonatim` and the source file `ls.nom` has the following:
