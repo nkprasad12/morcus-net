@@ -153,7 +153,6 @@ export function processIrregEntry(entry: string[]): IrregularStem {
         ...toInflectionData(parts.slice(1)),
         stem: templateData[0],
         template: templateData[1],
-        index: i,
       });
       continue;
     }
@@ -173,7 +172,7 @@ export function processIrregEntry(entry: string[]): IrregularStem {
         // Nouns must have a gender.
         checkPresent(context.grammaticalData.gender);
       }
-      regulars.push({ stem, template, index: i, ...context });
+      regulars.push({ code, stem, template, ...context });
       continue;
     }
 
@@ -181,7 +180,6 @@ export function processIrregEntry(entry: string[]): IrregularStem {
       ...toInflectionData(parts.slice(1)),
       code,
       form: parts[0].substring(code === undefined ? 0 : 4),
-      index: i,
     });
   }
   return {

@@ -8,6 +8,7 @@ import {
   mergeInflectionData,
   toInflectionData,
   wordInflectionDataToArray,
+  type InflectionContext,
   type InflectionEnding,
 } from "@/morceus/inflection_data_utils";
 import { mergeMaps, singletonOf } from "@/common/misc_utils";
@@ -125,6 +126,34 @@ function mergeLists<T>(first?: T[], second?: T[]): T[] | undefined {
   return merged.size === 0 ? undefined : [...merged];
 }
 
+export function expandSingleTable(
+  stem: string,
+  context: InflectionContext,
+  table: InflectionTable
+): InflectionEnding[] {
+  const results: InflectionEnding[] = [];
+  for (const inflectionEnding of table.endings) {
+    const mergedData = mergeInflectionData(
+      inflectionEnding.grammaticalData,
+      context.grammaticalData
+    );
+    if (mergedData === null) {
+      continue;
+    }
+
+    results.push({
+      tags: mergeLists(inflectionEnding.tags, context.tags),
+      internalTags: mergeLists(
+        inflectionEnding.internalTags,
+        context.internalTags
+      ),
+      ending: stem + inflectionEnding.ending,
+      grammaticalData: mergedData,
+    });
+  }
+  return results;
+}
+
 /**
  * Expands the given template.
  *
@@ -151,16 +180,10 @@ export function expandTemplate(
   const endings: InflectionEnding[] = template.endings || [];
   for (const subTemplate of requredTemplates) {
     // In `ta_t@decl3_i	gen pl`, this would be the expanded @decl3_i table.
-    const expanded = checkPresent(
+    const table = checkPresent(
       dependencies.get(subTemplate.name),
       `No expanded template ${template.name} in registry!`
     );
-    // We need to figure out the logic of exactly how grammatical data
-    // on a template invocation is supposed to interact with the endings
-    // specified in the template. It seems to be something like:
-    // (1) Combine the grammatical tags
-    // (2) If there is a contradiction, (e.g. Active and Passive) discard it.
-    // assert(subTemplate.args === undefined);
     const prefix =
       subTemplate.prefix === undefined
         ? ""
@@ -168,27 +191,7 @@ export function expandTemplate(
         ? ""
         : subTemplate.prefix;
     const subTemplateData = toInflectionData(subTemplate.args || []);
-    const prefixedEndings: InflectionEnding[] = [];
-    for (const inflectionEnding of expanded.endings) {
-      const mergedData = mergeInflectionData(
-        inflectionEnding.grammaticalData,
-        subTemplateData.grammaticalData
-      );
-      if (mergedData === null) {
-        continue;
-      }
-
-      prefixedEndings.push({
-        tags: mergeLists(inflectionEnding.tags, subTemplateData.tags),
-        internalTags: mergeLists(
-          inflectionEnding.internalTags,
-          subTemplateData.internalTags
-        ),
-        ending: prefix + inflectionEnding.ending,
-        grammaticalData: mergedData,
-      });
-    }
-    endings.push(...prefixedEndings);
+    endings.push(...expandSingleTable(prefix, subTemplateData, table));
   }
   assert(endings.length > 0, `Empty endings for ${template.name}`);
   const result: InflectionTable = {

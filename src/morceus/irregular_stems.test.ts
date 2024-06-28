@@ -162,7 +162,6 @@ describe("processIrregEntry", () => {
         {
           code: "wd",
           form: "dehinc",
-          index: 1,
           grammaticalData: {},
           internalTags: ["adverb"],
         },
@@ -178,7 +177,6 @@ describe("processIrregEntry", () => {
         {
           stem: "fal",
           template: "x_cis",
-          index: 1,
           grammaticalData: { gender: LatinGender.Feminine },
         },
       ],
@@ -200,7 +198,6 @@ describe("processIrregEntry", () => {
             number: LatinNumber.Singular,
           },
           internalTags: ["irreg_nom3"],
-          index: 1,
         },
       ],
       regularForms: [
@@ -213,7 +210,6 @@ describe("processIrregEntry", () => {
             number: LatinNumber.Singular,
           },
           internalTags: ["irreg_nom3"],
-          index: 2,
         },
       ],
     });
@@ -236,7 +232,6 @@ describe("processIrregEntry", () => {
             number: LatinNumber.Singular,
           },
           internalTags: ["irreg_nom3"],
-          index: 1,
         },
         {
           code: "wd",
@@ -247,7 +242,6 @@ describe("processIrregEntry", () => {
             number: LatinNumber.Plural,
           },
           internalTags: ["irreg_nom3"],
-          index: 3,
         },
       ],
       regularForms: [
@@ -258,7 +252,6 @@ describe("processIrregEntry", () => {
             gender: LatinGender.Neuter,
           },
           internalTags: ["irreg_nom3"],
-          index: 2,
         },
       ],
     });
@@ -274,7 +267,6 @@ describe("processIrregEntry", () => {
           template: "us_a_um",
           grammaticalData: {},
           internalTags: ["irreg_superl"],
-          index: 1,
         },
       ],
     });

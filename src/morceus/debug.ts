@@ -2,15 +2,26 @@
 
 // Central place collecting utitity for debugging or manual result inspection.
 
+import { checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import { InflectionContext } from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
   processNomIrregEntries2,
   processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
-import { allNounStems, allVerbStems, type Lemma } from "@/morceus/stem_parsing";
+import {
+  allNounStems,
+  allVerbStems,
+  type IrregularStem,
+  type Lemma,
+} from "@/morceus/stem_parsing";
 import { IndexMode, makeEndIndexAndSave } from "@/morceus/tables/indices";
-import { expandTemplatesAndSave } from "@/morceus/tables/templates";
+import {
+  EXPANDED_TEMPLATES,
+  expandSingleTable,
+  expandTemplatesAndSave,
+} from "@/morceus/tables/templates";
 import { compareEndTables } from "@/scripts/compare_morceus_results";
 import { compareEndIndices } from "@/scripts/compare_morceus_results";
 
@@ -30,7 +41,6 @@ function indexStems(lemmata: Lemma[]): Map<string, string[]> {
         data.push(stem.other);
       }
       const pos = stem.code;
-      console.log(pos);
       const prefix =
         pos === "vb" ? "1" : pos === "wd" ? "2" : pos === "de" ? "3" : "";
       const suffix = stem.stem === cleanSteam ? "" : stem.stem;
@@ -52,23 +62,36 @@ function writeStemIndex(lemmata: Lemma[], tag: string) {
   );
 }
 
+function stringifyIrreg(irreg: IrregularStem): string {
+  const lines: string[] = [`:le:${irreg.lemma}`];
+  for (const form of irreg.irregularForms || []) {
+    const context = InflectionContext.toString(form);
+    const code = form.code === undefined ? "" : `:${form.code}:`;
+    lines.push(`${code}${form.form} ${context}`);
+  }
+  for (const form of irreg.regularForms || []) {
+    if (form.code === "aj" || form.code === "no") {
+      const code = `:${form.code}:`;
+      const contextString = InflectionContext.toString(form);
+      lines.push(`${code}${form.stem} ${form.template} ${contextString}`);
+      continue;
+    }
+    const table = checkPresent(EXPANDED_TEMPLATES.get().get(form.template));
+    lines.push(
+      ...expandSingleTable(form.stem, form, table).map(
+        (ending) => `:wd:${ending.ending} ${InflectionContext.toString(ending)}`
+      )
+    );
+  }
+  return lines.join("\n");
+}
+
 function debugIrregs() {
   const lemmata = processNomIrregEntries2();
   fs.writeFileSync(
     "nom.irregs.test.txt",
-    lemmata.map((l) => JSON.stringify(l, undefined, 2)).join("\n")
+    lemmata.map(stringifyIrreg).join("\n\n")
   );
-  // This gives the expected output, but we should think about how we structure
-  // both the template output and `Lemma`ta that are generated from processing
-  // the irreg files.
-
-  // I suspect that we should have in the templates:
-  // - Types baked in when it's done
-  // - Separation of semantic data (early, contr, etc...) and other stuff
-  //
-  // Then in the irreg parsing, we can extend the template output
-  // The separation of semantic tags and other stuff gives us a natural
-  // home to put e.g. `irreg_nom3` that aren't naturally POS anyways.
 }
 
 function writeIrregsFile(lemmata: Lemma[], name: string) {

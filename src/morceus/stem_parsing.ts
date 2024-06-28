@@ -77,14 +77,12 @@ export interface Lemma {
 export interface IrregularForm extends InflectionContext {
   code?: StemCode;
   form: string;
-  index: number;
 }
 
 export interface RegularForm extends InflectionContext {
   code?: StemCode;
   stem: string;
   template: string;
-  index: number;
 }
 
 // TODO: Consolidate IrregularStem with Stem

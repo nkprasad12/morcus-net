@@ -55,6 +55,15 @@ export interface InflectionContext {
   internalTags?: string[];
 }
 
+export namespace InflectionContext {
+  export function toString(context: InflectionContext): string {
+    return (context.internalTags || [])
+      .concat(wordInflectionDataToArray(context.grammaticalData))
+      .concat(context.tags || [])
+      .join(" ");
+  }
+}
+
 /** An entry in an inflection table that shows an ending and when to use it. */
 export interface InflectionEnding extends InflectionContext {
   /** The ending corresponding to the given `grammaticalData`. */
