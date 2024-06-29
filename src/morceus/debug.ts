@@ -8,7 +8,7 @@ import { InflectionContext } from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
   processNomIrregEntries2,
-  processVerbIrregEntries,
+  processVerbIrregEntries2,
 } from "@/morceus/irregular_stems";
 import {
   allNounStems,
@@ -24,7 +24,7 @@ import {
 } from "@/morceus/tables/templates";
 import {
   compareEndTables,
-  compareIrregNomStems,
+  compareIrregStems,
 } from "@/scripts/compare_morceus_results";
 import { compareEndIndices } from "@/scripts/compare_morceus_results";
 
@@ -65,11 +65,12 @@ function writeStemIndex(lemmata: Lemma[], tag: string) {
   );
 }
 
-function stringifyIrreg(irreg: IrregularStem): string {
+function stringifyIrreg(irreg: IrregularStem, mode: "noms" | "verbs"): string {
+  const baseCode = mode === "noms" ? ":wd:" : ":vb:";
   const lines: string[] = [`:le:${irreg.lemma}`];
   for (const form of irreg.irregularForms || []) {
     const context = InflectionContext.toString(form);
-    const code = form.code === undefined ? ":wd:" : `:${form.code}:`;
+    const code = form.code === undefined ? baseCode : `:${form.code}:`;
     lines.push(`${code}${form.form} ${context}`);
   }
   for (const form of irreg.regularForms || []) {
@@ -82,19 +83,21 @@ function stringifyIrreg(irreg: IrregularStem): string {
     const table = checkPresent(EXPANDED_TEMPLATES.get().get(form.template));
     lines.push(
       ...expandSingleTable(form.stem, form, table).map(
-        (ending) => `:wd:${ending.ending} ${InflectionContext.toString(ending)}`
+        (ending) =>
+          `${baseCode}${ending.ending} ${InflectionContext.toString(ending)}`
       )
     );
   }
   return lines.join("\n");
 }
 
-function writeNomIrregs2() {
-  const lemmata = processNomIrregEntries2();
+function writeIrregs2(mode: "noms" | "verbs") {
+  const lemmata =
+    mode === "noms" ? processNomIrregEntries2() : processVerbIrregEntries2();
   fs.mkdirSync(IRREGS_OUTPUT_DIR, { recursive: true });
   fs.writeFileSync(
-    `${IRREGS_OUTPUT_DIR}/noms2.irreg`,
-    `\n${lemmata.map(stringifyIrreg).join("\n\n")}\n`
+    `${IRREGS_OUTPUT_DIR}/${mode}2.irreg`,
+    `\n${lemmata.map((l) => stringifyIrreg(l, mode)).join("\n\n")}\n`
   );
 }
 
@@ -109,8 +112,8 @@ function writeIrregsFile(lemmata: Lemma[], name: string) {
 export namespace Stems {
   export const makeNomIrregs = () =>
     writeIrregsFile(processNomIrregEntries(), "nom");
-  export const makeNomIrregs2 = writeNomIrregs2;
-  export const makeVerbIrregs = processVerbIrregEntries;
+  export const makeNomIrregs2 = () => writeIrregs2("noms");
+  export const makeVerbIrregs = () => writeIrregs2("verbs");
   export const createIndices = () => {
     fs.mkdirSync(INDEX_OUTPUT_DIR, { recursive: true });
     writeStemIndex(allNounStems(), "nouns");
@@ -131,5 +134,5 @@ export namespace Endings {
   export const compareIndices = compareEndIndices;
 }
 
-Stems.makeNomIrregs2();
-compareIrregNomStems();
+Stems.makeVerbIrregs();
+compareIrregStems("verbs");

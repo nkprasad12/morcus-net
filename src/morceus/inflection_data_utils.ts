@@ -20,12 +20,18 @@ export const SEMANTIC_TAGS = new Set([
   "orth",
   "poetic",
   "rare",
+  "syncop",
 ]);
 export const INTERNAL_TAGS = new Set<string>([
   "adverb",
   "are_vb",
+  "comp_only",
   "conj", // Is this conjunction or conjugation?
+  "conj1",
+  "conj2",
+  "conj3",
   "demonstr",
+  "has_redupl",
   "indecl",
   "indef",
   "interrog",
@@ -35,8 +41,12 @@ export const INTERNAL_TAGS = new Set<string>([
   "irreg_comp",
   "irreg_nom2",
   "irreg_nom3",
+  "irreg_pp1",
+  "irreg_pp2",
   "irreg_superl",
+  "no_comp",
   "numeral",
+  "perfstem",
   "pp4",
   "pron1",
   "pron2",
@@ -248,7 +258,7 @@ export function toInflectionData(grammaticalData: string[]): InflectionContext {
     }
 
     // Moods
-    else if (data === "ind") {
+    else if (data === "ind" || data === "indic") {
       assertEqual(result.mood, undefined);
       result.mood = LatinMood.Indicative;
     } else if (data === "subj") {

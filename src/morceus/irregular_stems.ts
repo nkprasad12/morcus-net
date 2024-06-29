@@ -151,7 +151,7 @@ export function processIrregEntry(entry: string[]): IrregularStem {
       assertEqual(templateData.length, 2, parts[0]);
       regulars.push({
         ...toInflectionData(parts.slice(1)),
-        stem: templateData[0].replaceAll("-", ""),
+        stem: templateData[0],
         template: templateData[1],
       });
       continue;
@@ -268,6 +268,12 @@ export function processVerbIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), VERB_PATH)
 ): Lemma[] {
   return parseEntries(filePath).map(processVerbEntry);
+}
+
+export function processVerbIrregEntries2(
+  filePath: string = path.join(envVar("MORPHEUS_ROOT"), VERB_PATH)
+) {
+  return parseEntries(filePath).map(processIrregEntry);
 }
 
 // console.log(JSON.stringify(processVerbIrregEntries(), undefined, 2));

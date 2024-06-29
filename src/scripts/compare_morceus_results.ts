@@ -21,6 +21,8 @@ const MORPHEUS_IRREGS_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/stemsrc`;
 const MORCEUS_IRREGS_ROOT = `${MORCEUS_ROOT}/irregs`;
 const MORPHEUS_IRREG_NOMS = `${MORPHEUS_IRREGS_ROOT}/nom.irreg`;
 const MORCEUS_IRREGS_NOMS = `${MORCEUS_IRREGS_ROOT}/noms2.irreg`;
+const MORPHEUS_IRREG_VERBS = `${MORPHEUS_IRREGS_ROOT}/vbs.irreg`;
+const MORCEUS_IRREGS_VERBS = `${MORCEUS_IRREGS_ROOT}/verbs2.irreg`;
 
 /**
  * Returns the normalized value of an end table.
@@ -178,7 +180,7 @@ export function compareEndIndices() {
   console.log(`${verbsErrors} verb lines have errors.`);
 }
 
-function nomIrregs(fileName: string): string[] {
+function irregLemmata(fileName: string): string[] {
   const lemmata = fs
     .readFileSync(fileName)
     .toString()
@@ -207,16 +209,23 @@ function normalizeIrregLemma(lemma: string): string {
     .split("\n")
     .filter((x) => x.length > 0)
     .map((line) => {
-      const words = line.split(/\s/).filter((word) => word.length > 0);
+      const words = line
+        .split(/\s/)
+        .filter((word) => word.length > 0)
+        .map((word) => word.replaceAll("-", ""));
       return `${words[0]} ${words.slice(1).sort().join(" ")}`;
     })
     .sort()
     .join("\n");
 }
 
-export function compareIrregNomStems() {
-  const morceusRaw = nomIrregs(MORCEUS_IRREGS_NOMS);
-  const morpheusRaw = nomIrregs(MORPHEUS_IRREG_NOMS);
+export function compareIrregStems(mode: "noms" | "verbs") {
+  const morceusFile =
+    mode === "noms" ? MORCEUS_IRREGS_VERBS : MORCEUS_IRREGS_NOMS;
+  const morpheusFile =
+    mode === "verbs" ? MORPHEUS_IRREG_VERBS : MORPHEUS_IRREG_NOMS;
+  const morceusRaw = irregLemmata(morceusFile);
+  const morpheusRaw = irregLemmata(morpheusFile);
   let differences = 0;
   for (let i = 0; i < morceusRaw.length; i++) {
     if (morceusRaw[i] !== morpheusRaw[i]) {
