@@ -17,6 +17,11 @@ const MORPHEUS_VERB_INDEX = `${MORPHEUS_END_INDICES_ROOT}/vbendind`;
 const MORCEUS_NOUN_INDEX = `${MORCEUS_END_INDICES_ROOT}/nouns.endindex`;
 const MORCEUS_VERB_INDEX = `${MORCEUS_END_INDICES_ROOT}/verbs.endindex`;
 
+const MORPHEUS_IRREGS_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/stemsrc`;
+const MORCEUS_IRREGS_ROOT = `${MORCEUS_ROOT}/irregs`;
+const MORPHEUS_IRREG_NOMS = `${MORPHEUS_IRREGS_ROOT}/nom.irreg`;
+const MORCEUS_IRREGS_NOMS = `${MORCEUS_IRREGS_ROOT}/noms2.irreg`;
+
 /**
  * Returns the normalized value of an end table.
  *
@@ -171,4 +176,58 @@ export function compareEndIndices() {
   );
   console.log(`${nounErrors} noun lines have errors.`);
   console.log(`${verbsErrors} verb lines have errors.`);
+}
+
+function nomIrregs(fileName: string): string[] {
+  const lemmata = fs
+    .readFileSync(fileName)
+    .toString()
+    .split("\n:le:")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .map((entry) => normalizeIrregLemma(":le:" + entry));
+  return lemmata;
+}
+
+function normalizeIrregLemma(lemma: string): string {
+  return lemma
+    .replaceAll("masc fem neut", "masc/fem/neut")
+    .replaceAll("neut masc fem", "masc/fem/neut")
+    .replaceAll("masc neut", "masc/neut")
+    .replaceAll("masc fem", "masc/fem")
+    .replaceAll("fem neut", "fem/neut")
+    .replaceAll("nom voc acc", "nom/voc/acc")
+    .replaceAll("nom acc voc", "nom/acc/voc")
+    .replaceAll("nom acc", "nom/acc")
+    .replaceAll("nom voc", "nom/voc")
+    .replaceAll("voc nom", "nom/voc")
+    .replaceAll("dat abl", "dat/abl")
+    .replaceAll("abl dat", "abl/dat")
+    .replaceAll("abl/dat", "dat/abl")
+    .split("\n")
+    .filter((x) => x.length > 0)
+    .map((line) => {
+      const words = line.split(/\s/).filter((word) => word.length > 0);
+      return `${words[0]} ${words.slice(1).sort().join(" ")}`;
+    })
+    .sort()
+    .join("\n");
+}
+
+export function compareIrregNomStems() {
+  const morceusRaw = nomIrregs(MORCEUS_IRREGS_NOMS);
+  const morpheusRaw = nomIrregs(MORPHEUS_IRREG_NOMS);
+  let differences = 0;
+  for (let i = 0; i < morceusRaw.length; i++) {
+    if (morceusRaw[i] !== morpheusRaw[i]) {
+      differences++;
+      console.log(morceusRaw[i]);
+      console.log(morpheusRaw[i]);
+    }
+  }
+  console.log(morceusRaw.length);
+  console.log(morpheusRaw.length);
+  console.log(differences);
+  fs.writeFileSync("morc.comp", morceusRaw.join("\n\n"));
+  fs.writeFileSync("morph.comp", morpheusRaw.join("\n\n"));
 }

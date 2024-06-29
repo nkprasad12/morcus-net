@@ -82,6 +82,13 @@ These are also explained in the doc and are something of a registry for all the 
 ### Current work
 
 Rewrite the irregulars parsing on top of the new ending generation.
+Based on the work for the nominals, the output has roughly been validated.
+There are a few key differences that all seem to be mistakes on the part of Morpheus:
+
+1. Morceus preserves `orth` when a table is expanded, where Morpheus does not.
+2. Morpheus re-assigns some stem types based on the values in `stemtypes.table` to the first
+   on the list with the same code. For example, any `rel_pron` gets changed to `relative` because
+   they are both listed with code `011`.
 
 ### Related thread
 

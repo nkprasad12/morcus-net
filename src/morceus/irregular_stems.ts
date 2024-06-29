@@ -151,7 +151,7 @@ export function processIrregEntry(entry: string[]): IrregularStem {
       assertEqual(templateData.length, 2, parts[0]);
       regulars.push({
         ...toInflectionData(parts.slice(1)),
-        stem: templateData[0],
+        stem: templateData[0].replaceAll("-", ""),
         template: templateData[1],
       });
       continue;
@@ -161,7 +161,7 @@ export function processIrregEntry(entry: string[]): IrregularStem {
     // requirements of each stem code.
     const code = StemCode.parse(parts[0]);
     if (code === "no" || code === "aj") {
-      const stem = parts[0].substring(4);
+      const stem = parts[0].substring(4).replaceAll("-", "");
       const theRest = parts.slice(1);
       const template = checkPresent(parseInflectionClass(theRest));
       const grammaticalData = theRest.filter((c) => c !== template);
@@ -179,7 +179,7 @@ export function processIrregEntry(entry: string[]): IrregularStem {
     irregulars.push({
       ...toInflectionData(parts.slice(1)),
       code,
-      form: parts[0].substring(code === undefined ? 0 : 4),
+      form: parts[0].substring(code === undefined ? 0 : 4).replaceAll("-", ""),
     });
   }
   return {
