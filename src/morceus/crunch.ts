@@ -2,8 +2,9 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
 import {
-  allNounStems,
-  allVerbStems,
+  allNounStems2,
+  allVerbStems2,
+  type IrregularLemma,
   type Lemma,
   type Stem,
 } from "@/morceus/stem_parsing";
@@ -39,15 +40,20 @@ export type Cruncher = (
   options?: CruncherOptions
 ) => LatinWordAnalysis[];
 
-export function makeStemsMap(lemmata: Lemma[]): Map<string, [Stem, string][]> {
+export function makeStemsMap(
+  lemmata: (Lemma | IrregularLemma)[]
+): Map<string, [Stem, string][]> {
   const stemMap = arrayMap<string, [Stem, string]>();
   for (const lemma of lemmata) {
-    for (const stem of lemma.stems) {
-      stemMap.add(
-        stem.stem.replaceAll("^", "").replaceAll("_", "").replaceAll("-", ""),
-        [stem, lemma.lemma]
-      );
+    if ("stems" in lemma) {
+      for (const stem of lemma.stems) {
+        stemMap.add(
+          stem.stem.replaceAll("^", "").replaceAll("_", "").replaceAll("-", ""),
+          [stem, lemma.lemma]
+        );
+      }
     }
+    // TODO: Handle the irregulars.
   }
   return stemMap.map;
 }
@@ -95,15 +101,30 @@ export function crunchWord(
   return results;
 }
 
+export interface CruncherConfig {
+  existing?: {
+    endsResult: EndsResult;
+    lemmata: (Lemma | IrregularLemma)[];
+  };
+  generate?: {
+    nomStemFiles: string[];
+    verbStemFiles: string[];
+  };
+}
+
 export namespace MorceusCruncher {
-  export function make(endsResult?: EndsResult, lemmata?: Lemma[]): Cruncher {
+  export function make(config?: CruncherConfig): Cruncher {
     const [endIndices, endTables] =
-      endsResult ??
+      config?.existing?.endsResult ??
       makeEndIndex(
         ["src/morceus/tables/lat/core/target"],
         ["src/morceus/tables/lat/core/dependency"]
       );
-    const cachedLemmata = lemmata ?? allNounStems().concat(allVerbStems());
+    const cachedLemmata =
+      config?.existing?.lemmata ??
+      allNounStems2(config?.generate?.nomStemFiles).concat(
+        allVerbStems2(config?.generate?.verbStemFiles)
+      );
     // Special cases
     endTables.set(
       "adverb",

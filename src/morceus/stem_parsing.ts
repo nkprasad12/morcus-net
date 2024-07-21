@@ -5,8 +5,8 @@ import type {
   InflectionEnding,
 } from "@/morceus/inflection_data_utils";
 import {
-  processNomIrregEntries,
-  processVerbIrregEntries,
+  processNomIrregEntries2,
+  processVerbIrregEntries2,
 } from "@/morceus/irregular_stems";
 import {
   EXPANDED_TEMPLATES,
@@ -17,13 +17,21 @@ import fs from "fs";
 
 const NOUN_STEM_FILES: string[] = [
   "stemlib/Latin/stemsrc/ls.nom",
-  // "stemlib/Latin/stemsrc/nom.livy",
-  // And we want to use the rest of the nom.*
+  "stemlib/Latin/stemsrc/nom.01",
+  "stemlib/Latin/stemsrc/nom.02",
+  "stemlib/Latin/stemsrc/nom.03",
+  "stemlib/Latin/stemsrc/nom.04",
+  "stemlib/Latin/stemsrc/nom.latin.bas",
+  "stemlib/Latin/stemsrc/nom.livy",
+  "stemlib/Latin/stemsrc/nom.smithbio.latin",
+  "stemlib/Latin/stemsrc/nom.cic.pname",
+  "stemlib/Latin/stemsrc/nom.smithgeo",
 ];
 
 const VERB_STEM_FILES: string[] = [
   "stemlib/Latin/stemsrc/vbs.latin",
-  // We need vbs.latin.irreg too, and all the rest.
+  "stemlib/Latin/stemsrc/vbs.latin.bas",
+  "stemlib/Latin/stemsrc/vbs.latin.irreg",
 ];
 
 // :le: 	lemma or headword
@@ -79,14 +87,14 @@ export interface IrregularForm extends InflectionContext {
   form: string;
 }
 
+// TODO: Consolidate RegularForm with Stem.
 export interface RegularForm extends InflectionContext {
   code?: StemCode;
   stem: string;
   template: string;
 }
 
-// TODO: Consolidate IrregularStem with Stem
-export interface IrregularStem {
+export interface IrregularLemma {
   lemma: string;
   irregularForms?: IrregularForm[];
   regularForms?: RegularForm[];
@@ -164,6 +172,10 @@ export function parseVerbStemFile(filePath: string): Lemma[] {
     if (line[0] === "#") {
       continue;
     }
+    if (line[0] === "@") {
+      console.warn("Skipping @ line for debugging. HANDLE THIS LATER!");
+      continue;
+    }
     if (line.length === 0) {
       continue;
     }
@@ -183,8 +195,8 @@ export function parseVerbStemFile(filePath: string): Lemma[] {
 }
 
 function processStem(lines: string[]): Lemma {
-  assert(lines.length > 1, lines.join("\n"));
-  assert(lines[0].startsWith(":le:"), lines.join("\n"));
+  assert(lines.length > 1);
+  assert(lines[0].startsWith(":le:"));
   const stems: Stem[] = [];
   for (let i = 1; i < lines.length; i++) {
     const line = lines[i];
@@ -199,19 +211,27 @@ function processStem(lines: string[]): Lemma {
   }
 
   return {
-    lemma: lines[0].substring(4),
+    lemma: lines[0].substring(4).trimEnd(),
     stems,
   };
 }
 
-export function allNounStems(): Lemma[] {
+export function allNounStems2(
+  stemFiles: string[] = NOUN_STEM_FILES
+): (Lemma | IrregularLemma)[] {
   const root = envVar("MORPHEUS_ROOT");
-  const stemFiles = NOUN_STEM_FILES.map((f) => root + "/" + f).concat();
-  return stemFiles.flatMap(parseNounStemFile).concat(processNomIrregEntries());
+  const stemPaths = stemFiles.map((f) => root + "/" + f).concat();
+  const regulars = stemPaths.flatMap(parseNounStemFile);
+  const irregulars = processNomIrregEntries2();
+  return [...regulars, ...irregulars];
 }
 
-export function allVerbStems(): Lemma[] {
+export function allVerbStems2(
+  stemFiles: string[] = VERB_STEM_FILES
+): (Lemma | IrregularLemma)[] {
   const root = envVar("MORPHEUS_ROOT");
-  const stemFiles = VERB_STEM_FILES.map((f) => root + "/" + f).concat();
-  return stemFiles.flatMap(parseVerbStemFile).concat(processVerbIrregEntries());
+  const stemPaths = stemFiles.map((f) => root + "/" + f).concat();
+  const regulars = stemPaths.flatMap(parseVerbStemFile);
+  const irregulars = processVerbIrregEntries2();
+  return [...regulars, ...irregulars];
 }

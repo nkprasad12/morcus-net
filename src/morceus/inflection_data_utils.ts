@@ -13,7 +13,9 @@ import {
 } from "@/morceus/types";
 
 export const SEMANTIC_TAGS = new Set([
+  "archaic",
   "contr",
+  "dep",
   "early",
   "late",
   "old",
@@ -21,6 +23,21 @@ export const SEMANTIC_TAGS = new Set([
   "poetic",
   "rare",
   "syncop",
+  "pers_name",
+  "is_ethnic",
+  "ethnic",
+  "geog_name",
+  "is_group",
+  "group_name",
+  "is_month",
+  "syncope",
+  "group",
+  "is_festival",
+  "pname",
+  "poet",
+  "interrog",
+  // This should be a case
+  "locative",
 ]);
 export const INTERNAL_TAGS = new Set<string>([
   "adverb",
@@ -34,7 +51,6 @@ export const INTERNAL_TAGS = new Set<string>([
   "has_redupl",
   "indecl",
   "indef",
-  "interrog",
   "ire_vb",
   "irreg_adj2",
   "irreg_adj3",
@@ -66,11 +82,14 @@ export interface InflectionContext {
 }
 
 export namespace InflectionContext {
-  export function toString(context: InflectionContext): string {
+  export function toStringArray(context: InflectionContext): string[] {
     return (context.internalTags || [])
       .concat(wordInflectionDataToArray(context.grammaticalData))
-      .concat(context.tags || [])
-      .join(" ");
+      .concat(context.tags || []);
+  }
+
+  export function toString(context: InflectionContext): string {
+    return toStringArray(context).join(" ");
   }
 }
 

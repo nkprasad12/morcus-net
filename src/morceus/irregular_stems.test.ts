@@ -3,8 +3,16 @@ import {
   processIrregEntry,
   processNomIrregEntries2,
 } from "@/morceus/irregular_stems";
-import type { IrregularLemma, Lemma } from "@/morceus/stem_parsing";
-import { LatinCase, LatinGender, LatinNumber } from "@/morceus/types";
+import type { IrregularLemma } from "@/morceus/stem_parsing";
+import {
+  LatinCase,
+  LatinGender,
+  LatinMood,
+  LatinNumber,
+  LatinPerson,
+  LatinTense,
+  LatinVoice,
+} from "@/morceus/types";
 import fs from "fs";
 
 console.debug = jest.fn();
@@ -85,20 +93,31 @@ dui@basvb2	irreg_pp1 pres subj act early
 describe("processIrregEntry on verb file", () => {
   it("handles template", () => {
     const lemma = processIrregEntry(AIO.split("\n"));
-    expect(lemma).toStrictEqual<Lemma>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "aio",
-      stems: [
+      regularForms: [
         {
-          code: "vb",
-          stem: "ajo_",
-          inflection: "N/A",
-          other: "irreg_pp1 1st sg pres ind act",
-        },
-        {
-          code: "vs",
           stem: "aje_",
-          inflection: "imperf",
-          other: "irreg_pp1 ind act imperf",
+          template: "imperf",
+          grammaticalData: {
+            mood: LatinMood.Indicative,
+            voice: LatinVoice.Active,
+            tense: LatinTense.Imperfect,
+          },
+          internalTags: ["irreg_pp1"],
+        },
+      ],
+      irregularForms: [
+        {
+          form: "ajo_",
+          grammaticalData: {
+            mood: LatinMood.Indicative,
+            voice: LatinVoice.Active,
+            tense: LatinTense.Present,
+            person: LatinPerson.FIRST,
+            number: LatinNumber.Singular,
+          },
+          internalTags: ["irreg_pp1"],
         },
       ],
     });
@@ -106,19 +125,22 @@ describe("processIrregEntry on verb file", () => {
 
   it("handles multiple verb stems", () => {
     const lemma = processIrregEntry(EO1.split("\n"));
-    expect(lemma).toEqual<Lemma>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "eo#1",
-      stems: [
+      regularForms: [
         {
           code: "vs",
           stem: "i_v",
-          inflection: "perfstem",
+          template: "perfstem",
+          grammaticalData: {},
         },
         {
           code: "vs",
           stem: "it",
-          inflection: "pp4",
-          other: "supine",
+          template: "pp4",
+          grammaticalData: {
+            mood: LatinMood.Supine,
+          },
         },
       ],
     });
@@ -126,26 +148,38 @@ describe("processIrregEntry on verb file", () => {
 
   it("handles explicit vb", () => {
     const lemma = processIrregEntry(DO.split("\n"));
-    expect(lemma).toStrictEqual<Lemma>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "do",
-      stems: [
+      regularForms: [
         {
-          code: "vb",
-          stem: "da^ri_",
-          inflection: "N/A",
-          other: "irreg_pp1 pres inf pass",
-        },
-        {
-          code: "vs",
           stem: "dui",
-          inflection: "basvb2",
-          other: "irreg_pp1 pres subj act early",
+          template: "basvb2",
+          grammaticalData: {
+            tense: LatinTense.Present,
+            mood: LatinMood.Subjunctive,
+            voice: LatinVoice.Active,
+          },
+          internalTags: ["irreg_pp1"],
+          tags: ["early"],
         },
         {
           code: "vs",
           stem: "de^d",
-          inflection: "perfstem",
-          other: "no_comp",
+          template: "perfstem",
+          grammaticalData: {},
+          internalTags: ["no_comp"],
+        },
+      ],
+      irregularForms: [
+        {
+          code: "vb",
+          form: "da^ri_",
+          grammaticalData: {
+            tense: LatinTense.Present,
+            mood: LatinMood.Infinitive,
+            voice: LatinVoice.Passive,
+          },
+          internalTags: ["irreg_pp1"],
         },
       ],
     });

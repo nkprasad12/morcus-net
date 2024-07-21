@@ -79,16 +79,28 @@ These are also explained in the doc and are something of a registry for all the 
   rather than just leaving them as raw strings. The result has been validated
   still to match 1:1 the Morpheus end index output.
 
-### Current work
-
-Rewrite the irregulars parsing on top of the new ending generation.
-Based on the work for the nominals, the output has roughly been validated.
+- Irregulars are parsed.
 There are a few key differences that all seem to be mistakes on the part of Morpheus:
 
 1. Morceus preserves `orth` when a table is expanded, where Morpheus does not.
 2. Morpheus re-assigns some stem types based on the values in `stemtypes.table` to the first
    on the list with the same code. For example, any `rel_pron` gets changed to `relative` because
    they are both listed with code `011`.
+
+- Nom Stem Indices match barring some errors in Morpheus. Also, Morceus retains some data (but that's OK).
+
+
+### Current work
+
+Generate end indexes. There are two rules for the generation of these end indices.
+1. For regulars, they follow the pattern shown in the `indexStems` function.
+2. For irregulars, they follow the pattern where all of the data is just stuffed into the line.
+   For example, check assibus.·
+
+IMMEDIATE CONCERN:
+Take a closer look at lemmara in `ls.nom` (in Morpheus) that have stem.
+For example, `:le:ens` uses the template for `ens_entis` just as so.
+We should make sure these are represented correctly.
 
 ### Related thread
 

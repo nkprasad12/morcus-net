@@ -2,7 +2,6 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { toInflectionData } from "@/morceus/inflection_data_utils";
 import {
-  Lemma,
   StemCode,
   type IrregularForm,
   type IrregularLemma,
@@ -105,21 +104,10 @@ export function processIrregEntry(entry: string[]): IrregularLemma {
   };
 }
 
-export function processNomIrregEntries(
-  _filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
-): Lemma[] {
-  return [];
-}
-
 export function processNomIrregEntries2(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
 ) {
   return parseEntries(filePath).map(processIrregEntry);
-}
-export function processVerbIrregEntries(
-  _filePath: string = path.join(envVar("MORPHEUS_ROOT"), VERB_PATH)
-): Lemma[] {
-  return [];
 }
 
 export function processVerbIrregEntries2(
