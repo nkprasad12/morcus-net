@@ -11,11 +11,11 @@ const MORPHEUS_ENDTABLE_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/endtables/ascii`;
 const MORCEUS_ENDTABLE_ROOT = `${MORCEUS_ROOT}/tables/lat`;
 
 const MORPHEUS_END_INDICES_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/endtables/indices`;
-const MORCEUS_END_INDICES_ROOT = `${MORCEUS_ROOT}/indices`;
+const MORCEUS_INDICES_ROOT = `${MORCEUS_ROOT}/indices`;
 const MORPHEUS_NOUN_INDEX = `${MORPHEUS_END_INDICES_ROOT}/nendind`;
 const MORPHEUS_VERB_INDEX = `${MORPHEUS_END_INDICES_ROOT}/vbendind`;
-const MORCEUS_NOUN_INDEX = `${MORCEUS_END_INDICES_ROOT}/nouns.endindex`;
-const MORCEUS_VERB_INDEX = `${MORCEUS_END_INDICES_ROOT}/verbs.endindex`;
+const MORCEUS_NOUN_INDEX = `${MORCEUS_INDICES_ROOT}/nouns.endindex`;
+const MORCEUS_VERB_INDEX = `${MORCEUS_INDICES_ROOT}/verbs.endindex`;
 
 const MORPHEUS_IRREGS_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/stemsrc`;
 const MORCEUS_IRREGS_ROOT = `${MORCEUS_ROOT}/irregs`;
@@ -23,6 +23,11 @@ const MORPHEUS_IRREG_NOMS = `${MORPHEUS_IRREGS_ROOT}/nom.irreg`;
 const MORCEUS_IRREGS_NOMS = `${MORCEUS_IRREGS_ROOT}/noms2.irreg`;
 const MORPHEUS_IRREG_VERBS = `${MORPHEUS_IRREGS_ROOT}/vbs.irreg`;
 const MORCEUS_IRREGS_VERBS = `${MORCEUS_IRREGS_ROOT}/verbs2.irreg`;
+
+const MORPHEUS_NOM_STEM_INDEX = `${MORPHEUS_ROOT}/stemlib/Latin/steminds/nomind`;
+const MORCEUS_NOM_STEM_INDEX = `${MORCEUS_INDICES_ROOT}/noms.stemindex`;
+const MORPHEUS_VERB_STEM_INDEX = `${MORPHEUS_ROOT}/stemlib/Latin/steminds/vbind`;
+const MORCEUS_VERB_STEM_INDEX = `${MORCEUS_INDICES_ROOT}/verbs.stemindex`;
 
 /**
  * Returns the normalized value of an end table.
@@ -180,6 +185,69 @@ export function compareEndIndices() {
   console.log(`${verbsErrors} verb lines have errors.`);
 }
 
+function normalizeStemIndex(path: string, isMorceus: boolean): string[] {
+  return fs
+    .readFileSync(path)
+    .toString()
+    .split("\n")
+    .map((entry) => entry.trim())
+    .filter((entry) => entry.length > 0)
+    .map((line) => {
+      const parts = line.split(" ");
+      const entries = parts.slice(1).map((part) =>
+        !isMorceus
+          ? part.replaceAll(":irreg_nom3", "")
+          : part
+              .replaceAll(":irreg_nom3", "")
+              // .replaceAll(":irreg_decl3", "")
+              // .replaceAll(":irreg_comp", "")
+              .replaceAll(":rel_pron", ":relative")
+              .replaceAll(":irreg_adj2", ":irreg_adj1")
+              .replaceAll(/:orth$/g, "")
+              .replaceAll(":orth:", ":")
+              .replaceAll(":pname", "")
+              .replaceAll(":ethnic:", ":")
+              .replaceAll(/:ethnic$/g, "")
+              .replaceAll(":group:", ":")
+              .replaceAll(/:group$/g, "")
+              .replaceAll(":is_group", "")
+              .replaceAll(":is_month", "")
+              .replaceAll(":is_ethnic", "")
+              .replaceAll(":is_festival", "")
+              .replaceAll(":nom/acc/voc", ":nom/voc/acc")
+              .replaceAll(":fem/masc", ":masc/fem")
+              .replaceAll(":dat/abl", ":abl/dat")
+      );
+      const sortedEntries = [...new Set(entries)].sort();
+      return [parts[0]].concat(sortedEntries).join(" ");
+    });
+}
+
+export function compareStemIndex(mode: "noms" | "verbs") {
+  const morceusFile =
+    mode === "noms" ? MORCEUS_NOM_STEM_INDEX : MORCEUS_VERB_STEM_INDEX;
+  const morpheusFile =
+    mode === "noms" ? MORPHEUS_NOM_STEM_INDEX : MORPHEUS_VERB_STEM_INDEX;
+  const morceus = normalizeStemIndex(morceusFile, true);
+  const morpheus = normalizeStemIndex(morpheusFile, false);
+  const morceusOnly = new Set<string>();
+  const morpheusOnly = new Set<string>(morpheus);
+  for (const morceusLine of morceus) {
+    const inMorpheus = morpheusOnly.delete(morceusLine);
+    if (!inMorpheus) {
+      morceusOnly.add(morceusLine);
+    }
+  }
+  console.log(`Morceus Entries: ${morceus.length}`);
+  console.log(`Morpheus Entries: ${morpheus.length}`);
+  console.log(`Morceus Only: ${morceusOnly.size}`);
+  console.log(`Morpheus Only: ${morpheusOnly.size}`);
+  fs.writeFileSync(`${mode}.morc_only.comp`, [...morceusOnly].join("\n"));
+  fs.writeFileSync(`${mode}.morph_only.comp`, [...morpheusOnly].join("\n"));
+  fs.writeFileSync(`${mode}.morc.stemindex.comp`, morceus.join("\n"));
+  fs.writeFileSync(`${mode}.morph.stemindex.comp`, morpheus.join("\n"));
+}
+
 function irregLemmata(fileName: string): string[] {
   const lemmata = fs
     .readFileSync(fileName)
@@ -221,7 +289,7 @@ function normalizeIrregLemma(lemma: string): string {
 
 export function compareIrregStems(mode: "noms" | "verbs") {
   const morceusFile =
-    mode === "noms" ? MORCEUS_IRREGS_VERBS : MORCEUS_IRREGS_NOMS;
+    mode === "noms" ? MORCEUS_IRREGS_NOMS : MORCEUS_IRREGS_VERBS;
   const morpheusFile =
     mode === "verbs" ? MORPHEUS_IRREG_VERBS : MORPHEUS_IRREG_NOMS;
   const morceusRaw = irregLemmata(morceusFile);
