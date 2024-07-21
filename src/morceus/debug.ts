@@ -9,12 +9,12 @@ import {
   toInflectionData,
 } from "@/morceus/inflection_data_utils";
 import {
-  processNomIrregEntries2,
-  processVerbIrregEntries2,
+  processNomIrregEntries,
+  processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
 import {
-  allNounStems2,
-  allVerbStems2,
+  allNounStems,
+  allVerbStems,
   type IrregularLemma,
   type Lemma,
   type StemCode,
@@ -159,9 +159,9 @@ function stringifyIrreg(irreg: IrregularLemma, mode: "noms" | "verbs"): string {
   return lines.join("\n");
 }
 
-function writeIrregs2(mode: "noms" | "verbs") {
+function writeIrregs(mode: "noms" | "verbs") {
   const lemmata =
-    mode === "noms" ? processNomIrregEntries2() : processVerbIrregEntries2();
+    mode === "noms" ? processNomIrregEntries() : processVerbIrregEntries();
   fs.mkdirSync(IRREGS_OUTPUT_DIR, { recursive: true });
   fs.writeFileSync(
     `${IRREGS_OUTPUT_DIR}/${mode}2.irreg`,
@@ -170,15 +170,15 @@ function writeIrregs2(mode: "noms" | "verbs") {
 }
 
 export namespace Stems {
-  export const makeNomIrregs2 = () => writeIrregs2("noms");
-  export const makeVerbIrregs = () => writeIrregs2("verbs");
+  export const makeNomIrregs = () => writeIrregs("noms");
+  export const makeVerbIrregs = () => writeIrregs("verbs");
   export const createNomIndex = () => {
     fs.mkdirSync(INDEX_OUTPUT_DIR, { recursive: true });
-    writeStemIndex(allNounStems2(), "noms");
+    writeStemIndex(allNounStems(), "noms");
   };
   export const createVerbIndex = () => {
     fs.mkdirSync(INDEX_OUTPUT_DIR, { recursive: true });
-    writeStemIndex(allVerbStems2(), "verbs");
+    writeStemIndex(allVerbStems(), "verbs");
   };
   export const createIndices = () => {
     createNomIndex();

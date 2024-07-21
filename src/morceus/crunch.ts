@@ -2,8 +2,8 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
 import {
-  allNounStems2,
-  allVerbStems2,
+  allNounStems,
+  allVerbStems,
   type IrregularLemma,
   type Lemma,
   type Stem,
@@ -122,8 +122,8 @@ export namespace MorceusCruncher {
       );
     const cachedLemmata =
       config?.existing?.lemmata ??
-      allNounStems2(config?.generate?.nomStemFiles).concat(
-        allVerbStems2(config?.generate?.verbStemFiles)
+      allNounStems(config?.generate?.nomStemFiles).concat(
+        allVerbStems(config?.generate?.verbStemFiles)
       );
     // Special cases
     endTables.set(

@@ -104,13 +104,13 @@ export function processIrregEntry(entry: string[]): IrregularLemma {
   };
 }
 
-export function processNomIrregEntries2(
+export function processNomIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
 ) {
   return parseEntries(filePath).map(processIrregEntry);
 }
 
-export function processVerbIrregEntries2(
+export function processVerbIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), VERB_PATH)
 ) {
   return parseEntries(filePath).map(processIrregEntry);

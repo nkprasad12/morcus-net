@@ -5,8 +5,8 @@ import type {
   InflectionEnding,
 } from "@/morceus/inflection_data_utils";
 import {
-  processNomIrregEntries2,
-  processVerbIrregEntries2,
+  processNomIrregEntries,
+  processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
 import {
   EXPANDED_TEMPLATES,
@@ -216,22 +216,22 @@ function processStem(lines: string[]): Lemma {
   };
 }
 
-export function allNounStems2(
+export function allNounStems(
   stemFiles: string[] = NOUN_STEM_FILES
 ): (Lemma | IrregularLemma)[] {
   const root = envVar("MORPHEUS_ROOT");
   const stemPaths = stemFiles.map((f) => root + "/" + f).concat();
   const regulars = stemPaths.flatMap(parseNounStemFile);
-  const irregulars = processNomIrregEntries2();
+  const irregulars = processNomIrregEntries();
   return [...regulars, ...irregulars];
 }
 
-export function allVerbStems2(
+export function allVerbStems(
   stemFiles: string[] = VERB_STEM_FILES
 ): (Lemma | IrregularLemma)[] {
   const root = envVar("MORPHEUS_ROOT");
   const stemPaths = stemFiles.map((f) => root + "/" + f).concat();
   const regulars = stemPaths.flatMap(parseVerbStemFile);
-  const irregulars = processVerbIrregEntries2();
+  const irregulars = processVerbIrregEntries();
   return [...regulars, ...irregulars];
 }
