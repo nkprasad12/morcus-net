@@ -1,10 +1,9 @@
 import {
   parseEntries,
   processIrregEntry,
-  processNomIrregEntries,
-  processVerbEntry,
+  processNomIrregEntries2,
 } from "@/morceus/irregular_stems";
-import type { IrregularStem, Lemma } from "@/morceus/stem_parsing";
+import type { IrregularLemma, Lemma } from "@/morceus/stem_parsing";
 import { LatinCase, LatinGender, LatinNumber } from "@/morceus/types";
 import fs from "fs";
 
@@ -83,9 +82,9 @@ const DO = `:le:do
 dui@basvb2	irreg_pp1 pres subj act early
 :vs:de^d perfstem no_comp`;
 
-describe("processVerbEntry", () => {
+describe("processIrregEntry on verb file", () => {
   it("handles template", () => {
-    const lemma = processVerbEntry(AIO.split("\n"));
+    const lemma = processIrregEntry(AIO.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "aio",
       stems: [
@@ -106,7 +105,7 @@ describe("processVerbEntry", () => {
   });
 
   it("handles multiple verb stems", () => {
-    const lemma = processVerbEntry(EO1.split("\n"));
+    const lemma = processIrregEntry(EO1.split("\n"));
     expect(lemma).toEqual<Lemma>({
       lemma: "eo#1",
       stems: [
@@ -126,7 +125,7 @@ describe("processVerbEntry", () => {
   });
 
   it("handles explicit vb", () => {
-    const lemma = processVerbEntry(DO.split("\n"));
+    const lemma = processIrregEntry(DO.split("\n"));
     expect(lemma).toStrictEqual<Lemma>({
       lemma: "do",
       stems: [
@@ -153,10 +152,10 @@ describe("processVerbEntry", () => {
   });
 });
 
-describe("processIrregEntry", () => {
+describe("processIrregEntry on nominals", () => {
   it("handles adverb", () => {
     const lemma = processIrregEntry(DEHINC.split("\n"));
-    expect(lemma).toEqual<IrregularStem>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "dehinc",
       irregularForms: [
         {
@@ -171,10 +170,11 @@ describe("processIrregEntry", () => {
 
   it("handles :no: entry", () => {
     const lemma = processIrregEntry(FALX.split("\n"));
-    expect(lemma).toEqual<IrregularStem>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "falx",
       regularForms: [
         {
+          code: "no",
           stem: "fal",
           template: "x_cis",
           grammaticalData: { gender: LatinGender.Feminine },
@@ -183,14 +183,12 @@ describe("processIrregEntry", () => {
     });
   });
 
-  // TODO: Re-enable this once migration is fixed.
-  it.failing("handles templates plus word", () => {
+  it("handles templates plus word", () => {
     const lemma = processIrregEntry(CERES.split("\n"));
-    expect(lemma).toEqual<IrregularStem>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "Ceres",
       irregularForms: [
         {
-          code: "wd",
           form: "Cere_s",
           grammaticalData: {
             case: LatinCase.Nominative,
@@ -202,7 +200,6 @@ describe("processIrregEntry", () => {
       ],
       regularForms: [
         {
-          code: "no",
           stem: "Cere^r",
           template: "decl3",
           grammaticalData: {
@@ -217,7 +214,7 @@ describe("processIrregEntry", () => {
 
   it("handles mixed marked and unmarked word", () => {
     const lemma = processIrregEntry(COR.split("\n"));
-    expect(lemma).toEqual<IrregularStem>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "cor",
       irregularForms: [
         {
@@ -259,10 +256,11 @@ describe("processIrregEntry", () => {
 
   it("handles adjective with tab", () => {
     const lemma = processIrregEntry(MATURUS.split("\n"));
-    expect(lemma).toEqual<IrregularStem>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "maturus",
       regularForms: [
         {
+          code: "aj",
           stem: "ma_tu_rrim",
           template: "us_a_um",
           grammaticalData: {},
@@ -272,101 +270,137 @@ describe("processIrregEntry", () => {
     });
   });
 
-  // TODO: Re-enable this once migration is fixed.
-  it.failing("handles adjective without tab", () => {
+  it("handles adjective without tab", () => {
     const lemma = processIrregEntry(MULTUS.split("\n"));
-    expect(lemma).toStrictEqual<Lemma>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "multus",
-      stems: [
+      irregularForms: [
         {
-          code: "wd",
-          stem: "plu_s",
-          inflection: "N/A",
-          other: "irreg_adj3 nom/acc sg irreg_comp",
+          form: "plu_s",
+          grammaticalData: {
+            case: [LatinCase.Nominative, LatinCase.Accusative],
+            number: LatinNumber.Singular,
+          },
+          internalTags: ["irreg_adj3", "irreg_comp"],
         },
+      ],
+      regularForms: [
         {
-          code: "aj",
           stem: "plu_r",
-          inflection: "decl3",
-          other: "irreg_adj3 neut gen sg irreg_comp",
+          template: "decl3",
+          grammaticalData: {
+            case: LatinCase.Genitive,
+            number: LatinNumber.Singular,
+            gender: LatinGender.Neuter,
+          },
+          internalTags: ["irreg_adj3", "irreg_comp"],
         },
       ],
     });
   });
 
   // TODO: Re-enable this once migration is fixed.
-  it.failing("handles alius2 edge case", () => {
+  it("handles alius2 edge case", () => {
     const lemma = processIrregEntry(ALIUS2.split("\n"));
-    expect(lemma).toStrictEqual<Lemma>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "alius#2",
-      stems: [
+      irregularForms: [
         {
           code: "wd",
-          stem: "alius",
-          inflection: "N/A",
-          other: "irreg_nom2 masc nom sg",
+          form: "alius",
+          grammaticalData: {
+            gender: LatinGender.Masculine,
+            case: LatinCase.Nominative,
+            number: LatinNumber.Singular,
+          },
+          internalTags: ["irreg_nom2"],
         },
         {
           code: "wd",
-          stem: "aliud",
-          inflection: "N/A",
-          other: "irreg_nom2 neut nom acc sg",
+          form: "aliud",
+          grammaticalData: {
+            gender: LatinGender.Neuter,
+            case: [LatinCase.Nominative, LatinCase.Accusative],
+            number: LatinNumber.Singular,
+          },
+          internalTags: ["irreg_nom2"],
         },
         {
           code: "wd",
-          stem: "ali_us",
-          inflection: "N/A",
-          other: "irreg_nom2 masc fem neut gen sg",
+          form: "ali_us",
+          grammaticalData: {
+            gender: [
+              LatinGender.Masculine,
+              LatinGender.Feminine,
+              LatinGender.Neuter,
+            ],
+            case: LatinCase.Genitive,
+            number: LatinNumber.Singular,
+          },
+          internalTags: ["irreg_nom2"],
         },
+      ],
+      regularForms: [
         {
-          code: "no",
           stem: "ali",
-          inflection: "ille",
-          other: "irreg_nom2",
+          template: "ille",
+          grammaticalData: {},
+          internalTags: ["irreg_nom2"],
         },
       ],
     });
   });
 
-  // TODO: Re-enable this once migration is fixed.
-  it.failing("handles interrog edge case", () => {
+  it("handles interrog edge case", () => {
     const lemma = processIrregEntry(INTERROG.split("\n"));
-    expect(lemma).toStrictEqual<Lemma>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "ecquis",
-      stems: [
+      irregularForms: [
         {
           code: "wd",
-          stem: "ecquis",
-          inflection: "N/A",
-          other: "interrog masc fem nom sg",
+          form: "ecquis",
+          grammaticalData: {
+            gender: [LatinGender.Masculine, LatinGender.Feminine],
+            case: LatinCase.Nominative,
+            number: LatinNumber.Singular,
+          },
+          tags: ["interrog"],
         },
+      ],
+      regularForms: [
         {
-          code: "wd",
           stem: "ec",
-          inflection: "quis",
-          other: "interrog",
+          template: "quis",
+          grammaticalData: {},
+          tags: ["interrog"],
         },
       ],
     });
   });
 
-  // TODO: Re-enable this once migration is fixed.
-  it.failing("handles extra tabs", () => {
+  it("handles extra tabs", () => {
     const lemma = processIrregEntry(MOS.split("\n"));
-    expect(lemma).toStrictEqual<Lemma>({
+    expect(lemma).toEqual<IrregularLemma>({
       lemma: "mos",
-      stems: [
+      irregularForms: [
         {
-          code: "wd",
-          stem: "mo_s",
-          inflection: "N/A",
-          other: "irreg_nom3 masc nom voc sg",
+          form: "mo_s",
+          grammaticalData: {
+            gender: LatinGender.Masculine,
+            case: [LatinCase.Nominative, LatinCase.Vocative],
+            number: LatinNumber.Singular,
+          },
+          internalTags: ["irreg_nom3"],
         },
+      ],
+      regularForms: [
         {
-          code: "no",
           stem: "mo_r",
-          inflection: "decl3",
-          other: "irreg_nom3 masc",
+          template: "decl3",
+          grammaticalData: {
+            gender: LatinGender.Masculine,
+          },
+          internalTags: ["irreg_nom3"],
         },
       ],
     });
@@ -400,7 +434,7 @@ describe("parsing", () => {
   });
 
   it("handles processing and parsing", () => {
-    const lemmata = processNomIrregEntries(TEMP_FILE);
+    const lemmata = processNomIrregEntries2(TEMP_FILE);
 
     expect(lemmata).toHaveLength(4);
     expect(lemmata[0].lemma).toEqual("dehinc");
