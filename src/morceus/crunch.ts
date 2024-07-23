@@ -1,6 +1,9 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
+import {
+  InflectionContext,
+  wordInflectionDataToArray,
+} from "@/morceus/inflection_data_utils";
 import {
   allNounStems,
   allVerbStems,
@@ -169,11 +172,10 @@ export namespace MorceusCruncher {
             inflection.ending.replaceAll("_", "").replaceAll("^", ""),
             result.ending.replaceAll("_", "").replaceAll("^", "")
           );
-          // TODO: This is just a stopgap as we're moving over to the new
-          // parsed approach.
+          // TODO: We should probably de-dedupe here and maybe more???
           const grammaticalData = wordInflectionDataToArray(
             inflection.grammaticalData
-          ).concat(result.stem.other ?? []);
+          ).concat(InflectionContext.toStringArray(result.stem));
           const ending = inflection.ending === "*" ? "" : inflection.ending;
           const form = result.stem.stem + ending;
           byForm.add(form, {

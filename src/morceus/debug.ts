@@ -4,10 +4,7 @@
 
 import { assert, checkPresent } from "@/common/assert";
 import { setMap } from "@/common/data_structures/collect_map";
-import {
-  InflectionContext,
-  toInflectionData,
-} from "@/morceus/inflection_data_utils";
+import { InflectionContext } from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
   processVerbIrregEntries,
@@ -65,22 +62,9 @@ function indexStems(
     if ("stems" in lemma) {
       for (const stem of lemma.stems) {
         const [key, entryForm] = computeIndexInfo(stem.code, stem.stem);
-        const data: string[] = [entryForm, lemma.lemma, stem.inflection];
-        const inflectionParts = (stem.other || "")
-          .split(/\s+/)
-          .filter((part) => part.length > 0)
-          .map((part) => part.trim());
-        try {
-          data.push(
-            ...InflectionContext.toStringArray(
-              toInflectionData(inflectionParts)
-            )
-          );
-          index.add(key, data.join(":"));
-        } catch (e) {
-          console.log(lemma);
-          throw e;
-        }
+        const inflectionData = InflectionContext.toStringArray(stem);
+        const entry: string[] = [entryForm, lemma.lemma, stem.inflection];
+        index.add(key, entry.concat(inflectionData).join(":"));
       }
     } else {
       const baseCode = mode === "noms" ? "wd" : "vb";
@@ -93,11 +77,9 @@ function indexStems(
       for (const form of lemma.regularForms || []) {
         if (form.code === "aj" || form.code === "no" || form.code === "vs") {
           const [key, entryForm] = computeIndexInfo(form.code, form.stem);
-          const inflection = InflectionContext.toStringArray(form);
-          const entry = [entryForm, lemma.lemma, form.template].concat(
-            inflection
-          );
-          index.add(key, entry.join(":"));
+          const inflectionData = InflectionContext.toStringArray(form);
+          const entry = [entryForm, lemma.lemma, form.template];
+          index.add(key, entry.concat(inflectionData).join(":"));
           continue;
         }
         const table = checkPresent(EXPANDED_TEMPLATES.get().get(form.template));

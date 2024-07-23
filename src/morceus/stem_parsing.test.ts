@@ -1,3 +1,4 @@
+import { toInflectionData } from "@/morceus/inflection_data_utils";
 import { parseNounStemFile, parseVerbStemFile } from "@/morceus/stem_parsing";
 
 describe("parseNounStemFile", () => {
@@ -10,7 +11,14 @@ describe("parseNounStemFile", () => {
     expect(nullus).toEqual({
       lemma: "nullus",
 
-      stems: [{ stem: "nu_ll", code: "aj", inflection: "us_ius_adj" }],
+      stems: [
+        {
+          stem: "nu_ll",
+          code: "aj",
+          inflection: "us_ius_adj",
+          ...toInflectionData([]),
+        },
+      ],
     });
   });
 
@@ -19,13 +27,23 @@ describe("parseNounStemFile", () => {
     expect(bonus).toEqual({
       lemma: "bonus",
       stems: [
-        { stem: "bon", inflection: "us_a_um", code: "aj", other: "no_comp" },
-        { stem: "mel", code: "aj", inflection: "ior_ius_comp" },
+        {
+          stem: "bon",
+          inflection: "us_a_um",
+          code: "aj",
+          ...toInflectionData("no_comp".split(" ")),
+        },
+        {
+          stem: "mel",
+          code: "aj",
+          inflection: "ior_ius_comp",
+          ...toInflectionData([]),
+        },
         {
           stem: "optim",
           code: "aj",
           inflection: "us_a_um",
-          other: "irreg_superl",
+          ...toInflectionData("irreg_superl".split(" ")),
         },
       ],
     });
@@ -43,7 +61,14 @@ describe("parseVerbStemFile", () => {
     const acclamo = verbs.filter((s) => s.lemma === "acclamo")[0];
     expect(acclamo).toEqual({
       lemma: "acclamo",
-      stems: [{ stem: "ac-cla_m", code: "de", inflection: "are_vb" }],
+      stems: [
+        {
+          stem: "ac-cla_m",
+          code: "de",
+          inflection: "are_vb",
+          ...toInflectionData([]),
+        },
+      ],
     });
   });
 
@@ -52,13 +77,18 @@ describe("parseVerbStemFile", () => {
     expect(caveo).toEqual({
       lemma: "caveo",
       stems: [
-        { stem: "ca^v", inflection: "conj2", code: "vs" },
+        {
+          stem: "ca^v",
+          inflection: "conj2",
+          code: "vs",
+          ...toInflectionData([]),
+        },
         {
           stem: "ca^ve^",
           code: "vb",
           // TODO: These are probably switched from what we expect!
           inflection: "irreg_pp1",
-          other: "2nd sg pres imperat act",
+          ...toInflectionData("2nd sg pres imperat act".split(" ")),
         },
       ],
     });

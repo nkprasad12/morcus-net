@@ -1,8 +1,9 @@
 import { assert, checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
-import type {
+import {
   InflectionContext,
-  InflectionEnding,
+  toInflectionData,
+  type InflectionEnding,
 } from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
@@ -70,11 +71,10 @@ export namespace StemCode {
   }
 }
 
-export interface Stem {
+export interface Stem extends InflectionContext {
   code: StemCode;
   stem: string;
   inflection: string;
-  other?: string;
 }
 
 export interface Lemma {
@@ -116,7 +116,7 @@ export function expandLemma(lemma: Lemma): InflectionTable {
             {
               name: stem.inflection,
               prefix: stem.stem,
-              args: stem.other?.split(" "),
+              args: InflectionContext.toStringArray(stem),
             },
           ],
         },
@@ -161,6 +161,7 @@ export function parseNounStemFile(filePath: string): Lemma[] {
   return results.map(processStem);
 }
 
+// TODO: Consolidate this with `parseNounStemFile`.
 export function parseVerbStemFile(filePath: string): Lemma[] {
   const content = fs.readFileSync(filePath).toString();
   const lines = content.split("\n");
@@ -206,7 +207,7 @@ function processStem(lines: string[]): Lemma {
       stem: parts[0].substring(4),
       code: StemCode.parseStrict(parts[0]),
       inflection: parts[1],
-      other: parts.length >= 3 ? parts.slice(2).join(" ") : undefined,
+      ...toInflectionData(parts.length >= 3 ? parts.slice(2) : []),
     });
   }
 
