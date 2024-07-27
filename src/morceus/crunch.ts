@@ -7,7 +7,6 @@ import {
 import {
   allNounStems,
   allVerbStems,
-  type IrregularLemma,
   type Lemma,
   type Stem,
 } from "@/morceus/stem_parsing";
@@ -43,19 +42,16 @@ export type Cruncher = (
   options?: CruncherOptions
 ) => LatinWordAnalysis[];
 
-export function makeStemsMap(
-  lemmata: (Lemma | IrregularLemma)[]
-): Map<string, [Stem, string][]> {
+export function makeStemsMap(lemmata: Lemma[]): Map<string, [Stem, string][]> {
   const stemMap = arrayMap<string, [Stem, string]>();
   for (const lemma of lemmata) {
-    if ("stems" in lemma) {
-      for (const stem of lemma.stems) {
-        stemMap.add(
-          stem.stem.replaceAll("^", "").replaceAll("_", "").replaceAll("-", ""),
-          [stem, lemma.lemma]
-        );
-      }
+    for (const stem of lemma.stems || []) {
+      stemMap.add(
+        stem.stem.replaceAll("^", "").replaceAll("_", "").replaceAll("-", ""),
+        [stem, lemma.lemma]
+      );
     }
+
     // TODO: Handle the irregulars.
   }
   return stemMap.map;
@@ -107,7 +103,7 @@ export function crunchWord(
 export interface CruncherConfig {
   existing?: {
     endsResult: EndsResult;
-    lemmata: (Lemma | IrregularLemma)[];
+    lemmata: Lemma[];
   };
   generate?: {
     nomStemFiles: string[];

@@ -13,6 +13,7 @@ import {
 } from "@/morceus/types";
 
 export const SEMANTIC_TAGS = new Set([
+  "adverb",
   "archaic",
   "contr",
   "dep",
@@ -20,9 +21,11 @@ export const SEMANTIC_TAGS = new Set([
   "late",
   "old",
   "orth",
+  "exclam",
   "poetic",
   "rare",
   "syncop",
+  "prep",
   "pers_name",
   "is_ethnic",
   "ethnic",
@@ -40,7 +43,6 @@ export const SEMANTIC_TAGS = new Set([
   "locative",
 ]);
 export const INTERNAL_TAGS = new Set<string>([
-  "adverb",
   "are_vb",
   "comp_only",
   "conj", // Is this conjunction or conjugation?
@@ -54,6 +56,7 @@ export const INTERNAL_TAGS = new Set<string>([
   "ire_vb",
   "irreg_adj2",
   "irreg_adj3",
+  "irreg_decl3",
   "irreg_comp",
   "irreg_nom2",
   "irreg_nom3",
@@ -64,6 +67,7 @@ export const INTERNAL_TAGS = new Set<string>([
   "numeral",
   "perfstem",
   "pp4",
+  "pron",
   "pron1",
   "pron2",
   "pron3",

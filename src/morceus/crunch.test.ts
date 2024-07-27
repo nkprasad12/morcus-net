@@ -131,8 +131,7 @@ describe("MorceusCruncher", () => {
     ]);
   });
 
-  // `ite` comes from the irregulars, so this is failing.
-  it.failing("handles ite", () => {
+  it("handles ite", () => {
     const cruncher = MorceusCruncher.make(FAKEDATA_CRUNCHER_CONFIG);
     const result = cruncher("ite", { vowelLength: "relaxed" });
 

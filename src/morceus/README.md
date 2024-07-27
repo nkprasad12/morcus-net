@@ -88,57 +88,9 @@ There are a few key differences that all seem to be mistakes on the part of Morp
    they are both listed with code `011`.
 
 - Nom Stem Indices match barring some errors in Morpheus. Also, Morceus retains some data (but that's OK).
+- Verb Stem Indices match barring some errors in Morpheus and maybe some weird stuff with the derivs.
 
 
 ### Current work
 
-Generate end indexes. There are two rules for the generation of these end indices.
-1. For regulars, they follow the pattern shown in the `indexStems` function.
-2. For irregulars, they follow the pattern where all of the data is just stuffed into the line.
-   For example, check assibus.·
-
-IMMEDIATE CONCERN:
-Take a closer look at lemmara in `ls.nom` (in Morpheus) that have stem.
-For example, `:le:ens` uses the template for `ens_entis` just as so.
-We should make sure these are represented correctly.
-
-### Related thread
-
-Current goal: Checking why Morpheus has `2zonatim` in its `nomind`.
-Morceus only has `zonatim` and the source file `ls.nom` has the following:
-
-```
-zo_na_tim
-:le:zonatim
-:wd:zo_na_tim	adverb
-```
-
-which doesn't make clear where the `2` comes from.
-
-Looking at the makefile, this is generated via:
-
-```
-stemind/nomind:	stemsrc/ls.nom ../Greek/getentities.pl
-	mkdir -p steminds
-	cat stemsrc/nom.* stemsrc/ls.nom > /tmp/nommorph
-	../Greek/getentities.pl /tmp/nommorph  > steminds/entitylist.txt
-	indexnoms -L
-```
-
-This calls into `index_noms` in `indexstems.c` with 3, 0, 0, 0.
-
-This calls into `index_stems`, which sets these prefixes as follows:
-
-1. :vb: -> 1
-2. :wd: -> 2
-3. :de: -> 3 (except pres_redupl, but this is Greek only so we can ignore it.)
-
-Note: there is another intermediate validation step we can do. `irregular_stems.ts` has
-some code that is used to process the source files `stemlib/Latin/stemsrc/irreg.nom.src` and
-`stemlib/Latin/stemsrc/irreg.vbs.src`. In Morpheus, these are processed and then turned into
-`nom.irreg` and `vbs.irreg`.
-
-We can make sure the parsing is correct by generating these intermediate files.
-
-Other big question!! - What is the actual function of these 1 / 2 / 3 prefixes later??
-How are they consumed by the later code?
+Get the cruncher up and running. Make sure to handle derivs.

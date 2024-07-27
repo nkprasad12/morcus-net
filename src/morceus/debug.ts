@@ -10,11 +10,11 @@ import {
   processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
 import {
+  StemCode,
   allNounStems,
   allVerbStems,
-  type IrregularLemma,
   type Lemma,
-  type StemCode,
+  type Stem,
 } from "@/morceus/stem_parsing";
 import { IndexMode, makeEndIndexAndSave } from "@/morceus/tables/indices";
 import {
@@ -32,6 +32,13 @@ import fs from "fs";
 
 const INDEX_OUTPUT_DIR = "build/morceus/indices";
 const IRREGS_OUTPUT_DIR = "build/morceus/irregs";
+
+const TEMPLATE_STEM_CODES = new Set<StemCode>(["aj", "de", "no", "vs"]);
+
+const DE_MAP = new Map<string, [string, string][]>([
+  ["ire_vb", [["", "conj4"]]],
+  ["are_vb", [["", "conj1"]]],
+]);
 
 function computeIndexInfo(code: StemCode, entry: string): [string, string] {
   const prefix =
@@ -51,55 +58,60 @@ function computeIndexInfo(code: StemCode, entry: string): [string, string] {
 
 /** Creates a stem index in a format matching Morpheus. */
 function indexStems(
-  lemmata: (Lemma | IrregularLemma)[],
+  lemmata: Lemma[],
   mode: "noms" | "verbs"
 ): Map<string, string[]> {
   const index = setMap<string, string>();
+  const baseCode = mode === "noms" ? "wd" : "vb";
   for (const lemma of lemmata) {
-    if (lemma.lemma === "prosum") {
-      console.log(lemma);
-    }
-    if ("stems" in lemma) {
-      for (const stem of lemma.stems) {
-        const [key, entryForm] = computeIndexInfo(stem.code, stem.stem);
-        const inflectionData = InflectionContext.toStringArray(stem);
-        const entry: string[] = [entryForm, lemma.lemma, stem.inflection];
-        index.add(key, entry.concat(inflectionData).join(":"));
-      }
-    } else {
-      const baseCode = mode === "noms" ? "wd" : "vb";
-      for (const form of lemma.irregularForms || []) {
-        const code = form.code === undefined ? baseCode : form.code;
-        const [key, entryForm] = computeIndexInfo(code, form.form);
-        const inflection = InflectionContext.toStringArray(form);
-        index.add(key, [entryForm, lemma.lemma].concat(inflection).join(":"));
-      }
-      for (const form of lemma.regularForms || []) {
-        if (form.code === "aj" || form.code === "no" || form.code === "vs") {
-          const [key, entryForm] = computeIndexInfo(form.code, form.stem);
-          const inflectionData = InflectionContext.toStringArray(form);
-          const entry = [entryForm, lemma.lemma, form.template];
-          index.add(key, entry.concat(inflectionData).join(":"));
-          continue;
-        }
-        const table = checkPresent(EXPANDED_TEMPLATES.get().get(form.template));
+    for (const stem of lemma.stems || []) {
+      if (stem.code === undefined) {
+        const table = checkPresent(
+          EXPANDED_TEMPLATES.get().get(stem.inflection)
+        );
         const prefix = baseCode === "vb" ? "1" : baseCode === "wd" ? "2" : "";
         assert(prefix.length > 0);
-        for (const ending of expandSingleTable(form.stem, form, table)) {
+        for (const ending of expandSingleTable(stem.stem, stem, table)) {
           const [key, entryForm] = computeIndexInfo(baseCode, ending.ending);
           const inflection = InflectionContext.toStringArray(ending);
           index.add(key, [entryForm, lemma.lemma].concat(inflection).join(":"));
         }
+        continue;
       }
+      assert(TEMPLATE_STEM_CODES.has(stem.code));
+      if (stem.code === "de") {
+        const pattern = checkPresent(
+          DE_MAP.get(stem.inflection),
+          JSON.stringify(lemma, undefined, 2)
+        );
+        for (const [infix, inflection] of pattern) {
+          const [key, entryForm] = computeIndexInfo("vs", stem.stem + infix);
+          const entry: string[] = [
+            entryForm,
+            lemma.lemma,
+            inflection,
+            stem.inflection,
+          ];
+          const inflectionData = InflectionContext.toStringArray(stem);
+          index.add(key, entry.concat(inflectionData).join(":"));
+        }
+      }
+      const [key, entryForm] = computeIndexInfo(stem.code, stem.stem);
+      const inflectionData = InflectionContext.toStringArray(stem);
+      const entry: string[] = [entryForm, lemma.lemma, stem.inflection];
+      index.add(key, entry.concat(inflectionData).join(":"));
+    }
+    for (const form of lemma.irregularForms || []) {
+      const code = form.code === undefined ? baseCode : form.code;
+      const [key, entryForm] = computeIndexInfo(code, form.form);
+      const inflection = InflectionContext.toStringArray(form);
+      index.add(key, [entryForm, lemma.lemma].concat(inflection).join(":"));
     }
   }
   return new Map([...index.map.entries()].map(([k, v]) => [k, [...v]]));
 }
 
-function writeStemIndex(
-  lemmata: (Lemma | IrregularLemma)[],
-  tag: "noms" | "verbs"
-) {
+function writeStemIndex(lemmata: Lemma[], tag: "noms" | "verbs") {
   const destination = `${INDEX_OUTPUT_DIR}/${tag}.stemindex`;
   fs.writeFileSync(
     destination,
@@ -110,7 +122,7 @@ function writeStemIndex(
   );
 }
 
-function stringifyIrreg(irreg: IrregularLemma, mode: "noms" | "verbs"): string {
+function stringifyIrreg(irreg: Lemma, mode: "noms" | "verbs"): string {
   const baseCode = mode === "noms" ? ":wd:" : ":vb:";
   const lines: string[] = [`:le:${irreg.lemma}`];
   for (const form of irreg.irregularForms || []) {
@@ -118,7 +130,7 @@ function stringifyIrreg(irreg: IrregularLemma, mode: "noms" | "verbs"): string {
     const code = form.code === undefined ? baseCode : `:${form.code}:`;
     lines.push(`${code}${form.form} ${context}`);
   }
-  for (const form of irreg.regularForms || []) {
+  for (const form of irreg.stems || []) {
     if (
       form.code === "aj" ||
       form.code === "no" ||
@@ -127,10 +139,10 @@ function stringifyIrreg(irreg: IrregularLemma, mode: "noms" | "verbs"): string {
     ) {
       const code = `:${form.code}:`;
       const contextString = InflectionContext.toString(form);
-      lines.push(`${code}${form.stem} ${form.template} ${contextString}`);
+      lines.push(`${code}${form.stem} ${form.inflection} ${contextString}`);
       continue;
     }
-    const table = checkPresent(EXPANDED_TEMPLATES.get().get(form.template));
+    const table = checkPresent(EXPANDED_TEMPLATES.get().get(form.inflection));
     lines.push(
       ...expandSingleTable(form.stem, form, table).map(
         (ending) =>
@@ -166,6 +178,33 @@ export namespace Stems {
     createNomIndex();
     createVerbIndex();
   };
+  export const validate = () => {
+    const weirdStems: Stem[][] = [];
+    const weirdInfls = new Set<string>();
+    for (const lemma of allNounStems().concat(allVerbStems())) {
+      const weirds: Stem[] = [];
+      for (const stem of lemma.stems || []) {
+        if (stem.code !== "wd" && stem.code !== "vb") {
+          weirds.push(stem);
+          weirdInfls.add(stem.inflection);
+        }
+      }
+      if (weirds.length > 0) {
+        weirdStems.push(weirds);
+      }
+    }
+
+    const weirdWithInfl = weirdStems
+      .flatMap((x) => x)
+      .filter(
+        (x) =>
+          !EXPANDED_TEMPLATES.get().has(x.inflection) &&
+          x.inflection !== "ire_vb" &&
+          x.inflection !== "are_vb"
+      );
+    console.log(weirdWithInfl);
+    console.log(weirdWithInfl.length);
+  };
 }
 
 export namespace Endings {
@@ -181,6 +220,9 @@ export namespace Endings {
   export const compareIndices = compareEndIndices;
 }
 
+Stems.makeNomIrregs();
 Stems.makeVerbIrregs();
 Stems.createVerbIndex();
+Stems.createNomIndex();
+compareStemIndex("noms");
 compareStemIndex("verbs");

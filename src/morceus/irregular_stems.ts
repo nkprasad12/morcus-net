@@ -2,10 +2,10 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { toInflectionData } from "@/morceus/inflection_data_utils";
 import {
+  Lemma,
   StemCode,
   type IrregularForm,
-  type IrregularLemma,
-  type RegularForm,
+  type Stem,
 } from "@/morceus/stem_parsing";
 import { EXPANDED_TEMPLATES } from "@/morceus/tables/templates";
 import { readFileSync } from "fs";
@@ -44,9 +44,9 @@ function parseInflectionClass(chunks: string[]): string | undefined {
   return undefined;
 }
 
-export function processIrregEntry(entry: string[]): IrregularLemma {
+export function processIrregEntry(entry: string[]): Lemma {
   const irregulars: IrregularForm[] = [];
-  const regulars: RegularForm[] = [];
+  const regulars: Stem[] = [];
 
   assert(entry[0].startsWith(":le:"));
   const lemma = entry[0].substring(4);
@@ -67,7 +67,7 @@ export function processIrregEntry(entry: string[]): IrregularLemma {
       regulars.push({
         ...toInflectionData(parts.slice(1)),
         stem: templateData[0],
-        template: templateData[1],
+        inflection: templateData[1],
       });
       continue;
     }
@@ -87,7 +87,7 @@ export function processIrregEntry(entry: string[]): IrregularLemma {
         // Nouns must have a gender.
         checkPresent(context.grammaticalData.gender);
       }
-      regulars.push({ code, stem, template, ...context });
+      regulars.push({ code, stem, inflection: template, ...context });
       continue;
     }
 
@@ -99,7 +99,7 @@ export function processIrregEntry(entry: string[]): IrregularLemma {
   }
   return {
     lemma,
-    regularForms: regulars.length > 0 ? regulars : undefined,
+    stems: regulars.length > 0 ? regulars : undefined,
     irregularForms: irregulars.length > 0 ? irregulars : undefined,
   };
 }

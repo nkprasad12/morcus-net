@@ -1,5 +1,9 @@
 import { toInflectionData } from "@/morceus/inflection_data_utils";
-import { parseNounStemFile, parseVerbStemFile } from "@/morceus/stem_parsing";
+import {
+  parseNounStemFile,
+  parseVerbStemFile,
+  type Lemma,
+} from "@/morceus/stem_parsing";
 
 describe("parseNounStemFile", () => {
   const nom01 = parseNounStemFile("src/morceus/stems/nom.01");
@@ -74,7 +78,7 @@ describe("parseVerbStemFile", () => {
 
   it("parses vb lemma", () => {
     const caveo = verbs.filter((s) => s.lemma === "caveo")[0];
-    expect(caveo).toEqual({
+    expect(caveo).toEqual<Lemma>({
       lemma: "caveo",
       stems: [
         {
@@ -83,12 +87,12 @@ describe("parseVerbStemFile", () => {
           code: "vs",
           ...toInflectionData([]),
         },
+      ],
+      irregularForms: [
         {
-          stem: "ca^ve^",
+          form: "ca^ve^",
           code: "vb",
-          // TODO: These are probably switched from what we expect!
-          inflection: "irreg_pp1",
-          ...toInflectionData("2nd sg pres imperat act".split(" ")),
+          ...toInflectionData("2nd sg pres imperat act irreg_pp1".split(" ")),
         },
       ],
     });
