@@ -5,7 +5,8 @@ import {
   makeStemsMap,
   type CruncherConfig,
 } from "@/morceus/crunch";
-import type { Lemma, Stem } from "@/morceus/stem_parsing";
+import { toInflectionData } from "@/morceus/inflection_data_utils";
+import type { IrregularForm, Lemma, Stem } from "@/morceus/stem_parsing";
 import type { EndIndexRow, InflectionLookup } from "@/morceus/tables/indices";
 import { LatinCase } from "@/morceus/types";
 
@@ -41,18 +42,20 @@ describe("crunchWord", () => {
       "morco"
     );
 
-    expect(result).toStrictEqual([{ lemma: "morcus", ending: "o", stem }]);
+    expect(result).toStrictEqual([
+      { lemma: "morcus", ending: "o", stemOrForm: stem },
+    ]);
   });
 
   it("handles indeclinable", () => {
-    const stem: Stem = {
+    const form: IrregularForm = {
       code: "wd",
-      stem: "topper",
-      inflection: "adverb",
+      form: "topper",
+      tags: ["adverb"],
       grammaticalData: {},
     };
     const endings: EndIndexRow[] = [{ ending: "o", tableNames: ["us"] }];
-    const lemmata: Lemma[] = [{ lemma: "topper", stems: [stem] }];
+    const lemmata: Lemma[] = [{ lemma: "topper", irregularForms: [form] }];
 
     const result = crunchWord(
       makeEndsMap(endings),
@@ -60,7 +63,9 @@ describe("crunchWord", () => {
       "topper"
     );
 
-    expect(result).toStrictEqual([{ lemma: "topper", ending: "*", stem }]);
+    expect(result).toStrictEqual([
+      { lemma: "topper", ending: "*", stemOrForm: form },
+    ]);
   });
 });
 
@@ -101,13 +106,18 @@ describe("MorceusCruncher", () => {
     const cruncher = MorceusCruncher.make(config);
     const result = cruncher("morco");
 
-    expect(result).toStrictEqual([
+    expect(result).toEqual([
       {
         lemma: "morcus",
         inflectedForms: [
           {
             form: "morco",
-            inflectionData: [{ inflection: "abl", usageNote: "archaic" }],
+            inflectionData: [
+              {
+                grammaticalData: { case: LatinCase.Ablative },
+                tags: ["archaic"],
+              },
+            ],
           },
         ],
       },
@@ -124,7 +134,9 @@ describe("MorceusCruncher", () => {
         inflectedForms: [
           {
             form: "ca^ve_te",
-            inflectionData: [{ inflection: "pres imperat act 2nd pl" }],
+            inflectionData: [
+              { ...toInflectionData("pres imperat act 2nd pl".split(" ")) },
+            ],
           },
         ],
       },

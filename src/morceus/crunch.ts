@@ -1,14 +1,13 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import {
-  InflectionContext,
-  wordInflectionDataToArray,
-} from "@/morceus/inflection_data_utils";
+import { InflectionContext } from "@/morceus/inflection_data_utils";
 import {
   allNounStems,
   allVerbStems,
+  type IrregularForm,
   type Lemma,
   type Stem,
+  type StemCode,
 } from "@/morceus/stem_parsing";
 import {
   makeEndIndex,
@@ -20,19 +19,18 @@ import {
 export interface CrunchResult {
   lemma: string;
   ending: string;
-  stem: Stem;
+  stemOrForm: Stem | IrregularForm;
 }
-interface InflectedFormData {
-  inflection: string;
-  usageNote?: string;
-}
+
 interface LatinWordAnalysis {
   lemma: string;
   inflectedForms: {
     form: string;
-    inflectionData: InflectedFormData[];
+    inflectionData: InflectionContext[];
   }[];
 }
+
+type StemMap = Map<string, [Stem | IrregularForm, string][]>;
 
 export interface CruncherOptions {
   vowelLength?: "strict" | "relaxed";
@@ -42,17 +40,19 @@ export type Cruncher = (
   options?: CruncherOptions
 ) => LatinWordAnalysis[];
 
-export function makeStemsMap(lemmata: Lemma[]): Map<string, [Stem, string][]> {
-  const stemMap = arrayMap<string, [Stem, string]>();
+function normalizeKey(input: string): string {
+  return input.replaceAll("^", "").replaceAll("_", "").replaceAll("-", "");
+}
+
+export function makeStemsMap(lemmata: Lemma[]): StemMap {
+  const stemMap = arrayMap<string, [Stem | IrregularForm, string]>();
   for (const lemma of lemmata) {
     for (const stem of lemma.stems || []) {
-      stemMap.add(
-        stem.stem.replaceAll("^", "").replaceAll("_", "").replaceAll("-", ""),
-        [stem, lemma.lemma]
-      );
+      stemMap.add(normalizeKey(stem.stem), [stem, lemma.lemma]);
     }
-
-    // TODO: Handle the irregulars.
+    for (const form of lemma.irregularForms || []) {
+      stemMap.add(normalizeKey(form.form), [form, lemma.lemma]);
+    }
   }
   return stemMap.map;
 }
@@ -63,9 +63,13 @@ export function makeEndsMap(endings: EndIndexRow[]): Map<string, string[]> {
   );
 }
 
+function hasIndeclinableCode(input: { code?: StemCode }): boolean {
+  return input?.code === "vb" || input?.code === "wd";
+}
+
 export function crunchWord(
   endsMap: Map<string, string[]>,
-  stemMap: Map<string, [Stem, string][]>,
+  stemMap: StemMap,
   word: string
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
@@ -77,24 +81,23 @@ export function crunchWord(
     }
     const maybeEnd = word.slice(i) || "*";
     const possibleEnds = endsMap.get(maybeEnd);
-    const indeclinables =
-      maybeEnd === "*" ? candidates.filter((s) => s[0].code === "wd") : [];
-    if (possibleEnds === undefined && indeclinables.length === 0) {
-      continue;
-    }
     for (const [candidate, lemma] of candidates) {
-      if (
-        (candidate.code === "wd" || candidate.code === "vb") &&
-        maybeEnd === "*"
-      ) {
-        results.push({ lemma, stem: candidate, ending: maybeEnd });
-      } else if (possibleEnds && possibleEnds.includes(candidate.inflection)) {
-        results.push({
-          lemma,
-          stem: candidate,
-          ending: maybeEnd,
-        });
+      const indeclinableCode = hasIndeclinableCode(candidate);
+      if ("form" in candidate) {
+        assert(indeclinableCode);
+        // If it's indeclinable, then we skip if it the expected ending is not empty
+        // (since there's no inflected ending to bridge the gap).
+        if (maybeEnd !== "*") {
+          continue;
+        }
+      } else {
+        assert(!indeclinableCode);
+        // If it's inflected, make sure there's a candidate inflection that matches.
+        if (!possibleEnds?.includes(candidate.inflection)) {
+          continue;
+        }
       }
+      results.push({ lemma, stemOrForm: candidate, ending: maybeEnd });
     }
   }
   return results;
@@ -124,17 +127,17 @@ export namespace MorceusCruncher {
       allNounStems(config?.generate?.nomStemFiles).concat(
         allVerbStems(config?.generate?.verbStemFiles)
       );
-    // Special cases
-    endTables.set(
-      "adverb",
-      new Map([
-        ["*", [{ grammaticalData: {}, ending: "*", internalTags: ["adverb"] }]],
-      ])
-    );
-    endTables.set(
-      "N/A",
-      new Map([["*", [{ grammaticalData: {}, ending: "*" }]]])
-    );
+    // // Special cases
+    // endTables.set(
+    //   "adverb",
+    //   new Map([
+    //     ["*", [{ grammaticalData: {}, ending: "*", internalTags: ["adverb"] }]],
+    //   ])
+    // );
+    // endTables.set(
+    //   "N/A",
+    //   new Map([["*", [{ grammaticalData: {}, ending: "*" }]]])
+    // );
     const endsMap = makeEndsMap(endIndices);
     const stemsMap = makeStemsMap(cachedLemmata);
     return (word, options) =>
@@ -153,10 +156,15 @@ export namespace MorceusCruncher {
     }
     const analyses: LatinWordAnalysis[] = [];
     for (const [lemma, results] of byLemma.map.entries()) {
-      const byForm = arrayMap<string, InflectedFormData>();
+      const byForm = arrayMap<string, InflectionContext>();
       for (const result of results) {
+        if ("form" in result.stemOrForm) {
+          byForm.add(result.stemOrForm.form, result.stemOrForm);
+          continue;
+        }
+        const stem = result.stemOrForm;
         const inflectionEndings = checkPresent(
-          inflectionLookup.get(result.stem.inflection)?.get(result.ending)
+          inflectionLookup.get(stem.inflection)?.get(result.ending)
         );
         for (const inflection of inflectionEndings) {
           // We can still differ here based on vowel length
@@ -168,16 +176,13 @@ export namespace MorceusCruncher {
             inflection.ending.replaceAll("_", "").replaceAll("^", ""),
             result.ending.replaceAll("_", "").replaceAll("^", "")
           );
-          // TODO: We should probably de-dedupe here and maybe more???
-          const grammaticalData = wordInflectionDataToArray(
-            inflection.grammaticalData
-          ).concat(InflectionContext.toStringArray(result.stem));
+          const mergedData = InflectionContext.merge(inflection, stem);
+          if (mergedData === null) {
+            continue;
+          }
           const ending = inflection.ending === "*" ? "" : inflection.ending;
-          const form = result.stem.stem + ending;
-          byForm.add(form, {
-            inflection: grammaticalData.join(" "),
-            usageNote: inflection.tags?.join(" "),
-          });
+          const form = stem.stem + ending;
+          byForm.add(form, mergedData);
         }
       }
       const inflectedForms = [...byForm.map.entries()];
@@ -198,9 +203,19 @@ export namespace MorceusCruncher {
   }
 }
 
-// const options: CruncherOptions = { vowelLength: "relaxed" };
-// const cruncher = MorceusCruncher.make();
-// const start = performance.now();
-// const result = cruncher("ite", options);
-// console.log(`${performance.now() - start} ms`);
-// console.log(JSON.stringify(result, undefined, 2));
+function printWordAnalysis(input: LatinWordAnalysis) {
+  console.log(`lemma: ${input.lemma}`);
+  for (const form of input.inflectedForms) {
+    console.log(`  - ${form.form}: `);
+    for (const data of form.inflectionData) {
+      console.log(`    - ${InflectionContext.toString(data)}`);
+    }
+  }
+}
+
+const options: CruncherOptions = { vowelLength: "relaxed" };
+const cruncher = MorceusCruncher.make();
+const start = performance.now();
+const result = cruncher("itura", options);
+console.log(`${performance.now() - start} ms`);
+result.forEach(printWordAnalysis);
