@@ -20,6 +20,7 @@ const WEB_SERVER = "web";
 const WORKER = "worker";
 const EDITOR = "editor";
 const BUNDLE = "bundle";
+const BUILD = "build";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -33,6 +34,8 @@ if (args.command === WEB_SERVER) {
   startLsEditor();
 } else if (args.command === BUNDLE) {
   buildBundle(args).then(assert);
+} else if (args.command === BUILD) {
+  buildArtifacts(args).then(assert);
 }
 
 function parseArguments() {
@@ -43,6 +46,30 @@ function parseArguments() {
     title: "Command list",
     dest: "command",
     required: true,
+  });
+
+  const build = subparsers.add_parser(BUILD, {
+    help: "Builds artifacts without starting the server.",
+  });
+  build.add_argument("-to", "--transpile_only", {
+    help: "Skips type checking for the bundle.",
+    action: "store_true",
+  });
+  build.add_argument("-b_ls", "--build_ls", {
+    help: "Re-processes LS.",
+    action: "store_true",
+  });
+  build.add_argument("-b_sh", "--build_sh", {
+    help: "Re-processes SH and saves to DB.",
+    action: "store_true",
+  });
+  build.add_argument("-b_li", "--build_latin_inflections", {
+    help: "Re-processes Latin Inflections and saves to DB.",
+    action: "store_true",
+  });
+  build.add_argument("-b_ll", "--build_latin_library", {
+    help: "Processing and stores the Latin library contents.",
+    action: "store_true",
   });
 
   const bundle = subparsers.add_parser(BUNDLE, {
@@ -137,7 +164,7 @@ function parseArguments() {
     help: "Starts the LS web editor.",
   });
 
-  for (const subcommand of [editor, worker, bundle, web]) {
+  for (const subcommand of [editor, worker, bundle, web, build]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
       action: "store_true",
@@ -251,15 +278,8 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   };
 }
 
-async function setupAndStartWebServer(args: any) {
+function artifactConfig(args: any): StepConfig[] {
   const setupSteps: StepConfig[] = [];
-  if (args.no_build_client === false) {
-    writeCommitId();
-    if (args.watch !== true) {
-      setupSteps.push(bundleConfig(args, 1));
-    }
-  }
-  setupSteps.push(writePwaManifestStep(1));
   if (args.build_latin_inflections === true) {
     setupSteps.push({
       operation: makeMorpheusDb,
@@ -297,7 +317,23 @@ async function setupAndStartWebServer(args: any) {
       priority: 2,
     });
   }
+  return setupSteps;
+}
 
+function buildArtifacts(args: any): Promise<boolean> {
+  return runPipeline(artifactConfig(args), { parallel: true });
+}
+
+async function setupAndStartWebServer(args: any) {
+  const setupSteps: StepConfig[] = [];
+  if (args.no_build_client === false) {
+    writeCommitId();
+    if (args.watch !== true) {
+      setupSteps.push(bundleConfig(args, 1));
+    }
+  }
+  setupSteps.push(writePwaManifestStep(1));
+  setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });
   if (!setupSuccess) {
     return false;
