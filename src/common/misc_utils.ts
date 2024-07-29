@@ -1,4 +1,5 @@
-import { assert } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 export class Tally<T> {
   private readonly counts = new Map<T, number>();
@@ -64,4 +65,37 @@ export function mergeMaps<K, V>(
     result.set(k, v);
   }
   return result;
+}
+
+export class AggregateTimer {
+  private map = arrayMap<string, number>();
+  private currentStart: [string, number] | undefined = undefined;
+
+  start(tag: string) {
+    assertEqual(this.currentStart, undefined);
+    this.currentStart = [tag, performance.now()];
+  }
+
+  end(tag: string) {
+    const [startTag, startTime] = checkPresent(this.currentStart);
+    const span = performance.now() - startTime;
+    assertEqual(tag, startTag);
+    this.map.add(tag, span);
+    this.currentStart = undefined;
+  }
+
+  summary(): string {
+    const result: string[] = [];
+    result.push("========================");
+    result.push("= Global Timer Summary =");
+    result.push("========================");
+    Array.from(this.map.map.entries(), ([tag, values]): [string, number] => [
+      tag,
+      values.reduce((a, b) => a + b),
+    ])
+      .sort((a, b) => b[1] - a[1])
+      .map(([tag, sum]) => `${sum.toFixed(1).padEnd(8)}   [${tag}]`)
+      .forEach((s) => result.push(s));
+    return result.join("\n");
+  }
 }

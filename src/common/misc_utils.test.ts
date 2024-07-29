@@ -1,4 +1,5 @@
 import {
+  AggregateTimer,
   Tally,
   exhaustiveGuard,
   mergeMaps,
@@ -120,5 +121,33 @@ describe("mergeMaps", () => {
     ]);
 
     expect(() => mergeMaps(first, second, false)).toThrowError(/Duplicate/);
+  });
+});
+
+describe("AggregateTimer", () => {
+  it("aggregates inputs", () => {
+    const timer = new AggregateTimer();
+
+    timer.start("alpha");
+    timer.end("alpha");
+    timer.start("alpha");
+    timer.end("alpha");
+    timer.start("beta");
+    timer.end("beta");
+
+    const summary = timer.summary();
+    expect(summary).toContain("Summary");
+    expect(summary).toContain("a");
+    expect(summary).toContain("b");
+  });
+
+  it("counts inputs with threshold", () => {
+    const tally = new Tally<string>();
+
+    tally.count("a");
+    tally.count("b");
+    tally.count("a");
+
+    expect(tally.toString(2)).toBe("Total: 3\n2 <= a");
   });
 });
