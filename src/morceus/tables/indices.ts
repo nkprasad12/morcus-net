@@ -25,6 +25,7 @@ export enum IndexMode {
   NOUNS = "nouns",
 }
 
+/** Maps stem type => end form => endings. */
 export type InflectionLookup = Map<string, Map<string, InflectionEnding[]>>;
 export interface EndIndexRow {
   /** The ending, without diacritics, of this row. */

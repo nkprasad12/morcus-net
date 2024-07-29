@@ -1,6 +1,9 @@
-import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import { InflectionContext } from "@/morceus/inflection_data_utils";
+import {
+  InflectionContext,
+  type InflectionEnding,
+} from "@/morceus/inflection_data_utils";
 import {
   allNounStems,
   allVerbStems,
@@ -15,22 +18,30 @@ import {
   type EndsResult,
   type InflectionLookup,
 } from "@/morceus/tables/indices";
+import { LatinDegree } from "@/morceus/types";
 
-export interface CrunchResult {
+export interface CrunchResult extends InflectionContext {
   lemma: string;
-  ending: string;
-  stemOrForm: Stem | IrregularForm;
+  form: string;
+  stem?: Stem;
+  end?: InflectionEnding;
 }
 
 interface LatinWordAnalysis {
   lemma: string;
   inflectedForms: {
     form: string;
-    inflectionData: InflectionContext[];
+    inflectionData: CrunchResult[];
   }[];
 }
 
 type StemMap = Map<string, [Stem | IrregularForm, string][]>;
+
+export interface CruncherTables {
+  endsMap: Map<string, string[]>;
+  stemMap: StemMap;
+  inflectionLookup: InflectionLookup;
+}
 
 export interface CruncherOptions {
   vowelLength?: "strict" | "relaxed";
@@ -68,36 +79,52 @@ function hasIndeclinableCode(input: { code?: StemCode }): boolean {
 }
 
 export function crunchWord(
-  endsMap: Map<string, string[]>,
-  stemMap: StemMap,
-  word: string
+  word: string,
+  tables: CruncherTables,
+  options?: CruncherOptions
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
   for (let i = 1; i <= word.length; i++) {
     const maybeStem = word.slice(0, i);
-    const candidates = stemMap.get(maybeStem);
+    const candidates = tables.stemMap.get(maybeStem);
     if (candidates === undefined) {
       continue;
     }
-    const maybeEnd = word.slice(i) || "*";
-    const possibleEnds = endsMap.get(maybeEnd);
+    const observedEnd = word.slice(i) || "*";
+    const possibleEnds = tables.endsMap.get(observedEnd);
     for (const [candidate, lemma] of candidates) {
       const indeclinableCode = hasIndeclinableCode(candidate);
       if ("form" in candidate) {
-        assert(indeclinableCode);
+        assert(indeclinableCode || candidate.code === undefined);
         // If it's indeclinable, then we skip if it the expected ending is not empty
-        // (since there's no inflected ending to bridge the gap).
-        if (maybeEnd !== "*") {
-          continue;
+        // (since there's no inflected ending to bridge the gap). Otherwise, since it
+        // is not inflected, we don't need to do any further compatibility checks
+        // like we do between stems and endings.
+        if (observedEnd === "*") {
+          results.push({ lemma, ...candidate });
         }
-      } else {
-        assert(!indeclinableCode);
-        // If it's inflected, make sure there's a candidate inflection that matches.
-        if (!possibleEnds?.includes(candidate.inflection)) {
-          continue;
+        continue;
+      }
+      assert(!indeclinableCode || candidate.code === undefined);
+      // Check to make sure there's a template that could have a match.
+      if (!possibleEnds?.includes(candidate.inflection)) {
+        continue;
+      }
+      const possibleEndInflections = checkPresent(
+        tables.inflectionLookup.get(candidate.inflection)?.get(observedEnd)
+      );
+      for (const end of possibleEndInflections) {
+        const mergedData = mergeIfCompatible(candidate, end);
+        if (mergedData !== null) {
+          results.push({
+            lemma,
+            form: candidate.stem + end.ending,
+            stem: candidate,
+            end,
+            ...mergedData,
+          });
         }
       }
-      results.push({ lemma, stemOrForm: candidate, ending: maybeEnd });
     }
   }
   return results;
@@ -114,108 +141,115 @@ export interface CruncherConfig {
   };
 }
 
+function subsetOf<T>(first?: T | T[], second?: T | T[]): boolean {
+  const firstArr =
+    first === undefined ? [] : Array.isArray(first) ? first : [first];
+  const secondArr =
+    second === undefined ? [] : Array.isArray(second) ? second : [second];
+  for (const item of firstArr) {
+    if (!secondArr.includes(item)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function mergeIfCompatible(
+  stem: InflectionContext,
+  ending: InflectionContext
+): InflectionContext | null {
+  const stemData = stem.grammaticalData;
+  const endData = ending.grammaticalData;
+  const isCompatible =
+    subsetOf(stemData.case, endData.case) &&
+    // For degree, the positive is implied if it is not marked.
+    subsetOf(
+      stemData.degree || LatinDegree.Positive,
+      endData.degree || LatinDegree.Positive
+    ) &&
+    subsetOf(stemData.gender, endData.gender) &&
+    subsetOf(stemData.mood, endData.mood) &&
+    subsetOf(stemData.number, endData.number) &&
+    subsetOf(stemData.person, endData.person) &&
+    subsetOf(stemData.tense, endData.tense) &&
+    subsetOf(stemData.voice, endData.voice);
+  if (!isCompatible) {
+    return null;
+  }
+  const result: InflectionContext = { grammaticalData: endData };
+  if (stem.tags !== undefined || ending.tags !== undefined) {
+    const tags = (stem.tags || []).concat(ending.tags || []);
+    result.tags = [...new Set<string>(tags)];
+  }
+  if (stem.internalTags !== undefined || ending.internalTags !== undefined) {
+    const tags = (stem.internalTags || []).concat(ending.internalTags || []);
+    result.internalTags = [...new Set<string>(tags)];
+  }
+  return result;
+}
+
 export namespace MorceusCruncher {
-  export function make(config?: CruncherConfig): Cruncher {
+  export function makeTables(config?: CruncherConfig): CruncherTables {
     const [endIndices, endTables] =
       config?.existing?.endsResult ??
       makeEndIndex(
         ["src/morceus/tables/lat/core/target"],
         ["src/morceus/tables/lat/core/dependency"]
       );
-    const cachedLemmata =
+    const allLemmata =
       config?.existing?.lemmata ??
       allNounStems(config?.generate?.nomStemFiles).concat(
         allVerbStems(config?.generate?.verbStemFiles)
       );
-    // // Special cases
-    // endTables.set(
-    //   "adverb",
-    //   new Map([
-    //     ["*", [{ grammaticalData: {}, ending: "*", internalTags: ["adverb"] }]],
-    //   ])
-    // );
-    // endTables.set(
-    //   "N/A",
-    //   new Map([["*", [{ grammaticalData: {}, ending: "*" }]]])
-    // );
     const endsMap = makeEndsMap(endIndices);
-    const stemsMap = makeStemsMap(cachedLemmata);
-    return (word, options) =>
-      convert(crunchWord(endsMap, stemsMap, word), endTables, options);
+    const stemMap = makeStemsMap(allLemmata);
+    return { endsMap, stemMap, inflectionLookup: endTables };
   }
 
-  function convert(
-    crunchResults: CrunchResult[],
-    inflectionLookup: InflectionLookup,
-    options?: CruncherOptions
-  ): LatinWordAnalysis[] {
-    const strictLengths = options?.vowelLength !== "relaxed";
+  export function make(tables?: CruncherTables): Cruncher {
+    return (word, options) =>
+      convert(crunchWord(word, tables || makeTables(), options));
+  }
+
+  function convert(crunchResults: CrunchResult[]): LatinWordAnalysis[] {
     const byLemma = arrayMap<string, CrunchResult>();
     for (const result of crunchResults) {
       byLemma.add(result.lemma, result);
     }
     const analyses: LatinWordAnalysis[] = [];
     for (const [lemma, results] of byLemma.map.entries()) {
-      const byForm = arrayMap<string, InflectionContext>();
+      const byForm = arrayMap<string, CrunchResult>();
       for (const result of results) {
-        if ("form" in result.stemOrForm) {
-          byForm.add(result.stemOrForm.form, result.stemOrForm);
-          continue;
-        }
-        const stem = result.stemOrForm;
-        const inflectionEndings = checkPresent(
-          inflectionLookup.get(stem.inflection)?.get(result.ending)
-        );
-        for (const inflection of inflectionEndings) {
-          // We can still differ here based on vowel length
-          if (inflection.ending !== result.ending && strictLengths) {
-            continue;
-          }
-          // We should probably replace this check later under a debug flag.
-          assertEqual(
-            inflection.ending.replaceAll("_", "").replaceAll("^", ""),
-            result.ending.replaceAll("_", "").replaceAll("^", "")
-          );
-          const mergedData = InflectionContext.merge(inflection, stem);
-          if (mergedData === null) {
-            continue;
-          }
-          const ending = inflection.ending === "*" ? "" : inflection.ending;
-          const form = stem.stem + ending;
-          byForm.add(form, mergedData);
-        }
-      }
-      const inflectedForms = [...byForm.map.entries()];
-      // This should only be if there was a vowel length mismatch
-      if (inflectedForms.length === 0) {
-        assert(strictLengths);
-        continue;
+        byForm.add(result.form, result);
       }
       analyses.push({
         lemma,
-        inflectedForms: inflectedForms.map(([form, inflectionData]) => ({
-          form,
-          inflectionData,
-        })),
+        inflectedForms: Array.from(
+          byForm.map.entries(),
+          ([form, inflectionData]) => ({
+            form,
+            inflectionData,
+          })
+        ),
       });
     }
     return analyses;
   }
 }
 
-function printWordAnalysis(input: LatinWordAnalysis) {
-  console.log(`lemma: ${input.lemma}`);
-  for (const form of input.inflectedForms) {
-    console.log(`  - ${form.form}: `);
-    for (const data of form.inflectionData) {
-      console.log(`    - ${InflectionContext.toString(data)}`);
-    }
-  }
-}
+// function printWordAnalysis(input: LatinWordAnalysis) {
+//   console.log(`lemma: ${input.lemma}`);
+//   for (const form of input.inflectedForms) {
+//     console.log(`  - ${form.form}: `);
+//     for (const data of form.inflectionData) {
+//       console.log(`    - ${InflectionContext.toString(data)}`);
+//     }
+//   }
+// }
 
-const options: CruncherOptions = { vowelLength: "relaxed" };
-const cruncher = MorceusCruncher.make();
-const start = performance.now();
-const result = cruncher("itura", options);
-console.log(`${performance.now() - start} ms`);
-result.forEach(printWordAnalysis);
+// const options: CruncherOptions = { vowelLength: "relaxed" };
+// const cruncher = MorceusCruncher.make(MorceusCruncher.makeTables());
+// const start = performance.now();
+// const result = cruncher(process.argv[2], options);
+// console.log(`${performance.now() - start} ms`);
+// result.forEach(printWordAnalysis);

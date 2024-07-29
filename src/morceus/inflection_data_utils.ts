@@ -95,29 +95,6 @@ export namespace InflectionContext {
   export function toString(context: InflectionContext): string {
     return toStringArray(context).join(" ");
   }
-
-  export function merge(
-    first: InflectionContext,
-    second: InflectionContext
-  ): InflectionContext | null {
-    const grammaticalData = mergeInflectionData(
-      first.grammaticalData,
-      second.grammaticalData
-    );
-    if (grammaticalData === null) {
-      return null;
-    }
-    const result: InflectionContext = { grammaticalData };
-    if (first.tags !== undefined || second.tags !== undefined) {
-      const tags = (first.tags || []).concat(second.tags || []);
-      result.tags = [...new Set<string>(tags)];
-    }
-    if (first.internalTags !== undefined || second.internalTags !== undefined) {
-      const tags = (first.internalTags || []).concat(second.internalTags || []);
-      result.internalTags = [...new Set<string>(tags)];
-    }
-    return result;
-  }
 }
 
 /** An entry in an inflection table that shows an ending and when to use it. */
@@ -277,7 +254,7 @@ export function toInflectionData(grammaticalData: string[]): InflectionContext {
     else if (data === "superl") {
       assertEqual(result.degree, undefined);
       result.degree = LatinDegree.Superlative;
-    } else if (data === "comp") {
+    } else if (data === "comp" || data === "comp_only") {
       assertEqual(result.degree, undefined);
       result.degree = LatinDegree.Comparative;
     }
@@ -344,7 +321,7 @@ export function toInflectionData(grammaticalData: string[]): InflectionContext {
 }
 
 /**
- * Merges inflection data when computed templated tables.
+ * Merges inflection data when computing templated tables.
  *
  * @param template
  * @param modifier
