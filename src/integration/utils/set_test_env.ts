@@ -13,6 +13,4 @@ export function setEnv(reuseDev: boolean, port: string, testDir: string) {
   process.env["LS_PROCESSED_PATH"] = `${testDir}/lsp.txt`;
   process.env["SH_RAW_PATH"] = `${testDir}/sh_raw.txt`;
   process.env["SH_PROCESSED_PATH"] = `${testDir}/shp.db`;
-  process.env["RAW_LATIN_WORDS"] = `${testDir}/lat_raw.txt`;
-  process.env["LATIN_INFLECTION_DB"] = `${testDir}/latin_inflect.db`;
 }

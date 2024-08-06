@@ -11,6 +11,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
 
 const REPLACED_CHARS = new Map<string, string>([
   ["ſ", "s"],
@@ -96,10 +97,7 @@ export class LewisAndShort implements Dictionary {
     const exactMatches: StoredEntryData[] = this.sqlDict
       .getRawEntry(input, extras)
       .map(StoredEntryData.fromEncoded);
-    if (
-      options?.handleInflections !== true ||
-      envVar("LATIN_INFLECTION_DB", "unsafe") === undefined
-    ) {
+    if (options?.handleInflections !== true) {
       return exactMatches.map(StoredEntryData.toEntryResult);
     }
 
@@ -137,8 +135,8 @@ export class LewisAndShort implements Dictionary {
             inflData.inflectionData.map((info) => ({
               lemma: analysis.lemma,
               form: inflData.form,
-              data: info.inflection,
-              usageNote: info.usageNote,
+              data: wordInflectionDataToArray(info.grammaticalData).join(" "),
+              usageNote: info.tags?.join(" "),
             }))
           ),
         }));

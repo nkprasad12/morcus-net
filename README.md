@@ -56,9 +56,8 @@ From the `morcus-net` root directory, set up a `Python` virtual environment and 
 | `MONGODB_URI`             | MongoDB database URI for metrics.                                                                                                   |
 | `DB_SOURCE`               | Tag used for metrics written to MongoDB. Example: `local`.                                                                          |
 | `PROCESSING_SERVER_TOKEN` | A token used to authenticate workers with the server. Should be long and random.                                                    |
-| `RAW_LATIN_WORDS`         | Path to a raw list of Latin words. Used for some processing.                                                                        |
 | `RAW_ENGLISH_WORDS`       | Path to a raw list of English words. Used for some processing.                                                                      |
-| `LATIN_INFLECTION_DB`     | An optional file name of the processed database of Latin inflection data. Used for some processing.db`                              |
+| `MORPHEUS_ROOT`           | The path to the root of the Morpheus repo. Used for raw data files for inflections.                                                 |
 
 ---
 

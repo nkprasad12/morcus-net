@@ -3,7 +3,7 @@
 // Central place collecting utitity for debugging or manual result inspection.
 
 import { assert, checkPresent } from "@/common/assert";
-import { setMap } from "@/common/data_structures/collect_map";
+import { arrayMap, setMap } from "@/common/data_structures/collect_map";
 import { InflectionContext } from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
@@ -22,10 +22,7 @@ import {
   expandSingleTable,
   expandTemplatesAndSave,
 } from "@/morceus/tables/templates";
-import {
-  compareEndTables,
-  compareStemIndex,
-} from "@/scripts/compare_morceus_results";
+import { compareEndTables } from "@/scripts/compare_morceus_results";
 import { compareEndIndices } from "@/scripts/compare_morceus_results";
 
 import fs from "fs";
@@ -220,9 +217,70 @@ export namespace Endings {
   export const compareIndices = compareEndIndices;
 }
 
-Stems.makeNomIrregs();
-Stems.makeVerbIrregs();
-Stems.createVerbIndex();
-Stems.createNomIndex();
-compareStemIndex("noms");
-compareStemIndex("verbs");
+// Stems.makeNomIrregs();
+// Stems.makeVerbIrregs();
+// Stems.createVerbIndex();
+// Stems.createNomIndex();
+// compareStemIndex("noms");
+// compareStemIndex("verbs");
+
+function undashLemma(lemma: Lemma) {
+  const result: Lemma = { lemma: lemma.lemma };
+  if (lemma.irregularForms !== undefined) {
+    result.irregularForms = lemma.irregularForms.map((form) => ({
+      ...form,
+      form: form.form.replaceAll("-", ""),
+    }));
+  }
+  if (lemma.stems !== undefined) {
+    result.stems = lemma.stems.map((stem) => ({
+      ...stem,
+      stem: stem.stem.replaceAll("-", ""),
+    }));
+  }
+  return result;
+}
+
+const vbs = allVerbStems();
+const nouns = allNounStems();
+
+let dupes = 0;
+let easySubstantives = 0;
+let exacts = 0;
+const knownLemmata = arrayMap<string, Lemma>();
+for (const lemma of vbs.concat(nouns)) {
+  const undashed = undashLemma(lemma);
+  knownLemmata.add(undashed.lemma, undashed);
+}
+for (const [lemma, values] of knownLemmata.map.entries()) {
+  if (values.length <= 1) {
+    continue;
+  }
+  if (new Set(values.map((v) => JSON.stringify(v))).size === 1) {
+    exacts += 1;
+    continue;
+  }
+  if (values.length === 2) {
+    const sameLemma = values[0].lemma === values[1].lemma;
+    const noIrregs =
+      values[0].irregularForms === undefined &&
+      values[1].irregularForms === undefined;
+    const matchingStems =
+      values[0].stems?.length === 1 &&
+      values[1].stems?.length === 1 &&
+      values[0].stems[0].stem === values[1].stems[0].stem;
+    const codes = [values[0].stems?.at(0)?.code, values[1].stems?.at(0)?.code];
+    const nomAndAdj = codes.includes("aj") && codes.includes("no");
+    if (sameLemma && noIrregs && matchingStems && nomAndAdj) {
+      easySubstantives += 1;
+      continue;
+    }
+  }
+  dupes += 1;
+  console.log(lemma);
+  for (const value of values) console.log(JSON.stringify(value));
+  console.log("\n");
+}
+console.log("Exact dupes: " + exacts);
+console.log("easySubstantives: " + easySubstantives);
+console.log(dupes);

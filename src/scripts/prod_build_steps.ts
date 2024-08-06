@@ -8,7 +8,6 @@ import { envVar } from "@/common/env_vars";
 import { processSmithHall } from "@/common/smith_and_hall/sh_process";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
-import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
@@ -83,14 +82,6 @@ const MAKE_SH: StepConfig = {
     path: envVar("SH_RAW_PATH"),
   },
 };
-const MAKE_INFL_DB: StepConfig = {
-  operation: makeMorpheusDb,
-  label: "Inflection DB creation",
-  dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/morcus-raw-data/main/morpheus_out_aug1_suff_removed.txt",
-    path: envVar("RAW_LATIN_WORDS"),
-  },
-};
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
     processLibrary(
@@ -119,7 +110,6 @@ const ALL_STEPS = [
   WRITE_COMMIT_ID,
   writePwaManifestStep(),
   MAKE_BUNDLE,
-  MAKE_INFL_DB,
   MAKE_SH,
   MAKE_LS,
   PROCESS_LAT_LIB,

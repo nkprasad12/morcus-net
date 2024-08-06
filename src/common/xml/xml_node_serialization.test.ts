@@ -4,10 +4,6 @@ import { CANABA, HABEO } from "@/common/lewis_and_short/sample_entries";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "./xml_utils";
-import fs from "fs";
-import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
-import { makeMorpheusDb } from "@/common/lexica/latin_words";
-import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 
 console.debug = jest.fn();
 
@@ -77,22 +73,6 @@ console.debug = jest.fn();
 //   serialize: (t) => JSON.stringify(simplify2(t)),
 //   deserialize: (t) => complicate2(JSON.parse(t)),
 // };
-
-const MORPH_FILE = "xml_node_serialization.test.ts.tmp.morph.txt";
-const INFL_DB_FILE = "xml_node_serialization.test.ts.tmp.lat.db";
-
-beforeAll(() => {
-  process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
-  fs.writeFileSync(MORPH_FILE, SAMPLE_MORPHEUS_OUTPUT);
-  makeMorpheusDb(MORPH_FILE, INFL_DB_FILE);
-});
-
-afterAll(() => {
-  try {
-    fs.unlinkSync(MORPH_FILE);
-  } catch {}
-  cleanupSqlTableFiles(INFL_DB_FILE);
-});
 
 function processNode(node: XmlNode): XmlNode {
   const data = XmlNodeSerialization.DEFAULT.serialize(node);

@@ -30,6 +30,7 @@ import {
 } from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
 import { scrapeUrlText } from "@/web/scraping/scraper";
+import { MorceusCruncher } from "@/morceus/crunch";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -80,6 +81,7 @@ export function startMorcusServer(): Promise<http.Server> {
   const app = express();
   const server = http.createServer(app);
 
+  setTimeout(MorceusCruncher.CACHED_TABLES.get, randInRange(100, 125));
   const lewisAndShort = delayedInit(
     () => LewisAndShort.create(),
     LatinDict.LewisAndShort

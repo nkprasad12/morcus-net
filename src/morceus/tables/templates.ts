@@ -182,7 +182,7 @@ export function expandTemplate(
     // In `ta_t@decl3_i	gen pl`, this would be the expanded @decl3_i table.
     const table = checkPresent(
       dependencies.get(subTemplate.name),
-      `No expanded template ${template.name} in registry!`
+      `No expanded template ${subTemplate.name} in registry!`
     );
     const prefix =
       subTemplate.prefix === undefined
@@ -241,8 +241,17 @@ export function expandTemplates(
 
   const targetTemplates = loadTemplates(targetDirs);
   const targetTables = new Map<string, InflectionTable>();
+  const derivs: InflectionTemplate[] = [];
   for (const template of targetTemplates.values()) {
+    if (template.name.endsWith(".deriv")) {
+      derivs.push(template);
+      continue;
+    }
     targetTables.set(template.name, expandTemplate(template, dependencyTables));
+  }
+  for (const deriv of derivs) {
+    const renamed = { ...deriv, name: deriv.name.slice(0, -6) };
+    targetTables.set(renamed.name, expandTemplate(renamed, targetTables));
   }
   return [targetTables, dependencyTables];
 }

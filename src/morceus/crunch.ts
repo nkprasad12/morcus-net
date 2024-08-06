@@ -1,5 +1,6 @@
 import { assert, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import { singletonOf } from "@/common/misc_utils";
 import {
   InflectionContext,
   type InflectionEnding,
@@ -18,7 +19,7 @@ import {
   type EndsResult,
   type InflectionLookup,
 } from "@/morceus/tables/indices";
-import { LatinDegree } from "@/morceus/types";
+import { LatinDegree, LatinGender } from "@/morceus/types";
 
 export interface CrunchResult extends InflectionContext {
   lemma: string;
@@ -27,7 +28,7 @@ export interface CrunchResult extends InflectionContext {
   end?: InflectionEnding;
 }
 
-interface LatinWordAnalysis {
+export interface LatinWordAnalysis {
   lemma: string;
   inflectedForms: {
     form: string;
@@ -167,7 +168,15 @@ function mergeIfCompatible(
       stemData.degree || LatinDegree.Positive,
       endData.degree || LatinDegree.Positive
     ) &&
-    subsetOf(stemData.gender, endData.gender) &&
+    // If the template doesn't have a gender, it is assumed to be valid for all.
+    subsetOf(
+      stemData.gender,
+      endData.gender || [
+        LatinGender.Feminine,
+        LatinGender.Masculine,
+        LatinGender.Neuter,
+      ]
+    ) &&
     subsetOf(stemData.mood, endData.mood) &&
     subsetOf(stemData.number, endData.number) &&
     subsetOf(stemData.person, endData.person) &&
@@ -206,6 +215,8 @@ export namespace MorceusCruncher {
     return { endsMap, stemMap, inflectionLookup: endTables };
   }
 
+  export const CACHED_TABLES = singletonOf(makeTables);
+
   export function make(tables?: CruncherTables): Cruncher {
     return (word, options) =>
       convert(crunchWord(word, tables || makeTables(), options));
@@ -223,11 +234,17 @@ export namespace MorceusCruncher {
         byForm.add(result.form, result);
       }
       analyses.push({
-        lemma,
+        lemma: lemma
+          .replaceAll("^", "\u0306")
+          .replaceAll("_", "\u0304")
+          .replaceAll("-", ""),
         inflectedForms: Array.from(
           byForm.map.entries(),
           ([form, inflectionData]) => ({
-            form,
+            form: form
+              .replaceAll("^", "\u0306")
+              .replaceAll("_", "\u0304")
+              .replaceAll("-", ""),
             inflectionData,
           })
         ),

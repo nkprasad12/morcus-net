@@ -1,29 +1,20 @@
-import { makeMorpheusDb } from "@/common/lexica/latin_words";
-import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
 import {
   ShLinkResolver,
   displayShEntry,
 } from "@/common/smith_and_hall/sh_display";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
-import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
-import { unlinkSync, writeFileSync } from "fs";
 
 console.debug = jest.fn();
 
-const MORPH_FILE = "sh_display.test.ts.tmp.morph.txt";
-const INFL_DB_FILE = "sh_display.test.ts.tmp.lat.db";
+const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
+const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
 
 beforeAll(() => {
-  process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
-  writeFileSync(MORPH_FILE, SAMPLE_MORPHEUS_OUTPUT);
-  makeMorpheusDb(MORPH_FILE, INFL_DB_FILE);
+  process.env.MORPHEUS_ROOT = FAKE_MORPHEUS_ROOT;
 });
 
 afterAll(() => {
-  try {
-    unlinkSync(MORPH_FILE);
-  } catch {}
-  cleanupSqlTableFiles(INFL_DB_FILE);
+  process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT;
 });
 
 const TEST_ENTRY: ShEntry = {

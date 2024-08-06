@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 
 import { assert } from "@/common/assert";
-import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import {
   StepConfig,
   runCommand,
@@ -280,13 +279,6 @@ function bundleConfig(args: any, priority?: number): StepConfig {
 
 function artifactConfig(args: any): StepConfig[] {
   const setupSteps: StepConfig[] = [];
-  if (args.build_latin_inflections === true) {
-    setupSteps.push({
-      operation: makeMorpheusDb,
-      label: "Building Latin inflection DB",
-      priority: 1,
-    });
-  }
   const childEnv = { ...process.env };
   let baseCommand = ["npm", "run", "tsnp"];
   if (args.bun === true) {

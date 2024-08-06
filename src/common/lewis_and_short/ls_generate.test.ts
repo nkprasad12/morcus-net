@@ -3,9 +3,6 @@ import fs from "fs";
 import { XmlNode } from "@/common/xml/xml_node";
 import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
-import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
-import { SAMPLE_MORPHEUS_OUTPUT } from "@/common/lexica/morpheus_testdata";
-import { makeMorpheusDb } from "@/common/lexica/latin_words";
 import {
   LewisAndShort,
   StoredEntryData,
@@ -17,7 +14,6 @@ console.debug = jest.fn();
 const LS_SUBSET = "testdata/ls/subset_partial_orths.xml";
 const TEMP_FILE = "ls.test.ts.tmp.txt";
 
-const MORPH_FILE = "ls.test.ts.tmp.morph.txt";
 const INFL_DB_FILE = "ls.test.ts.tmp.lat.db";
 
 const FAKE_OUTLINE: EntryOutline = {
@@ -25,17 +21,15 @@ const FAKE_OUTLINE: EntryOutline = {
   mainSection: { text: "", level: 0, ordinal: "0", sectionId: "" },
 };
 
+const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
+const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
+
 beforeAll(() => {
-  process.env.LATIN_INFLECTION_DB = INFL_DB_FILE;
-  fs.writeFileSync(MORPH_FILE, SAMPLE_MORPHEUS_OUTPUT);
-  makeMorpheusDb(MORPH_FILE, INFL_DB_FILE);
+  process.env.MORPHEUS_ROOT = FAKE_MORPHEUS_ROOT;
 });
 
 afterAll(() => {
-  try {
-    fs.unlinkSync(MORPH_FILE);
-  } catch {}
-  cleanupSqlTableFiles(INFL_DB_FILE);
+  process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT;
 });
 
 function toRawDictEntry(keys: string[], entry: StoredEntryData) {
@@ -79,8 +73,8 @@ const LS_DATA = [
     entry: new XmlNode("entryFree", [["id", "quisMacron"]], ["quisLong"]),
     outline: FAKE_OUTLINE,
   }),
-  toRawDictEntry(["exscio"], {
-    entry: new XmlNode("entryFree", [["id", "exscio"]], ["exscio"]),
+  toRawDictEntry(["excio"], {
+    entry: new XmlNode("entryFree", [["id", "excio"]], ["excio"]),
     outline: FAKE_OUTLINE,
   }),
 ];
@@ -205,7 +199,6 @@ describe("LewisAndShort", () => {
     SqlDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
-    process.env = { ...process.env, LATIN_INFLECTION_DB: undefined };
     const results = await dict.getEntry("Julius", undefined, {
       handleInflections: true,
     });

@@ -27,8 +27,8 @@ cd smithandhall || exit
 git checkout v1edits
 cd ..
 
-echo "Downloading Latin Inflection data."
-git clone https://github.com/nkprasad12/morcus-raw-data.git
+echo "Downloading Morpheus."
+git clone https://github.com/nkprasad12/morpheus.git
 
 echo "Populating '.env' file for $APP_NAME."
 dot_env="morcus-net/.env"
@@ -36,7 +36,7 @@ touch $dot_env
 echo "PORT=$PORT" >> $dot_env
 echo "LS_PATH=$PWD/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml" >> $dot_env
 echo "SH_RAW_PATH=$PWD/smithandhall/sh_F2_latest.txt" >> $dot_env
-echo "RAW_LATIN_WORDS=$PWD/morcus-raw-data/morpheus_out_aug1_suff_removed.txt" >> $dot_env
+echo "MORPHEUS_ROOT=$PWD/morpheus" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."
 cd morcus-net || exit

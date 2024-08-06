@@ -9,25 +9,10 @@ import {
   processVerbIrregEntries,
 } from "@/morceus/irregular_stems";
 import fs from "fs";
+import path from "path";
 
-const NOUN_STEM_FILES: string[] = [
-  "stemlib/Latin/stemsrc/ls.nom",
-  "stemlib/Latin/stemsrc/nom.01",
-  "stemlib/Latin/stemsrc/nom.02",
-  "stemlib/Latin/stemsrc/nom.03",
-  "stemlib/Latin/stemsrc/nom.04",
-  "stemlib/Latin/stemsrc/nom.latin.bas",
-  "stemlib/Latin/stemsrc/nom.livy",
-  "stemlib/Latin/stemsrc/nom.smithbio.latin",
-  "stemlib/Latin/stemsrc/nom.cic.pname",
-  "stemlib/Latin/stemsrc/nom.smithgeo",
-];
-
-const VERB_STEM_FILES: string[] = [
-  "stemlib/Latin/stemsrc/vbs.latin",
-  "stemlib/Latin/stemsrc/vbs.latin.bas",
-  "stemlib/Latin/stemsrc/vbs.latin.irreg",
-];
+const STEMS_SUBDIR = "stemlib/Latin/stemsrc";
+const EXCLUDED_STEM_FILES = new Set<string>(["nom.irreg", "vbs.irreg"]);
 
 // :le: 	lemma or headword
 // :wd: 	indeclinable form (preposition, adverb, interjection, etc.) or unanalyzed irregular form
@@ -81,27 +66,6 @@ export interface Lemma {
   stems?: Stem[];
   irregularForms?: IrregularForm[];
 }
-
-// export function expandLemma(lemma: Lemma): InflectionTable {
-//   const templates = EXPANDED_TEMPLATES.get();
-//   const endings: InflectionEnding[] = [];
-//   for (const stem of lemma.stems) {
-//     expandTemplate(
-//       {
-//         name: stem.stem,
-//         templates: [
-//           {
-//             name: stem.inflection,
-//             prefix: stem.stem,
-//             args: InflectionContext.toStringArray(stem),
-//           },
-//         ],
-//       },
-//       templates
-//     );
-//   }
-//   return { name: lemma.lemma, endings };
-// }
 
 export function parseNounStemFile(filePath: string): Lemma[] {
   const content = fs.readFileSync(filePath).toString();
@@ -211,17 +175,32 @@ function processStem(lines: string[]): Lemma {
   return result;
 }
 
-export function allNounStems(stemFiles: string[] = NOUN_STEM_FILES): Lemma[] {
+function findStemFiles(mode: "vbs" | "nom"): string[] {
+  return fs
+    .readdirSync(path.join(envVar("MORPHEUS_ROOT"), STEMS_SUBDIR))
+    .filter(
+      (fileName) =>
+        !EXCLUDED_STEM_FILES.has(fileName) &&
+        (fileName.startsWith(mode) || (mode === "nom" && fileName === "ls.nom"))
+    )
+    .map((fileName) => path.join(STEMS_SUBDIR, fileName));
+}
+
+export function allNounStems(stemFiles?: string[]): Lemma[] {
   const root = envVar("MORPHEUS_ROOT");
-  const stemPaths = stemFiles.map((f) => root + "/" + f).concat();
+  const stemPaths = (stemFiles ?? findStemFiles("nom")).map((fileName) =>
+    path.join(root, fileName)
+  );
   const regulars = stemPaths.flatMap(parseNounStemFile);
   const irregulars = processNomIrregEntries();
   return [...regulars, ...irregulars];
 }
 
-export function allVerbStems(stemFiles: string[] = VERB_STEM_FILES): Lemma[] {
+export function allVerbStems(stemFiles?: string[]): Lemma[] {
   const root = envVar("MORPHEUS_ROOT");
-  const stemPaths = stemFiles.map((f) => root + "/" + f).concat();
+  const stemPaths = (stemFiles ?? findStemFiles("vbs")).map((fileName) =>
+    path.join(root, fileName)
+  );
   const regulars = stemPaths.flatMap(parseVerbStemFile);
   const irregulars = processVerbIrregEntries();
   return [...regulars, ...irregulars];

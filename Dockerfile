@@ -7,13 +7,15 @@ RUN chown -R node:node /morcus
 
 USER node
 RUN npm ci --omit optional
-RUN npm run build
+RUN git clone --depth 1 https://github.com/nkprasad12/morpheus.git
+RUN MORPHEUS_ROOT=/morcus/morpheus npm run build
 
 FROM node:20-alpine3.18
 WORKDIR /morcus
 COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
 COPY --from=0 /morcus/package.json package.json
+COPY --from=0 /morcus/morpheus morpheus
 RUN mv build/dbs/ /morcus_dbs/
 RUN chown -R node:node /morcus
 RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
@@ -30,4 +32,4 @@ EXPOSE 5757
 CMD mv /*.db build/dbs/ \
       &&  chown -R node:node build/dbs \
       || echo "No databases to move."; \
-    su node -c 'cd /morcus && PORT=5757 node build/server.js'
+    su node -c 'cd /morcus && PORT=5757 MORPHEUS_ROOT=/morcus/morpheus node build/server.js'

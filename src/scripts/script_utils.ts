@@ -27,11 +27,17 @@ export async function safeCreateDir(path: string): Promise<void> {
 
 export function runCommand(
   command: string,
-  env?: Record<string, string | undefined>
+  env?: Record<string, string | undefined>,
+  cwd?: string
 ): Promise<number | null> {
   return new Promise((resolve, reject) => {
     console.log(`Executing: '${chalk.yellow(command)}'`);
-    const result = spawn(command, { shell: true, stdio: "inherit", env: env });
+    const result = spawn(command, {
+      shell: true,
+      stdio: "inherit",
+      env: env,
+      cwd: cwd,
+    });
     result.on("error", (err) => reject(err));
     result.on("exit", () => resolve(result.exitCode));
   });

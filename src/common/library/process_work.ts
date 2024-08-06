@@ -26,7 +26,7 @@ function markupText(text: string, parentName: string): XmlChild[] {
   const words = processWords(text, (word) => {
     // Even if we can't resolve it in the Morpheus table, LS may have it.
     const target = LatinWords.resolveLatinWord(word, (w) => [
-      LatinWords.allWords().has(w),
+      LatinWords.isWord(w),
       undefined,
     ]) || [word.toLowerCase(), true];
     return new XmlNode(
