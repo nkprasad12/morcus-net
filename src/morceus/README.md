@@ -80,7 +80,7 @@ These are also explained in the doc and are something of a registry for all the 
   still to match 1:1 the Morpheus end index output.
 
 - Irregulars are parsed.
-There are a few key differences that all seem to be mistakes on the part of Morpheus:
+  There are a few key differences that all seem to be mistakes on the part of Morpheus:
 
 1. Morceus preserves `orth` when a table is expanded, where Morpheus does not.
 2. Morpheus re-assigns some stem types based on the values in `stemtypes.table` to the first
@@ -89,7 +89,6 @@ There are a few key differences that all seem to be mistakes on the part of Morp
 
 - Nom Stem Indices match barring some errors in Morpheus. Also, Morceus retains some data (but that's OK).
 - Verb Stem Indices match barring some errors in Morpheus and maybe some weird stuff with the derivs.
-
 
 ### Current work
 

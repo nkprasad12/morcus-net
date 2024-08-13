@@ -113,10 +113,6 @@ export function parseVerbStemFile(filePath: string): Lemma[] {
     if (line[0] === "#") {
       continue;
     }
-    if (line[0] === "@") {
-      console.warn("Skipping @ line for debugging. HANDLE THIS LATER!");
-      continue;
-    }
     if (line.length === 0) {
       continue;
     }
