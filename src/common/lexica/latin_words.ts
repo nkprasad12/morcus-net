@@ -65,7 +65,8 @@ export namespace LatinWords {
   }
 
   export function analysesFor(term: string): LatinWordAnalysis[] {
-    return MorceusCruncher.make(MorceusCruncher.CACHED_TABLES.get())(term);
+    const tables = MorceusCruncher.CACHED_TABLES.get();
+    return MorceusCruncher.make(tables)(term, { relaxCase: true });
   }
 
   export function isWord(term: string): boolean {

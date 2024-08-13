@@ -26,6 +26,8 @@ export interface CrunchResult extends InflectionContext {
   form: string;
   stem?: Stem;
   end?: InflectionEnding;
+  relaxedCase?: true;
+  relaxedVowelLengths?: true;
 }
 
 export interface LatinWordAnalysis {
@@ -46,6 +48,7 @@ export interface CruncherTables {
 
 export interface CruncherOptions {
   vowelLength?: "strict" | "relaxed";
+  relaxCase?: boolean;
 }
 export type Cruncher = (
   word: string,
@@ -79,10 +82,9 @@ function hasIndeclinableCode(input: { code?: StemCode }): boolean {
   return input?.code === "vb" || input?.code === "wd";
 }
 
-export function crunchWord(
+function crunchExactMatch(
   word: string,
-  tables: CruncherTables,
-  options?: CruncherOptions
+  tables: CruncherTables
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
   for (let i = 1; i <= word.length; i++) {
@@ -126,6 +128,25 @@ export function crunchWord(
           });
         }
       }
+    }
+  }
+  return results;
+}
+
+export function crunchWord(
+  word: string,
+  tables: CruncherTables,
+  options?: CruncherOptions
+): CrunchResult[] {
+  const results: CrunchResult[] = crunchExactMatch(word, tables);
+  if (options?.relaxCase === true) {
+    const isUpperCase = word[0].toUpperCase() === word[0];
+    const relaxedFirst = isUpperCase
+      ? word[0].toLowerCase()
+      : word[0].toUpperCase();
+    const relaxedWord = relaxedFirst + word.slice(1);
+    for (const relaxedResult of crunchExactMatch(relaxedWord, tables)) {
+      results.push({ ...relaxedResult, relaxedCase: true });
     }
   }
   return results;
