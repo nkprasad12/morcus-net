@@ -24,16 +24,77 @@ describe("EndIndexRow", () => {
 describe("makeEndIndex", () => {
   it("Makes expected index for simple case", () => {
     const result = makeEndIndex([TARGET_TEMPLATES], [DEP_TEMPLATES]);
-    expect(result).toStrictEqual<EndsResult>([
+    expect(result).toEqual<EndsResult>([
       [
-        { ending: "a", tableNames: ["a_ae"] },
-        { ending: "ae", tableNames: ["a_ae"] },
-        { ending: "ai", tableNames: ["a_ae"] },
-        { ending: "arum", tableNames: ["a_ae"] },
+        { ending: "a", tableNames: ["a_ae", "decl1"] },
+        { ending: "ae", tableNames: ["a_ae", "decl1"] },
+        { ending: "ai", tableNames: ["a_ae", "decl1"] },
+        { ending: "arum", tableNames: ["a_ae", "decl1"] },
       ],
       new Map([
         [
           "a_ae",
+          new Map([
+            [
+              "a",
+              [
+                {
+                  ending: "a",
+                  grammaticalData: {
+                    case: [LatinCase.Nominative, LatinCase.Vocative],
+                    number: LatinNumber.Singular,
+                  },
+                },
+              ],
+            ],
+            [
+              "ae",
+              [
+                {
+                  ending: "ae",
+                  grammaticalData: {
+                    case: LatinCase.Genitive,
+                    number: LatinNumber.Singular,
+                  },
+                },
+                {
+                  ending: "ae",
+                  grammaticalData: {
+                    case: [LatinCase.Nominative, LatinCase.Vocative],
+                    number: LatinNumber.Plural,
+                  },
+                },
+              ],
+            ],
+            [
+              "arum",
+              [
+                {
+                  ending: "a_rum",
+                  grammaticalData: {
+                    case: LatinCase.Genitive,
+                    number: LatinNumber.Plural,
+                  },
+                },
+              ],
+            ],
+            [
+              "ai",
+              [
+                {
+                  ending: "a_i_",
+                  grammaticalData: {
+                    case: LatinCase.Genitive,
+                    number: LatinNumber.Singular,
+                  },
+                  tags: ["poetic"],
+                },
+              ],
+            ],
+          ]),
+        ],
+        [
+          "decl1",
           new Map([
             [
               "a",

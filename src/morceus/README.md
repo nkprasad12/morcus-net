@@ -89,7 +89,12 @@ These are also explained in the doc and are something of a registry for all the 
 
 - Nom Stem Indices match barring some errors in Morpheus. Also, Morceus retains some data (but that's OK).
 - Verb Stem Indices match barring some errors in Morpheus and maybe some weird stuff with the derivs.
+- Cruncher mostly works and we added handling for initial case difference.
 
 ### Current work
 
-Get the cruncher up and running. Make sure to handle derivs.
+http://localhost:5757/work/ovid/amores?q=1
+Lots of unhandled words!
+- praetulit
+- iam
+- levior

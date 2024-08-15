@@ -7,6 +7,7 @@ import { isArray, isString } from "@/web/utils/rpc/parsing";
 import { arrayMap, setMap } from "@/common/data_structures/collect_map";
 import type { InflectionEnding } from "@/morceus/inflection_data_utils";
 
+const KNOWN_DUPLICATES = new Set(["peLs_pedis"]);
 const VERB_TABLES = new Set([
   "conj1",
   "conj2",
@@ -51,6 +52,34 @@ export namespace EndIndexRow {
   }
 }
 
+function getInflectionTables(
+  targetDirOrTables: string[] | InflectionTable[],
+  dependencyDirs?: string[]
+): InflectionTable[] {
+  if (!isArray(isString)(targetDirOrTables)) {
+    return targetDirOrTables;
+  }
+  const [targetTables, depTables] = expandTemplates(
+    targetDirOrTables,
+    checkPresent(dependencyDirs)
+  );
+  const tables = new Map<string, InflectionTable>(targetTables);
+  // For the dependency tables, check that we have no overlaps with target tables
+  // that are unexpected.
+  for (const table of depTables.values()) {
+    const isDuplicate = tables.has(table.name);
+    const knownDuplicate = KNOWN_DUPLICATES.has(table.name);
+    if (isDuplicate) {
+      // If it's a duplicate, check that this is expected and ignore it
+      // (which means that we keep the table present in `targetTables`).
+      assert(knownDuplicate, table.name);
+      continue;
+    }
+    tables.set(table.name, table);
+  }
+  return [...tables.values()];
+}
+
 export function makeEndIndex(
   targetDirs: string[],
   dependencyDirs: string[],
@@ -62,14 +91,7 @@ export function makeEndIndex(
   dependencyDirs?: string[],
   indexMode?: IndexMode
 ): EndsResult {
-  const tables = isArray(isString)(targetDirOrTables)
-    ? [
-        ...expandTemplates(
-          targetDirOrTables,
-          checkPresent(dependencyDirs)
-        )[0].values(),
-      ]
-    : targetDirOrTables;
+  const tables = getInflectionTables(targetDirOrTables, dependencyDirs);
   const index = setMap<string, string>();
   const inflectionLookup: InflectionLookup = new Map();
   const tableFilter: (table: string) => boolean =

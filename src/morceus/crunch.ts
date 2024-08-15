@@ -19,6 +19,7 @@ import {
   type EndsResult,
   type InflectionLookup,
 } from "@/morceus/tables/indices";
+import { expandSingleEnding } from "@/morceus/tables/templates";
 import { LatinDegree, LatinGender } from "@/morceus/types";
 
 export interface CrunchResult extends InflectionContext {
@@ -117,7 +118,13 @@ function crunchExactMatch(
         tables.inflectionLookup.get(candidate.inflection)?.get(observedEnd)
       );
       for (const end of possibleEndInflections) {
-        const mergedData = mergeIfCompatible(candidate, end);
+        // If there's no inflection code,
+        // this means the entire table is intended to be expanded there. Otherwise,
+        // check to see whether the ending and stem are actually valid.
+        const mergedData =
+          candidate.code === undefined
+            ? expandSingleEnding(candidate.stem, candidate, end)
+            : mergeIfCompatible(candidate, end);
         if (mergedData !== null) {
           results.push({
             lemma,
