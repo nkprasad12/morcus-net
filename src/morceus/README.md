@@ -95,6 +95,6 @@ These are also explained in the doc and are something of a registry for all the 
 
 http://localhost:5757/work/ovid/amores?q=1
 Lots of unhandled words!
+
 - praetulit
 - iam
-- levior

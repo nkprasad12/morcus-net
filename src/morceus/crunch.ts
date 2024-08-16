@@ -192,10 +192,7 @@ function mergeIfCompatible(
   const isCompatible =
     subsetOf(stemData.case, endData.case) &&
     // For degree, the positive is implied if it is not marked.
-    subsetOf(
-      stemData.degree || LatinDegree.Positive,
-      endData.degree || LatinDegree.Positive
-    ) &&
+    subsetOf(stemData.degree, endData.degree || LatinDegree.Positive) &&
     // If the template doesn't have a gender, it is assumed to be valid for all.
     subsetOf(
       stemData.gender,
