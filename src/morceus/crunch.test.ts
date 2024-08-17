@@ -79,7 +79,7 @@ describe("crunchWord", () => {
     expect(result).toHaveLength(1);
     expect(result[0].lemma).toBe("caveo");
     expect(result[0].form).toBe("ca^ve_te");
-    expect(result[0].grammaticalData).toStrictEqual(
+    expect(result[0].grammaticalData).toEqual(
       toInflectionData("pres imperat act 2nd pl".split(" ")).grammaticalData
     );
   });

@@ -210,7 +210,24 @@ function mergeIfCompatible(
   if (!isCompatible) {
     return null;
   }
-  const result: InflectionContext = { grammaticalData: endData };
+
+  // For `case` and `gender`, if the stem has provides any narrowing we want to use
+  // that instead of the more expansive options on the ending (since the stem info
+  // is guaranteed to be a subset of the end options after the above checks).
+  // For example, if the stem has `fem` and the ending has `masc / fem`, we
+  // only want `fem` for the result.
+  //
+  // Note that we should theoretically be doing this for all the other dimensions as well,
+  // but because no other dimensions (besides `case` and `gender`) can have multiple
+  // options, the result is the same as just taking the data from the ending, since in that
+  // case either they are both undefined or both equal to the same thing (in which case
+  // it doesn't matter if we took the stem or the ending), or the stem is undefined and
+  // the ending is not (in which case we would want the ending).
+  const resultCase = stemData.case ?? endData.case;
+  const resultGender = stemData.gender ?? endData.gender;
+  const result: InflectionContext = {
+    grammaticalData: { ...endData, gender: resultGender, case: resultCase },
+  };
   if (stem.tags !== undefined || ending.tags !== undefined) {
     const tags = (stem.tags || []).concat(ending.tags || []);
     result.tags = [...new Set<string>(tags)];
