@@ -15,6 +15,7 @@ import {
 export const SEMANTIC_TAGS = new Set([
   "adverb",
   "archaic",
+  "conj", // Is this conjunction or conjugation?
   "contr",
   "dep",
   "early",
@@ -45,7 +46,6 @@ export const SEMANTIC_TAGS = new Set([
 export const INTERNAL_TAGS = new Set<string>([
   "are_vb",
   "comp_only",
-  "conj", // Is this conjunction or conjugation?
   "conj1",
   "conj2",
   "conj3",
