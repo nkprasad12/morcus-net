@@ -2,7 +2,9 @@ import { assert, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { singletonOf } from "@/common/misc_utils";
 import {
+  compareGrammaticalData,
   InflectionContext,
+  subsetOf,
   type InflectionEnding,
 } from "@/morceus/inflection_data_utils";
 import {
@@ -140,6 +142,48 @@ function crunchExactMatch(
   return results;
 }
 
+function consolidateResultCluster(cluster: CrunchResult[]): CrunchResult[] {
+  let original = cluster.slice();
+  while (true) {
+    const consolidated: CrunchResult[] = [];
+    for (const result of original) {
+      let consumed = false;
+      for (let i = 0; i < consolidated.length; i++) {
+        const comparison = compareGrammaticalData(
+          result.grammaticalData,
+          consolidated[i].grammaticalData
+        );
+        if (comparison === undefined) {
+          continue;
+        }
+        consumed = true;
+        if (comparison === 1) {
+          consolidated[i] = result;
+        }
+      }
+      if (!consumed) {
+        consolidated.push(result);
+      }
+    }
+    const didConsolidate = original.length !== consolidated.length;
+    original = consolidated;
+    if (!didConsolidate) {
+      return original;
+    }
+  }
+}
+
+function consolidateCrunchResults(rawResults: CrunchResult[]): CrunchResult[] {
+  // Split up by (lemma, form, tags), then consolidate within each cluster.
+  const byCluster = arrayMap<string, CrunchResult>();
+  for (const result of rawResults) {
+    const tags = (result.tags || []).map((tag) => tag.toLowerCase().trim());
+    const key = [result.lemma, result.form, tags.sort().join("@")];
+    byCluster.add(key.join("$"), result);
+  }
+  return Array.from(byCluster.map.values()).flatMap(consolidateResultCluster);
+}
+
 export function crunchWord(
   word: string,
   tables: CruncherTables,
@@ -156,7 +200,7 @@ export function crunchWord(
       results.push({ ...relaxedResult, relaxedCase: true });
     }
   }
-  return results;
+  return consolidateCrunchResults(results);
 }
 
 export interface CruncherConfig {
@@ -168,19 +212,6 @@ export interface CruncherConfig {
     nomStemFiles: string[];
     verbStemFiles: string[];
   };
-}
-
-function subsetOf<T>(first?: T | T[], second?: T | T[]): boolean {
-  const firstArr =
-    first === undefined ? [] : Array.isArray(first) ? first : [first];
-  const secondArr =
-    second === undefined ? [] : Array.isArray(second) ? second : [second];
-  for (const item of firstArr) {
-    if (!secondArr.includes(item)) {
-      return false;
-    }
-  }
-  return true;
 }
 
 function mergeIfCompatible(

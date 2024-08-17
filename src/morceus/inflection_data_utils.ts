@@ -152,6 +152,64 @@ function updateInflectionData<T extends LatinCase | LatinGender>(
   }
 }
 
+export function subsetOf<T>(first?: T | T[], second?: T | T[]): boolean {
+  const firstArr =
+    first === undefined ? [] : Array.isArray(first) ? first : [first];
+  const secondArr =
+    second === undefined ? [] : Array.isArray(second) ? second : [second];
+  for (const item of firstArr) {
+    if (!secondArr.includes(item)) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function compareField<T>(
+  first?: T | T[],
+  second?: T | T[]
+): -1 | 0 | 1 | undefined {
+  const isSubset = subsetOf(first, second);
+  const isSuperset = subsetOf(second, first);
+  return isSubset ? (isSuperset ? 0 : -1) : isSuperset ? 1 : undefined;
+}
+
+/**
+ * Compares the two input grammatical data and returns the result.
+ *
+ * @param first The first data.
+ * @param second The second data.
+ *
+ * @returns 0 if they are exactly equal, -1 if the first is a strict
+ * subset of the second, 1 if the first is a strict superset of the second,
+ * and undefined if none of the above are true.
+ */
+export function compareGrammaticalData(
+  first: WordInflectionData,
+  second: WordInflectionData
+): -1 | 0 | 1 | undefined {
+  const comparisons = new Set([
+    compareField(first.case, second.case),
+    compareField(first.degree, second.degree),
+    compareField(first.gender, second.gender),
+    compareField(first.mood, second.mood),
+    compareField(first.number, second.number),
+    compareField(first.person, second.person),
+    compareField(first.tense, second.tense),
+    compareField(first.voice, second.voice),
+  ]);
+  if (comparisons.has(undefined)) {
+    return undefined;
+  }
+  if (comparisons.has(1) && comparisons.has(-1)) {
+    return undefined;
+  }
+  if (comparisons.has(0) && comparisons.size === 1) {
+    return 0;
+  }
+  return comparisons.has(-1) ? -1 : 1;
+}
+
 export function toInflectionData(grammaticalData: string[]): InflectionContext {
   const result: WordInflectionData = {};
   const tags: string[] = [];
