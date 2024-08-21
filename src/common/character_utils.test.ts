@@ -1,4 +1,36 @@
-import { Vowels } from "@/common/character_utils";
+import {
+  combineLengthCombiners,
+  stripCombiners,
+  Vowels,
+} from "@/common/character_utils";
+
+describe("stripCombiners", () => {
+  it("removes all combiners", () => {
+    expect(stripCombiners("u\u0304")).toBe("u");
+    expect(stripCombiners("a\u0304e\u0306")).toBe("ae");
+  });
+
+  it("keeps macrons not from combiners", () => {
+    expect(stripCombiners("ōi\u0304")).toBe("ōi");
+  });
+});
+
+describe("combineLengthCombiners", () => {
+  it("Handles initial combiner", () => {
+    expect(combineLengthCombiners("u\u0304helloh")).toBe("ūhelloh");
+    expect(combineLengthCombiners("u\u0306helloh")).toBe("ŭhelloh");
+  });
+
+  it("Handles final combiner", () => {
+    expect(combineLengthCombiners("u\u0304hellohi\u0304")).toBe("ūhellohī");
+    expect(combineLengthCombiners("u\u0304hellohi\u0306")).toBe("ūhellohĭ");
+  });
+
+  it("Handles middle combiners", () => {
+    expect(combineLengthCombiners("hello\u0304hi\u0304")).toBe("hellōhī");
+    expect(combineLengthCombiners("hello\u0306hi\u0306")).toBe("hellŏhĭ");
+  });
+});
 
 describe("Vowels getLength", () => {
   it("returns unspecified on other", () => {

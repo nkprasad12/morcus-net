@@ -1,10 +1,38 @@
-import { assertEqual } from "@/common/assert";
+import { assertEqual, checkPresent } from "@/common/assert";
 
 // The last two are tilde characters. This look the same in VS code.
-export const MACRONS = "āēīōūȳĀĒĪŌŪÃÕ";
-export const BREVES = "ăĕĭŏŭўĂĬĔŎŬ";
+export const MACRONS = "āēīōūȳĀĒĪŌŪȲÃÕ";
+export const BREVES = "ăĕĭŏŭўĂĬĔŎŬY̆";
 export const MACRON_COMBINER = "\u0304";
 export const BREVE_COMBINER = "\u0306";
+const UNMARKED_VOWELS = "aeiouyAEIOUY";
+
+const LENGTH_MARK_EQUIVALENTS = new Map<string, string>([
+  [`a${MACRON_COMBINER}`, "ā"],
+  [`e${MACRON_COMBINER}`, "ē"],
+  [`i${MACRON_COMBINER}`, "ī"],
+  [`o${MACRON_COMBINER}`, "ō"],
+  [`u${MACRON_COMBINER}`, "ū"],
+  [`y${MACRON_COMBINER}`, "ȳ"],
+  [`A${MACRON_COMBINER}`, "Ā"],
+  [`E${MACRON_COMBINER}`, "Ē"],
+  [`I${MACRON_COMBINER}`, "Ī"],
+  [`O${MACRON_COMBINER}`, "Ō"],
+  [`U${MACRON_COMBINER}`, "Ū"],
+  [`Y${MACRON_COMBINER}`, "Ȳ"],
+  [`a${BREVE_COMBINER}`, "ă"],
+  [`e${BREVE_COMBINER}`, "ĕ"],
+  [`i${BREVE_COMBINER}`, "ĭ"],
+  [`o${BREVE_COMBINER}`, "ŏ"],
+  [`u${BREVE_COMBINER}`, "ŭ"],
+  [`y${BREVE_COMBINER}`, "ў"],
+  [`A${BREVE_COMBINER}`, "Ă"],
+  [`E${BREVE_COMBINER}`, "Ĕ"],
+  [`I${BREVE_COMBINER}`, "Ĭ"],
+  [`O${BREVE_COMBINER}`, "Ŏ"],
+  [`U${BREVE_COMBINER}`, "Ŭ"],
+  [`Y${BREVE_COMBINER}`, "Y̆"],
+]);
 
 export namespace Vowels {
   export type Length = "Long" | "Short" | "Ambiguous";
@@ -69,4 +97,50 @@ export namespace Vowels {
     }
     return true;
   }
+
+  export function isVowel(input: string): boolean {
+    return (
+      UNMARKED_VOWELS.includes(input) ||
+      MACRONS.includes(input) ||
+      BREVES.includes(input)
+    );
+  }
+
+  export function isUnmarkedVowel(input: string): boolean {
+    return UNMARKED_VOWELS.includes(input);
+  }
+}
+
+export function combineLengthCombiners(input: string): string {
+  const n = input.length;
+  let pendingVowel = Vowels.isUnmarkedVowel(input[0]) ? input[0] : undefined;
+  let result = pendingVowel ? "" : input[0];
+  for (let i = 1; i < n; i++) {
+    const c = input[i];
+    const isCombiner = c === MACRON_COMBINER || c === BREVE_COMBINER;
+    if (isCombiner) {
+      if (pendingVowel !== undefined) {
+        result += checkPresent(LENGTH_MARK_EQUIVALENTS.get(pendingVowel + c));
+        pendingVowel = undefined;
+      }
+      // If there's no pending vowel, then just skip the combiner.
+      continue;
+    }
+    if (pendingVowel !== undefined) {
+      // Since there's no combiner, move the pending vowel to the result.
+      result += pendingVowel;
+      pendingVowel = undefined;
+    }
+    if (Vowels.isUnmarkedVowel(c)) {
+      pendingVowel = c;
+    } else {
+      result += c;
+    }
+  }
+  // Add on any leftover pending vowel if we have one.
+  return result + (pendingVowel ?? "");
+}
+
+export function stripCombiners(input: string): string {
+  return input.replaceAll(/[\u0304\u0306]/g, "");
 }
