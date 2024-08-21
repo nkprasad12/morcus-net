@@ -65,6 +65,7 @@ export interface Lemma {
   lemma: string;
   stems?: Stem[];
   irregularForms?: IrregularForm[];
+  isVerb?: true;
 }
 
 export function parseNounStemFile(filePath: string): Lemma[] {
@@ -98,7 +99,7 @@ export function parseNounStemFile(filePath: string): Lemma[] {
     }
     current.push(line);
   }
-  return results.map(processStem);
+  return results.map((lines) => processStem(lines));
 }
 
 // TODO: Consolidate this with `parseNounStemFile`.
@@ -128,10 +129,10 @@ export function parseVerbStemFile(filePath: string): Lemma[] {
   if (current.length > 0) {
     results.push(current);
   }
-  return results.map(processStem);
+  return results.map((lines) => processStem(lines, true));
 }
 
-function processStem(lines: string[]): Lemma {
+function processStem(lines: string[], isVerb?: boolean): Lemma {
   assert(lines.length > 1);
   assert(lines[0].startsWith(":le:"));
   const stems: Stem[] = [];
@@ -162,6 +163,9 @@ function processStem(lines: string[]): Lemma {
     }
   }
   const result: Lemma = { lemma: lines[0].substring(4).trimEnd() };
+  if (isVerb === true) {
+    result.isVerb = true;
+  }
   if (stems.length > 0) {
     result.stems = stems;
   }

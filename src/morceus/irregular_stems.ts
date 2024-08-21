@@ -44,7 +44,7 @@ function parseInflectionClass(chunks: string[]): string | undefined {
   return undefined;
 }
 
-export function processIrregEntry(entry: string[]): Lemma {
+export function processIrregEntry(entry: string[], isVerb?: boolean): Lemma {
   const irregulars: IrregularForm[] = [];
   const regulars: Stem[] = [];
 
@@ -97,21 +97,25 @@ export function processIrregEntry(entry: string[]): Lemma {
       form: parts[0].substring(code === undefined ? 0 : 4).replaceAll("-", ""),
     });
   }
-  return {
+  const result: Lemma = {
     lemma,
     stems: regulars.length > 0 ? regulars : undefined,
     irregularForms: irregulars.length > 0 ? irregulars : undefined,
   };
+  if (isVerb === true) {
+    result.isVerb = true;
+  }
+  return result;
 }
 
 export function processNomIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
 ) {
-  return parseEntries(filePath).map(processIrregEntry);
+  return parseEntries(filePath).map((lines) => processIrregEntry(lines));
 }
 
 export function processVerbIrregEntries(
   filePath: string = path.join(envVar("MORPHEUS_ROOT"), VERB_PATH)
 ) {
-  return parseEntries(filePath).map(processIrregEntry);
+  return parseEntries(filePath).map((lines) => processIrregEntry(lines, true));
 }

@@ -63,8 +63,9 @@ describe("parseVerbStemFile", () => {
 
   it("parses line split lemma", () => {
     const acclamo = verbs.filter((s) => s.lemma === "acclamo")[0];
-    expect(acclamo).toEqual({
+    expect(acclamo).toEqual<Lemma>({
       lemma: "acclamo",
+      isVerb: true,
       stems: [
         {
           stem: "ac-cla_m",
@@ -80,6 +81,7 @@ describe("parseVerbStemFile", () => {
     const caveo = verbs.filter((s) => s.lemma === "caveo")[0];
     expect(caveo).toEqual<Lemma>({
       lemma: "caveo",
+      isVerb: true,
       stems: [
         {
           stem: "ca^v",
