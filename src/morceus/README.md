@@ -97,4 +97,62 @@ http://localhost:5757/work/ovid/amores?q=1
 Lots of unhandled words!
 
 - praetulit
-- iam
+
+TODOs:
+
+- Investigate how the hell praetulit shows up in Morpheus (but not in ours)
+- Auto-delete duplicates of exact copy lemmata [Not as important now that we can delete dupes]
+- Figure out strategy for subset lemmata [Not as important now that we can delete dupes]
+- Figure out strategy for substantive / adjective lemmata [Not as important now that we can delete dupes]
+- Figure out strategy for duplicate lemma that differ only on a vowel length marking
+  that is not contradictory (e.g. maxĭmus and maximus)
+
+Other important stuff before going live:
+
+- FIX DEPONENTS!!!!!!!!!!!!
+
+- Figure out a strategy for linking to subentries
+  - e.g. Romanus (http://localhost:5757/dicts/id/n41840#n41840.1) does not have its own entry
+  - Likely candidate would be for orths that are not in the initial blurb, we should link these
+    to the appropriate entry and just scroll down to the right subsection. This requires dictionary
+    changes as well so it is annoying.
+
+- Figure out a strategy to consolidate entries. For example:
+
+  ```
+  hīs:
+
+      fem dat pl
+      fem abl pl
+      masc dat pl
+      masc abl pl
+      neut dat pl
+      neut abl pl
+  ```
+
+  could ideally just be collapsed to 
+
+  ```
+  hīs:
+
+    fem/masc/neut dat/abl pl
+  ```
+
+- Another dictionary issue: it seems the logic needs to be tuned. For example, when typing in `cum`, 
+  we get results for `cos` and `Cos` as well because `Cos` was (incorrectly) marked as potentially
+  having an inflection `Cum` (should be `Coum`, but that's a separate problem).
+
+  However, the point here is that `cos` has genetive `cotis` so this shouldn't even have pretended
+  to be a match. Need to clean up this logic. It seems what happened was:
+
+  1. Analyses for `Cum` returns the lemma `Cos`.
+  2. Then, we returned results for `Cos` without verifying case.
+
+Other nice to haves:
+
+- Derank stub entries. For example, searching `maximum` gives the entry
+  for `maximus` first which is just a stub that refers to `magnus`. However,
+  the result also pulls up `magnus` anyways so we can just ignore this.
+  - For this, we can likely save some metadata about the entry, e.g. whether
+    it's a stub and if so where it points to. Then we can make the decision at
+    query time about whether to return that result or not.
