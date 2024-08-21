@@ -95,6 +95,21 @@ describe("crunchWord", () => {
       toInflectionData("pres imperat act 2nd pl".split(" ")).grammaticalData
     );
   });
+
+  it("handles ajunt", () => {
+    const tables = MorceusCruncher.makeTables(FAKEDATA_CRUNCHER_CONFIG);
+    const result = crunchWord("aiunt", tables, {
+      vowelLength: "relaxed",
+      relaxIandJ: true,
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].lemma).toBe("aio");
+    expect(result[0].form).toBe("ajunt");
+    expect(result[0].grammaticalData).toStrictEqual(
+      toInflectionData("pres ind act 3rd pl".split(" ")).grammaticalData
+    );
+  });
 });
 
 describe("MorceusCruncher", () => {

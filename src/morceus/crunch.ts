@@ -1,4 +1,9 @@
 import { assert, checkPresent } from "@/common/assert";
+import {
+  combineLengthCombiners,
+  stripCombiners,
+  Vowels,
+} from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { singletonOf } from "@/common/misc_utils";
 import {
@@ -52,7 +57,19 @@ export interface CruncherTables {
 export interface CruncherOptions {
   vowelLength?: "strict" | "relaxed";
   relaxCase?: boolean;
+  relaxUandV?: boolean;
+  relaxIandJ?: boolean;
 }
+
+export namespace CruncherOptions {
+  export const DEFAULT: CruncherOptions = {
+    vowelLength: "relaxed",
+    relaxCase: true,
+    relaxIandJ: true,
+    relaxUandV: true,
+  };
+}
+
 export type Cruncher = (
   word: string,
   options?: CruncherOptions
@@ -184,13 +201,20 @@ function consolidateCrunchResults(rawResults: CrunchResult[]): CrunchResult[] {
   return Array.from(byCluster.map.values()).flatMap(consolidateResultCluster);
 }
 
-export function crunchWord(
+/**
+ *
+ * @param word An input word. This must not have any combining characters.
+ * @param tables
+ * @param relaxCase
+ * @returns
+ */
+export function crunchAndMaybeRelaxCase(
   word: string,
   tables: CruncherTables,
-  options?: CruncherOptions
+  relaxCase?: boolean
 ): CrunchResult[] {
   const results: CrunchResult[] = crunchExactMatch(word, tables);
-  if (options?.relaxCase === true) {
+  if (relaxCase === true) {
     const isUpperCase = word[0].toUpperCase() === word[0];
     const relaxedFirst = isUpperCase
       ? word[0].toLowerCase()
@@ -200,7 +224,148 @@ export function crunchWord(
       results.push({ ...relaxedResult, relaxedCase: true });
     }
   }
-  return consolidateCrunchResults(results);
+  return results;
+}
+
+/**
+ * Returns the indices of the possible ambiguous `i` and `u` characters.
+ *
+ * @param word the input, which must not have any combining characters.
+ * @param tryI whether to check for ambiguous `i`.
+ * @param tryU whether to check for ambiguous 'u'.
+ *
+ * @returns the (0 based) indices of the possible ambiguous characters.
+ */
+export function findAmbiguousIandU(
+  word: string,
+  tryI: boolean = true,
+  tryU: boolean = true
+): number[] {
+  // We do not remove diacitics here on purpose because and i or u with
+  // a macron definitely is not a consonant.
+  const cleanWord = word.toLowerCase();
+  const n = cleanWord.length;
+
+  let markU = tryU;
+  let markI = tryI;
+  const isVowelTable: boolean[] = [];
+  for (let i = 0; i < n; i++) {
+    const c = cleanWord[i];
+    isVowelTable.push(Vowels.isVowel(c));
+    // If the word has a `j`, we assume `i` is only used as a vowel.
+    markI = markI && c !== "j";
+    // If the word has a `v`, assume that `v` is only used as a vowel.
+    // Note that some conventions use `V` for capital `u`, so we don't consider
+    // capital `V` here. Note that using `word[i]` instead of `c` is intentional
+    // as we need to distinguish the case here.
+    markU = markU && word[i] !== "v";
+  }
+  if (!markI && !markU) {
+    return [];
+  }
+
+  const result: number[] = [];
+  for (let i = 0; i < n; i++) {
+    const afterVowel = i >= 1 && isVowelTable[i - 1];
+    const beforeVowel = i < n - 1 && isVowelTable[i + 1];
+    if (!afterVowel && !beforeVowel) {
+      continue;
+    }
+    const c = cleanWord[i];
+    // Ignore `u` if after `q`, since `qu` is a digraph and `q` is never
+    // used without `u`.
+    const notAfterQ = cleanWord[i - 1] !== "q";
+    if ((markI && c === "i") || (markU && c === "u" && notAfterQ)) {
+      result.push(i);
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Generates variants of the word with possible ambiguous `i` and `u` characters.
+ *
+ * @param word the input, which must not have any combining characters.
+ * @param tryI whether to check for ambiguous `i`.
+ * @param tryU whether to check for ambiguous 'u'.
+ *
+ * @yields alternate spellings with consonental i or u as specified.
+ */
+function* alternatesWithIorU(
+  word: string,
+  tryI?: boolean,
+  tryU?: boolean
+): Generator<string> {
+  const ambigs = findAmbiguousIandU(word, tryI, tryU);
+  if (ambigs.length === 0) {
+    return;
+  }
+  const perm: boolean[] = Array(ambigs.length).fill(false);
+  // Skip the all false case since that is just the original string.
+  perm[0] = true;
+  while (true) {
+    const modifiedChunks = [word.substring(0, ambigs[0])];
+    for (let i = 0; i < ambigs.length; i++) {
+      const c = word[ambigs[i]];
+      const modifiedCurrent = perm[i]
+        ? c === "i"
+          ? "j"
+          : c === "I"
+          ? "J"
+          : c === "u"
+          ? "v"
+          : "V"
+        : c;
+      // We intentionally access `ambigs[i + 1]` without checking here, because
+      // Javascript returns `undefined` for an out of bounds array access. This
+      // means that `substring` will have no end index and will give us the rest
+      // of the string after the start index.
+      const nextInterval = word.substring(ambigs[i] + 1, ambigs[i + 1]);
+      modifiedChunks.push(modifiedCurrent + nextInterval);
+    }
+    yield modifiedChunks.join("");
+
+    let carry = true;
+    for (let i = 0; i < perm.length; i++) {
+      if (!carry) {
+        break;
+      }
+      carry = perm[i];
+      perm[i] = !perm[i];
+    }
+
+    // We overflowed!
+    if (carry) {
+      break;
+    }
+  }
+}
+
+export function crunchWord(
+  input: string,
+  tables: CruncherTables,
+  options?: CruncherOptions
+): CrunchResult[] {
+  // Combine macron and breve combiners with vowels and remove all
+  // others, since they make text processing more complicated.
+  const word = stripCombiners(combineLengthCombiners(input));
+  const results: CrunchResult[][] = [
+    crunchAndMaybeRelaxCase(word, tables, options?.relaxCase),
+  ];
+  if (options?.relaxIandJ !== undefined || options?.relaxUandV !== undefined) {
+    const alternates = alternatesWithIorU(
+      word,
+      options?.relaxIandJ,
+      options?.relaxUandV
+    );
+    Array.from(alternates).forEach((modifiedWord) =>
+      results.push(
+        crunchAndMaybeRelaxCase(modifiedWord, tables, options?.relaxCase)
+      )
+    );
+  }
+  return consolidateCrunchResults(results.flatMap((x) => x));
 }
 
 export interface CruncherConfig {
@@ -337,9 +502,9 @@ export namespace MorceusCruncher {
 //   }
 // }
 
-// const options: CruncherOptions = { vowelLength: "relaxed" };
 // const cruncher = MorceusCruncher.make(MorceusCruncher.makeTables());
 // const start = performance.now();
-// const result = cruncher(process.argv[2], options);
+// const result = cruncher(process.argv[2], CruncherOptions.DEFAULT);
 // console.log(`${performance.now() - start} ms`);
 // result.forEach(printWordAnalysis);
+// console.log(process.memoryUsage());
