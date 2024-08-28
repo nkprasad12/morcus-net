@@ -36,6 +36,7 @@ const PERSEUS_DOWNLOADS = [
   "data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml",
   "data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
   "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
+  "data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml",
 ].map(perseusDownloadConfig);
 
 function perseusUrl(resource: string): string {
