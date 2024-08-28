@@ -112,6 +112,7 @@ Other important stuff before going live:
 - FIX DEPONENTS!!!!!!!!!!!!
 
 - Figure out a strategy for linking to subentries
+
   - e.g. Romanus (http://localhost:5757/dicts/id/n41840#n41840.1) does not have its own entry
   - Likely candidate would be for orths that are not in the initial blurb, we should link these
     to the appropriate entry and just scroll down to the right subsection. This requires dictionary
@@ -130,7 +131,7 @@ Other important stuff before going live:
       neut abl pl
   ```
 
-  could ideally just be collapsed to 
+  could ideally just be collapsed to
 
   ```
   hīs:
@@ -138,7 +139,7 @@ Other important stuff before going live:
     fem/masc/neut dat/abl pl
   ```
 
-- Another dictionary issue: it seems the logic needs to be tuned. For example, when typing in `cum`, 
+- Another dictionary issue: it seems the logic needs to be tuned. For example, when typing in `cum`,
   we get results for `cos` and `Cos` as well because `Cos` was (incorrectly) marked as potentially
   having an inflection `Cum` (should be `Coum`, but that's a separate problem).
 
