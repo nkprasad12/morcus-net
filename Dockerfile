@@ -16,6 +16,7 @@ COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
 COPY --from=0 /morcus/package.json package.json
 COPY --from=0 /morcus/morpheus morpheus
+COPY --from=0 /morcus/src/morceus src/morceus
 RUN mv build/dbs/ /morcus_dbs/
 RUN chown -R node:node /morcus
 RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +

@@ -7,6 +7,17 @@ import { parseXmlStrings } from "./xml_utils";
 
 console.debug = jest.fn();
 
+const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
+const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
+
+beforeAll(() => {
+  process.env.MORPHEUS_ROOT = FAKE_MORPHEUS_ROOT;
+});
+
+afterAll(() => {
+  process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT;
+});
+
 // import { Serialization, instanceOf } from "@/web/utils/rpc/parsing";
 
 // const LEGACY: Serialization<XmlNode> = {

@@ -15,6 +15,17 @@ const SH_ENTRIES: ShEntry[] = [
   { keys: ["Hello"], blurb: "Loop", senses: [] },
 ];
 
+const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
+const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
+
+beforeAll(() => {
+  process.env.MORPHEUS_ROOT = FAKE_MORPHEUS_ROOT;
+});
+
+afterAll(() => {
+  process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT;
+});
+
 async function expectEntriesWithIds(
   promise: Promise<EntryResult[]>,
   expected: string[]

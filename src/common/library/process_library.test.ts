@@ -12,7 +12,11 @@ const LIB_DIR = "process_library_test_ts";
 const DBG_PATH =
   "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml";
 
+const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
+const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
+
 beforeAll(() => {
+  process.env.MORPHEUS_ROOT = FAKE_MORPHEUS_ROOT;
   if (!fs.existsSync(LIB_DIR)) {
     fs.mkdirSync(LIB_DIR, { recursive: true });
   }
@@ -22,6 +26,7 @@ afterAll(() => {
   try {
     fs.rmSync(LIB_DIR, { recursive: true, force: true });
   } catch {}
+  process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT;
 });
 
 describe("Library Processing", () => {
