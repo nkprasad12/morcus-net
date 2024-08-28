@@ -16,6 +16,23 @@ import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
 const DEFAULT_TEXT_NODES = ["p", "l"];
 const KNOWN_ALT_NODES = ["add", "sic", "del", "gap"];
+const WHITESPACE = new Set([" ", "\n", "\t"]);
+
+function collapseWhitespace(input: string): string {
+  let result = "";
+  for (let i = 0; i < input.length; i++) {
+    const c = input[i];
+    if (!WHITESPACE.has(c) || c === "\t") {
+      result += c;
+      continue;
+    }
+    const last = result[result.length - 1];
+    if (!WHITESPACE.has(last)) {
+      result += " ";
+    }
+  }
+  return result;
+}
 
 function markupText(text: string, parentName: string): XmlChild[] {
   if (parentName === "#comment") {
@@ -23,7 +40,7 @@ function markupText(text: string, parentName: string): XmlChild[] {
   }
   const isAlt = !DEFAULT_TEXT_NODES.includes(parentName);
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
-  const words = processWords(text, (word) => {
+  const words = processWords(collapseWhitespace(text), (word) => {
     // Even if we can't resolve it in the Morpheus table, LS may have it.
     const target = LatinWords.resolveLatinWord(word, (w) => [
       LatinWords.isWord(w),

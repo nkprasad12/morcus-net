@@ -22,9 +22,16 @@ const ALL_WORKS = [
 const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["Julius Caesar", "caesar"],
   ["P. Ovidius Naso", "ovid"],
+  ["Cornelius Tacitus", "tacitus"],
 ]);
 
-const NAME_TO_URL_LOOKUP = new Map<string, string>();
+const NAME_TO_DISPLAY_NAME = new Map<string, string>([
+  ["de Origine et Situ Germanorum Liber", "Germania"],
+]);
+
+const NAME_TO_URL_LOOKUP = new Map<string, string>([
+  ["de Origine et Situ Germanorum Liber", "germania"],
+]);
 
 function urlify(input: string, customs: Map<string, string>) {
   const custom = customs.get(input);
@@ -57,10 +64,11 @@ export function processLibrary(
       .slice(-1)[0]
       .replace(/\.[^/.]+$/, "");
     const tei = parseCtsTeiXml(parseRawXml(fs.readFileSync(workPath)));
+    const title = NAME_TO_DISPLAY_NAME.get(tei.info.title) || tei.info.title;
     const metadata: LibraryWorkMetadata = {
       id: workId,
       author: tei.info.author,
-      name: tei.info.title,
+      name: title,
       urlAuthor: urlifyAuthor(tei.info.author),
       urlName: urlifyName(tei.info.title),
     };
