@@ -12,8 +12,8 @@ export function assertEqual(
   const extra = details === undefined ? "" : `\n${details}`;
   if (expected !== actual) {
     throw new Error(
-      `Expected ${JSON.stringify(actual)}, but got ${JSON.stringify(
-        expected
+      `Expected ${JSON.stringify(expected)}, but got ${JSON.stringify(
+        actual
       )}.${extra}`
     );
   }
