@@ -456,10 +456,10 @@ export namespace MorceusCruncher {
   export function makeTables(config?: CruncherConfig): CruncherTables {
     const [endIndices, endTables] =
       config?.existing?.endsResult ??
-      makeEndIndex(
-        ["src/morceus/tables/lat/core/target"],
-        ["src/morceus/tables/lat/core/dependency"]
-      );
+      makeEndIndex([
+        "src/morceus/tables/lat/core/target",
+        "src/morceus/tables/lat/core/dependency",
+      ]);
     const allLemmata =
       config?.existing?.lemmata ??
       allNounStems(config?.generate?.nomStemFiles).concat(

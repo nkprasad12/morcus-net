@@ -1,3 +1,4 @@
+import { checkPresent } from "@/common/assert";
 import {
   expandTemplates,
   expandTemplatesAndSave,
@@ -122,11 +123,9 @@ describe("Template Expansion", () => {
   afterAll(cleanup);
 
   test("handles simple expansion", () => {
-    const [targets, _] = expandTemplates([A_AE], [DEP_TEMPLATES]);
-    const tables = [...targets.values()];
+    const tables = expandTemplates([A_AE, DEP_TEMPLATES]);
+    const table = checkPresent(tables.get("a_ae"));
 
-    expect(tables).toHaveLength(1);
-    const table = tables[0];
     expect(table.name).toBe("a_ae");
     expect(table.endings).toHaveLength(5);
     expect(table.endings![0]).toEqual({
@@ -168,17 +167,15 @@ describe("Template Expansion", () => {
   });
 
   test("handles expansion with filter", () => {
-    const [targets, _] = expandTemplates([TAS_TATIS], [DECL3_I, DECL3]);
-    const tables = [...targets.values()];
+    const tables = expandTemplates([TAS_TATIS, DECL3_I, DECL3]);
+    const table = checkPresent(tables.get("tas_tatis"));
 
-    expect(tables).toHaveLength(1);
-    const table = tables[0];
     expect(table.name).toBe("tas_tatis");
     expect(table.endings).toHaveLength(12);
   });
 
   test("writes to file", () => {
-    expandTemplatesAndSave([TARGET_TEMPLATES], [DEP_TEMPLATES], TEST_TMP_DIR);
+    expandTemplatesAndSave([TARGET_TEMPLATES, DEP_TEMPLATES], TEST_TMP_DIR);
     const table = fs.readFileSync(`${TEST_TMP_DIR}/a_ae.table`, "utf8");
     expect(table).toContain("a_rum");
   });

@@ -1,13 +1,12 @@
 import fs from "fs";
 import path from "path";
 
-import { assert, checkPresent } from "@/common/assert";
+import { assert } from "@/common/assert";
 import { InflectionTable, expandTemplates } from "@/morceus/tables/templates";
 import { isArray, isString } from "@/web/utils/rpc/parsing";
 import { arrayMap, setMap } from "@/common/data_structures/collect_map";
 import type { InflectionEnding } from "@/morceus/inflection_data_utils";
 
-const KNOWN_DUPLICATES = new Set(["peLs_pedis"]);
 const VERB_TABLES = new Set([
   "conj1",
   "conj2",
@@ -53,45 +52,24 @@ export namespace EndIndexRow {
 }
 
 function getInflectionTables(
-  targetDirOrTables: string[] | InflectionTable[],
-  dependencyDirs?: string[]
+  templateDirOrTables: string[] | InflectionTable[]
 ): InflectionTable[] {
-  if (!isArray(isString)(targetDirOrTables)) {
-    return targetDirOrTables;
+  if (!isArray(isString)(templateDirOrTables)) {
+    return templateDirOrTables;
   }
-  const [targetTables, depTables] = expandTemplates(
-    targetDirOrTables,
-    checkPresent(dependencyDirs)
-  );
-  const tables = new Map<string, InflectionTable>(targetTables);
-  // For the dependency tables, check that we have no overlaps with target tables
-  // that are unexpected.
-  for (const table of depTables.values()) {
-    const isDuplicate = tables.has(table.name);
-    const knownDuplicate = KNOWN_DUPLICATES.has(table.name);
-    if (isDuplicate) {
-      // If it's a duplicate, check that this is expected and ignore it
-      // (which means that we keep the table present in `targetTables`).
-      assert(knownDuplicate, table.name);
-      continue;
-    }
-    tables.set(table.name, table);
-  }
-  return [...tables.values()];
+  return Array.from(expandTemplates(templateDirOrTables).values());
 }
 
 export function makeEndIndex(
-  targetDirs: string[],
-  dependencyDirs: string[],
+  templateDirs: string[],
   indexMode?: IndexMode
 ): EndsResult;
 export function makeEndIndex(tables: InflectionTable[]): EndsResult;
 export function makeEndIndex(
-  targetDirOrTables: string[] | InflectionTable[],
-  dependencyDirs?: string[],
+  templateDirOrTables: string[] | InflectionTable[],
   indexMode?: IndexMode
 ): EndsResult {
-  const tables = getInflectionTables(targetDirOrTables, dependencyDirs);
+  const tables = getInflectionTables(templateDirOrTables);
   const index = setMap<string, string>();
   const inflectionLookup: InflectionLookup = new Map();
   const tableFilter: (table: string) => boolean =
@@ -131,15 +109,15 @@ export function makeEndIndex(
 
 export function makeEndIndexAndSave(
   mode: IndexMode = IndexMode.ALL,
-  targetDirs: string[] = ["src/morceus/tables/lat/core/target"],
-  dependencyDirs: string[] = ["src/morceus/tables/lat/core/dependency"],
+  templateDirs: string[] = [
+    "src/morceus/tables/lat/core/target",
+    "src/morceus/tables/lat/core/dependency",
+  ],
   outputDir: string = "build/morceus/indices/"
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
   fs.writeFileSync(
     path.join(outputDir, `${mode.toString()}.endindex`),
-    makeEndIndex(targetDirs, dependencyDirs, mode)[0]
-      .map(EndIndexRow.stringify)
-      .join("\n")
+    makeEndIndex(templateDirs, mode)[0].map(EndIndexRow.stringify).join("\n")
   );
 }

@@ -1,7 +1,7 @@
 import path from "path";
 import fs from "fs";
 
-import { assert, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { filesInPaths } from "@/utils/file_utils";
 import {
   isWordInflectionDataNonEmpty,
@@ -11,7 +11,7 @@ import {
   type InflectionContext,
   type InflectionEnding,
 } from "@/morceus/inflection_data_utils";
-import { mergeMaps, singletonOf } from "@/common/misc_utils";
+import { singletonOf } from "@/common/misc_utils";
 
 export const MORPHEUS_TARGETS = "src/morceus/tables/lat/core/target";
 export const MORPHEUS_DEPENDENCIES = "src/morceus/tables/lat/core/dependency";
@@ -172,7 +172,7 @@ export function expandSingleTable(
  */
 export function expandTemplate(
   template: InflectionTemplate,
-  dependencies: Map<string, InflectionTable>
+  dependencies: ReadonlyMap<string, InflectionTable>
 ): InflectionTable {
   const requredTemplates = template.templates;
   if (requredTemplates === undefined) {
@@ -210,83 +210,57 @@ export function expandTemplate(
   return result;
 }
 
-function expandDependencyTemplates(templates: readonly InflectionTemplate[]) {
-  const toBeExpanded = new Set(templates);
-  const result = new Map<string, InflectionTable>();
-  while (toBeExpanded.size > 0) {
-    const startSize = toBeExpanded.size;
-    for (const template of toBeExpanded.values()) {
-      const dependencies = template.templates || [];
-      const unprocessedDeps = dependencies.filter((t) => !result.has(t.name));
-      if (unprocessedDeps.length > 0) {
-        continue;
-      }
-      toBeExpanded.delete(template);
-      result.set(template.name, expandTemplate(template, result));
-    }
-    assert(
-      toBeExpanded.size < startSize,
-      `Unprocessable: ${JSON.stringify([...toBeExpanded.values()])}`
-    );
-  }
-  return result;
-}
-
 /**
- * Expands the templates specified in given directories.
+ * Expands templates in the given target directories.
  *
- * @param targetDirs Locations for target templates.
- * @param dependencyDirs Locations for dependency templates.
+ * @param templateDirs Directories to search for templates.
  *
- * @returns Maps of target and dependency tables used in processing.
+ * @returns a map of template names to expanded templates.
  */
 export function expandTemplates(
-  targetDirs: string[],
-  dependencyDirs: string[]
-): [Map<string, InflectionTable>, Map<string, InflectionTable>] {
-  const dependencyTemplates = loadTemplates(dependencyDirs);
-  const dependencyTemplateList = [...dependencyTemplates.values()];
-  const dependencyTables = expandDependencyTemplates(dependencyTemplateList);
+  templateDirs: string[]
+): Map<string, InflectionTable> {
+  const templates = loadTemplates(templateDirs);
+  const templateDeps = new Map<string, string[]>();
+  for (const [name, template] of templates) {
+    assertEqual(templateDeps.get(name), undefined);
+    templateDeps.set(name, template.templates?.map((dep) => dep.name) || []);
+  }
 
-  const targetTemplates = loadTemplates(targetDirs);
-  const targetTables = new Map<string, InflectionTable>();
-  const derivs: InflectionTemplate[] = [];
-  for (const template of targetTemplates.values()) {
-    if (template.name.endsWith(".deriv")) {
-      derivs.push(template);
-      continue;
+  const expanded = new Map<string, InflectionTable>();
+  while (templateDeps.size > 0) {
+    const expandable = [...templateDeps.entries()].filter(
+      ([_, deps]) =>
+        // Find anything where all the dependencies have been expanded.
+        deps.filter((dep) => expanded.get(dep) === undefined).length === 0
+    );
+    // If there's nothing to expand, we will have an infinite loop.
+    assert(expandable.length > 0);
+    for (const [name, _] of expandable) {
+      assert(templateDeps.delete(name));
+      assertEqual(expanded.get(name), undefined);
+      const template = checkPresent(templates.get(name));
+      expanded.set(name, expandTemplate(template, expanded));
     }
-    targetTables.set(template.name, expandTemplate(template, dependencyTables));
   }
-  // Target should be second so that any duplicate keys from the dependency tables
-  // are replaced by the target table version.
-  const allTables = mergeMaps(dependencyTables, targetTables, true);
-  for (const deriv of derivs) {
-    const renamed = { ...deriv, name: deriv.name.slice(0, -6) };
-    targetTables.set(renamed.name, expandTemplate(renamed, allTables));
-  }
-  return [targetTables, dependencyTables];
+  return expanded;
 }
 
 /**
  * Expands table templates into fully formed tables.
  *
- * @param targetDirs the list of directories where templates are located. These will be searched recursively.
- * @param dependencyDirs the path where the outputs will be written to.
+ * @param templateDirs Directories to search for templates.
  */
 export function expandTemplatesAndSave(
-  targetDirs: string[] = [MORPHEUS_TARGETS],
-  dependencyDirs: string[] = [MORPHEUS_DEPENDENCIES],
+  templateDirs: string[] = [MORPHEUS_TARGETS, MORPHEUS_DEPENDENCIES],
   outputDir: string = "build/morceus/tables/lat"
 ): void {
   fs.mkdirSync(outputDir, { recursive: true });
-  const [targets, _] = expandTemplates(targetDirs, dependencyDirs);
-  for (const expanded of targets.values()) {
+  for (const expanded of expandTemplates(templateDirs).values()) {
     writeTable(expanded, outputDir);
   }
 }
 
-export const EXPANDED_TEMPLATES = singletonOf(() => {
-  const t = expandTemplates([MORPHEUS_TARGETS], [MORPHEUS_DEPENDENCIES]);
-  return mergeMaps(t[0], t[1], true);
-});
+export const EXPANDED_TEMPLATES = singletonOf(() =>
+  expandTemplates([MORPHEUS_TARGETS, MORPHEUS_DEPENDENCIES])
+);
