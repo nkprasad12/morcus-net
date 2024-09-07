@@ -316,7 +316,7 @@ export function toInflectionData(grammaticalData: string[]): InflectionContext {
     else if (data === "superl") {
       assertEqual(result.degree, undefined);
       result.degree = LatinDegree.Superlative;
-    } else if (data === "comp" || data === "comp_only") {
+    } else if (data === "comp") {
       assertEqual(result.degree, undefined);
       result.degree = LatinDegree.Comparative;
     }

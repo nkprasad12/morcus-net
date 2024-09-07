@@ -400,9 +400,16 @@ function mergeIfCompatible(
   stem: InflectionContext,
   ending: InflectionContext
 ): InflectionContext | null {
+  const internalTags = new Set(
+    (stem.internalTags || []).concat(ending.internalTags || [])
+  );
   const stemData = stem.grammaticalData;
   const endData = ending.grammaticalData;
   const isCompatible =
+    // Morpheus marks ends with `comp_only` if it is a compound-only
+    // ending. We handle compounds differently, so just ignore these
+    // for now.
+    !internalTags.has("comp_only") &&
     subsetOf(stemData.case, endData.case) &&
     // For degree, the positive is implied if it is not marked.
     subsetOf(stemData.degree, endData.degree || LatinDegree.Positive) &&
@@ -445,9 +452,8 @@ function mergeIfCompatible(
     const tags = (stem.tags || []).concat(ending.tags || []);
     result.tags = [...new Set<string>(tags)];
   }
-  if (stem.internalTags !== undefined || ending.internalTags !== undefined) {
-    const tags = (stem.internalTags || []).concat(ending.internalTags || []);
-    result.internalTags = [...new Set<string>(tags)];
+  if (internalTags.size > 0) {
+    result.internalTags = [...internalTags];
   }
   return result;
 }

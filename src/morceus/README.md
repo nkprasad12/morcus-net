@@ -95,15 +95,16 @@ These are also explained in the doc and are something of a registry for all the 
 ### Current work
 
 - Implement and verify new tables we just added:
-  - fero_conj and eo_conj should be done
-  - do_conj and fio_conj need to be worked on
+  - do_conj and fio_conj need to be worked on ? 
 - Add implementation for the new flags we added:
   - no_fut
   - fut_part
   - no_fut_part
-- Then, check that praetulit works
+- Fix the adsum issue!
+  - We have :de:as sum_conj, which generates asest.
+  - IT SHOULD NOT DO THIS!
 
-### TODOs
+### Longer term TODOs
 
 - Auto-delete duplicates of exact copy lemmata [Not as important now that we can delete dupes]
 - Figure out strategy for subset lemmata [Not as important now that we can delete dupes]
