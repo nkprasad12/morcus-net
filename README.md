@@ -165,6 +165,14 @@ in your hosts file:
 127.0.0.1 foo.morcus.net
 ```
 
+### Play Store
+
+There is a Play Store app at https://play.google.com/store/apps/details?id=net.morcus.pwa. This is packaged using PWA builder - see instructions at https://docs.pwabuilder.com/#/builder/android?id=update-existing-pwa to update.
+
+- Current version: `1.0.1`
+- Current version code: `10`
+- Signing key information is in a file called `signing-key-info.txt`
+
 ## Code Guide
 
 ### Overview
