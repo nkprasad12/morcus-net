@@ -96,10 +96,6 @@ These are also explained in the doc and are something of a registry for all the 
 
 - Implement and verify new tables we just added:
   - do_conj and fio_conj need to be worked on ? 
-- Add implementation for the new flags we added:
-  - no_fut
-  - fut_part
-  - no_fut_part
 - Fix the adsum issue!
   - We have :de:as sum_conj, which generates asest.
   - IT SHOULD NOT DO THIS!
@@ -122,6 +118,12 @@ These are also explained in the doc and are something of a registry for all the 
   - Likely candidate would be for orths that are not in the initial blurb, we should link these
     to the appropriate entry and just scroll down to the right subsection. This requires dictionary
     changes as well so it is annoying.
+    - Currently in the LS parsing, we have a `rawOrths` function which only looks at orths that are
+      direct children of the root.
+
+      We can extend this to also include the children, but these should be marked with some data
+      indicating that they're not in the root (probably the subsection containing it) so that we
+      can differentiate these from top level orths.
 
 - Figure out a strategy to consolidate entries. For example:
 

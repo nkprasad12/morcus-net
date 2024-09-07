@@ -27,7 +27,12 @@ import {
   type InflectionLookup,
 } from "@/morceus/tables/indices";
 import { expandSingleEnding } from "@/morceus/tables/templates";
-import { LatinDegree, LatinGender } from "@/morceus/types";
+import {
+  LatinDegree,
+  LatinGender,
+  LatinMood,
+  LatinTense,
+} from "@/morceus/types";
 
 export interface CrunchResult extends InflectionContext {
   lemma: string;
@@ -445,9 +450,18 @@ function mergeIfCompatible(
   // the ending is not (in which case we would want the ending).
   const resultCase = stemData.case ?? endData.case;
   const resultGender = stemData.gender ?? endData.gender;
-  const result: InflectionContext = {
-    grammaticalData: { ...endData, gender: resultGender, case: resultCase },
-  };
+  const resultData = { ...endData, gender: resultGender, case: resultCase };
+
+  const isFuture = resultData.tense === LatinTense.Future;
+  const isParticiple = resultData.mood === LatinMood.Participle;
+  if (internalTags.has("no_fut") && isFuture) {
+    return null;
+  }
+  if (internalTags.has("no_fut_part") && isFuture && isParticiple) {
+    return null;
+  }
+
+  const result: InflectionContext = { grammaticalData: resultData };
   if (stem.tags !== undefined || ending.tags !== undefined) {
     const tags = (stem.tags || []).concat(ending.tags || []);
     result.tags = [...new Set<string>(tags)];
