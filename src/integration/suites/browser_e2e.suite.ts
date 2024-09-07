@@ -149,8 +149,8 @@ export function defineBrowserE2eSuite() {
         await page.keyboard.type("canaba", { delay: 20 });
         await page.keyboard.press("Enter");
 
+        await waitForText("hovel");
         await checkTitleIs("canaba | Morcus Latin Tools");
-        await checkHasText("hovel");
       }
     );
 
@@ -277,8 +277,8 @@ export function defineBrowserE2eSuite() {
         await page.keyboard.type("abagio", { delay: 20 });
         await page.keyboard.press("Enter");
 
+        await waitForText("supposed etymology of adagio");
         await checkTitleIs("abagio | Morcus Latin Tools");
-        await checkHasText("supposed etymology of adagio");
       }
     );
 
