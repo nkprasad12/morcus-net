@@ -1,0 +1,71 @@
+fe^ro_	1st sg pres ind act
+fe^rs	 2nd sg pres ind act
+fe^rt	 3rd sg pres ind act
+fe^rimus	 1st pl pres ind act
+fe^rtis	 2nd pl pres ind act
+fe^runt	 3rd pl pres ind act
+
+fe^ror	 1st sg pres ind pass
+fe^rris	 2nd sg pres ind pass
+fe^rtur	 3rd sg pres ind pass
+fe^rimur	 1st pl pres ind pass
+fe^rimini_	 2nd pl pres ind pass
+fe^runtur	 3rd pl pres ind pass
+
+fe^r	 2nd sg pres imperat act
+fe^rte	 2nd pl pres imperat act
+
+fe^rto_	 2nd sg fut imperat act
+fe^rto_	 3rd sg fut imperat act
+fe^rto_te	 2nd pl fut imperat act
+fe^runto_	 3rd pl fut imperat act
+
+fe^rre	 2nd sg pres imperat pass
+fe^rimini_	 2nd pl pres imperat pass
+
+fe^rtor	 2nd sg fut imperat pass
+fe^rtor	 3rd sg fut imperat pass
+fe^runtor	 3rd pl fut imperat pass
+
+ferre  pres inf act
+ferri_  pres inf pass
+
+#
+fe^rend@decl1 gerundive fem 
+fe^rend@decl2 gerundive masc 
+fe^rend@decl2 gerundive neut 
+fe^rendus	gerundive masc nom sg
+fe^rendum	gerundive neut nom sg
+#
+fe^rund@decl1 gerundive fem 
+fe^rund@decl2 gerundive masc 
+fe^rund@decl2 gerundive neut 
+fe^rundus	gerundive masc nom sg
+fe^rundum	gerundive neut nom sg
+
+ferr@emsub	 imperf subj
+fe^re_@imperf imperf ind act
+fe^re_@imperf imperf ind pass
+
+fe^r@future2 fut ind
+
+fe^re_ns	pres part masc/fem/neut nom/voc sg
+fe^re_ns	pres part neut acc sg
+fe^rente	pres part masc/fem/neut abl sg
+fe^renti_	pres part masc/fem/neut abl sg
+fe^rent@decl3_i pres part  masc fem neut
+
+fe^ram	pres subj act 1st sg
+fe^ra_s	pres subj act 2nd sg
+fe^rat	pres subj act 3rd sg
+fe^ra_mus	pres subj act 1st pl
+fe^ra_tis	pres subj act 2nd pl
+fe^rant	pres subj act 3rd pl
+fe^rar	pres subj pass 1st sg
+fe^ra_ris	pres subj pass 2nd sg
+fe^ra_re	pres subj pass 2nd sg
+fe^ra_tur	pres subj pass 3rd sg
+fe^ra_mur	pres subj pass 1st pl
+fe^ra_mini_	pres subj pass 2nd pl
+fe^rantur	pres subj pass 3rd pl
+

@@ -1,0 +1,54 @@
+eo_ pres ind act 1st sg
+i_s pres ind act 2nd sg
+it pres ind act 3rd sg
+i_mus pres ind act 1st pl
+i_tis pres ind act 2nd pl
+eunt pres ind act 3rd pl
+
+i_ba@basvb2 imperf ind act
+i_b@ofut fut ind act
+
+
+eor pres ind pass 1st sg
+i_ris pres ind pass 2nd sg
+i_tur pres ind pass 3rd sg
+i_mur pres ind pass 1st pl
+i_mini_ pres ind pass 2nd pl
+euntur pres ind pass 3rd pl
+
+i_ba@basvb2 imperf ind pass
+i_b@ofut fut ind pass
+
+
+ea@basvb2 pres subj act
+i_re@basvb2 imperf subj act
+ieri@basvb2 perf subj act
+i_sse@basvb2 plup subj act
+
+ea@basvb2 pres subj pass
+i_re@basvb2 imperf subj pass
+
+
+i_ pres imperat act 2nd sg
+i_te pres imperat act 2nd pl
+i_to_ fut imperat act 2nd sg
+i_to_ fut imperat act 3rd sg
+i_to_te fut imperat act 2nd pl
+eunto_ fut imperat act 3rd pl
+
+eunt@decl3_i pres part act
+eund@decl1 gerundive fem
+eund@decl2 gerundive masc/neut
+iend@decl1 gerundive fem early
+iend@decl2 gerundive masc/neut early
+eundus gerundive masc nom sg
+eunda gerundive fem nom sg
+eundum gerundive neut nom sg
+
+i_re pres inf act
+i_ri_ pres inf pass
+i_rier pres inf pass early
+i_sse perf inf act syncop
+iens pres part act masc/fem nom/voc sg
+iens pres part act neut nom/voc/acc sg
+eunte pres part act masc/fem/neut abl sg

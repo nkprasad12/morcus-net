@@ -90,24 +90,28 @@ These are also explained in the doc and are something of a registry for all the 
 - Nom Stem Indices match barring some errors in Morpheus. Also, Morceus retains some data (but that's OK).
 - Verb Stem Indices match barring some errors in Morpheus and maybe some weird stuff with the derivs.
 - Cruncher mostly works and we added handling for initial case difference.
+- We have manually created lists of compounds from Morpheus' buggy generation.
 
 ### Current work
 
-http://localhost:5757/work/ovid/amores?q=1
-Lots of unhandled words!
+- Implement and verify new tables we just added:
+  - fero_conj and eo_conj should be done
+  - do_conj and fio_conj need to be worked on
+- Add implementation for the new flags we added:
+  - no_fut
+  - fut_part
+  - no_fut_part
+- Then, check that praetulit works
 
-- praetulit
+### TODOs
 
-TODOs:
-
-- Investigate how the hell praetulit shows up in Morpheus (but not in ours)
 - Auto-delete duplicates of exact copy lemmata [Not as important now that we can delete dupes]
 - Figure out strategy for subset lemmata [Not as important now that we can delete dupes]
 - Figure out strategy for substantive / adjective lemmata [Not as important now that we can delete dupes]
 - Figure out strategy for duplicate lemma that differ only on a vowel length marking
   that is not contradictory (e.g. maxĭmus and maximus)
 
-Other important stuff before going live:
+### Other important stuff before going live
 
 - FIX DEPONENTS!!!!!!!!!!!!
 

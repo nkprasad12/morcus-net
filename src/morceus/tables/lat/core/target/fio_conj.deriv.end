@@ -1,0 +1,20 @@
+fi_o_	irreg_pp1 1st sg pres ind act
+fi_s	irreg_pp1 2nd sg pres ind act
+fi^t	irreg_pp1 3rd sg pres ind act
+fi_mus	irreg_pp1 1st pl pres ind act
+fi_tis	irreg_pp1 2nd pl pres ind act
+fi_unt	irreg_pp1 3rd pl pres ind act
+fi_e_@imperf irreg_pp1 imperf ind act
+fi^e@imperf irreg_pp1 imperf subj act
+fi_@future2	irreg_pp1 fut ind act
+fi_	irreg_pp1 2nd sg pres imperat act
+fi_te	irreg_pp1 2nd pl pres imperat act
+fi_to_	irreg_pp1 3rd sg pres imperat act
+fi_to_te	irreg_pp1 2nd pl fut imperat act
+fieri_	irreg_pp1 pres inf pass
+fi_am	irreg_pp1 pres subj act 1st sg
+fi_a_s	irreg_pp1 pres subj act 2nd sg
+fi_at	irreg_pp1 pres subj act 3rd sg
+fi_a_mus	irreg_pp1 pres subj act 1st pl
+fi_a_tis	irreg_pp1 pres subj act 2nd pl
+fi_ant	irreg_pp1 pres subj act 3rd pl

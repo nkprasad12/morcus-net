@@ -36,6 +36,7 @@ export interface CrunchResult extends InflectionContext {
   end?: InflectionEnding;
   relaxedCase?: true;
   relaxedVowelLengths?: true;
+  isVerb?: boolean;
 }
 
 export interface LatinWordAnalysis {
@@ -46,7 +47,8 @@ export interface LatinWordAnalysis {
   }[];
 }
 
-type StemMap = Map<string, [Stem | IrregularForm, string][]>;
+// key => [Stem / Form, lemma, isVerb]
+type StemMap = Map<string, [Stem | IrregularForm, string, boolean][]>;
 
 export interface CruncherTables {
   endsMap: Map<string, string[]>;
@@ -80,13 +82,14 @@ function normalizeKey(input: string): string {
 }
 
 export function makeStemsMap(lemmata: Lemma[]): StemMap {
-  const stemMap = arrayMap<string, [Stem | IrregularForm, string]>();
+  const stemMap = arrayMap<string, [Stem | IrregularForm, string, boolean]>();
   for (const lemma of lemmata) {
+    const isVerb = lemma.isVerb === true;
     for (const stem of lemma.stems || []) {
-      stemMap.add(normalizeKey(stem.stem), [stem, lemma.lemma]);
+      stemMap.add(normalizeKey(stem.stem), [stem, lemma.lemma, isVerb]);
     }
     for (const form of lemma.irregularForms || []) {
-      stemMap.add(normalizeKey(form.form), [form, lemma.lemma]);
+      stemMap.add(normalizeKey(form.form), [form, lemma.lemma, isVerb]);
     }
   }
   return stemMap.map;
@@ -107,7 +110,7 @@ function crunchExactMatch(
   tables: CruncherTables
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
-  for (let i = 1; i <= word.length; i++) {
+  for (let i = 0; i <= word.length; i++) {
     const maybeStem = word.slice(0, i);
     const candidates = tables.stemMap.get(maybeStem);
     if (candidates === undefined) {
@@ -115,7 +118,7 @@ function crunchExactMatch(
     }
     const observedEnd = word.slice(i) || "*";
     const possibleEnds = tables.endsMap.get(observedEnd);
-    for (const [candidate, lemma] of candidates) {
+    for (const [candidate, lemma, isVerb] of candidates) {
       const indeclinableCode = hasIndeclinableCode(candidate);
       if ("form" in candidate) {
         assert(indeclinableCode || candidate.code === undefined);
@@ -124,7 +127,7 @@ function crunchExactMatch(
         // is not inflected, we don't need to do any further compatibility checks
         // like we do between stems and endings.
         if (observedEnd === "*") {
-          results.push({ lemma, ...candidate });
+          results.push({ lemma, isVerb, ...candidate });
         }
         continue;
       }
@@ -150,6 +153,7 @@ function crunchExactMatch(
             form: candidate.stem + end.ending,
             stem: candidate,
             end,
+            isVerb,
             ...mergedData,
           });
         }
@@ -214,6 +218,12 @@ export function crunchAndMaybeRelaxCase(
   relaxCase?: boolean
 ): CrunchResult[] {
   const results: CrunchResult[] = crunchExactMatch(word, tables);
+  if (word[0] === "V") {
+    const relaxedWord = "U" + word.slice(1);
+    for (const relaxedResult of crunchExactMatch(relaxedWord, tables)) {
+      results.push({ ...relaxedResult, relaxedCase: true });
+    }
+  }
   if (relaxCase === true) {
     const isUpperCase = word[0].toUpperCase() === word[0];
     const relaxedFirst = isUpperCase
@@ -222,6 +232,13 @@ export function crunchAndMaybeRelaxCase(
     const relaxedWord = relaxedFirst + word.slice(1);
     for (const relaxedResult of crunchExactMatch(relaxedWord, tables)) {
       results.push({ ...relaxedResult, relaxedCase: true });
+    }
+    // Handle e.g. Vt for ut
+    if (word[0] === "V") {
+      const relaxedWord = "u" + word.slice(1);
+      for (const relaxedResult of crunchExactMatch(relaxedWord, tables)) {
+        results.push({ ...relaxedResult, relaxedCase: true });
+      }
     }
   }
   return results;

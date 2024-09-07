@@ -1,0 +1,35 @@
+sum		1st sg pres ind act
+es		2nd sg pres ind act
+est		3rd sg pres ind act
+sumus	1st pl pres ind act
+estis	2nd pl pres ind act
+sunt	3rd pl pres ind act
+#
+si@basvb2	pres subj act
+sie@basvb2	pres subj act early
+fuam	1st sg pres subj act early
+fua_s	2nd sg pres subj act early
+fuat	3rd sg pres subj act early
+fuant	3rd pl pres subj act early
+#
+era@basvb2	imperf ind act
+esse@basvb2	imperf subj act
+er@ofut		fut ind act
+#
+es		2nd sg pres imperat act
+este	2nd pl pres imperat act
+
+#
+esto_	2nd sg fut imperat act
+esto_	3rd sg fut imperat act
+esto_te	2nd pl fut imperat act
+sunto_	3rd pl fut imperat act
+#
+esse	pres inf act
+fore	fut inf act
+fore@basvb2	imperf subj act early
+
+e_ns    	pres part masc/fem/neut nom/voc sg
+e_ns    	pres part neut acc sg
+ente    	pres part masc/fem/neut abl sg
+ent@decl3_i	pres part masc fem neut

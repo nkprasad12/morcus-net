@@ -258,9 +258,12 @@ export function expandTemplates(
     }
     targetTables.set(template.name, expandTemplate(template, dependencyTables));
   }
+  // Target should be second so that any duplicate keys from the dependency tables
+  // are replaced by the target table version.
+  const allTables = mergeMaps(dependencyTables, targetTables, true);
   for (const deriv of derivs) {
     const renamed = { ...deriv, name: deriv.name.slice(0, -6) };
-    targetTables.set(renamed.name, expandTemplate(renamed, targetTables));
+    targetTables.set(renamed.name, expandTemplate(renamed, allTables));
   }
   return [targetTables, dependencyTables];
 }

@@ -2,6 +2,7 @@ import {
   MorceusCruncher,
   crunchWord,
   type CruncherConfig,
+  type LatinWordAnalysis,
 } from "@/morceus/crunch";
 import {
   toInflectionData,
@@ -140,7 +141,7 @@ describe("MorceusCruncher", () => {
     const cruncher = MorceusCruncher.make(tables);
     const result = cruncher("morco");
 
-    expect(result).toEqual([
+    expect(result).toEqual<LatinWordAnalysis[]>([
       {
         lemma: "morcus",
         inflectedForms: [
@@ -150,6 +151,7 @@ describe("MorceusCruncher", () => {
               {
                 lemma: "morcus",
                 form: "morco",
+                isVerb: false,
                 grammaticalData: { case: LatinCase.Ablative },
                 tags: ["archaic"],
                 stem: stem,

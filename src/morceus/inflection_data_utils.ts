@@ -13,6 +13,7 @@ import {
 } from "@/morceus/types";
 
 export const SEMANTIC_TAGS = new Set([
+  "abbrev",
   "adverb",
   "archaic",
   "conj", // Is this conjunction or conjugation?
@@ -42,6 +43,7 @@ export const SEMANTIC_TAGS = new Set([
   "interrog",
   // This should be a case
   "locative",
+  "variant",
 ]);
 export const INTERNAL_TAGS = new Set<string>([
   "are_vb",
@@ -64,6 +66,8 @@ export const INTERNAL_TAGS = new Set<string>([
   "irreg_pp2",
   "irreg_superl",
   "no_comp",
+  "no_fut",
+  "no_fut_part",
   "numeral",
   "perfstem",
   "pp4",

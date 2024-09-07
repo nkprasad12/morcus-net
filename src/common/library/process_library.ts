@@ -1,3 +1,4 @@
+import { envVar } from "@/common/env_vars";
 import {
   LIBRARY_INDEX,
   LIB_DEFAULT_DIR,
@@ -12,11 +13,14 @@ import { stringifyMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";
 
 // TODO: We should just crawl some root.
+const LOCAL_ROOT = envVar("LIB_XML_ROOT", "unsafe") || "texts/latin/perseus";
 const ALL_WORKS = [
-  // Ovid's Amores.
-  // "texts/latin/perseus/data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml",
-  "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
-  "texts/latin/perseus/data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
+  // // Ovid Amores.
+  // `${LOCAL_ROOT}/data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml`,
+  // // Tacitus Germania
+  // `${LOCAL_ROOT}/data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml`,
+  `${LOCAL_ROOT}/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml`,
+  `${LOCAL_ROOT}/data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml`,
 ];
 
 const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
