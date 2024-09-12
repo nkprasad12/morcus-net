@@ -21,11 +21,10 @@ import {
 import { writePwaManifestStep } from "@/scripts/write_webmanifest";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
-const PERSEUS_CLL_TAG = "0.0.6853394170";
+const PERSEUS_CLL_TAG = "master";
 const PERSEUS_CLL_ROOT =
-  "https://raw.githubusercontent.com/PerseusDL/canonical-latinLit";
-
-const PERSEUS_DOWNLOADS = [
+  "https://raw.githubusercontent.com/nkprasad12/canonical-latinLit";
+  const PERSEUS_DOWNLOADS = [
   // Remove these next two for now, since it has strange optional
   // nested elements that are not marked in the CTS header
   // "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
