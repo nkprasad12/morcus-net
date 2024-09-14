@@ -15,14 +15,25 @@ export interface EntryName {
   cleanOrth: string;
 }
 
-type BackingType = "Sync" | "Async";
-type MaybeAsync<T, U extends BackingType> = U extends "Async" ? Promise<T> : T;
+export type BackingType = "Sync" | "Async";
+export type NotPromise =
+  | null
+  | undefined
+  | string
+  | number
+  | Omit<object, "then">;
+export type MaybeAsync<
+  T extends NotPromise,
+  U extends BackingType
+> = U extends "Async" ? Promise<T> : T;
 
-export interface StoredDictBacking<Async extends BackingType> {
-  allEntryNames: () => MaybeAsync<EntryName[], Async>;
+export interface StoredDictBacking<IsAsync extends BackingType> {
+  allEntryNames: () => MaybeAsync<EntryName[], IsAsync>;
   matchesForCleanName: (
     cleanName: string
-  ) => MaybeAsync<{ id: string; orth: string }[], Async>;
-  entriesForIds: (ids: string[]) => MaybeAsync<{ entry: string }[], Async>;
-  entryNamesByPrefix: (prefix: string) => MaybeAsync<{ orth: string }[], Async>;
+  ) => MaybeAsync<{ id: string; orth: string }[], IsAsync>;
+  entriesForIds: (ids: string[]) => MaybeAsync<{ entry: string }[], IsAsync>;
+  entryNamesByPrefix: (
+    prefix: string
+  ) => MaybeAsync<{ orth: string }[], IsAsync>;
 }

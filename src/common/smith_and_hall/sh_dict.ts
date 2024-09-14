@@ -1,18 +1,19 @@
 import { envVar } from "@/common/env_vars";
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { StoredDict } from "@/common/dictionaries/dict_storage";
 import { Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
+import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 
 export class SmithAndHall implements Dictionary {
   readonly info = LatinDict.SmithAndHall;
 
-  private readonly sqlDict: SqlDict;
+  private readonly sqlDict: StoredDict;
 
   constructor(dbPath: string = envVar("SH_PROCESSED_PATH")) {
-    this.sqlDict = new SqlDict(dbPath);
+    this.sqlDict = new StoredDict(sqliteBacking(dbPath));
   }
 
   private reviveRaw(input: string) {
@@ -27,7 +28,8 @@ export class SmithAndHall implements Dictionary {
     input: string,
     extras?: ServerExtras | undefined
   ): Promise<EntryResult[]> {
-    return this.sqlDict.getRawEntry(input, extras).map(this.reviveRaw, this);
+    const rawEntries = await this.sqlDict.getRawEntry(input, extras);
+    return rawEntries.map(this.reviveRaw, this);
   }
 
   async getCompletions(input: string): Promise<string[]> {
@@ -35,7 +37,7 @@ export class SmithAndHall implements Dictionary {
   }
 
   async getEntryById(id: string): Promise<EntryResult | undefined> {
-    const rawResult = this.sqlDict.getById(id);
+    const rawResult = await this.sqlDict.getById(id);
     return rawResult === undefined ? rawResult : this.reviveRaw(rawResult);
   }
 }

@@ -2,7 +2,7 @@ import { assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { Vowels } from "@/common/character_utils";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { StoredDict } from "@/common/dictionaries/dict_storage";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { LatinWords } from "@/common/lexica/latin_words";
@@ -13,6 +13,7 @@ import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
+import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 
 const REPLACED_CHARS = new Map<string, string>([
   ["ſ", "s"],
@@ -64,17 +65,17 @@ export namespace StoredEntryData {
 export class LewisAndShort implements Dictionary {
   readonly info = LatinDict.LewisAndShort;
 
-  private readonly sqlDict: SqlDict;
+  private readonly sqlDict: StoredDict;
 
   constructor(dbFile: string = envVar("LS_PROCESSED_PATH")) {
-    this.sqlDict = new SqlDict(dbFile);
+    this.sqlDict = new StoredDict(sqliteBacking(dbFile));
   }
 
   async getEntryById(
     id: string,
     extras?: ServerExtras
   ): Promise<EntryResult | undefined> {
-    const raw = this.sqlDict.getById(id);
+    const raw = await this.sqlDict.getById(id);
     extras?.log("getById_sqlLookup");
     if (raw === undefined) {
       return undefined;
@@ -95,9 +96,8 @@ export class LewisAndShort implements Dictionary {
       .split("")
       .map((c) => REPLACED_CHARS.get(c) || c)
       .join("");
-    const exactMatches: StoredEntryData[] = this.sqlDict
-      .getRawEntry(input, extras)
-      .map(StoredEntryData.fromEncoded);
+    const rawEntries = await this.sqlDict.getRawEntry(input, extras);
+    const exactMatches = rawEntries.map(StoredEntryData.fromEncoded);
     if (options?.handleInflections !== true) {
       return exactMatches.map(StoredEntryData.toEntryResult);
     }
@@ -120,7 +120,7 @@ export class LewisAndShort implements Dictionary {
       const lemmaChunks = analysis.lemma.split("#");
       const lemmaBase = lemmaChunks[0];
 
-      const rawResults = this.sqlDict.getRawEntry(lemmaBase, extras);
+      const rawResults = await this.sqlDict.getRawEntry(lemmaBase, extras);
       const results: EntryResult[] = rawResults
         .map(StoredEntryData.fromEncoded)
         .filter((data) => {
