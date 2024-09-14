@@ -8,10 +8,10 @@ import {
   mergeVowelMarkers,
 } from "@/common/lewis_and_short/ls_orths";
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
 import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
+import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 
 function* extractEntryData(
   rawFile: string,
@@ -55,6 +55,6 @@ export namespace GenerateLs {
     dbPath: string = envVar("LS_PROCESSED_PATH"),
     rawFile: string = envVar("LS_PATH")
   ) {
-    SqlDict.save(processPerseusXml(rawFile), dbPath);
+    SqliteDict.save(processPerseusXml(rawFile), dbPath);
   }
 }

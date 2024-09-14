@@ -1,7 +1,7 @@
 import fs from "fs";
 
 import { XmlNode } from "@/common/xml/xml_node";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import {
   LewisAndShort,
@@ -150,7 +150,7 @@ describe("LewisAndShort", () => {
   });
 
   test("getEntryById returns expected entries", async () => {
-    SqlDict.save(LS_DATA, TEMP_FILE);
+    SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     expect(await dict.getEntryById("Juliu")).toBe(undefined);
@@ -159,7 +159,7 @@ describe("LewisAndShort", () => {
   });
 
   test("getEntry returns expected entries", async () => {
-    SqlDict.save(LS_DATA, TEMP_FILE);
+    SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     expectEntriesWithIds(dict.getEntry("Julius"), ["Julius"]);
@@ -167,7 +167,7 @@ describe("LewisAndShort", () => {
   });
 
   test("getEntry returns expect outlines", async () => {
-    SqlDict.save(LS_DATA, TEMP_FILE);
+    SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
@@ -176,7 +176,7 @@ describe("LewisAndShort", () => {
   });
 
   test("getEntry inflected returns no results with flag off", async () => {
-    SqlDict.save(LS_DATA, TEMP_FILE);
+    SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     const results = await dict.getEntry("excibat", undefined, {
@@ -187,7 +187,7 @@ describe("LewisAndShort", () => {
   });
 
   test("getEntry inflected returns no results with flag undefined", async () => {
-    SqlDict.save(LS_DATA, TEMP_FILE);
+    SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     const results = await dict.getEntry("excibat", undefined, undefined);
@@ -196,7 +196,7 @@ describe("LewisAndShort", () => {
   });
 
   test("getEntry inflected gracefully handles flag on with no inflection db", async () => {
-    SqlDict.save(LS_DATA, TEMP_FILE);
+    SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     const results = await dict.getEntry("Julius", undefined, {
@@ -207,7 +207,7 @@ describe("LewisAndShort", () => {
   });
 
   test("getEntry inflected returns results with flag on", async () => {
-    SqlDict.save(LS_DATA, TEMP_FILE);
+    SqliteDict.save(LS_DATA, TEMP_FILE);
     const dict = LewisAndShort.create(TEMP_FILE);
 
     const results = await dict.getEntry("excibat", undefined, {

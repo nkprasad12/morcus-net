@@ -7,7 +7,7 @@ import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { processSmithHall } from "@/common/smith_and_hall/sh_process";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
@@ -24,7 +24,7 @@ const RAW_LAT_LIB_DIR = "latin_works_raw";
 const PERSEUS_CLL_TAG = "master";
 const PERSEUS_CLL_ROOT =
   "https://raw.githubusercontent.com/nkprasad12/canonical-latinLit";
-  const PERSEUS_DOWNLOADS = [
+const PERSEUS_DOWNLOADS = [
   // Remove these next two for now, since it has strange optional
   // nested elements that are not marked in the CTS header
   // "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
@@ -74,7 +74,7 @@ const MAKE_SH: StepConfig = {
   operation: async () => {
     const unprocessed = await processSmithHall();
     const dbReady = shListToRaw(unprocessed);
-    SqlDict.save(dbReady, envVar("SH_PROCESSED_PATH"));
+    SqliteDict.save(dbReady, envVar("SH_PROCESSED_PATH"));
   },
   label: "Smith and Hall DB creation",
   dlInfo: {

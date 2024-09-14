@@ -1,5 +1,5 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { shListToRaw } from "@/common/smith_and_hall/sh_process";
@@ -51,7 +51,7 @@ describe("SmithAndHall dict", () => {
   });
 
   test("getEntry returns expected entries", async () => {
-    SqlDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
+    SqliteDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
     const dict = new SmithAndHall(TEMP_FILE);
 
     expect(await dict.getEntry("Julius")).toEqual([]);
@@ -60,7 +60,7 @@ describe("SmithAndHall dict", () => {
   });
 
   test("getEntryById returns expected entries", async () => {
-    SqlDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
+    SqliteDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
     const dict = new SmithAndHall(TEMP_FILE);
 
     expect(await dict.getEntryById("n1")).toEqual(undefined);
@@ -69,7 +69,7 @@ describe("SmithAndHall dict", () => {
   });
 
   test("getEntry returns expected completions", async () => {
-    SqlDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
+    SqliteDict.save(shListToRaw(SH_ENTRIES), TEMP_FILE);
     const dict = new SmithAndHall(TEMP_FILE);
 
     expect(await dict.getCompletions("H")).toEqual(["Hello", "Hi"]);

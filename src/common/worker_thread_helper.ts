@@ -5,7 +5,7 @@
 import { Worker, parentPort, workerData } from "node:worker_threads";
 
 import { envVar } from "@/common/env_vars";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { writeFileSync, existsSync } from "fs";
 import { spawnSync } from "node:child_process";
@@ -96,6 +96,6 @@ export async function multithreadedComputation<$O>(
 multithreadedComputation(
   (bounds) =>
     GenerateLs.processPerseusXml(envVar("LS_PATH"), bounds.start, bounds.end),
-  (results) => SqlDict.save(results, envVar("LS_PROCESSED_PATH")),
+  (results) => SqliteDict.save(results, envVar("LS_PROCESSED_PATH")),
   { threads: 2, rows: 51635 }
 );

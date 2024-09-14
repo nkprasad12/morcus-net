@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 
 import { envVar } from "@/common/env_vars";
-import { SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 // import { unmatched } from "@/common/smith_and_hall/sh_abbreviations";
 import {
   shListToRaw,
@@ -17,7 +17,7 @@ const dbPath = envVar("SH_PROCESSED_PATH");
 
 processSmithHall().then((data) => {
   const rawData: RawDictEntry[] = shListToRaw(data);
-  SqlDict.save(rawData, dbPath);
+  SqliteDict.save(rawData, dbPath);
   const runTime = Math.round(performance.now() - startTime);
   console.log(`Smith and Hall runtime: ${runTime} ms.`);
   // for (const [author, cits] of unmatched) {

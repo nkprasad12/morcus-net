@@ -15,9 +15,10 @@ export interface EntryName {
   cleanOrth: string;
 }
 
-type MaybeAsync<T, U extends boolean> = U extends true ? Promise<T> : T;
+type BackingType = "Sync" | "Async";
+type MaybeAsync<T, U extends BackingType> = U extends "Async" ? Promise<T> : T;
 
-export interface StoredDictBacking<Async extends boolean> {
+export interface StoredDictBacking<Async extends BackingType> {
   allEntryNames: () => MaybeAsync<EntryName[], Async>;
   matchesForCleanName: (
     cleanName: string
