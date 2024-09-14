@@ -4,15 +4,37 @@ import { Vowels } from "@/common/character_utils";
 import { DbConfig, ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 import { setMap } from "@/common/data_structures/collect_map";
+import type {
+  RawDictEntry,
+  StoredDictBacking,
+} from "@/common/dictionaries/stored_dict_interface";
 
-// TODO: Add Lemma and disambig number to this table
-export interface RawDictEntry {
-  /** The list of keys for this entry. */
-  keys: string[];
-  /** A unique identifier for this entry. */
-  id: string;
-  /** A serialized form of this entry. */
-  entry: string;
+function sqliteBacking(db: SqliteDb): StoredDictBacking<false> {
+  return {
+    allEntryNames: () =>
+      // @ts-expect-error
+      db.prepare(`SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`).all(),
+    // @ts-expect-error
+    matchesForCleanName: (cleanName: string) =>
+      db
+        .prepare(`SELECT id, orth FROM orths WHERE cleanOrth = '${cleanName}'`)
+        .all(),
+    // @ts-expect-error
+    entriesForIds: (ids: string[]) => {
+      const filter = ids.map(() => `id=?`).join(" OR ");
+      const n = ids.length;
+      return db
+        .prepare(`SELECT entry FROM entries WHERE ${filter} LIMIT ${n}`)
+        .all(ids);
+    },
+    // @ts-expect-error
+    entryNamesByPrefix: (prefix: string) =>
+      db
+        .prepare(
+          `SELECT DISTINCT orth FROM orths WHERE cleanOrth GLOB '${prefix}*'`
+        )
+        .all(),
+  };
 }
 
 /** A dictionary backed by SQLlite. */
@@ -43,16 +65,15 @@ export class SqlDict {
     });
   }
 
-  private readonly db: SqliteDb;
   private readonly table: Map<string, string[]>;
+  private readonly backing: StoredDictBacking<false>;
 
   constructor(dbFile: string) {
-    this.db = ReadOnlyDb.getDatabase(dbFile);
+    const db = ReadOnlyDb.getDatabase(dbFile);
+    this.backing = sqliteBacking(db);
     const lookup = setMap<string, string>();
-    this.db
-      .prepare(`SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`)
-      .all()
-      // @ts-ignore
+    this.backing
+      .allEntryNames()
       .forEach(({ orth, cleanOrth }) =>
         lookup.add(cleanOrth[0].toLowerCase(), orth)
       );
@@ -70,10 +91,7 @@ export class SqlDict {
    */
   getRawEntry(input: string, extras?: ServerExtras): string[] {
     const request = removeDiacritics(input).toLowerCase();
-    // @ts-ignore
-    const candidates: { id: string; orth: string }[] = this.db
-      .prepare(`SELECT id, orth FROM orths WHERE cleanOrth = '${request}'`)
-      .all();
+    const candidates = this.backing.matchesForCleanName(request);
     extras?.log(`${request}_sqlCandidates`);
     if (candidates.length === 0) {
       return [];
@@ -82,21 +100,14 @@ export class SqlDict {
     const allIds = candidates
       .filter(({ orth }) => Vowels.haveCompatibleLength(input, orth))
       .map(({ id }) => id);
-    const filter = allIds.map(() => `id=?`).join(" OR ");
-    // @ts-ignore
-    const entryStrings: { entry: string }[] = this.db
-      .prepare(`SELECT entry FROM entries WHERE ${filter}`)
-      .all(allIds);
+    const entryStrings = this.backing.entriesForIds(allIds);
     extras?.log(`${request}_entriesFetched`);
     return toRegularArray(entryStrings, ({ entry }) => entry);
   }
 
   /** Returns the entry with the given ID, if present. */
   getById(id: string): string | undefined {
-    // @ts-ignore
-    const result: { entry: string }[] = this.db
-      .prepare(`SELECT entry FROM entries WHERE id=? LIMIT 1`)
-      .all(id);
+    const result = this.backing.entriesForIds([id]);
     if (result.length === 0) {
       return undefined;
     }
@@ -110,12 +121,7 @@ export class SqlDict {
     if (precomputed !== undefined) {
       return precomputed;
     }
-    // @ts-ignore
-    const rows: { orth: string }[] = this.db
-      .prepare(
-        `SELECT DISTINCT orth FROM orths WHERE cleanOrth GLOB '${prefix}*'`
-      )
-      .all();
+    const rows: { orth: string }[] = this.backing.entryNamesByPrefix(prefix);
     return toRegularArray(rows, (row) => row.orth);
   }
 }

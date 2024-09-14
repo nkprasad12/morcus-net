@@ -8,13 +8,13 @@ import {
 } from "@/common/smith_and_hall/sh_preprocessing";
 import { RawSense, ShEntry } from "@/common/smith_and_hall/sh_entry";
 import { removeDiacritics } from "@/common/text_cleaning";
-import { RawDictEntry } from "@/common/dictionaries/dict_storage";
 import {
   ShLinkResolver,
   displayShEntry,
 } from "@/common/smith_and_hall/sh_display";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { getOutline } from "@/common/smith_and_hall/sh_outline";
+import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 
 type ProcessState = "In Blurb" | "In Sense" | "None";
 

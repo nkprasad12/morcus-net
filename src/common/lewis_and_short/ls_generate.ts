@@ -8,9 +8,10 @@ import {
   mergeVowelMarkers,
 } from "@/common/lewis_and_short/ls_orths";
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
-import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
 import { parseXmlStringsInline } from "@/common/xml/xml_utils";
+import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 
 function* extractEntryData(
   rawFile: string,

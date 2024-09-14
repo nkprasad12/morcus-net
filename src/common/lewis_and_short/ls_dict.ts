@@ -2,7 +2,7 @@ import { assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { Vowels } from "@/common/character_utils";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
-import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqlDict } from "@/common/dictionaries/dict_storage";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { LatinWords } from "@/common/lexica/latin_words";
@@ -12,6 +12,7 @@ import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
+import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 
 const REPLACED_CHARS = new Map<string, string>([
   ["ſ", "s"],

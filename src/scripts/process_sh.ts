@@ -1,13 +1,14 @@
 /* istanbul ignore file */
 
 import { envVar } from "@/common/env_vars";
-import { RawDictEntry, SqlDict } from "@/common/dictionaries/dict_storage";
+import { SqlDict } from "@/common/dictionaries/dict_storage";
 // import { unmatched } from "@/common/smith_and_hall/sh_abbreviations";
 import {
   shListToRaw,
   processSmithHall,
 } from "@/common/smith_and_hall/sh_process";
 import * as dotenv from "dotenv";
+import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 dotenv.config();
 
 const startTime = performance.now();
