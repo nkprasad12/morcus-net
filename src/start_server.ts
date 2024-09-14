@@ -31,6 +31,7 @@ import {
 import { readFileSync } from "fs";
 import { scrapeUrlText } from "@/web/scraping/scraper";
 import { MorceusCruncher } from "@/morceus/crunch";
+import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -83,12 +84,12 @@ export function startMorcusServer(): Promise<http.Server> {
 
   setTimeout(MorceusCruncher.CACHED_TABLES.get, randInRange(100, 125));
   const lewisAndShort = delayedInit(
-    () => LewisAndShort.create(),
+    () => LewisAndShort.create(sqliteBacking(envVar("LS_PROCESSED_PATH"))),
     LatinDict.LewisAndShort
   );
   const smithAndHall = delayedInit(() => {
     const start = performance.now();
-    const result = new SmithAndHall();
+    const result = new SmithAndHall(sqliteBacking(envVar("SH_PROCESSED_PATH")));
     const elapsed = (performance.now() - start).toFixed(3);
     console.debug(`SmithAndHall init: ${elapsed} ms`);
     return result;

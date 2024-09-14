@@ -1,19 +1,18 @@
-import { envVar } from "@/common/env_vars";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { StoredDict } from "@/common/dictionaries/dict_storage";
 import { Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
-import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
+import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 
 export class SmithAndHall implements Dictionary {
   readonly info = LatinDict.SmithAndHall;
 
   private readonly sqlDict: StoredDict;
 
-  constructor(dbPath: string = envVar("SH_PROCESSED_PATH")) {
-    this.sqlDict = new StoredDict(sqliteBacking(dbPath));
+  constructor(backing: StoredDictBacking<any>) {
+    this.sqlDict = new StoredDict(backing);
   }
 
   private reviveRaw(input: string) {

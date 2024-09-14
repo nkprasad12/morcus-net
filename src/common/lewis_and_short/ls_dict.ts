@@ -1,5 +1,4 @@
 import { assertEqual } from "@/common/assert";
-import { envVar } from "@/common/env_vars";
 import { Vowels } from "@/common/character_utils";
 import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { StoredDict } from "@/common/dictionaries/dict_storage";
@@ -12,8 +11,10 @@ import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
-import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
-import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
+import type {
+  RawDictEntry,
+  StoredDictBacking,
+} from "@/common/dictionaries/stored_dict_interface";
 
 const REPLACED_CHARS = new Map<string, string>([
   ["ſ", "s"],
@@ -67,8 +68,8 @@ export class LewisAndShort implements Dictionary {
 
   private readonly sqlDict: StoredDict;
 
-  constructor(dbFile: string = envVar("LS_PROCESSED_PATH")) {
-    this.sqlDict = new StoredDict(sqliteBacking(dbFile));
+  constructor(backing: StoredDictBacking<any>) {
+    this.sqlDict = new StoredDict(backing);
   }
 
   async getEntryById(
@@ -177,11 +178,9 @@ export class LewisAndShort implements Dictionary {
 }
 
 export namespace LewisAndShort {
-  export function create(
-    processedFile: string = envVar("LS_PROCESSED_PATH")
-  ): LewisAndShort {
+  export function create(backing: StoredDictBacking<any>): LewisAndShort {
     const start = performance.now();
-    const result = new LewisAndShort(processedFile);
+    const result = new LewisAndShort(backing);
     const elapsed = (performance.now() - start).toFixed(3);
     console.debug(`LewisAndShort init: ${elapsed} ms`);
     return result;
