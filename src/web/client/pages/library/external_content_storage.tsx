@@ -1,5 +1,5 @@
 import { useCloseable } from "@/web/client/utils/indexdb/hooks";
-import {
+import type {
   ObjectStore,
   SingleStoreDbConfig,
   Store,

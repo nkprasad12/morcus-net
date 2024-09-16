@@ -2,7 +2,7 @@ import type {
   RawDictEntry,
   StoredDictBacking,
 } from "@/common/dictionaries/stored_dict_interface";
-import { DbConfig, ReadOnlyDb } from "@/common/sql_helper";
+import { ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 import { removeDiacritics } from "@/common/text_cleaning";
 
@@ -35,12 +35,14 @@ export function sqliteBacking(
         )
         .all(),
   };
-} /** A dictionary backed by SQLlite. */
+}
 
 export namespace SqliteDict {
   /** Saves the given entries to a SQLite table. */
   export function save(entries: RawDictEntry[], destination: string): void {
-    DbConfig.of(destination, entries, "id");
+    // # # # # #
+    // IMPORTANT If the implementation here is updated, also change `indexdb_backing`!
+    // # # # # #
     ReadOnlyDb.saveToSql({
       destination,
       tables: [

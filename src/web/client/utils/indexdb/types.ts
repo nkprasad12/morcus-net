@@ -24,7 +24,7 @@ export interface Store<T extends object> {
    * The key path in the store. In the initial version,
    * this must be a top level field in the object.
    */
-  keyPath: string;
+  keyPath?: string;
   /** A validator for objects placed into the store. */
   validator?: Validator<T>;
 }
@@ -61,6 +61,7 @@ export type ObjectStore<
 
 export interface ObjectStoreFactory<U extends TransactionType> {
   objectStore<T extends object>(store: Store<T>): ObjectStore<T, U>;
+  commit: () => void;
 }
 
 export interface TransactionFactory {

@@ -21,7 +21,11 @@ function openDb(config: DbConfig): Promise<IDBDatabase> {
       const db = openRequest.result;
       for (const store of config.stores) {
         if (!db.objectStoreNames.contains(store.name)) {
-          db.createObjectStore(store.name, { keyPath: store.keyPath });
+          const autoIncrement = store.keyPath === undefined ? true : undefined;
+          db.createObjectStore(store.name, {
+            keyPath: store.keyPath,
+            autoIncrement,
+          });
         }
       }
     };
@@ -37,7 +41,8 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
     get: (key) =>
       new Promise((resolve, reject) => {
         const operation = raw.get(key);
-        operation.onerror = () => reject(`get failed on ${store.name}`);
+        operation.onerror = () =>
+          reject(`get failed on ${store.name}: ${operation.error}`);
         operation.onsuccess = () => {
           const t = operation.result;
           t === undefined ? reject("No match") : resolve(t);
@@ -46,28 +51,31 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
     getAll: () =>
       new Promise((resolve, reject) => {
         const operation = raw.getAll();
-        operation.onerror = () => reject(`getAll failed on ${store.name}`);
+        operation.onerror = () =>
+          reject(`getAll failed on ${store.name}: ${operation.error}`);
         operation.onsuccess = () => resolve(operation.result);
       }),
   };
   const writeOperations: WriteOperations<T> = {
     add: (item: T) => {
       const isValid =
-        Object.hasOwn(item, store.keyPath) &&
+        (store.keyPath === undefined || Object.hasOwn(item, store.keyPath)) &&
         (store.validator === undefined || store.validator(item));
       if (!isValid) {
         return Promise.reject(`Invalid object for store ${store.name}`);
       }
       return new Promise((resolve, reject) => {
         const operation = raw.add(item);
-        operation.onerror = () => reject(`add failed on ${store.name}`);
+        operation.onerror = () =>
+          reject(`add failed on ${store.name}: ${operation.error}`);
         operation.onsuccess = () => resolve();
       });
     },
     delete: (key) =>
       new Promise((resolve, reject) => {
         const operation = raw.delete(key);
-        operation.onerror = () => reject(`delete failed on ${store.name}`);
+        operation.onerror = () =>
+          reject(`delete failed on ${store.name}: ${operation.error}`);
         operation.onsuccess = () => resolve();
       }),
   };
@@ -78,16 +86,17 @@ export async function wrappedIndexDb(config: DbConfig): Promise<IndexDb> {
   const db = await openDb(config);
   const transaction: IndexDb["transaction"] = (stores, tType) => {
     stores.forEach((s) => assert(config.stores.includes(s)));
-    const transaction = db.transaction(
+    const rawTransaction = db.transaction(
       stores.map((s) => s.name),
       tType
     );
     return {
       objectStore: (storeConfig) => {
         assert(stores.includes(storeConfig));
-        const store = transaction.objectStore(storeConfig.name);
+        const store = rawTransaction.objectStore(storeConfig.name);
         return wrapObjectStore(store, storeConfig, tType);
       },
+      commit: () => rawTransaction.commit(),
     };
   };
   return {
