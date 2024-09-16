@@ -74,23 +74,26 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
   return { ...readOperations, ...writeOperations, ...store };
 }
 
-async function wrappedIndexDb(config: DbConfig): Promise<IndexDb> {
+export async function wrappedIndexDb(config: DbConfig): Promise<IndexDb> {
   const db = await openDb(config);
+  const transaction: IndexDb["transaction"] = (stores, tType) => {
+    stores.forEach((s) => assert(config.stores.includes(s)));
+    const transaction = db.transaction(
+      stores.map((s) => s.name),
+      tType
+    );
+    return {
+      objectStore: (storeConfig) => {
+        assert(stores.includes(storeConfig));
+        const store = transaction.objectStore(storeConfig.name);
+        return wrapObjectStore(store, storeConfig, tType);
+      },
+    };
+  };
   return {
-    transaction: (stores, tType) => {
-      stores.forEach((s) => assert(config.stores.includes(s)));
-      const transaction = db.transaction(
-        stores.map((s) => s.name),
-        tType
-      );
-      return {
-        objectStore: (storeConfig) => {
-          assert(stores.includes(storeConfig));
-          const store = transaction.objectStore(storeConfig.name);
-          return wrapObjectStore(store, storeConfig, tType);
-        },
-      };
-    },
+    transaction,
+    singleStore: (store, tType) =>
+      transaction([store], tType).objectStore(store),
     close: () => db.close(),
   };
 }

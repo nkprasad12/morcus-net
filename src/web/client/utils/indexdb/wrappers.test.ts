@@ -1,9 +1,23 @@
 import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 
-import { SingleStoreDbConfig } from "@/web/client/utils/indexdb/types";
-import { simpleIndexDbStore } from "@/web/client/utils/indexdb/wrappers";
-import { Validator, isAny, isString } from "@/web/utils/rpc/parsing";
+import {
+  SingleStoreDbConfig,
+  type DbConfig,
+  type Store,
+  type TransactionType,
+} from "@/web/client/utils/indexdb/types";
+import {
+  wrappedIndexDb,
+  simpleIndexDbStore,
+} from "@/web/client/utils/indexdb/wrappers";
+import {
+  Validator,
+  isAny,
+  isNumber,
+  isString,
+  matches,
+} from "@/web/utils/rpc/parsing";
 
 function dbConfig(
   validator?: Validator<any>
@@ -76,5 +90,111 @@ describe("indexDb simpleStore", () => {
     const store = simpleIndexDbStore(dbConfig(isAny));
     const validAdd = store.add({ x: 5 });
     expect(validAdd).resolves.toBe(undefined);
+  });
+});
+
+describe("wrappedIndexDb with multiple stores", () => {
+  beforeEach(() => {
+    // eslint-disable-next-line no-global-assign
+    indexedDB = new IDBFactory();
+  });
+
+  interface Foo {
+    id: string;
+    foo: string;
+  }
+
+  const FOO_VALIDATOR = matches<Foo>([
+    ["id", isString],
+    ["foo", isString],
+  ]);
+
+  interface Bar {
+    id: string;
+    bar: number;
+  }
+
+  const BAR_VALIDATOR = matches<Bar>([
+    ["id", isString],
+    ["bar", isNumber],
+  ]);
+
+  const FooStoreConfig: Store<Foo> = {
+    name: "foos",
+    keyPath: "id",
+    validator: FOO_VALIDATOR,
+  };
+
+  const BarStoreConfig: Store<Bar> = {
+    name: "bars",
+    keyPath: "id",
+    validator: BAR_VALIDATOR,
+  };
+
+  const MULTI_STORE_CONFIG: DbConfig = {
+    dbName: "testMultistoreDb",
+    version: 1,
+    stores: [FooStoreConfig, BarStoreConfig],
+  };
+
+  it("handles happy path", async () => {
+    const db = await wrappedIndexDb(MULTI_STORE_CONFIG);
+
+    const fooStore = <U extends TransactionType>(u: U) =>
+      db.singleStore(FooStoreConfig, u);
+    const barStore = <U extends TransactionType>(u: U) =>
+      db.singleStore(BarStoreConfig, u);
+
+    expect(await fooStore("readonly").getAll()).toHaveLength(0);
+    expect(await barStore("readonly").getAll()).toHaveLength(0);
+
+    fooStore("readwrite").add({ id: "5", foo: "5" });
+    fooStore("readwrite").add({ id: "7", foo: "7" });
+    expect(await fooStore("readonly").get("7")).toEqual({ id: "7", foo: "7" });
+    expect(await fooStore("readonly").getAll()).toEqual([
+      { id: "5", foo: "5" },
+      { id: "7", foo: "7" },
+    ]);
+    expect(await barStore("readonly").getAll()).toHaveLength(0);
+
+    await fooStore("readwrite").delete("5");
+    expect(await fooStore("readonly").getAll()).toEqual([
+      { id: "7", foo: "7" },
+    ]);
+    expect(fooStore("readonly").get("5")).rejects.toBe("No match");
+  });
+
+  it("handles concurrent opens on same stores", async () => {
+    const db = await wrappedIndexDb(MULTI_STORE_CONFIG);
+
+    const operations = [
+      db.singleStore(BarStoreConfig, "readwrite").add({ id: "5", bar: 6 }),
+      db.singleStore(BarStoreConfig, "readwrite").add({ id: "6", bar: 8 }),
+    ];
+    await Promise.allSettled(operations);
+
+    expect(await db.singleStore(BarStoreConfig, "readonly").getAll()).toEqual([
+      { id: "5", bar: 6 },
+      { id: "6", bar: 8 },
+    ]);
+  });
+
+  it("handles open then close", async () => {
+    let db = await wrappedIndexDb(MULTI_STORE_CONFIG);
+    await db.singleStore(BarStoreConfig, "readwrite").add({ id: "5", bar: 6 });
+    db.close();
+    await new Promise((r) => setTimeout(r, 10));
+
+    db = await wrappedIndexDb(MULTI_STORE_CONFIG);
+    expect(await db.singleStore(BarStoreConfig, "readonly").getAll()).toEqual([
+      { id: "5", bar: 6 },
+    ]);
+  });
+
+  it("raises on invalid inserts without key", async () => {
+    const db = await wrappedIndexDb(MULTI_STORE_CONFIG);
+    // @ts-expect-error
+    const illegalAdd = db.singleStore(FooStoreConfig, "readonly").add({ y: 5 });
+    expect(illegalAdd).rejects.toContain("Invalid object");
   });
 });

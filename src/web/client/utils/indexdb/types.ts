@@ -68,6 +68,10 @@ export interface TransactionFactory {
     stores: Store<object>[],
     tType: U
   ): ObjectStoreFactory<U>;
+  singleStore<T extends object, U extends TransactionType>(
+    store: Store<T>,
+    tType: U
+  ): ObjectStore<T, U>;
 }
 
 export interface IndexDb extends TransactionFactory, Closeable {}
