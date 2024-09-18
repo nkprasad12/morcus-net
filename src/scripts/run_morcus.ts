@@ -1,6 +1,7 @@
 /* istanbul ignore file */
 
 import { assert } from "@/common/assert";
+import { envVar } from "@/common/env_vars";
 import {
   StepConfig,
   runCommand,
@@ -9,6 +10,7 @@ import {
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
 import { writePwaManifestStep } from "@/scripts/write_webmanifest";
+import { createDir } from "@/utils/file_utils";
 import { ArgumentParser } from "argparse";
 import { ChildProcess, spawn } from "child_process";
 import dotenv from "dotenv";
@@ -285,6 +287,11 @@ function artifactConfig(args: any): StepConfig[] {
     baseCommand = ["bun"];
     childEnv.BUN = "1";
   }
+  setupSteps.push({
+    operation: () => createDir(envVar("OFFLINE_DATA_DIR")),
+    label: "Creating output dirs",
+    priority: 1,
+  });
   if (args.build_sh === true) {
     const command = baseCommand.concat(["src/scripts/process_sh.ts"]);
     setupSteps.push({

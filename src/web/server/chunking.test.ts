@@ -1,5 +1,5 @@
 import fs from "fs";
-import { safeCreateDir, safeRmDir } from "@/utils/file_utils";
+import { createCleanDir, safeRmDir } from "@/utils/file_utils";
 import { packCompressedChunks } from "@/web/server/chunking";
 import { unpack } from "@/common/bytedata/packing";
 import { gunzipSync } from "zlib";
@@ -7,12 +7,12 @@ import { gunzipSync } from "zlib";
 const TEMP_DIR = "unitTestTmp/chunking_test_ts";
 
 describe("packCompressedChunks", () => {
-  beforeAll(() => {
-    safeCreateDir(TEMP_DIR);
+  beforeAll(async () => {
+    await createCleanDir(TEMP_DIR);
   });
 
-  afterAll(() => {
-    safeRmDir(TEMP_DIR);
+  afterAll(async () => {
+    await safeRmDir(TEMP_DIR);
   });
 
   async function unpackUncompress(filePath: string): Promise<object[][]> {

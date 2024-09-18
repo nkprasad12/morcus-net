@@ -6,6 +6,7 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["SH_PROCESSED_PATH", "build/dbs/sh.db"],
   ["SH_RAW_PATH", "sh_raw.txt"],
   ["DB_SOURCE", "unspecified"],
+  ["OFFLINE_DATA_DIR", "build/offlineData"],
 ]);
 
 export function envVar(name: string, unsafe: "unsafe"): string | undefined;

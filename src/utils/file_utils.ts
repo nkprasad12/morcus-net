@@ -1,4 +1,5 @@
 import fs from "fs";
+import fsPromises from "fs/promises";
 import path from "path";
 
 export function* filesInPaths(inputPaths: string[]): Generator<string> {
@@ -22,13 +23,17 @@ export function* filesInPaths(inputPaths: string[]): Generator<string> {
   }
 }
 
-export function safeCreateDir(path: string) {
-  safeRmDir(path);
-  fs.mkdirSync(path, { recursive: true });
+export async function createCleanDir(path: string) {
+  await safeRmDir(path);
+  await createDir(path);
 }
 
-export function safeRmDir(path: string) {
+export async function createDir(path: string) {
+  await fsPromises.mkdir(path, { recursive: true });
+}
+
+export async function safeRmDir(path: string) {
   try {
-    fs.rmSync(path, { recursive: true, force: true });
+    await fsPromises.rm(path, { recursive: true, force: true });
   } catch {}
 }

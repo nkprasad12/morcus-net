@@ -12,6 +12,7 @@ import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
 import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
+import { packCompressedChunks } from "@/web/server/chunking";
 
 function* extractEntryData(
   rawFile: string,
@@ -51,11 +52,9 @@ export namespace GenerateLs {
     return [...extractEntryData(rawFile, start, end)];
   }
 
-  export function saveArtifacts(
-    dbPath: string = envVar("LS_PROCESSED_PATH"),
-    rawFile: string = envVar("LS_PATH")
-  ) {
-    const allEntries = processPerseusXml(rawFile);
-    SqliteDict.save(allEntries, dbPath);
+  export function saveArtifacts() {
+    const allEntries = processPerseusXml(envVar("LS_PATH"));
+    SqliteDict.save(allEntries, envVar("LS_PROCESSED_PATH"));
+    packCompressedChunks(allEntries, "lsDict", envVar("OFFLINE_DATA_DIR"), 100);
   }
 }

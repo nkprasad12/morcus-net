@@ -15,10 +15,12 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writePwaManifestStep } from "@/scripts/write_webmanifest";
-import { safeCreateDir } from "@/utils/file_utils";
+import { createCleanDir } from "@/utils/file_utils";
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
+const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
+
 const PERSEUS_CLL_TAG = "master";
 const PERSEUS_CLL_ROOT =
   "https://raw.githubusercontent.com/nkprasad12/canonical-latinLit";
@@ -47,10 +49,13 @@ function perseusDownloadConfig(resource: string): DownloadConfig {
 }
 
 const SETUP_DIRS: StepConfig = {
-  operation: () => {
-    safeCreateDir(LIB_DEFAULT_DIR);
-    safeCreateDir(RAW_LAT_LIB_DIR);
-  },
+  operation: () =>
+    Promise.all([
+      createCleanDir(LIB_DEFAULT_DIR),
+      createCleanDir(RAW_LAT_LIB_DIR),
+      createCleanDir(OFFLINE_DATA_DIR),
+    ]).then(() => {}),
+
   label: "Setting up directories",
 };
 const MAKE_LS: StepConfig = {
