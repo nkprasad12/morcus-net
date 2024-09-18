@@ -51,10 +51,11 @@ export namespace GenerateLs {
     return [...extractEntryData(rawFile, start, end)];
   }
 
-  export function saveToDb(
+  export function saveArtifacts(
     dbPath: string = envVar("LS_PROCESSED_PATH"),
     rawFile: string = envVar("LS_PATH")
   ) {
-    SqliteDict.save(processPerseusXml(rawFile), dbPath);
+    const allEntries = processPerseusXml(rawFile);
+    SqliteDict.save(allEntries, dbPath);
   }
 }

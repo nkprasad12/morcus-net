@@ -4,9 +4,6 @@ import chalk from "chalk";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
-import { processSmithHall } from "@/common/smith_and_hall/sh_process";
-import { shListToRaw } from "@/common/smith_and_hall/sh_process";
-import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
@@ -19,6 +16,7 @@ import {
 } from "@/scripts/script_utils";
 import { writePwaManifestStep } from "@/scripts/write_webmanifest";
 import { safeCreateDir } from "@/utils/file_utils";
+import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const PERSEUS_CLL_TAG = "master";
@@ -56,7 +54,7 @@ const SETUP_DIRS: StepConfig = {
   label: "Setting up directories",
 };
 const MAKE_LS: StepConfig = {
-  operation: GenerateLs.saveToDb,
+  operation: GenerateLs.saveArtifacts,
   label: "Lewis and Short DB creation",
   dlInfo: {
     url: "https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml",
@@ -64,11 +62,7 @@ const MAKE_LS: StepConfig = {
   },
 };
 const MAKE_SH: StepConfig = {
-  operation: async () => {
-    const unprocessed = await processSmithHall();
-    const dbReady = shListToRaw(unprocessed);
-    SqliteDict.save(dbReady, envVar("SH_PROCESSED_PATH"));
-  },
+  operation: generateShArtifacts,
   label: "Smith and Hall DB creation",
   dlInfo: {
     url: "https://raw.githubusercontent.com/nkprasad12/smithandhall/v1edits/sh_F2_latest.txt",

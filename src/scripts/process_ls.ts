@@ -5,6 +5,6 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 const startTime = performance.now();
-GenerateLs.saveToDb();
+GenerateLs.saveArtifacts();
 const runTime = Math.round(performance.now() - startTime);
 console.log(`Lewis and Short runtime: ${runTime} ms.`);
