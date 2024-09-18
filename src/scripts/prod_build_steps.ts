@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 
 import chalk from "chalk";
-import { mkdirSync, rmSync } from "fs";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
@@ -19,6 +18,7 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writePwaManifestStep } from "@/scripts/write_webmanifest";
+import { safeCreateDir } from "@/utils/file_utils";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const PERSEUS_CLL_TAG = "master";
@@ -46,13 +46,6 @@ function perseusDownloadConfig(resource: string): DownloadConfig {
   const url = perseusUrl(resource);
   const name = url.split("/").slice(-1)[0];
   return { url, path: `${RAW_LAT_LIB_DIR}/${name}` };
-}
-
-function safeCreateDir(path: string) {
-  try {
-    rmSync(path, { recursive: true, force: true });
-  } catch {}
-  mkdirSync(path, { recursive: true });
 }
 
 const SETUP_DIRS: StepConfig = {

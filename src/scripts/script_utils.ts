@@ -3,7 +3,7 @@
 import chalk from "chalk";
 import { spawn } from "child_process";
 import { assert, assertEqual } from "@/common/assert";
-import { mkdir, rm } from "fs/promises";
+import { rm } from "fs/promises";
 import { arrayMap } from "@/common/data_structures/collect_map";
 
 export interface DownloadConfig {
@@ -16,13 +16,6 @@ export interface StepConfig {
   label?: string;
   dlInfo?: DownloadConfig | DownloadConfig[];
   priority?: number;
-}
-
-export async function safeCreateDir(path: string): Promise<void> {
-  try {
-    await rm(path, { recursive: true, force: true });
-  } catch {}
-  await mkdir(path, { recursive: true });
 }
 
 export function runCommand(

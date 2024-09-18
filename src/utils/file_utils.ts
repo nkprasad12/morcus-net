@@ -21,3 +21,14 @@ export function* filesInPaths(inputPaths: string[]): Generator<string> {
     }
   }
 }
+
+export function safeCreateDir(path: string) {
+  safeRmDir(path);
+  fs.mkdirSync(path, { recursive: true });
+}
+
+export function safeRmDir(path: string) {
+  try {
+    fs.rmSync(path, { recursive: true, force: true });
+  } catch {}
+}
