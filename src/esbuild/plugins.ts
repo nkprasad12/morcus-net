@@ -7,6 +7,10 @@ import esbuild from "esbuild";
 import fs from "fs";
 import { gzipSync } from "zlib";
 
+export interface RenameOptions {
+  renameMap: Map<string, string>;
+}
+
 export function typeCheckPlugin(options?: BundleOptions): esbuild.Plugin {
   return {
     name: "typeCheck",
@@ -25,6 +29,30 @@ export function typeCheckPlugin(options?: BundleOptions): esbuild.Plugin {
         }
         if (!success && !options?.watch) {
           process.exit(1);
+        }
+      });
+    },
+  };
+}
+
+export function renamePlugin(options: RenameOptions): esbuild.Plugin {
+  return {
+    name: "nameOutputs",
+    setup(build) {
+      build.onEnd((result) => {
+        const metafile = checkPresent(result.metafile);
+        const outputs = checkPresent(metafile.outputs);
+        for (const outputName in outputs) {
+          const output = metafile.outputs[outputName];
+          if (output.entryPoint === undefined) {
+            continue;
+          }
+          const targetName = options.renameMap.get(output.entryPoint);
+          if (targetName === undefined) {
+            continue;
+          }
+          fs.renameSync(outputName, targetName);
+          console.log(`Renamed: ${outputName} -> ${targetName}`);
         }
       });
     },
