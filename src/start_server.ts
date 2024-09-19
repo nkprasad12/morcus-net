@@ -180,7 +180,17 @@ if (process.env.MAIN === "start") {
     log("Server started! Press Ctrl+C to exit.");
     const cleanup = (signal: string) => {
       log(`${signal} received, closing server.`);
-      server.close();
+      const forceCloseId = setTimeout(() => {
+        server.getConnections((_, numConnections) => {
+          log(`${numConnections} open connection(s) after 500 ms.`);
+          if (numConnections > 0) {
+            log("Forcibly closing open connections in 1500 ms.");
+            setTimeout(() => server.closeAllConnections(), 1500);
+          }
+        });
+      }, 500);
+      // If the server is closed, clear any forceClose logic.
+      server.close(() => clearTimeout(forceCloseId));
     };
     process.on("SIGTERM", () => cleanup("SIGTERM"));
     process.on("SIGINT", () => cleanup("SIGINT"));
