@@ -37,13 +37,17 @@ export const ORTHS_STORE: Store<OrthsTableRow> = {
   ]),
 };
 
-export const SH_CONFIG: DbConfig = {
+export interface IndexDbDictConfig extends DbConfig {
+  stores: [Store<EntriesTableRow>, Store<OrthsTableRow>];
+}
+
+export const SH_CONFIG: IndexDbDictConfig = {
   dbName: "smithAndHallDict",
   version: 1,
   stores: [ENTRIES_STORE, ORTHS_STORE],
 };
 
-export const LS_CONFIG: DbConfig = {
+export const LS_CONFIG: IndexDbDictConfig = {
   dbName: "lewisAndShortDict",
   version: 1,
   stores: [ENTRIES_STORE, ORTHS_STORE],
