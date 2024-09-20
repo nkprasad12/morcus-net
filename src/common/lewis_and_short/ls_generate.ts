@@ -55,6 +55,6 @@ export namespace GenerateLs {
   export function saveArtifacts() {
     const allEntries = processPerseusXml(envVar("LS_PATH"));
     SqliteDict.save(allEntries, envVar("LS_PROCESSED_PATH"));
-    packCompressedChunks(allEntries, "lsDict", envVar("OFFLINE_DATA_DIR"), 100);
+    packCompressedChunks(allEntries, 100, "lsDict", envVar("OFFLINE_DATA_DIR"));
   }
 }

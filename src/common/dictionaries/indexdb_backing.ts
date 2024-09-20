@@ -12,7 +12,7 @@ interface EntriesTableRow {
   entry: string;
 }
 
-const ENTRIES_STORE: Store<EntriesTableRow> = {
+export const ENTRIES_STORE: Store<EntriesTableRow> = {
   name: "entriesTable",
   keyPath: "id",
   validator: matches([
@@ -28,7 +28,7 @@ interface OrthsTableRow {
 }
 
 // TODO: The Sqlite implementation has cleanOrth as an index.
-const ORTHS_STORE: Store<OrthsTableRow> = {
+export const ORTHS_STORE: Store<OrthsTableRow> = {
   name: "orthsTable",
   validator: matches([
     ["id", isString],

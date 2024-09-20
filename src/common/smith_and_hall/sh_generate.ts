@@ -12,5 +12,5 @@ export async function generateShArtifacts(): Promise<void> {
   const shEntries = await processSmithHall();
   const rawEntries = shListToRaw(shEntries);
   SqliteDict.save(rawEntries, envVar("SH_PROCESSED_PATH"));
-  packCompressedChunks(rawEntries, "shDict", envVar("OFFLINE_DATA_DIR"), 30);
+  packCompressedChunks(rawEntries, 30, "shDict", envVar("OFFLINE_DATA_DIR"));
 }
