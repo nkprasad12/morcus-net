@@ -1,6 +1,6 @@
 function writeToStream(
   message: ArrayBuffer,
-  writable: WritableStream<any>
+  writable: WritableStream<ArrayBuffer>
 ): void {
   const writer = writable.getWriter();
   // Trying to `await` these Promises blocks forever, but I'm not sure why.
@@ -9,7 +9,7 @@ function writeToStream(
 }
 
 async function readFromStream(
-  readable: ReadableStream<any>
+  readable: ReadableStream<Uint8Array>
 ): Promise<Uint8Array[]> {
   const outputChunks: Uint8Array[] = [];
   const reader = readable.getReader();
