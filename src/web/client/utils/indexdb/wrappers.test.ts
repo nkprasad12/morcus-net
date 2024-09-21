@@ -21,7 +21,7 @@ import {
 
 function dbConfig(
   validator?: Validator<any>
-): SingleStoreDbConfig<{ x: number }> {
+): SingleStoreDbConfig<{ x: number; y?: number }> {
   return {
     dbName: "wrappersTestTsDb",
     version: 1,
@@ -90,6 +90,26 @@ describe("indexDb simpleStore", () => {
     const store = simpleIndexDbStore(dbConfig(isAny));
     const validAdd = store.add({ x: 5 });
     expect(validAdd).resolves.toBe(undefined);
+  });
+
+  it("doesn't allow overwrites on add", async () => {
+    const store = simpleIndexDbStore(dbConfig(isAny));
+    await store.add({ x: 5 });
+    let threwError = false;
+    try {
+      await store.add({ x: 5, y: 0 });
+    } catch {
+      threwError = true;
+    }
+    expect(threwError).toBe(true);
+    expect(store.getAll()).resolves.toEqual([{ x: 5 }]);
+  });
+
+  it("allows overwrites with update", async () => {
+    const store = simpleIndexDbStore(dbConfig(isAny));
+    await store.add({ x: 5 });
+    await store.update({ x: 5, y: 0 });
+    expect(store.getAll()).resolves.toEqual([{ x: 5, y: 0 }]);
   });
 });
 

@@ -71,6 +71,20 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
         operation.onsuccess = () => resolve();
       });
     },
+    update: (item: T) => {
+      const isValid =
+        (store.keyPath === undefined || Object.hasOwn(item, store.keyPath)) &&
+        (store.validator === undefined || store.validator(item));
+      if (!isValid) {
+        return Promise.reject(`Invalid object for store ${store.name}`);
+      }
+      return new Promise((resolve, reject) => {
+        const operation = raw.put(item);
+        operation.onerror = () =>
+          reject(`add failed on ${store.name}: ${operation.error}`);
+        operation.onsuccess = () => resolve();
+      });
+    },
     delete: (key) =>
       new Promise((resolve, reject) => {
         const operation = raw.delete(key);
@@ -124,6 +138,7 @@ export function simpleIndexDbStore<T extends object>(
     get: (k) => readStore().then((s) => s.get(k)),
     getAll: () => readStore().then((s) => s.getAll()),
     add: (t) => writeStore().then((s) => s.add(t)),
+    update: (t) => writeStore().then((s) => s.update(t)),
     delete: (k) => writeStore().then((s) => s.delete(k)),
     close: () => dbPromise.then((db) => db.close()),
   };

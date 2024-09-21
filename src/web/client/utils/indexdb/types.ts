@@ -42,6 +42,8 @@ export interface ReadOperations<T> {
 export interface WriteOperations<T> {
   /** Adds an item to the store. Rejects if the item is invalid. */
   add(item: T): Promise<void>;
+  /** Updates an item in the store. Rejects if the item is invalid. */
+  update(item: T): Promise<void>;
   /** Removes an item with the given key. */
   delete(key: DbKey): Promise<void>;
 }
