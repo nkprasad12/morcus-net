@@ -1,10 +1,11 @@
-import { pack, unpack } from "@/common/bytedata/packing";
+import { chunksInPacked, pack, unpack } from "@/common/bytedata/packing";
 
 describe("Packing utils", () => {
   it("handles empty input", () => {
     const packed = pack([]);
     const unpacked = [...unpack(packed)];
     expect(unpacked).toHaveLength(0);
+    expect(chunksInPacked(packed)).toBe(0);
   });
 
   it("handles non-empty input", () => {
@@ -17,5 +18,6 @@ describe("Packing utils", () => {
     expect(new Uint8Array(unpacked.next().value)).toEqual(buf1);
     expect(new Uint8Array(unpacked.next().value)).toEqual(buf2);
     expect(unpacked.next().done).toBe(true);
+    expect(chunksInPacked(packed)).toBe(2);
   });
 });
