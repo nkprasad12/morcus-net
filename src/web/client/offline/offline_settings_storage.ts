@@ -3,18 +3,9 @@ import type { SingleStoreDbConfig } from "@/web/client/utils/indexdb/types";
 import { simpleIndexDbStore } from "@/web/client/utils/indexdb/wrappers";
 
 const OFFLINE_SETTINGS_CHANGED = "OfflineSettingsChanged";
-/**
- * Exposed only for use in the client-side offline settings hook.
- * Should not be used anywhere else.
- * - The service worker is considered the source of truth for the offline mode
- *   state, and so will never need to subscribe to updates. For posting new
- *   updates, the service worker should not call this directly but use
- *   the `OfflineSettingsDb` instead.
- * - The app side should never modify the offline mode settings (since the
- *   service worker side is considered the source of truth). To access the
- *   value, the client side should use the provided hook instead.
- */
-const BROADCAST_CHANNEL = singletonOf(
+
+/** Exposed only for unit tests. */
+export const BROADCAST_CHANNEL = singletonOf(
   () => new BroadcastChannel(OFFLINE_SETTINGS_CHANGED)
 );
 
@@ -55,6 +46,13 @@ export interface OfflineSettings {
   morceusDownloaded?: boolean;
 }
 
+export const OFFLINE_SETTINGS_KEYS: (keyof OfflineSettings)[] = [
+  "offlineModeEnabled",
+  "lsDownloaded",
+  "shDownloaded",
+  "morceusDownloaded",
+];
+
 /**
  * Exposed for use on the service worker side ONLY - the app side should not
  * try to set the values, only read them.
@@ -73,6 +71,17 @@ export const OFFLINE_SETTINGS_APP_DB: OfflineSettingsReadonlyDb = {
 export type OfflineSettingsChangeListener = (
   e: MessageEvent<OfflineSettings>
 ) => unknown;
+/**
+ * Exposed only for use in the client-side offline settings hook.
+ * Should not be used anywhere else.
+ * - The service worker is considered the source of truth for the offline mode
+ *   state, and so will never need to subscribe to updates. For posting new
+ *   updates, the service worker should not call this directly but use
+ *   the `OfflineSettingsDb` instead.
+ * - The app side should never modify the offline mode settings (since the
+ *   service worker side is considered the source of truth). To access the
+ *   value, the client side should use the provided hook instead.
+ */
 export const addOfflineSettingsChangeListener = (
   listener: OfflineSettingsChangeListener
 ) => BROADCAST_CHANNEL.get().addEventListener("message", listener);
