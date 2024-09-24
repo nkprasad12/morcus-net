@@ -26,27 +26,26 @@ function getResponder<T extends Channel>(
 }
 
 export function registerMessageListener(
-  setActiveHandler: ChannelHandler<"SetActive">,
-  prepareOfflineHandler: ChannelHandler<"PrepareOffline">
+  settingToggledListener: ChannelHandler<"OfflineSettingToggled">
 ): () => void {
   const listener = (e: MessageEvent<any>) => {
     const channel: unknown = e.data?.channel;
     if (!isSwChannel(channel)) {
+      // This isn't reachable in a consistent state, but in case of a version
+      // mismatch between the app bundle and the service worker,
+      // it might be.
+      getResponder(
+        e.data,
+        checkPresent(e.source)
+      )({ complete: true, success: false });
       return;
     }
     const source = checkPresent(e.source);
     switch (channel) {
-      case "SetActive":
-        setActiveHandler(e.data, getResponder(e.data, source));
-        break;
-      case "PrepareOffline":
-        prepareOfflineHandler(e.data, getResponder(e.data, source));
+      case "OfflineSettingToggled":
+        settingToggledListener(e.data, getResponder(e.data, source));
         break;
       default:
-        // This isn't reachable in a consistent state, but in case of a version
-        // mismatch between the app bundle and the service worker,
-        // it might be.
-        getResponder(e.data, source)({ success: false });
         exhaustiveGuard(channel);
     }
   };

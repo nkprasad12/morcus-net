@@ -18,25 +18,34 @@ type FakeEvent = {
   source?: FakeSource;
 };
 type MessageListener = (e: FakeEvent) => void;
-type FakeAddEventListener = (
+type FakeEventListenerOp = (
   eventName: string,
   listener: MessageListener
 ) => void;
 
-function fakeMessagePair(
+function fakeMessaging(
   source?: FakeSource
-): [FakePostMessage, FakeAddEventListener] {
+): [FakePostMessage, FakeEventListenerOp, FakeEventListenerOp] {
   const listeners: MessageListener[] = [];
   const fakePost: FakePostMessage = (input) => {
     const event = { data: input, source };
     listeners.forEach((listener) => listener(event));
   };
-  const fakeAddListener: FakeAddEventListener = (eventName, listener) => {
+  const fakeAddListener: FakeEventListenerOp = (eventName, listener) => {
     if (eventName === "message") {
       listeners.push(listener);
     }
   };
-  return [fakePost, fakeAddListener];
+  const fakeRemoveListener: FakeEventListenerOp = (eventName, listener) => {
+    if (eventName === "message") {
+      for (let i = listeners.length - 1; i >= 0; i--) {
+        if (listener === listeners[i]) {
+          listeners.splice(i, 1);
+        }
+      }
+    }
+  };
+  return [fakePost, fakeAddListener, fakeRemoveListener];
 }
 
 describe("Service worker communication utils", () => {
@@ -51,13 +60,9 @@ describe("Service worker communication utils", () => {
   const IN_PROGRESS: BaseResponse = {
     progress: 57,
   };
-  const SET_ACTIVE_REQ: ChannelRequest<"SetActive"> = {
-    channel: "SetActive",
-    data: { isActive: true },
-  };
-  const PREPARE_OFFLINE_REQ: ChannelRequest<"PrepareOffline"> = {
-    channel: "PrepareOffline",
-    data: { resource: "shDict" },
+  const TOGGLE_REQ: ChannelRequest<"OfflineSettingToggled"> = {
+    channel: "OfflineSettingToggled",
+    data: { settingKey: "offlineModeEnabled", desiredValue: true },
   };
 
   let cleanup: undefined | (() => unknown) = undefined;
@@ -67,26 +72,23 @@ describe("Service worker communication utils", () => {
     global.navigator = realNav;
   });
 
-  function setupSwListener() {
-    cleanup = registerMessageListener(
-      (_, respond) => respond(COMPLETE_UNSUCCESSFUL),
-      (_, respond) => {
-        respond(IN_PROGRESS);
-        respond(COMPLETE_SUCCESSFUL);
-      }
+  function setupSwListener(responses: BaseResponse[]) {
+    cleanup = registerMessageListener((_, respond) =>
+      responses.forEach((response) => respond(response))
     );
   }
 
   function setupFakeEvents() {
-    const [swPostMessage, appAddEventListener] = fakeMessagePair();
-    const source: FakeSource = { postMessage: swPostMessage };
-    const [appPostMessage, swAddEventListener] = fakeMessagePair(source);
+    const swToApp = fakeMessaging();
+    const source: FakeSource = { postMessage: swToApp[0] };
+    const [appPostMessage, swAddEventListener] = fakeMessaging(source);
 
     // @ts-expect-error
     global.navigator.serviceWorker = {
       getRegistration: () =>
         Promise.resolve({ active: { postMessage: appPostMessage } }),
-      addEventListener: appAddEventListener,
+      addEventListener: swToApp[1],
+      removeEventListener: swToApp[2],
     };
     // @ts-expect-error
     global.addEventListener = swAddEventListener;
@@ -98,23 +100,40 @@ describe("Service worker communication utils", () => {
       getRegistration: () => undefined,
     };
 
-    expect(
-      sendToSw({ channel: "SetActive", data: { isActive: true } }, jest.fn())
-    ).rejects.toThrowError(/.*No active.*/);
+    expect(sendToSw(TOGGLE_REQ, jest.fn())).rejects.toThrowError(
+      /.*No active.*/
+    );
+  });
+
+  it("returns immediate error on unknown channel.", async () => {
+    setupFakeEvents();
+    const fakeCallback = jest.fn();
+
+    setupSwListener([COMPLETE_SUCCESSFUL]);
+    const bogusReq = { channel: "Bogus", data: {} };
+    // @ts-expect-error
+    await sendToSw(bogusReq, fakeCallback);
+
+    expect(fakeCallback).toHaveBeenCalledTimes(1);
+    expect(fakeCallback).toHaveBeenCalledWith({
+      channel: bogusReq.channel,
+      data: COMPLETE_UNSUCCESSFUL,
+      req: bogusReq,
+    });
   });
 
   it("posts message and listens if SW is active.", async () => {
     setupFakeEvents();
     const fakeCallback = jest.fn();
 
-    setupSwListener();
-    await sendToSw(SET_ACTIVE_REQ, fakeCallback);
+    setupSwListener([COMPLETE_SUCCESSFUL]);
+    await sendToSw(TOGGLE_REQ, fakeCallback);
 
     expect(fakeCallback).toHaveBeenCalledTimes(1);
     expect(fakeCallback).toHaveBeenCalledWith({
-      channel: "SetActive",
-      data: COMPLETE_UNSUCCESSFUL,
-      req: SET_ACTIVE_REQ,
+      channel: TOGGLE_REQ.channel,
+      data: COMPLETE_SUCCESSFUL,
+      req: TOGGLE_REQ,
     });
   });
 
@@ -122,43 +141,19 @@ describe("Service worker communication utils", () => {
     setupFakeEvents();
     const fakeCallback = jest.fn();
 
-    setupSwListener();
-    await sendToSw(PREPARE_OFFLINE_REQ, fakeCallback);
+    setupSwListener([IN_PROGRESS, COMPLETE_SUCCESSFUL]);
+    await sendToSw(TOGGLE_REQ, fakeCallback);
 
     expect(fakeCallback).toHaveBeenCalledTimes(2);
     expect(fakeCallback).toHaveBeenCalledWith({
-      channel: "PrepareOffline",
+      channel: TOGGLE_REQ.channel,
       data: IN_PROGRESS,
-      req: PREPARE_OFFLINE_REQ,
+      req: TOGGLE_REQ,
     });
     expect(fakeCallback).toHaveBeenLastCalledWith({
-      channel: "PrepareOffline",
+      channel: TOGGLE_REQ.channel,
       data: COMPLETE_SUCCESSFUL,
-      req: PREPARE_OFFLINE_REQ,
+      req: TOGGLE_REQ,
     });
-  });
-
-  it("does not mix up event streams.", async () => {
-    setupFakeEvents();
-    const prepareOfflineCallback = jest.fn();
-    const setActiveCallback = jest.fn();
-
-    setupSwListener();
-    await Promise.all([
-      sendToSw(PREPARE_OFFLINE_REQ, prepareOfflineCallback),
-      sendToSw(SET_ACTIVE_REQ, setActiveCallback),
-    ]);
-
-    expect(setActiveCallback).toHaveBeenCalledTimes(1);
-    expect(setActiveCallback).toHaveBeenCalledWith(
-      expect.objectContaining({ channel: "SetActive" })
-    );
-    expect(prepareOfflineCallback).toHaveBeenCalledTimes(2);
-    expect(prepareOfflineCallback).toHaveBeenCalledWith(
-      expect.objectContaining({ channel: "PrepareOffline" })
-    );
-    expect(prepareOfflineCallback).not.toHaveBeenCalledWith(
-      expect.objectContaining({ channel: "SetActive" })
-    );
   });
 });

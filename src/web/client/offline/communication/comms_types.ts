@@ -1,7 +1,8 @@
-const SET_ACTIVE = "SetActive";
-const PREPARE_OFFLINE = "PrepareOffline";
-const CHANNELS = new Set<unknown>([SET_ACTIVE, PREPARE_OFFLINE]);
-export type Channel = typeof SET_ACTIVE | typeof PREPARE_OFFLINE;
+import type { OfflineSettings } from "@/web/client/offline/offline_settings_storage";
+
+const OFFLINE_SETTING_TOGGLED = "OfflineSettingToggled";
+const CHANNELS = new Set<unknown>([OFFLINE_SETTING_TOGGLED]);
+export type Channel = typeof OFFLINE_SETTING_TOGGLED;
 
 export function isSwChannel(x: unknown): x is Channel {
   return CHANNELS.has(x);
@@ -12,18 +13,13 @@ export interface BaseMessage<T extends Channel, U> {
   data: U;
 }
 
-export interface SetActiveRequest {
-  isActive: boolean;
+export interface OfflineSettingToggledReqest {
+  settingKey: keyof OfflineSettings;
+  desiredValue: boolean;
 }
 
-export interface PrepareOfflineRequest {
-  resource: string;
-}
-
-type ChannelRequestType<T extends Channel> = T extends "SetActive"
-  ? SetActiveRequest
-  : T extends "PrepareOffline"
-  ? PrepareOfflineRequest
+type ChannelRequestType<T extends Channel> = T extends "OfflineSettingToggled"
+  ? OfflineSettingToggledReqest
   : never;
 
 export type ChannelRequest<T extends Channel> = BaseMessage<

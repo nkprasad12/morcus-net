@@ -11,11 +11,15 @@ export async function sendToSw<T extends Channel>(
 ): Promise<void> {
   const reg = await navigator.serviceWorker.getRegistration();
   const active = checkPresent(reg?.active, "No active service worker!");
-  navigator.serviceWorker.addEventListener("message", (e) => {
+  const listener = (e: MessageEvent<ChannelResponse<T>>) => {
     if (e.data?.channel !== req.channel) {
       return;
     }
+    if (e.data.data.complete === true) {
+      navigator.serviceWorker.removeEventListener("message", listener);
+    }
     callback(e.data);
-  });
+  };
+  navigator.serviceWorker.addEventListener("message", listener);
   active.postMessage(req);
 }
