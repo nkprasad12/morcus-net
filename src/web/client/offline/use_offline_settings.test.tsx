@@ -15,58 +15,8 @@ import {
   OFFLINE_SETTINGS_SW_DB,
   type OfflineSettings,
 } from "@/web/client/offline/offline_settings_storage";
-import { arrayMap } from "@/common/data_structures/collect_map";
-import { assertEqual, checkPresent } from "@/common/assert";
-
-const globalListeners = arrayMap<
-  FakeBroadcastChannel,
-  [string, (e: any) => unknown]
->();
-
-class FakeBroadcastChannel {
-  private closed = false;
-
-  constructor(private readonly channel: string) {}
-
-  addEventListener(eType: string, listener: (e: any) => unknown) {
-    assertEqual(this.closed, false);
-    assertEqual(eType, "message");
-    globalListeners.add(this, [this.channel, listener]);
-  }
-
-  removeEventListener(eType: string, listener: (e: any) => unknown) {
-    assertEqual(this.closed, false);
-    assertEqual(eType, "message");
-    const listeners = globalListeners.get(this);
-    if (listeners === undefined) {
-      return;
-    }
-    for (let i = listeners.length - 1; i >= 0; i--) {
-      if (listeners[i][1] === listener) {
-        listeners.splice(i, 1);
-      }
-    }
-  }
-
-  close() {
-    globalListeners.map.delete(this);
-    this.closed = true;
-  }
-
-  postMessage(message: any) {
-    for (const [channel, items] of globalListeners.map.entries()) {
-      if (channel === this) {
-        continue;
-      }
-      for (const [channelName, listener] of items) {
-        if (channelName !== this.channel) {
-          continue;
-        }
-        listener({ data: message });
-      }
-    }
-  }
-}
+import { checkPresent } from "@/common/assert";
+import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
 
 beforeEach(() => {
   // eslint-disable-next-line no-global-assign
@@ -107,7 +57,7 @@ describe("useOfflineSettings", () => {
     if (broadcastChannel) {
       broadcastChannel.close();
     }
-    globalListeners.map.clear();
+    FakeBroadcastChannel.cleanupAll();
   });
 
   it("doesn't update listeners on unrelated state changes", async () => {
