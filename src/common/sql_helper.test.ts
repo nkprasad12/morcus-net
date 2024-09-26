@@ -138,8 +138,6 @@ describe("SqlDict", () => {
       },
       { keys: "Publius", entry: "Non iterum repetenda suo" },
     ];
-    expect(() => makeTable(data, "entry", [["baz"]])).toThrow(
-      "Invalid index"
-    );
+    expect(() => makeTable(data, "entry", [["baz"]])).toThrow("Invalid index");
   });
 });

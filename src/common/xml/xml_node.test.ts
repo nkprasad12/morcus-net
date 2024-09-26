@@ -97,12 +97,8 @@ describe("parseEntries", () => {
   });
 
   it("raises on unpaired tags if validation is enabled", () => {
-    expect(
-      () => parseXmlStrings([makeEntry("<sense>")], true)[0]
-    ).toThrow();
-    expect(
-      () => parseXmlStrings([makeEntry("</sense>")], true)[0]
-    ).toThrow();
+    expect(() => parseXmlStrings([makeEntry("<sense>")], true)[0]).toThrow();
+    expect(() => parseXmlStrings([makeEntry("</sense>")], true)[0]).toThrow();
   });
 });
 
