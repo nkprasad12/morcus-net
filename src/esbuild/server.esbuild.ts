@@ -1,7 +1,6 @@
 /* istanbul ignore file */
 
 import esbuild from "esbuild";
-import { definePlugin } from "esbuild-plugin-define";
 import { BundleOptions, runBundler } from "@/esbuild/utils";
 import { printStatsPlugin, typeCheckPlugin } from "@/esbuild/plugins";
 
@@ -16,10 +15,12 @@ const options: esbuild.BuildOptions = {
   platform: "node",
   external: ["bun:sqlite"],
   outfile: OUT_FILE,
-  plugins: [
-    printStatsPlugin(envOptions),
-    definePlugin({ process: { env: { MAIN: "start" } } }),
-  ].concat(envOptions.typeCheck ? typeCheckPlugin(envOptions) : []),
+  define: {
+    "process.env.MAIN": '"start"',
+  },
+  plugins: [printStatsPlugin(envOptions)].concat(
+    envOptions.typeCheck ? typeCheckPlugin(envOptions) : []
+  ),
 };
 
 runBundler(options, envOptions);

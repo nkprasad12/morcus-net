@@ -78,7 +78,6 @@
     "compression": "^1.7.4",
     "dotenv": "^16.0.3",
     "esbuild": "0.23.1",
-    "esbuild-plugin-define": "^0.4.0",
     "esbuild-plugin-output-reset": "^2.0.1",
     "eslint": "^8.40.0",
     "eslint-plugin-jest": "^28.8.3",

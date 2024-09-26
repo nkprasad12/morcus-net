@@ -3,7 +3,6 @@
 import fs from "fs";
 import path from "path";
 import { htmlPlugin } from "@craftamap/esbuild-plugin-html";
-import { definePlugin } from "esbuild-plugin-define";
 import clear from "esbuild-plugin-output-reset";
 import { BundleOptions, runBundler } from "@/esbuild/utils";
 import {
@@ -34,14 +33,14 @@ const options: BuildOptions = {
   metafile: true,
   outdir: OUT_DIR,
   publicPath: "/",
+  define: {
+    COMMIT_HASH: `"${getHash()}"`,
+    BUILD_DATE: `"${new Date().toString()}"`,
+    DEFAULT_EXPERIMENTAL_MODE: `${!envOptions.isProduction}`,
+  },
   plugins: [
     printStatsPlugin(envOptions),
     clear,
-    definePlugin({
-      COMMIT_HASH: getHash(),
-      BUILD_DATE: new Date().toString(),
-      DEFAULT_EXPERIMENTAL_MODE: !envOptions.isProduction,
-    }),
     htmlPlugin({
       files: [
         {
