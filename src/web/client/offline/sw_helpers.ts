@@ -47,16 +47,14 @@ export async function registerServiceWorker(): Promise<-1 | 0 | 1> {
     return -1;
   }
   try {
-    const registered = await navigator.serviceWorker.getRegistration();
-    if (registered !== undefined) {
-      return 1;
+    const existing = await navigator.serviceWorker.getRegistration();
+    if (existing === undefined) {
+      await navigator.serviceWorker.register("/serviceworker.js");
     }
+    await navigator.serviceWorker.ready;
+    return 1;
   } catch (e) {
     console.debug(e);
-    // Continue since we might still be able to register.
+    return 0;
   }
-  return navigator.serviceWorker.register("/serviceworker.js").then(
-    () => 1,
-    () => 0
-  );
 }

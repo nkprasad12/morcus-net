@@ -6,6 +6,12 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { SiteSettings } from "@/web/client/pages/site_settings";
+import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
+
+// @ts-expect-error
+global.BroadcastChannel = FakeBroadcastChannel;
+
+afterAll(() => FakeBroadcastChannel.cleanupAll());
 
 describe("Site Settings Page", () => {
   test("handles experiment toggle correctly", async () => {
