@@ -38,52 +38,69 @@ const TEST_DB_CONFIG: IndexDbDictConfig = {
 };
 
 describe("offline data loading", () => {
-  beforeEach(async () => {
+  beforeEach(() => {
     // eslint-disable-next-line no-global-assign
     indexedDB = new IDBFactory();
   });
 
-  function mockFetch(buffer: Promise<unknown>, ok: boolean) {
+  function mockFetch(buffer: ArrayBuffer, ok: boolean) {
     global.fetch = jest.fn(() =>
-      Promise.resolve({ arrayBuffer: () => buffer, ok, status: ok ? 200 : 501 })
+      Promise.resolve({
+        body: {
+          getReader() {
+            let done = false;
+            return {
+              read: async () => {
+                if (!done) {
+                  done = true;
+                  return { value: buffer, done: false };
+                }
+                return { value: undefined, done: true };
+              },
+            };
+          },
+        },
+        ok,
+        status: ok ? 200 : 501,
+      })
     ) as jest.Mock;
   }
 
   test("rejects on failed fetch", async () => {
-    mockFetch(Promise.reject(new Error("Fetch failed")), true);
-    expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrowError(
+    global.fetch = jest.fn(() => Promise.reject(new Error("Fetch failed")));
+    await expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrowError(
       "Fetch failed"
     );
   });
 
   test("rejects on bad status", async () => {
-    mockFetch(Promise.resolve(Buffer.of(1)), false);
-    expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrowError(
+    mockFetch(Buffer.of(1), false);
+    await expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrowError(
       /Status 501.*/
     );
   });
 
   test("loads expected indexeddb tables", async () => {
     const data = packCompressedChunks(TEST_DATA, 2);
-    mockFetch(Promise.resolve(data), true);
+    mockFetch(new Uint8Array(data), true);
     await saveOfflineDict("data", TEST_DB_CONFIG);
 
     const dict = IndexedDbDict.backing(TEST_DB_CONFIG);
 
-    expect(dict.entriesForIds(["n1"])).resolves.toEqual([
+    await expect(dict.entriesForIds(["n1"])).resolves.toEqual([
       { id: "n1", entry: "hi, hello" },
     ]);
-    expect(dict.entryNamesByPrefix("h")).resolves.toEqual([
+    await expect(dict.entryNamesByPrefix("h")).resolves.toEqual([
       { orth: "hi" },
       { orth: "hello" },
     ]);
-    expect(dict.matchesForCleanName("sup")).resolves.toEqual([
+    await expect(dict.matchesForCleanName("sup")).resolves.toEqual([
       {
         id: "n2",
         orth: "sup",
       },
     ]);
-    expect(dict.allEntryNames()).resolves.toEqual([
+    await expect(dict.allEntryNames()).resolves.toEqual([
       { orth: "hello", cleanOrth: "hello" },
       { orth: "hi", cleanOrth: "hi" },
       { orth: "hi", cleanOrth: "hi" },
