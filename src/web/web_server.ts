@@ -36,6 +36,22 @@ export function setupServer(params: WebServerParams): void {
       }
     },
   };
+  app.use("/serviceworker.js", (_, res) => {
+    console.debug(`/serviceworker.js`);
+    res.sendFile(path.join(params.buildDir, "serviceworker.js"));
+    return;
+  });
+  app.use("/offlineData/:resourceName", (req, res) => {
+    res.header("Content-Type", "application/octet-stream");
+    const resourceName: string = req.params["resourceName"];
+    console.debug(`/offlineData/${resourceName}`);
+    res.sendFile(
+      path.resolve(
+        path.join("build/offlineData", `${resourceName}.json.gz.chunked`)
+      )
+    );
+    return;
+  });
   app.use("/public", express.static("public", staticOptions));
   app.use("/.well-known", express.static("public", staticOptions));
   app.use(express.static(params.buildDir, staticOptions));
