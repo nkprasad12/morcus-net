@@ -129,7 +129,7 @@ export function defineMorcusBackendIntegrationSuite() {
       expect(result.data.info.title).toBe("De bello Gallico");
     });
 
-    test("returns DBG by name and author ", async () => {
+    test("returns DBG by name and author", async () => {
       const result = await callApiFull(GetWork, {
         nameAndAuthor: {
           urlAuthor: "caesar",

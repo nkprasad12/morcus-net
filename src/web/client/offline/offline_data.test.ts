@@ -68,14 +68,14 @@ describe("offline data loading", () => {
 
   test("rejects on failed fetch", async () => {
     global.fetch = jest.fn(() => Promise.reject(new Error("Fetch failed")));
-    await expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrowError(
+    await expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrow(
       "Fetch failed"
     );
   });
 
   test("rejects on bad status", async () => {
     mockFetch(Buffer.of(1), false);
-    await expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrowError(
+    await expect(saveOfflineDict("data", TEST_DB_CONFIG)).rejects.toThrow(
       /Status 501.*/
     );
   });

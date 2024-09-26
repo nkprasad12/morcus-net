@@ -63,7 +63,7 @@ describe("WorkCache", () => {
     mockCallApi.mockRejectedValue("fail");
 
     const failed = fetchWork({ id: "foo" });
-    expect(failed).rejects.toBe("fail");
+    await expect(failed).rejects.toBe("fail");
     try {
       await failed;
     } catch {}
@@ -71,7 +71,7 @@ describe("WorkCache", () => {
     mockCallApi.mockResolvedValue("success");
     const succeeded = fetchWork({ id: "foo" });
 
-    expect(succeeded).resolves.toBe("success");
+    await expect(succeeded).resolves.toBe("success");
     expect(mockCallApi).toHaveBeenCalledTimes(2);
   });
 });

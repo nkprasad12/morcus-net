@@ -10,7 +10,7 @@ import {
 describe("exhaustiveGuard", () => {
   it("raises on all input and raises ts error", () => {
     // @ts-expect-error
-    expect(() => exhaustiveGuard("foo")).toThrowError();
+    expect(() => exhaustiveGuard("foo")).toThrow();
   });
 });
 
@@ -120,7 +120,7 @@ describe("mergeMaps", () => {
       [4, "4"],
     ]);
 
-    expect(() => mergeMaps(first, second, false)).toThrowError(/Duplicate/);
+    expect(() => mergeMaps(first, second, false)).toThrow(/Duplicate/);
   });
 });
 

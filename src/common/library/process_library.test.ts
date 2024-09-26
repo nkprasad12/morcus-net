@@ -50,7 +50,7 @@ describe("Library Processing", () => {
 
   test("handles invalid request correctly", async () => {
     processLibrary(LIB_DIR, [DBG_PATH]);
-    expect(
+    await expect(
       retrieveWork({ id: "phi0448.phi001.perseus-lat" }, LIB_DIR)
     ).rejects.toHaveProperty("status", 404);
   });

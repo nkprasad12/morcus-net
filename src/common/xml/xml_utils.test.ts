@@ -40,10 +40,10 @@ describe("parseRawXml", () => {
   it("handles validation if requested", () => {
     expect(() =>
       parseRawXml('<a f="g">hi</b></a>', { validate: true })
-    ).toThrowError();
+    ).toThrow();
     expect(() =>
       parseRawXml('<a f="g">hi</a>', { validate: true })
-    ).not.toThrowError();
+    ).not.toThrow();
   });
 });
 
@@ -324,7 +324,7 @@ describe("XmlOperations", () => {
     expect(root.children[0]).toBe(" end");
   });
 
-  test("removeMatchFromChunk handles removal from start", () => {
+  test("removeMatchFromChunk handles removal from end", () => {
     const root = makeNode(["start end"]);
     const searchResult = searchTreeSimple(root, "end");
 

@@ -11,6 +11,10 @@ import {
   OFFLINE_SETTINGS_SW_DB,
   removeOfflineSettingsChangeListener,
 } from "@/web/client/offline/offline_settings_storage";
+import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
+
+// @ts-expect-error
+global.BroadcastChannel = FakeBroadcastChannel;
 
 describe("offline mode settings DB", () => {
   beforeEach(() => {
@@ -18,65 +22,68 @@ describe("offline mode settings DB", () => {
     indexedDB = new IDBFactory();
   });
 
-  it("returns empty object by default", () => {
-    expect(async () => {
-      const settings = await OFFLINE_SETTINGS_APP_DB.get();
+  it("returns empty object by default", async () => {
+    const settings = await OFFLINE_SETTINGS_APP_DB.get();
 
-      expect(settings.lsDownloaded).toBeUndefined();
-      expect(settings.morceusDownloaded).toBeUndefined();
-      expect(settings.offlineModeEnabled).toBeUndefined();
-      expect(settings.shDownloaded).toBeUndefined();
-    });
+    expect(settings.lsDownloaded).toBeUndefined();
+    expect(settings.morceusDownloaded).toBeUndefined();
+    expect(settings.offlineModeEnabled).toBeUndefined();
+    expect(settings.shDownloaded).toBeUndefined();
   });
 
-  it("returns expected value in get after set", () => {
-    expect(async () => {
-      await OFFLINE_SETTINGS_SW_DB.get().set({ offlineModeEnabled: true });
+  it("returns expected value in get after set", async () => {
+    await OFFLINE_SETTINGS_SW_DB.get().set({ morceusDownloaded: true });
 
-      const settings = await OFFLINE_SETTINGS_APP_DB.get();
+    const settings = await OFFLINE_SETTINGS_APP_DB.get();
 
-      expect(settings.lsDownloaded).toBeUndefined();
-      expect(settings.morceusDownloaded).toBe(true);
-      expect(settings.offlineModeEnabled).toBeUndefined();
-      expect(settings.shDownloaded).toBeUndefined();
-    });
+    expect(settings.lsDownloaded).toBeUndefined();
+    expect(settings.morceusDownloaded).toBe(true);
+    expect(settings.offlineModeEnabled).toBeUndefined();
+    expect(settings.shDownloaded).toBeUndefined();
   });
 
-  it("returns expected value in get after set", () => {
-    expect(async () => {
-      await OFFLINE_SETTINGS_SW_DB.get().set({ offlineModeEnabled: true });
+  it("notifies broadcast listener on update", async () => {
+    const listener = jest.fn();
+    const channel = new FakeBroadcastChannel("OfflineSettingsChanged");
+    channel.addEventListener("message", listener);
+    const newValue = { offlineModeEnabled: true };
 
-      const settings = await OFFLINE_SETTINGS_APP_DB.get();
+    await OFFLINE_SETTINGS_SW_DB.get().set(newValue);
 
-      expect(settings.lsDownloaded).toBeUndefined();
-      expect(settings.morceusDownloaded).toBe(true);
-      expect(settings.offlineModeEnabled).toBeUndefined();
-      expect(settings.shDownloaded).toBeUndefined();
-    });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({ data: newValue });
   });
 
-  it("notifies broadcast listener on update", () => {
-    expect(async () => {
-      const listener = jest.fn();
-      addOfflineSettingsChangeListener(listener);
-      const newValue = { offlineModeEnabled: true };
+  it("doesn't notify listener after unregister", async () => {
+    const listener = jest.fn();
+    const channel = new FakeBroadcastChannel("OfflineSettingsChanged");
+    channel.addEventListener("message", listener);
+    channel.removeEventListener("message", listener);
 
-      await OFFLINE_SETTINGS_SW_DB.get().set(newValue);
+    await OFFLINE_SETTINGS_SW_DB.get().set({ offlineModeEnabled: true });
 
-      expect(listener).toHaveBeenCalledTimes(1);
-      expect(listener).toHaveBeenCalledWith(newValue);
-    });
+    expect(listener).not.toHaveBeenCalled();
   });
 
-  it("doesn't notify listener after unregister", () => {
-    expect(async () => {
-      const listener = jest.fn();
-      addOfflineSettingsChangeListener(listener);
-      removeOfflineSettingsChangeListener(listener);
+  test("addOfflineSettingsChangeListener gets callbacks from other channel sources", async () => {
+    const listener = jest.fn();
+    const channel = new FakeBroadcastChannel("OfflineSettingsChanged");
+    addOfflineSettingsChangeListener(listener);
 
-      await OFFLINE_SETTINGS_SW_DB.get().set({ offlineModeEnabled: true });
+    channel.postMessage("Hi");
 
-      expect(listener).not.toHaveBeenCalled();
-    });
+    expect(listener).toHaveBeenCalledTimes(1);
+    expect(listener).toHaveBeenCalledWith({ data: "Hi" });
+  });
+
+  test("removeOfflineSettingsChangeListener unregisters", async () => {
+    const listener = jest.fn();
+    const channel = new FakeBroadcastChannel("OfflineSettingsChanged");
+    addOfflineSettingsChangeListener(listener);
+    removeOfflineSettingsChangeListener(listener);
+
+    channel.postMessage("Hi");
+
+    expect(listener).not.toHaveBeenCalled();
   });
 });

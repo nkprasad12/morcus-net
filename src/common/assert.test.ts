@@ -42,7 +42,7 @@ describe("assertPresent", () => {
 
 describe("checkSatisfies", () => {
   test("raises on failures", () => {
-    expect(() => checkSatisfies(["foo"], (a) => a.length === 2)).toThrowError();
+    expect(() => checkSatisfies(["foo"], (a) => a.length === 2)).toThrow();
   });
 
   test("returns same on true", () => {

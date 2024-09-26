@@ -20,21 +20,21 @@ describe("reportIssue", () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.reject("Foo"));
     const request = GitHub.reportIssue(REQUEST, "token");
-    expect(request).rejects.toContain("Foo");
+    await expect(request).rejects.toContain("Foo");
   });
 
   it("rejects on failed API", async () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: false }));
     const request = GitHub.reportIssue(REQUEST, "token");
-    expect(request).rejects.toThrow();
+    await expect(request).rejects.toThrow();
   });
 
   it("resolves on successful API", async () => {
     // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: true }));
     const request = GitHub.reportIssue(REQUEST, "token");
-    expect(request).resolves;
+    await expect(request).resolves.not.toThrow();
   });
 
   it("passes correct arguments", async () => {

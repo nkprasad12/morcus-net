@@ -63,8 +63,8 @@ describe("App Bar View", () => {
 
     await user.click(screen.getAllByText(pages[0].name)[0]);
 
-    expect(mockSetPage).toBeCalledTimes(1);
-    expect(mockSetPage).toBeCalledWith({ path: pages[0].targetPath });
+    expect(mockSetPage).toHaveBeenCalledTimes(1);
+    expect(mockSetPage).toHaveBeenCalledWith({ path: pages[0].targetPath });
   });
 
   test("icon menu clicks", async () => {
@@ -81,8 +81,8 @@ describe("App Bar View", () => {
 
     await user.click(screen.getByLabelText("site settings"));
 
-    expect(mockSetPage).toBeCalledTimes(1);
-    expect(mockSetPage).toBeCalledWith({ path: "/settings" });
+    expect(mockSetPage).toHaveBeenCalledTimes(1);
+    expect(mockSetPage).toHaveBeenCalledWith({ path: "/settings" });
   });
 
   test("handles issue clicks", async () => {
@@ -93,7 +93,7 @@ describe("App Bar View", () => {
 
     await user.click(screen.getByLabelText("report an issue"));
 
-    expect(mockReportIssue).toBeCalledTimes(1);
+    expect(mockReportIssue).toHaveBeenCalledTimes(1);
   });
 
   test("handles dark mode clicks", async () => {

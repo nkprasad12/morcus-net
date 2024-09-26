@@ -43,7 +43,7 @@ describe("handleTouchMove", () => {
     expect(isSwiping.current).toBe(false);
   });
 
-  it("adds touch data as start and current on initial", () => {
+  it("updates with current and previous touch on move", () => {
     const isSwiping = { current: false };
     const ref = { current: null };
     const event1 = getEvent(5, 7);

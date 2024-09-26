@@ -3,8 +3,8 @@ import { processRawSense, splitSense } from "@/common/smith_and_hall/sh_senses";
 
 describe("processRawSense", () => {
   it("throws on invalid inputs", () => {
-    expect(() => processRawSense({ text: "foo" })).toThrowError();
-    expect(() => processRawSense({ bullet: "foo" })).toThrowError();
+    expect(() => processRawSense({ text: "foo" })).toThrow();
+    expect(() => processRawSense({ bullet: "foo" })).toThrow();
   });
 
   it("has expected results on regular input", () => {
@@ -78,6 +78,6 @@ describe("splitSense", () => {
   });
 
   it("throws on unhandled senses", () => {
-    expect(() => splitSense("A <i>To prevent from")).toThrowError();
+    expect(() => splitSense("A <i>To prevent from")).toThrow();
   });
 });

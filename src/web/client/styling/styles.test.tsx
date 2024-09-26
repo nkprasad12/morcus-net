@@ -46,8 +46,4 @@ describe("Custom styles", () => {
   test("styles has a lighter text color in dark mode", () => {
     expectDarkerInStyle(LIGHT_MODE, DARK_MODE, ".contentText", "color");
   });
-
-  test("styles has a lighter text color in dark mode", () => {
-    expectDarkerInStyle(LIGHT_MODE, DARK_MODE, ".contentText", "color");
-  });
 });

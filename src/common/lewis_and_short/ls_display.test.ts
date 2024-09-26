@@ -331,9 +331,7 @@ describe("defaultDisplay", () => {
     expect(child.children).toHaveLength(1);
     expect(child.children[0]).toBe("bar");
   });
-});
 
-describe("defaultDisplay", () => {
   it("shows expected entry with senses", () => {
     const input = parseXmlStrings([CANABA])[0];
     const expected = [

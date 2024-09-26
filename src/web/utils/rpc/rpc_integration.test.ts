@@ -421,7 +421,7 @@ describe("RPC library", () => {
       handler: async (s) => s,
     };
 
-    expect(() => addApi(bundle, Connect)).toThrowError();
+    expect(() => addApi(bundle, Connect)).toThrow();
   });
 
   test("handles data with serialization registry", async () => {

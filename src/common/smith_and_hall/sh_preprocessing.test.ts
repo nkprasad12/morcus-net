@@ -122,7 +122,7 @@ describe("extractEntryKeyFromLine", () => {
     expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
-  test("handles parenthical extras with tags", () => {
+  test("handles parenthetical extras with tags", () => {
     const input = `<b>bring before</b> (<i>call attention to</i>):`;
     const expected = "bring before";
     expect(extractEntryKeyFromLine(input)).toEqual([expected]);
@@ -137,12 +137,6 @@ describe("extractEntryKeyFromLine", () => {
   test("handles replacement of alternate division with parenthetical", () => {
     const input = `<b>arrest</b> (<i>v.</i>).`;
     const expected = "arrest";
-    expect(extractEntryKeyFromLine(input)).toEqual([expected]);
-  });
-
-  test("handles parenthical extras with tags", () => {
-    const input = `<b>bring before</b> (<i>call attention to</i>):`;
-    const expected = "bring before";
     expect(extractEntryKeyFromLine(input)).toEqual([expected]);
   });
 
@@ -302,8 +296,11 @@ describe("parseComboEntries", () => {
 });
 
 describe("decomposeKey", () => {
-  it("handles all major decomposeKey cases", () => {
+  it("splits slot with comma and word", () => {
     expect(decomposeKey("----, make")).toStrictEqual(["----", ",", "make"]);
+  });
+
+  it("splits slot with space and dashed word", () => {
     expect(decomposeKey("---- in-law")).toStrictEqual([
       "----",
       " ",
@@ -312,26 +309,37 @@ describe("decomposeKey", () => {
       "law",
     ]);
   });
-  expect(decomposeKey("---- -upon")).toStrictEqual(["----", "-", "upon"]);
 
-  expect(decomposeKey("therein")).toStrictEqual(["there", "-", "in"]);
-  expect(decomposeKey("sea-eagle")).toStrictEqual(["sea", "-", "eagle"]);
-  expect(decomposeKey("---- ----, become")).toStrictEqual([
-    "----",
-    " ",
-    "----",
-    ",",
-    "become",
-  ]);
-  expect(decomposeKey("----, to be on")).toStrictEqual([
-    "----",
-    ",",
-    "to",
-    " ",
-    "be",
-    " ",
-    "on",
-  ]);
+  it("splits slot with initial dashed word", () => {
+    expect(decomposeKey("---- -upon")).toStrictEqual(["----", "-", "upon"]);
+  });
+
+  it("splits internal dash words", () => {
+    expect(decomposeKey("therein")).toStrictEqual(["there", "-", "in"]);
+    expect(decomposeKey("sea-eagle")).toStrictEqual(["sea", "-", "eagle"]);
+  });
+
+  it("splits multi-slot keys", () => {
+    expect(decomposeKey("---- ----, become")).toStrictEqual([
+      "----",
+      " ",
+      "----",
+      ",",
+      "become",
+    ]);
+  });
+
+  it("splits multi-word keys", () => {
+    expect(decomposeKey("----, to be on")).toStrictEqual([
+      "----",
+      ",",
+      "to",
+      " ",
+      "be",
+      " ",
+      "on",
+    ]);
+  });
 });
 
 describe("replaceDash", () => {

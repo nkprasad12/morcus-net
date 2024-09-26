@@ -30,7 +30,7 @@ describe("PagePath", () => {
   test("parseParams with no params returns empty", () => {
     const path = "/hello/darkness/my/old/friend";
     const pagePath = checkPresent(PagePath.of(path));
-    expect(pagePath.parseParams(path));
+    expect(pagePath.parseParams(path)).toStrictEqual({});
   });
 
   test("parseParams with non-matching size returns null", () => {

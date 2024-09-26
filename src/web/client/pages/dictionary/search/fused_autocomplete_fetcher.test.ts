@@ -55,7 +55,7 @@ describe("FusedAutoCompleteFetcher", () => {
 
     const result = new FusedAutocompleteFetcher().getOptions(request);
 
-    expect(result).rejects.toThrow();
+    await expect(result).rejects.toThrow();
   });
 
   it("rejects on too long input", async () => {
@@ -64,7 +64,7 @@ describe("FusedAutoCompleteFetcher", () => {
 
     const result = new FusedAutocompleteFetcher().getOptions(request);
 
-    expect(result).rejects.toThrow();
+    await expect(result).rejects.toThrow();
   });
 
   it("returns single results on request", async () => {
@@ -107,9 +107,9 @@ describe("FusedAutoCompleteFetcher", () => {
     await Promise.all([aPromise, a2Promise, a3Promise]);
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
-    expect(aPromise).resolves.toEqual({ LS: ["ab", "abago"] });
-    expect(a2Promise).resolves.toEqual({ LS: ["ab", "abago"] });
-    expect(a3Promise).resolves.toEqual({ LS: ["ab", "abago"] });
+    await expect(aPromise).resolves.toEqual({ LS: ["ab", "abago"] });
+    await expect(a2Promise).resolves.toEqual({ LS: ["ab", "abago"] });
+    await expect(a3Promise).resolves.toEqual({ LS: ["ab", "abago"] });
   });
 
   it("caches results on subsequent requests", async () => {

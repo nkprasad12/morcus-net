@@ -40,17 +40,17 @@ describe("instanceOf", () => {
 });
 
 describe("typeOf", () => {
-  it("it returns valid on strings", () => {
+  it("returns valid on strings", () => {
     expect(typeOf("string")("1")).toBe(true);
     expect(typeOf("string")(1)).toBe(false);
   });
 
-  it("it returns valid on boolean", () => {
+  it("returns valid on boolean", () => {
     expect(typeOf("boolean")(false)).toBe(true);
     expect(typeOf("boolean")("false")).toBe(false);
   });
 
-  it("it returns valid on number", () => {
+  it("returns valid on number", () => {
     expect(typeOf("number")(1)).toBe(true);
     expect(typeOf("number")("1")).toBe(false);
   });

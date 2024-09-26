@@ -48,7 +48,7 @@ describe("indexDb simpleStore", () => {
     store.delete(5);
     expect(await store.getAll()).toEqual([{ x: 7 }]);
     expect(await store.get(7)).toEqual({ x: 7 });
-    expect(store.get(5)).rejects.toBe("No match");
+    await expect(store.get(5)).rejects.toBe("No match");
   });
 
   it("handles concurrent opens", async () => {
@@ -89,7 +89,7 @@ describe("indexDb simpleStore", () => {
   it("allows valid inserts with validator", async () => {
     const store = simpleIndexDbStore(dbConfig(isAny));
     const validAdd = store.add({ x: 5 });
-    expect(validAdd).resolves.toBe(undefined);
+    await expect(validAdd).resolves.toBe(undefined);
   });
 
   it("doesn't allow overwrites on add", async () => {
@@ -102,14 +102,14 @@ describe("indexDb simpleStore", () => {
       threwError = true;
     }
     expect(threwError).toBe(true);
-    expect(store.getAll()).resolves.toEqual([{ x: 5 }]);
+    await expect(store.getAll()).resolves.toEqual([{ x: 5 }]);
   });
 
   it("allows overwrites with update", async () => {
     const store = simpleIndexDbStore(dbConfig(isAny));
     await store.add({ x: 5 });
     await store.update({ x: 5, y: 0 });
-    expect(store.getAll()).resolves.toEqual([{ x: 5, y: 0 }]);
+    await expect(store.getAll()).resolves.toEqual([{ x: 5, y: 0 }]);
   });
 });
 
@@ -181,7 +181,7 @@ describe("wrappedIndexDb with multiple stores", () => {
     expect(await fooStore("readonly").getAll()).toEqual([
       { id: "7", foo: "7" },
     ]);
-    expect(fooStore("readonly").get("5")).rejects.toBe("No match");
+    await expect(fooStore("readonly").get("5")).rejects.toBe("No match");
   });
 
   it("handles concurrent opens on same stores", async () => {
@@ -215,6 +215,6 @@ describe("wrappedIndexDb with multiple stores", () => {
     const db = await wrappedIndexDb(MULTI_STORE_CONFIG);
     // @ts-expect-error
     const illegalAdd = db.singleStore(FooStoreConfig, "readonly").add({ y: 5 });
-    expect(illegalAdd).rejects.toContain("Invalid object");
+    await expect(illegalAdd).rejects.toContain("Invalid object");
   });
 });

@@ -127,7 +127,7 @@ describe("SqlDict", () => {
       },
       { keys: "Publius", entry: "Non iterum repetenda suo" },
     ];
-    expect(() => makeTable(data, "baz")).toThrowError("Invalid primary");
+    expect(() => makeTable(data, "baz")).toThrow("Invalid primary");
   });
 
   test("save throws with invalid index names", async () => {
@@ -138,7 +138,7 @@ describe("SqlDict", () => {
       },
       { keys: "Publius", entry: "Non iterum repetenda suo" },
     ];
-    expect(() => makeTable(data, "entry", [["baz"]])).toThrowError(
+    expect(() => makeTable(data, "entry", [["baz"]])).toThrow(
       "Invalid index"
     );
   });

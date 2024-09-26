@@ -100,7 +100,7 @@ describe("Service worker communication utils", () => {
       getRegistration: () => undefined,
     };
 
-    expect(sendToSw(TOGGLE_REQ, jest.fn())).rejects.toThrowError(
+    await expect(sendToSw(TOGGLE_REQ, jest.fn())).rejects.toThrow(
       /.*No active.*/
     );
   });
