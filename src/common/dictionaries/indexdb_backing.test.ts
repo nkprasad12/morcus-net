@@ -44,13 +44,8 @@ describe("IndexedDbDict", () => {
     await IndexedDbDict.save(RAW_DATA, LS_CONFIG);
     const backing = IndexedDbDict.backing(LS_CONFIG);
 
-    expect(await backing.entryNamesByPrefix("foo1")).toEqual([
-      { orth: "foo1" },
-      { orth: "foō13" },
-    ]);
-    expect(await backing.entryNamesByPrefix("foo2")).toEqual([
-      { orth: "foo2" },
-    ]);
+    expect(await backing.entryNamesByPrefix("foo1")).toEqual(["foo1", "foō13"]);
+    expect(await backing.entryNamesByPrefix("foo2")).toEqual(["foo2"]);
   });
 
   it("returns expected matchesForCleanName", async () => {

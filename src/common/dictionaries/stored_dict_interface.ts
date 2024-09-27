@@ -33,8 +33,6 @@ export interface StoredDictBacking<IsAsync extends BackingType> {
     cleanName: string
   ) => MaybeAsync<{ id: string; orth: string }[], IsAsync>;
   entriesForIds: (ids: string[]) => MaybeAsync<{ entry: string }[], IsAsync>;
-  entryNamesByPrefix: (
-    prefix: string
-  ) => MaybeAsync<{ orth: string }[], IsAsync>;
+  entryNamesByPrefix: (prefix: string) => MaybeAsync<string[], IsAsync>;
   lowMemory: boolean;
 }

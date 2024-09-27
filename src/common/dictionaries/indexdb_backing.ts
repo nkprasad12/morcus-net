@@ -121,9 +121,9 @@ function indexDbBacking(input: IndexDbDictConfig): StoredDictBacking<"Async"> {
       const query = IDBKeyRange.lowerBound(prefix);
       const stopper = (row: OrthsTableRow) => !row.cleanOrth.startsWith(prefix);
       const results = await store.searchIndex(cleanNameIndex, query, stopper);
-      const lookup = new Map<string, { orth: string }>();
+      const lookup = new Set<string>();
       for (const result of results) {
-        lookup.set(result.orth, { orth: result.orth });
+        lookup.add(result.orth);
       }
       return Array.from(lookup.values());
     },

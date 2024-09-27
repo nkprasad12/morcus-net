@@ -27,13 +27,14 @@ export function sqliteBacking(
         .prepare(`SELECT entry FROM entries WHERE ${filter} LIMIT ${n}`)
         .all(ids);
     },
-    // @ts-expect-error
     entryNamesByPrefix: (prefix: string) =>
       db
         .prepare(
           `SELECT DISTINCT orth FROM orths WHERE cleanOrth GLOB '${prefix}*'`
         )
-        .all(),
+        .all()
+        // @ts-expect-error
+        .map(({ orth }) => orth),
     lowMemory: false,
   };
 }

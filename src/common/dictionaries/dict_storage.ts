@@ -42,7 +42,7 @@ export class StoredDict {
       .map(({ id }) => id);
     const entryStrings = await this.backing.entriesForIds(allIds);
     extras?.log(`${request}_entriesFetched`);
-    return toRegularArray(entryStrings, ({ entry }) => entry);
+    return entryStrings.map(({ entry }) => entry);
   }
 
   /** Returns the entry with the given ID, if present. */
@@ -61,18 +61,6 @@ export class StoredDict {
     if (precomputed !== undefined) {
       return precomputed;
     }
-    const rows = await this.backing.entryNamesByPrefix(prefix);
-    return toRegularArray(rows, (row) => row.orth);
+    return this.backing.entryNamesByPrefix(prefix);
   }
-}
-
-function toRegularArray<T, U>(input: T[], mapper: (t: T) => U) {
-  // Somehow, the native result from `.all()` isn't quite a regular array.
-  // This makes the jest checks for strict equality fail, so manually do
-  // the map.
-  const result: U[] = Array(input.length);
-  input.forEach((value, i) => {
-    result[i] = mapper(value);
-  });
-  return result;
 }
