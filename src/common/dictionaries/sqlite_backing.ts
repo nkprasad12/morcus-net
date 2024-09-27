@@ -34,6 +34,7 @@ export function sqliteBacking(
           `SELECT DISTINCT orth FROM orths WHERE cleanOrth GLOB '${prefix}*'`
         )
         .all(),
+    lowMemory: false,
   };
 }
 

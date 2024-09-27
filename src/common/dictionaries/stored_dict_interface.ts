@@ -36,4 +36,5 @@ export interface StoredDictBacking<IsAsync extends BackingType> {
   entryNamesByPrefix: (
     prefix: string
   ) => MaybeAsync<{ orth: string }[], IsAsync>;
+  lowMemory: boolean;
 }

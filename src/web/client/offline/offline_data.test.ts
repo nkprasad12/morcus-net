@@ -91,8 +91,8 @@ describe("offline data loading", () => {
       { id: "n1", entry: "hi, hello" },
     ]);
     await expect(dict.entryNamesByPrefix("h")).resolves.toEqual([
-      { orth: "hi" },
       { orth: "hello" },
+      { orth: "hi" },
     ]);
     await expect(dict.matchesForCleanName("sup")).resolves.toEqual([
       {

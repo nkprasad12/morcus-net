@@ -22,10 +22,13 @@ function openDb(config: DbConfig): Promise<IDBDatabase> {
       for (const store of config.stores) {
         if (!db.objectStoreNames.contains(store.name)) {
           const autoIncrement = store.keyPath === undefined ? true : undefined;
-          db.createObjectStore(store.name, {
+          const objectStore = db.createObjectStore(store.name, {
             keyPath: store.keyPath,
             autoIncrement,
           });
+          for (const index of store.indices ?? []) {
+            objectStore.createIndex(`${index.keyPath}Index`, index.keyPath);
+          }
         }
       }
     };
@@ -55,6 +58,28 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
           reject(`getAll failed on ${store.name}: ${operation.error}`);
         operation.onsuccess = () => resolve(operation.result);
       }),
+    searchIndex: (index, query, shouldStop) => {
+      const rawIndex = raw.index(`${index.keyPath}Index`);
+      return new Promise((resolve, reject) => {
+        const cursorRequest = rawIndex.openCursor(query);
+        if (cursorRequest === null) {
+          reject(new Error("Failed to open cursor!"));
+          return;
+        }
+        cursorRequest.onerror = () =>
+          reject(new Error("Failed to open cursor!"));
+        const results: T[] = [];
+        cursorRequest.onsuccess = (e: any) => {
+          const cursor = e.target?.result as IDBCursorWithValue | undefined;
+          if (!cursor || shouldStop?.(cursor.value) === true) {
+            resolve(results);
+            return;
+          }
+          results.push(cursor.value);
+          cursor.continue();
+        };
+      });
+    },
   };
   const writeOperations: WriteOperations<T> = {
     add: (item: T) => {
@@ -137,6 +162,7 @@ export function simpleIndexDbStore<T extends object>(
     ...config.stores[0],
     get: (k) => readStore().then((s) => s.get(k)),
     getAll: () => readStore().then((s) => s.getAll()),
+    searchIndex: (i, q, sS) => readStore().then((s) => s.searchIndex(i, q, sS)),
     add: (t) => writeStore().then((s) => s.add(t)),
     update: (t) => writeStore().then((s) => s.update(t)),
     delete: (k) => writeStore().then((s) => s.delete(k)),

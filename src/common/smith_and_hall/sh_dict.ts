@@ -9,10 +9,10 @@ import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interf
 export class SmithAndHall implements Dictionary {
   readonly info = LatinDict.SmithAndHall;
 
-  private readonly sqlDict: StoredDict;
+  private readonly storage: StoredDict;
 
   constructor(backing: StoredDictBacking<any>) {
-    this.sqlDict = new StoredDict(backing);
+    this.storage = new StoredDict(backing);
   }
 
   private reviveRaw(input: string) {
@@ -27,16 +27,16 @@ export class SmithAndHall implements Dictionary {
     input: string,
     extras?: ServerExtras | undefined
   ): Promise<EntryResult[]> {
-    const rawEntries = await this.sqlDict.getRawEntry(input, extras);
+    const rawEntries = await this.storage.getRawEntry(input, extras);
     return rawEntries.map(this.reviveRaw, this);
   }
 
   async getCompletions(input: string): Promise<string[]> {
-    return this.sqlDict.getCompletions(input);
+    return this.storage.getCompletions(input);
   }
 
   async getEntryById(id: string): Promise<EntryResult | undefined> {
-    const rawResult = await this.sqlDict.getById(id);
+    const rawResult = await this.storage.getById(id);
     return rawResult === undefined ? rawResult : this.reviveRaw(rawResult);
   }
 }

@@ -12,14 +12,14 @@ interface EntriesTableRow {
   entry: string;
 }
 
-export const ENTRIES_STORE: Store<EntriesTableRow> = {
+export const ENTRIES_STORE = {
   name: "entriesTable",
   keyPath: "id",
   validator: matches([
     ["id", isString],
     ["entry", isString],
   ]),
-};
+} satisfies Store<EntriesTableRow>;
 
 interface OrthsTableRow {
   id: string;
@@ -28,17 +28,18 @@ interface OrthsTableRow {
 }
 
 // TODO: The Sqlite implementation has cleanOrth as an index.
-export const ORTHS_STORE: Store<OrthsTableRow> = {
+export const ORTHS_STORE = {
   name: "orthsTable",
   validator: matches([
     ["id", isString],
     ["orth", isString],
     ["cleanOrth", isString],
   ]),
-};
+  indices: [{ keyPath: "cleanOrth" }],
+} satisfies Store<OrthsTableRow>;
 
 export interface IndexDbDictConfig extends DbConfig {
-  stores: [Store<EntriesTableRow>, Store<OrthsTableRow>];
+  stores: [typeof ENTRIES_STORE, typeof ORTHS_STORE];
 }
 
 export const SH_CONFIG: IndexDbDictConfig = {
@@ -56,7 +57,7 @@ export const LS_CONFIG: IndexDbDictConfig = {
 /** Saves the given entries to the IndexedDb table. */
 async function saveToIndexedDb(
   entries: RawDictEntry[],
-  dbConfig: DbConfig
+  dbConfig: IndexDbDictConfig
 ): Promise<void> {
   // # # # # #
   // IMPORTANT If the implementation here is updated, also change `sqlite_backing`!
@@ -82,7 +83,7 @@ async function saveToIndexedDb(
   db.close();
 }
 
-function indexDbBacking(input: DbConfig): StoredDictBacking<"Async"> {
+function indexDbBacking(input: IndexDbDictConfig): StoredDictBacking<"Async"> {
   const db = wrappedIndexDb(input);
   return {
     allEntryNames: async () => {
@@ -96,16 +97,10 @@ function indexDbBacking(input: DbConfig): StoredDictBacking<"Async"> {
     },
     matchesForCleanName: async (cleanName: string) => {
       const store = (await db).singleStore(ORTHS_STORE, "readonly");
-      // TODO: The Sqlite implementation has cleanOrth as an index.
-      // Once we have an index, rewrite this to be more efficient.
-      const rows = await store.getAll();
-      const results: { id: string; orth: string }[] = [];
-      for (const row of rows) {
-        if (row.cleanOrth === cleanName) {
-          results.push({ id: row.id, orth: row.orth });
-        }
-      }
-      return results;
+      const cleanNameIndex = input.stores[1].indices[0];
+      const query = IDBKeyRange.only(cleanName);
+      const results = await store.searchIndex(cleanNameIndex, query);
+      return results.map(({ id, orth }) => ({ id, orth }));
     },
     entriesForIds: async (ids: string[]) => {
       const store = (await db).singleStore(ENTRIES_STORE, "readonly");
@@ -122,18 +117,17 @@ function indexDbBacking(input: DbConfig): StoredDictBacking<"Async"> {
     },
     entryNamesByPrefix: async (prefix: string) => {
       const store = (await db).singleStore(ORTHS_STORE, "readonly");
-      // TODO: The Sqlite implementation has cleanOrth as an index.
-      // Once we have an index, rewrite this to be more efficient.
-      const rows = await store.getAll();
-      const items = new Map<string, { orth: string }>();
-      for (const row of rows) {
-        if (!row.cleanOrth.startsWith(prefix)) {
-          continue;
-        }
-        items.set(row.orth, { orth: row.orth });
+      const cleanNameIndex = input.stores[1].indices[0];
+      const query = IDBKeyRange.lowerBound(prefix);
+      const stopper = (row: OrthsTableRow) => !row.cleanOrth.startsWith(prefix);
+      const results = await store.searchIndex(cleanNameIndex, query, stopper);
+      const lookup = new Map<string, { orth: string }>();
+      for (const result of results) {
+        lookup.set(result.orth, { orth: result.orth });
       }
-      return [...items.values()];
+      return Array.from(lookup.values());
     },
+    lowMemory: true,
   };
 }
 

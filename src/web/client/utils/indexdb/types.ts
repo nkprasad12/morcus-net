@@ -17,6 +17,10 @@ export interface Closeable {
   close(): void;
 }
 
+export interface StoreIndex {
+  keyPath: string;
+}
+
 export interface Store<T extends object> {
   /** The name of the store within the database. */
   name: string;
@@ -27,6 +31,8 @@ export interface Store<T extends object> {
   keyPath?: string;
   /** A validator for objects placed into the store. */
   validator?: Validator<T>;
+  /** Indices to create. */
+  indices?: StoreIndex[];
 }
 
 export interface ReadOperations<T> {
@@ -37,6 +43,21 @@ export interface ReadOperations<T> {
   get(key: DbKey): Promise<T>;
   /** Returns all objects from the store. */
   getAll(): Promise<T[]>;
+  /**
+   * Searches the index with the given name.
+   *
+   * @argument index the index to use.
+   * @argument query the cursor query to use.
+   * @argument shouldStop if present, stops the cursor and excludes
+   *   the offending element.
+   *
+   * @returns the matching results.
+   */
+  searchIndex(
+    index: StoreIndex,
+    query: IDBKeyRange,
+    shouldStop?: (t: T) => boolean
+  ): Promise<T[]>;
 }
 
 export interface WriteOperations<T> {
