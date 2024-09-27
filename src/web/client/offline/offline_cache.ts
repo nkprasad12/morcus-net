@@ -19,18 +19,22 @@ function isAppPage(input: string) {
   return false;
 }
 
-export async function returnCachedResource(pathname: string) {
+/** Resolves the cache key given a `url.pathname`. */
+export function cacheKeyForPath(pathname: string): string | undefined {
+  return pathname === APP_BUNDLE
+    ? APP_BUNDLE
+    : pathname === FAVICON
+    ? FAVICON
+    : isAppPage(pathname)
+    ? INDEX
+    : undefined;
+}
+
+export async function returnCachedResource(
+  cacheKey: string
+): Promise<Response | undefined> {
   const cache = await caches.open(CACHE_NAME);
-  if (pathname === APP_BUNDLE) {
-    return cache.match(APP_BUNDLE);
-  }
-  if (pathname === FAVICON) {
-    return cache.match(FAVICON);
-  }
-  if (isAppPage(pathname)) {
-    return cache.match(INDEX);
-  }
-  return undefined;
+  return cache.match(cacheKey);
 }
 
 export async function populateCache(): Promise<unknown> {

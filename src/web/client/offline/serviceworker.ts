@@ -20,11 +20,10 @@ import {
 import { singletonOf } from "@/common/misc_utils";
 import { saveOfflineDict } from "@/web/client/offline/offline_data";
 import {
+  cacheKeyForPath,
   populateCache,
   returnCachedResource,
 } from "@/web/client/offline/offline_cache";
-
-const SERVICE_WORKER_VERSION = "1.0";
 
 interface SwLifecycleEvent extends Event {
   waitUntil: (input: Promise<unknown>) => void;
@@ -49,7 +48,7 @@ const COMPLETIONS_FUSED = RouteAndHandler.create(CompletionsFusedApi, (i) =>
   DICTIONARY.getCompletions(i)
 );
 
-function offlineSettings() {
+const OFFLINE_SETTINGS = singletonOf(() => {
   let current: OfflineSettings | undefined = undefined;
   let initialStale = false;
   const initial = OFFLINE_SETTINGS_SW_DB.get().get();
@@ -67,50 +66,78 @@ function offlineSettings() {
       return OFFLINE_SETTINGS_SW_DB.get().set(current);
     },
   };
-}
-
-const OFFLINE_SETTINGS = singletonOf(offlineSettings);
+});
 
 function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
-  const handler = async (e: FetchEvent) => {
-    const settings = await OFFLINE_SETTINGS.get().get();
-    if (!settings.offlineModeEnabled) {
+  const findApiHandler = (url: URL) => {
+    for (const handler of handlers) {
+      if (url.pathname.startsWith(`${handler.route.path}/`)) {
+        return handler;
+      }
+    }
+    return undefined;
+  };
+
+  async function handleRequest<I, O>(
+    request: Request,
+    settingsPromise: OfflineSettings | Promise<OfflineSettings>,
+    apiHandler?: RouteAndHandler<I, O>,
+    cacheKey?: string
+  ): Promise<Response> {
+    const settings = await settingsPromise;
+    if (settings.offlineModeEnabled !== true) {
+      return fetch(request);
+    }
+    if (apiHandler !== undefined) {
+      const maybeInput = extractInput(request, apiHandler.route);
+      if (maybeInput instanceof Error) {
+        console.debug(
+          `Error parsing request, deferring to server.\n${maybeInput}`
+        );
+        return fetch(request);
+      }
+      const start = performance.now();
+      const apiResponse = await apiHandler.handler(maybeInput[0]);
+      const totalMs = (performance.now() - start).toFixed(2);
+      console.debug(`[SW] ${apiHandler.route.path} ${totalMs} ms`);
+      const encoded = encodeMessage(
+        {
+          data: apiResponse,
+          metadata: { commit: undefined },
+        },
+        apiHandler.route.registry
+      );
+      return new Response(encoded);
+    }
+    if (cacheKey !== undefined) {
+      const result = await returnCachedResource(cacheKey);
+      return result ?? fetch(request);
+    }
+    return fetch(request);
+  }
+
+  return (event: FetchEvent) => {
+    const settings = OFFLINE_SETTINGS.get().get();
+    if (!("then" in settings) && settings.offlineModeEnabled !== true) {
+      // If we had a value cached and offline mode is disabled, then we
+      // can return immediately.
       return;
     }
-    const url = new URL(e.request.url);
-    const cachedResult = await returnCachedResource(url.pathname);
-    if (cachedResult !== undefined) {
-      return cachedResult;
+    const url = new URL(event.request.url);
+    const apiHandler = findApiHandler(url);
+    const cacheKey = cacheKeyForPath(url.pathname);
+    if (apiHandler === undefined && cacheKey === undefined) {
+      // We have two ways of dealing with fetch requests - either a cache
+      // lookup or an API handler. If none work for the current fetch, we
+      // can't do anything more.
+      return;
     }
-    for (const option of handlers) {
-      if (!url.pathname.startsWith(`${option.route.path}/`)) {
-        continue;
-      }
-      console.debug(
-        `Service Worker [${SERVICE_WORKER_VERSION}] handling ${option.route.path}`
-      );
-      const result = extractInput(e.request, option.route);
-      if (result instanceof Error) {
-        console.debug(`Error parsing request, deferring to server.\n${result}`);
-        return;
-      }
-      const apiRequest = result[0];
-      const t = performance.now();
-      const apiResponse = await option.handler(apiRequest);
-      console.log(performance.now() - t);
-      return new Response(
-        encodeMessage(
-          {
-            data: apiResponse,
-            metadata: { commit: undefined },
-          },
-          option.route.registry
-        )
-      );
-    }
+    // At this point we know we can (at least try to) handle the request,
+    // so we can await the settings promise if needed and return a response;
+    event.respondWith(
+      handleRequest(event.request, settings, apiHandler, cacheKey)
+    );
   };
-  return (e) =>
-    e.respondWith(handler(e).then((response) => response ?? fetch(e.request)));
 }
 
 const FETCH_HANDLER = fetchHandler([DICTS_FUSED, COMPLETIONS_FUSED]);
@@ -148,7 +175,7 @@ registerMessageListener(async (req, respond) => {
 });
 
 function prewarm() {
-  offlineSettings().get();
+  OFFLINE_SETTINGS.get().get();
 }
 
 // @ts-expect-error [SW only]
