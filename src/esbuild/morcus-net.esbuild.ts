@@ -7,6 +7,7 @@ import clear from "esbuild-plugin-output-reset";
 import { BundleOptions, runBundler } from "@/esbuild/utils";
 import {
   compressPlugin,
+  injectBuildInfo,
   printStatsPlugin,
   renamePlugin,
   typeCheckPlugin,
@@ -48,6 +49,15 @@ const options: BuildOptions = {
           filename: "index.html",
           htmlTemplate: "./src/web/client/root.html",
           scriptLoading: "defer",
+        },
+      ],
+    }),
+    injectBuildInfo({
+      target: SERVICE_WORKER_ROOT,
+      replacements: [
+        {
+          placeholder: "@bundle-with-hash-placeholder.js@",
+          replacement: [SPA_ROOT, "outputName"],
         },
       ],
     }),

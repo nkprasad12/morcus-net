@@ -33,7 +33,7 @@ export class PagePath {
   /**
    * Parses parameters from an input path.
    *
-   * @rerurns null if the input does not match this path, or
+   * @returns null if the input does not match this path, or
    * an object containing the path parameters if it does.
    */
   parseParams(urlPath: string): Record<string, string> | null {
@@ -52,6 +52,10 @@ export class PagePath {
       }
     }
     return result;
+  }
+
+  matches(urlPath: string): boolean {
+    return this.parseParams(urlPath) !== null;
   }
 
   /**
@@ -90,8 +94,7 @@ export class PagePath {
 
 export function matchesPage(urlPath: string, page: ContentPage): boolean {
   for (const path of page.paths) {
-    const params = path.parseParams(urlPath);
-    if (params !== null) {
+    if (path.matches(urlPath)) {
       return true;
     }
   }

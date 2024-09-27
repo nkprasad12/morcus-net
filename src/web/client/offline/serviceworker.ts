@@ -19,20 +19,18 @@ import {
 } from "@/web/client/offline/offline_settings_storage";
 import { singletonOf } from "@/common/misc_utils";
 import { saveOfflineDict } from "@/web/client/offline/offline_data";
-import { getCommitHash } from "@/web/client/define_vars";
-
-const CACHE_NAME = "morcusOfflineData";
-const NON_INDEX_PATHS = ["/api/", "/offlineData/", "/public/", "/.well-known/"];
-const INDEX = "/index.html";
-const FAVICON = "/public/favicon.ico";
+import {
+  populateCache,
+  returnCachedResource,
+} from "@/web/client/offline/offline_cache";
 
 const SERVICE_WORKER_VERSION = "1.0";
 
-console.log(getCommitHash());
-
-interface InstallEvent extends Event {
+interface SwLifecycleEvent extends Event {
   waitUntil: (input: Promise<unknown>) => void;
 }
+interface InstallEvent extends SwLifecycleEvent {}
+interface ActivatedEvent extends SwLifecycleEvent {}
 
 interface FetchEvent extends Event {
   request: Request;
@@ -73,38 +71,6 @@ function offlineSettings() {
 
 const OFFLINE_SETTINGS = singletonOf(offlineSettings);
 
-async function returnCachedResource(pathname: string) {
-  for (const prefix of NON_INDEX_PATHS) {
-    if (pathname.startsWith(prefix)) {
-      return undefined;
-    }
-  }
-  if (pathname.endsWith(".js")) {
-    console.log("Should fetch bundle.");
-    return undefined;
-  }
-  console.log(`SW should get from cache: ${pathname}`);
-  // Open the app's cache.
-  const cache = await caches.open(CACHE_NAME);
-  if (pathname === FAVICON) {
-    return cache.match(FAVICON);
-  }
-  return cache.match(INDEX);
-  // if (cachedResponse) {
-  //   // Return the resource.
-  //   return cachedResponse;
-  // } else {
-  //   // The resource wasn't found in the cache, so fetch it from the network.
-  //   const fetchResponse = await fetch(event.request.url);
-  //   // Put the response in cache.
-  //   cache.put(event.request.url, fetchResponse.clone());
-  //   // And return the response.
-  //   return fetchResponse;
-  // }
-}
-
-// event.respondWith(returnCachedResource());
-
 function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
   const handler = async (e: FetchEvent) => {
     const settings = await OFFLINE_SETTINGS.get().get();
@@ -114,7 +80,6 @@ function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
     const url = new URL(e.request.url);
     const cachedResult = await returnCachedResource(url.pathname);
     if (cachedResult !== undefined) {
-      // e.respondWith();
       return cachedResult;
     }
     for (const option of handlers) {
@@ -132,8 +97,6 @@ function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
       const apiRequest = result[0];
       const t = performance.now();
       const apiResponse = await option.handler(apiRequest);
-      // e.respondWith(
-      //   option.handler(apiRequest).then((apiResponse) => {
       console.log(performance.now() - t);
       return new Response(
         encodeMessage(
@@ -144,8 +107,6 @@ function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
           option.route.registry
         )
       );
-      //   })
-      // );
     }
   };
   return (e) =>
@@ -188,8 +149,12 @@ registerMessageListener(async (req, respond) => {
 // @ts-expect-error
 self.addEventListener("fetch", FETCH_HANDLER);
 // @ts-expect-error
-self.addEventListener("install", (event: InstallEvent) => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then((cache) => cache.addAll([INDEX, FAVICON]))
-  );
+self.addEventListener("install", (event: InstallEvent) =>
+  event.waitUntil(populateCache())
+);
+// @ts-expect-error
+self.addEventListener("activate", (event: ActivatedEvent) => {
+  console.log("Got activate.");
+  // @ts-expect-error
+  event.waitUntil(self.clients.claim());
 });
