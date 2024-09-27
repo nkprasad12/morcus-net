@@ -146,15 +146,35 @@ registerMessageListener(async (req, respond) => {
     respond({ success: false, complete: true });
   }
 });
-// @ts-expect-error
-self.addEventListener("fetch", FETCH_HANDLER);
-// @ts-expect-error
-self.addEventListener("install", (event: InstallEvent) =>
-  event.waitUntil(populateCache())
-);
-// @ts-expect-error
+
+function prewarm() {
+  offlineSettings().get();
+}
+
+// @ts-expect-error [SW only]
+self.addEventListener("install", (event: InstallEvent) => {
+  // @ts-expect-error [SW only]
+  // This lets the current service worker activate.
+  const skip: Promise<unknown> = self.skipWaiting();
+  // We don't mind an error in `skipWaiting`.
+  event.waitUntil(Promise.all([populateCache(), skip.catch(() => {})]));
+});
+// @ts-expect-error [SW only]
 self.addEventListener("activate", (event: ActivatedEvent) => {
-  console.log("Got activate.");
-  // @ts-expect-error
+  // Pre-warm the cached value so that fetch handling doesn't need to wait on this.
+  // However, note that this MUST NOT move any earlier than `activate` because before
+  // there could be another service worker just about to do a write. Waiting until `activate`
+  // ensures that no other service workers can be getting events.
+  prewarm();
+  // @ts-expect-error [SW only]
+  // This lets the current service worker take over existing pages.
   event.waitUntil(self.clients.claim());
 });
+// @ts-expect-error [SW only]
+self.addEventListener("fetch", FETCH_HANDLER);
+// @ts-expect-error [SW only]
+if (self.serviceWorker.state === "activated") {
+  // Note that this is called both in the `activate` listener and also here.
+  // This covers the case that we're not replacing any existing service worker.
+  prewarm();
+}
