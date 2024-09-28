@@ -5,7 +5,6 @@ import {
   Vowels,
 } from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import { MorceusTables } from "@/morceus/cruncher_tables";
 import type {
   CruncherTables,
   CrunchResult,
@@ -19,7 +18,7 @@ import {
   subsetOf,
 } from "@/morceus/inflection_data_utils";
 import { type StemCode } from "@/morceus/stem_parsing";
-import { expandSingleEnding } from "@/morceus/tables/templates";
+import { expandSingleEnding } from "@/morceus/tables/template_utils_no_fs";
 import {
   LatinDegree,
   LatinGender,
@@ -383,9 +382,8 @@ function mergeIfCompatible(
 }
 
 export namespace MorceusCruncher {
-  export function make(tables?: CruncherTables): Cruncher {
-    return (word, options) =>
-      convert(crunchWord(word, tables || MorceusTables.CACHED.get(), options));
+  export function make(tables: CruncherTables): Cruncher {
+    return (word, options) => convert(crunchWord(word, tables, options));
   }
 
   function convert(crunchResults: CrunchResult[]): LatinWordAnalysis[] {

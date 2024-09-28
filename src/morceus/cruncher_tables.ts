@@ -14,9 +14,9 @@ import {
   type Stem,
 } from "@/morceus/stem_parsing";
 import { makeEndIndex, type EndIndexRow } from "@/morceus/tables/indices";
-import fs from "fs";
+import fs from "fs/promises";
 import path from "path";
-import { gzipSync } from "zlib";
+import { gzip } from "zlib";
 
 export namespace MorceusTables {
   export const make = makeTables;
@@ -41,24 +41,27 @@ function makeTables(config?: CruncherConfig): CruncherTables {
   return { endsMap, stemMap, inflectionLookup: endTables };
 }
 
-function saveTables() {
-  const tables = makeTables();
-  const replacer = (_: string, value: unknown) => {
-    if (value instanceof Map) {
-      return {
-        dataType: "Map",
-        value: Array.from(value.entries()),
-      };
-    } else {
-      return value;
-    }
-  };
-  const data = gzipSync(JSON.stringify(tables.endsMap, replacer), { level: 9 });
+async function saveTables(config?: CruncherConfig) {
+  const tables = makeTables(config);
+  const replacer = (_: string, value: unknown) =>
+    value instanceof Map
+      ? {
+          dataType: "Map",
+          value: Array.from(value.entries()),
+        }
+      : value;
+  const stringified = JSON.stringify(tables, replacer);
+  const data = await new Promise<Buffer>((resolve, reject) => {
+    const settings = { level: 9 };
+    gzip(stringified, settings, (error, result) =>
+      error === null ? resolve(result) : reject(error)
+    );
+  });
   const outPath = path.join(
     envVar("OFFLINE_DATA_DIR"),
-    "morceusTables.json.gz"
+    "morceusTables.json.gz.chunked"
   );
-  fs.writeFileSync(outPath, data);
+  await fs.writeFile(outPath, data);
 }
 
 function normalizeKey(input: string): string {

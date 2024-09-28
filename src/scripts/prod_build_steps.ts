@@ -17,6 +17,7 @@ import {
 import { writePwaManifestStep } from "@/scripts/write_webmanifest";
 import { createCleanDir } from "@/utils/file_utils";
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
+import { MorceusTables } from "@/morceus/cruncher_tables";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
@@ -57,6 +58,10 @@ const SETUP_DIRS: StepConfig = {
     ]).then(() => {}),
 
   label: "Setting up directories",
+};
+const SAVE_TABLES: StepConfig = {
+  operation: MorceusTables.save,
+  label: "Saving Morceus tables",
 };
 const MAKE_LS: StepConfig = {
   operation: GenerateLs.saveArtifacts,
@@ -102,6 +107,7 @@ const ALL_STEPS = [
   WRITE_COMMIT_ID,
   writePwaManifestStep(),
   MAKE_BUNDLE,
+  SAVE_TABLES,
   MAKE_SH,
   MAKE_LS,
   PROCESS_LAT_LIB,

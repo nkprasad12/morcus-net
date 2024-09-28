@@ -5,13 +5,13 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { filesInPaths } from "@/utils/file_utils";
 import {
   isWordInflectionDataNonEmpty,
-  mergeInflectionData,
   toInflectionData,
   wordInflectionDataToArray,
   type InflectionContext,
   type InflectionEnding,
 } from "@/morceus/inflection_data_utils";
 import { singletonOf } from "@/common/misc_utils";
+import { expandSingleEnding } from "@/morceus/tables/template_utils_no_fs";
 
 export const MORPHEUS_TARGETS = "src/morceus/tables/lat/core/target";
 export const MORPHEUS_DEPENDENCIES = "src/morceus/tables/lat/core/dependency";
@@ -114,41 +114,6 @@ function loadTemplates(inputDirs: string[]): Map<string, InflectionTemplate> {
       `Template ${template.name} has already been loaded!`
     );
     result.set(template.name, template);
-  }
-  return result;
-}
-
-function mergeLists<T>(first?: T[], second?: T[]): T[] | undefined {
-  const merged = new Set<T>(first || []);
-  for (const item of second || []) {
-    merged.add(item);
-  }
-  return merged.size === 0 ? undefined : [...merged];
-}
-
-export function expandSingleEnding(
-  stem: string,
-  context: InflectionContext,
-  ending: InflectionEnding
-): InflectionEnding | null {
-  const mergedData = mergeInflectionData(
-    ending.grammaticalData,
-    context.grammaticalData
-  );
-  if (mergedData === null) {
-    return null;
-  }
-  const result: InflectionEnding = {
-    ending: stem + ending.ending,
-    grammaticalData: mergedData,
-  };
-  const tags = mergeLists(ending.tags, context.tags);
-  if (tags !== undefined) {
-    result.tags = tags;
-  }
-  const internalTags = mergeLists(ending.internalTags, context.internalTags);
-  if (internalTags !== undefined) {
-    result.internalTags = undefined;
   }
   return result;
 }

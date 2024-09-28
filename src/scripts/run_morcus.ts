@@ -2,6 +2,7 @@
 
 import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
+import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
   StepConfig,
   runCommand,
@@ -56,6 +57,10 @@ function parseArguments() {
     help: "Skips type checking for the bundle.",
     action: "store_true",
   });
+  build.add_argument("-mot", "--morceus_tables", {
+    help: "Builds Morceus tables and saves to disk.",
+    action: "store_true",
+  });
   build.add_argument("-b_ls", "--build_ls", {
     help: "Re-processes LS.",
     action: "store_true",
@@ -98,6 +103,10 @@ function parseArguments() {
   });
   web.add_argument("-no_bc", "--no_build_client", {
     help: "The client bundle will not be built.",
+    action: "store_true",
+  });
+  web.add_argument("-mot", "--morceus_tables", {
+    help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
   web.add_argument("-b_ls", "--build_ls", {
@@ -292,6 +301,13 @@ function artifactConfig(args: any): StepConfig[] {
     label: "Creating output dirs",
     priority: 1,
   });
+  if (args.morceus_tables === true) {
+    setupSteps.push({
+      operation: MorceusTables.save,
+      label: "Saving Morceus tables",
+      priority: 2,
+    });
+  }
   if (args.build_sh === true) {
     const command = baseCommand.concat(["src/scripts/process_sh.ts"]);
     setupSteps.push({

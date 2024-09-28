@@ -60,6 +60,10 @@ function OfflineSettings() {
         label="Lewis and Short [Offline]"
         settingKey="lsDownloaded"
       />
+      <OfflineSettingsCheckbox
+        label="Latin Inflections [Offline]"
+        settingKey="morceusDownloaded"
+      />
     </details>
   );
 }
