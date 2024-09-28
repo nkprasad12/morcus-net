@@ -27,7 +27,9 @@ const REPLACED_CHARS = new Map<string, string>([
 const REGISTRY = [XmlNodeSerialization.DEFAULT];
 
 /** Finds analyses for the diacritic-free input. */
-type InflectionProvider = (cleanInput: string) => LatinWordAnalysis[];
+type InflectionProvider = (
+  cleanInput: string
+) => LatinWordAnalysis[] | Promise<LatinWordAnalysis[]>;
 
 export interface StoredEntryData {
   /** The disambiguation number for this entry, if applicable. */
@@ -112,7 +114,7 @@ export class LewisAndShort implements Dictionary {
     const cleanInput = removeDiacritics(input)
       .replaceAll("\u0304", "")
       .replaceAll("\u0306", "");
-    const analyses = this.inflectionProvider(cleanInput)
+    const analyses = (await this.inflectionProvider(cleanInput))
       .map((inflection) => ({
         ...inflection,
         inflectedForms: inflection.inflectedForms.filter((form) =>

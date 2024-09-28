@@ -1,3 +1,4 @@
+import { checkPresent } from "@/common/assert";
 import { decompress } from "@/common/bytedata/compression";
 import { readMetadata, unpackStreamed } from "@/common/bytedata/packing";
 import {
@@ -5,17 +6,22 @@ import {
   type IndexDbDictConfig,
 } from "@/common/dictionaries/indexdb_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
+import type { CruncherTables } from "@/morceus/cruncher_types";
+import { SingleItemStore } from "@/web/client/offline/single_item_store";
 
-async function* streamedGet(url: string): AsyncGenerator<Uint8Array> {
+async function fetchOfflineData(name: string): Promise<Response> {
+  const url = `${location.origin}/offlineData/${name}`;
   console.debug(`Fetching ${url}`);
   const response = await fetch(url);
   if (!response.ok) {
     return Promise.reject(new Error(`Status ${response.status} on ${url}`));
   }
-  if (response.body === null) {
-    return Promise.reject(new Error(`Response body was null!`));
-  }
-  const reader = response.body.getReader();
+  return response;
+}
+
+async function* streamedGet(name: string): AsyncGenerator<Uint8Array> {
+  const response = await fetchOfflineData(name);
+  const reader = checkPresent(response.body).getReader();
   while (true) {
     const { done, value } = await reader.read();
     if (done) return;
@@ -28,10 +34,9 @@ export async function saveOfflineDict(
   config: IndexDbDictConfig,
   onProgress?: (value: number) => unknown
 ): Promise<void> {
-  const url = `${location.origin}/offlineData/${name}`;
   const decoder = new TextDecoder();
   const start = performance.now();
-  const chunkStream = unpackStreamed(streamedGet(url));
+  const chunkStream = unpackStreamed(streamedGet(name));
 
   const numChunks = await readMetadata(chunkStream);
   let finished = 0;
@@ -45,4 +50,23 @@ export async function saveOfflineDict(
   }
   const totalTime = performance.now() - start;
   console.debug(`Saved ${name} in ${totalTime} ms.`);
+}
+
+export function reviveTables(decoded: string): CruncherTables {
+  return JSON.parse(decoded, (_, value) =>
+    typeof value === "object" && value !== null && value.dataType === "Map"
+      ? new Map(value.value)
+      : value
+  );
+}
+
+export async function fetchMorceusTables(): Promise<CruncherTables> {
+  const response = await fetchOfflineData("morceusTables");
+  const compressed = await response.arrayBuffer();
+  const decompressed = await decompress(compressed);
+  const decoded = new TextDecoder().decode(decompressed);
+  const save = SingleItemStore.forKey("morceusTables").set(decoded);
+  const result = reviveTables(decoded);
+  await save;
+  return result;
 }

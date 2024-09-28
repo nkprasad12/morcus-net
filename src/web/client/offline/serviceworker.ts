@@ -14,19 +14,26 @@ import {
   RouteAndHandler,
 } from "@/web/client/offline/offline_rpc";
 import { registerMessageListener } from "@/web/client/offline/communication/sw_comms";
-import { encodeMessage } from "@/web/utils/rpc/parsing";
+import { encodeMessage, isString } from "@/web/utils/rpc/parsing";
 import {
   OFFLINE_SETTINGS_SW_DB,
   type OfflineSettings,
 } from "@/web/client/offline/offline_settings_storage";
 import { singletonOf } from "@/common/misc_utils";
-import { saveOfflineDict } from "@/web/client/offline/offline_data";
+import {
+  fetchMorceusTables,
+  reviveTables,
+  saveOfflineDict,
+} from "@/web/client/offline/offline_data";
 import {
   cacheKeyForPath,
   populateCache,
   returnCachedResource,
 } from "@/web/client/offline/offline_cache";
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
+import { CruncherOptions, type CruncherTables } from "@/morceus/cruncher_types";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { SingleItemStore } from "@/web/client/offline/single_item_store";
 
 interface SwLifecycleEvent extends Event {
   waitUntil: (input: Promise<unknown>) => void;
@@ -51,7 +58,10 @@ const DOWNLOAD_CONFIG = new Map<
 
 const DICTIONARY = new FusedDictionary([
   new SmithAndHall(IndexedDbDict.backing(SH_CONFIG)),
-  new LewisAndShort(IndexedDbDict.backing(LS_CONFIG), () => []),
+  new LewisAndShort(IndexedDbDict.backing(LS_CONFIG), async (input) => {
+    const tables = await MORCEUS_TABLES.get().get();
+    return MorceusCruncher.make(tables)(input, CruncherOptions.DEFAULT);
+  }),
 ]);
 const DICTS_FUSED = RouteAndHandler.create(DictsFusedApi, (i) =>
   DICTIONARY.getEntry(i)
@@ -59,6 +69,23 @@ const DICTS_FUSED = RouteAndHandler.create(DictsFusedApi, (i) =>
 const COMPLETIONS_FUSED = RouteAndHandler.create(CompletionsFusedApi, (i) =>
   DICTIONARY.getCompletions(i)
 );
+
+const MORCEUS_TABLES = singletonOf(() => {
+  let current: CruncherTables | undefined = undefined;
+  let initialStale = false;
+  const initial = SingleItemStore.forKey("morceusTables", isString)
+    .get()
+    .then(reviveTables);
+  initial.then((value) => {
+    if (!initialStale) {
+      current = value;
+    }
+  });
+
+  return {
+    get: () => current ?? initial,
+  };
+});
 
 const OFFLINE_SETTINGS = singletonOf(() => {
   let current: OfflineSettings | undefined = undefined;
@@ -160,6 +187,16 @@ registerMessageListener(async (req, respond) => {
     await OFFLINE_SETTINGS.get().set((old) => {
       const settings = { ...old };
       settings[req.data.settingKey] = desiredValue;
+      return settings;
+    });
+    respond({ success: true, complete: true });
+    return;
+  }
+  if (req.data.settingKey === "morceusDownloaded") {
+    await fetchMorceusTables();
+    await OFFLINE_SETTINGS.get().set((old) => {
+      const settings = { ...old };
+      settings.morceusDownloaded = desiredValue;
       return settings;
     });
     respond({ success: true, complete: true });
