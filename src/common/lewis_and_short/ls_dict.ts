@@ -14,7 +14,7 @@ import type {
   RawDictEntry,
   StoredDictBacking,
 } from "@/common/dictionaries/stored_dict_interface";
-import type { LatinWordAnalysis } from "@/morceus/crunch";
+import type { LatinWordAnalysis } from "@/morceus/cruncher_types";
 
 const REPLACED_CHARS = new Map<string, string>([
   ["ſ", "s"],

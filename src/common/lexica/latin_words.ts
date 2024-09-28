@@ -1,10 +1,11 @@
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import { processWords, removeDiacritics } from "@/common/text_cleaning";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
   CruncherOptions,
-  MorceusCruncher,
   type LatinWordAnalysis,
-} from "@/morceus/crunch";
+} from "@/morceus/cruncher_types";
 
 const EXTENDED_COMMON_ENGLISH_WORDS = ["di", "sum", "simple"];
 const COMMON_ENGLISH_WORDS = new Set(
@@ -69,7 +70,7 @@ export namespace LatinWords {
   }
 
   export function analysesFor(term: string): LatinWordAnalysis[] {
-    const tables = MorceusCruncher.CACHED_TABLES.get();
+    const tables = MorceusTables.CACHED.get();
     return MorceusCruncher.make(tables)(term, CruncherOptions.DEFAULT);
   }
 

@@ -1,9 +1,9 @@
-import {
-  MorceusCruncher,
-  crunchWord,
-  type CruncherConfig,
-  type LatinWordAnalysis,
-} from "@/morceus/crunch";
+import { crunchWord, MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import type {
+  CruncherConfig,
+  LatinWordAnalysis,
+} from "@/morceus/cruncher_types";
 import {
   toInflectionData,
   type InflectionEnding,
@@ -60,7 +60,7 @@ describe("crunchWord", () => {
         lemmata,
       },
     };
-    const tables = MorceusCruncher.makeTables(config);
+    const tables = MorceusTables.make(config);
     const result = crunchWord("morco", tables);
 
     expect(result).toEqual([
@@ -74,7 +74,7 @@ describe("crunchWord", () => {
   });
 
   it("handles end to end case with relaxed vowel length", () => {
-    const tables = MorceusCruncher.makeTables(FAKEDATA_CRUNCHER_CONFIG);
+    const tables = MorceusTables.make(FAKEDATA_CRUNCHER_CONFIG);
     const result = crunchWord("cavete", tables, { vowelLength: "relaxed" });
 
     expect(result).toHaveLength(1);
@@ -86,7 +86,7 @@ describe("crunchWord", () => {
   });
 
   it("handles ite", () => {
-    const tables = MorceusCruncher.makeTables(FAKEDATA_CRUNCHER_CONFIG);
+    const tables = MorceusTables.make(FAKEDATA_CRUNCHER_CONFIG);
     const result = crunchWord("ite", tables, { vowelLength: "relaxed" });
 
     expect(result).toHaveLength(1);
@@ -98,7 +98,7 @@ describe("crunchWord", () => {
   });
 
   it("handles ajunt", () => {
-    const tables = MorceusCruncher.makeTables(FAKEDATA_CRUNCHER_CONFIG);
+    const tables = MorceusTables.make(FAKEDATA_CRUNCHER_CONFIG);
     const result = crunchWord("aiunt", tables, {
       vowelLength: "relaxed",
       relaxIandJ: true,
@@ -137,7 +137,7 @@ describe("MorceusCruncher", () => {
         lemmata,
       },
     };
-    const tables = MorceusCruncher.makeTables(config);
+    const tables = MorceusTables.make(config);
     const cruncher = MorceusCruncher.make(tables);
     const result = cruncher("morco");
 

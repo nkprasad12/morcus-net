@@ -5,27 +5,20 @@ import {
   Vowels,
 } from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import { singletonOf } from "@/common/misc_utils";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import type {
+  CruncherTables,
+  CrunchResult,
+  CruncherOptions,
+  Cruncher,
+  LatinWordAnalysis,
+} from "@/morceus/cruncher_types";
 import {
   compareGrammaticalData,
   InflectionContext,
   subsetOf,
-  type InflectionEnding,
 } from "@/morceus/inflection_data_utils";
-import {
-  allNounStems,
-  allVerbStems,
-  type IrregularForm,
-  type Lemma,
-  type Stem,
-  type StemCode,
-} from "@/morceus/stem_parsing";
-import {
-  makeEndIndex,
-  type EndIndexRow,
-  type EndsResult,
-  type InflectionLookup,
-} from "@/morceus/tables/indices";
+import { type StemCode } from "@/morceus/stem_parsing";
 import { expandSingleEnding } from "@/morceus/tables/templates";
 import {
   LatinDegree,
@@ -33,78 +26,6 @@ import {
   LatinMood,
   LatinTense,
 } from "@/morceus/types";
-
-export interface CrunchResult extends InflectionContext {
-  lemma: string;
-  form: string;
-  stem?: Stem;
-  end?: InflectionEnding;
-  relaxedCase?: true;
-  relaxedVowelLengths?: true;
-  isVerb?: boolean;
-}
-
-export interface LatinWordAnalysis {
-  lemma: string;
-  inflectedForms: {
-    form: string;
-    inflectionData: CrunchResult[];
-  }[];
-}
-
-// key => [Stem / Form, lemma, isVerb]
-type StemMap = Map<string, [Stem | IrregularForm, string, boolean][]>;
-
-export interface CruncherTables {
-  endsMap: Map<string, string[]>;
-  stemMap: StemMap;
-  inflectionLookup: InflectionLookup;
-}
-
-export interface CruncherOptions {
-  vowelLength?: "strict" | "relaxed";
-  relaxCase?: boolean;
-  relaxUandV?: boolean;
-  relaxIandJ?: boolean;
-}
-
-export namespace CruncherOptions {
-  export const DEFAULT: CruncherOptions = {
-    vowelLength: "relaxed",
-    relaxCase: true,
-    relaxIandJ: true,
-    relaxUandV: true,
-  };
-}
-
-export type Cruncher = (
-  word: string,
-  options?: CruncherOptions
-) => LatinWordAnalysis[];
-
-function normalizeKey(input: string): string {
-  return input.replaceAll("^", "").replaceAll("_", "").replaceAll("-", "");
-}
-
-export function makeStemsMap(lemmata: Lemma[]): StemMap {
-  const stemMap = arrayMap<string, [Stem | IrregularForm, string, boolean]>();
-  for (const lemma of lemmata) {
-    const isVerb = lemma.isVerb === true;
-    for (const stem of lemma.stems || []) {
-      stemMap.add(normalizeKey(stem.stem), [stem, lemma.lemma, isVerb]);
-    }
-    for (const form of lemma.irregularForms || []) {
-      stemMap.add(normalizeKey(form.form), [form, lemma.lemma, isVerb]);
-    }
-  }
-  return stemMap.map;
-}
-
-export function makeEndsMap(endings: EndIndexRow[]): Map<string, string[]> {
-  return new Map<string, string[]>(
-    endings.map((e) => [e.ending, e.tableNames])
-  );
-}
 
 function hasIndeclinableCode(input: { code?: StemCode }): boolean {
   return input?.code === "vb" || input?.code === "wd";
@@ -390,17 +311,6 @@ export function crunchWord(
   return consolidateCrunchResults(results.flatMap((x) => x));
 }
 
-export interface CruncherConfig {
-  existing?: {
-    endsResult: EndsResult;
-    lemmata: Lemma[];
-  };
-  generate?: {
-    nomStemFiles: string[];
-    verbStemFiles: string[];
-  };
-}
-
 function mergeIfCompatible(
   stem: InflectionContext,
   ending: InflectionContext
@@ -473,28 +383,9 @@ function mergeIfCompatible(
 }
 
 export namespace MorceusCruncher {
-  export function makeTables(config?: CruncherConfig): CruncherTables {
-    const [endIndices, endTables] =
-      config?.existing?.endsResult ??
-      makeEndIndex([
-        "src/morceus/tables/lat/core/target",
-        "src/morceus/tables/lat/core/dependency",
-      ]);
-    const allLemmata =
-      config?.existing?.lemmata ??
-      allNounStems(config?.generate?.nomStemFiles).concat(
-        allVerbStems(config?.generate?.verbStemFiles)
-      );
-    const endsMap = makeEndsMap(endIndices);
-    const stemMap = makeStemsMap(allLemmata);
-    return { endsMap, stemMap, inflectionLookup: endTables };
-  }
-
-  export const CACHED_TABLES = singletonOf(makeTables);
-
   export function make(tables?: CruncherTables): Cruncher {
     return (word, options) =>
-      convert(crunchWord(word, tables || makeTables(), options));
+      convert(crunchWord(word, tables || MorceusTables.CACHED.get(), options));
   }
 
   function convert(crunchResults: CrunchResult[]): LatinWordAnalysis[] {

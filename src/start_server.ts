@@ -30,9 +30,9 @@ import {
 } from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
 import { scrapeUrlText } from "@/web/scraping/scraper";
-import { MorceusCruncher } from "@/morceus/crunch";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 import { LatinWords } from "@/common/lexica/latin_words";
+import { MorceusTables } from "@/morceus/cruncher_tables";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -83,7 +83,7 @@ export function startMorcusServer(): Promise<http.Server> {
   const app = express();
   const server = http.createServer(app);
 
-  setTimeout(MorceusCruncher.CACHED_TABLES.get, randInRange(100, 125));
+  setTimeout(MorceusTables.CACHED.get, randInRange(100, 125));
   const lewisAndShort = delayedInit(
     () =>
       LewisAndShort.create(
