@@ -56,6 +56,10 @@ function OfflineSettings() {
         label="Smith and Hall [Offline]"
         settingKey="shDownloaded"
       />
+      <OfflineSettingsCheckbox
+        label="Lewis and Short [Offline]"
+        settingKey="lsDownloaded"
+      />
     </details>
   );
 }

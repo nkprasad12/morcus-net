@@ -11,6 +11,8 @@ import {
   StoredEntryData,
 } from "@/common/lewis_and_short/ls_dict";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
+import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
+import { LatinWords } from "@/common/lexica/latin_words";
 
 console.debug = jest.fn();
 
@@ -34,6 +36,10 @@ beforeAll(() => {
 afterAll(() => {
   process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT;
 });
+
+function createLewisAndShort(backing: StoredDictBacking<any>) {
+  return LewisAndShort.create(backing, LatinWords.analysesFor);
+}
 
 function toRawDictEntry(keys: string[], entry: StoredEntryData) {
   return StoredEntryData.toRawDictEntry(keys[0], keys, entry);
@@ -154,7 +160,7 @@ describe("LewisAndShort", () => {
 
   test("getEntryById returns expected entries", async () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(sqliteBacking(TEMP_FILE));
+    const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
     expect(await dict.getEntryById("Juliu")).toBe(undefined);
     const result = await dict.getEntryById("Julius")!;
@@ -163,7 +169,7 @@ describe("LewisAndShort", () => {
 
   test("getEntry returns expected entries", async () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(sqliteBacking(TEMP_FILE));
+    const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
     expectEntriesWithIds(dict.getEntry("Julius"), ["Julius"]);
     expectEntriesWithIds(dict.getEntry("Publius"), ["Publius"]);
@@ -171,7 +177,7 @@ describe("LewisAndShort", () => {
 
   test("getEntry returns expect outlines", async () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(sqliteBacking(TEMP_FILE));
+    const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
     const outline = (await dict.getEntry("Julius")).map((r) => r.outline);
 
@@ -180,7 +186,7 @@ describe("LewisAndShort", () => {
 
   test("getEntry inflected returns no results with flag off", async () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(sqliteBacking(TEMP_FILE));
+    const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
     const results = await dict.getEntry("excibat", undefined, {
       handleInflections: false,
@@ -191,7 +197,7 @@ describe("LewisAndShort", () => {
 
   test("getEntry inflected returns no results with flag undefined", async () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(sqliteBacking(TEMP_FILE));
+    const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
     const results = await dict.getEntry("excibat", undefined, undefined);
 
@@ -200,7 +206,7 @@ describe("LewisAndShort", () => {
 
   test("getEntry inflected gracefully handles flag on with no inflection db", async () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(sqliteBacking(TEMP_FILE));
+    const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
     const results = await dict.getEntry("Julius", undefined, {
       handleInflections: true,
@@ -211,7 +217,7 @@ describe("LewisAndShort", () => {
 
   test("getEntry inflected returns results with flag on", async () => {
     SqliteDict.save(LS_DATA, TEMP_FILE);
-    const dict = LewisAndShort.create(sqliteBacking(TEMP_FILE));
+    const dict = createLewisAndShort(sqliteBacking(TEMP_FILE));
 
     const results = await dict.getEntry("excibat", undefined, {
       handleInflections: true,

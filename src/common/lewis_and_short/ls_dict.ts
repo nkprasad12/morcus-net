@@ -4,7 +4,6 @@ import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
 import { StoredDict } from "@/common/dictionaries/dict_storage";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { LatinWords } from "@/common/lexica/latin_words";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
@@ -15,6 +14,7 @@ import type {
   RawDictEntry,
   StoredDictBacking,
 } from "@/common/dictionaries/stored_dict_interface";
+import type { LatinWordAnalysis } from "@/morceus/crunch";
 
 const REPLACED_CHARS = new Map<string, string>([
   ["ſ", "s"],
@@ -25,6 +25,9 @@ const REPLACED_CHARS = new Map<string, string>([
 ]);
 
 const REGISTRY = [XmlNodeSerialization.DEFAULT];
+
+/** Finds analyses for the diacritic-free input. */
+type InflectionProvider = (cleanInput: string) => LatinWordAnalysis[];
 
 export interface StoredEntryData {
   /** The disambiguation number for this entry, if applicable. */
@@ -66,17 +69,20 @@ export namespace StoredEntryData {
 export class LewisAndShort implements Dictionary {
   readonly info = LatinDict.LewisAndShort;
 
-  private readonly sqlDict: StoredDict;
+  private readonly storage: StoredDict;
 
-  constructor(backing: StoredDictBacking<any>) {
-    this.sqlDict = new StoredDict(backing);
+  constructor(
+    backing: StoredDictBacking<any>,
+    private readonly inflectionProvider: InflectionProvider
+  ) {
+    this.storage = new StoredDict(backing);
   }
 
   async getEntryById(
     id: string,
     extras?: ServerExtras
   ): Promise<EntryResult | undefined> {
-    const raw = await this.sqlDict.getById(id);
+    const raw = await this.storage.getById(id);
     extras?.log("getById_sqlLookup");
     if (raw === undefined) {
       return undefined;
@@ -97,7 +103,7 @@ export class LewisAndShort implements Dictionary {
       .split("")
       .map((c) => REPLACED_CHARS.get(c) || c)
       .join("");
-    const rawEntries = await this.sqlDict.getRawEntry(input, extras);
+    const rawEntries = await this.storage.getRawEntry(input, extras);
     const exactMatches = rawEntries.map(StoredEntryData.fromEncoded);
     if (options?.handleInflections !== true) {
       return exactMatches.map(StoredEntryData.toEntryResult);
@@ -106,7 +112,7 @@ export class LewisAndShort implements Dictionary {
     const cleanInput = removeDiacritics(input)
       .replaceAll("\u0304", "")
       .replaceAll("\u0306", "");
-    const analyses = LatinWords.analysesFor(cleanInput)
+    const analyses = this.inflectionProvider(cleanInput)
       .map((inflection) => ({
         ...inflection,
         inflectedForms: inflection.inflectedForms.filter((form) =>
@@ -121,7 +127,7 @@ export class LewisAndShort implements Dictionary {
       const lemmaChunks = analysis.lemma.split("#");
       const lemmaBase = lemmaChunks[0];
 
-      const rawResults = await this.sqlDict.getRawEntry(lemmaBase, extras);
+      const rawResults = await this.storage.getRawEntry(lemmaBase, extras);
       const results: EntryResult[] = rawResults
         .map(StoredEntryData.fromEncoded)
         .filter((data) => {
@@ -173,15 +179,18 @@ export class LewisAndShort implements Dictionary {
     input: string,
     _extras?: ServerExtras | undefined
   ): Promise<string[]> {
-    return this.sqlDict.getCompletions(input);
+    return this.storage.getCompletions(input);
   }
 }
 
 export namespace LewisAndShort {
-  export function create(backing: StoredDictBacking<any>): LewisAndShort {
+  export function create(
+    backing: StoredDictBacking<any>,
+    inflectionProvider: InflectionProvider
+  ): LewisAndShort {
     const start = performance.now();
-    const result = new LewisAndShort(backing);
-    const elapsed = (performance.now() - start).toFixed(3);
+    const result = new LewisAndShort(backing, inflectionProvider);
+    const elapsed = (performance.now() - start).toFixed(2);
     console.debug(`LewisAndShort init: ${elapsed} ms`);
     return result;
   }

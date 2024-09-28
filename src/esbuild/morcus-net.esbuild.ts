@@ -61,14 +61,14 @@ const options: BuildOptions = {
         },
       ],
     }),
+    ...(envOptions.compress ? [compressPlugin()] : []),
     renamePlugin({
       renameMap: new Map([
         [SERVICE_WORKER_ROOT, path.join(OUT_DIR, "serviceworker.js")],
       ]),
     }),
-  ]
-    .concat(envOptions.typeCheck ? typeCheckPlugin(envOptions) : [])
-    .concat(envOptions.compress ? compressPlugin() : []),
+    ...(envOptions.typeCheck ? [typeCheckPlugin(envOptions)] : []),
+  ],
 };
 
 runBundler(options, envOptions);

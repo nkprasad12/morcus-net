@@ -3,7 +3,9 @@
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import {
   IndexedDbDict,
+  LS_CONFIG,
   SH_CONFIG,
+  type IndexDbDictConfig,
 } from "@/common/dictionaries/indexdb_backing";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { CompletionsFusedApi, DictsFusedApi } from "@/web/api_routes";
@@ -24,6 +26,7 @@ import {
   populateCache,
   returnCachedResource,
 } from "@/web/client/offline/offline_cache";
+import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 
 interface SwLifecycleEvent extends Event {
   waitUntil: (input: Promise<unknown>) => void;
@@ -38,8 +41,17 @@ interface FetchEvent extends Event {
 
 type FetchHandler = (event: FetchEvent) => unknown;
 
+const DOWNLOAD_CONFIG = new Map<
+  keyof OfflineSettings,
+  [string, IndexDbDictConfig]
+>([
+  ["shDownloaded", ["shDict", SH_CONFIG]],
+  ["lsDownloaded", ["lsDict", LS_CONFIG]],
+]);
+
 const DICTIONARY = new FusedDictionary([
   new SmithAndHall(IndexedDbDict.backing(SH_CONFIG)),
+  new LewisAndShort(IndexedDbDict.backing(LS_CONFIG), () => []),
 ]);
 const DICTS_FUSED = RouteAndHandler.create(DictsFusedApi, (i) =>
   DICTIONARY.getEntry(i)
@@ -153,13 +165,13 @@ registerMessageListener(async (req, respond) => {
     respond({ success: true, complete: true });
     return;
   }
-  if (req.data.settingKey !== "shDownloaded") {
+  const downloadConfig = DOWNLOAD_CONFIG.get(req.data.settingKey);
+  if (downloadConfig === undefined) {
     respond({ success: false, complete: true });
     return;
   }
   try {
-    const resource = "shDict";
-    const config = SH_CONFIG;
+    const [resource, config] = downloadConfig;
     await saveOfflineDict(resource, config, (progress) =>
       respond({ progress })
     );
