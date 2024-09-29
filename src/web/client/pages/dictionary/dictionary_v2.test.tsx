@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import "fake-indexeddb/auto";
 import { XmlNode } from "@/common/xml/xml_node";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen, waitFor } from "@testing-library/react";
@@ -14,6 +15,9 @@ import {
   NO_RESULTS_MESSAGE,
 } from "@/web/client/pages/dictionary/dictionary_v2";
 import { RouteContext } from "@/web/client/router/router_v2";
+import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
+
+global.BroadcastChannel = FakeBroadcastChannel as any;
 
 jest.mock("@/web/client/utils/media_query", () => {
   return {

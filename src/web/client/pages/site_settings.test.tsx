@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import "fake-indexeddb/auto";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { SettingsHandler } from "@/web/client/components/global_flags";
@@ -10,6 +11,7 @@ import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channe
 
 // @ts-expect-error
 global.BroadcastChannel = FakeBroadcastChannel;
+console.debug = jest.fn();
 
 afterAll(() => FakeBroadcastChannel.cleanupAll());
 

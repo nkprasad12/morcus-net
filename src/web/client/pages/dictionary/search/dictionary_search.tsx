@@ -1,5 +1,8 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import {
+  LatinDict,
+  type LatinDictInfo,
+} from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { useState, useContext } from "react";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
@@ -14,6 +17,7 @@ import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Solarized } from "@/web/client/styling/colors";
 import { SpanButton } from "@/web/client/components/generic/basics";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
+import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -31,14 +35,29 @@ function HighlightStrengthSelector(props: {
   );
 }
 
+function useOfflineDictData() {
+  const settings = useOfflineSettings();
+  const enabled = settings?.offlineModeEnabled === true;
+
+  return {
+    offlineModeOn: enabled,
+    shouldDisable: {
+      inflections: enabled && settings?.morceusDownloaded !== true,
+      "S&H": enabled && settings?.shDownloaded !== true,
+      "L&S": enabled && settings?.lsDownloaded !== true,
+    },
+  };
+}
+
 function SearchSettingsDialog(props: {
   open: boolean;
   onClose: () => unknown;
-  dicts: DictInfo[];
-  setDicts: (newDicts: DictInfo[]) => unknown;
+  dicts: LatinDictInfo[];
+  setDicts: (newDicts: LatinDictInfo[]) => unknown;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
   const inflectedSearch = globalSettings.data.inflectedSearch === true;
+  const { offlineModeOn, shouldDisable } = useOfflineDictData();
 
   return (
     <ModalDialog
@@ -53,6 +72,12 @@ function SearchSettingsDialog(props: {
         Dictionary Options
       </div>
       <div style={{ padding: "0px 24px 20px" }}>
+        {offlineModeOn && (
+          <div className="text xs">
+            Note: Offline Mode is enabled, so features that are not downloaded
+            will be disabled.
+          </div>
+        )}
         <div className="text md light" style={{ marginTop: "8px" }}>
           Dictionaries
         </div>
@@ -62,7 +87,8 @@ function SearchSettingsDialog(props: {
               <input
                 id={dict.key + "option"}
                 type="checkbox"
-                checked={props.dicts.includes(dict)}
+                checked={!shouldDisable[dict.key] && props.dicts.includes(dict)}
+                disabled={shouldDisable[dict.key]}
                 onChange={(e) => {
                   const dicts = new Set(props.dicts);
                   if (e.target.checked) {
@@ -76,7 +102,12 @@ function SearchSettingsDialog(props: {
               <label htmlFor={dict.key + "option"}>
                 <span>
                   <DictChip label={dict.key} />{" "}
-                  <span className="text sm">{dict.displayName}</span>
+                  <span
+                    className={
+                      "text sm" + (shouldDisable[dict.key] ? " light" : "")
+                    }>
+                    {dict.displayName}
+                  </span>
                 </span>
               </label>
             </div>
@@ -90,7 +121,8 @@ function SearchSettingsDialog(props: {
             <input
               id="inflectionOption"
               type="checkbox"
-              checked={inflectedSearch}
+              checked={!shouldDisable.inflections && inflectedSearch}
+              disabled={shouldDisable.inflections}
               onChange={() =>
                 globalSettings.setData({
                   ...globalSettings.data,
@@ -137,8 +169,8 @@ function AutocompleteOption(props: { option: [DictInfo, string] }) {
 
 export function DictionarySearch(props: {
   smallScreen: boolean;
-  dicts: DictInfo[];
-  setDicts: (newDicts: DictInfo[]) => unknown;
+  dicts: LatinDictInfo[];
+  setDicts: (newDicts: LatinDictInfo[]) => unknown;
 }) {
   const { route, nav } = useDictRouter();
   const settings = useContext(GlobalSettingsContext);
@@ -191,11 +223,13 @@ export function DictionarySearch(props: {
 }
 
 function SettingsPreview(props: {
-  dicts: DictInfo[];
+  dicts: LatinDictInfo[];
   openDialog: () => unknown;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
-  const inflectionMode = globalSettings.data.inflectedSearch === true;
+  const { shouldDisable } = useOfflineDictData();
+  const rawInflectionMode = globalSettings.data.inflectedSearch === true;
+  const inflectionMode = !shouldDisable.inflections && rawInflectionMode;
 
   return (
     <>
@@ -208,14 +242,16 @@ function SettingsPreview(props: {
           marginRight: "12px",
         }}>
         In{" "}
-        {props.dicts.map((dict) => (
-          <span
-            key={dict.key}
-            style={{ marginRight: "2px", cursor: "pointer" }}
-            onClick={props.openDialog}>
-            <DictChip label={dict.key} />
-          </span>
-        ))}
+        {props.dicts
+          .filter((dict) => !shouldDisable[dict.key])
+          .map((dict) => (
+            <span
+              key={dict.key}
+              style={{ marginRight: "2px", cursor: "pointer" }}
+              onClick={props.openDialog}>
+              <DictChip label={dict.key} />
+            </span>
+          ))}
       </span>
       <span
         className="text light xxs compact"

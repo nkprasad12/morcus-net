@@ -7,7 +7,10 @@ import {
   SectionLinkTooltip,
 } from "@/web/client/pages/tooltips";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import {
+  LatinDict,
+  type LatinDictInfo,
+} from "@/common/dictionaries/latin_dicts";
 import { InflectionData } from "@/common/dictionaries/dict_result";
 import { FontSizes } from "@/web/client/styling/styles";
 import {
@@ -311,7 +314,7 @@ export namespace SearchSettings {
     sessionStorage.setItem(SEARCH_SETTINGS_KEY, keys.join(";"));
   }
 
-  export function retrieve(): DictInfo[] {
+  export function retrieve(): LatinDictInfo[] {
     const stored = sessionStorage.getItem(SEARCH_SETTINGS_KEY)?.split(";");
     const rawDicts =
       stored === undefined

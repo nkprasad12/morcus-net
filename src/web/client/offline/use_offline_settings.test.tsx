@@ -24,6 +24,7 @@ beforeEach(() => {
 });
 // @ts-expect-error
 global.BroadcastChannel = FakeBroadcastChannel;
+console.debug = jest.fn();
 
 afterAll(() => BROADCAST_CHANNEL.get().close());
 

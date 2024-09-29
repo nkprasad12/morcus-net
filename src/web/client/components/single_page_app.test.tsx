@@ -2,6 +2,9 @@
  * @jest-environment jsdom
  */
 
+import "fake-indexeddb/auto";
+import { IDBFactory } from "fake-indexeddb";
+
 import { describe, expect, test } from "@jest/globals";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
@@ -9,8 +12,17 @@ import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { RouteContext } from "@/web/client/router/router_v2";
 import { PagePath } from "@/web/client/router/paths";
+import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
 
 jest.mock("@/web/client/utils/media_query");
+
+global.BroadcastChannel = FakeBroadcastChannel as any;
+console.debug = jest.fn();
+
+beforeEach(() => {
+  // eslint-disable-next-line no-global-assign
+  indexedDB = new IDBFactory();
+});
 
 const GALLIA_PAGE: SinglePageApp.Page = {
   appBarConfig: {

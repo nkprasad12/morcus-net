@@ -15,6 +15,7 @@ import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channe
 
 // @ts-expect-error
 global.BroadcastChannel = FakeBroadcastChannel;
+console.debug = jest.fn();
 
 describe("offline mode settings DB", () => {
   beforeEach(() => {

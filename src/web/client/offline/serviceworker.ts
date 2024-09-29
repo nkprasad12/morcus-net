@@ -184,22 +184,30 @@ const FETCH_HANDLER = fetchHandler([DICTS_FUSED, COMPLETIONS_FUSED]);
 registerMessageListener(async (req, respond) => {
   const desiredValue = req.data.desiredValue === true;
   if (!desiredValue || req.data.settingKey === "offlineModeEnabled") {
-    await OFFLINE_SETTINGS.get().set((old) => {
-      const settings = { ...old };
-      settings[req.data.settingKey] = desiredValue;
-      return settings;
-    });
-    respond({ success: true, complete: true });
+    try {
+      await OFFLINE_SETTINGS.get().set((old) => {
+        const settings = { ...old };
+        settings[req.data.settingKey] = desiredValue;
+        return settings;
+      });
+      respond({ success: true, complete: true });
+    } catch {
+      respond({ success: false, complete: true });
+    }
     return;
   }
   if (req.data.settingKey === "morceusDownloaded") {
-    await fetchMorceusTables();
-    await OFFLINE_SETTINGS.get().set((old) => {
-      const settings = { ...old };
-      settings.morceusDownloaded = desiredValue;
-      return settings;
-    });
-    respond({ success: true, complete: true });
+    try {
+      await fetchMorceusTables();
+      await OFFLINE_SETTINGS.get().set((old) => {
+        const settings = { ...old };
+        settings.morceusDownloaded = desiredValue;
+        return settings;
+      });
+      respond({ success: true, complete: true });
+    } catch {
+      respond({ success: false, complete: true });
+    }
     return;
   }
   const downloadConfig = DOWNLOAD_CONFIG.get(req.data.settingKey);

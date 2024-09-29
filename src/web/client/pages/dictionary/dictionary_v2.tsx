@@ -6,7 +6,10 @@ import {
   DictsFusedRequest,
   DictsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import {
+  LatinDict,
+  type LatinDictInfo,
+} from "@/common/dictionaries/latin_dicts";
 import { DictsFusedApi } from "@/web/api_routes";
 import { Footer } from "@/web/client/components/footer";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
@@ -489,7 +492,7 @@ function TableOfContents(props: TableOfContentsProps) {
 export function DictionaryViewV2(props: DictionaryV2Props) {
   const [state, setState] = React.useState<DictState>("Landing");
   const [entries, setEntries] = React.useState<EntriesByDict[]>([]);
-  const [dictsToUse, setDictsToUse] = React.useState<DictInfo[]>(
+  const [dictsToUse, setDictsToUse] = React.useState<LatinDictInfo[]>(
     SearchSettings.retrieve()
   );
   const isScreenSmall = useMediaQuery("(max-width: 900px)");

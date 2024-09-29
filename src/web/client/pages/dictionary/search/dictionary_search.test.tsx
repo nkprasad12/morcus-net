@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import "fake-indexeddb/auto";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
@@ -9,6 +10,9 @@ import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionar
 import { RouteContext } from "@/web/client/router/router_v2";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
+import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
+
+global.BroadcastChannel = FakeBroadcastChannel as any;
 
 console.debug = jest.fn();
 

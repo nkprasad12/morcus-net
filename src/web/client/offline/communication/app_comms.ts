@@ -15,6 +15,9 @@ export async function sendToSw<T extends Channel>(
     if (e.data?.channel !== req.channel) {
       return;
     }
+    if (e.data.req.data.settingKey !== req.data.settingKey) {
+      return;
+    }
     if (e.data.data.complete === true) {
       navigator.serviceWorker.removeEventListener("message", listener);
     }

@@ -30,7 +30,12 @@ const OFFLINE_SETTINGS_CONFIG: SingleStoreDbConfig<OfflineSettingsInternal> = {
 function offlineSettingsDb(): OfflineSettingsDb {
   const db = simpleIndexDbStore(OFFLINE_SETTINGS_CONFIG);
   return {
-    get: () => db.get(0).catch(() => DEFAULT_SETTINGS),
+    get: () =>
+      db.get(0).catch((e) => {
+        console.debug("Error getting OfflineSettings.");
+        console.debug(e);
+        return DEFAULT_SETTINGS;
+      }),
     set: (settings) =>
       db
         .update({ ...settings, id: 0 })

@@ -1,4 +1,4 @@
-import { DictInfo } from "@/common/dictionaries/dictionaries";
+import type { LatinDictInfo } from "@/common/dictionaries/latin_dicts";
 import React from "react";
 
 const DEFAULT_DICT_OPTIONS: DictContextOptions = {
@@ -17,8 +17,8 @@ export interface DictContextOptions {
   isSmall: boolean;
   scale: number;
   textScale?: number;
-  dictsToUse: DictInfo[];
-  setDictsToUse: (dicts: DictInfo[]) => unknown;
+  dictsToUse: LatinDictInfo[];
+  setDictsToUse: (dicts: LatinDictInfo[]) => unknown;
   scrollTopRef: React.RefObject<HTMLDivElement>;
   setInitial?: (target: string) => unknown;
   fromInternalLink?: React.MutableRefObject<boolean>;

@@ -46,23 +46,33 @@ function OfflineSettings() {
   return (
     <details open>
       <summary className="nonDictText text md" style={{ paddingTop: "8px" }}>
-        Offline Mode Settings [Experimental]
+        Offline Mode Settings
       </summary>
+      <div className="nonDictText text sm light">
+        [Caution: experimental and may have bugs.]
+      </div>
       <OfflineSettingsCheckbox
         label="Offline Mode Enabled"
         settingKey="offlineModeEnabled"
+        salesPitch="use some features"
       />
       <OfflineSettingsCheckbox
-        label="Smith and Hall [Offline]"
+        label="Smith and Hall"
         settingKey="shDownloaded"
+        salesPitch="use S&H"
+        downloadSizeMb={10}
       />
       <OfflineSettingsCheckbox
-        label="Lewis and Short [Offline]"
+        label="Lewis and Short"
         settingKey="lsDownloaded"
+        downloadSizeMb={30}
+        salesPitch="use L&S"
       />
       <OfflineSettingsCheckbox
-        label="Latin Inflections [Offline]"
+        label="Latin Inflections"
         settingKey="morceusDownloaded"
+        downloadSizeMb={1}
+        salesPitch="search inflected Latin words"
       />
     </details>
   );
@@ -71,9 +81,23 @@ function OfflineSettings() {
 function OfflineSettingsCheckbox(props: {
   label: string;
   settingKey: keyof OfflineSettings;
+  salesPitch: string;
+  downloadSizeMb?: number;
 }) {
-  const setting = useOfflineSettings()?.[props.settingKey];
-  const [progress, setProgress] = useState("-");
+  const [progress, setProgress] = useState<string | undefined>(undefined);
+  const allSettings = useOfflineSettings();
+  const setting = allSettings?.[props.settingKey];
+
+  const settingOn = setting === true;
+  const showDownloadInfo = !settingOn && props.downloadSizeMb !== undefined;
+
+  if (
+    props.settingKey !== "offlineModeEnabled" &&
+    !allSettings?.offlineModeEnabled
+  ) {
+    return null;
+  }
+
   return (
     <div>
       <div>
@@ -83,19 +107,19 @@ function OfflineSettingsCheckbox(props: {
           checked={setting === true}
           onChange={async (e) => {
             const checked = e.target.checked;
-            setProgress("pending");
-            if (props.settingKey === "offlineModeEnabled" && checked) {
-              const status = await registerServiceWorker();
-              if (status === -1) {
-                setProgress("Browser doesn't support Service Workers :(");
-              }
+            setProgress("In progress: please wait");
+            const status = await registerServiceWorker();
+            if (status === -1) {
+              setProgress(
+                "Error: your browser doesn't support Service Workers :("
+              );
             }
             const updateProgress = (res: BaseResponse) => {
               if (res.progress !== undefined) {
-                setProgress(`${res.progress}% complete`);
+                setProgress(`In progress: ${res.progress}% complete`);
               } else if (res.complete) {
                 const success = res.success === true;
-                setProgress(`${success ? "Done!" : "Failed :("}`);
+                setProgress(success ? undefined : "An error occurred.");
               }
             };
             sendToSw(
@@ -114,7 +138,18 @@ function OfflineSettingsCheckbox(props: {
           {props.label}
         </label>
       </div>
-      <div className="text md light">Progress: {progress}</div>
+      <div className="nonDictText text sm light">
+        <div>
+          {settingOn ? "You can" : "Check to"} {props.salesPitch} offline.
+        </div>
+        {progress ? (
+          <div>{progress}</div>
+        ) : (
+          showDownloadInfo && (
+            <div>Download Size: {props.downloadSizeMb} MB.</div>
+          )
+        )}
+      </div>
     </div>
   );
 }
