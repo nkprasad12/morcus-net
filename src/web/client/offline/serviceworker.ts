@@ -84,6 +84,10 @@ const MORCEUS_TABLES = singletonOf(() => {
 
   return {
     get: () => current ?? initial,
+    set: (tables: CruncherTables) => {
+      initialStale = true;
+      current = tables;
+    },
   };
 });
 
@@ -198,7 +202,8 @@ registerMessageListener(async (req, respond) => {
   }
   if (req.data.settingKey === "morceusDownloaded") {
     try {
-      await fetchMorceusTables();
+      const tables = await fetchMorceusTables();
+      MORCEUS_TABLES.get().set(tables);
       await OFFLINE_SETTINGS.get().set((old) => {
         const settings = { ...old };
         settings.morceusDownloaded = desiredValue;
