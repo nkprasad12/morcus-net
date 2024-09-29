@@ -8,7 +8,10 @@ import type { OfflineSettings } from "@/web/client/offline/offline_settings_stor
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import { sendToSw } from "@/web/client/offline/communication/app_comms";
 import type { BaseResponse } from "@/web/client/offline/communication/comms_types";
-import { registerServiceWorker } from "@/web/client/offline/sw_helpers";
+import {
+  registerServiceWorker,
+  requestNotificationPermissions,
+} from "@/web/client/offline/sw_helpers";
 
 function GlobalSettingsCheckbox(props: {
   label: string;
@@ -108,6 +111,7 @@ function OfflineSettingsCheckbox(props: {
           onChange={async (e) => {
             const checked = e.target.checked;
             setProgress("In progress: please wait");
+            await requestNotificationPermissions();
             const status = await registerServiceWorker();
             if (status === -1) {
               setProgress(
