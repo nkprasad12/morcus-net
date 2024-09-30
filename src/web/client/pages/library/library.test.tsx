@@ -2,6 +2,9 @@
  * @jest-environment jsdom
  */
 
+global.structuredClone = (x) => JSON.parse(JSON.stringify(x));
+import "fake-indexeddb/auto";
+import { IDBFactory } from "fake-indexeddb";
 import { Library } from "@/web/client/pages/library/library";
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
@@ -11,6 +14,11 @@ import { RouteContext } from "@/web/client/router/router_v2";
 console.debug = jest.fn();
 
 jest.mock("@/web/utils/rpc/client_rpc");
+
+beforeEach(() => {
+  // eslint-disable-next-line no-global-assign
+  indexedDB = new IDBFactory();
+});
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApiFull;

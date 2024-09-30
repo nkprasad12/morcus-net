@@ -8,7 +8,11 @@ import {
   type IndexDbDictConfig,
 } from "@/common/dictionaries/indexdb_backing";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
-import { CompletionsFusedApi, DictsFusedApi } from "@/web/api_routes";
+import {
+  CompletionsFusedApi,
+  DictsFusedApi,
+  ListLibraryWorks,
+} from "@/web/api_routes";
 import {
   extractInput,
   RouteAndHandler,
@@ -34,6 +38,8 @@ import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import { CruncherOptions, type CruncherTables } from "@/morceus/cruncher_types";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { SingleItemStore } from "@/web/client/offline/single_item_store";
+import { ListLibraryWorksResponse } from "@/common/library/library_types";
+import { callApi } from "@/web/utils/rpc/client_rpc";
 
 interface SwLifecycleEvent extends Event {
   waitUntil: (input: Promise<unknown>) => void;
@@ -68,6 +74,12 @@ const DICTS_FUSED = RouteAndHandler.create(DictsFusedApi, (i) =>
 );
 const COMPLETIONS_FUSED = RouteAndHandler.create(CompletionsFusedApi, (i) =>
   DICTIONARY.getCompletions(i)
+);
+const LIST_LIBRARY_WORKS = RouteAndHandler.create(ListLibraryWorks, (_) =>
+  SingleItemStore.forKey(
+    ListLibraryWorks.path,
+    ListLibraryWorksResponse.isMatch
+  ).get()
 );
 
 const MORCEUS_TABLES = singletonOf(() => {
@@ -183,57 +195,69 @@ function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
   };
 }
 
-const FETCH_HANDLER = fetchHandler([DICTS_FUSED, COMPLETIONS_FUSED]);
+const FETCH_HANDLER = fetchHandler([
+  DICTS_FUSED,
+  COMPLETIONS_FUSED,
+  LIST_LIBRARY_WORKS,
+]);
 
 registerMessageListener(async (req, respond) => {
+  const settingKey = req.data.settingKey;
   const desiredValue = req.data.desiredValue === true;
-  if (!desiredValue || req.data.settingKey === "offlineModeEnabled") {
+
+  async function tryToExecuteThenUpdateState(
+    customLogic?: () => Promise<unknown>
+  ) {
     try {
+      await customLogic?.();
       await OFFLINE_SETTINGS.get().set((old) => {
         const settings = { ...old };
-        settings[req.data.settingKey] = desiredValue;
+        settings[settingKey] = desiredValue;
         return settings;
       });
       respond({ success: true, complete: true });
     } catch {
       respond({ success: false, complete: true });
     }
+  }
+
+  if (!desiredValue) {
+    // We just want to update the offline settings state to the requested one.
+    tryToExecuteThenUpdateState();
     return;
   }
-  if (req.data.settingKey === "morceusDownloaded") {
-    try {
+  if (settingKey === "offlineModeEnabled") {
+    tryToExecuteThenUpdateState(() =>
+      callApi(ListLibraryWorks, true)
+        .then((workList) =>
+          SingleItemStore.forKey(ListLibraryWorks.path).set(workList)
+        )
+        // Cache the list of works on a best-effort basis. We don't
+        // need to fail the whole operation on this.
+        .finally(() => {})
+    );
+    return;
+  }
+  if (settingKey === "morceusDownloaded") {
+    tryToExecuteThenUpdateState(async () => {
       const tables = await fetchMorceusTables();
       MORCEUS_TABLES.get().set(tables);
-      await OFFLINE_SETTINGS.get().set((old) => {
-        const settings = { ...old };
-        settings.morceusDownloaded = desiredValue;
-        return settings;
-      });
-      respond({ success: true, complete: true });
-    } catch {
-      respond({ success: false, complete: true });
-    }
+    });
     return;
   }
-  const downloadConfig = DOWNLOAD_CONFIG.get(req.data.settingKey);
+
+  // From here we just have dictionary downloads.
+  const downloadConfig = DOWNLOAD_CONFIG.get(settingKey);
   if (downloadConfig === undefined) {
     respond({ success: false, complete: true });
     return;
   }
-  try {
+  tryToExecuteThenUpdateState(async () => {
     const [resource, config] = downloadConfig;
     await saveOfflineDict(resource, config, (progress) =>
       respond({ progress })
     );
-    await OFFLINE_SETTINGS.get().set((old) => {
-      const settings = { ...old };
-      settings[req.data.settingKey] = desiredValue;
-      return settings;
-    });
-    respond({ success: true, complete: true });
-  } catch {
-    respond({ success: false, complete: true });
-  }
+  });
 });
 
 function prewarm() {

@@ -1,6 +1,7 @@
 import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
 import { Container, SpanLink } from "@/web/client/components/generic/basics";
+import { SingleItemStore } from "@/web/client/offline/single_item_store";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import {
@@ -10,7 +11,7 @@ import {
 } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 function onWorkSelected(work: LibraryWorkMetadata, nav: NavHelper<RouteInfo>) {
   const params = { author: work.urlAuthor, name: work.urlName };
@@ -68,9 +69,16 @@ function ExternalReaderLink() {
 export function Library() {
   const [works, setWorks] = useState<WorkListState>("Loading");
 
+  const onResult = useCallback((results: LibraryWorkMetadata[]) => {
+    setWorks(results);
+    // This is used for offline mode on a best-effort basis. We don't
+    // mind doing it every time since the data is only a
+    SingleItemStore.forKey(ListLibraryWorks.path).set(results);
+  }, []);
+
   useApiCall(ListLibraryWorks, true, {
     reloadOldClient: true,
-    onResult: setWorks,
+    onResult,
     onLoading: () => setWorks("Loading"),
     onError: () => setWorks("Error"),
   });

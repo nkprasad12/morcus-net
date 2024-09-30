@@ -12,7 +12,7 @@ export interface SingleItemStore<T> {
   /** Returns the current value from the database. */
   get: () => Promise<T>;
   /** Updates the current value in the database. */
-  set: (settings: T) => Promise<void>;
+  set: (item: T) => Promise<void>;
 }
 
 async function withCloseable<T extends Closeable, U>(
