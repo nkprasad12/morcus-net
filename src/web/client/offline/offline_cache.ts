@@ -1,10 +1,10 @@
 import { ClientPaths } from "@/web/client/routing/client_paths";
 
+export const INDEX_CACHE_KEY = "/index.html";
 // This is replaced at build time with the correct value.
 const APP_BUNDLE = "/@bundle-with-hash-placeholder.js@";
-const INDEX = "/index.html";
 const FAVICON = "/public/favicon.ico";
-const ALL_CACHED = [APP_BUNDLE, INDEX, FAVICON];
+const ALL_CACHED = [APP_BUNDLE, INDEX_CACHE_KEY, FAVICON];
 
 const CACHE_NAME = "morcusOfflineData";
 
@@ -26,7 +26,7 @@ export function cacheKeyForPath(pathname: string): string | undefined {
     : pathname === FAVICON
     ? FAVICON
     : isAppPage(pathname)
-    ? INDEX
+    ? INDEX_CACHE_KEY
     : undefined;
 }
 

@@ -31,6 +31,7 @@ import {
 } from "@/web/client/offline/offline_data";
 import {
   cacheKeyForPath,
+  INDEX_CACHE_KEY,
   populateCache,
   returnCachedResource,
 } from "@/web/client/offline/offline_cache";
@@ -115,9 +116,11 @@ const OFFLINE_SETTINGS = singletonOf(() => {
 
   return {
     get: () => current ?? initial,
-    set: (reducer: (oldValue: OfflineSettings) => OfflineSettings) => {
+    setKey: async (key: keyof OfflineSettings, desiredValue: boolean) => {
+      const oldValue = current ?? (await initial);
       initialStale = true;
-      current = reducer({ ...(current ?? {}) });
+      current = { ...oldValue };
+      current[key] = desiredValue;
       return OFFLINE_SETTINGS_SW_DB.get().set(current);
     },
   };
@@ -140,7 +143,8 @@ function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
     cacheKey?: string
   ): Promise<Response> {
     const settings = await settingsPromise;
-    if (settings.offlineModeEnabled !== true) {
+    const shouldOverride = shouldOverrideOff(settings, cacheKey);
+    if (settings.offlineModeEnabled !== true && !shouldOverride) {
       return fetch(request);
     }
     if (apiHandler !== undefined) {
@@ -166,21 +170,46 @@ function fetchHandler(handlers: RouteAndHandler<any, any>[]): FetchHandler {
     }
     if (cacheKey !== undefined) {
       const result = await returnCachedResource(cacheKey);
+      if (result !== undefined && shouldOverride) {
+        try {
+          await OFFLINE_SETTINGS.get().setKey("offlineModeEnabled", true);
+          await SingleItemStore.forKey("forcedOfflineMode").set(true);
+          return result;
+        } catch {
+          // Don't try to handle failure, just fall through.
+        }
+      }
       return result ?? fetch(request);
     }
     return fetch(request);
   }
 
+  function shouldOverrideOff(settings: OfflineSettings, cacheKey?: string) {
+    // Explicitly handle the `undefined` case - we don't want to override
+    // in that case.
+    const noNetwork = navigator?.onLine === false;
+    return (
+      settings.offlineModeEnabled !== true &&
+      cacheKey === INDEX_CACHE_KEY &&
+      noNetwork
+    );
+  }
+
   return (event: FetchEvent) => {
+    const url = new URL(event.request.url);
+    const cacheKey = cacheKeyForPath(url.pathname);
     const settings = OFFLINE_SETTINGS.get().get();
-    if (!("then" in settings) && settings.offlineModeEnabled !== true) {
-      // If we had a value cached and offline mode is disabled, then we
+    if (
+      !("then" in settings) &&
+      settings.offlineModeEnabled !== true &&
+      !shouldOverrideOff(settings, cacheKey)
+    ) {
+      // If we should override the enabled value, then continue on to the handler logic.
+      // Otherwise, if we had a value cached and offline mode is disabled, then we
       // can return immediately.
       return;
     }
-    const url = new URL(event.request.url);
     const apiHandler = findApiHandler(url);
-    const cacheKey = cacheKeyForPath(url.pathname);
     if (apiHandler === undefined && cacheKey === undefined) {
       // We have two ways of dealing with fetch requests - either a cache
       // lookup or an API handler. If none work for the current fetch, we
@@ -210,11 +239,7 @@ registerMessageListener(async (req, respond) => {
   ) {
     try {
       await customLogic?.();
-      await OFFLINE_SETTINGS.get().set((old) => {
-        const settings = { ...old };
-        settings[settingKey] = desiredValue;
-        return settings;
-      });
+      await OFFLINE_SETTINGS.get().setKey(settingKey, desiredValue);
       respond({ success: true, complete: true });
     } catch {
       respond({ success: false, complete: true });
