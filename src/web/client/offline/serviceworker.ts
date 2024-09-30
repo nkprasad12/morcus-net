@@ -259,7 +259,7 @@ registerMessageListener(async (req, respond) => {
         )
         // Cache the list of works on a best-effort basis. We don't
         // need to fail the whole operation on this.
-        .finally(() => {})
+        .catch(() => {})
     );
     return;
   }

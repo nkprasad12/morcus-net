@@ -190,7 +190,6 @@ function ToEntryButton(props: { outline: EntryOutline; scale: number }) {
       onClick={() => jumpToSection(props.outline.mainSection.sectionId)}>
       <SvgIcon
         style={{
-          marginBottom: `${-0.1 * scale}em`,
           marginRight: `${-0.1 * scale}em`,
           fontSize: `${0.8 * scale}em`,
           paddingLeft: `${0.1 * scale}em`,
@@ -368,7 +367,6 @@ function articleLinkButton(text: string, scale: number) {
         <SvgIcon
           pathD={SvgIcon.Link}
           style={{
-            marginBottom: `${-0.2 * scale}em`,
             marginRight: `${-0.2 * scale}em`,
             fontSize: `${1 * scale}em`,
             paddingLeft: `${0.2 * scale}em`,

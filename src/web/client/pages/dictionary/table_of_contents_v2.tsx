@@ -68,7 +68,6 @@ function OutlineSection(props: {
           <SvgIcon
             pathD={SvgIcon.OpenInNew}
             style={{
-              marginBottom: `${-0.1 * scale}em`,
               marginRight: `${-0.1 * scale}em`,
               fontSize: `${0.8 * scale}em`,
               paddingLeft: `${0.1 * scale}em`,
@@ -101,7 +100,6 @@ function OutlineSection(props: {
                   <SvgIcon
                     pathD={SvgIcon.OpenInNew}
                     style={{
-                      marginBottom: `${-0.1 * scale}em`,
                       marginRight: `${-0.1 * scale}em`,
                       fontSize: `${0.8 * scale}em`,
                       paddingLeft: `${0.1 * scale}em`,

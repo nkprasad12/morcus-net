@@ -130,6 +130,7 @@ export function getGlobalStyles(settings: StyleConfig): GlobalProps {
         width: "1em",
         height: "1em",
         flexShrink: "0",
+        verticalAlign: "middle",
       },
 
       // Text
