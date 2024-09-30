@@ -58,7 +58,7 @@ function ExternalReaderLink() {
 
   return (
     <SpanLink
-      className="jsLink"
+      className="dLink"
       onClick={() => nav.toPath(ClientPaths.EXTERNAL_CONTENT_READER.path)}
       id="externalReaderLink">
       {"input your own text"}

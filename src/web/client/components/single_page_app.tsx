@@ -8,7 +8,10 @@ import { ContentPage, matchesPage } from "@/web/client/router/paths";
 import { checkPresent } from "@/common/assert";
 import { SingleItemStore } from "@/web/client/offline/single_item_store";
 import { isBoolean } from "@/web/utils/rpc/parsing";
-import { ModalDialog } from "@/web/client/components/generic/overlays";
+import {
+  ModalDialog,
+  SimpleModal,
+} from "@/web/client/components/generic/overlays";
 import { SpanButton } from "@/web/client/components/generic/basics";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 
@@ -60,27 +63,7 @@ function NotificationModal() {
   }, []);
 
   return (
-    <ModalDialog
-      contentProps={{ className: "bgColor" }}
-      open={message !== undefined}
-      onClose={() => setMessage(undefined)}>
-      <div
-        id="notificationModalTitle"
-        className="text sm"
-        style={{ fontWeight: "bold", margin: 0, padding: "12px 12px" }}>
-        Offline Mode Enabled
-      </div>
-      <div style={{ padding: "0px 12px 12px" }} className="text sm">
-        {message}
-      </div>
-      <div className="dialogActions">
-        <SpanButton
-          onClick={() => setMessage(undefined)}
-          className="text sm light button simple">
-          Close
-        </SpanButton>
-      </div>
-    </ModalDialog>
+    <SimpleModal message={message} onClose={() => setMessage(undefined)} />
   );
 }
 
