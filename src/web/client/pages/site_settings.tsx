@@ -87,6 +87,7 @@ function OfflineSettingsCheckbox(props: {
   salesPitch: string;
   downloadSizeMb?: number;
 }) {
+  const [disabled, setDisabled] = useState(false);
   const [progress, setProgress] = useState<string | undefined>(undefined);
   const allSettings = useOfflineSettings();
   const setting = allSettings?.[props.settingKey];
@@ -108,6 +109,7 @@ function OfflineSettingsCheckbox(props: {
           id={props.label}
           type="checkbox"
           checked={setting === true}
+          disabled={disabled}
           onChange={async (e) => {
             const checked = e.target.checked;
             setProgress("In progress: please wait");
@@ -118,12 +120,14 @@ function OfflineSettingsCheckbox(props: {
                 "Error: your browser doesn't support Service Workers :("
               );
             }
+            setDisabled(true);
             const updateProgress = (res: BaseResponse) => {
               if (res.progress !== undefined) {
                 setProgress(`In progress: ${res.progress}% complete`);
               } else if (res.complete) {
                 const success = res.success === true;
                 setProgress(success ? undefined : "An error occurred.");
+                setDisabled(false);
               }
             };
             sendToSw(
