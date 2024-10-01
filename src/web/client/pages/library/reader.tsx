@@ -138,9 +138,10 @@ function updatePage(
   // Nav pages are 1-indexed.
   const newPage = Math.min(Math.max(0, proposed), work.pages.length - 1) + 1;
   nav.to((old) => ({ path: old.path, params: { pg: `${newPage}` } }));
-  if (isMobile) {
-    window.scrollTo({ top: 64, behavior: "smooth" });
-  }
+  const container = isMobile
+    ? window
+    : document.getElementById("readerMainColumn");
+  container?.scrollTo({ top: isMobile ? 64 : 0, behavior: "smooth" });
   const id = [work.info.title, work.info.author].join("@");
   LibrarySavedSpot.set(id, newPage);
 }
@@ -791,7 +792,8 @@ function displayForLibraryChunk(
       />
     );
   }
-  if (root.getAttr("alt") === "gap") {
+  const alt = root.getAttr("alt");
+  if (alt === "gap") {
     return React.createElement("span", { key: key }, [" [gap]"]);
   }
   return React.createElement("span", { key: key }, children);

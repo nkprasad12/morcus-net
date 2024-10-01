@@ -391,6 +391,7 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
     <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
       <div
         className="readerMain"
+        id="readerMainColumn"
         style={{
           ...COLUMN_STYLE,
           width: `${mainWidth}%`,
