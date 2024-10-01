@@ -183,8 +183,6 @@ export interface TextNodeData extends SingleTextNode {
  * Returns all nodes containing text in the tree rooted by the input node.
  *
  * @param root The root node of the tree to search from.
- * @param ancestors Ancestors of the root node in the overall tree, if any.
- *                  Closer ancestors should be later in the list.
  *
  * @returns Data for all text nodes, in DFS sequence.
  */
