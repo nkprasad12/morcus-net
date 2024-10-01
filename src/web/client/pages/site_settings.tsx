@@ -9,9 +9,17 @@ import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import { sendToSw } from "@/web/client/offline/communication/app_comms";
 import type { BaseResponse } from "@/web/client/offline/communication/comms_types";
 import {
+  hasPersistedStorage,
   registerServiceWorker,
   requestNotificationPermissions,
+  requestPersistedStorage,
 } from "@/web/client/offline/sw_helpers";
+
+const OFFLINE_STORAGE_MESSAGE =
+  "You may see up to two permission requests." +
+  " The first is for Notifications, and the second is for Persistent Storage.\n" +
+  " It is recommended that you grant these permissions (otherwise, the system may deem" +
+  " Morcus Latin Tools and its data to be unimportant and clear the data).";
 
 function GlobalSettingsCheckbox(props: {
   label: string;
@@ -49,15 +57,13 @@ function OfflineSettings() {
   return (
     <details open>
       <summary className="nonDictText text md" style={{ paddingTop: "8px" }}>
-        Offline Mode Settings
+        Offline Mode [Experimental]
       </summary>
-      <div className="nonDictText text sm light">
-        [Caution: experimental and may have bugs.]
-      </div>
       <OfflineSettingsCheckbox
         label="Offline Mode Enabled"
         settingKey="offlineModeEnabled"
         salesPitch="use some features"
+        offDetails={OFFLINE_STORAGE_MESSAGE}
       />
       <OfflineSettingsCheckbox
         label="Smith and Hall"
@@ -86,6 +92,7 @@ function OfflineSettingsCheckbox(props: {
   settingKey: keyof OfflineSettings;
   salesPitch: string;
   downloadSizeMb?: number;
+  offDetails?: string;
 }) {
   const [disabled, setDisabled] = useState(false);
   const [progress, setProgress] = useState<string | undefined>(undefined);
@@ -113,12 +120,16 @@ function OfflineSettingsCheckbox(props: {
           onChange={async (e) => {
             const checked = e.target.checked;
             setProgress("In progress: please wait");
-            await requestNotificationPermissions();
             const status = await registerServiceWorker();
             if (status === -1) {
               setProgress(
                 "Error: your browser doesn't support Service Workers :("
               );
+            }
+            if (props.settingKey === "offlineModeEnabled" && checked) {
+              await requestNotificationPermissions();
+              console.log(await hasPersistedStorage());
+              await requestPersistedStorage();
             }
             setDisabled(true);
             const updateProgress = (res: BaseResponse) => {
@@ -140,13 +151,13 @@ function OfflineSettingsCheckbox(props: {
           }}
         />
         <label
-          className={"nonDictText text md"}
+          className={"nonDictText text sm"}
           htmlFor={props.label}
           style={{ paddingLeft: 8 }}>
           {props.label}
         </label>
       </div>
-      <div className="nonDictText text sm light">
+      <div className="nonDictText text xs light">
         <div>
           {settingOn ? "You can" : "Check to"} {props.salesPitch} offline.
         </div>
@@ -156,6 +167,9 @@ function OfflineSettingsCheckbox(props: {
           showDownloadInfo && (
             <div>Download Size: {props.downloadSizeMb} MB.</div>
           )
+        )}
+        {!settingOn && props.offDetails !== undefined && (
+          <div>{props.offDetails}</div>
         )}
       </div>
     </div>

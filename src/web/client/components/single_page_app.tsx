@@ -8,11 +8,7 @@ import { ContentPage, matchesPage } from "@/web/client/router/paths";
 import { checkPresent } from "@/common/assert";
 import { SingleItemStore } from "@/web/client/offline/single_item_store";
 import { isBoolean } from "@/web/utils/rpc/parsing";
-import {
-  ModalDialog,
-  SimpleModal,
-} from "@/web/client/components/generic/overlays";
-import { SpanButton } from "@/web/client/components/generic/basics";
+import { SimpleModal } from "@/web/client/components/generic/overlays";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 
 export namespace SinglePageApp {
