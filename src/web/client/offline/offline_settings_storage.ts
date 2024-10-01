@@ -1,6 +1,10 @@
+import { assertEqual } from "@/common/assert";
 import { singletonOf } from "@/common/misc_utils";
 import type { SingleStoreDbConfig } from "@/web/client/utils/indexdb/types";
-import { simpleIndexDbStore } from "@/web/client/utils/indexdb/wrappers";
+import {
+  NO_MATCH_FOR_GET,
+  simpleIndexDbStore,
+} from "@/web/client/utils/indexdb/wrappers";
 
 const OFFLINE_SETTINGS_CHANGED = "OfflineSettingsChanged";
 
@@ -32,8 +36,8 @@ function offlineSettingsDb(): OfflineSettingsDb {
   return {
     get: () =>
       db.get(0).catch((e) => {
-        console.debug("Error getting OfflineSettings.");
-        console.debug(e);
+        // Intended only to handle the case where no one has set the initial value yet.
+        assertEqual(e, NO_MATCH_FOR_GET);
         return DEFAULT_SETTINGS;
       }),
     set: (settings) =>

@@ -11,6 +11,8 @@ import {
   Closeable,
 } from "@/web/client/utils/indexdb/types";
 
+export const NO_MATCH_FOR_GET = "No match";
+
 function openDb(config: DbConfig): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const openRequest = indexedDB.open(config.dbName, config.version);
@@ -48,7 +50,7 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
           reject(`get failed on ${store.name}: ${operation.error}`);
         operation.onsuccess = () => {
           const t = operation.result;
-          t === undefined ? reject("No match") : resolve(t);
+          t === undefined ? reject(NO_MATCH_FOR_GET) : resolve(t);
         };
       }),
     getAll: () =>
