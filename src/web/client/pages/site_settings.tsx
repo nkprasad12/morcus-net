@@ -47,7 +47,8 @@ function GlobalSettingsCheckbox(props: {
   );
 }
 
-function OfflineSettings() {
+// @ts-expect-error
+function OfflineSettingsSection() {
   const globalSettings = useContext(GlobalSettingsContext);
 
   if (globalSettings.data.experimentalMode !== true) {
@@ -185,9 +186,6 @@ export function SiteSettings() {
             label="Enable Experimental Features"
             settingKey="experimentalMode"
           />
-        </div>
-        <div className="nonDictText text lg">
-          <OfflineSettings />
         </div>
       </div>
     </Container>
