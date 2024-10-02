@@ -184,8 +184,8 @@ export function defineBrowserE2eSuite() {
         await waitForText("cānăba");
         await (await findText("cānăba", page, "span")).click();
 
+        await waitForText("hovel");
         await checkTitleIs("cānăba | Morcus Latin Tools");
-        await checkHasText("hovel");
       }
     );
 
