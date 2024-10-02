@@ -11,11 +11,13 @@ import {
   TeiNode,
 } from "@/common/xml/tei_utils";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
-import { findTextNodes } from "@/common/xml/xml_utils";
+import { findTextNodes, type SingleTextNode } from "@/common/xml/xml_utils";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
-const DEFAULT_TEXT_NODES = ["p", "l"];
-const KNOWN_ALT_NODES = ["add", "sic", "del", "gap"];
+const SKIP_NODES = new Set(["#comment", "note"]);
+// q is a quote and we should make sure that this is marked!!!
+const DEFAULT_TEXT_NODES = ["p", "l", "foreign"];
+const KNOWN_ALT_NODES = ["add", "sic", "del", "gap", "q", "quote"];
 const WHITESPACE = new Set([" ", "\n", "\t"]);
 
 function collapseWhitespace(input: string): string {
@@ -34,10 +36,22 @@ function collapseWhitespace(input: string): string {
   return result;
 }
 
-function markupText(text: string, parentName: string): XmlChild[] {
-  if (parentName === "#comment") {
-    return [];
+function shouldSkip(textNode: SingleTextNode): boolean {
+  if (SKIP_NODES.has(textNode.parent.name)) {
+    return true;
   }
+  for (const ancestor of textNode.ancestors) {
+    if (SKIP_NODES.has(ancestor.name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function markupText(textNode: SingleTextNode): XmlChild[] {
+  const text = textNode.text;
+  const parentName = textNode.parent.name;
+
   const isAlt = !DEFAULT_TEXT_NODES.includes(parentName);
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
   const words = processWords(collapseWhitespace(text), (word) => {
@@ -56,9 +70,11 @@ function markupText(text: string, parentName: string): XmlChild[] {
 }
 
 function markupTextInNode(node: XmlNode): XmlNode {
-  const children = findTextNodes(node).flatMap((textNode) =>
-    markupText(textNode.text, textNode.parent.name)
-  );
+  const contentNodes = findTextNodes(node).filter((tn) => !shouldSkip(tn));
+  if (contentNodes.length === 0) {
+    return new XmlNode("span", [], []);
+  }
+  const children = contentNodes.flatMap(markupText);
   if (children.length === 0) {
     return new XmlNode("span", [["alt", "gap"]]);
   }
@@ -102,22 +118,29 @@ function attachStringChildren(root: TeiNode): (XmlChild | TeiNode)[] {
   return result;
 }
 
-function processForDisplay(root: TeiNode): ProcessedWorkNode {
+export function processForDisplay(root: TeiNode): ProcessedWorkNode {
   const allChildren = attachStringChildren(root);
   const firstChild = allChildren[0];
   const isFirstHead =
     firstChild !== undefined &&
     firstChild instanceof XmlNode &&
     firstChild.name === "head";
-  const children = allChildren
-    .slice(isFirstHead ? 1 : 0)
-    .map((child) =>
-      isString(child)
-        ? new XmlNode("span", [], markupText(child, root.selfNode.name))
-        : child instanceof XmlNode
-        ? markupTextInNode(child)
-        : processForDisplay(child)
-    );
+  const children = allChildren.slice(isFirstHead ? 1 : 0).map((child, i) =>
+    isString(child)
+      ? new XmlNode(
+          "span",
+          [],
+          markupText({
+            text: child,
+            parent: root.selfNode,
+            ancestors: [],
+            textIndex: i,
+          })
+        )
+      : child instanceof XmlNode
+      ? markupTextInNode(child)
+      : processForDisplay(child)
+  );
 
   const result: ProcessedWorkNode = { id: root.id, children };
   if (isFirstHead) {

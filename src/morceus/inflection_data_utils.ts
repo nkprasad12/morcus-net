@@ -35,6 +35,8 @@ export const SEMANTIC_TAGS = new Set([
   "is_group",
   "group_name",
   "is_month",
+  "place_name",
+  "town",
   "syncope",
   "group",
   "is_festival",

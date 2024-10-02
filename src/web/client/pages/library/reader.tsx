@@ -796,5 +796,8 @@ function displayForLibraryChunk(
   if (alt === "gap") {
     return React.createElement("span", { key: key }, [" [gap]"]);
   }
+  if (alt === "q" || alt === "quote") {
+    return React.createElement("span", { key: key }, ["'", ...children, "'"]);
+  }
   return React.createElement("span", { key: key }, children);
 }

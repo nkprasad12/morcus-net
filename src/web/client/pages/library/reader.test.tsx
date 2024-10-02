@@ -26,6 +26,7 @@ jest.mock("@/web/utils/rpc/client_rpc");
 console.debug = jest.fn();
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 window.HTMLElement.prototype.scroll = jest.fn();
+window.HTMLElement.prototype.scrollTo = jest.fn();
 window.scrollTo = jest.fn();
 
 const WORK_PAGE = ClientPaths.WORK_PAGE;

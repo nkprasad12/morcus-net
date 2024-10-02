@@ -21,6 +21,8 @@ const ALL_WORKS = [
   // `${LOCAL_ROOT}/data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml`,
   `${LOCAL_ROOT}/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml`,
   `${LOCAL_ROOT}/data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml`,
+  // Juvenal Satires.
+  // `${LOCAL_ROOT}/data/phi1276/phi001/phi1276.phi001.perseus-lat2.xml`,
 ];
 
 const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
