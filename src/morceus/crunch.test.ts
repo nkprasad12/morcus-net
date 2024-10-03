@@ -111,6 +111,22 @@ describe("crunchWord", () => {
       toInflectionData("pres ind act 3rd pl".split(" ")).grammaticalData
     );
   });
+
+  it("handles -que enclitic", () => {
+    const tables = MorceusTables.make(FAKEDATA_CRUNCHER_CONFIG);
+    const result = crunchWord("aiuntque", tables, {
+      vowelLength: "relaxed",
+      relaxIandJ: true,
+      handleEnclitics: true,
+    });
+
+    expect(result).toHaveLength(1);
+    expect(result[0].lemma).toBe("aio");
+    expect(result[0].form).toBe("ajunt");
+    expect(result[0].grammaticalData).toStrictEqual(
+      toInflectionData("pres ind act 3rd pl".split(" ")).grammaticalData
+    );
+  });
 });
 
 describe("MorceusCruncher", () => {

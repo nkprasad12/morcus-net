@@ -1,5 +1,4 @@
 import { assert, assertEqual } from "@/common/assert";
-import { LatinWords } from "@/common/lexica/latin_words";
 import {
   ProcessedWork,
   ProcessedWorkNode,
@@ -54,18 +53,10 @@ function markupText(textNode: SingleTextNode): XmlChild[] {
 
   const isAlt = !DEFAULT_TEXT_NODES.includes(parentName);
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
-  const words = processWords(collapseWhitespace(text), (word) => {
-    // Even if we can't resolve it in the Morpheus table, LS may have it.
-    const target = LatinWords.resolveLatinWord(word, (w) => [
-      LatinWords.isWord(w),
-      undefined,
-    ]) || [word.toLowerCase(), true];
-    return new XmlNode(
-      "libLat",
-      target[0] === word ? [] : [["target", target[0]]],
-      [word]
-    );
-  });
+  const words = processWords(
+    collapseWhitespace(text),
+    (word) => new XmlNode("libLat", [], [word])
+  );
   return isAlt ? [new XmlNode("span", [["alt", parentName]], words)] : words;
 }
 

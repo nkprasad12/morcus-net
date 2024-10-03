@@ -26,13 +26,6 @@ const TEST_ENTRY: ShEntry = {
     { level: 1, bullet: "II", text: "<sc>suup</sc>" },
   ],
 };
-
-const ENTRY_WITH_LAT_LINKS: ShEntry = {
-  keys: ["Hi"],
-  blurb: "<b>Greetings</b>",
-  senses: [{ level: 1, bullet: "I", text: "Salutations excibat" }],
-};
-
 const ENTRY_WITH_LINKS: ShEntry = {
   keys: ["Hi"],
   blurb: "<f>GREETINGS</f>",
@@ -94,18 +87,6 @@ describe("displayShEntry", () => {
         `</li></ol>`,
         `</div>`,
       ].join("")
-    );
-  });
-
-  it("adds links for Latin words", () => {
-    const result = displayShEntry(
-      ENTRY_WITH_LAT_LINKS,
-      57,
-      new ShLinkResolver([])
-    );
-
-    expect(result.toString()).toContain(
-      `<span class="latWord" to="excibat"></span>`
     );
   });
 

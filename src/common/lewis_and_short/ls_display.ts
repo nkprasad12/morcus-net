@@ -24,7 +24,6 @@ import { displayTextForOrth } from "@/common/lewis_and_short/ls_orths";
 import { sanitizeTree } from "@/common/lewis_and_short/ls_outline";
 import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
-import { LatinWords } from "@/common/lexica/latin_words";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 
 const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
@@ -1112,5 +1111,5 @@ export function displayEntryFree(
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
   result = handleAbbreviations(result, GENERIC_EXPANSIONS, true);
   result = handleAbbreviations(result, GENERIC_HOVERS, false);
-  return LatinWords.attachLatinLinks(result);
+  return result;
 }

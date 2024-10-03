@@ -16,6 +16,7 @@ import {
   xmlNodeToJsx,
   SearchSettings,
   InflectionDataSection,
+  LatLink,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { RouteContext } from "@/web/client/router/router_v2";
@@ -29,6 +30,10 @@ function GalliaRef(props: any, ref: any) {
       Gallia
     </div>
   );
+}
+
+function expectMatchesJsx(input: unknown, expected: JSX.Element) {
+  expect(JSON.stringify(input)).toBe(JSON.stringify(expected));
 }
 
 describe("xmlNodeToJsx", () => {
@@ -67,8 +72,14 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root);
 
     expect(result.props.children).toHaveLength(2);
-    expect(result.props.children[0]).toBe("Caesar");
-    expect(result.props.children[1].props.children[0]).toBe("Gaius");
+    expectMatchesJsx(
+      result.props.children[0],
+      <LatLink word="Caesar" key={0} />
+    );
+    expectMatchesJsx(
+      result.props.children[1].props.children[0],
+      <LatLink word="Gaius" key={0} />
+    );
   });
 
   it("adds highlight on matching id", () => {
@@ -121,15 +132,8 @@ describe("xmlNodeToJsx", () => {
     );
   });
 
-  it("handles latWord elements", async () => {
-    const root = new XmlNode(
-      "span",
-      [
-        ["class", "latWord"],
-        ["to", "omnis"],
-      ],
-      []
-    );
+  it("handles linkifying elements", async () => {
+    const root = new XmlNode("span", [], ["omnis est"]);
     const result = xmlNodeToJsx(root, undefined);
     const mockNav = jest.fn(() => {});
     render(
@@ -147,33 +151,13 @@ describe("xmlNodeToJsx", () => {
         params: expect.objectContaining({ q: "omnis", in: "LnS" }),
       })
     );
-  });
 
-  it("handles latWord elements with different text", async () => {
-    const root = new XmlNode(
-      "span",
-      [
-        ["class", "latWord"],
-        ["to", "omnis"],
-        ["orig", "blah"],
-      ],
-      []
-    );
-    const result = xmlNodeToJsx(root, undefined);
-    const mockNav = jest.fn(() => {});
-    render(
-      <RouteContext.Provider
-        value={{ route: { path: "/" }, navigateTo: mockNav }}>
-        <div>{result}</div>
-      </RouteContext.Provider>
-    );
-
-    await user.click(screen.getByText("blah"));
+    await user.click(screen.getByText("est"));
 
     expect(mockNav).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/dicts",
-        params: expect.objectContaining({ q: "omnis", in: "LnS" }),
+        params: expect.objectContaining({ q: "est", in: "LnS" }),
       })
     );
   });

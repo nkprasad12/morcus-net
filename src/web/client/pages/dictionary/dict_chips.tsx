@@ -12,20 +12,22 @@ export function DictChip(props: { label: string }) {
   );
 }
 
-export function FullDictChip(props: { label: string }) {
-  function getClassName(label: string): string {
-    return label === LatinDict.SmithAndHall.displayName ? "shChip" : "lsChip";
-  }
+function fullChipClass(label: string, size?: string): string {
+  const chip =
+    label === LatinDict.SmithAndHall.displayName ? "shChip" : "lsChip";
+  return [chip, "text", size || "md"].join(" ");
+}
 
-  function displayText(label: string): string {
-    return label === LatinDict.SmithAndHall.displayName
-      ? `${label} [Beta]`
-      : label;
-  }
+function fullChipText(label: string): string {
+  return label === LatinDict.SmithAndHall.displayName
+    ? `${label} [Beta]`
+    : label;
+}
 
+export function FullDictChip(props: { label: string; size?: "md" | "sm" }) {
   return (
     <span
-      className={getClassName(props.label) + " text md"}
+      className={fullChipClass(props.label, props.size)}
       style={{
         whiteSpace: "pre-wrap",
         borderRadius: 4,
@@ -34,7 +36,7 @@ export function FullDictChip(props: { label: string }) {
         paddingLeft: 6,
         paddingRight: 6,
       }}>
-      {displayText(props.label)}
+      {fullChipText(props.label)}
     </span>
   );
 }

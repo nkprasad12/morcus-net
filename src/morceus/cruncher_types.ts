@@ -12,6 +12,7 @@ export interface CrunchResult extends InflectionContext {
   end?: InflectionEnding;
   relaxedCase?: true;
   relaxedVowelLengths?: true;
+  enclitic?: string;
   isVerb?: boolean;
 }
 
@@ -23,8 +24,9 @@ export interface LatinWordAnalysis {
   }[];
 }
 
-// key => [Stem / Form, lemma, isVerb]
-export type StemMap = Map<string, [Stem | IrregularForm, string, boolean][]>;
+// [Stem / Form, lemma, isVerb]
+export type StemMapValue = [Stem | IrregularForm, string, boolean];
+export type StemMap = Map<string, StemMapValue[]>;
 
 export interface CruncherTables {
   endsMap: Map<string, string[]>;
@@ -37,6 +39,7 @@ export interface CruncherOptions {
   relaxCase?: boolean;
   relaxUandV?: boolean;
   relaxIandJ?: boolean;
+  handleEnclitics?: boolean;
 }
 
 export namespace CruncherOptions {
@@ -45,6 +48,7 @@ export namespace CruncherOptions {
     relaxCase: true,
     relaxIandJ: true,
     relaxUandV: true,
+    handleEnclitics: true,
   };
 }
 

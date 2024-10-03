@@ -11,6 +11,7 @@ import type {
   CruncherOptions,
   Cruncher,
   LatinWordAnalysis,
+  StemMapValue,
 } from "@/morceus/cruncher_types";
 import {
   compareGrammaticalData,
@@ -26,13 +27,68 @@ import {
   LatinTense,
 } from "@/morceus/types";
 
+const ENCLITICS = ["que", "ne", "ve"];
+
 function hasIndeclinableCode(input: { code?: StemCode }): boolean {
   return input?.code === "vb" || input?.code === "wd";
 }
 
+function crunchOptionsForEnd(
+  rawEnd: string,
+  tables: CruncherTables,
+  candidates: StemMapValue[]
+): CrunchResult[] {
+  const observedEnd = rawEnd || "*";
+  const results: CrunchResult[] = [];
+  const possibleEnds = tables.endsMap.get(observedEnd);
+  for (const [candidate, lemma, isVerb] of candidates) {
+    const indeclinableCode = hasIndeclinableCode(candidate);
+    if ("form" in candidate) {
+      assert(indeclinableCode || candidate.code === undefined);
+      // If it's indeclinable, then we skip if it the expected ending is not empty
+      // (since there's no inflected ending to bridge the gap). Otherwise, since it
+      // is not inflected, we don't need to do any further compatibility checks
+      // like we do between stems and endings.
+      if (observedEnd === "*") {
+        results.push({ lemma, isVerb, ...candidate });
+      }
+      continue;
+    }
+    assert(!indeclinableCode || candidate.code === undefined);
+    // Check to make sure there's a template that could have a match.
+    if (!possibleEnds?.includes(candidate.inflection)) {
+      continue;
+    }
+    const possibleEndInflections = checkPresent(
+      tables.inflectionLookup.get(candidate.inflection)?.get(observedEnd)
+    );
+    for (const end of possibleEndInflections) {
+      // If there's no inflection code,
+      // this means the entire table is intended to be expanded there. Otherwise,
+      // check to see whether the ending and stem are actually valid.
+      const mergedData =
+        candidate.code === undefined
+          ? expandSingleEnding(candidate.stem, candidate, end)
+          : mergeIfCompatible(candidate, end);
+      if (mergedData !== null) {
+        results.push({
+          lemma,
+          form: candidate.stem + end.ending,
+          stem: candidate,
+          end,
+          isVerb,
+          ...mergedData,
+        });
+      }
+    }
+  }
+  return results;
+}
+
 function crunchExactMatch(
   word: string,
-  tables: CruncherTables
+  tables: CruncherTables,
+  options?: CruncherOptions
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
   for (let i = 0; i <= word.length; i++) {
@@ -41,47 +97,20 @@ function crunchExactMatch(
     if (candidates === undefined) {
       continue;
     }
-    const observedEnd = word.slice(i) || "*";
-    const possibleEnds = tables.endsMap.get(observedEnd);
-    for (const [candidate, lemma, isVerb] of candidates) {
-      const indeclinableCode = hasIndeclinableCode(candidate);
-      if ("form" in candidate) {
-        assert(indeclinableCode || candidate.code === undefined);
-        // If it's indeclinable, then we skip if it the expected ending is not empty
-        // (since there's no inflected ending to bridge the gap). Otherwise, since it
-        // is not inflected, we don't need to do any further compatibility checks
-        // like we do between stems and endings.
-        if (observedEnd === "*") {
-          results.push({ lemma, isVerb, ...candidate });
+    const fullEnd = word.slice(i);
+    results.push(...crunchOptionsForEnd(fullEnd, tables, candidates));
+    if (options?.handleEnclitics === true) {
+      for (const enclitic of ENCLITICS) {
+        if (!fullEnd.endsWith(enclitic)) {
+          continue;
         }
-        continue;
-      }
-      assert(!indeclinableCode || candidate.code === undefined);
-      // Check to make sure there's a template that could have a match.
-      if (!possibleEnds?.includes(candidate.inflection)) {
-        continue;
-      }
-      const possibleEndInflections = checkPresent(
-        tables.inflectionLookup.get(candidate.inflection)?.get(observedEnd)
-      );
-      for (const end of possibleEndInflections) {
-        // If there's no inflection code,
-        // this means the entire table is intended to be expanded there. Otherwise,
-        // check to see whether the ending and stem are actually valid.
-        const mergedData =
-          candidate.code === undefined
-            ? expandSingleEnding(candidate.stem, candidate, end)
-            : mergeIfCompatible(candidate, end);
-        if (mergedData !== null) {
-          results.push({
-            lemma,
-            form: candidate.stem + end.ending,
-            stem: candidate,
-            end,
-            isVerb,
-            ...mergedData,
-          });
-        }
+        const partialEnd = fullEnd.slice(0, -enclitic.length);
+        results.push(
+          ...crunchOptionsForEnd(partialEnd, tables, candidates).map((r) => ({
+            ...r,
+            enclitic: fullEnd.slice(-enclitic.length),
+          }))
+        );
       }
     }
   }
@@ -140,28 +169,40 @@ function consolidateCrunchResults(rawResults: CrunchResult[]): CrunchResult[] {
 export function crunchAndMaybeRelaxCase(
   word: string,
   tables: CruncherTables,
-  relaxCase?: boolean
+  options?: CruncherOptions
 ): CrunchResult[] {
-  const results: CrunchResult[] = crunchExactMatch(word, tables);
+  const results: CrunchResult[] = crunchExactMatch(word, tables, options);
   if (word[0] === "V") {
     const relaxedWord = "U" + word.slice(1);
-    for (const relaxedResult of crunchExactMatch(relaxedWord, tables)) {
+    for (const relaxedResult of crunchExactMatch(
+      relaxedWord,
+      tables,
+      options
+    )) {
       results.push({ ...relaxedResult, relaxedCase: true });
     }
   }
-  if (relaxCase === true) {
+  if (options?.relaxCase === true) {
     const isUpperCase = word[0].toUpperCase() === word[0];
     const relaxedFirst = isUpperCase
       ? word[0].toLowerCase()
       : word[0].toUpperCase();
     const relaxedWord = relaxedFirst + word.slice(1);
-    for (const relaxedResult of crunchExactMatch(relaxedWord, tables)) {
+    for (const relaxedResult of crunchExactMatch(
+      relaxedWord,
+      tables,
+      options
+    )) {
       results.push({ ...relaxedResult, relaxedCase: true });
     }
     // Handle e.g. Vt for ut
     if (word[0] === "V") {
       const relaxedWord = "u" + word.slice(1);
-      for (const relaxedResult of crunchExactMatch(relaxedWord, tables)) {
+      for (const relaxedResult of crunchExactMatch(
+        relaxedWord,
+        tables,
+        options
+      )) {
         results.push({ ...relaxedResult, relaxedCase: true });
       }
     }
@@ -293,7 +334,7 @@ export function crunchWord(
   // others, since they make text processing more complicated.
   const word = stripCombiners(combineLengthCombiners(input));
   const results: CrunchResult[][] = [
-    crunchAndMaybeRelaxCase(word, tables, options?.relaxCase),
+    crunchAndMaybeRelaxCase(word, tables, options),
   ];
   if (options?.relaxIandJ !== undefined || options?.relaxUandV !== undefined) {
     const alternates = alternatesWithIorU(
@@ -302,9 +343,7 @@ export function crunchWord(
       options?.relaxUandV
     );
     Array.from(alternates).forEach((modifiedWord) =>
-      results.push(
-        crunchAndMaybeRelaxCase(modifiedWord, tables, options?.relaxCase)
-      )
+      results.push(crunchAndMaybeRelaxCase(modifiedWord, tables, options))
     );
   }
   return consolidateCrunchResults(results.flatMap((x) => x));

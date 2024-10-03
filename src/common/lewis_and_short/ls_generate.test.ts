@@ -12,7 +12,9 @@ import {
 } from "@/common/lewis_and_short/ls_dict";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
-import { LatinWords } from "@/common/lexica/latin_words";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { CruncherOptions } from "@/morceus/cruncher_types";
 
 console.debug = jest.fn();
 
@@ -38,7 +40,11 @@ afterAll(() => {
 });
 
 function createLewisAndShort(backing: StoredDictBacking<any>) {
-  return LewisAndShort.create(backing, LatinWords.analysesFor);
+  const tables = MorceusTables.CACHED.get();
+  const cruncher = MorceusCruncher.make(tables);
+  return LewisAndShort.create(backing, (word) =>
+    cruncher(word, CruncherOptions.DEFAULT)
+  );
 }
 
 function toRawDictEntry(keys: string[], entry: StoredEntryData) {

@@ -141,7 +141,9 @@ describe("New Dictionary View", () => {
       mode: 0,
     });
     await waitFor(() => {
-      expect(screen.getByText(resultString)).toBeDefined();
+      expect(
+        screen.getByText((_, element) => element?.textContent === resultString)
+      ).toBeDefined();
       expect(screen.getByText("mainBlurb")).toBeDefined();
       expect(screen.getByText("sense1")).toBeDefined();
       expect(screen.getByText("sense2")).toBeDefined();
@@ -180,7 +182,12 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     await waitFor(() => {
-      expect(screen.getByText(NO_RESULTS_MESSAGE)).toBeDefined();
+      expect(
+        screen.getByText(
+          (_, element) =>
+            element?.textContent === NO_RESULTS_MESSAGE + " for Belgae."
+        )
+      ).toBeDefined();
     });
   });
 
@@ -285,7 +292,9 @@ describe("New Dictionary View", () => {
       mode: 0,
     });
     await waitFor(() => {
-      expect(screen.getByText(resultString)).toBeDefined();
+      expect(
+        screen.getByText((_, element) => element?.textContent === resultString)
+      ).toBeDefined();
       expect(screen.getByText("mainBlurb")).toBeDefined();
       expect(screen.getByText("sense1")).toBeDefined();
       expect(screen.getByText("sense2")).toBeDefined();
@@ -359,7 +368,9 @@ describe("New Dictionary View", () => {
       mode: 1,
     });
     await waitFor(() => {
-      expect(screen.getByText(resultString)).toBeDefined();
+      expect(
+        screen.getByText((_, element) => element?.textContent === resultString)
+      ).toBeDefined();
       expect(screen.getByText("mainBlurb")).toBeDefined();
       expect(screen.getByText("sense1")).toBeDefined();
       expect(screen.getByText("sense2")).toBeDefined();

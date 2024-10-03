@@ -31,8 +31,10 @@ import {
 import { readFileSync } from "fs";
 import { scrapeUrlText } from "@/web/scraping/scraper";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
-import { LatinWords } from "@/common/lexica/latin_words";
 import { MorceusTables } from "@/morceus/cruncher_tables";
+import { timed } from "@/common/timing/timed_invocation";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { CruncherOptions } from "@/morceus/cruncher_types";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -83,15 +85,17 @@ export function startMorcusServer(): Promise<http.Server> {
   const app = express();
   const server = http.createServer(app);
 
-  setTimeout(MorceusTables.CACHED.get, randInRange(100, 125));
-  const lewisAndShort = delayedInit(
-    () =>
-      LewisAndShort.create(
-        sqliteBacking(envVar("LS_PROCESSED_PATH")),
-        LatinWords.analysesFor
-      ),
-    LatinDict.LewisAndShort
-  );
+  const lewisAndShort = delayedInit(() => {
+    const tables = timed(
+      () => MorceusTables.CACHED.get(),
+      "Create Morpheus tables"
+    );
+    const cruncher = MorceusCruncher.make(tables);
+    return LewisAndShort.create(
+      sqliteBacking(envVar("LS_PROCESSED_PATH")),
+      (word) => cruncher(word, CruncherOptions.DEFAULT)
+    );
+  }, LatinDict.LewisAndShort);
   const smithAndHall = delayedInit(() => {
     const start = performance.now();
     const result = new SmithAndHall(sqliteBacking(envVar("SH_PROCESSED_PATH")));

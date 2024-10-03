@@ -56,9 +56,7 @@ export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
   " and / or refresh the page (or if using the app, close and re-open)." +
   " If the issue persists, contact Mórcus.";
-export const NO_RESULTS_MESSAGE =
-  "No results found. If applicable, try enabling another " +
-  "dictionary in settings.";
+export const NO_RESULTS_MESSAGE = "No results found";
 
 function chooseDicts(
   dicts: undefined | DictInfo | DictInfo[],
@@ -87,18 +85,24 @@ function HorizontalPlaceholder() {
   );
 }
 
-function NoResultsContent(props: { isSmall: boolean; dicts: DictInfo[] }) {
+function NoResultsContent(props: {
+  isSmall: boolean;
+  word?: string;
+  dicts: DictInfo[];
+}) {
   const labels =
     props.dicts.length > 0 ? props.dicts.map((d) => d.displayName) : ["None"];
   return (
     <ContentBox isSmall={props.isSmall}>
       <>
-        <div>{NO_RESULTS_MESSAGE}</div>
         <div>
+          {NO_RESULTS_MESSAGE + (props.word ? ` for ${props.word}.` : ".")}
+        </div>
+        <div className="text sm">
           Enabled dictionaries:{" "}
           {labels.map((label) => (
             <span key={label}>
-              <FullDictChip label={label} />{" "}
+              <FullDictChip label={label} size="sm" />{" "}
             </span>
           ))}
         </div>
@@ -610,7 +614,9 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   }
 
   if (state === "No Results") {
-    const noResults = <NoResultsContent isSmall={isSmall} dicts={dictsToUse} />;
+    const noResults = (
+      <NoResultsContent isSmall={isSmall} word={query} dicts={dictsToUse} />
+    );
     return (
       <ResponsiveLayout
         oneCol={noResults}

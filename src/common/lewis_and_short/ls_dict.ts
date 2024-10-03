@@ -117,9 +117,15 @@ export class LewisAndShort implements Dictionary {
     const analyses = (await this.inflectionProvider(cleanInput))
       .map((inflection) => ({
         ...inflection,
-        inflectedForms: inflection.inflectedForms.filter((form) =>
-          Vowels.haveCompatibleLength(input, form.form)
-        ),
+        inflectedForms: inflection.inflectedForms.filter((form) => {
+          // Only bother checking the first one. Since the form is the same
+          // and the input is the same, they will all have the same enclitic.
+          const enclitic = form.inflectionData[0].enclitic ?? "";
+          const fullForm = form.form + enclitic;
+          // We should enforce vowel correctness on the enclitic, too.
+          // https://github.com/nkprasad12/morcus-net/issues/175
+          return Vowels.haveCompatibleLength(input, fullForm);
+        }),
       }))
       .filter((inflection) => inflection.inflectedForms.length > 0);
     extras?.log("inflectionAnalysis");

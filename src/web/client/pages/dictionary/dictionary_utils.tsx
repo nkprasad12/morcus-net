@@ -24,6 +24,7 @@ import {
   useDictRouter,
 } from "@/web/client/pages/dictionary/dictionary_routing";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import { processWords } from "@/common/text_cleaning";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -184,7 +185,7 @@ function onLatinWordClick(
   }
 }
 
-function LatLink(props: { word: string; orig?: string }) {
+export function LatLink(props: { word: string }) {
   const { nav } = useDictRouter();
   const dictContext = React.useContext(DictContext);
 
@@ -200,7 +201,7 @@ function LatLink(props: { word: string; orig?: string }) {
         })
       }
       onClick={() => onLatinWordClick(nav, dictContext, props.word)}>
-      {props.orig || props.word}
+      {props.word}
     </span>
   );
 }
@@ -223,17 +224,6 @@ export function xmlNodeToJsx(
   key?: string,
   isEmbedded?: boolean
 ): JSX.Element {
-  const children = root.children.map((child, i) => {
-    if (typeof child === "string") {
-      return child;
-    }
-    return xmlNodeToJsx(
-      child,
-      highlightId,
-      child.getAttr("id") || `${i}`,
-      isEmbedded
-    );
-  });
   const props: { [propKey: string]: any } = {};
   if (key !== undefined) {
     props.key = key;
@@ -252,6 +242,23 @@ export function xmlNodeToJsx(
     }
     props[attrKey] = value;
   }
+
+  const shouldLinkifyWords =
+    !className?.includes("lsHover") && !className?.includes("lsSenseBullet");
+  const children = root.children.flatMap((child, idx) => {
+    if (typeof child !== "string") {
+      return xmlNodeToJsx(
+        child,
+        highlightId,
+        child.getAttr("id") || `${idx}`,
+        isEmbedded
+      );
+    }
+    if (!shouldLinkifyWords) {
+      return child;
+    }
+    return processWords(child, (word, i) => <LatLink word={word} key={i} />);
+  });
 
   if (titleText !== undefined) {
     function hoverForwardedNode(forwardProps: any, forwardRef: any) {
@@ -294,10 +301,6 @@ export function xmlNodeToJsx(
         key={key}
       />
     );
-  } else if (className === "latWord") {
-    const word = root.getAttr("to")!;
-    const orig = root.getAttr("orig");
-    return <LatLink word={word} orig={orig} key={key} />;
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
       props["className"] = "highlighted";

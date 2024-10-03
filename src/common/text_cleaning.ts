@@ -46,7 +46,7 @@ function isTextBreakChar(c: string): boolean {
 
 export function processWords<T>(
   input: string,
-  handler: (word: string) => T
+  handler: (word: string, i?: number) => T
 ): (string | T)[] {
   if (input.length === 0) {
     return [];
@@ -57,7 +57,7 @@ export function processWords<T>(
   for (let i = 0; i < input.length; i++) {
     const isBreak = isTextBreakChar(input[i]);
     if (isInWord && isBreak) {
-      results.push(handler(input.substring(lastChunkStart, i)));
+      results.push(handler(input.substring(lastChunkStart, i), i));
       isInWord = false;
       lastChunkStart = i;
     } else if (!isInWord && !isBreak) {
@@ -67,7 +67,7 @@ export function processWords<T>(
     }
   }
   const finalChunk = input.substring(lastChunkStart);
-  results.push(isInWord ? handler(finalChunk) : finalChunk);
+  results.push(isInWord ? handler(finalChunk, lastChunkStart) : finalChunk);
   return results;
 }
 
