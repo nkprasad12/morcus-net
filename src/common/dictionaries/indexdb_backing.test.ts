@@ -10,7 +10,12 @@ console.debug = jest.fn();
 
 const RAW_DATA: RawDictEntry[] = [
   { id: "1", keys: ["foo1", "bar2"], entry: "foo1bar1" },
-  { id: "2", keys: ["foo2", "bar2"], entry: "foo2bar2" },
+  {
+    id: "2",
+    keys: ["foo2", "bar2"],
+    entry: "foo2bar2",
+    derivedKeys: [["2.1", ["baz2"]]],
+  },
   { id: "3", keys: ["foō13"], entry: "foo3bar3" },
 ];
 
@@ -59,6 +64,9 @@ describe("IndexedDbDict", () => {
       { id: "1", orth: "bar2" },
       { id: "2", orth: "bar2" },
     ]);
+    expect(await backing.matchesForCleanName("baz2")).toEqual([
+      { id: "2", orth: "baz2", senseId: "2.1" },
+    ]);
   });
 
   it("returns expected allEntryNames", async () => {
@@ -68,6 +76,7 @@ describe("IndexedDbDict", () => {
     expect(await backing.allEntryNames()).toEqual([
       { orth: "bar2", cleanOrth: "bar2" },
       { orth: "bar2", cleanOrth: "bar2" },
+      { orth: "baz2", cleanOrth: "baz2" },
       { orth: "foo1", cleanOrth: "foo1" },
       { orth: "foō13", cleanOrth: "foo13" },
       { orth: "foo2", cleanOrth: "foo2" },

@@ -7,7 +7,7 @@ import type {
 import { removeDiacritics } from "@/common/text_cleaning";
 import type { DbConfig, Store } from "@/web/client/utils/indexdb/types";
 import { wrappedIndexDb } from "@/web/client/utils/indexdb/wrappers";
-import { isString, matches } from "@/web/utils/rpc/parsing";
+import { isString, matches, maybeUndefined } from "@/web/utils/rpc/parsing";
 
 export const ENTRIES_STORE = {
   name: "entriesTable",
@@ -25,6 +25,7 @@ export const ORTHS_STORE = {
     ["id", isString],
     ["orth", isString],
     ["cleanOrth", isString],
+    ["senseId", maybeUndefined(isString)],
   ]),
   indices: [{ keyPath: "cleanOrth" }],
 } satisfies Store<OrthsTableRow>;
@@ -45,6 +46,10 @@ export const LS_CONFIG: IndexDbDictConfig = {
   stores: [ENTRIES_STORE, ORTHS_STORE],
 };
 
+function cleanKey(key: string) {
+  return removeDiacritics(key).toLowerCase();
+}
+
 /** Saves the given entries to the IndexedDb table. */
 async function saveToIndexedDb(
   entries: RawDictEntry[],
@@ -60,15 +65,27 @@ async function saveToIndexedDb(
   const allPending: Promise<unknown>[] = [];
   for (const entry of entries) {
     allPending.push(entriesStore.add({ id: entry.id, entry: entry.entry }));
-    entry.keys.forEach(async (key) => {
+    entry.keys.forEach((key) => {
       allPending.push(
         orthsStore.add({
           id: entry.id,
           orth: key,
-          cleanOrth: removeDiacritics(key).toLowerCase(),
+          cleanOrth: cleanKey(key),
         })
       );
     });
+    for (const [senseId, derivedOrths] of entry.derivedKeys ?? []) {
+      derivedOrths.forEach((derived) =>
+        allPending.push(
+          orthsStore.add({
+            id: entry.id,
+            orth: derived,
+            cleanOrth: cleanKey(derived),
+            senseId,
+          })
+        )
+      );
+    }
   }
   await Promise.allSettled(allPending);
   db.close();
@@ -91,7 +108,7 @@ function indexDbBacking(input: IndexDbDictConfig): StoredDictBacking<"Async"> {
       const cleanNameIndex = input.stores[1].indices[0];
       const query = IDBKeyRange.only(cleanName);
       const results = await store.searchIndex(cleanNameIndex, query);
-      return results.map(({ id, orth }) => ({ id, orth }));
+      return results.map(({ id, orth, senseId }) => ({ id, orth, senseId }));
     },
     entriesForIds: async (ids: string[]) => {
       const store = (await db).singleStore(ENTRIES_STORE, "readonly");

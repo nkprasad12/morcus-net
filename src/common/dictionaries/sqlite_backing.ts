@@ -1,4 +1,5 @@
 import type {
+  OrthsTableRow,
   RawDictEntry,
   StoredDictBacking,
 } from "@/common/dictionaries/stored_dict_interface";
@@ -14,17 +15,26 @@ export function sqliteBacking(
     allEntryNames: () =>
       // @ts-expect-error
       db.prepare(`SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`).all(),
-    // @ts-expect-error
     matchesForCleanName: (cleanName: string) =>
       db
-        .prepare(`SELECT id, orth FROM orths WHERE cleanOrth = '${cleanName}'`)
-        .all(),
+        .prepare(
+          `SELECT id, orth, senseId FROM orths WHERE cleanOrth = '${cleanName}'`
+        )
+        .all()
+        // @ts-expect-error
+        .map(({ id, orth, senseId }) => {
+          const result: Omit<OrthsTableRow, "cleanOrth"> = { id, orth };
+          if (senseId !== null) {
+            result.senseId = senseId;
+          }
+          return result;
+        }),
     // @ts-expect-error
     entriesForIds: (ids: string[]) => {
       const filter = ids.map(() => `id=?`).join(" OR ");
       const n = ids.length;
       return db
-        .prepare(`SELECT entry FROM entries WHERE ${filter} LIMIT ${n}`)
+        .prepare(`SELECT id, entry FROM entries WHERE ${filter} LIMIT ${n}`)
         .all(ids);
     },
     entryNamesByPrefix: (prefix: string) =>
@@ -37,6 +47,10 @@ export function sqliteBacking(
         .map(({ orth }) => orth),
     lowMemory: false,
   };
+}
+
+function cleanKey(key: string): string {
+  return removeDiacritics(key).toLowerCase();
 }
 
 export namespace SqliteDict {
@@ -54,15 +68,27 @@ export namespace SqliteDict {
           primaryKey: "id",
         },
         {
-          records: entries.flatMap((entry) =>
-            entry.keys.map((key) => ({
+          records: entries.flatMap((entry) => {
+            const rows: OrthsTableRow[] = entry.keys.map((key) => ({
               id: entry.id,
               orth: key,
-              cleanOrth: removeDiacritics(key).toLowerCase(),
-            }))
-          ),
+              cleanOrth: cleanKey(key),
+            }));
+            for (const [senseId, derivedOrths] of entry.derivedKeys ?? []) {
+              derivedOrths.forEach((derived) =>
+                rows.push({
+                  id: entry.id,
+                  orth: derived,
+                  cleanOrth: cleanKey(derived),
+                  senseId,
+                })
+              );
+            }
+            return rows;
+          }),
           tableName: "orths",
           indices: [["cleanOrth"]],
+          optionalKeys: ["senseId"],
         },
       ],
     });

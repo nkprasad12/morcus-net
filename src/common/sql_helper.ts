@@ -8,9 +8,12 @@ export const ARRAY_INDEX = "@INDEX";
 function createTableCommand(
   prototype: object,
   primaryKey: string | typeof ARRAY_INDEX | undefined,
-  tableName: string
+  tableName: string,
+  optionalKeys?: string[]
 ): [string, string[]] {
-  const allKeys = Object.keys(prototype);
+  const allKeys = Array.from(
+    new Set(Object.keys(prototype).concat(optionalKeys ?? []))
+  );
   assert(
     primaryKey === undefined ||
       primaryKey === ARRAY_INDEX ||
@@ -32,6 +35,7 @@ export interface TableConfig {
   primaryKey?: string | typeof ARRAY_INDEX;
   indices?: string[][];
   tableName: string;
+  optionalKeys?: string[];
 }
 
 export interface DbConfig {
@@ -65,11 +69,13 @@ export namespace ReadOnlyDb {
     }
     const db = SqliteDb.create(destination);
     db.pragma("journal_mode = WAL");
-    for (const { records, primaryKey, tableName, indices } of tables) {
+    for (const table of tables) {
+      const { records, indices, tableName } = table;
       const [createTable, columnNames] = createTableCommand(
         records[0],
-        primaryKey,
-        tableName
+        table.primaryKey,
+        tableName,
+        table.optionalKeys
       );
       db.exec(createTable);
       for (const index of indices ?? []) {
@@ -87,16 +93,15 @@ export namespace ReadOnlyDb {
           ", "
         )}) VALUES (${columnNames.map((n) => "@" + n).join(", ")})`
       );
-
       const isBun = process.env.BUN === "1";
       const insertAll = db.transaction(() => {
         records.forEach((record, index) => {
           const row: Record<string, any> = {};
-          for (const key in record) {
+          for (const key of columnNames) {
             // @ts-expect-error
             row[isBun ? `@${key}` : key] = record[key];
           }
-          if (primaryKey === ARRAY_INDEX) {
+          if (table.primaryKey === ARRAY_INDEX) {
             row[isBun ? `@n` : "n"] = index;
           }
           insert.run(row);

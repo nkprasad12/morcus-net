@@ -7,6 +7,7 @@ import {
   sqliteBacking,
   SqliteDict,
 } from "@/common/dictionaries/sqlite_backing";
+import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 
 console.debug = jest.fn();
 
@@ -14,13 +15,14 @@ const serialize = XmlNodeSerialization.DEFAULT.serialize;
 
 const TEMP_FILE = "dict_storage.ts.tmp.txt";
 
-const FAKE_DICT = [
+const FAKE_DICT: RawDictEntry[] = [
   {
     id: "n1",
     keys: ["Julius"],
     entry: serialize(
       new XmlNode("entryFree", [["id", "Julius"]], ["Gallia est omnis"])
     ),
+    derivedKeys: [["n1.1", ["Julianus"]]],
   },
   {
     id: "n2",
@@ -116,6 +118,12 @@ describe("SqlDict", () => {
 
     expectEntriesWithIds(await dict.getRawEntry("Julius"), ["Julius"]);
     expectEntriesWithIds(await dict.getRawEntry("Publius"), ["Publius"]);
+  });
+
+  test("getRawEntry handles entries by derived key", async () => {
+    SqliteDict.save(FAKE_DICT, TEMP_FILE);
+    const dict = createSqlDict();
+    expectEntriesWithIds(await dict.getRawEntry("Julianus"), ["Julius"]);
   });
 
   test("getRawEntry handles ambiguous queries", async () => {

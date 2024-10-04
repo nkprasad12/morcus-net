@@ -57,7 +57,9 @@ export interface StoredDictBacking<IsAsync extends BackingType> {
   matchesForCleanName: (
     cleanName: string
   ) => MaybeAsync<Omit<OrthsTableRow, "cleanOrth">[], IsAsync>;
-  entriesForIds: (ids: string[]) => MaybeAsync<{ entry: string }[], IsAsync>;
+  entriesForIds: (
+    ids: string[]
+  ) => MaybeAsync<{ id: string; entry: string }[], IsAsync>;
   entryNamesByPrefix: (prefix: string) => MaybeAsync<string[], IsAsync>;
   lowMemory: boolean;
 }
