@@ -331,6 +331,8 @@ export interface ElementAndKey {
   element: JSX.Element;
   key: string;
   inflections?: InflectionData[];
+  sectionId?: string;
+  subsectionName?: string;
 }
 
 export function InflectionDataSection(props: {

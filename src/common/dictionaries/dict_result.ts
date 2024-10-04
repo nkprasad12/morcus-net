@@ -67,6 +67,8 @@ export interface EntryResult {
   entry: XmlNode;
   outline: EntryOutline;
   inflections?: InflectionData[];
+  sectionId?: string;
+  subsectionName?: string;
 }
 
 export namespace EntryResult {

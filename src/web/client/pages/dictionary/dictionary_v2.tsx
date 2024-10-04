@@ -131,6 +131,8 @@ function getEntriesByDict(
       element: xmlNodeToJsx(e.entry, hash, undefined, isEmbedded),
       key: e.entry.getAttr("id") || `${dictKey}${i}`,
       inflections: e.inflections,
+      sectionId: e.sectionId,
+      subsectionName: e.subsectionName,
     }));
     const outlines = rawEntries.map((e) => e.outline);
     const name = LatinDict.BY_KEY.get(dictKey)?.displayName || dictKey;
@@ -401,6 +403,49 @@ function DictionaryEntries(props: { entries: EntriesByDict[] }) {
   );
 }
 
+function SubsectionNote(props: {
+  subsectionName?: string;
+  sectionId?: string;
+  hasInflections: boolean;
+  scale: number;
+}) {
+  const { sectionId, subsectionName, scale } = props;
+
+  if (!sectionId || !subsectionName) {
+    return null;
+  }
+
+  return (
+    <div style={{ marginBottom: "8px" }}>
+      <div
+        className="text md"
+        style={{ marginBottom: "4px" }}
+        onClick={() => {
+          document.getElementById(sectionId)?.scrollIntoView(SCROLL_SMOOTH);
+        }}>
+        <span className="lsSenseBullet">
+          <SvgIcon
+            pathD={SvgIcon.KeyboardArrowDown}
+            style={{
+              marginRight: `${-0.2 * scale}em`,
+              fontSize: `${1 * scale}em`,
+              paddingLeft: `${0.2 * scale}em`,
+              paddingRight: `${0.4 * scale}em`,
+            }}
+          />
+          {subsectionName}{" "}
+        </span>{" "}
+        is part of a larger entry.
+      </div>
+      {props.hasInflections && (
+        <div className="text sm">
+          Inflections of <span className="lsOrth">{subsectionName}</span>:
+        </div>
+      )}
+    </div>
+  );
+}
+
 function SingleDictSection(props: {
   data: EntriesByDict;
   isSmall: boolean;
@@ -416,6 +461,12 @@ function SingleDictSection(props: {
       {props.data.entries.map((entry, i) => (
         <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
           <>
+            <SubsectionNote
+              sectionId={entry.sectionId}
+              subsectionName={entry.subsectionName}
+              hasInflections={(entry.inflections?.length ?? 0) > 0}
+              scale={props.scale}
+            />
             {entry.inflections && (
               <InflectionDataSection
                 inflections={entry.inflections}
