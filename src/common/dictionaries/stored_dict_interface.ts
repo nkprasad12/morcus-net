@@ -6,6 +6,11 @@ export interface RawDictEntry {
   id: string;
   /** A serialized form of this entry. */
   entry: string;
+  /**
+   * Keys that are not for this entry, but for subentries.
+   * `[[idContainingSubentry, [keyForSubentry1, ...]]`
+   */
+  derivedKeys?: [string, string[]][];
 }
 
 export interface EntryName {
@@ -27,11 +32,31 @@ export type MaybeAsync<
   U extends BackingType
 > = U extends "Async" ? Promise<T> : T;
 
+export interface EntriesTableRow {
+  id: string;
+  entry: string;
+}
+
+export interface OrthsTableRow {
+  id: string;
+  orth: string;
+  cleanOrth: string;
+  senseId?: string;
+}
+
 export interface StoredDictBacking<IsAsync extends BackingType> {
+  /** Returns all entry names in the given dictionary. */
   allEntryNames: () => MaybeAsync<EntryName[], IsAsync>;
+  /**
+   * Returns entries that match a given clean name.
+   *
+   * @argument cleanName the entry name stripped of diacritics and lower case.
+   *
+   * @returns All entries matching the clean name.
+   */
   matchesForCleanName: (
     cleanName: string
-  ) => MaybeAsync<{ id: string; orth: string }[], IsAsync>;
+  ) => MaybeAsync<Omit<OrthsTableRow, "cleanOrth">[], IsAsync>;
   entriesForIds: (ids: string[]) => MaybeAsync<{ entry: string }[], IsAsync>;
   entryNamesByPrefix: (prefix: string) => MaybeAsync<string[], IsAsync>;
   lowMemory: boolean;

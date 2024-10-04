@@ -1,4 +1,6 @@
 import type {
+  EntriesTableRow,
+  OrthsTableRow,
   RawDictEntry,
   StoredDictBacking,
 } from "@/common/dictionaries/stored_dict_interface";
@@ -6,11 +8,6 @@ import { removeDiacritics } from "@/common/text_cleaning";
 import type { DbConfig, Store } from "@/web/client/utils/indexdb/types";
 import { wrappedIndexDb } from "@/web/client/utils/indexdb/wrappers";
 import { isString, matches } from "@/web/utils/rpc/parsing";
-
-interface EntriesTableRow {
-  id: string;
-  entry: string;
-}
 
 export const ENTRIES_STORE = {
   name: "entriesTable",
@@ -20,12 +17,6 @@ export const ENTRIES_STORE = {
     ["entry", isString],
   ]),
 } satisfies Store<EntriesTableRow>;
-
-interface OrthsTableRow {
-  id: string;
-  orth: string;
-  cleanOrth: string;
-}
 
 // TODO: The Sqlite implementation has cleanOrth as an index.
 export const ORTHS_STORE = {
