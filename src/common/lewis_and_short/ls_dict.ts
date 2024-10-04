@@ -7,13 +7,10 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { decodeMessage, encodeMessage } from "@/web/utils/rpc/parsing";
+import { decodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { wordInflectionDataToArray } from "@/morceus/inflection_data_utils";
-import type {
-  RawDictEntry,
-  StoredDictBacking,
-} from "@/common/dictionaries/stored_dict_interface";
+import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 import type { LatinWordAnalysis } from "@/morceus/cruncher_types";
 
 const REPLACED_CHARS = new Map<string, string>([
@@ -49,18 +46,6 @@ export namespace StoredEntryData {
 
   export function fromEncoded(message: string): StoredEntryData {
     return decodeMessage(message, StoredEntryData.validator, REGISTRY);
-  }
-
-  export function toRawDictEntry(
-    id: string,
-    keys: string[],
-    entry: StoredEntryData
-  ): RawDictEntry {
-    return {
-      keys: keys,
-      entry: encodeMessage(entry, REGISTRY),
-      id,
-    };
   }
 
   export function toEntryResult(entry: StoredEntryData): EntryResult {

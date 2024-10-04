@@ -3,9 +3,10 @@ import { assert, checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import {
+  derivedOrths,
   getOrths,
   isRegularOrth,
-  mergeVowelMarkers,
+  removeStackedVowelMarkers,
 } from "@/common/lewis_and_short/ls_orths";
 import { extractOutline } from "@/common/lewis_and_short/ls_outline";
 import { StoredEntryData } from "@/common/lewis_and_short/ls_dict";
@@ -13,6 +14,10 @@ import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import { packCompressedChunks } from "@/web/server/chunking";
+import { encodeMessage } from "@/web/utils/rpc/parsing";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+
+const REGISTRY = [XmlNodeSerialization.DEFAULT];
 
 function* extractEntryData(
   rawFile: string,
@@ -25,7 +30,7 @@ function* extractEntryData(
     if (numHandled % 1000 === 0) {
       console.debug(`Processed ${numHandled + (start || 0)}`);
     }
-    const orths = getOrths(root).map(mergeVowelMarkers);
+    const orths = getOrths(root).map(removeStackedVowelMarkers);
     assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
     const regulars = orths.filter(isRegularOrth);
     const keys = regulars.length > 0 ? regulars : orths;
@@ -34,11 +39,12 @@ function* extractEntryData(
       outline: extractOutline(root),
       n: root.getAttr("n"),
     };
-    yield StoredEntryData.toRawDictEntry(
-      checkPresent(root.getAttr("id")),
+    yield {
+      id: checkPresent(root.getAttr("id")),
       keys,
-      data
-    );
+      entry: encodeMessage(data, REGISTRY),
+      derivedKeys: derivedOrths(root),
+    };
     numHandled += 1;
   }
 }

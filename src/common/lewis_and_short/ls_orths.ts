@@ -1,6 +1,7 @@
 import { XmlNode } from "@/common/xml/xml_node";
-import { assert } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { BREVES, MACRONS } from "@/common/character_utils";
+import { arrayMap } from "@/common/data_structures/collect_map";
 
 // const LOWER_CONSONANTS = "bcdfghjklmnpqrstvxz";
 // const UPPER_CONSONANTS = "BCDFGHJKLMNPQRSTVXZ";
@@ -200,6 +201,7 @@ const STARTS_MAP = new Map<string[], string[]>([
   [["ădŏl-"], ["ădŭl"]],
   [["adc-"], ["acc"]],
   [["adf-"], ["aff"]],
+  [["adl-"], ["all"]],
   [["ann-"], ["ān"]],
   [["adp-"], ["app"]],
   [["admixt-"], ["admist"]],
@@ -407,22 +409,86 @@ const STARTS_MAP = new Map<string[], string[]>([
   [["vī^trār-"], ["vī^trĕār"]],
 ]);
 
-export function rawOrths(root: XmlNode): string[] {
+export function extractFromOrth(orth: XmlNode): string {
+  assertEqual(orth.name, "orth");
+  if (typeof orth.children[0] === "string") {
+    return XmlNode.getSoleText(orth);
+  }
+  const reg = XmlNode.assertIsNode(orth.children[0], "reg");
+  const corr = XmlNode.assertIsNode(reg.children[1], "corr");
+  return XmlNode.getSoleText(corr);
+}
+
+/**
+ * Returns the raw orths for this node.
+ *
+ * Searches only direct children - does not search recursively.
+ */
+export function rawOrths(root: XmlNode, isRoot: boolean = true): string[] {
   const orths: string[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
       continue;
     }
+    if (child.name === "etym" && isRoot) {
+      orths.push(...rawOrths(child, false));
+    }
+    if (child.name === "orth") {
+      orths.push(extractFromOrth(child));
+    }
+  }
+  return orths;
+}
+
+/**
+ * Returns the derived orths for a root node.
+ *
+ * Orths under the root id are ignored, as these are handled separately.
+ *
+ * @argument root the root node to search from.
+ *
+ * @returns the results sorted by the node id in which they are contained, e.g.
+ * ```
+ * [ [firstId, orth1], [firstId, orth2], [secondId, orth3] ]
+ * ```
+ */
+export function derivedOrths(root: XmlNode): [string, string[]][] {
+  const id = checkPresent(root.getAttr("id"));
+  const derived = derivedRawOrthsHelper(root, id, id);
+  const bySense = arrayMap<string, string>();
+  derived.forEach(([id, orth]) => bySense.add(id, orth));
+  return Array.from(bySense.map.entries()).map(([id, orths]) => [
+    id,
+    Array.from(
+      new Set(
+        regularizeOrths(cleanOrths(orths))
+          .filter(isRegularOrth)
+          .map(removeStackedVowelMarkers)
+      )
+    ),
+  ]);
+}
+
+function derivedRawOrthsHelper(
+  root: XmlNode,
+  rootId: string,
+  lastId: string
+): [string, string][] {
+  const orths: [string, string][] = [];
+  const id = root.getAttr("id") ?? lastId;
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      continue;
+    }
+    // If we have a non-orth, continue the recursive search.
     if (child.name !== "orth") {
+      orths.push(...derivedRawOrthsHelper(child, rootId, id));
       continue;
     }
-    if (typeof child.children[0] !== "string") {
-      const reg = XmlNode.assertIsNode(child.children[0], "reg");
-      const corr = XmlNode.assertIsNode(reg.children[1], "corr");
-      orths.push(XmlNode.getSoleText(corr));
-      continue;
+    // Don't add orths that are under the root id, as these are handled separately.
+    if (id !== rootId) {
+      orths.push([checkPresent(id), extractFromOrth(child)]);
     }
-    orths.push(XmlNode.getSoleText(child));
   }
   return orths;
 }
@@ -507,7 +573,7 @@ function removeTrailingPunctuation(orth: string): string {
   return orth;
 }
 
-export function mergeVowelMarkers(orth: string): string {
+export function removeStackedVowelMarkers(orth: string): string {
   let result = "";
   for (const c of orth) {
     if (c === "^" || c === "_") {

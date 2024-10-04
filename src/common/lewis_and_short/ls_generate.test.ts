@@ -11,10 +11,15 @@ import {
   StoredEntryData,
 } from "@/common/lewis_and_short/ls_dict";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
-import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
+import type {
+  RawDictEntry,
+  StoredDictBacking,
+} from "@/common/dictionaries/stored_dict_interface";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
+import { encodeMessage } from "@/web/utils/rpc/parsing";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
 console.debug = jest.fn();
 
@@ -47,8 +52,12 @@ function createLewisAndShort(backing: StoredDictBacking<any>) {
   );
 }
 
-function toRawDictEntry(keys: string[], entry: StoredEntryData) {
-  return StoredEntryData.toRawDictEntry(keys[0], keys, entry);
+function toRawDictEntry(keys: string[], entry: StoredEntryData): RawDictEntry {
+  return {
+    id: keys[0],
+    keys,
+    entry: encodeMessage(entry, [XmlNodeSerialization.DEFAULT]),
+  };
 }
 
 const LS_DATA = [

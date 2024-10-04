@@ -4,9 +4,10 @@ import {
   regularizeOrths,
   attachAltStart,
   attachAltEnd,
-  mergeVowelMarkers,
+  removeStackedVowelMarkers,
   displayTextForOrth,
   getOrths,
+  derivedOrths,
 } from "@/common/lewis_and_short/ls_orths";
 import { XmlNode } from "@/common/xml/xml_node";
 
@@ -158,11 +159,11 @@ describe("attachAltEnd", () => {
 
 describe("mergeVowelMarkers", () => {
   it("removes lengths if present", () => {
-    expect(mergeVowelMarkers("a^na")).toBe("ana");
+    expect(removeStackedVowelMarkers("a^na")).toBe("ana");
   });
 
   it("is no-op if not present", () => {
-    expect(mergeVowelMarkers("ana")).toBe("ana");
+    expect(removeStackedVowelMarkers("ana")).toBe("ana");
   });
 });
 
@@ -184,5 +185,81 @@ describe("getOrths", () => {
     expect(result).toHaveLength(2);
     expect(result).toContain("appello");
     expect(result).toContain("adpello");
+  });
+
+  it("gets orths of initial etym", () => {
+    const orth1 = new XmlNode("orth", [], ["adpello"]);
+    const orth2 = new XmlNode("orth", [], ["appello"]);
+    const root = new XmlNode(
+      "entryFree",
+      [],
+      [orth1, new XmlNode("etym", [], [orth2])]
+    );
+
+    const result = getOrths(root);
+
+    expect(result).toHaveLength(2);
+    expect(result).toContain("appello");
+    expect(result).toContain("adpello");
+  });
+
+  it("does not return orths of other children", () => {
+    const orth1 = new XmlNode("orth", [], ["adpello"]);
+    const orth2 = new XmlNode("orth", [], ["appello"]);
+    const root = new XmlNode(
+      "entryFree",
+      [],
+      [orth1, new XmlNode("div", [], [orth2])]
+    );
+
+    const result = getOrths(root);
+
+    expect(result).toHaveLength(1);
+    expect(result).toContain("adpello");
+  });
+
+  it("does not return orths of nested etym children", () => {
+    const orth1 = new XmlNode("orth", [], ["adpello"]);
+    const orth2 = new XmlNode("orth", [], ["appello"]);
+    const root = new XmlNode(
+      "entryFree",
+      [],
+      [orth1, new XmlNode("div", [], [new XmlNode("etym", [], [orth2])])]
+    );
+
+    const result = getOrths(root);
+
+    expect(result).toHaveLength(1);
+    expect(result).toContain("adpello");
+  });
+});
+
+describe("derivedOrths", () => {
+  it("does not return orths of base", () => {
+    const orth1 = new XmlNode("orth", [], ["adpello"]);
+    const orth2 = new XmlNode("orth", [], ["appello"]);
+    const root = new XmlNode(
+      "entryFree",
+      [["id", "1"]],
+      [orth1, new XmlNode("div", [["id", "1.1"]], [orth2])]
+    );
+
+    const result = derivedOrths(root);
+
+    expect(result).toStrictEqual([["1.1", ["appello"]]]);
+  });
+
+  it("Handles orths that need regularization", () => {
+    const orth1 = new XmlNode("orth", [], ["appello"]);
+    const orth2 = new XmlNode("orth", [], ["adp-"]);
+    const root = new XmlNode(
+      "entryFree",
+      [["id", "1"]],
+      [new XmlNode("div", [["id", "1.1"]], [orth1, orth2])]
+    );
+
+    const result = derivedOrths(root);
+
+    expect(result).toStrictEqual([["1.1", ["appello", "adpello"]]]);
   });
 });
