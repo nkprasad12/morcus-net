@@ -28,7 +28,7 @@ export class SmithAndHall implements Dictionary {
     extras?: ServerExtras | undefined
   ): Promise<EntryResult[]> {
     const rawEntries = await this.storage.getRawEntry(input, extras);
-    return rawEntries.map(this.reviveRaw, this);
+    return rawEntries.map(({ entry }) => this.reviveRaw(entry));
   }
 
   async getCompletions(input: string): Promise<string[]> {

@@ -1,6 +1,9 @@
 import * as React from "react";
 
-import { EntryOutline } from "@/common/dictionaries/dict_result";
+import {
+  EntryOutline,
+  type DictSubsectionResult,
+} from "@/common/dictionaries/dict_result";
 import {
   DictInfo,
   DictsFusedRequest,
@@ -131,8 +134,7 @@ function getEntriesByDict(
       element: xmlNodeToJsx(e.entry, hash, undefined, isEmbedded),
       key: e.entry.getAttr("id") || `${dictKey}${i}`,
       inflections: e.inflections,
-      sectionId: e.sectionId,
-      subsectionName: e.subsectionName,
+      subsections: e.subsections,
     }));
     const outlines = rawEntries.map((e) => e.outline);
     const name = LatinDict.BY_KEY.get(dictKey)?.displayName || dictKey;
@@ -404,43 +406,53 @@ function DictionaryEntries(props: { entries: EntriesByDict[] }) {
 }
 
 function SubsectionNote(props: {
-  subsectionName?: string;
-  sectionId?: string;
-  hasInflections: boolean;
+  subsections: DictSubsectionResult[];
   scale: number;
 }) {
-  const { sectionId, subsectionName, scale } = props;
-
-  if (!sectionId || !subsectionName) {
-    return null;
-  }
+  const { subsections, scale } = props;
 
   return (
     <div style={{ marginBottom: "8px" }}>
-      <div
-        className="text md"
-        style={{ marginBottom: "4px" }}
-        onClick={() => {
-          document.getElementById(sectionId)?.scrollIntoView(SCROLL_SMOOTH);
-        }}>
-        <span className="lsSenseBullet">
-          <SvgIcon
-            pathD={SvgIcon.KeyboardArrowDown}
-            style={{
-              marginRight: `${-0.2 * scale}em`,
-              fontSize: `${1 * scale}em`,
-              paddingLeft: `${0.2 * scale}em`,
-              paddingRight: `${0.4 * scale}em`,
-            }}
-          />
-          {subsectionName}{" "}
-        </span>{" "}
-        is part of a larger entry.
+      <div style={{ marginBottom: "4px" }} className="text sm">
+        Found matches for{" "}
+        {subsections.map((subsection, i) => (
+          <span
+            key={subsection.name}
+            onClick={() => {
+              document
+                .getElementById(subsection.id)
+                ?.scrollIntoView(SCROLL_SMOOTH);
+            }}>
+            <span className="lsSenseBullet" style={{ whiteSpace: "nowrap" }}>
+              <SvgIcon
+                pathD={SvgIcon.KeyboardArrowDown}
+                style={{
+                  marginRight: `${-0.2 * scale}em`,
+                  fontSize: `${1 * scale}em`,
+                  paddingLeft: `${0.2 * scale}em`,
+                  paddingRight: `${0.4 * scale}em`,
+                }}
+              />
+              {subsection.name}{" "}
+            </span>
+            {i < subsections.length - 1 && (
+              <span>{i < subsections.length - 2 ? " , " : " and "}</span>
+            )}
+          </span>
+        ))}
+        , which {subsections.length > 1 ? "are" : "is"} part of a larger entry.
       </div>
-      {props.hasInflections && (
-        <div className="text sm">
-          Inflections of <span className="lsOrth">{subsectionName}</span>:
-        </div>
+      {subsections.map(
+        (subsection) =>
+          subsection.inflections && (
+            <>
+              <div className="text sm">
+                Inflections of <span className="lsOrth">{subsection.name}</span>
+                :
+              </div>
+              <InflectionDataSection inflections={subsection.inflections} />
+            </>
+          )
       )}
     </div>
   );
@@ -461,19 +473,13 @@ function SingleDictSection(props: {
       {props.data.entries.map((entry, i) => (
         <ContentBox key={entry.key} isSmall={isSmall} id={entry.key}>
           <>
-            <SubsectionNote
-              sectionId={entry.sectionId}
-              subsectionName={entry.subsectionName}
-              hasInflections={(entry.inflections?.length ?? 0) > 0}
-              scale={props.scale}
-            />
-            {entry.inflections && (
-              <InflectionDataSection
-                inflections={entry.inflections}
-                textScale={textScale}
+            {entry.subsections && (
+              <SubsectionNote
+                subsections={entry.subsections}
+                scale={props.scale}
               />
             )}
-            <div style={{ marginBottom: 5, marginTop: 8 }}>
+            <div style={{ marginTop: "12px" }}>
               <span>
                 <SectionLinkTooltip
                   forwarded={articleLinkButton(
@@ -485,6 +491,11 @@ function SingleDictSection(props: {
                 />
                 <FullDictChip label={props.data.name} />
               </span>
+              {entry.inflections && (
+                <div style={{ marginTop: "6px", marginBottom: "12px" }}>
+                  <InflectionDataSection inflections={entry.inflections} />
+                </div>
+              )}
             </div>
             {entry.element}
           </>

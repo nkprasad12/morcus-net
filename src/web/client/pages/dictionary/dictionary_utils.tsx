@@ -11,8 +11,10 @@ import {
   LatinDict,
   type LatinDictInfo,
 } from "@/common/dictionaries/latin_dicts";
-import { InflectionData } from "@/common/dictionaries/dict_result";
-import { FontSizes } from "@/web/client/styling/styles";
+import {
+  InflectionData,
+  type DictSubsectionResult,
+} from "@/common/dictionaries/dict_result";
 import {
   DictContext,
   DictContextOptions,
@@ -331,13 +333,11 @@ export interface ElementAndKey {
   element: JSX.Element;
   key: string;
   inflections?: InflectionData[];
-  sectionId?: string;
-  subsectionName?: string;
+  subsections?: DictSubsectionResult[];
 }
 
 export function InflectionDataSection(props: {
   inflections: InflectionData[];
-  textScale?: number;
 }) {
   const byForm = arrayMap<string, [string, string | undefined]>();
   for (const data of props.inflections) {
@@ -346,32 +346,31 @@ export function InflectionDataSection(props: {
   const formatted: [string, string[]][] = Array.from(byForm.map.entries()).map(
     ([form, data]) => [
       form,
-      data
-        .sort(([_1, a], [_2, b]) =>
-          a === undefined ? -1 : b === undefined ? 1 : a.localeCompare(b)
+      Array.from(
+        new Set(
+          data
+            .sort(([_1, a], [_2, b]) =>
+              a === undefined ? -1 : b === undefined ? 1 : a.localeCompare(b)
+            )
+            .map(
+              ([inflection, usage]) =>
+                inflection + (usage === undefined ? "" : ` (${usage})`)
+            )
         )
-        .map(
-          ([inflection, usage]) =>
-            inflection + (usage === undefined ? "" : ` (${usage})`)
-        ),
+      ),
     ]
   );
 
   return (
     <>
       {formatted.map(([form, inflections]) => (
-        <div
-          style={{
-            fontSize: FontSizes.SECONDARY * ((props.textScale || 100) / 100),
-            paddingBottom: 3,
-          }}
-          key={form}>
+        <div className="text sm" style={{ paddingBottom: 3 }} key={form}>
           <span className="lsOrth">{form}</span>:
           {inflections.length === 1 ? (
             ` ${inflections[0]}`
           ) : (
             <ul style={{ margin: 0 }} aria-label="Inflections">
-              {[...new Set(inflections)].map((inflection) => (
+              {inflections.map((inflection) => (
                 <li style={{ lineHeight: "normal" }} key={inflection}>
                   {inflection}
                 </li>

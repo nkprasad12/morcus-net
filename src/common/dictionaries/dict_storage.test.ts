@@ -1,6 +1,9 @@
 import fs from "fs";
 
-import { StoredDict } from "@/common/dictionaries/dict_storage";
+import {
+  StoredDict,
+  type StoredEntryAndMetadata,
+} from "@/common/dictionaries/dict_storage";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import {
@@ -85,8 +88,12 @@ function createSqlDict(): StoredDict {
 }
 
 describe("SqlDict", () => {
-  function expectEntriesWithIds(results: string[], expected: string[]) {
+  function expectEntriesWithIds(
+    results: StoredEntryAndMetadata[],
+    expected: string[]
+  ) {
     const ids = results
+      .map(({ entry }) => entry)
       .map(XmlNodeSerialization.DEFAULT.deserialize)
       .map((r) => r.getAttr("id"));
     expect(ids).toStrictEqual(expected);

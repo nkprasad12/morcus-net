@@ -4,6 +4,22 @@ import { Vowels } from "@/common/character_utils";
 import { setMap } from "@/common/data_structures/collect_map";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
 
+interface Subsection {
+  id: string;
+  name: string;
+}
+
+export interface StoredEntryAndMetadata {
+  /** The unique ID of this entry. */
+  id: string;
+  /** The raw entry data. */
+  entry: string;
+  /** Whether the main entry (e.g. `Roma`) should be a result. */
+  includeMain?: boolean;
+  /** Sub-entries (e.g. `Romanus` from `Roma`) that should be results. */
+  subsections?: Subsection[];
+}
+
 /** A generic stored dictionary. */
 export class StoredDict {
   private readonly table: Promise<Map<string, string[]>> | undefined;
@@ -29,20 +45,45 @@ export class StoredDict {
    * @param input the query to search against keys.
    * @param extras any server extras to pass to the function.
    */
-  async getRawEntry(input: string, extras?: ServerExtras): Promise<string[]> {
+  async getRawEntry(
+    input: string,
+    extras?: ServerExtras
+  ): Promise<StoredEntryAndMetadata[]> {
     const request = removeDiacritics(input).toLowerCase();
-    const candidates = await this.backing.matchesForCleanName(request);
+    const candidates = (await this.backing.matchesForCleanName(request)).filter(
+      ({ orth }) => Vowels.haveCompatibleLength(input, orth)
+    );
     extras?.log(`${request}_sqlCandidates`);
     if (candidates.length === 0) {
       return [];
     }
 
-    const allIds = candidates
-      .filter(({ orth }) => Vowels.haveCompatibleLength(input, orth))
-      .map(({ id }) => id);
+    const allIds = Array.from(new Set(candidates.map(({ id }) => id)));
     const entryStrings = await this.backing.entriesForIds(allIds);
     extras?.log(`${request}_entriesFetched`);
-    return entryStrings.map(({ entry }) => entry);
+    const results: StoredEntryAndMetadata[] = [];
+    for (const { id, entry } of entryStrings) {
+      const subsections: Subsection[] = [];
+      let includeMain: boolean = false;
+
+      for (const row of candidates) {
+        if (row.id !== id) {
+          continue;
+        }
+        if (row.senseId === undefined) {
+          includeMain = true;
+          continue;
+        }
+        subsections.push({ id: row.senseId, name: row.orth });
+      }
+
+      const result: StoredEntryAndMetadata = { id, entry, includeMain };
+      if (subsections.length > 0) {
+        result.subsections = subsections;
+      }
+      results.push(result);
+    }
+    return results;
   }
 
   /** Returns the entry with the given ID, if present. */

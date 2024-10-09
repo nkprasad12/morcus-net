@@ -62,13 +62,27 @@ export namespace InflectionData {
     ]);
 }
 
+export interface DictSubsectionResult {
+  id: string;
+  name: string;
+  inflections?: InflectionData[];
+}
+
+export namespace DictSubsectionResult {
+  export const isMatch: (x: unknown) => x is DictSubsectionResult =
+    matches<DictSubsectionResult>([
+      ["id", isString],
+      ["name", isString],
+      ["inflections", maybeUndefined(isArray(InflectionData.isMatch))],
+    ]);
+}
+
 /** The pre-processed result for a dictionary entry. */
 export interface EntryResult {
   entry: XmlNode;
   outline: EntryOutline;
   inflections?: InflectionData[];
-  sectionId?: string;
-  subsectionName?: string;
+  subsections?: DictSubsectionResult[];
 }
 
 export namespace EntryResult {
@@ -77,6 +91,7 @@ export namespace EntryResult {
       ["entry", instanceOf(XmlNode)],
       ["outline", EntryOutline.isMatch],
       ["inflections", maybeUndefined(isArray(InflectionData.isMatch))],
+      ["subsections", maybeUndefined(isArray(DictSubsectionResult.isMatch))],
     ]
   );
 }

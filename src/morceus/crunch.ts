@@ -5,7 +5,7 @@ import {
   Vowels,
 } from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import type {
+import {
   CruncherTables,
   CrunchResult,
   CruncherOptions,
@@ -467,7 +467,7 @@ export namespace MorceusCruncher {
 //   }
 // }
 
-// const cruncher = MorceusCruncher.make(MorceusCruncher.makeTables());
+// const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
 // const start = performance.now();
 // const result = cruncher(process.argv[2], CruncherOptions.DEFAULT);
 // console.log(`${performance.now() - start} ms`);

@@ -1,7 +1,14 @@
 import { assertEqual } from "@/common/assert";
 import { Vowels } from "@/common/character_utils";
-import { EntryOutline, EntryResult } from "@/common/dictionaries/dict_result";
-import { StoredDict } from "@/common/dictionaries/dict_storage";
+import {
+  EntryOutline,
+  EntryResult,
+  type DictSubsectionResult,
+} from "@/common/dictionaries/dict_result";
+import {
+  StoredDict,
+  type StoredEntryAndMetadata,
+} from "@/common/dictionaries/dict_storage";
 import { DictOptions, Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { removeDiacritics } from "@/common/text_cleaning";
@@ -90,8 +97,34 @@ export class LewisAndShort implements Dictionary {
       .split("")
       .map((c) => REPLACED_CHARS.get(c) || c)
       .join("");
+    // Sub-entries have the same dictionary data as an entry,
+    // so ensure we're not doing the same work twice. This is still suboptimal
+    // because it requires reading the same potentially long data twice for
+    // multiple entries in the database, but we can live with this for now.
+    const decodedEntries = new Map<string, StoredEntryData>();
+    const decodeStored = (
+      data: StoredEntryAndMetadata
+    ): Readonly<StoredEntryData> => {
+      const cached = decodedEntries.get(data.id);
+      if (cached !== undefined) {
+        return cached;
+      }
+      const decoded = StoredEntryData.fromEncoded(data.entry);
+      decodedEntries.set(data.id, decoded);
+      return decoded;
+    };
+    type DecodedStoredEntryAndMetadata = Omit<StoredEntryAndMetadata, "entry"> &
+      StoredEntryData &
+      Pick<EntryResult, "inflections"> &
+      Pick<EntryResult, "subsections">;
+
     const rawEntries = await this.storage.getRawEntry(input, extras);
-    const exactMatches = rawEntries.map(StoredEntryData.fromEncoded);
+    const exactMatches: DecodedStoredEntryAndMetadata[] = rawEntries.map(
+      (entryAndMetadata) => ({
+        ...entryAndMetadata,
+        ...decodeStored(entryAndMetadata),
+      })
+    );
     if (options?.handleInflections !== true) {
       return exactMatches.map(StoredEntryData.toEntryResult);
     }
@@ -99,49 +132,66 @@ export class LewisAndShort implements Dictionary {
     const cleanInput = removeDiacritics(input)
       .replaceAll("\u0304", "")
       .replaceAll("\u0306", "");
-    const analyses = (await this.inflectionProvider(cleanInput))
-      .map((inflection) => ({
-        ...inflection,
-        inflectedForms: inflection.inflectedForms.filter((form) => {
-          // Only bother checking the first one. Since the form is the same
-          // and the input is the same, they will all have the same enclitic.
-          const enclitic = form.inflectionData[0].enclitic ?? "";
-          const fullForm = form.form + enclitic;
-          // We should enforce vowel correctness on the enclitic, too.
-          // https://github.com/nkprasad12/morcus-net/issues/175
-          return Vowels.haveCompatibleLength(input, fullForm);
-        }),
-      }))
-      .filter((inflection) => inflection.inflectedForms.length > 0);
+    const inflectedResults: DecodedStoredEntryAndMetadata[] = [];
+    const exactResults: DecodedStoredEntryAndMetadata[] = [];
+    // Get inflected results that may match the input.
+    const analyses = await this.inflectionProvider(cleanInput);
     extras?.log("inflectionAnalysis");
-    const inflectedResults: EntryResult[] = [];
-    const exactResults: EntryResult[] = [];
     for (const analysis of analyses) {
+      const inflectedForms = analysis.inflectedForms.filter((form) => {
+        // Only bother checking the first one. Since the form is the same
+        // and the input is the same, they will all have the same enclitic.
+        const enclitic = form.inflectionData[0].enclitic ?? "";
+        const fullForm = form.form + enclitic;
+        // We should enforce vowel correctness on the enclitic, too.
+        // https://github.com/nkprasad12/morcus-net/issues/175
+        return Vowels.haveCompatibleLength(input, fullForm);
+      });
+      if (inflectedForms.length === 0) {
+        continue;
+      }
+
+      // Get the base lemma - for example, for `occido#2` -> `occido`.
       const lemmaChunks = analysis.lemma.split("#");
       const lemmaBase = lemmaChunks[0];
 
-      const rawResults = await this.storage.getRawEntry(lemmaBase, extras);
-      const results: EntryResult[] = rawResults
-        .map(StoredEntryData.fromEncoded)
-        .filter((data) => {
+      const results = (await this.storage.getRawEntry(lemmaBase, extras))
+        .map((entryAndMetadata) => ({
+          ...entryAndMetadata,
+          ...decodeStored(entryAndMetadata),
+        }))
+        .filter((entryData) => {
           if (lemmaChunks.length === 1) {
             return true;
           }
           assertEqual(lemmaChunks.length, 2);
-          return data.n === lemmaChunks[1];
+          return entryData.n === lemmaChunks[1];
         })
-        .map((data) => ({
-          ...StoredEntryData.toEntryResult(data),
-          inflections: analysis.inflectedForms.flatMap((inflData) =>
+        .map((entryData) => {
+          const subsectionIds = entryData.subsections?.map((s) => s.id);
+          const inflections = analysis.inflectedForms.flatMap((inflData) =>
             inflData.inflectionData.map((info) => ({
               lemma: analysis.lemma,
-              form: inflData.form,
+              form:
+                inflData.form + (info.enclitic ? ` + ${info.enclitic}` : ""),
               data: wordInflectionDataToArray(info.grammaticalData).join(" "),
               usageNote: info.tags?.join(" "),
             }))
-          ),
-        }));
-      extras?.log("inflectionResultComputed");
+          );
+          const result: DecodedStoredEntryAndMetadata = { ...entryData };
+          if (entryData.includeMain) {
+            result.inflections = inflections;
+          }
+          result.subsections = entryData.subsections?.map(
+            (subsection): DictSubsectionResult => {
+              if (subsectionIds?.includes(subsection.id)) {
+                return { ...subsection, inflections: inflections };
+              }
+              return subsection;
+            }
+          );
+          return result;
+        });
       // TODO: Currently, getRawEntry will ignore case, i.e
       // canis will also return inputs for Canis. Ignore this for
       // now but we should fix it later and handle case difference explicitly.
@@ -152,20 +202,45 @@ export class LewisAndShort implements Dictionary {
       }
     }
 
-    const results: EntryResult[] = [];
-    const idsSoFar = new Set<string>();
-    for (const candidate of exactResults
+    const mergedResults = new Map<string, EntryResult>();
+    for (const toMerge of exactResults
       .concat(exactMatches)
       .concat(inflectedResults)) {
-      const id = candidate.entry.getAttr("id")!;
-      if (idsSoFar.has(id)) {
+      const id = toMerge.id;
+      const merged = mergedResults.get(id);
+      if (merged === undefined) {
+        mergedResults.set(id, toMerge);
         continue;
       }
-      idsSoFar.add(id);
-      results.push(candidate);
+      if (toMerge.inflections) {
+        if (merged.inflections === undefined) {
+          merged.inflections = [];
+        }
+        merged.inflections.push(...toMerge.inflections);
+      }
+      for (const pendingSubsection of toMerge.subsections ?? []) {
+        const mergedSubsection = merged.subsections?.filter(
+          (s) => s.id === pendingSubsection.id
+        )?.[0];
+        if (merged.subsections === undefined) {
+          merged.subsections = [];
+        }
+        if (mergedSubsection === undefined) {
+          merged.subsections.push({ ...pendingSubsection });
+          continue;
+        }
+        if (pendingSubsection.inflections === undefined) {
+          // If we have no inflections, there's nothing to merge.
+          continue;
+        }
+        if (mergedSubsection.inflections === undefined) {
+          mergedSubsection.inflections = [];
+        }
+        mergedSubsection.inflections.push(...pendingSubsection.inflections);
+      }
     }
     extras?.log("resultsFiltered");
-    return results;
+    return Array.from(mergedResults.values());
   }
 
   async getCompletions(
