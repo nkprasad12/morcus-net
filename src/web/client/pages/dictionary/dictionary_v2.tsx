@@ -311,6 +311,7 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
 function SummarySection(props: {
   idSearch: boolean;
   entries: EntriesByDict[];
+  word?: string;
   scrollTopRef: React.RefObject<HTMLDivElement>;
 }) {
   const { isEmbedded, isSmall, scale } = React.useContext(DictContext);
@@ -334,6 +335,7 @@ function SummarySection(props: {
             fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
           }}>
           Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
+          {props.word ? ` for ${props.word}` : ""}
         </div>
         {numEntries > 1 &&
           entries
@@ -716,6 +718,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
               scrollTopRef={scrollTopRef}
               idSearch={idSearch}
               entries={entries}
+              word={query}
             />
             <TableOfContents entries={entries} />
           </div>
@@ -732,6 +735,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
             scrollTopRef={scrollTopRef}
             idSearch={idSearch}
             entries={entries}
+            word={query}
           />
           <DictionaryEntries entries={entries} />
         </>
