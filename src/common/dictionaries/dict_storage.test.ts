@@ -127,6 +127,13 @@ describe("SqlDict", () => {
     expectEntriesWithIds(await dict.getRawEntry("Publius"), ["Publius"]);
   });
 
+  test("getRawEntry handles expected entries with combiners", async () => {
+    SqliteDict.save(FAKE_DICT, TEMP_FILE);
+    const dict = createSqlDict();
+
+    expectEntriesWithIds(await dict.getRawEntry("Juli\u0304us"), ["Julius"]);
+  });
+
   test("getRawEntry handles entries by derived key", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
     const dict = createSqlDict();

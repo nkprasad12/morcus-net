@@ -49,7 +49,10 @@ export class StoredDict {
     input: string,
     extras?: ServerExtras
   ): Promise<StoredEntryAndMetadata[]> {
-    const request = removeDiacritics(input).toLowerCase();
+    const request = removeDiacritics(input)
+      .replaceAll("\u0304", "")
+      .replaceAll("\u0306", "")
+      .toLowerCase();
     const candidates = (await this.backing.matchesForCleanName(request)).filter(
       ({ orth }) => Vowels.haveCompatibleLength(input, orth)
     );
