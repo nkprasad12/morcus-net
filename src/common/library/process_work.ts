@@ -2,7 +2,6 @@ import { assert, assertEqual } from "@/common/assert";
 import {
   ProcessedWork,
   ProcessedWorkNode,
-  type DocumentInfo,
 } from "@/common/library/library_types";
 import { processWords } from "@/common/text_cleaning";
 import {
@@ -153,12 +152,9 @@ export function processForDisplay(
   return result;
 }
 
-interface DebugHelper {
-  onWord: (word: string) => unknown;
-}
-
+type DebugHelper = DebugSideChannel;
 export interface DebugSideChannel {
-  onWord: (info: DocumentInfo, word: string) => unknown;
+  onWord: (word: string) => unknown;
 }
 
 /** Returns the processed content of a TEI XML file. */
@@ -166,12 +162,9 @@ export function processTei(
   teiRoot: TeiCtsDocument,
   sideChannel?: DebugSideChannel
 ): ProcessedWork {
-  const debugHelper: DebugHelper | undefined = sideChannel && {
-    onWord: (word) => sideChannel.onWord(teiRoot.info, word),
-  };
   return {
     info: teiRoot.info,
     textParts: teiRoot.textParts,
-    root: processForDisplay(teiRoot.content, debugHelper),
+    root: processForDisplay(teiRoot.content, sideChannel),
   };
 }

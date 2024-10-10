@@ -33,8 +33,8 @@ describe("processTei", () => {
 
     processTei(SIMPLE_TEI_CTS, sideChannel);
 
-    expect(sideChannel.onWord).toHaveBeenCalledWith(DBG_INFO, "Gallia");
-    expect(sideChannel.onWord).toHaveBeenCalledWith(DBG_INFO, "est");
+    expect(sideChannel.onWord).toHaveBeenCalledWith("Gallia");
+    expect(sideChannel.onWord).toHaveBeenCalledWith("est");
     expect(sideChannel.onWord).toHaveBeenCalledTimes(2);
   });
 });

@@ -4,11 +4,17 @@ import {
   LIB_DEFAULT_DIR,
   LibraryIndex,
 } from "@/common/library/library_lookup";
-import { LibraryWorkMetadata } from "@/common/library/library_types";
+import {
+  LibraryWorkMetadata,
+  type ProcessedWork,
+} from "@/common/library/library_types";
 import { processTei } from "@/common/library/process_work";
-import { parseCtsTeiXml } from "@/common/xml/tei_utils";
+import { parseCtsTeiXml, type TeiCtsDocument } from "@/common/xml/tei_utils";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseRawXml } from "@/common/xml/xml_utils";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import { CruncherOptions } from "@/morceus/cruncher_types";
 import { stringifyMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";
 
@@ -58,6 +64,26 @@ function urlifyName(input: string): string {
   return urlify(input, NAME_TO_URL_LOOKUP);
 }
 
+function processTeiCts(tei: TeiCtsDocument): ProcessedWork {
+  const words: string[] = [];
+  const onWord = (word: string) => {
+    const trimmed = word.trim();
+    const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
+    if (cruncher(trimmed, CruncherOptions.DEFAULT).length === 0) {
+      words.push(trimmed);
+    }
+  };
+  const debugRoot: string | undefined = envVar("DEBUG_OUT", "unsafe");
+  const debugName = tei.info.title.replaceAll(" ", "_");
+  const outputPath = debugRoot?.concat("/", debugName, ".debug.txt");
+  const debugHelper = outputPath === undefined ? undefined : { onWord };
+  const result = processTei(tei, debugHelper);
+  if (outputPath !== undefined) {
+    fs.writeFileSync(outputPath, words.sort().join("\n"));
+  }
+  return result;
+}
+
 export function processLibrary(
   outputDir: string = LIB_DEFAULT_DIR,
   works: string[] = ALL_WORKS
@@ -78,7 +104,7 @@ export function processLibrary(
       urlAuthor: urlifyAuthor(tei.info.author),
       urlName: urlifyName(tei.info.title),
     };
-    const result = processTei(tei);
+    const result = processTeiCts(tei);
     const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
     const outputPath = `${outputDir}/${workId}`;
     index[workId] = [outputPath, metadata];
