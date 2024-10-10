@@ -165,6 +165,14 @@ in your hosts file:
 127.0.0.1 foo.morcus.net
 ```
 
+#### Updating the Reverse Proxy image
+
+This is updated so infrequently that doing it as part of the CI workflow (where it would rebuild with every commit) was not really worth it. In order to update:
+
+1. `cd src/devops/reverse_proxy`
+2. `docker build ./ -t ghcr.io/nkprasad12/morcus-proxy:latest`
+3. `docker push ghcr.io/nkprasad12/morcus-proxy:latest`
+
 ### Play Store
 
 There is a Play Store app at https://play.google.com/store/apps/details?id=net.morcus.pwa. This is packaged using PWA builder - see instructions at https://docs.pwabuilder.com/#/builder/android?id=update-existing-pwa to update.
