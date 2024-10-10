@@ -28,8 +28,13 @@ const root = ReactDOM.createRoot(
   document.querySelector("#placeholder") as HTMLElement
 );
 
+// Used for development only. Allows the dev only pages to not be included in
+// the final bundle. This should NEVER be checked in with the import uncommented.
+const DEV_ONLY_PAGES: SinglePageApp.Page[] = [];
+// import { DEV_ONLY_PAGES } from "@/web/client/routing/dev_only_pages";
+
 const props: SinglePageApp.Props = {
-  pages: [...ACTIVE_PAGES],
+  pages: [...ACTIVE_PAGES, ...DEV_ONLY_PAGES],
 };
 
 function ConfigurableStyles() {
