@@ -45,8 +45,8 @@ import { callApi } from "@/web/utils/rpc/client_rpc";
 interface SwLifecycleEvent extends Event {
   waitUntil: (input: Promise<unknown>) => void;
 }
-interface InstallEvent extends SwLifecycleEvent {}
-interface ActivatedEvent extends SwLifecycleEvent {}
+type InstallEvent = SwLifecycleEvent;
+type ActivatedEvent = SwLifecycleEvent;
 
 interface FetchEvent extends Event {
   request: Request;

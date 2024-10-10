@@ -8,9 +8,9 @@ const MAX_INT = 2 ** (DELIMITER_SIZE * 8);
 export function pack(buffers: ArrayBuffer[]): ArrayBuffer {
   // The initial bytes stores the number of chunks.
   let packedSize = DELIMITER_SIZE;
-  assert(buffers.length < MAX_INT), "Too many buffers.";
+  assert(buffers.length < MAX_INT, "Too many buffers.");
   for (const buf of buffers) {
-    assert(buf.byteLength < MAX_INT), "Buffer too large.";
+    assert(buf.byteLength < MAX_INT, "Buffer too large.");
     packedSize += DELIMITER_SIZE + buf.byteLength;
   }
   const packed = new ArrayBuffer(packedSize);

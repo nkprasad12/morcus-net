@@ -7,7 +7,9 @@ console.log = jest.fn();
 
 const mockConnect = jest.fn(() => Promise.resolve());
 const mockClose = jest.fn(() => Promise.resolve());
-const mockInsertOne = jest.fn(() => Promise.resolve());
+const mockInsertOne = jest.fn<Promise<void>, [], ApiCallEvent>(() =>
+  Promise.resolve()
+);
 const mockCollection = jest.fn().mockImplementation(() => ({
   insertOne: mockInsertOne,
 }));
@@ -65,6 +67,7 @@ describe("MongoLogger", () => {
     await logger.logApiCall({ name: "lsDict", status: 200, latencyMs: 4 });
 
     expect(mockInsertOne).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
     const loggedEvent: ApiCallEvent = mockInsertOne.mock.lastCall!.at(0)!;
     expect(loggedEvent.name).toBe("lsDict");
     expect(loggedEvent.source).toBe("bar");
@@ -80,6 +83,7 @@ describe("MongoLogger", () => {
     await logger.logServerHealth(input);
 
     expect(mockInsertOne).toHaveBeenCalledTimes(1);
+    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
     const loggedEvent: any = mockInsertOne.mock.lastCall!.at(0)!;
     expect(loggedEvent.rss).toBe(input.rss);
     expect(loggedEvent.timestamp).toBeDefined();

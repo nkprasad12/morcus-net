@@ -31,7 +31,7 @@ export class MongoLogger implements TelemetryLogger {
   private initialized: boolean = false;
 
   private constructor(
-    private readonly client: MongoClient,
+    private readonly client: Readonly<MongoClient>,
     private readonly source: string
   ) {}
 
@@ -47,7 +47,7 @@ export class MongoLogger implements TelemetryLogger {
     console.log("Closed MongoLogger");
   }
 
-  async logApiCall(data: ApiCallData): Promise<void> {
+  async logApiCall(data: Readonly<ApiCallData>): Promise<void> {
     assert(this.initialized, "MongoLogger was not initialized.");
     return this.log(data, API_CALL_COLLECTION);
   }

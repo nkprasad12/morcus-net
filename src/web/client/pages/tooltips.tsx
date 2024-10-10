@@ -226,7 +226,7 @@ export function CopyLinkTooltip(props: {
   const [state, setState] = React.useState<CopyLinkTooltipState>("Closed");
 
   function setTooltipVisible(isVisible: boolean) {
-    props.visibleListener && props.visibleListener(isVisible);
+    props.visibleListener?.(isVisible);
     setVisible(isVisible);
   }
 

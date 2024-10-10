@@ -24,13 +24,13 @@ export function parseEntries(filePath: string): string[][] {
       continue;
     }
     if (line.startsWith(":le:")) {
-      currentLemma.length > 0 && results.push(currentLemma);
+      if (currentLemma.length > 0) results.push(currentLemma);
       currentLemma = [line];
       continue;
     }
     currentLemma.push(line);
   }
-  currentLemma.length > 0 && results.push(currentLemma);
+  if (currentLemma.length > 0) results.push(currentLemma);
   return results;
 }
 

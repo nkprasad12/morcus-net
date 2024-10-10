@@ -50,7 +50,8 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
           reject(`get failed on ${store.name}: ${operation.error}`);
         operation.onsuccess = () => {
           const t = operation.result;
-          t === undefined ? reject(NO_MATCH_FOR_GET) : resolve(t);
+          if (t === undefined) reject(NO_MATCH_FOR_GET);
+          else resolve(t);
         };
       }),
     getAll: () =>

@@ -69,7 +69,7 @@ export interface WriteOperations<T> {
   delete(key: DbKey): Promise<void>;
 }
 
-// eslint-disable-next-line @typescript-eslint/ban-types
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 type EmptySet = {};
 /**
  * A helper object providing promise based wrappers for the native browser

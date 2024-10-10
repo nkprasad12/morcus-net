@@ -53,12 +53,12 @@ function BaseModal(
   );
 }
 
-export interface DrawerProps extends ModalProps {}
+export type DrawerProps = ModalProps;
 export function Drawer(props: PropsWithChildren<DrawerProps>) {
   return <BaseModal {...props} className="drawer" />;
 }
 
-export interface DialogProps extends ModalProps {}
+export type DialogProps = ModalProps;
 export function ModalDialog(props: PropsWithChildren<DialogProps>) {
   return <BaseModal {...props} className="dialogModal" />;
 }

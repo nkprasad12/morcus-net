@@ -156,7 +156,6 @@ function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
         if (route.method === "GET") {
           telemetryData.params = { input: JSON.stringify(input) };
         }
-        telemetryData.params;
         logApi(telemetryData, timer, app.telemetry);
       });
   };

@@ -45,11 +45,11 @@ export function handleTouchMove(
   if (swipeDir) {
     isSwiping.current = true;
     const onProgress = listeners?.onSwipeProgress;
-    onProgress && onProgress(swipeDir, size);
+    onProgress?.(swipeDir, size);
   } else if (isSwiping.current) {
     isSwiping.current = false;
     const onCancel = listeners?.onSwipeCancel;
-    onCancel && onCancel();
+    onCancel?.();
   }
 }
 
@@ -94,9 +94,9 @@ export function handleTouchEnd(
   const [swipeDir, size] = computeSwipeDetails(data);
   if (swipeDir) {
     const onSwipe = listeners?.onSwipeEnd;
-    onSwipe && onSwipe(swipeDir, size);
+    onSwipe?.(swipeDir, size);
   } else {
     const onCancel = listeners?.onSwipeCancel;
-    onCancel && onCancel();
+    onCancel?.();
   }
 }

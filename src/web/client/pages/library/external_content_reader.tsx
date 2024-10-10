@@ -26,10 +26,7 @@ import { SvgIcon } from "@/web/client/components/generic/icons";
 
 export function ExternalContentReader() {
   return (
-    <BaseReader<MainColumnProps>
-      MainColumn={MainColumn}
-      dictActionMessage="Click on"
-    />
+    <BaseReader<unknown> MainColumn={MainColumn} dictActionMessage="Click on" />
   );
 }
 
@@ -74,8 +71,7 @@ const LOADED_ICONS = [LOAD_ICON, READER_ICON];
 const LOAD_PENDING = <span>Loading text from URL ...</span>;
 const LOAD_ERROR = <span>Error loading from URL!</span>;
 
-interface MainColumnProps {}
-function MainColumn(props: MainColumnProps & BaseMainColumnProps) {
+function MainColumn(props: BaseMainColumnProps) {
   const { route } = Router.useRouter();
   const [currentTab, setCurrentTab] = useState<MainTab>("Load text");
   const [text, setText] = useState<ReaderTextState>(null);

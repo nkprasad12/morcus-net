@@ -43,7 +43,7 @@ describe("singleton helper", () => {
   });
 
   it("returns same instance on repeated calls", () => {
-    const someObject = singletonOf(() => {});
+    const someObject = singletonOf(() => ({}));
     expect(someObject.get()).toBe(someObject.get());
   });
 

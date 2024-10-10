@@ -90,7 +90,6 @@ export function SearchBox<T>(props: {
     if (props.optionsForInput === undefined) {
       return;
     }
-    inputRef.current?.selectionStart;
     setLoading(true);
     setOptions(await props.optionsForInput(value));
     setCursor(-1);
