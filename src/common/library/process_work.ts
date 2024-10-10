@@ -2,6 +2,7 @@ import { assert, assertEqual } from "@/common/assert";
 import {
   ProcessedWork,
   ProcessedWorkNode,
+  type DocumentInfo,
 } from "@/common/library/library_types";
 import { processWords } from "@/common/text_cleaning";
 import {
@@ -47,25 +48,25 @@ function shouldSkip(textNode: SingleTextNode): boolean {
   return false;
 }
 
-function markupText(textNode: SingleTextNode): XmlChild[] {
+function markupText(textNode: SingleTextNode, debug?: DebugHelper): XmlChild[] {
   const text = textNode.text;
   const parentName = textNode.parent.name;
 
   const isAlt = !DEFAULT_TEXT_NODES.includes(parentName);
   assert(!isAlt || KNOWN_ALT_NODES.includes(parentName), parentName);
-  const words = processWords(
-    collapseWhitespace(text),
-    (word) => new XmlNode("libLat", [], [word])
-  );
+  const words = processWords(collapseWhitespace(text), (word) => {
+    debug?.onWord(word);
+    return new XmlNode("libLat", [], [word]);
+  });
   return isAlt ? [new XmlNode("span", [["alt", parentName]], words)] : words;
 }
 
-function markupTextInNode(node: XmlNode): XmlNode {
+function markupTextInNode(node: XmlNode, debug?: DebugHelper): XmlNode {
   const contentNodes = findTextNodes(node).filter((tn) => !shouldSkip(tn));
   if (contentNodes.length === 0) {
     return new XmlNode("span", [], []);
   }
-  const children = contentNodes.flatMap(markupText);
+  const children = contentNodes.flatMap((n) => markupText(n, debug));
   if (children.length === 0) {
     return new XmlNode("span", [["alt", "gap"]]);
   }
@@ -109,7 +110,10 @@ function attachStringChildren(root: TeiNode): (XmlChild | TeiNode)[] {
   return result;
 }
 
-export function processForDisplay(root: TeiNode): ProcessedWorkNode {
+export function processForDisplay(
+  root: TeiNode,
+  debug?: DebugHelper
+): ProcessedWorkNode {
   const allChildren = attachStringChildren(root);
   const firstChild = allChildren[0];
   const isFirstHead =
@@ -121,16 +125,19 @@ export function processForDisplay(root: TeiNode): ProcessedWorkNode {
       ? new XmlNode(
           "span",
           [],
-          markupText({
-            text: child,
-            parent: root.selfNode,
-            ancestors: [],
-            textIndex: i,
-          })
+          markupText(
+            {
+              text: child,
+              parent: root.selfNode,
+              ancestors: [],
+              textIndex: i,
+            },
+            debug
+          )
         )
       : child instanceof XmlNode
-      ? markupTextInNode(child)
-      : processForDisplay(child)
+      ? markupTextInNode(child, debug)
+      : processForDisplay(child, debug)
   );
 
   const result: ProcessedWorkNode = { id: root.id, children };
@@ -146,11 +153,25 @@ export function processForDisplay(root: TeiNode): ProcessedWorkNode {
   return result;
 }
 
+interface DebugHelper {
+  onWord: (word: string) => unknown;
+}
+
+export interface DebugSideChannel {
+  onWord: (info: DocumentInfo, word: string) => unknown;
+}
+
 /** Returns the processed content of a TEI XML file. */
-export function processTei(teiRoot: TeiCtsDocument): ProcessedWork {
+export function processTei(
+  teiRoot: TeiCtsDocument,
+  sideChannel?: DebugSideChannel
+): ProcessedWork {
+  const debugHelper: DebugHelper | undefined = sideChannel && {
+    onWord: (word) => sideChannel.onWord(teiRoot.info, word),
+  };
   return {
     info: teiRoot.info,
     textParts: teiRoot.textParts,
-    root: processForDisplay(teiRoot.content),
+    root: processForDisplay(teiRoot.content, debugHelper),
   };
 }

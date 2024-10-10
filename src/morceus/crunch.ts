@@ -467,6 +467,7 @@ export namespace MorceusCruncher {
 //   }
 // }
 
+// import { MorceusTables } from "@/morceus/cruncher_tables";
 // const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
 // const start = performance.now();
 // const result = cruncher(process.argv[2], CruncherOptions.DEFAULT);
