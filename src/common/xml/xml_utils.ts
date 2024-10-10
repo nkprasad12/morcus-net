@@ -1,5 +1,5 @@
 import { XMLParser, XMLValidator, type X2jOptions } from "fast-xml-parser";
-import { assert } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
 import { arrayMap } from "@/common/data_structures/collect_map";
 
@@ -43,7 +43,7 @@ function crawlXml(root: any): XmlNode {
     throw new Error("Found tag node with unexpected properties.");
   }
 
-  const tagName = keys.filter((key) => key !== ATTRIBUTES_KEY)[0];
+  const tagName = checkPresent(keys.find((key) => key !== ATTRIBUTES_KEY));
   const attributes: [string, string][] = [];
   const children: XmlChild[] = [];
 

@@ -11,7 +11,7 @@ describe("parseNounStemFile", () => {
   it("has expected lemmata", () => expect(nom01).toHaveLength(30));
 
   it("parses two row lemma", () => {
-    const nullus = nom01.filter((s) => s.lemma === "nullus")[0];
+    const nullus = nom01.find((s) => s.lemma === "nullus");
     expect(nullus).toEqual({
       lemma: "nullus",
 
@@ -27,7 +27,7 @@ describe("parseNounStemFile", () => {
   });
 
   it("parses multi row lemma", () => {
-    const bonus = nom01.filter((s) => s.lemma === "bonus")[0];
+    const bonus = nom01.find((s) => s.lemma === "bonus");
     expect(bonus).toEqual({
       lemma: "bonus",
       stems: [
@@ -62,7 +62,7 @@ describe("parseVerbStemFile", () => {
   it("has expected lemmata", () => expect(verbs).toHaveLength(6));
 
   it("parses line split lemma", () => {
-    const acclamo = verbs.filter((s) => s.lemma === "acclamo")[0];
+    const acclamo = verbs.find((s) => s.lemma === "acclamo");
     expect(acclamo).toEqual<Lemma>({
       lemma: "acclamo",
       isVerb: true,
@@ -78,7 +78,7 @@ describe("parseVerbStemFile", () => {
   });
 
   it("parses vb lemma", () => {
-    const caveo = verbs.filter((s) => s.lemma === "caveo")[0];
+    const caveo = verbs.find((s) => s.lemma === "caveo");
     expect(caveo).toEqual<Lemma>({
       lemma: "caveo",
       isVerb: true,

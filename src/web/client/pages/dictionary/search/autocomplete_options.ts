@@ -1,3 +1,4 @@
+import { checkPresent } from "@/common/assert";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { FusedAutocompleteFetcher } from "@/web/client/pages/dictionary/search/fused_autocomplete_fetcher";
@@ -66,7 +67,7 @@ export async function autocompleteOptions(
         )
       );
       allFiltered.push([
-        dicts.filter((dict) => dict.key === dictKey)[0],
+        checkPresent(dicts.find((dict) => dict.key === dictKey)),
         filtered.slice(0, limit),
       ]);
     }
