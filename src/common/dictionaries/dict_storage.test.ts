@@ -75,7 +75,7 @@ const FAKE_DICT: RawDictEntry[] = [
   },
 ];
 
-function toDictData(keys: string[]) {
+function toDictData(keys: readonly string[]) {
   return keys.map((key, i) => ({
     id: `n${i}`,
     keys: [key + "_"],
@@ -89,8 +89,8 @@ function createSqlDict(): StoredDict {
 
 describe("SqlDict", () => {
   function expectEntriesWithIds(
-    results: StoredEntryAndMetadata[],
-    expected: string[]
+    results: readonly StoredEntryAndMetadata[],
+    expected: readonly string[]
   ) {
     const ids = results
       .map(({ entry }) => entry)

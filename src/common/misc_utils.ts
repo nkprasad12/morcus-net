@@ -33,7 +33,9 @@ export function exhaustiveGuard(_value: never): never {
   );
 }
 
-export function singletonOf<T>(initializer: () => T): { get: () => T } {
+export function singletonOf<T>(initializer: () => T): {
+  readonly get: () => T;
+} {
   let value: T | undefined = undefined;
   return {
     get: () => {
@@ -68,7 +70,7 @@ export function mergeMaps<K, V>(
 }
 
 export class AggregateTimer {
-  private map = arrayMap<string, number>();
+  private readonly map = arrayMap<string, number>();
   private currentStart: [string, number] | undefined = undefined;
 
   start(tag: string) {

@@ -130,11 +130,10 @@ export function startMorcusServer(): Promise<http.Server> {
   const params: WebServerParams = {
     webApp: app,
     routes: [
-      RouteDefinition.create(ReportApi, (request) =>
-        githubTokenEmpty
-          ? Promise.resolve(log(GitHub.createIssueBody(request)))
-          : GitHub.reportIssue(request, githubToken)
-      ),
+      RouteDefinition.create(ReportApi, async (request) => {
+        if (githubTokenEmpty) log(GitHub.createIssueBody(request));
+        else GitHub.reportIssue(request, githubToken);
+      }),
       RouteDefinition.create(DictsFusedApi, (input, extras) =>
         fusedDict.getEntry(input, extras)
       ),

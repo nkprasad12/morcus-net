@@ -14,6 +14,7 @@
   "overrides": [],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
+    "project": true,
     "ecmaVersion": "latest",
     "sourceType": "module"
   },
@@ -24,7 +25,8 @@
     "build/",
     "src/py/",
     "venv/",
-    "android/"
+    "android/",
+    "coverage/"
   ],
   "settings": {
     "react": {
@@ -40,6 +42,11 @@
     "@typescript-eslint/no-this-alias": "off",
     "@typescript-eslint/no-empty-function": "off",
     "@typescript-eslint/ban-ts-comment": "off",
+    "@typescript-eslint/prefer-readonly": "error",
+    "@typescript-eslint/no-confusing-void-expression": [
+      "error",
+      { "ignoreArrowShorthand": true }
+    ],
     "react/prop-types": "off",
     "react/no-unstable-nested-components": "error",
     "no-constant-condition": "off",
