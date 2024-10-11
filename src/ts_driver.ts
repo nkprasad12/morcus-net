@@ -1,10 +1,43 @@
 /* istanbul ignore file */
 
+import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
+import { envVar } from "@/common/env_vars";
+import { removeDiacritics } from "@/common/text_cleaning";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import { CruncherOptions } from "@/morceus/cruncher_types";
 import * as dotenv from "dotenv";
 
 dotenv.config();
 
 const startTime = performance.now();
+
+export function inLsButNotMorceus() {
+  const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
+  const backing = sqliteBacking(envVar("LS_PROCESSED_PATH"));
+  const all = backing
+    .allEntryNames()
+    .filter((orth) => {
+      if (orth.orth.includes(" ")) {
+        return false;
+      }
+      const bannedChars = ["'", "-"];
+      for (const banned of bannedChars) {
+        if (orth.orth.startsWith(banned)) {
+          return false;
+        }
+        if (orth.orth.endsWith(banned)) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .map((orth) => removeDiacritics(orth.orth.replaceAll("-", "")))
+    .filter((orth) => cruncher(orth, CruncherOptions.DEFAULT).length === 0);
+
+  console.log(all.length);
+  console.error(all.join("\n"));
+}
 
 // expandTemplatesAndSave();
 const runtime = Math.round(performance.now() - startTime);
