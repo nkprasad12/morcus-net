@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "Running Typescript formatting and linting"
+npx eslint . && npx prettier . --check

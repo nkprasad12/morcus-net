@@ -14,6 +14,9 @@ echo "Installing JS / TS dependencies from NPM."
 cd morcus-net || exit
 git checkout dev
 npm install
+
+echo "Setting up git hooks"
+git config --local core.hooksPath .githooks/
 # Return to the $MORCUS_DIR directory.
 cd ..
 
