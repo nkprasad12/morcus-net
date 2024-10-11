@@ -9,7 +9,7 @@ const FROM_DOCKER = process.env.FROM_DOCKER === "1" || false;
 setEnv(REUSE_DEV, PORT, TEST_TMP_DIR);
 
 import { setupMorcusBackendWithCleanup } from "@/integration/utils/morcus_integration_setup";
-import { defineBundleSizeSuite } from "@/integration/suites/bundle_size.suite";
+import { defineBundleValidationSuite } from "@/integration/suites/bundle_validation.suite";
 import { defineMorcusBackendIntegrationSuite } from "@/integration/suites/morcus_backend_integration.suite";
 import { defineBrowserE2eSuite } from "@/integration/suites/browser_e2e.suite";
 
@@ -22,6 +22,6 @@ setupMorcusBackendWithCleanup(FROM_DOCKER, REUSE_DEV, PORT, TEST_TMP_DIR);
 
 console.debug = jest.fn();
 
-defineBundleSizeSuite();
+defineBundleValidationSuite();
 defineMorcusBackendIntegrationSuite();
 defineBrowserE2eSuite();

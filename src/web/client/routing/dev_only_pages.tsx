@@ -4,7 +4,7 @@ import { checkPresent } from "@/common/assert";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { PagePath } from "@/web/client/router/paths";
 
-const MORCEUS_HELPER_PATH = checkPresent(PagePath.of("/morceusHelper"));
+const MORCEUS_HELPER_PATH = checkPresent(PagePath.of("/devOnlyHelper"));
 
 function MorceusHelper() {
   return (
@@ -24,7 +24,7 @@ export const MORCEUS_HELPER_PAGE: SinglePageApp.Page = {
   Content: MorceusHelper,
   paths: [MORCEUS_HELPER_PATH],
   appBarConfig: {
-    name: "MorceusHelper",
+    name: "DevOnlyHelper",
     targetPath: MORCEUS_HELPER_PATH.path,
   },
 };

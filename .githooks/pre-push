@@ -1,4 +1,8 @@
 #!/bin/sh
 
-echo "Running Typescript formatting and linting"
-npx eslint . && npx prettier . --check
+echo "Running eslint:"
+npx eslint .
+echo "Running prettier:"
+npx prettier . --check
+echo "Running Typescript unit tests:"
+npm run ts-tests
