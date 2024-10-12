@@ -140,7 +140,7 @@ export function* parseXmlStringsInline(
   for (let i = start || 0; i < (end || serializedXml.length); i++) {
     const entryFree = parser.parse(serializedXml[i])[0];
     if (validate) {
-      validateXml(entryFree);
+      validateXml(serializedXml[i]);
     }
     yield crawlXml(entryFree);
   }

@@ -33,6 +33,29 @@ export interface DisplayContext {
   lastAuthor?: string;
 }
 
+const COMMENTARY_PAIRS: [string, string][] = [
+  ["Serv.", "Verg."],
+  ["Tiro", "Cic."],
+  ["Ascon.", "Cic."],
+  ["Ps.-Ascon.", "Cic."],
+  ["Pseudo Ascon.", "Cic."],
+  ["Pseud. Ascon.", "Cic."],
+  ["Cato", "Cic."],
+  ["Cato", "Hor."],
+  ["Sol.", "Ov."],
+  ["Non.", "Verg."],
+  ["Don.", "Ter."],
+  // Fulgentius would be the grammarian here?
+  ["Plin.", "Fulg."],
+  // The following makes no real sense
+  ["Sen.", "Verg."],
+  // The Verg. is incorrectly resolved "id." and should refer to
+  // Don. (Donatus) instead, so it is reasonable.
+  ["Verg.", "Hor."],
+  // Similarly, the Ter. is incorrectly resolved from "id."
+  ["Ter.", "Ter."],
+];
+
 // Table for easy access to the display handler functions
 const DISPLAY_HANDLER_LOOKUP = new Map<
   string,
@@ -75,18 +98,15 @@ export function defaultDisplay(
   for (const child of root.children) {
     if (typeof child === "string") {
       result.push(child);
-    } else {
-      if (expectedNodes !== undefined && !expectedNodes.includes(child.name)) {
-        throw new Error("Unexpected node.");
-      }
-      result.push(
-        checkPresent(DISPLAY_HANDLER_LOOKUP.get(child.name))(
-          child,
-          context,
-          root
-        )
-      );
+      continue;
     }
+    assert(
+      expectedNodes === undefined || expectedNodes.includes(child.name),
+      "Unexpected node."
+    );
+    result.push(
+      checkPresent(DISPLAY_HANDLER_LOOKUP.get(child.name))(child, context, root)
+    );
   }
   return new XmlNode("span", [], result);
 }
@@ -314,6 +334,50 @@ function chooseAuthor(
   return undefined;
 }
 
+function isGenericCommentary(root: XmlNode): boolean {
+  const kids = root.children;
+  if (root.children.length < 3) {
+    return false;
+  }
+  if (typeof kids[0] === "string" || kids[0].name !== "author") {
+    return false;
+  }
+  if (typeof kids[2] === "string" || kids[2].name !== "author") {
+    return false;
+  }
+  if (typeof kids[1] !== "string") {
+    return false;
+  }
+  const middle = kids[1].trim();
+  return middle === "ad" || middle === "in";
+}
+
+function isCommentary(
+  root: XmlNode,
+  authors: XmlNode[],
+  context: DisplayContext
+) {
+  assert(authors.length === 1 || authors.length === 2);
+  if (authors.length === 1) {
+    return false;
+  }
+  if (isGenericCommentary(root)) {
+    return true;
+  }
+  const rawFirst = XmlNode.getSoleText(authors[0]);
+  const first =
+    rawFirst === "id." && context.lastAuthor !== undefined
+      ? context.lastAuthor
+      : rawFirst;
+  const second = XmlNode.getSoleText(authors[1]);
+  for (const pair of COMMENTARY_PAIRS) {
+    if (first === pair[0] && second === pair[1]) {
+      return true;
+    }
+  }
+  return false;
+}
+
 /**
  * Expands a `bibl` element.
  *
@@ -345,11 +409,17 @@ export function displayBibl(
   if (author.length === 0) {
     return defaultDisplay(root, context);
   }
-  assertEqual(author.length, 1);
+  assert(author.length === 1 || author.length === 2);
+  const commentary = isCommentary(root, author, context);
+  assert(author.length === 1 || commentary);
+  // If a commentary, make sure all author elements are direct children.
+  assert(!isCommentary || root.findChildren("author").length === author.length);
 
-  const authorKey = XmlNode.getSoleText(author[0]);
+  // If we have a commentary, the work belongs to the second.
+  const authorKey = XmlNode.getSoleText(author[commentary ? 1 : 0]);
+  // If we have a commentary, the last author isn't relevant.
   const resolvedKey =
-    authorKey === "id." && context.lastAuthor !== undefined
+    authorKey === "id." && context.lastAuthor !== undefined && !commentary
       ? context.lastAuthor
       : authorKey;
   // TODO: Flag and correct cases where authorKey is id. but there's
@@ -360,11 +430,12 @@ export function displayBibl(
     works = chooseAuthor(root, context, author[0])?.worksTrie;
   }
   const result = new XmlNode("span", [], []);
+  // If we have two authors (=== commentary), then don't expand until after
+  // we see the first author.
+  let authorsSeen = 0;
   for (const child of root.children) {
     if (typeof child === "string") {
-      if (works === undefined) {
-        result.children.push(child);
-      } else {
+      if (works !== undefined && (!commentary || authorsSeen > 1)) {
         let expansions = findExpansionsOld(child, works);
         if (expansions.length === 0) {
           expansions = findExpansionsOld(child, works, true);
@@ -372,8 +443,11 @@ export function displayBibl(
         handleAbbreviationsInMessage(child, expansions, true).forEach((x) =>
           result.children.push(x)
         );
+      } else {
+        result.children.push(child);
       }
     } else if (child.name === "author") {
+      authorsSeen++;
       result.children.push(displayAuthor(child, context, root));
     } else {
       let display = defaultDisplay(child, context);

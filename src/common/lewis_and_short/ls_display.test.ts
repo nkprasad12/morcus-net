@@ -221,6 +221,109 @@ describe("displayBibl", () => {
     ];
     expect(result.toString()).toBe(parts.join(""));
   });
+
+  it("raises on too many authors", () => {
+    const authorNode = (name: string) => new XmlNode("author", [], [name]);
+    const bibl = new XmlNode(
+      "bibl",
+      [],
+      [
+        authorNode("Serv."),
+        authorNode("Aug."),
+        authorNode("Cic."),
+        "Germ. 3, 7, 26",
+      ]
+    );
+
+    expect(() => displayBibl(bibl, {})).toThrow();
+  });
+
+  it("raises on unknown commentary pairs", () => {
+    const authorNode = (name: string) => new XmlNode("author", [], [name]);
+    const bibl = new XmlNode(
+      "bibl",
+      [],
+      [authorNode("Serv."), authorNode("Caes."), "Germ. 3, 7, 26"]
+    );
+
+    expect(() => displayBibl(bibl, {})).toThrow();
+  });
+
+  it("raises on bad generic commentary pair", () => {
+    const authorNode = (name: string) => new XmlNode("author", [], [name]);
+    const bibl = new XmlNode(
+      "bibl",
+      [],
+      // ` in ` and ` ad ` are valid, but ` de ` is not.
+      [authorNode("Serv."), " de ", authorNode("Caes."), "Germ. 3, 7, 26"]
+    );
+
+    expect(() => displayBibl(bibl, {})).toThrow();
+  });
+
+  it("allows good generic commentary pair", () => {
+    const authorNode = (name: string) => new XmlNode("author", [], [name]);
+    const bibl = new XmlNode(
+      "bibl",
+      [],
+      [authorNode("Don."), " ad ", authorNode("Caes."), "Germ. 3, 7, 26"]
+    );
+
+    const result = displayBibl(bibl, {});
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="Aelius Donatus, commentator, fl. A.D. 350" class="lsHover lsAuthor">Don.</span>',
+      " ad ",
+      '<span title="Caius Julius Caesar, historian, ob. B.C. 44" class="lsHover lsAuthor">Caes.</span>',
+      "Germ. 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("allows known commentary pair", () => {
+    const authorNode = (name: string) => new XmlNode("author", [], [name]);
+    const bibl = new XmlNode(
+      "bibl",
+      [],
+      [authorNode("Serv."), " de ", authorNode("Verg."), "Germ. 3, 7, 26"]
+    );
+
+    const result = displayBibl(bibl, {});
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="Servius Honoratus, gramm., fl. A.D. 390" class="lsHover lsAuthor">Serv.</span>',
+      " de ",
+      '<span title="P. Vergilius Maro, poet, ob. B.C. 19" class="lsHover lsAuthor">Verg.</span>',
+      "Germ. 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
+
+  it("expands works with multiple authors only after second", () => {
+    const authorNode = (name: string) => new XmlNode("author", [], [name]);
+    const bibl = new XmlNode(
+      "bibl",
+      [],
+      [authorNode("Serv."), " A. B. ", authorNode("Verg."), " A. 3, 7, 26"]
+    );
+
+    const result = displayBibl(bibl, {});
+
+    const parts = [
+      '<span class="lsBibl">',
+      '<span title="Servius Honoratus, gramm., fl. A.D. 390" class="lsHover lsAuthor">Serv.</span>',
+      " A. B. ",
+      '<span title="P. Vergilius Maro, poet, ob. B.C. 19" class="lsHover lsAuthor">Verg.</span>',
+      ' <span title="Originally: A." class="lsHover">Aeneis.</span>',
+      " 3, 7, 26",
+      "</span>",
+    ];
+    expect(result.toString()).toBe(parts.join(""));
+  });
 });
 
 describe("displayUsg", () => {
