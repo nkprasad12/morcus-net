@@ -26,7 +26,7 @@ import { findExpansionsOld } from "@/common/abbreviations/abbreviations";
 import { GRAMMAR_TERMS } from "@/common/lewis_and_short/ls_grammar_terms";
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
 
-const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
+export const AUTHOR_EDGE_CASES = ["Inscr.", "Cod.", "Gloss."];
 const AUTHOR_PRE_EXPANDED = ["Georg Curtius", "Georg Curtius."];
 
 export interface DisplayContext {

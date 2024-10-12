@@ -4,12 +4,17 @@ import * as dotenv from "dotenv";
 dotenv.config();
 
 import { getRawLsXml } from "@/common/lewis_and_short/ls_parser";
-import { XmlNode } from "@/common/xml/xml_node";
-import { parseAuthorAbbreviations } from "@/common/lewis_and_short/ls_abbreviations";
+import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
+import {
+  LsAuthorAbbreviations,
+  parseAuthorAbbreviations,
+} from "@/common/lewis_and_short/ls_abbreviations";
 import { checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { getOrths, isRegularOrth } from "@/common/lewis_and_short/ls_orths";
-import { parseXmlStringsInline } from "@/common/xml/xml_utils";
+import { findTextNodes, parseXmlStringsInline } from "@/common/xml/xml_utils";
+import { LsRewriters } from "@/common/lewis_and_short/ls_write";
+import { AUTHOR_EDGE_CASES } from "@/common/lewis_and_short/ls_display";
 
 export const LS_PATH = envVar("LS_PATH");
 
@@ -213,4 +218,102 @@ export function printUnhandledOrths() {
   console.log(unhandled);
   console.log(starts);
   console.log(ends);
+}
+
+function fixMissingAuthors(
+  input: string,
+  isBibl: boolean,
+  authorList: string[]
+): XmlChild[] {
+  for (const author of authorList) {
+    // Skip the edge case authors as they are not really authors
+    // but more like prefixes for comment types of works (e.g. Codex)
+    if (AUTHOR_EDGE_CASES.includes(author)) {
+      continue;
+    }
+    let i = 0;
+    while (true) {
+      // Keep searching for the author string
+      i = input.indexOf(author, i);
+      if (i === -1) {
+        break;
+      }
+      const authorStart = i;
+      i += author.length;
+      // Consume any spaces
+      let gotSpace = false;
+      while (i < input.length) {
+        const c = input[i];
+        if (c === " ") {
+          i++;
+          gotSpace = true;
+        } else {
+          break;
+        }
+      }
+      if (!gotSpace) {
+        continue;
+      }
+      // Find matching works for this matched author.
+      const works = LsAuthorAbbreviations.authors().get(author)!;
+      for (const work of works) {
+        const workNames = Array.from(work.works.keys());
+        for (const workName of workNames) {
+          const maybeWork = input.substring(i, i + workName.length);
+          if (maybeWork !== workName) {
+            continue;
+          }
+          const prefix = input.substring(0, authorStart);
+          const authorNode = new XmlNode("author", [], [author]);
+          // If we're already in a bibl, we can just add fix the author tag issue
+          // and leave the rest. Note the space is included because we may skip any
+          // number of spaces between the author and work, but we only care about one.
+          if (isBibl) {
+            return [prefix, authorNode, " " + input.substring(i)];
+          }
+          return [
+            prefix,
+            new XmlNode("bibl", [], [authorNode, " " + maybeWork]),
+            input.substring(i + workName.length),
+          ];
+        }
+      }
+    }
+  }
+  return [input];
+}
+
+/**
+ * Finds instances where we have an author followed by a work for that author but
+ * without author tags for that author, and adds <author> tags (and optionally
+ * <bibl> tags around the author and work if needed).
+ *
+ * Note that this does not attempt to handle the case where we have multiple missing
+ * authors in the same child string. This is rare enough that to handle those on the
+ * unprocessed text, we just run this twice. The first pass fixed ~2000 issues, the second
+ * pass fixed the remaining 9.
+ */
+export async function findMissingAuthorTags() {
+  const authorList = Array.from(LsAuthorAbbreviations.authors().keys());
+  let fixes = 0;
+  await LsRewriters.transformEntries(envVar("LS_PATH"), (root) => {
+    const allTextNodes = findTextNodes(root);
+    // Make sure to go backwards so the parent indicies in `allTextNodes` don't
+    // become out of date as we make fixes.
+    for (let i = allTextNodes.length - 1; i >= 0; i--) {
+      const textNode = allTextNodes[i];
+      const result = fixMissingAuthors(
+        textNode.text,
+        textNode.parent.name === "bibl",
+        authorList
+      );
+      if (result.length === 1 && result[0] === textNode.text) {
+        continue;
+      }
+      fixes++;
+      textNode.parent.children.splice(textNode.textIndex, 1, ...result);
+    }
+    return root;
+  });
+  console.log("Fixes found : " + fixes);
 }
