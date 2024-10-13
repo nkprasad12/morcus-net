@@ -37,6 +37,7 @@ services:
       DB_SOURCE: "dev-${DB_TAG}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
+      PWA_SHORT_NAME_SUFFIX: " D"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
     logging:

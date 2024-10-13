@@ -9,6 +9,7 @@ import {
   RouteDefinitionType,
   addApi,
 } from "@/web/utils/rpc/server_rpc";
+import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
 
 const MAX_AGE = 100 * 365 * 24 * 3600 * 100;
 
@@ -50,6 +51,10 @@ export function setupServer(params: WebServerParams): void {
         path.join("build/offlineData", `${resourceName}.json.gz.chunked`)
       )
     );
+    return;
+  });
+  app.use("/public/pwa.webmanifest", (_, res) => {
+    res.send(PWA_WEBMANIFEST);
     return;
   });
   app.use("/public", express.static("public", staticOptions));

@@ -14,7 +14,6 @@ import {
   runtimeMessage,
   shellStep,
 } from "@/scripts/script_utils";
-import { writePwaManifestStep } from "@/scripts/write_webmanifest";
 import { createCleanDir } from "@/utils/file_utils";
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
 import { MorceusTables } from "@/morceus/cruncher_tables";
@@ -106,7 +105,6 @@ const WRITE_COMMIT_ID: StepConfig = {
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
-  writePwaManifestStep(),
   MAKE_BUNDLE,
   SAVE_TABLES,
   MAKE_SH,

@@ -10,7 +10,6 @@ import {
   shellStep,
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
-import { writePwaManifestStep } from "@/scripts/write_webmanifest";
 import { createDir } from "@/utils/file_utils";
 import { ArgumentParser } from "argparse";
 import { ChildProcess, spawn } from "child_process";
@@ -347,7 +346,6 @@ async function setupAndStartWebServer(args: any) {
       setupSteps.push(bundleConfig(args, 1));
     }
   }
-  setupSteps.push(writePwaManifestStep(1));
   setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });
   if (!setupSuccess) {

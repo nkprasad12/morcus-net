@@ -11,3 +11,4 @@ venv
 genfiles_static
 morpheus/**/*
 android/
+public/
