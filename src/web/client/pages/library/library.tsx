@@ -43,8 +43,10 @@ function WorksList(props: { works: WorkListState }) {
               id={work.id}
               className="latWork"
               onClick={() => onWorkSelected(work, nav)}>
-              <span>{work.name}</span>{" "}
-              <span className="text md light">{work.author}</span>
+              <span style={{ whiteSpace: "nowrap" }}>{work.name}</span>{" "}
+              <span className="text md light" style={{ whiteSpace: "nowrap" }}>
+                {work.author}
+              </span>
             </SpanLink>
           </div>
         ))
