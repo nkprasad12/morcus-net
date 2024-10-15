@@ -741,9 +741,14 @@ function WorkChunk(props: {
           paddingLeft: indent ? "16px" : undefined,
         }}
         id={id}>
-        {content.map((node, i) =>
-          displayForLibraryChunk(node, props.setDictWord, i)
-        )}
+        {content.map((node, i) => (
+          <React.Fragment key={i}>
+            {displayForLibraryChunk(node, props.setDictWord, i)}
+            {
+              "\n" /* Add a newline so copy / paste works correctly on Firefox. */
+            }
+          </React.Fragment>
+        ))}
       </span>
     </>
   );
