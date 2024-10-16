@@ -115,6 +115,17 @@ export function defineBrowserE2eSuite() {
       }
     }
 
+    async function awaitAndClickText(
+      text: string,
+      parentType: string = "*",
+      className?: string
+    ) {
+      await waitForText(text, parentType, className);
+      await (
+        await findText(text, checkPresent(currentPage), parentType, className)
+      ).click();
+    }
+
     async function waitForUrlChange(old: string): Promise<string> {
       const page = checkPresent(currentPage);
       let url: string = "";
@@ -144,6 +155,10 @@ export function defineBrowserE2eSuite() {
       return page;
     }
 
+    // // // // // // // // //
+    // General / Navigation //
+    // // // // // // // // //
+
     it.each(ALL_SCREEN_SIZES(1))(
       "should load the landing page on %s screen #%s",
       async (screenSize, i) => {
@@ -166,6 +181,21 @@ export function defineBrowserE2eSuite() {
         await checkHasText("CC BY-SA 4.0");
       }
     );
+
+    it.each(ALL_SCREEN_SIZES(1))(
+      "should load about page on %s screen #%s",
+      async (screenSize, i) => {
+        await getPage(screenSize, "/about");
+        writeContext("aboutPage", screenSize, i);
+
+        await checkHasText("GPL-3.0");
+        await checkHasText("CC BY-SA 4.0");
+      }
+    );
+
+    // // // // // // // // //
+    // Dictionary - Search  //
+    // // // // // // // // //
 
     it.each(LARGE_ONLY(5))(
       "should load dictionary results on %s screen by typing and enter #%s",
@@ -209,24 +239,16 @@ export function defineBrowserE2eSuite() {
 
         await page.click(`[aria-label="Dictionary search box"]`);
         await page.keyboard.type("can", { delay: 20 });
-        await waitForText("cānăba");
-        await (await findText("cānăba", page, "span")).click();
+        await awaitAndClickText("cānăba", "span");
 
         await waitForText("hovel");
         await checkTitleIs("cānăba | Morcus Latin Tools");
       }
     );
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should load about page on %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/about");
-        writeContext("aboutPage", screenSize, i);
-
-        await checkHasText("GPL-3.0");
-        await checkHasText("CC BY-SA 4.0");
-      }
-    );
+    // // // // // // // //
+    // Dictionary - Main //
+    // // // // // // // //
 
     it.each(ALL_SCREEN_SIZES(1))(
       "should allow linkified latin words in SH %s screen #%s",
@@ -337,28 +359,31 @@ export function defineBrowserE2eSuite() {
       }
     );
 
+    // // // // //
+    // Library  //
+    // // // // //
+
     it.each(ALL_SCREEN_SIZES(1))(
-      "shows works by legacy id on %s screen #%s",
+      "shows library options on %s screen",
       async (screenSize, i) => {
-        await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2");
-        writeContext("workById", screenSize, i);
-        await waitForText("Gallia");
+        await getPage(screenSize, "/library");
+        writeContext("libraryListsWorks", screenSize, i);
+
+        await awaitAndClickText("Gallico");
+        // This assumes that the info tab is the first one shown.
+        // This is the editor.
+        await waitForText("T. Rice Holmes");
       }
     );
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "shows works by legacy id and q page %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2?q=3");
-        writeContext("workByIdAndPage", screenSize, i);
-        await waitForText("Orgetorix");
-      }
-    );
+    // // // // //
+    // Reader   //
+    // // // // //
 
     it.each(ALL_SCREEN_SIZES(1))(
       "shows works by name and author on %s screen #%s",
       async (screenSize, i) => {
-        await getPage(screenSize, "/work/phi0448.phi001.perseus-lat2");
+        await getPage(screenSize, "/work/caesar/de_bello_gallico");
         writeContext("workByNameAndAuthor", screenSize, i);
         await waitForText("Gallia");
       }
@@ -370,6 +395,18 @@ export function defineBrowserE2eSuite() {
         await getPage(screenSize, "/work/caesar/de_bello_gallico?pg=3");
         writeContext("workByNameAndAuthorWithPage", screenSize, i);
         await waitForText("Orgetorix");
+      }
+    );
+
+    it.each(ALL_SCREEN_SIZES(1))(
+      "handles clicky vocab on %s screen #%s",
+      async (screenSize, i) => {
+        await getPage(screenSize, "/work/caesar/de_bello_gallico");
+        writeContext("workByNameAndAuthor", screenSize, i);
+        await awaitAndClickText("divisa");
+
+        // This is part of the entry for `divido`.
+        await waitForText("To force asunder");
       }
     );
   });
