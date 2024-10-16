@@ -86,6 +86,8 @@ jobs:
           node-version-file: package.json
       - name: Installing npm dependencies
         run: npm ci
+      - name: Installing browsers
+        run: npx puppeteer browsers install firefox
       - name: Pulling docker image
         run: docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}
       - name: Running integration checks
