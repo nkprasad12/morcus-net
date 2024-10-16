@@ -31,11 +31,12 @@ export function defineBrowserE2eSuite() {
       try {
         mkdirSync(SCREENSHOTS_DIR);
       } catch {}
-      browser = await puppeteer.launch({ headless: true, product });
+      browser = await puppeteer.launch({ headless: true, browser: product });
       const context = browser.defaultBrowserContext();
       await context.overridePermissions(global.location.origin, [
         "clipboard-read",
         "clipboard-write",
+        "clipboard-sanitized-write",
       ]);
       currentPage = await checkPresent(browser).newPage();
     });
@@ -282,7 +283,7 @@ export function defineBrowserE2eSuite() {
       }
     );
 
-    it.skip.each(ALL_SCREEN_SIZES(1))(
+    it.each(ALL_SCREEN_SIZES(1))(
       "allows copying id links via tooltip %s screen #%s",
       async (screenSize, i) => {
         const page = await getPage(screenSize, "/dicts?q=pondus");
@@ -295,7 +296,7 @@ export function defineBrowserE2eSuite() {
 
         expect(
           await page.evaluate(() => navigator.clipboard.readText())
-        ).toEqual("Some text");
+        ).toEqual(`${global.location.origin}/dicts/id/n37007`);
       }
     );
 

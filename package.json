@@ -101,6 +101,6 @@
     "typescript": "5.5.2"
   },
   "optionalDependencies": {
-    "puppeteer": "^22.11.2"
+    "puppeteer": "^23.5.3"
   }
 }
