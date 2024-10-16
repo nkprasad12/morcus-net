@@ -12,8 +12,6 @@ import {
   LARGE_ONLY,
 } from "@/integration/utils/puppeteer_utils";
 
-const SCREENSHOTS_DIR = "puppeteer_screenshots";
-
 export function defineBrowserE2eSuite() {
   // Just on chrome for now, but we should add firefox later.
   // It requires some extra setup steps to install the browser.
@@ -24,20 +22,35 @@ export function defineBrowserE2eSuite() {
     let screenSize: ScreenSize | undefined = undefined;
     let iteration: number | undefined = undefined;
 
+    function screenshotsDir() {
+      return `puppeteer_screenshots/${product}`;
+    }
+
     beforeAll(async () => {
       try {
-        rmSync(SCREENSHOTS_DIR, { recursive: true, force: true });
+        rmSync(screenshotsDir(), { recursive: true, force: true });
       } catch {}
       try {
-        mkdirSync(SCREENSHOTS_DIR);
+        mkdirSync(screenshotsDir());
       } catch {}
       browser = await puppeteer.launch({ headless: true, browser: product });
       const context = browser.defaultBrowserContext();
-      await context.overridePermissions(global.location.origin, [
-        "clipboard-read",
-        "clipboard-write",
-        "clipboard-sanitized-write",
-      ]);
+      if (product === "chrome") {
+        await context.overridePermissions(global.location.origin, [
+          "clipboard-read",
+          "clipboard-write",
+          "clipboard-sanitized-write",
+        ]);
+      }
+      currentPage = await checkPresent(browser).newPage();
+    });
+
+    // Firefox doesn't nicely handle re-use of the same page.
+    afterEach(async () => {
+      if (product === "chrome") {
+        return;
+      }
+      await currentPage?.close();
       currentPage = await checkPresent(browser).newPage();
     });
 
@@ -49,7 +62,7 @@ export function defineBrowserE2eSuite() {
     async function takeScreenshot(): Promise<void> {
       const page = checkPresent(currentPage);
       const tag = `${testName}.${screenSize}.n${iteration}.png`;
-      await page.screenshot({ path: `${SCREENSHOTS_DIR}/${tag}` });
+      await page.screenshot({ path: `${screenshotsDir()}/${tag}` });
     }
 
     function writeContext(tag: string, size: ScreenSize, i: number) {
@@ -100,6 +113,20 @@ export function defineBrowserE2eSuite() {
         await takeScreenshot();
         throw err;
       }
+    }
+
+    async function waitForUrlChange(old: string): Promise<string> {
+      const page = checkPresent(currentPage);
+      let url: string = "";
+      for (let i = 0; i < 3; i++) {
+        url = page.url();
+        if (url !== old) {
+          return url;
+        }
+        await new Promise((resolve) => setTimeout(resolve, 50));
+      }
+      await takeScreenshot();
+      throw new Error(`Timed out waiting for change from: ${url}`);
     }
 
     async function getPage(
@@ -212,9 +239,19 @@ export function defineBrowserE2eSuite() {
         await page.keyboard.press("Enter");
 
         await waitForText("cohortandum");
+        const oldUrl = page.url();
         await (await findText("cohortandum", page)).click();
 
-        expect(page.url()).toContain("/dicts?q=cohortandum");
+        // The lemma form of cohortandum
+        await waitForText("cŏ-hortor");
+        if (product === "firefox") {
+          console.warn(
+            "Skipping URL check on Firefox because it doesn't work. This should be investigated later."
+          );
+          return;
+        }
+        const url = await waitForUrlChange(oldUrl);
+        expect(url).toContain("/dicts?q=cohortandum");
       }
     );
 

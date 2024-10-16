@@ -11,7 +11,7 @@ const SMALL_SCREEN: ScreenSize = "small";
 const LARGE_SCREEN: ScreenSize = "large";
 const SIZE_VARIANTS: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
 
-export const BROWSERS: BrowserProduct[] = ["chrome"];
+export const BROWSERS: BrowserProduct[] = ["firefox", "chrome"];
 export const SMALL_ONLY: (iterations: number) => [ScreenSize, number][] = (n) =>
   [...Array(n).keys()].flatMap((i) =>
     [SMALL_SCREEN].map((v) => [v, i + 1] as [ScreenSize, number])
