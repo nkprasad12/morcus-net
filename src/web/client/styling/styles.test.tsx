@@ -32,8 +32,8 @@ function expectDarkerInStyle(
   cssClass: string,
   property: string
 ) {
-  const firstStyle = getGlobalStyles(first).styles!;
-  const secondStyle = getGlobalStyles(second).styles!;
+  const firstStyle = getGlobalStyles(first);
+  const secondStyle = getGlobalStyles(second);
   // @ts-ignore
   expectDarker(firstStyle[cssClass][property], secondStyle[cssClass][property]);
 }

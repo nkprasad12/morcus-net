@@ -50,7 +50,7 @@
   "homepage": "https://github.com/nkprasad12/morcus-net#readme",
   "devDependencies": {
     "@craftamap/esbuild-plugin-html": "^0.7.0",
-    "@emotion/react": "^11.10.6",
+    "@emotion/serialize": "^1.1.1",
     "@jest/globals": "^29.7.0",
     "@mui/material": "^5.11.12",
     "@testing-library/jest-dom": "^5.16.5",

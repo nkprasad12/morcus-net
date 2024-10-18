@@ -1,9 +1,9 @@
 /* istanbul ignore file */
 
-import { useContext, StrictMode } from "react";
+import { useContext, StrictMode, useEffect, useRef, useMemo } from "react";
 import ReactDOM from "react-dom/client";
 
-import { Global } from "@emotion/react";
+import { serializeStyles } from "@emotion/serialize";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { SettingsHandler } from "@/web/client/components/global_flags";
 import { TitleHandler } from "./components/title";
@@ -39,13 +39,30 @@ const props: SinglePageApp.Props = {
 
 function ConfigurableStyles() {
   const styleConfig = useContext(StyleContext);
+  const styleSheet = useRef(new CSSStyleSheet());
 
   document.body.style.backgroundColor = getBackgroundColor(styleConfig);
   document
     .querySelector('meta[name="theme-color"]')
     ?.setAttribute("content", getAppBarColor(styleConfig));
 
-  return <Global {...getGlobalStyles(styleConfig)} />;
+  // UseEffect would wait until render, which is too long.
+  useMemo(() => document.adoptedStyleSheets.push(styleSheet.current), []);
+  useMemo(() => {
+    const styleObj = getGlobalStyles(styleConfig);
+    styleSheet.current.replace(serializeStyles([styleObj]).styles);
+  }, [styleConfig]);
+
+  useEffect(() => {
+    return () => {
+      document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+        (sheet) => sheet !== styleSheet.current
+      );
+    };
+  }, []);
+
+  return null;
 }
 
 root.render(
