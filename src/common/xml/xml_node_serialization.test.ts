@@ -210,16 +210,16 @@ describe("XmlNode serialization", () => {
 //   });
 
 //   it("produces smaller raw than default parser", () => {
-//     console.log("XML raw kB: " + xmlSerialized.length / 1024);
-//     console.log("Custom raw kB: " + customSerialized.length / 1024);
+//     console.log("XML raw kB: " + xmlSerialized.length / 1000);
+//     console.log("Custom raw kB: " + customSerialized.length / 1000);
 //     expect(customSerialized.length).toBeLessThan(xmlSerialized.length);
 //   });
 
 //   it("produces smaller gzipped than default parser", async () => {
 //     const xmlSize = await gzipSize(xmlSerialized);
-//     console.log("XML gzip kB: " + xmlSize / 1024);
+//     console.log("XML gzip kB: " + xmlSize / 1000);
 //     const customSize = await gzipSize(customSerialized);
-//     console.log("Custom gzip kB: " + customSize / 1024);
+//     console.log("Custom gzip kB: " + customSize / 1000);
 //     expect(customSize).toBeLessThan(xmlSize);
 //   });
 // });

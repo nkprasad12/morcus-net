@@ -23,12 +23,12 @@ export function defineBundleValidationSuite() {
       for await (const [jsFile, jsReq] of getBundleFiles()) {
         const contents = await jsReq.buffer();
         const gzipped = gzipSync(contents).byteLength;
-        console.debug(`${jsFile}: ${gzipped / 1024} KB`);
+        console.debug(`${jsFile}: ${gzipped / 1000} KB`);
         totalSize += gzipped;
       }
 
       expect(totalSize).toBeGreaterThan(0);
-      expect(totalSize / 1024).toBeLessThan(100);
+      expect(totalSize / 1000).toBeLessThan(100);
     });
 
     it("does not include dev-only code", async () => {

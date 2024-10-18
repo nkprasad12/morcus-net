@@ -147,7 +147,7 @@ function printBuildResult(
   }
   for (const output in metafile.outputs) {
     const data = metafile.outputs[output];
-    const size = (data.bytes / 1024).toFixed(2);
+    const size = (data.bytes / 1000).toFixed(2);
     console.log("entryPoint: " + data.entryPoint);
     console.log(`output: ${output} [${size} kB]\n`);
     if (options?.analyzeBundle) {
@@ -169,7 +169,7 @@ function compressResults(result: esbuild.BuildResult) {
     }
     const outFile = `${output}.gz`;
     const compressed = gzipSync(fs.readFileSync(output));
-    const size = (compressed.byteLength / 1024).toFixed(2);
+    const size = (compressed.byteLength / 1000).toFixed(2);
     console.log(`compressed: ${outFile} [${size} kB]`);
     fs.writeFileSync(outFile, compressed);
   }

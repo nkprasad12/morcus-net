@@ -63,19 +63,19 @@ function log(message: string) {
   console.log(`[start_server] ${message}`);
 }
 
-function bytesToMb(input: number): number {
-  const inMb = input / (1024 * 1024);
-  return Math.round(inMb * 10) / 10;
+function bytesToMib(input: number): number {
+  const inMib = input / (1024 * 1024);
+  return Math.round(inMib * 10) / 10;
 }
 
 function logMemoryUsage(telemetry: TelemetryLogger): void {
   const usage = process.memoryUsage();
   telemetry.logServerHealth({
-    rss: bytesToMb(usage.rss),
-    heapTotal: bytesToMb(usage.heapTotal),
-    heapUsed: bytesToMb(usage.heapUsed),
-    external: bytesToMb(usage.external),
-    arrayBuffers: bytesToMb(usage.arrayBuffers),
+    rss: bytesToMib(usage.rss),
+    heapTotal: bytesToMib(usage.heapTotal),
+    heapUsed: bytesToMib(usage.heapUsed),
+    external: bytesToMib(usage.external),
+    arrayBuffers: bytesToMib(usage.arrayBuffers),
   });
 }
 
