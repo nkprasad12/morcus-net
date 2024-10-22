@@ -1,7 +1,7 @@
 // @ts-ignore - puppeteer is an optional dependency.
 import puppeteer, { Browser, ElementHandle, Page } from "puppeteer";
 import { mkdirSync, rmSync } from "fs";
-import { assert, checkPresent } from "@/common/assert";
+import { checkPresent } from "@/common/assert";
 import {
   findText,
   openTab,
@@ -99,7 +99,7 @@ export function defineBrowserE2eSuite() {
       text: string,
       parentType: string = "*",
       className?: string
-    ): Promise<void> {
+    ): Promise<ElementHandle<Element>> {
       const page = checkPresent(currentPage);
       const classString =
         className === undefined ? "" : `and @class="${className}"`;
@@ -108,11 +108,27 @@ export function defineBrowserE2eSuite() {
           `xpath/.//${parentType}[contains(text(), "${text}")${classString}]`,
           { timeout: 3000 }
         );
-        assert(results !== null, `Failed to find text: ${text}`);
+        return checkPresent(results, `Failed to find text: ${text}`);
       } catch (err) {
         await takeScreenshot();
         throw err;
       }
+    }
+
+    async function awaitVisible(
+      element: ElementHandle<Element>,
+      timeout: number
+    ): Promise<void> {
+      const interval = timeout / 20;
+      for (let i = 0; i < 20; i++) {
+        const isVisible = await element.isIntersectingViewport();
+        if (isVisible) {
+          return;
+        }
+        await new Promise((resolve) => setTimeout(resolve, interval));
+      }
+      await takeScreenshot();
+      throw new Error("Failed to find element on screen!");
     }
 
     async function awaitAndClickText(
@@ -407,6 +423,24 @@ export function defineBrowserE2eSuite() {
 
         // This is part of the entry for `divido`.
         await waitForText("To force asunder");
+      }
+    );
+
+    it.each(ALL_SCREEN_SIZES(1))(
+      "has working scroll to line %s screen #%s",
+      async (screenSize, i) => {
+        const page = await getPage(screenSize, "/work/juvenal/saturae");
+        writeContext("readerScrollToLine", screenSize, i);
+        const achilles = await waitForText("Achilles");
+        expect(await achilles.isIntersectingViewport()).toBe(false);
+
+        await page.click(`[aria-label="Outline"]`);
+        await page.click(`[aria-label="jump to section"]`);
+        await page.keyboard.type("163");
+        await page.keyboard.press("Enter");
+
+        // Usually the scroll takes ~300 ms.
+        await awaitVisible(achilles, 2000);
       }
     );
   });

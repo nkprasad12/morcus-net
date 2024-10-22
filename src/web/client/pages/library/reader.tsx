@@ -612,12 +612,16 @@ function WorkNavigation(props: {
   );
 }
 
-function NumberInput(props: { onEnter: (input: number) => unknown }) {
+function NumberInput(props: {
+  onEnter: (input: number) => unknown;
+  label: string;
+}) {
   const [value, setValue] = useState<number | undefined>(undefined);
   return (
     <input
       style={{ maxWidth: "48px", borderRadius: "4px" }}
       className="bgColor text"
+      aria-label={props.label}
       value={value ?? ""}
       onChange={(e) => {
         const entered = e.target.value;
@@ -646,13 +650,15 @@ function WorkNavigationSection(props: { work: PaginatedWork }) {
       <div className="text sm light">
         <span>
           Jump to {props.work.textParts.slice(-1)[0].toLowerCase()} in current{" "}
-          {sectionName}:{"  "}
-          <NumberInput
-            onEnter={(l) =>
-              nav.to((old) => ({ ...old, params: { l: `${l - 1}`, hl: "0" } }))
-            }
-          />
+          {sectionName}
         </span>
+        {"  "}
+        <NumberInput
+          label="jump to section"
+          onEnter={(l) =>
+            nav.to((old) => ({ ...old, params: { l: `${l - 1}`, hl: "0" } }))
+          }
+        />
       </div>
       <details open>
         <summary>
