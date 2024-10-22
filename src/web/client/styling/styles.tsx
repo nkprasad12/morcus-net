@@ -623,7 +623,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
         isDarkMode ? Solarized.base01 + "80" : Solarized.base15
       }`,
     },
-    ".customSearchContainerFocused": {
+    ".customSearchContainer.focused": {
       border: `2px solid ${
         isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
       }`,

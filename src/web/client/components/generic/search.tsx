@@ -26,6 +26,7 @@ export function SearchBox<T>(props: {
   toKey: (t: T) => string;
   toInputDisplay: (t: T) => string;
   ariaLabel?: string;
+  embedded?: boolean;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -53,6 +54,7 @@ export function SearchBox<T>(props: {
   }, [cursor, toKey, options]);
 
   const smallScreen = props.smallScreen === true;
+  const embedded = props.embedded === true;
   const interactingWithPopup = mouseOnPopup;
   const popperOpen =
     containerRef.current !== null &&
@@ -60,7 +62,7 @@ export function SearchBox<T>(props: {
     (options.length > 0 || loading);
   const containerClasses = ["customSearchContainer"];
   if (focused) {
-    containerClasses.push("customSearchContainerFocused");
+    containerClasses.push("focused");
   }
 
   function handleArrow(key: "ArrowDown" | "ArrowUp") {
@@ -100,11 +102,11 @@ export function SearchBox<T>(props: {
     <div
       style={{
         padding: spacing(smallScreen ? 0 : 1),
-        paddingTop: spacing(2),
-        paddingBottom: spacing(2),
+        paddingTop: spacing(embedded ? 2 : 0),
+        paddingBottom: spacing(embedded ? 2 : 0),
         marginLeft: spacing(smallScreen ? 0 : 3),
         marginRight: spacing(smallScreen ? 0 : 3),
-        marginTop: spacing(2),
+        marginTop: spacing(embedded ? 2 : 1),
         marginBottom: spacing(1),
       }}>
       <div
