@@ -1,7 +1,12 @@
-import { crunchWord, MorceusCruncher } from "@/morceus/crunch";
+import {
+  consolidateResultCluster,
+  crunchWord,
+  MorceusCruncher,
+} from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import type {
   CruncherConfig,
+  CrunchResult,
   LatinWordAnalysis,
 } from "@/morceus/cruncher_types";
 import {
@@ -178,5 +183,66 @@ describe("MorceusCruncher", () => {
         ],
       },
     ]);
+  });
+});
+
+describe("consolidateResultCluster", () => {
+  function resultFor(stringInput: string): CrunchResult {
+    return {
+      lemma: "lemma",
+      form: "form",
+      grammaticalData: toInflectionData(stringInput.split(" ")).grammaticalData,
+    };
+  }
+
+  it("combines basic subsets", () => {
+    const inputs: CrunchResult[] = ["abl sg", "abl/dat sg"].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([inputs[1]]);
+  });
+
+  it("combines subsets across multiple categories", () => {
+    const inputs: CrunchResult[] = ["nom/voc/acc masc/fem", "nom/acc masc"].map(
+      resultFor
+    );
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([inputs[0]]);
+  });
+
+  it("does not combine disjoint results", () => {
+    const inputs: CrunchResult[] = ["abl pl", "abl/dat sg"].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual(inputs);
+  });
+
+  it("combines mergeable case results", () => {
+    const inputs: CrunchResult[] = ["abl pl", "dat pl"].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([resultFor("abl/dat pl")]);
+  });
+
+  it("does not combine unmergeable case results", () => {
+    const inputs: CrunchResult[] = ["acc pl", "dat pl"].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual(inputs);
+  });
+
+  it("combines mergeable gender results", () => {
+    const inputs: CrunchResult[] = ["masc pl", "fem pl"].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([resultFor("masc/fem pl")]);
+  });
+
+  it("combines PPP -īs case", () => {
+    const inputs: CrunchResult[] = [
+      "dat masc pl",
+      "abl masc pl",
+      "dat fem pl",
+      "abl fem pl",
+      "abl neut pl",
+      "dat neut pl",
+    ].map(resultFor);
+    const outputs = consolidateResultCluster(inputs);
+    expect(outputs).toStrictEqual([resultFor("dat/abl masc/fem/neut pl")]);
   });
 });

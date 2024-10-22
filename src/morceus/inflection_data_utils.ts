@@ -171,7 +171,7 @@ export function subsetOf<T>(first?: T | T[], second?: T | T[]): boolean {
   return true;
 }
 
-function compareField<T>(
+export function compareField<T>(
   first?: T | T[],
   second?: T | T[]
 ): -1 | 0 | 1 | undefined {

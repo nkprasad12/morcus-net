@@ -14,6 +14,7 @@ import {
   StemMapValue,
 } from "@/morceus/cruncher_types";
 import {
+  compareField,
   compareGrammaticalData,
   InflectionContext,
   subsetOf,
@@ -21,10 +22,12 @@ import {
 import { type StemCode } from "@/morceus/stem_parsing";
 import { expandSingleEnding } from "@/morceus/tables/template_utils_no_fs";
 import {
+  LatinCase,
   LatinDegree,
   LatinGender,
   LatinMood,
   LatinTense,
+  type WordInflectionData,
 } from "@/morceus/types";
 
 const ENCLITICS = ["que", "ne", "ve"];
@@ -117,8 +120,59 @@ function crunchExactMatch(
   return results;
 }
 
-function consolidateResultCluster(cluster: CrunchResult[]): CrunchResult[] {
+function fieldAsArray<T>(input: T | T[] | undefined): T[] {
+  return Array.isArray(input) ? input : input === undefined ? [] : [input];
+}
+
+function consolidateByCategory<T extends keyof WordInflectionData>(
+  cluster: CrunchResult[],
+  category: T,
+  consolidable: WordInflectionData[T][]
+): CrunchResult[] {
+  const unmerged: CrunchResult[] = [];
+  const mergeGroups: CrunchResult[] = [];
+  for (const item of cluster) {
+    const itemField = item.grammaticalData[category];
+    // @ts-expect-error
+    const k = compareField(itemField, consolidable);
+    // Only consider those that have a subset.
+    const isCandidate = k === -1 || k === 0;
+    if (!isCandidate) {
+      unmerged.push(item);
+      continue;
+    }
+    let consumed = false;
+    for (const leader of mergeGroups) {
+      const currData = { ...item.grammaticalData };
+      currData[category] = undefined;
+      const leaderData = { ...leader.grammaticalData };
+      leaderData[category] = undefined;
+      if (compareGrammaticalData(currData, leaderData) === 0) {
+        // @ts-expect-error
+        leaderData[category] = [
+          // @ts-expect-error
+          ...fieldAsArray(leader.grammaticalData[category]),
+          // @ts-expect-error
+          ...fieldAsArray(item.grammaticalData[category]),
+        ];
+        leader.grammaticalData = leaderData;
+        consumed = true;
+        break;
+      }
+    }
+    if (!consumed) {
+      mergeGroups.push(item);
+    }
+  }
+  return unmerged.concat(mergeGroups);
+}
+
+/** Consolidates cruncher results to reduce duplication. */
+export function consolidateResultCluster(
+  cluster: CrunchResult[]
+): CrunchResult[] {
   let original = cluster.slice();
+  // Merge results that are strict subsets of other results.
   while (true) {
     const consolidated: CrunchResult[] = [];
     for (const result of original) {
@@ -143,9 +197,18 @@ function consolidateResultCluster(cluster: CrunchResult[]): CrunchResult[] {
     const didConsolidate = original.length !== consolidated.length;
     original = consolidated;
     if (!didConsolidate) {
-      return original;
+      break;
     }
   }
+  original = consolidateByCategory(original, "case", [
+    LatinCase.Ablative,
+    LatinCase.Dative,
+  ]);
+  return consolidateByCategory(original, "gender", [
+    LatinGender.Feminine,
+    LatinGender.Masculine,
+    LatinGender.Neuter,
+  ]);
 }
 
 function consolidateCrunchResults(rawResults: CrunchResult[]): CrunchResult[] {
