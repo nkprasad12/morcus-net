@@ -54,6 +54,7 @@ import { SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { useCallback } from "react";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
+import { arrayMapBy } from "@/common/data_structures/collect_map";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -407,40 +408,62 @@ function DictionaryEntries(props: { entries: EntriesByDict[] }) {
   );
 }
 
+type DedupedSubsectionResult = Omit<DictSubsectionResult, "id"> & {
+  ids: string[];
+};
+
+function dedupeSubsectons(
+  subsections: DictSubsectionResult[]
+): DedupedSubsectionResult[] {
+  return Array.from(arrayMapBy(subsections, (s) => s.name).map.values()).map(
+    (results) => ({ ...results[0], ids: results.map((r) => r.id) })
+  );
+}
+
 function SubsectionNote(props: {
   subsections: DictSubsectionResult[];
   scale: number;
 }) {
-  const { subsections, scale } = props;
+  const { scale } = props;
+  const subsections = dedupeSubsectons(props.subsections);
 
   return (
     <div style={{ marginBottom: "8px" }}>
       <div style={{ marginBottom: "4px" }} className="text sm">
         Found matches for{" "}
         {subsections.map((subsection, i) => (
-          <span
-            key={subsection.name}
-            onClick={() => {
-              document
-                .getElementById(subsection.id)
-                ?.scrollIntoView(SCROLL_SMOOTH);
-            }}>
-            <span className="lsSenseBullet" style={{ whiteSpace: "nowrap" }}>
-              <SvgIcon
-                pathD={SvgIcon.KeyboardArrowDown}
-                style={{
-                  marginRight: `${-0.2 * scale}em`,
-                  fontSize: `${1 * scale}em`,
-                  paddingLeft: `${0.2 * scale}em`,
-                  paddingRight: `${0.4 * scale}em`,
-                }}
-              />
-              {subsection.name}{" "}
-            </span>
+          <React.Fragment key={subsection.name}>
+            {subsection.ids.map((id, j) => (
+              <React.Fragment key={id}>
+                {j > 0 && ", "}
+                <span
+                  key={id}
+                  onClick={() => {
+                    document.getElementById(id)?.scrollIntoView(SCROLL_SMOOTH);
+                  }}>
+                  <span
+                    className="lsSenseBullet"
+                    style={{ whiteSpace: "nowrap" }}>
+                    <SvgIcon
+                      pathD={SvgIcon.KeyboardArrowDown}
+                      style={{
+                        marginRight: `${-0.2 * scale}em`,
+                        fontSize: `${1 * scale}em`,
+                        paddingLeft: `${0.2 * scale}em`,
+                        paddingRight: `${0.4 * scale}em`,
+                      }}
+                    />
+                    {(j === 0 ? subsection.name + " " : "") +
+                      (subsection.ids.length > 1 ? `#${j + 1}` : "") +
+                      " "}
+                  </span>
+                </span>
+              </React.Fragment>
+            ))}
             {i < subsections.length - 1 && (
               <span>{i < subsections.length - 2 ? " , " : " and "}</span>
             )}
-          </span>
+          </React.Fragment>
         ))}
         , which {subsections.length > 1 ? "are" : "is"} part of a larger entry.
       </div>

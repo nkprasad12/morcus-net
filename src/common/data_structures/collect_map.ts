@@ -27,6 +27,15 @@ export function arrayMap<K, V>() {
   return collectMap<K, V, V[]>({ make: () => [], add: (c, v) => c.push(v) });
 }
 
+/** Creates an arrayMap initialized with the given list. */
+export function arrayMapBy<K, V>(list: V[], sorter: (v: V) => K) {
+  const bySorter = arrayMap<K, V>();
+  for (const v of list) {
+    bySorter.add(sorter(v), v);
+  }
+  return bySorter;
+}
+
 export function setMap<K, V>() {
   return collectMap<K, V, Set<V>>({
     make: () => new Set<V>(),
