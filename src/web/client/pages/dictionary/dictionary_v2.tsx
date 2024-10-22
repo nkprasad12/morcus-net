@@ -470,13 +470,14 @@ function SubsectionNote(props: {
       {subsections.map(
         (subsection) =>
           subsection.inflections && (
-            <>
-              <div className="text sm">
+            <details key={subsection.name} open={subsections.length < 2}>
+              <summary className="text sm">
                 Inflections of <span className="lsOrth">{subsection.name}</span>
-                :
+              </summary>
+              <div style={{ paddingLeft: "12px" }}>
+                <InflectionDataSection inflections={subsection.inflections} />
               </div>
-              <InflectionDataSection inflections={subsection.inflections} />
-            </>
+            </details>
           )
       )}
     </div>
