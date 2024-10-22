@@ -4,7 +4,7 @@ import { CSSProperties } from "react";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 
 export function SettingsText(props: { message: string }) {
-  return <span className="text md light">{props.message}</span>;
+  return <span className="text sm light">{props.message}</span>;
 }
 
 export function capitalizeWords(input: string): string {

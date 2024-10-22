@@ -150,6 +150,7 @@ interface ReaderState {
   hasTooltip: React.MutableRefObject<boolean[]>;
   section: ProcessedWorkNode | undefined;
   queryLine?: number;
+  highlightMode?: "centerOnly" | "highlightAndCenter";
   highlightRef?: React.RefObject<HTMLSpanElement>;
 }
 
@@ -169,6 +170,8 @@ export function ReadingPage() {
   const { nav, route } = Router.useRouter();
   const queryPage = safeParseInt(route.params?.q || route.params?.pg);
   const queryLine = safeParseInt(route.params?.l);
+  const highlightMode =
+    route.params?.hl === "0" ? "centerOnly" : "highlightAndCenter";
 
   const section = React.useMemo(
     () =>
@@ -228,7 +231,7 @@ export function ReadingPage() {
 
   return (
     <ReaderContext.Provider
-      value={{ hasTooltip, section, queryLine, highlightRef }}>
+      value={{ hasTooltip, section, queryLine, highlightRef, highlightMode }}>
       <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
         MainColumn={WorkColumn}
         ExtraSidebarContent={Sidebar}
@@ -420,6 +423,11 @@ function labelForId(
   return text + subtitle;
 }
 
+/**
+ * A label for the penultimate part of the work division.
+ * For example, in a work with Books, Chapters, and Sections, this would show
+ * `Chapter N`.
+ */
 function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
   const parts = props.work.textParts;
   if (props.page < 0 || parts.length <= 1) {
@@ -570,7 +578,7 @@ function WorkNavigation(props: {
           {isTerminal ? (
             <div style={{ paddingLeft: "8px" }}>
               <span
-                className="text md terminalNavItem"
+                className="text sm terminalNavItem"
                 onClick={() => {
                   for (let i = 0; i < props.work.pages.length; i++) {
                     const page = props.work.pages[i];
@@ -604,14 +612,57 @@ function WorkNavigation(props: {
   );
 }
 
-function WorkNavigationSection(props: { work: PaginatedWork }) {
+function NumberInput(props: { onEnter: (input: number) => unknown }) {
+  const [value, setValue] = useState<number | undefined>(undefined);
   return (
-    <details open>
-      <summary>
-        <SettingsText message={props.work.info.title} />
-      </summary>
-      <WorkNavigation root={props.work.root} work={props.work} level={1} />
-    </details>
+    <input
+      style={{ maxWidth: "48px", borderRadius: "4px" }}
+      className="bgColor text"
+      value={value ?? ""}
+      onChange={(e) => {
+        const entered = e.target.value;
+        if (entered.length === 0) {
+          setValue(undefined);
+          return;
+        }
+        if (/^\d+$/.test(entered)) {
+          setValue(parseInt(entered));
+        }
+      }}
+      onKeyUp={(e) => {
+        if (e.key === "Enter" && value !== undefined) {
+          props.onEnter(value);
+        }
+      }}
+    />
+  );
+}
+
+function WorkNavigationSection(props: { work: PaginatedWork }) {
+  const { nav } = Router.useRouter();
+  const sectionName = props.work.textParts.slice(-2)[0].toLowerCase();
+  return (
+    <div style={{ marginTop: "2px" }}>
+      <div className="text sm light">
+        <span>
+          Jump to {props.work.textParts.slice(-1)[0].toLowerCase()} in current{" "}
+          {sectionName}:{"  "}
+          <NumberInput
+            onEnter={(l) =>
+              nav.to((old) => ({ ...old, params: { l: `${l - 1}`, hl: "0" } }))
+            }
+          />
+        </span>
+      </div>
+      <details open>
+        <summary>
+          <SettingsText
+            message={`Browse ${sectionName}s of ${props.work.info.title}`}
+          />
+        </summary>
+        <WorkNavigation root={props.work.root} work={props.work} level={1} />
+      </details>
+    </div>
   );
 }
 
@@ -708,7 +759,7 @@ function WorkChunk(props: {
   isMobile: boolean;
   highlight?: boolean;
 }) {
-  const { highlightRef } = React.useContext(ReaderContext);
+  const { highlightRef, highlightMode } = React.useContext(ReaderContext);
   const { isMobile, node } = props;
   const id = node.id
     .map((idPart) =>
@@ -734,7 +785,11 @@ function WorkChunk(props: {
       </span>
       <span
         ref={props.highlight ? highlightRef : undefined}
-        className={props.highlight ? "highlighted" : undefined}
+        className={
+          props.highlight && highlightMode !== "centerOnly"
+            ? "highlighted"
+            : undefined
+        }
         style={{
           gridColumn: 2,
           gridRow: row,
