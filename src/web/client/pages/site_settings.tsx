@@ -47,7 +47,7 @@ function GlobalSettingsCheckbox(props: {
   );
 }
 
-// @ts-expect-error
+// @ts-expect-error [Code works but is not ready to deploy]
 function OfflineSettingsSection() {
   const globalSettings = useContext(GlobalSettingsContext);
 

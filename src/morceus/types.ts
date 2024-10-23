@@ -93,15 +93,17 @@ export interface VerbInflection {
   tense: LatinTense;
 }
 
+export type DataField<T> = T | T[] | undefined;
+
 export interface WordInflectionData {
-  case?: LatinCase | LatinCase[];
-  number?: LatinNumber | LatinNumber[];
-  gender?: LatinGender | LatinGender[];
-  person?: LatinPerson | LatinPerson[];
-  voice?: LatinVoice | LatinVoice[];
-  mood?: LatinMood | LatinMood[];
-  tense?: LatinTense | LatinTense[];
-  degree?: LatinDegree | LatinDegree[];
+  case?: DataField<LatinCase>;
+  number?: DataField<LatinNumber>;
+  gender?: DataField<LatinGender>;
+  person?: DataField<LatinPerson>;
+  voice?: DataField<LatinVoice>;
+  mood?: DataField<LatinMood>;
+  tense?: DataField<LatinTense>;
+  degree?: DataField<LatinDegree>;
 }
 
 export interface Word {
