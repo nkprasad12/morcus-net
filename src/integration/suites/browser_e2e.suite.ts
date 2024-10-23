@@ -398,5 +398,37 @@ export function defineBrowserE2eSuite() {
       // Usually the scroll takes ~300 ms.
       await awaitVisible(britannos, 2000);
     });
+
+    e2eTest()("reader copy paste across lines", async (screenSize) => {
+      const page = await getPage(screenSize, "/work/juvenal/saturae?q=1");
+      const semper = await waitForText("Semper");
+      const cordi = await waitForText("Cordi");
+
+      // TODO: Extract this out into a "select" function
+      await page.evaluate(
+        // @ts-ignore [This causes an issue for type checking if Puppeteer isn't installed]
+        (from, to) => {
+          // @ts-ignore [This executes in the browser, where `getSelection` exists]
+          const selection = from.getRootNode().getSelection();
+          const range = document.createRange();
+          range.setStartBefore(from);
+          range.setEndAfter(to);
+          selection.removeAllRanges();
+          selection.addRange(range);
+        },
+        semper,
+        cordi
+      );
+      // TODO: Extract this out into a "copy selection" function
+      const copied = await page.evaluate(() => {
+        // Copy the selected content to the clipboard
+        document.execCommand("copy");
+        // Obtain the content of the clipboard as a string
+        return navigator.clipboard.readText();
+      });
+      expect(copied).toBe(
+        "Semper ego auditor tantum? numquamne reponam\nvexatus totiens rauci Theseide Cordi"
+      );
+    });
   });
 }
