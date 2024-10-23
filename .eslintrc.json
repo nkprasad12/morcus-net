@@ -65,6 +65,9 @@
     "jest/valid-title": 2,
     "jest/valid-expect": 2,
     "jest/no-identical-title": 2,
-    "jest/no-standalone-expect": 2
+    "jest/no-standalone-expect": [
+      2,
+      { "additionalTestBlockFunctions": ["e2eTest"] }
+    ]
   }
 }

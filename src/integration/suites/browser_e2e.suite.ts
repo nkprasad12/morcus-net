@@ -9,7 +9,7 @@ import {
   type ScreenSize,
   ALL_SCREEN_SIZES,
   BROWSERS,
-  LARGE_ONLY,
+  multiSizeIteratedTest,
 } from "@/integration/utils/puppeteer_utils";
 
 export function defineBrowserE2eSuite() {
@@ -171,26 +171,31 @@ export function defineBrowserE2eSuite() {
       return page;
     }
 
+    const e2eTest: typeof multiSizeIteratedTest = (sizes, iterations) => {
+      return (name, testCase) => {
+        multiSizeIteratedTest(sizes, iterations)(name, async (size, i) => {
+          const tag = name.replaceAll(" ", "-");
+          writeContext(tag, size, i);
+          await testCase(size, i);
+        });
+      };
+    };
+
     // // // // // // // // //
     // General / Navigation //
     // // // // // // // // //
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should load the landing page on %s screen #%s",
-      async (screenSize, i) => {
-        const page = await getPage(screenSize);
-        writeContext("loadLanding", screenSize, i);
+    e2eTest()("should load the landing page", async (screenSize) => {
+      const page = await getPage(screenSize);
 
-        await checkTitleIs("Morcus Latin Tools");
-        expect(page.url()).toMatch(/\/dicts$/);
-      }
-    );
+      await checkTitleIs("Morcus Latin Tools");
+      expect(page.url()).toMatch(/\/dicts$/);
+    });
 
-    it.each(ALL_SCREEN_SIZES(3))(
-      "should have working tab navigation on %s screen #%s",
-      async (screenSize, i) => {
+    e2eTest(ALL_SCREEN_SIZES, 3)(
+      "should have working tab navigation",
+      async (screenSize) => {
         const page = await getPage(screenSize);
-        writeContext("tabNav", screenSize, i);
 
         await openTab("About", screenSize, page);
         await checkHasText("GPL-3.0");
@@ -198,26 +203,21 @@ export function defineBrowserE2eSuite() {
       }
     );
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should load about page on %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/about");
-        writeContext("aboutPage", screenSize, i);
+    e2eTest()("should load about page", async (screenSize) => {
+      await getPage(screenSize, "/about");
 
-        await checkHasText("GPL-3.0");
-        await checkHasText("CC BY-SA 4.0");
-      }
-    );
+      await checkHasText("GPL-3.0");
+      await checkHasText("CC BY-SA 4.0");
+    });
 
     // // // // // // // // //
     // Dictionary - Search  //
     // // // // // // // // //
 
-    it.each(LARGE_ONLY(5))(
-      "should load dictionary results on %s screen by typing and enter #%s",
-      async (screenSize, i) => {
+    e2eTest("large", 5)(
+      "should load dictionary results by typing and enter",
+      async (screenSize) => {
         const page = await getPage(screenSize, "/dicts");
-        writeContext("dictSearchTypeEnter", screenSize, i);
 
         await page.click(`[aria-label="Dictionary search box"]`);
         await page.keyboard.type("canaba", { delay: 20 });
@@ -228,11 +228,10 @@ export function defineBrowserE2eSuite() {
       }
     );
 
-    it.each(LARGE_ONLY(5))(
-      "should load dictionary results on %s screen by arrows and autocomplete #%s",
-      async (screenSize, i) => {
+    e2eTest("large", 5)(
+      "should load dictionary results by arrows and autocomplete",
+      async (screenSize) => {
         const page = await getPage(screenSize, "/dicts");
-        writeContext("dictSearchArrowEnter", screenSize, i);
 
         await page.click(`[aria-label="Dictionary search box"]`);
         await page.keyboard.type("can", { delay: 20 });
@@ -247,11 +246,10 @@ export function defineBrowserE2eSuite() {
       }
     );
 
-    it.each(ALL_SCREEN_SIZES(5))(
-      "should load dictionary results on %s screen by click and autocomplete #%s",
-      async (screenSize, i) => {
+    e2eTest(ALL_SCREEN_SIZES, 5)(
+      "should load dictionary results by click and autocomplete",
+      async (screenSize) => {
         const page = await getPage(screenSize, "/dicts");
-        writeContext("dictSearchClick", screenSize, i);
 
         await page.click(`[aria-label="Dictionary search box"]`);
         await page.keyboard.type("can", { delay: 20 });
@@ -266,11 +264,10 @@ export function defineBrowserE2eSuite() {
     // Dictionary - Main //
     // // // // // // // //
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should allow linkified latin words in SH %s screen #%s",
-      async (screenSize, i) => {
+    e2eTest()(
+      "should allow linkified latin words in SH",
+      async (screenSize) => {
         const page = await getPage(screenSize, "/dicts");
-        writeContext("linkLatInSH", screenSize, i);
 
         await page.click(`[aria-label="Dictionary search box"]`);
         await page.keyboard.type("influence", { delay: 20 });
@@ -293,155 +290,113 @@ export function defineBrowserE2eSuite() {
       }
     );
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should allow loading entries by old id on %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/dicts?q=n37007&o=2");
-        writeContext("dictEntryByOldId", screenSize, i);
-        await checkHasText("pondus");
-        await checkHasText("a weight");
-      }
-    );
+    e2eTest()("should allow loading entries by old id", async (screenSize) => {
+      await getPage(screenSize, "/dicts?q=n37007&o=2");
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    });
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should allow loading LS entries by name on %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/dicts?q=pondus");
-        writeContext("lsEntryByName", screenSize, i);
-        await checkHasText("pondus");
-        await checkHasText("a weight");
-      }
-    );
+    e2eTest()("should allow loading LS entries by name", async (screenSize) => {
+      await getPage(screenSize, "/dicts?q=pondus");
+      await checkHasText("pondus");
+      await checkHasText("a weight");
+    });
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should allow loading LS entries by new id on %s screen #%s",
-      async (screenSize, i) => {
+    e2eTest()(
+      "should allow loading LS entries by new id",
+      async (screenSize) => {
         await getPage(screenSize, "/dicts/id/n37007");
-        writeContext("lsEntryById", screenSize, i);
         await checkHasText("pondus");
         await checkHasText("a weight");
       }
     );
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should allow loading SH entries by name on %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/dicts?q=habiliment");
-        writeContext("shEntryByOldId", screenSize, i);
-        await checkHasText("habiliment");
-        await checkHasText("garment");
-      }
-    );
+    e2eTest()("should allow loading SH entries by name", async (screenSize) => {
+      await getPage(screenSize, "/dicts?q=habiliment");
+      await checkHasText("habiliment");
+      await checkHasText("garment");
+    });
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "should allow loading SH entries by new id on %s screen #%s",
-      async (screenSize, i) => {
+    e2eTest()(
+      "should allow loading SH entries by new id",
+      async (screenSize) => {
         await getPage(screenSize, "/dicts/id/sh11673");
-        writeContext("shEntryById", screenSize, i);
         await checkHasText("habiliment");
         await checkHasText("garment");
       }
     );
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "allows queries from the new ID page on %s screen #%s",
-      async (screenSize, i) => {
-        const page = await getPage(screenSize, "/dicts/id/sh11673");
-        writeContext("queryFromNewIdPage", screenSize, i);
+    e2eTest()("allows queries from the new ID page", async (screenSize) => {
+      const page = await getPage(screenSize, "/dicts/id/sh11673");
 
-        await page.click(`[aria-label="Dictionary search box"]`);
-        await page.keyboard.type("abagio", { delay: 20 });
-        await page.keyboard.press("Enter");
+      await page.click(`[aria-label="Dictionary search box"]`);
+      await page.keyboard.type("abagio", { delay: 20 });
+      await page.keyboard.press("Enter");
 
-        await waitForText("supposed etymology of adagio");
-        await checkTitleIs("abagio | Morcus Latin Tools");
-      }
-    );
+      await waitForText("supposed etymology of adagio");
+      await checkTitleIs("abagio | Morcus Latin Tools");
+    });
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "allows copying id links via tooltip %s screen #%s",
-      async (screenSize, i) => {
-        const page = await getPage(screenSize, "/dicts?q=pondus");
-        writeContext("copyArticleLink", screenSize, i);
+    e2eTest()("allows copying id links via tooltip", async (screenSize) => {
+      const page = await getPage(screenSize, "/dicts?q=pondus");
 
-        const button = await findText("pondus", page, "span", "lsSenseBullet");
-        await button.click();
-        const tooltip = await findText("Copy article link", page);
-        await tooltip.click();
+      const button = await findText("pondus", page, "span", "lsSenseBullet");
+      await button.click();
+      const tooltip = await findText("Copy article link", page);
+      await tooltip.click();
 
-        expect(
-          await page.evaluate(() => navigator.clipboard.readText())
-        ).toEqual(`${global.location.origin}/dicts/id/n37007`);
-      }
-    );
+      expect(await page.evaluate(() => navigator.clipboard.readText())).toEqual(
+        `${global.location.origin}/dicts/id/n37007`
+      );
+    });
 
     // // // // //
     // Library  //
     // // // // //
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "shows library options on %s screen",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/library");
-        writeContext("libraryListsWorks", screenSize, i);
+    e2eTest()("shows library options", async (screenSize) => {
+      await getPage(screenSize, "/library");
 
-        await awaitAndClickText("Gallico");
-        // This assumes that the info tab is the first one shown.
-        // This is the editor.
-        await waitForText("T. Rice Holmes");
-      }
-    );
+      await awaitAndClickText("Gallico");
+      // This assumes that the info tab is the first one shown.
+      // This is the editor.
+      await waitForText("T. Rice Holmes");
+    });
 
     // // // // //
     // Reader   //
     // // // // //
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "shows works by name and author on %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/work/caesar/de_bello_gallico");
-        writeContext("workByNameAndAuthor", screenSize, i);
-        await waitForText("Gallia");
-      }
-    );
+    e2eTest()("shows works by name and author", async (screenSize) => {
+      await getPage(screenSize, "/work/caesar/de_bello_gallico");
+      await waitForText("Gallia");
+    });
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "shows works by name and author and page %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/work/caesar/de_bello_gallico?pg=3");
-        writeContext("workByNameAndAuthorWithPage", screenSize, i);
-        await waitForText("Orgetorix");
-      }
-    );
+    e2eTest()("shows works by name and author and page", async (screenSize) => {
+      await getPage(screenSize, "/work/caesar/de_bello_gallico?pg=3");
+      await waitForText("Orgetorix");
+    });
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "handles clicky vocab on %s screen #%s",
-      async (screenSize, i) => {
-        await getPage(screenSize, "/work/caesar/de_bello_gallico");
-        writeContext("workByNameAndAuthor", screenSize, i);
-        await awaitAndClickText("divisa");
+    e2eTest()("handles clicky vocab", async (screenSize) => {
+      await getPage(screenSize, "/work/caesar/de_bello_gallico");
+      await awaitAndClickText("divisa");
 
-        // This is part of the entry for `divido`.
-        await waitForText("To force asunder");
-      }
-    );
+      // This is part of the entry for `divido`.
+      await waitForText("To force asunder");
+    });
 
-    it.each(ALL_SCREEN_SIZES(1))(
-      "has working scroll to line %s screen #%s",
-      async (screenSize, i) => {
-        const page = await getPage(screenSize, "/work/juvenal/saturae?q=2");
-        writeContext("readerScrollToLine", screenSize, i);
-        const britannos = await waitForText("Britannos");
-        expect(await britannos.isIntersectingViewport()).toBe(false);
+    e2eTest()("has working scroll to line", async (screenSize) => {
+      const page = await getPage(screenSize, "/work/juvenal/saturae?q=2");
+      const britannos = await waitForText("Britannos");
+      expect(await britannos.isIntersectingViewport()).toBe(false);
 
-        await page.click(`[aria-label="Outline"]`);
-        await page.click(`[aria-label="jump to section"]`);
-        await page.keyboard.type("161");
-        await page.keyboard.press("Enter");
+      await page.click(`[aria-label="Outline"]`);
+      await page.click(`[aria-label="jump to section"]`);
+      await page.keyboard.type("161");
+      await page.keyboard.press("Enter");
 
-        // Usually the scroll takes ~300 ms.
-        await awaitVisible(britannos, 2000);
-      }
-    );
+      // Usually the scroll takes ~300 ms.
+      await awaitVisible(britannos, 2000);
+    });
   });
 }

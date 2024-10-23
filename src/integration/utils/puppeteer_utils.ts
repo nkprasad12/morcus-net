@@ -9,23 +9,31 @@ export type ScreenSize = "small" | "large";
 
 const SMALL_SCREEN: ScreenSize = "small";
 const LARGE_SCREEN: ScreenSize = "large";
-const SIZE_VARIANTS: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
+export const ALL_SCREEN_SIZES: ScreenSize[] = [SMALL_SCREEN, LARGE_SCREEN];
 
 export const BROWSERS: BrowserProduct[] = ["firefox", "chrome"];
-export const SMALL_ONLY: (iterations: number) => [ScreenSize, number][] = (n) =>
-  [...Array(n).keys()].flatMap((i) =>
-    [SMALL_SCREEN].map((v) => [v, i + 1] as [ScreenSize, number])
+
+export const multiSizeIteratedTest = (
+  sizes?: ScreenSize | ScreenSize[],
+  iterations?: number
+) => {
+  const n = iterations ?? 1;
+  const finalSizes =
+    sizes === undefined
+      ? ALL_SCREEN_SIZES
+      : Array.isArray(sizes)
+      ? sizes
+      : [sizes];
+  const configs = [...Array(n).keys()].flatMap((i) =>
+    finalSizes.map((v) => [v, i + 1] as [ScreenSize, number])
   );
-export const LARGE_ONLY: (iterations: number) => [ScreenSize, number][] = (n) =>
-  [...Array(n).keys()].flatMap((i) =>
-    [LARGE_SCREEN].map((v) => [v, i + 1] as [ScreenSize, number])
-  );
-export const ALL_SCREEN_SIZES: (
-  iterations: number
-) => [ScreenSize, number][] = (n) =>
-  [...Array(n).keys()].flatMap((i) =>
-    SIZE_VARIANTS.map((v) => [v, i + 1] as [ScreenSize, number])
-  );
+  return (
+    name: string,
+    testCase: (size: ScreenSize, iteration: number) => Promise<unknown>
+  ) => {
+    it.each(configs)(`${name} [%s screen] [#%s]`, testCase);
+  };
+};
 
 export async function setSize(size: ScreenSize, page: Page) {
   const isSmall = size === "small";

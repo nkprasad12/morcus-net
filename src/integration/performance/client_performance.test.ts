@@ -16,6 +16,7 @@ import {
   type ScreenSize,
   checkTitleIs,
   waitForText,
+  multiSizeIteratedTest as e2eTest,
 } from "@/integration/utils/puppeteer_utils";
 import { checkPresent } from "@/common/assert";
 import fs from "fs";
@@ -35,7 +36,7 @@ describe("Client Performance Tests", () => {
   const allMetrics = arrayMap<string, Metrics>();
 
   beforeAll(async () => {
-    browser = await puppeteer.launch({ headless: true, product: "chrome" });
+    browser = await puppeteer.launch({ headless: true, browser: "chrome" });
     const context = browser.defaultBrowserContext();
     await context.overridePermissions(global.location.origin, [
       "clipboard-read",
@@ -68,30 +69,24 @@ describe("Client Performance Tests", () => {
     return page;
   }
 
-  it.each(ALL_SCREEN_SIZES(50))(
-    "metrics for landing %s screen #%s",
-    async (screenSize) => {
-      const page = await getSizedPage(screenSize);
-      await page.goto(global.location.origin);
-      await checkTitleIs("Morcus Latin Tools", page);
-      expect(page.url()).toMatch(/\/dicts$/);
+  e2eTest(ALL_SCREEN_SIZES, 50)("metrics for landing", async (screenSize) => {
+    const page = await getSizedPage(screenSize);
+    await page.goto(global.location.origin);
+    await checkTitleIs("Morcus Latin Tools", page);
+    expect(page.url()).toMatch(/\/dicts$/);
 
-      const metrics = await page.metrics();
-      const key = JSON.stringify([screenSize, "habeo"]);
-      allMetrics.add(key, metrics);
-    }
-  );
+    const metrics = await page.metrics();
+    const key = JSON.stringify([screenSize, "habeo"]);
+    allMetrics.add(key, metrics);
+  });
 
-  it.each(ALL_SCREEN_SIZES(50))(
-    "metrics for habeo %s screen #%s",
-    async (screenSize) => {
-      const page = await getSizedPage(screenSize);
-      await page.goto(`${global.location.origin}/dicts/id/n20077`);
-      await waitForText("HABETO", page);
+  e2eTest(ALL_SCREEN_SIZES, 50)("metrics for habeo", async (screenSize) => {
+    const page = await getSizedPage(screenSize);
+    await page.goto(`${global.location.origin}/dicts/id/n20077`);
+    await waitForText("HABETO", page);
 
-      const metrics = await page.metrics();
-      const key = JSON.stringify([screenSize, "landing"]);
-      allMetrics.add(key, metrics);
-    }
-  );
+    const metrics = await page.metrics();
+    const key = JSON.stringify([screenSize, "landing"]);
+    allMetrics.add(key, metrics);
+  });
 });
