@@ -861,6 +861,13 @@ function displayForLibraryChunk(
   if (alt === "gap") {
     return React.createElement("span", { key: key }, [" [gap]"]);
   }
+  // TODO: This is kind of a hack for Juvenal, because it has <note> elements
+  // that split up text, but we ignore whitespace in the processing so something
+  // like `foo<note>...</note> bar` would ignore the space before `bar`.
+  // Ideally we should be smarter about how we handle whitespace.
+  if (alt === "note") {
+    return React.createElement("span", { key: key }, [" "]);
+  }
   if (alt === "q" || alt === "quote") {
     return React.createElement("span", { key: key }, ["'", ...children, "'"]);
   }

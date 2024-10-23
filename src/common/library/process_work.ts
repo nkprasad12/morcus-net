@@ -61,6 +61,11 @@ function markupText(textNode: SingleTextNode, debug?: DebugHelper): XmlChild[] {
 }
 
 function markupTextInNode(node: XmlNode, debug?: DebugHelper): XmlNode {
+  // This is kind of a hack for Juvenal, because the <note> splits up text, and
+  // we ignore whitespace so a space after the test is ignored.
+  if (node.name === "note") {
+    return new XmlNode("span", [["alt", "note"]]);
+  }
   const contentNodes = findTextNodes(node).filter((tn) => !shouldSkip(tn));
   if (contentNodes.length === 0) {
     return new XmlNode("span", [], []);
