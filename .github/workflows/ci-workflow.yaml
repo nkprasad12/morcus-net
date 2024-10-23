@@ -24,7 +24,7 @@ jobs:
         with:
           node-version-file: package.json
       - name: Installing npm dependencies
-        run: npm ci --omit optional
+        run: npm ci
       - name: Installing Python dependencies
         run: pip install -r requirements.txt
       - name: Running unit tests
