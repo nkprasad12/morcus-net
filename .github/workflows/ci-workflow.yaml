@@ -29,12 +29,14 @@ jobs:
         run: pip install -r requirements.txt
       - name: Running unit tests
         run: npm run coverage
+      - name: Checking formatting
+        run: npm run format-check
+      - name: Checking TS types
+        run: npx tsc
       - name: Upload coverage reports to Codecov
         uses: codecov/codecov-action@v4
         with:
           directory: ./coverage
-      - name: Checking formatting
-        run: npm run format-check
 
   pytype-checks:
     runs-on: ubuntu-latest

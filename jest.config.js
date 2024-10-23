@@ -1,13 +1,22 @@
-const { pathsToModuleNameMapper } = require("ts-jest");
 
-/** @type {import('ts-jest').JestConfigWithTsJest} */
 module.exports = {
-  preset: "ts-jest",
-  testEnvironment: "node",
-  roots: ["<rootDir>"],
   modulePaths: ["./src"],
-  moduleNameMapper: pathsToModuleNameMapper({
-    "@/*": ["*"],
-  }),
+  moduleNameMapper: {
+    "^@/(.+)$": "<rootDir>/src/$1"
+  },
   collectCoverageFrom: ["src/**/*.ts", "src/**/*.tsx"],
+  transform: {
+    "^.+\\.(t|j)sx?$": [
+      "@swc/jest",
+      {
+        jsc: {
+          transform: {
+            react: {
+              runtime: "automatic",
+            },
+          },
+        },
+      },
+    ],
+  },
 };

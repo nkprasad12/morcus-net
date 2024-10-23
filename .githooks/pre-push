@@ -6,3 +6,5 @@ echo "Running prettier:"
 npx prettier . --check
 echo "Running Typescript unit tests:"
 npm run ts-tests
+echo "Checking TS types"
+npx tsc

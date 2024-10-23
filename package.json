@@ -14,7 +14,7 @@
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
-    "ts-tests": "npx jest --maxWorkers=4 --testPathIgnorePatterns src/integration/*",
+    "ts-tests": "npx jest --maxWorkers=8 --testPathIgnorePatterns src/integration/*",
     "integration-tests-dev-nb": "IMAGE_TAG=itests npm run integration-tests-docker",
     "integration-tests-dev": "docker build . -t ghcr.io/nkprasad12/morcus:itests && npm run integration-tests-dev-nb",
     "integration-tests-docker": "FROM_DOCKER=1 npx jest src/integration/all_functional",
@@ -29,13 +29,7 @@
     "server-p": "npm run ts-node src/web/nlp/processing_server.ts",
     "ts-driver": "npm run ts-node src/ts_driver.ts -- --allowUnusedLabels",
     "py-driver": "python -c \"import src.py.driver\"",
-    "loc-count": "npm run ts-node src/scripts/count_loc.ts",
-    "scale": "heroku ps:scale web=1 -a morcus-net",
-    "unscale": "heroku ps:scale web=0 -a morcus-net",
-    "logs": "heroku logs -t -a morcus-net",
-    "scale-staging": "heroku ps:scale web=1 -a morcus-net-dev",
-    "unscale-staging": "heroku ps:scale web=0 -a morcus-net-dev",
-    "logs-staging": "heroku logs -t -a morcus-net-dev"
+    "loc-count": "npm run ts-node src/scripts/count_loc.ts"
   },
   "repository": {
     "type": "git",
@@ -53,6 +47,8 @@
     "@emotion/serialize": "^1.1.1",
     "@jest/globals": "^29.7.0",
     "@mui/material": "^5.11.12",
+    "@swc/core": "^1.7.39",
+    "@swc/jest": "^0.2.36",
     "@testing-library/jest-dom": "^5.16.5",
     "@testing-library/react": "^14.0.0",
     "@testing-library/user-event": "^14.4.3",
@@ -95,7 +91,6 @@
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "supertest": "^6.3.3",
-    "ts-jest": "^29.1.2",
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.2",
     "typescript": "5.5.2"
