@@ -429,18 +429,18 @@ export function defineBrowserE2eSuite() {
     it.each(ALL_SCREEN_SIZES(1))(
       "has working scroll to line %s screen #%s",
       async (screenSize, i) => {
-        const page = await getPage(screenSize, "/work/juvenal/saturae");
+        const page = await getPage(screenSize, "/work/juvenal/saturae?q=2");
         writeContext("readerScrollToLine", screenSize, i);
-        const achilles = await waitForText("Achilles");
-        expect(await achilles.isIntersectingViewport()).toBe(false);
+        const britannos = await waitForText("Britannos");
+        expect(await britannos.isIntersectingViewport()).toBe(false);
 
         await page.click(`[aria-label="Outline"]`);
         await page.click(`[aria-label="jump to section"]`);
-        await page.keyboard.type("163");
+        await page.keyboard.type("161");
         await page.keyboard.press("Enter");
 
         // Usually the scroll takes ~300 ms.
-        await awaitVisible(achilles, 2000);
+        await awaitVisible(britannos, 2000);
       }
     );
   });

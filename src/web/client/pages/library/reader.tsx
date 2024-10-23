@@ -656,7 +656,10 @@ function WorkNavigationSection(props: { work: PaginatedWork }) {
         <NumberInput
           label="jump to section"
           onEnter={(l) =>
-            nav.to((old) => ({ ...old, params: { l: `${l - 1}`, hl: "0" } }))
+            nav.to((old) => ({
+              ...old,
+              params: { q: old.params?.q, l: `${l - 1}`, hl: "0" },
+            }))
           }
         />
       </div>
