@@ -26,6 +26,7 @@ jest.mock("@/web/client/utils/media_query", () => {
   };
 });
 import { useMediaQuery } from "@/web/client/utils/media_query";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
@@ -359,7 +360,12 @@ describe("New Dictionary View", () => {
         },
       ],
     });
-    render(<DictionaryViewV2 embedded initial="Belgae" />);
+    render(
+      <GlobalSettingsContext.Provider
+        value={{ data: { embeddedInflectedSearch: true }, setData: () => {} }}>
+        <DictionaryViewV2 embedded initial="Belgae" />
+      </GlobalSettingsContext.Provider>
+    );
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({

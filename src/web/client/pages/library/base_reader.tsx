@@ -380,13 +380,6 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
 const APP_BAR_MAX_HEIGHT = 64;
 const COLUMN_TOP_MARGIN = 8;
 const COLUMN_BOTTON_MARGIN = 8;
-const CONTAINER_STYLE: CSSProperties = {
-  height:
-    window.innerHeight -
-    APP_BAR_MAX_HEIGHT -
-    COLUMN_TOP_MARGIN -
-    COLUMN_BOTTON_MARGIN,
-};
 const COLUMN_STYLE: CSSProperties = {
   height: "100%",
   float: "left",
@@ -418,9 +411,24 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
   const { mainWidth, totalWidth, sidebarRef } = props;
+  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+
+  useEffect(() => {
+    const onResize = () => setWindowHeight(window.innerHeight);
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
 
   return (
-    <Container maxWidth={WIDTH_LOOKUP[totalWidth]} style={CONTAINER_STYLE}>
+    <Container
+      maxWidth={WIDTH_LOOKUP[totalWidth]}
+      style={{
+        height:
+          windowHeight -
+          APP_BAR_MAX_HEIGHT -
+          COLUMN_TOP_MARGIN -
+          COLUMN_BOTTON_MARGIN,
+      }}>
       <div
         className="readerMain"
         id="readerMainColumn"

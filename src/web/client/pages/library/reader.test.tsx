@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import "fake-indexeddb/auto";
 import user from "@testing-library/user-event";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen } from "@testing-library/react";
@@ -12,7 +13,9 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import { RouteContext, Router } from "@/web/client/router/router_v2";
 import { checkPresent } from "@/common/assert";
+import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
 
+global.BroadcastChannel = FakeBroadcastChannel as any;
 jest.mock("@/web/client/utils/media_query", () => {
   return {
     ...jest.requireActual("@/web/client/utils/media_query"),
