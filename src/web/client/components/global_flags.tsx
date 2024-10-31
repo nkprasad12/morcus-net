@@ -21,6 +21,10 @@ function toGlobalSettings(input: unknown): GlobalSettings {
   if (typeof input !== "object" || input === null) {
     return {};
   }
+  const result: GlobalSettings = input;
+  if (result.embeddedInflectedSearch === undefined) {
+    result.embeddedInflectedSearch = true;
+  }
   return input;
 }
 

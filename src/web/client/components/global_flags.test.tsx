@@ -81,4 +81,35 @@ describe("GlobalSettingsContext", () => {
       JSON.stringify({ experimentalMode: false })
     );
   });
+
+  it("auto-sets embedded inflection to true if unspecified", () => {
+    const defaultValue: GlobalSettings = {
+      inflectedSearch: true,
+    };
+    localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
+
+    const settings = setupHandler();
+
+    expect(settings.get).toBeDefined();
+    expect(settings.get?.data).toStrictEqual<GlobalSettings>({
+      inflectedSearch: true,
+      embeddedInflectedSearch: true,
+    });
+  });
+
+  it("respectes embedded inflection value if specified", () => {
+    const defaultValue: GlobalSettings = {
+      inflectedSearch: true,
+      embeddedInflectedSearch: false,
+    };
+    localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
+
+    const settings = setupHandler();
+
+    expect(settings.get).toBeDefined();
+    expect(settings.get?.data).toStrictEqual<GlobalSettings>({
+      inflectedSearch: true,
+      embeddedInflectedSearch: false,
+    });
+  });
 });
