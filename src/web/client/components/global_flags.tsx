@@ -14,6 +14,7 @@ export interface GlobalBooleans {
 export interface GlobalSettings extends GlobalBooleans {
   highlightStrength?: number;
   inflectedSearch?: boolean;
+  embeddedInflectedSearch?: boolean;
 }
 
 function toGlobalSettings(input: unknown): GlobalSettings {
@@ -45,6 +46,7 @@ export function getGlobalSettings(): GlobalSettings {
         experimentalMode: defaultExperimentalMode(),
         highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
         darkMode: false,
+        embeddedInflectedSearch: true,
       };
 }
 

@@ -11,8 +11,6 @@ import {
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
 import { SearchBox } from "@/web/client/components/generic/search";
-import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
-import { ClientPaths } from "@/web/client/routing/client_paths";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Solarized } from "@/web/client/styling/colors";
 import { SpanButton } from "@/web/client/components/generic/basics";
@@ -54,9 +52,13 @@ function SearchSettingsDialog(props: {
   onClose: () => unknown;
   dicts: LatinDictInfo[];
   setDicts: (newDicts: LatinDictInfo[]) => unknown;
+  isEmbedded?: boolean;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
-  const inflectedSearch = globalSettings.data.inflectedSearch === true;
+  const inflectedSetting = props.isEmbedded
+    ? globalSettings.data.embeddedInflectedSearch
+    : globalSettings.data.inflectedSearch;
+  const inflectedSearch = inflectedSetting === true;
   const { offlineModeOn, shouldDisable } = useOfflineDictData();
 
   return (
@@ -126,7 +128,9 @@ function SearchSettingsDialog(props: {
               onChange={() =>
                 globalSettings.setData({
                   ...globalSettings.data,
-                  inflectedSearch: !inflectedSearch,
+                  ...(props.isEmbedded
+                    ? { embeddedInflectedSearch: !inflectedSearch }
+                    : { inflectedSearch: !inflectedSearch }),
                 })
               }
             />
@@ -171,22 +175,17 @@ export function DictionarySearch(props: {
   smallScreen: boolean;
   dicts: LatinDictInfo[];
   setDicts: (newDicts: LatinDictInfo[]) => unknown;
+  autoFocused: boolean;
+  onSearchQuery: (term: string, dict?: DictInfo) => unknown;
+  embedded?: boolean;
 }) {
-  const { route, nav } = useDictRouter();
-  const settings = useContext(GlobalSettingsContext);
-
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
   async function onEnter(searchTerm: string, dict?: DictInfo) {
     if (searchTerm.length === 0) {
       return;
     }
-    nav.to({
-      path: ClientPaths.DICT_PAGE.path,
-      query: searchTerm,
-      dicts: dict,
-      inflectedSearch: settings.data.inflectedSearch === true,
-    });
+    props.onSearchQuery(searchTerm, dict);
   }
 
   return (
@@ -199,10 +198,11 @@ export function DictionarySearch(props: {
           <SettingsPreview
             dicts={props.dicts}
             openDialog={() => setDialogOpen(true)}
+            embedded={props.embedded}
           />
         }
         smallScreen={props.smallScreen}
-        autoFocused={route.query === undefined}
+        autoFocused={props.autoFocused}
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(t[1], t[0])}
         optionsForInput={(input) =>
@@ -211,12 +211,14 @@ export function DictionarySearch(props: {
         RenderOption={AutocompleteOption}
         toKey={(t) => `${t[1]},${t[0].key}`}
         toInputDisplay={(t) => t[1]}
+        embedded={props.embedded}
       />
       <SearchSettingsDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         dicts={props.dicts}
         setDicts={props.setDicts}
+        isEmbedded={props.embedded}
       />
     </>
   );
@@ -225,11 +227,15 @@ export function DictionarySearch(props: {
 function SettingsPreview(props: {
   dicts: LatinDictInfo[];
   openDialog: () => unknown;
+  embedded?: boolean;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
   const { shouldDisable } = useOfflineDictData();
-  const rawInflectionMode = globalSettings.data.inflectedSearch === true;
-  const inflectionMode = !shouldDisable.inflections && rawInflectionMode;
+  const rawInflectionSetting = props.embedded
+    ? globalSettings.data.embeddedInflectedSearch
+    : globalSettings.data.inflectedSearch;
+  const inflectionMode =
+    !shouldDisable.inflections && rawInflectionSetting === true;
 
   return (
     <>

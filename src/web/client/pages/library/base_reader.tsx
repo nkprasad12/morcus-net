@@ -395,6 +395,7 @@ const COLUMN_STYLE: CSSProperties = {
   boxSizing: "border-box",
   marginTop: COLUMN_TOP_MARGIN,
   marginBottom: COLUMN_BOTTON_MARGIN,
+  scrollPaddingTop: APP_BAR_MAX_HEIGHT,
   marginLeft: "1%",
   marginRight: "1%",
 };

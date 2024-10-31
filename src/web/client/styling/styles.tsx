@@ -299,6 +299,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".readerMain .text.xs": {
       fontSize: FontSizes.TERTIARY * readerMainScale,
     },
+    ".readerMain .text.xxs": {
+      fontSize: 12 * readerMainScale,
+    },
     ".readerSide .text.md": {
       fontSize: FontSizes.SMALL_SCREEN * readerSideScale,
     },
@@ -307,6 +310,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     ".readerSide .text.xs": {
       fontSize: FontSizes.TERTIARY * readerSideScale,
+    },
+    ".readerSide .text.xxs": {
+      fontSize: 12 * readerSideScale,
     },
     ".contentText": {
       color: contentTextColor,
@@ -642,9 +648,15 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       padding: "12px",
       outline: "none",
       spellcheck: "false",
-      ...TEXT_STYLE,
-      fontSize: FontSizes.BIG_SCREEN,
       color: isDarkMode ? Solarized.base1 : Solarized.base00,
+    },
+    ".readerMain .customSearchContainer .svgIcon": {
+      width: `${readerMainScale}em`,
+      height: `${readerMainScale}em`,
+    },
+    ".readerSide .customSearchContainer .svgIcon": {
+      width: `${readerSideScale}em`,
+      height: `${readerSideScale}em`,
     },
     ".customSearchPopup": {
       color: isDarkMode ? Solarized.base1 : Solarized.base01,

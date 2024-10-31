@@ -55,6 +55,7 @@ import { useMediaQuery } from "@/web/client/utils/media_query";
 import { useCallback } from "react";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 import { arrayMapBy } from "@/common/data_structures/collect_map";
+import { ClientPaths } from "@/web/client/routing/client_paths";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -62,20 +63,11 @@ export const ERROR_STATE_MESSAGE =
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE = "No results found";
 
-function chooseDicts(
-  dicts: undefined | DictInfo | DictInfo[],
-  isEmbedded: boolean
-): DictInfo[] {
-  if (isEmbedded) {
-    return LatinDict.AVAILABLE.filter((dict) => dict.languages.from === "La");
-  }
+function chooseDicts(dicts: undefined | DictInfo | DictInfo[]): DictInfo[] {
   if (dicts === undefined) {
     return LatinDict.AVAILABLE;
   }
-  if (Array.isArray(dicts)) {
-    return dicts;
-  }
-  return [dicts];
+  return Array.isArray(dicts) ? dicts : [dicts];
 }
 
 type EdgeCaseState = "Landing" | "Error" | "No Results";
@@ -158,12 +150,16 @@ interface SearchBarProps {
   className?: string;
 }
 function SearchBar(props: SearchBarProps) {
-  const { isEmbedded, isSmall, dictsToUse, setDictsToUse, scrollTopRef } =
-    React.useContext(DictContext);
+  const {
+    isEmbedded,
+    isSmall,
+    dictsToUse,
+    setDictsToUse,
+    scrollTopRef,
+    searchQuery,
+    onSearchQuery,
+  } = React.useContext(DictContext);
 
-  if (isEmbedded) {
-    return <></>;
-  }
   return (
     <Container
       maxWidth={props.maxWidth}
@@ -179,6 +175,9 @@ function SearchBar(props: SearchBarProps) {
           SearchSettings.store(newDicts);
           setDictsToUse(newDicts);
         }}
+        autoFocused={searchQuery === undefined}
+        onSearchQuery={onSearchQuery}
+        embedded={isEmbedded}
       />
     </Container>
   );
@@ -580,10 +579,13 @@ function TableOfContents(props: TableOfContentsProps) {
 }
 
 export function DictionaryViewV2(props: DictionaryV2Props) {
+  const isEmbedded = props?.embedded === true;
   const [state, setState] = React.useState<DictState>("Landing");
   const [entries, setEntries] = React.useState<EntriesByDict[]>([]);
   const [dictsToUse, setDictsToUse] = React.useState<LatinDictInfo[]>(
-    SearchSettings.retrieve()
+    SearchSettings.retrieve().filter(
+      (dict) => !isEmbedded || dict.languages.from === "La"
+    )
   );
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
@@ -591,24 +593,27 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
   const settings = React.useContext(GlobalSettingsContext);
-  const { route } = useDictRouter();
+  const { route, nav } = useDictRouter();
   const title = React.useContext(TitleContext);
   const fromInternalLink = React.useRef<boolean>(false);
 
-  const isEmbedded = props?.embedded === true;
   const isSmall = isEmbedded || isScreenSmall;
   const scale = (props?.textScale || 100) / 100;
   const textScale = props?.textScale;
   const idSearch = route.idSearch === true;
 
-  const { initial } = props;
+  const { initial, setInitial } = props;
   const query = isEmbedded ? initial : route.query;
   const hash = route.hash;
+  const inflectedSetting = isEmbedded
+    ? settings.data.embeddedInflectedSearch
+    : settings.data.inflectedSearch;
   const inflectedSearch =
-    settings.data.inflectedSearch === true || route.inflectedSearch === true;
+    inflectedSetting === true || route.inflectedSearch === true;
+  const allowedDicts = isEmbedded ? dictsToUse : route.dicts;
   const queryDicts = React.useMemo(
-    () => chooseDicts(route.dicts, isEmbedded),
-    [route.dicts, isEmbedded]
+    () => chooseDicts(allowedDicts),
+    [allowedDicts]
   );
   const apiRequest: DictsFusedRequest | null = React.useMemo(
     () =>
@@ -617,9 +622,9 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         : {
             query,
             dicts: queryDicts.map((dict) => dict.key),
-            mode: idSearch ? 2 : inflectedSearch || isEmbedded ? 1 : 0,
+            mode: idSearch ? 2 : inflectedSearch ? 1 : 0,
           },
-    [query, queryDicts, idSearch, inflectedSearch, isEmbedded]
+    [query, queryDicts, idSearch, inflectedSearch]
   );
   useApiCall(DictsFusedApi, apiRequest, {
     reloadOldClient: true,
@@ -648,8 +653,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     }
     const highlighted =
       hash === undefined ? null : document.getElementById(hash);
-    const scrollElement =
-      highlighted || (isEmbedded ? null : scrollTopRef.current);
+    const scrollElement = highlighted || scrollTopRef.current;
     const scrollType =
       fromInternalLink.current || isEmbedded
         ? SCROLL_JUMP
@@ -659,6 +663,22 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     scrollElement?.scrollIntoView(scrollType);
     fromInternalLink.current = false;
   }, [state, isEmbedded, hash]);
+
+  const onSearchQuery = useCallback(
+    (term: string, dict?: DictInfo) => {
+      if (setInitial) {
+        setInitial(term);
+        return;
+      }
+      nav.to({
+        path: ClientPaths.DICT_PAGE.path,
+        query: term,
+        dicts: dict,
+        inflectedSearch: settings.data.inflectedSearch === true,
+      });
+    },
+    [nav, settings.data.inflectedSearch, setInitial]
+  );
 
   const contextValues: DictContextOptions = React.useMemo(
     () => ({
@@ -672,6 +692,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       scrollTopRef,
       setInitial: props.setInitial,
       fromInternalLink,
+      searchQuery: query,
+      onSearchQuery,
     }),
     [
       isEmbedded,
@@ -684,6 +706,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       scrollTopRef,
       props.setInitial,
       fromInternalLink,
+      query,
+      onSearchQuery,
     ]
   );
 

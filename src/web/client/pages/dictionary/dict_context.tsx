@@ -1,3 +1,4 @@
+import type { DictInfo } from "@/common/dictionaries/dictionaries";
 import type { LatinDictInfo } from "@/common/dictionaries/latin_dicts";
 import React from "react";
 
@@ -9,6 +10,7 @@ const DEFAULT_DICT_OPTIONS: DictContextOptions = {
   dictsToUse: [],
   setDictsToUse: () => {},
   scrollTopRef: React.createRef(),
+  onSearchQuery: () => {},
 };
 
 export interface DictContextOptions {
@@ -22,6 +24,8 @@ export interface DictContextOptions {
   scrollTopRef: React.RefObject<HTMLDivElement>;
   setInitial?: (target: string) => unknown;
   fromInternalLink?: React.MutableRefObject<boolean>;
+  searchQuery?: string;
+  onSearchQuery: (query: string, dict?: DictInfo) => unknown;
 }
 
 export const DictContext: React.Context<DictContextOptions> =

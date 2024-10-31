@@ -102,12 +102,12 @@ export function SearchBox<T>(props: {
     <div
       style={{
         padding: spacing(smallScreen ? 0 : 1),
-        paddingTop: spacing(embedded ? 0 : 2),
+        paddingTop: spacing(embedded ? 1 : 2),
         paddingBottom: spacing(embedded ? 0 : 2),
-        marginLeft: spacing(smallScreen ? 0 : 3),
-        marginRight: spacing(smallScreen ? 0 : 3),
-        marginTop: spacing(embedded ? 1 : 2),
-        marginBottom: spacing(1),
+        marginLeft: spacing(smallScreen ? 0.5 : 3),
+        marginRight: spacing(smallScreen ? 0.5 : 3),
+        marginTop: spacing(embedded ? 0 : 2),
+        marginBottom: spacing(embedded ? 0.5 : 1),
       }}>
       <div
         className={containerClasses.join(" ")}
@@ -157,7 +157,7 @@ export function SearchBox<T>(props: {
           <input
             ref={inputRef}
             type="text"
-            className="customSearchBox"
+            className="customSearchBox text md"
             spellCheck="false"
             autoCapitalize="none"
             autoComplete="off"
