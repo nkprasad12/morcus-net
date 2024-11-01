@@ -1,9 +1,6 @@
 import { assert } from "@/common/assert";
 import { Container } from "@/web/client/components/generic/basics";
-import {
-  usePersistedBool,
-  usePersistedNumber,
-} from "@/web/client/utils/hooks/persisted_state";
+import { usePersistedState } from "@/web/client/utils/hooks/persisted_state";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultReaderSidebarContent,
@@ -29,6 +26,9 @@ import {
 } from "@/web/client/mobile/gestures";
 import { useWakeLock } from "@/web/client/mobile/wake_lock";
 import { useMediaQuery } from "@/web/client/utils/media_query";
+
+export const SWIPE_NAV_KEY = "RD_MB_NAV_SWIPE";
+export const TAP_NAV_KEY = "RD_MB_NAV_SIDE_TAP";
 
 type SidebarTab<T> = T | DefaultSidebarTab;
 interface Responsive {
@@ -81,13 +81,19 @@ export function BaseReader<
     SidebarTab<CustomSidebarTab>
   >(props.initialSidebarTab || "Dictionary");
   const [dictWord, setDictWord] = React.useState<string | undefined>(undefined);
-  const [totalWidth, setTotalWidth] = usePersistedNumber(1, "RD_TOTAL_WIDTH");
-  const [mainWidth, setMainWidth] = usePersistedNumber(56, "RD_WORK_WIDTH");
-  const [swipeNavigation, setSwipeNavigation] = usePersistedBool(
+  const [totalWidth, setTotalWidth] = usePersistedState<number>(
+    1,
+    "RD_TOTAL_WIDTH"
+  );
+  const [mainWidth, setMainWidth] = usePersistedState<number>(
+    56,
+    "RD_WORK_WIDTH"
+  );
+  const [swipeNavigation, setSwipeNavigation] = usePersistedState<boolean>(
     true,
     "RD_MB_NAV_SWIPE"
   );
-  const [tapNavigation, setTapNavigation] = usePersistedBool(
+  const [tapNavigation, setTapNavigation] = usePersistedState<boolean>(
     false,
     "RD_MB_NAV_SIDE_TAP"
   );

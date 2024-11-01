@@ -4,7 +4,7 @@ import {
   DEFAULT_HIGHLIGHT_STRENGTH,
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
-import { usePersistedNumber } from "@/web/client/utils/hooks/persisted_state";
+import { usePersistedState } from "@/web/client/utils/hooks/persisted_state";
 import React from "react";
 
 export interface ReaderStyleConfigSetter {
@@ -53,11 +53,11 @@ export function TestStyleContextProvider(
 
 export function StyleContextProvider(props: React.PropsWithChildren) {
   const globalSettings = React.useContext(GlobalSettingsContext);
-  const [readerMainScale, setReaderMainScale] = usePersistedNumber(
+  const [readerMainScale, setReaderMainScale] = usePersistedState<number>(
     100,
     "RD_WORK_SCALE"
   );
-  const [readerSideScale, setReaderSideScale] = usePersistedNumber(
+  const [readerSideScale, setReaderSideScale] = usePersistedState<number>(
     90,
     "RD_DICT_SCALE"
   );
