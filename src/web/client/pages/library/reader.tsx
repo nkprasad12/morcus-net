@@ -701,7 +701,11 @@ function WorkNavigationSection(props: { work: PaginatedWork }) {
           onEnter={(l) =>
             nav.to((old) => ({
               ...old,
-              params: { q: old.params?.q, l: `${l - 1}`, hl: "0" },
+              params: {
+                pg: old.params?.pg ?? old.params?.q,
+                l: `${l - 1}`,
+                hl: "0",
+              },
             }))
           }
         />

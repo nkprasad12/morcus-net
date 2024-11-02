@@ -386,7 +386,7 @@ export function defineBrowserE2eSuite() {
     });
 
     e2eTest()("has working scroll to line", async (screenSize) => {
-      const page = await getPage(screenSize, "/work/juvenal/saturae?q=2");
+      const page = await getPage(screenSize, "/work/juvenal/saturae?pg=2");
       const britannos = await waitForText("Britannos");
       expect(await britannos.isIntersectingViewport()).toBe(false);
 
@@ -400,7 +400,7 @@ export function defineBrowserE2eSuite() {
     });
 
     e2eTest()("reader copy paste across lines", async (screenSize) => {
-      const page = await getPage(screenSize, "/work/juvenal/saturae?q=1");
+      const page = await getPage(screenSize, "/work/juvenal/saturae?pg=1");
       const semper = await waitForText("Semper");
       const cordi = await waitForText("Cordi");
 
