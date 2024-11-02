@@ -73,10 +73,12 @@ function crunchOptionsForEnd(
         candidate.code === undefined
           ? expandSingleEnding(candidate.stem, candidate, end)
           : mergeIfCompatible(candidate, end);
+      // * is the placeholder for an empty ending.
+      const ending = end.ending === "*" ? "" : end.ending;
       if (mergedData !== null) {
         results.push({
           lemma,
-          form: candidate.stem + end.ending,
+          form: candidate.stem + ending,
           stem: candidate,
           end,
           isVerb,

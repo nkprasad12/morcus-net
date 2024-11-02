@@ -117,6 +117,18 @@ describe("crunchWord", () => {
     );
   });
 
+  it("handles empty ending", () => {
+    const tables = MorceusTables.make(FAKEDATA_CRUNCHER_CONFIG);
+    const result = crunchWord("marmor", tables);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].lemma).toBe("marmor");
+    expect(result[0].form).toBe("marmor");
+    expect(result[0].grammaticalData).toStrictEqual(
+      toInflectionData("neut sg nom/voc/acc".split(" ")).grammaticalData
+    );
+  });
+
   it("handles -que enclitic", () => {
     const tables = MorceusTables.make(FAKEDATA_CRUNCHER_CONFIG);
     const result = crunchWord("aiuntque", tables, {
