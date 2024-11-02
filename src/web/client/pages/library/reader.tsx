@@ -31,11 +31,14 @@ import {
   BaseExtraSidebarTabProps,
   BaseMainColumnProps,
   BaseReader,
+  SWIPE_NAV_KEY,
+  TAP_NAV_KEY,
 } from "@/web/client/pages/library/base_reader";
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
 import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import { SvgIcon } from "@/web/client/components/generic/icons";
+import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -141,7 +144,7 @@ function updatePage(
   const container = isMobile
     ? window
     : document.getElementById("readerMainColumn");
-  container?.scrollTo({ top: isMobile ? 64 : 0, behavior: "smooth" });
+  container?.scrollTo({ top: isMobile ? 64 : 0, behavior: "instant" });
   const id = [work.info.title, work.info.author].join("@");
   LibrarySavedSpot.set(id, newPage);
 }
@@ -333,6 +336,44 @@ export function SwipeFeedback(props: {
   );
 }
 
+function touchNavBlurbs(swipeNavOn: boolean, tapNavOn: boolean): string[] {
+  const blurbs: string[] = [];
+  if (swipeNavOn) {
+    blurbs.push("swipe horizontally");
+  }
+  if (tapNavOn) {
+    blurbs.push("tap the side of the screen");
+  }
+  return blurbs;
+}
+
+function NavigationInfoBlurb(props: { isMobile: boolean }) {
+  const tapNav = usePersistedValue<boolean>(false, TAP_NAV_KEY);
+  const swipeNav = usePersistedValue<boolean>(true, SWIPE_NAV_KEY);
+
+  const touchBlurbs = touchNavBlurbs(swipeNav, tapNav);
+  const showTouchBlurb = props.isMobile && touchBlurbs.length > 0;
+  const touchNavBlurb = showTouchBlurb
+    ? `, or ${touchBlurbs.join(" or ")} (on a touch screen)`
+    : "";
+
+  return (
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        padding: "64px 10% 0",
+        textAlign: "center",
+      }}>
+      <div className="text light xs unselectable">
+        Click the arrow buttons to navigate. You can also use the arrow keys (on
+        a keyboard){touchNavBlurb}.
+      </div>
+    </div>
+  );
+}
+
 interface WorkColumnProps {
   work: WorkState;
   currentPage: number;
@@ -378,6 +419,7 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
             </div>
           </>
         )}
+        <NavigationInfoBlurb isMobile={props.isMobile} />
       </ContentBox>
     </>
   );

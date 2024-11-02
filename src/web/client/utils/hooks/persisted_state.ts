@@ -55,7 +55,7 @@ export function usePersistedState<T extends NotFunction>(
 ): [T, SetStateType<T>] {
   const validator = resolveValidatorFor(defaultValue, maybeValidator);
   const [value, setValue] = useState<T>(
-    () => getStored(storageKey, validator) || defaultValue
+    () => getStored(storageKey, validator) ?? defaultValue
   );
 
   useEffect(() => {

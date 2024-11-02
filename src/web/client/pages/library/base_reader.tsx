@@ -91,11 +91,11 @@ export function BaseReader<
   );
   const [swipeNavigation, setSwipeNavigation] = usePersistedState<boolean>(
     true,
-    "RD_MB_NAV_SWIPE"
+    SWIPE_NAV_KEY
   );
   const [tapNavigation, setTapNavigation] = usePersistedState<boolean>(
     false,
-    "RD_MB_NAV_SIDE_TAP"
+    TAP_NAV_KEY
   );
   const [drawerHeight, setDrawerHeight] = useState<number>(
     window.innerHeight * 0.15
