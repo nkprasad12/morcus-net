@@ -1,6 +1,11 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { Solarized } from "@/web/client/styling/colors";
 import { StyleConfig } from "@/web/client/styling/style_context";
+import {
+  DEFAULT_DARK,
+  DEFAULT_LIGHT,
+  type SiteColors,
+} from "@/web/client/styling/themes";
 import type { Interpolation } from "@emotion/serialize";
 import type { CSSProperties } from "react";
 
@@ -56,18 +61,28 @@ const TEXT_STYLE: CSSProperties = {
   lineHeight: 1.5,
   letterSpacing: "0.00938em",
 };
+const MOBILE_NAV_BUTTON_BASE_STYLE: CSSProperties = {
+  borderRadius: 4,
+  marginTop: 3,
+  marginLeft: 3,
+  marginRight: 3,
+  fontSize: 40,
+};
+
+function themeFor(settings: Partial<StyleConfig>): SiteColors {
+  return settings.darkMode === true ? DEFAULT_DARK : DEFAULT_LIGHT;
+}
 
 export function getBackgroundColor(settings: Partial<StyleConfig>): string {
-  return settings.darkMode === true ? "#212022" : Solarized.base3;
+  return themeFor(settings).bg;
 }
 
 export function getAppBarColor(settings: Partial<StyleConfig>): string {
-  return settings.darkMode === true
-    ? Solarized.darkarkModeMint
-    : Solarized.base2;
+  return themeFor(settings).appBar;
 }
 
 export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
+  const theme = themeFor(settings);
   const modifier = settings.dictHighlightScale;
 
   function modifiedStrength(baseStrength: number): string {
@@ -77,28 +92,11 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     return `${Math.round(hexModified)}`;
   }
 
-  const isDarkMode = settings.darkMode;
-  const backgroundColor = getBackgroundColor(settings);
-  const bulletColor = isDarkMode ? Solarized.base2 : Solarized.base01;
-  const dictChipTextColor = isDarkMode
-    ? Solarized.base1
-    : Solarized.base03 + "A1";
-  const menuItemBaseColor = isDarkMode ? Solarized.base02 : Solarized.base01;
-  const mobileNavButtonBase = {
-    borderRadius: 4,
-    marginTop: 3,
-    marginLeft: 3,
-    marginRight: 3,
-    fontSize: 40,
-  };
-  const contentTextLightColor = isDarkMode
-    ? Solarized.base00
-    : Solarized.base01;
-  const contentTextColor = isDarkMode ? Solarized.base1 : Solarized.base015;
+  const backgroundColor = theme.bg;
+  const contentTextLightColor = theme.contentTextLight;
+  const contentTextColor = theme.contentText;
   const readerMainScale = settings.readerMainScale / 100;
   const readerSideScale = settings.readerSideScale / 100;
-  const bgColorAlt = isDarkMode ? Solarized.base015 : Solarized.base15;
-  const topBarColor = getAppBarColor(settings);
 
   return {
     /** For elements */
@@ -112,10 +110,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       paddingBottom: "2px",
     },
     a: {
-      color: isDarkMode ? Solarized.blue : undefined,
+      color: theme.link,
     },
     "a:visited": {
-      color: isDarkMode ? Solarized.violet : undefined,
+      color: theme.linkVisited,
     },
     pre: { margin: "0" },
     summary: {
@@ -157,8 +155,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       padding: "6px",
       paddingLeft: "12px",
       paddingRight: "12px",
-      backgroundColor: topBarColor,
-      color: isDarkMode ? Solarized.base01 : Solarized.base015,
+      backgroundColor: theme.appBar,
+      color: theme.buttonText,
     },
     ".button.simple": {
       backgroundColor,
@@ -167,10 +165,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundColor,
     },
     ".button:hover": {
-      backgroundColor: topBarColor + "A0",
+      backgroundColor: theme.appBar + "A0",
     },
     ".button:focus": {
-      backgroundColor: topBarColor + "A0",
+      backgroundColor: theme.appBar + "A0",
     },
     ".button.warn": {
       backgroundColor: Solarized.red + "40",
@@ -270,8 +268,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     /** Tooltip styling */
     ".tooltip": {
-      backgroundColor: isDarkMode ? backgroundColor : Solarized.mint,
-      border: `2px solid ${isDarkMode ? Solarized.base1 : Solarized.base01}`,
+      backgroundColor: theme.tooltipBg,
+      border: `2px solid ${theme.tooltipBorder}`,
       padding: "4px 8px",
       borderRadius: "4px",
       margin: "6px",
@@ -282,9 +280,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     /** Basic content primitives */
     ".bgColor": { backgroundColor },
-    ".bgColorAlt": { backgroundColor: bgColorAlt },
+    ".theme.bgAlt": { backgroundColor: theme.bgAlt },
     ".contentDivider": {
-      borderColor: (isDarkMode ? Solarized.base00 : "#839191") + "60",
+      borderColor: theme.divider + "60",
       flexShrink: 0,
       borderWidth: "0px 0px thin;",
       borderStyle: "solid",
@@ -331,13 +329,13 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     /** Menu and menu items */
     ".menuIcon": {
-      color: isDarkMode ? Solarized.base00 : Solarized.base1,
+      color: theme.menuIcon,
     },
     ".menuIconFaded": {
-      color: (isDarkMode ? Solarized.base00 : Solarized.base1) + 40,
+      color: theme.menuIcon + "40",
     },
     ".menu": {
-      backgroundColor: topBarColor,
+      backgroundColor: theme.appBar,
     },
     ".AppBar": {
       width: "100%",
@@ -352,10 +350,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
         "rgba(0, 0, 0, 0.2) 0px 2px 4px -1px, rgba(0, 0, 0, 0.14) 0px 4px 5px 0px, rgba(0, 0, 0, 0.12) 0px 1px 10px 0px;",
     },
     ".menuItemActive": {
-      color: menuItemBaseColor + (isDarkMode ? "D8" : ""),
+      color: theme.menuItemBase + theme.menuItemActiveAlpha,
     },
     ".menuItemInactive": {
-      color: menuItemBaseColor + (isDarkMode ? "88" : "90"),
+      color: theme.menuItemBase + theme.menuItemInactiveAlpha,
     },
 
     /** Dictionary specific */
@@ -370,25 +368,25 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       minWidth: "min(29%, 300px)",
     },
     ".nonDictText": {
-      color: isDarkMode ? Solarized.base1 : Solarized.base00,
+      color: theme.nonDictText,
     },
     ".footer": {
-      color: isDarkMode ? Solarized.base1 : Solarized.base02,
+      color: theme.footer,
     },
     ".lsChip": {
-      color: dictChipTextColor,
-      backgroundColor: "#7aab35" + (isDarkMode ? "60" : "30"),
+      color: theme.dictChip,
+      backgroundColor: "#7aab35" + theme.dictChipAlpha,
     },
     ".shChip": {
-      color: dictChipTextColor,
-      backgroundColor: "#9d42cf" + (isDarkMode ? "60" : "30"),
+      color: theme.dictChip,
+      backgroundColor: "#9d42cf" + theme.dictChipAlpha,
     },
     ".smallChip": {
       borderRadius: 4,
       paddingLeft: 3,
       paddingRight: 3,
       fontFamily: "monospace",
-      color: dictChipTextColor,
+      color: theme.dictChip,
     },
     ".highlighted": {
       border: "2px solid",
@@ -400,9 +398,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       cursor: "default",
     },
     ".lsHover": {
-      borderBottom: `1px dashed ${
-        isDarkMode ? Solarized.base0 : Solarized.base03
-      }`,
+      borderBottom: `1px dashed ${theme.textUnderline}`,
       fontWeight: "normal",
       cursor: "help",
     },
@@ -415,21 +411,20 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderRadius: 4,
     },
     ".lsBibl": {
-      backgroundColor:
-        Solarized.violet + modifiedStrength(isDarkMode ? 50 : 30),
+      backgroundColor: Solarized.violet + modifiedStrength(theme.lsBiblAlpha),
       borderRadius: 4,
     },
     ".lsQuote": {
-      backgroundColor: Solarized.blue + modifiedStrength(isDarkMode ? 45 : 28),
+      backgroundColor: Solarized.blue + modifiedStrength(theme.lsQuoteAlpha),
       borderRadius: 4,
     },
     ".lsGrammar": {
       backgroundColor:
-        Solarized.orange + modifiedStrength(isDarkMode ? 50 : 32),
+        Solarized.orange + modifiedStrength(theme.lsGrammarAlpha),
       borderRadius: 4,
     },
     ".lsOrth": {
-      backgroundColor: Solarized.red + modifiedStrength(isDarkMode ? 80 : 54),
+      backgroundColor: Solarized.red + modifiedStrength(theme.lsOrthAlpha),
       borderRadius: 4,
       padding: 2,
     },
@@ -437,21 +432,21 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".lsEmph": {
       fontWeight: "bold",
       fontStyle: "italic",
-      color: isDarkMode ? "#9fa29f" : undefined,
+      color: theme.lsEmph,
     },
     ".lsSenseBullet": {
       fontWeight: "bold",
       cursor: "pointer",
-      backgroundColor: bulletColor + "48",
+      backgroundColor: theme.bullet + "48",
       borderRadius: 4,
     },
     ".lsSenseBullet:hover": {
-      backgroundColor: bulletColor + "80",
+      backgroundColor: theme.bullet + "80",
     },
     ".outlineHead": {
       fontWeight: "bold",
       cursor: "pointer",
-      backgroundColor: bulletColor + "30",
+      backgroundColor: theme.bullet + "30",
       borderRadius: 4,
     },
     ".lsHelpText": {
@@ -491,15 +486,15 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundColor: Solarized.base1 + "40",
     },
     ".mobileNavButton": {
-      ...mobileNavButtonBase,
-      color: isDarkMode ? Solarized.base2 : Solarized.base1,
+      ...MOBILE_NAV_BUTTON_BASE_STYLE,
+      color: theme.mobileNavButton,
     },
     ".mobileNavButtonCollapsed": {
-      ...mobileNavButtonBase,
-      color: (isDarkMode ? Solarized.base2 : Solarized.base1) + "80",
+      ...MOBILE_NAV_BUTTON_BASE_STYLE,
+      color: theme.mobileNavButton + "80",
     },
     ".mobileNavButton:hover": {
-      color: isDarkMode ? Solarized.base3 : Solarized.base02,
+      color: theme.mobileNavButtonHover,
       cursor: "pointer",
     },
     ".QNAEmbedded": {
@@ -511,25 +506,25 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       position: "sticky",
       top: 0,
       width: "100%",
-      boxShadow: `0 2px 3px 1px ${bgColorAlt}`,
+      boxShadow: `0 2px 3px 1px ${theme.bgAlt}`,
       marginBottom: "3px",
-      backgroundColor: backgroundColor,
+      backgroundColor,
       zIndex: 5,
     },
     ".readerMobileBottomBar": {
       width: "100vw",
-      backgroundColor: bgColorAlt,
+      backgroundColor: theme.bgAlt,
     },
     ".readerMobileDragger": {
       width: "100vw",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
-      backgroundColor: bgColorAlt,
+      backgroundColor: theme.bgAlt,
       height: "15px",
     },
     ".readerDrawerContainer": {
       backgroundClip: "content-box, padding-box;",
-      backgroundImage: `linear-gradient(to bottom, ${backgroundColor} 0%, ${backgroundColor} 100%), linear-gradient(to bottom, ${bgColorAlt} 0%, ${bgColorAlt} 100%);`,
+      backgroundImage: `linear-gradient(to bottom, ${theme.bg} 0%, ${theme.bg} 100%), linear-gradient(to bottom, ${theme.bgAlt} 0%, ${theme.bgAlt} 100%);`,
     },
     ".draggerPuller": {
       width: 30,
@@ -592,7 +587,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       paddingBottom: "6px",
     },
     ".selectedSidePanelTab": {
-      backgroundColor: bgColorAlt,
+      backgroundColor,
     },
     ".readerMobileBottomBar .selectedSidePanelTab": {
       backgroundColor,
@@ -603,11 +598,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     /** Search box */
     ".textField": {
-      backgroundColor: bgColorAlt + "60",
+      backgroundColor: theme.bgAlt + "60",
       borderRadius: "4px",
-      border: `2px solid ${
-        isDarkMode ? Solarized.base01 + "80" : Solarized.base15
-      }`,
+      border: `2px solid ${theme.inputBorder}`,
       padding: "8px",
       outline: "none",
       paddingTop: "4px",
@@ -616,39 +609,33 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       marginBottom: "4px",
     },
     ".textField:focus": {
-      border: `2px solid ${
-        isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
-      }`,
+      border: `2px solid ${theme.appBar}`,
     },
     ".customSearchContainer": {
       backgroundColor,
       width: "100%",
       maxWidth: "100%",
       borderRadius: 4,
-      border: `2px solid ${
-        isDarkMode ? Solarized.base01 + "80" : Solarized.base15
-      }`,
+      border: `2px solid ${theme.inputBorder}`,
     },
     ".customSearchContainer.focused": {
-      border: `2px solid ${
-        isDarkMode ? Solarized.darkarkModeMint : Solarized.base2
-      }`,
+      border: `2px solid ${theme.appBar}`,
     },
     ".searchSettingsBar": {
       borderRadius: 4,
-      backgroundColor: bgColorAlt + 40,
+      backgroundColor: theme.bgAlt + 40,
       display: "flex",
       alignItems: "center",
     },
     ".customSearchBox": {
-      backgroundColor: backgroundColor,
+      backgroundColor,
       width: "100%",
       maxWidth: "100%",
       border: "none",
       padding: "12px",
       outline: "none",
       spellcheck: "false",
-      color: isDarkMode ? Solarized.base1 : Solarized.base00,
+      color: theme.nonDictText,
     },
     ".readerMain .customSearchContainer .svgIcon": {
       width: `${readerMainScale}em`,
@@ -659,17 +646,15 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       height: `${readerSideScale}em`,
     },
     ".customSearchPopup": {
-      color: isDarkMode ? Solarized.base1 : Solarized.base01,
-      backgroundColor: isDarkMode ? Solarized.base02 : "#fafafa",
+      color: theme.searchPopupText,
+      backgroundColor: theme.searchPopupBg,
       ...TEXT_STYLE,
       fontSize: FontSizes.BIG_SCREEN,
       paddingTop: "8px",
       paddingBottom: "8px",
       borderRadius: "4px",
       zIndex: 1000,
-      boxShadow: `0 2px 3px 2px ${
-        isDarkMode ? Solarized.base01 + "80" : Solarized.base15
-      }`,
+      boxShadow: `0 2px 3px 2px ${theme.inputBorder}`,
       overflow: "auto",
     },
     ".customSearchPopupOption": {
@@ -690,7 +675,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       width: "6px",
     },
     "::-webkit-scrollbar-track": {
-      backgroundColor: bgColorAlt,
+      backgroundColor,
       borderRadius: "3px",
     },
     "::-webkit-scrollbar-thumb": {
@@ -703,7 +688,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     /** Macronizer specific */
     ".macronBox": {
-      borderColor: isDarkMode ? Solarized.base01 : Solarized.base2,
+      borderColor: theme.macronBox,
     },
     ".macronLabel": {
       color: Solarized.base1,
