@@ -23,7 +23,7 @@ export function NumberSelector(props: {
         {props.label}
       </span>
       <span
-        className="bgColorAlt"
+        className="bgAlt"
         style={{
           borderRadius: "3px",
           paddingTop: "4px",

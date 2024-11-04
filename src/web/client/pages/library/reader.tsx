@@ -310,7 +310,7 @@ export function SwipeFeedback(props: {
 
   return (
     <div
-      className="unselectable text md bgColorAlt"
+      className="unselectable text md bgAlt"
       aria-label={`${action} for ${dir} page`}
       style={{
         position: "fixed",

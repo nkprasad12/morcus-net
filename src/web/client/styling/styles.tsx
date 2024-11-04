@@ -280,7 +280,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     /** Basic content primitives */
     ".bgColor": { backgroundColor },
-    ".theme.bgAlt": { backgroundColor: theme.bgAlt },
+    ".bgAlt": { backgroundColor: theme.bgAlt },
     ".contentDivider": {
       borderColor: theme.divider + "60",
       flexShrink: 0,
@@ -587,7 +587,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       paddingBottom: "6px",
     },
     ".selectedSidePanelTab": {
-      backgroundColor,
+      backgroundColor: theme.bgAlt,
     },
     ".readerMobileBottomBar .selectedSidePanelTab": {
       backgroundColor,
