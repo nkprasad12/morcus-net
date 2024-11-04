@@ -16,7 +16,7 @@ import {
   isAny,
   isNumber,
   isString,
-  matches,
+  matchesObject,
 } from "@/web/utils/rpc/parsing";
 
 function dbConfig(
@@ -124,20 +124,14 @@ describe("wrappedIndexDb with multiple stores", () => {
     foo: string;
   }
 
-  const FOO_VALIDATOR = matches<Foo>([
-    ["id", isString],
-    ["foo", isString],
-  ]);
+  const FOO_VALIDATOR = matchesObject<Foo>({ id: isString, foo: isString });
 
   interface Bar {
     id: string;
     bar: number;
   }
 
-  const BAR_VALIDATOR = matches<Bar>([
-    ["id", isString],
-    ["bar", isNumber],
-  ]);
+  const BAR_VALIDATOR = matchesObject<Bar>({ id: isString, bar: isNumber });
 
   const FooStoreConfig: Store<Foo> = {
     name: "foos",

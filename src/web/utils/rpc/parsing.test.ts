@@ -11,7 +11,7 @@ import {
   isPair,
   isRecord,
   isString,
-  matches,
+  matchesObject,
   maybeUndefined,
   parseMessage,
   stringifyMessage,
@@ -71,10 +71,10 @@ describe("maybeUndefined", () => {
 });
 
 describe("matchesInterface", () => {
-  const matcher = matches([
-    ["a", isString],
-    ["b", isNumber],
-  ]);
+  const matcher = matchesObject<{ a: string; b: number }>({
+    a: isString,
+    b: isNumber,
+  });
 
   it("returns false on non object", () => {
     expect(matcher(57)).toBe(false);
@@ -104,8 +104,8 @@ describe("isPrimitives", () => {
 });
 
 describe("is combinations", () => {
-  const aString = matches([["a", isString]]);
-  const bNumber = matches([["b", isNumber]]);
+  const aString = matchesObject<{ a: string }>({ a: isString });
+  const bNumber = matchesObject<{ b: number }>({ b: isNumber });
   const bothMatcher = isBoth(aString, bNumber);
 
   test("isBoth returns expected", () => {

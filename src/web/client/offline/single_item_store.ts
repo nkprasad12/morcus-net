@@ -3,7 +3,7 @@ import type {
   SingleStoreDbConfig,
 } from "@/web/client/utils/indexdb/types";
 import { simpleIndexDbStore } from "@/web/client/utils/indexdb/wrappers";
-import { isAny, matches, type Validator } from "@/web/utils/rpc/parsing";
+import { isAny, matchesObject, type Validator } from "@/web/utils/rpc/parsing";
 
 const ITEM_ID = 0;
 
@@ -51,10 +51,10 @@ interface InternalStore<T> {
 function isInternalStore<T>(
   validator?: Validator<T>
 ): (x: unknown) => x is InternalStore<T> {
-  return matches([
-    ["id", (x): x is typeof ITEM_ID => x === 0],
-    ["item", validator ?? isAny],
-  ]);
+  return matchesObject<InternalStore<T>>({
+    id: (x): x is typeof ITEM_ID => x === 0,
+    item: validator ?? isAny,
+  });
 }
 
 function singleItemDbConfig<T>(

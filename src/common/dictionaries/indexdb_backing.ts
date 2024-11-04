@@ -7,26 +7,27 @@ import type {
 import { removeDiacritics } from "@/common/text_cleaning";
 import type { DbConfig, Store } from "@/web/client/utils/indexdb/types";
 import { wrappedIndexDb } from "@/web/client/utils/indexdb/wrappers";
-import { isString, matches, maybeUndefined } from "@/web/utils/rpc/parsing";
+import {
+  isString,
+  matchesObject,
+  maybeUndefined,
+} from "@/web/utils/rpc/parsing";
 
 export const ENTRIES_STORE = {
   name: "entriesTable",
   keyPath: "id",
-  validator: matches([
-    ["id", isString],
-    ["entry", isString],
-  ]),
+  validator: matchesObject<EntriesTableRow>({ id: isString, entry: isString }),
 } satisfies Store<EntriesTableRow>;
 
 // TODO: The Sqlite implementation has cleanOrth as an index.
 export const ORTHS_STORE = {
   name: "orthsTable",
-  validator: matches([
-    ["id", isString],
-    ["orth", isString],
-    ["cleanOrth", isString],
-    ["senseId", maybeUndefined(isString)],
-  ]),
+  validator: matchesObject<OrthsTableRow>({
+    id: isString,
+    orth: isString,
+    cleanOrth: isString,
+    senseId: maybeUndefined(isString),
+  }),
   indices: [{ keyPath: "cleanOrth" }],
 } satisfies Store<OrthsTableRow>;
 

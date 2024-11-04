@@ -2,7 +2,7 @@ import {
   Serialization,
   Validator,
   isString,
-  matches,
+  matchesObject,
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
@@ -38,12 +38,11 @@ export namespace ServerMessage {
   export function validator<T>(
     innerValidator: Validator<T>
   ): Validator<ServerMessage<T>> {
-    return matches([
-      ["data", innerValidator],
-      [
-        "metadata",
-        maybeUndefined(matches([["commit", maybeUndefined(isString)]])),
-      ],
-    ]);
+    return matchesObject<ServerMessage<T>>({
+      data: innerValidator,
+      metadata: maybeUndefined(
+        matchesObject<ServerMetadata>({ commit: maybeUndefined(isString) })
+      ),
+    });
   }
 }

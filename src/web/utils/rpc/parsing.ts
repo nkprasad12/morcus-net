@@ -103,9 +103,9 @@ export function decodeMessage<T>(
   isFromUrl?: boolean
 ): T {
   const decoded = isFromUrl ? decodeURIComponent(t) : t;
-  const result: { w: T } = parseMessage(
+  const result = parseMessage(
     decoded,
-    matches([["w", validator]]),
+    matchesObject<{ w: T }>({ w: validator }),
     registry
   );
   return result.w;
@@ -208,8 +208,8 @@ export function maybeUndefined<T>(
   };
 }
 
-export function matches<T>(
-  fieldCheckers: [string, (x: unknown) => boolean][]
+export function matchesObject<T extends object>(
+  fieldCheckers: Record<keyof T, Validator<T[keyof T]>>
 ): (x: unknown) => x is T {
   return (x: unknown): x is T => {
     if (x === null) {
@@ -218,10 +218,10 @@ export function matches<T>(
     if (typeof x !== "object") {
       return false;
     }
-    for (const [name, checker] of fieldCheckers) {
+    for (const property in fieldCheckers) {
       // @ts-ignore
-      const value = x[name];
-      if (!checker(value)) {
+      const value = x[property];
+      if (!fieldCheckers[property](value)) {
         return false;
       }
     }

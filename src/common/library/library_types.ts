@@ -5,7 +5,7 @@ import {
   isArray,
   isOneOf,
   isString,
-  matches,
+  matchesObject,
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
@@ -19,14 +19,14 @@ export interface DocumentInfo {
 }
 
 export namespace DocumentInfo {
-  export const isMatch: Validator<DocumentInfo> = matches([
-    ["title", isString],
-    ["author", isString],
-    ["editor", maybeUndefined(isString)],
-    ["sponsor", maybeUndefined(isString)],
-    ["funder", maybeUndefined(isString)],
-    ["workId", maybeUndefined(isString)],
-  ]);
+  export const isMatch = matchesObject<DocumentInfo>({
+    title: isString,
+    author: isString,
+    editor: maybeUndefined(isString),
+    sponsor: maybeUndefined(isString),
+    funder: maybeUndefined(isString),
+    workId: maybeUndefined(isString),
+  });
 }
 
 export interface ProcessedWorkNode {
@@ -44,14 +44,14 @@ export interface ProcessedWorkNode {
 }
 
 export namespace ProcessedWorkNode {
-  export const isMatch: Validator<ProcessedWorkNode> = matches([
-    ["id", isArray(isString)],
-    ["header", maybeUndefined(isString)],
+  export const isMatch = matchesObject<ProcessedWorkNode>({
+    id: isArray(isString),
+    header: maybeUndefined(isString),
     // Apparently it doesn't work resursively, so just check that it's
     // a JSON object.
-    ["children", isArray(isOneOf(instanceOf(XmlNode), matches([])))],
-    ["rendNotes", maybeUndefined(isString)],
-  ]);
+    children: isArray(isOneOf(instanceOf(XmlNode), matchesObject<any>({}))),
+    rendNote: maybeUndefined(isString),
+  });
 }
 
 export interface ProcessedWork {
@@ -67,11 +67,11 @@ export interface ProcessedWork {
 }
 
 export namespace ProcessedWork {
-  export const isMatch: Validator<ProcessedWork> = matches([
-    ["info", DocumentInfo.isMatch],
-    ["textParts", isArray(isString)],
-    ["root", ProcessedWorkNode.isMatch],
-  ]);
+  export const isMatch = matchesObject<ProcessedWork>({
+    info: DocumentInfo.isMatch,
+    textParts: isArray(isString),
+    root: ProcessedWorkNode.isMatch,
+  });
 }
 
 /** Basic details about a single work in the library. */
@@ -89,13 +89,13 @@ export interface LibraryWorkMetadata {
 }
 
 export namespace LibraryWorkMetadata {
-  export const isMatch: Validator<LibraryWorkMetadata> = matches([
-    ["author", isString],
-    ["name", isString],
-    ["id", isString],
-    ["urlAuthor", isString],
-    ["urlName", isString],
-  ]);
+  export const isMatch = matchesObject<LibraryWorkMetadata>({
+    author: isString,
+    name: isString,
+    id: isString,
+    urlAuthor: isString,
+    urlName: isString,
+  });
 }
 
 export type ListLibraryWorksResponse = LibraryWorkMetadata[];
@@ -105,25 +105,24 @@ export namespace ListLibraryWorksResponse {
     isArray<LibraryWorkMetadata>(LibraryWorkMetadata.isMatch);
 }
 
+interface NameAndAuthor {
+  urlName: string;
+  urlAuthor: string;
+}
+
 export interface WorkId {
   id?: string;
-  nameAndAuthor?: {
-    urlName: string;
-    urlAuthor: string;
-  };
+  nameAndAuthor?: NameAndAuthor;
 }
 
 export namespace WorkId {
-  export const isMatch: Validator<WorkId> = matches([
-    ["id", maybeUndefined(isString)],
-    [
-      "nameAndAuthor",
-      maybeUndefined(
-        matches([
-          ["urlName", isString],
-          ["urlAuthor", isString],
-        ])
-      ),
-    ],
-  ]);
+  export const isMatch = matchesObject<WorkId>({
+    id: maybeUndefined(isString),
+    nameAndAuthor: maybeUndefined(
+      matchesObject<NameAndAuthor>({
+        urlName: isString,
+        urlAuthor: isString,
+      })
+    ),
+  });
 }

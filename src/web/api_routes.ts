@@ -2,7 +2,7 @@ import { ApiRoute } from "@/web/utils/rpc/rpc";
 import {
   isAny,
   isString,
-  matches,
+  matchesObject,
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 import {
@@ -53,12 +53,12 @@ export interface ReportApiRequest {
 export const ReportApi: ApiRoute<ReportApiRequest, any> = {
   path: "/api/report",
   method: "POST",
-  inputValidator: matches<ReportApiRequest>([
-    ["reportText", isString],
-    ["commit", isString],
-    ["url", maybeUndefined(isString)],
-    ["userAgent", maybeUndefined(isString)],
-  ]),
+  inputValidator: matchesObject<ReportApiRequest>({
+    reportText: isString,
+    commit: isString,
+    url: maybeUndefined(isString),
+    userAgent: maybeUndefined(isString),
+  }),
   outputValidator: isAny,
 };
 

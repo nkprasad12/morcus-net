@@ -1,6 +1,6 @@
 import { XmlNode } from "@/common/xml/xml_node";
 import {
-  matches,
+  matchesObject,
   instanceOf,
   isString,
   maybeUndefined,
@@ -16,13 +16,12 @@ export interface OutlineSection {
 }
 
 export namespace OutlineSection {
-  export const isMatch: (x: unknown) => x is OutlineSection =
-    matches<OutlineSection>([
-      ["text", isString],
-      ["level", isNumber],
-      ["ordinal", isString],
-      ["sectionId", isString],
-    ]);
+  export const isMatch = matchesObject<OutlineSection>({
+    text: isString,
+    level: isNumber,
+    ordinal: isString,
+    sectionId: isString,
+  });
 }
 
 /** A pre-processed outline for a dictionary entry. */
@@ -35,13 +34,12 @@ export interface EntryOutline {
 }
 
 export namespace EntryOutline {
-  export const isMatch: (x: unknown) => x is EntryOutline =
-    matches<EntryOutline>([
-      ["mainKey", isString],
-      ["mainLabel", maybeUndefined(isString)],
-      ["mainSection", OutlineSection.isMatch],
-      ["senses", maybeUndefined(isArray(OutlineSection.isMatch))],
-    ]);
+  export const isMatch = matchesObject<EntryOutline>({
+    mainKey: isString,
+    mainLabel: maybeUndefined(isString),
+    mainSection: OutlineSection.isMatch,
+    senses: maybeUndefined(isArray(OutlineSection.isMatch)),
+  });
 }
 
 /** Data for the inflection of a word. */
@@ -53,13 +51,12 @@ export interface InflectionData {
 }
 
 export namespace InflectionData {
-  export const isMatch: (x: unknown) => x is InflectionData =
-    matches<InflectionData>([
-      ["form", isString],
-      ["lemma", isString],
-      ["data", isString],
-      ["usageNote", maybeUndefined(isString)],
-    ]);
+  export const isMatch = matchesObject<InflectionData>({
+    form: isString,
+    lemma: isString,
+    data: isString,
+    usageNote: maybeUndefined(isString),
+  });
 }
 
 export interface DictSubsectionResult {
@@ -69,12 +66,11 @@ export interface DictSubsectionResult {
 }
 
 export namespace DictSubsectionResult {
-  export const isMatch: (x: unknown) => x is DictSubsectionResult =
-    matches<DictSubsectionResult>([
-      ["id", isString],
-      ["name", isString],
-      ["inflections", maybeUndefined(isArray(InflectionData.isMatch))],
-    ]);
+  export const isMatch = matchesObject<DictSubsectionResult>({
+    id: isString,
+    name: isString,
+    inflections: maybeUndefined(isArray(InflectionData.isMatch)),
+  });
 }
 
 /** The pre-processed result for a dictionary entry. */
@@ -86,12 +82,11 @@ export interface EntryResult {
 }
 
 export namespace EntryResult {
-  export const isMatch: (x: unknown) => x is EntryResult = matches<EntryResult>(
-    [
-      ["entry", instanceOf(XmlNode)],
-      ["outline", EntryOutline.isMatch],
-      ["inflections", maybeUndefined(isArray(InflectionData.isMatch))],
-      ["subsections", maybeUndefined(isArray(DictSubsectionResult.isMatch))],
-    ]
-  );
+  export const isMatch: (x: unknown) => x is EntryResult =
+    matchesObject<EntryResult>({
+      entry: instanceOf(XmlNode),
+      outline: EntryOutline.isMatch,
+      inflections: maybeUndefined(isArray(InflectionData.isMatch)),
+      subsections: maybeUndefined(isArray(DictSubsectionResult.isMatch)),
+    });
 }

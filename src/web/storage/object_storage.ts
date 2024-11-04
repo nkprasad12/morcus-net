@@ -2,7 +2,7 @@ import {
   isBoth,
   isRecord,
   isString,
-  matches,
+  matchesObject,
   maybeUndefined,
   type Validator,
 } from "@/web/utils/rpc/parsing";
@@ -14,8 +14,7 @@ export interface StorageBlobId {
 }
 
 export namespace StorageBlobId {
-  export const isMatch: (x: unknown) => x is StorageBlobId =
-    matches<StorageBlobId>([["id", isString]]);
+  export const isMatch = matchesObject<StorageBlobId>({ id: isString });
 }
 
 export interface StorageBlobData {
@@ -26,11 +25,10 @@ export interface StorageBlobData {
 }
 
 export namespace StorageBlobData {
-  export const isMatch: (x: unknown) => x is StorageBlobData =
-    matches<StorageBlobData>([
-      ["data", isString],
-      ["metadata", maybeUndefined(isRecord(isString))],
-    ]);
+  export const isMatch = matchesObject<StorageBlobData>({
+    data: isString,
+    metadata: maybeUndefined(isRecord(isString)),
+  });
 }
 
 export interface StorageBlob extends StorageBlobId, StorageBlobData {}

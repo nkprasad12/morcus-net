@@ -2,10 +2,9 @@ import { EntryResult } from "@/common/dictionaries/dict_result";
 import { XmlNode } from "@/common/xml/xml_node";
 import {
   isArray,
-  isNumber,
   isRecord,
   isString,
-  matches,
+  matchesObject,
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
@@ -57,6 +56,10 @@ export type DictRequestMode =
   | 1 // Search by keys and inflected forms
   | 2; // Search by ids only
 
+function isDictRequestMode(x: unknown): x is DictRequestMode {
+  return x === 0 || x === 1 || x === 2;
+}
+
 export interface DictsFusedRequest {
   query: string;
   dicts: string[];
@@ -65,11 +68,11 @@ export interface DictsFusedRequest {
 
 export namespace DictsFusedRequest {
   export const isMatch: (x: unknown) => x is DictsFusedRequest =
-    matches<DictsFusedRequest>([
-      ["query", isString],
-      ["dicts", isArray<string>(isString)],
-      ["mode", maybeUndefined(isNumber)],
-    ]);
+    matchesObject<DictsFusedRequest>({
+      query: isString,
+      dicts: isArray(isString),
+      mode: maybeUndefined(isDictRequestMode),
+    });
 }
 
 export interface DictsFusedResponse {
@@ -91,10 +94,10 @@ export interface CompletionsFusedRequest {
 
 export namespace CompletionsFusedRequest {
   export const isMatch: (x: unknown) => x is CompletionsFusedRequest =
-    matches<CompletionsFusedRequest>([
-      ["query", isString],
-      ["dicts", isArray<string>(isString)],
-    ]);
+    matchesObject<CompletionsFusedRequest>({
+      query: isString,
+      dicts: isArray(isString),
+    });
 }
 
 export interface CompletionsFusedResponse {
