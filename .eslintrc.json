@@ -11,7 +11,6 @@
     "plugin:@typescript-eslint/recommended"
     // "plugin:jest/recommended"
   ],
-  "overrides": [],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "project": true,
@@ -26,7 +25,8 @@
     "src/py/",
     "venv/",
     "android/",
-    "coverage/"
+    "coverage/",
+    "gaffiot.js"
   ],
   "settings": {
     "react": {
@@ -47,6 +47,10 @@
     "@typescript-eslint/no-confusing-void-expression": [
       "error",
       { "ignoreArrowShorthand": true }
+    ],
+    "@typescript-eslint/consistent-type-assertions": [
+      "error",
+      { "assertionStyle": "never" }
     ],
     "react/prop-types": "off",
     "react/no-unstable-nested-components": "error",
@@ -69,5 +73,13 @@
       2,
       { "additionalTestBlockFunctions": ["e2eTest"] }
     ]
-  }
+  },
+  "overrides": [
+    {
+      "files": ["*.test.ts*"],
+      "rules": {
+        "@typescript-eslint/consistent-type-assertions": "off"
+      }
+    }
+  ]
 }

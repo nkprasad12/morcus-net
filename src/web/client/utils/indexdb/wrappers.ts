@@ -73,6 +73,7 @@ function wrapObjectStore<T extends object, U extends TransactionType>(
           reject(new Error("Failed to open cursor!"));
         const results: T[] = [];
         cursorRequest.onsuccess = (e: any) => {
+          // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
           const cursor = e.target?.result as IDBCursorWithValue | undefined;
           if (!cursor || shouldStop?.(cursor.value) === true) {
             resolve(results);

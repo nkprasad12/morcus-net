@@ -18,6 +18,7 @@ import {
   StyleContext,
   StyleContextProvider,
 } from "@/web/client/styling/style_context";
+import { checkPresent } from "@/common/assert";
 
 document.querySelector("#initial")?.remove();
 if (window.location.pathname === "/") {
@@ -25,7 +26,7 @@ if (window.location.pathname === "/") {
 }
 
 const root = ReactDOM.createRoot(
-  document.querySelector("#placeholder") as HTMLElement
+  checkPresent(document.querySelector("#placeholder"))
 );
 
 // Used for development only. Allows the dev only pages to not be included in

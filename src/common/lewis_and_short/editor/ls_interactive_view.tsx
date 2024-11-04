@@ -1,11 +1,12 @@
 /* istanbul ignore file */
 
+import { checkPresent } from "@/common/assert";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { useState } from "react";
 import ReactDOM from "react-dom/client";
 
 const root = ReactDOM.createRoot(
-  document.querySelector("#placeholder") as HTMLElement
+  checkPresent(document.querySelector("#placeholder"))
 );
 
 const POST_HEADERS = {

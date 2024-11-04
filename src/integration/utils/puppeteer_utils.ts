@@ -25,7 +25,7 @@ export const multiSizeIteratedTest = (
       ? sizes
       : [sizes];
   const configs = [...Array(n).keys()].flatMap((i) =>
-    finalSizes.map((v) => [v, i + 1] as [ScreenSize, number])
+    finalSizes.map((v) => [v, i + 1] satisfies [ScreenSize, number])
   );
   return (
     name: string,
@@ -56,7 +56,7 @@ export async function getButtonByAriaLabel(
   );
   const button = results[0];
   assert(await button.isVisible());
-  return results[0] as ElementHandle<HTMLButtonElement>;
+  return button;
 }
 
 export async function filterNonVisible<
@@ -82,6 +82,7 @@ export async function getButtonByLabel(
     1,
     `Found ${visibleResults.length} visible buttons with label ${label}`
   );
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   return visibleResults[0] as ElementHandle<HTMLButtonElement>;
 }
 
@@ -117,7 +118,7 @@ export async function findText(
     `xpath/.//${parentType}[contains(text(), "${text}")${classString}]`
   );
   expect(results).toHaveLength(1);
-  return results[0] as ElementHandle<Element>;
+  return results[0];
 }
 
 export async function checkTitleIs(
