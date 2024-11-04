@@ -2,9 +2,11 @@ import { describe, expect, test } from "@jest/globals";
 import {
   assert,
   assertEqual,
+  assertType,
   checkPresent,
   checkSatisfies,
 } from "@/common/assert";
+import { isNumber, isString } from "@/web/utils/rpc/parsing";
 
 describe("assert", () => {
   test("raises message on false", () => {
@@ -23,6 +25,16 @@ describe("assertEqual", () => {
 
   test("is no-op on true", () => {
     assertEqual(3, 3);
+  });
+});
+
+describe("assertType", () => {
+  test("raises message on invalid", () => {
+    expect(() => assertType(3, isString)).toThrow();
+  });
+
+  test("is no-op on valid", () => {
+    assertType(3, isNumber);
   });
 });
 

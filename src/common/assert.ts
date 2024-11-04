@@ -19,6 +19,16 @@ export function assertEqual(
   }
 }
 
+export function assertType<T>(
+  input: unknown,
+  validator: (x: unknown) => x is T
+): T {
+  if (validator(input)) {
+    return input;
+  }
+  throw new Error("Input did not match expected type.");
+}
+
 function appendMessage(base: string, message?: string): string {
   if (message === undefined) {
     return base;
