@@ -48,15 +48,25 @@ function formatCells(cells: string[][]): string {
 async function countLines() {
   const tsSource: number[] = [];
   const tsTest: number[] = [];
+  const tsClientSource: number[] = [];
+  const tsClientTest: number[] = [];
+  const morceusSource: number[] = [];
+  const morceusTest: number[] = [];
   const pySource: number[] = [];
   const pyTest: number[] = [];
   for await (const file of walk(ROOT)) {
     const contents = await fs.promises.readFile(file);
     const lines = contents.toString().split("\n").length - 1;
+    const isClient = file.startsWith("src/web/client");
+    const isMorceus = file.startsWith("src/morceus");
     if (file.endsWith(".test.tsx") || file.endsWith(".test.ts")) {
       tsTest.push(lines);
+      if (isClient) tsClientTest.push(lines);
+      if (isMorceus) morceusTest.push(lines);
     } else if (file.endsWith(".tsx") || file.endsWith(".ts")) {
       tsSource.push(lines);
+      if (isClient) tsClientSource.push(lines);
+      if (isMorceus) morceusSource.push(lines);
     } else if (file.endsWith(".py")) {
       if (file.split("/").slice(-1)[0].startsWith("test_")) {
         pyTest.push(lines);
@@ -66,12 +76,19 @@ async function countLines() {
     }
   }
   const total = [tsSource, tsTest, pySource, pyTest].flatMap((x) => x);
+  const row = (label: string, lineData: number[]) => {
+    return [label, `${sum(lineData)} lines`, `${lineData.length} files`];
+  };
   const cells = [
-    ["TypeScript source", `${sum(tsSource)} lines`, `${tsSource.length} files`],
-    ["TypeScript tests", `${sum(tsTest)} lines`, `${tsTest.length} files`],
-    ["Python source", `${sum(pySource)} lines`, `${pySource.length} files`],
-    ["Python tests", `${sum(pyTest)} lines`, `${pyTest.length} files`],
-    ["Total", `${sum(total)} lines`, `${total.length} files`],
+    row("TypeScript source", tsSource),
+    row(" - client source", tsClientSource),
+    row(" - Morceus source", morceusSource),
+    row("TypeScript tests", tsTest),
+    row(" - client tests", tsClientTest),
+    row(" - Morceus tests", morceusTest),
+    row("Python source", pySource),
+    row("Python tests", pyTest),
+    row("Total", total),
   ];
   console.log(formatCells(cells));
 }
