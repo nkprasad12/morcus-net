@@ -153,7 +153,6 @@ interface ReaderState {
   hasTooltip: React.MutableRefObject<boolean[]>;
   section: ProcessedWorkNode | undefined;
   queryLine?: number;
-  highlightMode?: "centerOnly" | "highlightAndCenter";
   highlightRef?: React.RefObject<HTMLSpanElement>;
 }
 
@@ -173,8 +172,6 @@ export function ReadingPage() {
   const { nav, route } = Router.useRouter();
   const queryPage = safeParseInt(route.params?.q || route.params?.pg);
   const queryLine = safeParseInt(route.params?.l);
-  const highlightMode =
-    route.params?.hl === "0" ? "centerOnly" : "highlightAndCenter";
 
   const section = React.useMemo(
     () =>
@@ -234,7 +231,7 @@ export function ReadingPage() {
 
   return (
     <ReaderContext.Provider
-      value={{ hasTooltip, section, queryLine, highlightRef, highlightMode }}>
+      value={{ hasTooltip, section, queryLine, highlightRef }}>
       <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
         MainColumn={WorkColumn}
         ExtraSidebarContent={Sidebar}
@@ -580,7 +577,7 @@ export function WorkTextPage(props: {
           i={i + (hasHeader ? 1 : 0)}
           chunkArrayIndex={i}
           workName={capitalizeWords(props.work.info.title)}
-          hideHeader={
+          hideHeaderByDefault={
             hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0)
           }
           isMobile={isMobile}
@@ -704,7 +701,6 @@ function WorkNavigationSection(props: { work: PaginatedWork }) {
               params: {
                 pg: old.params?.pg ?? old.params?.q,
                 l: `${l - 1}`,
-                hl: "0",
               },
             }))
           }
@@ -757,9 +753,12 @@ function WorkInfo(props: { workInfo: DocumentInfo }) {
 
 function workSectionHeader(
   text: string,
-  latent?: boolean
+  latent?: boolean,
+  highlighted?: boolean
 ): React.ForwardRefRenderFunction<HTMLSpanElement, object> {
-  const classes = latent ? ["unselectable", "latent"] : ["unselectable"];
+  const classes = ["unselectable"]
+    .concat(latent ? ["latent"] : [])
+    .concat(highlighted ? ["readerHl"] : []);
   return function InternalWorkSectionHeader(fProps, fRef) {
     return (
       <span {...fProps} ref={fRef}>
@@ -778,6 +777,7 @@ function WorkChunkHeader(props: {
   blurb: string;
   chunkArrayIndex: number;
   latent?: boolean;
+  highlighted?: boolean;
 }) {
   const { hasTooltip } = React.useContext(ReaderContext);
   const { route } = Router.useRouter();
@@ -793,7 +793,7 @@ function WorkChunkHeader(props: {
   return (
     <CopyLinkTooltip
       forwarded={React.forwardRef<HTMLSpanElement>(
-        workSectionHeader(props.text, props.latent)
+        workSectionHeader(props.text, props.latent, props.highlighted)
       )}
       message={props.blurb}
       placement="right"
@@ -811,11 +811,11 @@ function WorkChunk(props: {
   i: number;
   chunkArrayIndex: number;
   workName: string;
-  hideHeader?: boolean;
+  hideHeaderByDefault?: boolean;
   isMobile: boolean;
   highlight?: boolean;
 }) {
-  const { highlightRef, highlightMode } = React.useContext(ReaderContext);
+  const { highlightRef } = React.useContext(ReaderContext);
   const { isMobile, node } = props;
   const id = node.id
     .map((idPart) =>
@@ -827,25 +827,23 @@ function WorkChunk(props: {
   const row = props.i + 1;
   const content = props.node.children.filter(instanceOf(XmlNode));
   assertEqual(content.length, props.node.children.length);
-  const showHeader = props.hideHeader !== true;
+  const shouldHighlight = props.highlight === true;
+  const showHeader = shouldHighlight || props.hideHeaderByDefault !== true;
   const indent = node.rendNote === "indent";
   return (
     <>
-      <span style={{ gridColumn: 1, gridRow: row }}>
+      <span
+        style={{ gridColumn: 1, gridRow: row }}
+        ref={props.highlight ? highlightRef : undefined}>
         <WorkChunkHeader
           text={node.id.slice(isMobile && node.id.length > 2 ? 2 : 0).join(".")}
           chunkArrayIndex={props.chunkArrayIndex}
           blurb={`${props.workName} ${id}`}
           latent={!showHeader}
+          highlighted={shouldHighlight}
         />
       </span>
       <span
-        ref={props.highlight ? highlightRef : undefined}
-        className={
-          props.highlight && highlightMode !== "centerOnly"
-            ? "highlighted"
-            : undefined
-        }
         style={{
           gridColumn: 2,
           gridRow: row,

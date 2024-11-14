@@ -394,6 +394,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderRadius: 4,
       borderColor: Solarized.red,
     },
+    ".readerHl": {
+      textDecoration: `underline ${Solarized.red} 2.5px solid`,
+    },
     ".dictPlaceholder": {
       color: backgroundColor,
       cursor: "default",
