@@ -5,6 +5,7 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["LS_PROCESSED_PATH", "build/dbs/ls.db"],
   ["SH_PROCESSED_PATH", "build/dbs/sh.db"],
   ["SH_RAW_PATH", "sh_raw.txt"],
+  ["GAFFIOT_RAW_PATH", "gaffiot.js"],
   ["DB_SOURCE", "unspecified"],
   ["OFFLINE_DATA_DIR", "build/offlineData"],
   ["PWA_SHORT_NAME_SUFFIX", ""],

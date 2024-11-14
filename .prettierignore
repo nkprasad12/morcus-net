@@ -12,3 +12,4 @@ genfiles_static
 morpheus/**/*
 android/
 public/
+gaffiot.js
