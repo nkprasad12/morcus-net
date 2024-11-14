@@ -54,9 +54,8 @@ const UNSELECTABLE: CSSProperties = {
   userSelect: "none",
 };
 
-const ALLOWED_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
+const DEFAULT_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
 const TEXT_STYLE: CSSProperties = {
-  fontFamily: ALLOWED_FONTS,
   fontWeight: 400,
   lineHeight: 1.5,
   letterSpacing: "0.00938em",
@@ -97,6 +96,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
   const contentTextColor = theme.contentText;
   const readerMainScale = settings.readerMainScale / 100;
   const readerSideScale = settings.readerSideScale / 100;
+  const fontFamily = settings.fontFamily === "serif" ? "serif" : DEFAULT_FONTS;
+  const textStyle = { ...TEXT_STYLE, fontFamily };
 
   return {
     /** For elements */
@@ -132,7 +133,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     // Text
     ".text": {
-      ...TEXT_STYLE,
+      ...textStyle,
       color: contentTextColor,
     },
     ".text.light": { color: contentTextLightColor },
@@ -648,7 +649,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".customSearchPopup": {
       color: theme.searchPopupText,
       backgroundColor: theme.searchPopupBg,
-      ...TEXT_STYLE,
+      ...textStyle,
       fontSize: FontSizes.BIG_SCREEN,
       paddingTop: "8px",
       paddingBottom: "8px",

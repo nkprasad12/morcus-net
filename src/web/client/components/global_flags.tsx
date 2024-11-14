@@ -54,6 +54,7 @@ export function getGlobalSettings(): GlobalSettings {
         highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
         darkMode: false,
         embeddedInflectedSearch: true,
+        fontFamily: "sans-serif",
       };
 }
 

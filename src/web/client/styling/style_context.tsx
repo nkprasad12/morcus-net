@@ -23,6 +23,7 @@ export interface DictStyleConfig {
 
 export interface GlobalStyleConfig {
   darkMode: boolean;
+  fontFamily?: string;
 }
 
 export type StyleConfig = ReaderStyleConfigSetter &
@@ -73,6 +74,7 @@ export function StyleContextProvider(props: React.PropsWithChildren) {
         readerSideScale,
         setReaderMainScale,
         setReaderSideScale,
+        fontFamily: globalSettings.data.fontFamily,
       }}>
       {props.children}
     </StyleContext.Provider>
