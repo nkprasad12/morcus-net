@@ -189,10 +189,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               size={iconSize}
               aria-label={darkModeOn ? "light mode" : "dark mode"}
               onClick={() =>
-                globalSettings.setData({
-                  ...globalSettings.data,
-                  darkMode: !darkModeOn,
-                })
+                globalSettings.mergeData({ darkMode: !darkModeOn })
               }
               className="menuIcon">
               <SvgIcon

@@ -126,8 +126,7 @@ function SearchSettingsDialog(props: {
               checked={!shouldDisable.inflections && inflectedSearch}
               disabled={shouldDisable.inflections}
               onChange={() =>
-                globalSettings.setData({
-                  ...globalSettings.data,
+                globalSettings.mergeData({
                   ...(props.isEmbedded
                     ? { embeddedInflectedSearch: !inflectedSearch }
                     : { inflectedSearch: !inflectedSearch }),
@@ -144,10 +143,7 @@ function SearchSettingsDialog(props: {
             globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
           }
           setHighlightStrength={(v) => {
-            globalSettings.setData({
-              ...globalSettings.data,
-              highlightStrength: v,
-            });
+            globalSettings.mergeData({ highlightStrength: v });
           }}
         />
       </div>

@@ -82,6 +82,51 @@ describe("GlobalSettingsContext", () => {
     );
   });
 
+  it("updates keys on merged settings modification with overlapping keys", () => {
+    const defaultValue: GlobalSettings = {
+      experimentalMode: true,
+      embeddedInflectedSearch: true,
+    };
+    localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
+
+    const settings = setupHandler();
+    act(() => {
+      settings.get?.mergeData({ experimentalMode: false });
+    });
+
+    expect(settings.get).toBeDefined();
+    expect(settings.get?.data.experimentalMode).toBe(false);
+    expect(settings.get?.data.embeddedInflectedSearch).toBe(true);
+    expect(localStorage.getItem("GlobalSettings")).toBe(
+      JSON.stringify({ experimentalMode: false, embeddedInflectedSearch: true })
+    );
+  });
+
+  it("updates keys on merged settings modification with non-overlapping keys", () => {
+    const defaultValue: GlobalSettings = {
+      highlightStrength: 50,
+      embeddedInflectedSearch: true,
+    };
+    localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
+
+    const settings = setupHandler();
+    act(() => {
+      settings.get?.mergeData({ experimentalMode: false });
+    });
+
+    expect(settings.get).toBeDefined();
+    expect(settings.get?.data.experimentalMode).toBe(false);
+    expect(settings.get?.data.highlightStrength).toBe(50);
+    expect(settings.get?.data.embeddedInflectedSearch).toBe(true);
+    expect(localStorage.getItem("GlobalSettings")).toBe(
+      JSON.stringify({
+        highlightStrength: 50,
+        embeddedInflectedSearch: true,
+        experimentalMode: false,
+      })
+    );
+  });
+
   it("auto-sets embedded inflection to true if unspecified", () => {
     const defaultValue: GlobalSettings = {
       inflectedSearch: true,

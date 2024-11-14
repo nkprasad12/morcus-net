@@ -15,6 +15,7 @@ export interface GlobalSettings extends GlobalBooleans {
   highlightStrength?: number;
   inflectedSearch?: boolean;
   embeddedInflectedSearch?: boolean;
+  fontFamily?: string;
 }
 
 function toGlobalSettings(input: unknown): GlobalSettings {
@@ -31,11 +32,13 @@ function toGlobalSettings(input: unknown): GlobalSettings {
 export interface DataAndSetter<T> {
   data: T;
   setData: (newData: T) => unknown;
+  mergeData: (partial: Partial<T>) => unknown;
 }
 
 const FALLBACK: DataAndSetter<GlobalSettings> = {
   data: {},
   setData: () => {},
+  mergeData: () => {},
 };
 
 export const GlobalSettingsContext: React.Context<
@@ -54,22 +57,34 @@ export function getGlobalSettings(): GlobalSettings {
       };
 }
 
+function storeGlobalSettings(settings: GlobalSettings) {
+  localStorage.setItem(SETTINGS_STORAGE_KEY, JSON.stringify(settings));
+}
+
 export function SettingsHandler(props: PropsWithChildren<Record<string, any>>) {
   const [settings, setSettings] = React.useState<GlobalSettings>(
     getGlobalSettings()
   );
 
+  const setData = React.useCallback((newSettings: GlobalSettings) => {
+    storeGlobalSettings(newSettings);
+    setSettings(newSettings);
+  }, []);
+
+  const mergeData = React.useCallback((partial: Partial<GlobalSettings>) => {
+    setSettings((old) => {
+      const merged = { ...old, ...partial };
+      storeGlobalSettings(merged);
+      return merged;
+    });
+  }, []);
+
   return (
     <GlobalSettingsContext.Provider
       value={{
         data: { ...settings },
-        setData: (newSettings) => {
-          localStorage.setItem(
-            SETTINGS_STORAGE_KEY,
-            JSON.stringify(newSettings)
-          );
-          setSettings(newSettings);
-        },
+        setData,
+        mergeData,
       }}>
       {props.children}
     </GlobalSettingsContext.Provider>
