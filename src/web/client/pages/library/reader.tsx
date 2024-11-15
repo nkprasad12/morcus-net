@@ -552,7 +552,7 @@ export function WorkTextPage(props: {
     return <InfoText text="Invalid page!" />;
   }
 
-  const gapSize = (textScale / 100) * 0.75;
+  const gapSize = (textScale / 100) * 0.65;
   const gap = `${gapSize}em`;
   const hasLines = work.textParts.slice(-1)[0].toLowerCase() === "line";
   const hasHeader = section.header !== undefined;
@@ -756,7 +756,7 @@ function workSectionHeader(
   latent?: boolean,
   highlighted?: boolean
 ): React.ForwardRefRenderFunction<HTMLSpanElement, object> {
-  const classes = ["unselectable"]
+  const classes = ["unselectable", "workHeader"]
     .concat(latent ? ["latent"] : [])
     .concat(highlighted ? ["readerHl"] : []);
   return function InternalWorkSectionHeader(fProps, fRef) {
@@ -764,7 +764,11 @@ function workSectionHeader(
       <span {...fProps} ref={fRef}>
         <InfoText
           text={text}
-          style={{ marginLeft: 0, marginRight: 0, cursor: "pointer" }}
+          style={{
+            marginLeft: undefined,
+            marginRight: undefined,
+            cursor: "pointer",
+          }}
           additionalClasses={classes}
         />
       </span>
