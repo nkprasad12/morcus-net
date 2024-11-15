@@ -80,6 +80,7 @@ function logMemoryUsage(telemetry: TelemetryLogger): void {
 }
 
 export function startMorcusServer(): Promise<http.Server> {
+  log("Attempting to start server");
   process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
   const app = express();

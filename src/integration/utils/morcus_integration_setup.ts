@@ -58,7 +58,7 @@ export function startMorcusFromDocker(): Promise<Closer> {
         resolve(close);
         return;
       }
-      if (performance.now() - start > 2000) {
+      if (performance.now() - start > 5000) {
         close();
         reject(errorWithOutAndErr("Timed out starting morcus server.", logs));
         return;
