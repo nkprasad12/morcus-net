@@ -53,6 +53,7 @@ export function startMorcusFromDocker(): Promise<Closer> {
         return;
       }
       const stdout = logs.stdout.toString();
+      console.log(stdout);
       if (stdout.includes(":5757")) {
         resolve(close);
         return;
