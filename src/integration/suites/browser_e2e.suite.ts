@@ -45,11 +45,15 @@ export function defineBrowserE2eSuite() {
       currentPage = await checkPresent(browser).newPage();
     });
 
-    // Firefox doesn't nicely handle re-use of the same page.
     afterEach(async () => {
+      await currentPage?.evaluate(() => {
+        window.sessionStorage.clear();
+        window.localStorage.clear();
+      });
       if (product === "chrome") {
         return;
       }
+      // Firefox doesn't nicely handle re-use of the same page.
       await currentPage?.close();
       currentPage = await checkPresent(browser).newPage();
     });
@@ -154,6 +158,10 @@ export function defineBrowserE2eSuite() {
       }
       await takeScreenshot();
       throw new Error(`Timed out waiting for change from: ${url}`);
+    }
+
+    async function goToPage(morcusPage: string): Promise<void> {
+      await checkPresent(currentPage).goto(global.location.origin + morcusPage);
     }
 
     async function getPage(
@@ -340,7 +348,7 @@ export function defineBrowserE2eSuite() {
     e2eTest()("allows copying id links via tooltip", async (screenSize) => {
       const page = await getPage(screenSize, "/dicts?q=pondus");
 
-      const button = await findText("pondus", page, "span", "lsSenseBullet");
+      const button = await waitForText("pondus", "span", "lsSenseBullet");
       await button.click();
       const tooltip = await findText("Copy article link", page);
       await tooltip.click();
@@ -370,6 +378,34 @@ export function defineBrowserE2eSuite() {
     e2eTest()("shows works by name and author", async (screenSize) => {
       await getPage(screenSize, "/work/caesar/de_bello_gallico");
       await waitForText("Gallia");
+    });
+
+    e2eTest()("saves spot on page turns", async (screenSize) => {
+      const page = await getPage(screenSize, "/work/caesar/de_bello_gallico");
+      await waitForText("Gallia");
+      await page.keyboard.press("ArrowRight");
+      await waitForText("Orgetorix");
+
+      await goToPage("/library");
+      await awaitAndClickText("Gallico");
+
+      await waitForText("Orgetorix");
+    });
+
+    e2eTest()("saves spot on quick nav", async (screenSize) => {
+      const page = await getPage(screenSize, "/work/caesar/de_bello_gallico");
+      await waitForText("Gallia");
+      await page.click(`[aria-label="Outline"]`);
+      // Chosen because there is no other Chapter 90 - otherwise we would
+      // have some trouble ambiguating between all of the links.
+      await awaitAndClickText("SEPTIMUS");
+      await awaitAndClickText("Chapter 90");
+      await waitForText("Aeduos");
+
+      await goToPage("/library");
+      await awaitAndClickText("Gallico");
+
+      await waitForText("Aeduos");
     });
 
     e2eTest()("shows works by name and author and page", async (screenSize) => {

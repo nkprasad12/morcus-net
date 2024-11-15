@@ -30,6 +30,10 @@ import { useMediaQuery } from "@/web/client/utils/media_query";
 export const SWIPE_NAV_KEY = "RD_MB_NAV_SWIPE";
 export const TAP_NAV_KEY = "RD_MB_NAV_SIDE_TAP";
 
+// This internal logic is currently being used in `reader.tsx` to determine
+// whether we are using a two column or one column layout for purposes of scroll.
+export const LARGE_VIEW_MAIN_COLUMN_ID = "readerMainColumn";
+
 type SidebarTab<T> = T | DefaultSidebarTab;
 interface Responsive {
   isMobile: boolean;
@@ -437,7 +441,7 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
       }}>
       <div
         className="readerMain"
-        id="readerMainColumn"
+        id={LARGE_VIEW_MAIN_COLUMN_ID}
         style={{
           ...COLUMN_STYLE,
           width: `${mainWidth}%`,

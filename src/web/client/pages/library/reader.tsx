@@ -31,6 +31,7 @@ import {
   BaseExtraSidebarTabProps,
   BaseMainColumnProps,
   BaseReader,
+  LARGE_VIEW_MAIN_COLUMN_ID,
   SWIPE_NAV_KEY,
   TAP_NAV_KEY,
 } from "@/web/client/pages/library/base_reader";
@@ -130,21 +131,28 @@ function resolveWorkId(path: string): WorkId | undefined {
   return undefined;
 }
 
-function updatePage(
+function incrementPage(
   offset: number,
   currentPage: number,
   nav: NavHelper<RouteInfo>,
-  work: PaginatedWork,
-  isMobile: boolean
+  work: PaginatedWork
 ) {
   const proposed = offset + currentPage;
   // Nav pages are 1-indexed.
   const newPage = Math.min(Math.max(0, proposed), work.pages.length - 1) + 1;
+  updatePage(newPage, nav, work);
+}
+
+function updatePage(
+  newPage: number,
+  nav: NavHelper<RouteInfo>,
+  work: PaginatedWork
+) {
   nav.to((old) => ({ path: old.path, params: { pg: `${newPage}` } }));
-  const container = isMobile
-    ? window
-    : document.getElementById("readerMainColumn");
-  container?.scrollTo({ top: isMobile ? 64 : 0, behavior: "instant" });
+  const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
+  const isOneColumn = twoColumnMain === null;
+  const container = isOneColumn ? window : twoColumnMain;
+  container?.scrollTo({ top: isOneColumn ? 64 : 0, behavior: "instant" });
   const id = [work.info.title, work.info.author].join("@");
   LibrarySavedSpot.set(id, newPage);
 }
@@ -259,7 +267,7 @@ export function ReadingPage() {
             setOverlayOpacity(0);
             if (size >= MIN_SWIPE_SIZE + 0.16) {
               const offset = direction === "Right" ? -1 : 1;
-              updatePage(offset, currentPage, nav, work, true);
+              incrementPage(offset, currentPage, nav, work);
             }
           },
         }}
@@ -484,13 +492,13 @@ function WorkNavigationBar(props: {
 }) {
   const { nav } = Router.useRouter();
   const navBarRef = React.useRef<HTMLDivElement>(null);
-  const { isMobile, page, work } = props;
+  const { page, work } = props;
 
   const changePage = React.useCallback(
     (offset: number) => {
-      updatePage(offset, page, nav, work, isMobile);
+      incrementPage(offset, page, nav, work);
     },
-    [page, nav, work, isMobile]
+    [page, nav, work]
   );
 
   React.useEffect(() => {
@@ -624,10 +632,7 @@ function WorkNavigation(props: {
                     const page = props.work.pages[i];
                     if (page.id.join(".") === childRoot.id.join(".")) {
                       // Nav pages are 1-indexed.
-                      nav.to((old) => ({
-                        path: old.path,
-                        params: { q: `${i + 1}` },
-                      }));
+                      updatePage(i + 1, nav, props.work);
                     }
                   }
                 }}>

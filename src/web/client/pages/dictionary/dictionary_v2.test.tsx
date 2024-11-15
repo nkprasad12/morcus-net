@@ -362,7 +362,11 @@ describe("New Dictionary View", () => {
     });
     render(
       <GlobalSettingsContext.Provider
-        value={{ data: { embeddedInflectedSearch: true }, setData: () => {} }}>
+        value={{
+          data: { embeddedInflectedSearch: true },
+          setData: () => {},
+          mergeData: () => {},
+        }}>
         <DictionaryViewV2 embedded initial="Belgae" />
       </GlobalSettingsContext.Provider>
     );
