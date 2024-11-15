@@ -2,34 +2,54 @@
 
 import { setEnv } from "@/integration/utils/set_test_env";
 import { checkPresent } from "@/common/assert";
-import { spawnSync } from "child_process";
+import { spawnSync, type SpawnSyncReturns } from "child_process";
 import { prodBuildSteps } from "@/scripts/prod_build_steps";
 import { startMorcusServer } from "@/start_server";
+import { randomUUID } from "crypto";
 import fs from "fs";
 
 type Closer = () => Promise<void>;
 
-const CONTAINER_NAME = "server-integration-test-morcus-container";
+const CONTAINER_BASE = "morcus-integration-test";
+
+function errorWithOutAndErr(
+  message: string,
+  process: SpawnSyncReturns<Buffer>
+): Error {
+  const stdout = process.stdout.toString();
+  const stderr = process.stderr.toString();
+  const lines = ["***", message, "***", "OUT:", stdout, "ERR:", stderr];
+  return new Error(lines.join("\n"));
+}
 
 /** Starts up the Morcus server from a Docker image. */
 export function startMorcusFromDocker(): Promise<Closer> {
   const imageTag = checkPresent(process.env.IMAGE_TAG);
   const imageName = `ghcr.io/nkprasad12/morcus:${imageTag}`;
-  const container = `docker run -dp 127.0.0.1:1337:5757 --name ${CONTAINER_NAME} ${imageName}`;
+  const containerName = CONTAINER_BASE + randomUUID();
+  const container = `docker run -dp 127.0.0.1:1337:5757 --name ${containerName} ${imageName}`;
   const close: Closer = async () => {
     try {
-      spawnSync("docker", ["stop", CONTAINER_NAME]);
-      spawnSync("docker", ["rm", CONTAINER_NAME]);
+      spawnSync("docker", ["stop", containerName]);
+      spawnSync("docker", ["rm", containerName]);
     } catch {}
   };
-  spawnSync(container, { shell: true, stdio: "inherit" });
+  const startContainer = spawnSync(container, { shell: true });
   const start = performance.now();
   return new Promise((resolve, reject) => {
     const callback = () => {
-      const logs = spawnSync("docker", ["logs", CONTAINER_NAME]);
+      if (startContainer.status !== 0) {
+        reject(
+          errorWithOutAndErr("Failed to start container.", startContainer)
+        );
+        return;
+      }
+      const logs = spawnSync("docker", ["logs", containerName]);
       if (logs.status !== 0) {
         close();
-        reject(Error("Starting morcus from docker image failed."));
+        reject(
+          errorWithOutAndErr("Starting morcus from docker image failed.", logs)
+        );
         return;
       }
       const stdout = logs.stdout.toString();
@@ -39,7 +59,7 @@ export function startMorcusFromDocker(): Promise<Closer> {
       }
       if (performance.now() - start > 2000) {
         close();
-        reject(Error("Timed out starting morcus server."));
+        reject(errorWithOutAndErr("Timed out starting morcus server.", logs));
         return;
       }
       setTimeout(callback, 250);
