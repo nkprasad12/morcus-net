@@ -55,6 +55,10 @@ function crawlXml(root: any): XmlNode {
     }
   }
   for (const child of root[tagName]) {
+    // if (typeof child === "string") {
+    //   children.push(new XmlNode("ws", [], [child]));
+    //   continue;
+    // }
     if (isTextNode(child)) {
       children.push(`${child[TEXT_NODE]}`);
       continue;
@@ -116,6 +120,11 @@ export function parseRawXml(
     .parse(rawXml)
     .map(crawlXml)
     .filter((n: XmlNode) => n.name[0] !== "?");
+  // Comment this one out ^, if uncommenting below
+  // .filter((n: XmlNode) => n.name[0] !== "?" && n.name !== "#text");
+  // for (const node of nodes) {
+  //   console.log(node.formatAsString(true));
+  // }
   assert(nodes.length === 1, "Expected exactly 1 root node.");
   return nodes[0];
 }

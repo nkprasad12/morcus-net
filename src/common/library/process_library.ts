@@ -84,6 +84,8 @@ function processTeiCts(tei: TeiCtsDocument): ProcessedWork {
   return result;
 }
 
+const DEBUG = false;
+
 export function processLibrary(
   outputDir: string = LIB_DEFAULT_DIR,
   works: string[] = ALL_WORKS
@@ -95,7 +97,13 @@ export function processLibrary(
       .split("/")
       .slice(-1)[0]
       .replace(/\.[^/.]+$/, "");
-    const tei = parseCtsTeiXml(parseRawXml(fs.readFileSync(workPath)));
+    const node = parseRawXml(fs.readFileSync(workPath), {
+      keepWhitespace: undefined,
+    });
+    if (DEBUG) {
+      console.log(node.formatAsString(true));
+    }
+    const tei = parseCtsTeiXml(node);
     const title = NAME_TO_DISPLAY_NAME.get(tei.info.title) || tei.info.title;
     const metadata: LibraryWorkMetadata = {
       id: workId,

@@ -13,7 +13,7 @@ import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import { findTextNodes, type SingleTextNode } from "@/common/xml/xml_utils";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
-const SKIP_NODES = new Set(["#comment", "note"]);
+const SKIP_NODES = new Set(["#comment", "note", "ws"]);
 // q is a quote and we should make sure that this is marked!!!
 const DEFAULT_TEXT_NODES = ["p", "l", "foreign"];
 const KNOWN_ALT_NODES = ["add", "sic", "del", "gap", "q", "quote"];
@@ -48,6 +48,7 @@ function shouldSkip(textNode: SingleTextNode): boolean {
 }
 
 function markupText(textNode: SingleTextNode, debug?: DebugHelper): XmlChild[] {
+  // console.log(textNode);
   const text = textNode.text;
   const parentName = textNode.parent.name;
 
