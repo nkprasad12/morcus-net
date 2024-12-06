@@ -19,6 +19,13 @@ export function assertEqual(
   }
 }
 
+export function assertArraysEqual<T>(expected: T[], actual: T[]) {
+  assertEqual(expected.length, actual.length, "Lengths do not match.");
+  for (let i = 0; i < expected.length; i++) {
+    assertEqual(expected[i], actual[i], `at position ${i}`);
+  }
+}
+
 export function assertType<T>(
   input: unknown,
   validator: (x: unknown) => x is T
