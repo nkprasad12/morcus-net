@@ -1,0 +1,11 @@
+[
+  {
+    "location": [
+      ["poem", "7"],
+      ["line", "13"]
+    ],
+    "target": "Alcitheon",
+    "replacement": "Alcithoen",
+    "reason": "Other sources and reference works correspond to the form Alcithoen"
+  }
+]
