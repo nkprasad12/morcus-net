@@ -1,4 +1,5 @@
 import { assert, assertEqual } from "@/common/assert";
+import type { LibraryPatch } from "@/common/library/library_patches";
 import {
   ProcessedWork,
   ProcessedWorkNode,
@@ -165,11 +166,11 @@ export interface DebugSideChannel {
 /** Returns the processed content of a TEI XML file. */
 export function processTei(
   teiRoot: TeiCtsDocument,
-  sideChannel?: DebugSideChannel
+  options?: { sideChannel?: DebugSideChannel; patches?: LibraryPatch[] }
 ): ProcessedWork {
   return {
     info: teiRoot.info,
     textParts: teiRoot.textParts,
-    root: processForDisplay(teiRoot.content, sideChannel),
+    root: processForDisplay(teiRoot.content, options?.sideChannel),
   };
 }

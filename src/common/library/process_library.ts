@@ -5,6 +5,10 @@ import {
   LibraryIndex,
 } from "@/common/library/library_lookup";
 import {
+  loadPatches,
+  type LibraryPatch,
+} from "@/common/library/library_patches";
+import {
   LibraryWorkMetadata,
   type ProcessedWork,
 } from "@/common/library/library_types";
@@ -17,6 +21,7 @@ import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { stringifyMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";
+import path from "path";
 
 // TODO: We should just crawl some root.
 const LOCAL_ROOT = envVar("LIB_XML_ROOT", "unsafe") || "texts/latin/perseus";
@@ -64,7 +69,10 @@ function urlifyName(input: string): string {
   return urlify(input, NAME_TO_URL_LOOKUP);
 }
 
-function processTeiCts(tei: TeiCtsDocument): ProcessedWork {
+function processTeiCts(
+  tei: TeiCtsDocument,
+  patches?: LibraryPatch[]
+): ProcessedWork {
   const words: string[] = [];
   const onWord = (word: string) => {
     const trimmed = word.trim();
@@ -77,7 +85,7 @@ function processTeiCts(tei: TeiCtsDocument): ProcessedWork {
   const debugName = tei.info.title.replaceAll(" ", "_");
   const outputPath = debugRoot?.concat("/", debugName, ".debug.txt");
   const debugHelper = outputPath === undefined ? undefined : { onWord };
-  const result = processTei(tei, debugHelper);
+  const result = processTei(tei, { sideChannel: debugHelper, patches });
   if (outputPath !== undefined) {
     fs.writeFileSync(outputPath, words.sort().join("\n"));
   }
@@ -88,13 +96,11 @@ export function processLibrary(
   outputDir: string = LIB_DEFAULT_DIR,
   works: string[] = ALL_WORKS
 ) {
+  const patches = loadPatches();
   const index: LibraryIndex = {};
   for (const workPath of works) {
     // We should use the Perseus URN instead.
-    const workId = workPath
-      .split("/")
-      .slice(-1)[0]
-      .replace(/\.[^/.]+$/, "");
+    const workId = path.basename(workPath).replace(/\.[^/.]+$/, "");
     const tei = parseCtsTeiXml(parseRawXml(fs.readFileSync(workPath)));
     const title = NAME_TO_DISPLAY_NAME.get(tei.info.title) || tei.info.title;
     const metadata: LibraryWorkMetadata = {
@@ -104,7 +110,7 @@ export function processLibrary(
       urlAuthor: urlifyAuthor(tei.info.author),
       urlName: urlifyName(tei.info.title),
     };
-    const result = processTeiCts(tei);
+    const result = processTeiCts(tei, patches.get(workId));
     const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
     const outputPath = `${outputDir}/${workId}`;
     index[workId] = [outputPath, metadata];

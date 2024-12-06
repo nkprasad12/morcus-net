@@ -22,7 +22,7 @@ describe("processTei", () => {
   it("gets same result with and without side channel", () => {
     const sideChannel: DebugSideChannel = { onWord: jest.fn() };
 
-    const withSideChannel = processTei(SIMPLE_TEI_CTS, sideChannel);
+    const withSideChannel = processTei(SIMPLE_TEI_CTS, { sideChannel });
     const withoutSideChannel = processTei(SIMPLE_TEI_CTS);
 
     expect(withSideChannel).toStrictEqual(withoutSideChannel);
@@ -31,7 +31,7 @@ describe("processTei", () => {
   it("gets side channel callbacks", () => {
     const sideChannel: DebugSideChannel = { onWord: jest.fn() };
 
-    processTei(SIMPLE_TEI_CTS, sideChannel);
+    processTei(SIMPLE_TEI_CTS, { sideChannel });
 
     expect(sideChannel.onWord).toHaveBeenCalledWith("Gallia");
     expect(sideChannel.onWord).toHaveBeenCalledWith("est");
