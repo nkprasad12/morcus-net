@@ -1,6 +1,7 @@
 import {
   AggregateTimer,
   Tally,
+  areArraysEqual,
   exhaustiveGuard,
   mergeMaps,
   safeParseInt,
@@ -149,5 +150,19 @@ describe("AggregateTimer", () => {
     tally.count("a");
 
     expect(tally.toString(2)).toBe("Total: 3\n2 <= a");
+  });
+});
+
+describe("areArraysEqual", () => {
+  test("false on differing lengths", () => {
+    expect(areArraysEqual([1, 2, 3], [1, 2])).toBe(false);
+  });
+
+  test("false on differing elements", () => {
+    expect(areArraysEqual([1, 3], [1, 2])).toBe(false);
+  });
+
+  test("true on equal", () => {
+    expect(areArraysEqual([1, 3], [1, 3])).toBe(true);
   });
 });

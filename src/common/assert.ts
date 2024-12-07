@@ -1,6 +1,9 @@
-export function assert(condition: boolean, message: string = "") {
+export function assert(
+  condition: boolean,
+  message: string | (() => string) = ""
+) {
   if (!condition) {
-    throw new Error(message);
+    throw new Error(typeof message === "string" ? message : message());
   }
 }
 
