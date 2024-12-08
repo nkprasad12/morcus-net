@@ -8,7 +8,7 @@ import {
 describe("parseNounStemFile", () => {
   const nom01 = parseNounStemFile("src/morceus/stems/nom.01");
 
-  it("has expected lemmata", () => expect(nom01).toHaveLength(30));
+  it("has expected lemmata", () => expect(nom01).toHaveLength(31));
 
   it("parses two row lemma", () => {
     const nullus = nom01.find((s) => s.lemma === "nullus");
@@ -20,6 +20,21 @@ describe("parseNounStemFile", () => {
           stem: "nu_ll",
           code: "aj",
           inflection: "us_ius_adj",
+          ...toInflectionData([]),
+        },
+      ],
+    });
+  });
+
+  it("parses stems with diareses", () => {
+    const Judaicus = nom01.find((s) => s.lemma === "Judaicus");
+    expect(Judaicus).toEqual({
+      lemma: "Judaicus",
+      stems: [
+        {
+          stem: "Ju_da^i+c",
+          code: "aj",
+          inflection: "us_a_um",
           ...toInflectionData([]),
         },
       ],

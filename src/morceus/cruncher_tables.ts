@@ -65,7 +65,11 @@ async function saveTables(config?: CruncherConfig) {
 }
 
 function normalizeKey(input: string): string {
-  return input.replaceAll("^", "").replaceAll("_", "").replaceAll("-", "");
+  return input
+    .replaceAll("^", "")
+    .replaceAll("_", "")
+    .replaceAll("-", "")
+    .replaceAll("+", "");
 }
 
 function makeStemsMap(lemmata: Lemma[]): StemMap {

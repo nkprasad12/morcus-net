@@ -54,6 +54,10 @@ export namespace Vowels {
     const long: number[] = [];
     const short: number[] = [];
     for (let i = 0; i < input.length; i++) {
+      // Morpheus uses these for diareses. We can ignore these here.
+      if (input[i] === "+") {
+        continue;
+      }
       if (input[i] === MACRON_COMBINER || input[i] === "_") {
         long.push(resultString.length - 1);
       } else if (input[i] === BREVE_COMBINER || input[i] === "^") {
