@@ -7,7 +7,7 @@ export const MACRON_COMBINER = "\u0304";
 export const BREVE_COMBINER = "\u0306";
 const UNMARKED_VOWELS = "aeiouyAEIOUY";
 
-const LENGTH_MARK_EQUIVALENTS = new Map<string, string>([
+export const LENGTH_MARK_EQUIVALENTS = new Map<string, string>([
   [`a${MACRON_COMBINER}`, "ā"],
   [`e${MACRON_COMBINER}`, "ē"],
   [`i${MACRON_COMBINER}`, "ī"],
@@ -54,9 +54,9 @@ export namespace Vowels {
     const long: number[] = [];
     const short: number[] = [];
     for (let i = 0; i < input.length; i++) {
-      if (input[i] === MACRON_COMBINER) {
+      if (input[i] === MACRON_COMBINER || input[i] === "_") {
         long.push(resultString.length - 1);
-      } else if (input[i] === BREVE_COMBINER) {
+      } else if (input[i] === BREVE_COMBINER || input[i] === "^") {
         short.push(resultString.length - 1);
       } else {
         resultString += input[i];
@@ -81,16 +81,17 @@ export namespace Vowels {
     for (let k = 0; k < first.length; k++) {
       const firstLength = Vowels.getLength(first[k]);
       const secondLength = Vowels.getLength(second[k]);
-      const hasLong =
-        firstLength === "Long" ||
-        firstLongs.includes(k) ||
-        secondLength === "Long" ||
-        secondLongs.includes(k);
-      const hasShort =
-        firstLength === "Short" ||
-        firstShorts.includes(k) ||
-        secondLength === "Short" ||
-        secondShorts.includes(k);
+      const firstLong = firstLength === "Long" || firstLongs.includes(k);
+      const secondLong = secondLength === "Long" || secondLongs.includes(k);
+      const firstShort = firstLength === "Short" || firstShorts.includes(k);
+      const secondShort = secondLength === "Short" || secondShorts.includes(k);
+      if ((firstLong && firstShort) || (secondLong && secondShort)) {
+        // In this case, one of the letters were marked as either long or short.
+        // This means it's automatically compatible with the other one.
+        continue;
+      }
+      const hasLong = firstLong || secondLong;
+      const hasShort = firstShort || secondShort;
       if (hasLong && hasShort) {
         return false;
       }

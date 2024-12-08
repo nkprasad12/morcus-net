@@ -27,6 +27,7 @@ import {
 } from "@/web/client/pages/dictionary/dictionary_routing";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { processWords } from "@/common/text_cleaning";
+import { LENGTH_MARK_EQUIVALENTS } from "@/common/character_utils";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -365,7 +366,10 @@ export function InflectionDataSection(props: {
     <>
       {formatted.map(([form, inflections]) => (
         <div className="text sm" style={{ paddingBottom: 3 }} key={form}>
-          <span className="lsOrth">{form}</span>:
+          <span className="lsOrth">
+            {form.replaceAll("^", "\u0306").replaceAll("_", "\u0304")}
+          </span>
+          :
           {inflections.length === 1 ? (
             ` ${inflections[0]}`
           ) : (

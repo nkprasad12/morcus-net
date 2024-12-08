@@ -509,10 +509,7 @@ export namespace MorceusCruncher {
         inflectedForms: Array.from(
           byForm.map.entries(),
           ([form, inflectionData]) => ({
-            form: form
-              .replaceAll("^", "\u0306")
-              .replaceAll("_", "\u0304")
-              .replaceAll("-", ""),
+            form: form.replaceAll("-", ""),
             inflectionData,
           })
         ),
