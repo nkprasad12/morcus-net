@@ -150,14 +150,16 @@ function stringifyIrreg(irreg: Lemma, mode: "noms" | "verbs"): string {
   return lines.join("\n");
 }
 
-function writeIrregs(mode: "noms" | "verbs") {
+export function writeIrregs(mode: "noms" | "verbs") {
   const lemmata =
     mode === "noms" ? processNomIrregEntries() : processVerbIrregEntries();
   fs.mkdirSync(IRREGS_OUTPUT_DIR, { recursive: true });
+  const fileName = `${IRREGS_OUTPUT_DIR}/${mode}2.irreg`;
   fs.writeFileSync(
-    `${IRREGS_OUTPUT_DIR}/${mode}2.irreg`,
+    fileName,
     `\n${lemmata.map((l) => stringifyIrreg(l, mode)).join("\n\n")}\n`
   );
+  console.log(`Wrote irregs to ${fileName}`);
 }
 
 export namespace Stems {
@@ -241,46 +243,51 @@ function undashLemma(lemma: Lemma) {
   return result;
 }
 
-const vbs = allVerbStems();
-const nouns = allNounStems();
+export function findDupes() {
+  const vbs = allVerbStems();
+  const nouns = allNounStems();
 
-let dupes = 0;
-let easySubstantives = 0;
-let exacts = 0;
-const knownLemmata = arrayMap<string, Lemma>();
-for (const lemma of vbs.concat(nouns)) {
-  const undashed = undashLemma(lemma);
-  knownLemmata.add(undashed.lemma, undashed);
-}
-for (const [lemma, values] of knownLemmata.map.entries()) {
-  if (values.length <= 1) {
-    continue;
+  let dupes = 0;
+  let easySubstantives = 0;
+  let exacts = 0;
+  const knownLemmata = arrayMap<string, Lemma>();
+  for (const lemma of vbs.concat(nouns)) {
+    const undashed = undashLemma(lemma);
+    knownLemmata.add(undashed.lemma, undashed);
   }
-  if (new Set(values.map((v) => JSON.stringify(v))).size === 1) {
-    exacts += 1;
-    continue;
-  }
-  if (values.length === 2) {
-    const sameLemma = values[0].lemma === values[1].lemma;
-    const noIrregs =
-      values[0].irregularForms === undefined &&
-      values[1].irregularForms === undefined;
-    const matchingStems =
-      values[0].stems?.length === 1 &&
-      values[1].stems?.length === 1 &&
-      values[0].stems[0].stem === values[1].stems[0].stem;
-    const codes = [values[0].stems?.at(0)?.code, values[1].stems?.at(0)?.code];
-    const nomAndAdj = codes.includes("aj") && codes.includes("no");
-    if (sameLemma && noIrregs && matchingStems && nomAndAdj) {
-      easySubstantives += 1;
+  for (const [lemma, values] of knownLemmata.map.entries()) {
+    if (values.length <= 1) {
       continue;
     }
+    if (new Set(values.map((v) => JSON.stringify(v))).size === 1) {
+      exacts += 1;
+      continue;
+    }
+    if (values.length === 2) {
+      const sameLemma = values[0].lemma === values[1].lemma;
+      const noIrregs =
+        values[0].irregularForms === undefined &&
+        values[1].irregularForms === undefined;
+      const matchingStems =
+        values[0].stems?.length === 1 &&
+        values[1].stems?.length === 1 &&
+        values[0].stems[0].stem === values[1].stems[0].stem;
+      const codes = [
+        values[0].stems?.at(0)?.code,
+        values[1].stems?.at(0)?.code,
+      ];
+      const nomAndAdj = codes.includes("aj") && codes.includes("no");
+      if (sameLemma && noIrregs && matchingStems && nomAndAdj) {
+        easySubstantives += 1;
+        continue;
+      }
+    }
+    dupes += 1;
+    console.log(lemma);
+    for (const value of values) console.log(JSON.stringify(value));
+    console.log("\n");
   }
-  dupes += 1;
-  console.log(lemma);
-  for (const value of values) console.log(JSON.stringify(value));
-  console.log("\n");
+  console.log("Exact dupes: " + exacts);
+  console.log("easySubstantives: " + easySubstantives);
+  console.log(dupes);
 }
-console.log("Exact dupes: " + exacts);
-console.log("easySubstantives: " + easySubstantives);
-console.log(dupes);

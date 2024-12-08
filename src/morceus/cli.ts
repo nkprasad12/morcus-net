@@ -1,9 +1,12 @@
+/* istanbul ignore file */
+
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
   CruncherOptions,
   type LatinWordAnalysis,
 } from "@/morceus/cruncher_types";
+import { writeIrregs } from "@/morceus/debug";
 import { InflectionContext } from "@/morceus/inflection_data_utils";
 import { expandTemplatesAndSave } from "@/morceus/tables/templates";
 import * as dotenv from "dotenv";
@@ -33,6 +36,12 @@ if (command === "analyzeWord") {
   analyzeWord();
 } else if (command === "buildTables") {
   expandTemplatesAndSave();
+} else if (command === "buildIrregs") {
+  const arg = process.argv[3];
+  if (arg !== "noms" && arg !== "verbs") {
+    throw new Error(`Argument can only be "noms" or "verbs"`);
+  }
+  writeIrregs(arg);
 } else {
   console.error(`Unknown command ${command}`);
 }
