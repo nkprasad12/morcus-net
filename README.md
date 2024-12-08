@@ -201,7 +201,7 @@ TODO: add subsections for all of these, and explain the build step.
 To run the analyzer on the given word (e.g. `habes`), use:
 
 ```
-npm run ts-node src/morceus/cli habes
+npm run ts-node src/morceus/cli.ts analyzeWord habes
 ```
 
 (if you have `bun` installed, you can replace `npm run ts-node` with `bun run`, which is much faster)
@@ -219,3 +219,9 @@ not known to the analyzer.
 
 You can update the list `ALL_WORKS` in `src/common/process_library.ts` to add or remove a work. Currently only DBG and Phaedrus run by
 default as they are checked in to the repo as test data, but Amores, Germania, and Satires are also known to work.
+
+### Expanding all Morceus tables
+
+```
+npm run ts-node src/morceus/cli.ts buildTables
+```
