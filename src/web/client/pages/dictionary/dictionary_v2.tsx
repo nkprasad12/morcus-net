@@ -49,7 +49,11 @@ import {
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
-import { Container, Divider } from "@/web/client/components/generic/basics";
+import {
+  Container,
+  Divider,
+  SpanButton,
+} from "@/web/client/components/generic/basics";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { useCallback } from "react";
@@ -73,11 +77,45 @@ function chooseDicts(dicts: undefined | DictInfo | DictInfo[]): DictInfo[] {
 type EdgeCaseState = "Landing" | "Error" | "No Results";
 type DictState = EdgeCaseState | "Loading" | "Results";
 
+function hasGreek(input: string): boolean {
+  return /[\u0370-\u03ff\u1f00-\u1fff]/.test(input);
+}
+
 function HorizontalPlaceholder() {
   return (
     <span key={"horizonatalSpacePlaceholder"} className="dictPlaceholder">
       {"pla ceh old er".repeat(20)}
     </span>
+  );
+}
+
+function GreekWordContent(props: { isSmall: boolean; word: string }) {
+  const logeionUrl = `https://logeion.uchicago.edu/${props.word}`;
+  const [showInline, setShowInline] = React.useState<boolean>(false);
+
+  return (
+    <>
+      <div className="text md">This site does not (yet) support Greek.</div>
+      <div className="text sm">
+        Click below to embed a Logeion search for {props.word} (or open{" "}
+        <a href={logeionUrl} target="_blank" rel="noreferrer">
+          in a new tab
+        </a>
+        ) .
+      </div>
+      <div style={{ marginTop: "8px", marginBottom: "8px" }}>
+        <SpanButton
+          className="button text light"
+          onClick={() => setShowInline((show) => !show)}>
+          {(showInline ? "Close" : "Open") + " Embedded"}
+        </SpanButton>
+      </div>
+      {showInline && (
+        <iframe
+          style={{ width: "100%", height: "100%" }}
+          src={logeionUrl}></iframe>
+      )}
+    </>
   );
 }
 
@@ -617,7 +655,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   const apiRequest: DictsFusedRequest | null = React.useMemo(
     () =>
-      query === undefined
+      query === undefined || hasGreek(query)
         ? null
         : {
             query,
@@ -710,6 +748,19 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       onSearchQuery,
     ]
   );
+
+  if (query && hasGreek(query)) {
+    const greekWorkContent = (
+      <GreekWordContent isSmall={isSmall} word={query} />
+    );
+    return (
+      <ResponsiveLayout
+        oneCol={greekWorkContent}
+        twoColMain={greekWorkContent}
+        contextValues={contextValues}
+      />
+    );
+  }
 
   if (state === "Landing") {
     return <ResponsiveLayout contextValues={contextValues} />;
