@@ -5,7 +5,10 @@ import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
-import { processLibrary } from "@/common/library/process_library";
+import {
+  ALL_SUPPORTED_WORKS,
+  processLibrary,
+} from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
 import {
   DownloadConfig,
@@ -24,20 +27,7 @@ const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
 const PERSEUS_CLL_TAG = "master";
 const PERSEUS_CLL_ROOT =
   "https://raw.githubusercontent.com/nkprasad12/canonical-latinLit";
-const PERSEUS_DOWNLOADS = [
-  // Remove these next two for now, since it has strange optional
-  // nested elements that are not marked in the CTS header
-  // "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
-  // "data/phi0893/phi001/phi0893.phi001.perseus-lat2.xml",
-
-  // Remove this for now, since it has whitespace between elements.
-  // "data/phi1318/phi001/phi1318.phi001.perseus-lat1.xml",
-  "data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml",
-  "data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
-  "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
-  "data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml",
-  `data/phi1276/phi001/phi1276.phi001.perseus-lat2.xml`,
-].map(perseusDownloadConfig);
+const PERSEUS_DOWNLOADS = ALL_SUPPORTED_WORKS.map(perseusDownloadConfig);
 
 function perseusUrl(resource: string): string {
   return `${PERSEUS_CLL_ROOT}/${PERSEUS_CLL_TAG}/${resource}`;
