@@ -305,7 +305,7 @@ export function xmlNodeToJsx(
     );
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
-      props["className"] = "highlighted";
+      props["className"] = "dictHighlighted";
     }
     return React.createElement(root.name, props, children);
   }
@@ -365,7 +365,13 @@ export function InflectionDataSection(props: {
     <>
       {formatted.map(([form, inflections]) => (
         <div className="text sm" style={{ paddingBottom: 3 }} key={form}>
-          <span className="lsOrth">{form}</span>:
+          <span className="lsOrth">
+            {form
+              .replaceAll("^", "\u0306")
+              .replaceAll("_", "\u0304")
+              .replaceAll("+", "\u0308")}
+          </span>
+          :
           {inflections.length === 1 ? (
             ` ${inflections[0]}`
           ) : (

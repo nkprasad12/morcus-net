@@ -46,6 +46,8 @@ export const SEMANTIC_TAGS = new Set([
   // This should be a case
   "locative",
   "variant",
+  "greek",
+  "disputed",
 ]);
 export const INTERNAL_TAGS = new Set<string>([
   "are_vb",

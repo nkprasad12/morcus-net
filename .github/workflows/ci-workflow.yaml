@@ -57,8 +57,6 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 6
     env:
-      LATEST: ghcr.io/nkprasad12/morcus:dev-latest
-      PREVIOUS: ghcr.io/nkprasad12/morcus:dev-previous
       CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}
 
     steps:
@@ -67,11 +65,25 @@ jobs:
         run: docker build . --tag $CANDIDATE --label "runnumber=${GITHUB_RUN_ID}"
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
-      - name: Backup current image
+      - name: Push image
+        run: docker push $CANDIDATE
+
+  push-dev-image:
+    needs: [build-image]
+    if: github.ref == 'refs/heads/dev'
+    runs-on: ubuntu-latest
+    timeout-minutes: 6
+    env:
+      LATEST: ghcr.io/nkprasad12/morcus:dev-latest
+      PREVIOUS: ghcr.io/nkprasad12/morcus:dev-previous
+      CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}
+    steps:
+      - name: Log in to registry
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
+      - name: Backup current dev image
         run: docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
-      - name: Push dev image
+      - name: Push latest dev image
         run: |
-          docker push $CANDIDATE
           docker tag $CANDIDATE $LATEST
           docker push $LATEST
 
