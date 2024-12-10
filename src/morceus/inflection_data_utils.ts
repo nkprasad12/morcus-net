@@ -47,6 +47,7 @@ export const SEMANTIC_TAGS = new Set([
   "locative",
   "variant",
   "greek",
+  "disputed",
 ]);
 export const INTERNAL_TAGS = new Set<string>([
   "are_vb",
