@@ -12,7 +12,7 @@ import {
   type WordInflectionData,
 } from "@/morceus/types";
 
-export const SEMANTIC_TAGS = new Set([
+const SEMANTIC_TAGS = new Set([
   "abbrev",
   "adverb",
   "archaic",
@@ -49,6 +49,7 @@ export const SEMANTIC_TAGS = new Set([
   "greek",
   "disputed",
 ]);
+
 export const INTERNAL_TAGS = new Set<string>([
   "are_vb",
   "comp_only",
@@ -82,6 +83,13 @@ export const INTERNAL_TAGS = new Set<string>([
   "relative",
   "rel_pron",
 ]);
+
+function isSemanticTag(tag: string): boolean {
+  if (SEMANTIC_TAGS.has(tag)) {
+    return true;
+  }
+  return tag.match(/^arabic\d+$/) !== null;
+}
 
 /** Grammatical inflection data and context on usage. */
 export interface InflectionContext {
@@ -371,7 +379,7 @@ export function toInflectionData(grammaticalData: string[]): InflectionContext {
     }
 
     // Other data
-    else if (SEMANTIC_TAGS.has(data)) {
+    else if (isSemanticTag(data)) {
       tags.push(data);
     } else if (INTERNAL_TAGS.has(data)) {
       internalTags.push(data);
