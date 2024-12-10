@@ -86,7 +86,7 @@ describe("xmlNodeToJsx", () => {
     const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
     const result = xmlNodeToJsx(root, "Caesar");
 
-    expect(result.props["className"]).toBe("highlighted");
+    expect(result.props["className"]).toBe("dictHighlighted");
   });
 
   it("does not add highlight on different id", () => {

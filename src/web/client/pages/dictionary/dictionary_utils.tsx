@@ -305,7 +305,7 @@ export function xmlNodeToJsx(
     );
   } else {
     if (root.getAttr("id") === highlightId && highlightId !== undefined) {
-      props["className"] = "highlighted";
+      props["className"] = "dictHighlighted";
     }
     return React.createElement(root.name, props, children);
   }

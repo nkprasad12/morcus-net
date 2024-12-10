@@ -389,10 +389,11 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       fontFamily: "monospace",
       color: theme.dictChip,
     },
-    ".highlighted": {
-      border: "2px solid",
-      borderRadius: 4,
+    ".dictHighlighted": {
+      borderLeft: "3px solid",
       borderColor: Solarized.red,
+      paddingLeft: "4px",
+      marginLeft: "-7px",
     },
     ".workHeader": {
       border: "2px solid",
