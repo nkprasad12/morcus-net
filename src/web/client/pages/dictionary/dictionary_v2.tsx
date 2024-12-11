@@ -60,12 +60,17 @@ import { useCallback } from "react";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 import { arrayMapBy } from "@/common/data_structures/collect_map";
 import { ClientPaths } from "@/web/client/routing/client_paths";
+import { StoredCheckBox } from "@/web/client/components/generic/settings_basics";
+import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
   " and / or refresh the page (or if using the app, close and re-open)." +
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE = "No results found";
+
+const EMBEDDED_LOGEION_SETTING_LABEL =
+  "Automatically open embedded Logeion searches in the future";
 
 function chooseDicts(dicts: undefined | DictInfo | DictInfo[]): DictInfo[] {
   if (dicts === undefined) {
@@ -89,33 +94,56 @@ function HorizontalPlaceholder() {
   );
 }
 
-function GreekWordContent(props: { isSmall: boolean; word: string }) {
+function GreekWordContent(props: {
+  isSmall: boolean;
+  word: string;
+  scrollTopRef: React.RefObject<HTMLDivElement>;
+}) {
   const logeionUrl = `https://logeion.uchicago.edu/${props.word}`;
-  const [showInline, setShowInline] = React.useState<boolean>(false);
+  const defaultShowInline = usePersistedValue<boolean>(
+    false,
+    EMBEDDED_LOGEION_SETTING_LABEL
+  );
+  const [showInline, setShowInline] =
+    React.useState<boolean>(defaultShowInline);
 
   return (
-    <>
-      <div className="text md">This site does not (yet) support Greek.</div>
-      <div className="text sm">
-        Click below to embed a Logeion search for {props.word} (or open{" "}
-        <a href={logeionUrl} target="_blank" rel="noreferrer">
-          in a new tab
-        </a>
-        ) .
-      </div>
-      <div style={{ marginTop: "8px", marginBottom: "8px" }}>
-        <SpanButton
-          className="button text light"
-          onClick={() => setShowInline((show) => !show)}>
-          {(showInline ? "Close" : "Open") + " Embedded"}
-        </SpanButton>
-      </div>
-      {showInline && (
+    <div ref={props.scrollTopRef}>
+      {!defaultShowInline && (
+        <>
+          <div className="text md">This site does not (yet) support Greek.</div>
+          <div className="text sm">
+            Click below to embed a Logeion search for {props.word} (or open{" "}
+            <a href={logeionUrl} target="_blank" rel="noreferrer">
+              in a new tab
+            </a>
+            ) .
+          </div>
+          <div style={{ marginTop: "8px", marginBottom: "8px" }}>
+            <div>
+              <SpanButton
+                className="button text light"
+                onClick={() => setShowInline((show) => !show)}>
+                {(showInline ? "Close" : "Open") + " Embed"}
+              </SpanButton>
+              <StoredCheckBox
+                className="text sm"
+                initial={false}
+                label="Automatically open embedded Logeion searches"
+              />
+            </div>
+          </div>
+        </>
+      )}
+      {defaultShowInline && (
+        <div className="text xs light">Using Logeion embed for Greek term</div>
+      )}
+      {(showInline || defaultShowInline) && (
         <iframe
           style={{ width: "100%", height: "100%" }}
           src={logeionUrl}></iframe>
       )}
-    </>
+    </div>
   );
 }
 
@@ -648,6 +676,9 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     : settings.data.inflectedSearch;
   const inflectedSearch =
     inflectedSetting === true || route.inflectedSearch === true;
+  const greekFallback = isEmbedded && query && hasGreek(query);
+  // TODO: We have a bug where if you click on one Greek word and then to another Greek word,
+  // we don't scroll past the Morcus search bar. Need to fix.
   const allowedDicts = isEmbedded ? dictsToUse : route.dicts;
   const queryDicts = React.useMemo(
     () => chooseDicts(allowedDicts),
@@ -655,14 +686,14 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   const apiRequest: DictsFusedRequest | null = React.useMemo(
     () =>
-      query === undefined || hasGreek(query)
+      query === undefined || greekFallback
         ? null
         : {
             query,
             dicts: queryDicts.map((dict) => dict.key),
             mode: idSearch ? 2 : inflectedSearch ? 1 : 0,
           },
-    [query, queryDicts, idSearch, inflectedSearch]
+    [query, queryDicts, idSearch, inflectedSearch, greekFallback]
   );
   useApiCall(DictsFusedApi, apiRequest, {
     reloadOldClient: true,
@@ -686,7 +717,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   }, [title, isEmbedded, query]);
 
   React.useEffect(() => {
-    if (state !== "Results") {
+    if (state !== "Results" && !greekFallback) {
       return;
     }
     const highlighted =
@@ -700,7 +731,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         : SCROLL_JUMP;
     scrollElement?.scrollIntoView(scrollType);
     fromInternalLink.current = false;
-  }, [state, isEmbedded, hash]);
+  }, [state, isEmbedded, hash, greekFallback]);
 
   const onSearchQuery = useCallback(
     (term: string, dict?: DictInfo) => {
@@ -749,9 +780,13 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     ]
   );
 
-  if (query && hasGreek(query)) {
+  if (greekFallback) {
     const greekWorkContent = (
-      <GreekWordContent isSmall={isSmall} word={query} />
+      <GreekWordContent
+        isSmall={isSmall}
+        word={query}
+        scrollTopRef={scrollTopRef}
+      />
     );
     return (
       <ResponsiveLayout

@@ -161,20 +161,20 @@ export function TextField(props: {
   );
 }
 
-export interface CheckBoxProps {
+export interface CheckBoxProps extends CoreProps {
   label: string;
   enabled: boolean;
-  onChange: (value: boolean) => unknown;
+  onNewValue: (value: boolean) => unknown;
 }
 
 export function CheckBox(props: CheckBoxProps) {
   return (
-    <div>
+    <div {...props}>
       <input
         id={props.label}
         type="checkbox"
         checked={props.enabled}
-        onChange={(e) => props.onChange(e.currentTarget.checked)}
+        onChange={(e) => props.onNewValue(e.currentTarget.checked)}
       />
       <label htmlFor={props.label} style={{ paddingLeft: 8 }}>
         {props.label}
