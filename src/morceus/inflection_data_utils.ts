@@ -56,7 +56,7 @@ const SEMANTIC_TAGS = new Set([
   "proport", //proportional numeral
   "tempnum", //temporal numeral
   "partnum", //partitive numeral
-  "othernum" //other numeral
+  "othernum", //other numeral
 ]);
 
 export const INTERNAL_TAGS = new Set<string>([
