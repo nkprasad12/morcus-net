@@ -48,6 +48,15 @@ const SEMANTIC_TAGS = new Set([
   "variant",
   "greek",
   "disputed",
+  "card", //cardinal numeral
+  "ord", //ordinal numeral
+  "distr", //distributive numeral
+  "advnum", //adverbial numeral
+  "multipl", //multiplicative numeral
+  "proport", //proportional numeral
+  "tempnum", //temporal numeral
+  "partnum", //partitive numeral
+  "othernum" //other numeral
 ]);
 
 export const INTERNAL_TAGS = new Set<string>([
