@@ -509,10 +509,7 @@ export namespace MorceusCruncher {
         inflectedForms: Array.from(
           byForm.map.entries(),
           ([form, inflectionData]) => ({
-            form: form
-              .replaceAll("^", "\u0306")
-              .replaceAll("_", "\u0304")
-              .replaceAll("-", ""),
+            form: form.replaceAll("-", ""),
             inflectionData,
           })
         ),
@@ -521,21 +518,3 @@ export namespace MorceusCruncher {
     return analyses;
   }
 }
-
-// function printWordAnalysis(input: LatinWordAnalysis) {
-//   console.log(`lemma: ${input.lemma}`);
-//   for (const form of input.inflectedForms) {
-//     console.log(`  - ${form.form}: `);
-//     for (const data of form.inflectionData) {
-//       console.log(`    - ${InflectionContext.toString(data)}`);
-//     }
-//   }
-// }
-
-// import { MorceusTables } from "@/morceus/cruncher_tables";
-// const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
-// const start = performance.now();
-// const result = cruncher(process.argv[2], CruncherOptions.DEFAULT);
-// console.log(`${performance.now() - start} ms`);
-// result.forEach(printWordAnalysis);
-// console.log(process.memoryUsage());

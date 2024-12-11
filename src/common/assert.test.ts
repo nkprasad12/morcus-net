@@ -1,6 +1,7 @@
 import { describe, expect, test } from "@jest/globals";
 import {
   assert,
+  assertArraysEqual,
   assertEqual,
   assertType,
   checkPresent,
@@ -25,6 +26,20 @@ describe("assertEqual", () => {
 
   test("is no-op on true", () => {
     assertEqual(3, 3);
+  });
+});
+
+describe("assertArraysEqual", () => {
+  test("raises message on differing lengths", () => {
+    expect(() => assertArraysEqual([1, 2], [1])).toThrow();
+  });
+
+  test("raises message on differing elements", () => {
+    expect(() => assertArraysEqual([1, 2], [1, 3])).toThrow();
+  });
+
+  test("is no-op on equal", () => {
+    assertArraysEqual([1, 3], [1, 3]);
   });
 });
 

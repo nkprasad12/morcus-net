@@ -1,0 +1,15 @@
+abin    abis + ne
+adeon   adeo + ne
+ain ais + ne
+egon    ego + ne
+men     me + ne
+ten     te + ne
+tun     tu + ne
+vin     vis + ne 
+
+nequis  ne + quis#1 L&S quis#1 I.B
+nescioquis  nescio + quis L&S nescio I.γ
+
+derat   de-erat
+derit   de-erit
+desser  de-esset

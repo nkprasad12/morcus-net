@@ -224,6 +224,7 @@ export function expandTemplatesAndSave(
   for (const expanded of expandTemplates(templateDirs).values()) {
     writeTable(expanded, outputDir);
   }
+  console.debug(`Saved expanded tables to ${outputDir}`);
 }
 
 export const EXPANDED_TEMPLATES = singletonOf(() =>

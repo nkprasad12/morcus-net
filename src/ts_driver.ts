@@ -38,7 +38,7 @@ export function inLsButNotMorceus() {
   console.log(all.length);
   console.error(all.join("\n"));
 }
-
+inLsButNotMorceus();
 // expandTemplatesAndSave();
 const runtime = Math.round(performance.now() - startTime);
 console.log(`Runtime: ${runtime} ms.`);
