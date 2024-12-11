@@ -1,4 +1,5 @@
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
+import { useUnchangeable } from "@/web/client/utils/indexdb/hooks";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
 import { useRef } from "react";

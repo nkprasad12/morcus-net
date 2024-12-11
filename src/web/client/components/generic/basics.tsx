@@ -23,10 +23,13 @@ export interface CoreProps extends AriaAttributes {
   style?: CSSProperties;
   id?: string;
   className?: string;
+}
+
+export interface ClickableCoreProps extends CoreProps {
   onClick?: () => unknown;
 }
 
-export interface ContainerProps extends CoreProps {
+export interface ContainerProps extends ClickableCoreProps {
   maxWidth?: BoxWidth;
   disableGutters?: boolean;
   gutterSize?: number;
