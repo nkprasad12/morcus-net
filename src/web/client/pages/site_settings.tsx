@@ -3,7 +3,7 @@ import {
   GlobalBooleans,
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
-import { Container } from "@/web/client/components/generic/basics";
+import { CheckBox, Container } from "@/web/client/components/generic/basics";
 import type { OfflineSettings } from "@/web/client/offline/offline_settings_storage";
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import { sendToSw } from "@/web/client/offline/communication/app_comms";
@@ -29,21 +29,15 @@ function GlobalSettingsCheckbox(props: {
   const enabled = globalSettings.data[props.settingKey] === true;
 
   return (
-    <div>
-      <input
-        id={props.label}
-        type="checkbox"
-        checked={enabled}
-        onChange={(e) => {
-          const newSettings = { ...globalSettings.data };
-          newSettings[props.settingKey] = e.currentTarget.checked;
-          globalSettings.setData(newSettings);
-        }}
-      />
-      <label htmlFor={props.label} style={{ paddingLeft: 8 }}>
-        {props.label}
-      </label>
-    </div>
+    <CheckBox
+      label={props.label}
+      enabled={enabled}
+      onChange={(newValue) => {
+        const newSettings = { ...globalSettings.data };
+        newSettings[props.settingKey] = newValue;
+        globalSettings.setData(newSettings);
+      }}
+    />
   );
 }
 

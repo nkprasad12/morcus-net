@@ -157,3 +157,25 @@ export function TextField(props: {
     <input type="text" {...baseProps} />
   );
 }
+
+export interface CheckBoxProps {
+  label: string;
+  enabled: boolean;
+  onChange: (value: boolean) => unknown;
+}
+
+export function CheckBox(props: CheckBoxProps) {
+  return (
+    <div>
+      <input
+        id={props.label}
+        type="checkbox"
+        checked={props.enabled}
+        onChange={(e) => props.onChange(e.currentTarget.checked)}
+      />
+      <label htmlFor={props.label} style={{ paddingLeft: 8 }}>
+        {props.label}
+      </label>
+    </div>
+  );
+}
