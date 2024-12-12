@@ -32,7 +32,7 @@ function GlobalSettingsCheckbox(props: {
     <CheckBox
       label={props.label}
       enabled={enabled}
-      onChange={(newValue) => {
+      onNewValue={(newValue) => {
         const newSettings = { ...globalSettings.data };
         newSettings[props.settingKey] = newValue;
         globalSettings.setData(newSettings);
