@@ -49,19 +49,28 @@ import {
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
-import { Container, Divider } from "@/web/client/components/generic/basics";
+import {
+  Container,
+  Divider,
+  SpanButton,
+} from "@/web/client/components/generic/basics";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { useCallback } from "react";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 import { arrayMapBy } from "@/common/data_structures/collect_map";
 import { ClientPaths } from "@/web/client/routing/client_paths";
+import { StoredCheckBox } from "@/web/client/components/generic/settings_basics";
+import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
   " and / or refresh the page (or if using the app, close and re-open)." +
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE = "No results found";
+
+const EMBEDDED_LOGEION_SETTING_LABEL =
+  "Automatically open embedded Logeion searches";
 
 function chooseDicts(dicts: undefined | DictInfo | DictInfo[]): DictInfo[] {
   if (dicts === undefined) {
@@ -73,11 +82,69 @@ function chooseDicts(dicts: undefined | DictInfo | DictInfo[]): DictInfo[] {
 type EdgeCaseState = "Landing" | "Error" | "No Results";
 type DictState = EdgeCaseState | "Loading" | "Results";
 
+function hasGreek(input: string): boolean {
+  return /[\u0370-\u03ff\u1f00-\u1fff]/.test(input);
+}
+
 function HorizontalPlaceholder() {
   return (
     <span key={"horizonatalSpacePlaceholder"} className="dictPlaceholder">
       {"pla ceh old er".repeat(20)}
     </span>
+  );
+}
+
+function GreekWordContent(props: {
+  isSmall: boolean;
+  word: string;
+  scrollTopRef: React.RefObject<HTMLDivElement>;
+}) {
+  const logeionUrl = `https://logeion.uchicago.edu/${props.word}`;
+  const defaultShowInline = usePersistedValue<boolean>(
+    false,
+    EMBEDDED_LOGEION_SETTING_LABEL
+  );
+  const [showInline, setShowInline] =
+    React.useState<boolean>(defaultShowInline);
+
+  return (
+    <div ref={props.scrollTopRef}>
+      {!defaultShowInline && (
+        <>
+          <div className="text md">This site does not (yet) support Greek.</div>
+          <div className="text sm">
+            Click below to embed a Logeion search for {props.word} (or open{" "}
+            <a href={logeionUrl} target="_blank" rel="noreferrer">
+              in a new tab
+            </a>
+            ) .
+          </div>
+          <div style={{ marginTop: "8px", marginBottom: "8px" }}>
+            <div>
+              <SpanButton
+                className="button text light"
+                onClick={() => setShowInline((show) => !show)}>
+                {(showInline ? "Close" : "Open") + " Embed"}
+              </SpanButton>
+              <StoredCheckBox
+                className="text sm"
+                style={{ marginTop: "4px" }}
+                initial={false}
+                label={EMBEDDED_LOGEION_SETTING_LABEL}
+              />
+            </div>
+          </div>
+        </>
+      )}
+      {defaultShowInline && (
+        <div className="text xs light">Using Logeion embed for Greek term</div>
+      )}
+      {(showInline || defaultShowInline) && (
+        <iframe
+          style={{ width: "100%", height: "100%" }}
+          src={logeionUrl}></iframe>
+      )}
+    </div>
   );
 }
 
@@ -610,6 +677,13 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     : settings.data.inflectedSearch;
   const inflectedSearch =
     inflectedSetting === true || route.inflectedSearch === true;
+  // We would have only needed a single boolean of whether we had a Greek term or now.
+  // However, since the scroll (to go past the search bar) is in a useEffect, we want to
+  // make sure the useEffect fires even if the query goes from one greek word to another.
+  // If we just had a boolean for is Greek or not in the dependency array, it wouldn't fire
+  // in this case, so just save the whole word.
+  const greekTerm = isEmbedded && query && hasGreek(query) ? query : null;
+
   const allowedDicts = isEmbedded ? dictsToUse : route.dicts;
   const queryDicts = React.useMemo(
     () => chooseDicts(allowedDicts),
@@ -617,14 +691,14 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   const apiRequest: DictsFusedRequest | null = React.useMemo(
     () =>
-      query === undefined
+      query === undefined || greekTerm !== null
         ? null
         : {
             query,
             dicts: queryDicts.map((dict) => dict.key),
             mode: idSearch ? 2 : inflectedSearch ? 1 : 0,
           },
-    [query, queryDicts, idSearch, inflectedSearch]
+    [query, queryDicts, idSearch, inflectedSearch, greekTerm]
   );
   useApiCall(DictsFusedApi, apiRequest, {
     reloadOldClient: true,
@@ -648,7 +722,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   }, [title, isEmbedded, query]);
 
   React.useEffect(() => {
-    if (state !== "Results") {
+    if (state !== "Results" && greekTerm === null) {
       return;
     }
     const highlighted =
@@ -662,7 +736,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         : SCROLL_JUMP;
     scrollElement?.scrollIntoView(scrollType);
     fromInternalLink.current = false;
-  }, [state, isEmbedded, hash]);
+  }, [state, isEmbedded, hash, greekTerm]);
 
   const onSearchQuery = useCallback(
     (term: string, dict?: DictInfo) => {
@@ -710,6 +784,23 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       onSearchQuery,
     ]
   );
+
+  if (greekTerm !== null) {
+    const greekWorkContent = (
+      <GreekWordContent
+        isSmall={isSmall}
+        word={greekTerm}
+        scrollTopRef={scrollTopRef}
+      />
+    );
+    return (
+      <ResponsiveLayout
+        oneCol={greekWorkContent}
+        twoColMain={greekWorkContent}
+        contextValues={contextValues}
+      />
+    );
+  }
 
   if (state === "Landing") {
     return <ResponsiveLayout contextValues={contextValues} />;

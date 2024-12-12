@@ -23,10 +23,13 @@ export interface CoreProps extends AriaAttributes {
   style?: CSSProperties;
   id?: string;
   className?: string;
+}
+
+export interface ClickableCoreProps extends CoreProps {
   onClick?: () => unknown;
 }
 
-export interface ContainerProps extends CoreProps {
+export interface ContainerProps extends ClickableCoreProps {
   maxWidth?: BoxWidth;
   disableGutters?: boolean;
   gutterSize?: number;
@@ -155,5 +158,27 @@ export function TextField(props: {
     <textarea {...baseProps} />
   ) : (
     <input type="text" {...baseProps} />
+  );
+}
+
+export interface CheckBoxProps extends CoreProps {
+  label: string;
+  enabled: boolean;
+  onNewValue: (value: boolean) => unknown;
+}
+
+export function CheckBox(props: CheckBoxProps) {
+  return (
+    <div {...props}>
+      <input
+        id={props.label}
+        type="checkbox"
+        checked={props.enabled}
+        onChange={(e) => props.onNewValue(e.currentTarget.checked)}
+      />
+      <label htmlFor={props.label} style={{ paddingLeft: 8 }}>
+        {props.label}
+      </label>
+    </div>
   );
 }

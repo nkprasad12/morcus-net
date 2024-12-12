@@ -4,6 +4,12 @@
 
 import { assert, checkPresent } from "@/common/assert";
 import { arrayMap, setMap } from "@/common/data_structures/collect_map";
+import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
+import { envVar } from "@/common/env_vars";
+import { removeDiacritics } from "@/common/text_cleaning";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import { CruncherOptions } from "@/morceus/cruncher_types";
 import { InflectionContext } from "@/morceus/inflection_data_utils";
 import {
   processNomIrregEntries,
@@ -290,4 +296,31 @@ export function findDupes() {
   console.log("Exact dupes: " + exacts);
   console.log("easySubstantives: " + easySubstantives);
   console.log(dupes);
+}
+
+export function inLsButNotMorceus(outputFile: string) {
+  const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
+  const backing = sqliteBacking(envVar("LS_PROCESSED_PATH"));
+  const all = backing
+    .allEntryNames()
+    .filter((orth) => {
+      if (orth.orth.includes(" ")) {
+        return false;
+      }
+      const bannedChars = ["'", "-"];
+      for (const banned of bannedChars) {
+        if (orth.orth.startsWith(banned)) {
+          return false;
+        }
+        if (orth.orth.endsWith(banned)) {
+          return false;
+        }
+      }
+      return true;
+    })
+    .map((orth) => removeDiacritics(orth.orth.replaceAll("-", "")))
+    .filter((orth) => cruncher(orth, CruncherOptions.DEFAULT).length === 0);
+
+  console.log(all.length);
+  fs.writeFileSync(outputFile, all.join("\n"));
 }
