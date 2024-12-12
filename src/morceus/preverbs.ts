@@ -94,10 +94,10 @@ export namespace PreverbData {
   export function create(): PreverbData {
     return {
       preverbIndex: parsePreverbIndex(
-        path.join(envVar("MORPHEUS_ROOT"), PREVERB_INDEX)
+        path.join(envVar("MORCEUS_DATA_ROOT"), PREVERB_INDEX)
       ),
       allowedPreverbs: parseAllowedPreverbs(
-        path.join(envVar("MORPHEUS_ROOT"), ALLOWED_PREVERBS)
+        path.join(envVar("MORCEUS_DATA_ROOT"), ALLOWED_PREVERBS)
       ),
     };
   }
@@ -269,7 +269,7 @@ function verbMap(): Map<string, Lemma[]> {
 }
 
 export function processCompounds() {
-  const filePath = path.join(envVar("MORPHEUS_ROOT"), ALLOWED_PREVERBS);
+  const filePath = path.join(envVar("MORCEUS_DATA_ROOT"), ALLOWED_PREVERBS);
   const verbs = verbMap();
   const lines = readMorpheusLines(filePath)
     .map((line) => line.trim())

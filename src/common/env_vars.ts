@@ -9,6 +9,7 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["DB_SOURCE", "unspecified"],
   ["OFFLINE_DATA_DIR", "build/offlineData"],
   ["PWA_SHORT_NAME_SUFFIX", ""],
+  ["MORCEUS_DATA_ROOT", "morceus-data/"],
 ]);
 
 export function envVar(name: string, unsafe: "unsafe"): string | undefined;

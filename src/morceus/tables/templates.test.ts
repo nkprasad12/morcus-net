@@ -17,10 +17,12 @@ const TESTDATA_DIR = "src/morceus/tables/lat/core/testdata/";
 const TEST_TEMPLATES = `${TESTDATA_DIR}testTemplates`;
 const DEP_TEMPLATES = `${TESTDATA_DIR}dependencyTemplates`;
 const TARGET_TEMPLATES = `${TESTDATA_DIR}targetTemplates`;
-const DECL3 = "src/morceus/tables/lat/core/dependency/decl3.end";
-const DECL3_I = "src/morceus/tables/lat/core/dependency/decl3_i.end";
-const A_AE = "src/morceus/tables/lat/core/target/a_ae.end";
-const TAS_TATIS = "src/morceus/tables/lat/core/target/tas_tatis.end";
+const REAL_DEP_TEMPLATES = `morceus-data/latin/ends/dependency`;
+const REAL_TARGET_TEMPLATES = `morceus-data/latin/ends/target`;
+const DECL3 = `${REAL_DEP_TEMPLATES}/decl3.end`;
+const DECL3_I = `${REAL_DEP_TEMPLATES}/decl3_i.end`;
+const A_AE = `${REAL_TARGET_TEMPLATES}/a_ae.end`;
+const TAS_TATIS = `${REAL_TARGET_TEMPLATES}/tas_tatis.end`;
 const TEST_TMP_DIR = "src/morceus/tables/templates/testts/out";
 
 function cleanup() {

@@ -1,0 +1,206 @@
+#@UNIQUE_NAME_JUVENAL
+:le:Aelia
+:no:Aeli^   a_ae fem
+
+#@UNIQUE_NAME_JUVENAL
+:le:Albina
+:no:Albi_n  a_ae fem 
+
+#@UNIQUE_NAME_JUVENAL
+:le:Alledius
+:no:Alle_d  ius_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Artorius 
+:no:Arto_r  ius_i masc 
+
+#@UNIQUE_NAME_JUVENAL
+:le:Carfinia
+:no:Carfi^ni^   a_ae fem 
+
+#@UNIQUE_NAME_JUVENAL
+:le:Cretonius
+:no:Cre_to_n    ius_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Eppia
+:no:Eppi^   a_ae fem
+
+#@UNIQUE_NAME_JUVENAL
+:le:Eupholius
+:no:Eupho^l ius_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Fabulla
+:no:Fa^bull a_ae fem 
+
+#@UNIQUE_NAME_JUVENAL
+:le:Faesidius
+:no:Faesi^d ius_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Gallitta
+:no:Gallitt a_ae fem
+
+#@UNIQUE_NAME_JUVENAL
+:le:Modia
+:no:Mo^di^  a_ae fem
+
+#@UNIQUE_NAME_JUVENAL
+:le:Naevolus
+:no:Naevo^l us_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Palfurius
+:no:Palfu^r ius_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Pollitta
+:no:Pollitt a_ae fem
+
+#@UNIQUE_NAME_JUVENAL
+:le:Rubrenus
+:no:Rubre_n us_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Sarmentus
+:no:Sarment us_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Telesinus
+:no:Te^le^si_n  us_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Tongilius
+:no:To_ngi^l ius_i masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Virro
+:no:Virr    o_oLnis masc
+
+#@UNIQUE_NAME_JUVENAL
+:le:Zalaces
+:wd:Za^la^ces nom sg masc 
+
+:le:Lucterius
+:no:Lucte_r	ius_i masc pers_name
+
+#@Gaffiot
+:le:Amydon
+:no:A^my^d  oLn_oLnis fem
+
+#@Gaffiot
+:le:Anchemolus
+:no:Anche^mo^l  us_i masc
+
+#@Gaffiot
+:le:Archigenes
+:no:Archi^ge^n  es_is masc
+:wd:Archi^ge^ne_n   acc sg masc 
+
+#@Gaffiot
+:le:Arviragus
+:no:Arvi^ra^g    us_i masc
+
+#@Gaffiot
+:le:Basilus
+:no:Ba^si^l us_i masc
+
+#@Gaffiot
+:le:Caedicius
+:no:Caedi^c ius_i masc
+
+#@Gaffiot
+:le:Carpophorus
+:no:carpo^pho^r us_i masc
+
+#@Gaffiot
+:le:Catulla
+:no:Ca^tull a_ae fem
+
+#@UNIQUE_NAME_JUVENAL
+:le:Celadus
+:no:Ce^la^d us_i masc 
+
+#@UNIQUE_NAME_JUVENAL
+:le:Censennia
+:no:Ce_nsenni^  a_ae fem 
+
+#@Gaffiot
+:le:Chaerippus
+:no:Chaeripp    us_i masc 
+
+#@Gaffiot
+:le:Cluvienus
+:no:Clu^vi^e_n  us_i masc 
+
+#@Gaffiot
+:le:Commius
+:no:Comm ius_i masc pers_name
+
+#@Gaffiot
+:le:Considius
+:no:Co_nsi^d ius_i masc pers_name
+
+#@Gaffiot
+:le:Crepereius
+:no:Cre^pe^re   ius_i masc
+
+#@Gaffiot
+:le:Glaphyrus
+:no:Gla^phy^r   us_i masc
+
+#@Gaffiot
+:le:Hirrus
+:no:Hirr    us_i masc
+
+#@Gaffiot
+:le:Natta
+:no:Natt    a_ae masc
+
+#@Gaffiot
+:le:Ogulnia
+:no:O^gulni^    a_ae fem
+
+#@LogeionGeo
+:le:Ombi
+:no:Omb us_i masc pl
+
+#@Gaffiot
+:le:Paccius
+:no:Pa_c    ius_i masc orth
+
+#@Gaffiot
+:le:Quintilla
+:no:Qui_ntill   a_ae fem
+
+#@Gaffiot
+:le:Sergiolus
+:no:Sergi^o^l   us_i masc
+
+#@Gaffiot
+:le:Ursidius
+:no:Ursi^d  ius_i masc
+
+#@Gaffiot
+:le:Vagellius
+:no:Va^gell ius_i masc
+
+#@Gaffiot
+:le:Varillus
+:no:Va_rill us_i masc
+
+:le:Liscus
+:no:Lisc us_i masc pers_name
+
+#@wikidata:Q1174354
+:le:Convictolitavis
+:no:Convictolitav decl3 masc pers_name
+
+#@wikidata:Q1092513
+:le:Cingetorix
+:no:Cingetori x_gis masc pers_name
+
+#@http://www.perseus.tufts.edu/hopper/text?doc=Perseus:text:1999.04.0006:entry=agedincum
+:le:Agedincum
+:no:Agedinc us_i neut town place_name

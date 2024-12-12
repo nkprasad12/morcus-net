@@ -71,7 +71,7 @@ describe("parseNounStemFile", () => {
 
 describe("parseVerbStemFile", () => {
   const verbs = parseVerbStemFile(
-    "src/morceus/testdata/stemlib/Latin/stemsrc/vbs.latin"
+    "src/morceus/testdata/latin/stems/verbs/vbs.latin"
   );
 
   it("has expected lemmata", () => expect(verbs).toHaveLength(6));

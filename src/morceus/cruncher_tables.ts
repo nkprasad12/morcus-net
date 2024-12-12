@@ -25,12 +25,12 @@ export namespace MorceusTables {
 }
 
 function makeTables(config?: CruncherConfig): CruncherTables {
+  // This would ideally be a module constant, but we define it here so that
+  // we can dynamically swap it out in unit tests
+  const ends_root = envVar("MORCEUS_DATA_ROOT") + "/latin/ends";
   const [endIndices, endTables] =
     config?.existing?.endsResult ??
-    makeEndIndex([
-      "src/morceus/tables/lat/core/target",
-      "src/morceus/tables/lat/core/dependency",
-    ]);
+    makeEndIndex([`${ends_root}/target`, `${ends_root}/dependency`]);
   const allLemmata =
     config?.existing?.lemmata ??
     allNounStems(config?.generate?.nomStemFiles).concat(

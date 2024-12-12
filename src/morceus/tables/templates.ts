@@ -13,8 +13,8 @@ import {
 import { singletonOf } from "@/common/misc_utils";
 import { expandSingleEnding } from "@/morceus/tables/template_utils_no_fs";
 
-export const MORPHEUS_TARGETS = "src/morceus/tables/lat/core/target";
-export const MORPHEUS_DEPENDENCIES = "src/morceus/tables/lat/core/dependency";
+export const MORPHEUS_TARGETS = "morceus-data/latin/ends/target";
+export const MORPHEUS_DEPENDENCIES = "morceus-data/latin/ends/dependency";
 
 export interface InflectionTable {
   name: string;

@@ -1,0 +1,1789 @@
+:le:abstineo
+:vs:absti^n	conj2
+:vs:absti^nu^ perfstem
+:vs:abstent pp4
+
+:le:transmoveo
+:vs:tra_nsmo^v conj2
+:vs:tra_nsmo_t pp4
+
+:le:traloquor
+:vs:tra_lo^qu conj3 dep
+:vs:tra_lo^cu_t pp4 dep
+
+:le:surruo
+:vs:surru^	conj3
+:vs:subru^	conj3 orth
+:vs:surru^	perfstem
+:vs:subru^	perfstem orth
+:vs:surru^t	pp4
+:vs:subru^t	pp4 orth
+
+:le:coalesco
+:vs:co^a^le_sc conj3
+:vs:co^a^lu^ perfstem
+:vs:co^a^li^t pp4
+
+:le:coaresco
+:vs:co^a_re_sc conj3 act
+:vs:co^a_ru^ perfstem act
+
+:le:peraresco
+:vs:pe^ra_re_sc conj3 act
+:vs:pe^ra_ru^ perfstem act
+
+:le:consaepi^o
+:vs:consaep conj4
+:vs:conse_p conj4 orth
+:vs:consaept pp4
+:vs:consipt pp4 orth
+
+:le:decalco
+:de:de_calc are_vb
+
+:le:deglubo
+:vs:de_glu_b conj3
+:vs:de_glu_pt pp4 
+
+:le:depleo
+:vs:de_pl conj2
+:vs:de_ple_v perfstem
+:vs:de_ple_t pp4
+
+:le:depulpo
+:vs:de_pulp conj1 act
+
+:le:designo
+:de:de_sign are_vb
+:de:dissign are_vb orth
+
+:le:diffiteor
+:vs:diffi^t	conj2 dep
+:vs:diffess pp4 dep
+
+:le:dimoveo
+:vs:di_mo^v conj2
+:vs:di_mo_v perfstem
+:vs:di_mo_t pp4
+:vs:dismo_t pp4 orth
+:vb:di_mo_runt 3rd pl perf ind act contr
+
+:le:dispando
+:vs:dispand conj3
+:vs:dispans pp4
+:vs:dispend conj3 orth
+:vs:dispens pp4 orth
+:vs:dispenn conj3 archaic
+:vs:dispess pp4 archaic
+
+:le:disseco
+:vs:disse^c	conj1
+:vs:disse^cu^ perfstem
+:vs:disse^ct pp4
+:vs:dissi^c	conj1 orth
+:vs:dissi^cu^ perfstem orth
+:vs:dissi^ct pp4 orth
+
+:le:excio
+:vs:exc conj4
+:vs:exci conj2 orth
+:vs:exci_v perfstem
+:vs:exci perfstem variant
+:vs:exci_^t pp4
+
+:le:effervesco
+:vs:e_fferve_sc	conj3 act
+:vs:e_fferbu^ perfstem act
+
+:le:effrico
+:vs:effri^c	conj1
+:vs:effri^x perfstem
+:vs:effri^ca_t pp4
+
+:le:emarcesco
+:vs:e_marce_sc	conj3 act
+:vs:e_marcu^ perfstem act
+
+:le:enotesco
+:vs:e_no^te_sc	conj3 act
+:vs:e_no^tu^ perfstem act
+
+:le:expungo
+:vs:expung conj3
+:vs:expunx perfstem
+:vs:expunct pp4
+
+:le:inaresco
+:vs:i^na_re_sc conj3 act
+:vs:i^na_ru^ perfstem act
+
+:le:differo
+:de:dif fero_conj
+:vs:distu^l perfstem
+:vs:di_la_t pp4
+
+:le:infero
+:de:i_n fero_conj
+:vs:intu^l perfstem
+:vs:inla_t pp4
+:vs:illa_t pp4 orth
+
+:le:infligo
+:vs:infli_g	conj3
+:vs:infli_x	perfstem
+:vs:infli_ct	pp4
+
+:le:ingre^di^or
+:vs:ingre^d	conj3_io dep
+:vs:ingress	pp4 dep 
+
+:le:inunguo
+:vs:i^nungu	conj3
+:vs:i^nung	conj3 orth
+:vs:i^nunx perfstem
+:vs:i^nunct pp4
+
+:le:interemo
+:vs:inte^re^m	conj3
+:vs:inte^ri^m	conj3 orth
+:vs:inte^re_m perfstem
+:vs:inte^re_mpt pp4
+:vs:inte^re_mt pp4 orth
+
+:le:occano
+:vs:occa^n	conj3
+:vs:occa^nu perfstem
+:vs:occa^n	conj3 orth
+:vs:occa^nu perfstem orth
+
+:le:occurro
+:vs:occurr	conj3
+:vs:occurr perfstem
+:vs:occecurr perfstem archaic
+:vs:occucurr perfstem rare
+:vs:occurs pp4
+:vs:obcurr	conj3 orth
+:vs:obcurr perfstem orth
+:vs:obcurs pp4 orth
+
+:le:offacio
+:vs:offi^c		conj3_io
+:vs:offe_c	perfstem
+:vs:offect	pp4
+:vs:obfi^c		conj3_io orth
+:vs:obfe_c	perfstem orth
+:vs:obfect	pp4 orth
+
+:le:observito
+:vs:observi^t conj1
+:vs:observi^ta_v perfstem
+
+:le:retineo
+:vs:re^ti^n	conj2
+:vs:re^ti^nu^ perfstem
+:vs:re^tent pp4
+
+:le:reverto
+:vs:re^vert	conj3
+:vs:re^vert perfstem
+:vs:re^vers pp4
+:vs:re^vort	conj3 orth
+:vs:re^vort perfstem orth
+:vs:re^vors pp4 orth
+
+:le:supergredior
+:vs:su^pergra^d	conj3_io dep
+:vs:su^pergre^d	conj3_io dep
+:vs:supergress	pp4 dep 
+
+:le:circumgredior
+:vs:circumgre^d	conj3_io dep
+:vs:circumgress	pp4 dep 
+
+:le:afficio
+:vs:affi^c	conj3_io
+:vs:affe_c perfstem
+:vs:affect pp4
+:vs:adfi^c	conj3_io orth
+:vs:adfe_c perfstem orth
+:vs:adfect pp4 orth
+
+:le:ambedo
+:vs:ambe^d 		conj3
+:vs:ambe_d		perfstem
+:vs:ambe_s		pp4
+
+:le:obedo
+:vs:o^be^d 		conj3
+:vs:o^be_d		perfstem
+:vs:o^be_s		pp4
+
+:le:exedo
+:vs:exe^d 		conj3
+:vs:exe_d		perfstem
+:vs:exe_s		pp4
+:vs:exess		pp4 variant
+:vb:exedint     pres act subj 3rd pl archaic
+:vb:exest     pres act ind 3rd sg
+
+:le:displodo
+:vs:displo_d	conj3
+:vs:displo_s pp4
+
+#a-scribo ascri_bo
+#a + scribo -> a + scri_bo 
+:le:ascribo
+:vs:ascri_b conj3 
+:vs:ascri_ps perfstem 
+:vs:ascri_pt pp4 
+
+#a-spiro aspi_ro
+#a + spiro -> a + spi_ro 
+:le:aspiro
+:de:aspi_r are_vb 
+
+#a-stringo astringo <- LS also adstringo, asstringo
+#a + stringo -> a + stringo, adstringo, asstringo 
+:le:astringo
+:vs:astring conj3 
+:vs:astrinx perfstem 
+:vs:astrict pp4
+:vs:adstring conj3 orth 
+:vs:adstrinx perfstem orth
+:vs:adstrict pp4 orth
+:vs:asstring conj3 orth
+:vs:asstrinx perfstem orth
+:vs:asstrict pp4 orth
+
+#ab-eo#1 a^be^o
+#ab + eo#1 -> a^b + e^o 
+:le:abeo
+:de:a^b eo_conj
+:vs:a^bi perfstem contr
+:vs:a^bi_v perfstem
+:vs:a^bi^t pp4
+
+:le:adeo
+:de:a^d eo_conj
+:vs:a^di perfstem contr
+:vs:a^di_v perfstem
+:vs:a^di^t pp4
+
+:le:subeo
+:de:sub eo_conj
+:vs:subi perfstem contr
+:vs:subi_v perfstem
+:vs:subi^t pp4
+
+:le:redeo
+:de:re^d eo_conj
+:vs:re^di perfstem contr
+:vs:re^di_v perfstem
+:vs:re^di^t pp4
+
+#ab-horreo a^bhorre^o
+#ab + horreo -> a^b + horre^o 
+:le:abhorreo
+:vs:a^bhorr conj2 
+:vs:a^bhorru perfstem 
+
+#ab-rumpo abrumpo
+#ab + rumpo -> ab + rumpo 
+:le:abrumpo
+:vs:abrump conj3 
+:vs:abru_p perfstem 
+:vs:abrupt pp4 
+
+#ab-utor a^bu_tor
+#ab + utor -> a^b + u_tor 
+:le:abutor
+:vs:a^bu_t conj3 dep
+:vs:a^bu_s pp4 
+
+#ad-aperio a^da^pe^ri^o
+#ad + aperio -> a^d + a^pe^ri^o 
+:le:adaperio
+:vs:a^da^pe^r conj4 
+:vs:a^da^pe^ru^ perfstem 
+:vs:a^da^pert pp4 
+
+#ad-augeo a^dauge^o
+#ad + augeo -> a^d + auge^o 
+:le:adaugeo
+:vs:a^daug conj2 
+:vs:a^daux perfstem 
+:vs:a^dauct pp4 
+
+#ad-cano acca^no <- LS also acci^no
+#ad + cano -> ac + ca^no, acci^no 
+:le:accano
+:vs:acca^n conj3 
+:vs:acci^n conj3 
+:vs:acce^ci^n perfstem 
+:vs:accant pp4 
+
+#ad-congero#1 acconge^ro <- LS also adconge^ro
+#ad + congero#1 -> ac + conge^ro, adconge^ro 
+:le:accongero#1
+:vs:accon-ge^r conj3 
+:vs:accon-gess perfstem 
+:vs:accon-gest pp4
+:vs:adcon-ge^r conj3 orth
+:vs:adcon-gess perfstem orth
+:vs:adcon-gest pp4 orth
+
+#ad-edo#1 a^de^do
+#ad + edo#1 -> a^d + e^do 
+:le:adedo#1
+:vs:a^ded conj3 
+:vs:a^de_d perfstem 
+:vs:a^de_s pp4 
+
+#ad-fero affe^ro <- LS also adfero
+#ad + fero -> af + fe^ro, adfero 
+:le:affero
+:de:af fero_conj
+:vs:attu^l perfstem
+:vs:alla_t pp4
+:de:ad fero_conj orth
+:vs:adtu^l perfstem orth
+:vs:adla_t pp4 orth
+
+#ad-figo affi_go <- LS also adfi_go
+#ad + figo -> af + fi_go, adfi_go 
+:le:affigo
+:vs:affi_g conj3 
+:vs:affi_x perfstem 
+:vs:affi_x pp4 
+:vs:adfi_g conj3 orth 
+:vs:adfi_x perfstem orth
+:vs:adfi_x pp4 orth
+
+#ad-flecto afflecto <- LS also adflecto
+#ad + flecto -> af + flecto, adflecto 
+:le:afflecto
+:vs:afflect conj3 
+:vs:afflex perfstem 
+:vs:afflex pp4
+:vs:adflect conj3 orth 
+:vs:adflex perfstem orth
+:vs:adflex pp4 orth
+
+#ad-fligo affli_go <- LS also adfli_go
+#ad + fligo -> af + fli_go, adfli_go 
+:le:affligo
+:vs:affli_g conj3 
+:vs:affli_x perfstem
+:vs:affli_ct pp4
+:vs:adfli_g conj3 orth
+:vs:adfli_x perfstem orth
+:vs:adfli_ct pp4 orth
+
+#ad-frico affri^co <- LS also adfri^co
+#ad + frico -> af + fri^co, adfri^co 
+:le:affrico
+:vs:affri^c conj1 
+:vs:affri^cu^ perfstem 
+:vs:affri^ct pp4 
+:vs:affri^ca_t pp4 variant
+:vs:adfri^c conj1 orth
+:vs:adfri^cu^ perfstem orth 
+:vs:adfri^ct pp4 orth
+:vs:adfri^ca_t pp4 variant orth
+
+#ad-fulgeo affulgeo <- LS also adfulge^o
+#ad + fulgeo -> af + fulgeo, adfulge^o 
+:le:affulgeo
+:vs:affulg conj2 act
+:vs:affulg conj3 act variant
+:vs:affuls perfstem act orth
+:vs:adfulg conj2 act orth
+:vs:adfulg conj3 act variant orth
+:vs:adfuls perfstem act orth
+
+#ad-fundo#1 affundo <- LS also adfundo
+#ad + fundo#1 -> af + fundo, adfundo 
+:le:affundo#1
+:vs:affund conj3 
+:vs:affu_d perfstem 
+:vs:affu_s pp4 
+:vs:adfund conj3 orth 
+:vs:adfu_d perfstem orth
+:vs:adfu_s pp4 orth
+
+#ad-ito a^dit^o
+#ad + ito -> a^d + it^o 
+:le:adito
+:de:a^di^t are_vb 
+
+#ad-opinor a^do^pi_nor
+#ad + opinor -> a^d + o^pi_nor 
+:le:adopinor
+:de:a^do^pi_n are_vb dep
+
+#ad-plaudo applaudo <- LS also adplaudo, adplo_do (post-class), applo_do (post-class)
+#ad + plaudo -> ap + plaudo, adplaudo, adplo_do (post-class), applo_do (post-class) 
+:le:applaudo
+:vs:applaud conj3 
+:vs:applaus perfstem 
+:vs:applaus pp4 
+:vs:applo_d conj3 orth
+:vs:applo_s perfstem orth
+:vs:applo_s pp4 orth
+:vs:adplo_d conj3 orth
+:vs:adplo_s perfstem orth
+:vs:adplo_s pp4 orth
+
+#ad-plico appli^co <- LS also adpli^co
+#ad + plico -> ap + pli^co, adpli^co 
+:le:applico
+:vs:applic conj1 
+:vs:applica_v	perfstem
+:vs:applicu^	perfstem variant
+:vs:applicit pp4  variant
+:vs:applica_t pp4 
+:vs:adplic conj1 orth
+:vs:adplica_v	perfstem orth
+:vs:adplicu^	perfstem variant orth
+:vs:adplicit pp4  variant orth
+:vs:adplica_t pp4 orth
+
+#ad-porto apporto <- LS also adporto
+#ad + porto -> ap + porto, adporto 
+:le:apporto
+:de:apport are_vb 
+:de:adport are_vb orth
+
+#ad-sector#2 assector <- LS also adsector
+#ad + sector#2 -> as + sector, adsector 
+:le:assector#2
+:de:assect are_vb dep
+:de:adsect are_vb dep orth
+
+#ad-soleo asso^le^o <- LS also adso^le^o
+#ad + soleo -> as + so^le^o, adso^le^o 
+:le:assoleo
+:vs:asso^l conj2 no_fut
+:vs:asso^li^t pp4 no_fut
+:vs:adso^l conj2 no_fut orth
+:vs:adso^li^t pp4 no_fut orth
+
+#ad-suesco assu^esco <- LS also adsu^esco
+#ad + suesco -> as + su^esco, adsu^esco 
+:le:adsuesco
+:vs:assue_sc conj3 
+:vs:assue_v perfstem 
+:vs:assue_t pp4 
+:vb:assue_sti irreg_pp2 perf ind act 2nd sg
+:vb:assue_stis irreg_pp2 perf ind act 2nd pl
+:vb:assue_runt irreg_pp2 perf ind act 3rd pl
+:vb:assue_sse irreg_pp2 perf ind act
+:vb:assue_sset irreg_pp2 plup subj act 3rd sg
+:vb:assue_ssent irreg_pp2 plup subj act 3rd pl
+:vs:adsue_sc conj3 orth
+:vs:adsue_v perfstem orth
+:vs:adsue_t pp4 orth
+:vb:adsue_sti irreg_pp2 perf ind act 2nd sg orth
+:vb:adsue_stis irreg_pp2 perf ind act 2nd pl orth
+:vb:adsue_runt irreg_pp2 perf ind act 3rd pl orth
+:vb:adsue_sse irreg_pp2 perf ind act orth
+:vb:adsue_sset irreg_pp2 plup subj act 3rd sg orth
+:vb:adsue_ssent irreg_pp2 plup subj act 3rd pl orth
+
+#ad-tribulo attri^bu^lo <- no perfect
+#ad + tribulo -> at + tri^bu^lo  [no_perf]
+:le:attribulo
+:de:attri_bu^l are_vb 
+
+#ante-ago anteago
+#ante + ago -> ante + ago 
+:le:anteago
+:vs:antea^g conj3 
+:vs:antee_g perfstem 
+:vs:antea_ct pp4 
+
+#ante-dico#2 antedi_co
+#ante + dico#2 -> ante + di_co 
+:le:antedico#2
+:vs:antedi_c conj3 
+:vs:antedi_x perfstem 
+:vs:antedict pp4 
+:vb:antedi_c pres imperat act 2nd sg
+:vb:antedi_xti_ perf ind act 2nd sg contr
+:vb:antedi_xtis perf ind act 2nd pl contr
+:vb:antedi_xe perf inf act
+
+#ante-fero ante^fe^ro
+#ante + fero -> ante^ + fe^ro 
+:le:antefero
+:de:ante^ fero_conj
+:vs:ante^tu^l perfstem
+:vs:ante^la_t pp4
+
+#circum-do circumdo
+#circum + do -> circum + do 
+:le:circumdo
+:de:circum do_conj
+:vs:circumde^d perfstem
+:vs:circumda^t pp4
+
+#circum-eo#1 circu^me^o <- LS also circu^e^o
+#circum + eo#1 -> circu^m + e^o, circu^e^o 
+:le:circumeo
+:de:circu^m eo_conj
+:vs:circu^mi perfstem contr
+:vs:circu^mi_v perfstem
+:vs:circu^mi^t pp4
+:de:circu^ eo_conj orth
+:vs:circu^i perfstem contr orth
+:vs:circu^i_v perfstem orth
+:vs:circu^i^t pp4 orth
+
+#circum-fero circumfe^ro
+#circum + fero -> circum + fe^ro 
+:le:circumfero
+:de:circum fero_conj
+:vs:circumtu^l perfstem
+:vs:circumla_t pp4
+
+#circum-fodio circumfo^di^o <- no perfect
+#circum + fodio -> circum + fo^di^o  [no_perf]
+:le:circumfodio
+:vs:circumfo^d conj3_io 
+:vs:circumfoss pp4 
+
+#circum-lavo circumla^vo
+#circum + lavo -> circum + la^vo 
+:le:circumlavo
+:vs:circumla^v conj3 
+:vs:circumla^v conj1 variant
+:vs:circumla_v perfstem 
+:vs:circumla^va_t pp4 
+:vs:circumlaut pp4 variant
+:vs:circumlo_t pp4 variant
+
+#circum-loquor circumlo^quor
+#circum + loquor -> circum + lo^quor 
+:le:circumloquor
+:vs:circumlo^qu conj3 dep
+:vs:circumlo^c conj3 dep
+:vs:circumlo^cu_t pp4 
+:vs:circumlo^quu_t pp4 old
+
+#circum-tondeo circumtonde^o
+#circum + tondeo -> circum + tonde^o 
+:le:circumtondeo
+:vs:circumtond conj2 
+:vs:circumto^tond perfstem 
+:vs:circumtons pp4 
+
+#circum-verro circumverro
+#circum + verro -> circum + verro 
+:le:circumverro
+:vs:circumverr conj3 
+:vs:circumverr perfstem 
+:vs:circumvers pp4 
+
+#co-eo#1 co^e^o
+#co + eo#1 -> co^ + e^o 
+:le:coeo
+:de:co^ eo_conj
+:vs:co^i perfstem contr
+:vs:co^i_v perfstem
+:vs:co^i^t pp4
+
+#co-utor co^u_tor
+#co + utor -> co^ + u_tor 
+:le:coutor
+:vs:co^u_t conj3 dep
+:vs:co^u_s pp4 
+
+#con-cateno conca^te_no
+#con + cateno -> con + ca^te_no 
+:le:concateno
+:de:conca^te_n are_vb 
+
+#con-clavo concla_vo
+#con + clavo -> con + cla_vo 
+:le:conclavo
+:de:concla_v are_vb 
+
+#con-comitor conco^mi^tor
+#con + comitor -> con + co^mi^tor 
+:le:concomitor
+:de:conco^mi^t are_vb dep
+
+#con-fabricor confa^bri^cor
+#con + fabricor -> con + fa^bri^cor 
+:le:confabricor
+:de:confa_^bri^c are_vb dep
+
+#con-fabulor confa_bu^lor
+#con + fabulor -> con + fa_bu^lor 
+:le:confabulor
+:de:confa_bu^l are_vb dep
+
+#con-fero confe^ro
+#con + fero -> con + fe^ro 
+:le:confero
+:de:con fero_conj
+:vs:contu^l perfstem
+:vs:conla_t pp4
+:vs:colla_t pp4 orth
+
+#con-fervesco confervesco
+#con + fervesco -> con + fervesco 
+:le:confervesco
+:vs:conferve_sc conj3 
+
+#con-figuro confi^gu_ro <- no perfect
+#con + figuro -> con + fi^gu_ro  [no_perf]
+:le:configuro
+:de:confi^gu_r are_vb 
+
+#con-foedero confoede^ro <- no perfect
+#con + foedero -> con + foede^ro  [no_perf]
+:le:confoedero
+:de:confoede^r are_vb 
+
+#con-frequento confrequento <- no perfect
+#con + frequento -> con + frequento  [no_perf]
+:le:confrequento
+:de:confre^quent are_vb 
+
+#con-frio confri^o <- no perfect
+#con + frio -> con + fri^o  [no_perf]
+:le:confrio
+:de:confri are_vb 
+
+#con-gratulor congra_tu^lor
+#con + gratulor -> con + gra_tu^lor 
+:le:congratulor
+:de:congra_tu^l are_vb dep
+
+#con-precor compre^cor <- LS also conpre^cor
+#con + precor -> com + pre^cor, conpre^cor 
+:le:comprecor
+:de:compre^c are_vb dep
+:de:conpre^c are_vb dep orth
+
+#con-rugo corru_go <- LS also conru_go
+#con + rugo -> cor + ru_go, conru_go 
+:le:corrugo
+:de:corru_g are_vb 
+:de:conru_g are_vb orth
+
+#con-scindo conscindo
+#con + scindo -> con + scindo 
+:le:conscindo
+:vs:conscind conj3 
+:vs:consci^d perfstem 
+:vs:consciss pp4 
+
+#con-sepelio conse^pe^li^o <- no perfect
+#con + sepelio -> con + se^pe^li^o  [no_perf]
+:le:consepelio
+:vs:conse^pe^l conj4 
+:vs:conse^pult pp4 
+
+#con-solido conso^li^do <- no perfect
+#con + solido -> con + so^li^do  [no_perf]
+:le:consolido
+:de:conso^li^d are_vb 
+
+#con-sopio conso_pi^o <- no perfect
+#con + sopio -> con + so_pi^o  [no_perf]
+:le:consopio
+:vs:conso_p conj4 
+:vs:conso_pi_t pp4 
+
+#con-spuo conspu^o <- no perfect
+#con + spuo -> con + spu^o  [no_perf]
+:le:conspuo
+:vs:conspu^ conj3 
+:vs:conspu_t pp4 
+
+#con-spurco conspurco <- no perfect
+#con + spurco -> con + spurco  [no_perf]
+:le:conspurco
+:de:conspurc are_vb 
+
+#con-temero conte^me^ro
+#con + temero -> con + te^me^ro 
+:le:contemero
+:de:conte^me^r are_vb 
+
+#con-tero conte^ro
+#con + tero -> con + te^ro 
+:le:contero
+:vs:conte^r conj3 
+:vs:contri_v perfstem 
+:vs:contri_t pp4 
+
+#con-torqueo contorque^o
+#con + torqueo -> con + torque^o 
+:le:contorqueo
+:vs:contorqu conj2 
+:vs:contors perfstem 
+:vs:contort pp4 
+
+#con-tribulo contri_bu^lo
+#con + tribulo -> con + tri_bu^lo 
+:le:contribulo
+:de:contri_bu^l are_vb 
+
+#con-tueor contu^e^or
+#con + tueor -> con + tu^e^or 
+:le:contueor
+:vs:contu^ conj2 dep
+:vs:contui^t pp4 dep
+:vs:contu_t pp4 dep
+
+#con-vitio convi^ti^o <- no perfect
+#con + vitio -> con + vi^ti^o  [no_perf]
+:le:convitio
+:de:convi^ti are_vb 
+
+#de-ambulo de^ambu^lo
+#de + ambulo -> de^ + ambu^lo 
+:le:deambulo
+:de:de^ambu^l are_vb 
+
+#de-armo de^armo
+#de + armo -> de^ + armo 
+:le:dearmo
+:de:de^arm are_vb 
+
+#de-calefacio de_ca^le^fa^ci^o
+#de + calefacio -> de_ + ca^le^fa^ci^o 
+:le:decalefacio
+:vs:de_ca^le^-fa^c conj3_io 
+:vs:de_ca^le^-fe_c perfstem 
+:vs:de_ca^le^-fact pp4 
+
+#de-calesco de_ca^lesco
+#de + calesco -> de_ + ca^lesco 
+:le:decalesco
+:vs:de_ca^le_sc conj3 
+
+#de-carmino#1 de_carmi^no
+#de + carmino#1 -> de_ + carmi^no 
+:le:decarmino#1
+:de:de_carmi^n are_vb 
+
+#de-curto de_curto <- no perfect
+#de + curto -> de_ + curto  [no_perf]
+:le:decurto
+:de:de_curt are_vb 
+
+#de-eo#1 de^e^o
+#de + eo#1 -> de^ + e^o 
+:le:deeo
+:de:de^ eo_conj
+:vs:de^i perfstem contr
+:vs:de^i_v perfstem
+:vs:de^i^t pp4
+
+#de-erro#1 de^erro
+#de + erro#1 -> de^ + erro 
+:le:deerro#1
+:de:de^err are_vb 
+
+#de-fero de_fe^ro
+#de + fero -> de_ + fe^ro 
+:le:defero
+:de:de_ fero_conj
+:vs:de_tu^l perfstem
+:vs:de_la_t pp4
+
+#de-fio de_fi_o
+#de + fio -> de_ + fi_o 
+:le:defio
+:de:de_ fio_conj dep
+:vs:de_fect pp4 dep
+
+:le:confio
+:de:co_n fio_conj dep
+:vs:co_nfect pp4 dep
+
+#de-fraudo de_fraudo <- LS also defru_do
+#de + fraudo -> de_ + fraudo, defru_do 
+:le:defraudo
+:de:de_fraud are_vb 
+:de:de_fru_d are_vb orth 
+
+#de-fremo de_fre^mo
+#de + fremo -> de_ + fre^mo 
+:le:defremo
+:vs:de_fre^m conj3 
+:vs:de_fre^mu^ perfstem 
+:vs:de_fre^mi^t pp4 
+
+#de-frico de_fri^co
+#de + frico -> de_ + fri^co 
+:le:defrico
+:vs:de_fri^c conj1 
+:vs:de_fri^cu^ perfstem 
+:vs:de_fri^ct pp4 
+:vs:de_fri^ca_t pp4 orth
+
+#de-fruor de_fru^or
+#de + fruor -> de_ + fru^or 
+:le:defruor
+:vs:de_fru^ conj3 dep
+:vs:de_fru_ct pp4 
+
+#de-fungor de_fungor
+#de + fungor -> de_ + fungor 
+:le:defungor
+:vs:de_fung conj3 dep
+:vs:de_funct pp4 dep
+
+#de-glabro de_gla^bro
+#de + glabro -> de_ + gla^bro 
+:le:deglabro
+:de:de_gla^br are_vb 
+
+#de-gravo de_gra^vo <- no perfect
+#de + gravo -> de_ + gra^vo  [no_perf]
+:le:degravo
+:de:de_gra^v are_vb 
+
+#de-hisco de^hisco
+#de + hisco -> de^ + hisco 
+:le:dehisco
+:vs:de^hi_sc conj3 
+
+#de-lavo de_la^vo <- no perfect
+#de + lavo -> de_ + la^vo  [no_perf]
+:le:delavo
+:vs:de_la^v conj3 
+:vs:de_la^v conj1 variant
+:vs:de_la^va_t pp4 
+:vs:de_laut pp4 variant
+:vs:de_lo_t pp4 variant
+
+#de-libro de_li^bro <- no perfect
+#de + libro -> de_ + li^bro  [no_perf]
+:le:delibro
+:de:de_li_br are_vb 
+
+#de-meio deme_io
+#de + meio -> de + me_io 
+:le:demeio
+:vs:demej conj3 
+
+#de-mordeo de_morde^o <- no perfect
+#de + mordeo -> de_ + morde^o  [no_perf]
+:le:demordeo
+:vs:de_mord conj2 
+:vs:de_mors pp4 
+
+#de-moveo de_mo^ve^o
+#de + moveo -> de_ + mo^ve^o 
+:le:demoveo
+:vs:de_mo^v conj2 
+:vs:de_mo_v perfstem 
+:vs:de_mo_t pp4 
+:vb:de_mo_runt perf ind act 3rd pl contr
+
+:le:submoveo
+:vs:submo^v conj2 
+:vs:submo_v perfstem 
+:vs:submo_t pp4 
+:vb:submo_runt perf ind act 3rd pl contr
+
+#de-nascor de_nascor
+#de + nascor -> de_ + nascor 
+:le:denascor
+:vs:de_na_sc conj3 dep
+:vs:de_na_t pp4 dep
+
+#de-operio de^o^pe^rio
+#de + operio -> de^ + o^pe^rio 
+:le:deoperio
+:vs:de^o^pe^r conj4 
+:vs:de^o^pe^ru perfstem 
+:vs:de^o^pert pp4 
+
+#de-pango de_pango <- no perfect
+#de + pango -> de_ + pango  [no_perf]
+:le:depango
+:vs:de_pang conj3 
+:vs:de_pa_nct pp4 
+:vs:de_pa_ct pp4 
+
+#de-pecto de_pecto <- no perfect
+#de + pecto -> de_ + pecto  [no_perf]
+:le:depecto
+:vs:de_pect conj3 
+:vs:de_pex pp4 
+:vs:de_pecti^t pp4 orth
+
+#de-polio#1 de_po^li^o <- no perfect
+#de + polio#1 -> de_ + po^li^o  [no_perf]
+:le:depolio#1
+:vs:de_po^l conj4 
+:vs:de_po^li_t pp4 
+
+#de-promo de_pro_mo
+#de + promo -> de_ + pro_mo 
+:le:depromo
+:vs:de_pro_m conj3 
+:vs:de_pro_mps perfstem 
+:vs:de_pro_ms perfstem orth
+:vs:de_pro_mpt pp4 
+:vs:de_pro_mt pp4 orth
+
+#de-purgo de_purgo <- no perfect
+#de + purgo -> de_ + purgo  [no_perf]
+:le:depurgo
+:de:de_pu_rg are_vb 
+
+#de-saevio de_saevi^o
+#de + saevio -> de_ + saevi^o 
+:le:desaevio
+:vs:de_saev conj4 
+:vs:de_saevi perfstem 
+:vs:de_saevi_t pp4 
+:vb:de_saevisse perf inf act syncope
+
+#de-sicco de_sicco <- no perfect
+#de + sicco -> de_ + sicco  [no_perf]
+:le:desicco
+:de:de_sicc are_vb 
+
+#de-sugo de_su_go <- no perfect
+#de + sugo -> de_ + su_go  [no_perf]
+:le:desugo
+:vs:de_su_g conj3 
+:vs:de_su_ct pp4 
+
+#de-tendo de_tendo <- no perfect
+#de + tendo -> de_ + tendo  [no_perf]
+:le:detendo
+:vs:de_tend conj3 
+:vs:de_tenn conj3 orth
+:vs:de_tens pp4 
+:vs:de_tent pp4 orth
+
+#de-torno de_torno <- no perfect
+#de + torno -> de_ + torno  [no_perf]
+:le:detorno
+:de:de_torn are_vb 
+
+#de-utor de^u_tor
+#de + utor -> de^ + u_tor 
+:le:deutor
+:vs:de^u_t conj3 dep
+:vs:de^u_s pp4 
+
+#de-vasto de_vasto <- no perfect
+#de + vasto -> de_ + vasto  [no_perf]
+:le:devasto
+:de:de_vast are_vb 
+
+#de-vello de_vello
+#de + vello -> de_ + vello 
+:le:devello
+:vs:de_vell conj3 
+:vs:de_vuls perfstem 
+:vs:de_vell perfstem variant
+:vs:de_vuls pp4 
+:vs:de_vols pp4 old
+
+#dis-crucio discru^ci^o <- no perfect
+#dis + crucio -> dis + cru^ci^o  [no_perf]
+:le:discrucio
+:de:discru^ci are_vb 
+
+#dis-fido diffi_do
+#dis + fido -> dif + fi_do 
+:le:diffido
+:vs:diffi_d conj3 
+:vs:diffi_s pp4 
+
+#dis-findo diffindo
+#dis + findo -> dif + findo 
+:le:diffindo
+:vs:diffind conj3 
+:vs:diffi^d perfstem 
+:vs:diffiss pp4 
+
+#dis-lorico di_lo_ri_co <- no perfect
+#dis + lorico -> di_ + lo_ri_co  [no_perf]
+:le:dilorico
+:de:di_lo_ri_c are_vb 
+
+#dis-pono dispo_no
+#dis + pono -> dis + po_no 
+:le:dispono
+:vs:dispo_n conj3 
+:vs:dispo^su^ perfstem 
+:vs:dispost pp4 
+:vs:disposit pp4 
+
+#dis-suo dissu^o <- no perfect
+#dis + suo -> dis + su^o  [no_perf]
+:le:dissuo
+:vs:dissu^ conj3 
+:vs:dissu_t pp4 
+
+#ex-eo#1 exe^o
+#ex + eo#1 -> ex + e^o 
+:le:exeo
+:de:ex eo_conj
+:vs:exi perfstem contr
+:vs:exi_v perfstem
+:vs:exi^t pp4
+
+#ex-fio effi_o
+#ex + fio -> ef + fi_o 
+:le:effio
+:de:ef fio_conj
+:vs:effact pp4 dep
+
+#ex-fleo effle^o
+#ex + fleo -> ef + fle^o 
+:le:effleo
+:vs:effl conj2 
+:vs:effle_v perfstem 
+:vs:effle_t pp4 
+
+#ex-fodio effo^di^o <- LS also exfo^di^o and ecfo^di^o
+#ex + fodio -> ef + fo^di^o, exfo^di^o and ecfo^di^o 
+:le:effodio
+:vs:effo^d conj3_io 
+:vs:effo_d perfstem 
+:vs:effoss pp4
+:vs:exfo^d conj3_io orth
+:vs:exfo_d perfstem orth 
+:vs:exfoss pp4 orth
+:vs:ecfo^d conj3_io orth
+:vs:ecfo_d perfstem orth 
+:vs:ecfoss pp4 orth
+
+#ex-labor#1 e_la_bor
+#ex + labor#1 -> e_ + la_bor 
+:le:elabor#1
+:vs:e_la_b conj3 dep
+:vs:e_la_ps pp4 dep
+:vs:e_la_bs pp4 dep orth
+
+#ex-molior e_mo_li^or
+#ex + molior -> e_ + mo_li^or 
+:le:emolior
+:vs:e_mo_l conj4 
+:vs:e_mo_li_t pp4 
+
+#ex-molo#1 emo^lo <- no perfect
+#ex + molo#1 -> e + mo^lo  [no_perf]
+:le:emolo#1
+:vs:emo^l conj3 
+:vs:emo^li^t pp4 
+
+#ex-moveo e_mo^ve^o <- LS also exmo^ve^o
+#ex + moveo -> e_ + mo^ve^o, exmo^ve^o 
+:le:emoveo
+:vs:e_mo^v conj2 
+:vs:e_mo_v perfstem 
+:vs:e_mo_t pp4 
+:vb:e_mo_runt perf ind act 3rd pl contr
+:vs:exmo^v conj2 orth 
+:vs:exmo_v perfstem orth
+:vs:exmo_t pp4 orth
+
+#ex-nascor e_nascor
+#ex + nascor -> e_ + nascor 
+:le:enascor
+:vs:e_na_sc conj3 dep
+:vs:e_na_t pp4 dep
+
+#ex-nitesco e_ni^tesco
+#ex + nitesco -> e_ + ni^tesco 
+:le:enitesco
+:vs:e_ni^te_sc conj3 
+:vs:e_ni^tu^ perfstem 
+
+#ex-nitor#1 e_ni_tor
+#ex + nitor#1 -> e_ + ni_tor 
+:le:enitor#1
+:vs:e_ni_t conj3 dep
+:vs:e_ni_s pp4 dep
+:vs:e_ni_x pp4 dep
+
+#ex-ordior exordi^or
+#ex + ordior -> ex + ordi^or 
+:le:exordior
+:vs:exo_rd conj4 
+:vs:exo_rs pp4 
+
+#ex-orior exo^ri^or
+#ex + orior -> ex + o^ri^or 
+:le:exorior
+:vs:exor conj4 dep
+:vs:exor conj3 dep
+:vs:exort pp4 
+
+#ex-scindo exscindo <- LS also excindo
+#ex + scindo -> ex + scindo, excindo 
+:le:exscindo
+:vs:exscind conj3 
+:vs:exsci^d perfstem 
+:vs:exsciss pp4 
+:vs:excind conj3 orth 
+:vs:exci^d perfstem orth
+:vs:exciss pp4 orth
+
+#ex-seco exse^co <- LS also exe^co, exi^co
+#ex + seco -> ex + se^co, exe^co, exi^co 
+:le:exseco
+:vs:exse^c conj1 
+:vs:exse^cu^ perfstem 
+:vs:exse^ct pp4 
+:vs:exe^c conj1 orth 
+:vs:exe^cu^ perfstem orth
+:vs:exe^ct pp4 orth
+:vs:exi^c conj1 orth
+:vs:exi^cu^ perfstem orth 
+:vs:exi^ct pp4 orth
+
+#ex-ungo exungo <- no perfect
+#ex + ungo -> ex + ungo  [no_perf]
+:le:exungo
+:vs:exung conj3 
+:vs:exunct pp4 
+
+#in-acerbo i^na^cerbo
+#in + acerbo -> i^n + a^cerbo 
+:le:inacerbo
+:de:i^na^cerb are_vb 
+
+#in-audio i^naudi^o
+#in + audio -> i^n + audi^o 
+:le:inaudio
+:vs:i^naud conj4 
+:vs:i^naudi_v perfstem 
+:vs:i^naudi^ perfstem 
+:vs:i^naudi_t pp4 
+
+#in-cubo incu^bo
+#in + cubo -> in + cu^bo 
+:le:incubo
+:vs:incu^b conj1 
+:vs:incu^b perfstem 
+:vs:incu^bi^t pp4 
+
+#in-cresco incresco
+#in + cresco -> in + cresco 
+:le:incresco
+:vs:incre_sc conj3 
+:vs:incre_v perfstem 
+:vs:incre_t pp4 
+
+#in-eo#1 i^ne^o
+#in + eo#1 -> i^n + e^o 
+:le:ineo
+:de:i^n eo_conj
+:vs:i^ni perfstem contr
+:vs:i^ni_v perfstem
+:vs:i^ni^t pp4
+
+#in-flecto inflecto
+#in + flecto -> in + flecto 
+:le:inflecto
+:vs:inflect conj3 
+:vs:inflex perfstem 
+:vs:inflex pp4 
+
+#in-generasco inge^ne^rasco
+#in + generasco -> in + ge^ne^rasco 
+:le:ingenerasco
+:vs:inge^ne^ra_sc conj3 
+
+#in-pascor impascor <- LS also inpascor
+#in + pascor -> im + pascor, inpascor 
+:le:impascor
+:vs:impa_sc conj3 dep
+:vs:impa_st pp4 dep
+:vs:inpa_sc conj3 dep orth 
+:vs:inpa_st pp4 dep orth
+
+#in-saepio insaepi^o
+#in + saepio -> in + saepi^o 
+:le:insaepio
+:vs:insaep conj4 
+:vs:insaeps perfstem 
+:vs:insaept pp4 
+:vs:inse_p conj4 orth
+:vs:inse_ps perfstem orth
+:vs:inse_pt pp4 orth
+
+#in-urgeo i^nurge^o
+#in + urgeo -> i^n + urge^o 
+:le:inurgeo
+:vs:i^nurg conj2 
+:vs:i^nurgu conj2 
+:vs:i^nurs perfstem 
+
+#inter-aperio inte^ra^pe^ri^o
+#inter + aperio -> inte^r + a^pe^ri^o 
+:le:interaperio
+:vs:inte^ra^pe^r conj4 
+:vs:inte^ra^pe^ru^ perfstem 
+:vs:inte^ra^pert pp4 
+
+#inter-do interdo
+#inter + do -> inter + do 
+:le:interdo
+:de:inter do_conj
+:vs:interde^d perfstem
+:vs:interda^t pp4
+
+#inter-fio interfi_o
+#inter + fio -> inter + fi_o 
+:le:interfio
+:de:inter fio_conj
+:vs:interfact pp4 dep
+
+#inter-fugio interfu^gi^o
+#inter + fugio -> inter + fu^gi^o 
+:le:interfugio
+:vs:interfu^g conj3_io 
+:vs:interfu_g perfstem 
+:vs:interfu^gi^t pp4 
+
+#inter-sileo intersi^le^o
+#inter + sileo -> inter + si^le^o 
+:le:intersileo
+:vs:intersi^l conj2 
+:vs:intersi^lu^ perfstem 
+:vs:intersi^lit pp4 
+
+#ob-duco obdu_co
+#ob + duco -> ob + du_co 
+:le:obduco
+:vs:obdu_c conj3 
+:vs:obdu_x perfstem 
+:vs:obduct pp4 
+:vb:obdu_c pres imperat act 2nd sg
+
+#ob-eo#1 o^be^o
+#ob + eo#1 -> o^b + e^o 
+:le:obeo
+:de:o^b eo_conj
+:vs:o^bi perfstem contr
+:vs:o^bi_v perfstem
+:vs:o^bi^t pp4
+
+#ob-fero offe^ro <- LS also offe^ro
+#ob + fero -> of + fe^ro, offe^ro 
+:le:offero
+:de:of fero_conj
+:de:ob fero_conj orth
+:vs:obtu^l perfstem
+:vs:obla_t pp4
+
+#ob-fundo#1 offundo <- LS also obfundo
+#ob + fundo#1 -> of + fundo, obfundo 
+:le:offundo#1
+:vs:offund conj3 
+:vs:offu_d perfstem 
+:vs:offu_s pp4
+:vs:obfund conj3 orth
+:vs:obfu_d perfstem orth 
+:vs:obfu_s pp4 orth
+
+#ob-irascor o^bi_rascor
+#ob + irascor -> o^b + i_rascor 
+:le:obirascor
+:vs:o^bi_ra_sc conj3 dep
+:vs:o^bi_ra_t pp4 
+
+#ob-jurgo objurgo
+#ob + jurgo -> ob + jurgo 
+:le:objurgo
+:de:obju_rg are_vb 
+
+#ob-nitor#1 obni_tor
+#ob + nitor#1 -> ob + ni_tor 
+:le:obnitor#1
+:vs:obni_t conj3 dep
+:vs:obni_s pp4 dep
+:vs:obni_x pp4 dep
+
+#ob-pono oppo_no <- LS also oppo_no
+#ob + pono -> op + po_no, oppo_no 
+:le:oppono
+:vs:oppo_n conj3 
+:vs:oppo^su^ perfstem
+:vs:oppo^si^v perfstem old 
+:vs:oppost pp4 variant
+:vs:opposit pp4
+:vs:obpo_n conj3 orth
+:vs:obpo^su^ perfstem orth
+:vs:obpost pp4 variant orth
+:vs:obposit pp4 orth
+
+#ob-ruo obru^o
+#ob + ruo -> ob + ru^o 
+:le:obruo
+:vs:obru^ conj3 
+:vs:obru^ perfstem 
+:vs:obru^t pp4
+
+#ob-sto obsto
+#ob + sto -> ob + sto 
+:le:obsto
+:vs:obst conj1 
+:vs:obste^t perfstem 
+:vs:obsta^t pp4 
+:vs:opst conj1 orth
+:vs:opste^t perfstem orth 
+:vs:opsta^t pp4 orth
+
+#op-fero offe^ro
+#op + fero -> of + fe^ro 
+:le:offero
+:de:of fero_conj
+:vs:oftu^l perfstem
+:vs:ofla_t pp4
+
+#per-caedo percaedo
+#per + caedo -> per + caedo 
+:le:percaedo
+:vs:percaed conj3 no_comp
+:vs:perceci_d perfstem has_redupl no_comp
+:vs:percecaed perfstem has_redupl no_comp
+:vs:percaes pp4 has_redupl no_comp
+:vs:perci_d conj3 comp
+:vs:perci_s perfstem comp
+:vs:perci_s pp4 comp
+
+#per-cupio percu^pi^o
+#per + cupio -> per + cu^pi^o 
+:le:percupio
+:vs:percu^p conj3_io 
+:vs:percu^pi_v perfstem 
+:vs:percu^pi^ perfstem 
+:vs:percu^pi_t pp4 
+
+#per-domo perdo^mo
+#per + domo -> per + do^mo 
+:le:perdomo
+:vs:perdo^m conj1 
+:vs:perdo^mu perfstem 
+:vs:perdo^mi^t pp4 
+
+#per-eo#1 pe^re^o
+#per + eo#1 -> pe^r + e^o 
+:le:pereo
+:de:pe^r eo_conj
+:vs:pe^ri perfstem contr
+:vs:pe^ri_v perfstem
+:vs:pe^ri^t pp4
+
+#per-fero perfe^ro
+#per + fero -> per + fe^ro 
+:le:perfero
+:de:per fero_conj
+:vs:pertu^l perfstem
+:vs:perla_t pp4
+
+#per-frico perfri^co
+#per + frico -> per + fri^co 
+:le:perfrico
+:vs:perfri^c conj1 
+:vs:perfri^cu^ perfstem 
+:vs:perfri^ct pp4 
+:vs:perfri^ca_t pp4 orth
+
+#per-fungor perfungor
+#per + fungor -> per + fungor 
+:le:perfungor
+:vs:perfung conj3 dep
+:vs:perfunct pp4 dep
+
+#per-moneo permo^ne^o
+#per + moneo -> per + mo^ne^o 
+:le:permoneo
+:vs:permo^n conj2 
+:vs:permo^nu^ perfstem 
+:vs:permo^ni^t pp4 
+
+#per-morior permo^ri^or
+#per + morior -> per + mo^ri^or 
+:le:permorior
+:vs:permo^r conj4 dep early
+:vs:permo^rit pp4 fut part dep
+:vs:permo^rtu^ pp4 perf dep
+:vs:permo^r conj3_io dep
+
+#per-nosco pernosco
+#per + nosco -> per + nosco 
+:le:pernosco
+:vs:perno_sc conj3 
+:vs:perno_v perfstem
+:vs:perno_ nosco_contr_perf
+:vs:perno_t pp4 
+:vs:pergno_sc conj3 orth
+:vs:pergno_v perfstem orth
+:vs:pergno_t pp4 orth
+
+#per-ungo pe^rungo
+#per + ungo -> pe^r + ungo 
+:le:perungo
+:vs:pe^rung conj3 
+:vs:pe^runx perfstem 
+:vs:pe^runct pp4 
+
+#per-urgeo pe^rurge^o
+#per + urgeo -> pe^r + urge^o 
+:le:perurgeo
+:vs:pe^rurg conj2 
+:vs:pe^rurgu conj2 
+:vs:pe^rurs perfstem 
+
+#prae-acuo praea^cu^o
+#prae + acuo -> prae + a^cu^o 
+:le:praeacuo
+:vs:praea^cu^ conj3 
+:vs:praea^cu perfstem 
+:vs:praea^cu_t pp4 
+
+#prae-fero praefe^ro
+#prae + fero -> prae + fe^ro 
+:le:praefero
+:de:prae fero_conj
+:vs:praetu^l perfstem
+:vs:praela_t pp4
+
+#prae-ostendo praeostendo
+#prae + ostendo -> prae + ostendo 
+:le:praeostendo
+:vs:praeostend conj3 
+:vs:praeostend perfstem 
+:vs:praeostens pp4 
+:vs:praeostent pp4 
+
+#prae-patior praepa^ti^or
+#prae + patior -> prae + pa^ti^or 
+:le:praepatior
+:vs:praepa^t conj3_io 
+:vs:praepass pp4 
+
+#prae-suo praesu^o
+#prae + suo -> prae + su^o 
+:le:praesuo
+:vs:praesu^ conj3 
+:vs:praesu^ perfstem 
+:vs:praesu_t pp4 
+
+#prae-ungo praeungo <- no perfect
+#prae + ungo -> prae + ungo  [no_perf]
+:le:praeungo
+:vs:praeung conj3 
+:vs:praeunct pp4 
+
+#praeter-ago praetera^go
+#praeter + ago -> praeter + a^go 
+:le:praeterago
+:vs:praetera^g conj3 
+:vs:praetere_g perfstem 
+:vs:praetera_ct pp4 
+
+#praeter-eo#1 praete^re^o
+#praeter + eo#1 -> praete^r + e^o 
+:le:praetereo
+:de:praete^r eo_conj
+:vs:praete^ri perfstem contr
+:vs:praete^ri_v perfstem
+:vs:praete^ri^t pp4
+
+#praeter-fero praeterfe^ro
+#praeter + fero -> praeter + fe^ro 
+:le:praeterfero
+:de:praeter fero_conj
+:vs:praetertu^l perfstem
+:vs:praeterla_t pp4
+
+#pro-fero pro_fe^ro
+#pro + fero -> pro_ + fe^ro 
+:le:profero
+:de:pro_ fero_conj
+:vs:pro_tu^l perfstem
+:vs:pro_la_t pp4
+
+#pro-patior pro_pa^ti^or
+#pro + patior -> pro_ + pa^ti^or 
+:le:propatior
+:vs:pro_pa^t conj3_io 
+:vs:pro_pass pp4 
+
+#pro-verto pro_verto <- LS also pro_vorto
+#pro + verto -> pro_ + verto, pro_vorto 
+:le:proverto
+:vs:pro_vert conj3 
+:vs:pro_vort conj3 orth
+:vs:pro_vert perfstem 
+:vs:pro_vort perfstem orth
+:vs:pro_vers pp4 
+:vs:pro_vors pp4 orth
+
+#re-bullio re^bulli^o
+#re + bullio -> re^ + bulli^o 
+:le:rebullio
+:vs:re^bull conj4 
+:vs:re^bulli_v perfstem 
+:vs:re^bulli_t pp4 
+
+#re-canto re^canto <- no perfect
+#re + canto -> re^ + canto  [no_perf]
+:le:recanto
+:de:re^cant are_vb 
+
+#re-frico re_^fri^co
+#re + frico -> re_^ + fri^co 
+:le:refrico
+:vs:re_^fri^c conj1 
+:vs:re_^fri^cu^ perfstem 
+:vs:re_^fri^ct pp4 
+:vs:re_^fri^ca_t pp4 orth
+
+#re-liceor re^li^ce^or
+#re + liceor -> re^ + li^ce^or 
+:le:reliceor
+:vs:re^li^c conj2 
+:vs:re^li^ci^t pp4 
+
+#re-lucesco re^lu_ce_sco
+#re + lucesco -> re^ + lu_ce_sco 
+:le:relucesco
+:vs:re^lu_ce_sc conj3 
+:vs:re^lu_ci_sc conj3 orth
+
+#re-nascor re^nascor
+#re + nascor -> re^ + nascor 
+:le:renascor
+:vs:re^na_sc conj3 dep
+:vs:re^na_t pp4 dep
+
+#re-nitor#1 reni_tor
+#re + nitor#1 -> re + ni_tor 
+:le:renitor#1
+:vs:reni_t conj3 dep
+:vs:reni_s pp4 dep
+:vs:reni_x pp4 dep
+
+#re-pecto re^pecto <- no perfect
+#re + pecto -> re^ + pecto  [no_perf]
+:le:repecto
+:vs:re^pect conj3 
+:vs:re^pex pp4 
+:vs:re^pecti^t pp4 orth
+
+#re-tero rete^ro
+#re + tero -> re + te^ro 
+:le:retero
+:vs:rete^r conj3 
+:vs:retri_v perfstem 
+:vs:retri_t pp4 
+
+#re-vereor re^ve^re^or
+#re + vereor -> re^ + ve^re^or 
+:le:revereor
+:vs:re^ver conj2 dep
+:vs:re^verit pp4 
+
+#re-vivesco revi_ve_sco
+#re + vivesco -> re + vi_ve_sco 
+:le:revivesco
+:vs:revi_ve_sc conj3 
+:vs:revi_x perfstem 
+:vs:revi_vi_sc conj3 orth
+
+#red-operio re^do^pe^rio
+#red + operio -> re^d + o^pe^rio 
+:le:redoperio
+:vs:re^do^pe^r conj4 
+:vs:re^do^pe^ru perfstem 
+:vs:re^do^pert pp4 
+
+#sub-aduno su^ba^du_no
+#sub + aduno -> su^b + a^du_no 
+:le:subaduno
+:de:su^ba^d-u_n are_vb 
+
+#sub-edo#1 su^be^do
+#sub + edo#1 -> su^b + e^do 
+:le:subedo#1
+:vs:su^bed conj3 
+:vs:su^be_d perfstem 
+:vs:su^be_s pp4 
+
+#sub-erigo sube_ri^go
+#sub + erigo -> sub + e_ri^go 
+:le:suberigo
+:vs:sube_-ri^g conj3 
+:vs:sube_-re_x perfstem 
+:vs:sube_-re_ct pp4 
+
+#sub-fero suffe^ro <- LS also subfe^ro
+#sub + fero -> suf + fe^ro, subfe^ro 
+:le:suffero
+:de:suf fero_conj
+:de:sub fero_conj orth
+:vs:sustu^l perfstem
+:vs:subla_t pp4
+
+#sub-irascor su^bi_rascor
+#sub + irascor -> su^b + i_rascor 
+:le:subirascor
+:vs:su^bi_ra_sc conj3 dep
+:vs:su^bi_ra_t pp4 
+
+#sub-ringor surringor <- LS also subringor
+#sub + ringor -> sur + ringor, subringor 
+:le:surringor
+:vs:surring conj3 dep
+:vs:surrict pp4 dep
+:vs:subring conj3 dep orth
+:vs:subrict pp4 dep orth
+
+#sub-uro su^bu_ro <- no perfect
+#sub + uro -> su^b + u_ro  [no_perf]
+:le:suburo
+:vs:su^bu_r conj3 
+:vs:su^bust pp4 
+
+#sub-vereor subve^re^or
+#sub + vereor -> sub + ve^re^or 
+:le:subvereor
+:vs:subver conj2 dep
+:vs:subverit pp4 
+
+#super-effero#2 su^pe^reffe^ro
+#super + effero#2 -> su^pe^r + effe^ro 
+:le:supereffero#2
+:de:su^pe^ref-fe^r are_vb 
+
+#super-egredior su^pe^re_gre^di^or
+#super + egredior -> su^pe^r + e_gre^di^or 
+:le:superegredior
+:vs:su^pe^re_-gre^d conj3_io 
+:vs:su^pe^re_-gress pp4 
+
+#super-emorior su^pe^re_mo^ri^or
+#super + emorior -> su^pe^r + e_mo^ri^or 
+:le:superemorior
+:vs:su^pe^re_-mo^r conj3_io 
+:vs:su^pe^re_-mortu pp4 
+
+#super-fero su^perfe^ro
+#super + fero -> su^per + fe^ro 
+:le:superfero
+:de:su^per fero_conj
+:vs:su^pertu^l perfstem
+:vs:su^perla_t pp4
+
+#super-figo su^perfi_go
+#super + figo -> su^per + fi_go 
+:le:superfigo
+:vs:su^perfi_g conj3 
+:vs:su^perfi_x perfstem 
+:vs:su^perfi_x pp4 
+
+#super-fio su^perfi_o
+#super + fio -> su^per + fi_o 
+:le:superfio
+:de:su^per fio_conj
+:vs:su^perfact pp4 dep
+
+#super-fugio su^perfu^gi^o
+#super + fugio -> su^per + fu^gi^o 
+:le:superfugio
+:vs:su^perfu^g conj3_io 
+:vs:su^perfu_g perfstem 
+:vs:su^perfu^gi^t pp4 
+
+#super-labor#1 su^perla_bor
+#super + labor#1 -> su^per + la_bor 
+:le:superlabor#1
+:vs:su^perla_b conj3 dep
+:vs:su^perla_ps pp4 dep
+:vs:su^perla_bs pp4 dep orth
+
+#super-ruo su^perru^o
+#super + ruo -> su^per + ru^o 
+:le:superruo
+:vs:su^perru^ conj3 
+:vs:su^perru^ perfstem 
+:vs:su^perru^t pp4
+
+#super-stringo su^perstringo
+#super + stringo -> su^per + stringo 
+:le:superstringo
+:vs:su^perstring conj3 
+:vs:su^perstrinx perfstem 
+:vs:su^perstrict pp4 
+
+#trans-eo#1 tra_nseo
+#trans + eo#1 -> tra_ns + eo 
+:le:transeo
+:de:tra_ns eo_conj
+:vs:tra_nsi perfstem contr
+:vs:tra_nsi_v perfstem
+:vs:tra_nsi^t pp4
+
+:le:intereo
+:de:inte^r eo_conj
+:vs:inte^ri^ perfstem contr
+:vs:inte^ri_v perfstem
+:vs:inte^ri^t pp4
+
+:le:prodeo
+:de:pro_d eo_conj
+:vs:pro_di^ perfstem contr
+:vs:pro_di_v perfstem
+:vs:pro_di^t pp4
+
+#trans-fero tra_nsfe^ro
+#trans + fero -> tra_ns + fe^ro 
+:le:transfero
+:de:tra_ns fero_conj
+:vs:tra_nstu^l perfstem
+:vs:tra_nsla_t pp4
+
+:le:adsum
+:de:ad sum_conj
+:de:as sum_conj orth
+:vs:adfu		perfstem
+:vs:adfut		pp4 fut part
+:vs:affu		perfstem orth
+:vs:affut		pp4 fut part orth
+
+:le:desum
+:de:de_ sum_conj
+:vs:de_fu		perfstem
+:vs:de_fut		pp4 fut part
+
+:le:praesum
+:de:prae sum_conj
+:vs:praefu		perfstem
+:vs:praefut		pp4 fut part
+
+:le:subsum
+:de:sub sum_conj
+:vs:subfu		perfstem
+:vs:subfut		pp4 fut part
+
+:le:intersum
+:de:inte^r sum_conj
+:vs:inte^rfu		perfstem
+:vs:inte^rfut		pp4 fut part
+
+#@Gaffiot
+:le:subministro
+:de:submi^nistr	are_vb
+:de:summi^nistr	are_vb orth
+

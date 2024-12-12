@@ -30,9 +30,6 @@ cd smithandhall || exit
 git checkout v1edits
 cd ..
 
-echo "Downloading Morpheus."
-git clone https://github.com/nkprasad12/morpheus.git
-
 echo "Downloading the Perseus Library."
 git clone https://github.com/nkprasad12/canonical-latinlit
 
@@ -42,7 +39,6 @@ touch $dot_env
 echo "PORT=$PORT" >> $dot_env
 echo "LS_PATH=$PWD/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml" >> $dot_env
 echo "SH_RAW_PATH=$PWD/smithandhall/sh_F2_latest.txt" >> $dot_env
-echo "MORPHEUS_ROOT=$PWD/morpheus" >> $dot_env
 echo "LIB_XML_ROOT=$PWD/canonical-latinlit" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."
