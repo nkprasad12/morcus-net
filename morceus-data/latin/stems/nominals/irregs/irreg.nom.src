@@ -155,16 +155,16 @@ alter@ille	irreg_nom2
 ali@ille irreg_nom2
 
 :le:ambo
-ambo_	numeral masc neut pl nom
-ambo_	numeral neut pl acc
-ambae	numeral	fem pl nom
-amba_s	numeral	fem pl acc
-ambo_s	numeral	masc pl acc
-ambo_	numeral	masc pl acc
-ambo_rum	irreg_adj3 masc neut gen pl
-amba_rum	irreg_adj3 fem gen pl
-ambo_bus	irreg_adj3 masc neut dat abl pl
-amba_bus	irreg_adj3 fem dat abl pl
+ambo_	numeral masc neut pl nom othernum arabic2
+ambo_	numeral neut pl acc othernum arabic2
+ambae	numeral	fem pl nom othernum arabic2
+amba_s	numeral	fem pl acc othernum arabic2
+ambo_s	numeral	masc pl acc othernum arabic2
+ambo_	numeral	masc pl acc othernum arabic2
+ambo_rum	irreg_adj3 masc neut gen pl othernum arabic2
+amba_rum	irreg_adj3 fem gen pl othernum arabic2
+ambo_bus	irreg_adj3 masc neut dat abl pl othernum arabic2
+amba_bus	irreg_adj3 fem dat abl pl othernum arabic2
 
 :le:anne
 :wd:anne	adverb
@@ -203,16 +203,16 @@ cord@decl3	irreg_nom3 neut
 :wd:dehinc	adverb
 
 :le:duo
-duo	irreg_adj3 masc neut nom pl
-duae	irreg_adj3 fem nom pl
-dua_s	irreg_adj3 fem acc pl
-duo_s	irreg_adj3 masc acc pl
-duo_rum	irreg_adj3 masc neut gen pl
-dua_rum	irreg_adj3 fem gen pl
-duo_bus	irreg_adj3 masc neut dat pl
-dua_bus	irreg_adj3 fem dat pl
-duo_bus	irreg_adj3 masc neut abl pl
-dua_bus	irreg_adj3 fem abl pl
+duo	irreg_adj3 masc neut nom pl numeral card arabic2
+duae	irreg_adj3 fem nom pl numeral card arabic2
+dua_s	irreg_adj3 fem acc pl numeral card arabic2
+duo_s	irreg_adj3 masc acc pl numeral card arabic2
+duo_rum	irreg_adj3 masc neut gen pl numeral card arabic2
+dua_rum	irreg_adj3 fem gen pl numeral card arabic2
+duo_bus	irreg_adj3 masc neut dat pl numeral card arabic2
+dua_bus	irreg_adj3 fem dat pl numeral card arabic2
+duo_bus	irreg_adj3 masc neut abl pl numeral card arabic2
+dua_bus	irreg_adj3 fem abl pl numeral card arabic2
 
 :le:falx
 :no:fal		x_cis fem
@@ -781,13 +781,13 @@ mell@decl3	irreg_nom3 neut
 fell@decl3	irreg_nom3 neut
 
 :le:mille
-mi_lle		numeral masc fem nom acc voc pl
-mi_l@decl3_i	numeral neut nom pl
-mi_l@decl3_i	numeral masc fem neut gen pl
-mi_l@decl3_i	numeral masc fem neut dat pl
-mi_l@decl3_i	numeral masc fem neut acc pl
-mi_l@decl3_i	numeral masc fem neut abl pl
-mi_ll@decl3_i	numeral neut pl early
+mi_lle		numeral masc fem nom acc voc pl numeral card arabic1000
+mi_l@decl3_i	numeral neut nom pl numeral card arabic1000
+mi_l@decl3_i	numeral masc fem neut gen pl numeral card arabic1000
+mi_l@decl3_i	numeral masc fem neut dat pl numeral card arabic1000
+mi_l@decl3_i	numeral masc fem neut acc pl numeral card arabic1000
+mi_l@decl3_i	numeral masc fem neut abl pl numeral card arabic1000
+mi_ll@decl3_i	numeral neut pl early numeral card arabic1000
 
 :le:mos
 mo_s		irreg_nom3	masc nom voc sg
@@ -868,12 +868,12 @@ su_^bus		irreg_nom3 masc fem abl pl
 su^ibus		irreg_nom3 masc fem abl pl
 
 :le:tres
-tre_s		numeral masc fem nom pl
-tr@decl3_i	numeral neut nom pl
-tr@decl3_i	numeral masc fem neut gen pl
-tr@decl3_i	numeral masc fem neut dat pl
-tr@decl3_i	numeral masc fem neut acc pl
-tr@decl3_i	numeral masc fem neut abl pl
+tre_s		numeral masc fem nom pl numeral card arabic3
+tr@decl3_i	numeral neut nom pl numeral card arabic3
+tr@decl3_i	numeral masc fem neut gen pl numeral card arabic3
+tr@decl3_i	numeral masc fem neut dat pl numeral card arabic3
+tr@decl3_i	numeral masc fem neut acc pl numeral card arabic3
+tr@decl3_i	numeral masc fem neut abl pl numeral card arabic3
 
 :le:alteruter
 alter-uter 	irreg_adj2 masc nom/voc sg

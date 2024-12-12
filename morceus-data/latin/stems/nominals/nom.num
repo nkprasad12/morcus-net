@@ -1,0 +1,613 @@
+#:le:septaginti
+#:wd:septa_ginti_ numeral
+
+#CARDINALS
+:le:unus
+:aj:u_n us_ius_adj numeral card arabic1
+
+#duo in irreg.nom.src
+
+#tres in irreg.nom.src
+
+:le:quattuor
+:aj:quattu^or	indecl numeral card arabic4
+:aj:qua_tu^or	indecl numeral card arabic4 orth
+:aj:quattor	indecl numeral card arabic4 orth
+
+:le:quinque
+:aj:qui_nque	indecl numeral card arabic5
+
+:le:sex
+:aj:sex	indecl numeral card arabic6
+
+:le:septem
+:aj:septem	indecl numeral card arabic7
+
+:le:octo
+:aj:octo	indecl numeral card arabic8
+
+:le:novem
+:aj:novem	indecl numeral card arabic9
+
+:le:decem
+:aj:de^cem	indecl numeral card arabic10
+
+:le:undecim
+:aj:u_ndecim	indecl numeral card arabic11
+
+:le:duodecim
+:aj:du^o^de^ci^m	indecl numeral card arabic12
+
+:le:tredecim
+:aj:tre^de^cim	indecl numeral card arabic13
+
+:le:quattuordecim
+:aj:quattu^orde^cim	indecl numeral card arabic14
+:aj:qua_tu^orde^cim indecl numeral card arabic14 orth
+
+:le:quindecim
+:aj:qui_nde^ci^m	indecl numeral card arabic15
+
+:le:sedecim
+:aj:se_de^cim	indecl numeral card arabic16
+:aj:sexde^cim	indecl numeral card arabic16 orth
+
+:le:septendecim
+:aj:septende^cim	indecl numeral card arabic17
+:aj:septemde^cim	indecl numeral card arabic17 orth
+	
+:le:duodeviginti
+:aj:du^o^de_vi_ginti_	indecl numeral card arabic18
+
+:le:octodecim
+:aj:octo_de^cim	indecl numeral card arabic18
+
+:le:undeviginti
+:aj:u_nde_vi_ginti_	indecl numeral card arabic19
+
+:le:viginti
+:aj:vi_ginti_	indecl numeral card arabic20
+
+:le:duodetriginta
+:aj:du^o^de_tri_ginta_ indecl numeral card arabic28
+
+:le:undetriginta
+:aj:u_nde_tri_ginta_ indecl numeral card arabic29
+
+:le:triginta
+:aj:tri_ginta_	indecl numeral card arabic30
+
+:le:duodequadraginta	
+:wd:du^o^-de_-qua_^dra_ginta_	numeral card arabic38
+
+:le:undequadraginta
+:aj:u_nde_quadra_ginta_	indecl numeral card arabic39
+
+:le:quadraginta
+:aj:qua_^dra_ginta_	indecl numeral card arabic40
+
+:le:undequinquaginta
+:aj:u_nde_qui_nqua_ginta_ indecl numeral card arabic49
+
+:le:quinquaginta
+:aj:qui_nqua_ginta_ indecl numeral card arabic50
+
+:le:undesexaginta
+:aj:u_nde_sexa_ginta_ indecl numeral card arabic59
+
+:le:sexaginta
+:aj:sexa_ginta_	indecl numeral card arabic60
+
+:le:septuaginta
+:aj:septua_ginta_	indecl numeral card arabic70
+
+:le:undeoctoginta
+:aj:u_nde_octo_ginta_ indecl numeral card arabic79
+
+:le:octoginta
+:aj:octo_ginta_	indecl numeral card arabic80
+
+:le:undenonaginta
+:aj:u_nde_no_na_ginta_ indecl numeral card arabic89
+
+:le:nonaginta
+:aj:no_na_ginta_	indecl numeral card arabic90
+
+:le:centum
+:aj:centum 	indecl numeral card arabic100
+
+:le:ducenti
+:aj:du^cent	us_a_um pl numeral card arabic200
+
+:le:trecenti
+:aj:tre^cent	us_a_um pl numeral card arabic300
+:wd:tre^centu_m   masc fem neut gen pl 
+
+:le:quadringenti
+:aj:quadringent	us_a_um pl numeral card arabic400
+
+:le:quingenti
+:aj:qui_ngent us_a_um  pl numeral card arabic500
+
+:le:sescenti
+:aj:ses-cent	us_a_um pl numeral card arabic600
+:aj:sex-cent	us_a_um pl numeral card arabic600 orth
+
+:le:septingenti
+:aj:septingent	us_a_um pl numeral card arabic700
+
+:le:octingenti
+:aj:octingent	us_a_um pl numeral card arabic800
+
+:le:nongenti
+:aj:no_ngent	us_a_um pl numeral card arabic900
+
+#mille in irreg.nom.src
+
+#ORDINALS
+
+:le:primus
+:aj:pri_m	us_a_um irreg_superl numeral ord arabic1
+
+:le:secundus#1
+:aj:se^cund	us_a_um numeral ord arabic2
+
+:le:tertius
+:aj:tert	ius_ia_ium numeral ord arabic3
+
+:le:quartus
+:aj:qua_rt	us_a_um numeral ord arabic4
+
+:le:quintus#1
+:aj:qui_nt	us_a_um numeral ord arabic5
+:aj:qui_nct	us_a_um numeral ord arabic5 orth
+
+:le:sextus#1
+:aj:sext	us_a_um numeral ord arabic6
+
+:le:septimus
+:aj:septi^m	us_a_um numeral ord arabic7
+:aj:septu^m	us_a_um numeral ord arabic7 orth
+
+:le:octavus
+:aj:octa_v	us_a_um numeral ord arabic8
+
+:le:nonus
+:aj:no_n	us_a_um numeral ord arabic9
+
+:le:decimus#1
+:aj:de^ci^m	us_a_um numeral ord arabic10
+:aj:de^cu^m	us_a_um numeral ord arabic10 orth
+
+:le:undecimus 
+:aj:u_nde^ci^m	us_a_um numeral ord arabic11
+
+:le:duodecimus
+:aj:du^o^-de^ci^m	us_a_um numeral ord arabic12
+:aj:du^o^-de^cu^m	us_a_um numeral ord arabic12 orth 
+
+:le:tertiusdecimus
+:aj:terti^us-de^ci^m	us_a_um numeral ord arabic13
+
+:le:quartusdecimus
+:aj:qua_rtus-de^ci^m	us_a_um numeral ord arabic14
+
+:le:quintusdecimus
+:aj:qui_ntus-de^ci^m	us_a_um numeral ord arabic15
+
+:le:sextusdecimus
+:aj:sextusde^ci^m	us_a_um numeral ord arabic16
+
+:le:septimusdecimus
+:aj:septi^musde^ci^m	us_a_um numeral ord arabic17
+
+:le:duodevicesimus
+:aj:du^o^-de_-vi_ce_si^m	us_a_um numeral ord arabic18
+:le:octavusdecimus
+:aj:octa_vus-de^ci^m	us_a_um numeral ord arabic18
+
+:le:nonusdecimus
+:aj:no_nus-de^ci^m	us_a_um numeral ord arabic19
+:le:undevicesimus
+:aj:u_nde_vi_ce_si^m	us_a_um numeral ord arabic19
+:aj:u_nde_vi_ce_nsi^m	us_a_um numeral ord arabic19
+:aj:u_nde_vi_ge_si^-m	us_a_um numeral ord arabic19 orth
+:aj:u_nde_vi_ge_nsi^-m	us_a_um numeral ord arabic19 orth
+
+:le:vicesimus
+:aj:vi_ce_si^m	us_a_um numeral ord arabic20
+:aj:vi_ce_nsi^m	us_a_um numeral ord arabic20
+:aj:vi_ge_si^-m	us_a_um numeral ord arabic20 orth
+:aj:vi_ge_nsi^-m	us_a_um numeral ord arabic20 orth
+:aj:vi_ce_su^m	us_a_um numeral ord arabic20 orth
+:aj:vi_ce_nsu^m	us_a_um numeral ord arabic20 orth
+:aj:vi_ge_su^-m	us_a_um numeral ord arabic20 orth
+:aj:vi_ge_nsu^-m	us_a_um numeral ord arabic20 orth
+
+:le:duoetvicesimus
+:aj:du^o^-et-vi_ce_si^m	us_a_um numeral ord arabic22
+
+:le:tricesimus
+:aj:tri_ce_si^m	us_a_um numeral ord arabic30 
+:aj:tri_censi^m	us_a_um numeral ord arabic30 orth 
+:aj:tri_ge_si^m	us_a_um numeral ord arabic30 orth 
+
+:le:quadragesimus
+:aj:qua_^dra_ge_si^m	us_a_um numeral ord arabic40
+:aj:qua_^dra_ge_su^m	us_a_um numeral ord arabic40 orth
+:aj:qua_^dra_gensi^m	us_a_um numeral ord arabic40 orth
+:aj:qua_^dra_gensu^m	us_a_um numeral ord arabic40 orth
+
+:le:quinquagesimus
+:aj:qui_nqua_ge_si^m	us_a_um numeral ord arabic50
+:aj:qui_nqua_gensi^m	us_a_um numeral ord arabic50
+
+:le:sexagesimus
+:aj:sexa_ge_si^m	us_a_um numeral ord arabic60
+:aj:sexa_gensi^m	us_a_um numeral ord arabic60
+
+:le:septuagesimus
+:aj:septu^a_ge_sim	us_a_um numeral ord arabic70
+:aj:septu^a_gensim	us_a_um numeral ord arabic70
+
+:le:octogesimus
+:aj:octo_ge_si^m	us_a_um numeral ord arabic80
+:aj:octo_gensi^m	us_a_um numeral ord arabic80 orth 
+
+:le:nonagesimus
+:aj:no_na_ge_si^m	us_a_um numeral ord arabic90
+:aj:no_na_gensi^m	us_a_um numeral ord arabic90 orth 
+:le:nonigesimus numeral ord arabic90
+:aj:no_ni^ge_si^m	us_a_um numeral ord arabic90
+:aj:no_ni^gensi^m	us_a_um numeral ord arabic90
+:aj:no_nge_si^m	us_a_um numeral ord arabic90 orth
+:aj:no_ngensi^m	us_a_um numeral ord arabic90 orth
+
+:le:centesimus
+:aj:cente_si^m	us_a_um numeral ord arabic100
+:aj:centensi^m	us_a_um numeral ord arabic100 orth 
+
+:le:trecentesimus
+:aj:tre^cente_si^m	us_a_um numeral ord arabic300
+:aj:tre^centensi^m	us_a_um numeral ord arabic300
+
+:le:quadringentesimus
+:aj:qua_^dringente_si^m	us_a_um numeral ord arabic400
+:aj:qua_^dringentensi^m	us_a_um numeral ord arabic400
+
+:le:quingentesimus
+:aj:qui_ngente_si^m	us_a_um numeral ord arabic500
+:aj:qui_ngente_nsi^m	us_a_um numeral ord arabic500
+
+:le:sescentesimus
+:aj:sescente_si^m	us_a_um numeral ord arabic600
+:aj:sexcente_si^m	us_a_um numeral ord arabic600 orth
+:aj:sescentensi^m	us_a_um numeral ord arabic600 orth
+:aj:sexcentensi^m	us_a_um numeral ord arabic600 orth
+
+:le:septingentesimus
+:aj:septingente_si^m	us_a_um numeral ord arabic700
+:aj:septingentensi^m	us_a_um numeral ord arabic700
+
+:le:octingentesimus	
+:aj:octingente_si^m	us_a_um numeral ord arabic800
+:aj:octingentensi^m	us_a_um numeral ord arabic800
+
+:le:noningentesimus
+:aj:no_ningente_si^m	us_a_um numeral ord arabic900
+:aj:no_ningentensi^m	us_a_um numeral ord arabic900
+:aj:nongente_-si^m	us_a_um numeral ord arabic900 orth
+
+:le:millesimus
+:aj:mi_lle_si^m	us_a_um numeral ord arabic1000
+:aj:mi_llensi^m	us_a_um numeral ord arabic1000 orth
+
+#DISTRIBUTIVES
+
+:le:singulus
+:aj:singu^l	us_a_um_distr numeral distr arabic1
+
+:le:singuli
+:aj:singu^l us_a_um_distr pl numeral distr arabic1
+
+:le:bini
+:aj:bi_n	us_a_um_distr pl numeral distr arabic2
+
+:le:terni
+:aj:tern	us_a_um_distr pl numeral distr arabic3
+:aj:tri_n	us_a_um_distr pl numeral distr arabic3 orth
+
+:le:quaterni
+:aj:quatern	us_a_um_distr pl numeral distr arabic4 
+
+:le:quini
+:aj:qui_n	us_a_um_distr pl numeral distr arabic5
+
+:le:seni
+:aj:se_n	us_a_um_distr pl numeral distr arabic6
+
+:le:septeni
+:aj:septe_n	us_a_um_distr pl numeral distr arabic7
+
+:le:octoni
+:aj:octo_n	us_a_um_distr pl numeral distr arabic8
+
+:le:novenus
+:aj:nove_n	us_a_um_distr numeral distr arabic9 
+
+:le:deni
+:aj:de_n	us_a_um_distr pl numeral distr arabic10
+
+:le:undeni
+:aj:u_nde_n	us_a_um_distr pl numeral distr arabic11
+
+:le:duodeni
+:aj:du^o^-de_n	us_a_um_distr pl numeral distr arabic12
+
+:le:duodeviceni
+:aj:du^o^de_vi_ce_n	us_a_um_distr pl numeral distr arabic18
+
+:le:undeviceni
+:aj:unde_vi_ce_n	us_a_um_distr pl numeral distr arabic19
+
+:le:viceni
+:aj:vi_ce_n	us_a_um_distr pl numeral distr arabic20 
+
+:le:triceni
+:aj:tri_ce_n	us_a_um_distr pl numeral distr arabic30
+
+:le:quadrageni
+:aj:qua_^dra_ge_n	us_a_um_distr pl numeral distr arabic40
+
+:le:quinquageni
+:aj:qui_nqua_ge_n	us_a_um_distr pl numeral distr arabic50
+
+:le:sexageni
+:aj:sexa_ge_n	us_a_um_distr pl numeral distr arabic60
+
+:le:septuageni
+:aj:septu^a_ge_n	us_a_um_distr pl numeral distr arabic70
+:wd:septu^a_ge_na_rum   gen pl fem numeral distr arabic70
+
+:le:octogeni
+:aj:octo_ge_n	us_a_um_distr pl numeral distr arabic80
+
+:le:nonageni
+:aj:no_na_ge_n	us_a_um_distr pl numeral distr arabic90
+
+:le:centeni
+:aj:cente_n	us_a_um_distr numeral distr arabic100
+
+:le:duceni
+:aj:duce_n	us_a_um_distr pl numeral distr arabic200
+
+:le:treceni
+:aj:tre^ce_n	us_a_um_distr pl numeral distr arabic300
+:wd:tre^ce_no_rum   gen pl masc neut numeral distr arabic300
+:aj:terce_n us_a_um_distr pl numeral distr arabic300 orth
+
+:le:quadringeni
+:aj:qua_^dringe_n	us_a_um_distr pl numeral distr arabic400 
+
+:le:quingeni
+:aj:qui_nge_n	us_a_um_distr pl numeral distr arabic500
+
+:le:sescenteni
+:aj:sescente_n  us_a_um_distr pl numeral distr arabic600
+:aj:sexce_n	us_a_um_distr pl numeral distr arabic600 orth
+:aj:se_sce_n	us_a_um_distr pl numeral distr arabic600 orth
+
+:le:septingeni
+:aj:septinge_n	us_a_um_distr pl numeral distr arabic700
+
+:le:octingeni
+:aj:octinge_n	us_a_um_distr pl numeral distr arabic800
+:aj:octingente_n    us_a_um_distr pl numeral distr arabic800 orth
+
+:le:nongeni
+:aj:no_nge_n	us_a_um_distr pl numeral distr arabic900
+:aj:nongente_n  us_a_um_distr pl numeral distr arabic900 orth 
+
+:le:milleni
+:aj:melle_n us_a_um_distr pl numeral distr arabic1000
+
+#ADVERBIALS
+
+:le:semel
+:wd:semel	adverb numeral advnum arabic1
+
+:le:bis
+:wd:bis		adverb numeral advnum arabic2
+
+:le:ter
+:wd:ter		adverb numeral advnum arabic3
+
+:le:quater
+:wd:quater	adverb numeral advnum arabic4
+
+:le:quinquiens
+:wd:qui_nqui^ens	adverb numeral advnum arabic5
+:wd:qui_nqui^e_s	adverb numeral advnum arabic5 orth
+
+:le:sexies
+:wd:sexi^e_s	adverb numeral advnum arabic6
+:wd:sexi^e_ns	adverb numeral advnum arabic6 orth
+
+:le:septies
+:wd:septie_s	adverb numeral advnum arabic7
+:wd:septiens	adverb numeral advnum arabic7 orth 
+
+:le:octies
+:wd:octie_s adverb numeral advnum arabic8
+:wd:octiens adverb numeral advnum arabic8 orth
+
+:le:novies
+:wd:no^vi^es	adverb numeral advnum arabic9
+:wd:no^vi^ens	adverb numeral advnum arabic9
+
+:le:decies
+:wd:de^ci^e_s	adverb numeral advnum arabic10
+:wd:de^ci^e_ns	adverb numeral advnum arabic10 orth
+
+:le:undecies
+:wd:u_nde^ci^e_s	adverb numeral advnum arabic11
+:wd:u_nde^ci^e_ns	adverb numeral advnum arabic11 orth
+
+:le:duodecies
+:wd:du^o^de^ci^es	adverb numeral advnum arabic12
+:wd:du^o^de^ci^ens	adverb numeral advnum arabic12 orth
+
+:le:terdecies:
+:wd:ter-de^ci^es adverb numeral advnum arabic13
+:wd:ter-de^ci^ens	adverb numeral advnum arabic13
+
+:le:quindecies
+:wd:qui_nde^ci^e_s	adverb numeral advnum arabic15
+:wd:qui_nde^ci^e_ns	adverb numeral advnum arabic15 orth
+
+:le:sedecies
+:wd:se_-de^ci^es	adverb numeral advnum arabic16
+
+:le:viciens
+:wd:vi_ciens	adverb numeral advnum arabic20
+:wd:vi_cie_s	adverb numeral advnum arabic20 orth
+
+:le:tricies
+:wd:tri_cie_s	adverb numeral advnum arabic30
+:wd:tri_ciens	adverb numeral advnum arabic30 orth
+
+:le:quadragies
+:wd:qua_^dra_gi^e_s	numeral advnum arabic40
+:wd:qua_^dra_gi^ens	numeral advnum arabic40
+
+:le:quinquagiens
+:wd:qui_nqua_gi^ens	adverb numeral advnum arabic50
+:wd:qui_nqua_gi^e_s	adverb numeral advnum arabic50 orth
+
+:le:sexagies
+:wd:sexa_gie_s	numeral advnum arabic60
+:wd:sexa_giens	numeral advnum arabic60
+
+:le:septuagies
+:wd:septu^a_gi^e_s	adverb numeral advnum arabic70
+
+:le:octogies
+:wd:octo_gi^es	adverb numeral advnum arabic80
+:wd:octo_gi^ens	adverb numeral advnum arabic80
+
+:le:nonagies
+:wd:no_na_gi^e_s	adverb numeral advnum arabic90
+:wd:no_na_gi^ens	adverb numeral advnum arabic90 orth
+
+:le:centiens
+:wd:centiens	adverb numeral advnum arabic100
+:wd:centie_s	adverb numeral advnum arabic100 orth
+
+:le:ducenties
+:wd:du^centi^e_s		adverb numeral advnum arabic200
+:wd:du^centi^ens		adverb numeral advnum arabic200
+
+:le:trecenties
+:wd:tre^centi^es	adverb numeral advnum arabic300
+:wd:tri^centi^es	adverb numeral advnum arabic300 orth
+
+:le:millies
+:wd:mi_llie_s adverb numeral advnum arabic1000
+:wd:mi_lie_s adverb numeral advnum arabic1000
+:wd:mi_lliens adverb numeral advnum arabic1000
+:wd:mi_liens adverb numeral advnum arabic1000
+
+#MULTIPLICATIVE
+
+#arabic1.5
+:le:sesquiplex
+:aj:sesqui^-pl	ex_icis_adj numeral multipl
+
+:le:simplex
+:aj:simpl	ex_icis_adj numeral multipl arabic1
+
+:le:duplex
+:aj:du_^pl	ex_icis_adj numeral multipl arabic2
+
+:le:triplex
+:aj:tri_^pl	ex_icis_adj numeral multipl arabic3
+
+:le:quadruplex
+:aj:qua_^dru^pl	ex_icis_adj numeral multipl arabic4
+
+:le:septemplex
+:aj:septem-pl	ex_icis_adj numeral multipl arabic7
+
+:le:decemplex
+:aj:de^cem-pl	ex_icis_adj numeral multipl arabic10
+
+:le:centuplex
+:aj:centu^pl	ex_icis_adj numeral multipl arabic100
+
+#PROPORTIONALS
+
+:le:duplus
+:aj:du_^pl	us_a_um numeral proport arabic2
+
+:le:triplus
+:aj:tri^pl	us_a_um numeral proport arabic3
+
+:le:quadruplus
+:aj:qua_^dru^pl	us_a_um numeral proport arabic4
+:aj:qua_^dru^pu^l	us_a_um numeral proport arabic4 orth
+
+:le:sescuplus
+:aj:sescupl	us_a_um numeral proport arabic6
+:aj:sesquipl	us_a_um numeral proport arabic6 orth
+
+:le:octuplus
+:aj:octu^pl	us_a_um numeral proport arabic8
+
+:le:decuplus
+:aj:de^cu^pl	us_a_um numeral proport arabic10
+
+:le:centuplus
+:aj:centu_^pl	us_a_um numeral proport arabic100
+
+#TEMPORALS
+:le:biduum
+:no:bi_du^	us_i neut numeral tempnum arabic2
+
+:le:biennis
+:aj:bi^enn	is_e numeral tempnum arabic2
+
+:le:triennis
+:aj:tri^enn	is_e numeral tempnum arabic3
+
+:le:sedecennis
+:aj:se_de^cenn	is_e numeral tempnum arabic16
+
+:le:biennium
+:no:bi^enn	ius_i neut numeral tempnum arabic2
+
+:le:bimestris
+:aj:bi^mestr	is_e numeral tempnum arabic2
+
+:le:trimestris
+:aj:tri^mestr	is_e numeral tempnum arabic3
+
+:le:bimus
+:aj:bi_m	us_a_um numeral tempnum arabic2
+
+:le:trimus
+:aj:tri_m	us_a_um numeral tempnum arabic3
+
+#PARTITIVES
+
+:le:binarius
+:aj:bi_na_r	ius_ia_ium numeral partnum arabic2
+
+:le:ternarius
+:aj:terna_r	ius_ia_ium numeral partnum arabic3
+
+#OTHER
+
+:le:subtriplus
+:aj:sub-tripl	us_a_um numeral othernum arabic3
+
+#ambo in irreg.nom.src

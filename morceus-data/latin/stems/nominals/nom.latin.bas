@@ -16,12 +16,6 @@
 :le:linter
 :no:lint	er_ris masc fem
 
-:le:undesexaginta
-:wd:u_nde_sexa_ginta_ numeral
-
-:le:undetriginta
-:wd:u_nde_tri_ginta_ numeral
-
 :le:ficus
 :no:fi_c	us_i masc
 :no:fi_c	us_us masc
@@ -52,8 +46,6 @@
 :le:transmontanus
 :aj:transmonta_n	us_a_um
 
-:le:tricesimus
-:aj:tri_ce_si^m	us_a_um
 
 :le:abacus
 :no:a^ba^c	us_i masc
@@ -62,11 +54,6 @@
 :no:mu_ni^c	eps_ipitis masc fem
 :no:mu_ni^c	eps_ipis masc fem
 
-:le:undenonaginta
-:wd:u_nde_no_na_ginta_ numeral
-
-:le:sescenti
-:wd:sexcenti_	numeral
 
 :le:sarisophorus
 :no:sari_sophor	us_i masc
@@ -74,9 +61,6 @@
 :le:tegimen
 :no:te^gi^m en_inis neut
 :no:te^gu^m en_inis neut
-
-:le:sedecim
-:wd:sexdecim numeral
 
 :le:paluster
 :aj:palu_st	er_ris_re
@@ -86,15 +70,6 @@
 
 :le:temptatio
 :no:tempta_ti	o_oLnis fem
-
-:le:undeoctoginta
-:wd:u_nde_octo_ginta_ numeral
-
-:le:undequadraginta
-:wd:u_nde_quadra_ginta_	numeral
-
-:le:undequinquaginta
-:wd:u_nde_qui_nqua_ginta_ numeral
 
 :le:enimvero
 :wd:enimve_ro_	adverb
@@ -114,9 +89,6 @@
 :le:duumvir
 :no:duumvir	0_i masc
 :no:duumuir	0_i masc
-
-:le:duodetriginta
-:wd:du^o^de_tri_ginta_ numeral
 
 :le:colluvio
 :no:collu^vi^	o_oLnis fem
@@ -151,10 +123,6 @@
 
 :le:juvenis
 :aj:ju_ni^ or_us_comp
-
-:le:octies
-:wd:octie_s adverb
-:wd:octiens adverb
 
 :le:trepidatio
 :no:tre^pi^da_ti o_oLnis fem
@@ -371,9 +339,6 @@
 :le:bene
 :wd:bene	adverb
 
-:le:bis
-:wd:bis		adverb
-
 :le:bonus
 :aj:bon		us_a_um		no_comp
 :aj:meli	or_us_comp irreg_comp
@@ -412,9 +377,6 @@
 
 :le:celsus
 :aj:cels	us_a_um
-
-:le:centum
-:wd:centum 	numeral
 
 :le:ceter
 :aj:ce_ter	us_a_um
@@ -515,9 +477,6 @@
 :le:daps
 :no:dap 	is_is fem
 :wd:daps	fem nom sg
-
-:le:decem
-:wd:de^cem	numeral
 
 :le:degener
 :aj:de_-gener	0_adj3
@@ -787,9 +746,6 @@
 :le:Hymenaeus
 :no:hymenae	us_i masc
 
-:le:Idus
-:no:I_d		us_us fem pl is_month
-:no:Eid		us_us fem pl is_month
 
 :le:jam
 :wd:jam	adverb
@@ -963,12 +919,6 @@
 :no:Metell	us_i	masc
 :no:Metell	a_ae	fem
 
-:le:millies
-:wd:mi_llie_s adverb
-:wd:mi_lie_s adverb
-:wd:mi_lliens adverb
-:wd:mi_liens adverb
-
 :le:Minturnae
 :no:Minturn	a_ae fem pl
 :no:Menturn	a_ae fem pl
@@ -1043,9 +993,6 @@
 :aj:nostra_t	is_e
 :wd:nostra_s	irreg_adj3 nom masc fem neut sg
 
-:le:novem
-:wd:novem	numeral
-
 :le:November
 :aj:Novemb er_ris_re
 :aj:Novembr is_e
@@ -1076,9 +1023,6 @@
 :le:ocior
 :no:o_c	us_a_um	comp
 :no:o_c	us_a_um	superl
-
-:le:octo
-:wd:octo	numeral
 
 :le:Oppianicus
 :no:Oppianic us_i masc
@@ -1259,13 +1203,6 @@
 :wd:quamquam	conj
 :wd:quanquam	conj orth
 
-:le:quater
-:wd:quater	adverb
-
-:le:quattuor
-:wd:quattu^or	numeral
-:wd:qua_tu^or	numeral
-:wd:quattor	numeral
 
 :le:quia
 :wd:quia	conj
@@ -1276,15 +1213,6 @@
 
 :le:quin
 :wd:qui_n	conj
-
-:le:quingenti
-:no:qui_ngent us_a_um numeral pl
-
-:le:quinquaginta
-:wd:qui_nqua_ginta_ numeral
-
-:le:quinque
-:wd:qui_nque	numeral
 
 #:le:quintus
 #:aj:qui_nt	us_a_um
@@ -1335,12 +1263,6 @@
 :le:Salvius
 :no:Salv	ius_i masc
 
-:le:sex
-:wd:sex	numeral
-
-:le:sexagies
-:wd:sexa_gie_s	numeral
-:wd:sexa_giens	numeral
 
 :le:secus
 :wd:secus	adverb
@@ -1352,9 +1274,6 @@
 :le:sed
 :wd:sed		conj
 :wd:set		conj
-
-:le:semel
-:wd:semel	adverb
 
 :le:semianimis
 :aj:se_mi^-a^ni^m	is_e
@@ -1368,22 +1287,6 @@
 :le:senatus
 :no:se^na_t	us_us masc
 :wd:se^na_ti	masc gen sg
-
-:le:septem
-:wd:septem	numeral
-
-:le:septaginti
-:wd:septa_ginti_ numeral
-
-:le:septies
-:wd:septie_s	adverb
-:wd:septiens	adverb
-
-:le:septingenti
-:aj:septingent	us_a_um pl
-
-:le:sexaginta
-:wd:sexa_ginta_	numeral
 
 :le:si
 :wd:si_	conj
@@ -1440,9 +1343,6 @@
 :le:tametsi
 :wd:tametsi_	conj
 
-:le:ter
-:wd:ter		adverb
-
 :le:Terentina
 :no:Terenti_n	a_ae fem
 
@@ -1490,12 +1390,6 @@
 :aj:transla_ti_ci	us_a_um
 :aj:tra_la_ti_ci	us_a_um
 
-:le:tricies
-:wd:tri_cie_s	adverb
-:wd:tri_ciens	adverb
-
-:le:triginta
-:wd:tri_ginta_	numeral
 
 :le:tum
 :wd:tum		adverb
@@ -1527,9 +1421,6 @@
 :wd:umquam	adverb
 :wd:unquam	adverb orth
 
-:le:undecim
-:wd:u_ndecim	numeral
-
 :le:undique
 :wd:undique	adverb
 
@@ -1554,20 +1445,8 @@
 :le:vestis
 :no:vest	is_is fem
 
-:le:vicesimus
-:aj:vi_ce_sim us_a_um
-:aj:vi_censim us_a_um
-:aj:vi_censum us_a_um
-
-:le:viciens
-:wd:vi_ciens	adverb
-:wd:vi_cie_s	adverb
-
 :le:vigil
 :aj:vigil	0_adj3
-
-:le:viginti
-:wd:vi_ginti_	numeral
 
 :le:vinculum
 :no:vincul	us_i neut
