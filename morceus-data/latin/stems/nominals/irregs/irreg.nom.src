@@ -852,6 +852,11 @@ senex	irreg_nom3 masc nom sg
 sen@decl3	irreg_nom3 masc
 sen@comp_adj  	irreg_nom3 masc
 
+:le:sinciput
+sinci^pu^t        irreg_nom3 neut nom/voc/acc sg
+sinci^pi^t@decl3    irreg_nom3 neut
+sinci^pi^ti_    irreg_nom3 neut abl sg
+
 :le:sus
 su_s		irreg_nom3 masc fem nom sg
 su_@decl3	irreg_nom3 masc fem sg

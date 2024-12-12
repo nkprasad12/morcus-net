@@ -2365,6 +2365,9 @@
 :vs:claud	conj3
 :vs:claus perfstem
 :vs:claus pp4
+:vs:clu_d    conj3 variant
+:vs:clu_s perfstem variant
+:vs:clu_s pp4 variant 
 :le:clavo
 :de:cla_v	are_vb
 :le:clepo
@@ -7871,8 +7874,11 @@
 :de:impe^d	are_vb
 :le:impello
 :vs:impell	conj3
+:vs:inpell  conj3 orth
 :vs:impu^l perfstem
+:vs:inpu^l perfstem orth
 :vs:impuls pp4
+:vs:inpuls pp4 orth
 :le:impendeo
 :vs:impend	conj2
 :le:impendo
@@ -7903,8 +7909,11 @@
 :de:impi^c	are_vb
 :le:impingo
 :vs:imping	conj3
+:vs:inping  conj3 orth
 :vs:impe_g perfstem
+:vs:impe_g perfstem orth
 :vs:impa_ct pp4
+:vs:inpa_ct pp4 orth
 :le:impinguo
 :de:impingu	are_vb
 :le:impio
@@ -9736,6 +9745,13 @@
 :vs:ling	conj3
 :vs:linx perfstem
 :vs:linct pp4
+:le:lino
+:vs:li^n    conj3
+:vs:le_v perfstem
+:vs:li^t pp4
+:vs:li^n    conj4 variant
+:vs:li^ni_v perfstem variant
+:vs:li^ni_t pp4 variant
 :le:linquo
 :vs:linqu	conj3
 :vs:li_qu perfstem
@@ -16660,7 +16676,9 @@
 :vs:sur-re_pt pp4
 :le:surrideo
 :vs:sur-ri_d	conj2
+:vs:sub-ri_d    conj2 orth
 :vs:sur-ri_s perfstem
+:vs:sub-ri_s perfstem orth
 :le:surrogo
 :de:sur-ro^g	are_vb
 :le:surrubeo
@@ -16794,7 +16812,8 @@
 :le:terebro
 :de:te^re^br	are_vb
 :le:tergeo
-:vs:terg	conj3
+:vs:terg    conj2
+:vs:terg	conj3   variant
 :vs:tergs perfstem
 :vs:tergs pp4
 :le:tergiversor
@@ -17158,6 +17177,9 @@
 :de:turbu^lent	are_vb
 :le:turgesco
 :vs:turge_sc	conj3
+:le:turgeo
+:vs:turg    conj2 act
+:vs:turs    perfstem
 :le:turifico
 :de:tu_ri^fi^c	are_vb
 :le:turpo

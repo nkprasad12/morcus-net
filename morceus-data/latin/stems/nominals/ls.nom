@@ -22709,8 +22709,10 @@ Bede^sis
 
 Be_dri^a^cum		<orth>Be_bri^a^cum</orth>	<orth>Be_tri^a^cum</orth>	
 :le:Bedriacum
-:no:Be_dri^a^c	us_i neut
-:no:Be_tri^a^c	us_i neut orth
+:no:Be_dri^a^c	us_i neut sg
+:no:Be_tri^a^c	us_i neut sg orth
+:no:Be_bri^a^c	us_i neut sg orth
+:wd:Be_bri^a^ci_s	abl dat masc fem neut pl disputed
 
 
 
@@ -68756,6 +68758,7 @@ e_ru^besci^bi^lis
 e_ru_ca		
 :le:eruca
 :no:e_ru_c	a_ae fem
+:no:u_ru_c	a_ae fem orth
 
 
 Erucius		
@@ -91099,7 +91102,7 @@ icte^ri^as
 icte^ri^cus		
 :le:ictericus
 :no:icte^ri^c	us_i masc
-:aj:icter^ri^c	us_a_um
+:aj:icte^ri^c	us_a_um
 
 
 icte^ri^ci		
@@ -152236,6 +152239,7 @@ perju_ri^o_sus
 perju_ri^um		
 :le:perjurium
 :no:perju_r	ius_i neut
+:no:pe_ju_r	ius_i neut orth
 
 
 perju_rus		
@@ -158795,6 +158799,7 @@ ple_be_i^us		<orth type=alt>-e_jus</orth>
 ple_be_i^us		
 :le:plebeius
 :no:ple_be_	ius_i masc
+:wd:ple_be_i_s abl dat masc fem neut pl 
 
 
 ple_bi^co^la		
@@ -172565,6 +172570,9 @@ quinquangu^lus
 
 Quinqua_tru_s		<itype>u^um</itype>	<gen>f.</gen>
 Quin-qua_tri^a		<itype>o_rum and i^um</itype>	<gen>n.</gen>
+:le:Quinquatria
+:no:Quin-qua_tr	is_is neut pl
+
 quinque#1		<pos>num. adj.</pos>
 quinque#2		<itype>for et quin</itype>
 quinque^fo^li^us		
@@ -180085,7 +180093,7 @@ Sa^lambo
 
 Sa^la^mis		<itype>i_nis</itype>
 :le:Salamis
-:no:Sa^la^mi	s_nis fem
+:no:Sa^la^mi_	s_nis fem
 Sa^la^mi_na		
 :le:Salamina
 :no:Sa^la^mi_n	a_ae fem
@@ -201872,7 +201880,7 @@ Ta^-na^i_ti^cus
 
 Ta^na^quil		<itype>i_lis</itype>	<gen>f.</gen>
 :le:Tanaquil
-:no:Ta^na^quil	0_is fem 
+:no:Ta^na^qui_l	0_is fem 
 
 tandem		
 :le:tandem
