@@ -70,7 +70,7 @@ export const ERROR_STATE_MESSAGE =
 export const NO_RESULTS_MESSAGE = "No results found";
 
 const EMBEDDED_LOGEION_SETTING_LABEL =
-  "Automatically open embedded Logeion searches in the future";
+  "Automatically open embedded Logeion searches";
 
 function chooseDicts(dicts: undefined | DictInfo | DictInfo[]): DictInfo[] {
   if (dicts === undefined) {
@@ -128,8 +128,9 @@ function GreekWordContent(props: {
               </SpanButton>
               <StoredCheckBox
                 className="text sm"
+                style={{ marginTop: "4px" }}
                 initial={false}
-                label="Automatically open embedded Logeion searches"
+                label={EMBEDDED_LOGEION_SETTING_LABEL}
               />
             </div>
           </div>
@@ -676,9 +677,13 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     : settings.data.inflectedSearch;
   const inflectedSearch =
     inflectedSetting === true || route.inflectedSearch === true;
-  const greekFallback = isEmbedded && query && hasGreek(query);
-  // TODO: We have a bug where if you click on one Greek word and then to another Greek word,
-  // we don't scroll past the Morcus search bar. Need to fix.
+  // We would have only needed a single boolean of whether we had a Greek term or now.
+  // However, since the scroll (to go past the search bar) is in a useEffect, we want to
+  // make sure the useEffect fires even if the query goes from one greek word to another.
+  // If we just had a boolean for is Greek or not in the dependency array, it wouldn't fire
+  // in this case, so just save the whole word.
+  const greekTerm = isEmbedded && query && hasGreek(query) ? query : null;
+
   const allowedDicts = isEmbedded ? dictsToUse : route.dicts;
   const queryDicts = React.useMemo(
     () => chooseDicts(allowedDicts),
@@ -686,14 +691,14 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   const apiRequest: DictsFusedRequest | null = React.useMemo(
     () =>
-      query === undefined || greekFallback
+      query === undefined || greekTerm !== null
         ? null
         : {
             query,
             dicts: queryDicts.map((dict) => dict.key),
             mode: idSearch ? 2 : inflectedSearch ? 1 : 0,
           },
-    [query, queryDicts, idSearch, inflectedSearch, greekFallback]
+    [query, queryDicts, idSearch, inflectedSearch, greekTerm]
   );
   useApiCall(DictsFusedApi, apiRequest, {
     reloadOldClient: true,
@@ -717,7 +722,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   }, [title, isEmbedded, query]);
 
   React.useEffect(() => {
-    if (state !== "Results" && !greekFallback) {
+    if (state !== "Results" && greekTerm === null) {
       return;
     }
     const highlighted =
@@ -731,7 +736,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         : SCROLL_JUMP;
     scrollElement?.scrollIntoView(scrollType);
     fromInternalLink.current = false;
-  }, [state, isEmbedded, hash, greekFallback]);
+  }, [state, isEmbedded, hash, greekTerm]);
 
   const onSearchQuery = useCallback(
     (term: string, dict?: DictInfo) => {
@@ -780,11 +785,11 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     ]
   );
 
-  if (greekFallback) {
+  if (greekTerm !== null) {
     const greekWorkContent = (
       <GreekWordContent
         isSmall={isSmall}
-        word={query}
+        word={greekTerm}
         scrollTopRef={scrollTopRef}
       />
     );
