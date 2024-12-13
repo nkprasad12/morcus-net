@@ -1,9 +1,5 @@
 /* istanbul ignore file */
 
-import * as dotenv from "dotenv";
-
-dotenv.config();
-
 const startTime = performance.now();
 
 const runtime = Math.round(performance.now() - startTime);

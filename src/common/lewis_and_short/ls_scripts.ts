@@ -1,8 +1,5 @@
 /* istanbul ignore file */
 
-import * as dotenv from "dotenv";
-dotenv.config();
-
 import { getRawLsXml } from "@/common/lewis_and_short/ls_parser";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import {
