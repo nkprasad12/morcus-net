@@ -141,7 +141,7 @@ function GreekWordContent(props: {
       )}
       {(showInline || defaultShowInline) && (
         <iframe
-          style={{ width: "100%", height: "100%" }}
+          style={{ width: "100%", height: "70vh" }}
           src={logeionUrl}></iframe>
       )}
     </div>
