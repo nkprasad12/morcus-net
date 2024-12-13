@@ -10,111 +10,111 @@
 #tres in irreg.nom.src
 
 :le:quattuor
-:aj:quattu^or	indecl numeral card arabic4
-:aj:qua_tu^or	indecl numeral card arabic4 orth
-:aj:quattor	indecl numeral card arabic4 orth
+:wd:quattu^or  numeral card arabic4
+:wd:qua_tu^or  numeral card arabic4 orth
+:wd:quattor  numeral card arabic4 orth
 
 :le:quinque
-:aj:qui_nque	indecl numeral card arabic5
+:wd:qui_nque  numeral card arabic5
 
 :le:sex
-:aj:sex	indecl numeral card arabic6
+:wd:sex  numeral card arabic6
 
 :le:septem
-:aj:septem	indecl numeral card arabic7
+:wd:septem  numeral card arabic7
 
 :le:octo
-:aj:octo	indecl numeral card arabic8
+:wd:octo  numeral card arabic8
 
 :le:novem
-:aj:novem	indecl numeral card arabic9
+:wd:novem  numeral card arabic9
 
 :le:decem
-:aj:de^cem	indecl numeral card arabic10
+:wd:de^cem  numeral card arabic10
 
 :le:undecim
-:aj:u_ndecim	indecl numeral card arabic11
+:wd:u_ndecim  numeral card arabic11
 
 :le:duodecim
-:aj:du^o^de^ci^m	indecl numeral card arabic12
+:wd:du^o^de^ci^m  numeral card arabic12
 
 :le:tredecim
-:aj:tre^de^cim	indecl numeral card arabic13
+:wd:tre^de^cim  numeral card arabic13
 
 :le:quattuordecim
-:aj:quattu^orde^cim	indecl numeral card arabic14
-:aj:qua_tu^orde^cim indecl numeral card arabic14 orth
+:wd:quattu^orde^cim  numeral card arabic14
+:wd:qua_tu^orde^cim  numeral card arabic14 orth
 
 :le:quindecim
-:aj:qui_nde^ci^m	indecl numeral card arabic15
+:wd:qui_nde^ci^m  numeral card arabic15
 
 :le:sedecim
-:aj:se_de^cim	indecl numeral card arabic16
-:aj:sexde^cim	indecl numeral card arabic16 orth
+:wd:se_de^cim  numeral card arabic16
+:wd:sexde^cim  numeral card arabic16 orth
 
 :le:septendecim
-:aj:septende^cim	indecl numeral card arabic17
-:aj:septemde^cim	indecl numeral card arabic17 orth
+:wd:septende^cim  numeral card arabic17
+:wd:septemde^cim  numeral card arabic17 orth
 	
 :le:duodeviginti
-:aj:du^o^de_vi_ginti_	indecl numeral card arabic18
+:wd:du^o^de_vi_ginti_  numeral card arabic18
 
 :le:octodecim
-:aj:octo_de^cim	indecl numeral card arabic18
+:wd:octo_de^cim  numeral card arabic18
 
 :le:undeviginti
-:aj:u_nde_vi_ginti_	indecl numeral card arabic19
+:wd:u_nde_vi_ginti_  numeral card arabic19
 
 :le:viginti
-:aj:vi_ginti_	indecl numeral card arabic20
+:wd:vi_ginti_  numeral card arabic20
 
 :le:duodetriginta
-:aj:du^o^de_tri_ginta_ indecl numeral card arabic28
+:wd:du^o^de_tri_ginta_  numeral card arabic28
 
 :le:undetriginta
-:aj:u_nde_tri_ginta_ indecl numeral card arabic29
+:wd:u_nde_tri_ginta_  numeral card arabic29
 
 :le:triginta
-:aj:tri_ginta_	indecl numeral card arabic30
+:wd:tri_ginta_  numeral card arabic30
 
 :le:duodequadraginta	
 :wd:du^o^-de_-qua_^dra_ginta_	numeral card arabic38
 
 :le:undequadraginta
-:aj:u_nde_quadra_ginta_	indecl numeral card arabic39
+:wd:u_nde_quadra_ginta_  numeral card arabic39
 
 :le:quadraginta
-:aj:qua_^dra_ginta_	indecl numeral card arabic40
+:wd:qua_^dra_ginta_  numeral card arabic40
 
 :le:undequinquaginta
-:aj:u_nde_qui_nqua_ginta_ indecl numeral card arabic49
+:wd:u_nde_qui_nqua_ginta_  numeral card arabic49
 
 :le:quinquaginta
-:aj:qui_nqua_ginta_ indecl numeral card arabic50
+:wd:qui_nqua_ginta_  numeral card arabic50
 
 :le:undesexaginta
-:aj:u_nde_sexa_ginta_ indecl numeral card arabic59
+:wd:u_nde_sexa_ginta_  numeral card arabic59
 
 :le:sexaginta
-:aj:sexa_ginta_	indecl numeral card arabic60
+:wd:sexa_ginta_  numeral card arabic60
 
 :le:septuaginta
-:aj:septua_ginta_	indecl numeral card arabic70
+:wd:septua_ginta_  numeral card arabic70
 
 :le:undeoctoginta
-:aj:u_nde_octo_ginta_ indecl numeral card arabic79
+:wd:u_nde_octo_ginta_  numeral card arabic79
 
 :le:octoginta
-:aj:octo_ginta_	indecl numeral card arabic80
+:wd:octo_ginta_  numeral card arabic80
 
 :le:undenonaginta
-:aj:u_nde_no_na_ginta_ indecl numeral card arabic89
+:wd:u_nde_no_na_ginta_  numeral card arabic89
 
 :le:nonaginta
-:aj:no_na_ginta_	indecl numeral card arabic90
+:wd:no_na_ginta_  numeral card arabic90
 
 :le:centum
-:aj:centum 	indecl numeral card arabic100
+:wd:centum  numeral card arabic100
 
 :le:ducenti
 :aj:du^cent	us_a_um pl numeral card arabic200
