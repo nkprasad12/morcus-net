@@ -1,10 +1,7 @@
 /* istanbul ignore file */
 
-import * as dotenv from "dotenv";
 // import { unmatched } from "@/common/smith_and_hall/sh_abbreviations";
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
-
-dotenv.config();
 
 const startTime = performance.now();
 generateShArtifacts().then(() => {

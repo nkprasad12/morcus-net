@@ -10,9 +10,6 @@ import {
 import { inLsButNotMorceus, writeIrregs } from "@/morceus/debug";
 import { InflectionContext } from "@/morceus/inflection_data_utils";
 import { expandTemplatesAndSave } from "@/morceus/tables/templates";
-import * as dotenv from "dotenv";
-
-dotenv.config();
 
 const ANALYZE_WORD = "analyzeWord";
 const BUILD_TABLES = "buildTables";

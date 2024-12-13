@@ -2,6 +2,10 @@
 FROM node:22-alpine3.20
 RUN apk add git && apk add curl && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
 WORKDIR /morcus
+# We automatically load a .env file in node commands for the purposes
+# of local development, so just create one so that we don't need to make separate
+# commands.
+RUN touch .env
 COPY --chown=node:node ./ ./
 RUN chown -R node:node /morcus
 

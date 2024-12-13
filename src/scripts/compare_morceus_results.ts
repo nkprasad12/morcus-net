@@ -4,7 +4,11 @@ import { assert, assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import fs from "fs";
 
-const MORPHEUS_ROOT = envVar("MORPHEUS_ROOT");
+// unsafe because MORPHEUS_ROOT is not required to be set, but
+// other files have dependencies on this.
+// Ideally this should be refactored but it's probably not worth the effort
+// as the Morpheus comparison functions probably won't be run very often from here.
+const MORPHEUS_ROOT = envVar("MORPHEUS_ROOT", "unsafe");
 const MORCEUS_ROOT = "build/morceus";
 
 const MORPHEUS_ENDTABLE_ROOT = `${MORPHEUS_ROOT}/stemlib/Latin/endtables/ascii`;

@@ -1,14 +1,12 @@
 /* istanbul ignore file */
 
 import fs from "fs";
-import * as dotenv from "dotenv";
 import {
   ALL_SUPPORTED_WORKS,
   processLibrary,
 } from "@/common/library/process_library";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { envVar } from "@/common/env_vars";
-dotenv.config();
 
 const startTime = performance.now();
 
