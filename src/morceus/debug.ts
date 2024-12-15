@@ -298,7 +298,7 @@ export function findDupes() {
   console.log(dupes);
 }
 
-export function inLsButNotMorceus(outputFile: string) {
+export function inLsButNotMorceus(outputFile?: string): string[] {
   const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
   const backing = sqliteBacking(envVar("LS_PROCESSED_PATH"));
   const all = backing
@@ -321,6 +321,9 @@ export function inLsButNotMorceus(outputFile: string) {
     .map((orth) => removeDiacritics(orth.orth.replaceAll("-", "")))
     .filter((orth) => cruncher(orth, CruncherOptions.DEFAULT).length === 0);
 
-  console.log(all.length);
-  fs.writeFileSync(outputFile, all.join("\n"));
+  if (outputFile) {
+    console.log(all.length);
+    fs.writeFileSync(outputFile, all.join("\n"));
+  }
+  return all;
 }
