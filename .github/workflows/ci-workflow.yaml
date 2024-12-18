@@ -92,15 +92,15 @@ jobs:
       - name: Installing npm dependencies
         run: npm ci
       - name: Installing browsers
-        run: npx puppeteer browsers install firefox
+        run: npx playwright install --with-deps
       - name: Pulling docker image
         run: docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}
       - name: Running integration checks
         run: IMAGE_TAG=${{ github.sha }} npm run integration-tests-docker
-      - name: Upload Puppeteer Screenshots
-        if: ${{ failure() }}
-        uses: actions/upload-artifact@v3
+      - name: Upload test report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
         with:
-          name: puppeteer_screenshots_docker
-          path: |
-            puppeteer_screenshots/
+          name: playwright-report
+          path: playwright-report/
+          retention-days: 30

@@ -1,14 +1,10 @@
 /* istanbul ignore file */
 
-import { setEnv } from "@/integration/utils/set_test_env";
 import { checkPresent } from "@/common/assert";
 import { spawnSync, type SpawnSyncReturns } from "child_process";
-import { prodBuildSteps } from "@/scripts/prod_build_steps";
-import { startMorcusServer } from "@/start_server";
 import { randomUUID } from "crypto";
-import fs from "fs";
 
-type Closer = () => Promise<void>;
+type Closer = () => void;
 
 const CONTAINER_BASE = "morcus-integration-test";
 
@@ -23,12 +19,14 @@ function errorWithOutAndErr(
 }
 
 /** Starts up the Morcus server from a Docker image. */
-export function startMorcusFromDocker(): Promise<Closer> {
+export function startMorcusFromDocker(): Promise<() => void> {
   const imageTag = checkPresent(process.env.IMAGE_TAG);
   const imageName = `ghcr.io/nkprasad12/morcus:${imageTag}`;
+  console.log("Using image %s", imageName);
   const containerName = CONTAINER_BASE + randomUUID();
   const container = `docker run -dp 127.0.0.1:1337:5757 --name ${containerName} ${imageName}`;
-  const close: Closer = async () => {
+  console.log("Starting container: `%s`", container);
+  const close: Closer = () => {
     try {
       spawnSync("docker", ["stop", containerName]);
       spawnSync("docker", ["rm", containerName]);
@@ -67,46 +65,4 @@ export function startMorcusFromDocker(): Promise<Closer> {
     };
     callback();
   });
-}
-
-export async function setupMorcus(
-  reuseDev: boolean,
-  port: string,
-  testDir: string
-): Promise<Closer> {
-  fs.mkdirSync(testDir, { recursive: true });
-  setEnv(reuseDev, port, testDir);
-  if (!reuseDev) {
-    expect(await prodBuildSteps()).toBe(true);
-  }
-  const morcusServer = startMorcusServer();
-  return () =>
-    morcusServer.then((s) => {
-      fs.rmSync(testDir, { recursive: true });
-      return new Promise((resolve) => {
-        s.close(() => resolve());
-      });
-    });
-}
-
-export function setupMorcusBackendWithCleanup(
-  fromDocker: boolean,
-  reuseDev: boolean,
-  port: string,
-  testTmpDir: string
-) {
-  let morcusCloser: Closer | undefined = undefined;
-  beforeAll(async () => {
-    if (fromDocker) {
-      morcusCloser = await startMorcusFromDocker();
-      return;
-    }
-    morcusCloser = await setupMorcus(reuseDev, port, testTmpDir);
-  }, 180000);
-
-  afterAll(async () => {
-    if (morcusCloser !== undefined) {
-      await morcusCloser();
-    }
-  }, 10000);
 }

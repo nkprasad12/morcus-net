@@ -1,92 +1,64 @@
 /* istanbul ignore file */
 
-import { setEnv } from "@/integration/utils/set_test_env";
-const PORT = "1337";
-const TEST_TMP_DIR = "tmp_all_functional_test";
-const REUSE_DEV = process.env.REUSE_DEV === "1" || false;
-const FROM_DOCKER = process.env.FROM_DOCKER === "1" || false;
-setEnv(REUSE_DEV, PORT, TEST_TMP_DIR);
-
-// @ts-ignore - puppeteer is an optional dependency.
-import puppeteer, { Browser, Page, Metrics } from "puppeteer";
-import { setupMorcusBackendWithCleanup } from "@/integration/utils/morcus_integration_setup";
-import {
-  ALL_SCREEN_SIZES,
-  setSize,
-  type ScreenSize,
-  checkTitleIs,
-  waitForText,
-  multiSizeIteratedTest as e2eTest,
-} from "@/integration/utils/puppeteer_utils";
+import { test, expect, type Page, type CDPSession } from "@playwright/test";
 import { checkPresent } from "@/common/assert";
 import fs from "fs";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import { repeatedTest } from "@/integration/utils/playwright_utils";
 
 // @ts-ignore
 global.location = {
   origin: "http://localhost:1337",
 };
 
-setupMorcusBackendWithCleanup(FROM_DOCKER, REUSE_DEV, PORT, TEST_TMP_DIR);
+test.describe("Client Performance Tests", () => {
+  test.skip(
+    ({ browserName }) => browserName !== "chromium",
+    "Performance tests rely on Chrome DevTools APIs to get data."
+  );
 
-describe("Client Performance Tests", () => {
-  let browser: Browser | undefined = undefined;
-  let currentPage: Page | undefined = undefined;
+  const allMetrics = arrayMap<string, object>();
+  let client: CDPSession | null = null;
 
-  const allMetrics = arrayMap<string, Metrics>();
-
-  beforeAll(async () => {
-    browser = await puppeteer.launch({ headless: true, browser: "chrome" });
-    const context = browser.defaultBrowserContext();
-    await context.overridePermissions(global.location.origin, [
-      "clipboard-read",
-      "clipboard-write",
-    ]);
+  test.beforeEach(async ({ page }) => {
+    client = await page.context().newCDPSession(page);
+    await client.send("Performance.enable");
   });
 
-  beforeEach(async () => {
-    currentPage = await checkPresent(browser).newPage();
+  test.afterEach(async () => {
+    if (client) {
+      await client.detach();
+      client = null;
+    }
   });
 
-  afterEach(async () => {
-    await currentPage?.close();
-    currentPage = undefined;
-  });
-
-  afterAll(async () => {
-    console.log(allMetrics.map);
+  test.afterAll(async ({ browserName, viewport }) => {
+    if (browserName !== "chromium") {
+      return;
+    }
     fs.promises.writeFile(
-      "metrics.json",
+      `${browserName}-${viewport?.width}x${viewport?.height}.metrics.json`,
       JSON.stringify([...allMetrics.map.entries()], undefined, 2)
     );
-    await currentPage?.close();
-    await browser?.close();
+    allMetrics.map.clear();
   });
 
-  async function getSizedPage(size: ScreenSize): Promise<Page> {
-    const page = checkPresent(currentPage);
-    await setSize(size, page);
-    return page;
+  async function collectMetrics(page: Page, tag: string) {
+    const metrics = await client!.send("Performance.getMetrics");
+    const size = checkPresent(page.viewportSize()?.width) < 400;
+    const key = JSON.stringify([size, tag]);
+    allMetrics.add(key, metrics.metrics);
   }
 
-  e2eTest(ALL_SCREEN_SIZES, 50)("metrics for landing", async (screenSize) => {
-    const page = await getSizedPage(screenSize);
-    await page.goto(global.location.origin);
-    await checkTitleIs("Morcus Latin Tools", page);
-    expect(page.url()).toMatch(/\/dicts$/);
-
-    const metrics = await page.metrics();
-    const key = JSON.stringify([screenSize, "habeo"]);
-    allMetrics.add(key, metrics);
+  repeatedTest("metrics for landing", 1, async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveTitle("Morcus Latin Tools");
+    await collectMetrics(page, "landing");
   });
 
-  e2eTest(ALL_SCREEN_SIZES, 50)("metrics for habeo", async (screenSize) => {
-    const page = await getSizedPage(screenSize);
-    await page.goto(`${global.location.origin}/dicts/id/n20077`);
-    await waitForText("HABETO", page);
-
-    const metrics = await page.metrics();
-    const key = JSON.stringify([screenSize, "landing"]);
-    allMetrics.add(key, metrics);
+  repeatedTest("metrics for habeo", 1, async ({ page }) => {
+    await page.goto(`/dicts/id/n20077`);
+    await expect(page.getByText("HABETO")).toBeVisible();
+    await collectMetrics(page, "habeo");
   });
 });

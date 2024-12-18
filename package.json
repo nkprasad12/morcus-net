@@ -14,10 +14,10 @@
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
-    "ts-tests": "npx jest --maxWorkers=8 --testPathIgnorePatterns src/integration/*",
-    "integration-tests-dev-nb": "IMAGE_TAG=itests npm run integration-tests-docker",
+    "ts-tests": "npx jest --maxWorkers=8 --testPathIgnorePatterns src/e2e/* src/integration/*",
+    "integration-tests-dev-nb": "IMAGE_TAG=itests npx playwright test",
     "integration-tests-dev": "docker build . -t ghcr.io/nkprasad12/morcus:itests && npm run integration-tests-dev-nb",
-    "integration-tests-docker": "FROM_DOCKER=1 npx jest src/integration/all_functional",
+    "integration-tests-docker": "FROM_DOCKER=1 npx playwright test",
     "py-tests": "python -m unittest discover",
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",
     "ts-coverage": "npx jest --coverage --maxWorkers=8 --testPathIgnorePatterns src/integration/* --coveragePathIgnorePatterns src/integration",
@@ -46,6 +46,7 @@
     "@emotion/serialize": "^1.1.1",
     "@jest/globals": "^29.7.0",
     "@mui/material": "^5.11.12",
+    "@playwright/test": "^1.49.1",
     "@swc/core": "^1.7.39",
     "@swc/jest": "^0.2.36",
     "@testing-library/jest-dom": "^5.16.5",
@@ -92,8 +93,5 @@
     "ts-node": "^10.9.1",
     "tsconfig-paths": "^4.1.2",
     "typescript": "5.5.2"
-  },
-  "optionalDependencies": {
-    "puppeteer": "^23.5.3"
   }
 }

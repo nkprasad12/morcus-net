@@ -143,3 +143,7 @@ public/pwa.webmanifest
 android/*
 v2morceus-out/*
 gaffiot.js
+/test-results/
+/playwright-report/
+/blob-report/
+/playwright/.cache/
