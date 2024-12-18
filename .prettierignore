@@ -13,3 +13,5 @@ morpheus/**/*
 android/
 public/
 gaffiot.js
+test-results/
+playwright-report/
