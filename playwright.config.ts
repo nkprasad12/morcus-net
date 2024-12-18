@@ -17,7 +17,7 @@ export default defineConfig({
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
   /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
+  workers: process.env.CI ? 2 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
   reporter: "html",
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
@@ -29,7 +29,9 @@ export default defineConfig({
     trace: "on-first-retry",
   },
 
-  globalSetup: require.resolve("@/integration/playwright_global.setup.ts"),
+  globalSetup: require.resolve(
+    "@/integration/utils/playwright_global.setup.ts"
+  ),
 
   /* Configure projects for major browsers */
   projects: [

@@ -6,11 +6,6 @@ import fs from "fs";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { repeatedTest } from "@/integration/utils/playwright_utils";
 
-// @ts-ignore
-global.location = {
-  origin: "http://localhost:1337",
-};
-
 test.describe("Client Performance Tests", () => {
   test.skip(
     ({ browserName }) => browserName !== "chromium",
@@ -50,15 +45,15 @@ test.describe("Client Performance Tests", () => {
     allMetrics.add(key, metrics.metrics);
   }
 
-  repeatedTest("metrics for landing", 1, async ({ page }) => {
+  repeatedTest("metrics for landing", 50, async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle("Morcus Latin Tools");
     await collectMetrics(page, "landing");
   });
 
-  repeatedTest("metrics for habeo", 1, async ({ page }) => {
+  repeatedTest("metrics for habeo", 50, async ({ page }) => {
     await page.goto(`/dicts/id/n20077`);
-    await expect(page.getByText("HABETO")).toBeVisible();
+    await expect(page.getByText("HABETO").first()).toBeVisible();
     await collectMetrics(page, "habeo");
   });
 });
