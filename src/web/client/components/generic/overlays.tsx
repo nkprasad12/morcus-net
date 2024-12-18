@@ -1,17 +1,14 @@
 import {
   AriaProps,
   SpanButton,
-  type CoreProps,
+  type ClickableCoreProps,
 } from "@/web/client/components/generic/basics";
 import FocusTrap from "@mui/base/FocusTrap";
-import { CSSProperties, PropsWithChildren, useEffect } from "react";
+import { PropsWithChildren, useEffect } from "react";
 
-export interface OverlayProps extends CoreProps {
-  className?: string;
-  style?: CSSProperties;
-}
+export type OverlayProps = ClickableCoreProps;
 
-interface ModalProps extends CoreProps {
+interface ModalProps extends ClickableCoreProps {
   open: boolean;
   onClose: () => unknown;
   contentProps?: OverlayProps;

@@ -11,8 +11,8 @@ import { EXPANDED_TEMPLATES } from "@/morceus/tables/templates";
 import { readFileSync } from "fs";
 import path from "path";
 
-const NOM_PATH = "stemlib/Latin/stemsrc/irreg.nom.src";
-const VERB_PATH = "stemlib/Latin/stemsrc/irreg.vbs.src";
+const NOM_PATH = "latin/stems/nominals/irregs/irreg.nom.src";
+const VERB_PATH = "latin/stems/verbs/irregs/irreg.vbs.src";
 
 export function parseEntries(filePath: string): string[][] {
   const contents = readFileSync(filePath).toString().split("\n");
@@ -109,13 +109,13 @@ export function processIrregEntry(entry: string[], isVerb?: boolean): Lemma {
 }
 
 export function processNomIrregEntries(
-  filePath: string = path.join(envVar("MORPHEUS_ROOT"), NOM_PATH)
+  filePath: string = path.join(envVar("MORCEUS_DATA_ROOT"), NOM_PATH)
 ) {
   return parseEntries(filePath).map((lines) => processIrregEntry(lines));
 }
 
 export function processVerbIrregEntries(
-  filePath: string = path.join(envVar("MORPHEUS_ROOT"), VERB_PATH)
+  filePath: string = path.join(envVar("MORCEUS_DATA_ROOT"), VERB_PATH)
 ) {
   return parseEntries(filePath).map((lines) => processIrregEntry(lines, true));
 }

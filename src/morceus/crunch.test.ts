@@ -17,20 +17,20 @@ import type { Lemma, Stem } from "@/morceus/stem_parsing";
 import type { EndIndexRow, InflectionLookup } from "@/morceus/tables/indices";
 import { LatinCase } from "@/morceus/types";
 
-const ORIGINAL_MORPHEUS_ROOT = process.env.MORPHEUS_ROOT;
-const FAKE_MORPHEUS_ROOT = "src/morceus/testdata";
+const ORIGINAL_MORCEUS_DATA_ROOT = process.env.MORCEUS_DATA_ROOT;
+const FAKE_MORCEUS_DATA_ROOT = "src/morceus/testdata";
 const FAKEDATA_CRUNCHER_CONFIG: CruncherConfig = {
   generate: {
     nomStemFiles: [
-      "stemlib/Latin/stemsrc/ls.nom",
-      "stemlib/Latin/stemsrc/nom.livy",
+      "latin/stems/nominals/ls.nom",
+      "latin/stems/nominals/nom.livy",
     ],
-    verbStemFiles: ["stemlib/Latin/stemsrc/vbs.latin"],
+    verbStemFiles: ["latin/stems/verbs/vbs.latin"],
   },
 };
 
-beforeAll(() => (process.env.MORPHEUS_ROOT = FAKE_MORPHEUS_ROOT));
-afterAll(() => (process.env.MORPHEUS_ROOT = ORIGINAL_MORPHEUS_ROOT));
+beforeAll(() => (process.env.MORCEUS_DATA_ROOT = FAKE_MORCEUS_DATA_ROOT));
+afterAll(() => (process.env.MORCEUS_DATA_ROOT = ORIGINAL_MORCEUS_DATA_ROOT));
 
 describe("crunchWord", () => {
   it("handles simple case with one option", () => {

@@ -11,8 +11,7 @@ import {
 import fs from "fs";
 import path from "path";
 
-const STEMS_SUBDIR = "stemlib/Latin/stemsrc";
-const EXCLUDED_STEM_FILES = new Set<string>(["nom.irreg", "vbs.irreg"]);
+const STEMS_SUBDIR = "latin/stems";
 
 // :le: 	lemma or headword
 // :wd: 	indeclinable form (preposition, adverb, interjection, etc.) or unanalyzed irregular form
@@ -176,18 +175,16 @@ function processStem(lines: string[], isVerb?: boolean): Lemma {
 }
 
 function findStemFiles(mode: "vbs" | "nom"): string[] {
+  const parent = mode === "vbs" ? "verbs" : "nominals";
+  const subdir = path.join(envVar("MORCEUS_DATA_ROOT"), STEMS_SUBDIR, parent);
   return fs
-    .readdirSync(path.join(envVar("MORPHEUS_ROOT"), STEMS_SUBDIR))
-    .filter(
-      (fileName) =>
-        !EXCLUDED_STEM_FILES.has(fileName) &&
-        (fileName.startsWith(mode) || (mode === "nom" && fileName === "ls.nom"))
-    )
-    .map((fileName) => path.join(STEMS_SUBDIR, fileName));
+    .readdirSync(subdir, { withFileTypes: true })
+    .filter((dirent) => dirent.isFile())
+    .map((dirent) => path.join(STEMS_SUBDIR, parent, dirent.name));
 }
 
 export function allNounStems(stemFiles?: string[]): Lemma[] {
-  const root = envVar("MORPHEUS_ROOT");
+  const root = envVar("MORCEUS_DATA_ROOT");
   const stemPaths = (stemFiles ?? findStemFiles("nom")).map((fileName) =>
     path.join(root, fileName)
   );
@@ -197,7 +194,7 @@ export function allNounStems(stemFiles?: string[]): Lemma[] {
 }
 
 export function allVerbStems(stemFiles?: string[]): Lemma[] {
-  const root = envVar("MORPHEUS_ROOT");
+  const root = envVar("MORCEUS_DATA_ROOT");
   const stemPaths = (stemFiles ?? findStemFiles("vbs")).map((fileName) =>
     path.join(root, fileName)
   );

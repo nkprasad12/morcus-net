@@ -2,10 +2,7 @@
 
 import { CompletionsFusedApi, DictsFusedApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import * as dotenv from "dotenv";
 import fetch from "node-fetch";
-
-dotenv.config();
 
 // @ts-ignore
 global.location = {

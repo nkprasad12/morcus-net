@@ -1,5 +1,5 @@
 {
-  "include": ["src"],
+  "include": ["src", "playwright.config.ts"],
   "compilerOptions": {
     /* Visit https://aka.ms/tsconfig to read more about this file */
 
@@ -27,7 +27,7 @@
 
     /* Modules */
     "module": "commonjs",                                /* Specify what module code is generated. */
-    "rootDir": "src",                                    /* Specify the root folder within your source files. */
+    "rootDir": "./",                                    /* Specify the root folder within your source files. */
     // "moduleResolution": "node",                       /* Specify how TypeScript looks up a file from a given module specifier. */
     // If updating `baseUrl`, also update `modulePaths` in `jest.config.js`
     "baseUrl": "./src",

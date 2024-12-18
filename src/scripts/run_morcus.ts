@@ -13,9 +13,6 @@ import { writeCommitId } from "@/scripts/write_source_version";
 import { createDir } from "@/utils/file_utils";
 import { ArgumentParser } from "argparse";
 import { ChildProcess, spawn } from "child_process";
-import dotenv from "dotenv";
-
-dotenv.config();
 
 const WEB_SERVER = "web";
 const WORKER = "worker";

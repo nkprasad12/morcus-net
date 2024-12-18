@@ -62,12 +62,32 @@ describe("Vowels haveCompatibleLength", () => {
     expect(Vowels.haveCompatibleLength("quĭs", "quīs")).toBe(false);
   });
 
+  it("returns false on caret and macron", () => {
+    expect(Vowels.haveCompatibleLength("qui^s", "quīs")).toBe(false);
+  });
+
   it("returns true on macron and unmarked", () => {
     expect(Vowels.haveCompatibleLength("quis", "quīs")).toBe(true);
   });
 
+  it("returns true on underscore and unmarked", () => {
+    expect(Vowels.haveCompatibleLength("quis", "qui_s")).toBe(true);
+  });
+
   it("returns true on macron and macron combiner", () => {
     expect(Vowels.haveCompatibleLength("quīs", "quīs")).toBe(true);
+  });
+
+  it("returns true on underscore and macron combiner", () => {
+    expect(Vowels.haveCompatibleLength("quīs", "qui_s")).toBe(true);
+  });
+
+  it("returns true on macron and underscore", () => {
+    expect(Vowels.haveCompatibleLength("qui_s", "quīs")).toBe(true);
+  });
+
+  it("returns true on macron + breve and underscore", () => {
+    expect(Vowels.haveCompatibleLength("qui_^s", "quīs")).toBe(true);
   });
 
   it("returns true on unmarked and macron combiner", () => {
@@ -78,8 +98,24 @@ describe("Vowels haveCompatibleLength", () => {
     expect(Vowels.haveCompatibleLength("quĭs", "quĭs")).toBe(true);
   });
 
+  it("returns true on caret and breve combiner", () => {
+    expect(Vowels.haveCompatibleLength("quĭs", "qui^s")).toBe(true);
+  });
+
+  it("returns true on breve and caret", () => {
+    expect(Vowels.haveCompatibleLength("quĭs", "qui^s")).toBe(true);
+  });
+
+  it("returns true on breve and caret + underscore", () => {
+    expect(Vowels.haveCompatibleLength("quĭs", "qui^_s")).toBe(true);
+  });
+
   it("returns true on unmarked and breve combiner", () => {
     expect(Vowels.haveCompatibleLength("quĭs", "quis")).toBe(true);
+  });
+
+  it("returns true on unmarked and caret", () => {
+    expect(Vowels.haveCompatibleLength("qui^s", "quis")).toBe(true);
   });
 
   it("returns true with mix", () => {

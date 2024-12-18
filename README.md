@@ -57,7 +57,6 @@ From the `morcus-net` root directory, set up a `Python` virtual environment and 
 | `DB_SOURCE`               | Tag used for metrics written to MongoDB. Example: `local`.                                                                          |
 | `PROCESSING_SERVER_TOKEN` | A token used to authenticate workers with the server. Should be long and random.                                                    |
 | `RAW_ENGLISH_WORDS`       | Path to a raw list of English words. Used for some processing.                                                                      |
-| `MORPHEUS_ROOT`           | The path to the root of the Morpheus repo. Used for raw data files for inflections.                                                 |
 
 ---
 
@@ -193,3 +192,35 @@ Morcus Latin Tools is a web application (it is also available in the Play Store,
 4. _NLP_ code, which is developed in `Python`. This is currently used for the macronizer.
 
 TODO: add subsections for all of these, and explain the build step.
+
+## Misc
+
+### Running the Morceus analyzer
+
+To run the analyzer on the given word (e.g. `habes`), use:
+
+```
+npm run ts-node src/morceus/cli.ts analyzeWord habes
+```
+
+(if you have `bun` installed, you can replace `npm run ts-node` with `bun run`, which is much faster)
+
+### Analyzing the library for unknown words
+
+To run the analyzer and determine unknown words for the current library, run
+
+```
+DEBUG_OUT=./ ./morcus.sh build --build_latin_library
+```
+
+This will create files in the specified directory called `<name of work>.debug.txt` which contains lists of words that were
+not known to the analyzer.
+
+You can update the list `ALL_WORKS` in `src/common/process_library.ts` to add or remove a work. Currently only DBG and Phaedrus run by
+default as they are checked in to the repo as test data, but Amores, Germania, and Satires are also known to work.
+
+### Expanding all Morceus tables
+
+```
+npm run ts-node src/morceus/cli.ts buildTables
+```

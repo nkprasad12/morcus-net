@@ -110,8 +110,8 @@ export function makeEndIndex(
 export function makeEndIndexAndSave(
   mode: IndexMode = IndexMode.ALL,
   templateDirs: string[] = [
-    "src/morceus/tables/lat/core/target",
-    "src/morceus/tables/lat/core/dependency",
+    "morceus-data/latin/ends/target",
+    "morceus-data/latin/ends/dependency",
   ],
   outputDir: string = "build/morceus/indices/"
 ): void {

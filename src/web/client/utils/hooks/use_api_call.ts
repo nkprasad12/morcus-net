@@ -1,24 +1,8 @@
-import { assert } from "@/common/assert";
 import { reloadIfOldClient } from "@/web/client/components/page_utils";
+import { useUnchangeable } from "@/web/client/utils/indexdb/hooks";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { ApiRoute } from "@/web/utils/rpc/rpc";
 import { useRef } from "react";
-
-function useUnchangeable<T>(
-  candidate: NonNullable<T>,
-  tag: string
-): NonNullable<T> {
-  const ref = useRef<T>();
-  if (ref.current === undefined) {
-    ref.current = candidate;
-  } else {
-    assert(
-      candidate === ref.current,
-      `${tag} must be the same across renders.`
-    );
-  }
-  return candidate;
-}
 
 export interface UseApiCallArguments<O> {
   /**

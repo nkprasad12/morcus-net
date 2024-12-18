@@ -12,7 +12,7 @@ import {
   type WordInflectionData,
 } from "@/morceus/types";
 
-export const SEMANTIC_TAGS = new Set([
+const SEMANTIC_TAGS = new Set([
   "abbrev",
   "adverb",
   "archaic",
@@ -46,7 +46,19 @@ export const SEMANTIC_TAGS = new Set([
   // This should be a case
   "locative",
   "variant",
+  "greek",
+  "disputed",
+  "card", //cardinal numeral
+  "ord", //ordinal numeral
+  "distr", //distributive numeral
+  "advnum", //adverbial numeral
+  "multipl", //multiplicative numeral
+  "proport", //proportional numeral
+  "tempnum", //temporal numeral
+  "partnum", //partitive numeral
+  "othernum", //other numeral
 ]);
+
 export const INTERNAL_TAGS = new Set<string>([
   "are_vb",
   "comp_only",
@@ -80,6 +92,13 @@ export const INTERNAL_TAGS = new Set<string>([
   "relative",
   "rel_pron",
 ]);
+
+function isSemanticTag(tag: string): boolean {
+  if (SEMANTIC_TAGS.has(tag)) {
+    return true;
+  }
+  return tag.match(/^arabic\d+$/) !== null;
+}
 
 /** Grammatical inflection data and context on usage. */
 export interface InflectionContext {
@@ -369,7 +388,7 @@ export function toInflectionData(grammaticalData: string[]): InflectionContext {
     }
 
     // Other data
-    else if (SEMANTIC_TAGS.has(data)) {
+    else if (isSemanticTag(data)) {
       tags.push(data);
     } else if (INTERNAL_TAGS.has(data)) {
       internalTags.push(data);
