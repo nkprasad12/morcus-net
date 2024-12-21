@@ -3,7 +3,7 @@ import { repeatedTest } from "@/integration/utils/playwright_utils";
 import { test, expect } from "@playwright/test";
 
 test.beforeEach(async ({ context, browserName }) => {
-  if (browserName !== "firefox") {
+  if (browserName === "chromium") {
     // Firefox seems to have these permission by default.
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
   }
