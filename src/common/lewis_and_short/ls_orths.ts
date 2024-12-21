@@ -299,7 +299,9 @@ const STARTS_MAP = new Map<string[], string[]>([
   [["Dors-"], ["Doss"]],
   [["exf-"], ["eff"]],
   [["ecf-"], ["eff"]],
-  [["ecfr-"], ["eff"]],
+  // This only appears once, in `effreno`.
+  // They have `ef-freno` and `ecfr-`.
+  [["ecfr-"], ["effr"]],
   [["exlec-"], ["ēlĕc"]],
   [["exmov-"], ["ēmŏv"]],
   [["ĕnhar-"], ["ĕnar"]],
