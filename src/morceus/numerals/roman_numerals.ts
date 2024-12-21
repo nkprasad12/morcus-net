@@ -1,7 +1,4 @@
-export function isRomanNumeral(input: string) {
-  const inputUpper = input.toUpperCase();
-  return inputUpper.match(/^[IVXLCDM]+$/) !== null;
-}
+import { assertEqual } from "@/common/assert";
 
 function valueOf(c: string): number | undefined {
   switch (c) {
@@ -32,19 +29,48 @@ export function parseRomanNumeral(rawInput: string): number | undefined {
   const input = rawInput.toUpperCase();
 
   let total = 0;
-  let max = 1001;
+  let lastAdded: number | undefined = undefined;
 
-  for (let i = 0; i < input.length; i++) {
-    const c = input.toUpperCase()[i];
-    const value = valueOf(c);
-    if (value === undefined) {
+  let i = 0;
+  for (; i < input.length - 1; i++) {
+    const n = valueOf(input[i]);
+    if (n === undefined) {
       return undefined;
     }
-    if (value > max) {
+    const m = valueOf(input[i + 1]);
+    if (m === undefined) {
       return undefined;
     }
-    max = Math.min(max, value);
+    // Numbers must go in descending order.
+    if (Math.max(n, m) > (lastAdded ?? Infinity)) {
+      return undefined;
+    }
+    lastAdded = Math.max(n, m);
+    if (n > m) {
+      // Just consume n, because m could be subtractive. For example,
+      // consider XIV and i = 0, where n -> X = 10 and m -> I = 1.
+      total += n;
+    } else if (n === m) {
+      // We can consume both, since we can't have two subtractive characters.
+      total += n + m;
+      i++;
+    } else {
+      total += m - n;
+      i++;
+    }
   }
-  total += 5;
+  // Consume the last character, if needed.
+  if (i < input.length) {
+    assertEqual(i, input.length - 1);
+    const n = valueOf(input[i]);
+    if (n === undefined) {
+      return undefined;
+    }
+    if (n > (lastAdded ?? Infinity)) {
+      return undefined;
+    }
+    total += n;
+  }
+
   return total;
 }
