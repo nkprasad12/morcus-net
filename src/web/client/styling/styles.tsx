@@ -382,6 +382,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       color: theme.dictChip,
       backgroundColor: "#9d42cf" + theme.dictChipAlpha,
     },
+    ".numChip": {
+      color: theme.dictChip,
+      backgroundColor: "#1234D8" + theme.dictChipAlpha,
+    },
     ".smallChip": {
       borderRadius: 4,
       paddingLeft: 3,

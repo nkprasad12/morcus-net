@@ -43,6 +43,7 @@ function useOfflineDictData() {
       inflections: enabled && settings?.morceusDownloaded !== true,
       "S&H": enabled && settings?.shDownloaded !== true,
       "L&S": enabled && settings?.lsDownloaded !== true,
+      NUM: enabled,
     },
   };
 }

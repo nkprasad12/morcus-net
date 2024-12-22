@@ -9,14 +9,14 @@ import {
 } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
-export type DictLang = "La" | "En";
+export type DictLang = "La" | "En" | "*";
 
 export interface DictType {
   from: DictLang;
   to: DictLang;
 }
 
-export type DictTags = "Classical" | "Other";
+export type DictTags = "Classical" | "Other" | "Numeral";
 
 export interface DictInfo {
   key: string;
