@@ -1,8 +1,23 @@
-import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import {
+  LatinDict,
+  type LatinDictInfo,
+} from "@/common/dictionaries/latin_dicts";
+
+function classForDictChip(input: string, property: keyof LatinDictInfo) {
+  switch (input) {
+    case LatinDict.SmithAndHall[property]:
+      return "shChip";
+    case LatinDict.LewisAndShort[property]:
+      return "lsChip";
+    case LatinDict.Numeral[property]:
+      return "numChip";
+  }
+  return "genericChip";
+}
 
 export function DictChip(props: { label: string }) {
   function getClassName(label: string): string {
-    return label === LatinDict.SmithAndHall.key ? "shChip" : "lsChip";
+    return classForDictChip(label, "key");
   }
 
   return (
@@ -13,8 +28,7 @@ export function DictChip(props: { label: string }) {
 }
 
 function fullChipClass(label: string, size?: string): string {
-  const chip =
-    label === LatinDict.SmithAndHall.displayName ? "shChip" : "lsChip";
+  const chip = classForDictChip(label, "displayName");
   return [chip, "text", size || "md"].join(" ");
 }
 
