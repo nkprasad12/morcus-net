@@ -31,19 +31,24 @@ export function About() {
         <div className="nonDictText text md">
           <Section name="Site">
             <p>
-              This website is a free collection of resources for Latin learners,
-              developed by Mórcus. It is provided under the{" "}
+              This website is a free collection of resources for Latin learners.
+              It is provided under the{" "}
               <a href="https://www.gnu.org/licenses/gpl-3.0.en.html">GPL-3.0</a>{" "}
-              license; source code is available on{" "}
+              license. Source code is available on{" "}
               <a href="https://github.com/nkprasad12/morcus-net">GitHub</a>.
             </p>
             <p>
-              Comments, contributions or feature requests are welcome - feel
-              free to contact me on GitHub or ask for Mórcus on the{" "}
-              <a href="https://discord.gg/latin">Latin Discord</a>. Please
-              submit corrections or other issues with dictionary entries by
-              clicking on the flag icon in the top navigation bar.
+              Comments, contributions or feature requests are welcome by any of
+              the following methods:
             </p>
+            <ul>
+              <li>clicking on the flag icon in the top navigation bar</li>
+              <li>opening an issue on the GitHub repo</li>
+              <li>
+                asking for Mórcus on the{" "}
+                <a href="https://discord.gg/latin">Latin Discord</a>
+              </li>
+            </ul>
           </Section>
           <Section name="Dictionary">
             <p>
@@ -56,13 +61,13 @@ export function About() {
               </a>{" "}
               license. During deployment, this site pulls from a{" "}
               <a href="https://github.com/nkprasad12/lexica">fork</a> of the
-              Perseus repo, to which I make changes and corrections which are
+              Perseus repo, to which we make changes and corrections which are
               eventually merged upstream.
             </p>
           </Section>
           <Section name="Acknowledgements">
             <p>
-              I am ever grateful to the{" "}
+              This site is indebted to the{" "}
               <a href="https://www.perseus.tufts.edu/hopper/">
                 Perseus project
               </a>{" "}
@@ -71,14 +76,30 @@ export function About() {
               and open access.
             </p>
             <p>
-              Shoutouts also to my friends on the LLPSI and Latin Discords who
-              have graciously helped and encouraged me, both on my Latin journey
-              and in making this site - thanks to Aemilia, Emilia, Quintus, and
-              Remus for their feedback on early versions of the dictionary.
-              Special thanks to Quillful for being my guide to the (initially)
-              murky world of Digital Classics, for the long ideation
-              converstions, and for the thorough feedback and many great ideas
-              on improving the user interface. Grátiás vóbís agó!
+              A special thank you to the following
+              <ul>
+                <li>
+                  Quillful: for so many useful suggestions of features and UX
+                  improvements touching on virtually every aspect of the site;
+                  for many contributions in improving the accuracy of the
+                  Morphological analysis; for reporting countless typos in the
+                  dictionaries and library texts.
+                </li>
+                <li>
+                  Remus: for adding title handling in the dictionary; for all
+                  the helpful feedback on the dictionary presentation; for all
+                  the typo reports.
+                </li>
+                <li>
+                  Aemilia, Emilia and Quintus: for typo reports and various
+                  feedback on early versions of the dictionary.
+                </li>
+                <li>
+                  Cantulus, Davus, and Quillful: transcribing many Hebrew and
+                  Punic words that were omitted in Perseus&apos; original
+                  transcription of Lewis and Short.
+                </li>
+              </ul>
             </p>
           </Section>
           <Section name="Installation">
