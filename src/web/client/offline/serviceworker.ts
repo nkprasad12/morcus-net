@@ -41,6 +41,7 @@ import { MorceusCruncher } from "@/morceus/crunch";
 import { SingleItemStore } from "@/web/client/offline/single_item_store";
 import { ListLibraryWorksResponse } from "@/common/library/library_types";
 import { callApi } from "@/web/utils/rpc/client_rpc";
+import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 
 interface SwLifecycleEvent extends Event {
   waitUntil: (input: Promise<unknown>) => void;
@@ -69,6 +70,7 @@ const DICTIONARY = new FusedDictionary([
     const tables = await MORCEUS_TABLES.get().get();
     return MorceusCruncher.make(tables)(input, CruncherOptions.DEFAULT);
   }),
+  new NumeralDict(),
 ]);
 const DICTS_FUSED = RouteAndHandler.create(DictsFusedApi, (i) =>
   DICTIONARY.getEntry(i)

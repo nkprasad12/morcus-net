@@ -246,7 +246,7 @@ function SettingsPreview(props: {
         }}>
         In{" "}
         {props.dicts
-          .filter((dict) => !shouldDisable[dict.key])
+          .filter((dict) => !shouldDisable[dict.key] && dict.key !== "NUM")
           .map((dict) => (
             <span
               key={dict.key}
