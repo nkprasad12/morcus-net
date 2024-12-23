@@ -13,21 +13,45 @@ function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
 
-export function SearchBox<T>(props: {
+interface AutoCompleteSearchProps<T> {
+  optionsForInput: (input: string) => T[] | Promise<T[]>;
+  onOptionSelected: (t: T) => unknown;
+  RenderOption: (props: { option: T }) => JSX.Element;
+  toKey: (t: T) => string;
+  toInputDisplay: (t: T) => string;
+}
+
+interface BaseSearchBoxProps {
   smallScreen?: boolean;
   autoFocused?: boolean;
   placeholderText?: string;
   onOpenSettings?: () => unknown;
   settingsPreview?: JSX.Element;
   onRawEnter: (input: string) => unknown;
-  optionsForInput: (input: string) => T[] | Promise<T[]>;
-  onOptionSelected: (t: T) => unknown;
-  RenderOption: (props: { option: T }) => JSX.Element;
-  toKey: (t: T) => string;
-  toInputDisplay: (t: T) => string;
   ariaLabel?: string;
   embedded?: boolean;
-}) {
+}
+
+type SearchBoxProps<T> = BaseSearchBoxProps & AutoCompleteSearchProps<T>;
+
+function unimplemented<T>(): T {
+  throw new Error("Unimplemented");
+}
+
+export function SearchBoxNoAutocomplete(props: BaseSearchBoxProps) {
+  return (
+    <SearchBox
+      onOptionSelected={unimplemented}
+      RenderOption={unimplemented}
+      toInputDisplay={unimplemented}
+      optionsForInput={() => []}
+      toKey={unimplemented}
+      {...props}
+    />
+  );
+}
+
+export function SearchBox<T>(props: SearchBoxProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
 
