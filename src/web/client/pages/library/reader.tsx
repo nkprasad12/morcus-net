@@ -40,6 +40,7 @@ import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
+import { SearchBoxNoAutocomplete } from "@/web/client/components/generic/search";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -276,13 +277,14 @@ export function ReadingPage() {
   );
 }
 
-type CustomTabs = "Outline" | "Attribution";
+type CustomTabs = "Outline" | "Attribution" | "TextSearch";
 type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
 const SIDEBAR_PANEL_ICONS: ReaderInternalTabConfig<SidebarPanel>[] = [
   { tab: "Outline", Icon: <SvgIcon pathD={SvgIcon.Toc} /> },
   ...DEFAULT_SIDEBAR_TAB_CONFIGS,
   { tab: "Attribution", Icon: <SvgIcon pathD={SvgIcon.Info} /> },
+  { tab: "TextSearch", Icon: <SvgIcon pathD={SvgIcon.Search} /> },
 ];
 
 interface SidebarProps {
@@ -296,9 +298,24 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
       return <>{work && <WorkNavigationSection work={work} />}</>;
     case "Attribution":
       return <>{work?.info && <WorkInfo workInfo={work?.info} />}</>;
+    case "TextSearch":
+      return <>{work && <TextSearchSection work={work} />}</>;
     default:
       exhaustiveGuard(tab);
   }
+}
+
+function TextSearchSection(props: { work: PaginatedWork }) {
+  return (
+    <SearchBoxNoAutocomplete
+      onRawEnter={(value) => {
+        console.log(value);
+        console.log(props.work);
+      }}
+      autoFocused
+      smallScreen
+    />
+  );
 }
 
 export function SwipeFeedback(props: {
