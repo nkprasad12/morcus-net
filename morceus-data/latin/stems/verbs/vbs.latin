@@ -63,7 +63,7 @@
 :le:ablacto
 :de:ab-lact	are_vb
 :le:ablaqueo
-:de:ab-la^qu	are_vb
+:de:ab-la^que^	are_vb
 :le:ablego
 :de:ab-le_g	are_vb
 :le:abligurrio
@@ -17360,6 +17360,12 @@
 :vs:ve_nd	conj3
 :vs:ve_ndi^d perfstem
 :vs:ve_ndi^t pp4
+:le:veneo
+:vs:ve_n    conj2
+:vs:vaen    conj2 orth
+:vs:ve_ni_  perfstem
+:vs:ve_ni^  perfstem
+:vs:ve_ni_  pp4
 :le:veneno
 :de:ve^ne_n	are_vb
 :le:veneror
@@ -17388,6 +17394,12 @@
 :vs:ve_num-d	conj1
 :vs:ve_num-de^d perfstem
 :vs:ve_num-da^t pp4
+:vs:vaenun-d    conj1 orth
+:vs:vaenun-de^d perfstem orth
+:vs:vaenun-da^t pp4 orth
+:vs:ve_nun-d    conj1 orth
+:vs:ve_nun-de^d perfstem orth
+:vs:ve_nun-da^t pp4 orth
 :le:venusto
 :de:ve^nust	are_vb
 :le:verberito
@@ -17455,6 +17467,10 @@
 :vs:ue^tu^ perfstem
 :vs:ue^ti^t pp4
 
+:le:vetustesco
+:vs:ve^tustesc conj3
+:vs:ve^tustisc  conj3 orth
+
 :le:vexo
 :de:vex	are_vb
 :le:vibrisso
@@ -17475,6 +17491,9 @@
 :de:vi^du^	are_vb
 :le:viesco
 :vs:vi^e_sc	conj3
+:le:vieo
+:vs:vi^ conj2
+:vs:vi^e_t  pp4
 :le:vigeo
 :vs:vi^g	conj2
 :le:vigesco
@@ -17484,8 +17503,12 @@
 :de:vi^gi^l	are_vb
 :le:vigoro
 :de:vi^go_r	are_vb
+:le:vilesco
+:vs:vi_lesc conj3 act
+:vs:vi_lu^ perfstem
 :le:vilico#1
 :de:vi_li^c	are_vb
+:de:villi^c are_vb orth
 :le:vilifico
 :de:vi_li^fi^c	are_vb
 :le:vilipendo
@@ -17550,6 +17573,7 @@
 :le:vivo
 :vs:vi_v	conj3
 :vs:vi_x perfstem
+:wd:vi_xet  plup subj 3rd sg act
 :vs:vi_ct pp4
 :le:vocifero
 :de:vo_ci^fe^r	are_vb
@@ -17592,6 +17616,7 @@
 :de:vulni^fi^c	are_vb
 :le:vulpinor
 :de:vulpi_n	are_vb dep
+:de:volpi_n are_vb dep orth
 :le:zelo
 :de:ze_l	are_vb
 :le:zinzilulo

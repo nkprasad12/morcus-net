@@ -148,20 +148,13 @@ Abdalony^mus		<orth type=alt>Abdol-</orth>
 Abde_ra		
 :le:Abdera
 :no:Abde_r	us_i neut pl
-
-
-Abde_ra	
-:le:Abdera
-:no:Abde_r	a_ae fem
-
-	
-:le:Abdera
 :no:Abde_r	a_ae fem
 
 
 Abde_ri_ta		<orth>Abde_ri_tes</orth>	
 :le:Abderita
 :no:Abde_ri_t	a_ae masc
+:wd:Abde_ri_te_s	nom sg masc 
 
 
 Ab-de_ri_ta_nus		
@@ -214,14 +207,12 @@ a^be^ce^da_ri^us
 :le:abecedarius
 :aj:a^be^ce^da_r	ius_ia_ium
 
+:le:abecedaius
+:no:a^be^ce^da_	ius_i masc
 
-a^be^ce^d&acmacr;i^us		<itype>i^i</itype>	<gen>m.</gen>
-a^be^ce^da_ri^a		
 :le:abecedaria
 :no:a^be^ce^da_ri^	a_ae fem
-
-
-a^be^-ce^da_ri^um		
+		
 :le:abecedarium
 :no:a^be^-ce^da_r	ius_i neut
 
@@ -237,14 +228,15 @@ A^bella
 :le:Abella
 :no:A^bell	a_ae fem
 
-
-Abella_na		<itype>nux or Avellana, also Abellina</itype>
 :le:Abella_na
-:no:A^bella_na a_ae fem
-:no:A^vella_na a_ae fem
-:no:A^belli_na a_ae fem
+:no:A^bella_n a_ae fem
+:no:A^vella_n a_ae fem
+:no:A^belli_n a_ae fem
 
-Abellani	
+Abellani
+:le:Abellani
+:no:A^bella_n	us_i masc pl
+
 Abelli_num		
 :le:Abellinum
 :no:Abelli_n	us_i neut
@@ -869,15 +861,19 @@ a^bu_sor
 :no:a^bu_s	or_oLris masc
 
 
-a^b-usque		<pos>prep.</pos>
+:le:abusque
+:wd:a^b-usque	prep
+
 a^bu_sus		
 :le:abusus
 :no:a^bu_s	us_us masc
 
 
-A^by_dus		<orth>A^by_dos</orth>	<itype>i</itype>
-Aboedus		<gen>c.</gen>
-A^by_de_nus		
+:le:Abydus
+:no:A^by_d	us_i fem masc
+:no:A^boed	us_i fem masc orth
+:no:A^by_d	os_i fem masc orth
+	
 :le:Abydenus
 :aj:A^by_de_n	us_a_um
 
@@ -982,7 +978,13 @@ a^canthyllis
 
 
 a^capnos		<itype>on</itype>	<pos>adj.</pos>
+:le:acapnos
+:aj:a^capn	us_a_um
+:wd:a^capnon	nom acc neut sg
+
 A^carna_n		<itype>a_nis</itype>	<pos>adj.</pos>
+
+
 A^carna_ni^a		
 :le:Acarnania
 :no:A^carna_ni^	a_ae fem
@@ -22902,10 +22904,9 @@ Belli^us
 Bellocassi		
 :le:Bellocassi
 :no:Bellocass	us_i masc pl
+:no:Velocass	es_is masc pl orth
+:no:Velliocass	es_is masc pl orth
 
-
-Velocasses		<itype>ium</itype>
-Velliocasses		<gen>m.</gen>
 Bello_na		<orth>Duello_na</orth>	
 :le:Bellona
 :no:Bello_n	a_ae fem
@@ -58954,6 +58955,7 @@ di^aere^sis
 di^aeta		<orth>zaeta</orth>	<orth>ze_ta</orth>	
 :le:diaeta
 :no:di^aet	a_ae fem
+:no:zaet	a_ae fem orth
 :no:ze_t	a_ae fem orth
 
 
@@ -88423,7 +88425,8 @@ Hispulla
 Hister#1		<itype>tri</itype>
 :le:Hister
 :no:Hist	er_ri masc
-Ister		<gen>m.</gen>
+:no:Ist	er_ri masc orth
+
 histon		
 :le:histon
 :no:hist	oLn_oLnis masc
@@ -99624,6 +99627,9 @@ infri_gi^da_ti^o
 
 
 in-frons		<itype>ondis</itype>	<pos>adj.</pos>
+:le:infrons
+:aj:infron	s_dis_adj
+
 in-fronta_te_		
 :le:infrontate
 :wd:in-fronta_te_	adverb
@@ -99684,11 +99690,14 @@ infu^mus
 infundi^bu^lum		<orth type=alt>infu_d-, infi_d-</orth>	
 :le:infundibulum
 :no:infundi^bu^l	us_i neut
+:no:infu_di^bu^l	us_i neut orth
+:no:infi_di^bu^l	us_i neut orth
 
 
 infurni^bu^lum		
 :le:infurnibulum
 :no:infurni^bu^l	us_i neut
+:no:infu_mi^bu^l	us_i neut
 
 
 in-fuscus		
@@ -99852,6 +99861,9 @@ ingra_ti^fi^ca_ti^o
 
 
 ingra_ti^fi^centi^a	
+:le:ingratificentia
+:no:ingra_ti^fi^centi^	a_ae fem 
+
 ingra_ti^fi^cus		
 :le:ingratificus
 :aj:ingra_ti^fi^c	us_a_um
@@ -99902,6 +99914,7 @@ ingui^-na
 ingui^na_lis		
 :le:inguinalis
 :aj:ingui^na_l	is_e
+:aj:ingui^na_ri^	us_a_um
 
 
 ingui^na_ri^us	
@@ -100080,6 +100093,7 @@ i^nhu_ma_ni^tas
 i^n-hu_ma_nus		
 :le:inhumanus
 :aj:i^n-hu_ma_n	us_a_um
+:wd:i^n-hu_ma_ni^ter	adverb
 
 	<itype>Hence</itype>	<pos>adv.</pos>
 i^nhu_ma_ne_		<orth>i^n-hu_ma_ni^ter</orth>
@@ -100089,6 +100103,8 @@ i^nhu^ma_tus
 
 
 i^n-hu_mectus		<itype>a, unc</itype>	<pos>adj.</pos>
+:le:inhumectus
+:aj:i^n-hu_mect	us_a_um
 i^n-i^bi		
 :le:inibi
 :wd:i^n-i^bi_^	adverb
@@ -100109,6 +100125,7 @@ i^ni^mi_ci^ti^a
 i^ni^mi_cus		
 :le:inimicus
 :aj:i^ni^mi_c	us_a_um
+:wd:i^ni^mi_ci^ter	adverb
 
 
 i^ni^mi_-cu_m		<pos>adj.</pos>	<pos>Adj.</pos>
@@ -131694,6 +131711,7 @@ Naristi		<orth>Varisti</orth>	<orth>Varis-tae</orth>	<itype>a_rum</itype>
 :le:Naristi
 :no:Narist	us_i masc pl
 :no:Varist	us_i masc pl orth
+:no:Varist	a_ae masc pl variant
 
 
 
@@ -190216,14 +190234,16 @@ sma^ragdus		<orth>zma^r-</orth>
 
 
 	<gen>c.</gen>
-sma^ris		<orth type=alt>zma^ris</orth>	
+
 :le:smaris
 :no:sma^r	is_idis fem
+:no:zma^r	is_idis fem orth
 
 
 smecti^cus		
 :le:smecticus
 :aj:sme_cti^c	us_a_um
+:aj:zme_cti^c	us_a_um orth
 
 
 smegma		<orth>smigma</orth>	<orth>zmeg-ma</orth>	
@@ -190247,6 +190267,7 @@ smi_la
 smi_lax		
 :le:smilax
 :no:smi_la	x_cis fem
+:no:zmi_la	x_cis fem orth
 
 
 smi_li^on		
@@ -190302,6 +190323,7 @@ Smyr-naei		<orth type=alt>Zmyr-</orth>
 smyrni^on		<orth>zmyrni^um</orth>	
 :le:smyrnion
 :no:smyrn	ios_i neut
+:no:zmyrn	ius_i neut orth
 
 
 smyrrhi_za		
@@ -214437,6 +214459,7 @@ va^do_sus
 va^dum		
 :le:vadum
 :no:va^d	us_i neut
+:no:va^d	us_i masc variant
 
 
 va^-dus		<itype>i</itype>
@@ -214452,8 +214475,10 @@ va^fellus
 :aj:va^fell	us_a_um
 
 
-va^fer		<itype>fra, frum</itype>	<pos>adj.</pos>
-va_^fre_	
+:le:vafer
+:aj:va^f	er_ra_rum
+:wd:va_^fre_	adverb
+	
 va_^fra_mentum		
 :le:vaframentum
 :no:va_^fra_ment	us_i neut
@@ -214478,6 +214503,7 @@ va^ga_tus		<itype>us</itype>	<gen>m.</gen>
 Vagi^a		<orth type=alt>Vace^a</orth>	
 :le:Vagia
 :no:Vagi^	a_ae masc
+:no:Vace^	a_ae masc orth
 
 
 Vagienni		<orth type=alt>-genni</orth>	
@@ -214505,6 +214531,8 @@ va_gor#2
 :le:vagor#2
 :no:va_g	or_oLris masc
 
+:le:vagulatio
+:no:va_gu^la_ti^	o_oLnis fem
 
 va^gu^lus		
 :le:vagulus
@@ -214524,6 +214552,7 @@ va^ge_
 Va^ha^lis		
 :le:Vahalis
 :no:Va^ha^l	is_is masc
+:no:Va^cha^l	is_is masc orth
 
 
 Va^cha^lis	
@@ -214726,6 +214755,7 @@ Vanda^li^i		<orth>Vandi^li</orth>	<orth>Vandi^li^i</orth>
 :le:Vandalii
 :no:Vanda^li^	us_i masc pl
 :no:Vandi^li^	us_i masc pl orth
+:no:Vandi^l		us_i masc pl orth
 
 
 
@@ -214744,7 +214774,9 @@ vanga
 :no:vang	a_ae fem
 
 
-Vangi^o		<itype>o^nis</itype>	<gen>m.</gen>
+:le:Vangio
+:no:Vangi^	o_onis masc sg
+
 Vangi^o^nes		
 :le:Vangiones
 :no:Vangi^o^n	0_is masc pl
@@ -214830,6 +214862,7 @@ va^pi^de_
 va^por		<orth>va^pos</orth>	
 :le:vapor
 :no:va^p	or_oLris masc
+:wd:va^pos	nom sg masc
 
 
 va^po_ra_lis		
@@ -215071,6 +215104,8 @@ va^s#1		<itype>va^dis</itype>	<gen>m.</gen>
 va_s#2		<orth>va_sa</orth>	<itype>o_rum</itype>
 :le:vas#2
 :no:va_s	0_is neut
+:wd:va_sus	nom sg masc 
+:wd:va_sum	nom sg neut
 
 va_sum		
 :le:vasum
@@ -215083,9 +215118,9 @@ va_sa_ri^um
 
 
 Va_^sa_tes		<itype>um</itype>
-Va_^sa_tae		
-:le:Vasatae
-:no:Va_^sa_t	a_ae masc pl
+:le:Vasates
+:no:Va_^sa_t	es_is	masc pl
+:no:Va_^sa_t	a_ae masc pl variant
 
 
 Va_^sa_ti^cus		
@@ -215264,15 +215299,17 @@ va^ti^a
 va_^trax		
 :le:vatrax
 :aj:va_^tr	ax_adj
+:aj:va_^tri^co_s	us_a_um masc variant
 
-
-va_^tri^co_sus		<itype>i</itype>
 Va_^trenus		
 :le:Vatrenus
 :no:Va_^tren	us_i masc
 
 
-ve^#1	
+ve^#1
+:le:ve
+:wd:ve^	conj
+
 ve_-#2		<orth>vae-</orth>
 Vecili^us		
 :le:Vecilius
@@ -215334,7 +215371,9 @@ vecti_gal
 :no:vecti_g	al_aLlis neut
 
 
-vecti_ga_li^a_ri^us		<itype>ii</itype>
+:le:vectigaliarius 
+:no:vecti_ga_li^ar	ius_i masc
+
 vecti_ga_lis		
 :le:vectigalis
 :aj:vecti_ga_l	is_e
@@ -215461,6 +215500,7 @@ ve^he^mens		<orth>veemens</orth>	<orth>ve_mens</orth>
 :le:vehemens
 :aj:ve^he^m	ens_adj
 :aj:ve_m	ens_adj orth
+:aj:ve^e^m	ens_adj orth
 
 
 
@@ -215678,7 +215718,9 @@ ve_li^fi^cus
 :aj:ve_li^fi^c	us_a_um
 
 
-ve_li^ger		<itype>ge^ra, ge^rum</itype>	<pos>adj.</pos>
+:le:veliger
+:aj:ve_li^g	er_era_erum
+
 Ve^li_nusla^cus#1		<orth>Ve^li_-nus</orth>	<orth>Ve^li_na tri^bus</orth>
 ve_li^ta_ris		
 :le:velitaris
@@ -215693,6 +215735,7 @@ ve_li^ta_res
 ve_li^ta_ti^o		
 :le:velitatio
 :no:ve_li^ta_ti^	o_oLnis fem
+:no:verbive_li^ta_ti^	o_oLnis fem
 
 
 Ve^li_ternus#2		
@@ -215720,7 +215763,9 @@ Ve^li_terni_-nus
 :aj:Ve^li_terni_-n	us_a_um
 
 
-ve_li^vo^lans		<itype>antis</itype>	<pos>adj.</pos>
+:le:velivolans
+:aj:ve_li^vo^lan	s_tis_adj
+
 ve_li^vo^lus		
 :le:velivolus
 :aj:ve_li^vo^l	us_a_um
@@ -215818,9 +215863,9 @@ ve_na_bu^lum
 Ve^na_frum		
 :le:Venafrum
 :no:Ve^na_fr	us_i neut
+:aj:Ve^na_f	er_ra_rum
 
 
-Ve^na_fer		<itype>fra, frum</itype>	<pos>adj.</pos>
 Ve^na_fra_nus		
 :le:Venafranus
 :aj:Ve^na_fra_n	us_a_um
@@ -215844,6 +215889,7 @@ ve_na_li_ci^a_ri^us
 ve_na_li_ci^us		<orth>-ti^us</orth>	
 :le:venalicius
 :aj:ve_na_li^c	ius_ia_ium
+:aj:ve_na_li_t	ius_ia_ium orth
 
 
 ve_na_li_ci^um		
@@ -215890,6 +215936,7 @@ Venaria
 ve_na_ti_ci^us		<orth>-ti^us</orth>	
 :le:venaticius
 :aj:ve_na_ti_c	ius_ia_ium
+:aj:ve_na_ti_t	ius_ia_ium orth
 
 
 ve_na_ti^cus		
@@ -216248,6 +216295,8 @@ ventri^lo^quus
 ventri^o_sus		
 :le:ventriosus
 :aj:ventri^o_s	us_a_um
+:aj:ventro_s	us_a_um variant
+:aj:ventru^o_s	us_a_um variant
 
 
 ventru^o_sus		<orth>ventro_sus</orth>
@@ -216261,8 +216310,12 @@ ventus
 :no:vent	us_i masc
 
 
-ve_nu_cu^la		<orth>ve_nu_ncu^la</orth>	<orth>vennu_cu^la</orth>	<itype>uva</itype>
-ve_ni_cu^la	
+:le:venucula
+:aj:ve_nu_cu^l	us_a_um fem
+:aj:ve_nu_ncu^l	us_a_um fem orth
+:aj:vennu_cu^l	us_a_um fem orth
+:aj:ve_ni_cu^l	us_a_um fem orth
+
 ve_nu^la		
 :le:venula
 :no:ve_nu^l	a_ae fem
@@ -216367,6 +216420,8 @@ ve_^pres		<orth type=alt>ve_^pris</orth>	<orth type=alt>ve^per</orth>	<itype>is<
 ve^pres		
 :le:vepres
 :no:ve^pr	is_is masc pl
+:wd:ve^per	nom sg masc
+:wd:ve_^pris	nom sg masc
 
 
 ve_^pre_tum		
@@ -216596,11 +216651,13 @@ Vergentum
 Vergi^li^ae		
 :le:Vergiliae
 :no:Vergi^li^	a_ae fem pl
+:no:Virgi^li^	a_ae fem pl orth
 
 
 Vergi^li^o-cento		
 :le:Vergiliocento
 :no:Vergi^li^o-cent	o_oLnis masc
+:no:Virgi^li^o-cent	o_oLnis masc
 
 
 Vergi^li^us		<orth>Virgi^li^us</orth>	
@@ -216613,6 +216670,7 @@ Vergi^li^us		<orth>Virgi^li^us</orth>
 Vergi^li^-a_nus		
 :le:Vergilianus
 :aj:Vergi^li^-a_n	us_a_um
+:aj:Virgi^li^-a_n	us_a_um orth
 
 
 Vergo^a_num		
@@ -216792,6 +216850,7 @@ vernum
 Veromandu^i		
 :le:Veromandui
 :no:Veromandu^	us_i masc pl
+:no:Viromandu^	us_i masc pl orth
 
 
 Ve_ro_na		
@@ -216870,6 +216929,7 @@ verru_ca_ri^aherba
 Verrucius		<orth type=alt>-tius</orth>	
 :le:Verrucius
 :no:Verruc	ius_i masc
+:no:Verrut	ius_i masc orth
 
 
 verru_co_sus		
@@ -216913,6 +216973,10 @@ versi^ca^pillus
 
 
 versi^co^lor		<itype>o_ris</itype>
+:le:versicolor
+:aj:versi^co^l	or_oLris_adj
+:wd:versi^co^lo_re^	abl sg masc fem neut 
+
 versi^co^lo_rus		<orth>-co^lo_ri^us</orth>	
 :le:versicolorus
 :no:versi^co^lo_r	us_a_um masc
@@ -217022,6 +217086,9 @@ Vertacomacori
 verta^gus		
 :le:vertagus
 :no:verta^g	us_i masc
+:no:verta^g	a_ae masc
+:no:verta^gr	a_ae masc
+:no:vertra^gr	a_ae masc
 
 
 verta^ga		<orth>verta^gra</orth>	<orth>vertra^ga</orth>
@@ -217121,6 +217188,10 @@ Vertum-na_li^a
 ve^ru		<itype>u_s</itype>
 :le:veru
 :no:ve^r	us_us neut
+:wd:ve^rum	nom sg neut
+:no:ve^ro_n	es_is masc pl
+:wd:verubus	abl pl neut 
+:wd:veribus	abl pl neut
 
 ve^rum		<orth>ve^ro_nes</orth>	<itype>plumbei</itype>	<gen>n.</gen>
 ve^ru_cu^la_tus		
@@ -217158,7 +217229,10 @@ ve_rum#2
 :no:ve_r	us_i neut
 
 
-ve_rum-ta^men		<orth>ve_run-ta^men</orth>	<orth>ve_-rum ta^men</orth>
+:le:verumtamen
+:wd:ve_rum-ta^men	conj
+:wd:ve_run-ta^men	conj
+
 ve_rus		
 :le:verus
 :aj:ve_r	us_a_um
@@ -217181,6 +217255,7 @@ ve_rum		<orth>ve_ro_</orth>	<orth>ve_re_</orth>
 ve^ru_tum		<orth type=alt>verru_tum</orth>	
 :le:verutum
 :no:ve^ru_t	us_i neut
+:no:verru_t	us_i neut orth
 
 
 ve^ru_tus		
@@ -217196,6 +217271,7 @@ vervactum
 Verve_ce^us		<orth type=alt>-ci^us</orth>	
 :le:Verveceus
 :no:Verve_ce^	us_i masc
+:no:Verve_c		ius_i masc orth
 
 
 verve_ci_nus		
@@ -217244,6 +217320,9 @@ Vescita_ni^a
 
 vescor		<itype>vesci</itype>
 vescu^lus		<itype>i</itype>	<pos>adj.</pos>
+:le:vesculus
+:aj:vescu^l	us_i masc fem neut 
+
 vescus		
 :le:vescus
 :aj:vesc	us_a_um
@@ -217268,6 +217347,7 @@ ve_si_ca		<orth>vensi_ca</orth>	<orth>vessi_ca</orth>
 :le:vesica
 :no:ve_si_c	a_ae fem
 :no:vessi_c	a_ae fem orth
+:no:vensi_c	a_ae fem orth
 
 
 
@@ -217421,7 +217501,9 @@ vesti^bu^lum
 :no:vesti^bu^l	us_i neut
 
 
-vesti^ceps		<itype>ci^pis</itype>
+:le:vesticeps
+:aj:vesti^c	eps_ipis
+
 Vesti^co^la		
 :le:Vesticola
 :no:Vesti^co^l	a_ae fem
@@ -217544,32 +217626,23 @@ Ve^su^vi^us
 :le:Vesuvius
 :no:Ve^su^v	ius_i masc
 
-
-Ve^se_vus		<orth type=alt>Ve^saev-</orth>	
 :le:Vesevus
 :no:Ve^se_v	us_i masc
 :no:Ve^saev	us_i masc orth
 
-
-
-Vesvi^us		<orth>Vesbi^us</orth>	
 :le:Vesvius
 :no:Vesv	ius_i masc
 :no:Vesb	ius_i masc orth
-
-
-
-Ve^su^vi_-nus		
+	
 :le:Vesuvinus
 :aj:Ve^su^vi_-n	us_a_um
-
-
-Ve^se_vi_nus		
+	
 :le:Vesevinus
 :aj:Ve^se_vi_n	us_a_um
 
+:le:Vesbinus
+:aj:Vesbi_n	us_a_um
 
-Vesbi_nus	
 Ve^te^ra		
 :le:Vetera
 :no:Ve^te^r	0_is neut pl
@@ -217880,6 +217953,10 @@ vi^a_trix
 
 
 vi_bex		<orth type=alt>vi_bix</orth>	<itype>i_cis</itype>	<gen>f.</gen>
+:le:vibex
+:no:vi_b	ex_icis
+:no:vi_bi	x_cis orth 
+
 vi^bi^a		
 :le:vibia
 :no:vi^bi^	a_ae fem
@@ -217913,6 +217990,7 @@ vibo#1
 Vibo#2		<orth>Vibon</orth>	
 :le:Vibo
 :no:Vib	o_oLnis fem
+:no:Vib	oLn_oLnis fem orth
 
 
 Vibo_nensis		
@@ -218062,9 +218140,9 @@ vi_ce_si^ma_ti^o
 vi_ce_si^mus		<orth>vi_censi^mus</orth>	<orth>vi_ge_si^mus</orth>	<orth>vi_ce_nsi^-ma</orth>	<orth type=alt>-suma</orth>	<itype>ae</itype>	<gen>f.</gen>
 
 
-Vi_ce_ti^a		<orth type=alt>Vi_centi^a</orth>	
 :le:Vicetia
 :no:Vi_ce_ti^	a_ae fem
+:no:Vi_centi^	a_ae fem orth
 
 
 Vi_ce_ti_ni		<orth>Vi_centi_ni</orth>	
@@ -218403,7 +218481,7 @@ vi_ginti^vi^ra_tus
 
 vi_ginti^-vi^ri		
 :le:vigintiviri
-:no:vi_ginti_-vi^r	us_i masc pl
+:no:vi_ginti_-vi^r	0_i masc
 
 
 vi^gor		
@@ -218415,6 +218493,7 @@ vi_lesco		<itype>lu^i</itype>
 vi_li^ca_ti^o		
 :le:vilicatio
 :no:vi_li^ca_ti^	o_oLnis fem
+:no:villi^ca_ti^	o_oLnis fem orth
 
 
 vi_li^ca_tus		
@@ -218508,6 +218587,7 @@ vi_mentum
 vi_mi^na_lis		
 :le:viminalis
 :aj:vi_mi^na_l	is_e
+:aj:Vi_mi^n	ius_ia_ium 
 
 
 Vi_mi^ni^us	
@@ -219007,6 +219087,7 @@ virgi^na_lis
 virgi^na_le		
 :le:virginale
 :no:virgi^na_l	is_is neut
+:wd:virgi^nal	nom acc neut sg
 
 
 virgi^na_ri^us		
@@ -219105,13 +219186,16 @@ vi_ri^cu^lum
 :no:vi_ri^cu^l	us_i neut
 
 
-vi^ri^da_ri^um		<orth>vi^ri^di^a_ri^um</orth>	<itype>and</itype>
-virdi^a_ri^um		
+:le:viridarium
+:no:vi^ri^da_r	ius_i neut
+:no:vi^ri^di^a_r	ius_i neut variant		
 :le:virdiarium
 :no:virdi^a_r	ius_i neut
 
 
-vi^ri^di^cans		<itype>antis</itype>
+:le:viridicans
+:aj:vi^ri^di^can	s_tis_adj
+
 vi^ri^di^ca_tus		
 :le:viridicatus
 :aj:vi^ri^di^ca_t	us_a_um
@@ -219142,6 +219226,7 @@ Viridoma^rus		<orth type=alt>Virdum-</orth>
 :le:Viridomarus
 :no:Viridoma^r	us_i masc
 :no:Virduma^r	us_i masc orth
+:no:Virdoma^r	us_i masc orth
 
 
 
@@ -219300,10 +219385,13 @@ visco_sus
 viscum		
 :le:viscum
 :no:visc	us_i neut
+:no:visc	us_i masc variant
 
 	<gen>m.</gen>
 viscus		<itype>i</itype>
 viscus#1		<itype>e^ris</itype>
+:le:viscus
+:no:visc	us_eris neut 
 visce^ra		
 :le:viscera
 :no:vi_sce^r	0_is neut pl
@@ -219655,6 +219743,7 @@ vi^tre^a_men
 vi_^tre^a_ri^us		<orth>vi_^tra_r-</orth>	
 :le:vitrearius
 :no:vi_^tre^a_r	ius_i masc
+:no:vi_^tra_r	ius_i masc orth
 
 
 vi_^tre^o^lus		
@@ -220153,8 +220242,10 @@ Vologesocerta
 :no:Vologesocert	a_ae fem
 
 
-Vologe_sus		<itype>i</itype>
-Vologe_ses		<itype>is or i</itype>	<gen>m.</gen>
+:le:Vologesus
+:no:Vologe_s	us_i masc 
+:no:Vologe_s	es_is masc
+
 volpes		<orth type=alt>volpi_nor</orth>
 Volscens		
 :le:Volscens
@@ -220181,12 +220272,14 @@ volsella		<orth type=alt>vuls-</orth>	<orth>volsilla</orth>
 :le:volsella
 :no:volsell	a_ae fem
 :no:volsill	a_ae fem orth
+:no:vulsell	a_ae fem orth
 
 
 
 Volsi^ni^i		<orth type=alt>Vulsi^ni^i</orth>	
 :le:Volsinii
 :no:Volsi^ni^	us_i masc pl
+:no:Vulsi^ni^	us_i masc pl
 
 
 Volsi^ni^us		
@@ -220210,6 +220303,7 @@ Volsi^ni^en-ses		<orth type=alt>Vuls-</orth>
 
 volt		<orth type=alt>voltis</orth>	<itype>old forms for vult, vultis, from volo</itype>
 Volta	
+
 Voltini^atri^bus		<orth>Voltini^enses</orth>	<itype>i^um</itype>	<gen>m.</gen>
 Voltumna		
 :le:Voltumna
@@ -220231,7 +220325,9 @@ vo^lu_bi^li^tas
 :no:vo^lu_bi^li^	tas_tatis fem
 
 
-vo^lu^cer		<itype>u_^cris, u_^cre</itype>	<pos>adj.</pos>
+:le:volucer
+:aj:vo^lu^cr	is_e
+:wd:vo^lu^cer	nom sg masc
 vo^lu_^cris		
 :le:volucris
 :no:vo^lu_^cr	is_is fem
@@ -220247,7 +220343,10 @@ vo^lu_cra
 
 
 vo^lu_cre	
-vo^lu_^cri^-pe^s		<itype>e^dis</itype>	<pos>adj.</pos>
+
+:le:volucripes
+:aj:vo^lu_^cripe^	s_dis_adj
+
 vo^lu_^cri^tas		
 :le:volucritas
 :no:vo^lu_^cri^	tas_tatis fem
@@ -220418,7 +220517,7 @@ volvo^la
 volvu^la		<orth type=alt>vulv-</orth>	
 :le:volvula
 :no:volvu^l	a_ae fem
-:no:vulvolvu^l	a_ae fem orth
+:no:vulvu^l	a_ae fem orth
 
 
 
@@ -220464,6 +220563,7 @@ vo^mi^flu^us
 vo^mi^ti^o		
 :le:vomitio
 :no:vo^mi^ti^	o_oLnis fem
+:no:vo^mi^t	ius_i neut variant
 
 
 vo^mi^ti^um	
@@ -220544,7 +220644,10 @@ vo^ra_ci^ter
 
 vorsovorso_ri^us		<orth type=alt>vorsum</orth>
 vortexvorti^co_sus		<orth type=alt>vorto</orth>
-Vo^se^gus		<orth>Vo^sa^gus</orth>	<itype>and, less correctly</itype>
+
+:le:Vosegus
+:no:Vo^se^g	us_i masc
+:no:Vo^sa^g	us_i masc orth
 Vo^ge^sus		
 :le:Vogesus
 :no:Vo^ge^s	us_i masc
@@ -220923,9 +221026,9 @@ Xe^no^cra^tes
 xe^no^do^chi_um		<orth>-e_um</orth>	
 :le:xenodochium
 :no:xe^no^do^chi_	us_i neut
+:no:xe^no^d^che_	us_i neut orth
+:no:xe^n	oLn_oLnis masc variant
 
-
-xe^no_n		<itype>o_nis</itype>
 xe^no^do^chus		
 :le:xenodochus
 :no:xe^no^do^ch	us_i masc
@@ -220992,7 +221095,10 @@ xe_rophthalmi^a
 :no:xe_rophthalmi^	a_ae fem
 
 
-Xerxes		<orth>Xerses</orth>	<gen>m.</gen>
+:le:Xerxes
+:no:Xerx	es_is masc
+:no:Xers	es_is masc orth
+
 xi^phi^as		
 :le:xiphias
 :no:xi^phi^	as_ae masc
@@ -221046,6 +221152,7 @@ xy^lon
 xy^lo^phy^tum		<orth type=alt>-on</orth>	
 :le:xylophytum
 :no:xy^lo^phy^t	us_i neut
+:wd:xy^lo^phy^ton	nom acc neut sg
 
 
 Xy_ni^ae		
@@ -221157,6 +221264,7 @@ Za^molxis
 zancha		<orth type=alt>zanca</orth>	<orth>zanga</orth>	
 :le:zancha
 :no:zanch	a_ae fem
+:no:zanc	a_ae fem orth
 :no:zang	a_ae fem orth
 
 
@@ -221241,6 +221349,7 @@ ze^ma		<orth>zu^ma</orth>
 Ze_no		<orth>Ze_non</orth>	
 :le:Zeno
 :no:Ze_n	o_oLnis masc
+:no:Ze_n	oLn_oLnis masc orth
 
 
 Ze_no_ni^a_nus		
@@ -221305,6 +221414,7 @@ Ze_thus
 
 
 Zeugi^ta_nare^gio		<orth>Zeugis</orth>
+
 zeugi_tes		
 :le:zeugites
 :no:zeugi_t	es_ae masc
@@ -221325,11 +221435,16 @@ ze_us
 :no:ze_	us_i masc
 
 
-Zeuxis		<itype>is and i^dis</itype>	<gen>m.</gen>
+:le:Zeuxis
+:no:Zeux	is_idis masc
+:wd:Zeuxin	acc sg masc
+:wd:Zeuxim	acc sg masc
+
 zingi^be^ri		<orth>zimpi^be^ri</orth>	<itype>indecl.</itype>	<gen>n.</gen>
-zingi^-ber		
-:le:zingiber
-:no:zingi^-b	er_eris neut
+:le:zingiberi
+:wd:zing^be^ri	indecl neut
+:wd:zimpi^be^ri	indecl neut variant
+:no:zingi^-b	er_eris neut variant
 
 
 zinza^la		
@@ -221455,6 +221570,7 @@ zo_py^ron
 Zo_py^rus		
 :le:Zopyrus
 :no:Zo_py^r	us_i masc
+:wd:Zo_py^ri^a_tim	adverb
 
 
 Zo_py^rion		<orth>Zo_py^ria_tim</orth>	
