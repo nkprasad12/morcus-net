@@ -1699,6 +1699,8 @@
 :de:su^per fio_conj
 :vs:su^perfact pp4 dep
 
+
+
 #super-fugio su^perfu^gi^o
 #super + fugio -> su^per + fu^gi^o 
 :le:superfugio
@@ -1787,3 +1789,5 @@
 :de:submi^nistr	are_vb
 :de:summi^nistr	are_vb orth
 
+:le:vacefio
+:de:va^ce_  fio_conj
