@@ -75,7 +75,7 @@ export function About() {
               would not simply be possible if not for their commitment to free
               and open access.
             </p>
-            <p>
+            <div>
               A special thank you to the following
               <ul>
                 <li>
@@ -100,7 +100,7 @@ export function About() {
                   transcription of Lewis and Short.
                 </li>
               </ul>
-            </p>
+            </div>
           </Section>
           <Section name="Installation">
             <p>
