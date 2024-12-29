@@ -48,6 +48,11 @@ function ConfigurableStyles() {
   }, [styleConfig]);
 
   useEffect(() => {
+    // This is not really needed for production but allows styles to work
+    // correctly in strict mode.
+    if (!document.adoptedStyleSheets.includes(styleSheet.current)) {
+      document.adoptedStyleSheets.push(styleSheet.current);
+    }
     return () => {
       document.adoptedStyleSheets = document.adoptedStyleSheets.filter(
         // eslint-disable-next-line react-hooks/exhaustive-deps
