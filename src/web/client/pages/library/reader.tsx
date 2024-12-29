@@ -21,7 +21,7 @@ import {
   TooltipNavIcon,
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
-import { assertEqual } from "@/common/assert";
+import { assertEqual, checkPresent } from "@/common/assert";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,
@@ -41,6 +41,8 @@ import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 import { SearchBoxNoAutocomplete } from "@/web/client/components/generic/search";
+import { setMap } from "@/common/data_structures/collect_map";
+import { SpanButton } from "@/web/client/components/generic/basics";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -147,9 +149,13 @@ function incrementPage(
 function updatePage(
   newPage: number,
   nav: NavHelper<RouteInfo>,
-  work: PaginatedWork
+  work: PaginatedWork,
+  line?: string
 ) {
-  nav.to((old) => ({ path: old.path, params: { pg: `${newPage}` } }));
+  nav.to((old) => ({
+    path: old.path,
+    params: { pg: `${newPage}`, ...(line === undefined ? {} : { l: line }) },
+  }));
   const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
   const isOneColumn = twoColumnMain === null;
   const container = isOneColumn ? window : twoColumnMain;
@@ -305,16 +311,92 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
   }
 }
 
+function findMatchPage(id: string[], work: PaginatedWork): number | undefined {
+  for (let i = 0; i < work.pages.length; i++) {
+    const page = work.pages[i];
+    let isMatch = true;
+    for (let j = 0; j < page.id.length; j++) {
+      if (id[j] != page.id[j]) {
+        isMatch = false;
+        break;
+      }
+    }
+    if (isMatch) {
+      return i;
+    }
+  }
+}
+
+function indexWork(work: PaginatedWork) {
+  const stack: (ProcessedWorkNode | XmlNode)[] = [];
+  let currentId: string[] = work.root.id;
+  stack.push(work.root);
+  const index = setMap<string, string[]>();
+  while (stack.length > 0) {
+    const node = checkPresent(stack.pop());
+    if (ProcessedWorkNode.isMatch(node)) {
+      for (let i = 0; i < node.children.length; i++) {
+        stack.push(node.children[node.children.length - 1 - i]);
+      }
+      currentId = node.id;
+      continue;
+    }
+    for (const libLat of node.findDescendants("libLat")) {
+      index.add(XmlNode.getSoleText(libLat), currentId);
+    }
+  }
+  return index.map;
+}
+
 function TextSearchSection(props: { work: PaginatedWork }) {
+  const [query, setQuery] = useState<string[]>([]);
+  const [results, setResults] = useState<string[][]>([]);
+  const { nav } = Router.useRouter();
+
   return (
-    <SearchBoxNoAutocomplete
-      onRawEnter={(value) => {
-        console.log(value);
-        console.log(props.work);
-      }}
-      autoFocused
-      smallScreen
-    />
+    <>
+      <SearchBoxNoAutocomplete
+        onRawEnter={(value) => {
+          const words = value.split(/\s+/);
+          if (words.length === 0) {
+            return;
+          }
+          setQuery(words);
+          const index = indexWork(props.work);
+          let matches = index.get(words[0]) ?? new Set();
+          for (let i = 0; i < words.length; i++) {
+            const wordMatches = index.get(words[i]) ?? new Set();
+            matches = new Set(
+              [...matches].filter((match) => wordMatches.has(match))
+            );
+          }
+          setResults(Array.from(matches.values()));
+        }}
+        autoFocused
+        smallScreen
+      />
+      {query.length > 0 && (
+        <div>
+          <span className="text sm light">Results for: </span>
+          <span className="text sm">{query.join(" ")}</span>
+        </div>
+      )}
+      {results.map((result, i) => (
+        <SpanButton
+          style={{ display: "block" }}
+          key={i}
+          onClick={() => {
+            const newPage = findMatchPage(result, props.work);
+            if (newPage === undefined) {
+              return;
+            }
+            const line = parseInt(result.slice(-1)[0]) - 1;
+            updatePage(newPage + 1, nav, props.work, line.toString());
+          }}>
+          {result.join(".")}
+        </SpanButton>
+      ))}
+    </>
   );
 }
 

@@ -1,3 +1,5 @@
+import { checkPresent } from "@/common/assert";
+import { arrayMap } from "@/common/data_structures/collect_map";
 import { envVar } from "@/common/env_vars";
 import {
   LIBRARY_INDEX,
@@ -10,10 +12,12 @@ import {
 } from "@/common/library/library_patches";
 import {
   LibraryWorkMetadata,
+  ProcessedWorkNode,
   type ProcessedWork,
 } from "@/common/library/library_types";
 import { processTei } from "@/common/library/process_work";
 import { parseCtsTeiXml, type TeiCtsDocument } from "@/common/xml/tei_utils";
+import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { MorceusCruncher } from "@/morceus/crunch";
@@ -110,6 +114,32 @@ function processTeiCts(
   return result;
 }
 
+function indexWork(work: ProcessedWork) {
+  const stack: ProcessedWork["root"]["children"] = [];
+  const idMap = new Map<string[], number>();
+  let currentId: string[] = work.root.id;
+  stack.push(work.root);
+  const index = arrayMap<string, number>();
+  while (stack.length > 0) {
+    const node = checkPresent(stack.pop());
+    if (ProcessedWorkNode.isMatch(node)) {
+      for (let i = 0; i < node.children.length; i++) {
+        stack.push(node.children[node.children.length - 1 - i]);
+      }
+      currentId = node.id;
+      continue;
+    }
+    for (const libLat of node.findDescendants("libLat")) {
+      if (!idMap.has(currentId)) {
+        console.log(`${JSON.stringify(currentId)} -> ${idMap.size}`);
+        idMap.set(currentId, idMap.size);
+      }
+      index.add(XmlNode.getSoleText(libLat), idMap.get(currentId)!);
+    }
+  }
+  return index.map;
+}
+
 export function processLibrary(
   outputDir: string = LIB_DEFAULT_DIR,
   works: string[] = LOCAL_REPO_WORK_PATHS
@@ -129,10 +159,15 @@ export function processLibrary(
       urlName: urlifyName(tei.info.title),
     };
     const result = processTeiCts(tei, patches.get(workId));
+    const workIndex = indexWork(result);
     const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
     const outputPath = `${outputDir}/${workId}`;
     index[workId] = [outputPath, metadata];
     fs.writeFileSync(outputPath, encoded);
+    fs.writeFileSync(
+      `${outputPath}.index`,
+      JSON.stringify([...workIndex.entries()])
+    );
     console.log("Wrote processed file to %s", outputPath);
   }
   // TODO: We should verify here that there are no duplicates.
