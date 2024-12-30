@@ -9,9 +9,10 @@ import {
 import { checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { getOrths, isRegularOrth } from "@/common/lewis_and_short/ls_orths";
-import { findTextNodes, parseXmlStringsInline } from "@/common/xml/xml_utils";
+import { parseXmlStringsInline } from "@/common/xml/xml_utils";
 import { LsRewriters } from "@/common/lewis_and_short/ls_write";
 import { AUTHOR_EDGE_CASES } from "@/common/lewis_and_short/ls_display";
+import { findTextNodes } from "@/common/xml/xml_text_utils";
 
 export const LS_PATH = envVar("LS_PATH");
 

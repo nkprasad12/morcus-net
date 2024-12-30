@@ -17,7 +17,10 @@ import {
   TeiNode,
 } from "@/common/xml/tei_utils";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
-import { findTextNodes, type SingleTextNode } from "@/common/xml/xml_utils";
+import {
+  type SingleTextNode,
+  findTextNodes,
+} from "@/common/xml/xml_text_utils";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
 const SKIP_NODES = new Set(["#comment", "note"]);
