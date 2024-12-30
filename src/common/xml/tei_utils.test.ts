@@ -7,7 +7,8 @@ import {
   parseXPath,
 } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
-import { DescendantNode, parseRawXml } from "@/common/xml/xml_utils";
+import { parseRawXml } from "@/common/xml/xml_utils";
+import type { DescendantNode } from "@/common/xml/xml_text_utils";
 
 const DBG =
   "texts/latin/perseus/data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml";
