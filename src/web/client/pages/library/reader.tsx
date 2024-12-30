@@ -21,7 +21,7 @@ import {
   TooltipNavIcon,
 } from "@/web/client/pages/library/reader_utils";
 import { instanceOf } from "@/web/utils/rpc/parsing";
-import { assertEqual, checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,
@@ -43,6 +43,7 @@ import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 import { SearchBoxNoAutocomplete } from "@/web/client/components/generic/search";
 import { setMap } from "@/common/data_structures/collect_map";
 import { SpanButton } from "@/web/client/components/generic/basics";
+import { findTextNodes, type TextNodeData } from "@/common/xml/xml_text_utils";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -79,6 +80,15 @@ function divideWork(work: ProcessedWork): WorkPage[] {
   return result;
 }
 
+/**
+ * Finda a section in the processed work by id.
+ *
+ * @param id The id to search for.
+ * @param root The root node.
+ * @param sectionToCheck The section to search in. This is an internal recursive variable and
+ *   should not be set by callers.
+ * @returns The node representing the section of interest.
+ */
 function findSectionById(
   id: string[],
   root: ProcessedWorkNode,
@@ -342,15 +352,145 @@ function indexWork(work: PaginatedWork) {
       continue;
     }
     for (const libLat of node.findDescendants("libLat")) {
-      index.add(XmlNode.getSoleText(libLat), currentId);
+      index.add(XmlNode.getSoleText(libLat).toLowerCase(), currentId);
     }
   }
   return index.map;
 }
 
+function findCandidateMatches(work: PaginatedWork, query: string[]) {
+  const index = indexWork(work);
+  let matches = index.get(query[0].toLowerCase()) ?? new Set();
+  for (let i = 0; i < query.length; i++) {
+    const wordMatches = index.get(query[i].toLowerCase()) ?? new Set();
+    matches = new Set([...matches].filter((match) => wordMatches.has(match)));
+  }
+  return Array.from(matches.values());
+}
+
+/**
+ * Finds instances of the sequence of words in the `query` within the `test`.
+ */
+function findTextQuery(
+  query: string[],
+  text: TextNodeData[]
+): [number, number][] {
+  const results: [number, number][] = [];
+  let matchStart: number | undefined = undefined;
+  let queryIndex: number = 0;
+  for (let i = 0; i < text.length; i++) {
+    // Skip anything not tagged as a Latin word.
+    if (text[i].parent.name !== "libLat") {
+      continue;
+    }
+    const expected = query[queryIndex].toLowerCase();
+    if (text[i].text.toLowerCase() !== expected) {
+      queryIndex = 0;
+      matchStart = undefined;
+      continue;
+    }
+    if (matchStart === undefined) {
+      matchStart = i;
+    }
+    queryIndex++;
+    if (queryIndex === query.length) {
+      results.push([checkPresent(matchStart), i]);
+      queryIndex = 0;
+      matchStart = undefined;
+    }
+  }
+  return results;
+}
+
+interface RawTextMatchResult {
+  sectionId: string[];
+  textIndices: [number, number];
+  text: TextNodeData[];
+}
+
+function filterCandidateMatches(
+  work: PaginatedWork,
+  candidates: string[][],
+  query: string[]
+) {
+  const results: RawTextMatchResult[] = [];
+  for (const candidate of candidates) {
+    const section = findSectionById(candidate, work.root);
+    if (section === undefined) {
+      continue;
+    }
+    const root = new XmlNode(
+      "root",
+      [],
+      section.children.filter(instanceOf(XmlNode))
+    );
+    const text = findTextNodes(root);
+    const matches = findTextQuery(query, text);
+    if (matches.length > 0) {
+      results.push(
+        ...matches.map((match) => ({
+          text,
+          sectionId: candidate,
+          textIndices: match,
+        }))
+      );
+    }
+  }
+  return results;
+}
+
+interface TextMatchResult {
+  sectionId: string[];
+  matchText: string;
+  leftContext: string;
+  rightContext: string;
+}
+
+function getTextContext(
+  text: TextNodeData[],
+  start: number,
+  dir: 1 | -1
+): string {
+  const result: string[] = [];
+  let wordsSeen = 0;
+  for (let i = start + dir; 0 <= i && i < text.length; i += dir) {
+    result.push(text[i].text);
+    if (text[i].parent.name === "libLat") {
+      wordsSeen++;
+    }
+    if (wordsSeen === 3) {
+      break;
+    }
+  }
+  if (dir < 0) {
+    result.reverse();
+  }
+  return result.join("");
+}
+
+function transformRawTextMatch(raw: RawTextMatchResult): TextMatchResult {
+  let matchText = "";
+  for (let i = raw.textIndices[0]; i <= raw.textIndices[1]; i++) {
+    matchText += raw.text[i].text;
+  }
+  return {
+    sectionId: raw.sectionId,
+    matchText,
+    leftContext: getTextContext(raw.text, raw.textIndices[0], -1),
+    rightContext: getTextContext(raw.text, raw.textIndices[1], 1),
+  };
+}
+
+function findTextSearchMatches(work: PaginatedWork, query: string[]) {
+  assert(query.length > 0);
+  const candidates = findCandidateMatches(work, query);
+  const matches = filterCandidateMatches(work, candidates, query);
+  return matches.map(transformRawTextMatch);
+}
+
 function TextSearchSection(props: { work: PaginatedWork }) {
   const [query, setQuery] = useState<string[]>([]);
-  const [results, setResults] = useState<string[][]>([]);
+  const [results, setResults] = useState<TextMatchResult[]>([]);
   const { nav } = Router.useRouter();
 
   return (
@@ -362,15 +502,7 @@ function TextSearchSection(props: { work: PaginatedWork }) {
             return;
           }
           setQuery(words);
-          const index = indexWork(props.work);
-          let matches = index.get(words[0]) ?? new Set();
-          for (let i = 0; i < words.length; i++) {
-            const wordMatches = index.get(words[i]) ?? new Set();
-            matches = new Set(
-              [...matches].filter((match) => wordMatches.has(match))
-            );
-          }
-          setResults(Array.from(matches.values()));
+          setResults(findTextSearchMatches(props.work, words));
         }}
         autoFocused
         smallScreen
@@ -386,14 +518,19 @@ function TextSearchSection(props: { work: PaginatedWork }) {
           style={{ display: "block" }}
           key={i}
           onClick={() => {
-            const newPage = findMatchPage(result, props.work);
+            const newPage = findMatchPage(result.sectionId, props.work);
             if (newPage === undefined) {
               return;
             }
-            const line = parseInt(result.slice(-1)[0]) - 1;
+            const line = parseInt(result.sectionId.slice(-1)[0]) - 1;
             updatePage(newPage + 1, nav, props.work, line.toString());
           }}>
-          {result.join(".")}
+          <span className="text light">[{result.sectionId.join(".")}] </span>
+          {result.leftContext}
+          <b>
+            <span>{result.matchText}</span>
+          </b>
+          {result.rightContext}
         </SpanButton>
       ))}
     </>

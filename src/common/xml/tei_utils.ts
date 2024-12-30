@@ -5,7 +5,8 @@ import { arrayMap } from "@/common/data_structures/collect_map";
 import { DocumentInfo } from "@/common/library/library_types";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
-import { DescendantNode, findXmlNodes } from "@/common/xml/xml_utils";
+import type { DescendantNode } from "@/common/xml/xml_text_utils";
+import { findXmlNodes } from "@/common/xml/xml_utils";
 
 const XPATH_START = "#xpath(";
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
