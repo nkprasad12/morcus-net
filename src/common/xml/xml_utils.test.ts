@@ -1,8 +1,8 @@
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
+import { findTextNodes } from "@/common/xml/xml_text_utils";
 import {
   TargetMatch,
   XmlOperations,
-  findTextNodes,
   findXmlNodes,
   modifyInTree,
   parseRawXml,
