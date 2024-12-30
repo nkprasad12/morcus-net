@@ -97,9 +97,17 @@
 :le:Anchemolus
 :no:Anche^mo^l  us_i masc
 
+#@Gaffiot
+:le:Anglii
+:no:Angl    ius_i masc pl
+
 #@Nepos
 :le:Anicia
 :no:Anici	a_ae fem
+
+#@Gaffiot
+:le:Aravisci
+:no:Aravisc us_i masc pl
 
 #@Gaffiot
 :le:Archigenes
@@ -109,6 +117,10 @@
 #@Gaffiot
 :le:Arviragus
 :no:Arvi^ra^g    us_i masc
+
+#@Gaffiot
+:le:Aviones
+:no:Avion   es_is masc pl
 
 #@Gaffiot
 :le:Basilus
@@ -139,6 +151,10 @@
 :no:Chaeripp    us_i masc 
 
 #@Gaffiot
+:le:Chlide
+:no:Chli^d  e_es fem
+
+#@Gaffiot
 :le:Cluvienus
 :no:Clu^vi^e_n  us_i masc 
 
@@ -159,12 +175,50 @@
 :no:Da^ta^m	es_is masc
 
 #@Gaffiot
+:le:Dulgubnii
+:no:Dulgubn ius_i masc pl
+
+#@UNIQUE_NAME_OVID
+:le:Euanthe
+:no:Euanth  e_es fem
+
+#@UNIQUE_NAME_TACITUS   
+:le:Gambrivii
+:no:Gambriv ius_i masc pl
+
+#@Gaffiot
 :le:Glaphyrus
 :no:Gla^phy^r   us_i masc
+
+#@UNIQUE_NAME_TACITUS
+#LaNe
+:le:Gotones
+:no:Goto_n  es_is masc pl
+
+#@Gaffiot
+:le:Harii
+:no:Har ius_i masc pl
+
+#@UNIQUE_NAME_TACITUS
+:le:Helisii
+:no:Helis   ius_i masc pl
+
+#@Gaffiot
+:le:Helveconae
+:no:Helvecon    a_ae masc pl
+
+#Harpers
+:le:Hercynius
+:aj:Hercyn  ius_ia_ium
 
 #@Gaffiot
 :le:Hirrus
 :no:Hirr    us_i masc
+
+#@UNIQUE_NAME_TACITUS
+#Geography
+:le:Manimi
+:no:Manim   us_i masc pl
 
 #@Gaffiot
 :le:Natta
@@ -183,12 +237,30 @@
 :no:Pa_c    ius_i masc orth
 
 #@Gaffiot
+:le:Peuceni
+:no:Peuce_n us_i masc pl
+:no:Peuci_n us_i masc pl orth
+
+#@UNIQUE_NAME_OVID
+:le:Pitho
+:no:Pi_th   o_us fem
+
+#@Gaffiot
 :le:Quintilla
 :no:Qui_ntill   a_ae fem
 
 #@Gaffiot
 :le:Sergiolus
 :no:Sergi^o^l   us_i masc
+
+#@Gaffiot
+:le:Tudri
+:no:Tudr    us_i masc pl
+
+#UNIQUE_NAME_TACITUS
+#LaNe Georges
+:le:Tuisto
+:no:Tuist   o_oLnis masc
 
 #@Gaffiot
 :le:Ursidius

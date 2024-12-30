@@ -1657,6 +1657,7 @@ A^che^lo_i^us
 A^che^lo_u^s		
 :le:Achelous
 :no:A^che^lo_	us_i masc
+:wd:A^che^lo_on	acc sg masc
 
 
 A^che^ri_ni		
@@ -1736,7 +1737,8 @@ a^chille_os
 
 A^chilles		
 :le:Achilles
-:aj:A^chill	es_is masc
+:no:A^chill	es_is masc
+:wd:Achille_n	acc sg masc
 
 
 A^chille_us		
@@ -6379,6 +6381,7 @@ Agrippa
 Agrippi_na		
 :le:Agrippina
 :no:Agrippi_n	a_ae fem
+:no:Agrippi_nens	is_is masc pl
 
 
 agri^us#1		
@@ -8046,7 +8049,8 @@ Alphe^si^boea
 Alphe_us		<orth type=alt>trisyl.</orth>	<orth>Alphe_o^s</orth>	
 :le:Alpheus
 :no:Alphe_	us_i masc
-:no:Alphe_o^s	us_i masc orth
+:no:Alphe_	os_i masc orth
+:wd:Alphe_on	acc masc sg
 
 
 
@@ -8680,6 +8684,7 @@ A^ma_ta
 A^ma^thu_s		
 :le:Amathus
 :no:A^ma^th	us_untis fem
+:aj:A^ma^thu_s	ius_ia_ium fem
 
 
 A^ma^thu_si^a		<orth>A^ma^thu_si^a^-cus</orth>	<itype>a, um</itype>
@@ -11136,6 +11141,9 @@ a^ni^mus
 
 
 A^ni^o		<itype>e_nis</itype>	<gen>m.</gen>
+:le:Anio
+:no:A^ni^	o_eLnis masc
+:wd:A^ni^en	nom sg masc
 A^ni^en		<orth>A^ni^e_nus</orth>
 a^ni_so^cy_^cla		
 :le:anisocycla
@@ -16530,6 +16538,9 @@ Arrunti^us
 
 ars		<itype>artis</itype>	<gen>f.</gen>	<pos>adj.</pos>
 Arsa^ces		<gen>m.</gen>
+:le:Arsaces
+:no:Arsa^c	es_is masc
+
 Arsa^ci^dae		
 :le:Arsacidae
 :no:Arsa^ci^d	a_ae masc pl
@@ -17371,6 +17382,8 @@ A_so_pis
 A_so_pus		<orth type=alt>-os</orth>	
 :le:Asopus
 :no:A_so_p	us_i masc
+:wd:A_so_pon	acc sg masc
+:wd:A_so_pos	nom sg masc
 
 
 a^so_ti_a		
@@ -25943,6 +25956,13 @@ Bri_saeus		<orth type=alt>-se_us</orth>
 
 
 Bri_se_i+s		<itype>i^dos</itype>	<gen>f.</gen>
+:le:Briseis
+:no:Bri_se_	is_idos fem
+:wd:Bri_se_i+da	acc sg fem
+:wd:Bri_se_i+dam	acc sg fem
+:wd:Bri_saei+	voc sg fem
+
+
 Bri^tanni		
 :le:Britanni
 :no:Bri^tann	us_i masc pl ethnic
@@ -34795,6 +34815,8 @@ centi^fo^li^a
 centi^gra_ni^um	
 centi^ma_lis	
 centi^ma^nus		<itype>u_s</itype>	<pos>adj.</pos>
+:le:centimanus
+:aj:centi^ma^n	us_us masc
 centi^me^ter		
 :le:centimeter
 :no:centi^me^t	er_ri masc
@@ -37735,6 +37757,7 @@ Ci^lix		<itype>i^cis</itype>	<pos>adj.</pos>	<pos>Subst.</pos>
 Ci^li^-ces		
 :le:Cilices
 :no:Ci^li^-c	0_is masc pl
+:wd:Ci^li^-cas	acc pl masc 
 
 
 Ci^lissa		<itype>ae</itype>	<pos>adj.</pos>
@@ -43626,6 +43649,7 @@ compi^tum		<orth>compe^tum</orth>
 :le:compitum
 :no:compi^t	us_i neut
 :no:compe^t	us_i neut orth
+:no:conpi^t	us_i neut orth
 
 
 
@@ -43695,6 +43719,7 @@ com-plexi_ve_
 complexus#2		<orth type=alt>con-</orth>	
 :le:complexus#2
 :no:complex	us_us masc
+:no:conplex	us_us masc orth
 
 
 compli^ca_bi^lis		
@@ -48997,6 +49022,8 @@ Corni^fi^ci^us
 
 corni^-frons		<itype>ontis</itype>	<pos>adj.</pos>
 corni^ger		<itype>ge^ra, ge^rum</itype>	<pos>adj.</pos>
+:le:corniger
+:aj:corni^g	er_era_erum
 corni^ge^ra		
 :le:cornigera
 :no:corni^ge^r	us_i neut pl
@@ -53746,6 +53773,7 @@ cy^pa^rissus		<orth>Cy^pa^rissus</orth>	<itype>i</itype>
 Cy^passis		
 :le:Cypassis
 :no:Cy^pass	is_idis fem
+:wd:Cy^passi	voc sg fem
 
 
 cy^pe_ris		<itype>i^dos</itype>	<gen>f.</gen>
@@ -55634,6 +55662,8 @@ de_-culpa_tus
 
 de_culta_runt		<itype>valde occultarunt</itype>
 de^cu^ma_tes		<itype>ium</itype>	<pos>adj.</pos>
+:le:decumates
+:aj:de^cu^ma_t	is_e pl numeral othernum arabic10
 de^cuncis		
 :le:decuncis
 :no:de^cunc	is_is masc
@@ -60826,7 +60856,9 @@ disco^bo^lus
 
 disco^i+_des		<itype>is</itype>	<pos>adj.</pos>
 disco^li^us	
-dis-co^lor		<itype>o_ris</itype>
+
+:le:discolor
+:aj:dis-co^l	or_oLris_adj
 disco^lo_ri^us		<orth>disco^lo_rus</orth>	
 :le:discolorius
 :aj:disco^lo_r	ius_ia_ium
@@ -66616,6 +66648,7 @@ encauta_ri^um
 Ence^la^dus		
 :le:Enceladus
 :no:Ence^la^d	us_i masc
+:wd:Ence^la^don	acc sg masc
 
 
 Encheliae		<orth type=alt>Encheleae</orth>	
@@ -69429,6 +69462,8 @@ Eude_mus
 
 eudiaeon		<itype>lineum filum, quod medici extremo in clysterio relinquunt</itype>
 Eudoses		<itype>um</itype>
+:le:Eudoses
+:no:Eudos	es_is masc pl
 Eudoxus		
 :le:Eudoxus
 :no:Eudox	us_i masc
@@ -82455,6 +82490,7 @@ Glaesa_ri^a		<orth type=alt>Gle_s-</orth>
 glaesum		<orth type=alt>gle_sum</orth>	<orth type=alt>glessum</orth>	
 :le:glaesum
 :no:glaes	us_i neut
+:no:gle_s	us_i neut orth
 
 
 glaesa_ri^us		
@@ -84514,6 +84550,7 @@ Gy^as		<orth>Gy^es</orth>
 :le:Gyas
 :no:Gy^	as_ae masc
 :no:Gy^es	as_ae masc orth
+:wd:Gy^e_n	acc sg masc
 
 
 
@@ -85048,6 +85085,7 @@ Ha^le_sus		<orth>Halaesus</orth>	<orth>Ale_sus</orth>
 :le:Halesus
 :no:Ha^le_s	us_i masc
 :no:Ale_s	us_i masc orth
+:no:Ha^laes	us_i masc orth
 
 
 
@@ -87075,6 +87113,8 @@ Hermi^o^ni^cus
 Hermi^o_nes		
 :le:Hermiones
 :no:Hermi^o_n	0_is masc pl
+#LaNe
+:no:Hermi^no_n	es_is masc pl orth 
 
 
 Hermippus		
@@ -94967,6 +95007,7 @@ I_na^chi^a
 I_na^chus		<orth>-os</orth>	
 :le:Inachus
 :no:I_na^ch	us_i masc
+:wd:I_na^chon	acc sg masc
 
 
 I_na^chi^us		
@@ -99726,6 +99767,8 @@ infu_sus#2
 
 
 Ingaevo^ncs		<itype>um</itype>	<gen>m.</gen>
+:le:Ingaevones
+:no:Ingaevo^n	0_is masc pl
 Ingauni		
 :le:Ingauni
 :no:Ingaun	us_i masc pl
@@ -106274,6 +106317,12 @@ I^ty^lus
 
 
 I^tys		<itype>Ity^os, Ity^n or Ity^m</itype>	<gen>m.</gen>
+:le:Itys
+:wd:I^tys	nom sg masc
+:wd:I^tyos	gen sg masc
+:wd:I^tyn	acc sg masc
+:wd:I^tym	acc sg masc
+
 i^u_lis#1		
 :le:iulis#1
 :no:i^u_l	is_idis fem
@@ -108814,6 +108863,10 @@ la_i^cus
 
 
 La_i+s		<itype>i^dis and i^dos</itype>	<gen>f.</gen>
+:le:Lais
+:no:La_	is_idis fem
+:no:La_	is_idos fem
+
 La_i^us		<orth>Lajus</orth>	
 :le:Laius
 :no:La_	ius_i masc
@@ -109505,6 +109558,7 @@ La_o^di^ce_ni		<orth>Lau-di^ce_ni</orth>
 La_o^me^don		
 :le:Laomedon
 :no:La_o^me^d	on_ontis masc
+:no:La_u^me^d	on_ontis masc
 
 
 La_o^me^donte_us		
@@ -113414,7 +113468,9 @@ Li^geri^cus
 
 Ligii		<orth type=alt>Lygii</orth>	
 :le:Ligii
-:no:Ligi	us_i masc pl
+:no:Lig	ius_i masc pl
+:no:Lyg	ius_i masc pl orth
+:no:Lug	ius_i masc pl orth	
 
 
 ligna_ri^us		
@@ -114133,6 +114189,8 @@ li_num
 Li^nus		<orth type=alt>-os</orth>	
 :le:Linus
 :no:Li^n	us_i masc
+:wd:Li^nos	nom sg masc
+:wd:Li^non	acc sg masc
 
 
 li_ny^phus		<orth type=alt>li_ni^f-</orth>	<itype>i</itype>
@@ -117444,7 +117502,10 @@ macaerinthe_
 :no:macaerinth	e_es fem
 
 
-Ma^ca^reus		<orth type=alt>trisyl.</orth>	<itype>e^i and e^os</itype>	<gen>m.</gen>
+:le:Macareus
+:no:Ma^ca^r	eus_ei masc
+:wd:Ma^ca^re^os	gen sg masc
+
 Ma^ca^re_i+s		
 :le:Macareis
 :no:Ma^ca^re_	is_idis fem
@@ -123436,6 +123497,7 @@ me^mo^randus
 Memphis		<itype>is and i^dos</itype>	<gen>f.</gen>
 :le:Memphis
 :no:Memph	is_is fem
+:wd:Memphin	acc sg fem
 
 Memphi_tes		
 :le:Memphites
@@ -127088,6 +127150,7 @@ moeni^o		<itype>i_re, for munio</itype>
 Moenis		
 :le:Moenis
 :no:Moen	is_is masc
+:no:Moen	us_i masc variant
 
 
 Moenus		<itype>i</itype>
@@ -131510,6 +131573,7 @@ naevus
 Nahanarva_li		
 :le:Nahanarvali
 :no:Nahanarva_l	us_i masc pl
+:no:Naharva_l	us_i masc pl variant
 
 
 Na_i^a^s		
@@ -133305,7 +133369,9 @@ Ne^mestri_nus
 :no:Ne^mestri_n	us_i masc
 
 
-Ne^me_^tes		<itype>um</itype>
+
+:le:Nemetes
+:no:Ne^me_^t	0_is masc pl
 Ne^me_^tae		
 :le:Nemetae
 :no:Ne^me_^t	a_ae masc pl
@@ -133692,7 +133758,11 @@ Ne^re_-ti_ni
 :no:Ne^re_-ti_n	us_i masc pl
 
 
-Ne_reus		<orth type=alt>dissyl.</orth>	<itype>i and e^os</itype>	<gen>m.</gen>
+Ne_reus
+:le:Nereus
+:no:Ne_r	eus_ei masc
+:wd:Ne_re^os	gen sg masc
+
 Ne_re_^is		
 :le:Nereis
 :no:Ne_re_^	is_idis fem
@@ -136290,6 +136360,7 @@ nu_gu^lae
 Nuitho_nes		
 :le:Nuithones
 :no:Nuitho_n	0_is masc pl
+:no:Nuito_n	0_is masc pl
 
 
 nulla_-te^nus	
@@ -143735,6 +143806,7 @@ Oxi^mum
 Oxiones		
 :le:Oxiones
 :no:Oxion	0_is masc pl
+:wd:Oxionas	acc pl masc
 
 
 Oxos		<orth>-us</orth>	
@@ -146177,6 +146249,7 @@ Pa^phos#1		<orth>-us</orth>
 Pa^phos#2		<orth type=alt>-us</orth>	
 :le:Paphos
 :no:Pa^ph	os_i fem
+:wd:Pa^phon	acc sg fem
 
 
 Pa^phi^a^-cus		
@@ -149510,7 +149583,10 @@ Pelinnaeus
 
 
 Pe_li^on		<itype>ii</itype>
-Pe_li^os		<gen>n.</gen>
+:le:Pelion
+:no:Pe_li^	os_i neut
+:no:Pe_li^	os_i masc variant
+
 Pe_li^a^cus		
 :le:Peliacus
 :aj:Pe_li^a^c	us_a_um
@@ -153908,8 +153984,10 @@ pervi^cus
 :aj:pervi^c	us_a_um
 
 
-pervi^gi^l		<itype>is</itype>
-pervi^gi^lis		<pos>adj.</pos>
+:le:pervigil
+:aj:pervi^gi^l	0_adj3
+:aj:pervi^gi^l	is_e variant
+
 pervi^gi^la_ti^o		
 :le:pervigilatio
 :no:pervi^gi^la_ti^	o_oLnis fem
@@ -156124,6 +156202,8 @@ Phoebas
 
 
 Phoeni_ce_#1		<itype>e_s</itype>
+:le:Phoenice
+:no:Phoeni_c	e_es fem
 Phoeni_ca		<orth>Poeni_ce_</orth>	
 :le:Phoenica
 :no:Phoeni_c	a_ae fem
@@ -156143,6 +156223,7 @@ Phoenix		<pos>Adj.</pos>
 phoeni_-ce^us		<orth type=alt>poeni_-, foeni_-</orth>	
 :le:phoeniceus
 :aj:phoeni_-ce^	us_a_um
+:aj:poeni_-ce^	us_a_um orth
 
 
 Phoeni_ci^us		
@@ -156493,6 +156574,8 @@ Phthi_o_ta
 Phthi_-o_tes		
 :le:Phthiotes
 :no:Phthi_-o_t	es_ae masc
+#Ovid
+:wd:Pthi_otum	gen pl masc
 
 
 Phthi_o_tis		
@@ -156508,6 +156591,8 @@ Phthi_-o_ti^cus
 Phthi_us		
 :le:Phthius
 :aj:Phthi_	us_a_um
+#LaNe/Ovid
+:aj:Pthi_	us_a_um orth
 
 
 phthi_r		<gen>m.</gen>
@@ -168160,7 +168245,11 @@ pro_testa_ti^o
 :no:pro_testa_ti^	o_oLnis fem
 
 
-Pro_teus		<orth type=alt>dissyl.</orth>	<itype>e^i and e^os</itype>	<gen>m.</gen>
+Pro_teus
+:le:Proteus
+:no:Pro_t	eus_ei masc
+:wd:Pro_te^o^s	gen sg masc
+
 pro^the^o_re_ma		
 :le:protheorema
 :no:pro^the^o_re_	ma_matis neut
@@ -171927,6 +172016,8 @@ quamplu_ri^mum
 
 
 quam-pri_mum	
+:le:quamprimum
+:wd:quam-pri_mum	adverb
 quam-quam		<orth type=alt>quan-</orth>	<pos>adj.</pos>
 quam-vi_s		
 :le:quamvis
@@ -172230,7 +172321,10 @@ quattu^or-vi^ri		<orth type=alt>quat-</orth>
 
 
 quaxa_re		<itype>ranae dicuntur, cum vocem mittunt</itype>
-que^	
+que^
+:le:que
+:wd:que^	conj
+
 que^madmo^dum		<orth>que^m ad mo^-dum</orth>	
 :le:quemadmodum
 :wd:que^madmo^dum	adverb
@@ -180934,6 +181028,7 @@ Sammoni^um		<orth type=alt>Samon-</orth>	<itype>promontorium</itype>
 Samni^um		
 :le:Samnium
 :no:Samn	ius_i neut
+:aj:Samni_	s_tis_adj
 
 
 Samni_s		<orth>Samni_tis</orth>	<itype>i_tis</itype>	<pos>adj.</pos>	<pos>Subst.</pos>
@@ -185329,10 +185424,10 @@ sembella
 
 
 se^me^l		<pos>adv. num.</pos>
-Se^me^le_		<itype>e_s</itype>
-Se^me^la		
-:le:Semela
-:no:Se^me^l	a_ae fem
+
+:le:Semele
+:no:Se^me^l	e_es fem		
+:no:Se^me^l	a_ae fem variant
 
 
 Se^me^le_i+us		
@@ -188729,9 +188824,12 @@ Si^gambri		<orth>Si^cambri, Sy^-gambri</orth>	<orth>Su^gambri</orth>
 
 
 Si^gamber		<itype>bra, brum</itype>	<pos>adj.</pos>
+:le:Sigamber
+:aj:Si^gamb	er_ra_rum
 Si^gambra		
 :le:Sigambra
 :no:Si^gambr	a_ae fem
+:no:Sy^gambr	a_ae fem orth
 
 
 Si^gam-bri^a		
@@ -198214,6 +198312,7 @@ su^i_nus
 Sui^o^nes		
 :le:Suiones
 :no:Sui^o^n	0_is masc pl
+:wd:Sui^o^nas	acc pl masc
 
 
 Suismontium		
@@ -203197,6 +203296,8 @@ temo_na_-ri^us
 
 
 Tempe_		<itype>indecl.</itype>
+:le:Tempe
+:wd:Tempe_ neut pl indecl
 tempe^ra_cu^lum		
 :le:temperaculum
 :no:tempe^ra_cu^l	us_i neut
@@ -207197,6 +207298,7 @@ Ti_ty^rus
 Tity^us		
 :le:Tityus
 :no:Tity^	us_i masc
+:wd:Tity^on	acc sg masc
 
 
 Tle_po^le^mus		
@@ -209201,6 +209303,7 @@ tri^ba^s
 Tribocci		<orth type=alt>Triboci</orth>	
 :le:Tribocci
 :no:Tribocc	us_i masc pl
+:no:Triboc	us_i masc pl orth
 
 
 tri^bo_n		
@@ -212533,8 +212636,9 @@ u_li_go
 
 U^lixes		<orth>U^lys-ses</orth>	
 :le:Ulixes
-:aj:U^lix	es_is masc
-:aj:U^lys-s	es_is masc orth
+:no:U^lix	es_is masc
+:no:U^lys-s	es_is masc orth
+:wd:U^lixe_n	acc sg masc
 
 
 
@@ -213846,6 +213950,7 @@ u_si^o
 Usi_pe^tes		
 :le:Usipetes
 :no:Usi_pe^t	0_is masc pl
+:no:Usi_p	ius_i masc pl variant
 
 
 Usi_pi^i	
@@ -218430,8 +218535,10 @@ vi_gessis
 :no:vi_gess	is_is masc
 
 
-vi^gil		<itype>i^lis</itype>	<pos>adj.</pos>
-vi^gil		<itype>i^lis</itype>	<gen>m.</gen>
+:le:vigil
+:aj:vi^gil	0_adj3
+:no:vi^gil	0_is masc
+
 vi^gi^la_bi^lis		
 :le:vigilabilis
 :aj:vi^gi^la_bi^l	is_e

@@ -18,8 +18,11 @@ pa^r@decl3	irreg_adj3 masc fem neut
 
 :le:compar
 compa_r		irreg_adj3 masc fem neut nom voc sg
+conpa_r     irreg_adj3 masc fem neut nom voc sg orth
 compa_r		irreg_adj3 neut acc sg
+conpa_r     irreg_adj3 neut acc sg orth
 compa^r@decl3	irreg_adj3 masc fem neut
+conpa^r@decl3   irreg_adj3 masc fem neut orth
 
 :le:dispar
 dispa_r		irreg_adj3 masc fem neut nom voc sg
@@ -132,6 +135,7 @@ exhe_re_d@decl3_i	irreg_adj3 masc fem neut
 :le:femur
 :wd:fe^mur	irreg_nom3 masc nom sg
 femin@decl3	irreg_nom3 masc
+femor@decl3 irreg_nom3 masc variant
 
 :le:mas
 :wd:ma_s	irreg_adj3 masc nom sg
@@ -925,6 +929,10 @@ volg@decl2	irreg_nom2 neut sg orth
 
 :le:similis
 :aj:simillim	us_a_um irreg_superl
+
+:le:Simois
+Si^mo^i_s  irreg_nom3 masc nom voc sg
+Si^mo^ent@decl3 irreg_nom3 masc
 
 :le:dissimilis
 :aj:dissimillim	us_a_um irreg_superl

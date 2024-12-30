@@ -845,6 +845,8 @@
 :le:alluo
 :vs:al-lu^	conj3
 :vs:al-lu^ perfstem
+:vs:ad-lu^  conj3 orth
+:vs:ad-lu^  perfstem orth
 :le:alterco
 :de:alterc	are_vb
 :le:altercor
@@ -1303,6 +1305,9 @@
 :vs:a-spi^c	conj3_io
 :vs:a-spex	perfstem
 :vs:a-spect	pp4
+:vs:ad-spi^c    conj3_io orth
+:vs:ad-spex perfstem orth
+:vs:ad-spect    pp4 orth
 :le:asporto
 :de:as-port	are_vb
 :le:aspuo
@@ -1374,6 +1379,7 @@
 :le:assimulo
 :de:assi^mu^l	are_vb
 :de:assi^mi^l	are_vb orth
+:de:adsi^mu^l   are_vb orth
 :le:assisto
 :vs:as-sist	conj3 act
 :vs:asti^t	perfstem act
@@ -1844,6 +1850,8 @@
 :le:caneo
 :vs:ca_n	conj2
 :vs:ca_nu perfstem
+:le:canesco
+:vs:ca_nesc conj3 act
 :le:cano
 :vs:ca^n	conj3
 :vs:ce^ci^n perfstem
@@ -2342,7 +2350,7 @@
 :le:clareo
 :vs:cla_r	conj2
 :le:claresco
-:vs:cla_resc	conj2
+:vs:cla_resc	conj3
 :vs:cla_ru perfstem
 :le:clarico
 :de:cla_ri^c	are_vb
@@ -2888,6 +2896,8 @@
 :le:complector
 :vs:complect	conj3
 :vs:complex pp4
+:vs:conplect    conj3 orth
+:vs:conplex     pp4 orth
 :le:compleo
 :vs:com-pl	conj2
 :vs:com-ple_v perfstem
@@ -5180,6 +5190,7 @@
 :de:di_-me_t	are_vb dep
 :le:dimico
 :de:di_-mi^c	are_vb
+:wd:di_mi^cu^isse   perf act inf
 :le:dimidio
 :de:di_mi^di	are_vb
 :le:diminuo
@@ -7701,6 +7712,7 @@
 :vs:illa_ps pp4
 :le:illaboro
 :de:illa^bo_r	are_vb
+:de:inla^bo_r   are_vb orth
 :le:illacrimo
 :de:illa^cri^m	are_vb
 :le:illacrimor
@@ -7828,6 +7840,9 @@
 :vs:immitt	conj3
 :vs:immi_s perfstem
 :vs:immiss pp4
+:vs:inmitt  conj3 orth
+:vs:inmi_s  perfstem orth
+:vs:inmiss  pp4 orth
 :le:immolo
 :de:immo^l	are_vb
 :de:in-mo^l	are_vb
@@ -10407,6 +10422,7 @@
 :vs:negle^g	conj3
 :vs:negle_x perfstem
 :vs:negle_ct pp4
+:vs:necle_ct pp4 orth
 :le:nego
 :de:ne^g	are_vb
 :le:negotior
@@ -14140,6 +14156,10 @@
 :vs:re^d-i^g	conj3
 :vs:re^d-e_g perfstem
 :vs:re^d-a_ct pp4
+:le:redimio
+:vs:re^di^m conj4
+:vs:re^di^mi^   perfstem
+:vs:re^di^mi_t  pp4
 :le:redimo
 :vs:re^d-i^m	conj3
 :vs:re^d-e_m perfstem
@@ -16178,6 +16198,9 @@
 :vs:sum-merg	conj3
 :vs:sum-mers perfstem
 :vs:sum-mers pp4
+:vs:sub-merg    conj3 orth
+:vs:sub-mers    perfstem orth
+:vs:sub-mers    pp4 orth
 :le:summerso
 :de:summers	are_vb
 :le:sumministro
@@ -16684,6 +16707,7 @@
 :de:sur-ro^g	are_vb
 :le:surrubeo
 :vs:sur-ru^b	conj2
+:vs:sub-ru^b    conj2 orth
 :le:surrumo
 :de:sur-ru_m	are_vb
 :le:surrumpo
@@ -17037,7 +17061,12 @@
 :le:transmuto
 :de:trans-mu_t	are_vb
 :le:transnato
-:de:trans-na^t	are_vb
+:vs:trans-na^t	conj1
+:vs:trans-na_v   perfstem
+:vs:trans-na_t  pp4
+:vs:tra_na^t    conj1 orth
+:vs:tra_na_v    perfstem orth
+:vs:tra_na_t    pp4 orth
 :le:transnavigo
 :de:trans-na_vi^g	are_vb
 :le:transnomino

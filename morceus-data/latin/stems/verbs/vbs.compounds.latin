@@ -236,6 +236,9 @@
 :vs:ascri_b conj3 
 :vs:ascri_ps perfstem 
 :vs:ascri_pt pp4 
+:vs:adscri_b    conj3 orth
+:vs:adscri_ps   perfstem orth
+:vs:adsci_pt    pp4 orth
 
 #a-spiro aspi_ro
 #a + spiro -> a + spi_ro 
@@ -887,6 +890,10 @@
 :vs:de_mo_t pp4 
 :vb:de_mo_runt perf ind act 3rd pl contr
 
+:le:dissilio
+:vs:dis-si^l    conj4
+:vs:dis-si^lu^  perfstem
+
 :le:submoveo
 :vs:submo^v conj2 
 :vs:submo_v perfstem 
@@ -1479,6 +1486,10 @@
 :vs:praesu^ perfstem 
 :vs:praesu_t pp4 
 
+#@Gaffiot
+:le:praetracto
+:vs:praetract   conj1
+
 #prae-ungo praeungo <- no perfect
 #prae + ungo -> prae + ungo  [no_perf]
 :le:praeungo
@@ -1588,6 +1599,11 @@
 :vs:rete^r conj3 
 :vs:retri_v perfstem 
 :vs:retri_t pp4 
+
+:le:retexo
+:vs:re^-tex conj3
+:vs:re^-texu^   perfstem
+:vs:re^-text    pp4
 
 #re-vereor re^ve^re^or
 #re + vereor -> re^ + ve^re^or 
