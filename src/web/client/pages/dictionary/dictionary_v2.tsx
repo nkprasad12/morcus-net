@@ -651,7 +651,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const [entries, setEntries] = React.useState<EntriesByDict[]>([]);
   const [dictsToUse, setDictsToUse] = React.useState<LatinDictInfo[]>(
     SearchSettings.retrieve().filter(
-      (dict) => !isEmbedded || dict.languages.from === "La"
+      (dict) => !isEmbedded || ["La", "*"].includes(dict.languages.from)
     )
   );
   const isScreenSmall = useMediaQuery("(max-width: 900px)");

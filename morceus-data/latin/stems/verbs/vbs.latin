@@ -5755,6 +5755,7 @@
 :vs:ef-fo^v	conj2
 :le:effreno
 :de:ef-fre_n	are_vb
+:de:ec-fre_n	are_vb orth
 :le:effringo
 :vs:ef-fring	conj3
 :vs:ef-fre_g perfstem
@@ -7717,7 +7718,7 @@
 :le:illacrimor
 :de:illa^cri^m	are_vb dep
 :le:illaqueo
-:de:illa^qu	are_vb
+:de:illa^que	are_vb
 :le:illargio
 :de:illarg	ire_vb
 :le:illatebro

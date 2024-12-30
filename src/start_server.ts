@@ -34,6 +34,7 @@ import { MorceusTables } from "@/morceus/cruncher_tables";
 import { timed } from "@/common/timing/timed_invocation";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
+import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -103,7 +104,12 @@ export function startMorcusServer(): Promise<http.Server> {
     console.debug(`SmithAndHall init: ${elapsed} ms`);
     return result;
   }, LatinDict.SmithAndHall);
-  const fusedDict = new FusedDictionary([lewisAndShort, smithAndHall]);
+  const numeralDict = new NumeralDict();
+  const fusedDict = new FusedDictionary([
+    lewisAndShort,
+    smithAndHall,
+    numeralDict,
+  ]);
 
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;

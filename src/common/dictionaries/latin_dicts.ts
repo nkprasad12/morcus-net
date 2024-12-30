@@ -1,6 +1,6 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 
-export type LatinDictKey = "L&S" | "S&H";
+export type LatinDictKey = "L&S" | "S&H" | "NUM";
 export interface LatinDictInfo extends DictInfo {
   key: LatinDictKey;
 }
@@ -20,7 +20,18 @@ export namespace LatinDict {
     tags: ["Classical"],
   };
 
-  export const AVAILABLE: LatinDictInfo[] = [LewisAndShort, SmithAndHall];
+  export const Numeral: LatinDictInfo = {
+    key: "NUM",
+    displayName: "Numeral",
+    languages: { from: "*", to: "*" },
+    tags: ["Numeral"],
+  };
+
+  export const AVAILABLE: LatinDictInfo[] = [
+    LewisAndShort,
+    SmithAndHall,
+    Numeral,
+  ];
   export const BY_KEY = new Map<string, LatinDictInfo>(
     AVAILABLE.map((d) => [d.key, d])
   );
