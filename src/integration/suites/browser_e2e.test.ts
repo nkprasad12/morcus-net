@@ -242,6 +242,22 @@ test.describe("main reader", () => {
     await expect(page.getByText("Britannos")).toBeInViewport();
   });
 
+  test("text search has expected results", async ({ page }) => {
+    await page.goto("/work/caesar/de_bello_gallico");
+    await click(page.locator(`[aria-label="TextSearch"]`));
+    await click(page.locator(`[aria-label="search this work"]`));
+    await page.keyboard.type("est in Britanniam");
+    await page.keyboard.press("Enter");
+
+    await expect(page.getByText("diem quartum quam")).toBeVisible();
+    await click(page.getByText("atque ex Gallia"));
+
+    await expect(page.getByText("Insula natura triquetra")).toBeVisible();
+    await expect(page).toHaveURL(
+      /\/work\/caesar\/de_bello_gallico\?pg=169&l=1$/
+    );
+  });
+
   test("reader copy paste across lines", async ({ page }) => {
     skipIfWebkit("page.evaluate doesn't yet work on Webkit.");
     await page.goto("/work/juvenal/saturae?pg=1");
