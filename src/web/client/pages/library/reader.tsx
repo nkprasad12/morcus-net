@@ -494,10 +494,12 @@ function TextSearchSection(props: { work: PaginatedWork }) {
   const { nav } = Router.useRouter();
 
   return (
-    <>
+    <div>
       <SearchBoxNoAutocomplete
         onRawEnter={(value) => {
-          const words = value.split(/\s+/);
+          const words = value
+            .split(/[\s,.-]+/)
+            .filter((word) => /^[\w\d]+$/.test(word));
           if (words.length === 0) {
             return;
           }
@@ -506,6 +508,7 @@ function TextSearchSection(props: { work: PaginatedWork }) {
         }}
         autoFocused
         smallScreen
+        embedded
       />
       {query.length > 0 && (
         <div>
@@ -533,7 +536,10 @@ function TextSearchSection(props: { work: PaginatedWork }) {
           {result.rightContext}
         </SpanButton>
       ))}
-    </>
+      <div className="text sm light">
+        Search for text within this work. Punctuation is ignored.
+      </div>
+    </div>
   );
 }
 
