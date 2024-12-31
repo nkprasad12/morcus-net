@@ -4234,8 +4234,10 @@
 :le:dedamno
 :de:de_-damn	are_vb
 :le:dedecet
-:vs:de_-de^c	conj2
-:vs:de_-de^cu   perfstem 3rd
+:vs:de_-de^c	conj2 3rd
+:vs:de_-de^cu^   perfstem 3rd
+:vb:de_-de^cu^i_    1st sg perf act indic rare
+:vb:de_de^ce_re pres act inf rare
 :le:dedecoro
 :de:de_-de^co^r	are_vb
 :le:dedico
@@ -16974,7 +16976,12 @@
 :le:trajecto
 :de:tra_ject	are_vb
 :le:trano
-:de:tra_n	are_vb
+:vs:tra_n	conj1
+:vs:tra_na_v    perfstem
+:vs:tra_na_t    pp4
+:vs:transn  conj1 orth
+:vs:transna_v   perfstem orth
+:vs:transna_t   pp4 orth
 :le:tranquillo#2
 :de:tranquill	are_vb
 :le:transadigo
@@ -17062,11 +17069,11 @@
 :de:trans-mu_t	are_vb
 :le:transnato
 :vs:trans-na^t	conj1
-:vs:trans-na_v   perfstem
-:vs:trans-na_t  pp4
+:vs:trans-na^ta_v   perfstem
+:vs:trans-na^ta_t  pp4
 :vs:tra_na^t    conj1 orth
-:vs:tra_na_v    perfstem orth
-:vs:tra_na_t    pp4 orth
+:vs:tra_na^ta_v    perfstem orth
+:vs:tra_na^ta_t    pp4 orth
 :le:transnavigo
 :de:trans-na_vi^g	are_vb
 :le:transnomino

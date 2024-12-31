@@ -57,6 +57,7 @@ const SEMANTIC_TAGS = new Set([
   "tempnum", //temporal numeral
   "partnum", //partitive numeral
   "othernum", //other numeral
+  "enclitic",
 ]);
 
 export const INTERNAL_TAGS = new Set<string>([

@@ -99957,7 +99957,7 @@ ingui^-na
 ingui^na_lis		
 :le:inguinalis
 :aj:ingui^na_l	is_e
-:aj:ingui^na_ri^	us_a_um
+:aj:ingui^na_ri^	us_a_um variant
 
 
 ingui^na_ri^us	
@@ -108865,7 +108865,7 @@ la_i^cus
 La_i+s		<itype>i^dis and i^dos</itype>	<gen>f.</gen>
 :le:Lais
 :no:La_	is_idis fem
-:no:La_	is_idos fem
+:no:La_	is_idos fem variant
 
 La_i^us		<orth>Lajus</orth>	
 :le:Laius
@@ -109558,7 +109558,7 @@ La_o^di^ce_ni		<orth>Lau-di^ce_ni</orth>
 La_o^me^don		
 :le:Laomedon
 :no:La_o^me^d	on_ontis masc
-:no:La_u^me^d	on_ontis masc
+:no:La_u^me^d	on_ontis masc variant
 
 
 La_o^me^donte_us		
@@ -136360,7 +136360,7 @@ nu_gu^lae
 Nuitho_nes		
 :le:Nuithones
 :no:Nuitho_n	0_is masc pl
-:no:Nuito_n	0_is masc pl
+:no:Nuito_n	0_is masc pl orth
 
 
 nulla_-te^nus	
@@ -172323,7 +172323,7 @@ quattu^or-vi^ri		<orth type=alt>quat-</orth>
 quaxa_re		<itype>ranae dicuntur, cum vocem mittunt</itype>
 que^
 :le:que
-:wd:que^	conj
+:wd:que^	conj enclitic
 
 que^madmo^dum		<orth>que^m ad mo^-dum</orth>	
 :le:quemadmodum
@@ -181028,10 +181028,10 @@ Sammoni^um		<orth type=alt>Samon-</orth>	<itype>promontorium</itype>
 Samni^um		
 :le:Samnium
 :no:Samn	ius_i neut
+:le:Samnis
 :aj:Samni_	s_tis_adj
 
 
-Samni_s		<orth>Samni_tis</orth>	<itype>i_tis</itype>	<pos>adj.</pos>	<pos>Subst.</pos>
 Samni_tes		
 :le:Samnites
 :no:Samni_t	is_is masc pl
@@ -207327,6 +207327,7 @@ Tmo_lus		<orth>Ti^mo_lus</orth>
 :le:Tmolus
 :no:Tmo_l	us_i masc
 :no:Ti^mo_l	us_i masc orth
+:no:Ty^mo_l	us_i masc orth
 
 
 
@@ -215413,7 +215414,7 @@ Va_^trenus
 
 ve^#1
 :le:ve
-:wd:ve^	conj
+:wd:ve^	conj enclitic
 
 ve_-#2		<orth>vae-</orth>
 Vecili^us		
@@ -217336,7 +217337,7 @@ ve_rum#2
 
 :le:verumtamen
 :wd:ve_rum-ta^men	conj
-:wd:ve_run-ta^men	conj
+:wd:ve_run-ta^men	conj orth
 
 ve_rus		
 :le:verus
@@ -217426,7 +217427,7 @@ Vescita_ni^a
 vescor		<itype>vesci</itype>
 vescu^lus		<itype>i</itype>	<pos>adj.</pos>
 :le:vesculus
-:aj:vescu^l	us_i masc fem neut 
+:aj:vescu^l	us_a_um
 
 vescus		
 :le:vescus
