@@ -506,6 +506,7 @@ function TextSearchSection(props: { work: PaginatedWork }) {
           setQuery(words);
           setResults(findTextSearchMatches(props.work, words));
         }}
+        ariaLabel="search this work"
         autoFocused
         smallScreen
         embedded
