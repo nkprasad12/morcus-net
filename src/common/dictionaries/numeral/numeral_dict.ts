@@ -10,11 +10,11 @@ export function buildEntryFor(input: number): EntryResult {
   return {
     entry: resultXml,
     outline: {
-      mainKey: key,
+      mainKey: input.toString(),
       mainSection: {
         text: `Arabic: ${input}`,
-        level: 1,
-        ordinal: "A",
+        level: 0,
+        ordinal: "0",
         sectionId: key,
       },
     },
