@@ -87,6 +87,14 @@ function AttributionContent(props: { dictKey: string }) {
   if (props.dictKey === LatinDict.SmithAndHall.key) {
     return <ShAttribution key={key} />;
   }
+  if (props.dictKey === LatinDict.Numeral.key) {
+    return (
+      <div>
+        Numeral data was collected and organized by Quillful and sourced from
+        Allen and Greenough and Lewis and Short.
+      </div>
+    );
+  }
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 
