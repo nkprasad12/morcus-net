@@ -13,7 +13,7 @@ morcus.net development is currently done only on Linux machines.
 Before you get started, install `git` and:
 
 - If you want to work on the Typescript code: `npm`, `node` (other Node versions will likely work, but only version `20` is run in CI and guaranteed to work)
-- If you want to work on the Python code: `python3.8` (other Python versions may work, but only `3.8` is run in CI and guaranteed to work.)
+- If you want to work on the Python code: `python3.12` (other Python versions may work, but only `3.12` is run in CI and guaranteed to work.)
 
 ### Typescript Code (Client, Server, Workers)
 
@@ -37,8 +37,8 @@ Common arguments for this script (run `./morcus.sh --help` for full options):
 
 From the `morcus-net` root directory, set up a `Python` virtual environment and install `Python` dependencies.
 
-1. `python3.8 -m venv venv`
-2. `source venv/bin/activate && python3.8 -m pip install -r requirements.txt`
+1. `python3.12 -m venv venv`
+2. `source venv/bin/activate && python3.12 -m pip install -r requirements.txt`
 3. Run `npm run setup-alatius` to set up the macronizer for local use.
 4. To run NLP models, you may also need to install `stanza` and `cltk` from `pip`.
 
@@ -224,3 +224,13 @@ default as they are checked in to the repo as test data, but Amores, Germania, a
 ```
 npm run ts-node src/morceus/cli.ts buildTables
 ```
+
+## Python Sadness
+
+### Updating packages
+
+This may be required when updating Python versions.
+
+1. `sed -i 's/==/>=/g' requirements.txt` (don't pin to exact versions so the upgrade can work)
+2. `venv/bin/pip install -r requirements.txt --upgrade`
+3. `venv/bin/pip freeze > requirements.txt`
