@@ -1,6 +1,5 @@
 import { readFileSync } from "fs";
-import { checkPresent } from "@/common/assert";
-import { assert } from "console";
+import { assert, checkPresent } from "@/common/assert";
 
 const WORDS = /[A-Za-z]+/g;
 
