@@ -61,6 +61,10 @@ function parseArguments() {
     help: "Re-processes LS.",
     action: "store_true",
   });
+  build.add_argument("-b_ra", "--build_ra", {
+    help: "Processes RA and saves to DB.",
+    action: "store_true",
+  });
   build.add_argument("-b_sh", "--build_sh", {
     help: "Re-processes SH and saves to DB.",
     action: "store_true",
@@ -107,6 +111,10 @@ function parseArguments() {
   });
   web.add_argument("-b_ls", "--build_ls", {
     help: "Re-processes LS.",
+    action: "store_true",
+  });
+  web.add_argument("-b_ra", "--build_ra", {
+    help: "Processes RA and saves to DB.",
     action: "store_true",
   });
   web.add_argument("-b_sh", "--build_sh", {
@@ -309,6 +317,14 @@ function artifactConfig(args: any): StepConfig[] {
     setupSteps.push({
       operation: () => shellStep(command.join(" ")),
       label: "Processing SH",
+      priority: 2,
+    });
+  }
+  if (args.build_ra === true) {
+    const command = baseCommand.concat(["src/scripts/process_ra.ts"]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Processing RA",
       priority: 2,
     });
   }

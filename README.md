@@ -51,6 +51,8 @@ From the `morcus-net` root directory, set up a `Python` virtual environment and 
 | `PORT`                    | The port number on which the server will listen. Example: `5757`.                                                                   |
 | `LS_PATH`                 | The path to the raw Lewis and Short XML file. Example: `[Path to lexica]/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml` |
 | `LS_PROCESSED_PATH`       | An optional file name of the processed database of Lewis and Short entries.                                                         |
+| `RA_PATH`                 | The path to the Riddle-Arnold raw TSV file.                                                                                         |
+| `RA_PROCESSED_PATH`       | An optional file name of the processed database of Riddle-Arnold entries.                                                           |
 | `SH_RAW_PATH`             | A raw path to the Smith and Hall text file.                                                                                         |
 | `SH_PROCESSED_PATH`       | An optional file name of the processed database of Smith and Hall entries.                                                          |
 | `MONGODB_URI`             | MongoDB database URI for metrics.                                                                                                   |
