@@ -35,6 +35,7 @@ import { timed } from "@/common/timing/timed_invocation";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
+import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -105,9 +106,11 @@ export function startMorcusServer(): Promise<http.Server> {
     return result;
   }, LatinDict.SmithAndHall);
   const numeralDict = new NumeralDict();
+  const riddleArnold = new RiddleArnoldDict();
   const fusedDict = new FusedDictionary([
     lewisAndShort,
     smithAndHall,
+    riddleArnold,
     numeralDict,
   ]);
 

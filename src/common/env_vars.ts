@@ -2,8 +2,10 @@ import { checkPresent } from "@/common/assert";
 
 const DEFAULT_ENV_VARS = new Map<string, string>([
   ["LS_PATH", "ls_raw.xml"],
+  ["RA_PATH", "riddle-arnold.tsv"],
   ["LS_PROCESSED_PATH", "build/dbs/ls.db"],
   ["SH_PROCESSED_PATH", "build/dbs/sh.db"],
+  ["RA_PROCESSED_PATH", "build/dbs/ra.db"],
   ["SH_RAW_PATH", "sh_raw.txt"],
   ["GAFFIOT_RAW_PATH", "gaffiot.js"],
   ["DB_SOURCE", "unspecified"],
