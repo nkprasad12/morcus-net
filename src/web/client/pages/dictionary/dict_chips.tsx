@@ -6,6 +6,7 @@ import {
 function classForDictChip(input: string, property: keyof LatinDictInfo) {
   switch (input) {
     case LatinDict.SmithAndHall[property]:
+    case LatinDict.RiddleArnold[property]:
       return "shChip";
     case LatinDict.LewisAndShort[property]:
       return "lsChip";
@@ -15,9 +16,9 @@ function classForDictChip(input: string, property: keyof LatinDictInfo) {
   return "genericChip";
 }
 
-export function DictChip(props: { label: string }) {
+export function DictChip(props: { label: string; className?: string }) {
   function getClassName(label: string): string {
-    return classForDictChip(label, "key");
+    return props.className ?? classForDictChip(label, "key");
   }
 
   return (
@@ -33,7 +34,7 @@ function fullChipClass(label: string, size?: string): string {
 }
 
 function fullChipText(label: string): string {
-  return label === LatinDict.SmithAndHall.displayName
+  return label === LatinDict.RiddleArnold.displayName
     ? `${label} [Beta]`
     : label;
 }

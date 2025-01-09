@@ -43,6 +43,7 @@ function useOfflineDictData() {
       inflections: enabled && settings?.morceusDownloaded !== true,
       "S&H": enabled && settings?.shDownloaded !== true,
       "L&S": enabled && settings?.lsDownloaded !== true,
+      "R&A": enabled && settings?.raDownloaded !== true,
       NUM: enabled,
     },
   };
@@ -160,9 +161,11 @@ function SearchSettingsDialog(props: {
 }
 
 function AutocompleteOption(props: { option: [DictInfo, string] }) {
+  const from = props.option[0].languages.from;
+  const className = from === "En" ? "shChip" : "lsChip";
   return (
     <>
-      <DictChip label={props.option[0].key} />
+      <DictChip label={from} className={className} />
       <span style={{ marginLeft: 10 }}>{props.option[1]}</span>
     </>
   );
