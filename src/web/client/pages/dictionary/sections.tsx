@@ -95,6 +95,15 @@ function AttributionContent(props: { dictKey: string }) {
       </div>
     );
   }
+  if (props.dictKey === LatinDict.RiddleArnold.key) {
+    return (
+      <div>
+        Data for Riddle and Arnold was retrieved from{" "}
+        <SelfLink to="https://github.com/FergusJPWalsh/riddle-arnold" /> and is
+        available under a CC-BY-SA-4.0 license.
+      </div>
+    );
+  }
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 
