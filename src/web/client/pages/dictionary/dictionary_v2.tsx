@@ -8,6 +8,7 @@ import {
   DictInfo,
   DictsFusedRequest,
   DictsFusedResponse,
+  type DictLang,
 } from "@/common/dictionaries/dictionaries";
 import {
   LatinDict,
@@ -685,9 +686,13 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const greekTerm = isEmbedded && query && hasGreek(query) ? query : null;
 
   const allowedDicts = isEmbedded ? dictsToUse : route.dicts;
+  const queryLang = route.lang;
   const queryDicts = React.useMemo(
-    () => chooseDicts(allowedDicts),
-    [allowedDicts]
+    () =>
+      chooseDicts(allowedDicts).filter(
+        (d) => queryLang === undefined || d.languages.from === queryLang
+      ),
+    [allowedDicts, queryLang]
   );
   const apiRequest: DictsFusedRequest | null = React.useMemo(
     () =>
@@ -739,7 +744,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   }, [state, isEmbedded, hash, greekTerm]);
 
   const onSearchQuery = useCallback(
-    (term: string, dict?: DictInfo) => {
+    (term: string, lang?: DictLang) => {
       if (setInitial) {
         setInitial(term);
         return;
@@ -747,7 +752,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       nav.to({
         path: ClientPaths.DICT_PAGE.path,
         query: term,
-        dicts: dict,
+        lang: lang,
         inflectedSearch: settings.data.inflectedSearch === true,
       });
     },

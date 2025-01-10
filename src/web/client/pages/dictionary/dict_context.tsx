@@ -1,4 +1,4 @@
-import type { DictInfo } from "@/common/dictionaries/dictionaries";
+import type { DictLang } from "@/common/dictionaries/dictionaries";
 import type { LatinDictInfo } from "@/common/dictionaries/latin_dicts";
 import React from "react";
 
@@ -25,7 +25,7 @@ export interface DictContextOptions {
   setInitial?: (target: string) => unknown;
   fromInternalLink?: React.MutableRefObject<boolean>;
   searchQuery?: string;
-  onSearchQuery: (query: string, dict?: DictInfo) => unknown;
+  onSearchQuery: (query: string, dict?: DictLang) => unknown;
 }
 
 export const DictContext: React.Context<DictContextOptions> =

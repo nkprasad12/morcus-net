@@ -1,5 +1,6 @@
 import { checkPresent } from "@/common/assert";
-import { DictInfo } from "@/common/dictionaries/dictionaries";
+import { setMap } from "@/common/data_structures/collect_map";
+import { DictInfo, type DictLang } from "@/common/dictionaries/dictionaries";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { FusedAutocompleteFetcher } from "@/web/client/pages/dictionary/search/fused_autocomplete_fetcher";
 
@@ -39,7 +40,7 @@ export async function autocompleteOptions(
   input: string,
   dicts: DictInfo[],
   limit: number = 200
-): Promise<[DictInfo, string][]> {
+): Promise<[DictLang, string][]> {
   if (input.length === 0) {
     return [];
   }
@@ -56,7 +57,7 @@ export async function autocompleteOptions(
     fetchResults(extraQuery, fromLatin),
   ];
 
-  const allFiltered: [DictInfo, string[]][] = [];
+  const allFiltered: [DictLang, string[]][] = [];
   for (const pending of allPending) {
     const allOptions = await pending;
     for (const dictKey in allOptions) {
@@ -67,19 +68,22 @@ export async function autocompleteOptions(
         )
       );
       allFiltered.push([
-        checkPresent(dicts.find((dict) => dict.key === dictKey)),
+        checkPresent(dicts.find((dict) => dict.key === dictKey)).languages.from,
         filtered.slice(0, limit),
       ]);
     }
   }
 
-  const formatted: [DictInfo, string][] = [];
+  const byLang = setMap<DictLang, string>();
   for (const [info, options] of allFiltered) {
     for (const option of options) {
-      formatted.push([info, option]);
+      byLang.add(info, option);
     }
   }
-  return formatted
+  return Array.from(byLang.map.entries())
+    .flatMap(([lang, words]) =>
+      Array.from(words).map((w): [DictLang, string] => [lang, w])
+    )
     .sort((a, b) =>
       removeDiacritics(a[1])
         .toLowerCase()

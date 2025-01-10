@@ -31,8 +31,8 @@ describe("DictionarySearch", () => {
 
   beforeEach(() => {
     mockAutocomplete.mockResolvedValue([
-      [LatinDict.LewisAndShort, "ab"],
-      [LatinDict.SmithAndHall, "ack"],
+      ["La", "ab"],
+      ["En", "ack"],
     ]);
   });
 
@@ -96,7 +96,10 @@ describe("DictionarySearch", () => {
 
     await user.click(screen.getByText("ab"));
 
-    expect(mockCallback).toHaveBeenCalledWith("ab", LatinDict.LewisAndShort);
+    expect(mockCallback).toHaveBeenCalledWith(
+      "ab",
+      LatinDict.LewisAndShort.languages.from
+    );
   });
 
   it("handles navigation on option enter", async () => {
@@ -118,7 +121,10 @@ describe("DictionarySearch", () => {
     await user.hover(screen.getByText("ack"));
     await user.type(search, "{enter}");
 
-    expect(mockCallback).toHaveBeenCalledWith("ack", LatinDict.SmithAndHall);
+    expect(mockCallback).toHaveBeenCalledWith(
+      "ack",
+      LatinDict.SmithAndHall.languages.from
+    );
   });
 
   it("has an options menu that disables and enables dicts", async () => {
