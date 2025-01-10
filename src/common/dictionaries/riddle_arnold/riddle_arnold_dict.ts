@@ -1,21 +1,44 @@
 import type { EntryResult } from "@/common/dictionaries/dict_result";
-import type { DictInfo, Dictionary } from "@/common/dictionaries/dictionaries";
+import { StoredDict } from "@/common/dictionaries/dict_storage";
+import type { Dictionary } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import type { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 export class RiddleArnoldDict implements Dictionary {
-  readonly info: DictInfo = LatinDict.RiddleArnold;
+  readonly info = LatinDict.RiddleArnold;
 
-  async getEntry(input: string): Promise<EntryResult[]> {
-    console.log("[RA] " + input);
-    return [];
+  private readonly storage: StoredDict;
+
+  constructor(backing: StoredDictBacking<any>) {
+    this.storage = new StoredDict(backing);
+  }
+
+  private processRaw(input: string): EntryResult {
+    return {
+      entry: XmlNodeSerialization.DEFAULT.deserialize(input),
+      outline: {
+        mainKey: "Placeholder",
+        mainSection: { text: "text", level: 0, ordinal: "0", sectionId: "a" },
+      },
+    };
+  }
+
+  async getEntry(
+    input: string,
+    extras?: ServerExtras | undefined
+  ): Promise<EntryResult[]> {
+    const rawEntries = await this.storage.getRawEntry(input, extras);
+    return rawEntries.map(({ entry }) => this.processRaw(entry));
+  }
+
+  async getCompletions(input: string): Promise<string[]> {
+    return this.storage.getCompletions(input);
   }
 
   async getEntryById(id: string): Promise<EntryResult | undefined> {
-    return undefined;
-  }
-
-  async getCompletions(_input: string): Promise<string[]> {
-    // For now, don't handle autocompletions.
-    return [];
+    const rawResult = await this.storage.getById(id);
+    return rawResult === undefined ? rawResult : this.processRaw(rawResult);
   }
 }
