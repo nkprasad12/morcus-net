@@ -13,6 +13,8 @@ import {
 } from "@/morceus/types";
 import fs from "fs";
 
+console.debug = jest.fn();
+
 const TESTDATA_DIR = "src/morceus/tables/lat/core/testdata/";
 const TEST_TEMPLATES = `${TESTDATA_DIR}testTemplates`;
 const DEP_TEMPLATES = `${TESTDATA_DIR}dependencyTemplates`;

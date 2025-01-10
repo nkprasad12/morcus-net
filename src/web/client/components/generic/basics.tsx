@@ -25,6 +25,16 @@ export interface CoreProps extends AriaAttributes {
   className?: string;
 }
 
+export function extractCoreProps(coreProps: CoreProps) {
+  const ariaProps = AriaProps.extract(coreProps);
+  return {
+    ...ariaProps,
+    style: coreProps.style,
+    id: coreProps.id,
+    className: coreProps.className,
+  };
+}
+
 export interface ClickableCoreProps extends CoreProps {
   onClick?: () => unknown;
 }
@@ -169,7 +179,7 @@ export interface CheckBoxProps extends CoreProps {
 
 export function CheckBox(props: CheckBoxProps) {
   return (
-    <div {...props}>
+    <div {...extractCoreProps(props)}>
       <input
         id={props.label}
         type="checkbox"
