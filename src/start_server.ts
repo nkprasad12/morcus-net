@@ -114,7 +114,7 @@ export function startMorcusServer(): Promise<http.Server> {
     const elapsed = (performance.now() - start).toFixed(3);
     console.debug(`RiddleArnold init: ${elapsed} ms`);
     return result;
-  }, LatinDict.SmithAndHall);
+  }, LatinDict.RiddleArnold);
   const fusedDict = new FusedDictionary([
     lewisAndShort,
     smithAndHall,
