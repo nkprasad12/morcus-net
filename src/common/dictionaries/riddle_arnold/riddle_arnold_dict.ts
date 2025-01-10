@@ -16,12 +16,10 @@ export class RiddleArnoldDict implements Dictionary {
   }
 
   private processRaw(input: string): EntryResult {
+    const parsed = JSON.parse(input);
     return {
-      entry: XmlNodeSerialization.DEFAULT.deserialize(input),
-      outline: {
-        mainKey: "Placeholder",
-        mainSection: { text: "text", level: 0, ordinal: "0", sectionId: "a" },
-      },
+      entry: XmlNodeSerialization.DEFAULT.deserialize(parsed.entry),
+      outline: parsed.outline,
     };
   }
 

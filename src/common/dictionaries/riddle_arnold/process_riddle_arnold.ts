@@ -7,6 +7,7 @@ import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import type { EntryOutline } from "@/common/dictionaries/dict_result";
 
 export function processRiddleArnold() {
   const contents = fs.readFileSync(envVar("RA_PATH"));
@@ -28,13 +29,22 @@ export function processRiddleArnold() {
     usedIds.add(id);
     const entry = new XmlNode(
       "div",
-      [],
+      [["id", id]],
       entries.map((e) => new XmlNode("div", [], [e]))
     );
+    const serializedEntry = XmlNodeSerialization.DEFAULT.serialize(entry);
+    const outline: EntryOutline = {
+      mainKey: keys[0],
+      mainSection: { text: "", level: 0, ordinal: "0", sectionId: id },
+    };
+    const fullEntry = {
+      entry: serializedEntry,
+      outline,
+    };
     allEntries.push({
       keys,
       id,
-      entry: XmlNodeSerialization.DEFAULT.serialize(entry),
+      entry: JSON.stringify(fullEntry),
     });
   }
   SqliteDict.save(allEntries, envVar("RA_PROCESSED_PATH"));
