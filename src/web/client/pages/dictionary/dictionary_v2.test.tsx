@@ -111,6 +111,13 @@ describe("New Dictionary View", () => {
       query: "Belgae",
       mode: 0,
     });
+
+    // We don't really care about this but we just want to wait for the
+    // API promise to resolve so that React doesn't complain about updates
+    // running outside of `act`.
+    await waitFor(() => {
+      expect(screen.getByText(/No results/)).toBeDefined();
+    });
   });
 
   it("shows fetched result on large screen", async () => {
