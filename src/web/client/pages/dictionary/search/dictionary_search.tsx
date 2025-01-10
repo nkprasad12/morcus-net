@@ -1,4 +1,4 @@
-import { DictInfo } from "@/common/dictionaries/dictionaries";
+import { type DictLang } from "@/common/dictionaries/dictionaries";
 import {
   LatinDict,
   type LatinDictInfo,
@@ -160,8 +160,8 @@ function SearchSettingsDialog(props: {
   );
 }
 
-function AutocompleteOption(props: { option: [DictInfo, string] }) {
-  const from = props.option[0].languages.from;
+function AutocompleteOption(props: { option: [DictLang, string] }) {
+  const from = props.option[0];
   const className = from === "En" ? "shChip" : "lsChip";
   return (
     <>
@@ -176,16 +176,16 @@ export function DictionarySearch(props: {
   dicts: LatinDictInfo[];
   setDicts: (newDicts: LatinDictInfo[]) => unknown;
   autoFocused: boolean;
-  onSearchQuery: (term: string, dict?: DictInfo) => unknown;
+  onSearchQuery: (term: string, lang?: DictLang) => unknown;
   embedded?: boolean;
 }) {
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
-  async function onEnter(searchTerm: string, dict?: DictInfo) {
+  async function onEnter(searchTerm: string, lang?: DictLang) {
     if (searchTerm.length === 0) {
       return;
     }
-    props.onSearchQuery(searchTerm, dict);
+    props.onSearchQuery(searchTerm, lang);
   }
 
   return (
@@ -206,10 +206,10 @@ export function DictionarySearch(props: {
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(t[1], t[0])}
         optionsForInput={(input) =>
-          autocompleteOptions(input, props.dicts, 200)
+          autocompleteOptions(input, props.dicts, 300)
         }
         RenderOption={AutocompleteOption}
-        toKey={(t) => `${t[1]},${t[0].key}`}
+        toKey={(t) => `${t[1]},${t[0]}`}
         toInputDisplay={(t) => t[1]}
         embedded={props.embedded}
       />

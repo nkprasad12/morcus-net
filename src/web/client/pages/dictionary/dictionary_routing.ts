@@ -1,4 +1,8 @@
-import { DictInfo } from "@/common/dictionaries/dictionaries";
+import {
+  DictInfo,
+  isDictLang,
+  type DictLang,
+} from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { RouteInfo, Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
@@ -6,6 +10,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 const QUERY_KEY = "q";
 const OPTIONS_KEY = "o";
 const DICTS_KEY = "in";
+const LANG_KEY = "lang";
 
 const INFLECTED_SEARCH_COMPATIBILITY_ENABLED = "1";
 const ID_SEARCH_ENABLED = "2";
@@ -26,6 +31,8 @@ export interface DictRoute {
    * If left undefined, all dictionaries will be searched.
    */
   dicts?: DictInfo[] | DictInfo;
+  /** Which source languages to filter on. */
+  lang?: DictLang;
 }
 
 function dictsToParam(rawDicts?: DictInfo[] | DictInfo): string | undefined {
@@ -56,6 +63,7 @@ function toRoute(info: DictRoute): RouteInfo {
       : undefined;
   params[QUERY_KEY] = info.query;
   params[DICTS_KEY] = dictsToParam(info.dicts);
+  params[LANG_KEY] = info.lang;
   params[OPTIONS_KEY] = optionMode;
   return { path: info.path, params, hash: info.hash };
 }
@@ -72,12 +80,14 @@ function fromRoute(info: RouteInfo): DictRoute {
   }
   const params = info.params || {};
   const option = params[OPTIONS_KEY];
+  const rawLang = params[LANG_KEY];
   return {
     path: info.path,
     query: params[QUERY_KEY],
     inflectedSearch: option === INFLECTED_SEARCH_COMPATIBILITY_ENABLED,
     idSearch: option === ID_SEARCH_ENABLED,
     dicts: dictsFromParam(params[DICTS_KEY]),
+    lang: rawLang !== undefined && isDictLang(rawLang) ? rawLang : undefined,
     hash: info.hash,
   };
 }

@@ -11,6 +11,10 @@ import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
 export type DictLang = "La" | "En" | "*";
 
+export function isDictLang(input: string): input is DictLang {
+  return ["La", "En", "*"].includes(input);
+}
+
 export interface DictType {
   from: DictLang;
   to: DictLang;

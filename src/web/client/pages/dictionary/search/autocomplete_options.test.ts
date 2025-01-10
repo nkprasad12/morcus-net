@@ -43,9 +43,10 @@ function setApiResult(result: Record<string, string[]> | Error) {
   }
 }
 
-const LS_LIST = ["ab", "abago", "insunt", "jam", "sab", "sad"];
-const SH_LIST = ["away", "now", "inside", "jab", "sac"];
-const ALL_DICTS = { LS: LS_LIST, SH: SH_LIST };
+const LS_LIST = ["ab", "abago", "dives", "insunt", "jam", "sab", "sad"];
+const SH_LIST = ["away", "now", "dives", "inside", "jab", "sac"];
+const RA_LIST = ["dives"];
+const ALL_DICTS = { LS: LS_LIST, SH: SH_LIST, RA: RA_LIST };
 
 const LD1: DictInfo = {
   key: "LS",
@@ -56,6 +57,12 @@ const LD1: DictInfo = {
 const ED1: DictInfo = {
   key: "SH",
   displayName: "Smith and Hall",
+  languages: { from: "En", to: "La" },
+  tags: ["Classical"],
+};
+const ED2: DictInfo = {
+  key: "RA",
+  displayName: "Riddle Arnold",
   languages: { from: "En", to: "La" },
   tags: ["Classical"],
 };
@@ -74,16 +81,16 @@ describe("autocompleteOptions", () => {
   it("returns expected substrings", async () => {
     setApiResult(ALL_DICTS);
     const result = await autocompleteOptions("aba", [LD1]);
-    expect(result).toStrictEqual([[LD1, "abago"]]);
+    expect(result).toStrictEqual([["La", "abago"]]);
   });
 
   it("fetches alternate character completions for Latin only", async () => {
     setApiResult(ALL_DICTS);
     const result = await autocompleteOptions("i", [LD1, ED1]);
     expect(result).toStrictEqual([
-      [ED1, "inside"],
-      [LD1, "insunt"],
-      [LD1, "jam"],
+      ["En", "inside"],
+      ["La", "insunt"],
+      ["La", "jam"],
     ]);
   });
 
@@ -91,15 +98,30 @@ describe("autocompleteOptions", () => {
     setApiResult(ALL_DICTS);
     const result = await autocompleteOptions("sa", [LD1, ED1]);
     expect(result).toStrictEqual([
-      [LD1, "sab"],
-      [ED1, "sac"],
-      [LD1, "sad"],
+      ["La", "sab"],
+      ["En", "sac"],
+      ["La", "sad"],
     ]);
   });
 
   it("displays correct options with internal character", async () => {
     setApiResult(ALL_DICTS);
     const result = await autocompleteOptions("insv", [LD1, ED1]);
-    expect(result).toStrictEqual([[LD1, "insunt"]]);
+    expect(result).toStrictEqual([["La", "insunt"]]);
+  });
+
+  it("dedupes results from same language dictionary", async () => {
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("d", [ED1, ED2]);
+    expect(result).toStrictEqual([["En", "dives"]]);
+  });
+
+  it("splits results from different language dictionary", async () => {
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("d", [LD1, ED1, ED2]);
+    expect(result).toStrictEqual([
+      ["La", "dives"],
+      ["En", "dives"],
+    ]);
   });
 });
