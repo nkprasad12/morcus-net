@@ -93,6 +93,26 @@ describe("New Dictionary View", () => {
     });
   });
 
+  it("respects lang filter in URL", async () => {
+    mockCallApiMockResolvedValue({});
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: "/", params: { q: "Belgae", lang: "En" } },
+          navigateTo: jest.fn(),
+        }}>
+        <DictionaryViewV2 />
+      </RouteContext.Provider>
+    );
+
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
+      dicts: ["S&H", "R&A"],
+      query: "Belgae",
+      mode: 0,
+    });
+  });
+
   it("shows fetched result on large screen", async () => {
     const spyScrollTo = jest.fn();
     HTMLElement.prototype.scrollIntoView = spyScrollTo;
