@@ -106,7 +106,15 @@ export function startMorcusServer(): Promise<http.Server> {
     return result;
   }, LatinDict.SmithAndHall);
   const numeralDict = new NumeralDict();
-  const riddleArnold = new RiddleArnoldDict();
+  const riddleArnold = delayedInit(() => {
+    const start = performance.now();
+    const result = new RiddleArnoldDict(
+      sqliteBacking(envVar("RA_PROCESSED_PATH"))
+    );
+    const elapsed = (performance.now() - start).toFixed(3);
+    console.debug(`RiddleArnold init: ${elapsed} ms`);
+    return result;
+  }, LatinDict.SmithAndHall);
   const fusedDict = new FusedDictionary([
     lewisAndShort,
     smithAndHall,
