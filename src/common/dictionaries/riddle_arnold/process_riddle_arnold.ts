@@ -9,6 +9,52 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import type { EntryOutline } from "@/common/dictionaries/dict_result";
 
+function formatEntry(id: string, parts: string[], header: string): XmlNode {
+  const headerParts = header
+    .split(",")
+    .map((word) => new XmlNode("span", [["class", "lsOrth"]], [word.trim()]));
+  const formattedHeader = new XmlNode(
+    "div",
+    [],
+    [
+      new XmlNode(
+        "span",
+        [
+          ["class", "lsSenseBullet"],
+          ["senseid", `${id}.blurb`],
+        ],
+        ["  •  "]
+      ),
+      " ",
+      // Put commas between each element.
+      ...headerParts.flatMap((orth) => [orth, ", "]).slice(0, -1),
+    ]
+  );
+  const formattedParts =
+    parts.length === 1
+      ? [new XmlNode("div", [], [parts[0]])]
+      : parts.map(
+          (part, i) =>
+            new XmlNode(
+              "div",
+              [],
+              [
+                new XmlNode(
+                  "span",
+                  [
+                    ["class", "lsSenseBullet"],
+                    ["senseid", `${id}.${i + 1}`],
+                  ],
+                  [` ${i + 1}. `]
+                ),
+                " ",
+                part,
+              ]
+            )
+        );
+  return new XmlNode("div", [["id", id]], [formattedHeader, ...formattedParts]);
+}
+
 export function processRiddleArnold() {
   const contents = fs.readFileSync(envVar("RA_PATH"));
   const lines = contents.toString().split("\n");
@@ -27,15 +73,11 @@ export function processRiddleArnold() {
     const id = `ra_${keys.join("_").replaceAll(" ", "_").replaceAll("'", "")}`;
     assert(!usedIds.has(id), id);
     usedIds.add(id);
-    const entry = new XmlNode(
-      "div",
-      [["id", id]],
-      entries.map((e) => new XmlNode("div", [], [e]))
-    );
+    const entry = formatEntry(id, entries, header);
     const serializedEntry = XmlNodeSerialization.DEFAULT.serialize(entry);
     const outline: EntryOutline = {
       mainKey: keys[0],
-      mainSection: { text: "", level: 0, ordinal: "0", sectionId: id },
+      mainSection: { text: header, level: 0, ordinal: "0", sectionId: id },
     };
     const fullEntry = {
       entry: serializedEntry,
