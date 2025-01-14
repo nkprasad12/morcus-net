@@ -5,9 +5,22 @@ import { assert, assertEqual } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
-import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import type { EntryOutline } from "@/common/dictionaries/dict_result";
+
+function splitEntryParts(rawPart: string): XmlChild {
+  // TODO: We first need to split on (A), (B), (C), etc...
+  const parts = rawPart.split("||");
+  if (parts.length === 1) {
+    return rawPart;
+  }
+  return new XmlNode(
+    "ul",
+    [],
+    parts.map((p) => new XmlNode("li", [], [p]))
+  );
+}
 
 function formatEntry(id: string, parts: string[], header: string): XmlNode {
   const headerParts = header
@@ -32,7 +45,7 @@ function formatEntry(id: string, parts: string[], header: string): XmlNode {
   );
   const formattedParts =
     parts.length === 1
-      ? [new XmlNode("div", [], [parts[0]])]
+      ? [new XmlNode("div", [], [splitEntryParts(parts[0])])]
       : parts.map(
           (part, i) =>
             new XmlNode(
@@ -48,11 +61,15 @@ function formatEntry(id: string, parts: string[], header: string): XmlNode {
                   [` ${i + 1}. `]
                 ),
                 " ",
-                part,
+                splitEntryParts(part),
               ]
             )
         );
-  return new XmlNode("div", [["id", id]], [formattedHeader, ...formattedParts]);
+  const rootAttrs: [string, string][] = [
+    ["id", id],
+    ["class", "raRoot"],
+  ];
+  return new XmlNode("div", rootAttrs, [formattedHeader, ...formattedParts]);
 }
 
 export function processRiddleArnold() {

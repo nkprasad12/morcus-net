@@ -490,6 +490,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderBottom: `1px solid ${Solarized.blue}`,
       cursor: "pointer",
     },
+    ".raRoot ul": {
+      marginTop: 0,
+    },
 
     /** Dictionary mobile quick nav */
     ".mobileNavMenu": {
