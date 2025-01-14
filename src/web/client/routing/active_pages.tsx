@@ -7,7 +7,6 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 import { ExternalContentReader } from "@/web/client/pages/library/external_content_reader";
 import { Library } from "@/web/client/pages/library/library";
 import { ReadingPage } from "@/web/client/pages/library/reader";
-import { Macronizer } from "@/web/client/pages/macron";
 import { SiteSettings } from "@/web/client/pages/site_settings";
 
 export const ABOUT_PAGE: SinglePageApp.Page = {
@@ -26,16 +25,6 @@ export const DICT_PAGE: SinglePageApp.Page = {
     name: "Dictionary",
     targetPath: ClientPaths.DICT_PAGE.path,
   },
-};
-
-export const MACRONIZER_PAGE: SinglePageApp.Page = {
-  Content: Macronizer,
-  paths: [ClientPaths.MACRONIZER_PATH],
-  appBarConfig: {
-    name: "Macronizer",
-    targetPath: ClientPaths.MACRONIZER_PATH.path,
-  },
-  experimental: true,
 };
 
 export const LIBRARY_PAGE: SinglePageApp.Page = {
@@ -66,7 +55,6 @@ export const ACTIVE_PAGES = [
   // Visible in top navigation
   DICT_PAGE,
   LIBRARY_PAGE,
-  MACRONIZER_PAGE,
   ABOUT_PAGE,
   // Other pages
   SETTINGS_PAGE,
