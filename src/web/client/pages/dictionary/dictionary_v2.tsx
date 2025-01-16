@@ -29,7 +29,6 @@ import {
   xmlNodeToJsx,
   DictHelpSection,
 } from "@/web/client/pages/dictionary/dictionary_utils";
-import { QuickNavMenu } from "@/web/client/pages/dictionary/quick_nav";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import {
   ContentBox,
@@ -40,7 +39,6 @@ import {
   jumpToSection,
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
 import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
-import ReactDOM from "react-dom";
 import { FontSizes } from "@/web/client/styling/styles";
 import {
   DictContext,
@@ -849,8 +847,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       contextValues={contextValues}
       oneCol={
         <>
-          {!isEmbedded &&
-            ReactDOM.createPortal(<QuickNavMenu />, document.body)}
           <HelpSection
             id={"HelpSection"}
             className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
