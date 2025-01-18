@@ -1,11 +1,12 @@
 import { XMLParser, XMLValidator, type X2jOptions } from "fast-xml-parser";
-import { assert, checkPresent } from "@/common/assert";
+import { assert, assertEqual, assertType, checkPresent } from "@/common/assert";
 import { COMMENT_NODE, XmlChild, XmlNode } from "@/common/xml/xml_node";
 import {
   type DescendantNode,
   type TextNodeData,
   findTextNodes,
 } from "@/common/xml/xml_text_utils";
+import { instanceOf } from "@/web/utils/rpc/parsing";
 
 const ATTRIBUTES_KEY = ":@";
 const TEXT_NODE = "#text";
@@ -27,13 +28,18 @@ const PARSE_KEEP_WHITESPACE = {
   trimValues: false,
 };
 
-function crawlXml(root: any): XmlNode {
+function crawlXml(root: any, depth = 0): XmlNode | string {
   // Each node in the parsed XML tree is either a text node, which is
   // a leaf, or a tag node. Tag nodes have a property keyed to the
   // name of the tag, which has a value equal to an array of all the
   // nodes inside the tag node. Tag nodes may also have a property
   // which is an object containing all of its attributes. Tag nodes have
   // no other properties.
+  if (isTextNode(root)) {
+    // Handle top-level text. This happens only in whitespace mode.
+    assertEqual(depth, 0);
+    return `${root[TEXT_NODE]}`;
+  }
   const keys = Object.keys(root);
   if (keys.includes("#text")) {
     if (keys.length !== 1) {
@@ -63,7 +69,7 @@ function crawlXml(root: any): XmlNode {
       children.push(`${child[TEXT_NODE]}`);
       continue;
     }
-    const childResult = crawlXml(child);
+    const childResult = crawlXml(child, depth + 1);
     children.push(childResult);
   }
   return new XmlNode(tagName, attributes, children);
@@ -116,12 +122,21 @@ export function parseRawXml(
   if (options?.validate === true) {
     validateXml(rawXml);
   }
-  const nodes: XmlNode[] = parser
-    .parse(rawXml)
-    .map(crawlXml)
-    .filter((n: XmlNode) => n.name[0] !== "?");
-  assert(nodes.length === 1, "Expected exactly 1 root node.");
-  return nodes[0];
+  let node: XmlNode | undefined = undefined;
+  for (const rawNode of parser.parse(rawXml)) {
+    const result = crawlXml(rawNode);
+    if (typeof result === "string") {
+      assert(options?.keepWhitespace === true && result.trim().length === 0);
+      continue;
+    }
+    if (result.name[0] === "?") {
+      // Filter `?xml and the like`
+      continue;
+    }
+    assertEqual(node, undefined);
+    node = result;
+  }
+  return checkPresent(node);
 }
 
 /**
@@ -146,7 +161,7 @@ export function* parseXmlStringsInline(
     if (validate) {
       validateXml(serializedXml[i]);
     }
-    yield crawlXml(entryFree);
+    yield assertType(crawlXml(entryFree), instanceOf(XmlNode));
   }
 }
 
