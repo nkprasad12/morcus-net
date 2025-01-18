@@ -37,6 +37,14 @@ describe("parseRawXml", () => {
     );
   });
 
+  it("handles keep whitespace mode with top level whitespace", () => {
+    const result = parseRawXml(
+      '<?xml version="1.0" encoding="UTF-8"?>\n\t<div/>\n',
+      { keepWhitespace: true }
+    );
+    expect(result).toEqual(new XmlNode("div"));
+  });
+
   it("handles validation if requested", () => {
     expect(() =>
       parseRawXml('<a f="g">hi</b></a>', { validate: true })
