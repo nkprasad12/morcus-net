@@ -48,6 +48,8 @@ export const ALL_SUPPORTED_WORKS = LOCAL_REPO_WORKS.concat([
   "data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml",
   // Juvenal Satires.
   "data/phi1276/phi001/phi1276.phi001.perseus-lat2.xml",
+  // Sallust Catalina
+  // "data/phi0631/phi001/phi0631.phi001.perseus-lat3.xml",
 ]);
 
 const LOCAL_REPO_WORK_PATHS = LOCAL_REPO_WORKS.map(

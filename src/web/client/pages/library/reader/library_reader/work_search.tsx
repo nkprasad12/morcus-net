@@ -1,5 +1,6 @@
 import { assert, checkPresent } from "@/common/assert";
 import { setMap } from "@/common/data_structures/collect_map";
+import { processWords } from "@/common/text_cleaning";
 import { XmlNode } from "@/common/xml/xml_node";
 import { findTextNodes, type TextNodeData } from "@/common/xml/xml_text_utils";
 import { SpanButton } from "@/web/client/components/generic/basics";
@@ -30,13 +31,9 @@ function matchPageId(id: string[], work: PaginatedWork): string[] | undefined {
 function indexWork(work: PaginatedWork) {
   const index = setMap<string, string[]>();
   for (const [id, node] of work.rows) {
-    const currentId = id.split(".");
-    // TODO: DO NOT CHECK THIS In
-    if (typeof node === "string") {
-      continue;
-    }
-    for (const libLat of node.findDescendants("libLat")) {
-      index.add(XmlNode.getSoleText(libLat).toLowerCase(), currentId);
+    const currentId = id;
+    for (const textNode of findTextNodes(node)) {
+      processWords(textNode.text, (w) => index.add(w.toLowerCase(), currentId));
     }
   }
   return index.map;
