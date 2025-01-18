@@ -125,6 +125,8 @@ export function ReadingPage() {
   const { nav, route } = Router.useRouter();
   const urlPg = safeParseInt(route.params?.pg);
   const urlId = route.params?.id;
+  const urlLine = route.params?.l;
+  const queryLine = safeParseInt(urlLine);
 
   const findMatchPage = React.useCallback(() => {
     if (typeof work === "string" || work.pages.length === 0) {
@@ -138,24 +140,7 @@ export function ReadingPage() {
     return match === undefined || match < 0 ? undefined : match;
   }, [findMatchPage]);
 
-  const urlLine = route.params?.l;
-  const queryLine = safeParseInt(urlLine);
-
-  useEffect(() => {
-    if (typeof work === "string") {
-      return;
-    }
-    // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
-    if (urlPg !== undefined) {
-      updatePage(urlPg, nav, work, urlLine);
-      return;
-    }
-    // Handle invalid ids.
-    if (findMatchPage() === -1) {
-      updatePage(1, nav, work);
-    }
-  }, [urlPg, work, urlLine, nav, findMatchPage]);
-
+  // Fetch data
   useEffect(() => {
     const workId = resolveWorkId(route.path);
     if (workId === undefined) {
@@ -174,6 +159,23 @@ export function ReadingPage() {
       });
   }, [route.path]);
 
+  // Redirect legacy or bad URL parameters.
+  useEffect(() => {
+    if (typeof work === "string") {
+      return;
+    }
+    // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
+    if (urlPg !== undefined) {
+      updatePage(urlPg, nav, work, urlLine);
+      return;
+    }
+    // Handle invalid ids.
+    if (findMatchPage() === -1) {
+      updatePage(1, nav, work);
+    }
+  }, [urlPg, work, urlLine, nav, findMatchPage]);
+
+  // Scroll to the required line, if specified.
   useEffect(() => {
     if (queryLine === undefined) {
       return;
@@ -238,7 +240,7 @@ export function ReadingPage() {
   );
 }
 
-type CustomTabs = "Outline" | "Attribution";
+type CustomTabs = "Outline" | "Attribution"; // | "TextSearch";
 type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
 const SIDEBAR_PANEL_ICONS: ReaderInternalTabConfig<SidebarPanel>[] = [
@@ -259,6 +261,8 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
       return <>{work && <WorkNavigationSection work={work} />}</>;
     case "Attribution":
       return <>{work?.info && <WorkInfo workInfo={work?.info} />}</>;
+    // case "TextSearch":
+    //   return <>{work && <TextSearchSection work={work} />}</>;
     default:
       exhaustiveGuard(tab);
   }
@@ -502,11 +506,11 @@ function WorkNavigationBar(props: {
 function* rowsForPage(
   work: PaginatedWork,
   page: number
-): Generator<[[string, XmlNode<ProcessedWorkContentNodeType>], number]> {
+): Generator<[[string[], XmlNode<ProcessedWorkContentNodeType>], number]> {
   const [start, end] = work.pages[page].rows;
   let j = 0;
   for (let i = start; i < end; i++) {
-    if (work.rows[i][0].split(".").length !== work.textParts.length) {
+    if (work.rows[i][0].length !== work.textParts.length) {
       continue;
     }
     yield [work.rows[i], j];
@@ -537,8 +541,8 @@ export function WorkTextPage(props: {
       }}>
       {Array.from(rowsForPage(work, props.page), ([[id, node], i]) => (
         <WorkChunk
-          key={id}
-          sectionId={id}
+          key={id.join(".")}
+          sectionId={id.join(".")}
           node={node}
           setDictWord={props.setDictWord}
           i={i}

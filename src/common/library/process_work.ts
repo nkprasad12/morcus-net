@@ -267,14 +267,15 @@ function computeIncludedSections(root: XmlNode, memo: Set<string>[]) {
 function convertToRows(
   current: XmlNode,
   data: PreprocessedTree
-): [string, XmlNode][] {
+): [string[], XmlNode][] {
   const uid = checkPresent(safeParseInt(current.getAttr("uid")));
   const sections = checkPresent(data.includedSections[uid]);
-  const sid = checkPresent(current.getAttr("sid"));
+  const rawSid = checkPresent(current.getAttr("sid"));
+  const sid = rawSid.length === 0 ? [] : rawSid.split(".");
   if (sections.size === 1) {
     return [[sid, current]];
   }
-  const results: [string, XmlNode][] = [];
+  const results: [string[], XmlNode][] = [];
   for (const child of current.children) {
     if (typeof child === "string") {
       // Wrap the string child in a node.
@@ -406,7 +407,8 @@ function getTextparts(root: XmlNode) {
   });
 }
 
-function divideWork(
+/** Exported for unit testing. */
+export function divideWork(
   rows: ProcessedWork2["rows"],
   textParts: string[]
 ): WorkPage[] {
@@ -425,12 +427,10 @@ function divideWork(
   }
 
   for (let i = 0; i < rows.length; i++) {
-    const id = rows[i][0].split(".");
+    const id = rows[i][0];
     const pageId = id.slice(0, idLength);
-    const isNewPage =
-      currentId === undefined || !areArraysEqual(currentId, pageId);
     // If we're in the same page, just keep going. We only track the end index.
-    if (!isNewPage) {
+    if (currentId !== undefined && areArraysEqual(currentId, pageId)) {
       continue;
     }
 

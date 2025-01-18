@@ -52,8 +52,8 @@ const PROCESSED_WORK: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
   rows: [
-    ["1.1", new XmlNode("span", [], ["Gallia est omnis"])],
-    ["1.2", new XmlNode("span", [], [" divisa in partes tres"])],
+    [["1", "1"], new XmlNode("span", [], ["Gallia est omnis"])],
+    [["1", "2"], new XmlNode("span", [], [" divisa in partes tres"])],
   ],
   pages: [{ id: ["1"], rows: [0, 2] }],
 };
@@ -62,8 +62,8 @@ const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
   rows: [
-    ["1.1", new XmlNode("span", [], ["Gallia est omnis"])],
-    ["2.1", new XmlNode("span", [], [" divisa in partes tres"])],
+    [["1", "1"], new XmlNode("span", [], ["Gallia est omnis"])],
+    [["2", "1"], new XmlNode("span", [], [" divisa in partes tres"])],
   ],
   pages: [
     { id: ["1"], rows: [0, 1] },
@@ -76,11 +76,11 @@ const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
   textParts: ["chapter", "section"],
   rows: [
     [
-      "1.1",
+      ["1", "1"],
       new XmlNode("span", [], ["omnis ", new XmlNode("s", [], ["deleted"])]),
     ],
     [
-      "2.1",
+      ["2", "1"],
       new XmlNode(
         "q",
         [],

@@ -1,5 +1,7 @@
 import type { LibraryPatch } from "@/common/library/library_patches";
+import { WorkPage, type ProcessedWork2 } from "@/common/library/library_types";
 import {
+  divideWork,
   patchText,
   processTei2,
   type DebugSideChannel,
@@ -174,5 +176,89 @@ describe("patchText", () => {
     const rawText = "hi thathat hi";
 
     expect(() => patchText(rawText, options)).toThrow(/Overlapping/);
+  });
+});
+
+describe("divideWork", () => {
+  function toRows(ids: string[]): ProcessedWork2["rows"] {
+    return ids.map((id) => [
+      id.length === 0 ? [] : id.split("."),
+      new XmlNode("span"),
+    ]);
+  }
+
+  it("handles empty rows", () => {
+    const rows = toRows([]);
+    const textParts = ["chapter", "section"];
+
+    const pages = divideWork(rows, textParts);
+
+    expect(pages).toHaveLength(0);
+  });
+
+  it("handles clean division", () => {
+    const rows = toRows(["1.1", "1.2", "2.1", "2.2"]);
+    const textParts = ["chapter", "section"];
+
+    const pages = divideWork(rows, textParts);
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 2] },
+      { id: ["2"], rows: [2, 4] },
+    ]);
+  });
+
+  it("handles divisions with headers on sections", () => {
+    const rows = toRows(["1.1", "1", "1.2", "2.1", "2.2", "2"]);
+    const textParts = ["chapter", "section"];
+
+    const pages = divideWork(rows, textParts);
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 3] },
+      { id: ["2"], rows: [3, 6] },
+    ]);
+  });
+
+  it("handles initial top level headers", () => {
+    const rows = toRows(["", "1.1", "1.2", "2.1"]);
+    const textParts = ["chapter", "section"];
+
+    const pages = divideWork(rows, textParts);
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [1, 3] },
+      { id: ["2"], rows: [3, 4] },
+    ]);
+  });
+
+  it("handles middle top level headers", () => {
+    const rows = toRows(["1.1", "1.2", "", "2.1"]);
+    const textParts = ["chapter", "section"];
+
+    const pages = divideWork(rows, textParts);
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 2] },
+      { id: ["2"], rows: [3, 4] },
+    ]);
+  });
+
+  it("handles final top level headers", () => {
+    const rows = toRows(["1.1", "1.2", "2.1", ""]);
+    const textParts = ["chapter", "section"];
+
+    const pages = divideWork(rows, textParts);
+
+    expect(pages).toStrictEqual<WorkPage[]>([
+      { id: ["1"], rows: [0, 2] },
+      { id: ["2"], rows: [2, 3] },
+    ]);
+  });
+
+  it("raises on malformed sections", () => {
+    const rows = toRows(["1.1", "1", "2.1", "2.2", "2", "1.2"]);
+    const textParts = ["chapter", "section"];
+    expect(() => divideWork(rows, textParts)).toThrow();
   });
 });

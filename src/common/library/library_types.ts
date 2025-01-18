@@ -51,7 +51,7 @@ export interface ProcessedWork2 {
    */
   textParts: string[];
   /** Rows representing the work content. */
-  rows: [string, XmlNode<ProcessedWorkContentNodeType>][];
+  rows: [string[], XmlNode<ProcessedWorkContentNodeType>][];
   /** The default pagination for the content. */
   pages: WorkPage[];
 }
@@ -60,7 +60,7 @@ export namespace ProcessedWork2 {
   export const isMatch = matchesObject<ProcessedWork2>({
     info: DocumentInfo.isMatch,
     textParts: isArray(isString),
-    rows: isArray(isPair(isString, instanceOf(XmlNode))),
+    rows: isArray(isPair(isArray(isString), instanceOf(XmlNode))),
     pages: isArray(isWorkPage),
   });
 }
