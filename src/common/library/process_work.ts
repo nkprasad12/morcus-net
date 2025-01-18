@@ -278,6 +278,10 @@ function convertToRows(
   const results: [string[], XmlNode][] = [];
   for (const child of current.children) {
     if (typeof child === "string") {
+      // Ignore just whitespace.
+      if (child.trim() === "") {
+        continue;
+      }
       // Wrap the string child in a node.
       results.push([sid, new XmlNode("span", [], [child])]);
       continue;
@@ -291,7 +295,6 @@ function convertToRows(
  * Validates whitespace and collapses clusters.
  *
  * @param input the string to process.
- * @param parentName the name of the node containing this text.
  * @param previousEndedInCluster whether the previous analyzed text ended
  *        in a whitespace cluster.
  *
@@ -299,16 +302,13 @@ function convertToRows(
  */
 function handleTextWhitespace(
   input: string,
-  parentName: string,
   previousEndedInCluster: boolean
 ): [string, boolean] {
-  const canHaveNewlines = parentName === "p";
   let inWhitespace = previousEndedInCluster;
   let processed = "";
   for (let i = 0; i < input.length; i++) {
     const c = input[i];
-    assert(c !== "\t" && c !== "\r" && (c !== "\n" || canHaveNewlines));
-    const isWhitespace = c === " " || c === "\n";
+    const isWhitespace = c === " " || c === "\n" || c === "\t";
     if (!isWhitespace) {
       processed += c;
     } else if (!inWhitespace && isWhitespace) {
@@ -366,7 +366,7 @@ function processRowContent(
   for (const child of root.children) {
     const isString = typeof child === "string";
     const childResult = isString
-      ? handleTextWhitespace(child, root.name, inWhitespace)
+      ? handleTextWhitespace(child, inWhitespace)
       : processRowContent(child, inWhitespace);
     inWhitespace = childResult[1];
     children.push(childResult[0]);
@@ -400,10 +400,9 @@ function getTextparts(root: XmlNode) {
       .map((p) => p.name);
   }
   assertEqual(nonCts.length, 1, nonCts.map((n) => n.toString()).join("\n"));
-  return nonCts[0].children.map((child) => {
-    const node = XmlNode.assertIsNode(child);
-    assertEqual(node.name, "refState");
-    return checkPresent(node.getAttr("unit"));
+  return nonCts[0].children.filter(instanceOf(XmlNode)).map((child) => {
+    assertEqual(child.name, "refState");
+    return checkPresent(child.getAttr("unit"));
   });
 }
 

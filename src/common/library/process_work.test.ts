@@ -109,6 +109,11 @@ describe("processTei2", () => {
     expect(sideChannel.onWord).toHaveBeenCalledWith("est");
     expect(sideChannel.onWord).toHaveBeenCalledTimes(2);
   });
+
+  it("parses expected text parts", () => {
+    const work = processTei2(testRoot(BODY_WITH_BOOK_ONLY));
+    expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
+  });
 });
 
 describe("patchText", () => {

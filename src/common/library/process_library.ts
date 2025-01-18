@@ -121,7 +121,9 @@ export function processLibrary(
   for (const workPath of works) {
     // We should use the Perseus URN instead.
     const workId = path.basename(workPath).replace(/\.[^/.]+$/, "");
-    const rawXml = parseRawXml(fs.readFileSync(workPath));
+    const rawXml = parseRawXml(fs.readFileSync(workPath), {
+      keepWhitespace: true,
+    });
     const result = processTeiCts2(rawXml, patches.get(workId));
     const rawTitle = result.info.title;
     const title = NAME_TO_DISPLAY_NAME.get(rawTitle) ?? rawTitle;
