@@ -123,26 +123,39 @@ export function ReadingPage() {
   const highlightRef = React.useRef<HTMLSpanElement>(null);
 
   const { nav, route } = Router.useRouter();
-  const urlPg = route.params?.pg;
+  const urlPg = safeParseInt(route.params?.pg);
   const urlId = route.params?.id;
-  const currentPage = React.useMemo(() => {
-    if (typeof work === "string") {
+
+  const findMatchPage = React.useCallback(() => {
+    if (typeof work === "string" || work.pages.length === 0) {
       return undefined;
     }
+    return work.pages.findIndex((page) => page.id.join(".") === urlId);
+  }, [work, urlId]);
+
+  const currentPage = React.useMemo(() => {
+    const match = findMatchPage();
+    return match === undefined || match < 0 ? undefined : match;
+  }, [findMatchPage]);
+
+  useEffect(() => {
+    const match = findMatchPage();
+    if (match === undefined || match >= 0 || typeof work === "string") {
+      return;
+    }
+    updatePage(1, nav, work);
+  }, [findMatchPage, nav, work]);
+
+  const urlLine = route.params?.l;
+  const queryLine = safeParseInt(urlLine);
+
+  useEffect(() => {
     // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
-    const legacy = safeParseInt(urlPg);
-    if (legacy !== undefined) {
-      // The displayed `pg` is 1-indexed, so convert to 0-indexed.
-      return legacy - 1;
+    if (typeof work === "string" || urlPg === undefined) {
+      return;
     }
-    for (let i = 0; i < work.pages.length; i++) {
-      if (work.pages[i].id.join(".") === urlId) {
-        return i;
-      }
-    }
-    return work.pages.length > 0 ? 0 : undefined;
-  }, [urlPg, urlId, work]);
-  const queryLine = safeParseInt(route.params?.l);
+    updatePage(urlPg, nav, work, urlLine);
+  }, [urlPg, work, urlLine, nav]);
 
   useEffect(() => {
     const workId = resolveWorkId(route.path);
@@ -160,7 +173,7 @@ export function ReadingPage() {
         console.debug(reason);
         setWork("Error");
       });
-  }, [setWork, route.path]);
+  }, [route.path]);
 
   useEffect(() => {
     if (queryLine === undefined) {
@@ -625,7 +638,6 @@ function WorkNavigationSection(props: { work: PaginatedWork }) {
               ...old,
               params: {
                 id: old.params?.id,
-                pg: old.params?.pg,
                 l: `${l - 1}`,
               },
             }))
