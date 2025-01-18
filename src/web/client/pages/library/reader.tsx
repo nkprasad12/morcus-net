@@ -138,24 +138,23 @@ export function ReadingPage() {
     return match === undefined || match < 0 ? undefined : match;
   }, [findMatchPage]);
 
-  useEffect(() => {
-    const match = findMatchPage();
-    if (match === undefined || match >= 0 || typeof work === "string") {
-      return;
-    }
-    updatePage(1, nav, work);
-  }, [findMatchPage, nav, work]);
-
   const urlLine = route.params?.l;
   const queryLine = safeParseInt(urlLine);
 
   useEffect(() => {
-    // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
-    if (typeof work === "string" || urlPg === undefined) {
+    if (typeof work === "string") {
       return;
     }
-    updatePage(urlPg, nav, work, urlLine);
-  }, [urlPg, work, urlLine, nav]);
+    // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
+    if (urlPg !== undefined) {
+      updatePage(urlPg, nav, work, urlLine);
+      return;
+    }
+    // Handle invalid ids.
+    if (findMatchPage() === -1) {
+      updatePage(1, nav, work);
+    }
+  }, [urlPg, work, urlLine, nav, findMatchPage]);
 
   useEffect(() => {
     const workId = resolveWorkId(route.path);
@@ -505,10 +504,13 @@ function* rowsForPage(
   page: number
 ): Generator<[[string, XmlNode<ProcessedWorkContentNodeType>], number]> {
   const [start, end] = work.pages[page].rows;
+  let j = 0;
   for (let i = start; i < end; i++) {
-    if (work.rows[i][0].split(".").length === work.textParts.length) {
-      yield [work.rows[i], i - start];
+    if (work.rows[i][0].split(".").length !== work.textParts.length) {
+      continue;
     }
+    yield [work.rows[i], j];
+    j++;
   }
 }
 

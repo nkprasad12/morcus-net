@@ -523,7 +523,7 @@ describe("Reading UI", () => {
     );
     await screen.findByText(/error/);
 
-    expect(mockNav).toHaveBeenCalled();
+    expect(mockNav).toHaveBeenCalledTimes(1);
     const newRoute = mockNav.mock.calls[0][0](originalRoute);
     expect(newRoute).toStrictEqual({
       path: urlByIdFor("dbg"),
