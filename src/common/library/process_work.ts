@@ -10,8 +10,9 @@ import type { LibraryPatch } from "@/common/library/library_patches";
 import {
   type ProcessedWork2,
   type ProcessedWorkContentNodeType,
+  type WorkPage,
 } from "@/common/library/library_types";
-import { safeParseInt } from "@/common/misc_utils";
+import { areArraysEqual, safeParseInt } from "@/common/misc_utils";
 import { processWords } from "@/common/text_cleaning";
 import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
@@ -405,6 +406,49 @@ function getTextparts(root: XmlNode) {
   });
 }
 
+function divideWork(
+  rows: ProcessedWork2["rows"],
+  textParts: string[]
+): WorkPage[] {
+  const idLength = textParts.length - 1;
+  const pages: WorkPage[] = [];
+  const addedPages = new Set<string>();
+  let currentId: undefined | string[] = undefined;
+  let currentStart: undefined | number = undefined;
+
+  function addPageIfNeeded(end: number) {
+    if (currentId !== undefined) {
+      assert(!addedPages.has(currentId.join(".")));
+      addedPages.add(currentId.join("."));
+      pages.push({ id: currentId, rows: [checkPresent(currentStart), end] });
+    }
+  }
+
+  for (let i = 0; i < rows.length; i++) {
+    const id = rows[i][0].split(".");
+    const pageId = id.slice(0, idLength);
+    const isNewPage =
+      currentId === undefined || !areArraysEqual(currentId, pageId);
+    // If we're in the same page, just keep going. We only track the end index.
+    if (!isNewPage) {
+      continue;
+    }
+
+    addPageIfNeeded(i);
+    // If the current id matches the expected length, start a new page.
+    // Otherwise, reset the current ID and start.
+    if (pageId.length === idLength) {
+      currentId = pageId;
+      currentStart = i;
+    } else {
+      currentId = undefined;
+      currentStart = undefined;
+    }
+  }
+  addPageIfNeeded(rows.length);
+  return pages;
+}
+
 /** Returns the processed content of a TEI XML file. */
 export function processTei2(
   xmlRoot: XmlNode,
@@ -419,9 +463,11 @@ export function processTei2(
     xmlRoot.findDescendants("body"),
     (arr) => arr.length === 1
   );
+  const rows = processWorkBody(body[0], textParts, processOptions);
   return {
     info: extractInfo(xmlRoot),
     textParts,
-    rows: processWorkBody(body[0], textParts, processOptions),
+    rows,
+    pages: divideWork(rows, textParts),
   };
 }

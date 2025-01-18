@@ -3,6 +3,7 @@ import {
   Validator,
   instanceOf,
   isArray,
+  isNumber,
   isPair,
   isString,
   matchesObject,
@@ -29,6 +30,17 @@ export namespace DocumentInfo {
   });
 }
 
+export interface WorkPage {
+  id: string[];
+  // The start and end.
+  rows: [number, number];
+}
+
+const isWorkPage = matchesObject<WorkPage>({
+  id: isArray(isString),
+  rows: isPair(isNumber, isNumber),
+});
+
 export type ProcessedWorkContentNodeType = "span" | "head" | "s" | "gap" | "q";
 export interface ProcessedWork2 {
   /** Basic information about this work such as author or title. */
@@ -38,8 +50,10 @@ export interface ProcessedWork2 {
    * These are returned in descending order of size.
    */
   textParts: string[];
-  /** Rows representing the work content.. */
+  /** Rows representing the work content. */
   rows: [string, XmlNode<ProcessedWorkContentNodeType>][];
+  /** The default pagination for the content. */
+  pages: WorkPage[];
 }
 
 export namespace ProcessedWork2 {
@@ -47,6 +61,7 @@ export namespace ProcessedWork2 {
     info: DocumentInfo.isMatch,
     textParts: isArray(isString),
     rows: isArray(isPair(isString, instanceOf(XmlNode))),
+    pages: isArray(isWorkPage),
   });
 }
 
