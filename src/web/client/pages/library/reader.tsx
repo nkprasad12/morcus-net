@@ -106,20 +106,20 @@ function updatePage(
 }
 
 interface ReaderState {
-  hasTooltip: React.MutableRefObject<boolean[]>;
+  hasTooltip: React.MutableRefObject<Set<number>>;
   queryLine?: number;
   highlightRef?: React.RefObject<HTMLSpanElement>;
 }
 
 const ReaderContext = React.createContext<ReaderState>({
-  hasTooltip: { current: [] },
+  hasTooltip: { current: new Set<number>() },
 });
 
 export function ReadingPage() {
   const [work, setWork] = useState<WorkState>("Loading");
   const [overlayOpacity, setOverlayOpacity] = useState(0);
   const [swipeDir, setSwipeDir] = useState<SwipeDirection>("Left");
-  const hasTooltip = React.useRef<boolean[]>([]);
+  const hasTooltip = React.useRef<Set<number>>(new Set<number>());
   const highlightRef = React.useRef<HTMLSpanElement>(null);
 
   const { nav, route } = Router.useRouter();
@@ -180,13 +180,9 @@ export function ReadingPage() {
     tryToScroll();
   }, [queryLine]);
 
-  // useEffect(() => {
-  //   if (currentPage === undefined) {
-  //     hasTooltip.current = [];
-  //     return;
-  //   }
-  //   hasTooltip.current = section.map((_) => false);
-  // }, [currentPage]);
+  useEffect(() => {
+    hasTooltip.current = new Set();
+  }, [currentPage]);
 
   return (
     <ReaderContext.Provider value={{ hasTooltip, queryLine, highlightRef }}>
@@ -203,7 +199,7 @@ export function ReadingPage() {
         swipeListeners={{
           onSwipeCancel: () => setOverlayOpacity(0),
           onSwipeProgress: (direction, size) => {
-            if (typeof work === "string" || hasTooltip.current.some((v) => v)) {
+            if (typeof work === "string" || hasTooltip.current.size > 0) {
               return;
             }
             setSwipeDir(direction);
@@ -214,7 +210,7 @@ export function ReadingPage() {
             if (
               typeof work === "string" ||
               currentPage === undefined ||
-              hasTooltip.current.some((v) => v)
+              hasTooltip.current.size > 0
             ) {
               return;
             }
@@ -726,7 +722,11 @@ function WorkChunkHeader(props: {
       placement="right"
       link={url}
       visibleListener={(visible) => {
-        hasTooltip.current[props.chunkArrayIndex] = visible;
+        if (visible) {
+          hasTooltip.current.add(props.chunkArrayIndex);
+        } else {
+          hasTooltip.current.delete(props.chunkArrayIndex);
+        }
       }}
     />
   );
@@ -796,7 +796,7 @@ function LatLink(props: {
     <span
       className="workLatWord"
       onClick={(e) => {
-        if (hasTooltip.current.some((v) => v)) {
+        if (hasTooltip.current.size > 0) {
           return;
         }
         props.setDictWord(props.word);
