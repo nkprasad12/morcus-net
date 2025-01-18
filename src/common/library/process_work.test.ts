@@ -1,34 +1,99 @@
 import type { LibraryPatch } from "@/common/library/library_patches";
-import type { DocumentInfo } from "@/common/library/library_types";
 import {
   patchText,
-  processTei,
+  processTei2,
   type DebugSideChannel,
   type MarkupTextOptions,
 } from "@/common/library/process_work";
-import type { TeiCtsDocument } from "@/common/xml/tei_utils";
 import { XmlNode } from "@/common/xml/xml_node";
+import { parseRawXml } from "@/common/xml/xml_utils";
 
 console.debug = jest.fn();
 
-const DBG_INFO: DocumentInfo = { title: "DBG", author: "Caesar" };
-const GALLIA_EST = new XmlNode("p", [], ["Gallia est"]);
-const SIMPLE_TEI_CTS: TeiCtsDocument = {
-  info: DBG_INFO,
-  textParts: ["book"],
-  content: {
-    id: ["1"],
-    selfNode: new XmlNode("div", [], [GALLIA_EST]),
-    children: [GALLIA_EST],
-  },
-};
+const TEI_HEADER = `
+<teiHeader xml:lang="eng">
+<fileDesc>
+<titleStmt>
+<title xml:lang="lat">De bello Gallico</title>
+<author>Julius Caesar</author>
+	<editor>T. Rice Holmes</editor>
+<sponsor>Perseus Project, Tufts University</sponsor>
+		<principal>Gregory Crane</principal>
+		<respStmt>
+		<resp>Prepared under the supervision of</resp>
+		<name>Lisa Cerrato</name>
+		<name>William Merrill</name>
+		<name>David Smith</name>
+		</respStmt>
+<funder n="org:NEH">The National Endowment for the Humanities</funder>
+</titleStmt>
+<sourceDesc>
+<biblStruct>
+<monogr>
+<author>Julius Caesar</author>
+<title xml:lang="lat">C. Iuli Commentarii Rerum in Gallia Gestarum VII A. Hirti Commentarius VII</title>
+<editor>T. Rice Holmes</editor>
+<imprint>
+<pubPlace>Oxford</pubPlace>
+<publisher>Clarendon</publisher>
+<date>1914</date>
+</imprint>
+</monogr>
+<series>
+<title>Scriptorum Classicorum Bibliotheca Oxoniensis</title>
+</series>
+	<ref target="https://archive.org/details/ciulicaesarisco00caesgoog">Internet Archive</ref>
+</biblStruct>
+</sourceDesc>
+</fileDesc>
 
-describe("processTei", () => {
+	<encodingDesc>
+		<refsDecl n="CTS">
+			<cRefPattern n="Section"
+				matchPattern="(\\w+).(\\w+).(\\w+)"
+				replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']/tei:div[@n='$3'])">
+				<p>This pointer pattern extracts Book and Chapter and Section</p>
+			</cRefPattern>
+			<cRefPattern n="Chapter"
+				matchPattern="(\\w+).(\\w+)"
+				replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2'])">
+				<p>This pointer pattern extracts Book and Chapter</p>
+			</cRefPattern>
+			<cRefPattern n="Book"
+				matchPattern="(\\w+)"
+				replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])">
+				<p>This pointer pattern extracts Book</p>
+			</cRefPattern>
+		</refsDecl>
+		<refsDecl>
+			<refState unit="book" delim="."/>
+			<refState unit="chapter" delim="."/>
+			<refState unit="section"/>
+		</refsDecl>
+	</encodingDesc>
+</teiHeader>`;
+
+function testRoot(body: string): XmlNode {
+  return parseRawXml(
+    `<TEI xmlns="http://www.tei-c.org/ns/1.0">
+      ${TEI_HEADER}
+      <text>
+        <body>${body}</body>
+      </text>
+    </TEI>`
+  );
+}
+
+const BODY_WITH_BOOK_ONLY = `<div n="1" type="textpart" subtype="book">Gallia est</div>`;
+
+describe("processTei2", () => {
   it("gets same result with and without side channel", () => {
     const sideChannel: DebugSideChannel = { onWord: jest.fn() };
 
-    const withSideChannel = processTei(SIMPLE_TEI_CTS, { sideChannel });
-    const withoutSideChannel = processTei(SIMPLE_TEI_CTS);
+    const withSideChannel = processTei2(testRoot(BODY_WITH_BOOK_ONLY), {
+      sideChannel,
+    });
+    const withoutSideChannel = processTei2(testRoot(BODY_WITH_BOOK_ONLY));
 
     expect(withSideChannel).toStrictEqual(withoutSideChannel);
   });
@@ -36,7 +101,7 @@ describe("processTei", () => {
   it("gets side channel callbacks", () => {
     const sideChannel: DebugSideChannel = { onWord: jest.fn() };
 
-    processTei(SIMPLE_TEI_CTS, { sideChannel });
+    processTei2(testRoot(BODY_WITH_BOOK_ONLY), { sideChannel });
 
     expect(sideChannel.onWord).toHaveBeenCalledWith("Gallia");
     expect(sideChannel.onWord).toHaveBeenCalledWith("est");

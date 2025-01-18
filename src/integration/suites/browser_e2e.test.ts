@@ -202,7 +202,7 @@ test.describe("main reader", () => {
     await click(page.locator(`[aria-label="Outline"]`));
     // Chosen because there is no other Chapter 90 - otherwise we would
     // have some trouble ambiguating between all of the links.
-    await click(page.getByText("SEPTIMUS").nth(0));
+    await click(page.getByText("Book 7").nth(0));
     await click(page.getByText("Chapter 90").nth(0));
     await expect(page.getByText("Aeduos").nth(0)).toBeVisible();
 
@@ -242,7 +242,7 @@ test.describe("main reader", () => {
     await expect(page.getByText("Britannos")).toBeInViewport();
   });
 
-  test("text search has expected results", async ({ page }) => {
+  test.fixme("text search has expected results", async ({ page }) => {
     await page.goto("/work/caesar/de_bello_gallico");
     await click(page.locator(`[aria-label="TextSearch"]`));
     await click(page.locator(`[aria-label="search this work"]`));

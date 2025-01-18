@@ -14,7 +14,7 @@ import {
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import {
   ListLibraryWorksResponse,
-  ProcessedWork,
+  ProcessedWork2,
   WorkId,
 } from "@/common/library/library_types";
 
@@ -69,11 +69,11 @@ export const ListLibraryWorks: ApiRoute<any, ListLibraryWorksResponse> = {
   outputValidator: ListLibraryWorksResponse.isMatch,
 };
 
-export const GetWork: ApiRoute<WorkId, ProcessedWork> = {
+export const GetWork: ApiRoute<WorkId, ProcessedWork2> = {
   path: "/api/library/work",
   method: "GET",
   inputValidator: WorkId.isMatch,
-  outputValidator: ProcessedWork.isMatch,
+  outputValidator: ProcessedWork2.isMatch,
   registry: [XmlNodeSerialization.DEFAULT],
 };
 

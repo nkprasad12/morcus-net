@@ -429,7 +429,7 @@ export function displayBibl(
   if (authorData !== undefined && authorData.length > 1) {
     works = chooseAuthor(root, context, author[0])?.worksTrie;
   }
-  const result = new XmlNode("span", [], []);
+  const result = new XmlNode<string>("span", [], []);
   // If we have two authors (=== commentary), then don't expand until after
   // we see the first author.
   let authorsSeen = 0;

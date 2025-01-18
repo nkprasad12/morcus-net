@@ -1,12 +1,8 @@
-// // @ts-ignore
-// import { betaCodeToGreek } from "beta-code-js";
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { arrayMap } from "@/common/data_structures/collect_map";
 import { DocumentInfo } from "@/common/library/library_types";
 import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import type { DescendantNode } from "@/common/xml/xml_text_utils";
-import { findXmlNodes } from "@/common/xml/xml_utils";
 
 const XPATH_START = "#xpath(";
 const TITLE_STATEMENT_PATH = ["teiHeader", "fileDesc", "titleStmt"];
@@ -149,7 +145,7 @@ function firstTextOfChild(
   return typeof content === "string" ? content : undefined;
 }
 
-function extractInfo(teiRoot: XmlNode) {
+export function extractInfo(teiRoot: XmlNode) {
   const titleStatement = findChild(teiRoot, TITLE_STATEMENT_PATH);
   return {
     title: XmlNode.getSoleText(titleStatement.findChildren("title")[0]),
@@ -231,122 +227,4 @@ export function findCtsEncoding(teiRoot: XmlNode): CtsRefPattern[] {
       assertEqual(idNodes.length, idSize);
       return { name: p.name, idSize, nodePath };
     });
-}
-
-interface RawTeiData {
-  idx: number;
-  id: string[];
-  node: XmlNode;
-  ofParent?: true;
-}
-
-export function parseCtsTeiXml(teiRoot: XmlNode): TeiCtsDocument {
-  const ctsPatterns = findCtsEncoding(teiRoot);
-  return {
-    info: extractInfo(teiRoot),
-    textParts: ctsPatterns
-      .sort((a, b) => a.idSize - b.idSize)
-      .map((p) => p.name),
-    content: extractTeiContent(teiRoot, ctsPatterns),
-  };
-}
-
-function extractTeiContent(
-  teiRoot: XmlNode,
-  ctsPatterns: CtsRefPattern[]
-): TeiNode {
-  const descendants = findXmlNodes(teiRoot);
-  const toKeep: RawTeiData[] = [];
-  for (let i = 0; i < descendants.length; i++) {
-    const id = CtsRefPattern.match(descendants[i], ctsPatterns);
-    if (id !== undefined) {
-      toKeep.push({ idx: i, id, node: descendants[i][0] });
-      continue;
-    }
-    const ancestors = descendants[i][1];
-    if (ancestors.length === 0) {
-      continue;
-    }
-    const parentId = CtsRefPattern.match(
-      [ancestors[ancestors.length - 1], ancestors.slice(0, -1)],
-      ctsPatterns
-    );
-    if (parentId !== undefined) {
-      toKeep.push({
-        idx: i,
-        id: parentId,
-        node: descendants[i][0],
-        ofParent: true,
-      });
-    }
-  }
-  return assembleTeiData(toKeep, ctsPatterns);
-}
-
-function assembleTeiTree(
-  rootKey: string,
-  nodeLookup: Map<
-    string,
-    { id: string[]; children: RawTeiData[]; selfNode: XmlNode }
-  >
-): TeiNode {
-  const rawData = checkPresent(nodeLookup.get(rootKey));
-  const children = [...rawData.children]
-    .sort((a, b) => a.idx - b.idx)
-    .map((child) =>
-      child.ofParent === true
-        ? child.node
-        : assembleTeiTree(child.id.join(","), nodeLookup)
-    );
-  return { id: rawData.id, children, selfNode: rawData.selfNode };
-}
-
-function assembleTeiData(
-  rawData: RawTeiData[],
-  patterns: CtsRefPattern[]
-): TeiNode {
-  patterns.sort((a, b) => a.idSize - b.idSize);
-  assert(patterns[0].idSize > 0);
-  for (let i = 0; i < patterns.length - 1; i++) {
-    assert(patterns[i].idSize < patterns[i + 1].idSize);
-  }
-  rawData.forEach((data) =>
-    data.id.forEach((part) => assert(!part.includes(",")))
-  );
-  const mains: RawTeiData[] = [];
-  const extrasById = arrayMap<string, RawTeiData>();
-  const nodeLookup = new Map<
-    string,
-    { id: string[]; children: RawTeiData[]; selfNode: XmlNode }
-  >();
-  // We verify above that every pattern has a non-empty id list.
-  // Use this as the root element.
-  nodeLookup.set("", {
-    id: [],
-    children: [],
-    selfNode: new XmlNode(ROOT_NODE_NAME),
-  });
-  for (const data of rawData) {
-    const combinedId = data.id.join(",");
-    if (data.ofParent === true) {
-      extrasById.add(combinedId, data);
-      continue;
-    }
-    mains.push(data);
-    assert(!nodeLookup.has(combinedId));
-    nodeLookup.set(combinedId, {
-      id: data.id,
-      children: [],
-      selfNode: data.node,
-    });
-  }
-  for (const [combinedId, extras] of extrasById.map) {
-    const parent = checkPresent(nodeLookup.get(combinedId));
-    parent.children.push(...extras);
-  }
-  for (const main of mains) {
-    const parentId = main.id.slice(0, -1).join(",");
-    checkPresent(nodeLookup.get(parentId)).children.push(main);
-  }
-  return assembleTeiTree("", nodeLookup);
 }

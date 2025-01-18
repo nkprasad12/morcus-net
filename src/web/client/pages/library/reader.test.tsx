@@ -8,7 +8,7 @@ import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen } from "@testing-library/react";
 import { ReadingPage, SwipeFeedback } from "@/web/client/pages/library/reader";
 import { ClientPaths } from "@/web/client/routing/client_paths";
-import { ProcessedWork } from "@/common/library/library_types";
+import { ProcessedWork2 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import { RouteContext, Router } from "@/web/client/router/router_v2";
@@ -44,96 +44,53 @@ const urlByIdFor = (workId: string) =>
   checkPresent(WORK_PAGE.toUrlPath({ workId }));
 const urlByNameFor = (name: string, author: string) =>
   checkPresent(WORK_BY_NAME.toUrlPath({ name, author }));
-const PROCESSED_WORK: ProcessedWork = {
+const PROCESSED_WORK: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
-  root: {
-    id: [],
-    children: [
-      {
-        id: ["1"],
-        children: [
-          {
-            id: ["1", "1"],
-            children: [new XmlNode("span", [], ["Gallia est omnis"])],
-          },
-          {
-            id: ["1", "2"],
-            children: [new XmlNode("span", [], [" divisa in partes tres"])],
-          },
-        ],
-      },
-    ],
-  },
+  rows: [
+    ["1.1", new XmlNode("span", [], ["Gallia est omnis"])],
+    ["1.2", new XmlNode("span", [], [" divisa in partes tres"])],
+  ],
 };
 
-const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork = {
+const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
-  root: {
-    id: [],
-    children: [
-      {
-        id: ["1"],
-        children: [
-          {
-            id: ["1", "1"],
-            children: [new XmlNode("span", [], ["Gallia est omnis"])],
-          },
-        ],
-      },
-      {
-        id: ["2"],
-        children: [
-          {
-            id: ["2", "1"],
-            children: [new XmlNode("span", [], [" divisa in partes tres"])],
-          },
-        ],
-      },
-    ],
-  },
+  rows: [
+    ["1.1", new XmlNode("span", [], ["Gallia est omnis"])],
+    ["2.1", new XmlNode("span", [], [" divisa in partes tres"])],
+  ],
 };
 
-const PROCESSED_WORK_VARIANTS: ProcessedWork = {
+const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
-  root: {
-    id: [],
-    children: [
-      {
-        id: ["1"],
-        children: [
-          {
-            id: ["1", "1"],
-            children: [
-              new XmlNode(
-                "span",
-                [],
-                [new XmlNode("libLat", [["target", "omnis"]], ["Omnis"])]
-              ),
-            ],
-          },
-          {
-            id: ["1", "2"],
-            children: [
-              new XmlNode("span", [], [new XmlNode("libLat", [], ["est"])]),
-            ],
-          },
-          {
-            id: ["1", "3"],
-            children: [
-              new XmlNode(
-                "span",
-                [],
-                [new XmlNode("latLink", [["alt", "gap"]])]
-              ),
-            ],
-          },
-        ],
-      },
+  rows: [
+    [
+      "1.1",
+      new XmlNode("span", [], ["omnis ", new XmlNode("s", [], ["deleted"])]),
     ],
-  },
+    [
+      "2.1",
+      new XmlNode(
+        "q",
+        [],
+        [" divisa in partes tres", new XmlNode("gap", [], [])]
+      ),
+    ],
+  ],
+};
+
+const findOnScreen = (text: string) => {
+  // Passing function to `getByText`
+  return screen.getByText((_, element) => {
+    const hasText = (element: Element | null) => element?.textContent === text;
+    const elementHasText = hasText(element);
+    const childrenDontHaveText = Array.from(element?.children || []).every(
+      (child) => !hasText(child)
+    );
+    return elementHasText && childrenDontHaveText;
+  });
 };
 
 describe("Reading UI", () => {
@@ -247,7 +204,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: urlByIdFor("dbg") },
+          route: { path: urlByIdFor("dbg"), params: { pg: "1" } },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -255,7 +212,7 @@ describe("Reading UI", () => {
     );
 
     await screen.findByText(/DBG/);
-    await screen.findByText(/Gallia est omnis/);
+    expect(findOnScreen("Gallia est omnis")).not.toBeNull();
   });
 
   it("shows work contents on success on mobile", async () => {
@@ -266,7 +223,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: urlByIdFor("dbg") },
+          route: { path: urlByIdFor("dbg"), params: { pg: "1" } },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -274,7 +231,7 @@ describe("Reading UI", () => {
     );
 
     await screen.findByText(/DBG/);
-    await screen.findByText(/Gallia est omnis/);
+    expect(findOnScreen("Gallia est omnis")).not.toBeNull();
   });
 
   it("shows marked up contents", async () => {
@@ -283,7 +240,7 @@ describe("Reading UI", () => {
     render(
       <RouteContext.Provider
         value={{
-          route: { path: urlByIdFor("dbg") },
+          route: { path: urlByIdFor("dbg"), params: { id: "2" } },
           navigateTo: () => {},
         }}>
         <ReadingPage />
@@ -291,16 +248,10 @@ describe("Reading UI", () => {
     );
 
     await screen.findByText(/\[gap\]/);
-    await user.click(await screen.findByText(/Omnis/));
-    // Note the lower case, since the target is omnis.
+    await user.click(await screen.findByText(/divisa/));
     expect(mockCallApiFull).toHaveBeenLastCalledWith(
       expect.objectContaining({ path: "/api/dicts/fused" }),
-      expect.objectContaining({ query: "omnis" })
-    );
-    await user.click(await screen.findByText(/est/));
-    expect(mockCallApiFull).toHaveBeenLastCalledWith(
-      expect.objectContaining({ path: "/api/dicts/fused" }),
-      expect.objectContaining({ query: "est" })
+      expect.objectContaining({ query: "divisa" })
     );
   });
 
@@ -312,7 +263,7 @@ describe("Reading UI", () => {
         value={{
           route: {
             path: urlByIdFor("dbg"),
-            params: { q: "2" },
+            params: { id: "2" },
           },
           navigateTo: () => {},
         }}>
@@ -339,7 +290,7 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("next section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { pg: "2" } })
+      expect.objectContaining({ path, params: { id: "2" } })
     );
   });
 
@@ -357,7 +308,7 @@ describe("Reading UI", () => {
     await user.keyboard("[ArrowRight]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { pg: "2" } })
+      expect.objectContaining({ path, params: { id: "2" } })
     );
   });
 
@@ -367,7 +318,7 @@ describe("Reading UI", () => {
     const path = urlByIdFor("dbg");
     render(
       <Router.TestRoot
-        initial={{ path, params: { q: "2" } }}
+        initial={{ path, params: { id: "2" } }}
         updateListener={mockNav}>
         <ReadingPage />
       </Router.TestRoot>
@@ -377,7 +328,7 @@ describe("Reading UI", () => {
     await user.keyboard("[ArrowLeft]");
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { pg: "1" } })
+      expect.objectContaining({ path, params: { id: "1" } })
     );
   });
 
@@ -387,7 +338,7 @@ describe("Reading UI", () => {
     const path = urlByIdFor("dbg");
     render(
       <Router.TestRoot
-        initial={{ path, params: { q: "2" } }}
+        initial={{ path, params: { id: "2" } }}
         updateListener={mockNav}>
         <ReadingPage />
       </Router.TestRoot>
@@ -397,12 +348,11 @@ describe("Reading UI", () => {
     await user.click(screen.queryByLabelText("previous section")!);
 
     expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({ path, params: { pg: "1" } })
+      expect.objectContaining({ path, params: { id: "1" } })
     );
   });
 
-  // TODO: Figure out why this test doesn't work.
-  it.skip("shows settings page", async () => {
+  it("shows settings page", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
     const mockNav = jest.fn();
     render(
@@ -410,7 +360,6 @@ describe("Reading UI", () => {
         value={{
           route: {
             path: urlByIdFor("dbg"),
-            params: { q: "1" },
           },
           navigateTo: mockNav,
         }}>
@@ -419,8 +368,7 @@ describe("Reading UI", () => {
     );
 
     await user.click(screen.queryByLabelText("Reader settings")!);
-
-    await screen.findByText(/Reader settings/);
+    await screen.findByText(/Layout settings/);
   });
 
   it("shows page specified from URL", async () => {

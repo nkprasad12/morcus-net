@@ -4,13 +4,13 @@ const INDENT = "-   ";
 
 export const COMMENT_NODE = "#comment";
 
-export type XmlChild = XmlNode | string;
+export type XmlChild<T extends string = string> = XmlNode<T> | string;
 
-export class XmlNode {
+export class XmlNode<T extends string = string> {
   constructor(
-    readonly name: string,
+    readonly name: T,
     readonly attrs: [string, string][] = [],
-    readonly children: XmlChild[] = []
+    readonly children: XmlChild<T>[] = []
   ) {}
 
   formatAsString(indent: boolean = true, level: number = 0): string {
@@ -59,8 +59,8 @@ export class XmlNode {
   }
 
   /** Returns all descendants with the given `name`. */
-  findDescendants(name: string): XmlNode[] {
-    const result: XmlNode[] = [];
+  findDescendants(name: string): XmlNode<T>[] {
+    const result: XmlNode<T>[] = [];
     for (const child of this.children) {
       if (typeof child === "string") {
         continue;
@@ -88,8 +88,8 @@ export class XmlNode {
     return undefined;
   }
 
-  deepcopy(): XmlNode {
-    const children: XmlChild[] = [];
+  deepcopy(): XmlNode<T> {
+    const children: XmlChild<T>[] = [];
     for (const child of this.children) {
       if (typeof child === "string") {
         children.push(child);
@@ -98,7 +98,7 @@ export class XmlNode {
       }
     }
     const attrs: [string, string][] = this.attrs.map(([k, v]) => [k, v]);
-    return new XmlNode(this.name, attrs, children);
+    return new XmlNode<T>(this.name, attrs, children);
   }
 }
 
@@ -115,7 +115,10 @@ export namespace XmlNode {
     throw new Error(`Expected "string", but got ${node.formatAsString()}`);
   }
 
-  export function assertIsNode(node: XmlChild, name?: string): XmlNode {
+  export function assertIsNode<T extends string>(
+    node: XmlChild<T>,
+    name?: string
+  ): XmlNode<T> {
     if (typeof node === "string") {
       throw new Error(`Expected XmlNode, but got string.`);
     }
