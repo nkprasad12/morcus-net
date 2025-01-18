@@ -18,8 +18,11 @@ function onWorkSelected(work: LibraryWorkMetadata, nav: NavHelper<RouteInfo>) {
   const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
   if (path !== null) {
     const id = [work.name, work.author].join("@");
-    const page = LibrarySavedSpot.get(id) || 1;
-    nav.to({ path, params: { pg: `${page}` } });
+    const saved = LibrarySavedSpot.get(id);
+    const useSectionId = typeof saved === "string";
+    const pg = useSectionId ? undefined : `${saved ?? 1}`;
+    const sectionId = useSectionId ? saved : undefined;
+    nav.to({ path, params: { pg, id: sectionId } });
   }
 }
 

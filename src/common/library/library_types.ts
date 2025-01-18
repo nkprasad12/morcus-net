@@ -3,7 +3,7 @@ import {
   Validator,
   instanceOf,
   isArray,
-  isOneOf,
+  isPair,
   isString,
   matchesObject,
   maybeUndefined,
@@ -29,32 +29,8 @@ export namespace DocumentInfo {
   });
 }
 
-export interface ProcessedWorkNode {
-  /** The identified for this node. */
-  id: string[];
-  /** A header for this section, if any. */
-  header?: string;
-  /**
-   * The data for this node. Any recursive children are themselves versioned sections,
-   * while raw `XmlNode` children are data attached to this node.
-   */
-  children: (XmlNode | ProcessedWorkNode)[];
-  /** Notes for rendering this node and all its children. */
-  rendNote?: string;
-}
-
-export namespace ProcessedWorkNode {
-  export const isMatch = matchesObject<ProcessedWorkNode>({
-    id: isArray(isString),
-    header: maybeUndefined(isString),
-    // Apparently it doesn't work resursively, so just check that it's
-    // a JSON object.
-    children: isArray(isOneOf(instanceOf(XmlNode), matchesObject<any>({}))),
-    rendNote: maybeUndefined(isString),
-  });
-}
-
-export interface ProcessedWork {
+export type ProcessedWorkContentNodeType = "span" | "head" | "s" | "gap" | "q";
+export interface ProcessedWork2 {
   /** Basic information about this work such as author or title. */
   info: DocumentInfo;
   /**
@@ -62,15 +38,15 @@ export interface ProcessedWork {
    * These are returned in descending order of size.
    */
   textParts: string[];
-  /** Root node for the content of this work. */
-  root: ProcessedWorkNode;
+  /** Rows representing the work content.. */
+  rows: [string, XmlNode<ProcessedWorkContentNodeType>][];
 }
 
-export namespace ProcessedWork {
-  export const isMatch = matchesObject<ProcessedWork>({
+export namespace ProcessedWork2 {
+  export const isMatch = matchesObject<ProcessedWork2>({
     info: DocumentInfo.isMatch,
     textParts: isArray(isString),
-    root: ProcessedWorkNode.isMatch,
+    rows: isArray(isPair(isString, instanceOf(XmlNode))),
   });
 }
 

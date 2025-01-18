@@ -1,6 +1,6 @@
 import {
   LibraryWorkMetadata,
-  ProcessedWork,
+  ProcessedWork2,
   WorkId,
 } from "@/common/library/library_types";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
@@ -75,10 +75,10 @@ export async function retrieveWorkStringified(
 export async function retrieveWork(
   workId: WorkId,
   resultDir: string = LIB_DEFAULT_DIR
-): Promise<ProcessedWork> {
+): Promise<ProcessedWork2> {
   return parseMessage(
     await retrieveWorkStringified(workId, resultDir),
-    ProcessedWork.isMatch,
+    ProcessedWork2.isMatch,
     [XmlNodeSerialization.DEFAULT]
   );
 }

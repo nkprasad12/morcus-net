@@ -1,10 +1,10 @@
-import { ProcessedWork, WorkId } from "@/common/library/library_types";
+import { ProcessedWork2, WorkId } from "@/common/library/library_types";
 import { GetWork } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 
-let lastFetched: [WorkId, Promise<ProcessedWork>] | undefined = undefined;
+let lastFetched: [WorkId, Promise<ProcessedWork2>] | undefined = undefined;
 
-export function fetchWork(id: WorkId): Promise<ProcessedWork> {
+export function fetchWork(id: WorkId): Promise<ProcessedWork2> {
   const oldId = lastFetched?.[0];
   const needToFetch =
     oldId === undefined ||

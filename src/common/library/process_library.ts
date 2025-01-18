@@ -1,5 +1,3 @@
-import { checkPresent } from "@/common/assert";
-import { arrayMap } from "@/common/data_structures/collect_map";
 import { envVar } from "@/common/env_vars";
 import {
   LIBRARY_INDEX,
@@ -12,11 +10,9 @@ import {
 } from "@/common/library/library_patches";
 import {
   LibraryWorkMetadata,
-  ProcessedWorkNode,
-  type ProcessedWork,
+  type ProcessedWork2,
 } from "@/common/library/library_types";
-import { processTei } from "@/common/library/process_work";
-import { parseCtsTeiXml, type TeiCtsDocument } from "@/common/xml/tei_utils";
+import { processTei2 } from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseRawXml } from "@/common/xml/xml_utils";
@@ -91,10 +87,10 @@ function urlifyName(input: string): string {
   return urlify(input, NAME_TO_URL_LOOKUP);
 }
 
-function processTeiCts(
-  tei: TeiCtsDocument,
+function processTeiCts2(
+  root: XmlNode,
   patches?: LibraryPatch[]
-): ProcessedWork {
+): ProcessedWork2 {
   const words: string[] = [];
   const onWord = (word: string) => {
     const trimmed = word.trim();
@@ -104,40 +100,14 @@ function processTeiCts(
     }
   };
   const debugRoot: string | undefined = envVar("DEBUG_OUT", "unsafe");
-  const debugName = tei.info.title.replaceAll(" ", "_");
+  const debugHelper = debugRoot === undefined ? undefined : { onWord };
+  const result = processTei2(root, { patches, sideChannel: debugHelper });
+  const debugName = result.info.title.replaceAll(" ", "_");
   const outputPath = debugRoot?.concat("/", debugName, ".debug.txt");
-  const debugHelper = outputPath === undefined ? undefined : { onWord };
-  const result = processTei(tei, { sideChannel: debugHelper, patches });
   if (outputPath !== undefined) {
     fs.writeFileSync(outputPath, words.sort().join("\n"));
   }
   return result;
-}
-
-function indexWork(work: ProcessedWork) {
-  const stack: ProcessedWork["root"]["children"] = [];
-  const idMap = new Map<string[], number>();
-  let currentId: string[] = work.root.id;
-  stack.push(work.root);
-  const index = arrayMap<string, number>();
-  while (stack.length > 0) {
-    const node = checkPresent(stack.pop());
-    if (ProcessedWorkNode.isMatch(node)) {
-      for (let i = 0; i < node.children.length; i++) {
-        stack.push(node.children[node.children.length - 1 - i]);
-      }
-      currentId = node.id;
-      continue;
-    }
-    for (const libLat of node.findDescendants("libLat")) {
-      if (!idMap.has(currentId)) {
-        console.log(`${JSON.stringify(currentId)} -> ${idMap.size}`);
-        idMap.set(currentId, idMap.size);
-      }
-      index.add(XmlNode.getSoleText(libLat), idMap.get(currentId)!);
-    }
-  }
-  return index.map;
 }
 
 export function processLibrary(
@@ -149,25 +119,21 @@ export function processLibrary(
   for (const workPath of works) {
     // We should use the Perseus URN instead.
     const workId = path.basename(workPath).replace(/\.[^/.]+$/, "");
-    const tei = parseCtsTeiXml(parseRawXml(fs.readFileSync(workPath)));
-    const title = NAME_TO_DISPLAY_NAME.get(tei.info.title) || tei.info.title;
+    const rawXml = parseRawXml(fs.readFileSync(workPath));
+    const result = processTeiCts2(rawXml, patches.get(workId));
+    const rawTitle = result.info.title;
+    const title = NAME_TO_DISPLAY_NAME.get(rawTitle) ?? rawTitle;
     const metadata: LibraryWorkMetadata = {
       id: workId,
-      author: tei.info.author,
+      author: result.info.author,
       name: title,
-      urlAuthor: urlifyAuthor(tei.info.author),
-      urlName: urlifyName(tei.info.title),
+      urlAuthor: urlifyAuthor(result.info.author),
+      urlName: urlifyName(result.info.title),
     };
-    const result = processTeiCts(tei, patches.get(workId));
-    const workIndex = indexWork(result);
     const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
     const outputPath = `${outputDir}/${workId}`;
     index[workId] = [outputPath, metadata];
     fs.writeFileSync(outputPath, encoded);
-    fs.writeFileSync(
-      `${outputPath}.index`,
-      JSON.stringify([...workIndex.entries()])
-    );
     console.log("Wrote processed file to %s", outputPath);
   }
   // TODO: We should verify here that there are no duplicates.
