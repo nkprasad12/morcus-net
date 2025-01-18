@@ -51,6 +51,7 @@ const PROCESSED_WORK: ProcessedWork2 = {
     ["1.1", new XmlNode("span", [], ["Gallia est omnis"])],
     ["1.2", new XmlNode("span", [], [" divisa in partes tres"])],
   ],
+  pages: [{ id: ["1"], rows: [0, 2] }],
 };
 
 const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
@@ -59,6 +60,10 @@ const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
   rows: [
     ["1.1", new XmlNode("span", [], ["Gallia est omnis"])],
     ["2.1", new XmlNode("span", [], [" divisa in partes tres"])],
+  ],
+  pages: [
+    { id: ["1"], rows: [0, 1] },
+    { id: ["2"], rows: [1, 2] },
   ],
 };
 
@@ -78,6 +83,10 @@ const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
         [" divisa in partes tres", new XmlNode("gap", [], [])]
       ),
     ],
+  ],
+  pages: [
+    { id: ["1"], rows: [0, 1] },
+    { id: ["2"], rows: [1, 2] },
   ],
 };
 

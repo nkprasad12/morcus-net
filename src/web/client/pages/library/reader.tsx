@@ -1,7 +1,6 @@
 import {
   DocumentInfo,
   WorkId,
-  type ProcessedWork2,
   type ProcessedWorkContentNodeType,
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -24,7 +23,6 @@ import {
   NavIcon,
   TooltipNavIcon,
 } from "@/web/client/pages/library/reader_utils";
-import { checkPresent } from "@/common/assert";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,
@@ -53,17 +51,6 @@ const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
 type WorkState = PaginatedWork | "Loading" | "Error";
 
-function divideWork(work: ProcessedWork2): WorkPage[] {
-  const idLength = work.textParts.length - 1;
-  const ids = new Set<string>();
-  for (const [rowId, _] of work.rows) {
-    const id = rowId.split(".");
-    if (id.length < idLength) continue;
-    ids.add(id.slice(0, idLength).join("."));
-  }
-  return Array.from(ids).map((id) => ({ id: id.split(".") }));
-}
-
 function buildNavTree(pages: WorkPage[]): NavTreeNode {
   const root: NavTreeNode = { id: [], children: [] };
   for (const { id } of pages) {
@@ -79,17 +66,6 @@ function buildNavTree(pages: WorkPage[]): NavTreeNode {
     }
   }
   return root;
-}
-
-function findRowsForPage(work: PaginatedWork, page: number) {
-  const target = checkPresent(work.pages[page].id);
-  return work.rows.filter((row) => {
-    const id = row[0].split(".");
-    if (id.length < work.textParts.length) {
-      return false;
-    }
-    return areArraysEqual(target, id.slice(0, target.length));
-  });
 }
 
 function resolveWorkId(path: string): WorkId | undefined {
@@ -131,14 +107,12 @@ function updatePage(
 
 interface ReaderState {
   hasTooltip: React.MutableRefObject<boolean[]>;
-  section: ProcessedWork2["rows"] | undefined;
   queryLine?: number;
   highlightRef?: React.RefObject<HTMLSpanElement>;
 }
 
 const ReaderContext = React.createContext<ReaderState>({
   hasTooltip: { current: [] },
-  section: undefined,
 });
 
 export function ReadingPage() {
@@ -170,14 +144,6 @@ export function ReadingPage() {
   }, [urlPg, urlId, work]);
   const queryLine = safeParseInt(route.params?.l);
 
-  const section = React.useMemo(
-    () =>
-      typeof work === "string" || currentPage === undefined
-        ? undefined
-        : findRowsForPage(work, currentPage),
-    [work, currentPage]
-  );
-
   useEffect(() => {
     const workId = resolveWorkId(route.path);
     if (workId === undefined) {
@@ -186,9 +152,8 @@ export function ReadingPage() {
     }
     fetchWork(workId)
       .then((data) => {
-        const pages = divideWork(data);
-        const navTree = buildNavTree(pages);
-        const paginated = { ...data, pages, navTree };
+        const navTree = buildNavTree(data.pages);
+        const paginated = { ...data, navTree };
         setWork(paginated);
       })
       .catch((reason) => {
@@ -215,17 +180,16 @@ export function ReadingPage() {
     tryToScroll();
   }, [queryLine]);
 
-  useEffect(() => {
-    if (section === undefined) {
-      hasTooltip.current = [];
-      return;
-    }
-    hasTooltip.current = section.map((_) => false);
-  }, [section]);
+  // useEffect(() => {
+  //   if (currentPage === undefined) {
+  //     hasTooltip.current = [];
+  //     return;
+  //   }
+  //   hasTooltip.current = section.map((_) => false);
+  // }, [currentPage]);
 
   return (
-    <ReaderContext.Provider
-      value={{ hasTooltip, section, queryLine, highlightRef }}>
+    <ReaderContext.Provider value={{ hasTooltip, queryLine, highlightRef }}>
       <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
         MainColumn={WorkColumn}
         ExtraSidebarContent={Sidebar}
@@ -527,6 +491,18 @@ function WorkNavigationBar(props: {
   );
 }
 
+function* rowsForPage(
+  work: PaginatedWork,
+  page: number
+): Generator<[[string, XmlNode<ProcessedWorkContentNodeType>], number]> {
+  const [start, end] = work.pages[page].rows;
+  for (let i = start; i < end; i++) {
+    if (work.rows[i][0].split(".").length === work.textParts.length) {
+      yield [work.rows[i], i - start];
+    }
+  }
+}
+
 export function WorkTextPage(props: {
   work: PaginatedWork;
   setDictWord: (word: string) => unknown;
@@ -535,10 +511,7 @@ export function WorkTextPage(props: {
   isMobile: boolean;
 }) {
   const { textScale, isMobile, work } = props;
-  const { section, queryLine } = React.useContext(ReaderContext);
-  if (section === undefined) {
-    return <InfoText text="Invalid page!" />;
-  }
+  const { queryLine } = React.useContext(ReaderContext);
 
   const gapSize = (textScale / 100) * 0.65;
   const gap = `${gapSize}em`;
@@ -551,7 +524,7 @@ export function WorkTextPage(props: {
         columnGap: gap,
         marginTop: isMobile ? `${gapSize / 2}em` : gap,
       }}>
-      {section.map(([id, node], i) => (
+      {Array.from(rowsForPage(work, props.page), ([[id, node], i]) => (
         <WorkChunk
           key={id}
           sectionId={id}

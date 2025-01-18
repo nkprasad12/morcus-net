@@ -13,7 +13,6 @@ export interface NavTreeNode {
 }
 
 export interface PaginatedWork extends ProcessedWork2 {
-  pages: WorkPage[];
   navTree: NavTreeNode;
 }
 
