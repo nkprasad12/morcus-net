@@ -4,7 +4,7 @@ const PHAEDRUS_FABULAE = "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml";
 const OVID_AMORES = "data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml";
 const TACITUS_GERMANIA = "data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml";
 const JUVENAL_SATURAE = "data/phi1276/phi001/phi1276.phi001.perseus-lat2.xml";
-const SALLUST_CATALINA1 = "data/phi0631/phi001/phi0631.phi001.perseus-lat3.xml";
+const SALLUST_CATALINA1 = "data/phi0631/phi001/phi0631.phi001.perseus-lat4.xml";
 
 // Two supported works are checked in to the repo itself for the sake of unit testing.
 export const LOCAL_REPO_WORKS = [CAESAR_DBG, PHAEDRUS_FABULAE];
