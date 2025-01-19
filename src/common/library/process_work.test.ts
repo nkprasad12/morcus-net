@@ -1,6 +1,7 @@
 import type { LibraryPatch } from "@/common/library/library_patches";
 import { WorkPage, type ProcessedWork2 } from "@/common/library/library_types";
 import {
+  analyzeQuotes,
   divideWork,
   patchText,
   processTei2,
@@ -265,5 +266,48 @@ describe("divideWork", () => {
     const rows = toRows(["1.1", "1", "2.1", "2.2", "2", "1.2"]);
     const textParts = ["chapter", "section"];
     expect(() => divideWork(rows, textParts)).toThrow();
+  });
+});
+
+describe("analyzeQuotes", () => {
+  it("detects and raises on unsafe closes", () => {
+    const rows: ProcessedWork2["rows"] = [
+      [[], new XmlNode("span", [], ["“‘”’”"])],
+    ];
+    expect(() => analyzeQuotes(rows)).toThrow();
+  });
+
+  it("handles combinations of quote types", () => {
+    const rows: ProcessedWork2["rows"] = [
+      [[], new XmlNode("span", [], ['“‘’”""'])],
+    ];
+    expect(analyzeQuotes(rows)).toHaveLength(0);
+  });
+
+  it("looks across siblings", () => {
+    const rows: ProcessedWork2["rows"] = [
+      [[], new XmlNode("span", [], ["“‘", '’”""'])],
+    ];
+    expect(analyzeQuotes(rows)).toHaveLength(0);
+  });
+
+  it("does a DFS search", () => {
+    const rows: ProcessedWork2["rows"] = [
+      [
+        [],
+        new XmlNode("span", [], ["“‘", new XmlNode("span", [], ["’”"]), '""']),
+      ],
+    ];
+    expect(analyzeQuotes(rows)).toHaveLength(0);
+  });
+
+  it("Returns unclosed quotes", () => {
+    const rows: ProcessedWork2["rows"] = [
+      [[], new XmlNode("span", [], ["“hi", "hello"])],
+    ];
+    const unclosed = analyzeQuotes(rows);
+
+    expect(unclosed).toHaveLength(1);
+    expect(unclosed[0]).toStrictEqual(["“", "“hi"]);
   });
 });
