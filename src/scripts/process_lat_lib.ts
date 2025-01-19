@@ -1,12 +1,10 @@
 /* istanbul ignore file */
 
 import fs from "fs";
-import {
-  ALL_SUPPORTED_WORKS,
-  processLibrary,
-} from "@/common/library/process_library";
+import { processLibrary } from "@/common/library/process_library";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { envVar } from "@/common/env_vars";
+import { ALL_SUPPORTED_WORKS } from "@/common/library/library_constants";
 
 const startTime = performance.now();
 
