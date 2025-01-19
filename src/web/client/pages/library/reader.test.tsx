@@ -8,7 +8,10 @@ import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
 import { render, screen } from "@testing-library/react";
 import { ReadingPage, SwipeFeedback } from "@/web/client/pages/library/reader";
 import { ClientPaths } from "@/web/client/routing/client_paths";
-import { ProcessedWork2 } from "@/common/library/library_types";
+import {
+  ProcessedWork2,
+  type NavTreeNode,
+} from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
 import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import {
@@ -48,6 +51,18 @@ const urlByIdFor = (workId: string) =>
   checkPresent(WORK_PAGE.toUrlPath({ workId }));
 const urlByNameFor = (name: string, author: string) =>
   checkPresent(WORK_BY_NAME.toUrlPath({ name, author }));
+
+const ONE_CHAPTER_NAV_TREE: NavTreeNode = {
+  id: [],
+  children: [{ id: ["1"], children: [] }],
+};
+const TWO_CHAPTER_NAV_TREE: NavTreeNode = {
+  id: [],
+  children: [
+    { id: ["1"], children: [] },
+    { id: ["2"], children: [] },
+  ],
+};
 const PROCESSED_WORK: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
@@ -56,6 +71,7 @@ const PROCESSED_WORK: ProcessedWork2 = {
     [["1", "2"], new XmlNode("span", [], [" divisa in partes tres"])],
   ],
   pages: [{ id: ["1"], rows: [0, 2] }],
+  navTree: ONE_CHAPTER_NAV_TREE,
 };
 
 const WORK_WITH_FLAVOR_TEXT: ProcessedWork2 = {
@@ -67,6 +83,7 @@ const WORK_WITH_FLAVOR_TEXT: ProcessedWork2 = {
     [["1", "2"], new XmlNode("span", [], [" divisa in partes tres"])],
   ],
   pages: [{ id: ["1"], rows: [0, 3] }],
+  navTree: ONE_CHAPTER_NAV_TREE,
 };
 
 const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
@@ -80,6 +97,7 @@ const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
     { id: ["1"], rows: [0, 1] },
     { id: ["2"], rows: [1, 2] },
   ],
+  navTree: TWO_CHAPTER_NAV_TREE,
 };
 
 const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
@@ -103,6 +121,7 @@ const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
     { id: ["1"], rows: [0, 1] },
     { id: ["2"], rows: [1, 2] },
   ],
+  navTree: TWO_CHAPTER_NAV_TREE,
 };
 
 const findOnScreen = (text: string) => {

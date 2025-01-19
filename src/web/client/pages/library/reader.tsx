@@ -1,6 +1,7 @@
 import {
   DocumentInfo,
   WorkId,
+  type NavTreeNode,
   type ProcessedWorkContentNodeType,
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -9,11 +10,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 
 import { useEffect, useState } from "react";
 import * as React from "react";
-import {
-  areArraysEqual,
-  exhaustiveGuard,
-  safeParseInt,
-} from "@/common/misc_utils";
+import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
@@ -41,32 +38,13 @@ import { SvgIcon } from "@/web/client/components/generic/icons";
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 import {
   navigateToSection,
-  type NavTreeNode,
   type PaginatedWork,
-  type WorkPage,
 } from "@/web/client/pages/library/reader/library_reader/library_reader_common";
 import { processWords } from "@/common/text_cleaning";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
 type WorkState = PaginatedWork | "Loading" | "Error";
-
-function buildNavTree(pages: WorkPage[]): NavTreeNode {
-  const root: NavTreeNode = { id: [], children: [] };
-  for (const { id } of pages) {
-    let node = root;
-    for (let i = 0; i < id.length; i++) {
-      const idSubset = id.slice(0, i + 1);
-      let child = node.children.find((c) => areArraysEqual(c.id, idSubset));
-      if (child === undefined) {
-        child = { id: idSubset, children: [] };
-        node.children.push(child);
-      }
-      node = child;
-    }
-  }
-  return root;
-}
 
 function resolveWorkId(path: string): WorkId | undefined {
   const byNameParams = ClientPaths.WORK_BY_NAME.parseParams(path);
@@ -148,11 +126,7 @@ export function ReadingPage() {
       return;
     }
     fetchWork(workId)
-      .then((data) => {
-        const navTree = buildNavTree(data.pages);
-        const paginated = { ...data, navTree };
-        setWork(paginated);
-      })
+      .then(setWork)
       .catch((reason) => {
         console.debug(reason);
         setWork("Error");

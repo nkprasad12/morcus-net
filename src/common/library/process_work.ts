@@ -8,6 +8,7 @@ import {
 import { arrayMap } from "@/common/data_structures/collect_map";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import {
+  type NavTreeNode,
   type ProcessedWork2,
   type ProcessedWorkContentNodeType,
   type WorkPage,
@@ -18,7 +19,7 @@ import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf } from "@/web/utils/rpc/parsing";
 
-const SKIP_NODES = new Set(["#comment", "note"]);
+const SKIP_NODES = new Set(["#comment", "note", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 const HANDLED_REND = new Set<string>(["indent"]);
 // `merge` occurs only one time. It happens when we have a continued quote:
@@ -142,7 +143,11 @@ function getSectionId(
   const sectionId: string[] = [];
   let parentHadSection = false;
   for (const ancestor of ancestors) {
-    if (ancestor.getAttr("type") !== "textpart" && ancestor.name !== "l") {
+    const isTextPart = ancestor.getAttr("type") === "textpart";
+    // `l` is sometimes used even if the CTS says `line`, and it is often not marked.
+    // However, it is also sometimes used to show poetry in prose when it's not a CTS
+    // section.
+    if (!isTextPart && (ancestor.name !== "l" || i >= textParts.length)) {
       parentHadSection = false;
       continue;
     }
@@ -150,8 +155,7 @@ function getSectionId(
       textParts[i].toLowerCase(),
       ancestor.name === "l"
         ? "line"
-        : ancestor.getAttr("subtype")?.toLowerCase(),
-      ancestors.slice(-1)[0].toString()
+        : ancestor.getAttr("subtype")?.toLowerCase()
     );
     sectionId.push(checkPresent(ancestor.getAttr("n")));
     i++;
@@ -401,10 +405,17 @@ function getTextparts(root: XmlNode) {
       .map((p) => p.name);
   }
   assertEqual(nonCts.length, 1, nonCts.map((n) => n.toString()).join("\n"));
-  return nonCts[0].children.filter(instanceOf(XmlNode)).map((child) => {
-    assertEqual(child.name, "refState");
-    return checkPresent(child.getAttr("unit"));
-  });
+  const textParts = nonCts[0].children
+    .filter(instanceOf(XmlNode))
+    .map((child) => {
+      assertEqual(child.name, "refState");
+      return checkPresent(child.getAttr("unit"));
+    });
+  // Hack for Sallust
+  if (areArraysEqual(["text", "chapter", "section"], textParts)) {
+    return ["chapter"];
+  }
+  return textParts;
 }
 
 /** Exported for unit testing. */
@@ -449,6 +460,23 @@ export function divideWork(
   return pages;
 }
 
+function buildNavTree(pages: WorkPage[]): NavTreeNode {
+  const root: NavTreeNode = { id: [], children: [] };
+  for (const { id } of pages) {
+    let node = root;
+    for (let i = 0; i < id.length; i++) {
+      const idSubset = id.slice(0, i + 1);
+      let child = node.children.find((c) => areArraysEqual(c.id, idSubset));
+      if (child === undefined) {
+        child = { id: idSubset, children: [] };
+        node.children.push(child);
+      }
+      node = child;
+    }
+  }
+  return root;
+}
+
 /** Returns the processed content of a TEI XML file. */
 export function processTei2(
   xmlRoot: XmlNode,
@@ -464,10 +492,13 @@ export function processTei2(
     (arr) => arr.length === 1
   );
   const rows = processWorkBody(body[0], textParts, processOptions);
+  const pages = divideWork(rows, textParts);
+  const navTree = buildNavTree(pages);
   return {
     info: extractInfo(xmlRoot),
     textParts,
     rows,
-    pages: divideWork(rows, textParts),
+    pages,
+    navTree,
   };
 }

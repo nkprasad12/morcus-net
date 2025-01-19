@@ -41,6 +41,18 @@ const isWorkPage = matchesObject<WorkPage>({
   rows: isPair(isNumber, isNumber),
 });
 
+export interface NavTreeNode {
+  id: string[];
+  children: NavTreeNode[];
+}
+
+function isNavTreeNode(x: unknown): x is NavTreeNode {
+  return matchesObject<NavTreeNode>({
+    id: isArray(isString),
+    children: isArray(isNavTreeNode),
+  })(x);
+}
+
 export type ProcessedWorkContentNodeType = "span" | "head" | "s" | "gap" | "q";
 export interface ProcessedWork2 {
   /** Basic information about this work such as author or title. */
@@ -54,6 +66,8 @@ export interface ProcessedWork2 {
   rows: [string[], XmlNode<ProcessedWorkContentNodeType>][];
   /** The default pagination for the content. */
   pages: WorkPage[];
+  /** The default navigation tree for the content. */
+  navTree: NavTreeNode;
 }
 
 export namespace ProcessedWork2 {
@@ -62,6 +76,7 @@ export namespace ProcessedWork2 {
     textParts: isArray(isString),
     rows: isArray(isPair(isArray(isString), instanceOf(XmlNode))),
     pages: isArray(isWorkPage),
+    navTree: isNavTreeNode,
   });
 }
 
