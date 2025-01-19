@@ -411,10 +411,6 @@ function getTextparts(root: XmlNode) {
       assertEqual(child.name, "refState");
       return checkPresent(child.getAttr("unit"));
     });
-  // Hack for Sallust
-  if (areArraysEqual(["text", "chapter", "section"], textParts)) {
-    return ["chapter"];
-  }
   return textParts;
 }
 
@@ -423,7 +419,8 @@ export function divideWork(
   rows: ProcessedWork2["rows"],
   textParts: string[]
 ): WorkPage[] {
-  const idLength = textParts.length - 1;
+  const n = textParts.length;
+  const idLength = n === 1 ? n : n - 1;
   const pages: WorkPage[] = [];
   const addedPages = new Set<string>();
   let currentId: undefined | string[] = undefined;

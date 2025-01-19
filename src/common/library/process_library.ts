@@ -43,6 +43,7 @@ const NAME_TO_DISPLAY_NAME = new Map<string, string>([
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["de Origine et Situ Germanorum Liber", "germania"],
+  ["The Catilinarian Conspiracy", "catalina1"],
 ]);
 
 function urlify(input: string, customs: Map<string, string>) {
