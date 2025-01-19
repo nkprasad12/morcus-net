@@ -503,21 +503,6 @@ function WorkNavigationBar(props: {
   );
 }
 
-function* rowsForPage(
-  work: PaginatedWork,
-  page: number
-): Generator<[[string[], XmlNode<ProcessedWorkContentNodeType>], number]> {
-  const [start, end] = work.pages[page].rows;
-  let j = 0;
-  for (let i = start; i < end; i++) {
-    if (work.rows[i][0].length !== work.textParts.length) {
-      continue;
-    }
-    yield [work.rows[i], j];
-    j++;
-  }
-}
-
 export function WorkTextPage(props: {
   work: PaginatedWork;
   setDictWord: (word: string) => unknown;
@@ -526,11 +511,67 @@ export function WorkTextPage(props: {
   isMobile: boolean;
 }) {
   const { textScale, isMobile, work } = props;
-  const { queryLine } = React.useContext(ReaderContext);
+  const { queryLine, highlightRef } = React.useContext(ReaderContext);
 
   const gapSize = (textScale / 100) * 0.65;
   const gap = `${gapSize}em`;
   const hasLines = work.textParts.slice(-1)[0].toLowerCase() === "line";
+
+  const [start, end] = work.pages[props.page].rows;
+  const children: JSX.Element[] = [];
+  let i = 0;
+  for (let j = start; j < end; j++) {
+    const [id, content] = work.rows[j];
+    const gridRow = j - start + 1;
+    if (id.length !== work.textParts.length) {
+      children.push(
+        <WorkTextColumn
+          key={j}
+          className="text sm light"
+          gridRow={gridRow}
+          setDictWord={props.setDictWord}
+          content={content}
+        />
+      );
+      continue;
+    }
+    const idLabelParts = id.map((idPart) =>
+      safeParseInt(idPart) !== undefined
+        ? idPart
+        : capitalizeWords(idPart.substring(0, isMobile ? 2 : 3))
+    );
+    const idLabel = idLabelParts.join(".");
+    const shortLabel = idLabelParts
+      .slice(isMobile && id.length > 2 ? 2 : 0)
+      .join(".");
+    const shouldHighlight = queryLine === i;
+    const workName = capitalizeWords(props.work.info.title);
+    const hideHeaderByDefault =
+      hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0);
+    const showHeader = !hideHeaderByDefault || shouldHighlight;
+    children.push(
+      <React.Fragment key={j}>
+        <span
+          style={{ gridColumn: 1, gridRow }}
+          ref={shouldHighlight ? highlightRef : undefined}>
+          <WorkChunkHeader
+            text={shortLabel}
+            chunkArrayIndex={i}
+            blurb={`${workName} ${idLabel}`}
+            latent={!showHeader}
+            highlighted={shouldHighlight}
+          />
+        </span>
+        <WorkTextColumn
+          gridRow={gridRow}
+          id={idLabel}
+          setDictWord={props.setDictWord}
+          content={content}
+        />
+      </React.Fragment>
+    );
+    i++;
+  }
 
   return (
     <div
@@ -539,23 +580,26 @@ export function WorkTextPage(props: {
         columnGap: gap,
         marginTop: isMobile ? `${gapSize / 2}em` : gap,
       }}>
-      {Array.from(rowsForPage(work, props.page), ([[id, node], i]) => (
-        <WorkChunk
-          key={id.join(".")}
-          sectionId={id.join(".")}
-          node={node}
-          setDictWord={props.setDictWord}
-          i={i}
-          chunkArrayIndex={i}
-          workName={capitalizeWords(props.work.info.title)}
-          hideHeaderByDefault={
-            hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0)
-          }
-          isMobile={isMobile}
-          highlight={queryLine === i}
-        />
-      ))}
+      {children}
     </div>
+  );
+}
+
+function WorkTextColumn(props: {
+  gridRow: number;
+  id?: string;
+  className?: string;
+  content: XmlNode<ProcessedWorkContentNodeType>;
+  setDictWord: (word: string) => unknown;
+}) {
+  return (
+    <span
+      style={{ gridColumn: 2, gridRow: props.gridRow }}
+      id={props.id}
+      className={props.className}>
+      {displayForLibraryChunk(props.content, props.setDictWord)}
+      {"\n" /* Add a newline so copy / paste works correctly on Firefox. */}
+    </span>
   );
 }
 
@@ -747,61 +791,6 @@ function WorkChunkHeader(props: {
         }
       }}
     />
-  );
-}
-
-function WorkChunk(props: {
-  node: XmlNode<ProcessedWorkContentNodeType>;
-  sectionId: string;
-  setDictWord: (word: string) => unknown;
-  i: number;
-  chunkArrayIndex: number;
-  workName: string;
-  hideHeaderByDefault?: boolean;
-  isMobile: boolean;
-  highlight?: boolean;
-}) {
-  const { highlightRef } = React.useContext(ReaderContext);
-  const { isMobile, node } = props;
-  const sectionId = props.sectionId.split(".");
-  const id = sectionId
-    .map((idPart) =>
-      safeParseInt(idPart) !== undefined
-        ? idPart
-        : capitalizeWords(idPart.substring(0, isMobile ? 2 : 3))
-    )
-    .join(".");
-  const row = props.i + 1;
-
-  const shouldHighlight = props.highlight === true;
-  const showHeader = shouldHighlight || props.hideHeaderByDefault !== true;
-  const indent = false;
-  return (
-    <>
-      <span
-        style={{ gridColumn: 1, gridRow: row }}
-        ref={props.highlight ? highlightRef : undefined}>
-        <WorkChunkHeader
-          text={sectionId
-            .slice(isMobile && sectionId.length > 2 ? 2 : 0)
-            .join(".")}
-          chunkArrayIndex={props.chunkArrayIndex}
-          blurb={`${props.workName} ${id}`}
-          latent={!showHeader}
-          highlighted={shouldHighlight}
-        />
-      </span>
-      <span
-        style={{
-          gridColumn: 2,
-          gridRow: row,
-          paddingLeft: indent ? "16px" : undefined,
-        }}
-        id={id}>
-        {displayForLibraryChunk(node, props.setDictWord)}
-        {"\n" /* Add a newline so copy / paste works correctly on Firefox. */}
-      </span>
-    </>
   );
 }
 
