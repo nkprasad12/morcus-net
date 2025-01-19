@@ -1,3 +1,7 @@
+/* istanbul ignore file */
+
+// This isn't used yet.
+
 import { assert, checkPresent } from "@/common/assert";
 import { setMap } from "@/common/data_structures/collect_map";
 import { processWords } from "@/common/text_cleaning";
