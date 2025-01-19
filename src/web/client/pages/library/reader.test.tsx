@@ -58,6 +58,17 @@ const PROCESSED_WORK: ProcessedWork2 = {
   pages: [{ id: ["1"], rows: [0, 2] }],
 };
 
+const WORK_WITH_FLAVOR_TEXT: ProcessedWork2 = {
+  info: { title: "DBG", author: "Caesar" },
+  textParts: ["chapter", "section"],
+  rows: [
+    [["1", "1"], new XmlNode("span", [], ["Gallia est omnis"])],
+    [["1"], new XmlNode("span", [], ["I am a header"])],
+    [["1", "2"], new XmlNode("span", [], [" divisa in partes tres"])],
+  ],
+  pages: [{ id: ["1"], rows: [0, 3] }],
+};
+
 const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
@@ -209,6 +220,23 @@ describe("Reading UI", () => {
     );
 
     await screen.findByText(/error/);
+  });
+
+  it("shows flavor text in expected location", async () => {
+    mockCallApi.mockResolvedValue(WORK_WITH_FLAVOR_TEXT);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("dbg"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findByText(/DBG/);
+    expect(findOnScreen("I am a header")).not.toBeNull();
   });
 
   it("shows work contents on success on large screen", async () => {
