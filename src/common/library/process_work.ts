@@ -29,8 +29,28 @@ const HANDLED_REND = new Set<string>(["indent"]);
 // previous quote.
 // This is very hard to handle and only occurs once, so we just ignore it.
 const KNOWN_REND = new Set([undefined, "merge"].concat(...HANDLED_REND));
-// @ts-expect-error
-const QUOTE_CHARACTERS = ["\u2018", "\u2019", "\u201C", "\u201D", "'", '"'];
+type QuoteOpen = "‘" | "“" | "'" | '"';
+type QuoteClose = "’" | "”" | "'" | '"';
+type QuotePair = [QuoteClose, QuoteOpen];
+const QUOTE_PAIRS: QuotePair[] = [
+  ["’", "‘"],
+  ["”", "“"],
+  ["'", "'"],
+  ['"', '"'],
+];
+const QUOTE_OPENS = new Set<QuoteOpen>(QUOTE_PAIRS.map((x) => x[1]));
+const QUOTE_CLOSES = new Set<QuoteClose>(QUOTE_PAIRS.map((x) => x[0]));
+const QUOTE_OPEN_FOR_CLOSE = new Map<QuoteClose, QuoteOpen>(QUOTE_PAIRS);
+
+function isQuoteOpen(x: unknown): x is QuoteOpen {
+  // @ts-expect-error
+  return QUOTE_OPENS.has(x);
+}
+
+function isQuoteClose(x: unknown): x is QuoteClose {
+  // @ts-expect-error
+  return QUOTE_CLOSES.has(x);
+}
 
 // // // // // //
 // PATCH STUFF //
@@ -136,6 +156,55 @@ export interface ProcessTeiOptions {
 // // // // // //
 // PATCH STUFF //
 // // // // // //
+
+type PTC = [node: XmlNode | string, [quoteOpens: QuoteOpen, context: string][]];
+
+function analyzeQuotesInNode(input: PTC): PTC {
+  const node = input[0];
+  let opens = Array.from(input[1]);
+  if (typeof node !== "string") {
+    const children: XmlChild[] = [];
+    for (const child of node.children) {
+      const result = analyzeQuotesInNode([child, opens]);
+      opens = result[1];
+      children.push(result[0]);
+    }
+    return [new XmlNode(node.name, node.attrs, children), opens];
+  }
+  for (let i = 0; i < node.length; i++) {
+    const c = node[i];
+    const lastOpen: QuoteOpen | undefined = opens.slice(-1)[0]?.[0];
+    if (isQuoteClose(c)) {
+      if (lastOpen === checkPresent(QUOTE_OPEN_FOR_CLOSE.get(c))) {
+        opens.pop();
+        continue;
+      }
+      const isAmbiguous = c === "'" || c === '"';
+      assert(isAmbiguous, `Got close without open. [${node}] [${opens}]`);
+    }
+    if (isQuoteOpen(c)) {
+      opens.push([c, node]);
+    }
+  }
+  return [node, opens];
+}
+
+// This isn't used now. We need to figure out a strategy to handle unclosed quotes.
+// - For Saturae, the scan shows double quotes everywhere, so maybe we can just change it.
+// - For others, maybe we can try to fix the closes?
+// - Maybe we should try to smartly choose what a `<quote>` represents?
+export function analyzeQuotes(rows: ProcessedWork2["rows"]) {
+  let opens: PTC[1] = [];
+  for (const [_, rowRoot] of rows) {
+    const [_, unhandled] = analyzeQuotesInNode([rowRoot, opens]);
+    opens = unhandled;
+  }
+  if (opens.length > 0) {
+    console.debug("Opens without closes: ");
+    console.debug(opens);
+  }
+  return opens;
+}
 
 function getSectionId(
   ancestors: XmlNode[],
