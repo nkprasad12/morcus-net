@@ -1,4 +1,5 @@
 import { envVar } from "@/common/env_vars";
+import { LOCAL_REPO_WORKS } from "@/common/library/library_constants";
 import {
   LIBRARY_INDEX,
   LIB_DEFAULT_DIR,
@@ -25,32 +26,6 @@ import path from "path";
 
 // TODO: We should just crawl some root.
 const LOCAL_REPO_ROOT = "texts/latin/perseus";
-
-// Two supported works are checked in to the repo itself for the sake of unit testing.
-const LOCAL_REPO_WORKS = [
-  // Caesar DBG
-  "data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml",
-  // Phaedrus
-  "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml",
-];
-
-export const ALL_SUPPORTED_WORKS = LOCAL_REPO_WORKS.concat([
-  // Remove these next two for now, since it has strange optional
-  // nested elements that are not marked in the CTS header
-  // "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
-  // "data/phi0893/phi001/phi0893.phi001.perseus-lat2.xml",
-
-  // Remove this for now, since it has whitespace between elements.
-  // "data/phi1318/phi001/phi1318.phi001.perseus-lat1.xml",
-  // Ovid Amores.
-  "data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml",
-  // Tacitus Germania
-  "data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml",
-  // Juvenal Satires.
-  "data/phi1276/phi001/phi1276.phi001.perseus-lat2.xml",
-  // Sallust Catalina
-  // "data/phi0631/phi001/phi0631.phi001.perseus-lat3.xml",
-]);
 
 const LOCAL_REPO_WORK_PATHS = LOCAL_REPO_WORKS.map(
   (work) => `${LOCAL_REPO_ROOT}/${work}`
