@@ -29,6 +29,8 @@ const HANDLED_REND = new Set<string>(["indent"]);
 // previous quote.
 // This is very hard to handle and only occurs once, so we just ignore it.
 const KNOWN_REND = new Set([undefined, "merge"].concat(...HANDLED_REND));
+// @ts-expect-error
+const QUOTE_CHARACTERS = ["\u2018", "\u2019", "\u201C", "\u201D", "'", '"'];
 
 // // // // // //
 // PATCH STUFF //
