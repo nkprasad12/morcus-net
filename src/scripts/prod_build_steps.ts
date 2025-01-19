@@ -5,10 +5,7 @@ import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
 import { assert } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
-import {
-  ALL_SUPPORTED_WORKS,
-  processLibrary,
-} from "@/common/library/process_library";
+import { processLibrary } from "@/common/library/process_library";
 import { writeCommitId } from "@/scripts/write_source_version";
 import {
   DownloadConfig,
@@ -21,6 +18,7 @@ import { createCleanDir } from "@/utils/file_utils";
 import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { processRiddleArnold } from "@/common/dictionaries/riddle_arnold/process_riddle_arnold";
+import { ALL_SUPPORTED_WORKS } from "@/common/library/library_constants";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");

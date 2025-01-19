@@ -3,18 +3,7 @@ import { LARGE_VIEW_MAIN_COLUMN_ID } from "@/web/client/pages/library/base_reade
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import type { NavHelper, RouteInfo } from "@/web/client/router/router_v2";
 
-export interface WorkPage {
-  id: string[];
-}
-
-export interface NavTreeNode {
-  id: string[];
-  children: NavTreeNode[];
-}
-
-export interface PaginatedWork extends ProcessedWork2 {
-  navTree: NavTreeNode;
-}
+export type PaginatedWork = ProcessedWork2;
 
 export function navigateToSection(
   sectionId: string,
