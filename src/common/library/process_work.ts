@@ -359,7 +359,7 @@ function transformContentNode(
 
 function processRowContent(
   root: XmlNode,
-  previouslyInWhitespace: boolean = false
+  previouslyInWhitespace: boolean
 ): [XmlNode<ProcessedWorkContentNodeType>, boolean] {
   let inWhitespace = previouslyInWhitespace;
   const children: XmlChild<ProcessedWorkContentNodeType>[] = [];
@@ -387,7 +387,8 @@ export function processWorkBody(
   const data = preprocessTree(originalRoot, textParts, options);
   return convertToRows(data.root, data).map(([id, content]) => [
     id,
-    processRowContent(content)[0],
+    // Pass true here so that we skip over any initial whitespace.
+    processRowContent(content, true)[0],
   ]);
 }
 
