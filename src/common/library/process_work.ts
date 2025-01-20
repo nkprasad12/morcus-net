@@ -242,9 +242,6 @@ interface PreprocessedTree {
   includedSections: Set<string>[];
 }
 
-// WE NEED WHITESPACE BETWEEN ELEMENTS.
-// CONSIDER SATURAE 1.1.102
-
 function preprocessTree(
   originalRoot: XmlNode,
   textParts: string[],
@@ -446,6 +443,7 @@ function transformContentNode(
     case "sic":
     case "said":
     case "emph":
+    case "num":
     case "foreign":
     // Each node will be placed in its own row, so we don't
     // need to worry about making `div` and `p` into their own

@@ -828,7 +828,12 @@ function displayForLibraryChunk(
   }
   switch (root.name) {
     case "gap":
-      return <span key={key}>[gap]</span>;
+      return (
+        <span key={key} className="text light">
+          {" "}
+          [gap]{" "}
+        </span>
+      );
   }
   return (
     <span key={key} style={style} className={className}>
