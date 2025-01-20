@@ -118,7 +118,7 @@ export function Library() {
   return (
     <Container
       maxWidth="md"
-      style={{ paddingTop: "24px" }}
+      style={{ paddingTop: "12px", paddingBottom: "12px" }}
       className="text md library">
       <div>
         Welcome to the library. Select an existing work from the list below, or{" "}

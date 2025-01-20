@@ -3,6 +3,7 @@ import { WorkPage, type ProcessedWork2 } from "@/common/library/library_types";
 import {
   analyzeQuotes,
   divideWork,
+  getSectionId,
   patchText,
   processTei2,
   type DebugSideChannel,
@@ -88,15 +89,23 @@ function testRoot(body: string): XmlNode {
 }
 
 const BODY_WITH_BOOK_ONLY = `<div n="1" type="textpart" subtype="book">Gallia est</div>`;
+const BODY_WITH_CHOICE = `<div n="1" type="textpart" subtype="book"><choice><reg>FooBar</reg><orig>BazBap</orig></choice></div>`;
+const WORK_ID = "workId";
 
 describe("processTei2", () => {
   it("gets same result with and without side channel", () => {
     const sideChannel: DebugSideChannel = { onWord: jest.fn() };
 
-    const withSideChannel = processTei2(testRoot(BODY_WITH_BOOK_ONLY), {
-      sideChannel,
+    const withSideChannel = processTei2(
+      testRoot(BODY_WITH_BOOK_ONLY),
+      { workId: WORK_ID },
+      {
+        sideChannel,
+      }
+    );
+    const withoutSideChannel = processTei2(testRoot(BODY_WITH_BOOK_ONLY), {
+      workId: WORK_ID,
     });
-    const withoutSideChannel = processTei2(testRoot(BODY_WITH_BOOK_ONLY));
 
     expect(withSideChannel).toStrictEqual(withoutSideChannel);
   });
@@ -104,7 +113,11 @@ describe("processTei2", () => {
   it("gets side channel callbacks", () => {
     const sideChannel: DebugSideChannel = { onWord: jest.fn() };
 
-    processTei2(testRoot(BODY_WITH_BOOK_ONLY), { sideChannel });
+    processTei2(
+      testRoot(BODY_WITH_BOOK_ONLY),
+      { workId: WORK_ID },
+      { sideChannel }
+    );
 
     expect(sideChannel.onWord).toHaveBeenCalledWith("Gallia");
     expect(sideChannel.onWord).toHaveBeenCalledWith("est");
@@ -112,8 +125,18 @@ describe("processTei2", () => {
   });
 
   it("parses expected text parts", () => {
-    const work = processTei2(testRoot(BODY_WITH_BOOK_ONLY));
+    const work = processTei2(testRoot(BODY_WITH_BOOK_ONLY), {
+      workId: WORK_ID,
+    });
     expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
+  });
+
+  it("handles elements with choice", () => {
+    const work = processTei2(testRoot(BODY_WITH_CHOICE), {
+      workId: WORK_ID,
+    });
+    expect(work.rows[0][1].toString()).toContain("FooBar");
+    expect(work.rows[0][1].toString()).not.toContain("BazBap");
   });
 });
 
@@ -309,5 +332,79 @@ describe("analyzeQuotes", () => {
 
     expect(unclosed).toHaveLength(1);
     expect(unclosed[0]).toStrictEqual(["“", "“hi"]);
+  });
+});
+
+describe("getSectionId", () => {
+  const BOOK = [
+    ["type", "textpart"],
+    ["subtype", "book"],
+  ] satisfies XmlNode["attrs"];
+  const CHAPTER = [
+    ["type", "textpart"],
+    ["subtype", "chapter"],
+  ] satisfies XmlNode["attrs"];
+
+  function book(n: string): XmlNode["attrs"] {
+    return [...BOOK, ["n", n]];
+  }
+
+  function chapter(n: string): XmlNode["attrs"] {
+    return [...CHAPTER, ["n", n]];
+  }
+
+  function toNodes(attrs: XmlNode["attrs"][]): XmlNode[] {
+    return attrs.map((a) => new XmlNode("span", a, []));
+  }
+
+  it("handles empty stack", () => {
+    expect(getSectionId([], ["book", "chapter"])).toStrictEqual([[], false]);
+  });
+
+  it("handles leaf section", () => {
+    const textParts = ["book", "chapter"];
+    const nodes = toNodes([book("2"), chapter("1")]);
+
+    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], true]);
+  });
+
+  it("handles seg", () => {
+    const textParts = ["book", "chapter"];
+    const nodes = toNodes([book("2")]).concat(
+      new XmlNode("seg", [
+        ["type", "chapter"],
+        ["n", "1"],
+      ])
+    );
+
+    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], true]);
+  });
+
+  it("raises on bad order", () => {
+    const textParts = ["book", "chapter"];
+    const nodes = toNodes([chapter("1"), book("2")]);
+
+    expect(() => getSectionId(nodes, textParts)).toThrow();
+  });
+
+  it("raises on unexpected section", () => {
+    const textParts = ["book", "chapter"];
+    const nodes = toNodes([book("1"), book("2")]);
+
+    expect(() => getSectionId(nodes, textParts)).toThrow();
+  });
+
+  it("handles leaf section with intermediate nodes", () => {
+    const textParts = ["book", "chapter"];
+    const nodes = toNodes([book("2"), [], chapter("1")]);
+
+    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], true]);
+  });
+
+  it("handles leaf node without section", () => {
+    const textParts = ["book", "chapter"];
+    const nodes = toNodes([book("2"), [], chapter("1"), []]);
+
+    expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], false]);
   });
 });

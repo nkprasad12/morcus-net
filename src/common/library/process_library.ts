@@ -67,6 +67,7 @@ function urlifyName(input: string): string {
 
 function processTeiCts2(
   root: XmlNode,
+  workId: string,
   patches?: LibraryPatch[]
 ): ProcessedWork2 {
   const words: string[] = [];
@@ -79,7 +80,11 @@ function processTeiCts2(
   };
   const debugRoot: string | undefined = envVar("DEBUG_OUT", "unsafe");
   const debugHelper = debugRoot === undefined ? undefined : { onWord };
-  const result = processTei2(root, { patches, sideChannel: debugHelper });
+  const result = processTei2(
+    root,
+    { workId },
+    { patches, sideChannel: debugHelper }
+  );
   const debugName = result.info.title.replaceAll(" ", "_");
   const outputPath = debugRoot?.concat("/", debugName, ".debug.txt");
   if (outputPath !== undefined) {
@@ -100,7 +105,7 @@ export function processLibrary(
     const rawXml = parseRawXml(fs.readFileSync(workPath), {
       keepWhitespace: true,
     });
-    const result = processTeiCts2(rawXml, patches.get(workId));
+    const result = processTeiCts2(rawXml, workId, patches.get(workId));
     const rawTitle = result.info.title;
     const title = NAME_TO_DISPLAY_NAME.get(rawTitle) ?? rawTitle;
     const metadata: LibraryWorkMetadata = {

@@ -20,6 +20,13 @@ import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
+const IGNORE_SUBTYPES = new Map<string, Set<string>>([
+  ["phi0472.phi001.perseus-lat2", new Set(["Lyrics", "longpoems", "Elegies"])],
+]);
+const FORCE_CTS = new Set([
+  "phi0588.abo001.perseus-lat2",
+  "phi0588.abo002.perseus-lat2",
+]);
 const SKIP_NODES = new Set(["#comment", "note", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 const HANDLED_REND = new Set<string>(["indent", "italic", "blockquote"]);
@@ -143,6 +150,7 @@ function createPatchTree(
 interface ProcessForDisplayOptions {
   debug?: DebugSideChannel;
   patchTree?: PatchTree;
+  workId?: string;
 }
 
 export interface DebugSideChannel {
@@ -207,14 +215,23 @@ export function analyzeQuotes(rows: ProcessedWork2["rows"]) {
   return opens;
 }
 
-function getSectionId(
+export function getSectionId(
   ancestors: XmlNode[],
-  textParts: string[]
+  textParts: string[],
+  workId?: string
 ): [string[], boolean] {
   let i = 0;
   const sectionId: string[] = [];
   let parentHadSection = false;
   for (const ancestor of ancestors) {
+    const n = ancestor.getAttr("n");
+    if (ancestor.name === "seg") {
+      assertEqual(textParts[i].toLowerCase(), ancestor.getAttr("type"));
+      sectionId.push(checkPresent(n));
+      i++;
+      parentHadSection = true;
+      continue;
+    }
     const isTextPart = ancestor.getAttr("type") === "textpart";
     // `l` is sometimes used even if the CTS says `line`, and it is often not marked.
     // However, it is also sometimes used to show poetry in prose when it's not a CTS
@@ -223,13 +240,23 @@ function getSectionId(
       parentHadSection = false;
       continue;
     }
+    const subtype = ancestor.getAttr("subtype");
+    if (IGNORE_SUBTYPES.get(workId ?? "")?.has(subtype ?? "")) {
+      parentHadSection = false;
+      continue;
+    }
     assertEqual(
       textParts[i].toLowerCase(),
-      ancestor.name === "l"
-        ? "line"
-        : ancestor.getAttr("subtype")?.toLowerCase()
+      ancestor.name === "l" ? "line" : subtype?.toLowerCase()
     );
-    sectionId.push(checkPresent(ancestor.getAttr("n")));
+    if (n === undefined && ancestor.name === "l") {
+      assertEqual(workId, "phi0550.phi001.perseus-lat1");
+      assertEqual(ancestor.children.length, 1);
+      assertEqual(XmlNode.assertIsNode(ancestor.children[0]).name, "gap");
+      parentHadSection = false;
+      continue;
+    }
+    sectionId.push(checkPresent(n));
     i++;
     parentHadSection = true;
   }
@@ -284,7 +311,11 @@ function preprocessTree(
     uids.push(top);
     top.attrs.push(["uid", uid.toString()]);
 
-    const [section, isLeader] = getSectionId(ancestors, textPartsLower);
+    const [section, isLeader] = getSectionId(
+      ancestors,
+      textPartsLower,
+      options.workId
+    );
     section.forEach((p) => assert(!p.includes(".")));
     top.attrs.push(["sid", section.join(".")]);
     if (isLeader) {
@@ -399,7 +430,8 @@ function handleTextWhitespace(
 
 function transformContentNode(
   node: XmlNode,
-  children: XmlChild<ProcessedWorkContentNodeType>[]
+  children: XmlChild<ProcessedWorkContentNodeType>[],
+  parent?: XmlNode
 ): XmlNode<ProcessedWorkContentNodeType> {
   const attrs: XmlNode["attrs"] = [];
   const rend = node.getAttr("rend");
@@ -413,9 +445,27 @@ function transformContentNode(
   if (node.name === "l") {
     attrs.push(["l", "1"]);
   }
+  if (node.name === "choice") {
+    assertEqual(children.length, 2);
+    const corrected = XmlNode.assertIsNode(
+      checkPresent(
+        children.find(
+          (c) => typeof c !== "string" && c.getAttr("origName") === "reg"
+        )
+      )
+    );
+    return corrected;
+  }
+  if (node.name === "orig") {
+    attrs.push(["origName", node.name]);
+  }
   if (node.name === "reg") {
     assert(children.length === 1);
     const child = assertType(children[0], isString);
+    if (parent?.name === "choice") {
+      attrs.push(["origName", node.name]);
+      return new XmlNode("span", attrs, children);
+    }
     assert(/^[a-zA-Z]/.test(child));
     const capitalized = child[0].toUpperCase() + child.slice(1);
     return new XmlNode("span", attrs, [capitalized]);
@@ -444,6 +494,8 @@ function transformContentNode(
     case "said":
     case "emph":
     case "num":
+    case "orig":
+    case "seg":
     case "foreign":
     // Each node will be placed in its own row, so we don't
     // need to worry about making `div` and `p` into their own
@@ -462,7 +514,8 @@ function transformContentNode(
 
 function processRowContent(
   root: XmlNode,
-  previouslyInWhitespace: boolean
+  previouslyInWhitespace: boolean,
+  parent?: XmlNode
 ): [XmlNode<ProcessedWorkContentNodeType>, boolean] {
   let inWhitespace = previouslyInWhitespace;
   const children: XmlChild<ProcessedWorkContentNodeType>[] = [];
@@ -470,11 +523,11 @@ function processRowContent(
     const isString = typeof child === "string";
     const childResult = isString
       ? handleTextWhitespace(child, inWhitespace)
-      : processRowContent(child, inWhitespace);
+      : processRowContent(child, inWhitespace, root);
     inWhitespace = childResult[1];
     children.push(childResult[0]);
   }
-  return [transformContentNode(root, children), inWhitespace];
+  return [transformContentNode(root, children, parent), inWhitespace];
 }
 
 /** Exported for unit testing. */
@@ -491,10 +544,10 @@ export function processWorkBody(
   ]);
 }
 
-function getTextparts(root: XmlNode) {
+function getTextparts(root: XmlNode, workId: string) {
   const refsDecls = root.findDescendants("refsDecl");
   const nonCts = refsDecls.filter((node) => node.getAttr("n") !== "CTS");
-  if (nonCts.length === 0) {
+  if (FORCE_CTS.has(workId) || nonCts.length === 0) {
     return findCtsEncoding(root)
       .sort((a, b) => a.idSize - b.idSize)
       .map((p) => p.name);
@@ -572,12 +625,14 @@ function buildNavTree(pages: WorkPage[]): NavTreeNode {
 /** Returns the processed content of a TEI XML file. */
 export function processTei2(
   xmlRoot: XmlNode,
+  metadata: { workId: string },
   options?: ProcessTeiOptions
 ): ProcessedWork2 {
-  const textParts = getTextparts(xmlRoot);
+  const textParts = getTextparts(xmlRoot, metadata.workId);
   const processOptions: ProcessForDisplayOptions = {
     debug: options?.sideChannel,
     patchTree: createPatchTree(options?.patches ?? [], textParts),
+    workId: metadata.workId,
   };
   const body = checkSatisfies(
     xmlRoot.findDescendants("body"),
