@@ -2,7 +2,6 @@ import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
 import { Container, SpanLink } from "@/web/client/components/generic/basics";
 import { SingleItemStore } from "@/web/client/offline/single_item_store";
-import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import {
   Router,
@@ -12,6 +11,12 @@ import {
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 import { useCallback, useState } from "react";
+
+const WORK_STYLE: React.CSSProperties = {
+  display: "block",
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+};
 
 function onWorkSelected(work: LibraryWorkMetadata, nav: NavHelper<RouteInfo>) {
   const params = { author: work.urlAuthor, name: work.urlName };
@@ -46,8 +51,8 @@ function WorksList(props: { works: WorkListState }) {
               id={work.id}
               className="latWork"
               onClick={() => onWorkSelected(work, nav)}>
-              <span style={{ whiteSpace: "nowrap" }}>{work.name}</span>{" "}
-              <span className="text md light" style={{ whiteSpace: "nowrap" }}>
+              <span style={WORK_STYLE}>{work.name}</span>
+              <span className="text sm light" style={WORK_STYLE}>
                 {work.author}
               </span>
             </SpanLink>
@@ -89,16 +94,12 @@ export function Library() {
   });
 
   return (
-    <Container maxWidth="xxl" style={{ paddingTop: "24px" }}>
-      <ContentBox isSmall={false}>
-        <>
-          <div className="text md">Welcome to the library</div>
-          <div className="text md light">
-            Select a work from the list below, or <ExternalReaderLink />.
-          </div>
-          <WorksList works={works} />
-        </>
-      </ContentBox>
+    <Container maxWidth="md" style={{ paddingTop: "24px" }} className="text md">
+      <div>Welcome to the library</div>
+      <div className="text light">
+        Select a work from the list below, or <ExternalReaderLink />.
+      </div>
+      <WorksList works={works} />
     </Container>
   );
 }

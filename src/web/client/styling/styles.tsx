@@ -561,14 +561,14 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     ".latWork": {
       borderRadius: "4px",
-      marginLeft: "8px",
+      margin: "8px",
       padding: "8px",
       backgroundColor: Solarized.base1 + "32",
-      marginTop: "8px",
-      display: "inline-block",
+      display: "block",
       textTransform: "capitalize",
       overflowWrap: "break-word",
       wordBreak: "break-all",
+      maxWidth: "400px",
     },
     ".latWork.fromUrl": {
       textTransform: "none",
