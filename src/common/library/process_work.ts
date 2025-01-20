@@ -2,6 +2,7 @@ import {
   assert,
   assertArraysEqual,
   assertEqual,
+  assertType,
   checkPresent,
   checkSatisfies,
 } from "@/common/assert";
@@ -17,11 +18,11 @@ import { areArraysEqual, safeParseInt } from "@/common/misc_utils";
 import { processWords } from "@/common/text_cleaning";
 import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
-import { instanceOf } from "@/web/utils/rpc/parsing";
+import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
 const SKIP_NODES = new Set(["#comment", "note", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
-const HANDLED_REND = new Set<string>(["indent"]);
+const HANDLED_REND = new Set<string>(["indent", "italic", "blockquote"]);
 // `merge` occurs only one time. It happens when we have a continued quote:
 // <l>blah blah <q>blah </q></l>
 // <l><q rend="merge">blah</q> blah</l>
@@ -305,6 +306,11 @@ function preprocessTree(
         }
         continue;
       }
+      // Ignore milestones for now, but we may need to use it later.
+      if (child.name === "milestone") {
+        assertEqual(child.children.length, 0);
+        continue;
+      }
       if (SKIP_NODES.has(child.name)) {
         continue;
       }
@@ -395,27 +401,51 @@ function handleTextWhitespace(
 }
 
 function transformContentNode(
-  node: XmlNode
-): [ProcessedWorkContentNodeType, XmlNode["attrs"]] {
+  node: XmlNode,
+  children: XmlChild<ProcessedWorkContentNodeType>[]
+): XmlNode<ProcessedWorkContentNodeType> {
   const attrs: XmlNode["attrs"] = [];
   const rend = node.getAttr("rend");
   assert(KNOWN_REND.has(rend), rend);
   if (rend !== undefined && HANDLED_REND.has(rend)) {
-    attrs.push(["rend", rend]);
+    if (node.name === "emph") {
+      assertEqual(rend, "italic");
+    }
+    attrs.push(["rend", rend], ["rendParent", node.name]);
   }
-  if (node.name === "gap") {
-    assert(node.children.length === 0);
-    return ["gap", attrs];
+  if (node.name === "l") {
+    attrs.push(["l", "1"]);
+  }
+  if (node.name === "reg") {
+    assert(children.length === 1);
+    const child = assertType(children[0], isString);
+    assert(/^[a-zA-Z]/.test(child));
+    const capitalized = child[0].toUpperCase() + child.slice(1);
+    return new XmlNode("span", attrs, [capitalized]);
   }
   if (QUOTE_NODES.has(node.name)) {
-    return ["q", attrs];
+    return new XmlNode(
+      "span",
+      attrs,
+      // We don't need to add quotes even if the node is a `quote` since
+      // the blockquote will emphasize enough.
+      rend === "blockquote" ? children : ["“", ...children, "”"]
+    );
   }
   switch (node.name) {
     case "head":
-      return ["head", attrs];
+      return new XmlNode("head", attrs, children);
+    case "gap":
+      assert(children.length === 0);
+      return new XmlNode("gap", attrs, children);
+    case "label":
+      assert(children.length === 1);
+      return new XmlNode("b", attrs, children);
     case "l":
     case "add":
     case "sic":
+    case "said":
+    case "emph":
     case "foreign":
     // Each node will be placed in its own row, so we don't
     // need to worry about making `div` and `p` into their own
@@ -425,9 +455,9 @@ function transformContentNode(
     // eslint-disable-next-line no-fallthrough
     case "div":
     case "p":
-      return ["span", attrs];
+      return new XmlNode("span", attrs, children);
     case "del":
-      return ["s", attrs];
+      return new XmlNode("s", attrs, children);
   }
   throw new Error(`Unknown node: ${node.name}`);
 }
@@ -446,11 +476,7 @@ function processRowContent(
     inWhitespace = childResult[1];
     children.push(childResult[0]);
   }
-  const [name, attrs] = transformContentNode(root);
-  return [
-    new XmlNode<ProcessedWorkContentNodeType>(name, attrs, children),
-    inWhitespace,
-  ];
+  return [transformContentNode(root, children), inWhitespace];
 }
 
 /** Exported for unit testing. */

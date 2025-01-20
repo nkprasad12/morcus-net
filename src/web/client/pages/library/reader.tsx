@@ -803,28 +803,35 @@ function displayForLibraryChunk(
   });
 
   const style: React.CSSProperties = {};
-  if (root.getAttr("rend") === "indent") {
-    style.paddingLeft = "1em";
+  let className: string | undefined = undefined;
+
+  const rend = root.getAttr("rend");
+  if (rend === "blockquote") {
+    className = rend;
+    return React.createElement("span", { key, className }, children);
+  }
+  if (rend === "indent") {
     style.display = "inline-block";
+    // For paragraphs, we want just the start to be indented.
+    // For anything else, indent the whole thing so it's visible.
+    const isP = root.getAttr("rendParent") === "p";
+    style[isP ? "textIndent" : "paddingLeft"] = "1em";
+  }
+  if (rend === "italic") {
+    style.fontStyle = "italic";
+  }
+  if (root.getAttr("l") !== undefined) {
+    className = "l";
+  }
+  if (["s", "b"].includes(root.name)) {
+    return React.createElement(root.name, { key, style }, children);
   }
   switch (root.name) {
-    case "s":
-      return (
-        <s key={key} style={style}>
-          {children}
-        </s>
-      );
-    case "q":
-      return (
-        <span key={key} style={style}>
-          “{children}”
-        </span>
-      );
     case "gap":
       return <span key={key}>[gap]</span>;
   }
   return (
-    <span key={key} style={style}>
+    <span key={key} style={style} className={className}>
       {children}
     </span>
   );

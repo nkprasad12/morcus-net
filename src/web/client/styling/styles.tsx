@@ -668,6 +668,17 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       width: `${readerSideScale}em`,
       height: `${readerSideScale}em`,
     },
+    ".readerMain .blockquote": {
+      display: "block",
+      margin: "0.25em 0",
+      fontStyle: "italic",
+      marginLeft: "1em",
+      // Override from `text`.
+      whiteSpace: "normal",
+    },
+    ".readerMain .blockquote .l": {
+      display: "block",
+    },
     ".customSearchPopup": {
       color: theme.searchPopupText,
       backgroundColor: theme.searchPopupBg,
