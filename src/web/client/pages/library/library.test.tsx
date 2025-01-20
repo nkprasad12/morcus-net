@@ -31,6 +31,13 @@ mockCallApi.mockResolvedValue({
       urlAuthor: "caesar",
       urlName: "dbg",
     },
+    {
+      author: "Sallust",
+      name: "Catalina",
+      id: "Catalina",
+      urlAuthor: "sallust",
+      urlName: "catalina",
+    },
   ],
 });
 
@@ -41,6 +48,21 @@ describe("library view", () => {
     await screen.findByText(/Welcome/);
     await screen.findByText(/DBG/);
     await screen.findByText(/Caesar/);
+    await screen.findByText(/Sallust/);
+    await screen.findByText(/Catalina/);
+  });
+
+  it("has working filter", async () => {
+    render(<Library />);
+    await screen.findByText(/Welcome/);
+
+    const search = screen.getByRole("combobox");
+    await user.click(search);
+    await user.type(search, "Cat");
+
+    expect(screen.queryByText("DBG")).toBeNull();
+    expect(screen.queryByText("Sallust")).not.toBeNull();
+    expect(screen.queryByText("Catalina")).not.toBeNull();
   });
 
   it("handles item click", async () => {

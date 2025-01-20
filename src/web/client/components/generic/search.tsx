@@ -5,10 +5,6 @@ import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 
 const CLEAR_QUERY = "Clear query";
 
-function spacing(input: number): string {
-  return `${input * 8}px`;
-}
-
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
@@ -22,14 +18,14 @@ interface AutoCompleteSearchProps<T> {
 }
 
 interface BaseSearchBoxProps {
-  smallScreen?: boolean;
   autoFocused?: boolean;
   placeholderText?: string;
   onOpenSettings?: () => unknown;
   settingsPreview?: JSX.Element;
-  onRawEnter: (input: string) => unknown;
+  onRawEnter?: (input: string) => unknown;
   ariaLabel?: string;
-  embedded?: boolean;
+  onInput?: (input: string) => unknown;
+  style?: React.CSSProperties;
 }
 
 type SearchBoxProps<T> = BaseSearchBoxProps & AutoCompleteSearchProps<T>;
@@ -77,8 +73,6 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
     element.scrollIntoView({ behavior: "instant", block: "nearest" });
   }, [cursor, toKey, options]);
 
-  const smallScreen = props.smallScreen === true;
-  const embedded = props.embedded === true;
   const interactingWithPopup = mouseOnPopup;
   const popperOpen =
     containerRef.current !== null &&
@@ -112,6 +106,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   }
 
   async function onInput(value: string) {
+    props.onInput?.(value);
     setInput(value);
     if (props.optionsForInput === undefined) {
       return;
@@ -123,16 +118,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   }
 
   return (
-    <div
-      style={{
-        padding: spacing(smallScreen ? 0 : 1),
-        paddingTop: spacing(embedded ? 1 : 2),
-        paddingBottom: spacing(embedded ? 0 : 2),
-        marginLeft: spacing(smallScreen ? 0.5 : 3),
-        marginRight: spacing(smallScreen ? 0.5 : 3),
-        marginTop: spacing(embedded ? 0 : 2),
-        marginBottom: spacing(embedded ? 0.5 : 1),
-      }}>
+    <div style={props.style}>
       <div
         className={containerClasses.join(" ")}
         style={{
@@ -195,7 +181,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
               if (cursor > -1) {
                 onOptionChosen(options[cursor]);
               } else if (input.trim().length > 0) {
-                props.onRawEnter(input);
+                props.onRawEnter?.(input);
                 setFocused(false);
                 setCursor(-1);
                 setMouseOnPopup(false);

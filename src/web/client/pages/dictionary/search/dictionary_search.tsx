@@ -171,6 +171,10 @@ function AutocompleteOption(props: { option: [DictLang, string] }) {
   );
 }
 
+function spacing(level: number): string {
+  return `${level * 8}px`;
+}
+
 export function DictionarySearch(props: {
   smallScreen: boolean;
   dicts: LatinDictInfo[];
@@ -179,6 +183,7 @@ export function DictionarySearch(props: {
   onSearchQuery: (term: string, lang?: DictLang) => unknown;
   embedded?: boolean;
 }) {
+  const { smallScreen, embedded } = props;
   const [dialogOpen, setDialogOpen] = useState<boolean>(false);
 
   async function onEnter(searchTerm: string, lang?: DictLang) {
@@ -201,7 +206,6 @@ export function DictionarySearch(props: {
             embedded={props.embedded}
           />
         }
-        smallScreen={props.smallScreen}
         autoFocused={props.autoFocused}
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(t[1], t[0])}
@@ -211,7 +215,15 @@ export function DictionarySearch(props: {
         RenderOption={AutocompleteOption}
         toKey={(t) => `${t[1]},${t[0]}`}
         toInputDisplay={(t) => t[1]}
-        embedded={props.embedded}
+        style={{
+          padding: spacing(smallScreen ? 0 : 1),
+          paddingTop: spacing(embedded ? 1 : 2),
+          paddingBottom: spacing(embedded ? 0 : 2),
+          marginLeft: spacing(smallScreen ? 0.5 : 3),
+          marginRight: spacing(smallScreen ? 0.5 : 3),
+          marginTop: spacing(embedded ? 0 : 2),
+          marginBottom: spacing(embedded ? 0.5 : 1),
+        }}
       />
       <SearchSettingsDialog
         open={dialogOpen}
