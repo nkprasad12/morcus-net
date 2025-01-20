@@ -111,7 +111,7 @@ const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
     [
       ["2", "1"],
       new XmlNode(
-        "q",
+        "b",
         [],
         [" divisa in partes tres", new XmlNode("gap", [], [])]
       ),
