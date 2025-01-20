@@ -189,8 +189,6 @@ export function TextSearchSection(props: { work: PaginatedWork }) {
         }}
         ariaLabel="search this work"
         autoFocused
-        smallScreen
-        embedded
       />
       {query.length > 0 && (
         <div>

@@ -657,6 +657,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       spellcheck: "false",
       color: theme.nonDictText,
     },
+    ".library .customSearchContainer": {
+      padding: "0",
+    },
     ".readerMain .customSearchContainer .svgIcon": {
       width: `${readerMainScale}em`,
       height: `${readerMainScale}em`,
