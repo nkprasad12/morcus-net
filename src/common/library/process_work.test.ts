@@ -380,6 +380,17 @@ describe("getSectionId", () => {
     expect(getSectionId(nodes, textParts)).toStrictEqual([["2", "1"], true]);
   });
 
+  it("handles l with no id due to gap", () => {
+    const textParts = ["book", "line"];
+    const nodes = toNodes([book("2")]).concat(
+      new XmlNode("l", [], [new XmlNode("gap")])
+    );
+
+    expect(
+      getSectionId(nodes, textParts, "phi0550.phi001.perseus-lat1")
+    ).toStrictEqual([["2"], false]);
+  });
+
   it("raises on bad order", () => {
     const textParts = ["book", "chapter"];
     const nodes = toNodes([chapter("1"), book("2")]);
