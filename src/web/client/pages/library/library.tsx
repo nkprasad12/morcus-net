@@ -49,40 +49,38 @@ function WorksList(props: { works: WorkListState }) {
 
   return (
     <>
-      <div style={{ marginTop: 4, display: "flex", flexDirection: "column" }}>
-        {props.works === "Loading" ? (
-          <span className="text sm">Loading titles ...</span>
-        ) : props.works === "Error" ? (
-          <span className="text sm">
-            Error loading titles. Check your internet and if the problem
-            persists, contact Morcus.
-          </span>
-        ) : (
-          <div style={{ maxWidth: "400px" }}>
-            <SearchBoxNoAutocomplete
-              onInput={setFilter}
-              placeholderText={SEARCH_PLACEHOLDER}
-              // Left and right are not equal to account for the border.
-              style={{ padding: "8px 12px 4px 8px" }}
-              ariaLabel={SEARCH_PLACEHOLDER}
-              autoFocused
-            />
-            {props.works.filter(shouldShowWork).map((work) => (
-              <div key={work.id}>
-                <SpanLink
-                  id={work.id}
-                  className="latWork"
-                  onClick={() => onWorkSelected(work, nav)}>
-                  <span style={WORK_STYLE}>{work.name}</span>
-                  <span className="text sm light" style={WORK_STYLE}>
-                    {work.author}
-                  </span>
-                </SpanLink>
-              </div>
-            ))}
-          </div>
-        )}
-      </div>
+      {props.works === "Loading" ? (
+        <span className="text sm">Loading titles ...</span>
+      ) : props.works === "Error" ? (
+        <span className="text sm">
+          Error loading titles. Check your internet and if the problem persists,
+          contact Morcus.
+        </span>
+      ) : (
+        <div style={{ maxWidth: "400px", margin: "auto" }}>
+          <SearchBoxNoAutocomplete
+            onInput={setFilter}
+            placeholderText={SEARCH_PLACEHOLDER}
+            // Left and right are not equal to account for the border.
+            style={{ padding: "8px 12px 4px 8px" }}
+            ariaLabel={SEARCH_PLACEHOLDER}
+            autoFocused
+          />
+          {props.works.filter(shouldShowWork).map((work) => (
+            <div key={work.id}>
+              <SpanLink
+                id={work.id}
+                className="latWork"
+                onClick={() => onWorkSelected(work, nav)}>
+                <span style={WORK_STYLE}>{work.name}</span>
+                <span className="text sm light" style={WORK_STYLE}>
+                  {work.author}
+                </span>
+              </SpanLink>
+            </div>
+          ))}
+        </div>
+      )}
     </>
   );
 }
@@ -122,9 +120,9 @@ export function Library() {
       maxWidth="md"
       style={{ paddingTop: "24px" }}
       className="text md library">
-      <div>Welcome to the library</div>
-      <div className="text light">
-        Select a work from the list below, or <ExternalReaderLink />.
+      <div>
+        Welcome to the library. Select an existing work from the list below, or{" "}
+        <ExternalReaderLink />.
       </div>
       <WorksList works={works} />
     </Container>
