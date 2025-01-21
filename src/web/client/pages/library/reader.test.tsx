@@ -74,6 +74,32 @@ const PROCESSED_WORK: ProcessedWork2 = {
   navTree: ONE_CHAPTER_NAV_TREE,
 };
 
+const WORK_WITH_NOTES: ProcessedWork2 = {
+  info: { title: "DBG", author: "Caesar" },
+  textParts: ["chapter", "section"],
+  rows: [
+    [
+      ["1", "1"],
+      new XmlNode(
+        "span",
+        [],
+        ["Gallia est omnis", new XmlNode("note", [["noteId", "0"]])]
+      ),
+    ],
+    [
+      ["1", "2"],
+      new XmlNode(
+        "span",
+        [],
+        [" divisa in partes tres", new XmlNode("note", [["noteId", "1"]])]
+      ),
+    ],
+  ],
+  pages: [{ id: ["1"], rows: [0, 2] }],
+  navTree: ONE_CHAPTER_NAV_TREE,
+  notes: [new XmlNode("span", [], ["I am a note tooltip"])],
+};
+
 const WORK_WITH_FLAVOR_TEXT: ProcessedWork2 = {
   info: { title: "DBG", author: "Caesar" },
   textParts: ["chapter", "section"],
@@ -256,6 +282,30 @@ describe("Reading UI", () => {
 
     await screen.findByText(/DBG/);
     expect(findOnScreen("I am a header")).not.toBeNull();
+  });
+
+  it("displays a work with notes", async () => {
+    mockCallApi.mockResolvedValue(WORK_WITH_NOTES);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("dbg"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findByText(/DBG/);
+    expect(screen.queryByText("I am a note tooltip")).toBeNull();
+    const notes = await screen.findAllByLabelText("toggle note");
+    // The second stub is not rendered because we only passed 1 note in the `work`.
+    expect(notes).toHaveLength(1);
+    await user.click(notes[0]);
+    expect(screen.queryByText("I am a note tooltip")).not.toBeNull();
+    await user.click(notes[0]);
+    expect(screen.queryByText("I am a note tooltip")).toBeNull();
   });
 
   it("shows work contents on success on large screen", async () => {
