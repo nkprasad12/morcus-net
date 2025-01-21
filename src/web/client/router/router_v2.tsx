@@ -6,6 +6,7 @@ export interface RouteInfo {
   path: string;
   params?: Record<string, string | undefined>;
   hash?: string;
+  replace?: boolean;
 }
 
 type ToLinkFunction<T> = (t: T, full?: boolean) => string;
@@ -57,7 +58,10 @@ function pushRouteInfo(info: RouteInfo): void {
   const oldLink = RouteInfo.toLink(RouteInfo.extract());
   const newLink = RouteInfo.toLink(info);
   if (oldLink !== newLink) {
-    window.history.pushState({}, "", newLink);
+    const action: keyof typeof window.history = info.replace
+      ? "replaceState"
+      : "pushState";
+    window.history[action]({}, "", newLink);
   }
 }
 
@@ -65,14 +69,18 @@ function onRouteUpdate(
   action: React.SetStateAction<RouteInfo>,
   setRouteState: React.Dispatch<React.SetStateAction<RouteInfo>>
 ): void {
+  // A little hacky, bit consume the `replace` in `pushRouteInfo`
+  // and delete it when we save the state.
   if (typeof action === "function") {
     setRouteState((prev) => {
       const next = action(prev);
       pushRouteInfo(next);
+      delete next.replace;
       return next;
     });
   } else {
     pushRouteInfo(action);
+    delete action.replace;
     setRouteState(action);
   }
 }
