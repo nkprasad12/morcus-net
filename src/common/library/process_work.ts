@@ -27,7 +27,7 @@ const FORCE_CTS = new Set([
   "phi0588.abo001.perseus-lat2",
   "phi0588.abo002.perseus-lat2",
 ]);
-const SKIP_NODES = new Set(["#comment", "note", "pb"]);
+const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 const HANDLED_REND = new Set<string>(["indent", "italic", "blockquote"]);
 // `merge` occurs only one time. It happens when we have a continued quote:
@@ -275,6 +275,7 @@ function preprocessTree(
   options: ProcessForDisplayOptions
 ): PreprocessedTree {
   const textPartsLower = textParts.map((part) => part.toLowerCase());
+  const notes: XmlNode[] = [];
   const root = originalRoot.deepcopy();
   // Initialize all of the patch data structures before, since we might run into sections
   // in a non-continuous fashion. For example, we could have:
@@ -321,6 +322,17 @@ function preprocessTree(
     if (isLeader) {
       top.attrs.push(["leader", "1"]);
     }
+    // `note` is included in the tree to mark the position,
+    // but the actual content is stored separately.
+    if (top.name === "note") {
+      // `sid`, `uid`, and `parent`.
+      assertEqual(top.attrs.length, 3);
+      const noteId = notes.length.toString();
+      top.attrs.push(["noteId", noteId]);
+      notes.push(top.deepcopy());
+      continue;
+    }
+
     const children: XmlChild[] = [];
     const sectionKey = JSON.stringify(section);
     const markupOptions = textMarkupOptionsBySection.get(sectionKey);
@@ -458,6 +470,10 @@ function transformContentNode(
   }
   if (node.name === "orig") {
     attrs.push(["origName", node.name]);
+  }
+  if (node.name === "note") {
+    const noteId = checkPresent(node.getAttr("noteId"));
+    return new XmlNode("note", [["noteId", noteId]]);
   }
   if (node.name === "reg") {
     assert(children.length === 1);

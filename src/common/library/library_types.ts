@@ -53,7 +53,13 @@ function isNavTreeNode(x: unknown): x is NavTreeNode {
   })(x);
 }
 
-export type ProcessedWorkContentNodeType = "span" | "head" | "s" | "gap" | "b";
+export type ProcessedWorkContentNodeType =
+  | "span"
+  | "head"
+  | "s"
+  | "gap"
+  | "b"
+  | "note";
 export interface ProcessedWork2 {
   /** Basic information about this work such as author or title. */
   info: DocumentInfo;

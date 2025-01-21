@@ -84,12 +84,14 @@ function testRoot(body: string): XmlNode {
       <text>
         <body>${body}</body>
       </text>
-    </TEI>`
+    </TEI>`,
+    { keepWhitespace: true }
   );
 }
 
 const BODY_WITH_BOOK_ONLY = `<div n="1" type="textpart" subtype="book">Gallia est</div>`;
 const BODY_WITH_CHOICE = `<div n="1" type="textpart" subtype="book"><choice><reg>FooBar</reg><orig>BazBap</orig></choice></div>`;
+const BODY_WITH_NOTES = `<div n="1" type="textpart" subtype="book">Gallia <note>Gaul</note> est<note>is</note></div>`;
 const WORK_ID = "workId";
 
 describe("processTei2", () => {
@@ -137,6 +139,17 @@ describe("processTei2", () => {
     });
     expect(work.rows[0][1].toString()).toContain("FooBar");
     expect(work.rows[0][1].toString()).not.toContain("BazBap");
+  });
+
+  it("handles elements with notes", () => {
+    const work = processTei2(testRoot(BODY_WITH_NOTES), {
+      workId: WORK_ID,
+    });
+    const root = work.rows[0][1];
+    expect(root.children[0]).toBe("Gallia ");
+    expect(XmlNode.assertIsNode(root.children[1]).getAttr("noteId")).toBe("0");
+    expect(root.children[2]).toBe(" est");
+    expect(XmlNode.assertIsNode(root.children[3]).getAttr("noteId")).toBe("1");
   });
 });
 
