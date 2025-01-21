@@ -161,23 +161,15 @@ export function ReadingPage() {
 
   // Scroll to the required line, if specified.
   useEffect(() => {
-    if (queryLine === undefined) {
+    // Continue if we have a loaded work and there's line specified.
+    if (queryLine === undefined || typeof work === "string") {
       return;
     }
-    const pollingInterval = 16;
-    const tryToScroll = () => {
-      console.log("try to scroll");
-      if (highlightRef.current === null) {
-        setTimeout(tryToScroll, pollingInterval);
-      } else {
-        highlightRef.current.scrollIntoView({
-          behavior: "smooth",
-          block: "center",
-        });
-      }
-    };
-    tryToScroll();
-  }, [queryLine]);
+    highlightRef.current?.scrollIntoView({
+      behavior: "smooth",
+      block: "center",
+    });
+  }, [queryLine, work]);
 
   useEffect(() => {
     hasTooltip.current = new Set();
