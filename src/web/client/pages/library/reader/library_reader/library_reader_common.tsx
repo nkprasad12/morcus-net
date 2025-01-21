@@ -9,7 +9,8 @@ export function navigateToSection(
   sectionId: string,
   nav: NavHelper<RouteInfo>,
   work: PaginatedWork,
-  line?: string
+  line?: string,
+  replace?: boolean
 ) {
   nav.to((old) => ({
     path: old.path,
@@ -17,6 +18,7 @@ export function navigateToSection(
       id: sectionId,
       ...(line === undefined ? {} : { l: line }),
     },
+    replace,
   }));
   const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
   const isOneColumn = twoColumnMain === null;

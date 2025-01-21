@@ -79,9 +79,10 @@ function appBundle() {
   const app = express();
   app.use(bodyParser.text());
   const telemetryLogger: TelemetryLogger = {
-    logApiCall: (d) => Promise.resolve(),
+    logApiCall: () => Promise.resolve(),
     teardown: () => Promise.resolve(),
-    logServerHealth: (d) => Promise.resolve(),
+    logServerHealth: () => Promise.resolve(),
+    logClientEvent: () => Promise.resolve(),
   };
   return { webApp: app, telemetry: Promise.resolve(telemetryLogger) };
 }

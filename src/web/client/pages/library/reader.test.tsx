@@ -575,6 +575,7 @@ describe("Reading UI", () => {
     expect(newRoute).toStrictEqual({
       path: urlByIdFor("dbg"),
       params: { id: "2" },
+      replace: true,
     });
   });
 
@@ -602,6 +603,7 @@ describe("Reading UI", () => {
     expect(newRoute).toStrictEqual({
       path: urlByIdFor("dbg"),
       params: { id: "1" },
+      replace: true,
     });
   });
 });
