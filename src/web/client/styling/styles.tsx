@@ -679,6 +679,15 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".readerMain .blockquote .l": {
       display: "block",
     },
+    // TODO: Eventually we can delete `SpanButton` and just use this.
+    ".readerMain button": {
+      backgroundColor: "transparent",
+      border: "none",
+      margin: 0,
+      padding: 0,
+      cursor: "pointer",
+      outline: "none",
+    },
     ".customSearchPopup": {
       color: theme.searchPopupText,
       backgroundColor: theme.searchPopupBg,
