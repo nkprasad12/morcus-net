@@ -93,6 +93,14 @@ const ReaderContext = React.createContext<ReaderState>({
   hasTooltip: { current: new Set<number>() },
 });
 
+interface WorkColumnContextType {
+  setDictWord: (word: string) => unknown;
+}
+
+const WorkColumnContext = React.createContext<WorkColumnContextType>({
+  setDictWord: () => {},
+});
+
 export function ReadingPage() {
   const [work, setWork] = useState<WorkState>("Loading");
   const [overlayOpacity, setOverlayOpacity] = useState(0);
@@ -264,10 +272,7 @@ export function SwipeFeedback(props: {
         left: swipeDir === "Right" ? 10 : undefined,
         right: swipeDir === "Left" ? 10 : undefined,
         opacity: overlayOpacity,
-        paddingTop: "4px",
-        paddingBottom: "4px",
-        paddingLeft: "4px",
-        paddingRight: "4px",
+        padding: "4px",
         borderRadius: 8,
         borderStyle: "solid",
         borderWidth: 4,
@@ -328,9 +333,13 @@ interface WorkColumnProps {
 }
 function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
   const { work, currentPage, isMobile, overlayOpacity } = props;
+  const workColumnContext: WorkColumnContextType = React.useMemo(
+    () => ({ setDictWord: props.onWordSelected }),
+    [props.onWordSelected]
+  );
 
   return (
-    <>
+    <WorkColumnContext.Provider value={workColumnContext}>
       <SwipeFeedback
         overlayOpacity={overlayOpacity}
         swipeDir={props.swipeDir}
@@ -356,7 +365,6 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
               }}>
               <WorkTextPage
                 work={work}
-                setDictWord={props.onWordSelected}
                 page={currentPage}
                 textScale={props.scale}
                 isMobile={isMobile}
@@ -366,7 +374,7 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
         )}
         <NavigationInfoBlurb isMobile={props.isMobile} />
       </ContentBox>
-    </>
+    </WorkColumnContext.Provider>
   );
 }
 
@@ -479,7 +487,6 @@ function WorkNavigationBar(props: {
 
 export function WorkTextPage(props: {
   work: PaginatedWork;
-  setDictWord: (word: string) => unknown;
   page: number;
   textScale: number;
   isMobile: boolean;
@@ -503,7 +510,6 @@ export function WorkTextPage(props: {
           key={j}
           className="text sm light"
           gridRow={gridRow}
-          setDictWord={props.setDictWord}
           content={content}
         />
       );
@@ -536,12 +542,7 @@ export function WorkTextPage(props: {
             highlighted={shouldHighlight}
           />
         </span>
-        <WorkTextColumn
-          gridRow={gridRow}
-          id={idLabel}
-          setDictWord={props.setDictWord}
-          content={content}
-        />
+        <WorkTextColumn gridRow={gridRow} id={idLabel} content={content} />
       </React.Fragment>
     );
     i++;
@@ -564,14 +565,13 @@ function WorkTextColumn(props: {
   id?: string;
   className?: string;
   content: XmlNode<ProcessedWorkContentNodeType>;
-  setDictWord: (word: string) => unknown;
 }) {
   return (
     <span
       style={{ gridColumn: 2, gridRow: props.gridRow }}
       id={props.id}
       className={props.className}>
-      {displayForLibraryChunk(props.content, props.setDictWord)}
+      {displayForLibraryChunk(props.content)}
       {"\n" /* Add a newline so copy / paste works correctly on Firefox. */}
     </span>
   );
@@ -768,11 +768,9 @@ function WorkChunkHeader(props: {
   );
 }
 
-function LatLink(props: {
-  word: string;
-  setDictWord: (input: string) => unknown;
-}) {
+function LatLink(props: { word: string }) {
   const { hasTooltip } = React.useContext(ReaderContext);
+  const { setDictWord } = React.useContext(WorkColumnContext);
   return (
     <span
       className="workLatWord"
@@ -780,7 +778,7 @@ function LatLink(props: {
         if (hasTooltip.current.size > 0) {
           return;
         }
-        props.setDictWord(props.word);
+        setDictWord(props.word);
         e.stopPropagation();
       }}>
       {props.word}
@@ -790,16 +788,13 @@ function LatLink(props: {
 
 function displayForLibraryChunk(
   root: XmlNode<ProcessedWorkContentNodeType>,
-  setDictWord: (word: string) => unknown,
   key?: number
 ): JSX.Element {
   const children = root.children.map((child, i) => {
     if (typeof child === "string") {
-      return processWords(child, (word, i) => (
-        <LatLink word={word} setDictWord={setDictWord} key={i} />
-      ));
+      return processWords(child, (word, i) => <LatLink word={word} key={i} />);
     }
-    return displayForLibraryChunk(child, setDictWord, i);
+    return displayForLibraryChunk(child, i);
   });
 
   const style: React.CSSProperties = {};
