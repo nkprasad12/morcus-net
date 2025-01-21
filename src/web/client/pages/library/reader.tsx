@@ -2,6 +2,7 @@ import {
   DocumentInfo,
   WorkId,
   type NavTreeNode,
+  type ProcessedWork2,
   type ProcessedWorkContentNodeType,
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -11,7 +12,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useEffect, useState } from "react";
 import * as React from "react";
 import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
-import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
+import { ClickableTooltip, CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
   SettingsText,
@@ -41,6 +42,7 @@ import {
   type PaginatedWork,
 } from "@/web/client/pages/library/reader/library_reader/library_reader_common";
 import { processWords } from "@/common/text_cleaning";
+import { checkPresent } from "@/common/assert";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -96,6 +98,9 @@ const ReaderContext = React.createContext<ReaderState>({
 
 interface WorkColumnContextType {
   setDictWord: (word: string) => unknown;
+  // It should be provided everywhere, but it's a pain to
+  // provide a default value.
+  work?: ProcessedWork2;
 }
 
 const WorkColumnContext = React.createContext<WorkColumnContextType>({
@@ -328,13 +333,9 @@ interface WorkColumnProps {
 }
 function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
   const { work, currentPage, isMobile, overlayOpacity } = props;
-  const workColumnContext: WorkColumnContextType = React.useMemo(
-    () => ({ setDictWord: props.onWordSelected }),
-    [props.onWordSelected]
-  );
 
   return (
-    <WorkColumnContext.Provider value={workColumnContext}>
+    <>
       <SwipeFeedback
         overlayOpacity={overlayOpacity}
         swipeDir={props.swipeDir}
@@ -363,13 +364,14 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
                 page={currentPage}
                 textScale={props.scale}
                 isMobile={isMobile}
+                setDictWord={props.onWordSelected}
               />
             </div>
           </>
         )}
         <NavigationInfoBlurb isMobile={props.isMobile} />
       </ContentBox>
-    </WorkColumnContext.Provider>
+    </>
   );
 }
 
@@ -485,9 +487,14 @@ export function WorkTextPage(props: {
   page: number;
   textScale: number;
   isMobile: boolean;
+  setDictWord: (work: string) => unknown;
 }) {
-  const { textScale, isMobile, work } = props;
+  const { textScale, isMobile, work, setDictWord } = props;
   const { queryLine, highlightRef } = React.useContext(ReaderContext);
+  const workColumnContext: WorkColumnContextType = React.useMemo(
+    () => ({ setDictWord, work }),
+    [setDictWord, work]
+  );
 
   const gapSize = (textScale / 100) * 0.65;
   const gap = `${gapSize}em`;
@@ -544,14 +551,16 @@ export function WorkTextPage(props: {
   }
 
   return (
-    <div
-      style={{
-        display: "inline-grid",
-        columnGap: gap,
-        marginTop: isMobile ? `${gapSize / 2}em` : gap,
-      }}>
-      {children}
-    </div>
+    <WorkColumnContext.Provider value={workColumnContext}>
+      <div
+        style={{
+          display: "inline-grid",
+          columnGap: gap,
+          marginTop: isMobile ? `${gapSize / 2}em` : gap,
+        }}>
+        {children}
+      </div>
+    </WorkColumnContext.Provider>
   );
 }
 
@@ -781,6 +790,48 @@ function LatLink(props: { word: string }) {
   );
 }
 
+function renderTooltip(root: XmlNode): JSX.Element {
+  const italic = root.getAttr("rend") === "italic";
+  return (
+    <span style={{ fontStyle: italic ? "italic" : undefined }}>
+      {root.children.map((c) => (typeof c === "string" ? c : renderTooltip(c)))}
+    </span>
+  );
+}
+
+export const TextNoteContent = React.forwardRef<HTMLButtonElement>(
+  function TextNoteBlah(fProps, fRef) {
+    return (
+      <button {...fProps} ref={fRef}>
+        <sup className="text md light">*</sup>
+      </button>
+    );
+  }
+);
+
+function TextNote(props: { node: XmlNode }) {
+  const { work } = React.useContext(WorkColumnContext);
+  const { hasTooltip } = React.useContext(ReaderContext);
+  const i = checkPresent(safeParseInt(props.node.getAttr("noteId")));
+  const note = work?.notes?.[i] ?? null;
+
+  return (
+    note && (
+      <ClickableTooltip
+        titleText={renderTooltip(note)}
+        ChildFactory={TextNoteContent}
+        visibleListener={(isOpen) => {
+          if (isOpen) {
+            hasTooltip.current.add(-i);
+          } else {
+            hasTooltip.current.delete(-i);
+          }
+        }}
+      />
+    )
+  );
+}
+
 function displayForLibraryChunk(
   root: XmlNode<ProcessedWorkContentNodeType>,
   key?: number
@@ -791,6 +842,9 @@ function displayForLibraryChunk(
     }
     return displayForLibraryChunk(child, i);
   });
+  if (root.name === "note") {
+    return <TextNote node={root} />;
+  }
 
   const style: React.CSSProperties = {};
   let className: string | undefined = undefined;

@@ -443,6 +443,25 @@ function handleTextWhitespace(
   return [processed, inWhitespace];
 }
 
+function transformNoteNode(node: XmlNode): XmlNode {
+  assert(
+    ["note", "hi", "emph", "foreign", "q"].includes(node.name),
+    node.toString()
+  );
+  const attrs: XmlNode["attrs"] = [];
+  const rend = node.getAttr("rend");
+  assert(rend === undefined || rend === "italic");
+  if (rend === "italic") {
+    attrs.push(["rend", "italic"]);
+  }
+  const baseChildren = node.children.map((c) =>
+    typeof c === "string" ? c : transformNoteNode(c)
+  );
+  const children =
+    node.name === "q" ? ["“", ...baseChildren, "”"] : baseChildren;
+  return new XmlNode("span", attrs, children);
+}
+
 function transformContentNode(
   node: XmlNode,
   children: XmlChild<ProcessedWorkContentNodeType>[],
@@ -562,7 +581,7 @@ export function processWorkBody(
       // Pass true here so that we skip over any initial whitespace.
       processRowContent(content, true)[0],
     ]),
-    notes: data.notes,
+    notes: data.notes.map(transformNoteNode),
   };
 }
 

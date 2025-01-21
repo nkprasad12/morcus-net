@@ -120,15 +120,21 @@ function BaseTooltip(props: TooltipProps) {
 export function ClickableTooltip(props: {
   titleText: string | JSX.Element;
   ChildFactory: TooltipChild;
+  visibleListener?: (visisble: boolean) => unknown;
 }) {
   const [open, setOpen] = React.useState(false);
+
+  function notifyOpen(open: boolean) {
+    setOpen(open);
+    props.visibleListener?.(open);
+  }
 
   return (
     <BaseTooltip
       {...props}
       open={open}
-      onChildClick={() => setOpen(!open)}
-      onClickAway={() => setOpen(false)}
+      onChildClick={() => notifyOpen(!open)}
+      onClickAway={() => notifyOpen(false)}
     />
   );
 }
