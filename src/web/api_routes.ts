@@ -1,7 +1,6 @@
 import { ApiRoute } from "@/web/utils/rpc/rpc";
 import {
   isAny,
-  isBoolean,
   isString,
   matchesObject,
   maybeUndefined,

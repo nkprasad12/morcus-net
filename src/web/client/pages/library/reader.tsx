@@ -77,10 +77,11 @@ function updatePage(
   newPage: number,
   nav: NavHelper<RouteInfo>,
   work: PaginatedWork,
-  line?: string
+  line?: string,
+  replace?: boolean
 ) {
   const sectionId = work.pages[newPage - 1].id.join(".");
-  navigateToSection(sectionId, nav, work, line);
+  navigateToSection(sectionId, nav, work, line, replace);
 }
 
 interface ReaderState {
@@ -148,12 +149,12 @@ export function ReadingPage() {
     }
     // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
     if (urlPg !== undefined) {
-      updatePage(urlPg, nav, work, urlLine);
+      updatePage(urlPg, nav, work, urlLine, true);
       return;
     }
     // Handle invalid ids.
     if (findMatchPage() === -1) {
-      updatePage(1, nav, work);
+      updatePage(1, nav, work, undefined, true);
     }
   }, [urlPg, work, urlLine, nav, findMatchPage]);
 

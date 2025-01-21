@@ -212,8 +212,20 @@ test.describe("main reader", () => {
     await expect(page.getByText("Aeduos").nth(0)).toBeVisible();
   });
 
-  test("shows works by name and author and page", async ({ page }) => {
+  test("handles legacy pg links in works", async ({ page }) => {
+    await page.goto("/library");
     await page.goto("/work/caesar/de_bello_gallico?pg=3");
+    await expect(page.getByText("Orgetorix")).toBeVisible();
+
+    // Make sure we replaced the URL and then can go back.
+    await expect(page).toHaveURL(/\/work\/caesar\/de_bello_gallico\?id=1\.3$/);
+    await page.goBack();
+    await expect(page.getByText("Welcome to the library")).toBeVisible();
+    await expect(page).toHaveURL(/\/library$/);
+  });
+
+  test("shows works by name and author and page", async ({ page }) => {
+    await page.goto("/work/caesar/de_bello_gallico?id=1.3");
     await expect(page.getByText("Orgetorix")).toBeVisible();
   });
 
