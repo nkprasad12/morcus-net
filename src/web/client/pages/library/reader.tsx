@@ -147,15 +147,16 @@ export function ReadingPage() {
     if (typeof work === "string") {
       return;
     }
-    // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
     if (urlPg !== undefined) {
+      // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
       updatePage(urlPg, nav, work, urlLine, true);
-      return;
-    }
-    // Handle invalid ids.
-    if (findMatchPage() === -1) {
+    } else if (findMatchPage() === -1) {
+      // Handle invalid ids.
       updatePage(1, nav, work, undefined, true);
     }
+    // For reasons I don't understand, when we do the redirect the browser seems to
+    // put as at the bottom - to avoid this, premptively scroll to the top first.
+    window.scrollTo({ top: 0, behavior: "instant" });
   }, [urlPg, work, urlLine, nav, findMatchPage]);
 
   // Scroll to the required line, if specified.
@@ -165,6 +166,7 @@ export function ReadingPage() {
     }
     const pollingInterval = 16;
     const tryToScroll = () => {
+      console.log("try to scroll");
       if (highlightRef.current === null) {
         setTimeout(tryToScroll, pollingInterval);
       } else {
