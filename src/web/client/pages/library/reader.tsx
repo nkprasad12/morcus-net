@@ -800,9 +800,9 @@ function renderTooltip(root: XmlNode): JSX.Element {
 }
 
 export const TextNoteContent = React.forwardRef<HTMLButtonElement>(
-  function TextNoteBlah(fProps, fRef) {
+  function TextNoteContent(fProps, fRef) {
     return (
-      <button {...fProps} ref={fRef}>
+      <button {...fProps} ref={fRef} aria-label="toggle note">
         <sup className="text md light">*</sup>
       </button>
     );
@@ -843,7 +843,7 @@ function displayForLibraryChunk(
     return displayForLibraryChunk(child, i);
   });
   if (root.name === "note") {
-    return <TextNote node={root} />;
+    return <TextNote key={key} node={root} />;
   }
 
   const style: React.CSSProperties = {};
