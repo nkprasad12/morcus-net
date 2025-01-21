@@ -1,6 +1,7 @@
 import { ApiRoute } from "@/web/utils/rpc/rpc";
 import {
   isAny,
+  isBoolean,
   isString,
   matchesObject,
   maybeUndefined,
@@ -17,6 +18,7 @@ import {
   ProcessedWork2,
   WorkId,
 } from "@/common/library/library_types";
+import type { ClientEventData } from "@/web/telemetry/telemetry";
 
 export const MacronizeApi: ApiRoute<string, string> = {
   path: "/api/macronize",
@@ -82,4 +84,14 @@ export const ScrapeUrlApi: ApiRoute<string, string> = {
   method: "GET",
   inputValidator: isString,
   outputValidator: isString,
+};
+
+export const LogClientEventApi: ApiRoute<ClientEventData, any> = {
+  path: "/api/logClientEvent",
+  method: "GET",
+  inputValidator: matchesObject<ClientEventData>({
+    name: isString,
+    extras: isAny,
+  }),
+  outputValidator: isAny,
 };

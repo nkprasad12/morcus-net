@@ -18,7 +18,7 @@ import {
   useSavedExternalContent,
 } from "@/web/client/pages/library/external_content_storage";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import { ScrapeUrlApi } from "@/web/api_routes";
+import { LogClientEventApi, ScrapeUrlApi } from "@/web/api_routes";
 import { Router } from "@/web/client/router/router_v2";
 import { CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { NavIcon } from "@/web/client/pages/library/reader_utils";
@@ -98,6 +98,7 @@ function MainColumn(props: BaseMainColumnProps) {
         return;
       }
       setCurrentTab("Text reader");
+      callApi(LogClientEventApi, { name: "ExternalContentOpen" });
       if (isMobile) {
         window.scrollTo({ top: 0, behavior: "instant" });
         window.scrollTo({ top: 64, behavior: "instant" });
