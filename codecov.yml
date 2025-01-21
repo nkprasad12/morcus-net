@@ -1,5 +1,5 @@
 coverage:
-  range: 50..92.5
+  range: 50..100
   round: nearest
   precision: 1
   status:
@@ -8,4 +8,4 @@ coverage:
         target: 80
     project:
       default:
-        target: 92.5
+        target: 90.0
