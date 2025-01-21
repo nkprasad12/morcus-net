@@ -104,7 +104,37 @@ describe("Router", () => {
     expect(info.path.endsWith("/newPath")).toBe(true);
     expect(info.hash).toBe(undefined);
     expect(info.params).toStrictEqual({ hi: "hello" });
+    expect(info.replace).toBeUndefined();
     expect(pushState).toHaveBeenCalledTimes(1);
     expect(pushState.mock.lastCall![2]).toBe("/newPath?hi=hello");
+  });
+
+  test("Router handles navigation replacements", async () => {
+    const replaceState = jest.fn();
+    window.history.replaceState = replaceState;
+    const target: RouteInfo = {
+      path: "/newPath",
+      params: { hi: "hello" },
+      replace: true,
+    };
+    const navSpy = jest.fn();
+
+    render(
+      <Router.Root>
+        <TestApp navSpy={navSpy} target={target} />
+      </Router.Root>
+    );
+    navSpy.mockClear();
+
+    await user.click(screen.getByText("Button"));
+
+    expect(navSpy).toHaveBeenCalledTimes(1);
+    const info = navSpy.mock.lastCall![0];
+    expect(info.path.endsWith("/newPath")).toBe(true);
+    expect(info.hash).toBe(undefined);
+    expect(info.params).toStrictEqual({ hi: "hello" });
+    expect(info.replace).toBeUndefined();
+    expect(replaceState).toHaveBeenCalledTimes(1);
+    expect(replaceState.mock.lastCall![2]).toBe("/newPath?hi=hello");
   });
 });
