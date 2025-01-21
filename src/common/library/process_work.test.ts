@@ -150,6 +150,10 @@ describe("processTei2", () => {
     expect(XmlNode.assertIsNode(root.children[1]).getAttr("noteId")).toBe("0");
     expect(root.children[2]).toBe(" est");
     expect(XmlNode.assertIsNode(root.children[3]).getAttr("noteId")).toBe("1");
+
+    expect(work.notes).toHaveLength(2);
+    expect(work.notes?.[0].toString()).toContain("Gaul");
+    expect(work.notes?.[1].toString()).toContain("is");
   });
 });
 

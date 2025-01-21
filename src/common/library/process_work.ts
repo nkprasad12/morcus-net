@@ -267,6 +267,7 @@ interface PreprocessedTree {
   root: XmlNode;
   uids: XmlNode[];
   includedSections: Set<string>[];
+  notes: XmlNode[];
 }
 
 function preprocessTree(
@@ -363,7 +364,7 @@ function preprocessTree(
   }
   const includedSections = uids.map((_) => new Set<string>());
   computeIncludedSections(root, includedSections);
-  return { root, uids, includedSections };
+  return { root, uids, includedSections, notes };
 }
 
 /**
@@ -551,13 +552,16 @@ export function processWorkBody(
   originalRoot: XmlNode,
   textParts: string[],
   options: ProcessForDisplayOptions
-): ProcessedWork2["rows"] {
+): Pick<ProcessedWork2, "rows" | "notes"> {
   const data = preprocessTree(originalRoot, textParts, options);
-  return convertToRows(data.root, data).map(([id, content]) => [
-    id,
-    // Pass true here so that we skip over any initial whitespace.
-    processRowContent(content, true)[0],
-  ]);
+  return {
+    rows: convertToRows(data.root, data).map(([id, content]) => [
+      id,
+      // Pass true here so that we skip over any initial whitespace.
+      processRowContent(content, true)[0],
+    ]),
+    notes: data.notes,
+  };
 }
 
 function getTextparts(root: XmlNode, workId: string) {
@@ -654,7 +658,7 @@ export function processTei2(
     xmlRoot.findDescendants("body"),
     (arr) => arr.length === 1
   );
-  const rows = processWorkBody(body[0], textParts, processOptions);
+  const { rows, notes } = processWorkBody(body[0], textParts, processOptions);
   const pages = divideWork(rows, textParts);
   const navTree = buildNavTree(pages);
   return {
@@ -663,5 +667,6 @@ export function processTei2(
     rows,
     pages,
     navTree,
+    notes,
   };
 }

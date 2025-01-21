@@ -74,6 +74,8 @@ export interface ProcessedWork2 {
   pages: WorkPage[];
   /** The default navigation tree for the content. */
   navTree: NavTreeNode;
+  /** Notes for the document. */
+  notes?: XmlNode[];
 }
 
 export namespace ProcessedWork2 {
@@ -83,6 +85,7 @@ export namespace ProcessedWork2 {
     rows: isArray(isPair(isArray(isString), instanceOf(XmlNode))),
     pages: isArray(isWorkPage),
     navTree: isNavTreeNode,
+    notes: maybeUndefined(isArray(instanceOf(XmlNode))),
   });
 }
 
