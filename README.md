@@ -12,7 +12,7 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 morcus.net development is currently done only on Linux machines.
 Before you get started, install `git` and:
 
-- If you want to work on the Typescript code: `npm`, `node` (other Node versions will likely work, but only version `20` is run in CI and guaranteed to work)
+- If you want to work on the Typescript code: `npm`, `node` (other Node versions will likely work, but only version `22` is run in CI and guaranteed to work)
 - If you want to work on the Python code: `python3.12` (other Python versions may work, but only `3.12` is run in CI and guaranteed to work.)
 
 ### Typescript Code (Client, Server, Workers)
