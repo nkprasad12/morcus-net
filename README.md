@@ -236,3 +236,27 @@ This may be required when updating Python versions.
 1. `sed -i 's/==/>=/g' requirements.txt` (don't pin to exact versions so the upgrade can work)
 2. `venv/bin/pip install -r requirements.txt --upgrade`
 3. `venv/bin/pip freeze > requirements.txt`
+
+## Manual Maintenance Tasks
+
+The following should be done at regular intervals:
+
+- Update the `fast-forward` token on `GitHub`: required for pushing to `main`. Due _before_ `2026/01/19`.
+  - Go to account settings, and rotate the token.
+  - Copy the rotated value into `morcus-net` settings (under `Secrets` currently).
+- Update the token used on the server for writing to `GitHub` issues. Due _before_ `2026/01/19`.
+  - Go to account settings, and rotate the token.
+  - Update the value of `GITHUB_TOKEN` in the `.env` file on the VM.
+  - Restart the server (`docker compose down ; docker compose up -d`).
+- Update the VM OS (currently: `Ubuntu 22.04`). Due _before_ it goes EOL in 2027/04.
+  - Standard instructions. Unclear how best to avoid downtime.
+- Update the `Python` version (currently: `3.12`). Due _before_ it goes EOL in 2028/10.
+  - Search for `3.12` and replace with the latest version everywhere. Currently this just means in the CI workflow, documentations, and in one script.
+  - Update the `requirements.txt` (see [above](#updating-packages)).
+- Update the `node` version, (currently: `22`). Due _before_ it goes EOL in `2027/04`.
+  - Check the `package.json`
+  - Update the version used in the CI workflows
+  - Update the version used in the `Dockerfile`
+- Update the `nginx` version, (currently `1.26.2`). Due _before_ it goes EOL in `2025/04`.
+  - Update the `nginx` version in `src/devops/reverse-proxy/Dockerfile`
+  - Follow the build and push instructions [above](#updating-the-reverse-proxy-image)
