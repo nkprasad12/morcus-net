@@ -323,14 +323,16 @@ function preprocessTree(
     if (isLeader) {
       top.attrs.push(["leader", "1"]);
     }
-    // `note` is included in the tree to mark the position,
-    // but the actual content is stored separately.
     if (top.name === "note") {
       // `sid`, `uid`, and `parent`.
       assertEqual(top.attrs.length, 3);
       const noteId = notes.length.toString();
-      top.attrs.push(["noteId", noteId]);
       notes.push(top.deepcopy());
+      top.attrs.push(["noteId", noteId]);
+      // This is a way to remove all children from the node.
+      // `note` is included in the tree to mark the position,
+      // but the actual content is stored separately.
+      top.children.length = 0;
       continue;
     }
 

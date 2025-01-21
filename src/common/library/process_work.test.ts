@@ -147,9 +147,13 @@ describe("processTei2", () => {
     });
     const root = work.rows[0][1];
     expect(root.children[0]).toBe("Gallia ");
-    expect(XmlNode.assertIsNode(root.children[1]).getAttr("noteId")).toBe("0");
-    expect(root.children[2]).toBe(" est");
-    expect(XmlNode.assertIsNode(root.children[3]).getAttr("noteId")).toBe("1");
+    expect(root.children[2]).toBe("est");
+    const note1 = XmlNode.assertIsNode(root.children[1]);
+    expect(note1.getAttr("noteId")).toBe("0");
+    expect(note1.children).toHaveLength(0);
+    const note2 = XmlNode.assertIsNode(root.children[3]);
+    expect(note2.getAttr("noteId")).toBe("1");
+    expect(note2.children).toHaveLength(0);
 
     expect(work.notes).toHaveLength(2);
     expect(work.notes?.[0].toString()).toContain("Gaul");
