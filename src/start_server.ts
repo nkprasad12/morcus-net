@@ -15,6 +15,7 @@ import {
   DictsFusedApi,
   GetWork,
   ListLibraryWorks,
+  LogClientEventApi,
   ReportApi,
   ScrapeUrlApi,
 } from "@/web/api_routes";
@@ -166,6 +167,9 @@ export function startMorcusServer(): Promise<http.Server> {
         retrieveWorksList()
       ),
       RouteDefinition.create(ScrapeUrlApi, scrapeUrlText),
+      RouteDefinition.create(LogClientEventApi, async (eventData) => {
+        (await telemetry).logClientEvent(eventData);
+      }),
     ],
     telemetry: telemetry,
     buildDir,
