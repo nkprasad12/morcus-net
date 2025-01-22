@@ -79,7 +79,7 @@ describe("library view", () => {
 
     expect(mockNav).toHaveBeenCalledWith({
       path: "/work/caesar/dbg",
-      params: { pg: "1" },
+      params: {},
     });
   });
 

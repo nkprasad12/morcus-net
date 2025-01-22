@@ -10,6 +10,7 @@ import { ReadingPage, SwipeFeedback } from "@/web/client/pages/library/reader";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import {
   ProcessedWork2,
+  type DocumentInfo,
   type NavTreeNode,
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -41,6 +42,11 @@ window.scrollTo = jest.fn();
 
 const WORK_PAGE = ClientPaths.WORK_PAGE;
 const WORK_BY_NAME = ClientPaths.WORK_BY_NAME;
+const DBG_INFO: DocumentInfo = {
+  title: "DBG",
+  author: "Caesar",
+  workId: "dbg",
+};
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
@@ -64,7 +70,7 @@ const TWO_CHAPTER_NAV_TREE: NavTreeNode = {
   ],
 };
 const PROCESSED_WORK: ProcessedWork2 = {
-  info: { title: "DBG", author: "Caesar" },
+  info: DBG_INFO,
   textParts: ["chapter", "section"],
   rows: [
     [["1", "1"], new XmlNode("span", [], ["Gallia est omnis"])],
@@ -75,7 +81,7 @@ const PROCESSED_WORK: ProcessedWork2 = {
 };
 
 const WORK_WITH_NOTES: ProcessedWork2 = {
-  info: { title: "DBG", author: "Caesar" },
+  info: DBG_INFO,
   textParts: ["chapter", "section"],
   rows: [
     [
@@ -101,7 +107,7 @@ const WORK_WITH_NOTES: ProcessedWork2 = {
 };
 
 const WORK_WITH_FLAVOR_TEXT: ProcessedWork2 = {
-  info: { title: "DBG", author: "Caesar" },
+  info: DBG_INFO,
   textParts: ["chapter", "section"],
   rows: [
     [["1", "1"], new XmlNode("span", [], ["Gallia est omnis"])],
@@ -113,7 +119,7 @@ const WORK_WITH_FLAVOR_TEXT: ProcessedWork2 = {
 };
 
 const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
-  info: { title: "DBG", author: "Caesar" },
+  info: DBG_INFO,
   textParts: ["chapter", "section"],
   rows: [
     [["1", "1"], new XmlNode("span", [], ["Gallia est omnis"])],
@@ -127,7 +133,7 @@ const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
 };
 
 const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
-  info: { title: "DBG", author: "Caesar" },
+  info: DBG_INFO,
   textParts: ["chapter", "section"],
   rows: [
     [
@@ -601,12 +607,12 @@ describe("Reading UI", () => {
     await screen.findByText(/Drawer/);
   });
 
-  it("redirects on legacy page", async () => {
+  it("redirects on no id page", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
     const originalRoute: RouteInfo = {
       path: urlByIdFor("dbg"),
-      params: { pg: "2" },
+      params: {},
     };
 
     render(
@@ -624,7 +630,7 @@ describe("Reading UI", () => {
     const newRoute = mockNav.mock.calls[0][0](originalRoute);
     expect(newRoute).toStrictEqual({
       path: urlByIdFor("dbg"),
-      params: { id: "2" },
+      params: { id: "1" },
       replace: true,
     });
   });
