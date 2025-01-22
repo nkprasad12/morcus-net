@@ -183,6 +183,10 @@ function parseArguments() {
       help: "Runs supported commands with bun.",
       action: "store_true",
     });
+    subcommand.add_argument("--node", {
+      help: "Runs supported commands with node.",
+      action: "store_true",
+    });
   }
 
   return parser.parse_args();
