@@ -245,9 +245,15 @@ test.describe("main reader", () => {
     ).toBeVisible();
   });
 
-  test("has working scroll to line", async ({ page }) => {
+  test("has working scroll to line from UI from URL", async ({ page }) => {
     skipIfWebkit("viewport assertions don't yet work on Webkit.");
-    await page.goto("/work/juvenal/saturae?pg=2");
+    await page.goto("/work/juvenal/saturae?id=1.2&l=160");
+    await expect(page.getByText("Britannos")).toBeInViewport();
+  });
+
+  test("has working scroll to line from UI", async ({ page }) => {
+    skipIfWebkit("viewport assertions don't yet work on Webkit.");
+    await page.goto("/work/juvenal/saturae?id=1.2");
     await expect(page.getByText("Britannos")).toBeVisible();
     await expect(page.getByText("Britannos")).not.toBeInViewport();
 
@@ -256,7 +262,6 @@ test.describe("main reader", () => {
     await page.keyboard.type("161");
     await page.keyboard.press("Enter");
 
-    // Usually the scroll takes ~300 ms.
     await expect(page.getByText("Britannos")).toBeInViewport();
   });
 
