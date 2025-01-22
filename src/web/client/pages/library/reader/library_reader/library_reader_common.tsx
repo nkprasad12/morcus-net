@@ -23,6 +23,6 @@ export function navigateToSection(
   const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
   const isOneColumn = twoColumnMain === null;
   const container = isOneColumn ? window : twoColumnMain;
-  container?.scrollTo({ top: isOneColumn ? 64 : 0, behavior: "instant" });
+  container?.scrollTo({ top: 0, behavior: "instant" });
   LibrarySavedSpot.set(work.info.workId, sectionId);
 }

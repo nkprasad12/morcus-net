@@ -156,7 +156,7 @@ export function ReadingPage() {
       updatePage(1, nav, work, undefined, true);
     }
     // For reasons I don't understand, when we do the redirect the browser seems to
-    // put as at the bottom - to avoid this, premptively scroll to the top first.
+    // put us at the bottom - to avoid this, premptively scroll to the top first.
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [work, urlLine, nav, findMatchPage]);
 
