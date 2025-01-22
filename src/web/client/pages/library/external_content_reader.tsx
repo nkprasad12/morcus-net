@@ -101,7 +101,6 @@ function MainColumn(props: BaseMainColumnProps) {
       callApi(LogClientEventApi, { name: "ExternalContentOpen" });
       if (isMobile) {
         window.scrollTo({ top: 0, behavior: "instant" });
-        window.scrollTo({ top: 64, behavior: "instant" });
       }
     },
     [setText, setCurrentTab, isMobile]
