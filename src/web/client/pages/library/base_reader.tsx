@@ -89,10 +89,6 @@ export function BaseReader<
     1,
     "RD_TOTAL_WIDTH"
   );
-  const [mainWidth, setMainWidth] = usePersistedState<number>(
-    56,
-    "RD_WORK_WIDTH"
-  );
   const [swipeNavigation, setSwipeNavigation] = usePersistedState<boolean>(
     true,
     SWIPE_NAV_KEY
@@ -163,7 +159,6 @@ export function BaseReader<
 
   return (
     <BaseLayout
-      mainWidth={mainWidth}
       totalWidth={totalWidth}
       sidebarRef={sidebarRef}
       drawerHeight={drawerHeight}
@@ -192,8 +187,6 @@ export function BaseReader<
           setSideScale={setReaderSideScale}
           totalWidth={isScreenSmall ? undefined : totalWidth}
           setTotalWidth={isScreenSmall ? undefined : setTotalWidth}
-          mainWidth={isScreenSmall ? undefined : mainWidth}
-          setMainWidth={isScreenSmall ? undefined : setMainWidth}
           {...(isScreenSmall && props.showMobileNavSettings
             ? {
                 swipeNavigation,
@@ -236,49 +229,58 @@ function eventConsumer<E extends Event>(handler: (e: E) => boolean) {
 
 function DragHelper(
   props: PropsWithChildren<{
-    currentHeight: number;
-    setCurrentHeight: React.Dispatch<React.SetStateAction<number>>;
+    currentLen: number;
+    setCurrentLen: (callback: (old: number) => number) => unknown;
+    horizontal?: true;
+    minRatio?: number;
+    maxRatio?: number;
+    style?: CSSProperties;
+    className?: string;
   }>
 ) {
-  const { currentHeight, setCurrentHeight } = props;
-  const dragStartY = React.useRef<number | undefined>(undefined);
-  const dragStartHeight = React.useRef<number | undefined>(undefined);
+  const { currentLen, setCurrentLen, horizontal, minRatio, maxRatio } = props;
+  const dragStartPos = React.useRef<number | undefined>(undefined);
+  const dragStartLen = React.useRef<number | undefined>(undefined);
+  const posKey = horizontal ? "clientX" : "clientY";
 
   const onDrag = useCallback(
-    (currentY: number) => {
-      if (dragStartHeight.current === undefined) {
-        // We didn't get the onTouchStart callback yet, so wait for it.
+    (currentPos: number) => {
+      if (dragStartLen.current === undefined) {
+        // We didn't get the start callback yet, so wait for it.
         return false;
       }
-      setCurrentHeight((oldHeight) => {
-        if (dragStartY.current === undefined) {
-          dragStartY.current = currentY;
+      setCurrentLen((oldLen) => {
+        if (dragStartPos.current === undefined) {
+          dragStartPos.current = currentPos;
         }
-        if (dragStartHeight.current === undefined) {
-          return oldHeight;
+        if (dragStartLen.current === undefined) {
+          return oldLen;
         }
-        const offset = dragStartY.current - currentY;
-        const proposed = dragStartHeight.current + offset;
-        const max = window.innerHeight * DRAWER_MAX_SIZE;
-        const newHeight = proposed > max ? max : proposed < 0 ? 0 : proposed;
-        const largeChange = Math.abs(oldHeight - newHeight) >= 3;
-        return newHeight === 0 || largeChange ? newHeight : oldHeight;
+        const offset =
+          (dragStartPos.current - currentPos) * (horizontal ? -1 : 1);
+        const proposed = dragStartLen.current + offset;
+        const total = horizontal ? window.innerWidth : window.innerHeight;
+        const min = total * (minRatio ?? 0);
+        const max = total * (maxRatio ?? 1);
+        const newLen = proposed > max ? max : proposed < min ? min : proposed;
+        const largeChange = Math.abs(oldLen - newLen) >= 3;
+        return newLen === 0 || largeChange ? newLen : oldLen;
       });
       return true;
     },
-    [setCurrentHeight]
+    [setCurrentLen, horizontal, maxRatio, minRatio]
   );
 
   const onDragEnd = useCallback(() => {
     const result =
-      dragStartHeight.current !== undefined || dragStartY.current !== undefined;
-    dragStartY.current = undefined;
-    dragStartHeight.current = undefined;
+      dragStartLen.current !== undefined || dragStartPos.current !== undefined;
+    dragStartPos.current = undefined;
+    dragStartLen.current = undefined;
     return result;
   }, []);
 
   useEffect(() => {
-    const moveHandler = eventConsumer((e: MouseEvent) => onDrag(e.clientY));
+    const moveHandler = eventConsumer((e: MouseEvent) => onDrag(e[posKey]));
     document.addEventListener("mousemove", moveHandler);
     const upHandler = eventConsumer((_e: Event) => onDragEnd());
     document.addEventListener("mouseup", upHandler);
@@ -286,19 +288,24 @@ function DragHelper(
       document.removeEventListener("mousemove", moveHandler);
       document.removeEventListener("mouseup", upHandler);
     };
-  }, [onDrag, onDragEnd]);
+  }, [onDrag, onDragEnd, posKey]);
 
-  const onDragStart = () => {
-    dragStartHeight.current = currentHeight;
+  const onDragStart = (e: { preventDefault: () => void }) => {
+    dragStartLen.current = currentLen;
+    e.preventDefault();
   };
 
   return (
     <div
-      style={{ touchAction: "none" }}
+      style={{ ...props.style, touchAction: "none" }}
+      className={props.className}
       onMouseDown={onDragStart}
       onTouchStart={onDragStart}
       onTouchEnd={onDragEnd}
-      onTouchMove={(e) => onDrag(e.targetTouches[0].clientY)}>
+      onTouchMove={(e) => {
+        e.preventDefault();
+        onDrag(e.targetTouches[0][posKey]);
+      }}>
       {props.children}
     </div>
   );
@@ -350,8 +357,9 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
         disableGutters
         style={{ position: "fixed", bottom: 0, zIndex: 1 }}>
         <DragHelper
-          currentHeight={drawerHeight}
-          setCurrentHeight={setDrawerHeight}>
+          currentLen={drawerHeight}
+          setCurrentLen={setDrawerHeight}
+          maxRatio={DRAWER_MAX_SIZE}>
           <div>
             <div className="readerMobileDragger">
               <div className="draggerPuller" />
@@ -390,17 +398,27 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
 const APP_BAR_MAX_HEIGHT = 64;
 const COLUMN_TOP_MARGIN = 8;
 const COLUMN_BOTTON_MARGIN = 8;
-const COLUMN_STYLE: CSSProperties = {
+const BASE_COLUMN_STYLE: CSSProperties = {
   height: "100%",
   float: "left",
+  boxSizing: "border-box",
+};
+const COLUMN_STYLE: CSSProperties = {
+  ...BASE_COLUMN_STYLE,
   width: "48%",
   overflow: "auto",
-  boxSizing: "border-box",
   marginTop: COLUMN_TOP_MARGIN,
   marginBottom: COLUMN_BOTTON_MARGIN,
   scrollPaddingTop: APP_BAR_MAX_HEIGHT,
-  marginLeft: "1%",
-  marginRight: "1%",
+  marginLeft: "0.5%",
+  marginRight: "0.5%",
+};
+const DRAGGER_STYLE: CSSProperties = {
+  ...BASE_COLUMN_STYLE,
+  width: "0.5%",
+  margin: "16px 0",
+  opacity: "50%",
+  cursor: "col-resize",
 };
 const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | undefined)[] = [
   "lg",
@@ -413,15 +431,19 @@ type BaseReaderLayoutProps = PropsWithChildren<{
   sidebarRef?: React.RefObject<HTMLDivElement>;
 }>;
 interface NonMobileReaderLayoutProps extends BaseReaderLayoutProps {
-  mainWidth: number;
   totalWidth: number;
 }
 function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
   const children = React.Children.toArray(props.children);
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
-  const { mainWidth, totalWidth, sidebarRef } = props;
+  const { totalWidth, sidebarRef } = props;
   const [windowHeight, setWindowHeight] = useState(window.innerHeight);
+  const [mainWidthPercent, setMainWidthPercent] = usePersistedState<number>(
+    56,
+    "RD_WORK_WIDTH2"
+  );
+  const containerRef = React.useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const onResize = () => setWindowHeight(window.innerHeight);
@@ -429,8 +451,21 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
+  function containerWidth() {
+    return containerRef.current?.clientWidth ?? window.innerWidth;
+  }
+
+  function mainWidth() {
+    return (mainWidthPercent * containerWidth()) / 100;
+  }
+
+  function setMainWidth(newWidth: number) {
+    setMainWidthPercent((newWidth / containerWidth()) * 100);
+  }
+
   return (
     <Container
+      innerRef={containerRef}
       maxWidth={WIDTH_LOOKUP[totalWidth]}
       style={{
         height:
@@ -444,15 +479,24 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
         id={LARGE_VIEW_MAIN_COLUMN_ID}
         style={{
           ...COLUMN_STYLE,
-          width: `${mainWidth}%`,
+          width: `${mainWidthPercent}%`,
         }}>
         {mainContent}
       </div>
+      <DragHelper
+        currentLen={mainWidth()}
+        setCurrentLen={(update) => setMainWidth(update(mainWidth()))}
+        style={DRAGGER_STYLE}
+        horizontal
+        minRatio={0.2}
+        maxRatio={0.8}
+        className="bgAlt"
+      />
       <div
         className="readerSide"
         style={{
           ...COLUMN_STYLE,
-          width: `${96 - mainWidth}%`,
+          width: `${96 - mainWidthPercent}%`,
         }}
         ref={sidebarRef}>
         <ContentBox isSmall>
