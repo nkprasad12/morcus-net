@@ -20,6 +20,7 @@ import { parseRawXml } from "@/common/xml/xml_utils";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions } from "@/morceus/cruncher_types";
+import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
 import { stringifyMessage } from "@/web/utils/rpc/parsing";
 import fs from "fs";
 import path from "path";
@@ -70,12 +71,15 @@ function processTeiCts2(
   workId: string,
   patches?: LibraryPatch[]
 ): ProcessedWork2 {
-  const words: string[] = [];
+  const words = new Set<string>();
   const onWord = (word: string) => {
     const trimmed = word.trim();
+    if (parseRomanNumeral(trimmed) !== undefined) {
+      return;
+    }
     const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
     if (cruncher(trimmed, CruncherOptions.DEFAULT).length === 0) {
-      words.push(trimmed);
+      words.add(trimmed);
     }
   };
   const debugRoot: string | undefined = envVar("DEBUG_OUT", "unsafe");
@@ -88,7 +92,7 @@ function processTeiCts2(
   const debugName = result.info.title.replaceAll(" ", "_");
   const outputPath = debugRoot?.concat("/", debugName, ".debug.txt");
   if (outputPath !== undefined) {
-    fs.writeFileSync(outputPath, words.sort().join("\n"));
+    fs.writeFileSync(outputPath, Array.from(words).sort().join("\n"));
   }
   return result;
 }
