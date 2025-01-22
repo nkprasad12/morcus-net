@@ -4,7 +4,7 @@ import { defaultExperimentalMode } from "@/web/client/define_vars";
 
 const SETTINGS_STORAGE_KEY = "GlobalSettings";
 
-export const DEFAULT_HIGHLIGHT_STRENGTH = 50;
+export const DEFAULT_HIGHLIGHT_STRENGTH = 40;
 
 export interface GlobalBooleans {
   experimentalMode?: boolean;
@@ -54,6 +54,7 @@ export function getGlobalSettings(): GlobalSettings {
         highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
         darkMode: false,
         embeddedInflectedSearch: true,
+        inflectedSearch: true,
         fontFamily: "sans-serif",
       };
 }
