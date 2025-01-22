@@ -27,14 +27,14 @@ mockCallApi.mockResolvedValue({
     {
       author: "Caesar",
       name: "DBG",
-      id: "DBG",
+      id: "phi002",
       urlAuthor: "caesar",
       urlName: "dbg",
     },
     {
       author: "Sallust",
       name: "Catalina",
-      id: "Catalina",
+      id: "phi001",
       urlAuthor: "sallust",
       urlName: "catalina",
     },
@@ -50,6 +50,19 @@ describe("library view", () => {
     await screen.findByText(/Caesar/);
     await screen.findByText(/Sallust/);
     await screen.findByText(/Catalina/);
+  });
+
+  it("allows filter by full id", async () => {
+    render(<Library />);
+    await screen.findByText(/Welcome/);
+
+    const search = screen.getByRole("combobox");
+    await user.click(search);
+    await user.type(search, "phi001");
+
+    expect(screen.queryByText("DBG")).toBeNull();
+    expect(screen.queryByText("Sallust")).not.toBeNull();
+    expect(screen.queryByText("Catalina")).not.toBeNull();
   });
 
   it("has working filter", async () => {
