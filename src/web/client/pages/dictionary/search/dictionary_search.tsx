@@ -160,12 +160,20 @@ function SearchSettingsDialog(props: {
   );
 }
 
+function LangChip(props: { lang: DictLang }) {
+  return (
+    <DictChip
+      label={props.lang}
+      className={props.lang === "La" ? "lsChip" : "shChip"}
+    />
+  );
+}
+
 function AutocompleteOption(props: { option: [DictLang, string] }) {
   const from = props.option[0];
-  const className = from === "En" ? "shChip" : "lsChip";
   return (
     <>
-      <DictChip label={from} className={className} />
+      <LangChip lang={from} />
       <span style={{ marginLeft: 10 }}>{props.option[1]}</span>
     </>
   );
@@ -248,6 +256,12 @@ function SettingsPreview(props: {
     : globalSettings.data.inflectedSearch;
   const inflectionMode =
     !shouldDisable.inflections && rawInflectionSetting === true;
+  const langs = new Set(
+    props.dicts
+      .filter((dict) => !shouldDisable[dict.key])
+      .map((d) => d.languages.from)
+      .filter((lang) => lang !== "*")
+  );
 
   return (
     <>
@@ -260,16 +274,14 @@ function SettingsPreview(props: {
           marginRight: "12px",
         }}>
         In{" "}
-        {props.dicts
-          .filter((dict) => !shouldDisable[dict.key] && dict.key !== "NUM")
-          .map((dict) => (
-            <span
-              key={dict.key}
-              style={{ marginRight: "2px", cursor: "pointer" }}
-              onClick={props.openDialog}>
-              <DictChip label={dict.key} />
-            </span>
-          ))}
+        {Array.from(langs).map((lang) => (
+          <span
+            key={lang}
+            style={{ marginRight: "2px", cursor: "pointer" }}
+            onClick={props.openDialog}>
+            <LangChip lang={lang} />
+          </span>
+        ))}
       </span>
       <span
         className="text light xxs compact"
