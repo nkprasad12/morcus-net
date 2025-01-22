@@ -24,14 +24,12 @@ const WORK_STYLE: React.CSSProperties = {
 function onWorkSelected(work: LibraryWorkMetadata, nav: NavHelper<RouteInfo>) {
   const params = { author: work.urlAuthor, name: work.urlName };
   const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
-  if (path !== null) {
-    const id = [work.name, work.author].join("@");
-    const saved = LibrarySavedSpot.get(id);
-    const useSectionId = typeof saved === "string";
-    const pg = useSectionId ? undefined : `${saved ?? 1}`;
-    const sectionId = useSectionId ? saved : undefined;
-    nav.to({ path, params: { pg, id: sectionId } });
+  if (path === null) {
+    return;
   }
+  const saved = LibrarySavedSpot.get(work.id);
+  const [pg, id] = saved === undefined ? ["1", undefined] : [undefined, saved];
+  nav.to({ path, params: { pg, id } });
 }
 
 type WorkListState = "Loading" | "Error" | LibraryWorkMetadata[];

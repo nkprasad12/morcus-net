@@ -21,5 +21,9 @@ describe("LibrarySaveSpot", () => {
 
     expect(LibrarySavedSpot.get("foo.bar")).toBe("8");
     expect(LibrarySavedSpot.get("bar.baz")).toBe("7");
+    expect(LibrarySavedSpot.getAll()).toStrictEqual({
+      "foo.bar": { sectionId: "8" },
+      "bar.baz": { sectionId: "7" },
+    });
   });
 });

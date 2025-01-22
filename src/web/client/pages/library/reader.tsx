@@ -691,6 +691,7 @@ function WorkInfo(props: { workInfo: DocumentInfo }) {
         {props.workInfo.sponsor && (
           <InfoLine label="Sponsor" value={props.workInfo.sponsor} />
         )}
+        <InfoLine label="ID" value={props.workInfo.workId} />
       </div>
       <div style={{ lineHeight: 1, marginTop: "8px" }}>
         <span className="text sm light">
