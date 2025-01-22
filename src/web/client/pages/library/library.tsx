@@ -28,8 +28,7 @@ function onWorkSelected(work: LibraryWorkMetadata, nav: NavHelper<RouteInfo>) {
     return;
   }
   const saved = LibrarySavedSpot.get(work.id);
-  const [pg, id] = saved === undefined ? ["1", undefined] : [undefined, saved];
-  nav.to({ path, params: { pg, id } });
+  nav.to({ path, params: { id: saved } });
 }
 
 type WorkListState = "Loading" | "Error" | LibraryWorkMetadata[];

@@ -115,7 +115,6 @@ export function ReadingPage() {
   const highlightRef = React.useRef<HTMLSpanElement>(null);
 
   const { nav, route } = Router.useRouter();
-  const urlPg = safeParseInt(route.params?.pg);
   const urlId = route.params?.id;
   const urlLine = route.params?.l;
   const queryLine = safeParseInt(urlLine);
@@ -152,17 +151,14 @@ export function ReadingPage() {
     if (typeof work === "string") {
       return;
     }
-    if (urlPg !== undefined) {
-      // `pg` is the legacy parameter. This is just for backwards compatibility of old links.
-      updatePage(urlPg, nav, work, urlLine, true);
-    } else if (findMatchPage() === -1) {
+    if (findMatchPage() === -1) {
       // Handle invalid ids.
       updatePage(1, nav, work, undefined, true);
     }
     // For reasons I don't understand, when we do the redirect the browser seems to
     // put as at the bottom - to avoid this, premptively scroll to the top first.
     window.scrollTo({ top: 0, behavior: "instant" });
-  }, [urlPg, work, urlLine, nav, findMatchPage]);
+  }, [work, urlLine, nav, findMatchPage]);
 
   // Scroll to the required line, if specified.
   useEffect(() => {
