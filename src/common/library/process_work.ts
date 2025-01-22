@@ -682,12 +682,6 @@ export function processTei2(
   const { rows, notes } = processWorkBody(body[0], textParts, processOptions);
   const pages = divideWork(rows, textParts);
   const navTree = buildNavTree(pages);
-  return {
-    info: extractInfo(xmlRoot),
-    textParts,
-    rows,
-    pages,
-    navTree,
-    notes,
-  };
+  const info = { ...extractInfo(xmlRoot), workId: metadata.workId };
+  return { info, textParts, rows, pages, navTree, notes };
 }

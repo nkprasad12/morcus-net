@@ -24,6 +24,5 @@ export function navigateToSection(
   const isOneColumn = twoColumnMain === null;
   const container = isOneColumn ? window : twoColumnMain;
   container?.scrollTo({ top: isOneColumn ? 64 : 0, behavior: "instant" });
-  const id = [work.info.title, work.info.author].join("@");
-  LibrarySavedSpot.set(id, sectionId);
+  LibrarySavedSpot.set(work.info.workId, sectionId);
 }

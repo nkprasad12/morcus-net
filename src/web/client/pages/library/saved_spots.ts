@@ -1,23 +1,29 @@
-import { safeParseInt } from "@/common/misc_utils";
+const SAVED_SPOTS_KEY = "LIBRARY_SPOTS";
 
-const SAVED_SPOTS_KEY_PREFIX = "LIBRARY_SPOT_";
+interface SavedSpotEntry {
+  sectionId: string;
+}
 
-const getKey = (id: string, v: string) => SAVED_SPOTS_KEY_PREFIX + v + id;
+interface SavedSpotData {
+  [workId: string]: SavedSpotEntry;
+}
 
 export namespace LibrarySavedSpot {
-  export function get(id: string): number | string | undefined {
-    const stored = localStorage.getItem(getKey(id, "V2"));
+  export function getAll(): SavedSpotData {
+    const stored = localStorage.getItem(SAVED_SPOTS_KEY);
     if (stored !== null) {
       return JSON.parse(stored);
     }
-    const v1 = localStorage.getItem(getKey(id, "V1"));
-    if (v1 === null) {
-      return undefined;
-    }
-    return safeParseInt(JSON.parse(v1));
+    return {};
   }
 
-  export function set(id: string, sectionId: string): void {
-    localStorage.setItem(getKey(id, "V2"), JSON.stringify(sectionId));
+  export function get(workId: string): string | undefined {
+    return getAll()[workId]?.sectionId;
+  }
+
+  export function set(workId: string, sectionId: string): void {
+    const spots = getAll();
+    spots[workId] = { sectionId };
+    localStorage.setItem(SAVED_SPOTS_KEY, JSON.stringify(spots));
   }
 }
