@@ -136,16 +136,13 @@ export function ReaderSettings(props: ReaderSettingsProps) {
   const {
     totalWidth,
     setTotalWidth,
-    mainWidth,
-    setMainWidth,
     mainScale,
     setMainScale,
     sideScale,
     setSideScale,
   } = props;
   const hasTotalWidth = totalWidth !== undefined && setTotalWidth !== undefined;
-  const hasMainWidth = mainWidth !== undefined && setMainWidth !== undefined;
-  const hasLayoutSettings = hasTotalWidth || hasMainWidth;
+  const hasLayoutSettings = hasTotalWidth;
   const mainLabel = hasLayoutSettings ? "Main column" : "Main panel";
   const sideLabel = hasLayoutSettings ? "Side column" : "Drawer";
   return (
@@ -163,16 +160,6 @@ export function ReaderSettings(props: ReaderSettingsProps) {
               min={0}
               max={3}
               step={1}
-            />
-          )}
-          {hasMainWidth && (
-            <NumberSelector
-              value={mainWidth}
-              setValue={setMainWidth}
-              label="Main width"
-              min={32}
-              max={80}
-              step={8}
             />
           )}
         </details>

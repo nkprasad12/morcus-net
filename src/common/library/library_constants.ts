@@ -31,7 +31,6 @@ export const ALL_SUPPORTED_WORKS = LOCAL_REPO_WORKS.concat([
   SALLUST_CATALINA1,
   DE_AMICITIA,
   CAESAR_BELLUM_CIVILIS,
-  // We're not handling the `lg` (line groups)!
   CATULLUS,
   DE_RERUM_NATURA,
   NEPOS_MILTIADES,
