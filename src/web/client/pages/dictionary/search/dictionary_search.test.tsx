@@ -169,6 +169,6 @@ describe("DictionarySearch", () => {
     await user.click(increment!);
 
     const storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
-    expect(storage.highlightStrength).toBe(70);
+    expect(storage.highlightStrength).toBe(60);
   });
 });
