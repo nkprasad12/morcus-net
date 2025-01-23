@@ -67,18 +67,23 @@ describe("xmlNodeToJsx", () => {
     const root = new XmlNode(
       "span",
       [],
-      ["Caesar", new XmlNode("span", [], ["Gaius"])]
+      ["Caesar", new XmlNode("span", [], ["Pompey    Crassus"])]
     );
     const result = xmlNodeToJsx(root);
 
     expect(result.props.children).toHaveLength(2);
     expectMatchesJsx(
       result.props.children[0],
-      <LatLink word="Caesar" key={0} />
+      <LatLink word="Caesar" key="0.0" />
     );
     expectMatchesJsx(
       result.props.children[1].props.children[0],
-      <LatLink word="Gaius" key={0} />
+      <LatLink word="Pompey" key="0.6" />
+    );
+    expect(result.props.children[1].props.children[1]).toBe("    ");
+    expectMatchesJsx(
+      result.props.children[1].props.children[2],
+      <LatLink word="Crassus" key="0.10" />
     );
   });
 

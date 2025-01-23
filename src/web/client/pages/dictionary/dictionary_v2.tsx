@@ -191,7 +191,7 @@ function getEntriesByDict(
     const rawEntries = response[dictKey];
     const entries = rawEntries.map((e, i) => ({
       element: xmlNodeToJsx(e.entry, hash, undefined, isEmbedded),
-      key: e.entry.getAttr("id") || `${dictKey}${i}`,
+      key: e.entry.getAttr("id") ?? `${dictKey}${i}`,
       inflections: e.inflections,
       subsections: e.subsections,
     }));
