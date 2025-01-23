@@ -89,12 +89,12 @@ function parseArguments() {
     help: "Skips type checking for the bundle.",
     action: "store_true",
   });
-  bundle.add_argument("-p", "--prod", {
-    help: "Builds a minimized bundle.",
+  bundle.add_argument("-m", "--minify", {
+    help: "Minifies the bundle after building.",
     action: "store_true",
   });
   bundle.add_argument("-c", "--compress", {
-    help: "Builds a gzipped bundle.",
+    help: "Stores pre-compressed bundle outputs.",
     action: "store_true",
   });
 
@@ -137,8 +137,8 @@ function parseArguments() {
     help: "Runs a dev server for local iteration.",
     action: "store_true",
   });
-  web.add_argument("-p", "--prod", {
-    help: "Runs setup suitable for production.",
+  web.add_argument("-m", "--minify", {
+    help: "Minifies the bundle after building.",
     action: "store_true",
   });
   web.add_argument("-to", "--transpile_only", {
@@ -205,15 +205,14 @@ function registerCleanup() {
 
 function startWorker(args: any, workerType: string): Promise<void> {
   const childEnv = { ...process.env };
+  childEnv.NODE_ENV = "production";
 
   let socketAddress = `http://localhost:${childEnv.PORT}`;
   if (args.prod === true) {
     socketAddress = `https://www.morcus.net`;
-    childEnv.NODE_ENV = "production";
   }
   if (args.staging === true) {
     socketAddress = `https://dev.morcus.net`;
-    childEnv.NODE_ENV = "production";
   }
   childEnv.SOCKET_ADDRESS = socketAddress;
   let workerFile = "";
@@ -274,8 +273,9 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   const executor = args.bun ? ["bun"] : ["npm", "run", "ts-node"];
   const buildCommand = executor.concat(["src/esbuild/morcus-net.esbuild.ts"]);
   const childEnv = { ...process.env };
-  if (args.prod || args.staging) {
-    childEnv.NODE_ENV = "production";
+  childEnv.NODE_ENV = "production";
+  if (args.minify) {
+    childEnv.MINIFY = "1";
   }
   if (args.watch) {
     childEnv.WATCH = "1";
@@ -299,6 +299,7 @@ function bundleConfig(args: any, priority?: number): StepConfig {
 function artifactConfig(args: any): StepConfig[] {
   const setupSteps: StepConfig[] = [];
   const childEnv = { ...process.env };
+  childEnv.NODE_ENV = "production";
   let baseCommand = ["npm", "run", "tsnp"];
   if (args.bun === true) {
     baseCommand = ["bun"];
@@ -374,9 +375,7 @@ async function setupAndStartWebServer(args: any) {
 
 function startWebServer(args: any) {
   const serverEnv = { ...process.env };
-  if (args.prod === true) {
-    serverEnv.NODE_ENV = "production";
-  }
+  serverEnv.NODE_ENV = "production";
   if (args.watch) {
     bundleConfig(args).operation();
   }

@@ -48,4 +48,4 @@ echo "LIB_XML_ROOT=$PWD/canonical-latinlit" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."
 cd morcus-net || exit
-./morcus.sh web -b_ls -b_sh -b_li -b_ll --prod
+./morcus.sh web -b_ls -b_sh -b_li -b_ll -m

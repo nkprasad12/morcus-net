@@ -29,7 +29,7 @@ function getHash(): string {
 const options: BuildOptions = {
   entryPoints: [SPA_ROOT, SERVICE_WORKER_ROOT],
   bundle: true,
-  minify: envOptions.isProduction,
+  minify: envOptions.minify,
   entryNames: "[dir]/[name].[hash]",
   metafile: true,
   outdir: OUT_DIR,
@@ -37,7 +37,7 @@ const options: BuildOptions = {
   define: {
     COMMIT_HASH: `"${getHash()}"`,
     BUILD_DATE: `"${new Date().toString()}"`,
-    DEFAULT_EXPERIMENTAL_MODE: `${!envOptions.isProduction}`,
+    DEFAULT_EXPERIMENTAL_MODE: `${!envOptions.minify}`,
   },
   plugins: [
     printStatsPlugin(envOptions),

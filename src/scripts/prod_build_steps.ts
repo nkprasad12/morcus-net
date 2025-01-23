@@ -87,7 +87,7 @@ const PROCESS_LAT_LIB: StepConfig = {
 };
 const MAKE_BUNDLE: StepConfig = {
   operation: () => {
-    const childEnv = { ...process.env, RUN_TSC: "1" };
+    const childEnv = { ...process.env, RUN_TSC: "1", MINIFY: "1" };
     return shellStep(
       "npm run tsnp src/esbuild/morcus-net.esbuild.ts",
       childEnv

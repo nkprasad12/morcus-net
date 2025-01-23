@@ -36,4 +36,4 @@ EXPOSE 5757
 CMD mv /*.db build/dbs/ \
       &&  chown -R node:node build/dbs \
       || echo "No databases to move."; \
-    su node -c 'cd /morcus && PORT=5757 node build/server.js'
+    su node -c 'cd /morcus && PORT=5757 NODE_ENV=production node build/server.js'
