@@ -30,7 +30,7 @@ Common arguments for this script (run `./morcus.sh --help` for full options):
 | ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `--build_ls`       | This processes Lewis and Short for use by the server. This needs to be run the first time and whenever you modify the Lewis and Short raw XML file. This is slow.                              |
 | `--build_sh`       | This processes Smith and Hall for use by the server. This needs to be run the first time and whenever you modify the Smith and Hall raw text file or any of the processing code. This is slow. |
-| `--prod`           | Builds the client and runs the server in production mode. This is slower.                                                                                                                      |
+| `--minify`         | Builds a minified client. This is used in production builds. This skips `React`'s `StrictMode` warnings as well.                                                                               |
 | `--transpile_only` | Skips `typescript` type checking. This is _faster_.                                                                                                                                            |
 
 ### Python Code (ML)

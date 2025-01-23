@@ -3,7 +3,7 @@
 import esbuild from "esbuild";
 
 export interface BundleOptions {
-  isProduction: boolean;
+  minify: boolean;
   watch: boolean;
   analyzeBundle: boolean;
   typeCheck: boolean;
@@ -13,7 +13,7 @@ export interface BundleOptions {
 export namespace BundleOptions {
   export function get(): BundleOptions {
     return {
-      isProduction: process.env.NODE_ENV === "production",
+      minify: process.env.MINIFY === "1",
       watch: process.env.WATCH === "1",
       analyzeBundle: process.env.ANALYZE_BUNDLE === "1",
       typeCheck: process.env.RUN_TSC === "1",

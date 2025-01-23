@@ -23,7 +23,7 @@
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",
     "ts-coverage": "npx jest --coverage --maxWorkers=8 --testPathIgnorePatterns src/integration/* --coveragePathIgnorePatterns src/integration",
     "coverage": "npm run ts-coverage && npm run py-coverage",
-    "ts-node": "node --max-old-space-size=4096 --env-file=.env -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register",
+    "ts-node": "NODE_ENV=production node --max-old-space-size=4096 --env-file=.env -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register",
     "tsnp": "NODE_ENV=production node --max-old-space-size=4096 --env-file=.env -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only",
     "pytype": "python -m pytype src/py src/scripts",
     "server-p": "npm run ts-node src/web/nlp/processing_server.ts",
