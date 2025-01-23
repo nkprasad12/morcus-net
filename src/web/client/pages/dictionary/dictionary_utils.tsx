@@ -252,14 +252,16 @@ export function xmlNodeToJsx(
       return xmlNodeToJsx(
         child,
         highlightId,
-        child.getAttr("id") || `${idx}`,
+        child.getAttr("id") ?? `${idx}`,
         isEmbedded
       );
     }
     if (!shouldLinkifyWords) {
       return child;
     }
-    return processWords(child, (word, i) => <LatLink word={word} key={i} />);
+    return processWords(child, (word, i) => (
+      <LatLink word={word} key={`${idx}.${i}`} />
+    ));
   });
 
   if (titleText !== undefined) {
