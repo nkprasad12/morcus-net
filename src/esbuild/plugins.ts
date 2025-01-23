@@ -6,7 +6,8 @@ import { runCommand } from "@/scripts/script_utils";
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
-import { gzipSync } from "zlib";
+import { brotliCompress, gzip, constants } from "zlib";
+import { promisify } from "node:util";
 
 export interface RenameOptions {
   renameMap: Map<string, string>;
@@ -158,7 +159,20 @@ function printBuildResult(
   }
 }
 
-function compressResults(result: esbuild.BuildResult) {
+async function compressFile(
+  buffer: Buffer,
+  fileName: string,
+  ext: string,
+  compressor: (buf: Buffer) => Promise<Buffer>
+) {
+  const outFile = `${fileName}.${ext}`;
+  const compressed = await compressor(buffer);
+  const size = (compressed.byteLength / 1000).toFixed(2);
+  console.log(`${ext} compressed: ${outFile} [${size} kB]`);
+  return fs.promises.writeFile(outFile, compressed);
+}
+
+async function compressResults(result: esbuild.BuildResult) {
   const metafile = result.metafile;
   if (metafile === undefined) {
     return;
@@ -167,10 +181,16 @@ function compressResults(result: esbuild.BuildResult) {
     if (!output.endsWith(".js")) {
       continue;
     }
-    const outFile = `${output}.gz`;
-    const compressed = gzipSync(fs.readFileSync(output));
-    const size = (compressed.byteLength / 1000).toFixed(2);
-    console.log(`compressed: ${outFile} [${size} kB]`);
-    fs.writeFileSync(outFile, compressed);
+    const rawFile = await fs.promises.readFile(output);
+    await Promise.all([
+      compressFile(rawFile, output, "gz", (buf) =>
+        promisify(gzip)(buf, { level: 9 })
+      ),
+      compressFile(rawFile, output, "br", (buf) =>
+        promisify(brotliCompress)(buf, {
+          params: { [constants.BROTLI_PARAM_QUALITY]: 11 },
+        })
+      ),
+    ]);
   }
 }
