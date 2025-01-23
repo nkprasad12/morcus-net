@@ -1,6 +1,5 @@
 declare const COMMIT_HASH: string;
 declare const BUILD_DATE: string;
-declare const DEFAULT_EXPERIMENTAL_MODE: boolean;
 
 export function tryOr<T>(f: () => T, fallback: T): T {
   try {
@@ -16,8 +15,4 @@ export function getCommitHash(): string {
 
 export function getBuildDate(): string {
   return tryOr(() => BUILD_DATE.trim(), "undefined");
-}
-
-export function defaultExperimentalMode(): boolean {
-  return tryOr(() => DEFAULT_EXPERIMENTAL_MODE, false);
 }
