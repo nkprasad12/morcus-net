@@ -1,6 +1,5 @@
 import * as React from "react";
 import { PropsWithChildren, createContext } from "react";
-import { defaultExperimentalMode } from "@/web/client/define_vars";
 
 const SETTINGS_STORAGE_KEY = "GlobalSettings";
 
@@ -50,7 +49,7 @@ export function getGlobalSettings(): GlobalSettings {
   return storageSetting !== null
     ? toGlobalSettings(JSON.parse(storageSetting))
     : {
-        experimentalMode: defaultExperimentalMode(),
+        experimentalMode: false,
         highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
         darkMode: false,
         embeddedInflectedSearch: true,
