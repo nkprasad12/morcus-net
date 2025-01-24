@@ -221,10 +221,48 @@ function eventConsumer<E extends Event>(handler: (e: E) => boolean) {
   };
 }
 
+/** Exported only for unit tests. */
+export function makeOnDrag(
+  dragStartLen: React.MutableRefObject<number | undefined>,
+  dragStartPos: React.MutableRefObject<number | undefined>,
+  setCurrentLen: SetCurrentLenType,
+  getMax: () => number,
+  minRatio?: number,
+  maxRatio?: number,
+  reverse?: boolean
+) {
+  return (currentPos: number) => {
+    if (dragStartLen.current === undefined) {
+      // We didn't get the start callback yet, so wait for it.
+      return false;
+    }
+    setCurrentLen((oldLen) => {
+      if (dragStartPos.current === undefined) {
+        dragStartPos.current = currentPos;
+      }
+      if (dragStartLen.current === undefined) {
+        return oldLen;
+      }
+      const offset = (dragStartPos.current - currentPos) * (reverse ? -1 : 1);
+      const proposed = dragStartLen.current + offset;
+      const total = getMax();
+      const min = total * (minRatio ?? 0);
+      const max = total * (maxRatio ?? 1);
+      const newLen = proposed > max ? max : proposed < min ? min : proposed;
+      const largeChange = Math.abs(oldLen - newLen) >= 6;
+      const atBound = newLen === min || newLen === max;
+      return atBound || largeChange ? newLen : oldLen;
+    });
+    return true;
+  };
+}
+
+type SetCurrentLenType = (callback: (old: number) => number) => unknown;
+
 function DragHelper(
   props: PropsWithChildren<{
     currentLen: number;
-    setCurrentLen: (callback: (old: number) => number) => unknown;
+    setCurrentLen: SetCurrentLenType;
     horizontal?: true;
     minRatio?: number;
     maxRatio?: number;
@@ -247,35 +285,17 @@ function DragHelper(
   const dragStartLen = React.useRef<number | undefined>(undefined);
   const posKey = horizontal ? "clientX" : "clientY";
 
-  const onDrag = useCallback(
-    (currentPos: number) => {
-      if (dragStartLen.current === undefined) {
-        // We didn't get the start callback yet, so wait for it.
-        return false;
-      }
-      setCurrentLen((oldLen) => {
-        if (dragStartPos.current === undefined) {
-          dragStartPos.current = currentPos;
-        }
-        if (dragStartLen.current === undefined) {
-          return oldLen;
-        }
-        const offset =
-          (dragStartPos.current - currentPos) *
-          (horizontal ? -1 : 1) *
-          (reverse ? -1 : 1);
-        const proposed = dragStartLen.current + offset;
-        const getMaxRes = getMax?.();
-        const total =
-          getMaxRes ?? (horizontal ? window.innerWidth : window.innerHeight);
-        const min = total * (minRatio ?? 0);
-        const max = total * (maxRatio ?? 1);
-        const newLen = proposed > max ? max : proposed < min ? min : proposed;
-        const largeChange = Math.abs(oldLen - newLen) >= 3;
-        return newLen === 0 || largeChange ? newLen : oldLen;
-      });
-      return true;
-    },
+  const onDrag = React.useMemo(
+    () =>
+      makeOnDrag(
+        dragStartLen,
+        dragStartPos,
+        setCurrentLen,
+        getMax ?? (() => (horizontal ? window.innerWidth : window.innerHeight)),
+        minRatio,
+        maxRatio,
+        reverse
+      ),
     [setCurrentLen, horizontal, maxRatio, minRatio, reverse, getMax]
   );
 
@@ -509,6 +529,7 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
       }}>
       <ResizingDragger
         currentLen={gutterSize}
+        reverse
         setCurrentLen={setGutterSize}
         maxRatio={0.3}
       />
@@ -545,7 +566,6 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
       <ResizingDragger
         currentLen={gutterSize}
         setCurrentLen={setGutterSize}
-        reverse
         maxRatio={0.3}
       />
     </div>
