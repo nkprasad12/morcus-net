@@ -1,3 +1,4 @@
+import { checkPresent } from "@/common/assert";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import { WorkPage, type ProcessedWork2 } from "@/common/library/library_types";
 import {
@@ -89,8 +90,15 @@ function testRoot(body: string): XmlNode {
   );
 }
 
+function testRootWithNote(noteBody: string): XmlNode {
+  return testRoot(
+    `<div n="1" type="textpart" subtype="book">${noteBody}</div>`
+  );
+}
+
 const BODY_WITH_BOOK_ONLY = `<div n="1" type="textpart" subtype="book">Gallia est</div>`;
 const BODY_WITH_CHOICE = `<div n="1" type="textpart" subtype="book"><choice><reg>FooBar</reg><orig>BazBap</orig></choice></div>`;
+const BODY_WITH_CHOICE_AND_CORR = `<div n="1" type="textpart" subtype="book"><choice><corr>FooBar</corr><orig>BazBap</orig></choice></div>`;
 const BODY_WITH_NOTES = `<div n="1" type="textpart" subtype="book">Gallia <note>Gaul</note> est<note>is</note></div>`;
 const WORK_ID = "workId";
 
@@ -133,8 +141,16 @@ describe("processTei2", () => {
     expect(work.textParts).toStrictEqual(["book", "chapter", "section"]);
   });
 
-  it("handles elements with choice", () => {
+  it("handles elements with choice and reg", () => {
     const work = processTei2(testRoot(BODY_WITH_CHOICE), {
+      workId: WORK_ID,
+    });
+    expect(work.rows[0][1].toString()).toContain("FooBar");
+    expect(work.rows[0][1].toString()).not.toContain("BazBap");
+  });
+
+  it("handles elements with choice and corr", () => {
+    const work = processTei2(testRoot(BODY_WITH_CHOICE_AND_CORR), {
       workId: WORK_ID,
     });
     expect(work.rows[0][1].toString()).toContain("FooBar");
@@ -159,6 +175,90 @@ describe("processTei2", () => {
     expect(work.notes?.[0].toString()).toContain("Gaul");
     expect(work.notes?.[1].toString()).toContain("is");
   });
+
+  it("handles note markup for gap", () => {
+    const work = processTei2(
+      testRootWithNote('<note>text <gap reason="omitted"/> more text</note>'),
+      {
+        workId: WORK_ID,
+      }
+    );
+
+    expect(work.notes).toHaveLength(1);
+    const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
+    expect(noteRoot.children).toHaveLength(3);
+    expect(noteRoot.children[0]).toBe("text ");
+    expect(XmlNode.assertIsNode(noteRoot.children[1]).children[0]).toContain(
+      "[gap]"
+    );
+    expect(noteRoot.children[2]).toBe(" more text");
+  });
+});
+
+it("raises on note with unknown rend", () => {
+  expect(() =>
+    processTei2(
+      testRootWithNote(`<note>text <hi rend="magic">more text</hi></note>`),
+      {
+        workId: WORK_ID,
+      }
+    )
+  ).toThrow();
+});
+
+it("handles note with known rend", () => {
+  const work = processTei2(
+    testRootWithNote(`<note>text <hi rend="italic">more text</hi></note>`),
+    {
+      workId: WORK_ID,
+    }
+  );
+
+  expect(work.notes).toHaveLength(1);
+  const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
+  expect(noteRoot.children).toHaveLength(2);
+  expect(noteRoot.children[0]).toBe("text ");
+  const hiNode = XmlNode.assertIsNode(noteRoot.children[1]);
+  expect(hiNode.getAttr("rend")).toBe("italic");
+  expect(hiNode.children).toEqual(["more text"]);
+});
+
+it("handles note markup for q", () => {
+  const work = processTei2(
+    testRootWithNote("<note>text <q>more text</q></note>"),
+    {
+      workId: WORK_ID,
+    }
+  );
+
+  expect(work.notes).toHaveLength(1);
+  const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
+  expect(noteRoot.children).toHaveLength(2);
+  expect(noteRoot.children[0]).toBe("text ");
+  expect(XmlNode.assertIsNode(noteRoot.children[1]).children).toEqual([
+    "“",
+    "more text",
+    "”",
+  ]);
+});
+
+it("handles note markup for add", () => {
+  const work = processTei2(
+    testRootWithNote("<note>text <add>more text</add></note>"),
+    {
+      workId: WORK_ID,
+    }
+  );
+
+  expect(work.notes).toHaveLength(1);
+  const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
+  expect(noteRoot.children).toHaveLength(2);
+  expect(noteRoot.children[0]).toBe("text ");
+  expect(XmlNode.assertIsNode(noteRoot.children[1]).children).toEqual([
+    "<",
+    "more text",
+    ">",
+  ]);
 });
 
 describe("patchText", () => {
