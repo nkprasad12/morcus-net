@@ -321,11 +321,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     ".Container": {
       boxSizing: "border-box",
-      marginLeft: "auto",
-      marginRight: "auto",
       display: "block",
-      paddingLeft: "16px",
-      paddingRight: "16px",
+      padding: "0 16px",
+      margin: "0 auto",
     },
 
     /** Menu and menu items */

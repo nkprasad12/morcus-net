@@ -85,10 +85,6 @@ export function BaseReader<
     SidebarTab<CustomSidebarTab>
   >(props.initialSidebarTab || "Dictionary");
   const [dictWord, setDictWord] = React.useState<string | undefined>(undefined);
-  const [totalWidth, setTotalWidth] = usePersistedState<number>(
-    1,
-    "RD_TOTAL_WIDTH"
-  );
   const [swipeNavigation, setSwipeNavigation] = usePersistedState<boolean>(
     true,
     SWIPE_NAV_KEY
@@ -159,7 +155,6 @@ export function BaseReader<
 
   return (
     <BaseLayout
-      totalWidth={totalWidth}
       sidebarRef={sidebarRef}
       drawerHeight={drawerHeight}
       setDrawerHeight={setDrawerHeight}
@@ -180,13 +175,12 @@ export function BaseReader<
       />
       {showDefaultTab ? (
         <DefaultReaderSidebarContent
+          isSmallScreen={isScreenSmall}
           scale={readerSideScale}
           mainScale={readerMainScale}
           setMainScale={setReaderMainScale}
           sideScale={readerSideScale}
           setSideScale={setReaderSideScale}
-          totalWidth={isScreenSmall ? undefined : totalWidth}
-          setTotalWidth={isScreenSmall ? undefined : setTotalWidth}
           {...(isScreenSmall && props.showMobileNavSettings
             ? {
                 swipeNavigation,
@@ -236,9 +230,19 @@ function DragHelper(
     maxRatio?: number;
     style?: CSSProperties;
     className?: string;
+    reverse?: boolean;
+    getMax?: () => number;
   }>
 ) {
-  const { currentLen, setCurrentLen, horizontal, minRatio, maxRatio } = props;
+  const {
+    currentLen,
+    setCurrentLen,
+    horizontal,
+    minRatio,
+    maxRatio,
+    reverse,
+    getMax,
+  } = props;
   const dragStartPos = React.useRef<number | undefined>(undefined);
   const dragStartLen = React.useRef<number | undefined>(undefined);
   const posKey = horizontal ? "clientX" : "clientY";
@@ -257,9 +261,13 @@ function DragHelper(
           return oldLen;
         }
         const offset =
-          (dragStartPos.current - currentPos) * (horizontal ? -1 : 1);
+          (dragStartPos.current - currentPos) *
+          (horizontal ? -1 : 1) *
+          (reverse ? -1 : 1);
         const proposed = dragStartLen.current + offset;
-        const total = horizontal ? window.innerWidth : window.innerHeight;
+        const getMaxRes = getMax?.();
+        const total =
+          getMaxRes ?? (horizontal ? window.innerWidth : window.innerHeight);
         const min = total * (minRatio ?? 0);
         const max = total * (maxRatio ?? 1);
         const newLen = proposed > max ? max : proposed < min ? min : proposed;
@@ -268,7 +276,7 @@ function DragHelper(
       });
       return true;
     },
-    [setCurrentLen, horizontal, maxRatio, minRatio]
+    [setCurrentLen, horizontal, maxRatio, minRatio, reverse, getMax]
   );
 
   const onDragEnd = useCallback(() => {
@@ -405,43 +413,63 @@ const BASE_COLUMN_STYLE: CSSProperties = {
 };
 const COLUMN_STYLE: CSSProperties = {
   ...BASE_COLUMN_STYLE,
-  width: "48%",
   overflow: "auto",
   marginTop: COLUMN_TOP_MARGIN,
   marginBottom: COLUMN_BOTTON_MARGIN,
   scrollPaddingTop: APP_BAR_MAX_HEIGHT,
-  marginLeft: "0.5%",
-  marginRight: "0.5%",
 };
+const DRAGGER_SIZE = 24;
 const DRAGGER_STYLE: CSSProperties = {
   ...BASE_COLUMN_STYLE,
-  width: "0.5%",
-  margin: "16px 0",
-  opacity: "50%",
+  width: `${DRAGGER_SIZE}px`,
+  marginTop: "16px",
+  opacity: "60%",
   cursor: "col-resize",
 };
-const WIDTH_LOOKUP: ("lg" | "xl" | "xxl" | undefined)[] = [
-  "lg",
-  "xl",
-  "xxl",
-  undefined,
-];
+
+function ResizingDragger(props: {
+  currentLen: number;
+  setCurrentLen: (callback: (old: number) => number) => unknown;
+  reverse?: boolean;
+  minRatio?: number;
+  maxRatio?: number;
+  getMax?: () => number;
+}) {
+  return (
+    <DragHelper
+      currentLen={props.currentLen}
+      setCurrentLen={props.setCurrentLen}
+      style={DRAGGER_STYLE}
+      horizontal
+      minRatio={props.minRatio}
+      maxRatio={props.maxRatio}
+      reverse={props.reverse}
+      getMax={props.getMax}>
+      <div
+        style={{ height: "100%", margin: "auto", width: "4px" }}
+        className="bgAlt"
+      />
+    </DragHelper>
+  );
+}
 
 type BaseReaderLayoutProps = PropsWithChildren<{
   sidebarRef?: React.RefObject<HTMLDivElement>;
 }>;
-interface NonMobileReaderLayoutProps extends BaseReaderLayoutProps {
-  totalWidth: number;
-}
+type NonMobileReaderLayoutProps = BaseReaderLayoutProps;
 function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
   const children = React.Children.toArray(props.children);
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
-  const { totalWidth, sidebarRef } = props;
+  const { sidebarRef } = props;
   const [windowHeight, setWindowHeight] = useState(window.innerHeight);
   const [mainWidthPercent, setMainWidthPercent] = usePersistedState<number>(
     56,
     "RD_WORK_WIDTH2"
+  );
+  const [gutterSize, setGutterSize] = usePersistedState<number>(
+    100,
+    "RD_TOTAL_WIDTH2"
   );
   const containerRef = React.useRef<HTMLDivElement>(null);
 
@@ -451,9 +479,10 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  function containerWidth() {
-    return containerRef.current?.clientWidth ?? window.innerWidth;
-  }
+  const containerWidth = React.useCallback(
+    () => containerRef.current?.clientWidth ?? window.innerWidth,
+    []
+  );
 
   function mainWidth() {
     return (mainWidthPercent * containerWidth()) / 100;
@@ -464,16 +493,25 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
   }
 
   return (
-    <Container
-      innerRef={containerRef}
-      maxWidth={WIDTH_LOOKUP[totalWidth]}
+    <div
+      ref={containerRef}
       style={{
+        boxSizing: "border-box",
+        display: "block",
+        margin: "0 auto",
+        width: "100%",
+        maxWidth: `calc(100% - ${gutterSize * 2}px`,
         height:
           windowHeight -
           APP_BAR_MAX_HEIGHT -
           COLUMN_TOP_MARGIN -
           COLUMN_BOTTON_MARGIN,
       }}>
+      <ResizingDragger
+        currentLen={gutterSize}
+        setCurrentLen={setGutterSize}
+        maxRatio={0.3}
+      />
       <div
         className="readerMain"
         id={LARGE_VIEW_MAIN_COLUMN_ID}
@@ -483,20 +521,18 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
         }}>
         {mainContent}
       </div>
-      <DragHelper
+      <ResizingDragger
         currentLen={mainWidth()}
         setCurrentLen={(update) => setMainWidth(update(mainWidth()))}
-        style={DRAGGER_STYLE}
-        horizontal
         minRatio={0.2}
         maxRatio={0.8}
-        className="bgAlt"
+        getMax={() => containerWidth()}
       />
       <div
         className="readerSide"
         style={{
           ...COLUMN_STYLE,
-          width: `${96 - mainWidthPercent}%`,
+          width: `calc(${100 - mainWidthPercent}% - ${3 * DRAGGER_SIZE}px)`,
         }}
         ref={sidebarRef}>
         <ContentBox isSmall>
@@ -506,6 +542,12 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
           </>
         </ContentBox>
       </div>
-    </Container>
+      <ResizingDragger
+        currentLen={gutterSize}
+        setCurrentLen={setGutterSize}
+        reverse
+        maxRatio={0.3}
+      />
+    </div>
   );
 }
