@@ -146,13 +146,15 @@ function printBuildResult(
   if (metafile === undefined) {
     return;
   }
+  if (options?.analyzeBundle) {
+    console.log(esbuild.analyzeMetafileSync(metafile));
+  }
   for (const output in metafile.outputs) {
     const data = metafile.outputs[output];
     const size = (data.bytes / 1000).toFixed(2);
     console.log("entryPoint: " + data.entryPoint);
     console.log(`output: ${output} [${size} kB]\n`);
     if (options?.analyzeBundle) {
-      console.log(esbuild.analyzeMetafileSync(metafile));
       const metaPath = `${data.entryPoint}.esbuild.meta.json`;
       fs.writeFileSync(metaPath, JSON.stringify(metafile));
     }
