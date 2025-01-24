@@ -571,8 +571,12 @@ function WorkTextColumn(props: {
       style={{ gridColumn: 2, gridRow: props.gridRow }}
       id={props.id}
       className={props.className}>
-      {displayForLibraryChunk(props.content)}
-      {"\n" /* Add a newline so copy / paste works correctly on Firefox. */}
+      <span style={{ whiteSpace: "normal" }}>
+        {displayForLibraryChunk(props.content)}
+      </span>
+      {
+        "\n" /* Add a newline out of the `whiteSpace: normal` so copy / paste works correctly on Firefox. */
+      }
     </span>
   );
 }
@@ -788,9 +792,19 @@ function LatLink(props: { word: string }) {
 }
 
 function renderTooltip(root: XmlNode): JSX.Element {
-  const italic = root.getAttr("rend") === "italic";
+  const style: React.CSSProperties = {};
+  const rend = root.getAttr("rend");
+  if (rend === "italic") {
+    style.fontStyle = "italic";
+  }
+  if (rend === "overline") {
+    style.textDecoration = "overline";
+  }
+  if (rend === "sup") {
+    style.verticalAlign = "super";
+  }
   return (
-    <span style={{ fontStyle: italic ? "italic" : undefined }}>
+    <span style={style}>
       {root.children.map((c) => (typeof c === "string" ? c : renderTooltip(c)))}
     </span>
   );

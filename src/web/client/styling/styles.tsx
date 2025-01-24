@@ -671,8 +671,6 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       margin: "0.25em 0",
       fontStyle: "italic",
       marginLeft: "1em",
-      // Override from `text`.
-      whiteSpace: "normal",
     },
     ".readerMain .blockquote .l": {
       display: "block",
