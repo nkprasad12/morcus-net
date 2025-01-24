@@ -108,19 +108,7 @@ export function MobileReaderSettingsSections(props: MobileReaderSettings) {
   );
 }
 
-export interface DesktopReaderSettings {
-  /** The total width setting for the reader. */
-  totalWidth?: number;
-  /** A setter for the total width of the reader. */
-  setTotalWidth?: (width: number) => unknown;
-  /** The width of the main column of the reader. */
-  mainWidth?: number;
-  /** A setter for the width of the main column of the reader. */
-  setMainWidth?: (width: number) => unknown;
-}
-export interface ReaderSettingsProps
-  extends DesktopReaderSettings,
-    MobileReaderSettings {
+export interface ReaderSettingsProps extends MobileReaderSettings {
   /** The scale to use for the elements in the reader. */
   scale: number;
   /** The scale of the main column of the reader. */
@@ -131,39 +119,16 @@ export interface ReaderSettingsProps
   sideScale: number;
   /** A setter for the scale of the side column of the reader. */
   setSideScale: (width: number) => unknown;
+  /** Whether the reader is a small screen. */
+  isSmallScreen: boolean;
 }
 export function ReaderSettings(props: ReaderSettingsProps) {
-  const {
-    totalWidth,
-    setTotalWidth,
-    mainScale,
-    setMainScale,
-    sideScale,
-    setSideScale,
-  } = props;
-  const hasTotalWidth = totalWidth !== undefined && setTotalWidth !== undefined;
-  const hasLayoutSettings = hasTotalWidth;
-  const mainLabel = hasLayoutSettings ? "Main column" : "Main panel";
-  const sideLabel = hasLayoutSettings ? "Side column" : "Drawer";
+  const { mainScale, setMainScale, sideScale, setSideScale, isSmallScreen } =
+    props;
+  const mainLabel = isSmallScreen ? "Main panel" : "Main column";
+  const sideLabel = isSmallScreen ? "Drawer" : "Side column";
   return (
     <>
-      {hasLayoutSettings && (
-        <details open>
-          <summary>
-            <SettingsText message="Layout settings" />
-          </summary>
-          {hasTotalWidth && (
-            <NumberSelector
-              value={totalWidth}
-              setValue={setTotalWidth}
-              label="Total width"
-              min={0}
-              max={3}
-              step={1}
-            />
-          )}
-        </details>
-      )}
       <MobileReaderSettingsSections {...props} />
       <details open>
         <summary>

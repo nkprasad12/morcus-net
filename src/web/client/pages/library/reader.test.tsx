@@ -486,7 +486,8 @@ describe("Reading UI", () => {
     );
 
     await user.click(screen.queryByLabelText("Reader settings")!);
-    await screen.findByText(/Layout settings/);
+    await screen.findByText(/Main.+settings/);
+    expect(await screen.findAllByText(/Text size/)).toHaveLength(2);
   });
 
   it("shows page specified from URL", async () => {
@@ -580,7 +581,6 @@ describe("Reading UI", () => {
 
     await user.click(screen.queryByLabelText("Reader settings")!);
 
-    await screen.findByText(/Layout/);
     await screen.findByText(/Main column/);
     await screen.findByText(/Side column/);
   });
