@@ -13,6 +13,8 @@ const DE_RERUM_NATURA = "data/phi0550/phi001/phi0550.phi001.perseus-lat1.xml";
 const NEPOS_MILTIADES = "data/phi0588/abo001/phi0588.abo001.perseus-lat2.xml";
 const NEPOS_THEMISTOCLES =
   "data/phi0588/abo002/phi0588.abo002.perseus-lat2.xml";
+const AMMIANUS_MARCELLINUS =
+  "data/stoa0023/stoa001/stoa0023.stoa001.perseus-lat2.xml";
 
 // Two supported works are checked in to the repo itself for the sake of unit testing.
 export const LOCAL_REPO_WORKS = [CAESAR_DBG, PHAEDRUS_FABULAE];
@@ -35,4 +37,5 @@ export const ALL_SUPPORTED_WORKS = LOCAL_REPO_WORKS.concat([
   DE_RERUM_NATURA,
   NEPOS_MILTIADES,
   NEPOS_THEMISTOCLES,
+  AMMIANUS_MARCELLINUS,
 ]);

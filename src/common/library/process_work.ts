@@ -27,6 +27,9 @@ const FORCE_CTS = new Set([
   "phi0588.abo001.perseus-lat2",
   "phi0588.abo002.perseus-lat2",
 ]);
+
+// For regular nodes
+const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr"]);
 const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 const HANDLED_REND = new Set<string>(["indent", "italic", "blockquote"]);
@@ -37,6 +40,30 @@ const HANDLED_REND = new Set<string>(["indent", "italic", "blockquote"]);
 // previous quote.
 // This is very hard to handle and only occurs once, so we just ignore it.
 const KNOWN_REND = new Set([undefined, "merge"].concat(...HANDLED_REND));
+
+// For `note` nodes. These should be separate since they're
+// rendered in a tooltip.
+const NOTE_NODES = new Set([
+  "note",
+  "hi",
+  "emph",
+  "foreign",
+  "q",
+  "title",
+  "gap",
+  // TODO: Check how Scaife renders this.
+  "add",
+]);
+const HANDLED_NOTE_REND = new Set<string | undefined>([
+  "italic",
+  "sup",
+  "overline",
+]);
+const KNOWN_NOTE_REND = new Set<string | undefined>([
+  undefined,
+  ...HANDLED_NOTE_REND,
+]);
+
 type QuoteOpen = "‘" | "“" | "'" | '"';
 type QuoteClose = "’" | "”" | "'" | '"';
 type QuotePair = [QuoteClose, QuoteOpen];
@@ -415,50 +442,26 @@ function convertToRows(
   return results;
 }
 
-/**
- * Validates whitespace and collapses clusters.
- *
- * @param input the string to process.
- * @param previousEndedInCluster whether the previous analyzed text ended
- *        in a whitespace cluster.
- *
- * @returns `[processed string, whether the string ends in a cluster]`
- */
-function handleTextWhitespace(
-  input: string,
-  previousEndedInCluster: boolean
-): [string, boolean] {
-  let inWhitespace = previousEndedInCluster;
-  let processed = "";
-  for (let i = 0; i < input.length; i++) {
-    const c = input[i];
-    const isWhitespace = c === " " || c === "\n" || c === "\t";
-    if (!isWhitespace) {
-      processed += c;
-    } else if (!inWhitespace && isWhitespace) {
-      processed += " ";
-    }
-    inWhitespace = isWhitespace;
-  }
-  return [processed, inWhitespace];
-}
-
 function transformNoteNode(node: XmlNode): XmlNode {
-  assert(
-    ["note", "hi", "emph", "foreign", "q"].includes(node.name),
-    node.toString()
-  );
+  assert(NOTE_NODES.has(node.name), node.toString());
+  if (node.name === "gap") {
+    return new XmlNode("span", [], [" [gap] "]);
+  }
   const attrs: XmlNode["attrs"] = [];
   const rend = node.getAttr("rend");
-  assert(rend === undefined || rend === "italic");
-  if (rend === "italic") {
-    attrs.push(["rend", "italic"]);
+  assert(KNOWN_NOTE_REND.has(rend), rend);
+  if (HANDLED_NOTE_REND.has(rend)) {
+    attrs.push(["rend", checkPresent(rend)]);
   }
   const baseChildren = node.children.map((c) =>
     typeof c === "string" ? c : transformNoteNode(c)
   );
   const children =
-    node.name === "q" ? ["“", ...baseChildren, "”"] : baseChildren;
+    node.name === "q"
+      ? ["“", ...baseChildren, "”"]
+      : node.name === "add"
+      ? ["<", ...baseChildren, ">"]
+      : baseChildren;
   return new XmlNode("span", attrs, children);
 }
 
@@ -480,15 +483,29 @@ function transformContentNode(
     attrs.push(["l", "1"]);
   }
   if (node.name === "choice") {
-    assertEqual(children.length, 2);
+    assertEqual(
+      // Ignore children that are just whitespace. Some of the documents have
+      // <choice> <corr>corrected</corr> <sic>incorrect</sic> </choice>
+      // where the spaces are uneeded.
+      children.filter((c) => typeof c !== "string" || c.trim().length > 0)
+        .length,
+      2
+    );
     const corrected = XmlNode.assertIsNode(
       checkPresent(
         children.find(
-          (c) => typeof c !== "string" && c.getAttr("origName") === "reg"
+          (c) =>
+            typeof c !== "string" &&
+            CHOICE_GOOD_CHILD.has(c.getAttr("origName"))
         )
       )
     );
     return corrected;
+  }
+  if (node.name === "corr") {
+    assertType(children[0], isString);
+    assertEqual(parent?.name, "choice");
+    attrs.push(["origName", node.name]);
   }
   if (node.name === "orig") {
     attrs.push(["origName", node.name]);
@@ -543,6 +560,7 @@ function transformContentNode(
     // eslint-disable-next-line no-fallthrough
     case "div":
     case "p":
+    case "corr":
       return new XmlNode("span", attrs, children);
     case "del":
       return new XmlNode("s", attrs, children);
@@ -552,20 +570,15 @@ function transformContentNode(
 
 function processRowContent(
   root: XmlNode,
-  previouslyInWhitespace: boolean,
   parent?: XmlNode
-): [XmlNode<ProcessedWorkContentNodeType>, boolean] {
-  let inWhitespace = previouslyInWhitespace;
+): XmlNode<ProcessedWorkContentNodeType> {
   const children: XmlChild<ProcessedWorkContentNodeType>[] = [];
   for (const child of root.children) {
-    const isString = typeof child === "string";
-    const childResult = isString
-      ? handleTextWhitespace(child, inWhitespace)
-      : processRowContent(child, inWhitespace, root);
-    inWhitespace = childResult[1];
-    children.push(childResult[0]);
+    children.push(
+      typeof child === "string" ? child : processRowContent(child, root)
+    );
   }
-  return [transformContentNode(root, children, parent), inWhitespace];
+  return transformContentNode(root, children, parent);
 }
 
 /** Exported for unit testing. */
@@ -578,8 +591,7 @@ export function processWorkBody(
   return {
     rows: convertToRows(data.root, data).map(([id, content]) => [
       id,
-      // Pass true here so that we skip over any initial whitespace.
-      processRowContent(content, true)[0],
+      processRowContent(content),
     ]),
     notes: data.notes.map(transformNoteNode),
   };
