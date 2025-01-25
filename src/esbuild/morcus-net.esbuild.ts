@@ -30,7 +30,9 @@ const options: BuildOptions = {
   entryPoints: [SPA_ROOT, SERVICE_WORKER_ROOT],
   bundle: true,
   minify: envOptions.minify,
-  entryNames: "[dir]/[name].[hash]",
+  // We need the `client-bundle` suffix because that's the prefix we use
+  // to set the `immutable` cache control header in the server.
+  entryNames: "[dir]/[name].[hash].client-bundle",
   metafile: true,
   outdir: OUT_DIR,
   publicPath: "/",

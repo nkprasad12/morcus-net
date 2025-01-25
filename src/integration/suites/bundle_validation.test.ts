@@ -9,7 +9,7 @@ async function* getBundleFiles(): AsyncGenerator<[string, Response]> {
   const req = await fetch(`${baseUrl}/`);
   const rootHtml = await req.text();
 
-  const pattern = /script src="\/([\w0-9.]+\.js)"/g;
+  const pattern = /script src="\/([\w0-9.-]+\.js)"/g;
   const matches = [...rootHtml.matchAll(pattern)];
   const bundleFiles = matches.map((matchArray) => matchArray[1]);
   for (const genfile of bundleFiles) {
@@ -26,8 +26,8 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
 
   test("bundle size is within limit", async () => {
     let totalSize = 0;
-    for await (const [jsFile, jsReq] of getBundleFiles()) {
-      const contents = await jsReq.buffer();
+    for await (const [jsFile, jsRes] of getBundleFiles()) {
+      const contents = await jsRes.buffer();
       const gzipped = gzipSync(contents).byteLength;
       console.debug(`${jsFile}: ${gzipped / 1000} KB`);
       totalSize += gzipped;
@@ -37,9 +37,16 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
     expect(totalSize / 1000).toBeLessThan(100);
   });
 
+  test("bundle is sent with an immutable header", async () => {
+    for await (const [_, jsRes] of getBundleFiles()) {
+      expect(jsRes.headers.get("cache-control")).toBeDefined();
+      expect(jsRes.headers.get("cache-control")).toContain("immutable");
+    }
+  });
+
   test("does not include dev-only code", async () => {
-    for await (const [jsFile, jsReq] of getBundleFiles()) {
-      const contents = await jsReq.text();
+    for await (const [jsFile, jsRes] of getBundleFiles()) {
+      const contents = await jsRes.text();
       for (const banned of BANNED_STRINGS) {
         if (contents.includes(banned)) {
           throw new Error(`${jsFile} has banned string ${banned}`);
