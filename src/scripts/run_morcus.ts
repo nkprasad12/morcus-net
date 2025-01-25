@@ -141,6 +141,10 @@ function parseArguments() {
     help: "Minifies the bundle after building.",
     action: "store_true",
   });
+  web.add_argument("-c", "--compress", {
+    help: "Stores pre-compressed bundle outputs.",
+    action: "store_true",
+  });
   web.add_argument("-to", "--transpile_only", {
     help: "Skips type checking for the client and server.",
     action: "store_true",

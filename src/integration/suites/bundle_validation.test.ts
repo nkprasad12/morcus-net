@@ -4,17 +4,44 @@ import { test, expect } from "@playwright/test";
 
 const BANNED_STRINGS = ["/devOnlyHelper"];
 
-async function* getBundleFiles(): AsyncGenerator<[string, Response]> {
+async function listBundleFiles(): Promise<string[]> {
   const baseUrl = process.env.BASE_URL;
   const req = await fetch(`${baseUrl}/`);
   const rootHtml = await req.text();
 
   const pattern = /script src="\/([\w0-9.-]+\.js)"/g;
   const matches = [...rootHtml.matchAll(pattern)];
-  const bundleFiles = matches.map((matchArray) => matchArray[1]);
-  for (const genfile of bundleFiles) {
+  return matches.map((matchArray) => matchArray[1]);
+}
+
+async function* getBundleFiles(): AsyncGenerator<[string, Response]> {
+  const baseUrl = process.env.BASE_URL;
+  for (const genfile of await listBundleFiles()) {
     const response = await fetch(`${baseUrl}/${genfile}`);
     yield [genfile, response];
+  }
+}
+
+async function fetchWithEncoding(
+  fileName: string,
+  encoding: string
+): Promise<Response> {
+  const baseUrl = process.env.BASE_URL;
+  const response = await fetch(`${baseUrl}/${fileName}`, {
+    headers: { "accept-encoding": encoding },
+  });
+  expect(response.status).toBe(200);
+  return response;
+}
+
+function assertEncodingHeaders(
+  response: Response,
+  contentEncoding: string | null,
+  preCompressed?: "preCompressed"
+) {
+  expect(response.headers.get("content-encoding")).toBe(contentEncoding);
+  if (preCompressed !== undefined) {
+    expect(response.headers.get("X-MorcusNet-PreCompressed")).toBe("1");
   }
 }
 
@@ -41,6 +68,47 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
     for await (const [_, jsRes] of getBundleFiles()) {
       expect(jsRes.headers.get("cache-control")).toBeDefined();
       expect(jsRes.headers.get("cache-control")).toContain("immutable");
+    }
+  });
+
+  test("bundle is served pre-compressed in gzip or brotli", async () => {
+    for (const genfile of await listBundleFiles()) {
+      // Returns pre-compressed gzip if requested.
+      assertEncodingHeaders(
+        await fetchWithEncoding(genfile, "gzip"),
+        "gzip",
+        "preCompressed"
+      );
+      // Returns pre-compresed brotli if requested.
+      assertEncodingHeaders(
+        await fetchWithEncoding(genfile, "br"),
+        "br",
+        "preCompressed"
+      );
+      // Returns pre-compressed brotli preferentially.
+      assertEncodingHeaders(
+        await fetchWithEncoding(genfile, "gzip, br"),
+        "br",
+        "preCompressed"
+      );
+      // Falls back to uncompressed in case of unsupported
+      // or no supported compressed.
+      assertEncodingHeaders(
+        await fetchWithEncoding(genfile, "middleOut"),
+        null
+      );
+      assertEncodingHeaders(await fetchWithEncoding(genfile, ""), null);
+    }
+  });
+
+  test("all bundle compressions have the same content", async () => {
+    for (const genfile of await listBundleFiles()) {
+      const results = new Set([
+        await (await fetchWithEncoding(genfile, "gzip")).text(),
+        await (await fetchWithEncoding(genfile, "br")).text(),
+        await (await fetchWithEncoding(genfile, "")).text(),
+      ]);
+      expect(results.size).toBe(1);
     }
   });
 

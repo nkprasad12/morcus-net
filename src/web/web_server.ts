@@ -2,6 +2,7 @@ import compression from "compression";
 import express, { Response } from "express";
 import bodyParser from "body-parser";
 import path from "path";
+import fs from "fs/promises";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   Data,
@@ -12,6 +13,64 @@ import {
 import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
 
 const MAX_AGE = 100 * 365 * 24 * 3600 * 100;
+const CLIENT_BUNDLE_SUFFIX = ".client-bundle.js";
+const CLIENT_BUNDLE_CACHE_CONTROL = `public, max-age=${MAX_AGE}, immutable`;
+const SET_HEADERS = (res: Response, path: string) => {
+  // Force users to always fetch the index from the server so that they
+  // always get the latest Javascript bundles.
+  if (path.endsWith("index.html")) {
+    res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
+  }
+  if (path.endsWith(CLIENT_BUNDLE_SUFFIX)) {
+    res.setHeader("Cache-Control", CLIENT_BUNDLE_CACHE_CONTROL);
+  }
+};
+
+const STATIC_OPTIONS = {
+  maxAge: MAX_AGE,
+  setHeaders: SET_HEADERS,
+};
+
+interface Encoding {
+  encoding: string;
+  extension: string;
+}
+
+const PRE_COMPRESSED_ENCODINGS: Encoding[] = [
+  { encoding: "br", extension: "br" },
+  { encoding: "gzip", extension: "gz" },
+];
+
+function preCompressedMiddleware(sourceDir: string): express.Handler {
+  let sourceDirFiles: Set<string> | undefined = undefined;
+  return async (req, res, next) => {
+    const acceptEncoding = req.header("accept-encoding");
+    if (
+      acceptEncoding === undefined ||
+      !req.path.endsWith(CLIENT_BUNDLE_SUFFIX)
+    ) {
+      next();
+      return;
+    }
+    if (sourceDirFiles === undefined) {
+      sourceDirFiles = new Set(await fs.readdir(sourceDir).catch(() => []));
+    }
+    for (const { encoding, extension } of PRE_COMPRESSED_ENCODINGS) {
+      const fileName = path.basename(`${req.path}.${extension}`);
+      if (!acceptEncoding.includes(encoding) || !sourceDirFiles.has(fileName)) {
+        continue;
+      }
+      res.setHeader("Content-Encoding", encoding);
+      res.setHeader("Vary", "Accept-Encoding");
+      res.setHeader("Cache-Control", CLIENT_BUNDLE_CACHE_CONTROL);
+      res.setHeader("Content-Type", "application/javascript");
+      res.setHeader("X-MorcusNet-PreCompressed", "1");
+      res.sendFile(path.join(sourceDir, fileName));
+      return;
+    }
+    next();
+  };
+}
 
 export interface WebServerParams {
   webApp: express.Express;
@@ -23,20 +82,8 @@ export interface WebServerParams {
 export function setupServer(params: WebServerParams): void {
   const app = params.webApp;
   app.use(bodyParser.text());
+  app.use(preCompressedMiddleware(params.buildDir));
   app.use(compression());
-  const staticOptions = {
-    maxAge: MAX_AGE,
-    setHeaders: (res: Response, path: string) => {
-      // Force users to always fetch the index from the server so that they
-      // always get the latest Javascript bundles.
-      if (path.endsWith("index.html")) {
-        res.setHeader("Cache-Control", "no-cache, no-store, must-revalidate");
-      }
-      if (path.endsWith(".client-bundle.js")) {
-        res.setHeader("Cache-Control", `public, max-age=${MAX_AGE}, immutable`);
-      }
-    },
-  };
   app.use("/serviceworker.js", (_, res) => {
     console.debug(`/serviceworker.js`);
     res.sendFile(path.join(params.buildDir, "serviceworker.js"));
@@ -57,9 +104,9 @@ export function setupServer(params: WebServerParams): void {
     res.send(PWA_WEBMANIFEST);
     return;
   });
-  app.use("/public", express.static("public", staticOptions));
-  app.use("/.well-known", express.static("public", staticOptions));
-  app.use(express.static(params.buildDir, staticOptions));
+  app.use("/public", express.static("public", STATIC_OPTIONS));
+  app.use("/.well-known", express.static("public", STATIC_OPTIONS));
+  app.use(express.static(params.buildDir, STATIC_OPTIONS));
 
   app.use("/*", (req, res, next) => {
     if (!req.baseUrl.startsWith("/api/")) {
