@@ -14,24 +14,19 @@ console.debug = jest.fn();
 const TEMP_DIR = "web_server_test_ts";
 const TEMP_FILE = `${TEMP_DIR}/sample.html`;
 const TEMP_INDEX_FILE = `${TEMP_DIR}/index.html`;
+const BUNDLE_NAME = "root.ABC.client-bundle.js";
+const BUNDLE = `${TEMP_DIR}/${BUNDLE_NAME}`;
+const BUNDLE_GZ = `${BUNDLE}.gz`;
+const BUNDLE_BR = `${BUNDLE}.br`;
 
-beforeAll(() => {
-  fs.mkdirSync(TEMP_DIR);
-  fs.writeFileSync(TEMP_FILE, "<!DOCTYPE html>\n<html></html>");
-  fs.writeFileSync(TEMP_INDEX_FILE, "<!DOCTYPE html>\n<html></html>");
-});
-
-afterAll(() => {
+function removePreCompressed() {
   try {
-    fs.unlinkSync(TEMP_FILE);
+    fs.unlinkSync(BUNDLE_GZ);
   } catch (e) {}
   try {
-    fs.unlinkSync(TEMP_INDEX_FILE);
+    fs.rmdirSync(BUNDLE_BR);
   } catch (e) {}
-  try {
-    fs.rmdirSync(TEMP_DIR);
-  } catch (e) {}
-});
+}
 
 const NumberPost: RouteDefinition<number, number> = {
   route: {
@@ -83,6 +78,19 @@ function getServer(): express.Express {
 describe("WebServer", () => {
   const app = getServer();
 
+  beforeAll(() => {
+    fs.mkdirSync(TEMP_DIR);
+    fs.writeFileSync(TEMP_FILE, "<!DOCTYPE html>\n<html></html>");
+    fs.writeFileSync(TEMP_INDEX_FILE, "<!DOCTYPE html>\n<html></html>");
+    fs.writeFileSync(BUNDLE, "");
+  });
+
+  afterEach(() => removePreCompressed());
+
+  afterAll(() => {
+    fs.rmSync(TEMP_DIR, { recursive: true, force: true });
+  });
+
   test("handles post route with good data", async () => {
     const response = await request(app)
       .post(NumberPost.route.path)
@@ -119,7 +127,7 @@ describe("WebServer", () => {
     expect(response.text).toContain("171");
   });
 
-  test("sends  unknown requests to index", async () => {
+  test("sends unknown requests to index", async () => {
     const response = await request(app).get("/notEvenRemotelyReal");
 
     expect(response.status).toBe(200);
@@ -127,6 +135,46 @@ describe("WebServer", () => {
     expect(response.headers["cache-control"]).toBe(
       "no-cache, no-store, must-revalidate"
     );
+  });
+
+  test("sends bundle with correct cache control", async () => {
+    const response = await request(app).get(`/${BUNDLE_NAME}`);
+
+    expect(response.status).toBe(200);
+    expect(response.type).toBe("application/javascript");
+    expect(response.headers["cache-control"]).toBe(
+      "public, max-age=315360000000, immutable"
+    );
+  });
+
+  test("sends pre-compressed brotli if available", async () => {
+    fs.writeFileSync(BUNDLE_BR, "const br = true");
+    // Make a new one so that we aren't caching previous results.
+    const response = await request(getServer())
+      .get(`/${BUNDLE_NAME}`)
+      .set("Accept-Encoding", "br");
+
+    expect(response.status).toBe(200);
+    expect(response.type).toBe("application/javascript");
+    expect(response.headers["cache-control"]).toBe(
+      "public, max-age=315360000000, immutable"
+    );
+    expect(response.headers["content-encoding"]).toBe("br");
+    expect(response.headers["x-morcusnet-precompressed"]).toBe("1");
+  });
+
+  test("sends uncompressed js if not available", async () => {
+    const response = await request(app)
+      .get(`/${BUNDLE_NAME}`)
+      .set("Accept-Encoding", "br");
+
+    expect(response.status).toBe(200);
+    expect(response.type).toBe("application/javascript");
+    expect(response.headers["cache-control"]).toBe(
+      "public, max-age=315360000000, immutable"
+    );
+    expect(response.headers["content-encoding"]).toBe(undefined);
+    expect(response.headers["x-morcusnet-precompressed"]).toBe(undefined);
   });
 
   test("sends out index without cache", async () => {

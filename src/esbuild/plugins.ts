@@ -168,9 +168,11 @@ async function compressFile(
   compressor: (buf: Buffer) => Promise<Buffer>
 ) {
   const outFile = `${fileName}.${ext}`;
+  const start = performance.now();
   const compressed = await compressor(buffer);
+  const elapsed = (performance.now() - start).toFixed(2);
   const size = (compressed.byteLength / 1000).toFixed(2);
-  console.log(`${ext} compressed: ${outFile} [${size} kB]`);
+  console.log(`${ext} compressed: ${outFile} [${size} kB, ${elapsed} ms]`);
   return fs.promises.writeFile(outFile, compressed);
 }
 
