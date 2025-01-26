@@ -545,6 +545,7 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
       <ResizingDragger
         currentLen={mainWidth()}
         setCurrentLen={(update) => setMainWidth(update(mainWidth()))}
+        reverse
         minRatio={0.2}
         maxRatio={0.8}
         getMax={() => containerWidth()}
