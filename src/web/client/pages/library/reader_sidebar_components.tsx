@@ -7,6 +7,8 @@ import {
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { SvgIcon } from "@/web/client/components/generic/icons";
+import { StyleContext } from "@/web/client/styling/style_context";
+import { useContext } from "react";
 
 export interface EmbeddedDictionaryProps {
   /** The word to look up in the dictionary, if any. */
@@ -16,8 +18,6 @@ export interface EmbeddedDictionaryProps {
    * within the embedded dictionary request a new word.
    */
   setDictWord: (word: string) => unknown;
-  /** The scale (for display size) to use for the dictionary. */
-  scale: number;
   /**
    * The message to display in the instruction text for the dictionary.
    * This should instruct the user what action to perform on a word in
@@ -29,6 +29,7 @@ export interface EmbeddedDictionaryProps {
 export function EmbeddedDictionary(
   props: EmbeddedDictionaryProps
 ): JSX.Element {
+  const styles = useContext(StyleContext);
   const action = props.dictActionMessage || "Click on";
   return props.dictWord === undefined ? (
     <InfoText
@@ -38,7 +39,7 @@ export function EmbeddedDictionary(
     <DictionaryViewV2
       embedded
       initial={props.dictWord}
-      textScale={props.scale}
+      textScale={styles.readerSideScale}
       embeddedOptions={{ hideableOutline: true }}
       setInitial={props.setDictWord}
     />
@@ -109,22 +110,13 @@ export function MobileReaderSettingsSections(props: MobileReaderSettings) {
 }
 
 export interface ReaderSettingsProps extends MobileReaderSettings {
-  /** The scale to use for the elements in the reader. */
-  scale: number;
-  /** The scale of the main column of the reader. */
-  mainScale: number;
-  /** A setter for the scale of the main column of the reader. */
-  setMainScale: (width: number) => unknown;
-  /** The scale of the side column of the reader. */
-  sideScale: number;
-  /** A setter for the scale of the side column of the reader. */
-  setSideScale: (width: number) => unknown;
   /** Whether the reader is a small screen. */
   isSmallScreen: boolean;
 }
 export function ReaderSettings(props: ReaderSettingsProps) {
-  const { mainScale, setMainScale, sideScale, setSideScale, isSmallScreen } =
-    props;
+  const { isSmallScreen } = props;
+  const styles = useContext(StyleContext);
+
   const mainLabel = isSmallScreen ? "Main panel" : "Main column";
   const sideLabel = isSmallScreen ? "Drawer" : "Side column";
   return (
@@ -135,8 +127,8 @@ export function ReaderSettings(props: ReaderSettingsProps) {
           <SettingsText message={`${mainLabel} settings`} />
         </summary>
         <NumberSelector
-          value={mainScale}
-          setValue={setMainScale}
+          value={styles.readerMainScale}
+          setValue={styles.setReaderMainScale}
           label="Text size"
           tag={mainLabel}
           min={50}
@@ -149,8 +141,8 @@ export function ReaderSettings(props: ReaderSettingsProps) {
           <SettingsText message={`${sideLabel} settings`} />
         </summary>
         <NumberSelector
-          value={sideScale}
-          setValue={setSideScale}
+          value={styles.readerSideScale}
+          setValue={styles.setReaderSideScale}
           label="Text size"
           tag={sideLabel}
           min={50}
@@ -254,7 +246,6 @@ export function DefaultReaderSidebarContent(
             props.setCurrentTab("Dictionary");
             props.setDictWord(target);
           }}
-          scale={props.sideScale}
           dictActionMessage={props.dictActionMessage}
         />
       );

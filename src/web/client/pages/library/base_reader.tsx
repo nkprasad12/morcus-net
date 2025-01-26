@@ -9,7 +9,6 @@ import {
   ReaderInternalTabConfig,
   isDefaultSidebarTab,
 } from "@/web/client/pages/library/reader_sidebar_components";
-import { StyleContext } from "@/web/client/styling/style_context";
 import React, {
   CSSProperties,
   PropsWithChildren,
@@ -49,12 +48,10 @@ interface SidebarConfig<CustomTabs> {
 /** Configuration for extra tabs to add to the sidebar or drawer. */
 export interface BaseExtraSidebarTabProps<CustomSidebarTab> {
   tab: CustomSidebarTab;
-  scale: number;
 }
 /** Properties for the main column. */
 export interface BaseMainColumnProps extends Responsive {
   onWordSelected: (word: string) => unknown;
-  scale: number;
 }
 interface ReaderExternalLayoutProps {
   swipeListeners?: SwipeListeners;
@@ -106,13 +103,6 @@ export function BaseReader<
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
   const BaseLayout = isScreenSmall ? BaseMobileReaderLayout : BaseReaderLayout;
 
-  const {
-    readerMainScale,
-    setReaderMainScale,
-    readerSideScale,
-    setReaderSideScale,
-  } = React.useContext(StyleContext);
-
   const sidebarRef = React.useRef<HTMLDivElement>(null);
 
   const showDefaultTab = isDefaultSidebarTab(sidebarTab);
@@ -163,7 +153,6 @@ export function BaseReader<
       swipeListeners={swipeListeners}>
       <props.MainColumn
         {...props}
-        scale={readerMainScale}
         onWordSelected={onWordSelected}
         isMobile={isScreenSmall}
       />
@@ -176,11 +165,6 @@ export function BaseReader<
       {showDefaultTab ? (
         <DefaultReaderSidebarContent
           isSmallScreen={isScreenSmall}
-          scale={readerSideScale}
-          mainScale={readerMainScale}
-          setMainScale={setReaderMainScale}
-          sideScale={readerSideScale}
-          setSideScale={setReaderSideScale}
           {...(isScreenSmall && props.showMobileNavSettings
             ? {
                 swipeNavigation,
@@ -198,11 +182,7 @@ export function BaseReader<
       ) : props.ExtraSidebarContent === undefined ? (
         <></>
       ) : (
-        <props.ExtraSidebarContent
-          {...props}
-          tab={sidebarTab}
-          scale={readerSideScale}
-        />
+        <props.ExtraSidebarContent {...props} tab={sidebarTab} />
       )}
     </BaseLayout>
   );

@@ -43,6 +43,7 @@ import {
 } from "@/web/client/pages/library/reader/library_reader/library_reader_common";
 import { processWords } from "@/common/text_cleaning";
 import { checkPresent } from "@/common/assert";
+import { StyleContext } from "@/web/client/styling/style_context";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -358,7 +359,6 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
               <WorkTextPage
                 work={work}
                 page={currentPage}
-                textScale={props.scale}
                 isMobile={isMobile}
                 setDictWord={props.onWordSelected}
               />
@@ -481,18 +481,19 @@ function WorkNavigationBar(props: {
 export function WorkTextPage(props: {
   work: PaginatedWork;
   page: number;
-  textScale: number;
   isMobile: boolean;
   setDictWord: (work: string) => unknown;
 }) {
-  const { textScale, isMobile, work, setDictWord } = props;
+  const { isMobile, work, setDictWord } = props;
+
+  const { readerMainScale } = React.useContext(StyleContext);
   const { queryLine, highlightRef } = React.useContext(ReaderContext);
   const workColumnContext: WorkColumnContextType = React.useMemo(
     () => ({ setDictWord, work }),
     [setDictWord, work]
   );
 
-  const gapSize = (textScale / 100) * 0.65;
+  const gapSize = (readerMainScale / 100) * 0.65;
   const gap = `${gapSize}em`;
   const hasLines = work.textParts.slice(-1)[0].toLowerCase() === "line";
 
