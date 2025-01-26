@@ -51,9 +51,10 @@ function WorksList(props: { works: WorkListState }) {
   function shouldShowWork(work: LibraryWorkMetadata): boolean {
     const query = filter.toLowerCase().trim();
     return (
-      work.id === query ||
-      work.author.toLowerCase().includes(query) ||
-      work.name.toLowerCase().includes(query)
+      !work.isTranslation &&
+      (work.id === query ||
+        work.author.toLowerCase().includes(query) ||
+        work.name.toLowerCase().includes(query))
     );
   }
 

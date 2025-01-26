@@ -1,41 +1,40 @@
-const CAESAR_DBG = "data/phi0448/phi001/phi0448.phi001.perseus-lat2.xml";
-const CAESAR_BELLUM_CIVILIS =
-  "data/phi0448/phi002/phi0448.phi002.perseus-lat2.xml";
-const PHAEDRUS_FABULAE = "data/phi0975/phi001/phi0975.phi001.perseus-lat2.xml";
-const CATULLUS = "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml";
+import { assert } from "@/common/assert";
 
-const OVID_AMORES = "data/phi0959/phi001/phi0959.phi001.perseus-lat2.xml";
-const TACITUS_GERMANIA = "data/phi1351/phi002/phi1351.phi002.perseus-lat1.xml";
-const JUVENAL_SATURAE = "data/phi1276/phi001/phi1276.phi001.perseus-lat2.xml";
-const SALLUST_CATALINA1 = "data/phi0631/phi001/phi0631.phi001.perseus-lat4.xml";
-const DE_AMICITIA = "data/phi0474/phi052/phi0474.phi052.perseus-lat2.xml";
-const DE_RERUM_NATURA = "data/phi0550/phi001/phi0550.phi001.perseus-lat1.xml";
-const NEPOS_MILTIADES = "data/phi0588/abo001/phi0588.abo001.perseus-lat2.xml";
-const NEPOS_THEMISTOCLES =
-  "data/phi0588/abo002/phi0588.abo002.perseus-lat2.xml";
-const AMMIANUS_MARCELLINUS =
-  "data/stoa0023/stoa001/stoa0023.stoa001.perseus-lat2.xml";
+export const LatinWorks = {
+  CAESAR_DBG: "phi0448.phi001.perseus-lat2",
+  CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
+  PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
+  CATULLUS: "phi0472.phi001.perseus-lat2",
+  OVID_AMORES: "phi0959.phi001.perseus-lat2",
+  TACITUS_GERMANIA: "phi1351.phi002.perseus-lat1",
+  JUVENAL_SATURAE: "phi1276.phi001.perseus-lat2",
+  SALLUST_CATALINA1: "phi0631.phi001.perseus-lat4",
+  DE_AMICITIA: "phi0474.phi052.perseus-lat2",
+  DE_RERUM_NATURA: "phi0550.phi001.perseus-lat1",
+  NEPOS_MILTIADES: "phi0588.abo001.perseus-lat2",
+  NEPOS_THEMISTOCLES: "phi0588.abo002.perseus-lat2",
+  AMMIANUS_MARCELLINUS: "stoa0023.stoa001.perseus-lat2",
+};
+
+export const EnglishTranslations: Record<string, string> = {
+  [LatinWorks.SALLUST_CATALINA1]: "phi0631.phi001.perseus-eng2",
+} satisfies { [K in keyof typeof LatinWorks]?: string };
+
+function toPerseusPath(workId: string): string {
+  const parts = workId.split(".");
+  assert(parts.length === 3, () => `Invalid work ID: ${workId}`);
+  return `data/${parts[0]}/${parts[1]}/${workId}.xml`;
+}
 
 // Two supported works are checked in to the repo itself for the sake of unit testing.
-export const LOCAL_REPO_WORKS = [CAESAR_DBG, PHAEDRUS_FABULAE];
+export const LOCAL_REPO_WORKS = [
+  toPerseusPath(LatinWorks.CAESAR_DBG),
+  toPerseusPath(LatinWorks.PHAEDRUS_FABULAE),
+];
 
-export const ALL_SUPPORTED_WORKS = LOCAL_REPO_WORKS.concat([
-  // Remove these next two for now, since it has strange optional
-  // nested elements that are not marked in the CTS header
-  // "data/phi0472/phi001/phi0472.phi001.perseus-lat2.xml",
-  // "data/phi0893/phi001/phi0893.phi001.perseus-lat2.xml",
+console.log(EnglishTranslations);
 
-  // Remove this for now, since it has whitespace between elements.
-  // "data/phi1318/phi001/phi1318.phi001.perseus-lat1.xml",
-  OVID_AMORES,
-  TACITUS_GERMANIA,
-  JUVENAL_SATURAE,
-  SALLUST_CATALINA1,
-  DE_AMICITIA,
-  CAESAR_BELLUM_CIVILIS,
-  CATULLUS,
-  DE_RERUM_NATURA,
-  NEPOS_MILTIADES,
-  NEPOS_THEMISTOCLES,
-  AMMIANUS_MARCELLINUS,
-]);
+export const ALL_SUPPORTED_WORKS = [
+  ...Object.values(LatinWorks).map(toPerseusPath),
+  ...Object.values(EnglishTranslations).map(toPerseusPath),
+];

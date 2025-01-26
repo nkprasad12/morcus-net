@@ -3,6 +3,7 @@ import {
   Validator,
   instanceOf,
   isArray,
+  isBoolean,
   isNumber,
   isPair,
   isString,
@@ -102,6 +103,10 @@ export interface LibraryWorkMetadata {
   urlAuthor: string;
   /** The representation of the work name in a URL. */
   urlName: string;
+  /** The ID of the translation for this work. */
+  translationId?: string;
+  /** Whether this is a translation. */
+  isTranslation?: boolean;
 }
 
 export namespace LibraryWorkMetadata {
@@ -111,6 +116,8 @@ export namespace LibraryWorkMetadata {
     id: isString,
     urlAuthor: isString,
     urlName: isString,
+    translationId: maybeUndefined(isString),
+    isTranslation: maybeUndefined(isBoolean),
   });
 }
 
