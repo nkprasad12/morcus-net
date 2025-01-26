@@ -49,8 +49,14 @@ const NOTE_NODES = new Set([
   "emph",
   "foreign",
   "q",
+  "quote",
   "title",
   "gap",
+  "placeName",
+  "date",
+  "bibl",
+  "cit",
+  "pb",
   // TODO: Check how Scaife renders this.
   "add",
 ]);
@@ -65,6 +71,8 @@ const KNOWN_NOTE_REND = new Set<string | undefined>([
 ]);
 const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
+  "anchored",
+  "place",
   "sid",
   "uid",
   "parent",
@@ -497,7 +505,8 @@ function convertToRows(
 }
 
 function transformNoteNode(node: XmlNode): XmlNode {
-  assert(NOTE_NODES.has(node.name), node.toString());
+  // TODO: REMOVE node.toSting()!!!
+  assert(NOTE_NODES.has(node.name));
   if (node.name === "gap") {
     return new XmlNode("span", [], [" [gap] "]);
   }
@@ -510,12 +519,11 @@ function transformNoteNode(node: XmlNode): XmlNode {
   const baseChildren = node.children.map((c) =>
     typeof c === "string" ? c : transformNoteNode(c)
   );
-  const children =
-    node.name === "q"
-      ? ["“", ...baseChildren, "”"]
-      : node.name === "add"
-      ? ["<", ...baseChildren, ">"]
-      : baseChildren;
+  const children = QUOTE_NODES.has(node.name)
+    ? ["“", ...baseChildren, "”"]
+    : node.name === "add"
+    ? ["<", ...baseChildren, ">"]
+    : baseChildren;
   return new XmlNode("span", attrs, children);
 }
 
@@ -602,6 +610,11 @@ function transformContentNode(
     case "sic":
     case "said":
     case "emph":
+    // We may some day want to handle these, but for
+    // now just render the text.
+    // eslint-disable-next-line no-fallthrough
+    case "placeName":
+    case "date":
     case "num":
     case "orig":
     case "seg":
