@@ -63,6 +63,12 @@ const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,
   ...HANDLED_NOTE_REND,
 ]);
+const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
+  "xml:lang",
+  "sid",
+  "uid",
+  "parent",
+]);
 
 type QuoteOpen = "‘" | "“" | "'" | '"';
 type QuoteClose = "’" | "”" | "'" | '"';
@@ -351,8 +357,7 @@ function preprocessTree(
       top.attrs.push(["leader", "1"]);
     }
     if (top.name === "note") {
-      // `sid`, `uid`, and `parent`.
-      assertEqual(top.attrs.length, 3);
+      top.attrs.forEach((attr) => assert(KNOWN_NOTE_ATTRS.has(attr[0])));
       const noteId = notes.length.toString();
       notes.push(top.deepcopy());
       top.attrs.push(["noteId", noteId]);
