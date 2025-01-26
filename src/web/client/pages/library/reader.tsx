@@ -856,6 +856,9 @@ function displayForLibraryChunk(
   if (root.name === "note") {
     return <TextNote key={key} node={root} />;
   }
+  if (root.name === "space") {
+    return <></>;
+  }
 
   const style: React.CSSProperties = {};
   let className: string | undefined = undefined;
