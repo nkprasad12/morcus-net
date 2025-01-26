@@ -829,7 +829,7 @@ function TextNote(props: { node: XmlNode }) {
   return (
     note && (
       <ClickableTooltip
-        titleText={renderTooltip(note)}
+        titleText={<div className="text sm">{renderTooltip(note)}</div>}
         ChildFactory={TextNoteContent}
         visibleListener={(isOpen) => {
           if (isOpen) {
