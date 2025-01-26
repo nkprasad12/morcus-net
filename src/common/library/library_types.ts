@@ -59,6 +59,7 @@ export type ProcessedWorkContentNodeType =
   | "s"
   | "gap"
   | "b"
+  | "space"
   | "note";
 export interface ProcessedWork2 {
   /** Basic information about this work such as author or title. */

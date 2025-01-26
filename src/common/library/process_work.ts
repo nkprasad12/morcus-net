@@ -415,15 +415,64 @@ function computeIncludedSections(root: XmlNode, memo: Set<string>[]) {
   return memo[uid];
 }
 
+function* findAncestors(
+  node: XmlNode,
+  tree: PreprocessedTree
+): Generator<XmlNode> {
+  let current: XmlNode = node;
+  while (true) {
+    yield current;
+    const parent = safeParseInt(current.getAttr("parent"));
+    if (parent === undefined) {
+      assertEqual(current, tree.root);
+      break;
+    }
+    current = tree.uids[parent];
+  }
+}
+
+/**
+ * Finds the nearest ancestor `lg`. and returns its section ID and UID.
+ *
+ * @param node - The XML node to start the search from.
+ * @param tree - The preprocessed tree containing the node and its ancestors.
+ * @returns A tuple with the section ID of the `lg` and its UID, or undefined.
+ */
+function findLg(
+  node: XmlNode,
+  tree: PreprocessedTree
+): [string, string] | undefined {
+  for (const ancestor of findAncestors(node, tree)) {
+    if (ancestor.name === "lg") {
+      return [
+        checkPresent(ancestor.getAttr("sid")),
+        checkPresent(ancestor.getAttr("uid")),
+      ];
+    }
+  }
+  return undefined;
+}
+
+function splitSid(sid: string): string[] {
+  return sid.length === 0 ? [] : sid.split(".");
+}
+
 function convertToRows(
   current: XmlNode,
   data: PreprocessedTree
 ): [string[], XmlNode][] {
   const uid = checkPresent(safeParseInt(current.getAttr("uid")));
   const sections = checkPresent(data.includedSections[uid]);
-  const rawSid = checkPresent(current.getAttr("sid"));
-  const sid = rawSid.length === 0 ? [] : rawSid.split(".");
+  const sid = splitSid(checkPresent(current.getAttr("sid")));
+  // If the current node only has one section beneath it, add it as a row.
   if (sections.size === 1) {
+    // Check to see if the section is contained within an `lg` node and attach
+    // the data of the `lg` node for later processing.
+    const nearestLg = findLg(current, data);
+    if (nearestLg !== undefined) {
+      current.attrs.push(["lg-sid", nearestLg[0]]);
+      current.attrs.push(["lg", nearestLg[1]]);
+    }
     return [[sid, current]];
   }
   const results: [string[], XmlNode][] = [];
@@ -588,13 +637,27 @@ export function processWorkBody(
   options: ProcessForDisplayOptions
 ): Pick<ProcessedWork2, "rows" | "notes"> {
   const data = preprocessTree(originalRoot, textParts, options);
-  return {
-    rows: convertToRows(data.root, data).map(([id, content]) => [
-      id,
-      processRowContent(content),
-    ]),
-    notes: data.notes.map(transformNoteNode),
-  };
+  const rawRows = convertToRows(data.root, data);
+  const rows: ProcessedWork2["rows"] = [];
+  let currentLg: undefined | [string, string[]] = undefined;
+  const addSpaceRowIfNeeded = () =>
+    currentLg !== undefined &&
+    rows.push([currentLg[1], new XmlNode("space", [["lg", currentLg[0]]])]);
+
+  for (const [id, rowRoot] of rawRows) {
+    const rowLg = rowRoot.getAttr("lg");
+    // Add a spacer row when the `lg` changes.
+    if (rowLg !== currentLg?.[0]) {
+      addSpaceRowIfNeeded();
+      currentLg =
+        rowLg === undefined
+          ? undefined
+          : [rowLg, splitSid(checkPresent(rowRoot.getAttr("lg-sid")))];
+    }
+    rows.push([id, processRowContent(rowRoot)]);
+  }
+  addSpaceRowIfNeeded();
+  return { rows, notes: data.notes.map(transformNoteNode) };
 }
 
 function getTextparts(root: XmlNode, workId: string) {
