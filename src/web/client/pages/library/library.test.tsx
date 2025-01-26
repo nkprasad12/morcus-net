@@ -38,6 +38,14 @@ mockCallApi.mockResolvedValue({
       urlAuthor: "sallust",
       urlName: "catalina",
     },
+    {
+      author: "BlahBLah",
+      name: "Translation",
+      id: "phi003",
+      urlAuthor: "blahh",
+      urlName: "blah",
+      isTranslation: true,
+    },
   ],
 });
 
@@ -46,10 +54,15 @@ describe("library view", () => {
     render(<Library />);
 
     await screen.findByText(/Welcome/);
-    await screen.findByText(/DBG/);
-    await screen.findByText(/Caesar/);
-    await screen.findByText(/Sallust/);
-    await screen.findByText(/Catalina/);
+
+    // Non-translations
+    expect(screen.queryByText("DBG")).not.toBeNull();
+    expect(screen.queryByText("Caesar")).not.toBeNull();
+    expect(screen.queryByText("Sallust")).not.toBeNull();
+    expect(screen.queryByText("Catalina")).not.toBeNull();
+    // Translations
+    expect(screen.queryByText("BlahBLah")).toBeNull();
+    expect(screen.queryByText("Translation")).toBeNull();
   });
 
   it("allows filter by full id", async () => {

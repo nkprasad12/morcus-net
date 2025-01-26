@@ -1,5 +1,8 @@
 import { envVar } from "@/common/env_vars";
-import { LOCAL_REPO_WORKS } from "@/common/library/library_constants";
+import {
+  EnglishTranslations,
+  LOCAL_REPO_WORKS,
+} from "@/common/library/library_constants";
 import {
   LIBRARY_INDEX,
   LIB_DEFAULT_DIR,
@@ -114,12 +117,17 @@ export function processLibrary(
     const result = processTeiCts2(rawXml, workId, patches.get(workId));
     const rawTitle = result.info.title;
     const title = NAME_TO_DISPLAY_NAME.get(rawTitle) ?? rawTitle;
+
     const metadata: LibraryWorkMetadata = {
       id: workId,
       author: result.info.author,
       name: title,
       urlAuthor: urlifyAuthor(result.info.author),
       urlName: urlifyName(result.info.title),
+      translationId: EnglishTranslations[workId],
+      isTranslation: Object.values(EnglishTranslations).some(
+        (translation) => translation === workId
+      ),
     };
     const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
     const outputPath = `${outputDir}/${workId}`;
