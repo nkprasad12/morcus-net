@@ -87,17 +87,19 @@ const QUOTE_PAIRS: QuotePair[] = [
   ["'", "'"],
   ['"', '"'],
 ];
-const QUOTE_OPENS = new Set<QuoteOpen>(QUOTE_PAIRS.map((x) => x[1]));
-const QUOTE_CLOSES = new Set<QuoteClose>(QUOTE_PAIRS.map((x) => x[0]));
+const QUOTE_OPENS: Set<unknown> = new Set<QuoteOpen>(
+  QUOTE_PAIRS.map((x) => x[1])
+);
+const QUOTE_CLOSES: Set<unknown> = new Set<QuoteClose>(
+  QUOTE_PAIRS.map((x) => x[0])
+);
 const QUOTE_OPEN_FOR_CLOSE = new Map<QuoteClose, QuoteOpen>(QUOTE_PAIRS);
 
 function isQuoteOpen(x: unknown): x is QuoteOpen {
-  // @ts-expect-error
   return QUOTE_OPENS.has(x);
 }
 
 function isQuoteClose(x: unknown): x is QuoteClose {
-  // @ts-expect-error
   return QUOTE_CLOSES.has(x);
 }
 
