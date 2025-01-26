@@ -54,11 +54,6 @@ const TEI_HEADER = `
 
 	<encodingDesc>
 		<refsDecl n="CTS">
-			<cRefPattern n="Section"
-				matchPattern="(\\w+).(\\w+).(\\w+)"
-				replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2']/tei:div[@n='$3'])">
-				<p>This pointer pattern extracts Book and Chapter and Section</p>
-			</cRefPattern>
 			<cRefPattern n="Chapter"
 				matchPattern="(\\w+).(\\w+)"
 				replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2'])">
@@ -132,6 +127,95 @@ describe("processTei2", () => {
     expect(sideChannel.onWord).toHaveBeenCalledWith("Gallia");
     expect(sideChannel.onWord).toHaveBeenCalledWith("est");
     expect(sideChannel.onWord).toHaveBeenCalledTimes(2);
+  });
+
+  it("processes work with leaf level nodes", () => {
+    const body = `<div n="1" type="textpart" subtype="book">
+      <div n="1" type="textpart" subtype="chapter">First chapter text</div>
+      <div n="2" type="textpart" subtype="chapter">Second chapter text</div>
+    </div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows).toHaveLength(2);
+    expect(work.rows[0][0]).toEqual(["1", "1"]);
+    expect(work.rows[1][0]).toEqual(["1", "2"]);
+    expect(work.rows[0][1].toString()).toContain("First chapter text");
+    expect(work.rows[1][1].toString()).toContain("Second chapter text");
+  });
+
+  it("processes work with final line group", () => {
+    const body = `<div n="1" type="textpart" subtype="book">
+      <div n="1" type="textpart" subtype="chapter">First chapter text</div>
+      <lg>
+        <div n="2" type="textpart" subtype="chapter">Second chapter text</div>
+        <div n="3" type="textpart" subtype="chapter">Third chapter text</div>
+      </lg>
+    </div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows).toHaveLength(4);
+    expect(work.rows[0][0]).toEqual(["1", "1"]);
+    expect(work.rows[0][1].toString()).toContain("First chapter text");
+    expect(work.rows[1][0]).toEqual(["1", "2"]);
+    expect(work.rows[1][1].toString()).toContain("Second chapter text");
+    expect(work.rows[2][0]).toEqual(["1", "3"]);
+    expect(work.rows[2][1].toString()).toContain("Third chapter text");
+    expect(work.rows[3][0]).toEqual(["1"]);
+    expect(XmlNode.assertIsNode(work.rows[3][1]).name).toBe("space");
+  });
+
+  it("processes work with split line group", () => {
+    const body = `<div n="1" type="textpart" subtype="book">
+      <div n="1" type="textpart" subtype="chapter">First chapter text</div>
+      <lg>
+        <div n="2" type="textpart" subtype="chapter">Second chapter text</div>
+      </lg>
+      <lg>
+        <div n="3" type="textpart" subtype="chapter">Third chapter text</div>
+      </lg>
+    </div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows).toHaveLength(5);
+    expect(work.rows[0][0]).toEqual(["1", "1"]);
+    expect(work.rows[0][1].toString()).toContain("First chapter text");
+
+    expect(work.rows[1][0]).toEqual(["1", "2"]);
+    expect(work.rows[1][1].toString()).toContain("Second chapter text");
+    expect(work.rows[2][0]).toEqual(["1"]);
+    expect(XmlNode.assertIsNode(work.rows[2][1]).name).toBe("space");
+
+    expect(work.rows[3][0]).toEqual(["1", "3"]);
+    expect(work.rows[3][1].toString()).toContain("Third chapter text");
+    expect(work.rows[4][0]).toEqual(["1"]);
+    expect(XmlNode.assertIsNode(work.rows[4][1]).name).toBe("space");
+  });
+
+  it("processes work with non-line group after line group", () => {
+    const body = `<div n="1" type="textpart" subtype="book">
+      <div n="1" type="textpart" subtype="chapter">First chapter text</div>
+      <lg>
+        <div n="2" type="textpart" subtype="chapter">Second chapter text</div>
+      </lg>
+      <div n="3" type="textpart" subtype="chapter">Third chapter text</div>
+    </div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows).toHaveLength(4);
+    expect(work.rows[0][0]).toEqual(["1", "1"]);
+    expect(work.rows[0][1].toString()).toContain("First chapter text");
+
+    expect(work.rows[1][0]).toEqual(["1", "2"]);
+    expect(work.rows[1][1].toString()).toContain("Second chapter text");
+    expect(work.rows[2][0]).toEqual(["1"]);
+    expect(XmlNode.assertIsNode(work.rows[2][1]).name).toBe("space");
+
+    expect(work.rows[3][0]).toEqual(["1", "3"]);
+    expect(work.rows[3][1].toString()).toContain("Third chapter text");
   });
 
   it("parses expected text parts", () => {
