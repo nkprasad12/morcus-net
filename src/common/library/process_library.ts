@@ -36,6 +36,8 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["Julius Caesar", "caesar"],
   ["P. Ovidius Naso", "ovid"],
   ["Cornelius Tacitus", "tacitus"],
+  ["C. Valerius Catullus", "catullus"],
+  ["M. Tullius Cicero", "cicero"],
 ]);
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([
