@@ -3,8 +3,7 @@ import {
   SpanButton,
   type ClickableCoreProps,
 } from "@/web/client/components/generic/basics";
-import FocusTrap from "@mui/base/FocusTrap";
-import { PropsWithChildren, useEffect } from "react";
+import { PropsWithChildren, useEffect, useRef } from "react";
 
 export type OverlayProps = ClickableCoreProps;
 
@@ -14,11 +13,19 @@ interface ModalProps extends ClickableCoreProps {
   contentProps?: OverlayProps;
 }
 
-function BaseModal(
-  props: PropsWithChildren<ModalProps & { className: string }>
-) {
-  const { open, onClose } = props;
+interface BaseDialogProps extends ClickableCoreProps {
+  open: boolean;
+  onClose: () => unknown;
+  className: string;
+  contentProps?: OverlayProps;
+}
 
+export function BaseDialog(props: PropsWithChildren<BaseDialogProps>) {
+  const { open, onClose } = props;
+  const dialogRef = useRef<HTMLDialogElement>(null);
+  const classes = [props.className]
+    .concat(props.contentProps?.className || [])
+    .join(" ");
   useEffect(() => {
     if (!open) {
       return;
@@ -32,32 +39,32 @@ function BaseModal(
     return () => window.removeEventListener("keyup", keyListener);
   }, [open, onClose]);
 
-  const classes = ["contentHolder"]
-    .concat(props.contentProps?.className || [])
-    .concat(open ? "open" : []);
+  useEffect(() => {
+    if (open) dialogRef.current?.showModal();
+    else dialogRef.current?.close();
+  }, [open]);
+
   return (
-    <FocusTrap open={open}>
-      <div
-        className={props.className}
-        tabIndex={-1}
-        {...AriaProps.extract(props)}>
-        <div className={classes.join(" ")}>{open && props.children}</div>
-        {open && (
-          <div className="modalOverlay" onClick={onClose} tabIndex={-1} />
-        )}
+    <dialog
+      ref={dialogRef}
+      onClick={onClose}
+      className={classes}
+      {...AriaProps.extract(props)}>
+      <div onClick={(e) => e.stopPropagation()} role="presentation">
+        {props.children}
       </div>
-    </FocusTrap>
+    </dialog>
   );
 }
 
 export type DrawerProps = ModalProps;
 export function Drawer(props: PropsWithChildren<DrawerProps>) {
-  return <BaseModal {...props} className="drawer" />;
+  return <BaseDialog {...props} className="drawer" />;
 }
 
 export type DialogProps = ModalProps;
 export function ModalDialog(props: PropsWithChildren<DialogProps>) {
-  return <BaseModal {...props} className="dialogModal" />;
+  return <BaseDialog {...props} className="dialogModal" />;
 }
 
 export interface SimpleModalProps {

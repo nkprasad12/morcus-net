@@ -149,6 +149,17 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     // Buttons
+    button: {
+      backgroundColor: "transparent",
+      border: "none",
+      margin: 0,
+      padding: 0,
+      cursor: "pointer",
+      outline: "none",
+    },
+    "button:is(:hover, :focus-visible):not(:disabled)": {
+      backgroundColor: "rgba(0, 0, 0, 0.075)",
+    },
     ".button": {
       borderRadius: 4,
       cursor: "pointer",
@@ -217,48 +228,33 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".iconButton:disabled": {
       color: contentTextColor + "20",
     },
-    ".iconButton:is(:hover, :focus-visible):not(:disabled)": {
-      backgroundColor: "rgba(0, 0, 0, 0.075)",
-    },
 
     // Modals
-    ".modalOverlay": {
-      display: "block",
-      height: "100vh",
-      width: "100%",
-      left: 0,
-      top: 0,
-      backgroundColor: "#00000080",
-      position: "fixed",
-      zIndex: 100,
+    dialog: {
+      border: "none",
+      padding: 0,
     },
-    ".drawer .contentHolder": {
-      position: "fixed",
-      height: "100vh",
-      top: 0,
-      left: 0,
-      zIndex: 101,
-      transform: "translateX(-100%);",
+    "dialog::backdrop": {
+      backgroundColor: "#00000080",
+    },
+    // Dialog modals
+    "dialog.dialogModal": {
+      borderRadius: "8px",
+      width: "400px",
+      // This is animated: see `@starting-style`.
+      opacity: 1,
+      transition: "opacity 0.25s ease-out",
+    },
+    // Drawer
+    "dialog.drawer": {
+      margin: 0,
+      maxHeight: "100vh",
+      height: "100%",
+      // This is animated: see `@starting-style`.
+      transform: "translateX(0)",
       transition: "transform 0.14s ease-out;",
     },
-    ".drawer .contentHolder.open": {
-      transform: "translateX(0);",
-    },
-    ".dialogModal .contentHolder ": {
-      position: "fixed",
-      maxWidth: "80vw",
-      top: "50vh",
-      left: "50vw",
-      zIndex: 101,
-      borderRadius: "8px",
-      transform: "translate(-50%, -60%)",
-      transition: "opacity 0.25s ease-out;",
-      width: "400px",
-      opacity: 0,
-    },
-    ".dialogModal .contentHolder.open": {
-      opacity: 1,
-    },
+    // Contents.
     ".dialogActions": {
       display: "flex",
       alignItems: "center",
@@ -675,15 +671,6 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".readerMain .blockquote .l": {
       display: "block",
     },
-    // TODO: Eventually we can delete `SpanButton` and just use this.
-    ".readerMain button": {
-      backgroundColor: "transparent",
-      border: "none",
-      margin: 0,
-      padding: 0,
-      cursor: "pointer",
-      outline: "none",
-    },
     ".customSearchPopup": {
       color: theme.searchPopupText,
       backgroundColor: theme.searchPopupBg,
@@ -756,6 +743,15 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       },
       "::-webkit-scrollbar-thumb": {
         borderRadius: "4px",
+      },
+    },
+    // For reasons I don't understand, this has to be at the bottom.
+    "@starting-style": {
+      "dialog[open].dialogModal": {
+        opacity: 0,
+      },
+      "dialog[open].drawer": {
+        transform: "translateX(-100%)",
       },
     },
   };
