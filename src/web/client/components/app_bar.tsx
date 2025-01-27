@@ -54,28 +54,25 @@ function DrawerMenu(props: {
       contentProps={{
         className: "menu",
       }}>
-      <div
-        role="navigation"
-        onClick={props.onClose}
-        id="menu-appbar"
-        className="text md">
+      <div role="navigation" id="menu-appbar" className="drawerContents">
         {pages.map((page) => (
           <div key={page.name}>
-            <SpanButton
+            <button
               key={page.name}
               onClick={props.onPageClick(page.targetPath)}
               className={
-                props.isCurrentPage(page.targetPath)
+                "text md " +
+                (props.isCurrentPage(page.targetPath)
                   ? "menuItemActive"
-                  : "menuItemInactive"
+                  : "menuItemInactive")
               }
               style={{
                 padding: "16px 24px",
                 display: "block",
-                justifyContent: "center",
+                width: "100%",
               }}>
               <b>{page.name}</b>
-            </SpanButton>
+            </button>
             <Divider key={page.name + "_divider"} />
           </div>
         ))}
