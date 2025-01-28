@@ -44,6 +44,7 @@ export function BaseDialog(props: PropsWithChildren<BaseDialogProps>) {
     else dialogRef.current?.close();
   }, [open]);
 
+  if (!open) return null;
   return (
     <dialog
       ref={dialogRef}

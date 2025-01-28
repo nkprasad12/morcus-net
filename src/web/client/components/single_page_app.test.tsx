@@ -41,6 +41,13 @@ const OMNIS_PAGE: SinglePageApp.Page = {
   Content: () => <div>OmnisPage</div>,
 };
 
+beforeAll(() => {
+  // js-dom doesn't yet support `dialog`.
+  HTMLDialogElement.prototype.show = jest.fn();
+  HTMLDialogElement.prototype.showModal = jest.fn();
+  HTMLDialogElement.prototype.close = jest.fn();
+});
+
 describe("Single Page App View", () => {
   const pages: SinglePageApp.Page[] = [GALLIA_PAGE, OMNIS_PAGE];
   const experimentPages: SinglePageApp.Page[] = [

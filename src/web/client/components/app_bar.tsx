@@ -2,11 +2,7 @@ import * as React from "react";
 
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
-import {
-  Container,
-  Divider,
-  SpanButton,
-} from "@/web/client/components/generic/basics";
+import { Container, Divider } from "@/web/client/components/generic/basics";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { Drawer } from "@/web/client/components/generic/overlays";
@@ -61,17 +57,15 @@ function DrawerMenu(props: {
               key={page.name}
               onClick={props.onPageClick(page.targetPath)}
               className={
-                "text md " +
-                (props.isCurrentPage(page.targetPath)
-                  ? "menuItemActive"
-                  : "menuItemInactive")
+                "text md menuItem" +
+                (props.isCurrentPage(page.targetPath) ? " active" : "")
               }
               style={{
                 padding: "16px 24px",
                 display: "block",
                 width: "100%",
               }}>
-              <b>{page.name}</b>
+              {page.name}
             </button>
             <Divider key={page.name + "_divider"} />
           </div>
@@ -150,26 +144,23 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             }}>
             <LogoImage />
           </div>
-          <div
-            style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}
-            className="text md">
+          <div style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
             {mainPages.map((page) => (
-              <SpanButton
+              <button
                 key={page.name}
                 onAuxClick={() => window.open(page.targetPath)}
                 onClick={handlePageClick(page.targetPath)}
                 className={
-                  isCurrentPage(page.targetPath)
-                    ? "menuItemActive"
-                    : "menuItemInactive"
+                  "text md menuItem" +
+                  (isCurrentPage(page.targetPath) ? " active" : "")
                 }
                 style={{
                   marginLeft: "8px",
                   marginRight: "8px",
                   display: "block",
                 }}>
-                <b>{page.name}</b>
-              </SpanButton>
+                {page.name}
+              </button>
             ))}
           </div>
           <div>

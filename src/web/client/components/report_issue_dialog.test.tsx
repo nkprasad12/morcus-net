@@ -17,17 +17,26 @@ beforeEach(() => {
   mockCallApi.mockResolvedValue("");
 });
 
+const mockShowModal = jest.fn();
+const mockClose = jest.fn();
+beforeAll(() => {
+  // js-dom doesn't yet support `dialog`.
+  HTMLDialogElement.prototype.show = jest.fn();
+  HTMLDialogElement.prototype.showModal = mockShowModal;
+  HTMLDialogElement.prototype.close = mockClose;
+});
+
 describe("Report Issue Dialog", () => {
   it("is not shown when closed", async () => {
     const mockOnClose = jest.fn(() => {});
     render(<ReportIssueDialog show={false} onClose={mockOnClose} />);
-    expect(screen.queryByText("Issues / Feedback")).toBeNull();
+    expect(mockShowModal).not.toHaveBeenCalled();
   });
 
   it("is shown when open", async () => {
     const mockOnClose = jest.fn(() => {});
     render(<ReportIssueDialog show onClose={mockOnClose} />);
-    expect(screen.queryByText("Issues / Feedback")).not.toBeNull();
+    expect(mockShowModal).toHaveBeenCalled();
   });
 
   it("calls close on cancel", async () => {

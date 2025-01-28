@@ -24,6 +24,13 @@ afterEach(() => {
 
 const BOTH_DICTS = [LatinDict.LewisAndShort, LatinDict.SmithAndHall];
 
+beforeAll(() => {
+  // js-dom doesn't yet support `dialog`.
+  HTMLDialogElement.prototype.show = jest.fn();
+  HTMLDialogElement.prototype.showModal = jest.fn();
+  HTMLDialogElement.prototype.close = jest.fn();
+});
+
 describe("DictionarySearch", () => {
   beforeAll(() => {
     window.HTMLElement.prototype.scrollIntoView = jest.fn();
@@ -143,8 +150,8 @@ describe("DictionarySearch", () => {
     await user.click(settings);
 
     expect(screen.queryByText("Dictionary Options")).not.toBeNull();
-    const lsCheck = screen.getAllByRole("checkbox");
-    await user.click(lsCheck[0]);
+    const lsCheck = screen.getByText("Lewis and Short");
+    await user.click(lsCheck);
     expect(mockSetDicts).toHaveBeenCalledWith([LatinDict.SmithAndHall]);
   });
 
