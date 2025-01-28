@@ -40,6 +40,13 @@ window.HTMLElement.prototype.scroll = jest.fn();
 window.HTMLElement.prototype.scrollTo = jest.fn();
 window.scrollTo = jest.fn();
 
+beforeAll(() => {
+  // js-dom doesn't yet support `dialog`.
+  HTMLDialogElement.prototype.show = jest.fn();
+  HTMLDialogElement.prototype.showModal = jest.fn();
+  HTMLDialogElement.prototype.close = jest.fn();
+});
+
 const WORK_PAGE = ClientPaths.WORK_PAGE;
 const WORK_BY_NAME = ClientPaths.WORK_BY_NAME;
 const DBG_INFO: DocumentInfo = {

@@ -38,11 +38,10 @@ test.describe("general navigation", () => {
   test("has working tab navigation", async ({ page, isMobile, viewport }) => {
     await page.goto("/");
     if (isMobile || checkPresent(viewport?.width) < 400) {
-      skipIfWebkit("The drawer animation doesn't seem to work on Webkit.");
       // Click into the hamburger menu
       await click(page.getByLabel("site pages"));
     }
-    await click(page.getByText("About").nth(0));
+    await click(page.locator('button:text("About")').nth(0));
 
     await expect(page.getByText("GPL-3.0")).toBeVisible();
     await expect(page.getByText("CC BY-SA 4.0")).toBeVisible();

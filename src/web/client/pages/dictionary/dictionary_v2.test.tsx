@@ -28,6 +28,13 @@ jest.mock("@/web/client/utils/media_query", () => {
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
+beforeAll(() => {
+  // js-dom doesn't yet support `dialog`.
+  HTMLDialogElement.prototype.show = jest.fn();
+  HTMLDialogElement.prototype.showModal = jest.fn();
+  HTMLDialogElement.prototype.close = jest.fn();
+});
+
 window.HTMLElement.prototype.scrollIntoView = jest.fn();
 console.debug = jest.fn();
 
