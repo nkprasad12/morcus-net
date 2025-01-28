@@ -882,7 +882,7 @@ function displayForLibraryChunk(
   if (root.getAttr("l") !== undefined) {
     className = "l";
   }
-  if (["s", "b"].includes(root.name)) {
+  if (["s", "b", "ul", "li"].includes(root.name)) {
     return React.createElement(root.name, { key, style }, children);
   }
   switch (root.name) {

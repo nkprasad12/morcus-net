@@ -41,6 +41,7 @@ const HANDLED_REND = new Set<string>(["indent", "italic", "blockquote"]);
 // This is very hard to handle and only occurs once, so we just ignore it.
 const KNOWN_REND = new Set([undefined, "merge"].concat(...HANDLED_REND));
 
+const TABLE_ITEM_CHILDREN = new Set<string>(["date"]);
 // For `note` nodes. These should be separate since they're
 // rendered in a tooltip.
 const NOTE_NODES = new Set([
@@ -507,7 +508,6 @@ function convertToRows(
 }
 
 function transformNoteNode(node: XmlNode): XmlNode {
-  // TODO: REMOVE node.toSting()!!!
   assert(NOTE_NODES.has(node.name));
   if (node.name === "gap") {
     return new XmlNode("span", [], [" [gap] "]);
@@ -637,17 +637,83 @@ function transformContentNode(
   throw new Error(`Unknown node: ${node.name}`);
 }
 
+function processListItem(root: XmlNode): XmlNode<ProcessedWorkContentNodeType> {
+  const children: XmlChild<ProcessedWorkContentNodeType>[] = [];
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      children.push(child);
+      continue;
+    }
+    // These should all be something that requires no more processing than a simple span.
+    assert(TABLE_ITEM_CHILDREN.has(child.name), child.name);
+    children.push(processListItem(child));
+  }
+  return new XmlNode("span", [], children);
+}
+
+function processListNode(root: XmlNode): XmlNode<ProcessedWorkContentNodeType> {
+  assertEqual(root.name, "list");
+  assertEqual(root.getAttr("type"), "simple");
+  const rows: [
+    XmlNode<"b"> | undefined,
+    XmlNode<ProcessedWorkContentNodeType> | undefined
+  ][] = [];
+  let lastLabel: XmlNode<"b"> | undefined = undefined;
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      assert(child.trim() === "");
+      continue;
+    }
+    if (child.name === "headLabel") {
+      assert(rows.length === 0);
+      assertEqual(lastLabel, undefined);
+      rows.push([
+        new XmlNode("b", [], [XmlNode.getSoleText(child)]),
+        undefined,
+      ]);
+      continue;
+    }
+    if (child.name === "label") {
+      assertEqual(lastLabel, undefined);
+      lastLabel = new XmlNode("b", [], [XmlNode.getSoleText(child)]);
+      continue;
+    }
+    if (child.name === "item") {
+      const item = processListItem(child);
+      rows.push([lastLabel, item]);
+      lastLabel = undefined;
+      continue;
+    }
+    throw new Error(`Unknown table node: ${child.name}`);
+  }
+  return new XmlNode(
+    "ul",
+    [],
+    rows.map(
+      ([label, item]) =>
+        new XmlNode(
+          "li",
+          [],
+          [label, item].filter((n) => n !== undefined)
+        )
+    )
+  );
+}
+
 function processRowContent(
   root: XmlNode,
   parent?: XmlNode
 ): XmlNode<ProcessedWorkContentNodeType> {
-  const children: XmlChild<ProcessedWorkContentNodeType>[] = [];
-  for (const child of root.children) {
-    children.push(
-      typeof child === "string" ? child : processRowContent(child, root)
-    );
+  if (root.name === "list") {
+    return processListNode(root);
   }
-  return transformContentNode(root, children, parent);
+  return transformContentNode(
+    root,
+    root.children.map((child) =>
+      typeof child === "string" ? child : processRowContent(child, root)
+    ),
+    parent
+  );
 }
 
 /** Exported for unit testing. */
