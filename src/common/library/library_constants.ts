@@ -32,8 +32,6 @@ export const LOCAL_REPO_WORKS = [
   toPerseusPath(LatinWorks.PHAEDRUS_FABULAE),
 ];
 
-console.log(EnglishTranslations);
-
 export const ALL_SUPPORTED_WORKS = [
   ...Object.values(LatinWorks).map(toPerseusPath),
   ...Object.values(EnglishTranslations).map(toPerseusPath),

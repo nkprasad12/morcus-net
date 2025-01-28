@@ -12,6 +12,7 @@ import {
 } from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
+import { instanceOf } from "@/web/utils/rpc/parsing";
 
 console.debug = jest.fn();
 
@@ -277,72 +278,152 @@ describe("processTei2", () => {
     );
     expect(noteRoot.children[2]).toBe(" more text");
   });
-});
 
-it("raises on note with unknown rend", () => {
-  expect(() =>
-    processTei2(
-      testRootWithNote(`<note>text <hi rend="magic">more text</hi></note>`),
+  it("processes list with headLabel", () => {
+    const xml = `<div n="1" type="textpart" subtype="book">
+                   <list type="simple">
+                     <headLabel>Chapter 1</headLabel>
+                     <item>Item 1</item>
+                     <item>Item 2</item>
+                   </list>
+                 </div>`;
+    const result = processTei2(testRoot(xml), { workId: WORK_ID });
+
+    expect(result.rows).toHaveLength(1);
+    const root = XmlNode.assertIsNode(checkPresent(result.rows?.[0][1]));
+    const listRoot = checkPresent(root.children.find(instanceOf(XmlNode)));
+
+    expect(listRoot.name).toBe("ul");
+    const listChildren = listRoot.children.filter(instanceOf(XmlNode));
+    expect(listChildren).toHaveLength(3);
+    expect(listChildren[0].name).toBe("li");
+    expect(listChildren[0].toString()).toContain("Chapter 1");
+    expect(listChildren[1].name).toBe("li");
+    expect(listChildren[1].toString()).toContain("Item 1");
+    expect(listChildren[2].name).toBe("li");
+    expect(listChildren[2].toString()).toContain("Item 2");
+  });
+
+  it("processes list nodes with label", () => {
+    const xml = `<div n="1" type="textpart" subtype="book">
+                   <list type="simple">
+                     <label>First</label><item>Item 1</item>
+                     <item>Item 2</item>
+                   </list>
+                 </div>`;
+    const result = processTei2(testRoot(xml), { workId: WORK_ID });
+
+    expect(result.rows).toHaveLength(1);
+    const root = XmlNode.assertIsNode(checkPresent(result.rows?.[0][1]));
+    const listRoot = checkPresent(root.children.find(instanceOf(XmlNode)));
+
+    expect(listRoot.name).toBe("ul");
+    const listChildren = listRoot.children.filter(instanceOf(XmlNode));
+    expect(listChildren).toHaveLength(2);
+    expect(listChildren[0].name).toBe("li");
+    expect(listChildren[0].toString()).toContain("First");
+    expect(listChildren[0].toString()).toContain("Item 1");
+    expect(listChildren[1].name).toBe("li");
+    expect(listChildren[1].toString()).toContain("Item 2");
+  });
+
+  it("raises error on unknown nodes", () => {
+    const xml = `<div n="1" type="textpart" subtype="book">
+                   <list type="simple">
+                     <item>Item 1 <mystery>text</mystery></item>
+                     <item>Item 2</item>
+                   </list>
+                 </div>`;
+    expect(() => processTei2(testRoot(xml), { workId: WORK_ID })).toThrow();
+  });
+
+  it("processes item nodes with no labels", () => {
+    const xml = `<div n="1" type="textpart" subtype="book">
+                     <list type="simple">
+                       <item>Item 1</item>
+                       <item>Item 2</item>
+                     </list>
+                   </div>`;
+    const result = processTei2(testRoot(xml), { workId: WORK_ID });
+
+    expect(result.rows).toHaveLength(1);
+    const root = XmlNode.assertIsNode(checkPresent(result.rows?.[0][1]));
+    const listRoot = checkPresent(root.children.find(instanceOf(XmlNode)));
+
+    expect(listRoot.name).toBe("ul");
+    const listChildren = listRoot.children.filter(instanceOf(XmlNode));
+    expect(listChildren).toHaveLength(2);
+    expect(listChildren[0].name).toBe("li");
+    expect(listChildren[0].toString()).toContain("Item 1");
+    expect(listChildren[1].name).toBe("li");
+    expect(listChildren[1].toString()).toContain("Item 2");
+  });
+
+  it("raises on note with unknown rend", () => {
+    expect(() =>
+      processTei2(
+        testRootWithNote(`<note>text <hi rend="magic">more text</hi></note>`),
+        {
+          workId: WORK_ID,
+        }
+      )
+    ).toThrow();
+  });
+
+  it("handles note with known rend", () => {
+    const work = processTei2(
+      testRootWithNote(`<note>text <hi rend="italic">more text</hi></note>`),
       {
         workId: WORK_ID,
       }
-    )
-  ).toThrow();
-});
+    );
 
-it("handles note with known rend", () => {
-  const work = processTei2(
-    testRootWithNote(`<note>text <hi rend="italic">more text</hi></note>`),
-    {
-      workId: WORK_ID,
-    }
-  );
+    expect(work.notes).toHaveLength(1);
+    const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
+    expect(noteRoot.children).toHaveLength(2);
+    expect(noteRoot.children[0]).toBe("text ");
+    const hiNode = XmlNode.assertIsNode(noteRoot.children[1]);
+    expect(hiNode.getAttr("rend")).toBe("italic");
+    expect(hiNode.children).toEqual(["more text"]);
+  });
 
-  expect(work.notes).toHaveLength(1);
-  const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
-  expect(noteRoot.children).toHaveLength(2);
-  expect(noteRoot.children[0]).toBe("text ");
-  const hiNode = XmlNode.assertIsNode(noteRoot.children[1]);
-  expect(hiNode.getAttr("rend")).toBe("italic");
-  expect(hiNode.children).toEqual(["more text"]);
-});
+  it("handles note markup for q", () => {
+    const work = processTei2(
+      testRootWithNote("<note>text <q>more text</q></note>"),
+      {
+        workId: WORK_ID,
+      }
+    );
 
-it("handles note markup for q", () => {
-  const work = processTei2(
-    testRootWithNote("<note>text <q>more text</q></note>"),
-    {
-      workId: WORK_ID,
-    }
-  );
+    expect(work.notes).toHaveLength(1);
+    const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
+    expect(noteRoot.children).toHaveLength(2);
+    expect(noteRoot.children[0]).toBe("text ");
+    expect(XmlNode.assertIsNode(noteRoot.children[1]).children).toEqual([
+      "“",
+      "more text",
+      "”",
+    ]);
+  });
 
-  expect(work.notes).toHaveLength(1);
-  const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
-  expect(noteRoot.children).toHaveLength(2);
-  expect(noteRoot.children[0]).toBe("text ");
-  expect(XmlNode.assertIsNode(noteRoot.children[1]).children).toEqual([
-    "“",
-    "more text",
-    "”",
-  ]);
-});
+  it("handles note markup for add", () => {
+    const work = processTei2(
+      testRootWithNote("<note>text <add>more text</add></note>"),
+      {
+        workId: WORK_ID,
+      }
+    );
 
-it("handles note markup for add", () => {
-  const work = processTei2(
-    testRootWithNote("<note>text <add>more text</add></note>"),
-    {
-      workId: WORK_ID,
-    }
-  );
-
-  expect(work.notes).toHaveLength(1);
-  const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
-  expect(noteRoot.children).toHaveLength(2);
-  expect(noteRoot.children[0]).toBe("text ");
-  expect(XmlNode.assertIsNode(noteRoot.children[1]).children).toEqual([
-    "<",
-    "more text",
-    ">",
-  ]);
+    expect(work.notes).toHaveLength(1);
+    const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
+    expect(noteRoot.children).toHaveLength(2);
+    expect(noteRoot.children[0]).toBe("text ");
+    expect(XmlNode.assertIsNode(noteRoot.children[1]).children).toEqual([
+      "<",
+      "more text",
+      ">",
+    ]);
+  });
 });
 
 describe("patchText", () => {
