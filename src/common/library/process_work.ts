@@ -827,7 +827,7 @@ function buildNavTree(pages: WorkPage[]): NavTreeNode {
 /** Returns the processed content of a TEI XML file. */
 export function processTei2(
   xmlRoot: XmlNode,
-  metadata: { workId: string },
+  metadata: { workId: string; translationId?: string },
   options?: ProcessTeiOptions
 ): ProcessedWork2 {
   const textParts = getTextparts(xmlRoot, metadata.workId);
@@ -843,6 +843,10 @@ export function processTei2(
   const { rows, notes } = processWorkBody(body[0], textParts, processOptions);
   const pages = divideWork(rows, textParts);
   const navTree = buildNavTree(pages);
-  const info = { ...extractInfo(xmlRoot), workId: metadata.workId };
+  const info = {
+    ...extractInfo(xmlRoot),
+    workId: metadata.workId,
+    translationId: metadata.translationId,
+  };
   return { info, textParts, rows, pages, navTree, notes };
 }

@@ -18,6 +18,7 @@ export interface DocumentInfo {
   sponsor?: string;
   funder?: string;
   workId: string;
+  translationId?: string;
 }
 
 export namespace DocumentInfo {
@@ -28,6 +29,7 @@ export namespace DocumentInfo {
     sponsor: maybeUndefined(isString),
     funder: maybeUndefined(isString),
     workId: isString,
+    translationId: maybeUndefined(isString),
   });
 }
 
