@@ -399,11 +399,9 @@ describe("processTei2", () => {
     const noteRoot = XmlNode.assertIsNode(checkPresent(work.notes?.[0]));
     expect(noteRoot.children).toHaveLength(2);
     expect(noteRoot.children[0]).toBe("text ");
-    expect(XmlNode.assertIsNode(noteRoot.children[1]).children).toEqual([
-      "“",
-      "more text",
-      "”",
-    ]);
+    const moreText = XmlNode.assertIsNode(noteRoot.children[1]);
+    expect(moreText.getAttr("rend")).toBe("italic");
+    expect(moreText.children).toEqual(["more text"]);
   });
 
   it("handles note markup for add", () => {

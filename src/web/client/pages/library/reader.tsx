@@ -794,6 +794,9 @@ function LatLink(props: { word: string }) {
 
 function renderTooltip(root: XmlNode): JSX.Element {
   const style: React.CSSProperties = {};
+  if (root.name === "br") {
+    return <br />;
+  }
   const rend = root.getAttr("rend");
   if (rend === "italic") {
     style.fontStyle = "italic";
@@ -803,6 +806,9 @@ function renderTooltip(root: XmlNode): JSX.Element {
   }
   if (rend === "sup") {
     style.verticalAlign = "super";
+  }
+  if (root.getAttr("block") === "1") {
+    style.display = "block";
   }
   return (
     <span style={style}>
