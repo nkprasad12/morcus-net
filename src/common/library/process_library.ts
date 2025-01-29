@@ -74,7 +74,8 @@ function urlifyName(input: string): string {
 function processTeiCts2(
   root: XmlNode,
   workId: string,
-  patches?: LibraryPatch[]
+  patches?: LibraryPatch[],
+  translationId?: string
 ): ProcessedWork2 {
   const words = new Set<string>();
   const onWord = (word: string) => {
@@ -91,7 +92,7 @@ function processTeiCts2(
   const debugHelper = debugRoot === undefined ? undefined : { onWord };
   const result = processTei2(
     root,
-    { workId },
+    { workId, translationId },
     { patches, sideChannel: debugHelper }
   );
   const debugName = result.info.title.replaceAll(" ", "_");
@@ -114,7 +115,13 @@ export function processLibrary(
     const rawXml = parseRawXml(fs.readFileSync(workPath), {
       keepWhitespace: true,
     });
-    const result = processTeiCts2(rawXml, workId, patches.get(workId));
+    const translationId = EnglishTranslations[workId];
+    const result = processTeiCts2(
+      rawXml,
+      workId,
+      patches.get(workId),
+      translationId
+    );
     const rawTitle = result.info.title;
     const title = NAME_TO_DISPLAY_NAME.get(rawTitle) ?? rawTitle;
 
@@ -124,7 +131,7 @@ export function processLibrary(
       name: title,
       urlAuthor: urlifyAuthor(result.info.author),
       urlName: urlifyName(result.info.title),
-      translationId: EnglishTranslations[workId],
+      translationId,
       isTranslation: Object.values(EnglishTranslations).some(
         (translation) => translation === workId
       ),
