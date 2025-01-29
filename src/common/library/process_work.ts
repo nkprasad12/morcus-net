@@ -58,7 +58,8 @@ const NOTE_NODES = new Set([
   "bibl",
   "cit",
   "pb",
-  // TODO: Check how Scaife renders this.
+  "lb",
+  "l",
   "add",
 ]);
 const HANDLED_NOTE_REND = new Set<string | undefined>([
@@ -509,23 +510,30 @@ function convertToRows(
 
 function transformNoteNode(node: XmlNode): XmlNode {
   assert(NOTE_NODES.has(node.name));
+  if (node.name === "lb") {
+    return new XmlNode("br", [], []);
+  }
   if (node.name === "gap") {
     return new XmlNode("span", [], [" [gap] "]);
   }
   const attrs: XmlNode["attrs"] = [];
+  if (["l"].includes(node.name)) {
+    attrs.push(["block", "1"]);
+  }
   const rend = node.getAttr("rend");
   assert(KNOWN_NOTE_REND.has(rend), rend);
   if (HANDLED_NOTE_REND.has(rend)) {
     attrs.push(["rend", checkPresent(rend)]);
   }
+  if (QUOTE_NODES.has(node.name)) {
+    attrs.push(["rend", "italic"]);
+  }
   const baseChildren = node.children.map((c) =>
     typeof c === "string" ? c : transformNoteNode(c)
   );
-  const children = QUOTE_NODES.has(node.name)
-    ? ["“", ...baseChildren, "”"]
-    : node.name === "add"
-    ? ["<", ...baseChildren, ">"]
-    : baseChildren;
+
+  const children =
+    node.name === "add" ? ["<", ...baseChildren, ">"] : baseChildren;
   return new XmlNode("span", attrs, children);
 }
 
@@ -629,6 +637,11 @@ function transformContentNode(
     // eslint-disable-next-line no-fallthrough
     case "div":
     case "p":
+    // TODO: Eventually we should probably link with these, but for now
+    // we don't really need to do anything.
+    // eslint-disable-next-line no-fallthrough
+    case "bibl":
+    case "cit":
     case "corr":
       return new XmlNode("span", attrs, children);
     case "del":
