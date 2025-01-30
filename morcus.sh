@@ -11,7 +11,7 @@ has_param() {
     return 1
 }
 
-COMMAND="npm run ts-node --transpile_only"
+COMMAND="node --max-old-space-size=4096 --env-file=.env node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only"
 BUN_FLAG="0"
 ARGS="$@"
 
@@ -28,4 +28,4 @@ elif command -v bun 2>&1 >/dev/null; then
   ARGS="$@ --bun"
 fi
 
-export BUN=$BUN_FLAG && $COMMAND src/scripts/run_morcus.ts -- $ARGS
+export BUN=$BUN_FLAG NODE_ENV=production && $COMMAND src/scripts/run_morcus.ts $ARGS

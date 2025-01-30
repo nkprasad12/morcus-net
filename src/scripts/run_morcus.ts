@@ -5,6 +5,7 @@ import { envVar } from "@/common/env_vars";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
   StepConfig,
+  TS_NODE,
   runCommand,
   runPipeline,
   shellStep,
@@ -236,7 +237,7 @@ function startWorker(args: any, workerType: string): Promise<void> {
     childEnv.KEEP_WORKERS_ON_DISCONNECT = "true";
   }
 
-  const child = spawnChild(["npm", "run", "ts-node", workerFile], childEnv);
+  const child = spawnChild([...TS_NODE, workerFile], childEnv);
 
   cleanupOperations.push(() => {
     console.log(`[run script] Cleaning up ${workerType}`);
@@ -260,7 +261,7 @@ async function awaitAll(workers: Promise<void>[]) {
 
 function spawnChild(command: string[], env?: NodeJS.ProcessEnv): ChildProcess {
   const child = spawn(command[0], command.slice(1), {
-    env: env,
+    env: { NODE_ENV: "production", ...env },
     stdio: "inherit",
   });
   return child;
@@ -274,7 +275,7 @@ function buildBundle(args: any): Promise<boolean> {
 }
 
 function bundleConfig(args: any, priority?: number): StepConfig {
-  const executor = args.bun ? ["bun"] : ["npm", "run", "ts-node"];
+  const executor = args.bun ? ["bun"] : TS_NODE;
   const buildCommand = executor.concat(["src/esbuild/morcus-net.esbuild.ts"]);
   const childEnv = { ...process.env };
   childEnv.NODE_ENV = "production";
@@ -304,7 +305,7 @@ function artifactConfig(args: any): StepConfig[] {
   const setupSteps: StepConfig[] = [];
   const childEnv = { ...process.env };
   childEnv.NODE_ENV = "production";
-  let baseCommand = ["npm", "run", "tsnp"];
+  let baseCommand = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
     childEnv.BUN = "1";
@@ -386,7 +387,7 @@ function startWebServer(args: any) {
   if (args.real_database === false) {
     serverEnv.CONSOLE_TELEMETRY = "yes";
   }
-  let baseCommand: string[] = ["npm", "run", "ts-node"];
+  let baseCommand: string[] = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
     serverEnv.BUN = "1";
@@ -394,7 +395,7 @@ function startWebServer(args: any) {
       baseCommand.push("--watch");
     }
   } else if (args.transpile_only === true) {
-    baseCommand.push("--", "--transpile-only");
+    baseCommand.push("--transpile-only");
   }
   serverEnv.MAIN = "start";
   baseCommand.push("src/start_server.ts");
@@ -406,10 +407,10 @@ async function startLsEditor() {
   const steps: StepConfig[] = [
     {
       operation: () =>
-        shellStep(`npm run tsnp ${editorRoot}/editor.esbuild.ts`),
+        shellStep(`${TS_NODE.join(" ")} ${editorRoot}/editor.esbuild.ts`),
       label: "Building bundle",
     },
   ];
   assert(await runPipeline(steps));
-  runCommand(`npm run ts-node ${editorRoot}/ls_interactive.ts`);
+  runCommand(`${TS_NODE.join(" ")} ${editorRoot}/ls_interactive.ts`);
 }
