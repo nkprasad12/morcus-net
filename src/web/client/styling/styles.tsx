@@ -160,6 +160,12 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     "button:is(:hover, :focus-visible):not(:disabled)": {
       backgroundColor: "rgba(0, 0, 0, 0.075)",
     },
+    "button.outline": {
+      borderRadius: "4px",
+      backgroundColor: `${theme.bgAlt}20`,
+      padding: "4px 8px",
+      border: `2px solid ${theme.bgAlt}`,
+    },
     ".button": {
       borderRadius: 4,
       cursor: "pointer",

@@ -46,7 +46,7 @@ interface SidebarConfig<CustomTabs> {
   showMobileNavSettings?: boolean;
 }
 /** Configuration for extra tabs to add to the sidebar or drawer. */
-export interface BaseExtraSidebarTabProps<CustomSidebarTab> {
+export interface BaseExtraSidebarTabProps<CustomSidebarTab> extends Responsive {
   tab: CustomSidebarTab;
 }
 /** Properties for the main column. */
@@ -182,7 +182,11 @@ export function BaseReader<
       ) : props.ExtraSidebarContent === undefined ? (
         <></>
       ) : (
-        <props.ExtraSidebarContent {...props} tab={sidebarTab} />
+        <props.ExtraSidebarContent
+          {...props}
+          tab={sidebarTab}
+          isMobile={isScreenSmall}
+        />
       )}
     </BaseLayout>
   );
