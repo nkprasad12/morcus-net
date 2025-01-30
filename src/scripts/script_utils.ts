@@ -6,6 +6,19 @@ import { assert, assertEqual } from "@/common/assert";
 import { rm } from "fs/promises";
 import { arrayMap } from "@/common/data_structures/collect_map";
 
+export const TS_NODE: ReadonlyArray<string> = [
+  "node",
+  "--max-old-space-size=4096",
+  "--env-file=.env",
+  "--",
+  "node_modules/.bin/ts-node",
+  "-P",
+  "tsconfig.json",
+  "-r",
+  "tsconfig-paths/register",
+  "--transpile-only",
+];
+
 export interface DownloadConfig {
   url: string;
   path: string;
@@ -28,7 +41,7 @@ export function runCommand(
     const result = spawn(command, {
       shell: true,
       stdio: "inherit",
-      env: env,
+      env: { NODE_ENV: "production", ...env },
       cwd: cwd,
     });
     result.on("error", (err) => reject(err));
