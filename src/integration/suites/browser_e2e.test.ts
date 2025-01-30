@@ -246,7 +246,7 @@ test.describe("main reader", () => {
 
   test("has working scroll to line from UI from URL", async ({ page }) => {
     skipIfWebkit("viewport assertions don't yet work on Webkit.");
-    await page.goto("/work/juvenal/saturae?id=1.2&l=160");
+    await page.goto("/work/juvenal/saturae?id=1.2.161");
     await expect(page.getByText("Britannos")).toBeInViewport();
   });
 
@@ -256,8 +256,7 @@ test.describe("main reader", () => {
     await expect(page.getByText("Britannos")).toBeVisible();
     await expect(page.getByText("Britannos")).not.toBeInViewport();
 
-    await click(page.locator(`[aria-label="Outline"]`));
-    await click(page.locator(`[aria-label="jump to section"]`));
+    await click(page.locator(`[aria-label="jump to id"]`));
     await page.keyboard.type("161");
     await page.keyboard.press("Enter");
 

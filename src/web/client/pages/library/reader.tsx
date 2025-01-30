@@ -746,7 +746,7 @@ function WorkNavigationSection(props: { work: PaginatedWork }) {
         <span>Jump to ID</span>
         {"  "}
         <StringInput
-          label="jump to section"
+          label="jump to id"
           onEnter={(inputId) =>
             nav.to((old) => ({
               ...old,
