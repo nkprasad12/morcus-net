@@ -16,22 +16,6 @@ import {
 import { Router } from "@/web/client/router/router_v2";
 import { useState } from "react";
 
-function matchPageId(id: string[], work: PaginatedWork): string[] | undefined {
-  for (let i = 0; i < work.pages.length; i++) {
-    const page = work.pages[i];
-    let isMatch = true;
-    for (let j = 0; j < page.id.length; j++) {
-      if (id[j] != page.id[j]) {
-        isMatch = false;
-        break;
-      }
-    }
-    if (isMatch) {
-      return work.pages[i].id;
-    }
-  }
-}
-
 function indexWork(work: PaginatedWork) {
   const index = setMap<string, string[]>();
   for (const [id, node] of work.rows) {
@@ -200,19 +184,9 @@ export function TextSearchSection(props: { work: PaginatedWork }) {
         <SpanButton
           style={{ display: "block" }}
           key={i}
-          onClick={() => {
-            const newSection = matchPageId(result.sectionId, props.work);
-            if (newSection === undefined) {
-              return;
-            }
-            const line = parseInt(result.sectionId.slice(-1)[0]) - 1;
-            navigateToSection(
-              newSection.join("."),
-              nav,
-              props.work,
-              line.toString()
-            );
-          }}>
+          onClick={() =>
+            navigateToSection(result.sectionId.join("."), nav, props.work)
+          }>
           <span className="text light">[{result.sectionId.join(".")}] </span>
           {result.leftContext}
           <b>

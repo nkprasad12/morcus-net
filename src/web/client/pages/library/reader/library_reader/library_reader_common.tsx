@@ -9,15 +9,11 @@ export function navigateToSection(
   sectionId: string,
   nav: NavHelper<RouteInfo>,
   work: PaginatedWork,
-  line?: string,
   replace?: boolean
 ) {
   nav.to((old) => ({
     path: old.path,
-    params: {
-      id: sectionId,
-      ...(line === undefined ? {} : { l: line }),
-    },
+    params: { id: sectionId },
     replace,
   }));
   const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
