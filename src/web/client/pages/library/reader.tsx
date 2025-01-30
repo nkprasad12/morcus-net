@@ -11,7 +11,11 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 
 import { useEffect, useState } from "react";
 import * as React from "react";
-import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
+import {
+  areArraysEqual,
+  exhaustiveGuard,
+  safeParseInt,
+} from "@/common/misc_utils";
 import { ClickableTooltip, CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
@@ -135,10 +139,19 @@ export function ReadingPage() {
 
   const findMatchPage = React.useCallback(
     (loadedWork: WorkState) => {
-      if (typeof loadedWork === "string" || loadedWork.pages.length === 0) {
+      if (
+        typeof loadedWork === "string" ||
+        loadedWork.pages.length === 0 ||
+        urlId === undefined
+      ) {
         return undefined;
       }
-      return loadedWork.pages.findIndex((page) => page.id.join(".") === urlId);
+      const id = urlId.trim();
+      const idParts = id.length === 0 ? [] : id.split(".");
+      const idSubset = idParts.slice(0, loadedWork.pages[0].id.length);
+      return loadedWork.pages.findIndex((page) =>
+        areArraysEqual(page.id, idSubset)
+      );
     },
     [urlId]
   );

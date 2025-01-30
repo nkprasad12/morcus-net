@@ -642,6 +642,26 @@ describe("Reading UI", () => {
     });
   });
 
+  it("resolves subsection ids of pages", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const originalRoute: RouteInfo = {
+      path: urlByIdFor("dbg"),
+      params: { id: "1.1" },
+    };
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: originalRoute,
+          navigateTo: mockNav,
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/omnis/);
+  });
+
   it("shows nav on invalid page", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
