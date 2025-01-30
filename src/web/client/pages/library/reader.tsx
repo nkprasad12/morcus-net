@@ -84,16 +84,15 @@ function updatePage(
   newPage: number,
   nav: NavHelper<RouteInfo>,
   work: PaginatedWork,
-  line?: string,
   replace?: boolean
 ) {
   const sectionId = work.pages[newPage - 1].id.join(".");
-  navigateToSection(sectionId, nav, work, line, replace);
+  navigateToSection(sectionId, nav, work, replace);
 }
 
 interface ReaderState {
   hasTooltip: React.MutableRefObject<Set<number>>;
-  queryLine?: number;
+  urlId?: string;
   highlightRef?: React.RefObject<HTMLSpanElement>;
 }
 
@@ -123,9 +122,6 @@ export function ReadingPage() {
   const highlightRef = React.useRef<HTMLSpanElement>(null);
 
   const { nav, route } = Router.useRouter();
-  const urlId = route.params?.id;
-  const urlLine = route.params?.l;
-  const queryLine = safeParseInt(urlLine);
 
   const loadTranslation = React.useCallback((translationId: string) => {
     setTranslation("Loading");
@@ -137,6 +133,7 @@ export function ReadingPage() {
       });
   }, []);
 
+  const urlId = route.params?.id;
   const findMatchPage = React.useCallback(
     (loadedWork: WorkState) => {
       if (
@@ -171,9 +168,9 @@ export function ReadingPage() {
     if (typeof work === "string" || urlId !== undefined) {
       return;
     }
-    updatePage(1, nav, work, undefined, true);
+    updatePage(1, nav, work, true);
     // For reasons I don't understand, when we do the redirect the browser seems to
-    // put us at the bottom - to avoid this, premptively scroll to the top first.
+    // put us at the bottom - to avoid this, pre-emptively scroll to the top first.
     window.scrollTo({ top: 0, behavior: "instant" });
   }, [work, urlId, nav]);
 
@@ -195,21 +192,21 @@ export function ReadingPage() {
   // Scroll to the required line, if specified.
   useEffect(() => {
     // Continue if we have a loaded work and there's line specified.
-    if (queryLine === undefined || typeof work === "string") {
+    if (urlId === undefined || typeof work === "string") {
       return;
     }
     highlightRef.current?.scrollIntoView({
       behavior: "smooth",
       block: "center",
     });
-  }, [queryLine, work]);
+  }, [urlId, work]);
 
   useEffect(() => {
     hasTooltip.current = new Set();
   }, [currentPage]);
 
   return (
-    <ReaderContext.Provider value={{ hasTooltip, queryLine, highlightRef }}>
+    <ReaderContext.Provider value={{ hasTooltip, urlId, highlightRef }}>
       <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
         MainColumn={WorkColumn}
         ExtraSidebarContent={Sidebar}
@@ -578,7 +575,7 @@ export function WorkTextPage(props: {
   const { isMobile, work, setDictWord } = props;
 
   const { readerMainScale } = React.useContext(StyleContext);
-  const { queryLine, highlightRef } = React.useContext(ReaderContext);
+  const { urlId, highlightRef } = React.useContext(ReaderContext);
   const workColumnContext: WorkColumnContextType = React.useMemo(
     () => ({ setDictWord, work }),
     [setDictWord, work]
@@ -614,7 +611,7 @@ export function WorkTextPage(props: {
     const shortLabel = idLabelParts
       .slice(isMobile && id.length > 2 ? 2 : 0)
       .join(".");
-    const shouldHighlight = queryLine === i;
+    const shouldHighlight = urlId === idLabel;
     const workName = capitalizeWords(props.work.info.title);
     const hideHeaderByDefault =
       hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0);
@@ -627,6 +624,7 @@ export function WorkTextPage(props: {
           <WorkChunkHeader
             text={shortLabel}
             chunkArrayIndex={i}
+            idLabel={idLabel}
             blurb={`${workName} ${idLabel}`}
             latent={!showHeader}
             highlighted={shouldHighlight}
@@ -719,20 +717,20 @@ function WorkNavigation(props: { work: PaginatedWork; node?: NavTreeNode }) {
   );
 }
 
-function NumberInput(props: {
-  onEnter: (input: number) => unknown;
+function StringInput(props: {
+  onEnter: (input: string) => unknown;
   label: string;
 }) {
-  const [value, setValue] = useState<number | undefined>(undefined);
+  const [value, setValue] = useState<string>("");
   return (
     <input
       style={{ maxWidth: "48px", borderRadius: "4px" }}
       className="bgColor text"
       aria-label={props.label}
-      value={value ?? ""}
-      onChange={(e) => setValue(safeParseInt(e.target.value))}
+      value={value}
+      onChange={(e) => setValue(e.target.value ?? "")}
       onKeyUp={(e) => {
-        if (e.key === "Enter" && value !== undefined) {
+        if (e.key === "Enter" && value.length > 0) {
           props.onEnter(value);
         }
       }}
@@ -742,23 +740,19 @@ function NumberInput(props: {
 
 function WorkNavigationSection(props: { work: PaginatedWork }) {
   const { nav } = Router.useRouter();
-  const sectionName = props.work.textParts.slice(-2)[0].toLowerCase();
   return (
     <div style={{ marginTop: "2px" }}>
       <div className="text sm light">
-        <span>
-          Jump to {props.work.textParts.slice(-1)[0].toLowerCase()} in current{" "}
-          {sectionName}
-        </span>
+        <span>Jump to ID</span>
         {"  "}
-        <NumberInput
+        <StringInput
           label="jump to section"
-          onEnter={(l) =>
+          onEnter={(inputId) =>
             nav.to((old) => ({
               ...old,
               params: {
-                id: old.params?.id,
-                l: `${l - 1}`,
+                ...old.params,
+                id: inputId,
               },
             }))
           }
@@ -831,6 +825,7 @@ function workSectionHeader(
 function WorkChunkHeader(props: {
   text: string;
   blurb: string;
+  idLabel: string;
   chunkArrayIndex: number;
   latent?: boolean;
   highlighted?: boolean;
@@ -841,7 +836,7 @@ function WorkChunkHeader(props: {
   const url = RouteInfo.toLink(
     {
       path: route.path,
-      params: { ...route.params, l: props.chunkArrayIndex.toString() },
+      params: { ...route.params, id: props.idLabel },
     },
     true
   );
