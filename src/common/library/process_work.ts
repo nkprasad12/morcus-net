@@ -645,7 +645,7 @@ function transformContentNode(
     case "corr":
       return new XmlNode("span", attrs, children);
     case "del":
-      return new XmlNode("s", attrs, children);
+      return new XmlNode("span", attrs, ["[", ...children, "]"]);
   }
   throw new Error(`Unknown node: ${node.name}`);
 }
