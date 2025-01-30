@@ -145,7 +145,7 @@ const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
   rows: [
     [
       ["1", "1"],
-      new XmlNode("span", [], ["omnis ", new XmlNode("s", [], ["deleted"])]),
+      new XmlNode("span", [], ["omnis ", new XmlNode("span", [], ["deleted"])]),
     ],
     [
       ["2", "1"],
@@ -614,7 +614,7 @@ describe("Reading UI", () => {
     await screen.findByText(/Drawer/);
   });
 
-  it("redirects on no id page", async () => {
+  it("redirects to initial page on no id", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
     const originalRoute: RouteInfo = {
@@ -631,9 +631,9 @@ describe("Reading UI", () => {
         <ReadingPage />
       </RouteContext.Provider>
     );
-    await screen.findByText(/error/);
 
-    expect(mockNav).toHaveBeenCalledTimes(1);
+    await screen.findByText(/DBG/);
+    expect(mockNav).toHaveBeenCalled();
     const newRoute = mockNav.mock.calls[0][0](originalRoute);
     expect(newRoute).toStrictEqual({
       path: urlByIdFor("dbg"),
@@ -642,7 +642,7 @@ describe("Reading UI", () => {
     });
   });
 
-  it("redirects on invalid page", async () => {
+  it("shows nav on invalid page", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
     const mockNav = jest.fn();
     const originalRoute: RouteInfo = {
@@ -659,15 +659,7 @@ describe("Reading UI", () => {
         <ReadingPage />
       </RouteContext.Provider>
     );
-    await screen.findByText(/error/);
-
-    expect(mockNav).toHaveBeenCalled();
-    const newRoute = mockNav.mock.calls[0][0](originalRoute);
-    expect(newRoute).toStrictEqual({
-      path: urlByIdFor("dbg"),
-      params: { id: "1" },
-      replace: true,
-    });
+    await screen.findByText(/Invalid section/);
   });
 });
 

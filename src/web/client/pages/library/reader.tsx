@@ -143,15 +143,26 @@ export function ReadingPage() {
     [urlId]
   );
 
-  const currentPage = React.useMemo(() => {
-    const match = findMatchPage(work);
-    return match === undefined || match < 0 ? undefined : match;
-  }, [findMatchPage, work]);
+  const currentPage = React.useMemo(
+    () => findMatchPage(work),
+    [findMatchPage, work]
+  );
 
   const translationPage = React.useMemo(
     () => (translation === undefined ? undefined : findMatchPage(translation)),
     [translation, findMatchPage]
   );
+
+  // Redirect initial page
+  useEffect(() => {
+    if (typeof work === "string" || urlId !== undefined) {
+      return;
+    }
+    updatePage(1, nav, work, undefined, true);
+    // For reasons I don't understand, when we do the redirect the browser seems to
+    // put us at the bottom - to avoid this, premptively scroll to the top first.
+    window.scrollTo({ top: 0, behavior: "instant" });
+  }, [work, urlId, nav]);
 
   // Fetch data
   useEffect(() => {
@@ -167,20 +178,6 @@ export function ReadingPage() {
         setWork("Error");
       });
   }, [route.path]);
-
-  // Redirect legacy or bad URL parameters.
-  useEffect(() => {
-    if (typeof work === "string") {
-      return;
-    }
-    if (findMatchPage(work) === -1) {
-      // Handle invalid ids.
-      updatePage(1, nav, work, undefined, true);
-    }
-    // For reasons I don't understand, when we do the redirect the browser seems to
-    // put us at the bottom - to avoid this, premptively scroll to the top first.
-    window.scrollTo({ top: 0, behavior: "instant" });
-  }, [work, urlLine, nav, findMatchPage]);
 
   // Scroll to the required line, if specified.
   useEffect(() => {
@@ -227,6 +224,7 @@ export function ReadingPage() {
             if (
               typeof work === "string" ||
               currentPage === undefined ||
+              currentPage === -1 ||
               hasTooltip.current.size > 0
             ) {
               return;
@@ -419,6 +417,11 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
           <span>
             An error occurred - either the work or section is invalid.
           </span>
+        ) : currentPage === -1 ? (
+          <div>
+            <div>Invalid section.</div>
+            <WorkNavigation work={work} />
+          </div>
         ) : (
           <>
             <WorkNavigationBar
@@ -963,7 +966,7 @@ function displayForLibraryChunk(
   if (root.getAttr("l") !== undefined) {
     className = "l";
   }
-  if (["s", "b", "ul", "li"].includes(root.name)) {
+  if (["b", "ul", "li"].includes(root.name)) {
     return React.createElement(root.name, { key, style }, children);
   }
   switch (root.name) {

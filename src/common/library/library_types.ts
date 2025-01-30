@@ -59,7 +59,6 @@ function isNavTreeNode(x: unknown): x is NavTreeNode {
 export type ProcessedWorkContentNodeType =
   | "span"
   | "head"
-  | "s"
   | "gap"
   | "b"
   | "space"
