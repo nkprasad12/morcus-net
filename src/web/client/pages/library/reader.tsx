@@ -110,6 +110,9 @@ const WorkColumnContext = React.createContext<WorkColumnContextType>({
 
 export function ReadingPage() {
   const [work, setWork] = useState<WorkState>("Loading");
+  const [translation, setTranslation] = useState<WorkState | undefined>(
+    undefined
+  );
   const [overlayOpacity, setOverlayOpacity] = useState(0);
   const [swipeDir, setSwipeDir] = useState<SwipeDirection>("Left");
   const hasTooltip = React.useRef<Set<number>>(new Set<number>());
@@ -120,17 +123,35 @@ export function ReadingPage() {
   const urlLine = route.params?.l;
   const queryLine = safeParseInt(urlLine);
 
-  const findMatchPage = React.useCallback(() => {
-    if (typeof work === "string" || work.pages.length === 0) {
-      return undefined;
-    }
-    return work.pages.findIndex((page) => page.id.join(".") === urlId);
-  }, [work, urlId]);
+  const loadTranslation = React.useCallback((translationId: string) => {
+    setTranslation("Loading");
+    fetchWork({ id: translationId })
+      .then(setTranslation)
+      .catch((e) => {
+        console.error(e);
+        setTranslation("Error");
+      });
+  }, []);
+
+  const findMatchPage = React.useCallback(
+    (loadedWork: WorkState) => {
+      if (typeof loadedWork === "string" || loadedWork.pages.length === 0) {
+        return undefined;
+      }
+      return loadedWork.pages.findIndex((page) => page.id.join(".") === urlId);
+    },
+    [urlId]
+  );
 
   const currentPage = React.useMemo(() => {
-    const match = findMatchPage();
+    const match = findMatchPage(work);
     return match === undefined || match < 0 ? undefined : match;
-  }, [findMatchPage]);
+  }, [findMatchPage, work]);
+
+  const translationPage = React.useMemo(
+    () => (translation === undefined ? undefined : findMatchPage(translation)),
+    [translation, findMatchPage]
+  );
 
   // Fetch data
   useEffect(() => {
@@ -152,7 +173,7 @@ export function ReadingPage() {
     if (typeof work === "string") {
       return;
     }
-    if (findMatchPage() === -1) {
+    if (findMatchPage(work) === -1) {
       // Handle invalid ids.
       updatePage(1, nav, work, undefined, true);
     }
@@ -188,6 +209,9 @@ export function ReadingPage() {
         currentPage={currentPage}
         overlayOpacity={overlayOpacity}
         showMobileNavSettings
+        loadTranslation={loadTranslation}
+        translation={translation}
+        translationPage={translationPage}
         swipeDir={swipeDir}
         swipeListeners={{
           onSwipeCancel: () => setOverlayOpacity(0),
@@ -219,18 +243,22 @@ export function ReadingPage() {
   );
 }
 
-type CustomTabs = "Outline" | "Attribution"; // | "TextSearch";
+type CustomTabs = "Outline" | "Attribution" | "Translation"; // | "TextSearch";
 type SidebarPanel = CustomTabs | DefaultSidebarTab;
 
 const SIDEBAR_PANEL_ICONS: ReaderInternalTabConfig<SidebarPanel>[] = [
   { tab: "Outline", Icon: <SvgIcon pathD={SvgIcon.Toc} /> },
   ...DEFAULT_SIDEBAR_TAB_CONFIGS,
   { tab: "Attribution", Icon: <SvgIcon pathD={SvgIcon.Info} /> },
+  { tab: "Translation", Icon: <SvgIcon pathD={SvgIcon.AutoStories} /> },
   // { tab: "TextSearch", Icon: <SvgIcon pathD={SvgIcon.Search} /> },
 ];
 
 interface SidebarProps {
   work: WorkState;
+  translation: WorkState | undefined;
+  loadTranslation: (translationId: string) => unknown;
+  translationPage?: number;
 }
 function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
   const tab = props.tab;
@@ -240,11 +268,58 @@ function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
       return <>{work && <WorkNavigationSection work={work} />}</>;
     case "Attribution":
       return <>{work?.info && <WorkInfo workInfo={work?.info} />}</>;
+    case "Translation":
+      return (
+        <div className="text md">
+          <TranslationTab {...props} />
+        </div>
+      );
     // case "TextSearch":
     //   return <>{work && <TextSearchSection work={work} />}</>;
     default:
       exhaustiveGuard(tab);
   }
+}
+
+function TranslationTab(props: {
+  work: WorkState;
+  translation?: WorkState;
+  loadTranslation: (translationId: string) => unknown;
+  translationPage?: number;
+  isMobile: boolean;
+}) {
+  const { work, translation } = props;
+  if (typeof work === "string") {
+    return <span>Main work not yet loaded.</span>;
+  }
+  const translationId = work.info.translationId;
+  if (translationId === undefined) {
+    return <span>No translation available for this text.</span>;
+  }
+  if (translation === undefined) {
+    return (
+      <button
+        onClick={() => props.loadTranslation(translationId)}
+        className="text md outline">
+        Load translation [Beta]
+      </button>
+    );
+  }
+  if (translation === "Error" || props.translationPage === undefined) {
+    return <span>Error loading translation.</span>;
+  }
+  if (translation === "Loading") {
+    return <span>Loading translation...</span>;
+  }
+
+  return (
+    <WorkTextPage
+      work={translation}
+      page={props.translationPage}
+      isMobile={props.isMobile}
+      setDictWord={() => {}}
+    />
+  );
 }
 
 export function SwipeFeedback(props: {
