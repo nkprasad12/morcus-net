@@ -41,8 +41,8 @@ export function runCommand(
     const result = spawn(command, {
       shell: true,
       stdio: "inherit",
-      env: { NODE_ENV: "production", ...env },
-      cwd: cwd,
+      env: { NODE_ENV: "production", ...(env ?? process.env) },
+      cwd,
     });
     result.on("error", (err) => reject(err));
     result.on("exit", () => resolve(result.exitCode));
