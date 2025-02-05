@@ -23,7 +23,7 @@ export interface AuthorData extends MatchContext {
   works?: [string[], string][];
 }
 
-const SH_EXPANSIONS: AbbreviationData[] = [
+const SH_EXPANDABLE_HOVERS: AbbreviationData[] = [
   ["v.", { expansion: "see", postfix: " <f>" }],
   ["abstr.", "abstract."],
   ["Acta Syn. Dord.", "Acta Synodi Dordrechtensis."],
@@ -259,8 +259,8 @@ const GENERIC_SH_HOVERS: AbbreviationData[] = [
 ];
 
 const SH_COMBINED_EXPANSIONS = AbbreviationTrie.from(
-  GENERIC_SH_HOVERS,
-  SH_EXPANSIONS
+  [...GENERIC_SH_HOVERS, ...SH_EXPANDABLE_HOVERS],
+  []
 );
 
 const SH_AUTHOR_TRIE: GenericTrieNode<AuthorData> = GenericTrieNode.withValues(
@@ -393,7 +393,7 @@ function matchedWorks(
   return matches.filter((match) => match[0].length === longest);
 }
 
-function substituteMatchedWorks(
+function attachWorkExpansion(
   citation: string,
   matches: [string, string, AuthorData][]
 ): XmlChild[] {
@@ -412,9 +412,9 @@ function substituteMatchedWorks(
       "span",
       [
         ["class", "lsHover"],
-        ["title", `Originally: ${abbreviation}`],
+        ["title", expansion],
       ],
-      [expansion]
+      [abbreviation]
     ),
     citation.substring(i + abbreviation.length),
   ].filter((x) => typeof x !== "string" || x.length > 0);
@@ -462,7 +462,7 @@ export function markupCitations(input: string): XmlChild[] {
               ],
               [firstChunk.substring(i, i + citation.authLen)]
             ),
-            ...substituteMatchedWorks(afterAuthorText, works),
+            ...attachWorkExpansion(afterAuthorText, works),
           ]
         ),
         firstChunk.substring(i + length),
@@ -480,12 +480,9 @@ export function expandShAbbreviationsIn(input: string): XmlChild[] {
   const result: XmlChild[] = [input];
   for (const [i, length, data] of expansions) {
     const best = findBestExpansions(data);
-    const isExpansion = best.length === 1 && best[0].replace === true;
-
-    const mainText = isExpansion ? best[0].expansion : best[0].original;
-    const hoverText = isExpansion
-      ? `Originally: ${best[0].original}`
-      : best.map((d) => d.expansion).join("; OR ");
+    assert(best[0].replace !== true);
+    const mainText = best[0].original;
+    const hoverText = best.map((d) => d.expansion).join("; OR ");
 
     const firstChunk = XmlNode.assertIsString(result[0]);
     result.splice(

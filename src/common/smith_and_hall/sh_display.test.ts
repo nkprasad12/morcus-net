@@ -121,7 +121,7 @@ describe("displayShEntry", () => {
       [
         '<div><div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57">  •  </span>',
         ' <span class="lsOrth">Hi</span>: ',
-        '<span class="lsHover" title="Originally: v.">see</span>',
+        '<span class="lsHover" title="see">v.</span>',
         " <span>Hello</span></div><div></div></div>",
       ].join("")
     );
