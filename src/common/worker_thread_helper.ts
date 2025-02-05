@@ -7,21 +7,12 @@ import { Worker, parentPort, workerData } from "node:worker_threads";
 import { envVar } from "@/common/env_vars";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import { GenerateLs } from "@/common/lewis_and_short/ls_generate";
-import { writeFileSync, existsSync } from "fs";
-import { spawnSync } from "node:child_process";
 
 declare const $PRODUCER: any;
 
 interface Bounds {
   start: number;
   end?: number;
-}
-
-async function writeFileAndWaitUntilExists(path: string, contents: string) {
-  writeFileSync(path, contents, { flag: "w" });
-  while (!existsSync(path)) {
-    await new Promise<void>((r) => setTimeout(r, 50));
-  }
 }
 
 function startWorker<WorkerData, $O>(
@@ -60,7 +51,6 @@ async function runMain<$O>(
 
 const runWorker = (producer: (data: Bounds) => unknown[] = $PRODUCER) => {
   const data: Bounds = workerData;
-  console.log(data);
   parentPort?.postMessage(producer(data));
 };
 
@@ -69,33 +59,24 @@ export async function multithreadedComputation<$O>(
   consumer: (input: $O[]) => unknown,
   options: { threads: number; rows: number }
 ) {
-  const workerFile = `./worker.tmp.ts`;
-  spawnSync(`touch`, [workerFile]);
-  // This should work, but it doesn't.
-  // What we need to do is write the file
-  const workerParts = [
-    `import { parentPort, workerData } from "worker_threads"`,
-    `import { envVar } from "@/common/assert"`,
-    `import { GenerateLs } from "@/common/lewis_and_short/ls_generate"`,
-    `const $PRODUCER = ${producer.toString()}`,
-    `const $RUN = ${runWorker.toString()}`,
-    `$RUN()`,
-  ];
-  await writeFileAndWaitUntilExists(workerFile, workerParts.join(";\n"));
+  const workerLogic = `import { parentPort, workerData } from "worker_threads"
+    import { envVar } from "@/common/env_vars"
+    import { GenerateLs } from "@/common/lewis_and_short/ls_generate"
+    const $PRODUCER = ${producer.toString()}
+    const $RUN = ${runWorker.toString()}
+    $RUN()`;
+  const blob = new Blob([workerLogic], { type: "text/javascript" });
+  const workerScript = URL.createObjectURL(blob);
   try {
-    await runMain(consumer, options.threads, options.rows, workerFile);
+    await runMain(consumer, options.threads, options.rows, workerScript);
   } catch (err) {
     console.log(err);
   }
-  // We should delete this, but apparently we can only
-  // read files that already exists before the process
-  // was created.
-  // rmSync(workerFile);
 }
 
 multithreadedComputation(
   (bounds) =>
     GenerateLs.processPerseusXml(envVar("LS_PATH"), bounds.start, bounds.end),
   (results) => SqliteDict.save(results, envVar("LS_PROCESSED_PATH")),
-  { threads: 2, rows: 51635 }
+  { threads: 4, rows: 51635 }
 );
