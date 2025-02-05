@@ -10,7 +10,7 @@ COPY --chown=node:node ./ ./
 RUN chown -R node:node /morcus
 
 USER node
-RUN npm ci --omit optional
+RUN npm ci
 RUN npm run build
 
 FROM node:22-alpine3.20
