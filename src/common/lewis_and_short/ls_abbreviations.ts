@@ -387,38 +387,6 @@ export const GENERIC_HOVERS = AbbreviationTrieOld.forMap(
     ["var. lect.", "varia lectio (different reading)."],
     ["v. h. v.", "vide hanc vocem. (see this entry)"],
     ["v. h. vv.", "vide hanc vocem. (see these entries)"],
-  ])
-);
-
-// There are listed in the abbreviation table, but never appear in the
-// actual dictionary.
-// ["a. h. v.", "ad hanc vocem. (at this entry)"]
-// ["aug.", "augmentative."],
-// ["chh.", "church."]
-// ["epic.", "epicene."],
-// ["express.", "expression."]
-// ["JCtus.", "juris consultus."],
-// ["plur. tant.", "used only in the plural."],
-
-// Only appears in tags which are handled already
-// ["poet.", "poetical, -ly."],
-
-// Too short to be safe
-// ["h.", "hence."],
-// ["p.", "page."],
-// n. or neutr. neuter.
-// ["m.", "masculine."],
-// ["l.", "lege (read!) or lectio. (reading) as X instead of Y"],
-// ["f.", "feminine."],
-// ["c.", "cum (with)."],
-
-// Should be fine for English speakers without, and never highlighted
-// ["math.", "mathematics, -ical."],
-// ["diff.", "differs or different."], <- could be buggy with Diff., a work.
-// ["abbrev.", "abbreviated, -tion."],
-
-export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
-  new Map<string, string>([
     ["abl.", "ablative."],
     ["Abl.", "ablative."],
     ["Absol.", "absolutely, i. e. without case or adjunct."],
@@ -601,6 +569,33 @@ export const GENERIC_EXPANSIONS = AbbreviationTrieOld.forMap(
     ["Weich.", "Weichert"],
   ])
 );
+
+// There are listed in the abbreviation table, but never appear in the
+// actual dictionary.
+// ["a. h. v.", "ad hanc vocem. (at this entry)"]
+// ["aug.", "augmentative."],
+// ["chh.", "church."]
+// ["epic.", "epicene."],
+// ["express.", "expression."]
+// ["JCtus.", "juris consultus."],
+// ["plur. tant.", "used only in the plural."],
+
+// Only appears in tags which are handled already
+// ["poet.", "poetical, -ly."],
+
+// Too short to be safe
+// ["h.", "hence."],
+// ["p.", "page."],
+// n. or neutr. neuter.
+// ["m.", "masculine."],
+// ["l.", "lege (read!) or lectio. (reading) as X instead of Y"],
+// ["f.", "feminine."],
+// ["c.", "cum (with)."],
+
+// Should be fine for English speakers without, and never highlighted
+// ["math.", "mathematics, -ical."],
+// ["diff.", "differs or different."], <- could be buggy with Diff., a work.
+// ["abbrev.", "abbreviated, -tion."],
 
 export namespace LsAuthorAbbreviations {
   export interface LsAuthorData extends LsAuthorAbbreviation {

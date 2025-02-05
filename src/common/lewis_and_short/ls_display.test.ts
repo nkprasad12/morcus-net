@@ -58,8 +58,8 @@ describe("displayBibl", () => {
       '<span title="T. Maccius Plautus, writer of comedy. ob. B.C. 184" class="lsHover lsAuthor">',
       "Plaut.",
       "</span>",
-      '<span title="Originally: Mil." class="lsHover">',
-      "Miles Gloriosus.",
+      '<span title="Miles Gloriosus." class="lsHover">',
+      "Mil.",
       "</span>",
       " 4, 4, 36",
       "</span>",
@@ -78,8 +78,8 @@ describe("displayBibl", () => {
       '<span title="Q. Horatius Flaccus, poet, obiit B.C. 8" class="lsHover lsAuthor">',
       "Hor.",
       "</span>",
-      '<span title="Originally: C." class="lsHover">',
-      "Carmina, or Odae.",
+      '<span title="Carmina, or Odae." class="lsHover">',
+      "C.",
       "</span>",
       " 1, 12, 32",
       "</span>",
@@ -98,8 +98,8 @@ describe("displayBibl", () => {
       '<span title="C. Plinius Caecilius Secundus (minor), ob. A.D. 113" class="lsHover lsAuthor">',
       "Plin.",
       "</span>",
-      '<span title="Originally: Ep." class="lsHover">',
-      "Epistulae.",
+      '<span title="Epistulae." class="lsHover">',
+      "Ep.",
       "</span>",
       " 1, 12, 32",
       "</span>",
@@ -118,8 +118,8 @@ describe("displayBibl", () => {
       '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
       "Cic.",
       "</span>",
-      '<span title="Originally: Ad brut." class="lsHover">',
-      "ad Brutum Epistulae.",
+      '<span title="ad Brutum Epistulae." class="lsHover">',
+      "Ad brut.",
       "</span>",
       " 3, 7, 26",
       "</span>",
@@ -138,8 +138,8 @@ describe("displayBibl", () => {
       '<span title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43" class="lsHover lsAuthor">',
       "Cic.",
       "</span>",
-      '<span title="Originally: de Or." class="lsHover">',
-      "De Oratore.",
+      '<span title="De Oratore." class="lsHover">',
+      "de Or.",
       "</span>",
       " 3, 7, 26",
       "</span>",
@@ -158,8 +158,8 @@ describe("displayBibl", () => {
       "<span>",
       "id.",
       "</span>",
-      '<span title="Originally: de Or." class="lsHover">',
-      "De Oratore.",
+      '<span title="De Oratore." class="lsHover">',
+      "de Or.",
       "</span>",
       " 3, 7, 26",
       "</span>",
@@ -195,8 +195,8 @@ describe("displayBibl", () => {
       "<span>",
       "id.",
       "</span>",
-      '<span title="Originally: Germ." class="lsHover">',
-      "Germania.",
+      '<span title="Germania." class="lsHover">',
+      "Germ.",
       "</span>",
       " 3, 7, 26",
       "</span>",
@@ -318,7 +318,7 @@ describe("displayBibl", () => {
       '<span title="Servius Honoratus, gramm., fl. A.D. 390" class="lsHover lsAuthor">Serv.</span>',
       " A. B. ",
       '<span title="P. Vergilius Maro, poet, ob. B.C. 19" class="lsHover lsAuthor">Verg.</span>',
-      ' <span title="Originally: A." class="lsHover">Aeneis.</span>',
+      ' <span title="Aeneis." class="lsHover">A.</span>',
       " 3, 7, 26",
       "</span>",
     ];
@@ -334,8 +334,8 @@ describe("displayUsg", () => {
 
     const parts = [
       "<span>",
-      '<span title="Originally: Medic. t. t." class="lsHover">',
-      "Medical [technical term]",
+      '<span title="Medical [technical term]" class="lsHover">',
+      "Medic. t. t.",
       "</span>",
       "</span>",
     ];
@@ -440,12 +440,12 @@ describe("defaultDisplay", () => {
     const expected = [
       '<span><span class="lsOrth">cānăba</span> (or <span class="lsOrth">cannăba</span>), ',
       "<span>ae</span>, ",
-      '<span title="Originally: f." class="lsHover">feminine</span> ',
+      '<span title="feminine" class="lsHover">f.</span> ',
       "<span>[kindr. with <span>κάναβος</span> and <span>κάννα</span>; acc. to others, with <span>καλύβη</span>]</span>, ",
       '<span><span class="lsEmph"><span>a hovel</span></span>, <span class="lsEmph"><span>hut</span></span>, ',
       '<span class="lsBibl"><span title="Aurelius Augustinus, Christian writer, obiit, A.D. 430" class="lsHover lsAuthor">Aug.</span> ',
-      '<span title="Originally: Serm." class="lsHover">Sermones.</span> 61</span>, de Temp.; ',
-      '<span class="lsBibl"><span title="Originally: Inscr. Orell." class="lsHover">Inscriptiones. Orelli.</span> 39</span>; <span>4077</span>.</span></span>',
+      '<span title="Sermones." class="lsHover">Serm.</span> 61</span>, de Temp.; ',
+      '<span class="lsBibl"><span title="Inscriptiones. Orelli." class="lsHover">Inscr. Orell.</span> 39</span>; <span>4077</span>.</span></span>',
     ];
 
     const output = defaultDisplay(input, {});
@@ -569,7 +569,7 @@ describe("displayAuthor", () => {
     const output = displayAuthor(input, {});
 
     expect(output.toString()).toBe(
-      '<span title="Originally: Inscr. Don." class="lsHover">Inscriptiones. Donii.</span>'
+      '<span title="Inscriptiones. Donii." class="lsHover">Inscr. Don.</span>'
     );
   });
 
@@ -698,7 +698,7 @@ describe("displayNumber", () => {
     const input = new XmlNode("number", [], ["sing."]);
     const output = displayNumber(input, {});
     expect(output.toString()).toBe(
-      '<span title="Originally: sing." class="lsHover">singular</span>'
+      '<span title="singular" class="lsHover">sing.</span>'
     );
   });
 });
@@ -708,7 +708,7 @@ describe("displayMood", () => {
     const input = new XmlNode("mood", [], ["Part."]);
     const output = displayMood(input, {});
     expect(output.toString()).toBe(
-      '<span title="Originally: Part." class="lsHover">Participle</span>'
+      '<span title="Participle" class="lsHover">Part.</span>'
     );
   });
 });
@@ -718,7 +718,7 @@ describe("displayCase", () => {
     const input = new XmlNode("case", [], ["abl."]);
     const output = displayCase(input, {});
     expect(output.toString()).toBe(
-      '<span title="Originally: abl." class="lsHover lsGrammar">ablative</span>'
+      '<span title="ablative" class="lsHover lsGrammar">abl.</span>'
     );
   });
 });

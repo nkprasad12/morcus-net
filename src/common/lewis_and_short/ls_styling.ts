@@ -86,15 +86,14 @@ export function attachHoverText(
   return new XmlNode("span", attrs, [displayText]);
 }
 
-export function substituteAbbreviation(
+export function hoverForAbbreviation(
   original: string,
   lookup: Map<string, string>,
   expandedCssClasses?: string[]
 ): XmlNode {
-  const expanded = checkPresent(lookup.get(original));
   return attachHoverText(
-    expanded,
-    `Originally: ${original}`,
+    original,
+    checkPresent(lookup.get(original)),
     expandedCssClasses
   );
 }

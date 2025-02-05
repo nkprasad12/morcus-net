@@ -3,7 +3,6 @@ import { XmlChild, XmlNode } from "@/common/xml/xml_node";
 import {
   CASE_ABBREVIATIONS,
   EDGE_CASE_HOVERS,
-  GENERIC_EXPANSIONS,
   GENERIC_HOVERS,
   GEN_ABBREVIATIONS,
   LBL_ABBREVIATIONS,
@@ -15,7 +14,7 @@ import {
   USG_TRIE,
 } from "@/common/lewis_and_short/ls_abbreviations";
 import {
-  substituteAbbreviation,
+  hoverForAbbreviation,
   attachHoverText,
   handleAbbreviations,
   handleAbbreviationsInMessage,
@@ -440,7 +439,7 @@ export function displayBibl(
         if (expansions.length === 0) {
           expansions = findExpansionsOld(child, works, true);
         }
-        handleAbbreviationsInMessage(child, expansions, true).forEach((x) =>
+        handleAbbreviationsInMessage(child, expansions, false).forEach((x) =>
           result.children.push(x)
         );
       } else {
@@ -452,7 +451,7 @@ export function displayBibl(
     } else {
       let display = defaultDisplay(child, context);
       if (works !== undefined) {
-        display = handleAbbreviations(display, works, true);
+        display = handleAbbreviations(display, works, false);
       }
       result.children.push(display);
     }
@@ -509,7 +508,7 @@ export function displayAuthor(
     const worksMap = checkPresent(authorData[0].works);
     const endExpanded = checkPresent(worksMap.get(end));
     const expanded = `${authorData[0].expanded} ${endExpanded}`;
-    return attachHoverText(expanded, `Originally: ${abbreviated}`);
+    return attachHoverText(abbreviated, expanded);
   }
   const authorData = checkPresent(
     LsAuthorAbbreviations.authors().get(abbreviated)
@@ -650,7 +649,7 @@ export function displayUsg(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "usg");
-  return handleAbbreviations(defaultDisplay(root, context), USG_TRIE, true);
+  return handleAbbreviations(defaultDisplay(root, context), USG_TRIE, false);
 }
 
 /**
@@ -761,7 +760,7 @@ function displayPos(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "pos");
-  return substituteAbbreviation(XmlNode.getSoleText(root), POS_ABBREVIATIONS);
+  return hoverForAbbreviation(XmlNode.getSoleText(root), POS_ABBREVIATIONS);
 }
 
 /**
@@ -832,7 +831,7 @@ function displayGen(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "gen");
-  return substituteAbbreviation(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
+  return hoverForAbbreviation(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
 }
 
 /**
@@ -858,7 +857,7 @@ function displayLbl(
 ): XmlNode {
   assert(root.name === "lbl");
   assert(parent !== undefined, "<lbl> should have a parent.");
-  return substituteAbbreviation(
+  return hoverForAbbreviation(
     XmlNode.getSoleText(root),
     checkPresent(LBL_ABBREVIATIONS.get(checkPresent(parent).name))
   );
@@ -919,7 +918,7 @@ export function displayCase(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "case");
-  return substituteAbbreviation(XmlNode.getSoleText(root), CASE_ABBREVIATIONS, [
+  return hoverForAbbreviation(XmlNode.getSoleText(root), CASE_ABBREVIATIONS, [
     "lsGrammar",
   ]);
 }
@@ -943,7 +942,7 @@ export function displayMood(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "mood");
-  return substituteAbbreviation(XmlNode.getSoleText(root), MOOD_ABBREVIATIONS);
+  return hoverForAbbreviation(XmlNode.getSoleText(root), MOOD_ABBREVIATIONS);
 }
 
 /**
@@ -965,10 +964,7 @@ export function displayNumber(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "number");
-  return substituteAbbreviation(
-    XmlNode.getSoleText(root),
-    NUMBER_ABBREVIATIONS
-  );
+  return hoverForAbbreviation(XmlNode.getSoleText(root), NUMBER_ABBREVIATIONS);
 }
 
 /**
@@ -1183,7 +1179,6 @@ export function displayEntryFree(
     ),
   ]);
   result = handleAbbreviations(result, EDGE_CASE_HOVERS, false);
-  result = handleAbbreviations(result, GENERIC_EXPANSIONS, true);
   result = handleAbbreviations(result, GENERIC_HOVERS, false);
   return result;
 }
