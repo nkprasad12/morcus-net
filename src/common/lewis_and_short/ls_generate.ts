@@ -31,7 +31,7 @@ function* extractEntryData(
       console.debug(`Processed ${numHandled + (start || 0)}`);
     }
     const orths = getOrths(root).map(removeStackedVowelMarkers);
-    assert(orths.length > 0, `Expected > 0 orths\n${root.toString()}`);
+    assert(orths.length > 0, () => `Expected > 0 orths\n${root.toString()}`);
     const regulars = orths.filter(isRegularOrth);
     const keys = regulars.length > 0 ? regulars : orths;
     const data: StoredEntryData = {
