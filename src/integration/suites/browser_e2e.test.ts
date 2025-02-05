@@ -258,7 +258,7 @@ test.describe("main reader", () => {
 
     await click(page.locator(`[aria-label="Outline"]`));
     await click(page.locator(`[aria-label="jump to id"]`));
-    await page.keyboard.type("161");
+    await page.keyboard.type("1.2.161");
     await page.keyboard.press("Enter");
 
     await expect(page.getByText("Britannos")).toBeInViewport();
