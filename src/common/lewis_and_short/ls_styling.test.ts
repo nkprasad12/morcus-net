@@ -1,6 +1,6 @@
 import { XmlNode } from "@/common/xml/xml_node";
 import {
-  substituteAbbreviation,
+  hoverForAbbreviation,
   attachHoverText,
   handleAbbreviations,
 } from "@/common/lewis_and_short/ls_styling";
@@ -17,7 +17,7 @@ describe("attachHoverText", () => {
 
 describe("substituteAbbreviation", () => {
   it("shows expected content", () => {
-    const result = substituteAbbreviation(
+    const result = hoverForAbbreviation(
       "Caesar",
       new Map([
         ["A", "B"],
@@ -25,8 +25,8 @@ describe("substituteAbbreviation", () => {
       ])
     ).toString();
 
-    expect(result).toContain("Augustus");
-    expect(result).toContain(`Originally: Caesar`);
+    expect(result).toContain("Caesar");
+    expect(result).toContain(`title="Augustus"`);
   });
 });
 
