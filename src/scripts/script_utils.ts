@@ -16,7 +16,7 @@ export const TS_NODE: ReadonlyArray<string> = [
   "tsconfig.json",
   "-r",
   "tsconfig-paths/register",
-  "--transpile-only",
+  "--swc",
 ];
 
 export interface DownloadConfig {

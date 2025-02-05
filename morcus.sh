@@ -11,7 +11,7 @@ has_param() {
     return 1
 }
 
-COMMAND="node --max-old-space-size=4096 --env-file=.env node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only"
+COMMAND="node --max-old-space-size=4096 --env-file=.env node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --swc"
 BUN_FLAG="0"
 ARGS="$@"
 
