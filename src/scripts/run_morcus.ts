@@ -395,7 +395,7 @@ function startWebServer(args: any) {
       baseCommand.push("--watch");
     }
   } else if (args.transpile_only === true) {
-    baseCommand.push("--transpile-only");
+    baseCommand.push("--swc");
   }
   serverEnv.MAIN = "start";
   baseCommand.push("src/start_server.ts");

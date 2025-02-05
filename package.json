@@ -24,7 +24,7 @@
     "ts-coverage": "npx jest --coverage --maxWorkers=8 --testPathIgnorePatterns src/integration/* --coveragePathIgnorePatterns src/integration",
     "coverage": "npm run ts-coverage && npm run py-coverage",
     "ts-node": "NODE_ENV=production node --max-old-space-size=4096 --env-file=.env -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register",
-    "tsnp": "NODE_ENV=production node --max-old-space-size=4096 --env-file=.env -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --transpile-only",
+    "tsnp": "NODE_ENV=production node --max-old-space-size=4096 --env-file=.env -- node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --swc",
     "pytype": "python -m pytype src/py src/scripts",
     "server-p": "npm run ts-node src/web/nlp/processing_server.ts",
     "ts-driver": "npm run ts-node src/ts_driver.ts -- --allowUnusedLabels",
