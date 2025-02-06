@@ -1,10 +1,7 @@
 import { scrapeUrlText } from "@/web/scraping/scraper";
-import fetch from "node-fetch";
 
-// @ts-expect-error
-const mockFetch: jest.Mock<any, any, any> = fetch;
-
-jest.mock("node-fetch");
+const mockFetch: jest.Mock<any, any, any> = jest.fn();
+global.fetch = mockFetch;
 
 const PAGE_URL = "https://foo.bar";
 

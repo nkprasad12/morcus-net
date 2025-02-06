@@ -17,14 +17,11 @@ import {
   isString,
   stringifyMessage,
 } from "@/web/utils/rpc/parsing";
-import fetch from "node-fetch";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 
 const PORT = 1594;
 
-// @ts-ignore
-global.fetch = fetch;
-// @ts-ignore
+// @ts-expect-error
 global.location = {
   origin: `http://localhost:${PORT}`,
 };
@@ -329,16 +326,14 @@ describe("RPC library", () => {
     expect(result).toBe(228);
   });
 
-  test("handles boolean with GET", async () => {
+  test.each([true, false])("handles boolean with GET %s", async (value) => {
     server = await setupApp();
-    expect(await callApi(BoolGet.route, false)).toBe(false);
-    expect(await callApi(BoolGet.route, true)).toBe(true);
+    expect(await callApi(BoolGet.route, value)).toBe(value);
   });
 
-  test("handles boolean with POST", async () => {
+  test.each([true, false])("handles boolean with POST %s", async (value) => {
     server = await setupApp();
-    expect(await callApi(BoolPost.route, false)).toBe(true);
-    expect(await callApi(BoolPost.route, true)).toBe(false);
+    expect(await callApi(BoolPost.route, value)).toBe(!value);
   });
 
   test("handles JSON with GET", async () => {

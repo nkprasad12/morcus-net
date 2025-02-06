@@ -1,5 +1,4 @@
 import type { ReportApiRequest } from "@/web/api_routes";
-import fetch from "node-fetch";
 
 const GITHUB_ISSUES_API =
   "https://api.github.com/repos/nkprasad12/morcus-net/issues";
