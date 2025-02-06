@@ -5,7 +5,6 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { ServerMessage } from "@/web/utils/rpc/rpc";
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 
-import fetch from "node-fetch";
 import { test, expect } from "@playwright/test";
 
 test.beforeAll(() => {

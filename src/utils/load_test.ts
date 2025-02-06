@@ -2,9 +2,8 @@
 
 import { CompletionsFusedApi, DictsFusedApi } from "@/web/api_routes";
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import fetch from "node-fetch";
 
-// @ts-ignore
+// @ts-expect-error
 global.location = {
   origin: `https://dev-hz.morcus.net`,
 };

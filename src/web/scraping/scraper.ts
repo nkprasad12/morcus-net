@@ -2,7 +2,6 @@ import { assert, checkPresent } from "@/common/assert";
 import type { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
 import { isString } from "@/web/utils/rpc/parsing";
-import fetch from "node-fetch";
 
 const BLOCK_STARTS = new Set(["p", "div"]);
 const ALL_TAGS = new Set(

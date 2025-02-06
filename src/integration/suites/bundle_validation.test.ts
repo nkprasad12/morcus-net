@@ -1,5 +1,4 @@
 import { gzipSync } from "zlib";
-import fetch, { type Response } from "node-fetch";
 import { test, expect } from "@playwright/test";
 
 const BANNED_STRINGS = ["/devOnlyHelper"];
@@ -54,7 +53,7 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
   test("bundle size is within limit", async () => {
     let totalSize = 0;
     for await (const [jsFile, jsRes] of getBundleFiles()) {
-      const contents = await jsRes.buffer();
+      const contents = await jsRes.arrayBuffer();
       const gzipped = gzipSync(contents).byteLength;
       console.debug(`${jsFile}: ${gzipped / 1000} KB`);
       totalSize += gzipped;

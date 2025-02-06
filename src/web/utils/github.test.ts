@@ -1,11 +1,10 @@
-import fetch from "node-fetch";
 import { GitHub } from "@/web/utils/github";
 import type { ReportApiRequest } from "@/web/api_routes";
 
-jest.mock("node-fetch");
+const fetch = jest.fn();
+global.fetch = fetch;
 
 beforeEach(() => {
-  // @ts-ignore
   fetch.mockClear();
 });
 
@@ -17,33 +16,28 @@ const REQUEST: ReportApiRequest = {
 
 describe("reportIssue", () => {
   it("rejects on API error", async () => {
-    // @ts-ignore
     fetch.mockImplementation(() => Promise.reject("Foo"));
     const request = GitHub.reportIssue(REQUEST, "token");
     await expect(request).rejects.toContain("Foo");
   });
 
   it("rejects on failed API", async () => {
-    // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: false }));
     const request = GitHub.reportIssue(REQUEST, "token");
     await expect(request).rejects.toThrow();
   });
 
   it("resolves on successful API", async () => {
-    // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: true }));
     const request = GitHub.reportIssue(REQUEST, "token");
     await expect(request).resolves.not.toThrow();
   });
 
   it("passes correct arguments", async () => {
-    // @ts-ignore
     fetch.mockImplementation(() => Promise.resolve({ ok: true }));
 
     await GitHub.reportIssue(REQUEST, "token");
 
-    // @ts-ignore
     const calls = fetch.mock.calls;
     expect(calls).toHaveLength(1);
     expect(calls[0][0]).toBe(
