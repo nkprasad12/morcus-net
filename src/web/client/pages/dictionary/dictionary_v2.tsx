@@ -61,6 +61,7 @@ import { arrayMapBy } from "@/common/data_structures/collect_map";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { StoredCheckBox } from "@/web/client/components/generic/settings_basics";
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
+import { getCommitHash } from "@/web/client/define_vars";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -700,6 +701,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
             query,
             dicts: queryDicts.map((dict) => dict.key),
             mode: idSearch ? 2 : inflectedSearch ? 1 : 0,
+            commitHash: getCommitHash(),
           },
     [query, queryDicts, idSearch, inflectedSearch, greekTerm]
   );

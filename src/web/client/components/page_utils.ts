@@ -11,7 +11,7 @@ export function reloadIfOldClient(message: ServerMessage<unknown>): void {
   const clientCommit = getCommitHash();
   if (
     serverCommit !== undefined &&
-    clientCommit !== "undefined" &&
+    clientCommit !== undefined &&
     serverCommit !== clientCommit
   ) {
     location.reload();

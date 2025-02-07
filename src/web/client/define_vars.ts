@@ -9,8 +9,8 @@ export function tryOr<T>(f: () => T, fallback: T): T {
   }
 }
 
-export function getCommitHash(): string {
-  return tryOr(() => COMMIT_HASH.trim(), "undefined");
+export function getCommitHash(): string | undefined {
+  return tryOr(() => COMMIT_HASH.trim(), undefined);
 }
 
 export function getBuildDate(): string {

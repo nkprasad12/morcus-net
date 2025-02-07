@@ -118,10 +118,9 @@ function fetchWork(
   onWorkState: (state: WorkState) => unknown
 ): Promise<unknown> {
   onWorkState("Loading");
-  const commitHash = getCommitHash();
   return callApi(GetWork, {
     ...workId,
-    commitHash: commitHash === "undefined" ? undefined : commitHash,
+    commitHash: getCommitHash(),
   })
     .then(onWorkState)
     .catch((e) => {

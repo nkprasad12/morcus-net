@@ -193,7 +193,9 @@ export type RouteDefinition<
 export namespace RouteDefinition {
   export function create<I, O>(
     route: ApiRoute<I, O>,
-    handler: ApiHandler<I, O>
+    handler: ApiHandler<I, O>,
+    preStringified?: undefined,
+    reponseSetter?: ResponseSetter<I>
   ): RouteDefinition<I, O>;
   export function create<I, O>(
     route: ApiRoute<I, O>,

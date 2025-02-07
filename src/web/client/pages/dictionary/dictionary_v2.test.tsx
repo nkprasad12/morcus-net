@@ -117,6 +117,7 @@ describe("New Dictionary View", () => {
       dicts: ["S&H", "R&A"],
       query: "Belgae",
       mode: 0,
+      commitHash: undefined,
     });
 
     // We don't really care about this but we just want to wait for the
@@ -174,6 +175,7 @@ describe("New Dictionary View", () => {
       dicts: ["L&S", "S&H", "R&A", "NUM"],
       query: "Belgae",
       mode: 0,
+      commitHash: undefined,
     });
     await waitFor(() => {
       expect(
@@ -325,6 +327,7 @@ describe("New Dictionary View", () => {
       dicts: ["L&S", "S&H", "R&A", "NUM"],
       query: "Belgae",
       mode: 0,
+      commitHash: undefined,
     });
     await waitFor(() => {
       expect(
@@ -410,6 +413,7 @@ describe("New Dictionary View", () => {
       dicts: ["L&S", "NUM"],
       query: "Belgae",
       mode: 1,
+      commitHash: undefined,
     });
     await waitFor(() => {
       expect(

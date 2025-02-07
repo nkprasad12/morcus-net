@@ -68,6 +68,7 @@ export interface DictsFusedRequest {
   query: string;
   dicts: string[];
   mode?: DictRequestMode;
+  commitHash?: string;
 }
 
 export namespace DictsFusedRequest {
@@ -76,6 +77,7 @@ export namespace DictsFusedRequest {
       query: isString,
       dicts: isArray(isString),
       mode: maybeUndefined(isDictRequestMode),
+      commitHash: maybeUndefined(isString),
     });
 }
 
