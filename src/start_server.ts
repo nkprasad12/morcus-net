@@ -161,7 +161,16 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(
         GetWork,
         (workId) => retrieveWorkStringified(workId),
-        true
+        true,
+        (res, workId) => {
+          if (workId.commitHash === undefined) {
+            return;
+          }
+          // Note 3153600 is 1/10 of a year. We don't want to set it too high because
+          // we want the browser to clean it up eventually. it's ok to request the
+          // resource once a month.
+          res.setHeader("Cache-Control", "public, max-age=3153600, immutable");
+        }
       ),
       RouteDefinition.create(ListLibraryWorks, (_unused) =>
         retrieveWorksList()

@@ -17,7 +17,6 @@ import {
   safeParseInt,
 } from "@/common/misc_utils";
 import { ClickableTooltip, CopyLinkTooltip } from "@/web/client/pages/tooltips";
-import { fetchWork } from "@/web/client/pages/library/work_cache";
 import {
   SettingsText,
   InfoText,
@@ -48,6 +47,9 @@ import {
 import { processWords } from "@/common/text_cleaning";
 import { checkPresent } from "@/common/assert";
 import { StyleContext } from "@/web/client/styling/style_context";
+import { callApi } from "@/web/utils/rpc/client_rpc";
+import { GetWork } from "@/web/api_routes";
+import { getCommitHash } from "@/web/client/define_vars";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -111,6 +113,23 @@ const WorkColumnContext = React.createContext<WorkColumnContextType>({
   setDictWord: () => {},
 });
 
+function fetchWork(
+  workId: WorkId,
+  onWorkState: (state: WorkState) => unknown
+): Promise<unknown> {
+  onWorkState("Loading");
+  const commitHash = getCommitHash();
+  return callApi(GetWork, {
+    ...workId,
+    commitHash: commitHash === "undefined" ? undefined : commitHash,
+  })
+    .then(onWorkState)
+    .catch((e) => {
+      console.error(e);
+      onWorkState("Error");
+    });
+}
+
 export function ReadingPage() {
   const [work, setWork] = useState<WorkState>("Loading");
   const [translation, setTranslation] = useState<WorkState | undefined>(
@@ -123,15 +142,10 @@ export function ReadingPage() {
 
   const { nav, route } = Router.useRouter();
 
-  const loadTranslation = React.useCallback((translationId: string) => {
-    setTranslation("Loading");
-    fetchWork({ id: translationId })
-      .then(setTranslation)
-      .catch((e) => {
-        console.error(e);
-        setTranslation("Error");
-      });
-  }, []);
+  const loadTranslation = React.useCallback(
+    (translationId: string) => fetchWork({ id: translationId }, setTranslation),
+    []
+  );
 
   const urlId = route.params?.id;
   const findMatchPage = React.useCallback(
@@ -181,12 +195,7 @@ export function ReadingPage() {
       setWork("Error");
       return;
     }
-    fetchWork(workId)
-      .then(setWork)
-      .catch((reason) => {
-        console.debug(reason);
-        setWork("Error");
-      });
+    fetchWork(workId, setWork);
   }, [route.path]);
 
   // Scroll to the required line, if specified.

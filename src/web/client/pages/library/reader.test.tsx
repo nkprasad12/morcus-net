@@ -14,7 +14,6 @@ import {
   type NavTreeNode,
 } from "@/common/library/library_types";
 import { XmlNode } from "@/common/xml/xml_node";
-import { invalidateWorkCache } from "@/web/client/pages/library/work_cache";
 import {
   RouteContext,
   Router,
@@ -177,11 +176,9 @@ const findOnScreen = (text: string) => {
 
 describe("Reading UI", () => {
   beforeAll(() => {
-    invalidateWorkCache();
     mockCallApiFull.mockResolvedValue({ data: { LS: [] } });
   });
   afterEach(() => {
-    invalidateWorkCache();
     mockCallApiFull.mockClear();
     // @ts-ignore
     useMediaQuery.mockImplementation(() => false);

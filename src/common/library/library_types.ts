@@ -139,6 +139,7 @@ interface NameAndAuthor {
 export interface WorkId {
   id?: string;
   nameAndAuthor?: NameAndAuthor;
+  commitHash?: string;
 }
 
 export namespace WorkId {
@@ -150,5 +151,6 @@ export namespace WorkId {
         urlAuthor: isString,
       })
     ),
+    commitHash: maybeUndefined(isString),
   });
 }
