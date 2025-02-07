@@ -12,7 +12,7 @@ describe("define_vars", () => {
   });
 
   it("falls back to undefined for hash", () => {
-    expect(getCommitHash()).toBe("undefined");
+    expect(getCommitHash()).toBe(undefined);
   });
 
   it("falls back to undefined for build date", () => {

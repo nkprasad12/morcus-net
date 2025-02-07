@@ -23,7 +23,7 @@ function Section(props: SectionProps) {
 }
 
 export function About() {
-  const commitHash = getCommitHash();
+  const commitHash = getCommitHash() ?? "undefined";
 
   return (
     <Container maxWidth="lg">

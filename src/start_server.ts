@@ -81,6 +81,18 @@ function logMemoryUsage(telemetry: TelemetryLogger): void {
   });
 }
 
+type MaybeCacheable = { commitHash?: string };
+
+const CACHING_SETTER = (res: http.ServerResponse, input: MaybeCacheable) => {
+  if (input.commitHash === undefined) {
+    return;
+  }
+  // Note 3153600 is 1/10 of a year. We don't want to set it too high because
+  // we want the browser to clean it up eventually. it's ok to request the
+  // resource once a month.
+  res.setHeader("Cache-Control", "public, max-age=3153600, immutable");
+};
+
 export function startMorcusServer(): Promise<http.Server> {
   log("Attempting to start server");
   process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
@@ -152,8 +164,11 @@ export function startMorcusServer(): Promise<http.Server> {
         if (githubTokenEmpty) log(GitHub.createIssueBody(request));
         else GitHub.reportIssue(request, githubToken);
       }),
-      RouteDefinition.create(DictsFusedApi, (input, extras) =>
-        fusedDict.getEntry(input, extras)
+      RouteDefinition.create(
+        DictsFusedApi,
+        (input, extras) => fusedDict.getEntry(input, extras),
+        undefined,
+        CACHING_SETTER
       ),
       RouteDefinition.create(CompletionsFusedApi, (input, extras) =>
         fusedDict.getCompletions(input, extras)
@@ -162,15 +177,7 @@ export function startMorcusServer(): Promise<http.Server> {
         GetWork,
         (workId) => retrieveWorkStringified(workId),
         true,
-        (res, workId) => {
-          if (workId.commitHash === undefined) {
-            return;
-          }
-          // Note 3153600 is 1/10 of a year. We don't want to set it too high because
-          // we want the browser to clean it up eventually. it's ok to request the
-          // resource once a month.
-          res.setHeader("Cache-Control", "public, max-age=3153600, immutable");
-        }
+        CACHING_SETTER
       ),
       RouteDefinition.create(ListLibraryWorks, (_unused) =>
         retrieveWorksList()

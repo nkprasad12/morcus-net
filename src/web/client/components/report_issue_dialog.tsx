@@ -53,7 +53,7 @@ export function ReportIssueDialog(props: {
           onClick={() => {
             const request: ReportApiRequest = {
               reportText,
-              commit: getCommitHash(),
+              commit: getCommitHash() ?? "undefined",
               url: window.location.href,
               userAgent: navigator ? navigator?.userAgent : undefined,
             };
