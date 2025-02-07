@@ -146,6 +146,7 @@ function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
           result = result.replace(`"${DATA_PLACEHOLDER}"`, body);
         }
         timer.event("encodeMessageComplete");
+        routeDefinition.reponseSetter?.(res, input);
         res.status(status).send(result);
         const telemetryData: Omit<ApiCallData, "latencyMs"> = {
           name: route.path,
@@ -171,12 +172,15 @@ export interface ServerExtras {
 export type ApiHandler<I, O> = (input: I, extras?: ServerExtras) => Promise<O>;
 export type PreStringifiedRpc = "PreStringified";
 export type RouteDefinitionType = undefined | PreStringifiedRpc;
+export type ResponseSetter<I> = (res: Response, input: I) => unknown;
+
 type HandlerType<I, O, T> = T extends PreStringifiedRpc
   ? ApiHandler<I, string>
   : ApiHandler<I, O>;
 interface RouteDefinitionBase<I, O, T extends RouteDefinitionType = undefined> {
   route: ApiRoute<I, O>;
   handler: HandlerType<I, O, T>;
+  reponseSetter?: ResponseSetter<I>;
 }
 export type RouteDefinition<
   I,
@@ -194,15 +198,17 @@ export namespace RouteDefinition {
   export function create<I, O>(
     route: ApiRoute<I, O>,
     handler: ApiHandler<I, string>,
-    preStringified: true
+    preStringified: true,
+    reponseSetter?: ResponseSetter<I>
   ): RouteDefinition<I, O, "PreStringified">;
   export function create<I, O, T extends RouteDefinitionType>(
     route: ApiRoute<I, O>,
     handler: HandlerType<I, O, T>,
-    preStringified?: T extends PreStringifiedRpc ? true : undefined
+    preStringified?: T extends PreStringifiedRpc ? true : undefined,
+    reponseSetter?: ResponseSetter<I>
   ): RouteDefinition<I, O, T> {
     // @ts-ignore
-    return { route, handler, preStringified };
+    return { route, handler, preStringified, reponseSetter };
   }
 }
 
