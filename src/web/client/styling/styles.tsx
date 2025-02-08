@@ -532,6 +532,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       marginBottom: "3px",
       backgroundColor,
       zIndex: 5,
+      display: "flex",
     },
     ".readerMobileBottomBar": {
       width: "100vw",
@@ -591,12 +592,6 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       color: Solarized.blue,
       backgroundColor: Solarized.base1 + "40",
       cursor: "pointer",
-    },
-    ".readerNavIconContainer": {
-      marginTop: "2px",
-      paddingBottom: "4px",
-      paddingTop: "2px",
-      borderRadius: "4px",
     },
     ".extReaderMobile .readerNavIconContainer": {
       borderRadius: "8px",
