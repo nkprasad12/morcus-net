@@ -54,7 +54,8 @@ const UNSELECTABLE: CSSProperties = {
   userSelect: "none",
 };
 
-const DEFAULT_FONTS = `"Roboto","Arial","Helvetica",sans-serif`;
+const DEFAULT_FONTS = `"Arial","Helvetica",sans-serif`;
+const SERIF_FONTS = `"Georgia", "Times New Roman", "Times", serif`;
 const TEXT_STYLE: CSSProperties = {
   fontWeight: 400,
   lineHeight: 1.5,
@@ -96,7 +97,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
   const contentTextColor = theme.contentText;
   const readerMainScale = settings.readerMainScale / 100;
   const readerSideScale = settings.readerSideScale / 100;
-  const fontFamily = settings.fontFamily === "serif" ? "serif" : DEFAULT_FONTS;
+  const fontFamily =
+    settings.fontFamily === "serif" ? SERIF_FONTS : DEFAULT_FONTS;
   const textStyle = { ...TEXT_STYLE, fontFamily };
 
   return {
@@ -353,7 +355,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     ".menuItem": {
       color: theme.menuItemBase + theme.menuItemInactiveAlpha,
-      fontWeight: "bold",
+      fontFamily: DEFAULT_FONTS,
     },
     ".menuItem.active": {
       color: theme.menuItemBase + theme.menuItemActiveAlpha,
