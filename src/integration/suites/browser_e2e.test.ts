@@ -256,12 +256,13 @@ test.describe("main reader", () => {
     await expect(page.getByText("Britannos")).toBeVisible();
     await expect(page.getByText("Britannos")).not.toBeInViewport();
 
-    await click(page.locator(`[aria-label="Outline"]`));
     await click(page.locator(`[aria-label="jump to id"]`));
-    await page.keyboard.type("1.2.161");
+    // It should be pre-populated with `1.2`, the current ID.
+    await page.keyboard.type(".161");
     await page.keyboard.press("Enter");
 
     await expect(page.getByText("Britannos")).toBeInViewport();
+    await expect(page).toHaveURL(/\/work\/juvenal\/saturae\?id=1\.2\.161$/);
   });
 
   test.fixme("text search has expected results", async ({ page }) => {

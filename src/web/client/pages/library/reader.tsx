@@ -503,6 +503,36 @@ function labelForId(id: string[], work: PaginatedWork): string {
   return capitalizeWords(`${parts[i]} ${id[i]}`);
 }
 
+function JumpToSection() {
+  const { nav, route } = Router.useRouter();
+  const [value, setValue] = useState<string>("");
+  const id = route.params?.id ?? "";
+  useEffect(() => setValue(id), [id]);
+  return (
+    <>
+      <span className="text sm light">§ </span>
+      <input
+        style={{ maxWidth: "48px", borderRadius: "4px" }}
+        className="bgColor text"
+        aria-label="jump to id"
+        value={value}
+        onChange={(e) => setValue(e.target.value ?? "")}
+        onKeyUp={(e) => {
+          if (e.key === "Enter" && value.length > 0) {
+            nav.to((old) => ({
+              ...old,
+              params: {
+                ...old.params,
+                id: value,
+              },
+            }));
+          }
+        }}
+      />
+    </>
+  );
+}
+
 function WorkNavigationBar(props: {
   page: number;
   work: PaginatedWork;
@@ -544,6 +574,7 @@ function WorkNavigationBar(props: {
           onClick={() => changePage(-1)}
         />
         <span style={{ flexGrow: 1, textAlign: "center" }}>
+          <JumpToSection />
           <CopyLinkTooltip
             forwarded={TooltipNavIcon}
             message="Copy link to page"
@@ -720,47 +751,9 @@ function WorkNavigation(props: { work: PaginatedWork; node?: NavTreeNode }) {
   );
 }
 
-function StringInput(props: {
-  onEnter: (input: string) => unknown;
-  label: string;
-}) {
-  const [value, setValue] = useState<string>("");
-  return (
-    <input
-      style={{ maxWidth: "48px", borderRadius: "4px" }}
-      className="bgColor text"
-      aria-label={props.label}
-      value={value}
-      onChange={(e) => setValue(e.target.value ?? "")}
-      onKeyUp={(e) => {
-        if (e.key === "Enter" && value.length > 0) {
-          props.onEnter(value);
-        }
-      }}
-    />
-  );
-}
-
 function WorkNavigationSection(props: { work: PaginatedWork }) {
-  const { nav } = Router.useRouter();
   return (
-    <div style={{ marginTop: "2px" }}>
-      <div className="text sm light">
-        <span>Jump to ID</span>
-        {"  "}
-        <StringInput
-          label="jump to id"
-          onEnter={(inputId) =>
-            nav.to((old) => ({
-              ...old,
-              params: {
-                ...old.params,
-                id: inputId,
-              },
-            }))
-          }
-        />
-      </div>
+    <div style={{ marginTop: "4px" }}>
       <WorkNavigation work={props.work} />
     </div>
   );
