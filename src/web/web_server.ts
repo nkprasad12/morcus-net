@@ -15,6 +15,9 @@ import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
 const MAX_AGE = 100 * 365 * 24 * 3600 * 100;
 const CLIENT_BUNDLE_SUFFIX = ".client-bundle.js";
 const CLIENT_BUNDLE_CACHE_CONTROL = `public, max-age=${MAX_AGE}, immutable`;
+// Add no-transform to prevent proxies from uncompressing and then recompressing
+// the Javascript bundles at a lower compression level.
+const PRE_COMPRESSED_CACHE_CONTROL = `${CLIENT_BUNDLE_CACHE_CONTROL}, no-transform`;
 const SET_HEADERS = (res: Response, path: string) => {
   // Force users to always fetch the index from the server so that they
   // always get the latest Javascript bundles.
@@ -62,7 +65,7 @@ function preCompressedMiddleware(sourceDir: string): express.Handler {
       }
       res.setHeader("Content-Encoding", encoding);
       res.setHeader("Vary", "Accept-Encoding");
-      res.setHeader("Cache-Control", CLIENT_BUNDLE_CACHE_CONTROL);
+      res.setHeader("Cache-Control", PRE_COMPRESSED_CACHE_CONTROL);
       res.setHeader("Content-Type", "application/javascript");
       res.setHeader("X-MorcusNet-PreCompressed", "1");
       res.sendFile(path.join(sourceDir, fileName));

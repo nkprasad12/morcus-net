@@ -87,9 +87,9 @@ const CACHING_SETTER = (res: http.ServerResponse, input: MaybeCacheable) => {
   if (input.commitHash === undefined) {
     return;
   }
-  // Note 3153600 is 1/10 of a year. We don't want to set it too high because
-  // we want the browser to clean it up eventually. it's ok to request the
-  // resource once a month.
+  // Note 3153600 is 1/10 of a year. We don't want to set it too high because we
+  // we don't want the browser to hold on to older versions for too long.
+  // it's ok to request the resource ~once a month.
   res.setHeader("Cache-Control", "public, max-age=3153600, immutable");
 };
 
