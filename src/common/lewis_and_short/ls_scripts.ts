@@ -315,3 +315,24 @@ export async function findMissingAuthorTags() {
   });
   console.log("Fixes found : " + fixes);
 }
+
+/**
+ * Previous automated correction fixed missing author tags in an automated way. But this was
+ * an issue for commentaries, where we have e.g. Serv.(ius) ad Verg.(il) A.(eneid), where we
+ * picked up Verg. A. as an untagged author. But it's really more of a work name.
+ */
+export async function flagSecondAuthorInBibl() {
+  let multipleAuthors = 0;
+  await LsRewriters.transformEntries(envVar("LS_PATH"), (root) => {
+    for (const bibl of root.findDescendants("bibl")) {
+      const authors = bibl.findChildren("author");
+      if (authors.length > 1) {
+        multipleAuthors++;
+      }
+    }
+    return root;
+  });
+  console.log(multipleAuthors);
+}
+
+flagSecondAuthorInBibl();
