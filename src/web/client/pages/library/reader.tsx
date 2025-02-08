@@ -533,24 +533,29 @@ function WorkNavigationBar(props: {
 
   return (
     <>
-      <div className="readerIconBar" ref={navBarRef}>
+      <div
+        className="readerIconBar"
+        ref={navBarRef}
+        style={{ display: "flex", alignItems: "center" }}>
         <NavIcon
           Icon={<SvgIcon pathD={SvgIcon.ArrowBack} />}
           label="previous section"
           disabled={page <= 0}
           onClick={() => changePage(-1)}
         />
+        <span style={{ flexGrow: 1, textAlign: "center" }}>
+          <CopyLinkTooltip
+            forwarded={TooltipNavIcon}
+            message="Copy link to page"
+            link={window.location.href}
+            placement="bottom"
+          />
+        </span>
         <NavIcon
           Icon={<SvgIcon pathD={SvgIcon.ArrowForward} />}
           label="next section"
           disabled={page >= work.pages.length - 1}
           onClick={() => changePage(1)}
-        />
-        <CopyLinkTooltip
-          forwarded={TooltipNavIcon}
-          message="Copy link to page"
-          link={window.location.href}
-          placement="bottom"
         />
       </div>
       <div
