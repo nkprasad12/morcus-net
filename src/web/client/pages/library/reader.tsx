@@ -474,18 +474,23 @@ function HeaderText(props: { data: PaginatedWork; page: number }) {
 
   const id = props.data.pages[props.page].id;
   const idLabels: string[] = [];
-  for (let i = 0; i < props.data.textParts.length - 2; i++) {
+  for (let i = 0; i < props.data.textParts.length - 1; i++) {
     const parentId = id.slice(0, i + 1);
     idLabels.push(labelForId(parentId, props.data));
   }
   return (
-    <>
-      {idLabels.map((idPart) => (
-        <InfoText text={capitalizeWords(idPart)} key={idPart} />
-      ))}
-      <InfoText text={capitalizeWords(props.data.info.title)} />
-      <InfoText text={capitalizeWords(props.data.info.author)} />
-    </>
+    <div
+      className="text sm light"
+      style={{ textTransform: "capitalize", margin: "0 8px" }}>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        {idLabels.join(", ")}
+      </div>
+      <div style={{ display: "flex", justifyContent: "center" }}>
+        {props.data.info.title}
+        {" • "}
+        {props.data.info.author}
+      </div>
+    </div>
   );
 }
 
@@ -496,20 +501,6 @@ function labelForId(id: string[], work: PaginatedWork): string {
     return capitalizeWords(id[i]);
   }
   return capitalizeWords(`${parts[i]} ${id[i]}`);
-}
-
-/**
- * A label for the penultimate part of the work division.
- * For example, in a work with Books, Chapters, and Sections, this would show
- * `Chapter N`.
- */
-function PenulimateLabel(props: { page: number; work: PaginatedWork }) {
-  const parts = props.work.textParts;
-  if (props.page < 0 || parts.length <= 1) {
-    return <></>;
-  }
-  const id = props.work.pages[props.page].id;
-  return <InfoText text={labelForId(id, props.work)} />;
 }
 
 function WorkNavigationBar(props: {
@@ -549,7 +540,6 @@ function WorkNavigationBar(props: {
           disabled={page <= 0}
           onClick={() => changePage(-1)}
         />
-        <PenulimateLabel page={page} work={work} />
         <NavIcon
           Icon={<SvgIcon pathD={SvgIcon.ArrowForward} />}
           label="next section"
