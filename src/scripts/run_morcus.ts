@@ -86,6 +86,14 @@ function parseArguments() {
         action: "store_true",
       },
     },
+    {
+      short: "-b_gaf",
+      long: "--build_gaffiot",
+      options: {
+        help: "Processes Gaffiot and saves to DB.",
+        action: "store_true",
+      },
+    },
   ];
   build.add_argument("-to", "--transpile_only", {
     help: "Skips type checking for the bundle.",
@@ -342,6 +350,14 @@ function artifactConfig(args: any): StepConfig[] {
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
       label: "Processing LS",
+      priority: 2,
+    });
+  }
+  if (args.build_gaffiot === true) {
+    const command = baseCommand.concat(["src/scripts/process_gaf_cli.ts"]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Processing Gaffiot",
       priority: 2,
     });
   }

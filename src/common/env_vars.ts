@@ -8,6 +8,7 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["RA_PROCESSED_PATH", "build/dbs/ra.db"],
   ["SH_RAW_PATH", "sh_raw.txt"],
   ["GAFFIOT_RAW_PATH", "gaffiot.js"],
+  ["GAFFIOT_PROCESSED_PATH", "build/dbs/gaf.db"],
   ["DB_SOURCE", "unspecified"],
   ["OFFLINE_DATA_DIR", "build/offlineData"],
   ["PWA_SHORT_NAME_SUFFIX", ""],
