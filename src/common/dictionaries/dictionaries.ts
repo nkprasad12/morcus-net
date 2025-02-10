@@ -9,10 +9,10 @@ import {
 } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
-export type DictLang = "La" | "En" | "*";
+export type DictLang = "La" | "En" | "Fr" | "*";
 
 export function isDictLang(input: string): input is DictLang {
-  return ["La", "En", "*"].includes(input);
+  return ["La", "En", "Fr", "*"].includes(input);
 }
 
 export interface DictType {
