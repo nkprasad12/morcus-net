@@ -12,7 +12,7 @@ import {
 } from "@/scripts/script_utils";
 import { writeCommitId } from "@/scripts/write_source_version";
 import { createDir } from "@/utils/file_utils";
-import { ArgumentParser } from "argparse";
+import { ArgumentParser, type ArgumentOptions } from "argparse";
 import { ChildProcess, spawn } from "child_process";
 
 const WEB_SERVER = "web";
@@ -37,6 +37,18 @@ if (args.command === WEB_SERVER) {
   buildArtifacts(args).then(assert);
 }
 
+interface CommandArgument {
+  short: string;
+  long: string;
+  options?: ArgumentOptions;
+}
+
+function addArguments(parser: ArgumentParser, args: CommandArgument[]) {
+  for (const arg of args) {
+    parser.add_argument(arg.short, arg.long, arg.options);
+  }
+}
+
 function parseArguments() {
   const parser = new ArgumentParser({
     description: "Helper scripts to start the Morcus Latin Tools",
@@ -50,6 +62,31 @@ function parseArguments() {
   const build = subparsers.add_parser(BUILD, {
     help: "Builds artifacts without starting the server.",
   });
+  const COMMON_BUILD_ARGS: CommandArgument[] = [
+    {
+      short: "-b_ls",
+      long: "--build_ls",
+      options: { help: "Processes LS and saves to DB.", action: "store_true" },
+    },
+    {
+      short: "-b_ra",
+      long: "--build_ra",
+      options: { help: "Processes RA and saves to DB.", action: "store_true" },
+    },
+    {
+      short: "-b_sh",
+      long: "--build_sh",
+      options: { help: "Processes SH and saves to DB.", action: "store_true" },
+    },
+    {
+      short: "-b_ll",
+      long: "--build_latin_library",
+      options: {
+        help: "Processing and stores the Latin library contents.",
+        action: "store_true",
+      },
+    },
+  ];
   build.add_argument("-to", "--transpile_only", {
     help: "Skips type checking for the bundle.",
     action: "store_true",
@@ -58,26 +95,7 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
-  build.add_argument("-b_ls", "--build_ls", {
-    help: "Re-processes LS.",
-    action: "store_true",
-  });
-  build.add_argument("-b_ra", "--build_ra", {
-    help: "Processes RA and saves to DB.",
-    action: "store_true",
-  });
-  build.add_argument("-b_sh", "--build_sh", {
-    help: "Re-processes SH and saves to DB.",
-    action: "store_true",
-  });
-  build.add_argument("-b_li", "--build_latin_inflections", {
-    help: "Re-processes Latin Inflections and saves to DB.",
-    action: "store_true",
-  });
-  build.add_argument("-b_ll", "--build_latin_library", {
-    help: "Processing and stores the Latin library contents.",
-    action: "store_true",
-  });
+  addArguments(build, COMMON_BUILD_ARGS);
 
   const bundle = subparsers.add_parser(BUNDLE, {
     help: "Builds the client bundle.",
@@ -110,26 +128,7 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
-  web.add_argument("-b_ls", "--build_ls", {
-    help: "Re-processes LS.",
-    action: "store_true",
-  });
-  web.add_argument("-b_ra", "--build_ra", {
-    help: "Processes RA and saves to DB.",
-    action: "store_true",
-  });
-  web.add_argument("-b_sh", "--build_sh", {
-    help: "Re-processes SH and saves to DB.",
-    action: "store_true",
-  });
-  web.add_argument("-b_li", "--build_latin_inflections", {
-    help: "Re-processes Latin Inflections and saves to DB.",
-    action: "store_true",
-  });
-  web.add_argument("-b_ll", "--build_latin_library", {
-    help: "Processing and stores the Latin library contents.",
-    action: "store_true",
-  });
+  addArguments(web, COMMON_BUILD_ARGS);
   web.add_argument("-r_db", "--real_database", {
     help: "Uses the real telemetry database.",
     action: "store_true",
