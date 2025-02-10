@@ -111,16 +111,16 @@ function gaffiotDict(): Record<string, Record<string, string>> {
   return JSON.parse(data.substring(start));
 }
 
-function toEntryResult(input: string): EntryResult {
+function toEntryResult(input: string, key: string, id: string): EntryResult {
   return {
-    entry: new XmlNode("div", [], [input]),
+    entry: new XmlNode("div", [["id", id]], [input]),
     outline: {
-      mainKey: "Blah1",
+      mainKey: key,
       mainSection: {
-        text: "blah2",
+        text: "placeholder text",
         level: 0,
-        ordinal: "blah3",
-        sectionId: "blah4",
+        ordinal: "0",
+        sectionId: id,
       },
     },
   };
@@ -136,7 +136,7 @@ export function processGaffiot(): RawDictEntry[] {
   const ids = new Set<string>();
   const tags = new Set<string>();
   for (const entryName in gaffiot) {
-    const id = entryName.replaceAll(/[\s'?!*()]/g, "");
+    const id = "gaf-" + entryName.replaceAll(/[\s'?!*()]/g, "");
     assert(/^[A-Za-z\d-]+$/.test(id), id);
     assert(!ids.has(id), `Duplicate id: ${id}`);
     ids.add(id);
@@ -155,7 +155,7 @@ export function processGaffiot(): RawDictEntry[] {
     entries.push({
       id,
       keys: [entryName],
-      entry: encodeMessage(toEntryResult(entryText), [
+      entry: encodeMessage(toEntryResult(entryText, entryName, id), [
         XmlNodeSerialization.DEFAULT,
       ]),
     });
