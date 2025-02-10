@@ -104,6 +104,14 @@ function AttributionContent(props: { dictKey: string }) {
       </div>
     );
   }
+  if (props.dictKey === LatinDict.Gaffiot.key) {
+    return (
+      <div>
+        Gaffiot data kindly provided by{" "}
+        <a href="https://gaffiot.fr">gaffiot.fr</a>
+      </div>
+    );
+  }
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 

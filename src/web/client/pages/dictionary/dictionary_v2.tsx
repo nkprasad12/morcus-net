@@ -165,7 +165,7 @@ function NoResultsContent(props: {
           Enabled dictionaries:{" "}
           {labels.map((label) => (
             <span key={label}>
-              <FullDictChip label={label} size="sm" />{" "}
+              <FullDictChip label={label} size="xs" />{" "}
             </span>
           ))}
         </div>
