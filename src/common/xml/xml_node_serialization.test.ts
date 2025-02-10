@@ -164,6 +164,12 @@ describe("XmlNode serialization", () => {
     const node = displayEntryFree(rawNode);
     expect(processNode(node)).toEqual(node);
   });
+
+  it("handles text with delimiter", () => {
+    const text = ["Sup <this is a comment>"];
+    const node = new XmlNode("div", [], text);
+    expect(processNode(node)).toEqual(node);
+  });
 });
 
 // describe("peformance test suite", () => {

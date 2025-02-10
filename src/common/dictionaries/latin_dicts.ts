@@ -1,6 +1,6 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 
-export type LatinDictKey = "L&S" | "S&H" | "NUM" | "R&A";
+export type LatinDictKey = "L&S" | "S&H" | "NUM" | "R&A" | "GAF";
 export interface LatinDictInfo extends DictInfo {
   key: LatinDictKey;
 }
@@ -34,8 +34,16 @@ export namespace LatinDict {
     tags: ["Classical"],
   };
 
+  export const Gaffiot: LatinDictInfo = {
+    key: "GAF",
+    displayName: "Gaffiot",
+    languages: { from: "La", to: "Fr" },
+    tags: ["Classical"],
+  };
+
   export const AVAILABLE: LatinDictInfo[] = [
     LewisAndShort,
+    Gaffiot,
     SmithAndHall,
     RiddleArnold,
     Numeral,

@@ -1,7 +1,11 @@
-import { assertType } from "@/common/assert";
+import { assert, assertType } from "@/common/assert";
+import type { EntryResult } from "@/common/dictionaries/dict_result";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
+import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import {
+  encodeMessage,
   isArray,
   isString,
   matchesObject,
@@ -107,30 +111,55 @@ function gaffiotDict(): Record<string, Record<string, string>> {
   return JSON.parse(data.substring(start));
 }
 
-function gaffiotWords() {
+function toEntryResult(input: string): EntryResult {
+  return {
+    entry: new XmlNode("div", [], [input]),
+    outline: {
+      mainKey: "Blah1",
+      mainSection: {
+        text: "blah2",
+        level: 0,
+        ordinal: "blah3",
+        sectionId: "blah4",
+      },
+    },
+  };
+}
+
+function stripComments(entryText: string): string {
+  return entryText.replace(/<[^>]*>/g, "");
+}
+
+export function processGaffiot(): RawDictEntry[] {
   const gaffiot = gaffiotDict();
+  const entries: RawDictEntry[] = [];
+  const ids = new Set<string>();
   const tags = new Set<string>();
-  for (const key in gaffiot) {
-    if (!KEY_PATTERN.test(key)) {
-      console.log(`Weird key: ${key}`);
-      continue;
+  for (const entryName in gaffiot) {
+    const id = entryName.replaceAll(/[\s'?!*()]/g, "");
+    assert(/^[A-Za-z\d-]+$/.test(id), id);
+    assert(!ids.has(id), `Duplicate id: ${id}`);
+    ids.add(id);
+
+    if (!KEY_PATTERN.test(entryName)) {
+      console.log(`Weird key: ${entryName}`);
     }
-    const entry = assertType(gaffiot[key], isGaffiotEntry);
-    for (const tag of entry.article.matchAll(/\\(\w+)[^\w{\\}]/g)) {
+
+    const entry = assertType(gaffiot[entryName], isGaffiotEntry);
+    const entryText = stripComments(entry.article);
+    for (const tag of entryText.matchAll(/\\(\w+)[^\w{\\}]/g)) {
       if (!GAFFIOT_TAGS.includes(tag[1])) {
         tags.add(tag[1]);
       }
     }
-    // if (/\d/.test(key)) {
-    //   console.error(key);
-    // }
+    entries.push({
+      id,
+      keys: [entryName],
+      entry: encodeMessage(toEntryResult(entryText), [
+        XmlNodeSerialization.DEFAULT,
+      ]),
+    });
   }
   console.log(tags);
+  return entries;
 }
-
-export function processGaffiot(): RawDictEntry[] {
-  gaffiotWords();
-  return [{ keys: ["test"], id: "test", entry: "test" }];
-}
-
-gaffiotWords();

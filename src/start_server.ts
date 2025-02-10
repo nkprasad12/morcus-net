@@ -37,6 +37,7 @@ import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
+import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -118,6 +119,15 @@ export function startMorcusServer(): Promise<http.Server> {
     console.debug(`SmithAndHall init: ${elapsed} ms`);
     return result;
   }, LatinDict.SmithAndHall);
+  const gaffiot = delayedInit(() => {
+    const start = performance.now();
+    const result = new GaffiotDict(
+      sqliteBacking(envVar("GAFFIOT_PROCESSED_PATH"))
+    );
+    const elapsed = (performance.now() - start).toFixed(3);
+    console.debug(`Gaffiot init: ${elapsed} ms`);
+    return result;
+  }, LatinDict.Gaffiot);
   const numeralDict = new NumeralDict();
   const riddleArnold = delayedInit(() => {
     const start = performance.now();
@@ -132,6 +142,7 @@ export function startMorcusServer(): Promise<http.Server> {
     lewisAndShort,
     smithAndHall,
     riddleArnold,
+    gaffiot,
     numeralDict,
   ]);
 
