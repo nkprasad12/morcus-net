@@ -172,7 +172,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "S&H", "R&A", "NUM"],
+      dicts: ["L&S", "GAF", "S&H", "R&A", "NUM"],
       query: "Belgae",
       mode: 0,
       commitHash: undefined,
@@ -324,7 +324,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "S&H", "R&A", "NUM"],
+      dicts: ["L&S", "GAF", "S&H", "R&A", "NUM"],
       query: "Belgae",
       mode: 0,
       commitHash: undefined,
@@ -410,7 +410,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "NUM"],
+      dicts: ["L&S", "GAF", "NUM"],
       query: "Belgae",
       mode: 1,
       commitHash: undefined,
