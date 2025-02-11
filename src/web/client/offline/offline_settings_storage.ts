@@ -54,6 +54,7 @@ export interface OfflineSettings {
   shDownloaded?: boolean;
   morceusDownloaded?: boolean;
   raDownloaded?: boolean;
+  gafDownloaded?: boolean;
 }
 
 export const OFFLINE_SETTINGS_KEYS: (keyof OfflineSettings)[] = [
@@ -61,6 +62,8 @@ export const OFFLINE_SETTINGS_KEYS: (keyof OfflineSettings)[] = [
   "lsDownloaded",
   "shDownloaded",
   "morceusDownloaded",
+  "raDownloaded",
+  "gafDownloaded",
 ];
 
 /**
