@@ -44,6 +44,7 @@ function useOfflineDictData() {
       "S&H": enabled && settings?.shDownloaded !== true,
       "L&S": enabled && settings?.lsDownloaded !== true,
       "R&A": enabled && settings?.raDownloaded !== true,
+      GAF: enabled && settings?.gafDownloaded !== true,
       NUM: enabled,
     },
   };
