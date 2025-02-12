@@ -27,6 +27,7 @@ jest.mock("@/web/client/utils/media_query", () => {
 });
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 beforeAll(() => {
   // js-dom doesn't yet support `dialog`.
@@ -49,6 +50,11 @@ function mockCallApiMockResolvedValue(input: any) {
   mockCallApi.mockResolvedValue({ data: input });
   mockCallApiLegacy.mockResolvedValue(input);
 }
+
+const ALL_DICT_KEYS = LatinDict.AVAILABLE.map((d) => d.key);
+const FROM_LATIN_KEYS = LatinDict.AVAILABLE.filter(
+  (d) => d.languages.from === "La" || d.languages.from === "*"
+).map((d) => d.key);
 
 describe("New Dictionary View", () => {
   afterEach(() => {
@@ -172,7 +178,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "GAF", "S&H", "R&A", "NUM"],
+      dicts: ALL_DICT_KEYS,
       query: "Belgae",
       mode: 0,
       commitHash: undefined,
@@ -324,7 +330,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "GAF", "S&H", "R&A", "NUM"],
+      dicts: ALL_DICT_KEYS,
       query: "Belgae",
       mode: 0,
       commitHash: undefined,
@@ -410,7 +416,7 @@ describe("New Dictionary View", () => {
 
     expect(mockCallApi).toHaveBeenCalledTimes(1);
     expect(mockCallApi.mock.calls[0][1]).toStrictEqual({
-      dicts: ["L&S", "GAF", "NUM"],
+      dicts: FROM_LATIN_KEYS,
       query: "Belgae",
       mode: 1,
       commitHash: undefined,

@@ -2,7 +2,7 @@ import { assert, assertType } from "@/common/assert";
 import type { EntryResult } from "@/common/dictionaries/dict_result";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
-import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import {
   encodeMessage,
@@ -13,17 +13,7 @@ import {
 } from "@/web/utils/rpc/parsing";
 import { readFileSync } from "fs";
 
-// TODO: Do we replace all `~` characters with ` `? gaffiot.fr does this.
-
-// Guide:
-// - Initial number indicates that there are two words with the
-//   same spelling but different meanings.
-// - ? indicates that the word may have some doubt.
-// - ' and ! indicate an abbreviation or an exclamation.
-const KEY_PATTERN = /^(\d )?(\? )?\w[\w -]*['!]?$/;
-// Loaded from: `https://gaffiot.fr/gaffiot.js`
-
-export const GAFFIOT_TAGS = [
+const REGULAR_TAGS = new Set([
   "entree", // Contains an entry, with diacritics.
   "gen", // Gender
   "aut", // Author
@@ -54,7 +44,6 @@ export const GAFFIOT_TAGS = [
   "romain", // Seems to be inserted commentary in Latin text?
   "hbox",
   "gras", // bold
-  "S", // Section symbol §, may be followed by a number. Usually empty.
   "overline", // Has a line over
   "desv", // Inflection variant (c.f. \\des), e.g. abl. pl. \desv{-tabus}.
   "latdim", // diminuitive of Latin word
@@ -66,32 +55,35 @@ export const GAFFIOT_TAGS = [
   "italp", // composition in italics for opening parenthesis
   "smash", // Only happens once, can ignore?
   "qqng", // qq non-gras (not bold)
-  "setparameterlist", // Ignore everything after this, it's not supposed to be there.
-  //
-  // The below do not have `{` following
-  //
-  "par", // <BR>
+]);
+
+// The below do not have `{` following
+const BRACKETLESS_WITH_UNIT = new Set([
+  "kern",
+  "raise",
+  "hskip", // Only happens twice, can convert to a space.
+]);
+const BRACKETLESS_TAGS: string[] = [
+  ...BRACKETLESS_WITH_UNIT,
+  "par",
   "F", // Arrow
-  "kern", // Should have a number immediately after, maybe followed by a space.
-  "kern0", // Should have something like 0.5em etc... after
-  "string", // Unclear what it means but good to render exactly what is after this.
-  "dixpc", // Note: comes AFTER, not before, an opening brace. Whatever is after should be in capitals
-  "times", // times symbol
-  "raise", // Means raised up, we can ignore it. Only happens 3 times. Has a unit immediately after and can include a `.`! so \raise0.1em must be handled.
-  "arabe", // Arabic
+  "string",
+  "dixpc",
+  "times",
+  "arabe",
+  "%", // A literal percent sign
   "thinspace", // replace this and a mandatory following space with a period
-  "douzerm", // Only happens once, we can maybe igno0re
+  "S",
+  "douzerm", // Only happens once, we can maybe ignore
   "break", // small break, maybe can be a space or two. Can have text immediately after.
-  "hskip", // has a unit e.g. \\hskip0.3em immediately after. Only happens twice, can convert to a space.
   "neufrm", // Note: this is after, not before, brackets. can ignore
+  ",",
   "goodbreak", // Ignore
   "dixrmchif", // Note: after, not before {. Just render text
   "nobreak", // ignore
   "penalty5000", // ignore
-  "etyml", // This is a mistake: \\etyml {(vociferor),}. Happens only once.
   "hfil", // Just ignore.
   "unskip", // Just ignore
-  "finishpdffile", // Ignore this, not supposed to be there
 ];
 
 interface GaffiotEntry {
@@ -104,20 +96,129 @@ const isGaffiotEntry = matchesObject<GaffiotEntry>({
   images: maybeUndefined(isArray(isString)),
 });
 
-function gaffiotDict(): Record<string, Record<string, string>> {
+function loadGaffiotDict(): Record<string, Record<string, string>> {
   const filePath = envVar("GAFFIOT_RAW_PATH");
   const data = readFileSync(filePath).toString();
   const start = data.indexOf("{");
   return JSON.parse(data.substring(start));
 }
 
+function findClosingBracket(input: string, start: number): number {
+  let depth = 1;
+  for (let i = start + 1; i < input.length; i++) {
+    if (input[i] === "{") depth++;
+    if (input[i] === "}") depth--;
+    if (depth === 0) return i;
+  }
+  throw new Error("Unmatched bracket in input string");
+}
+
+function cleanText(entryText: string): string {
+  // Does three things:
+  // - Removes XML-like comments
+  // - Removes $ characters
+  // - Replaces ~ with a space
+  return entryText.replace(/(<[^>]*>)|\$/g, "").replaceAll("~", " ");
+}
+
+export function texToXml(input: string): XmlChild[] {
+  const stack: XmlChild[] = [];
+  let currentText = "";
+
+  const flushText = () => {
+    if (currentText) {
+      stack.push(cleanText(currentText));
+      currentText = "";
+    }
+  };
+
+  for (let i = 0; i < input.length; i++) {
+    // Handle the case of nameless brackets.
+    if (input[i] === "{") {
+      flushText();
+      const close = findClosingBracket(input, i);
+      const content = input.slice(i + 1, close);
+      const children = texToXml(content);
+      // Omit empty brackets.
+      if (children.length > 0) {
+        stack.push(new XmlNode("nameless", [], children));
+      }
+      i = close;
+      continue;
+    }
+    // If we don't have a backslash, just add to the current text.
+    if (input[i] !== "\\" || input[i + 1] === undefined) {
+      currentText += input[i];
+      continue;
+    }
+    flushText();
+    const end = input.indexOf("{", i);
+    const maybeTag = input.slice(i + 1, end);
+    if (end !== -1 && REGULAR_TAGS.has(maybeTag)) {
+      const close = findClosingBracket(input, end);
+      const content = input.slice(end + 1, close);
+      // Ignore comments.
+      if (maybeTag !== "comm") {
+        stack.push(new XmlNode(maybeTag, [], texToXml(content)));
+      }
+      i = close;
+      continue;
+    }
+    let foundMatch = false;
+    for (const tag of BRACKETLESS_TAGS) {
+      if (input.startsWith(tag, i + 1)) {
+        let extra = "";
+        const attrs: [string, string][] = [];
+        if (BRACKETLESS_WITH_UNIT.has(tag)) {
+          const match = input
+            .substring(i + tag.length + 1)
+            .match(/^-?(\d\.\d+em)/);
+          if (!match) {
+            throw new Error(`Expected unit after ${tag}: ${input.slice(i)}`);
+          }
+          extra = match[0];
+          attrs.push(["unit", match[1]]);
+        }
+        stack.push(new XmlNode(tag, attrs, []));
+        i += tag.length + extra.length;
+        foundMatch = true;
+        break;
+      }
+    }
+    assert(foundMatch);
+  }
+  flushText();
+  return stack;
+}
+
+function processEntryXml(children: XmlChild[]): XmlChild[] {
+  const results: XmlChild[] = [];
+  for (const child of children) {
+    if (typeof child === "string") {
+      results.push(child);
+      continue;
+    }
+    assert(
+      BRACKETLESS_TAGS.includes(child.name) ||
+        REGULAR_TAGS.has(child.name) ||
+        child.name === "nameless",
+      child.name
+    );
+    results.push(new XmlNode("span", [], processEntryXml(child.children)));
+  }
+  return results;
+}
+
 function toEntryResult(input: string, key: string, id: string): EntryResult {
+  const xmlContent = processEntryXml(texToXml(input));
+  const entry = new XmlNode("div", [["id", id]], xmlContent);
   return {
-    entry: new XmlNode("div", [["id", id]], [input]),
+    entry,
+    // TODO: Actually implement this.
     outline: {
       mainKey: key,
       mainSection: {
-        text: "placeholder text",
+        text: "",
         level: 0,
         ordinal: "0",
         sectionId: id,
@@ -126,32 +227,25 @@ function toEntryResult(input: string, key: string, id: string): EntryResult {
   };
 }
 
-function stripComments(entryText: string): string {
-  return entryText.replace(/<[^>]*>/g, "");
-}
-
 export function processGaffiot(): RawDictEntry[] {
-  const gaffiot = gaffiotDict();
+  const gaffiot = loadGaffiotDict();
   const entries: RawDictEntry[] = [];
   const ids = new Set<string>();
-  const tags = new Set<string>();
+  // Guide:
+  // - Initial number indicates that there are two words with the
+  //   same spelling but different meanings.
+  // - ? indicates that the word may have some doubt.
+  // - ' and ! indicate an abbreviation or an exclamation.
+  // const KEY_PATTERN = /^(\d )?(\? )?\w[\w -]*['!]?$/;
   for (const entryName in gaffiot) {
     const id = "gaf-" + entryName.replaceAll(/[\s'?!*()]/g, "");
     assert(/^[A-Za-z\d-]+$/.test(id), id);
     assert(!ids.has(id), `Duplicate id: ${id}`);
     ids.add(id);
 
-    if (!KEY_PATTERN.test(entryName)) {
-      console.log(`Weird key: ${entryName}`);
-    }
-
     const entry = assertType(gaffiot[entryName], isGaffiotEntry);
-    const entryText = stripComments(entry.article);
-    for (const tag of entryText.matchAll(/\\(\w+)[^\w{\\}]/g)) {
-      if (!GAFFIOT_TAGS.includes(tag[1])) {
-        tags.add(tag[1]);
-      }
-    }
+    const entryText = entry.article;
+
     entries.push({
       id,
       keys: [entryName],
@@ -160,6 +254,5 @@ export function processGaffiot(): RawDictEntry[] {
       ]),
     });
   }
-  console.log(tags);
   return entries;
 }
