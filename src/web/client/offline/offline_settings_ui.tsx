@@ -1,5 +1,3 @@
-/* istanbul ignore file */
-
 import type { OfflineSettings } from "@/web/client/offline/offline_settings_storage";
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import { sendToSw } from "@/web/client/offline/communication/app_comms";
@@ -19,9 +17,7 @@ const OFFLINE_STORAGE_MESSAGE =
   " It is recommended that you grant these permissions (otherwise, the system may deem" +
   " Morcus Latin Tools and its data to be unimportant and clear the data).";
 
-// Make sure to demove the `istanbul ignore file` once we actually use this!
-// @ts-expect-error
-function OfflineSettingsSection() {
+export function OfflineSettingsSection() {
   const globalSettings = useContext(GlobalSettingsContext);
 
   if (globalSettings.data.experimentalMode !== true) {
@@ -30,8 +26,8 @@ function OfflineSettingsSection() {
 
   return (
     <details open>
-      <summary className="nonDictText text md" style={{ paddingTop: "8px" }}>
-        Offline Mode [Experimental]
+      <summary className="nonDictText text sm" style={{ paddingTop: "8px" }}>
+        Offline Mode [Very Experimental]
       </summary>
       <OfflineSettingsCheckbox
         label="Offline Mode Enabled"
@@ -97,8 +93,13 @@ function OfflineSettingsCheckbox(props: {
             const status = await registerServiceWorker();
             if (status === -1) {
               setProgress(
-                "Error: your browser doesn't support Service Workers :("
+                "Error: your browser doesn't support Service Workers."
               );
+              return;
+            }
+            if (status === 0) {
+              setProgress("Error: Service Worker registration failed.");
+              return;
             }
             if (props.settingKey === "offlineModeEnabled" && checked) {
               await requestNotificationPermissions();

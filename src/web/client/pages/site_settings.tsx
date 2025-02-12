@@ -4,6 +4,7 @@ import {
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
 import { CheckBox, Container } from "@/web/client/components/generic/basics";
+import { OfflineSettingsSection } from "@/web/client/offline/offline_settings_ui";
 
 function GlobalSettingsCheckbox(props: {
   label: string;
@@ -86,6 +87,7 @@ export function SiteSettings() {
             settingKey="experimentalMode"
           />
         </SettingsSection>
+        <OfflineSettingsSection />
       </div>
     </Container>
   );

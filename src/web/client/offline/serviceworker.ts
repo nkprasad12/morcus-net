@@ -312,8 +312,15 @@ self.addEventListener("activate", (event: ActivatedEvent) => {
 });
 // @ts-expect-error [SW only]
 self.addEventListener("fetch", FETCH_HANDLER);
-// @ts-expect-error [SW only]
-if (self.serviceWorker.state === "activated") {
+// Apparently, `self.serviceWorker` is not defined in Firefox.
+if (
+  // @ts-expect-error [SW only]
+  typeof self.serviceWorker === "object" &&
+  // @ts-expect-error [SW only]
+  "state" in self.serviceWorker &&
+  // @ts-expect-error [SW only]
+  self.serviceWorker.state === "activated"
+) {
   // Note that this is called both in the `activate` listener and also here.
   // This covers the case that we're not replacing any existing service worker.
   prewarm();
