@@ -19,6 +19,7 @@ import { generateShArtifacts } from "@/common/smith_and_hall/sh_generate";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { processRiddleArnold } from "@/common/dictionaries/riddle_arnold/process_riddle_arnold";
 import { ALL_SUPPORTED_WORKS } from "@/common/library/library_constants";
+import { generateGaffiotArtifacts } from "@/common/gaffiot/gaf_generate";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
@@ -58,6 +59,14 @@ const MAKE_LS: StepConfig = {
   dlInfo: {
     url: "https://raw.githubusercontent.com/nkprasad12/lexica/master/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml",
     path: envVar("LS_PATH"),
+  },
+};
+const MAKE_GAF: StepConfig = {
+  operation: generateGaffiotArtifacts,
+  label: "Gaffiot DB creation",
+  dlInfo: {
+    url: "https://raw.githubusercontent.com/nkprasad12/gaffiot/refs/heads/main/gaffiot.js",
+    path: envVar("GAFFIOT_RAW_PATH"),
   },
 };
 const MAKE_RA: StepConfig = {
@@ -110,6 +119,7 @@ const ALL_STEPS = [
   MAKE_BUNDLE,
   SAVE_TABLES,
   MAKE_SH,
+  MAKE_GAF,
   MAKE_LS,
   MAKE_RA,
   PROCESS_LAT_LIB,
