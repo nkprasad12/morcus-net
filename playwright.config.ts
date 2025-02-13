@@ -16,10 +16,10 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
   retries: process.env.CI ? 1 : 0,
-  /* Github Actions uses runners with 4 CPUs. */
-  workers: process.env.CI ? 6 : undefined,
+  /* Github Actions uses runners with 4 CPUs, so try using default parallelism. */
+  // workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: "html",
+  reporter: [["html"], process.env.CI ? ["github"] : ["list"]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
