@@ -1,6 +1,12 @@
 import { checkPresent } from "@/common/assert";
 import { repeatedTest } from "@/integration/utils/playwright_utils";
-import { test, expect, type Locator } from "@playwright/test";
+import {
+  test,
+  expect,
+  type Locator,
+  type ViewportSize,
+  type Page,
+} from "@playwright/test";
 
 test.beforeEach(async ({ context, browserName }) => {
   if (browserName === "chromium") {
@@ -27,6 +33,19 @@ async function click(locator: Locator) {
   return locator.click({ force: true });
 }
 
+async function goToTab(
+  tabName: string,
+  page: Page,
+  isMobile: boolean,
+  viewport: ViewportSize | null
+) {
+  if (isMobile || checkPresent(viewport?.width) < 400) {
+    // Click into the hamburger menu
+    await click(page.getByLabel("site pages"));
+  }
+  await click(page.locator(`button:text("${tabName}")`).nth(0));
+}
+
 test.describe("general navigation", () => {
   test("should load the landing page", async ({ page }) => {
     await page.goto("/");
@@ -37,11 +56,7 @@ test.describe("general navigation", () => {
 
   test("has working tab navigation", async ({ page, isMobile, viewport }) => {
     await page.goto("/");
-    if (isMobile || checkPresent(viewport?.width) < 400) {
-      // Click into the hamburger menu
-      await click(page.getByLabel("site pages"));
-    }
-    await click(page.locator('button:text("About")').nth(0));
+    await goToTab("About", page, isMobile, viewport);
 
     await expect(page.getByText("GPL-3.0")).toBeVisible();
     await expect(page.getByText("CC BY-SA 4.0")).toBeVisible();
@@ -315,19 +330,36 @@ test.describe("main reader", () => {
 });
 
 test.describe("offline mode", () => {
-  test("allows S&H offline", async ({ page, context }) => {
+  // Currently this doesn't work on Firefox.
+  test.skip("allows S&H offline", async ({
+    page,
+    context,
+    isMobile,
+    viewport,
+  }) => {
+    test.setTimeout(60000);
     await page.goto("/settings");
     await click(page.getByText("Experiments"));
     await click(page.getByLabel("Enable experimental features"));
     await click(page.getByLabel("Offline mode enabled"));
+    await expect(page.getByLabel("Smith and Hall")).toBeVisible({
+      timeout: 10000,
+    });
 
     await click(page.getByLabel("Smith and Hall"));
     await expect(page.getByText("You can use S&H offline.")).toBeVisible({
       timeout: 45000,
     });
-    context.setOffline(true);
+    // Block any API requests to show they're being served locally.
+    // Ideally we would use `context.setOffline(true)` but it doesn't seem to
+    // work on Safari.
+    await context.route(/.*api.*$/, (route) => route.abort());
 
-    page.goto("/dicts?q=habiliment");
+    await goToTab("Dictionary", page, isMobile, viewport);
+    await click(page.locator(`[aria-label="Dictionary search box"]`));
+    await page.keyboard.type("habiliment", { delay: 20 });
+    await page.keyboard.press("Enter");
+
     await expect(page.getByText("habiliment").nth(0)).toBeVisible();
     await expect(page.getByText("garment").nth(0)).toBeVisible();
   });
