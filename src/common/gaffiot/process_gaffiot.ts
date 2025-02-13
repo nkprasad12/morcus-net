@@ -1,4 +1,4 @@
-import { assert, assertType } from "@/common/assert";
+import { assert, assertEqual, assertType } from "@/common/assert";
 import type { EntryResult } from "@/common/dictionaries/dict_result";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
@@ -209,9 +209,7 @@ function processEntryXml(children: XmlChild[]): XmlChild[] {
   return results;
 }
 
-function toEntryResult(input: string, key: string, id: string): EntryResult {
-  const xmlContent = processEntryXml(texToXml(input));
-  const entry = new XmlNode("div", [["id", id]], xmlContent);
+function toEntryResult(entry: XmlNode, key: string, id: string): EntryResult {
   return {
     entry,
     // TODO: Actually implement this.
@@ -227,6 +225,13 @@ function toEntryResult(input: string, key: string, id: string): EntryResult {
   };
 }
 
+function findEntryKey(root: XmlNode): string {
+  const entrees = root.findDescendants("entree");
+  assert(entrees.length === 1);
+  const text = XmlNode.getSoleText(entrees[0]).trim();
+  return text.replace(/\s*,\s*$/, "");
+}
+
 export function processGaffiot(): RawDictEntry[] {
   const gaffiot = loadGaffiotDict();
   const entries: RawDictEntry[] = [];
@@ -237,19 +242,27 @@ export function processGaffiot(): RawDictEntry[] {
   // - ? indicates that the word may have some doubt.
   // - ' and ! indicate an abbreviation or an exclamation.
   // const KEY_PATTERN = /^(\d )?(\? )?\w[\w -]*['!]?$/;
+  let i = 0;
   for (const entryName in gaffiot) {
+    i++;
+    if (i % 10000 === 0) {
+      console.debug(`[Gaffiot] ${i} / ${Object.keys(gaffiot).length}`);
+    }
     const id = "gaf-" + entryName.replaceAll(/[\s'?!*()]/g, "");
     assert(/^[A-Za-z\d-]+$/.test(id), id);
     assert(!ids.has(id), `Duplicate id: ${id}`);
     ids.add(id);
 
-    const entry = assertType(gaffiot[entryName], isGaffiotEntry);
-    const entryText = entry.article;
+    const entryText = assertType(gaffiot[entryName], isGaffiotEntry).article;
+    const rawXml = new XmlNode("div", [], texToXml(entryText));
+    const key = findEntryKey(rawXml);
+    const xmlContent = processEntryXml(rawXml.children);
+    const entry = new XmlNode("div", [["id", id]], xmlContent);
 
     entries.push({
       id,
-      keys: [entryName],
-      entry: encodeMessage(toEntryResult(entryText, entryName, id), [
+      keys: [key],
+      entry: encodeMessage(toEntryResult(entry, key, id), [
         XmlNodeSerialization.DEFAULT,
       ]),
     });
