@@ -204,7 +204,20 @@ function processEntryXml(children: XmlChild[]): XmlChild[] {
         child.name === "nameless",
       child.name
     );
-    results.push(new XmlNode("span", [], processEntryXml(child.children)));
+    const attrs: [string, string][] = [];
+    if (child.name === "entree") {
+      attrs.push(["class", "lsOrth"]);
+    }
+    if (child.name === "aut") {
+      attrs.push(["class", "gafAuth"]);
+    }
+    if (child.name === "cl") {
+      attrs.push(["class", "lsQuote"]);
+    }
+    if (child.name === "oeuv" || child.name === "refch") {
+      attrs.push(["class", "lsBibl"]);
+    }
+    results.push(new XmlNode("span", attrs, processEntryXml(child.children)));
   }
   return results;
 }
@@ -229,7 +242,7 @@ function findEntryKey(root: XmlNode): string {
   const entrees = root.findDescendants("entree");
   assert(entrees.length === 1);
   const text = XmlNode.getSoleText(entrees[0]).trim();
-  return text.replace(/\s*,\s*$/, "");
+  return text.replace(/\s*[,!]\s*$/, "").replace(/^\s*\d\s*/, "");
 }
 
 export function processGaffiot(): RawDictEntry[] {

@@ -435,6 +435,11 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundColor: Solarized.violet + modifiedStrength(theme.lsBiblAlpha),
       borderRadius: 4,
     },
+    ".gafAuth": {
+      backgroundColor:
+        Solarized.violet + modifiedStrength(25 + theme.lsBiblAlpha),
+      borderRadius: 4,
+    },
     ".lsQuote": {
       backgroundColor: Solarized.blue + modifiedStrength(theme.lsQuoteAlpha),
       borderRadius: 4,
