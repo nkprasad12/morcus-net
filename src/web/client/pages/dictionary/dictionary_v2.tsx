@@ -88,7 +88,9 @@ function hasGreek(input: string): boolean {
 
 function HorizontalPlaceholder() {
   return (
-    <span key={"horizonatalSpacePlaceholder"} className="dictPlaceholder">
+    <span
+      key={"horizonatalSpacePlaceholder"}
+      className="dictPlaceholder unselectable">
       {"pla ceh old er".repeat(20)}
     </span>
   );
