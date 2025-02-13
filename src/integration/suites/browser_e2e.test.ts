@@ -313,3 +313,22 @@ test.describe("main reader", () => {
     );
   });
 });
+
+test.describe("offline mode", () => {
+  test("allows S&H offline", async ({ page, context }) => {
+    await page.goto("/settings");
+    await click(page.getByText("Experiments"));
+    await click(page.getByLabel("Enable experimental features"));
+    await click(page.getByLabel("Offline mode enabled"));
+
+    await click(page.getByLabel("Smith and Hall"));
+    await expect(page.getByText("You can use S&H offline.")).toBeVisible({
+      timeout: 45000,
+    });
+    context.setOffline(true);
+
+    page.goto("/dicts?q=habiliment");
+    await expect(page.getByText("habiliment").nth(0)).toBeVisible();
+    await expect(page.getByText("garment").nth(0)).toBeVisible();
+  });
+});
