@@ -92,6 +92,7 @@ test.describe("dictionary search", () => {
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
 
     await expect(page.getByText("a hovel, hut").nth(0)).toBeVisible();
@@ -144,6 +145,18 @@ test.describe("dictionary main entries", () => {
     await expect(page.getByText("a weight").nth(0)).toBeVisible();
   });
 
+  test("should allow loading Gaffiot entries by name", async ({ page }) => {
+    page.goto("/dicts?q=abiegineus");
+    await expect(page.getByText("ăbĭegnĭus").nth(0)).toBeVisible();
+    await expect(page.getByText("abiegnus").nth(0)).toBeVisible();
+  });
+
+  test("should allow loading Gaffiot entries by new id", async ({ page }) => {
+    page.goto("/dicts/id/gaf-abiegineus");
+    await expect(page.getByText("ăbĭegnĭus").nth(0)).toBeVisible();
+    await expect(page.getByText("abiegnus").nth(0)).toBeVisible();
+  });
+
   test("should allow loading SH entries by name", async ({ page }) => {
     page.goto("/dicts?q=habiliment");
     await expect(page.getByText("habiliment").nth(0)).toBeVisible();
@@ -160,24 +173,26 @@ test.describe("dictionary main entries", () => {
     page.goto("/dicts/id/sh11673");
 
     await click(page.locator(`[aria-label="Dictionary search box"]`));
-    await page.keyboard.type("abagio", { delay: 20 });
+    await page.keyboard.type("ăbăgĭō", { delay: 20 });
     await page.keyboard.press("Enter");
 
     await expect(
       page.getByText("supposed etymology of adagio").nth(0)
     ).toBeVisible();
-    expect(page).toHaveTitle("abagio | Morcus Latin Tools");
+    expect(page).toHaveTitle("ăbăgĭō | Morcus Latin Tools");
   });
 
   test("allows copying id links via tooltip", async ({ page }) => {
     skipIfWebkit("page.evaluate doesn't yet work on Webkit.");
-    await page.goto("/dicts?q=pondus");
+    await page.goto("/dicts?q=abiegineus");
 
-    await click(page.locator('[class="lsSenseBullet"]').getByText("pondus"));
+    await click(
+      page.locator('[class="lsSenseBullet"]').getByText("ăbĭĕgĭnĕus")
+    );
     await click(page.getByText("Copy article link"));
 
     expect(await page.evaluate(() => navigator.clipboard.readText())).toEqual(
-      `${process.env.BASE_URL}/dicts/id/n37007`
+      `${process.env.BASE_URL}/dicts/id/gaf-abiegineus`
     );
   });
 });

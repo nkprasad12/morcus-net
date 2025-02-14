@@ -85,6 +85,6 @@ describe("GaffiotDict", () => {
 
     const dict = new GaffiotDict(sqliteBacking(TEMP_DB));
 
-    expect(await dict.getCompletions("ab")).toEqual(["abactio", "Abacuc"]);
+    expect(await dict.getCompletions("ab")).toEqual(["ăbāctĭō", "Abăcūc"]);
   });
 });
