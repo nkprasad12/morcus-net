@@ -3,6 +3,7 @@ import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autoco
 // @ts-ignore
 import { FusedAutocompleteFetcher } from "@/web/client/pages/dictionary/search/fused_autocomplete_fetcher";
 import { DictInfo } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 jest.mock(
@@ -43,15 +44,16 @@ function setApiResult(result: Record<string, string[]> | Error) {
   }
 }
 
-const LS_LIST = ["ab", "abago", "dives", "insunt", "jam", "sab", "sad"];
-const SH_LIST = ["away", "now", "dives", "inside", "jab", "sac"];
-const RA_LIST = ["dives"];
-const ALL_DICTS = { LS: LS_LIST, SH: SH_LIST, RA: RA_LIST };
-
 const LD1: DictInfo = {
   key: "LS",
   displayName: "Lewis and Short",
   languages: { from: "La", to: "En" },
+  tags: ["Classical"],
+};
+const GAF: DictInfo = {
+  key: LatinDict.Gaffiot.key,
+  displayName: "Gaffiot",
+  languages: { from: "La", to: "Fr" },
   tags: ["Classical"],
 };
 const ED1: DictInfo = {
@@ -65,6 +67,28 @@ const ED2: DictInfo = {
   displayName: "Riddle Arnold",
   languages: { from: "En", to: "La" },
   tags: ["Classical"],
+};
+
+const LS_LIST = [
+  "ab",
+  "abago",
+  "dives",
+  "insunt",
+  "jam",
+  "oīo",
+  "occīdo",
+  "occĭdo",
+  "sab",
+  "sad",
+];
+const SH_LIST = ["away", "now", "dives", "inside", "jab", "sac"];
+const RA_LIST = ["dives"];
+const GAF_LIST = ["abago", "oĭō", "occĭdō", "occīdō"];
+const ALL_DICTS = {
+  LS: LS_LIST,
+  SH: SH_LIST,
+  RA: RA_LIST,
+  [GAF.key]: GAF_LIST,
 };
 
 describe("autocompleteOptions", () => {
@@ -122,6 +146,17 @@ describe("autocompleteOptions", () => {
     expect(result).toStrictEqual([
       ["La", "dives"],
       ["En", "dives"],
+    ]);
+  });
+
+  it("combines vowel compatible results in same language", async () => {
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("o", [LD1, GAF]);
+    expect(result).toStrictEqual([
+      ["La", "occīdō"],
+      ["La", "occĭdō"],
+      ["La", "oīo"],
+      ["La", "oĭō"],
     ]);
   });
 });
