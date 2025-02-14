@@ -1,6 +1,8 @@
 import { checkPresent } from "@/common/assert";
-import { setMap } from "@/common/data_structures/collect_map";
+import { Vowels } from "@/common/character_utils";
+import { arrayMap } from "@/common/data_structures/collect_map";
 import { DictInfo, type DictLang } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { FusedAutocompleteFetcher } from "@/web/client/pages/dictionary/search/fused_autocomplete_fetcher";
 
@@ -57,7 +59,7 @@ export async function autocompleteOptions(
     fetchResults(extraQuery, fromLatin),
   ];
 
-  const allFiltered: [DictLang, string[]][] = [];
+  const allFiltered: [DictLang, DictInfo["key"], string[]][] = [];
   for (const pending of allPending) {
     const allOptions = await pending;
     for (const dictKey in allOptions) {
@@ -69,18 +71,59 @@ export async function autocompleteOptions(
       );
       allFiltered.push([
         checkPresent(dicts.find((dict) => dict.key === dictKey)).languages.from,
+        dictKey,
         filtered.slice(0, limit),
       ]);
     }
   }
 
-  const byLang = setMap<DictLang, string>();
-  for (const [info, options] of allFiltered) {
+  const groupsByLang = new Map<
+    DictLang,
+    ReturnType<typeof arrayMap<string, [DictInfo["key"], string]>>
+  >();
+  // Group filtered options by language and form
+  for (const [lang, dict, options] of allFiltered) {
+    if (!groupsByLang.has(lang)) {
+      groupsByLang.set(lang, arrayMap<string, [DictInfo["key"], string]>());
+    }
     for (const option of options) {
-      byLang.add(info, option);
+      groupsByLang.get(lang)!.add(removeDiacritics(option), [dict, option]);
     }
   }
-  return Array.from(byLang.map.entries())
+
+  const optionsByLang = arrayMap<DictLang, string>();
+  // Group options by language and ensure compatibility of vowel lengths
+  for (const [lang, formMap] of groupsByLang.entries()) {
+    for (const [_, options] of formMap.map.entries()) {
+      const formGroups: [DictInfo["key"], string][][] = [];
+      for (const [dict, option] of options) {
+        let foundGroup = false;
+        for (const group of formGroups) {
+          const compatible = group.every((member) =>
+            Vowels.haveCompatibleLength(member[1], option)
+          );
+          if (compatible) {
+            group.push([dict, option]);
+            foundGroup = true;
+            break;
+          }
+        }
+        if (!foundGroup) {
+          formGroups.push([[dict, option]]);
+        }
+      }
+
+      // Select the leader option for each group
+      for (const group of formGroups) {
+        const leader =
+          group.find(([key, _]) => key === LatinDict.Gaffiot.key) ?? group[0];
+        optionsByLang.add(lang, leader[1]);
+      }
+    }
+  }
+
+  // Flatten and sort the options by language and return the top results
+  return Array.from(optionsByLang.map.entries())
     .flatMap(([lang, words]) =>
       Array.from(words).map((w): [DictLang, string] => [lang, w])
     )

@@ -35,7 +35,10 @@ function fullChipClass(label: string, size?: string): string {
 }
 
 function fullChipText(label: string): string {
-  return label === LatinDict.RiddleArnold.displayName
+  return [
+    LatinDict.RiddleArnold.displayName,
+    LatinDict.Gaffiot.displayName,
+  ].includes(label)
     ? `${label} [Beta]`
     : label;
 }

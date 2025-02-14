@@ -1,4 +1,4 @@
-import { assert, assertEqual, assertType } from "@/common/assert";
+import { assert, assertType } from "@/common/assert";
 import type { EntryResult } from "@/common/dictionaries/dict_result";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";

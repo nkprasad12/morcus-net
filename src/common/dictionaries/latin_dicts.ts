@@ -43,7 +43,7 @@ export namespace LatinDict {
 
   export const AVAILABLE: LatinDictInfo[] = [
     LewisAndShort,
-    // Gaffiot,
+    Gaffiot,
     SmithAndHall,
     RiddleArnold,
     Numeral,
