@@ -461,16 +461,14 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       color: theme.lsEmph,
     },
     ".lsSenseBullet": {
-      fontWeight: "bold",
       cursor: "pointer",
-      backgroundColor: theme.bullet + "48",
+      backgroundColor: theme.bullet + "38",
       borderRadius: 4,
     },
     ".lsSenseBullet:hover": {
-      backgroundColor: theme.bullet + "80",
+      backgroundColor: theme.bullet + "60",
     },
     ".outlineHead": {
-      fontWeight: "bold",
       cursor: "pointer",
       backgroundColor: theme.bullet + "30",
       borderRadius: 4,
