@@ -9,6 +9,7 @@ import {
   buttonLikeProps,
   type ButtonLikeProps,
 } from "@/web/client/components/generic/basics";
+import { reportIssue } from "@/web/client/components/report_util";
 
 export type TooltipPlacement = "top" | "right" | "bottom";
 
@@ -139,7 +140,7 @@ export function ClickableTooltip(props: {
   );
 }
 
-type CopyLinkTooltipState = "Closed" | "Open" | "Success" | "Error";
+type CopyLinkTooltipState = "Closed" | "Open" | "CopySuccess" | "Error";
 
 interface TooltipMenuItem {
   message: string;
@@ -152,9 +153,9 @@ function TooltipMenu(props: { items: TooltipMenuItem[] }) {
     <div className="text sm">
       {props.items.map((item) => (
         <div
+          className="tooltipMenuItem"
           key={item.message}
-          onClick={item.handler}
-          style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+          onClick={item.handler}>
           <SvgIcon
             pathD={item.icon}
             style={{ marginRight: "4px" }}
@@ -184,8 +185,7 @@ function SectionMenuTitleText(props: {
   mainMessage: string;
   link: string;
   setState: (state: CopyLinkTooltipState) => unknown;
-  dismissTooltip: () => unknown;
-  onEditRequest?: () => unknown;
+  idToEdit?: string;
 }) {
   if (props.state === "Closed") {
     return <></>;
@@ -193,7 +193,7 @@ function SectionMenuTitleText(props: {
   if (props.state === "Error") {
     return <CopyLinkError link={props.link} />;
   }
-  if (props.state === "Success") {
+  if (props.state === "CopySuccess") {
     return (
       <TooltipMenu items={[{ message: "Link copied!", icon: SvgIcon.Link }]} />
     );
@@ -206,21 +206,21 @@ function SectionMenuTitleText(props: {
         handler: async () => {
           try {
             await navigator.clipboard.writeText(props.link);
-            props.setState("Success");
-            setTimeout(() => props.dismissTooltip(), 500);
+            props.setState("CopySuccess");
+            setTimeout(() => props.setState("Closed"), 500);
           } catch (e) {
             props.setState("Error");
           }
         },
       },
     ];
-    if (props.onEditRequest) {
+    if (props.idToEdit !== undefined) {
       items.push({
         message: "Edit and Report",
         icon: SvgIcon.Edit,
         handler: () => {
-          props.dismissTooltip();
-          props.onEditRequest?.();
+          onEditRequest(props.idToEdit);
+          props.setState("Closed");
         },
       });
     }
@@ -229,46 +229,68 @@ function SectionMenuTitleText(props: {
   exhaustiveGuard(props.state);
 }
 
+function onEditRequest(idToEdit: string | undefined) {
+  if (!idToEdit) {
+    return;
+  }
+  const target = document.getElementById(idToEdit);
+  const original = target?.innerText;
+  target?.setAttribute("contenteditable", "true");
+  target?.focus();
+  const listener = () => {
+    const updated = target?.innerText;
+    target?.removeAttribute("contenteditable");
+    target?.removeEventListener("blur", listener);
+    if (updated !== original) {
+      const content = [
+        `id: ${idToEdit}`,
+        "Original:",
+        original,
+        "Edited:",
+        updated,
+      ];
+      reportIssue(content.join("\n"), ["userEdit"]);
+    }
+  };
+  target?.addEventListener("blur", listener);
+}
+
 export function CopyLinkTooltip(props: {
   forwarded: TooltipChild;
   message: string;
   link: string;
   visibleListener?: (visible: boolean) => unknown;
   placement?: TooltipPlacement;
-  onEditRequest?: () => unknown;
+  idToEdit?: string;
 }) {
-  const [visible, setVisible] = React.useState<boolean>(false);
+  const { visibleListener } = props;
   const [state, setState] = React.useState<CopyLinkTooltipState>("Closed");
+  const visible = state !== "Closed";
 
-  function setTooltipVisible(isVisible: boolean) {
-    props.visibleListener?.(isVisible);
-    setVisible(isVisible);
-  }
+  const enhancedSetState = React.useCallback(
+    (state: CopyLinkTooltipState) => {
+      setState(state);
+      visibleListener?.(state !== "Closed");
+    },
+    [visibleListener]
+  );
 
   return (
     <BaseTooltip
       titleText={
         <SectionMenuTitleText
           state={state}
-          setState={setState}
+          setState={enhancedSetState}
           mainMessage={props.message}
           link={props.link}
-          onEditRequest={props.onEditRequest}
-          dismissTooltip={() => setTooltipVisible(false)}
+          idToEdit={props.idToEdit}
         />
       }
       ChildFactory={props.forwarded}
       placement={props.placement || "top"}
       open={visible}
-      onChildClick={() => {
-        if (visible) {
-          setVisible(false);
-          return;
-        }
-        setState("Open");
-        setTooltipVisible(true);
-      }}
-      onClickAway={() => setTooltipVisible(false)}
+      onChildClick={() => enhancedSetState(visible ? "Closed" : "Open")}
+      onClickAway={() => enhancedSetState("Closed")}
     />
   );
 }
@@ -277,7 +299,7 @@ export function SectionLinkTooltip(props: {
   forwarded: TooltipChild;
   id: string;
   forArticle?: boolean;
-  onEditRequest?: () => unknown;
+  idToEdit?: string;
 }) {
   const isArticle = props.forArticle === true;
   const message = `Copy ${isArticle ? "article" : "section"} link`;
@@ -295,7 +317,7 @@ export function SectionLinkTooltip(props: {
       forwarded={props.forwarded}
       message={message}
       link={getLink()}
-      onEditRequest={props.onEditRequest}
+      idToEdit={props.idToEdit}
     />
   );
 }

@@ -1,10 +1,8 @@
 import { useState } from "react";
 
-import { callApi } from "@/web/utils/rpc/client_rpc";
-import { ReportApi, type ReportApiRequest } from "@/web/api_routes";
-import { getCommitHash } from "@/web/client/define_vars";
 import { SpanButton, TextField } from "@/web/client/components/generic/basics";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
+import { reportIssue } from "@/web/client/components/report_util";
 
 const DEFAULT_TEXT = `\n\nReporter: Anonymous`;
 
@@ -51,13 +49,7 @@ export function ReportIssueDialog(props: {
         </SpanButton>
         <SpanButton
           onClick={() => {
-            const request: ReportApiRequest = {
-              reportText,
-              commit: getCommitHash() ?? "undefined",
-              url: window.location.href,
-              userAgent: navigator ? navigator?.userAgent : undefined,
-            };
-            callApi(ReportApi, request).catch(() => {});
+            reportIssue(reportText);
             props.onClose();
           }}
           className="button">
