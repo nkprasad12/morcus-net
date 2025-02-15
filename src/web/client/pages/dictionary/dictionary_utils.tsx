@@ -285,14 +285,13 @@ export function xmlNodeToJsx(
       return React.createElement(root.name, allProps, children);
     }
     const ForwardedNode = React.forwardRef<HTMLElement>(senseForwardedNode);
+    const senseId = checkPresent(root.getAttr("senseid"));
     return (
       <SectionLinkTooltip
         forwarded={ForwardedNode}
-        id={checkPresent(
-          root.getAttr("senseid"),
-          "lsSenseBullet must have senseid!"
-        )}
+        id={senseId}
         key={key}
+        idToEdit={senseId}
       />
     );
   } else if (className === "dLink") {

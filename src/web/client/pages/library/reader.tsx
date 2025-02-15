@@ -842,6 +842,7 @@ function WorkChunkHeader(props: {
       forwarded={React.forwardRef<HTMLSpanElement>(
         workSectionHeader(props.text, props.latent, props.highlighted)
       )}
+      idToEdit={props.idLabel}
       message={props.blurb}
       placement="right"
       link={url}

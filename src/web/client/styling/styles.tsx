@@ -275,14 +275,24 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".tooltip": {
       backgroundColor: theme.tooltipBg,
       border: `2px solid ${theme.tooltipBorder}`,
-      padding: "4px 8px",
+      // padding: "4px 8px",
       borderRadius: "4px",
       margin: "6px",
     },
     ".MuiPopper-root": {
       zIndex: 102,
     },
-
+    ".tooltipMenuItem": {
+      cursor: "pointer",
+      display: "flex",
+      alignItems: "center",
+      borderRadius: "4px",
+      padding: "4px",
+      margin: "4px 0",
+    },
+    ".tooltipMenuItem:hover": {
+      backgroundColor: theme.bgAlt + "80",
+    },
     /** Basic content primitives */
     ".bgColor": { backgroundColor },
     ".bgAlt": { backgroundColor: theme.bgAlt },
