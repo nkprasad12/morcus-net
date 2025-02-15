@@ -1,6 +1,7 @@
 import { ApiRoute } from "@/web/utils/rpc/rpc";
 import {
   isAny,
+  isArray,
   isString,
   matchesObject,
   maybeUndefined,
@@ -49,6 +50,7 @@ export interface ReportApiRequest {
   commit: string;
   url?: string;
   userAgent?: string;
+  tags?: string[];
 }
 
 export const ReportApi: ApiRoute<ReportApiRequest, any> = {
@@ -59,6 +61,7 @@ export const ReportApi: ApiRoute<ReportApiRequest, any> = {
     commit: isString,
     url: maybeUndefined(isString),
     userAgent: maybeUndefined(isString),
+    tags: maybeUndefined(isArray(isString)),
   }),
   outputValidator: isAny,
 };
