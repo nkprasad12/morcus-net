@@ -139,84 +139,92 @@ export function ClickableTooltip(props: {
   );
 }
 
-type CopyLinkTooltipState = "Closed" | "ClickToCopy" | "Success" | "Error";
+type CopyLinkTooltipState = "Closed" | "Open" | "Success" | "Error";
 
-function TextWithIcon(props: {
+interface TooltipMenuItem {
   message: string;
-  link: string;
-  setState: (state: CopyLinkTooltipState) => unknown;
-  dismissTooltip: () => unknown;
-}) {
-  async function onClick() {
-    try {
-      await navigator.clipboard.writeText(props.link);
-      props.setState("Success");
-      setTimeout(() => props.dismissTooltip(), 500);
-    } catch (e) {
-      props.setState("Error");
-    }
-  }
+  icon: string;
+  handler?: () => unknown;
+}
 
+function TooltipMenu(props: { items: TooltipMenuItem[] }) {
   return (
-    <div className="text md">
-      <div
-        onClick={onClick}
-        style={{
-          cursor: "pointer",
-          display: "flex",
-          alignItems: "center",
-        }}>
-        <SvgIcon
-          pathD={SvgIcon.Link}
-          style={{ marginRight: "4px" }}
-          aria-hidden
-        />
-        <span>{props.message}</span>
-      </div>
+    <div className="text sm">
+      {props.items.map((item) => (
+        <div
+          key={item.message}
+          onClick={item.handler}
+          style={{ cursor: "pointer", display: "flex", alignItems: "center" }}>
+          <SvgIcon
+            pathD={item.icon}
+            style={{ marginRight: "4px" }}
+            aria-hidden
+          />
+          <span>{item.message}</span>
+        </div>
+      ))}
     </div>
   );
 }
 
-function TitleText(props: {
+function CopyLinkError(props: { link: string }) {
+  return (
+    <div className="text sm">
+      <span style={{ lineHeight: "normal" }}>
+        Error: please copy manually:{" "}
+      </span>
+      <br />
+      <span style={{ lineHeight: "normal" }}>{props.link}</span>
+    </div>
+  );
+}
+
+function SectionMenuTitleText(props: {
   state: CopyLinkTooltipState;
   mainMessage: string;
   link: string;
   setState: (state: CopyLinkTooltipState) => unknown;
   dismissTooltip: () => unknown;
+  onEditRequest?: () => unknown;
 }) {
   if (props.state === "Closed") {
     return <></>;
   }
   if (props.state === "Error") {
-    return (
-      <div className="text md">
-        <span style={{ fontSize: 14, lineHeight: "normal" }}>
-          Error: please copy manually:{" "}
-        </span>
-        <br />
-        <span style={{ fontSize: 16, lineHeight: "normal" }}>{props.link}</span>
-      </div>
-    );
+    return <CopyLinkError link={props.link} />;
   }
   if (props.state === "Success") {
     return (
-      <TextWithIcon
-        message="Link copied!"
-        setState={props.setState}
-        dismissTooltip={props.dismissTooltip}
-        link={props.link}
-      />
+      <TooltipMenu items={[{ message: "Link copied!", icon: SvgIcon.Link }]} />
     );
   }
-  if (props.state === "ClickToCopy") {
-    return (
-      <TextWithIcon
-        message={props.mainMessage}
-        setState={props.setState}
-        dismissTooltip={props.dismissTooltip}
-        link={props.link}
-      />
-    );
+  if (props.state === "Open") {
+    const items: TooltipMenuItem[] = [
+      {
+        message: props.mainMessage,
+        icon: SvgIcon.Link,
+        handler: async () => {
+          try {
+            await navigator.clipboard.writeText(props.link);
+            props.setState("Success");
+            setTimeout(() => props.dismissTooltip(), 500);
+          } catch (e) {
+            props.setState("Error");
+          }
+        },
+      },
+    ];
+    if (props.onEditRequest) {
+      items.push({
+        message: "Edit and Report",
+        icon: SvgIcon.Edit,
+        handler: () => {
+          props.dismissTooltip();
+          props.onEditRequest?.();
+        },
+      });
+    }
+    return <TooltipMenu items={items} />;
   }
   exhaustiveGuard(props.state);
 }
@@ -227,6 +235,7 @@ export function CopyLinkTooltip(props: {
   link: string;
   visibleListener?: (visible: boolean) => unknown;
   placement?: TooltipPlacement;
+  onEditRequest?: () => unknown;
 }) {
   const [visible, setVisible] = React.useState<boolean>(false);
   const [state, setState] = React.useState<CopyLinkTooltipState>("Closed");
@@ -239,11 +248,12 @@ export function CopyLinkTooltip(props: {
   return (
     <BaseTooltip
       titleText={
-        <TitleText
+        <SectionMenuTitleText
           state={state}
           setState={setState}
           mainMessage={props.message}
           link={props.link}
+          onEditRequest={props.onEditRequest}
           dismissTooltip={() => setTooltipVisible(false)}
         />
       }
@@ -255,7 +265,7 @@ export function CopyLinkTooltip(props: {
           setVisible(false);
           return;
         }
-        setState("ClickToCopy");
+        setState("Open");
         setTooltipVisible(true);
       }}
       onClickAway={() => setTooltipVisible(false)}
@@ -267,6 +277,7 @@ export function SectionLinkTooltip(props: {
   forwarded: TooltipChild;
   id: string;
   forArticle?: boolean;
+  onEditRequest?: () => unknown;
 }) {
   const isArticle = props.forArticle === true;
   const message = `Copy ${isArticle ? "article" : "section"} link`;
@@ -284,6 +295,7 @@ export function SectionLinkTooltip(props: {
       forwarded={props.forwarded}
       message={message}
       link={getLink()}
+      onEditRequest={props.onEditRequest}
     />
   );
 }
