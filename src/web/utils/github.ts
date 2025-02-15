@@ -23,7 +23,7 @@ export namespace GitHub {
     const body = {
       title: `User Report: ${firstLine}`,
       body: createIssueBody(request),
-      labels: ["userReport"],
+      labels: ["userReport", ...(request.tags ?? [])],
     };
 
     const response = await fetch(GITHUB_ISSUES_API, {
