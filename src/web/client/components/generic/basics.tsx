@@ -150,7 +150,7 @@ export function TextField(props: {
   const baseProps = {
     id: props.id,
     className: "text md textField",
-    spellCheck: false,
+    spellcheck: false,
     autoCapitalize: "none",
     autoComplete: "off",
     defaultValue: props.defaultValue,

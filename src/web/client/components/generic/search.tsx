@@ -168,7 +168,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             ref={inputRef}
             type="text"
             className="customSearchBox text md"
-            spellCheck="false"
+            spellcheck={false}
             autoCapitalize="none"
             autoComplete="off"
             aria-label={props.ariaLabel}
