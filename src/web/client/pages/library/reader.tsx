@@ -516,7 +516,7 @@ function JumpToSection() {
         className="bgColor text"
         aria-label="jump to id"
         value={value}
-        onChange={(e) => setValue(e.target.value ?? "")}
+        onChange={(e) => setValue(e.currentTarget.value ?? "")}
         onKeyUp={(e) => {
           if (e.key === "Enter" && value.length > 0) {
             nav.to((old) => ({

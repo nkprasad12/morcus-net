@@ -88,7 +88,7 @@ function OfflineSettingsCheckbox(props: {
           checked={setting === true}
           disabled={disabled}
           onChange={async (e) => {
-            const checked = e.target.checked;
+            const checked = e.currentTarget.checked;
             setProgress("In progress: please wait");
             const status = await registerServiceWorker();
             if (status === -1) {

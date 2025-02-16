@@ -84,7 +84,7 @@ export function MobileReaderSettingsSections(props: MobileReaderSettings) {
             id="swipeNav"
             name="swipeNav"
             checked={swipeNavigation}
-            onChange={(e) => setSwipeNavigation(e.target.checked)}
+            onChange={(e) => setSwipeNavigation(e.currentTarget.checked)}
           />
           <label htmlFor="swipeNav" className="text md">
             Swipe to change page
@@ -98,7 +98,7 @@ export function MobileReaderSettingsSections(props: MobileReaderSettings) {
             id="tapNav"
             name="tapNav"
             checked={tapNavigation}
-            onChange={(e) => setTapNavigation(e.target.checked)}
+            onChange={(e) => setTapNavigation(e.currentTarget.checked)}
           />
           <label htmlFor="tapNav" className="text md">
             Tap edge to change page [Beta]

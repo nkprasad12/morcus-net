@@ -145,7 +145,7 @@ export function TextField(props: {
     onNewValue === undefined
       ? undefined
       : (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
-          onNewValue(e.target.value);
+          onNewValue(e.currentTarget.value);
   const width = "calc(100% - 12px)";
   const baseProps = {
     id: props.id,
