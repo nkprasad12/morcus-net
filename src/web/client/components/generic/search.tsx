@@ -173,7 +173,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             autoComplete="off"
             aria-label={props.ariaLabel}
             value={input}
-            onChange={async (e) => onInput(e.target.value)}
+            onChange={async (e) => onInput(e.currentTarget.value)}
             onKeyUp={(event) => {
               if (event.key !== "Enter") {
                 return;

@@ -96,7 +96,7 @@ function SearchSettingsDialog(props: {
                 disabled={shouldDisable[dict.key]}
                 onChange={(e) => {
                   const dicts = new Set(props.dicts);
-                  if (e.target.checked) {
+                  if (e.currentTarget.checked) {
                     dicts.add(dict);
                   } else {
                     dicts.delete(dict);

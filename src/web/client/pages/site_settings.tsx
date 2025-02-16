@@ -38,7 +38,7 @@ function DropDown(props: {
       <select
         name={props.id}
         id={props.id}
-        onChange={(e) => props.onSelected(e.target.value)}
+        onChange={(e) => props.onSelected(e.currentTarget.value)}
         defaultValue={props.default}>
         {props.options.map((o) => (
           <option value={o} key={o}>
