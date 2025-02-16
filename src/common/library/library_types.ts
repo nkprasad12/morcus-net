@@ -13,6 +13,7 @@ import {
 
 export interface DocumentInfo {
   title: string;
+  shortTitle?: string;
   author: string;
   editor?: string;
   sponsor?: string;
@@ -24,6 +25,7 @@ export interface DocumentInfo {
 export namespace DocumentInfo {
   export const isMatch = matchesObject<DocumentInfo>({
     title: isString,
+    shortTitle: maybeUndefined(isString),
     author: isString,
     editor: maybeUndefined(isString),
     sponsor: maybeUndefined(isString),
