@@ -44,7 +44,7 @@ export function getWidth(width: BoxWidth): number {
   }
 }
 
-const UNSELECTABLE: CSSProperties = {
+const UNSELECTABLE = {
   WebkitTouchCallout: "none",
   // @ts-ignore
   WebkitTouchSelect: "none",
@@ -52,22 +52,22 @@ const UNSELECTABLE: CSSProperties = {
   MozUserSelect: "none",
   msUserSelect: "none",
   userSelect: "none",
-};
+} as const satisfies CSSProperties;
 
 const DEFAULT_FONTS = `"Arial","Helvetica",sans-serif`;
 const SERIF_FONTS = `"Georgia", "Times New Roman", "Times", serif`;
-const TEXT_STYLE: CSSProperties = {
+const TEXT_STYLE = {
   fontWeight: 400,
   lineHeight: 1.5,
   letterSpacing: "0.00938em",
-};
-const MOBILE_NAV_BUTTON_BASE_STYLE: CSSProperties = {
+} as const satisfies CSSProperties;
+const MOBILE_NAV_BUTTON_BASE_STYLE = {
   borderRadius: 4,
   marginTop: 3,
   marginLeft: 3,
   marginRight: 3,
   fontSize: 40,
-};
+} as const satisfies CSSProperties;
 
 function themeFor(settings: Partial<StyleConfig>): SiteColors {
   return settings.darkMode === true ? DEFAULT_DARK : DEFAULT_LIGHT;

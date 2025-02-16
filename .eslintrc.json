@@ -54,6 +54,8 @@
     ],
     "react/prop-types": "off",
     "react/no-unstable-nested-components": "error",
+    // Preact only has `spellcheck`, not `spellCheck`.
+    "react/no-unknown-property": ["error", { "ignore": ["spellcheck"] }],
     "no-constant-condition": "off",
     "no-inner-declarations": "off",
     "no-empty": ["error", { "allowEmptyCatch": true }],

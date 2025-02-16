@@ -162,7 +162,7 @@ export function TextField(props: {
       ...(props.fullWidth ? { width, maxWidth: width } : {}),
       ...props.styles,
     },
-  };
+  } as const;
 
   return props.multiline ? (
     <textarea {...baseProps} />

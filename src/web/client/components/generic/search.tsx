@@ -199,6 +199,8 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             onFocus={() => setFocused(true)}
             onBlur={(e) => {
               // If this is due to a click of the clear button, just reset the cursor and return.
+              // @ts-expect-error - `relatedTarget` can technically be any `EventTarget`, not just
+              //   an `Element`. But the null coalescing will handle this just fine.
               if (e.relatedTarget?.ariaLabel === CLEAR_QUERY) {
                 setCursor(-1);
                 return;
