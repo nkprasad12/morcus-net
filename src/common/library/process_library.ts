@@ -45,6 +45,8 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([
   ["de Origine et Situ Germanorum Liber", "Germania"],
+  ["The Catilinarian Conspiracy", "Bellum Catilinae"],
+  ["Laelius De Amicitia", "De Amicitia"],
 ]);
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>([
@@ -123,7 +125,9 @@ export function processLibrary(
       translationId
     );
     const rawTitle = result.info.title;
-    const title = NAME_TO_DISPLAY_NAME.get(rawTitle) ?? rawTitle;
+    const shortName = NAME_TO_DISPLAY_NAME.get(rawTitle);
+    const title = shortName ?? rawTitle;
+    result.info.shortTitle = shortName;
 
     const metadata: LibraryWorkMetadata = {
       id: workId,

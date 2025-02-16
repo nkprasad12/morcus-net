@@ -485,11 +485,6 @@ function HeaderText(props: { data: PaginatedWork; page: number }) {
       <div style={{ display: "flex", justifyContent: "center" }}>
         {idLabels.join(", ")}
       </div>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        {props.data.info.title}
-        {" • "}
-        {props.data.info.author}
-      </div>
     </div>
   );
 }
@@ -510,7 +505,7 @@ function JumpToSection() {
   useEffect(() => setValue(id), [id]);
   return (
     <>
-      <span className="text sm light">§ </span>
+      {"§ "}
       <input
         style={{ maxWidth: "48px", borderRadius: "4px" }}
         className="bgColor text"
@@ -573,7 +568,10 @@ function WorkNavigationBar(props: {
           disabled={page <= 0}
           onClick={() => changePage(-1)}
         />
-        <span style={{ flexGrow: 1, textAlign: "center" }}>
+        <span
+          style={{ flexGrow: 1, textAlign: "center" }}
+          className="text sm light">
+          {(work.info.shortTitle ?? work.info.title) + " "}
           <JumpToSection />
           <CopyLinkTooltip
             forwarded={TooltipNavIcon}
