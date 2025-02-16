@@ -118,7 +118,15 @@ function cleanText(entryText: string): string {
   // - Removes XML-like comments
   // - Removes $ characters
   // - Replaces ~ with a space
-  return entryText.replace(/(<[^>]*>)|\$/g, "").replaceAll("~", " ");
+  return entryText
+    .replace(/(<[^>]*>)|\$/g, "")
+    .replaceAll("~", " ")
+    .replaceAll("ÿ", "ў")
+    .replaceAll("Ÿ", "Y̆");
+  // From gaffiot.fr, but we haven't seen these yet.
+  // .replace(/Ȟ/g, "ن")
+  // .replace(/ȟ/g, "Y")
+  // .replace(/Ƞ/g, "˘");
 }
 
 export function texToXml(input: string): XmlChild[] {
