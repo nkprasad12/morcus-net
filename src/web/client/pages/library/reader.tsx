@@ -9,7 +9,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, JSX } from "react";
 import * as React from "react";
 import {
   areArraysEqual,

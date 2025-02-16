@@ -8,7 +8,7 @@ import {
   ReaderInternalTabConfig,
 } from "@/web/client/pages/library/reader_sidebar_components";
 
-import { PropsWithChildren, useEffect, useState } from "react";
+import { PropsWithChildren, useEffect, useState, JSX } from "react";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import React from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";

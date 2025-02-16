@@ -1,3 +1,5 @@
+import { JSX } from "react";
+
 export interface ContentPage {
   /** The content to display for this page. */
   Content: (props: Partial<Record<string, any>>) => JSX.Element;

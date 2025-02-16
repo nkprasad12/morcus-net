@@ -1,4 +1,4 @@
-import { useState, useContext, useEffect } from "react";
+import { useState, useContext, useEffect, JSX } from "react";
 
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";

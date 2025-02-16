@@ -3,7 +3,7 @@ import {
   SpanButton,
   type ClickableCoreProps,
 } from "@/web/client/components/generic/basics";
-import { PropsWithChildren, useEffect, useRef } from "react";
+import { PropsWithChildren, useEffect, useRef, JSX } from "react";
 
 export type OverlayProps = ClickableCoreProps;
 
