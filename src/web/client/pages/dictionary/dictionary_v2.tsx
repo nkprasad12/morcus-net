@@ -184,6 +184,10 @@ function ErrorContent(props: { isSmall: boolean }) {
   );
 }
 
+function LandingContent() {
+  return <></>;
+}
+
 function getEntriesByDict(
   response: DictsFusedResponse,
   hash: string | undefined,
@@ -314,17 +318,19 @@ function ResponsiveLayout(props: {
   oneCol?: React.ReactNode;
   twoColSide?: React.ReactNode;
   twoColMain?: React.ReactNode;
+  content?: React.ReactNode;
   contextValues: DictContextOptions;
 }) {
+  const { oneCol, twoColSide, twoColMain, content } = props;
   const { isSmall } = props.contextValues;
   return (
     <DictContext.Provider value={props.contextValues}>
       {isSmall ? (
-        <OneColumnLayout>{props.oneCol || <></>}</OneColumnLayout>
+        <OneColumnLayout>{oneCol ?? content ?? <></>}</OneColumnLayout>
       ) : (
         <TwoColumnLayout>
-          {props.twoColSide || <></>}
-          {props.twoColMain || <></>}
+          {twoColSide ?? <></>}
+          {twoColMain ?? content ?? <></>}
         </TwoColumnLayout>
       )}
     </DictContext.Provider>
@@ -792,57 +798,26 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     ]
   );
 
-  if (greekTerm !== null) {
-    const greekWorkContent = (
+  const simpleContent =
+    greekTerm !== null ? (
       <GreekWordContent
         isSmall={isSmall}
         word={greekTerm}
         scrollTopRef={scrollTopRef}
       />
-    );
-    return (
-      <ResponsiveLayout
-        oneCol={greekWorkContent}
-        twoColMain={greekWorkContent}
-        contextValues={contextValues}
-      />
-    );
-  }
-
-  if (state === "Landing") {
-    return <ResponsiveLayout contextValues={contextValues} />;
-  }
-
-  if (state === "Error") {
-    return (
-      <ResponsiveLayout
-        contextValues={contextValues}
-        oneCol={<ErrorContent isSmall={isSmall} />}
-        twoColMain={<ErrorContent isSmall={isSmall} />}
-      />
-    );
-  }
-
-  if (state === "No Results") {
-    const noResults = (
+    ) : state === "Landing" ? (
+      <LandingContent />
+    ) : state === "Error" ? (
+      <ErrorContent isSmall={isSmall} />
+    ) : state === "No Results" ? (
       <NoResultsContent isSmall={isSmall} word={query} dicts={dictsToUse} />
-    );
-    return (
-      <ResponsiveLayout
-        oneCol={noResults}
-        twoColMain={noResults}
-        contextValues={contextValues}
-      />
-    );
-  }
+    ) : state === "Loading" ? (
+      <LoadingMessage />
+    ) : null;
 
-  if (state === "Loading") {
+  if (simpleContent !== null) {
     return (
-      <ResponsiveLayout
-        contextValues={contextValues}
-        oneCol={<LoadingMessage />}
-        twoColMain={<LoadingMessage />}
-      />
+      <ResponsiveLayout content={simpleContent} contextValues={contextValues} />
     );
   }
 
