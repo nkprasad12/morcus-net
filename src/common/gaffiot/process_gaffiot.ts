@@ -1,4 +1,4 @@
-import { assert, assertType } from "@/common/assert";
+import { assert, assertEqual, assertType } from "@/common/assert";
 import type { EntryResult } from "@/common/dictionaries/dict_result";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
@@ -204,6 +204,7 @@ function processEntryXml(children: XmlChild[]): XmlChild[] {
         child.name === "nameless",
       child.name
     );
+    let name = "span";
     const attrs: [string, string][] = [];
     if (child.name === "entree") {
       attrs.push(["class", "lsOrth"]);
@@ -217,7 +218,20 @@ function processEntryXml(children: XmlChild[]): XmlChild[] {
     if (child.name === "oeuv" || child.name === "refch") {
       attrs.push(["class", "lsBibl"]);
     }
-    results.push(new XmlNode("span", attrs, processEntryXml(child.children)));
+    if (child.name === "S") {
+      assertEqual(child.children.length, 0);
+      results.push("§");
+      continue;
+    }
+    if (child.name === "F") {
+      assertEqual(child.children.length, 0);
+      results.push("➳");
+      continue;
+    }
+    if (child.name === "gras") {
+      name = "b";
+    }
+    results.push(new XmlNode(name, attrs, processEntryXml(child.children)));
   }
   return results;
 }

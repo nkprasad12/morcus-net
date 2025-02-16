@@ -37,6 +37,12 @@ const FAKE_GAFFIOT = {
     article:
       "\\entree{Abăcūc,} \\gen{m.} indécl., prophète des Hébreux : \\aut{Eccl.}   ",
   },
+  testEntry1: {
+    article: "\\entree{testEntry1,} \\S1 \\F \\S2",
+  },
+  testEntry2: {
+    article: "\\entree{testEntry2}\\gras{bold}",
+  },
 };
 
 async function expectEntriesWithIds(
@@ -49,12 +55,16 @@ async function expectEntriesWithIds(
 }
 
 describe("GaffiotDict", () => {
-  beforeEach(() => {
+  let dict: GaffiotDict;
+
+  beforeAll(() => {
     process.env.GAFFIOT_RAW_PATH = TEMP_FILE;
     fs.writeFileSync(TEMP_FILE, JSON.stringify(FAKE_GAFFIOT));
+    SqliteDict.save(processGaffiot(), TEMP_DB);
+    dict = new GaffiotDict(sqliteBacking(TEMP_DB));
   });
 
-  afterEach(() => {
+  afterAll(() => {
     try {
       fs.unlinkSync(TEMP_FILE);
     } catch (e) {}
@@ -62,29 +72,41 @@ describe("GaffiotDict", () => {
   });
 
   test("getEntry returns expected entries", async () => {
-    SqliteDict.save(processGaffiot(), TEMP_DB);
-
-    const dict = new GaffiotDict(sqliteBacking(TEMP_DB));
-
     expect(await dict.getEntry("Julius")).toEqual([]);
     await expectEntriesWithIds(dict.getEntry("abactio"), ["gaf-abactio"]);
   });
 
   test("getEntryById returns expected entries", async () => {
-    SqliteDict.save(processGaffiot(), TEMP_DB);
-
-    const dict = new GaffiotDict(sqliteBacking(TEMP_DB));
-
     expect(await dict.getEntryById("n1")).toEqual(undefined);
     const result = await dict.getEntryById("gaf-2a");
     expect(result?.entry.toString().includes("gaf-2a")).toBe(true);
   });
 
   test("getCompletions returns expected completions", async () => {
-    SqliteDict.save(processGaffiot(), TEMP_DB);
-
-    const dict = new GaffiotDict(sqliteBacking(TEMP_DB));
-
     expect(await dict.getCompletions("ab")).toEqual(["ăbāctĭō", "Abăcūc"]);
+  });
+
+  test("processes section and arrows correction.", async () => {
+    const result = await dict.getEntry("testEntry1");
+    expect(result).toHaveLength(1);
+    const entry = result[0].entry;
+
+    expect(entry.children.slice(1)).toStrictEqual([
+      " ",
+      "§",
+      "1 ",
+      "➳",
+      " ",
+      "§",
+      "2",
+    ]);
+  });
+
+  test("processes bold entries.", async () => {
+    const result = await dict.getEntry("testEntry2");
+    expect(result).toHaveLength(1);
+    const entry = result[0].entry;
+
+    expect(entry.children[1]).toStrictEqual(new XmlNode("b", [], ["bold"]));
   });
 });
