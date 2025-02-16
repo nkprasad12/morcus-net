@@ -137,7 +137,7 @@ function SearchSettingsDialog(props: {
               }
             />
             <label htmlFor="inflectionOption">
-              <span className="text sm">Inflected forms (Beta)</span>
+              <span className="text sm">Latin inflected forms</span>
             </label>
           </div>
         </div>
