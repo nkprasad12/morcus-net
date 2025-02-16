@@ -15,6 +15,7 @@ import React, {
   useEffect,
   useState,
   useCallback,
+  JSX,
 } from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Footer } from "@/web/client/components/footer";

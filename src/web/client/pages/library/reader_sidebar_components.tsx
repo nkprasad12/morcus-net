@@ -8,7 +8,7 @@ import { exhaustiveGuard } from "@/common/misc_utils";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { StyleContext } from "@/web/client/styling/style_context";
-import { useContext } from "react";
+import { useContext, JSX } from "react";
 
 export interface EmbeddedDictionaryProps {
   /** The word to look up in the dictionary, if any. */

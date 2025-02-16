@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect } from "react";
+import { useRef, useState, useEffect, JSX } from "react";
 
 import Popper from "@mui/base/PopperUnstyled";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
