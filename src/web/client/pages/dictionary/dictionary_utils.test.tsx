@@ -6,7 +6,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { render, screen } from "@testing-library/react";
 import "@testing-library/jest-dom";
 import user from "@testing-library/user-event";
-import { forwardRef } from "react";
+import { forwardRef, JSX } from "react";
 
 import {
   ClickableTooltip,

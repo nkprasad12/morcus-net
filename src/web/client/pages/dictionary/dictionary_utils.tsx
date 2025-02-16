@@ -1,4 +1,5 @@
 import * as React from "react";
+import { JSX } from "react";
 
 import { checkPresent } from "@/common/assert";
 import { XmlNode } from "@/common/xml/xml_node";

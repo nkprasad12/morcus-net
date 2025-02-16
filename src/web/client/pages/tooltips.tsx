@@ -1,5 +1,5 @@
 import Popper from "@mui/base/PopperUnstyled";
-import React, { RefObject } from "react";
+import React, { RefObject, JSX } from "react";
 import { exhaustiveGuard, singletonOf } from "@/common/misc_utils";
 import { RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";

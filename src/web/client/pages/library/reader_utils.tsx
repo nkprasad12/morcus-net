@@ -1,6 +1,6 @@
 import React from "react";
 
-import { CSSProperties } from "react";
+import { CSSProperties, JSX } from "react";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 
 export function SettingsText(props: { message: string }) {
