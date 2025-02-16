@@ -34,6 +34,12 @@ const options: BuildOptions = {
   // to set the `immutable` cache control header in the server.
   entryNames: "[dir]/[name].[hash].client-bundle",
   metafile: true,
+  alias: {
+    react: "preact/compat",
+    "react-dom/test-utils": "preact/test-utils",
+    "react-dom": "preact/compat",
+    "react/jsx-runtime": "preact/jsx-runtime",
+  },
   outdir: OUT_DIR,
   publicPath: "/",
   define: {
