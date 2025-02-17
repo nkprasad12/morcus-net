@@ -38,6 +38,10 @@ function runPerformanceTest(tag: string): PerformanceTestResult[] {
   if (process.argv.includes("--largeOnly")) {
     args.push("--project=chromium");
   }
+  const filter = findArg("filter", false);
+  if (filter) {
+    args.push(`-g ${filter}`);
+  }
 
   const command = `${env.join(" ")} ${BASE_COMMAND} ${args.join(" ")}`;
   execSync(command, { stdio: "inherit" });
