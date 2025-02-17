@@ -83,7 +83,7 @@
     "jest-environment-jsdom": "^29.7.0",
     "mongodb": "6.5",
     "node-cleanup": "^2.1.2",
-    "preact": "^10.25.4",
+    "preact": "^10.26.0",
     "prettier": "2.8.4",
     "supertest": "^6.3.3",
     "ts-node": "^10.9.1",
