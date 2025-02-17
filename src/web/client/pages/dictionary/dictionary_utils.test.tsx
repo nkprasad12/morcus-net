@@ -16,7 +16,7 @@ import {
   xmlNodeToJsx,
   SearchSettings,
   InflectionDataSection,
-  LatLink,
+  LatLinkify,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { RouteContext } from "@/web/client/router/router_v2";
@@ -74,16 +74,11 @@ describe("xmlNodeToJsx", () => {
     expect(result.props.children).toHaveLength(2);
     expectMatchesJsx(
       result.props.children[0],
-      <LatLink word="Caesar" key="0.0" />
+      <LatLinkify input="Caesar" key="0" />
     );
     expectMatchesJsx(
       result.props.children[1].props.children[0],
-      <LatLink word="Pompey" key="0.6" />
-    );
-    expect(result.props.children[1].props.children[1]).toBe("    ");
-    expectMatchesJsx(
-      result.props.children[1].props.children[2],
-      <LatLink word="Crassus" key="0.10" />
+      <LatLinkify input="Pompey    Crassus" key="0" />
     );
   });
 

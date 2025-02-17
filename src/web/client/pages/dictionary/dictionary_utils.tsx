@@ -188,24 +188,31 @@ function onLatinWordClick(
   }
 }
 
-export function LatLink(props: { word: string }) {
+function onLatinWordAuxClick(nav: NavHelper<DictRoute>, word: string) {
+  nav.inNewTab({
+    path: ClientPaths.DICT_PAGE.path,
+    query: word,
+    dicts: LatinDict.LewisAndShort,
+    inflectedSearch: true,
+  });
+}
+
+export function LatLinkify(props: { input: string }) {
   const { nav } = useDictRouter();
   const dictContext = React.useContext(DictContext);
 
   return (
-    <span
-      className="latWord"
-      onAuxClick={() =>
-        nav.inNewTab({
-          path: ClientPaths.DICT_PAGE.path,
-          query: props.word,
-          dicts: LatinDict.LewisAndShort,
-          inflectedSearch: true,
-        })
-      }
-      onClick={() => onLatinWordClick(nav, dictContext, props.word)}>
-      {props.word}
-    </span>
+    <>
+      {processWords(props.input, (word, i) => (
+        <span
+          key={i}
+          className="latWord"
+          onAuxClick={() => onLatinWordAuxClick(nav, word)}
+          onClick={() => onLatinWordClick(nav, dictContext, word)}>
+          {word}
+        </span>
+      ))}
+    </>
   );
 }
 
@@ -260,9 +267,7 @@ export function xmlNodeToJsx(
     if (!shouldLinkifyWords) {
       return child;
     }
-    return processWords(child, (word, i) => (
-      <LatLink word={word} key={`${idx}.${i}`} />
-    ));
+    return <LatLinkify key={idx} input={child} />;
   });
 
   if (titleText !== undefined) {

@@ -846,6 +846,16 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     );
   }
 
+  const tableOfContents = <TableOfContents entries={entries} />;
+  const summarySection = (
+    <SummarySection
+      scrollTopRef={scrollTopRef}
+      idSearch={idSearch}
+      entries={entries}
+      word={query}
+    />
+  );
+  const dictionaryEntries = <DictionaryEntries entries={entries} />;
   return (
     <ResponsiveLayout
       contextValues={contextValues}
@@ -858,30 +868,18 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
           <div
             id={"Toc"}
             className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>
-            <SummarySection
-              scrollTopRef={scrollTopRef}
-              idSearch={idSearch}
-              entries={entries}
-              word={query}
-            />
-            <TableOfContents entries={entries} />
+            {summarySection}
+            {tableOfContents}
           </div>
-          <div ref={entriesRef}>
-            <DictionaryEntries entries={entries} />
-          </div>
+          <div ref={entriesRef}>{dictionaryEntries}</div>
         </>
       }
-      twoColSide={<TableOfContents entries={entries} />}
+      twoColSide={tableOfContents}
       twoColMain={
         <>
           <HelpSection />
-          <SummarySection
-            scrollTopRef={scrollTopRef}
-            idSearch={idSearch}
-            entries={entries}
-            word={query}
-          />
-          <DictionaryEntries entries={entries} />
+          {summarySection}
+          {dictionaryEntries}
         </>
       }
     />
