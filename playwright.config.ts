@@ -19,7 +19,7 @@ export default defineConfig({
   /* Github Actions uses runners with 4 CPUs, so try using default parallelism. */
   // workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [["html"], process.env.CI ? ["github"] : ["list"]],
+  reporter: [["html"], process.env.CI ? ["github"] : ["line"]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */
