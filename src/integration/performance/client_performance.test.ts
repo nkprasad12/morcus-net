@@ -5,7 +5,10 @@ import { assertType, checkPresent } from "@/common/assert";
 import fs from "fs";
 import { repeatedTest } from "@/integration/utils/playwright_utils";
 import { isNumber } from "@/web/utils/rpc/parsing";
-import { METRICS_DIR, type PerformanceTestResult } from "@/perf/e2e_perf";
+import {
+  E2E_RAW_METRICS_DIR,
+  type PerformanceTestResult,
+} from "@/perf/e2e_perf";
 import { safeParseInt } from "@/common/misc_utils";
 
 type Metric = { name: string; value: number };
@@ -103,36 +106,36 @@ test.describe("Client Performance Tests", () => {
       metrics: groupedMetrics([allMetrics]),
     };
     await fs.promises.writeFile(
-      `${METRICS_DIR}/${rawName}`,
+      `${E2E_RAW_METRICS_DIR}/${rawName}`,
       JSON.stringify(result)
     );
   }
 
-  repeatedTest("metrics for landing", N, async ({ page }) => {
+  repeatedTest("metrics for dict landing", N, async ({ page }) => {
     await page.goto("/");
     await expect(page).toHaveTitle("Morcus Latin Tools");
     await collectMetrics(page, "dicts-landing");
   });
 
-  repeatedTest("metrics for unda", N, async ({ page }) => {
+  repeatedTest("metrics for dict-LS unda", N, async ({ page }) => {
     await page.goto(`/dicts/id/n49758`);
     await expect(page.getByText("Water, moisture").first()).toBeVisible();
     await collectMetrics(page, "dicts-ls-unda");
   });
 
-  repeatedTest("metrics for habeo", N, async ({ page }) => {
+  repeatedTest("metrics for dict-LS habeo", N, async ({ page }) => {
     await page.goto(`/dicts/id/n20077`);
     await expect(page.getByText("HABETO").first()).toBeVisible();
     await collectMetrics(page, "dicts-ls-habeo");
   });
 
-  repeatedTest("metrics for DBG", N, async ({ page }) => {
+  repeatedTest("metrics for reader DBG", N, async ({ page }) => {
     await page.goto(`/work/caesar/de_bello_gallico?id=1.1`);
     await expect(page.getByText("Pyrenaeos").first()).toBeVisible();
     await collectMetrics(page, "work-de-bello-gallico");
   });
 
-  repeatedTest("metrics for DRN", N, async ({ page }) => {
+  repeatedTest("metrics for reader DRN", N, async ({ page }) => {
     await page.goto(`/work/lucretius/de_rerum_natura?id=1`);
     await expect(page.getByText("lumina").first()).toBeVisible();
     await collectMetrics(page, "work-de-rerum-natura");

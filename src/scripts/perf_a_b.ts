@@ -8,25 +8,190 @@ import chalk from "chalk";
 import ttest from "ttest";
 
 import { assert, checkPresent } from "@/common/assert";
-import { METRICS_DIR, type PerformanceTestResult } from "@/perf/e2e_perf";
+import {
+  E2E_RAW_METRICS_DIR,
+  E2E_REPORTS_DIR,
+  type PerformanceTestResult,
+} from "@/perf/e2e_perf";
 import { safeParseInt } from "@/common/misc_utils";
 
+interface ComparedMetric {
+  name: string;
+  diff: number;
+  rawMeans: [number, number];
+  samples: number;
+  pValue: string;
+}
+
+interface PerformanceComparison {
+  id: PerformanceTestResult["testId"];
+  metrics: Record<string, ComparedMetric>;
+}
+
 const BASE_COMMAND = "npx playwright test --grep performance/*.test.ts";
+const SPECIAL_TAGS = new Set(["main-latest", "dev-latest"]);
+
+const REPORT_HEAD = `
+  <head>
+    <style>
+      body {
+        background-color: #121212;
+        color: #e0e0e0;
+        font-family: Arial, sans-serif;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      th, td {
+        border: 1px solid #333;
+        padding: 8px;
+        text-align: left;
+        opacity: 0.8;
+      }
+      th {
+        background-color: #333;
+      }
+      tr:nth-child(even) {
+        background-color: #1e1e1e;
+      }
+      tr:nth-child(odd) {
+        background-color: #2a2a2a;
+      }
+      .diff {
+        font-weight: bold;
+        opacity: 0.8;
+      }
+      .diff.positive {
+        color: #ff0000;
+      }
+      .diff.negative {
+        color: #00ff00;
+      }
+      .pValue {
+        opacity: 0.9;
+        font-size: 0.9em;
+      }
+      .rawValues {
+        opacity: 0.8;
+        font-size: 0.75em;
+      }
+      .scenarioName {
+        font-weight: bold;
+        color: #00a0a0;
+      }
+      .scenarioData {
+        opacity: 0.9;
+        font-size: 0.9em;
+        border-radius: 8px;
+        background-color: #6a6a6a;
+        padding: 0px 6px;
+        margin: 0px 4px;
+      }
+      .compA {
+        color: #f0aaff;
+      }
+      .compB {
+        color: #f0a000;
+      }   
+    </style>
+  </head>`;
+
+function generateHtmlReport(results: PerformanceComparison[]): string {
+  const allMetricNames = Array.from(
+    new Set(results.flatMap((result) => Object.keys(result.metrics)))
+  ).sort();
+
+  const headerRow = `
+    <tr>
+      <th>Scenario</th>
+      ${allMetricNames.map((name) => `<th>${name}</th>`).join("")}
+    </tr>
+  `;
+
+  const bodyRows = results
+    .map((result) => {
+      const metricCells = allMetricNames
+        .map((name) => {
+          const metric = result.metrics[name];
+          if (metric === undefined) {
+            return "<td/>";
+          }
+          const pos = metric.diff > 0;
+          const diffClass = `class="diff ${pos ? "positive" : "negative"}"`;
+          const diffText = `${pos ? "+" : ""}${metric.diff.toFixed(1)}%`;
+          const diffEl = `<span ${diffClass}>${diffText}</span>`;
+
+          const pValueEl = `<span class="pValue">[p=${metric.pValue}]</span>`;
+
+          const [meanA, meanB] = metric.rawMeans.map((x) => x.toPrecision(3));
+          const rawValueText = `${meanA} 🡒 ${meanB}, N=${metric.samples}`;
+          const rawValuesEl = `<span class="rawValues">${rawValueText}</span>`;
+          return `<td>${diffEl} ${pValueEl}<br>${rawValuesEl}</td>`;
+        })
+        .join("");
+      const nameEl = `<span class="scenarioName">${result.id.name}</span>`;
+      const screenSizeEl = `<span class="scenarioData">${result.id.screenSize}</span>`;
+      return `<tr><td>${nameEl}${screenSizeEl}</td>${metricCells}</tr>`;
+    })
+    .join("");
+  const table = `<table>${headerRow}${bodyRows}</table>`;
+  return `
+    <html>
+      ${REPORT_HEAD}
+      <body>
+        ${reportPreamble()}
+        ${table}
+        <br/>
+        <div class="rawValues">${process.argv.join(" ")}</div>
+      </body>
+    </html>
+  `;
+}
+
+function reportPreamble() {
+  const tagA = findArg("A", true);
+  const tagB = findArg("B", true);
+  const tagAEl = `<span class="compA">${tagA}</span>`;
+  const tagBEl = `<span class="compB">${tagB}</span>`;
+
+  return `
+      <h3>Performance comparison: ${tagAEl} vs ${tagBEl}</h3>
+      <p>
+        <div>
+          <span class="compA">A</span> is ${tagAEl};
+          <span class="compB">B</span> is ${tagBEl}
+        </div>
+        <div><span class="diff positive">Red</span> means ${tagBEl} <b>is greater than</b> (usually worse) ${tagAEl}.</div>
+        <div><span class="diff negative">Green</span> means ${tagBEl} <b>is less than</b> (usually better) ${tagAEl}.</div>
+      </p>  
+    `;
+}
 
 function readResults(): PerformanceTestResult[] {
   const resultFiles = fs
-    .readdirSync(METRICS_DIR)
+    .readdirSync(E2E_RAW_METRICS_DIR)
     .filter((file) => file.endsWith(".json"));
   if (resultFiles.length === 0) {
-    throw new Error(`No results found in directory: ${METRICS_DIR}`);
+    throw new Error(`No results found in directory: ${E2E_RAW_METRICS_DIR}`);
   }
   return resultFiles.flatMap((file) =>
-    JSON.parse(fs.readFileSync(path.join(METRICS_DIR, file), "utf-8"))
+    JSON.parse(fs.readFileSync(path.join(E2E_RAW_METRICS_DIR, file), "utf-8"))
   );
 }
 
 function runPerformanceTest(tag: string): PerformanceTestResult[] {
-  console.log(`Running performance tests for tag: ${tag}`);
+  console.log(chalk.bgYellow(`Running performance tests for tag: ${tag}`));
+  if (SPECIAL_TAGS.has(tag)) {
+    console.log(
+      chalk.yellow(
+        `Special tag "${tag}" detected. Downloading from the container repository.`
+      )
+    );
+    execSync(`docker pull ghcr.io/nkprasad12/morcus:${tag}`, {
+      stdio: "inherit",
+    });
+  }
   const iters = findArg("N", false) ?? "25";
   const env = [`IMAGE_TAG=${tag}`, `PERF_TEST_ITERATIONS=${iters}`];
   const args: string[] = [];
@@ -46,12 +211,6 @@ function runPerformanceTest(tag: string): PerformanceTestResult[] {
   const command = `${env.join(" ")} ${BASE_COMMAND} ${args.join(" ")}`;
   execSync(command, { stdio: "inherit" });
   return readResults();
-}
-
-function runABTest(tagA: string, tagB: string): void {
-  const resultsA = runPerformanceTest(tagA);
-  const resultsB = runPerformanceTest(tagB);
-  compareResults(resultsA, resultsB);
 }
 
 function testIdToKey(testId: PerformanceTestResult["testId"]): string {
@@ -83,7 +242,7 @@ function resultsByKey(
 function compareResults(
   resultsA: PerformanceTestResult[],
   resultsB: PerformanceTestResult[]
-): void {
+): PerformanceComparison[] {
   const resultsByKeyA = resultsByKey(resultsA);
   const resultsByKeyB = resultsByKey(resultsB);
   const keys = new Set(resultsByKeyA.keys());
@@ -96,46 +255,34 @@ function compareResults(
     const bId = resultsByKeyB.get(b)!.testId;
     return aId.name.localeCompare(bId.name);
   });
-  printComparisonHeader();
+  const comparisons: PerformanceComparison[] = [];
   for (const key of sorted) {
     const resultA = checkPresent(resultsByKeyA.get(key));
     const resultB = checkPresent(resultsByKeyB.get(key));
-    printComparison(resultA, resultB);
+    comparisons.push(generateComparison(resultA, resultB));
   }
-}
-
-function printComparisonHeader() {
-  console.log(chalk.bgBlue("\nPerformance test comparison"));
-  const tagA = findArg("A", true);
-  const tagB = findArg("B", true);
-  console.log(`- A is "${tagA}", B is "${tagB}"`);
-  console.log(`- ${chalk.red("Red")} means ${tagB} is higher than ${tagA}`);
-  console.log(`- ${chalk.green("Green")} means ${tagB} is lower than ${tagA}`);
+  return comparisons;
 }
 
 function mean(values: number[]): number {
   return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-function printComparison(
+function generateComparison(
   resultA: PerformanceTestResult,
   resultB: PerformanceTestResult
 ) {
-  console.log(
-    chalk.blue(`\nComparing scenario: ${JSON.stringify(resultA.testId)}`)
-  );
+  const comparisons: PerformanceComparison["metrics"] = {};
   const metricsA = resultA.metrics;
   const metricsB = resultB.metrics;
   const keys = new Set([...Object.keys(metricsA), ...Object.keys(metricsB)]);
-  const longestKeyLength = Math.max(
-    ...Array.from(keys).map((key) => key.length)
-  );
   const verbose = process.argv.includes("--verbose");
+
   for (const key of keys) {
     const valuesA = metricsA[key];
     const valuesB = metricsB[key];
     if (valuesA === undefined || valuesB === undefined) {
-      console.log(`Missing value for key: ${key}`);
+      console.error(`Missing value for key: ${key}`);
       continue;
     }
 
@@ -153,17 +300,27 @@ function printComparison(
     ) {
       continue;
     }
-    const sign = rawDiff > 0 ? "+" : "";
-    const diffPercent = ((rawDiff / meanA) * 100).toFixed(2);
-    const diffText = (rawDiff > 0 ? chalk.red : chalk.green)(
-      `${sign}${diffPercent}%`.padEnd(7)
-    );
-    const values = chalk.gray(`   ${meanA} -> ${meanB}`);
-    const paddedKey = key.padEnd(longestKeyLength, " ");
-    const pValue = stats.pValue().toPrecision(4);
-    console.log(`• ${chalk.cyan(paddedKey)} | ${diffText} | p=${pValue}`);
-    console.log(values);
+    comparisons[key] = {
+      name: key,
+      pValue: stats.pValue().toPrecision(2),
+      diff: (rawDiff / meanA) * 100,
+      rawMeans: [meanA, meanB],
+      samples: Math.min(valuesA.length, valuesB.length),
+    };
   }
+  return { id: resultA.testId, metrics: comparisons };
+}
+
+function runABTest(tagA: string, tagB: string): void {
+  const resultsA = runPerformanceTest(tagA);
+  const resultsB = runPerformanceTest(tagB);
+  const results = compareResults(resultsA, resultsB);
+  const htmlReport = generateHtmlReport(results);
+  const reportName = `performance_report_${tagA}_vs_${tagB}_${performance.now()}.html`;
+  const reportPath = path.join(E2E_REPORTS_DIR, reportName);
+  fs.writeFileSync(reportPath, htmlReport);
+  console.log(chalk.bgYellow(`Report written to: ${reportPath}`));
+  execSync(`xdg-open ${reportPath}`);
 }
 
 function findArg(name: string, required: true): string;
