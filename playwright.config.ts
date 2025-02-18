@@ -4,6 +4,7 @@ const BASE_URL = "http://localhost:1337";
 
 process.env.BASE_URL = BASE_URL;
 const MOBILE_TEMPLATE = devices["Pixel 5"];
+const FUNCTIONAL_CI = process.env.CI && !process.env.PERF_TEST;
 
 /**
  * See https://playwright.dev/docs/test-configuration.
@@ -15,11 +16,11 @@ export default defineConfig({
   /* Fail the build on CI if you accidentally left test.only in the source code. */
   forbidOnly: !!process.env.CI,
   /* Retry on CI only */
-  retries: process.env.CI ? 1 : 0,
+  retries: FUNCTIONAL_CI ? 1 : 0,
   /* Github Actions uses runners with 4 CPUs, so try using default parallelism. */
   // workers: process.env.CI ? 4 : undefined,
   /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: [["html"], process.env.CI ? ["github"] : ["line"]],
+  reporter: [["html"], FUNCTIONAL_CI ? ["github"] : ["line"]],
   /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
   use: {
     /* Base URL to use in actions like `await page.goto('/')`. */

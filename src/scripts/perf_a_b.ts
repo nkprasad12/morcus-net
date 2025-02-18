@@ -28,7 +28,7 @@ interface PerformanceComparison {
   metrics: Record<string, ComparedMetric>;
 }
 
-const BASE_COMMAND = "npx playwright test --grep performance/*.test.ts";
+const BASE_COMMAND = "npx playwright test src/integration/performance/";
 const SPECIAL_TAGS = new Set(["main-latest", "dev-latest"]);
 
 const REPORT_HEAD = `
@@ -193,7 +193,11 @@ function runPerformanceTest(tag: string): PerformanceTestResult[] {
     });
   }
   const iters = findArg("N", false) ?? "25";
-  const env = [`IMAGE_TAG=${tag}`, `PERF_TEST_ITERATIONS=${iters}`];
+  const env = [
+    `IMAGE_TAG=${tag}`,
+    `PERF_TEST_ITERATIONS=${iters}`,
+    "PERF_TEST=1",
+  ];
   const args: string[] = [];
 
   const cpuThrottle = safeParseInt(findArg("cpuThrottle", false));
