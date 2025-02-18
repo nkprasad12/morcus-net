@@ -110,6 +110,9 @@ jobs:
     needs: [build-image]
     runs-on: ubuntu-latest
     timeout-minutes: 10
+    strategy:
+      matrix:
+        screenSize: [small, large]
 
     steps:
       - uses: actions/checkout@v4
@@ -128,7 +131,7 @@ jobs:
       - name: Running Performance tests
         run: |
           touch .env
-          npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=100 --ci
+          npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=25 --screenSize=${{ matrix.screenSize }} --ci
       - name: Upload Performance report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
