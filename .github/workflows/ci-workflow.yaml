@@ -105,4 +105,37 @@ jobs:
         with:
           name: playwright-report
           path: playwright-report/
-          retention-days: 30
+
+  e2e-performance:
+    needs: [build-image]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: package.json
+      - name: Pulling docker images
+        run: |
+          docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}
+          docker pull ghcr.io/nkprasad12/morcus:main-latest
+      - name: Installing npm dependencies
+        run: npm ci
+      - name: Installing browsers
+        run: npx playwright install chromium --with-deps
+      - name: Running Performance tests
+        run: npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=100 --ci
+      - name: Upload Performance report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: performance-report.html
+          path: e2e_metrics/reports/*.html
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v4
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: playwright-report/

@@ -200,8 +200,12 @@ function runPerformanceTest(tag: string): PerformanceTestResult[] {
   if (cpuThrottle !== undefined) {
     env.push(`CPU_THROTTLE=${cpuThrottle}`);
   }
-  if (process.argv.includes("--largeOnly")) {
+  const screenSize = findArg("screenSize", false);
+  if (screenSize !== "small") {
     args.push("--project=chromium");
+  }
+  if (screenSize !== "large") {
+    args.push("--project='Mobile Chrome'");
   }
   const filter = findArg("filter", false);
   if (filter) {
@@ -319,8 +323,10 @@ function runABTest(tagA: string, tagB: string): void {
   const reportName = `performance_report_${tagA}_vs_${tagB}_${performance.now()}.html`;
   const reportPath = path.join(E2E_REPORTS_DIR, reportName);
   fs.writeFileSync(reportPath, htmlReport);
-  console.log(chalk.bgYellow(`Report written to: ${reportPath}`));
-  execSync(`xdg-open ${reportPath}`);
+  console.log(chalk.bgYellow(`A/B report written to: ${reportPath}`));
+  if (!process.argv.includes("--ci")) {
+    execSync(`xdg-open ${reportPath}`);
+  }
 }
 
 function findArg(name: string, required: true): string;
