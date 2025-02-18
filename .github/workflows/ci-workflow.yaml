@@ -103,7 +103,7 @@ jobs:
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: playwright-report
+          name: functional-test-report
           path: playwright-report/
 
   e2e-performance:
@@ -131,16 +131,10 @@ jobs:
       - name: Running Performance tests
         run: |
           touch .env
-          npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=25 --screenSize=${{ matrix.screenSize }} --ci
+          npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=40 --screenSize=${{ matrix.screenSize }} --ci
       - name: Upload Performance report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: performance-report.html
-          path: e2e_metrics/reports/*.html
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: playwright-report/
+          name: performance-report-${{ matrix.screenSize }}
+          path: e2e_metrics/
