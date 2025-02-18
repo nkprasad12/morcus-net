@@ -855,21 +855,26 @@ function WorkChunkHeader(props: {
   );
 }
 
-function LatLink(props: { word: string }) {
+function LatLinkify(props: { input: string }) {
   const { hasTooltip } = React.useContext(ReaderContext);
   const { setDictWord } = React.useContext(WorkColumnContext);
   return (
-    <span
-      className="workLatWord"
-      onClick={(e) => {
-        if (hasTooltip.current.size > 0) {
-          return;
-        }
-        setDictWord(props.word);
-        e.stopPropagation();
-      }}>
-      {props.word}
-    </span>
+    <>
+      {processWords(props.input, (word, i) => (
+        <span
+          key={i}
+          className="workLatWord"
+          onClick={(e) => {
+            if (hasTooltip.current.size > 0) {
+              return;
+            }
+            setDictWord(word);
+            e.stopPropagation();
+          }}>
+          {word}
+        </span>
+      ))}
+    </>
   );
 }
 
@@ -937,7 +942,7 @@ function displayForLibraryChunk(
 ): JSX.Element {
   const children = root.children.map((child, i) => {
     if (typeof child === "string") {
-      return processWords(child, (word, i) => <LatLink word={word} key={i} />);
+      return <LatLinkify input={child} key={i} />;
     }
     return displayForLibraryChunk(child, i);
   });
