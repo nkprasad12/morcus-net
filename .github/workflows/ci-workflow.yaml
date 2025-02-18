@@ -126,7 +126,9 @@ jobs:
       - name: Installing browsers
         run: npx playwright install chromium --with-deps
       - name: Running Performance tests
-        run: npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=100 --ci
+        run: |
+          touch .env
+          npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=100 --ci
       - name: Upload Performance report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
