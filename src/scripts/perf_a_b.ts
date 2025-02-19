@@ -20,7 +20,7 @@ interface ComparedMetric {
   diff: number;
   rawMeans: [number, number];
   samples: number;
-  pValue: string;
+  pValue: number;
 }
 
 interface PerformanceComparison {
@@ -29,6 +29,7 @@ interface PerformanceComparison {
 }
 
 const BASE_COMMAND = "npx playwright test src/integration/performance/";
+const TAG_HEAD = "head";
 const SPECIAL_TAGS = new Set(["main-latest", "dev-latest"]);
 
 const REPORT_HEAD = `
@@ -118,11 +119,14 @@ function generateHtmlReport(results: PerformanceComparison[]): string {
             return "<td/>";
           }
           const pos = metric.diff > 0;
-          const diffClass = `class="diff ${pos ? "positive" : "negative"}"`;
+          const diffColor =
+            metric.pValue > 0.025 ? "" : pos ? "positive" : "negative";
+          const diffClass = `class="diff ${diffColor}"`;
           const diffText = `${pos ? "+" : ""}${metric.diff.toFixed(1)}%`;
           const diffEl = `<span ${diffClass}>${diffText}</span>`;
 
-          const pValueEl = `<span class="pValue">[p=${metric.pValue}]</span>`;
+          const pValueText = `p=${metric.pValue.toPrecision(2)}`;
+          const pValueEl = `<span class="pValue">[${pValueText}]</span>`;
 
           const [meanA, meanB] = metric.rawMeans.map((x) => x.toPrecision(3));
           const rawValueText = `${meanA} 🡒 ${meanB}, N=${metric.samples}`;
@@ -136,6 +140,14 @@ function generateHtmlReport(results: PerformanceComparison[]): string {
     })
     .join("");
   const table = `<table>${headerRow}${bodyRows}</table>`;
+  const scriptIdx = process.argv.indexOf(__filename);
+  const args =
+    scriptIdx === -1
+      ? process.argv
+      : [
+          __filename.slice(__dirname.length + 1),
+          ...process.argv.slice(scriptIdx + 1),
+        ];
   return `
     <html>
       ${REPORT_HEAD}
@@ -143,15 +155,15 @@ function generateHtmlReport(results: PerformanceComparison[]): string {
         ${reportPreamble()}
         ${table}
         <br/>
-        <div class="rawValues">${process.argv.join(" ")}</div>
+        <div class="rawValues">${args.join(" ")}</div>
       </body>
     </html>
   `;
 }
 
 function reportPreamble() {
-  const tagA = findArg("A", true);
-  const tagB = findArg("B", true);
+  const tagA = resolveTag("A");
+  const tagB = resolveTag("B");
   const tagAEl = `<span class="compA">${tagA}</span>`;
   const tagBEl = `<span class="compB">${tagB}</span>`;
 
@@ -294,7 +306,7 @@ function generateComparison(
       continue;
     }
 
-    const stats = ttest(valuesA, valuesB, { alpha: 0.04 });
+    const stats = ttest(valuesA, valuesB, { alpha: 0.1 });
     const meanA = mean(valuesA);
     const meanB = mean(valuesB);
     const rawDiff = meanB - meanA;
@@ -310,7 +322,7 @@ function generateComparison(
     }
     comparisons[key] = {
       name: key,
-      pValue: stats.pValue().toPrecision(2),
+      pValue: stats.pValue(),
       diff: (rawDiff / meanA) * 100,
       rawMeans: [meanA, meanB],
       samples: Math.min(valuesA.length, valuesB.length),
@@ -319,7 +331,26 @@ function generateComparison(
   return { id: resultA.testId, metrics: comparisons };
 }
 
-function runABTest(tagA: string, tagB: string): void {
+function resolveTag(arg: "A" | "B"): string {
+  const raw = findArg(arg, true);
+  return raw === TAG_HEAD ? findArg("buildTag", true) : raw;
+}
+
+function runABTest(rawTagA: string, rawTagB: string): void {
+  if (rawTagA === TAG_HEAD || rawTagB === TAG_HEAD) {
+    const buildTag = findArg("buildTag", true);
+    console.log(
+      chalk.bgYellow(
+        `Special tag ${TAG_HEAD} specified. Building new image with name "${buildTag}"`
+      )
+    );
+    execSync(`docker build . -t ghcr.io/nkprasad12/morcus:${buildTag}`, {
+      stdio: "inherit",
+    });
+  }
+  const tagA = resolveTag("A");
+  const tagB = resolveTag("B");
+
   const resultsA = runPerformanceTest(tagA);
   const resultsB = runPerformanceTest(tagB);
   const results = compareResults(resultsA, resultsB);
@@ -327,7 +358,7 @@ function runABTest(tagA: string, tagB: string): void {
   const reportName = `performance_report_${tagA}_vs_${tagB}_${performance.now()}.html`;
   const reportPath = path.join(E2E_REPORTS_DIR, reportName);
   fs.writeFileSync(reportPath, htmlReport);
-  console.log(chalk.bgYellow(`A/B report written to: ${reportPath}`));
+  console.log(chalk.bgGreen(`A/B report written to: ${reportPath}\n`));
   if (!process.argv.includes("--ci")) {
     execSync(`xdg-open ${reportPath}`);
   }
@@ -345,15 +376,19 @@ function findArg(name: string, required?: boolean): string | undefined {
   return matches.length === 1 ? matches[0].slice(prefix.length) : undefined;
 }
 
-const tagA = findArg("A", true);
-const tagB = findArg("B", true);
-if (!tagA || !tagB) {
-  console.error("Please provide two tags for the versions to test.");
-  process.exit(1);
+function main() {
+  const tagA = findArg("A", true);
+  const tagB = findArg("B", true);
+  if (!tagA || !tagB) {
+    console.error("Please provide two tags for the versions to test.");
+    process.exit(1);
+  }
+  try {
+    runABTest(tagA, tagB);
+  } catch (error) {
+    console.error("Error running performance tests:", error);
+    process.exit(1);
+  }
 }
-try {
-  runABTest(tagA, tagB);
-} catch (error) {
-  console.error("Error running performance tests:", error);
-  process.exit(1);
-}
+
+main();
