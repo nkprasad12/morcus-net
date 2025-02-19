@@ -71,7 +71,7 @@
     "body-parser": "^1.20.2",
     "chalk": "^4.1.2",
     "compression": "^1.7.4",
-    "esbuild": "0.23.1",
+    "esbuild": "^0.25.0",
     "esbuild-plugin-output-reset": "^2.0.1",
     "eslint": "^8.40.0",
     "eslint-plugin-jest": "^28.8.3",
