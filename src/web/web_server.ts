@@ -87,11 +87,13 @@ export function setupServer(params: WebServerParams): void {
   app.use(bodyParser.text());
   app.use(preCompressedMiddleware(params.buildDir));
   app.use(compression());
-  app.use("/serviceworker.js", (_, res) => {
-    console.debug(`/serviceworker.js`);
-    res.sendFile(path.join(params.buildDir, "serviceworker.js"));
-    return;
-  });
+  // Remove the service worker for now. We don't use it but
+  // some browsers automatically request it.
+  // app.use("/serviceworker.js", (_, res) => {
+  //   console.debug(`/serviceworker.js`);
+  //   res.sendFile(path.join(params.buildDir, "serviceworker.js"));
+  //   return;
+  // });
   app.use("/offlineData/:resourceName", (req, res) => {
     res.header("Content-Type", "application/octet-stream");
     const resourceName: string = req.params["resourceName"];
