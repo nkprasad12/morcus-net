@@ -50,6 +50,7 @@ import { StyleContext } from "@/web/client/styling/style_context";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { GetWork } from "@/web/api_routes";
 import { getCommitHash } from "@/web/client/define_vars";
+import { textCallback } from "@/web/client/utils/callback_utils";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 
@@ -607,7 +608,7 @@ export function WorkTextPage(props: {
   const { isMobile, work, setDictWord } = props;
 
   const { readerMainScale } = React.useContext(StyleContext);
-  const { urlId, highlightRef } = React.useContext(ReaderContext);
+  const { urlId, highlightRef, hasTooltip } = React.useContext(ReaderContext);
   const workColumnContext: WorkColumnContextType = React.useMemo(
     () => ({ setDictWord, work }),
     [setDictWord, work]
@@ -671,6 +672,13 @@ export function WorkTextPage(props: {
   return (
     <WorkColumnContext.Provider value={workColumnContext}>
       <div
+        onClick={textCallback((w) => {
+          if (hasTooltip.current.size > 0) {
+            return false;
+          }
+          setDictWord(w);
+          return true;
+        }, "workLatWord")}
         style={{
           display: "inline-grid",
           columnGap: gap,
@@ -856,21 +864,10 @@ function WorkChunkHeader(props: {
 }
 
 function LatLinkify(props: { input: string }) {
-  const { hasTooltip } = React.useContext(ReaderContext);
-  const { setDictWord } = React.useContext(WorkColumnContext);
   return (
     <>
       {processWords(props.input, (word, i) => (
-        <span
-          key={i}
-          className="workLatWord"
-          onClick={(e) => {
-            if (hasTooltip.current.size > 0) {
-              return;
-            }
-            setDictWord(word);
-            e.stopPropagation();
-          }}>
+        <span key={i} className="workLatWord">
           {word}
         </span>
       ))}

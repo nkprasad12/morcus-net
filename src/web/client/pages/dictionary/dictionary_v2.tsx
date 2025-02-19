@@ -28,6 +28,9 @@ import {
   SearchSettings,
   xmlNodeToJsx,
   DictHelpSection,
+  type XmlNodeToJsxArgs,
+  onLatinWordClick,
+  onLatinWordAuxClick,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import {
@@ -62,6 +65,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 import { StoredCheckBox } from "@/web/client/components/generic/settings_basics";
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 import { getCommitHash } from "@/web/client/define_vars";
+import { textCallback } from "@/web/client/utils/callback_utils";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -193,11 +197,12 @@ function getEntriesByDict(
   hash: string | undefined,
   isEmbedded: boolean
 ): EntriesByDict[] {
+  const args: XmlNodeToJsxArgs = { isEmbedded, highlightId: hash };
   const result: EntriesByDict[] = [];
   for (const dictKey in response) {
     const rawEntries = response[dictKey];
     const entries = rawEntries.map((e, i) => ({
-      element: xmlNodeToJsx(e.entry, hash, undefined, isEmbedded),
+      element: xmlNodeToJsx(e.entry, args),
       key: e.entry.getAttr("id") ?? `${dictKey}${i}`,
       inflections: e.inflections,
       subsections: e.subsections,
@@ -322,10 +327,9 @@ function ResponsiveLayout(props: {
   contextValues: DictContextOptions;
 }) {
   const { oneCol, twoColSide, twoColMain, content } = props;
-  const { isSmall } = props.contextValues;
   return (
     <DictContext.Provider value={props.contextValues}>
-      {isSmall ? (
+      {props.contextValues.isSmall ? (
         <OneColumnLayout>{oneCol ?? content ?? <></>}</OneColumnLayout>
       ) : (
         <TwoColumnLayout>
@@ -466,9 +470,21 @@ function articleLinkButton(text: string, scale: number) {
 }
 
 function DictionaryEntries(props: { entries: EntriesByDict[] }) {
-  const { isSmall, textScale, scale } = React.useContext(DictContext);
+  const { isSmall, textScale, scale, setInitial, fromInternalLink } =
+    React.useContext(DictContext);
+  const { nav } = useDictRouter();
+
+  const clickHandler = textCallback(
+    (w) => onLatinWordClick(nav, setInitial, fromInternalLink, w),
+    "latWord"
+  );
+  const auxClickHandler = textCallback(
+    (w) => onLatinWordAuxClick(nav, w),
+    "latWord"
+  );
+
   return (
-    <>
+    <div onAuxClick={auxClickHandler} onClick={clickHandler}>
       {props.entries.map((entry) => (
         <SingleDictSection
           data={entry}
@@ -478,7 +494,7 @@ function DictionaryEntries(props: { entries: EntriesByDict[] }) {
           scale={scale}
         />
       ))}
-    </>
+    </div>
   );
 }
 
@@ -837,11 +853,11 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       oneCol={
         <>
           <HelpSection
-            id={"HelpSection"}
+            id="HelpSection"
             className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
           />
           <div
-            id={"Toc"}
+            id="Toc"
             className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>
             {summarySection}
             {tableOfContents}

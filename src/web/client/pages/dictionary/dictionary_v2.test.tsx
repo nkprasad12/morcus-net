@@ -5,7 +5,7 @@
 import "fake-indexeddb/auto";
 import { XmlNode } from "@/common/xml/xml_node";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
-import { render, screen, waitFor } from "@testing-library/react";
+import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import user from "@testing-library/user-event";
 
 import { assertEqual } from "@/common/assert";
@@ -276,6 +276,49 @@ describe("New Dictionary View", () => {
       expect(screen.getByText("Entry1")).toBeDefined();
       expect(screen.getByText("Entry2")).toBeDefined();
     });
+  });
+
+  it("allows clicking to navigate to latin words", async () => {
+    const resultString = "France or whatever idk lol";
+    const navigateTo = jest.fn();
+    mockCallApiMockResolvedValue({
+      LS: [
+        {
+          entry: new XmlNode("span", [["id", "n3"]], [resultString]),
+          outline: {
+            mainKey: "mainKey",
+            mainSection: {
+              text: "mainBlurb",
+              sectionId: "n1",
+            },
+            senses: [],
+          },
+        },
+      ],
+    });
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: "/", params: { q: "Belgae" } },
+          navigateTo,
+        }}>
+        <DictionaryViewV2 />
+      </RouteContext.Provider>
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByText((_, element) => element?.textContent === resultString)
+      ).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText("France"));
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/dicts",
+        params: expect.objectContaining({ in: "LnS", q: "France" }),
+      })
+    );
   });
 
   it("shows fetched result on small screen", async () => {

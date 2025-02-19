@@ -16,10 +16,7 @@ import {
   InflectionData,
   type DictSubsectionResult,
 } from "@/common/dictionaries/dict_result";
-import {
-  DictContext,
-  DictContextOptions,
-} from "@/web/client/pages/dictionary/dict_context";
+import { DictContext } from "@/web/client/pages/dictionary/dict_context";
 import { NavHelper } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import {
@@ -28,6 +25,7 @@ import {
 } from "@/web/client/pages/dictionary/dictionary_routing";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { processWords } from "@/common/text_cleaning";
+import type { Callback } from "@/web/client/utils/callback_utils";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -104,7 +102,9 @@ function HelpSectionRow(props: { row: number } & HelpRowConfig) {
   const gridRow = props.row + 1;
   return (
     <>
-      <span style={{ gridRow, gridColumn: 1 }}>{xmlNodeToJsx(props.left)}</span>
+      <span style={{ gridRow, gridColumn: 1 }}>
+        {xmlNodeToJsx(props.left, {})}
+      </span>
       <span style={{ gridRow, gridColumn: 2 }}>{props.right}</span>
     </>
   );
@@ -168,47 +168,47 @@ function ShLink(props: { text: string; query: string }) {
   );
 }
 
-function onLatinWordClick(
+export function onLatinWordClick(
   nav: NavHelper<DictRoute>,
-  dictContext: DictContextOptions,
+  setInitial: Callback<string> | undefined,
+  fromInternalLinkRef: React.MutableRefObject<boolean> | undefined,
   word: string
 ) {
-  if (dictContext.setInitial !== undefined) {
-    dictContext.setInitial(word);
-  } else {
-    if (dictContext.fromInternalLink) {
-      dictContext.fromInternalLink.current = true;
-    }
-    nav.to({
-      path: ClientPaths.DICT_PAGE.path,
-      query: word,
-      dicts: LatinDict.LewisAndShort,
-      inflectedSearch: true,
-    });
+  // If we're in embedded mode, we don't use URL.
+  if (setInitial !== undefined) {
+    setInitial(word);
+    return true;
   }
+  // This flag is used only to determine whether or not to trigger
+  // certain transition UI affordances (in the current writing, smooth scroll).
+  // It is *not* used to calculate VDOM state.
+  if (fromInternalLinkRef) {
+    fromInternalLinkRef.current = true;
+  }
+  nav.to({
+    path: ClientPaths.DICT_PAGE.path,
+    query: word,
+    dicts: LatinDict.LewisAndShort,
+    inflectedSearch: true,
+  });
+  return true;
 }
 
-function onLatinWordAuxClick(nav: NavHelper<DictRoute>, word: string) {
+export function onLatinWordAuxClick(nav: NavHelper<DictRoute>, word: string) {
   nav.inNewTab({
     path: ClientPaths.DICT_PAGE.path,
     query: word,
     dicts: LatinDict.LewisAndShort,
     inflectedSearch: true,
   });
+  return true;
 }
 
 export function LatLinkify(props: { input: string }) {
-  const { nav } = useDictRouter();
-  const dictContext = React.useContext(DictContext);
-
   return (
     <>
       {processWords(props.input, (word, i) => (
-        <span
-          key={i}
-          className="latWord"
-          onAuxClick={() => onLatinWordAuxClick(nav, word)}
-          onClick={() => onLatinWordClick(nav, dictContext, word)}>
+        <span key={i} className="latWord">
           {word}
         </span>
       ))}
@@ -228,11 +228,15 @@ function transformClassAttr(value: string, isEmbedded: boolean) {
     .join(" ");
 }
 
+export interface XmlNodeToJsxArgs {
+  highlightId?: string;
+  isEmbedded?: boolean;
+}
+
 export function xmlNodeToJsx(
   root: XmlNode,
-  highlightId?: string,
-  key?: string,
-  isEmbedded?: boolean
+  args: XmlNodeToJsxArgs,
+  key?: string
 ): JSX.Element {
   const props: { [propKey: string]: any } = {};
   if (key !== undefined) {
@@ -242,7 +246,7 @@ export function xmlNodeToJsx(
   let className: string | undefined = undefined;
   for (const [attrKey, value] of root.attrs) {
     if (attrKey === "class") {
-      className = transformClassAttr(value, isEmbedded === true);
+      className = transformClassAttr(value, args.isEmbedded === true);
       props.className = className;
       continue;
     }
@@ -257,12 +261,7 @@ export function xmlNodeToJsx(
     !className?.includes("lsHover") && !className?.includes("lsSenseBullet");
   const children = root.children.flatMap((child, idx) => {
     if (typeof child !== "string") {
-      return xmlNodeToJsx(
-        child,
-        highlightId,
-        child.getAttr("id") ?? `${idx}`,
-        isEmbedded
-      );
+      return xmlNodeToJsx(child, args, child.getAttr("id") ?? `${idx}`);
     }
     if (!shouldLinkifyWords) {
       return child;
@@ -311,7 +310,8 @@ export function xmlNodeToJsx(
       />
     );
   } else {
-    if (root.getAttr("id") === highlightId && highlightId !== undefined) {
+    const rootId = root.getAttr("id");
+    if (rootId !== undefined && rootId === args.highlightId) {
       props["className"] = "dictHighlighted";
     }
     return React.createElement(root.name, props, children);

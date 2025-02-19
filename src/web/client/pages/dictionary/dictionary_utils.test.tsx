@@ -39,7 +39,7 @@ function expectMatchesJsx(input: unknown, expected: JSX.Element) {
 describe("xmlNodeToJsx", () => {
   it("changes class to className", () => {
     const root = new XmlNode("span", [["class", "Caesar"]], []);
-    const result = xmlNodeToJsx(root);
+    const result = xmlNodeToJsx(root, {});
     expect(result.props.className).toBe("Caesar");
   });
 
@@ -50,14 +50,14 @@ describe("xmlNodeToJsx", () => {
       [new XmlNode("span", [["class", "QNA"]])]
     );
 
-    const result = xmlNodeToJsx(root, undefined, undefined, true);
+    const result = xmlNodeToJsx(root, { isEmbedded: true });
     expect(result.props.className).toBe("Caesar QNAEmbedded");
     expect(result.props.children[0].props.className).toBe("QNAEmbedded");
   });
 
   it("handles nodes with titles", () => {
     const root = new XmlNode("span", [["title", "Caesar"]], ["Gallia"]);
-    const result = xmlNodeToJsx(root);
+    const result = xmlNodeToJsx(root, {});
 
     expect(result.type).toBe(ClickableTooltip);
     expect(result.props.titleText).toBe("Caesar");
@@ -69,7 +69,7 @@ describe("xmlNodeToJsx", () => {
       [],
       ["Caesar", new XmlNode("span", [], ["Pompey    Crassus"])]
     );
-    const result = xmlNodeToJsx(root);
+    const result = xmlNodeToJsx(root, {});
 
     expect(result.props.children).toHaveLength(2);
     expectMatchesJsx(
@@ -84,21 +84,21 @@ describe("xmlNodeToJsx", () => {
 
   it("adds highlight on matching id", () => {
     const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
-    const result = xmlNodeToJsx(root, "Caesar");
+    const result = xmlNodeToJsx(root, { highlightId: "Caesar" });
 
     expect(result.props["className"]).toBe("dictHighlighted");
   });
 
   it("does not add highlight on different id", () => {
     const root = new XmlNode("span", [["id", "Caesar"]], ["Gallia"]);
-    const result = xmlNodeToJsx(root, "Augustus");
+    const result = xmlNodeToJsx(root, { highlightId: "Augustus" });
 
     expect(result.props["className"]).toBe(undefined);
   });
 
   it("does not add highlight on both undefined", () => {
     const root = new XmlNode("span", [], ["Gallia"]);
-    const result = xmlNodeToJsx(root, undefined);
+    const result = xmlNodeToJsx(root, {});
 
     expect(result.props["className"]).toBe(undefined);
   });
@@ -113,7 +113,7 @@ describe("xmlNodeToJsx", () => {
       ],
       []
     );
-    const result = xmlNodeToJsx(root, undefined);
+    const result = xmlNodeToJsx(root, {});
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -134,7 +134,7 @@ describe("xmlNodeToJsx", () => {
 
   it("handles linkifying elements", async () => {
     const root = new XmlNode("span", [], ["omnis est"]);
-    const result = xmlNodeToJsx(root, undefined);
+    const result = xmlNodeToJsx(root, {});
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
@@ -143,23 +143,12 @@ describe("xmlNodeToJsx", () => {
       </RouteContext.Provider>
     );
 
-    await user.click(screen.getByText("omnis"));
-
-    expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: "/dicts",
-        params: expect.objectContaining({ q: "omnis", in: "LnS" }),
-      })
-    );
-
-    await user.click(screen.getByText("est"));
-
-    expect(mockNav).toHaveBeenCalledWith(
-      expect.objectContaining({
-        path: "/dicts",
-        params: expect.objectContaining({ q: "est", in: "LnS" }),
-      })
-    );
+    expect(screen.queryByText("omnis")).toBeVisible();
+    expect(screen.queryByText("omnis")).toHaveClass("latWord");
+    expect(screen.queryByText("omnis")).toHaveTextContent("omnis");
+    expect(screen.queryByText("est")).toBeVisible();
+    expect(screen.queryByText("est")).toHaveClass("latWord");
+    expect(screen.queryByText("est")).toHaveTextContent("est");
   });
 });
 
