@@ -60,6 +60,7 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
     }
 
     expect(totalSize).toBeGreaterThan(0);
+    console.log(`::notice title=Bundle::${totalSize / 1000} kB`);
     expect(totalSize / 1000).toBeLessThan(100);
   });
 

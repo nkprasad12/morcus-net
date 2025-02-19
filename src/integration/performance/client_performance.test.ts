@@ -122,7 +122,7 @@ test.describe("Client Performance Tests", () => {
     const allMetrics = metrics.metrics.concat([
       lcp,
       { name: "JSHeapMaxUsed", value: maxTotalMem },
-      { name: "JSHeapTotalUsed", value: maxUsedMem },
+      { name: "JSHeapMaxTotal", value: maxUsedMem },
     ]);
 
     const size =
