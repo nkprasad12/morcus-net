@@ -18,7 +18,12 @@ const N = safeParseInt(process.env.PERF_TEST_ITERATIONS) ?? 1;
 const CPU_THROTTLE = safeParseInt(process.env.CPU_THROTTLE);
 
 const LCP = "LargestContentfulPaint";
-const MEM_METRICS = new Set(["JSHeapUsedSize", "JSHeapTotalSize"]);
+const MEM_METRICS = new Set([
+  "JSHeapUsedSize",
+  "JSHeapTotalSize",
+  "JSHeapMaxUsed",
+  "JSHeapMaxTotal",
+]);
 const PERF_METRICS = new Set([
   "LayoutDuration",
   "RecalcStyleDuration",
@@ -75,6 +80,8 @@ test.describe("Client Performance Tests", () => {
   );
 
   let client: CDPSession | null = null;
+  let runMemory: { total: number; used: number }[] = [];
+  let collectorHandle: NodeJS.Timeout | undefined = undefined;
 
   test.beforeEach(async ({ page }) => {
     client = await page.context().newCDPSession(page);
@@ -84,6 +91,16 @@ test.describe("Client Performance Tests", () => {
       });
     }
     await client.send("Performance.enable");
+    runMemory = [];
+    const collector = async () => {
+      const metrics = await client!.send("Performance.getMetrics");
+      const total = metrics.metrics.find((m) => m.name === "JSHeapTotalSize");
+      const used = metrics.metrics.find((m) => m.name === "JSHeapUsedSize");
+      if (total && used) {
+        runMemory.push({ total: total.value, used: used.value });
+      }
+    };
+    collectorHandle = setInterval(collector, 16);
   });
 
   test.afterEach(async () => {
@@ -94,9 +111,19 @@ test.describe("Client Performance Tests", () => {
   });
 
   async function collectMetrics(page: Page, tag: string) {
+    if (collectorHandle) {
+      clearInterval(collectorHandle);
+    }
+    const maxTotalMem = Math.max(...runMemory.map((m) => m.total)) ?? 0;
+    const maxUsedMem = Math.max(...runMemory.map((m) => m.used)) ?? 0;
+    await client!.send("HeapProfiler.collectGarbage");
     const metrics = await client!.send("Performance.getMetrics");
     const lcp = await largestContentfulPaint(page);
-    const allMetrics = metrics.metrics.concat(lcp);
+    const allMetrics = metrics.metrics.concat([
+      lcp,
+      { name: "JSHeapMaxUsed", value: maxTotalMem },
+      { name: "JSHeapTotalUsed", value: maxUsedMem },
+    ]);
 
     const size =
       checkPresent(page.viewportSize()?.width) < 400 ? "small" : "large";
