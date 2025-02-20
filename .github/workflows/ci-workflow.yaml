@@ -128,10 +128,16 @@ jobs:
         run: npm ci
       - name: Installing browsers
         run: npx playwright install chromium --with-deps
+      - name: Setting up .env
+        run: touch .env
+      - name: Setting comparison tag (dev branch)
+        if: github.ref == 'refs/heads/dev'
+        run: echo "A_TAG=main-latest" >> "$GITHUB_ENV"
+      - name: Setting comparison tag (non-dev branch)
+        if: github.ref != 'refs/heads/dev'
+        run: echo "A_TAG=dev-latest" >> "$GITHUB_ENV"
       - name: Running Performance tests
-        run: |
-          touch .env
-          npm run tsnp src/scripts/perf_a_b.ts -- --A=main-latest --B=${{ github.sha }} --N=40 --screenSize=${{ matrix.screenSize }} --ci
+        run: npm run tsnp src/scripts/perf_a_b.ts -- --A=$A_TAG --B=${{ github.sha }} --N=40 --screenSize=${{ matrix.screenSize }} --ci
       - name: Upload Performance report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
