@@ -8,10 +8,13 @@ import user from "@testing-library/user-event";
 
 import { Macronizer } from "@/web/client/pages/macron";
 import { callApi } from "@/web/utils/rpc/client_rpc";
+import { silenceErroneousWarnings } from "@/web/client/test_utils";
 
 console.debug = jest.fn();
 
 jest.mock("@/web/utils/rpc/client_rpc");
+
+silenceErroneousWarnings();
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;

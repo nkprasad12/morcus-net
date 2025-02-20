@@ -13,12 +13,15 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import { Router, type RouteInfo } from "@/web/client/router/router_v2";
+import { silenceErroneousWarnings } from "@/web/client/test_utils";
 
 jest.mock("@/web/client/utils/media_query");
 jest.mock("@/web/utils/rpc/client_rpc");
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
+
+silenceErroneousWarnings();
 
 beforeEach(() => {
   mockCallApi.mockReset();

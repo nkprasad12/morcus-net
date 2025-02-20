@@ -10,6 +10,7 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { callApiFull } from "@/web/utils/rpc/client_rpc";
 import { RouteContext } from "@/web/client/router/router_v2";
+import { silenceErroneousWarnings } from "@/web/client/test_utils";
 
 console.debug = jest.fn();
 
@@ -19,6 +20,8 @@ beforeEach(() => {
   // eslint-disable-next-line no-global-assign
   indexedDB = new IDBFactory();
 });
+
+silenceErroneousWarnings();
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApiFull;
