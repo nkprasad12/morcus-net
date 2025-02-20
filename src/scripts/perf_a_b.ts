@@ -14,6 +14,7 @@ import {
   type PerformanceTestResult,
 } from "@/perf/e2e_perf";
 import { safeParseInt } from "@/common/misc_utils";
+import { setMap } from "@/common/data_structures/collect_map";
 
 interface ComparedMetric {
   name: string;
@@ -31,6 +32,11 @@ interface PerformanceComparison {
 const BASE_COMMAND = "npx playwright test src/integration/performance/";
 const TAG_HEAD = "head";
 const SPECIAL_TAGS = new Set(["main-latest", "dev-latest"]);
+const CRUCIAL_METRICS = new Set([
+  "JSHeapMaxTotal",
+  "JSHeapTotalSize",
+  "LargestContentfulPaint",
+]);
 
 const REPORT_HEAD = `
   <head>
@@ -97,6 +103,62 @@ const REPORT_HEAD = `
       }   
     </style>
   </head>`;
+
+function generateCiReport(results: PerformanceComparison[]) {
+  interface ReportStats {
+    screenSize: string;
+    improved: ReturnType<typeof setMap<string, string>>;
+    regressed: ReturnType<typeof setMap<string, string>>;
+  }
+  const allStats = new Map<string, ReportStats>();
+  for (const result of results) {
+    const id = result.id;
+    for (const key of Object.keys(result.metrics)) {
+      if (!CRUCIAL_METRICS.has(key)) {
+        continue;
+      }
+      const metric = result.metrics[key];
+      if (metric.pValue > 0.01) {
+        continue;
+      }
+      if (Math.abs(metric.diff) < 0.01) {
+        continue;
+      }
+      if (!allStats.has(id.screenSize)) {
+        allStats.set(id.screenSize, {
+          screenSize: id.screenSize,
+          improved: setMap<string, string>(),
+          regressed: setMap<string, string>(),
+        });
+      }
+      const stats = allStats.get(id.screenSize)!;
+      const mapToUse = metric.diff > 0 ? stats.regressed : stats.improved;
+      mapToUse.add(key, id.name);
+    }
+  }
+  for (const stats of allStats.values()) {
+    // ::notice file={name},line={line},endLine={endLine},title={title}::{message}
+    const title = `Performance A/B [${stats.screenSize}]`;
+    const improvedSummary: string[] = [];
+    for (const [key, names] of stats.improved.map) {
+      improvedSummary.push(`${key} (${names.size})`);
+    }
+    if (improvedSummary.length > 0) {
+      console.log(
+        `::notice title=${title} Improved::${improvedSummary.join(", ")}`
+      );
+    }
+    const regressedSummary: string[] = [];
+    for (const [key, names] of stats.regressed.map) {
+      regressedSummary.push(`${key} (${names.size})`);
+    }
+    if (regressedSummary.length > 0) {
+      console.log(
+        `::warning title=${title} Regressed::${regressedSummary.join(", ")}`
+      );
+    }
+  }
+}
 
 function generateHtmlReport(results: PerformanceComparison[]): string {
   const allMetricNames = Array.from(
@@ -355,6 +417,9 @@ function runABTest(rawTagA: string, rawTagB: string): void {
   const resultsB = runPerformanceTest(tagB);
   const results = compareResults(resultsA, resultsB);
   const htmlReport = generateHtmlReport(results);
+  if (process.argv.includes("--ci")) {
+    generateCiReport(results);
+  }
   const reportName = `performance_report_${tagA}_vs_${tagB}_${performance.now()}.html`;
   const reportPath = path.join(E2E_REPORTS_DIR, reportName);
   fs.writeFileSync(reportPath, htmlReport);
