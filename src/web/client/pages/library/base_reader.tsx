@@ -303,9 +303,8 @@ function DragHelper(
     };
   }, [onDrag, onDragEnd, posKey]);
 
-  const onDragStart = (e: { preventDefault: () => void }) => {
+  const onDragStart = () => {
     dragStartLen.current = currentLen;
-    e.preventDefault();
   };
 
   return (
