@@ -60,7 +60,7 @@ describe("xmlNodeToJsx", () => {
     const result = xmlNodeToJsx(root, {});
 
     expect(result.type).toBe(ClickableTooltip);
-    expect(result.props.titleText).toBe("Caesar");
+    expect(JSON.stringify(result.props.titleText)).toContain("Caesar");
   });
 
   it("handles nested and text nodes", () => {

@@ -8,7 +8,6 @@ import {
   DictInfo,
   DictsFusedRequest,
   DictsFusedResponse,
-  type DictLang,
 } from "@/common/dictionaries/dictionaries";
 import {
   LatinDict,
@@ -29,8 +28,6 @@ import {
   xmlNodeToJsx,
   DictHelpSection,
   type XmlNodeToJsxArgs,
-  onLatinWordClick,
-  onLatinWordAuxClick,
 } from "@/web/client/pages/dictionary/dictionary_utils";
 import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionary_search";
 import {
@@ -47,6 +44,7 @@ import {
   DictContext,
   DictContextOptions,
   DictionaryV2Props,
+  type OnSearchQuery,
 } from "@/web/client/pages/dictionary/dict_context";
 import { assert } from "@/common/assert";
 import { TitleContext } from "@/web/client/components/title";
@@ -243,7 +241,7 @@ function SearchBar(props: SearchBarProps) {
       maxWidth={props.maxWidth}
       disableGutters
       innerRef={scrollTopRef}
-      style={{ marginLeft: props.marginLeft || "auto" }}
+      style={{ marginLeft: props.marginLeft ?? "auto" }}
       id={props.id}
       className={props.className}>
       <DictionarySearch
@@ -470,18 +468,29 @@ function articleLinkButton(text: string, scale: number) {
 }
 
 function DictionaryEntries(props: { entries: EntriesByDict[] }) {
-  const { isSmall, textScale, scale, setInitial, fromInternalLink } =
+  const { isSmall, textScale, scale, fromInternalLink, onSearchQuery } =
     React.useContext(DictContext);
   const { nav } = useDictRouter();
 
-  const clickHandler = textCallback(
-    (w) => onLatinWordClick(nav, setInitial, fromInternalLink, w),
-    "latWord"
-  );
-  const auxClickHandler = textCallback(
-    (w) => onLatinWordAuxClick(nav, w),
-    "latWord"
-  );
+  const clickHandler = textCallback((query) => {
+    // This flag is used only to determine whether or not to trigger
+    // certain transition UI affordances (in the current writing, smooth scroll).
+    // It is *not* used to calculate VDOM state.
+    if (fromInternalLink) {
+      fromInternalLink.current = true;
+    }
+    onSearchQuery(query, { lang: "La", inflectedSearch: true });
+    return true;
+  }, "latWord");
+  const auxClickHandler = textCallback((query) => {
+    nav.inNewTab({
+      path: ClientPaths.DICT_PAGE.path,
+      query,
+      lang: "La",
+      inflectedSearch: true,
+    });
+    return true;
+  }, "latWord");
 
   return (
     <div onAuxClick={auxClickHandler} onClick={clickHandler}>
@@ -717,17 +726,21 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       ),
     [allowedDicts, queryLang]
   );
+
+  // Serialized to a string so that the dependency array doesn't
+  // change if the contents don't change.
+  const queryDictKeys = queryDicts.map((d) => d.key).join("@@");
   const apiRequest: DictsFusedRequest | null = React.useMemo(
     () =>
       query === undefined || greekTerm !== null
         ? null
         : {
             query,
-            dicts: queryDicts.map((dict) => dict.key),
+            dicts: queryDictKeys.split("@@"),
             mode: idSearch ? 2 : inflectedSearch ? 1 : 0,
             commitHash: getCommitHash(),
           },
-    [query, queryDicts, idSearch, inflectedSearch, greekTerm]
+    [query, queryDictKeys, idSearch, inflectedSearch, greekTerm]
   );
   useApiCall(DictsFusedApi, apiRequest, {
     reloadOldClient: true,
@@ -767,20 +780,28 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     fromInternalLink.current = false;
   }, [state, isEmbedded, hash, greekTerm]);
 
-  const onSearchQuery = useCallback(
-    (term: string, lang?: DictLang) => {
+  const onSearchQuery: OnSearchQuery = useCallback(
+    (query, options) => {
       if (setInitial) {
-        setInitial(term);
+        setInitial(query);
         return;
       }
+      const filterDicts = (d: LatinDictInfo) =>
+        options?.lang === undefined || d.languages.from === options?.lang;
+      const available = LatinDict.AVAILABLE.filter(filterDicts);
+      const canUse = dictsToUse.filter(filterDicts);
       nav.to({
         path: ClientPaths.DICT_PAGE.path,
-        query: term,
-        lang: lang,
-        inflectedSearch: settings.data.inflectedSearch === true,
+        query,
+        lang: options?.lang,
+        inflectedSearch:
+          options?.inflectedSearch ?? settings.data.inflectedSearch === true,
+        dicts:
+          options?.dicts ??
+          (available.length === canUse.length ? undefined : canUse),
       });
     },
-    [nav, settings.data.inflectedSearch, setInitial]
+    [nav, settings.data.inflectedSearch, setInitial, dictsToUse]
   );
 
   const contextValues: DictContextOptions = React.useMemo(
@@ -793,7 +814,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       dictsToUse,
       setDictsToUse,
       scrollTopRef,
-      setInitial: props.setInitial,
       fromInternalLink,
       searchQuery: query,
       onSearchQuery,
@@ -807,7 +827,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       dictsToUse,
       setDictsToUse,
       scrollTopRef,
-      props.setInitial,
       fromInternalLink,
       query,
       onSearchQuery,

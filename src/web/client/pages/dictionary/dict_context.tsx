@@ -1,5 +1,5 @@
-import type { DictLang } from "@/common/dictionaries/dictionaries";
 import type { LatinDictInfo } from "@/common/dictionaries/latin_dicts";
+import type { DictRoute } from "@/web/client/pages/dictionary/dictionary_routing";
 import React from "react";
 
 const DEFAULT_DICT_OPTIONS: DictContextOptions = {
@@ -13,6 +13,11 @@ const DEFAULT_DICT_OPTIONS: DictContextOptions = {
   onSearchQuery: () => {},
 };
 
+export type OnSearchQuery = (
+  query: string,
+  options?: Pick<DictRoute, "dicts" | "inflectedSearch" | "lang">
+) => unknown;
+
 export interface DictContextOptions {
   isEmbedded: boolean;
   embeddedOptions?: EmbeddedDictOptions;
@@ -22,10 +27,9 @@ export interface DictContextOptions {
   dictsToUse: LatinDictInfo[];
   setDictsToUse: (dicts: LatinDictInfo[]) => unknown;
   scrollTopRef: React.RefObject<HTMLDivElement>;
-  setInitial?: (target: string) => unknown;
   fromInternalLink?: React.MutableRefObject<boolean>;
   searchQuery?: string;
-  onSearchQuery: (query: string, dict?: DictLang) => unknown;
+  onSearchQuery: OnSearchQuery;
 }
 
 export const DictContext: React.Context<DictContextOptions> =
