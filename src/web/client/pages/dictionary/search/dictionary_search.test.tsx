@@ -82,7 +82,7 @@ describe("DictionarySearch", () => {
     await user.type(search, "{enter}");
     expect(mockCallback).not.toHaveBeenCalled();
     await user.type(search, "a{enter}");
-    expect(mockCallback).toHaveBeenCalledWith("a", undefined);
+    expect(mockCallback).toHaveBeenCalledWith("a", { lang: undefined });
   });
 
   it("handles navigation on option click", async () => {
@@ -103,10 +103,9 @@ describe("DictionarySearch", () => {
 
     await user.click(screen.getByText("ab"));
 
-    expect(mockCallback).toHaveBeenCalledWith(
-      "ab",
-      LatinDict.LewisAndShort.languages.from
-    );
+    expect(mockCallback).toHaveBeenCalledWith("ab", {
+      lang: LatinDict.LewisAndShort.languages.from,
+    });
   });
 
   it("handles navigation on option enter", async () => {
@@ -128,10 +127,9 @@ describe("DictionarySearch", () => {
     await user.hover(screen.getByText("ack"));
     await user.type(search, "{enter}");
 
-    expect(mockCallback).toHaveBeenCalledWith(
-      "ack",
-      LatinDict.SmithAndHall.languages.from
-    );
+    expect(mockCallback).toHaveBeenCalledWith("ack", {
+      lang: LatinDict.SmithAndHall.languages.from,
+    });
   });
 
   it("has an options menu that disables and enables dicts", async () => {

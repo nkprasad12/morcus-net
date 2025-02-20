@@ -17,15 +17,10 @@ import {
   type DictSubsectionResult,
 } from "@/common/dictionaries/dict_result";
 import { DictContext } from "@/web/client/pages/dictionary/dict_context";
-import { NavHelper } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
-import {
-  DictRoute,
-  useDictRouter,
-} from "@/web/client/pages/dictionary/dictionary_routing";
+import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { processWords } from "@/common/text_cleaning";
-import type { Callback } from "@/web/client/utils/callback_utils";
 
 export const QUICK_NAV_ANCHOR = "QNA";
 export const QNA_EMBEDDED = "QNAEmbedded";
@@ -166,42 +161,6 @@ function ShLink(props: { text: string; query: string }) {
       {props.text}
     </span>
   );
-}
-
-export function onLatinWordClick(
-  nav: NavHelper<DictRoute>,
-  setInitial: Callback<string> | undefined,
-  fromInternalLinkRef: React.MutableRefObject<boolean> | undefined,
-  word: string
-) {
-  // If we're in embedded mode, we don't use URL.
-  if (setInitial !== undefined) {
-    setInitial(word);
-    return true;
-  }
-  // This flag is used only to determine whether or not to trigger
-  // certain transition UI affordances (in the current writing, smooth scroll).
-  // It is *not* used to calculate VDOM state.
-  if (fromInternalLinkRef) {
-    fromInternalLinkRef.current = true;
-  }
-  nav.to({
-    path: ClientPaths.DICT_PAGE.path,
-    query: word,
-    dicts: LatinDict.LewisAndShort,
-    inflectedSearch: true,
-  });
-  return true;
-}
-
-export function onLatinWordAuxClick(nav: NavHelper<DictRoute>, word: string) {
-  nav.inNewTab({
-    path: ClientPaths.DICT_PAGE.path,
-    query: word,
-    dicts: LatinDict.LewisAndShort,
-    inflectedSearch: true,
-  });
-  return true;
 }
 
 export function LatLinkify(props: { input: string }) {

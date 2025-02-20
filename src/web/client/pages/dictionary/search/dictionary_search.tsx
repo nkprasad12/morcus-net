@@ -16,6 +16,7 @@ import { Solarized } from "@/web/client/styling/colors";
 import { SpanButton } from "@/web/client/components/generic/basics";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
+import type { OnSearchQuery } from "@/web/client/pages/dictionary/dict_context";
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -189,7 +190,7 @@ export function DictionarySearch(props: {
   dicts: LatinDictInfo[];
   setDicts: (newDicts: LatinDictInfo[]) => unknown;
   autoFocused: boolean;
-  onSearchQuery: (term: string, lang?: DictLang) => unknown;
+  onSearchQuery: OnSearchQuery;
   embedded?: boolean;
 }) {
   const { smallScreen, embedded } = props;
@@ -199,7 +200,7 @@ export function DictionarySearch(props: {
     if (searchTerm.length === 0) {
       return;
     }
-    props.onSearchQuery(searchTerm, lang);
+    props.onSearchQuery(searchTerm, { lang });
   }
 
   return (

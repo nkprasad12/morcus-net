@@ -28,6 +28,7 @@ jest.mock("@/web/client/utils/media_query", () => {
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { SearchSettings } from "@/web/client/pages/dictionary/dictionary_utils";
 
 beforeAll(() => {
   // js-dom doesn't yet support `dialog`.
@@ -60,6 +61,8 @@ describe("New Dictionary View", () => {
   afterEach(() => {
     mockCallApi.mockReset();
   });
+
+  beforeEach(() => window.sessionStorage.clear());
 
   it("shows expected components", () => {
     render(<DictionaryViewV2 />);
@@ -316,7 +319,56 @@ describe("New Dictionary View", () => {
     expect(navigateTo).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/dicts",
-        params: expect.objectContaining({ in: "LnS", q: "France" }),
+        params: expect.objectContaining({
+          lang: "La",
+          in: undefined,
+          q: "France",
+        }),
+      })
+    );
+  });
+
+  it("allows clicking to navigate to latin words with filters", async () => {
+    const resultString = "France or whatever idk lol";
+    const navigateTo = jest.fn();
+    mockCallApiMockResolvedValue({
+      LS: [
+        {
+          entry: new XmlNode("span", [["id", "n3"]], [resultString]),
+          outline: {
+            mainKey: "mainKey",
+            mainSection: {
+              text: "mainBlurb",
+              sectionId: "n1",
+            },
+            senses: [],
+          },
+        },
+      ],
+    });
+
+    SearchSettings.store([LatinDict.LewisAndShort]);
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: "/", params: { q: "Belgae" } },
+          navigateTo,
+        }}>
+        <DictionaryViewV2 />
+      </RouteContext.Provider>
+    );
+    await waitFor(() => {
+      expect(
+        screen.getByText((_, element) => element?.textContent === resultString)
+      ).toBeDefined();
+    });
+
+    fireEvent.click(screen.getByText("France"));
+
+    expect(navigateTo).toHaveBeenCalledWith(
+      expect.objectContaining({
+        path: "/dicts",
+        params: expect.objectContaining({ lang: "La", in: "LnS", q: "France" }),
       })
     );
   });
