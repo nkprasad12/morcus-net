@@ -29,6 +29,9 @@ import { useMediaQuery } from "@/web/client/utils/media_query";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SearchSettings } from "@/web/client/pages/dictionary/dictionary_utils";
+import { silenceErroneousWarnings } from "@/web/client/test_utils";
+
+silenceErroneousWarnings();
 
 beforeAll(() => {
   // js-dom doesn't yet support `dialog`.

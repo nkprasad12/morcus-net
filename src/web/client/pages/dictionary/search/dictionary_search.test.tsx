@@ -10,6 +10,7 @@ import { DictionarySearch } from "@/web/client/pages/dictionary/search/dictionar
 import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { FakeBroadcastChannel } from "@/web/client/offline/fake_broadcast_channel";
+import { silenceErroneousWarnings } from "@/web/client/test_utils";
 
 global.BroadcastChannel = FakeBroadcastChannel as any;
 
@@ -30,6 +31,8 @@ beforeAll(() => {
   HTMLDialogElement.prototype.showModal = jest.fn();
   HTMLDialogElement.prototype.close = jest.fn();
 });
+
+silenceErroneousWarnings();
 
 describe("DictionarySearch", () => {
   beforeAll(() => {

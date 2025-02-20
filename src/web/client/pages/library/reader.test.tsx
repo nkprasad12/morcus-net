@@ -30,8 +30,11 @@ jest.mock("@/web/client/utils/media_query", () => {
   };
 });
 import { useMediaQuery } from "@/web/client/utils/media_query";
+import { silenceErroneousWarnings } from "@/web/client/test_utils";
 
 jest.mock("@/web/utils/rpc/client_rpc");
+
+silenceErroneousWarnings([["Failed for testing"]]);
 
 console.debug = jest.fn();
 window.HTMLElement.prototype.scrollIntoView = jest.fn();

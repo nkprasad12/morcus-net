@@ -6,8 +6,11 @@ import { render, screen } from "@testing-library/react";
 import user from "@testing-library/user-event";
 import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";
 import { callApi } from "@/web/utils/rpc/client_rpc";
+import { silenceErroneousWarnings } from "@/web/client/test_utils";
 
 jest.mock("@/web/utils/rpc/client_rpc");
+
+silenceErroneousWarnings();
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApi;
