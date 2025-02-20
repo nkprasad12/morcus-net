@@ -278,7 +278,7 @@ export function xmlNodeToJsx(
     const ForwardedNode = React.forwardRef<HTMLElement>(hoverForwardedNode);
     return (
       <ClickableTooltip
-        titleText={titleText}
+        titleText={<span style={{ padding: "0px 4px" }}>{titleText}</span>}
         ChildFactory={ForwardedNode}
         key={key}
       />
