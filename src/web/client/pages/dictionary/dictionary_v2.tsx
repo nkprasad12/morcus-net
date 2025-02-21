@@ -8,6 +8,7 @@ import {
   DictInfo,
   DictsFusedRequest,
   DictsFusedResponse,
+  type DictLang,
 } from "@/common/dictionaries/dictionaries";
 import {
   LatinDict,
@@ -142,28 +143,20 @@ function GreekWordContent(props: {
 }
 
 function NoResultsContent(props: {
-  isSmall: boolean;
   word?: string;
-  dicts: DictInfo[];
+  dicts: LatinDictInfo[];
+  inflectedSearch: boolean | undefined;
 }) {
-  const labels =
-    props.dicts.length > 0 ? props.dicts.map((d) => d.displayName) : ["None"];
   return (
-    <ContentBox isSmall={props.isSmall}>
-      <>
-        <div>
-          {NO_RESULTS_MESSAGE + (props.word ? ` for ${props.word}.` : ".")}
-        </div>
-        <div className="text sm">
-          Enabled dictionaries:{" "}
-          {labels.map((label) => (
-            <span key={label}>
-              <FullDictChip label={label} size="xs" />{" "}
-            </span>
-          ))}
-        </div>
-      </>
-    </ContentBox>
+    <>
+      <div className="text md" style={{ margin: "6px 12px" }}>
+        {NO_RESULTS_MESSAGE + (props.word ? ` for ${props.word}.` : ".")}
+      </div>
+      <LandingContent
+        dictsToUse={props.dicts}
+        inflectedSearch={props.inflectedSearch}
+      />
+    </>
   );
 }
 
@@ -175,8 +168,63 @@ function ErrorContent(props: { isSmall: boolean }) {
   );
 }
 
-function LandingContent() {
-  return <></>;
+function fullLangName(lang: DictLang): string {
+  switch (lang) {
+    case "La":
+      return "Latin";
+    case "En":
+      return "English";
+    case "Fr":
+      return "French";
+    default:
+      return lang;
+  }
+}
+
+function LandingContent(props: {
+  dictsToUse: LatinDictInfo[];
+  inflectedSearch: boolean | undefined;
+}) {
+  const dicts = props.dictsToUse.filter((d) => d.key !== "NUM");
+  const fromLangs = Array.from(new Set(dicts.map((d) => d.languages.from)));
+  const inflectedLatin =
+    props.inflectedSearch && dicts.some((d) => d.languages.from === "La");
+
+  return (
+    <div className="text xs light" style={{ margin: "12px 16px" }}>
+      <details>
+        <summary className="text xs light">
+          You are searching {dicts.length} dictionaries
+        </summary>
+        {dicts.map((dict) => (
+          <div key={dict.key} style={{ marginLeft: "16px", marginTop: "6px" }}>
+            <FullDictChip size="xs" label={dict.displayName} />{" "}
+            <span>
+              (from {fullLangName(dict.languages.from)} to{" "}
+              {fullLangName(dict.languages.to)})
+            </span>
+          </div>
+        ))}
+      </details>
+      <div>
+        You can type headwords in{" "}
+        {fromLangs
+          .filter((lang) => !inflectedLatin || lang !== "La")
+          .map((lang) => fullLangName(lang))
+          .join(" or ")}
+        {inflectedLatin && <span>, and inflected forms of Latin words</span>}
+        {"."}
+      </div>
+      <div className="text xs" style={{ marginTop: "8px" }}>
+        Click the {<SvgIcon className="menuIcon" pathD={SvgIcon.Settings} />}{" "}
+        icon in the search bar to
+        {fromLangs.includes("La") && !props.inflectedSearch
+          ? " enable searching inflected (i.e. conjugated or declined) forms of Latin words, and to "
+          : ""}
+        {" enable or disable dictionaries. "}
+      </div>
+    </div>
+  );
 }
 
 function getEntriesByDict(
@@ -814,11 +862,18 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         scrollTopRef={scrollTopRef}
       />
     ) : state === "Landing" ? (
-      <LandingContent />
+      <LandingContent
+        dictsToUse={dictsToUse}
+        inflectedSearch={settings.data.inflectedSearch}
+      />
     ) : state === "Error" ? (
       <ErrorContent isSmall={isSmall} />
     ) : state === "No Results" ? (
-      <NoResultsContent isSmall={isSmall} word={query} dicts={dictsToUse} />
+      <NoResultsContent
+        word={query}
+        dicts={dictsToUse}
+        inflectedSearch={settings.data.inflectedSearch}
+      />
     ) : state === "Loading" ? (
       <LoadingMessage />
     ) : null;
