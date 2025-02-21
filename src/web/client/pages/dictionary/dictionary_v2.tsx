@@ -468,7 +468,7 @@ function articleLinkButton(text: string, scale: number) {
 }
 
 function DictionaryEntries(props: { entries: EntriesByDict[] }) {
-  const { isSmall, textScale, scale, fromInternalLink, onSearchQuery } =
+  const { isSmall, scale, fromInternalLink, onSearchQuery } =
     React.useContext(DictContext);
   const { nav } = useDictRouter();
 
@@ -499,7 +499,6 @@ function DictionaryEntries(props: { entries: EntriesByDict[] }) {
           data={entry}
           key={`${entry.dictKey}EntrySection`}
           isSmall={isSmall}
-          textScale={textScale}
           scale={scale}
         />
       ))}
@@ -586,10 +585,9 @@ function SubsectionNote(props: {
 function SingleDictSection(props: {
   data: EntriesByDict;
   isSmall: boolean;
-  textScale?: number;
   scale: number;
 }) {
-  const { isSmall, textScale, scale } = props;
+  const { isSmall, scale } = props;
   if (props.data.entries.length === 0) {
     return <></>;
   }
@@ -626,17 +624,13 @@ function SingleDictSection(props: {
           </>
         </ContentBox>
       ))}
-      <DictAttribution
-        isSmall={isSmall}
-        dictKey={props.data.dictKey}
-        textScale={textScale}
-      />
+      <DictAttribution isSmall={isSmall} dictKey={props.data.dictKey} />
     </>
   );
 }
 
 function DefaultTableOfContents(props: TableOfContentsProps) {
-  const { isSmall, textScale } = React.useContext(DictContext);
+  const { isSmall } = React.useContext(DictContext);
   return (
     <>
       {props.entries.map((entry) => (
@@ -645,7 +639,6 @@ function DefaultTableOfContents(props: TableOfContentsProps) {
           outlines={entry.outlines}
           isSmall={isSmall}
           key={entry.dictKey + "ToC"}
-          textScale={textScale}
         />
       ))}
     </>
@@ -699,7 +692,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
 
   const isSmall = isEmbedded || isScreenSmall;
   const scale = (props?.textScale || 100) / 100;
-  const textScale = props?.textScale;
   const idSearch = route.idSearch === true;
 
   const { initial, setInitial } = props;
@@ -809,7 +801,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       isEmbedded,
       isSmall,
       scale,
-      textScale,
       embeddedOptions: props.embeddedOptions,
       dictsToUse,
       setDictsToUse,
@@ -822,7 +813,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       isEmbedded,
       isSmall,
       scale,
-      textScale,
       props.embeddedOptions,
       dictsToUse,
       setDictsToUse,
