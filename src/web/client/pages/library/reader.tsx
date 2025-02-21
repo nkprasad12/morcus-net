@@ -526,6 +526,11 @@ function JumpToSection() {
         value={value}
         onChange={(e) => setValue(e.currentTarget.value ?? "")}
         onKeyUp={(e) => {
+          // Make sure the Arrow keys don't trigger navigation.
+          if (e.key.includes("Arrow")) {
+            e.stopPropagation();
+            return;
+          }
           if (e.key === "Enter" && value.length > 0) {
             nav.to((old) => ({
               ...old,
