@@ -62,6 +62,7 @@ jobs:
       CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}
       LATEST: ghcr.io/nkprasad12/morcus:dev-latest
       PREVIOUS: ghcr.io/nkprasad12/morcus:dev-previous
+      PR_LATEST: ghcr.io/nkprasad12/morcus:pr-latest
 
     steps:
       - uses: actions/checkout@v4
@@ -79,6 +80,11 @@ jobs:
         run: |
           docker tag $CANDIDATE $LATEST
           docker push $LATEST
+      - name: Push latest PR image
+        if: github.ref != 'refs/heads/dev'
+        run: |
+          docker tag $CANDIDATE $PR_LATEST
+          docker push $PR_LATEST
 
   validate-image:
     needs: [build-image]
