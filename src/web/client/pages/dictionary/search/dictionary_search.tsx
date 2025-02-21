@@ -228,11 +228,11 @@ export function DictionarySearch(props: {
         style={{
           padding: spacing(smallScreen ? 0 : 1),
           paddingTop: spacing(embedded ? 1 : 2),
-          paddingBottom: spacing(embedded ? 0 : 2),
-          marginLeft: spacing(smallScreen ? 0.5 : 3),
-          marginRight: spacing(smallScreen ? 0.5 : 3),
-          marginTop: spacing(embedded ? 0 : 2),
-          marginBottom: spacing(embedded ? 0.5 : 1),
+          paddingBottom: spacing(embedded ? 0 : 1),
+          marginLeft: spacing(smallScreen ? 0.5 : 2),
+          marginRight: spacing(smallScreen ? 0.5 : 2),
+          marginTop: spacing(embedded ? 0 : 0.5),
+          marginBottom: spacing(0.5),
         }}
       />
       <SearchSettingsDialog

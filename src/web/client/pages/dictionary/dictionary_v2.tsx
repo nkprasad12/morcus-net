@@ -87,16 +87,6 @@ function hasGreek(input: string): boolean {
   return /[\u0370-\u03ff\u1f00-\u1fff]/.test(input);
 }
 
-function HorizontalPlaceholder() {
-  return (
-    <span
-      key={"horizonatalSpacePlaceholder"}
-      className="dictPlaceholder unselectable">
-      {"pla ceh old er".repeat(20)}
-    </span>
-  );
-}
-
 function GreekWordContent(props: {
   isSmall: boolean;
   word: string;
@@ -220,7 +210,6 @@ interface EntriesByDict {
 
 interface SearchBarProps {
   maxWidth: "md" | "lg" | "xl";
-  marginLeft?: "auto" | "0";
   id?: string;
   className?: string;
 }
@@ -240,7 +229,7 @@ function SearchBar(props: SearchBarProps) {
       maxWidth={props.maxWidth}
       disableGutters
       innerRef={scrollTopRef}
-      style={{ marginLeft: props.marginLeft ?? "auto" }}
+      style={{ margin: "auto" }}
       id={props.id}
       className={props.className}>
       <DictionarySearch
@@ -366,6 +355,7 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
 
   return (
     <Container maxWidth="xl" style={{ minHeight: "100vh" }}>
+      <SearchBar maxWidth="md" />
       <div
         style={{
           display: "flex",
@@ -374,9 +364,7 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
         }}>
         <div className="tocSidebar">{sidebarContent}</div>
         <div style={{ maxWidth: "10000px" }}>
-          <SearchBar maxWidth="md" marginLeft="0" />
           {mainContent}
-          <HorizontalPlaceholder />
           <Footer />
         </div>
       </div>
