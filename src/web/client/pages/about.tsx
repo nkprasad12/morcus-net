@@ -2,8 +2,7 @@ import * as React from "react";
 import { getCommitHash } from "@/web/client/define_vars";
 import { Container } from "@/web/client/components/generic/basics";
 
-const INSTALL_GUIDE =
-  "https://www.cdc.gov/niosh/mining/content/hearingloss/installPWA.html";
+const INSTALL_GUIDE = "https://www.cdc.gov/niosh/mining/tools/installpwa.html";
 
 type SectionProps = React.PropsWithChildren<{ name: string }>;
 
@@ -104,25 +103,8 @@ export function About() {
           </Section>
           <Section name="Installation">
             <p>
-              Morcus Latin Tools is also installable as a standalone app
-              (meaning that it will come with its own launcher icon, will not
-              have clutter from the browser search bar, will have some light
-              extra theming, and so on).
-            </p>
-            <p>
-              Android users can get the app directly from the{" "}
-              <a href="https://play.google.com/store/apps/details?id=net.morcus.pwa">
-                Play Store
-              </a>
-              . Otherwise, see instructions for{" "}
-              <a href={`${INSTALL_GUIDE}#InstallingaPWAonAndroid`}>Android</a>
-              {" (without Play Store), "}
-              <a href={`${INSTALL_GUIDE}#InstallingaPWAoniOS`}>iOS</a>
-              {", or "}
-              <a href={`${INSTALL_GUIDE}#InstallingaPWAonaWindowsPCorMac`}>
-                desktop
-              </a>
-              .
+              Morcus Latin Tools is also installable as an app. See instructions
+              for <a href={INSTALL_GUIDE}>Android, iOS, and desktop</a>.
             </p>
           </Section>
           <Section name="Debugging">
