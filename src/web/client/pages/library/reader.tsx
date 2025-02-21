@@ -202,15 +202,17 @@ export function ReadingPage() {
     if (urlId === undefined || typeof work === "string") {
       return;
     }
+    if (highlightRef.current) {
+      highlightRef.current.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      });
+      return;
+    }
+    // Otherwise, just reset position to the top.
     window.scrollTo({ top: 0, behavior: "instant" });
     const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
-    if (twoColumnMain) {
-      twoColumnMain.scrollTo({ top: 0, behavior: "instant" });
-    }
-    highlightRef.current?.scrollIntoView({
-      behavior: "smooth",
-      block: "start",
-    });
+    twoColumnMain?.scrollTo({ top: 0, behavior: "instant" });
   }, [urlId, work]);
 
   useEffect(() => {

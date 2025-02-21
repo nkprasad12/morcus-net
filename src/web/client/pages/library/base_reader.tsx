@@ -16,6 +16,7 @@ import React, {
   useState,
   useCallback,
   JSX,
+  useLayoutEffect,
 } from "react";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import { Footer } from "@/web/client/components/footer";
@@ -94,6 +95,18 @@ export function BaseReader<
   const [drawerHeight, setDrawerHeight] = useState<number>(
     window.innerHeight * 0.15
   );
+  const isScreenSmall = useMediaQuery("(max-width: 900px)");
+
+  useLayoutEffect(() => {
+    // On a small screen, we have to set scrollPaddingTop on the document
+    // because that it what is scrolling. On a wide screen, there reader text
+    // is in a column that itself scrolls.
+    const value = isScreenSmall ? "48px" : "0px";
+    document.documentElement.style.scrollPaddingTop = value;
+    return () => {
+      document.documentElement.style.scrollPaddingTop = "0px";
+    };
+  }, [isScreenSmall]);
 
   useEffect(() => {
     const resetDrawer = () => setDrawerHeight(window.innerHeight * 0.15);
@@ -101,7 +114,6 @@ export function BaseReader<
     window.removeEventListener("orientationchange", resetDrawer);
   }, [setDrawerHeight]);
 
-  const isScreenSmall = useMediaQuery("(max-width: 900px)");
   const BaseLayout = isScreenSmall ? BaseMobileReaderLayout : BaseReaderLayout;
 
   const sidebarRef = React.useRef<HTMLDivElement>(null);
@@ -352,18 +364,17 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
 
   return (
     <div>
-      <Container className="readerMain" disableGutters>
-        <div
-          {...(props.swipeNavigation ? listeners : {})}
-          onClick={
-            props.tapNavigation === true
-              ? (e) => handleSideTap(e, props.swipeListeners?.onSwipeEnd)
-              : undefined
-          }>
-          {mainContent}
-          <Footer marginRatio={DRAWER_MAX_SIZE} />
-        </div>
-      </Container>
+      <div
+        className="readerMain"
+        {...(props.swipeNavigation ? listeners : {})}
+        onClick={
+          props.tapNavigation === true
+            ? (e) => handleSideTap(e, props.swipeListeners?.onSwipeEnd)
+            : undefined
+        }>
+        {mainContent}
+        <Footer marginRatio={DRAWER_MAX_SIZE} />
+      </div>
       <Container
         className="readerSide bgColor"
         disableGutters
@@ -420,7 +431,7 @@ const COLUMN_STYLE: CSSProperties = {
   overflow: "auto",
   marginTop: COLUMN_TOP_MARGIN,
   marginBottom: COLUMN_BOTTON_MARGIN,
-  scrollPaddingTop: APP_BAR_MAX_HEIGHT,
+  scrollPaddingTop: 48,
 };
 const DRAGGER_SIZE = 24;
 const DRAGGER_STYLE: CSSProperties = {
