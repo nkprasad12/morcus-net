@@ -33,6 +33,7 @@ import {
   BaseExtraSidebarTabProps,
   BaseMainColumnProps,
   BaseReader,
+  LARGE_VIEW_MAIN_COLUMN_ID,
   SWIPE_NAV_KEY,
   TAP_NAV_KEY,
 } from "@/web/client/pages/library/base_reader";
@@ -183,9 +184,6 @@ export function ReadingPage() {
       return;
     }
     updatePage(1, nav, work, true);
-    // For reasons I don't understand, when we do the redirect the browser seems to
-    // put us at the bottom - to avoid this, pre-emptively scroll to the top first.
-    window.scrollTo({ top: 0, behavior: "instant" });
   }, [work, urlId, nav]);
 
   // Fetch data
@@ -198,15 +196,20 @@ export function ReadingPage() {
     fetchWork(workId, setWork);
   }, [route.path]);
 
-  // Scroll to the required line, if specified.
   useEffect(() => {
-    // Continue if we have a loaded work and there's line specified.
+    // Continue if we have a loaded work and there's an ID in the URL.
+    // The case where we don't have an ID is handled by redirection to the start page.
     if (urlId === undefined || typeof work === "string") {
       return;
     }
+    window.scrollTo({ top: 0, behavior: "instant" });
+    const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
+    if (twoColumnMain) {
+      twoColumnMain.scrollTo({ top: 0, behavior: "instant" });
+    }
     highlightRef.current?.scrollIntoView({
       behavior: "smooth",
-      block: "center",
+      block: "start",
     });
   }, [urlId, work]);
 
@@ -450,6 +453,13 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
             />
             <div
               style={{
+                lineHeight: props.isMobile ? 1 : undefined,
+                paddingTop: props.isMobile ? "8px" : undefined,
+              }}>
+              <HeaderText data={work} page={currentPage} />
+            </div>
+            <div
+              style={{
                 paddingLeft: isMobile ? "12px" : undefined,
                 paddingRight: isMobile ? "12px" : "8px",
               }}>
@@ -558,44 +568,35 @@ function WorkNavigationBar(props: {
   }, [changePage]);
 
   return (
-    <>
-      <div
-        className="readerIconBar"
-        ref={navBarRef}
-        style={{ display: "flex", alignItems: "center" }}>
-        <NavIcon
-          Icon={<SvgIcon pathD={SvgIcon.ArrowBack} />}
-          label="previous section"
-          disabled={page <= 0}
-          onClick={() => changePage(-1)}
+    <div
+      className="readerIconBar"
+      ref={navBarRef}
+      style={{ display: "flex", alignItems: "center" }}>
+      <NavIcon
+        Icon={<SvgIcon pathD={SvgIcon.ArrowBack} />}
+        label="previous section"
+        disabled={page <= 0}
+        onClick={() => changePage(-1)}
+      />
+      <span
+        style={{ flexGrow: 1, textAlign: "center" }}
+        className="text sm light">
+        {(work.info.shortTitle ?? work.info.title) + " "}
+        <JumpToSection />
+        <CopyLinkTooltip
+          forwarded={TooltipNavIcon}
+          message="Copy link to page"
+          link={window.location.href}
+          placement="bottom"
         />
-        <span
-          style={{ flexGrow: 1, textAlign: "center" }}
-          className="text sm light">
-          {(work.info.shortTitle ?? work.info.title) + " "}
-          <JumpToSection />
-          <CopyLinkTooltip
-            forwarded={TooltipNavIcon}
-            message="Copy link to page"
-            link={window.location.href}
-            placement="bottom"
-          />
-        </span>
-        <NavIcon
-          Icon={<SvgIcon pathD={SvgIcon.ArrowForward} />}
-          label="next section"
-          disabled={page >= work.pages.length - 1}
-          onClick={() => changePage(1)}
-        />
-      </div>
-      <div
-        style={{
-          lineHeight: props.isMobile ? 1 : undefined,
-          paddingTop: props.isMobile ? "8px" : undefined,
-        }}>
-        <HeaderText data={work} page={page} />
-      </div>
-    </>
+      </span>
+      <NavIcon
+        Icon={<SvgIcon pathD={SvgIcon.ArrowForward} />}
+        label="next section"
+        disabled={page >= work.pages.length - 1}
+        onClick={() => changePage(1)}
+      />
+    </div>
   );
 }
 
