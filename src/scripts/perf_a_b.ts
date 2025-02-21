@@ -160,7 +160,10 @@ function generateCiReport(results: PerformanceComparison[]) {
   }
 }
 
-function generateHtmlReport(results: PerformanceComparison[]): string {
+function generateHtmlReport(
+  results: PerformanceComparison[],
+  forCi?: boolean
+): string {
   const allMetricNames = Array.from(
     new Set(results.flatMap((result) => Object.keys(result.metrics)))
   ).sort();
@@ -202,6 +205,10 @@ function generateHtmlReport(results: PerformanceComparison[]): string {
     })
     .join("");
   const table = `<table>${headerRow}${bodyRows}</table>`;
+  if (forCi) {
+    const header = reportPreamble(true);
+    return `<html>${header}${table}</html>`;
+  }
   const scriptIdx = process.argv.indexOf(__filename);
   const args =
     scriptIdx === -1
@@ -223,14 +230,17 @@ function generateHtmlReport(results: PerformanceComparison[]): string {
   `;
 }
 
-function reportPreamble() {
+function reportPreamble(forCi?: boolean) {
   const tagA = resolveTag("A");
   const tagB = resolveTag("B");
   const tagAEl = `<span class="compA">${tagA}</span>`;
   const tagBEl = `<span class="compB">${tagB}</span>`;
-
+  const header = `<h3>Performance comparison: ${tagAEl} vs ${tagBEl}</h3>`;
+  if (forCi) {
+    return header;
+  }
   return `
-      <h3>Performance comparison: ${tagAEl} vs ${tagBEl}</h3>
+      ${header}
       <p>
         <div>
           <span class="compA">A</span> is ${tagAEl};
@@ -398,6 +408,33 @@ function resolveTag(arg: "A" | "B"): string {
   return raw === TAG_HEAD ? findArg("buildTag", true) : raw;
 }
 
+function handleResults(
+  results: PerformanceComparison[],
+  tagA: string,
+  tagB: string
+) {
+  const isCi = process.argv.includes("--ci");
+  const htmlReport = generateHtmlReport(results);
+  if (isCi) {
+    generateCiReport(results);
+    const summaryFile = process.env.GITHUB_STEP_SUMMARY;
+    const simpleReport = generateHtmlReport(results, true);
+    if (summaryFile) {
+      fs.appendFileSync(
+        summaryFile,
+        "\n\n" + simpleReport.replaceAll("\n", " ").trim() + "\n\n"
+      );
+    }
+  }
+  const reportName = `performance_report_${tagA}_vs_${tagB}_${performance.now()}.html`;
+  const reportPath = path.join(E2E_REPORTS_DIR, reportName);
+  fs.writeFileSync(reportPath, htmlReport);
+  console.log(chalk.bgGreen(`A/B report written to: ${reportPath}\n`));
+  if (!isCi) {
+    execSync(`xdg-open ${reportPath}`);
+  }
+}
+
 function runABTest(rawTagA: string, rawTagB: string): void {
   if (rawTagA === TAG_HEAD || rawTagB === TAG_HEAD) {
     const buildTag = findArg("buildTag", true);
@@ -416,17 +453,7 @@ function runABTest(rawTagA: string, rawTagB: string): void {
   const resultsA = runPerformanceTest(tagA);
   const resultsB = runPerformanceTest(tagB);
   const results = compareResults(resultsA, resultsB);
-  const htmlReport = generateHtmlReport(results);
-  if (process.argv.includes("--ci")) {
-    generateCiReport(results);
-  }
-  const reportName = `performance_report_${tagA}_vs_${tagB}_${performance.now()}.html`;
-  const reportPath = path.join(E2E_REPORTS_DIR, reportName);
-  fs.writeFileSync(reportPath, htmlReport);
-  console.log(chalk.bgGreen(`A/B report written to: ${reportPath}\n`));
-  if (!process.argv.includes("--ci")) {
-    execSync(`xdg-open ${reportPath}`);
-  }
+  handleResults(results, tagA, tagB);
 }
 
 function findArg(name: string, required: true): string;
