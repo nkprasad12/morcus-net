@@ -377,9 +377,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       zIndex: 1,
       top: 0,
       left: 0,
-      marginTop: 10,
       overflow: "auto",
-      maxHeight: "calc(100vh - 40px)",
+      maxHeight: "calc(100vh - 158px)",
       minWidth: "min(29%, 300px)",
     },
     ".nonDictText": {
