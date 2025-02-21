@@ -613,9 +613,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       paddingBottom: "4px",
     },
     ".readerMobileBottomBar .readerNavIconContainer": {
-      borderRadius: "8px",
-      marginLeft: "4px",
-      paddingBottom: "6px",
+      marginLeft: "6px",
+      marginTop: "4px",
+      display: "inline-block",
     },
     ".selectedSidePanelTab": {
       backgroundColor: theme.bgAlt,
