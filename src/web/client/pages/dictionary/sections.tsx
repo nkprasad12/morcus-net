@@ -2,7 +2,6 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SelfLink } from "@/web/client/components/misc";
 import { getBuildDate } from "@/web/client/define_vars";
 import * as React from "react";
-import { FontSizes } from "@/web/client/styling/styles";
 import { Divider } from "@/web/client/components/generic/basics";
 
 export function ContentBox(
@@ -115,18 +114,10 @@ function AttributionContent(props: { dictKey: string }) {
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 
-export function DictAttribution(props: {
-  isSmall: boolean;
-  dictKey: string;
-  textScale?: number;
-}) {
+export function DictAttribution(props: { isSmall: boolean; dictKey: string }) {
   return (
     <ContentBox isSmall={props.isSmall}>
-      <div
-        style={{
-          fontSize: FontSizes.TERTIARY * ((props.textScale || 100) / 100),
-          lineHeight: "normal",
-        }}>
+      <div className="text xs" style={{ lineHeight: "normal" }}>
         <AttributionContent dictKey={props.dictKey} />
       </div>
     </ContentBox>

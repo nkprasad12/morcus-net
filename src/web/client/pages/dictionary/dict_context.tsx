@@ -6,7 +6,6 @@ const DEFAULT_DICT_OPTIONS: DictContextOptions = {
   isEmbedded: false,
   isSmall: false,
   scale: 1,
-  textScale: 100,
   dictsToUse: [],
   setDictsToUse: () => {},
   scrollTopRef: React.createRef(),
@@ -23,7 +22,6 @@ export interface DictContextOptions {
   embeddedOptions?: EmbeddedDictOptions;
   isSmall: boolean;
   scale: number;
-  textScale?: number;
   dictsToUse: LatinDictInfo[];
   setDictsToUse: (dicts: LatinDictInfo[]) => unknown;
   scrollTopRef: React.RefObject<HTMLDivElement>;
