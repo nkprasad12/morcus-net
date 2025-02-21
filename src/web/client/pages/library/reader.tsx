@@ -435,12 +435,12 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
         swipeDir={props.swipeDir}
       />
       <ContentBox isSmall mt={isMobile ? 0 : undefined}>
-        {work === "Loading" ? (
-          <span>{`Loading, please wait`}</span>
-        ) : work === "Error" || currentPage === undefined ? (
+        {work === "Error" ? (
           <span>
             An error occurred - either the work or section is invalid.
           </span>
+        ) : work === "Loading" || currentPage === undefined ? (
+          <span>{`Loading, please wait`}</span>
         ) : currentPage === -1 ? (
           <div>
             <div>Invalid section.</div>

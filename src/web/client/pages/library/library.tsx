@@ -36,10 +36,10 @@ function WorksList(props: { works: WorkListState }) {
   const { nav } = Router.useRouter();
   const [filter, setFilter] = useState<string>("");
 
-  if (props.works === "Error") {
+  if (props.works === "Loading") {
     return <span className="text sm">Loading titles ...</span>;
   }
-  if (props.works === "Loading") {
+  if (props.works === "Error") {
     return (
       <span className="text sm">
         Error loading titles. Check your internet and if the problem persists,
