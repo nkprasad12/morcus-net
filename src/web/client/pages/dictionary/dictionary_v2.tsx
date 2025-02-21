@@ -39,7 +39,6 @@ import {
   jumpToSection,
 } from "@/web/client/pages/dictionary/table_of_contents_v2";
 import { SectionLinkTooltip } from "@/web/client/pages/tooltips";
-import { FontSizes } from "@/web/client/styling/styles";
 import {
   DictContext,
   DictContextOptions,
@@ -406,11 +405,7 @@ function SummarySection(props: {
       noDivider={isEmbedded}
       mt={0}>
       <>
-        <div
-          ref={isEmbedded ? scrollTopRef : undefined}
-          style={{
-            fontSize: isEmbedded ? FontSizes.BIG_SCREEN * scale : undefined,
-          }}>
+        <div ref={isEmbedded ? scrollTopRef : undefined} className="text md">
           Found {numEntries} {numEntries > 1 ? "entries" : "entry"}
           {props.word ? ` for ${props.word}` : ""}
         </div>
