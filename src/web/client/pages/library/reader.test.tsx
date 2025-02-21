@@ -632,7 +632,7 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
 
-    await screen.findByText(/error/);
+    await screen.findByText(/Loading/);
     expect(mockNav).toHaveBeenCalled();
     const newRoute = mockNav.mock.calls[0][0](originalRoute);
     expect(newRoute).toStrictEqual({
