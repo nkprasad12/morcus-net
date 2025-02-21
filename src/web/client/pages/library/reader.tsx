@@ -644,7 +644,7 @@ export function WorkTextPage(props: {
     const shortLabel = idLabelParts
       .slice(isMobile && id.length > 2 ? 2 : 0)
       .join(".");
-    const shouldHighlight = urlId === idLabel;
+    const shouldHighlight = urlId === idLabel && end - start > 1;
     const workName = capitalizeWords(props.work.info.title);
     const hideHeaderByDefault =
       hasLines && (isMobile ? i % 2 !== 0 : i !== 0 && (i + 1) % 5 !== 0);
