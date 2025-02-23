@@ -1,8 +1,11 @@
 import {
   assertAllSenseNodesTopLevel,
+  buildSenseTree,
   texToXml,
 } from "@/common/gaffiot/process_gaffiot";
 import { XmlNode } from "@/common/xml/xml_node";
+import exp from "constants";
+import { readFileSync } from "fs";
 
 describe("texToXml", () => {
   it("should process plain text correctly", () => {
@@ -134,5 +137,86 @@ describe("assertAllSenseNodesTopLevel", () => {
       new XmlNode("div", [], [new XmlNode("pp", [], ["content"])]),
     ];
     expect(() => assertAllSenseNodesTopLevel(input)).toThrow();
+  });
+});
+
+describe("buildSenseTree", () => {
+  it("should build a sense tree correctly", () => {
+    const input = [
+      new XmlNode("Rub", [], ["I"]),
+      new XmlNode("pp", [], ["1"]),
+      new XmlNode("qq", [], ["a"]),
+    ];
+    const result = buildSenseTree(input);
+    expect(result).toEqual([
+      {
+        label: " • ",
+        content: [],
+        children: [],
+      },
+      {
+        label: "I",
+        content: [],
+        children: [
+          {
+            label: "1",
+            content: [],
+            children: [
+              {
+                label: "a",
+                content: [],
+                children: [],
+              },
+            ],
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("captures expected siblings senses", () => {
+    const input = [
+      new XmlNode("Rub", [], ["I"]),
+      "content1",
+      new XmlNode("Rub", [], ["II"]),
+      "content2",
+    ];
+
+    const result = buildSenseTree(input);
+
+    expect(result).toEqual([
+      {
+        label: " • ",
+        content: [],
+        children: [],
+      },
+      {
+        label: "I",
+        content: ["content1"],
+        children: [],
+      },
+      {
+        label: "II",
+        content: ["content2"],
+        children: [],
+      },
+    ]);
+  });
+
+  it("should handle blurb correctly", () => {
+    const input = ["Some introductory text", new XmlNode("Rub", [], ["I"])];
+    const result = buildSenseTree(input);
+    expect(result).toEqual([
+      {
+        label: " • ",
+        content: ["Some introductory text"],
+        children: [],
+      },
+      {
+        label: "I",
+        content: [],
+        children: [],
+      },
+    ]);
   });
 });

@@ -41,7 +41,7 @@ const FAKE_GAFFIOT = {
     article: "\\entree{testEntry1,} \\S1 \\F \\S2",
   },
   testEntry2: {
-    article: "\\entree{testEntry2}\\gras{bold}",
+    article: "\\entree{testEntry2}\\gras{bold} \\ital{italic}",
   },
 };
 
@@ -91,22 +91,15 @@ describe("GaffiotDict", () => {
     expect(result).toHaveLength(1);
     const entry = result[0].entry;
 
-    expect(entry.children.slice(1)).toStrictEqual([
-      " ",
-      "§",
-      "1 ",
-      "➳",
-      " ",
-      "§",
-      "2",
-    ]);
+    expect(entry.toString()).toContain(" §1 ➳ §2");
   });
 
   test("processes bold entries.", async () => {
     const result = await dict.getEntry("testEntry2");
     expect(result).toHaveLength(1);
-    const entry = result[0].entry;
+    const entry = result[0].entry.toString();
 
-    expect(entry.children[1]).toStrictEqual(new XmlNode("b", [], ["bold"]));
+    expect(entry).toContain("<b>bold</b>");
+    expect(entry).toContain("<i>italic</i>");
   });
 });
