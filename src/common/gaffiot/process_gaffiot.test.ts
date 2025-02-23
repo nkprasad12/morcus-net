@@ -176,6 +176,11 @@ describe("buildSenseTree", () => {
     ]);
   });
 
+  it("throws error on invalid sense heirarchy", () => {
+    const input = [new XmlNode("pp", [], ["I"]), new XmlNode("Rub", [], ["1"])];
+    expect(() => buildSenseTree(input)).toThrow();
+  });
+
   it("captures expected siblings senses", () => {
     const input = [
       new XmlNode("Rub", [], ["I"]),
