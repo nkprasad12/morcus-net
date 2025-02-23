@@ -173,7 +173,9 @@ export class LewisAndShort implements Dictionary {
             inflData.inflectionData.map((info) => ({
               lemma: analysis.lemma,
               form:
-                inflData.form + (info.enclitic ? ` + ${info.enclitic}` : ""),
+                // We use | instead of + as the seprator since Morpheus tables use
+                // + to signal diareses.
+                inflData.form + (info.enclitic ? ` | ${info.enclitic}` : ""),
               data: wordInflectionDataToArray(info.grammaticalData).join(" "),
               usageNote: info.tags?.join(" "),
             }))
