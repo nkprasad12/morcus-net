@@ -4,8 +4,6 @@ import {
   texToXml,
 } from "@/common/gaffiot/process_gaffiot";
 import { XmlNode } from "@/common/xml/xml_node";
-import exp from "constants";
-import { readFileSync } from "fs";
 
 describe("texToXml", () => {
   it("should process plain text correctly", () => {
@@ -153,18 +151,22 @@ describe("buildSenseTree", () => {
         label: " • ",
         content: [],
         children: [],
+        level: -2,
       },
       {
         label: "I",
         content: [],
+        level: 0,
         children: [
           {
             label: "1",
             content: [],
+            level: 2,
             children: [
               {
                 label: "a",
                 content: [],
+                level: 3,
                 children: [],
               },
             ],
@@ -189,16 +191,19 @@ describe("buildSenseTree", () => {
         label: " • ",
         content: [],
         children: [],
+        level: -2,
       },
       {
         label: "I",
         content: ["content1"],
         children: [],
+        level: 0,
       },
       {
         label: "II",
         content: ["content2"],
         children: [],
+        level: 0,
       },
     ]);
   });
@@ -211,11 +216,13 @@ describe("buildSenseTree", () => {
         label: " • ",
         content: ["Some introductory text"],
         children: [],
+        level: -2,
       },
       {
         label: "I",
         content: [],
         children: [],
+        level: 0,
       },
     ]);
   });
