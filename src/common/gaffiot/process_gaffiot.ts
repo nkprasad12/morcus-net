@@ -13,6 +13,9 @@ import {
 } from "@/web/utils/rpc/parsing";
 import { readFileSync } from "fs";
 
+const SENSE_NODE_NAMES = ["Rub", "rub", "pp", "qq", "qqng"];
+const BLURB_LABEL = " • ";
+
 const REGULAR_TAGS = new Set([
   "entree", // Contains an entry, with diacritics.
   "gen", // Gender
@@ -211,6 +214,114 @@ export function assertAllSenseNodesTopLevel(children: XmlChild[]): void {
   children.forEach((child) => checkDescendants(child));
 }
 
+interface SenseTreeNode {
+  label: string;
+  content: XmlChild[];
+  children: SenseTreeNode[];
+}
+
+function buildSenseTreeHelper(
+  data: XmlChild[],
+  i: number,
+  parentLevel?: number
+): [SenseTreeNode, number] {
+  const current = XmlNode.assertIsNode(data[i]);
+
+  const label = XmlNode.getSoleText(current).trim();
+  assert(label.length > 0);
+
+  const level = SENSE_NODE_NAMES.indexOf(current.name);
+  assert(level !== -1);
+  assert(parentLevel === undefined || level > parentLevel);
+
+  // Collect the content for this node.
+  const content: XmlChild[] = [];
+  let k = i + 1;
+  for (; k < data.length; k++) {
+    const xmlChild = data[k];
+    if (typeof xmlChild === "string") {
+      content.push(xmlChild);
+      continue;
+    }
+    const childLevel = SENSE_NODE_NAMES.indexOf(xmlChild.name);
+    if (childLevel === -1) {
+      content.push(xmlChild);
+      continue;
+    }
+    break;
+  }
+
+  // Anything else is a sense.
+  const children: SenseTreeNode[] = [];
+  while (k < data.length) {
+    const nextChild = XmlNode.assertIsNode(data[k]);
+    const nextLevel = SENSE_NODE_NAMES.indexOf(nextChild.name);
+    assert(nextLevel !== -1);
+    if (nextLevel <= level) {
+      break;
+    }
+    const [childSense, nextK] = buildSenseTreeHelper(data, k, level);
+    children.push(childSense);
+    k = nextK;
+  }
+  assert(k > i);
+  return [{ label, content, children }, k];
+}
+
+/** Exported for unit testing only. Do not use. */
+export function buildSenseTree(nodes: XmlChild[]): SenseTreeNode[] {
+  let i = 0;
+  const blurbChildren: XmlChild[] = [];
+  for (; i < nodes.length; i++) {
+    const node = nodes[i];
+    if (typeof node !== "string" && SENSE_NODE_NAMES.includes(node.name)) {
+      break;
+    }
+    blurbChildren.push(node);
+  }
+  const blurb = {
+    label: BLURB_LABEL,
+    content: blurbChildren,
+    children: [],
+  };
+  const senses: SenseTreeNode[] = [blurb];
+  while (i < nodes.length) {
+    const [sense, nextI] = buildSenseTreeHelper(nodes, i);
+    senses.push(sense);
+    i = nextI;
+  }
+  assert(i >= nodes.length);
+  return senses;
+}
+
+function processSenseTree(senseTree: SenseTreeNode, parentId: string): XmlNode {
+  const id =
+    parentId + (senseTree.label === BLURB_LABEL ? "blurb" : senseTree.label);
+  const content = processEntryXml(senseTree.content);
+  const children = senseTree.children.map(
+    (child) => new XmlNode("li", [], [processSenseTree(child, id)])
+  );
+
+  const dot = /[\dIVX]$/.test(senseTree.label) ? "." : "";
+  const senseHead = new XmlNode(
+    "span",
+    [
+      ["class", "lsSenseBullet"],
+      ["senseid", id],
+    ],
+    [` ${senseTree.label}${dot} `]
+  );
+
+  return new XmlNode(
+    "div",
+    [],
+    [
+      new XmlNode("span", [["id", id]], [senseHead, " ", ...content]),
+      children.length > 0 ? new XmlNode("ol", [], children) : "",
+    ]
+  );
+}
+
 function processEntryXml(children: XmlChild[]): XmlChild[] {
   const results: XmlChild[] = [];
   for (const child of children) {
@@ -251,6 +362,10 @@ function processEntryXml(children: XmlChild[]): XmlChild[] {
     if (child.name === "gras") {
       name = "b";
     }
+    if (child.name === "ital") {
+      name = "i";
+    }
+
     results.push(new XmlNode(name, attrs, processEntryXml(child.children)));
   }
   return results;
@@ -302,13 +417,16 @@ export function processGaffiot(): RawDictEntry[] {
 
     const entryText = assertType(gaffiot[entryName], isGaffiotEntry).article;
     const rawXml = new XmlNode("div", [], texToXml(entryText));
+    const headword = findEntryKey(rawXml);
     assertAllSenseNodesTopLevel(rawXml.children);
+    const senses = buildSenseTree(rawXml.children);
+    const xmlContent = senses.map((sense) => processSenseTree(sense, `${id}.`));
     const entry = new XmlNode("div", [["id", id]], xmlContent);
 
     entries.push({
       id,
-      keys: [key],
-      entry: encodeMessage(toEntryResult(entry, key, id), [
+      keys: [headword],
+      entry: encodeMessage(toEntryResult(entry, headword, id), [
         XmlNodeSerialization.DEFAULT,
       ]),
     });
