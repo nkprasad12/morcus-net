@@ -216,6 +216,7 @@ export function assertAllSenseNodesTopLevel(children: XmlChild[]): void {
 
 interface SenseTreeNode {
   label: string;
+  level: number;
   content: XmlChild[];
   children: SenseTreeNode[];
 }
@@ -265,7 +266,7 @@ function buildSenseTreeHelper(
     k = nextK;
   }
   assert(k > i);
-  return [{ label, content, children }, k];
+  return [{ label, level, content, children }, k];
 }
 
 /** Exported for unit testing only. Do not use. */
@@ -281,6 +282,7 @@ export function buildSenseTree(nodes: XmlChild[]): SenseTreeNode[] {
   }
   const blurb = {
     label: BLURB_LABEL,
+    level: -2,
     content: blurbChildren,
     children: [],
   };
