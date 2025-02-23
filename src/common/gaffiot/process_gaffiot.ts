@@ -504,7 +504,13 @@ export function processGaffiot(): RawDictEntry[] {
 
     entries.push({
       id,
-      keys: [headword],
+      keys: [
+        headword
+          .replace(/Æ/g, "AE")
+          .replace(/æ/g, "ae")
+          .replace(/Œ/g, "OE")
+          .replace(/œ/g, "oe"),
+      ],
       entry: encodeMessage(
         { entry, outline: makeOutline(senses, headword, id) },
         [XmlNodeSerialization.DEFAULT]
