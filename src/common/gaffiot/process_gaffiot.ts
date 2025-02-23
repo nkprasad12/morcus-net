@@ -1,5 +1,8 @@
 import { assert, assertEqual, assertType } from "@/common/assert";
-import type { EntryResult } from "@/common/dictionaries/dict_result";
+import type {
+  EntryResult,
+  OutlineSection,
+} from "@/common/dictionaries/dict_result";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
@@ -13,6 +16,7 @@ import {
 } from "@/web/utils/rpc/parsing";
 import { readFileSync } from "fs";
 
+const OUTLINE_SKIPS = new Set<string>(["aut", "oeuv", "refch", "cl"]);
 const SENSE_NODE_NAMES = ["Rub", "rub", "pp", "qq", "qqng"];
 const BLURB_LABEL = " • ";
 
@@ -293,7 +297,29 @@ export function buildSenseTree(nodes: XmlChild[]): SenseTreeNode[] {
     i = nextI;
   }
   assert(i >= nodes.length);
+  validateSenseTree(senses);
   return senses;
+}
+
+function validateSenseTree(
+  senses: SenseTreeNode[],
+  topLevel: boolean = true,
+  parentLevel: number = -1
+): void {
+  const sensesToCheck = topLevel
+    ? senses.filter((s) => s.level !== -2)
+    : senses;
+  if (sensesToCheck.length === 0) {
+    return;
+  }
+
+  const minLevel = Math.min(...sensesToCheck.map((s) => s.level));
+  const maxLevel = Math.max(...sensesToCheck.map((s) => s.level));
+  assertEqual(minLevel, maxLevel);
+  assert(minLevel > parentLevel);
+  for (const sense of senses) {
+    validateSenseTree(sense.children, false, minLevel);
+  }
 }
 
 function processSenseTree(senseTree: SenseTreeNode, parentId: string): XmlNode {
@@ -373,20 +399,71 @@ function processEntryXml(children: XmlChild[]): XmlChild[] {
   return results;
 }
 
-function toEntryResult(entry: XmlNode, key: string, id: string): EntryResult {
-  return {
-    entry,
-    // TODO: Actually implement this.
-    outline: {
-      mainKey: key,
-      mainSection: {
-        text: "",
-        level: 0,
-        ordinal: "0",
-        sectionId: id,
-      },
-    },
+function getOutlineText(data: XmlChild[], numWords: number = 12): string {
+  const stack = data.slice().reverse();
+  const words: string[] = [];
+  while (stack.length > 0 && words.length < numWords) {
+    const node = stack.pop()!;
+    if (typeof node !== "string") {
+      if (!OUTLINE_SKIPS.has(node.name)) {
+        stack.push(...node.children.slice().reverse());
+      }
+      continue;
+    }
+    const parts = node.split(" ");
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i].trim();
+      if (part.length === 0) {
+        continue;
+      }
+      words.push(part);
+      if (words.length >= numWords) {
+        if (i < parts.length - 1 || stack.length > 0) {
+          words.push("...");
+        }
+        return words.join(" ");
+      }
+    }
+  }
+  return words.join(" ");
+}
+
+function makeOutline(
+  senses: SenseTreeNode[],
+  key: string,
+  id: string
+): EntryResult["outline"] {
+  const senseSections: OutlineSection[] = [];
+  type StackItem = [SenseTreeNode, string];
+  const stack: StackItem[] = senses
+    .slice()
+    .reverse()
+    .map((s) => [s, `${id}.`]);
+  while (stack.length > 0) {
+    const [sense, idPrefix] = stack.pop()!;
+    if (sense.label === BLURB_LABEL) {
+      continue;
+    }
+    const senseId = idPrefix + sense.label;
+    const senseSection: OutlineSection = {
+      text: getOutlineText(sense.content),
+      level: sense.level,
+      ordinal: sense.label,
+      sectionId: senseId,
+    };
+    senseSections.push(senseSection);
+    for (const child of sense.children.slice().reverse()) {
+      stack.push([child, `${senseId}`]);
+    }
+  }
+  assertEqual(senses[0].label, BLURB_LABEL);
+  const mainSection: OutlineSection = {
+    text: getOutlineText(senses[0].content),
+    level: 0,
+    ordinal: "",
+    sectionId: id,
   };
+  return { mainKey: key, mainSection, senses: senseSections };
 }
 
 function findEntryKey(root: XmlNode): string {
@@ -428,9 +505,10 @@ export function processGaffiot(): RawDictEntry[] {
     entries.push({
       id,
       keys: [headword],
-      entry: encodeMessage(toEntryResult(entry, headword, id), [
-        XmlNodeSerialization.DEFAULT,
-      ]),
+      entry: encodeMessage(
+        { entry, outline: makeOutline(senses, headword, id) },
+        [XmlNodeSerialization.DEFAULT]
+      ),
     });
   }
   return entries;
