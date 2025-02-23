@@ -37,6 +37,9 @@ const FAKE_GAFFIOT = {
     article:
       "\\entree{Abăcūc,} \\gen{m.} indécl., prophète des Hébreux : \\aut{Eccl.}   ",
   },
+  testAether: {
+    article: "\\entree{æther} aether",
+  },
   testEntry1: {
     article: "\\entree{testEntry1,} \\S1 \\F \\S2",
   },
@@ -74,6 +77,10 @@ describe("GaffiotDict", () => {
   test("getEntry returns expected entries", async () => {
     expect(await dict.getEntry("Julius")).toEqual([]);
     await expectEntriesWithIds(dict.getEntry("abactio"), ["gaf-abactio"]);
+  });
+
+  test("getEntry handles digraphs", async () => {
+    await expectEntriesWithIds(dict.getEntry("aether"), ["gaf-testAether"]);
   });
 
   test("getEntryById returns expected entries", async () => {
