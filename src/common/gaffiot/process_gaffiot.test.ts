@@ -1,4 +1,7 @@
-import { texToXml } from "./process_gaffiot";
+import {
+  assertAllSenseNodesTopLevel,
+  texToXml,
+} from "@/common/gaffiot/process_gaffiot";
 import { XmlNode } from "@/common/xml/xml_node";
 
 describe("texToXml", () => {
@@ -110,5 +113,26 @@ describe("texToXml", () => {
       new XmlNode("lat", [], ["content"]),
       new XmlNode("nameless", [], ["other"]),
     ]);
+  });
+});
+
+describe("assertAllSenseNodesTopLevel", () => {
+  it("should not throw an error for non-nested sense nodes", () => {
+    const input = [new XmlNode("qq", [], ["content"])];
+    expect(() => assertAllSenseNodesTopLevel(input)).not.toThrow();
+  });
+
+  it("should throw an error for nested sense nodes", () => {
+    const input = [
+      new XmlNode("Rub", [], [new XmlNode("pp", [], ["content"])]),
+    ];
+    expect(() => assertAllSenseNodesTopLevel(input)).toThrow();
+  });
+
+  it("should throw an error for child sense nodes", () => {
+    const input = [
+      new XmlNode("div", [], [new XmlNode("pp", [], ["content"])]),
+    ];
+    expect(() => assertAllSenseNodesTopLevel(input)).toThrow();
   });
 });

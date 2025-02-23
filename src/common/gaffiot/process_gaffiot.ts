@@ -199,6 +199,18 @@ export function texToXml(input: string): XmlChild[] {
   return stack;
 }
 
+export function assertAllSenseNodesTopLevel(children: XmlChild[]): void {
+  function checkDescendants(node: XmlChild, level: number = 0): void {
+    if (typeof node === "string") {
+      return;
+    }
+    const isSenseNode = SENSE_NODE_NAMES.includes(node.name);
+    assert(!isSenseNode || level === 0);
+    node.children.forEach((child) => checkDescendants(child, level + 1));
+  }
+  children.forEach((child) => checkDescendants(child));
+}
+
 function processEntryXml(children: XmlChild[]): XmlChild[] {
   const results: XmlChild[] = [];
   for (const child of children) {
@@ -290,8 +302,7 @@ export function processGaffiot(): RawDictEntry[] {
 
     const entryText = assertType(gaffiot[entryName], isGaffiotEntry).article;
     const rawXml = new XmlNode("div", [], texToXml(entryText));
-    const key = findEntryKey(rawXml);
-    const xmlContent = processEntryXml(rawXml.children);
+    assertAllSenseNodesTopLevel(rawXml.children);
     const entry = new XmlNode("div", [["id", id]], xmlContent);
 
     entries.push({
