@@ -378,7 +378,7 @@ function ResponsiveLayout(props: {
 function OneColumnLayout(props: { children: React.ReactNode }) {
   const { isEmbedded } = React.useContext(DictContext);
   return (
-    <Container maxWidth="lg" disableGutters={isEmbedded}>
+    <Container className="dictRoot" maxWidth="lg" disableGutters={isEmbedded}>
       <SearchBar
         maxWidth="lg"
         id={"SearchBox"}
@@ -402,7 +402,10 @@ function TwoColumnLayout(props: { children: React.ReactNode }) {
   const mainContent = children[1] || <></>;
 
   return (
-    <Container maxWidth="xl" style={{ minHeight: "100vh" }}>
+    <Container
+      className="dictRoot"
+      maxWidth="xl"
+      style={{ minHeight: "100vh" }}>
       <SearchBar maxWidth="md" />
       <div
         style={{

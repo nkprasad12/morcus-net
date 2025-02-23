@@ -372,6 +372,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     /** Dictionary specific */
+    ".dictRoot ol": {
+      marginTop: 0,
+      marginBottom: 0,
+    },
     ".tocSidebar": {
       position: "sticky",
       zIndex: 1,
