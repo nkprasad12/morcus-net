@@ -1,4 +1,6 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
+import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
+import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
 import {
   sqliteBacking,
   SqliteDict,
@@ -7,6 +9,9 @@ import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import { processGaffiot } from "@/common/gaffiot/process_gaffiot";
 import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
 import { XmlNode } from "@/common/xml/xml_node";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import { CruncherOptions } from "@/morceus/cruncher_types";
 import fs from "fs";
 
 console.debug = jest.fn();
@@ -14,16 +19,13 @@ console.debug = jest.fn();
 const TEMP_FILE = "gaf_dict.test.ts.tmp.txt";
 const TEMP_DB = "gaf_dict.test.ts.tmp.db";
 
-const ORIGINAL_MORCEUS_DATA_ROOT = process.env.MORCEUS_DATA_ROOT;
-const FAKE_MORCEUS_DATA_ROOT = "src/morceus/testdata";
+setupMorceusWithFakeData();
 
-beforeAll(() => {
-  process.env.MORCEUS_DATA_ROOT = FAKE_MORCEUS_DATA_ROOT;
-});
-
-afterAll(() => {
-  process.env.MORCEUS_DATA_ROOT = ORIGINAL_MORCEUS_DATA_ROOT;
-});
+function makeInflectionProvider(): InflectionProvider {
+  const tables = MorceusTables.CACHED.get();
+  const cruncher = MorceusCruncher.make(tables);
+  return (word) => cruncher(word, CruncherOptions.DEFAULT);
+}
 
 const FAKE_GAFFIOT = {
   "2 a": {
@@ -64,7 +66,7 @@ describe("GaffiotDict", () => {
     process.env.GAFFIOT_RAW_PATH = TEMP_FILE;
     fs.writeFileSync(TEMP_FILE, JSON.stringify(FAKE_GAFFIOT));
     SqliteDict.save(processGaffiot(), TEMP_DB);
-    dict = new GaffiotDict(sqliteBacking(TEMP_DB));
+    dict = new GaffiotDict(sqliteBacking(TEMP_DB), makeInflectionProvider());
   });
 
   afterAll(() => {

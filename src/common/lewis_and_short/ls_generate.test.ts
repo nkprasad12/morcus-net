@@ -20,6 +20,7 @@ import { MorceusCruncher } from "@/morceus/crunch";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { encodeMessage } from "@/web/utils/rpc/parsing";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
 
 console.debug = jest.fn();
 
@@ -33,16 +34,7 @@ const FAKE_OUTLINE: EntryOutline = {
   mainSection: { text: "", level: 0, ordinal: "0", sectionId: "" },
 };
 
-const ORIGINAL_MORCEUS_DATA_ROOT = process.env.MORCEUS_DATA_ROOT;
-const FAKE_MORCEUS_DATA_ROOT = "src/morceus/testdata";
-
-beforeAll(() => {
-  process.env.MORCEUS_DATA_ROOT = FAKE_MORCEUS_DATA_ROOT;
-});
-
-afterAll(() => {
-  process.env.MORCEUS_DATA_ROOT = ORIGINAL_MORCEUS_DATA_ROOT;
-});
+setupMorceusWithFakeData();
 
 function createLewisAndShort(backing: StoredDictBacking<any>) {
   const tables = MorceusTables.CACHED.get();
