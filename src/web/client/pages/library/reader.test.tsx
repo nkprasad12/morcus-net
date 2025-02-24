@@ -5,7 +5,7 @@
 import "fake-indexeddb/auto";
 import user from "@testing-library/user-event";
 import { callApi, callApiFull } from "@/web/utils/rpc/client_rpc";
-import { render, screen } from "@testing-library/react";
+import { render, screen, waitFor } from "@testing-library/react";
 import { ReadingPage, SwipeFeedback } from "@/web/client/pages/library/reader";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import {
@@ -633,7 +633,7 @@ describe("Reading UI", () => {
     );
 
     await screen.findByText(/Loading/);
-    expect(mockNav).toHaveBeenCalled();
+    await waitFor(() => expect(mockNav).toHaveBeenCalled());
     const newRoute = mockNav.mock.calls[0][0](originalRoute);
     expect(newRoute).toStrictEqual({
       path: urlByIdFor("dbg"),
