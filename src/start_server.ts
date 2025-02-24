@@ -38,6 +38,8 @@ import { CruncherOptions } from "@/morceus/cruncher_types";
 import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
+import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
+import { singletonOf } from "@/common/misc_utils";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -94,6 +96,15 @@ const CACHING_SETTER = (res: http.ServerResponse, input: MaybeCacheable) => {
   res.setHeader("Cache-Control", "public, max-age=3153600, immutable");
 };
 
+const INFLECTION_PROVIDER = singletonOf<InflectionProvider>(() => {
+  const tables = timed(
+    () => MorceusTables.CACHED.get(),
+    "Create Morpheus tables"
+  );
+  const cruncher = MorceusCruncher.make(tables);
+  return (word) => cruncher(word, CruncherOptions.DEFAULT);
+});
+
 export function startMorcusServer(): Promise<http.Server> {
   log("Attempting to start server");
   process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
@@ -102,14 +113,9 @@ export function startMorcusServer(): Promise<http.Server> {
   const server = http.createServer(app);
 
   const lewisAndShort = delayedInit(() => {
-    const tables = timed(
-      () => MorceusTables.CACHED.get(),
-      "Create Morpheus tables"
-    );
-    const cruncher = MorceusCruncher.make(tables);
     return LewisAndShort.create(
       sqliteBacking(envVar("LS_PROCESSED_PATH")),
-      (word) => cruncher(word, CruncherOptions.DEFAULT)
+      INFLECTION_PROVIDER.get()
     );
   }, LatinDict.LewisAndShort);
   const smithAndHall = delayedInit(() => {
@@ -122,7 +128,8 @@ export function startMorcusServer(): Promise<http.Server> {
   const gaffiot = delayedInit(() => {
     const start = performance.now();
     const result = new GaffiotDict(
-      sqliteBacking(envVar("GAFFIOT_PROCESSED_PATH"))
+      sqliteBacking(envVar("GAFFIOT_PROCESSED_PATH")),
+      INFLECTION_PROVIDER.get()
     );
     const elapsed = (performance.now() - start).toFixed(3);
     console.debug(`Gaffiot init: ${elapsed} ms`);
