@@ -191,7 +191,9 @@ function LandingContent(props: {
     props.inflectedSearch && dicts.some((d) => d.languages.from === "La");
 
   return (
-    <div className="text xs light" style={{ margin: "12px 16px" }}>
+    <div
+      className="text xs light"
+      style={{ margin: "12px 16px", maxWidth: 550 }}>
       <details>
         <summary className="text xs light">
           You are searching {dicts.length} dictionaries
