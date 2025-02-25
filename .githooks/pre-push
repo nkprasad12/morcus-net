@@ -1,7 +1,7 @@
 #!/bin/sh
 set -e
 echo "Running eslint:"
-npx eslint .
+ESLINT_USE_FLAT_CONFIG=false npx eslint .
 echo "Running prettier:"
 npx prettier . --check
 echo "Running Typescript unit tests:"
