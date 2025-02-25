@@ -295,6 +295,16 @@ test.describe("main reader", () => {
     await expect(page).toHaveURL(/\/work\/juvenal\/saturae\?id=1\.2\.161$/);
   });
 
+  test("has working translations", async ({ page }) => {
+    await page.goto("/work/sallust/catalina1?id=1");
+    await page.getByLabel("Translation").click();
+    await page.getByRole("button", { name: /Load translation/ }).click();
+
+    await expect(page.getByText("government")).toBeVisible();
+    await page.getByLabel("next section").click();
+    await expect(page.getByText("Cyrus").nth(1)).toBeVisible();
+  });
+
   test.fixme("text search has expected results", async ({ page }) => {
     await page.goto("/work/caesar/de_bello_gallico");
     await click(page.locator(`[aria-label="TextSearch"]`));
