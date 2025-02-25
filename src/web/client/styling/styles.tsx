@@ -556,14 +556,14 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       width: "100vw",
       backgroundColor: theme.bgAlt,
     },
-    ".readerMobileDragger": {
+    ".mobileDragger": {
       width: "100vw",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
       backgroundColor: theme.bgAlt,
       height: "15px",
     },
-    ".readerDrawerContainer": {
+    ".drawerContainer": {
       backgroundClip: "content-box, padding-box;",
       backgroundImage: `linear-gradient(to bottom, ${theme.bg} 0%, ${theme.bg} 100%), linear-gradient(to bottom, ${theme.bgAlt} 0%, ${theme.bgAlt} 100%);`,
     },
