@@ -169,6 +169,16 @@ test.describe("dictionary main entries", () => {
     await expect(page.getByText("garment").nth(0)).toBeVisible();
   });
 
+  test("allows navigating via outline", async ({ page }) => {
+    await page.goto("/dicts/id/n20077");
+    await page
+      .getByText("O. Gladiatorial t. t., of a wounded combatant", {
+        exact: true,
+      })
+      .click();
+    await expect(page.getByText("he is hit")).toBeInViewport();
+  });
+
   test("allows queries from the new ID page", async ({ page }) => {
     page.goto("/dicts/id/sh11673");
 
