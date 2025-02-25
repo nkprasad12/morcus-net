@@ -334,7 +334,7 @@ function TranslationTab(props: {
         {blurb}
         <button
           onClick={() => props.loadTranslation(translationId)}
-          className="text sm outline">
+          className="text sm light outline">
           Load translation [Beta]
         </button>
       </>

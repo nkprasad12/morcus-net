@@ -164,9 +164,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     "button.outline": {
       borderRadius: "4px",
-      backgroundColor: `${theme.bgAlt}20`,
-      padding: "4px 8px",
-      border: `2px solid ${theme.bgAlt}`,
+      backgroundColor: `${theme.bgAlt}60`,
+      padding: "2px 6px",
+      border: `1px solid ${theme.bgAlt}`,
     },
     ".button": {
       borderRadius: 4,
