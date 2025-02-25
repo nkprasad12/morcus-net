@@ -15,6 +15,7 @@ import {
 import {
   LibraryWorkMetadata,
   type ProcessedWork2,
+  type TranslationInfo,
 } from "@/common/library/library_types";
 import { processTei2 } from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
@@ -105,15 +106,31 @@ function processTeiCts2(
   return result;
 }
 
+function pathToId(filePath: string): string {
+  return path.basename(filePath).replace(/\.[^/.]+$/, "");
+}
+
+function isTranslationId(workId: string): boolean {
+  return Object.values(EnglishTranslations).some(
+    (translation) => translation === workId
+  );
+}
+
 export function processLibrary(
   outputDir: string = LIB_DEFAULT_DIR,
   works: string[] = LOCAL_REPO_WORK_PATHS
 ) {
   const patches = loadPatches();
   const index: LibraryIndex = {};
-  for (const workPath of works) {
+  const sortedWorks = works
+    .map((p) => [p, pathToId(p)])
+    .sort((a) => (isTranslationId(a[1]) ? -1 : 1))
+    .map((a) => a[0]);
+  const translationDataById = new Map<string, TranslationInfo>();
+
+  for (const workPath of sortedWorks) {
     // We should use the Perseus URN instead.
-    const workId = path.basename(workPath).replace(/\.[^/.]+$/, "");
+    const workId = pathToId(workPath);
     const rawXml = parseRawXml(fs.readFileSync(workPath), {
       keepWhitespace: true,
     });
@@ -128,6 +145,8 @@ export function processLibrary(
     const shortName = NAME_TO_DISPLAY_NAME.get(rawTitle);
     const title = shortName ?? rawTitle;
     result.info.shortTitle = shortName;
+    const isTranslation = isTranslationId(workId);
+    result.info.translationInfo = translationDataById.get(translationId);
 
     const metadata: LibraryWorkMetadata = {
       id: workId,
@@ -136,10 +155,15 @@ export function processLibrary(
       urlAuthor: urlifyAuthor(result.info.author),
       urlName: urlifyName(result.info.title),
       translationId,
-      isTranslation: Object.values(EnglishTranslations).some(
-        (translation) => translation === workId
-      ),
+      isTranslation,
     };
+    if (isTranslation) {
+      translationDataById.set(workId, {
+        id: workId,
+        translator: result.info.translator,
+        title: result.info.title,
+      });
+    }
     const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
     const outputPath = `${outputDir}/${workId}`;
     index[workId] = [outputPath, metadata];

@@ -314,17 +314,30 @@ function TranslationTab(props: {
   if (typeof work === "string") {
     return <span>Main work not yet loaded.</span>;
   }
-  const translationId = work.info.translationId;
+  const info = work.info.translationInfo;
+  const translationId = info?.id ?? work.info.translationId;
   if (translationId === undefined) {
     return <span>No translation available for this text.</span>;
   }
+
+  const blurb =
+    info === undefined ? null : (
+      <div className="text sm">
+        <div>Title: {info.title}</div>
+        {info.translator && <div>Translator: {info.translator}</div>}
+        <div>ID: {info.id}</div>
+      </div>
+    );
   if (translation === undefined) {
     return (
-      <button
-        onClick={() => props.loadTranslation(translationId)}
-        className="text md outline">
-        Load translation [Beta]
-      </button>
+      <>
+        {blurb}
+        <button
+          onClick={() => props.loadTranslation(translationId)}
+          className="text sm outline">
+          Load translation [Beta]
+        </button>
+      </>
     );
   }
   if (translation === "Error" || props.translationPage === undefined) {
