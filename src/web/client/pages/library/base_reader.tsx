@@ -1,5 +1,4 @@
 import { assert } from "@/common/assert";
-import { Container } from "@/web/client/components/generic/basics";
 import { usePersistedState } from "@/web/client/utils/hooks/persisted_state";
 import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
@@ -27,6 +26,10 @@ import {
 } from "@/web/client/mobile/gestures";
 import { useWakeLock } from "@/web/client/mobile/wake_lock";
 import { useMediaQuery } from "@/web/client/utils/media_query";
+import {
+  BottomDrawer,
+  DragHelper,
+} from "@/web/client/components/bottom_drawer";
 
 export const SWIPE_NAV_KEY = "RD_MB_NAV_SWIPE";
 export const TAP_NAV_KEY = "RD_MB_NAV_SIDE_TAP";
@@ -208,133 +211,6 @@ export function BaseReader<
 // The maximum size of the drawer as a ratio of the screen height.
 const DRAWER_MAX_SIZE = 0.6;
 
-function eventConsumer<E extends Event>(handler: (e: E) => boolean) {
-  return (e: E) => {
-    const handled = handler(e);
-    if (handled) {
-      e.preventDefault();
-      e.stopPropagation();
-    }
-  };
-}
-
-/** Exported only for unit tests. */
-export function makeOnDrag(
-  dragStartLen: React.MutableRefObject<number | undefined>,
-  dragStartPos: React.MutableRefObject<number | undefined>,
-  setCurrentLen: SetCurrentLenType,
-  getMax: () => number,
-  minRatio?: number,
-  maxRatio?: number,
-  reverse?: boolean
-) {
-  return (currentPos: number) => {
-    if (dragStartLen.current === undefined) {
-      // We didn't get the start callback yet, so wait for it.
-      return false;
-    }
-    setCurrentLen((oldLen) => {
-      if (dragStartPos.current === undefined) {
-        dragStartPos.current = currentPos;
-      }
-      if (dragStartLen.current === undefined) {
-        return oldLen;
-      }
-      const offset = (dragStartPos.current - currentPos) * (reverse ? -1 : 1);
-      const proposed = dragStartLen.current + offset;
-      const total = getMax();
-      const min = total * (minRatio ?? 0);
-      const max = total * (maxRatio ?? 1);
-      const newLen = proposed > max ? max : proposed < min ? min : proposed;
-      const largeChange = Math.abs(oldLen - newLen) >= 6;
-      const atBound = newLen === min || newLen === max;
-      return atBound || largeChange ? newLen : oldLen;
-    });
-    return true;
-  };
-}
-
-type SetCurrentLenType = (callback: (old: number) => number) => unknown;
-
-function DragHelper(
-  props: PropsWithChildren<{
-    currentLen: number;
-    setCurrentLen: SetCurrentLenType;
-    horizontal?: true;
-    minRatio?: number;
-    maxRatio?: number;
-    style?: CSSProperties;
-    className?: string;
-    reverse?: boolean;
-    getMax?: () => number;
-  }>
-) {
-  const {
-    currentLen,
-    setCurrentLen,
-    horizontal,
-    minRatio,
-    maxRatio,
-    reverse,
-    getMax,
-  } = props;
-  const dragStartPos = React.useRef<number | undefined>(undefined);
-  const dragStartLen = React.useRef<number | undefined>(undefined);
-  const posKey = horizontal ? "clientX" : "clientY";
-
-  const onDrag = React.useMemo(
-    () =>
-      makeOnDrag(
-        dragStartLen,
-        dragStartPos,
-        setCurrentLen,
-        getMax ?? (() => (horizontal ? window.innerWidth : window.innerHeight)),
-        minRatio,
-        maxRatio,
-        reverse
-      ),
-    [setCurrentLen, horizontal, maxRatio, minRatio, reverse, getMax]
-  );
-
-  const onDragEnd = useCallback(() => {
-    const result =
-      dragStartLen.current !== undefined || dragStartPos.current !== undefined;
-    dragStartPos.current = undefined;
-    dragStartLen.current = undefined;
-    return result;
-  }, []);
-
-  useEffect(() => {
-    const moveHandler = eventConsumer((e: MouseEvent) => onDrag(e[posKey]));
-    document.addEventListener("mousemove", moveHandler);
-    const upHandler = eventConsumer((_e: Event) => onDragEnd());
-    document.addEventListener("mouseup", upHandler);
-    return () => {
-      document.removeEventListener("mousemove", moveHandler);
-      document.removeEventListener("mouseup", upHandler);
-    };
-  }, [onDrag, onDragEnd, posKey]);
-
-  const onDragStart = () => {
-    dragStartLen.current = currentLen;
-  };
-
-  return (
-    <div
-      style={{ ...props.style, touchAction: "none" }}
-      className={props.className}
-      onMouseDown={onDragStart}
-      onTouchStart={onDragStart}
-      onTouchEnd={onDragEnd}
-      onTouchMove={(e) => {
-        e.preventDefault();
-        onDrag(e.targetTouches[0][posKey]);
-      }}>
-      {props.children}
-    </div>
-  );
-}
-
 /** Exported only for testing. Do not use externally. */
 export function handleSideTap(
   e: { clientX: number },
@@ -375,42 +251,15 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
         {mainContent}
         <Footer marginRatio={DRAWER_MAX_SIZE} />
       </div>
-      <Container
-        className="readerSide bgColor"
-        disableGutters
-        style={{ position: "fixed", bottom: 0, zIndex: 1 }}>
-        <DragHelper
-          currentLen={drawerHeight}
-          setCurrentLen={setDrawerHeight}
-          maxRatio={DRAWER_MAX_SIZE}>
-          <div>
-            <div className="readerMobileDragger">
-              <div className="draggerPuller" />
-            </div>
-            {sidebarBar}
-          </div>
-        </DragHelper>
-        <Container
-          className="bgColor readerDrawerContainer"
-          gutterSize={6}
-          innerRef={sidebarRef}
-          style={{
-            overflowY: "auto",
-            height: drawerHeight,
-          }}>
-          <ContentBox
-            isSmall
-            styles={{
-              marginTop: "0px",
-              height: "100%",
-              paddingLeft: "6px",
-              paddingRight: "6px",
-              paddingTop: "2px",
-            }}>
-            {sidebarContent}
-          </ContentBox>
-        </Container>
-      </Container>
+      <BottomDrawer
+        containerClass="readerSide"
+        drawerHeight={drawerHeight}
+        setDrawerHeight={setDrawerHeight}
+        maxRatio={DRAWER_MAX_SIZE}
+        drawerContentRef={sidebarRef}>
+        {sidebarBar}
+        {sidebarContent}
+      </BottomDrawer>
     </div>
   );
 }
