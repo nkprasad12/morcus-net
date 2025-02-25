@@ -9,8 +9,8 @@
   "scripts": {
     "build": "MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && npm run tsnp src/esbuild/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
     "start": "node build/server.js",
-    "format": "ESLINT_USE_FLAT_CONFIG=false npx eslint . && npx prettier . --write && python -m black .",
-    "format-check": "ESLINT_USE_FLAT_CONFIG=false npx eslint . && npx prettier . --check && python -m black . --check",
+    "format": "npx eslint . && npx prettier . --write && python -m black .",
+    "format-check": "npx eslint . && npx prettier . --check && python -m black . --check",
     "setup-alatius": "python src/scripts/alatius.py",
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
@@ -45,6 +45,9 @@
   "devDependencies": {
     "@craftamap/esbuild-plugin-html": "^0.7.0",
     "@emotion/serialize": "^1.1.1",
+    "@eslint/compat": "^1.2.7",
+    "@eslint/eslintrc": "^3.3.0",
+    "@eslint/js": "^9.21.0",
     "@jest/globals": "^29.7.0",
     "@mui/material": "^5.11.12",
     "@playwright/test": "^1.49.1",
@@ -80,6 +83,7 @@
     "express": "^4.18.2",
     "fake-indexeddb": "^5.0.2",
     "fast-xml-parser": "^4.3.5",
+    "globals": "^16.0.0",
     "jest": "^29.7.0",
     "jest-environment-jsdom": "^29.7.0",
     "mongodb": "6.5",
