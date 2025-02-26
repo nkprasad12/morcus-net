@@ -537,9 +537,6 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       color: theme.mobileNavButtonHover,
       cursor: "pointer",
     },
-    ".QNAEmbedded": {
-      scrollMarginTop: "40px",
-    },
 
     /** Reader specific */
     ".readerIconBar": {
