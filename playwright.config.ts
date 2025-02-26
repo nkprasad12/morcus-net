@@ -1,6 +1,10 @@
 import { defineConfig, devices } from "@playwright/test";
 
-const BASE_URL = "http://localhost:1337";
+const PORT = process.env.REUSE_DEV_SERVER ? process.env.PORT : "1337";
+if (PORT === undefined) {
+  throw new Error(`$PORT must be set when reusing the dev server.`);
+}
+const BASE_URL = `http://localhost:${PORT}`;
 
 process.env.BASE_URL = BASE_URL;
 const MOBILE_TEMPLATE = devices["Pixel 5"];
