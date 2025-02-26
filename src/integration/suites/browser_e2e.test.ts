@@ -113,14 +113,9 @@ test.describe("dictionary search", () => {
 
 test.describe("dictionary main entries", () => {
   test("should allow linkified latin words in SH", async ({ page }) => {
-    page.goto("/dicts");
+    await page.goto("/dicts/id/sh13535");
 
-    await click(page.locator(`[aria-label="Dictionary search box"]`));
-    await page.keyboard.type("influence", { delay: 20 });
-    await page.keyboard.press("Enter");
-
-    await expect(page.getByText("cohortandum").nth(0)).toBeVisible();
-    await click(page.getByText("cohortandum"));
+    await page.getByText("cohortandum").click();
 
     // The lemma form of cohortandum
     await expect(page.getByText("cŏ-hortor").nth(0)).toBeVisible();
