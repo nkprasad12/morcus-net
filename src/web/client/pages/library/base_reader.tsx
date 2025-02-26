@@ -111,12 +111,6 @@ export function BaseReader<
     };
   }, [isScreenSmall]);
 
-  useEffect(() => {
-    const resetDrawer = () => setDrawerHeight(window.innerHeight * 0.15);
-    window.addEventListener("orientationchange", resetDrawer);
-    window.removeEventListener("orientationchange", resetDrawer);
-  }, [setDrawerHeight]);
-
   const BaseLayout = isScreenSmall ? BaseMobileReaderLayout : BaseReaderLayout;
 
   const sidebarRef = React.useRef<HTMLDivElement>(null);

@@ -21,8 +21,6 @@ import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   ElementAndKey,
   InflectionDataSection,
-  QUICK_NAV_ANCHOR,
-  QNA_EMBEDDED,
   SCROLL_JUMP,
   SCROLL_SMOOTH,
   SearchSettings,
@@ -64,6 +62,7 @@ import { StoredCheckBox } from "@/web/client/components/generic/settings_basics"
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 import { getCommitHash } from "@/web/client/define_vars";
 import { textCallback } from "@/web/client/utils/callback_utils";
+import { BottomDrawer } from "@/web/client/components/bottom_drawer";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -355,45 +354,56 @@ function LoadingMessage() {
   );
 }
 
-function ResponsiveLayout(props: {
-  oneCol?: React.ReactNode;
-  twoColSide?: React.ReactNode;
-  twoColMain?: React.ReactNode;
-  content?: React.ReactNode;
+interface ResponsiveLayoutComponents {
+  mainContent: React.ReactNode;
+  sideContent?: React.ReactNode;
+  combinedContent?: React.ReactNode;
+}
+
+interface ResponsiveLayoutProps extends ResponsiveLayoutComponents {
   contextValues: DictContextOptions;
-}) {
-  const { oneCol, twoColSide, twoColMain, content } = props;
+}
+
+function ResponsiveLayout(props: ResponsiveLayoutProps) {
   return (
     <DictContext.Provider value={props.contextValues}>
       {props.contextValues.isSmall ? (
-        <OneColumnLayout>{oneCol ?? content ?? <></>}</OneColumnLayout>
+        <NarrowScreenLayout {...props} />
       ) : (
         <TwoColumnLayout>
-          {twoColSide ?? <></>}
-          {twoColMain ?? content ?? <></>}
+          {props.sideContent ?? <></>}
+          {props.mainContent}
         </TwoColumnLayout>
       )}
     </DictContext.Provider>
   );
 }
 
-function OneColumnLayout(props: { children: React.ReactNode }) {
+function NarrowScreenLayout(props: ResponsiveLayoutProps) {
   const { isEmbedded } = React.useContext(DictContext);
+  const [drawerHeight, setDrawerHeight] = React.useState<number>(
+    window.innerHeight * 0.15
+  );
+
   return (
-    <Container className="dictRoot" maxWidth="lg" disableGutters={isEmbedded}>
-      <SearchBar
-        maxWidth="lg"
-        id={"SearchBox"}
-        className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-      />
-      {props.children}
-      {!isEmbedded && (
-        <Footer
-          id={"Footer"}
-          className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-        />
+    <>
+      <Container className="dictRoot" maxWidth="lg" disableGutters={isEmbedded}>
+        <SearchBar maxWidth="lg" id="SearchBox" />
+        {isEmbedded && props.combinedContent
+          ? props.combinedContent
+          : props.mainContent}
+        {!isEmbedded && <Footer id="Footer" />}
+      </Container>
+      {!isEmbedded && props.sideContent && (
+        <BottomDrawer
+          containerClass="dictRoot"
+          drawerHeight={drawerHeight}
+          setDrawerHeight={setDrawerHeight}>
+          <div className="bgAlt" style={{ height: "16px" }} />
+          {props.sideContent}
+        </BottomDrawer>
       )}
-    </Container>
+    </>
   );
 }
 
@@ -718,7 +728,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
-  const entriesRef = React.useRef<HTMLDivElement>(null);
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
   const settings = React.useContext(GlobalSettingsContext);
@@ -885,7 +894,10 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
 
   if (simpleContent !== null) {
     return (
-      <ResponsiveLayout content={simpleContent} contextValues={contextValues} />
+      <ResponsiveLayout
+        mainContent={simpleContent}
+        contextValues={contextValues}
+      />
     );
   }
 
@@ -899,32 +911,28 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     />
   );
   const dictionaryEntries = <DictionaryEntries entries={entries} />;
+  const helpSection = <HelpSection />;
+  const mainContent = (
+    <>
+      {helpSection}
+      {summarySection}
+      {dictionaryEntries}
+    </>
+  );
+  const combinedContent = (
+    <>
+      {helpSection}
+      {summarySection}
+      {tableOfContents}
+      {dictionaryEntries}
+    </>
+  );
   return (
     <ResponsiveLayout
       contextValues={contextValues}
-      oneCol={
-        <>
-          <HelpSection
-            id="HelpSection"
-            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-          />
-          <div
-            id="Toc"
-            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>
-            {summarySection}
-            {tableOfContents}
-          </div>
-          <div ref={entriesRef}>{dictionaryEntries}</div>
-        </>
-      }
-      twoColSide={tableOfContents}
-      twoColMain={
-        <>
-          <HelpSection />
-          {summarySection}
-          {dictionaryEntries}
-        </>
-      }
+      mainContent={mainContent}
+      sideContent={tableOfContents}
+      combinedContent={combinedContent}
     />
   );
 }

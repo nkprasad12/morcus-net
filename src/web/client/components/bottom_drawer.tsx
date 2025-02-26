@@ -135,6 +135,10 @@ export function DragHelper(
   );
 }
 
+function getDefaultHeight() {
+  return window.innerHeight * 0.15;
+}
+
 export interface BottomDrawerProps {
   drawerHeight: number;
   setDrawerHeight: React.Dispatch<React.SetStateAction<number>>;
@@ -149,6 +153,13 @@ export function BottomDrawer(
   const { drawerHeight, setDrawerHeight } = props;
   const children = React.Children.toArray(props.children);
   assertEqual(children.length, 2);
+
+  useEffect(() => {
+    const resetDrawer = () => setDrawerHeight(getDefaultHeight());
+    window.addEventListener("orientationchange", resetDrawer);
+    window.removeEventListener("orientationchange", resetDrawer);
+  }, [setDrawerHeight]);
+
   return (
     <Container
       className={`bgColor ${props.containerClass}`}
