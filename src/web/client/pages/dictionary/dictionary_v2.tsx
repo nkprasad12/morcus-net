@@ -70,6 +70,7 @@ export const ERROR_STATE_MESSAGE =
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE = "No results found";
 
+const DRAWER_DEFAULT_HEIGHT = 0.3;
 const EMBEDDED_LOGEION_SETTING_LABEL =
   "Automatically open embedded Logeion searches";
 
@@ -382,7 +383,7 @@ function ResponsiveLayout(props: ResponsiveLayoutProps) {
 function NarrowScreenLayout(props: ResponsiveLayoutProps) {
   const { isEmbedded } = React.useContext(DictContext);
   const [drawerHeight, setDrawerHeight] = React.useState<number>(
-    window.innerHeight * 0.15
+    window.innerHeight * DRAWER_DEFAULT_HEIGHT
   );
 
   return (
@@ -398,6 +399,7 @@ function NarrowScreenLayout(props: ResponsiveLayoutProps) {
         <BottomDrawer
           containerClass="dictRoot"
           drawerHeight={drawerHeight}
+          defaultHeightRatio={DRAWER_DEFAULT_HEIGHT}
           setDrawerHeight={setDrawerHeight}>
           <div className="bgAlt" style={{ height: "16px" }} />
           {props.sideContent}

@@ -135,14 +135,11 @@ export function DragHelper(
   );
 }
 
-function getDefaultHeight() {
-  return window.innerHeight * 0.15;
-}
-
 export interface BottomDrawerProps {
   drawerHeight: number;
   setDrawerHeight: React.Dispatch<React.SetStateAction<number>>;
   maxRatio?: number;
+  defaultHeightRatio?: number;
   drawerContentRef?: React.RefObject<HTMLDivElement>;
   containerClass: string;
 }
@@ -155,10 +152,13 @@ export function BottomDrawer(
   assertEqual(children.length, 2);
 
   useEffect(() => {
-    const resetDrawer = () => setDrawerHeight(getDefaultHeight());
+    const resetDrawer = () =>
+      // Use the `innerWidth' and not the `innerHeight` because we seem to get
+      // the event before the values are swapped.
+      setDrawerHeight(window.innerWidth * (props.defaultHeightRatio ?? 0.15));
     window.addEventListener("orientationchange", resetDrawer);
-    window.removeEventListener("orientationchange", resetDrawer);
-  }, [setDrawerHeight]);
+    return () => window.removeEventListener("orientationchange", resetDrawer);
+  }, [setDrawerHeight, props.defaultHeightRatio]);
 
   return (
     <Container
