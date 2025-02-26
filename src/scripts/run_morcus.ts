@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import { assert } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import {
@@ -20,6 +20,7 @@ const WORKER = "worker";
 const EDITOR = "editor";
 const BUNDLE = "bundle";
 const BUILD = "build";
+const E2E = "e2e";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -35,6 +36,8 @@ if (args.command === WEB_SERVER) {
   buildBundle(args).then(assert);
 } else if (args.command === BUILD) {
   buildArtifacts(args).then(assert);
+} else if (args.command === E2E) {
+  runE2eTests(args).then(assert);
 }
 
 interface CommandArgument {
@@ -190,7 +193,23 @@ function parseArguments() {
     help: "Starts the LS web editor.",
   });
 
-  for (const subcommand of [editor, worker, bundle, web, build]) {
+  const e2e = subparsers.add_parser(E2E, {
+    help: "Runs E2E tests.",
+  });
+  e2e.add_argument("-r", "--rerun", {
+    help: "Reuses an existing docker image for the tests.",
+    action: "store_true",
+  });
+  e2e.add_argument("-d", "--dev-server", {
+    help: "Uses the local dev server instead of docker for the tests.",
+    action: "store_true",
+  });
+  e2e.add_argument("-t", "--tag", {
+    help: "The tag to use if using a docker image.",
+    default: "itests",
+  });
+
+  for (const subcommand of [editor, worker, bundle, web, build, e2e]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
       action: "store_true",
@@ -428,4 +447,33 @@ async function startLsEditor() {
   ];
   assert(await runPipeline(steps));
   runCommand(`${TS_NODE.join(" ")} ${editorRoot}/ls_interactive.ts`);
+}
+
+async function runE2eTests(args: any) {
+  const childEnv = { ...process.env };
+  const steps: StepConfig[] = [];
+  if (args.rerun && args.dev_server) {
+    throw new Error("--rerun is incompatible with --dev-server");
+  }
+  const tag = checkPresent(args.tag);
+  if (!args.rerun && !args.dev_server) {
+    const fullTag = `ghcr.io/nkprasad12/morcus:${tag}`;
+    steps.push({
+      operation: () => shellStep(`docker build . -t ${fullTag}`),
+      label: `Building docker image ${fullTag}`,
+    });
+  }
+  if (args.dev_server === true) {
+    if (args.tag !== "itests") {
+      throw new Error("--tag is incompatible with --dev-server");
+    }
+    childEnv.REUSE_DEV_SERVER = "1";
+  } else {
+    childEnv.IMAGE_TAG = tag;
+  }
+  steps.push({
+    operation: () => shellStep("npm run integration-tests", childEnv),
+    label: "Running E2E tests",
+  });
+  return runPipeline(steps);
 }
