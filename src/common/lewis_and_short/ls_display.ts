@@ -1059,10 +1059,7 @@ export function formatSenseList(
     stack[stack.length - 1].children.push(
       new XmlNode(
         "li",
-        [
-          ["id", id],
-          ["class", "QNA"],
-        ],
+        [["id", id]],
         [
           new XmlNode(
             "span",
@@ -1165,14 +1162,7 @@ export function displayEntryFree(
   const attrs: [string, string][] = [["class", "lsEntryFree"]];
   attrs.push(["id", idAttr]);
   let result = new XmlNode("div", attrs, [
-    new XmlNode(
-      "div",
-      [
-        ["id", blurbId],
-        ["class", "QNA"],
-      ],
-      mainBlurbNodes
-    ),
+    new XmlNode("div", [["id", blurbId]], mainBlurbNodes),
     formatSenseList(
       senseNodes.slice(hasDuplicate1I || isSole1I ? 1 : 0),
       context

@@ -25,12 +25,11 @@ function skipIfWebkit(reason: string) {
   test.skip(checkPresent(currentBrowserName === "webkit"), reason);
 }
 
+/**
+ * @deprecated Call `click` directly on the locator instead.
+ */
 async function click(locator: Locator) {
-  if (checkPresent(currentBrowserName) !== "webkit") {
-    return locator.click();
-  }
-  await expect(locator).toBeVisible();
-  return locator.click({ force: true });
+  return locator.click();
 }
 
 async function goToTab(
@@ -113,14 +112,9 @@ test.describe("dictionary search", () => {
 
 test.describe("dictionary main entries", () => {
   test("should allow linkified latin words in SH", async ({ page }) => {
-    page.goto("/dicts");
+    await page.goto("/dicts/id/sh13535");
 
-    await click(page.locator(`[aria-label="Dictionary search box"]`));
-    await page.keyboard.type("influence", { delay: 20 });
-    await page.keyboard.press("Enter");
-
-    await expect(page.getByText("cohortandum").nth(0)).toBeVisible();
-    await click(page.getByText("cohortandum"));
+    await page.getByText("cohortandum").click();
 
     // The lemma form of cohortandum
     await expect(page.getByText("cŏ-hortor").nth(0)).toBeVisible();
@@ -128,49 +122,59 @@ test.describe("dictionary main entries", () => {
   });
 
   test("should allow loading entries by old id", async ({ page }) => {
-    page.goto("/dicts?q=n37007&o=2");
+    await page.goto("/dicts?q=n37007&o=2");
     await expect(page.getByText("pondus").nth(0)).toBeVisible();
     await expect(page.getByText("a weight").nth(0)).toBeVisible();
   });
 
   test("should allow loading LS entries by name", async ({ page }) => {
-    page.goto("/dicts?q=pondus");
+    await page.goto("/dicts?q=pondus");
     await expect(page.getByText("pondus").nth(0)).toBeVisible();
     await expect(page.getByText("a weight").nth(0)).toBeVisible();
   });
 
   test("should allow loading LS entries by new id", async ({ page }) => {
-    page.goto("/dicts/id/n37007");
+    await page.goto("/dicts/id/n37007");
     await expect(page.getByText("pondus").nth(0)).toBeVisible();
     await expect(page.getByText("a weight").nth(0)).toBeVisible();
   });
 
   test("should allow loading Gaffiot entries by name", async ({ page }) => {
-    page.goto("/dicts?q=abiegineus");
+    await page.goto("/dicts?q=abiegineus");
     await expect(page.getByText("ăbĭegnĭus").nth(0)).toBeVisible();
     await expect(page.getByText("abiegnus").nth(0)).toBeVisible();
   });
 
   test("should allow loading Gaffiot entries by new id", async ({ page }) => {
-    page.goto("/dicts/id/gaf-abiegineus");
+    await page.goto("/dicts/id/gaf-abiegineus");
     await expect(page.getByText("ăbĭegnĭus").nth(0)).toBeVisible();
     await expect(page.getByText("abiegnus").nth(0)).toBeVisible();
   });
 
   test("should allow loading SH entries by name", async ({ page }) => {
-    page.goto("/dicts?q=habiliment");
+    await page.goto("/dicts?q=habiliment");
     await expect(page.getByText("habiliment").nth(0)).toBeVisible();
     await expect(page.getByText("garment").nth(0)).toBeVisible();
   });
 
   test("should allow loading SH entries by new id", async ({ page }) => {
-    page.goto("/dicts/id/sh11673");
+    await page.goto("/dicts/id/sh11673");
     await expect(page.getByText("habiliment").nth(0)).toBeVisible();
     await expect(page.getByText("garment").nth(0)).toBeVisible();
   });
 
+  test("allows navigating via outline", async ({ page }) => {
+    await page.goto("/dicts/id/n20077");
+    await page
+      .getByText("O. Gladiatorial t. t., of a wounded combatant", {
+        exact: true,
+      })
+      .click();
+    await expect(page.getByText("he is hit")).toBeInViewport();
+  });
+
   test("allows queries from the new ID page", async ({ page }) => {
-    page.goto("/dicts/id/sh11673");
+    await page.goto("/dicts/id/sh11673");
 
     await click(page.locator(`[aria-label="Dictionary search box"]`));
     await page.keyboard.type("ăbăgĭō", { delay: 20 });
@@ -293,6 +297,16 @@ test.describe("main reader", () => {
 
     await expect(page.getByText("Britannos")).toBeInViewport();
     await expect(page).toHaveURL(/\/work\/juvenal\/saturae\?id=1\.2\.161$/);
+  });
+
+  test("has working translations", async ({ page }) => {
+    await page.goto("/work/sallust/catalina1?id=1");
+    await page.getByLabel("Translation").click();
+    await page.getByRole("button", { name: /Load translation/ }).click();
+
+    await expect(page.getByText("government")).toBeVisible();
+    await page.getByLabel("next section").click();
+    await expect(page.getByText("Cyrus").nth(1)).toBeVisible();
   });
 
   test.fixme("text search has expected results", async ({ page }) => {

@@ -22,9 +22,6 @@ import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing"
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { processWords } from "@/common/text_cleaning";
 
-export const QUICK_NAV_ANCHOR = "QNA";
-export const QNA_EMBEDDED = "QNAEmbedded";
-
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
   block: "start",
@@ -175,18 +172,6 @@ export function LatLinkify(props: { input: string }) {
   );
 }
 
-function transformClassAttr(value: string, isEmbedded: boolean) {
-  return value
-    .split(" ")
-    .map((chunk) => {
-      if (!isEmbedded || chunk !== QUICK_NAV_ANCHOR) {
-        return chunk;
-      }
-      return QNA_EMBEDDED;
-    })
-    .join(" ");
-}
-
 export interface XmlNodeToJsxArgs {
   highlightId?: string;
   isEmbedded?: boolean;
@@ -205,7 +190,7 @@ export function xmlNodeToJsx(
   let className: string | undefined = undefined;
   for (const [attrKey, value] of root.attrs) {
     if (attrKey === "class") {
-      className = transformClassAttr(value, args.isEmbedded === true);
+      className = value;
       props.className = className;
       continue;
     }

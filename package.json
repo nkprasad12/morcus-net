@@ -15,8 +15,6 @@
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
     "ts-tests": "npx jest --maxWorkers=8 --testPathIgnorePatterns src/integration/*",
-    "integration-tests-dev-nb": "IMAGE_TAG=itests npm run integration-tests",
-    "integration-tests-dev": "docker build . -t ghcr.io/nkprasad12/morcus:itests && npm run integration-tests-dev-nb",
     "integration-tests": "npx playwright test --grep-invert performance/*.test.ts",
     "perf-tests": "npx playwright test --grep performance/*.test.ts",
     "py-tests": "python -m unittest discover",

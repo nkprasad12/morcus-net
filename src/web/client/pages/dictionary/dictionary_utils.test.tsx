@@ -43,18 +43,6 @@ describe("xmlNodeToJsx", () => {
     expect(result.props.className).toBe("Caesar");
   });
 
-  it("handles embedded QNA elements", () => {
-    const root = new XmlNode(
-      "span",
-      [["class", "Caesar QNA"]],
-      [new XmlNode("span", [["class", "QNA"]])]
-    );
-
-    const result = xmlNodeToJsx(root, { isEmbedded: true });
-    expect(result.props.className).toBe("Caesar QNAEmbedded");
-    expect(result.props.children[0].props.className).toBe("QNAEmbedded");
-  });
-
   it("handles nodes with titles", () => {
     const root = new XmlNode("span", [["title", "Caesar"]], ["Gallia"]);
     const result = xmlNodeToJsx(root, {});

@@ -7,6 +7,13 @@ async function globalSetup() {
   await fs.promises.rm(E2E_RAW_METRICS_DIR, { recursive: true, force: true });
   await fs.promises.mkdir(E2E_REPORTS_DIR, { recursive: true });
   await fs.promises.mkdir(E2E_RAW_METRICS_DIR, { recursive: true });
+  if (process.env.REUSE_DEV_SERVER) {
+    console.warn(
+      "Environment variable REUSE_DEV_SERVER is set. Reusing the dev server at port",
+      process.env.PORT
+    );
+    return;
+  }
   const closer = await startMorcusFromDocker();
   return closer;
 }
