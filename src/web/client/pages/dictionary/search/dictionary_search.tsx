@@ -57,6 +57,7 @@ function SearchSettingsDialog(props: {
   dicts: LatinDictInfo[];
   setDicts: (newDicts: LatinDictInfo[]) => unknown;
   isEmbedded?: boolean;
+  isSmall?: boolean;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
   const inflectedSetting = props.isEmbedded
@@ -144,7 +145,7 @@ function SearchSettingsDialog(props: {
             </label>
           </div>
           <div className="text md light">Display Settings</div>
-          {!props.isEmbedded && (
+          {!props.isEmbedded && props.isSmall && (
             <div>
               <div className="text sm" style={{ marginTop: "8px" }}>
                 Mobile dictionary layout:
@@ -293,6 +294,7 @@ export function DictionarySearch(props: {
         dicts={props.dicts}
         setDicts={props.setDicts}
         isEmbedded={props.embedded}
+        isSmall={smallScreen}
       />
     </>
   );

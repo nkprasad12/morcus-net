@@ -185,7 +185,7 @@ describe("DictionarySearch", () => {
     render(
       <SettingsHandler>
         <DictionarySearch
-          smallScreen={false}
+          smallScreen
           dicts={BOTH_DICTS}
           setDicts={mockSetDicts}
           autoFocused
@@ -216,12 +216,32 @@ describe("DictionarySearch", () => {
     render(
       <SettingsHandler>
         <DictionarySearch
-          smallScreen={false}
+          smallScreen
           dicts={BOTH_DICTS}
           setDicts={mockSetDicts}
           autoFocused
           onSearchQuery={() => {}}
           embedded
+        />
+      </SettingsHandler>
+    );
+
+    const settings = screen.getByLabelText("search settings");
+    await user.click(settings);
+
+    expect(screen.queryByText("Mobile dictionary layout:")).toBeNull();
+  });
+
+  it("doesn't show mobile layout options in large screen", async () => {
+    const mockSetDicts = jest.fn();
+    render(
+      <SettingsHandler>
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          setDicts={mockSetDicts}
+          autoFocused
+          onSearchQuery={() => {}}
         />
       </SettingsHandler>
     );
