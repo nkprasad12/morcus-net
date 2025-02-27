@@ -381,21 +381,22 @@ function ResponsiveLayout(props: ResponsiveLayoutProps) {
 }
 
 function NarrowScreenLayout(props: ResponsiveLayoutProps) {
-  const { isEmbedded } = React.useContext(DictContext);
+  const { isEmbedded, mobileLayout } = React.useContext(DictContext);
   const [drawerHeight, setDrawerHeight] = React.useState<number>(
     window.innerHeight * DRAWER_DEFAULT_HEIGHT
   );
+  const classicView = mobileLayout === "Classic" || isEmbedded;
 
   return (
     <>
       <Container className="dictRoot" maxWidth="lg" disableGutters={isEmbedded}>
         <SearchBar maxWidth="lg" id="SearchBox" />
-        {isEmbedded && props.combinedContent
+        {classicView && props.combinedContent
           ? props.combinedContent
           : props.mainContent}
         {!isEmbedded && <Footer id="Footer" />}
       </Container>
-      {!isEmbedded && props.sideContent && (
+      {!classicView && props.sideContent && (
         <BottomDrawer
           containerClass="dictRoot"
           drawerHeight={drawerHeight}
@@ -855,6 +856,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       fromInternalLink,
       searchQuery: query,
       onSearchQuery,
+      mobileLayout: settings.data.dictionaryMobileLayout,
     }),
     [
       isEmbedded,
@@ -867,6 +869,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       fromInternalLink,
       query,
       onSearchQuery,
+      settings.data.dictionaryMobileLayout,
     ]
   );
 

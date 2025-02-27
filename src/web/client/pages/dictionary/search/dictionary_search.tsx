@@ -64,6 +64,7 @@ function SearchSettingsDialog(props: {
     : globalSettings.data.inflectedSearch;
   const inflectedSearch = inflectedSetting === true;
   const { offlineModeOn, shouldDisable } = useOfflineDictData();
+  const mobileLayout = globalSettings.data.dictionaryMobileLayout ?? "Drawer";
 
   return (
     <ModalDialog
@@ -74,7 +75,7 @@ function SearchSettingsDialog(props: {
       <div
         id="dictOptTitle"
         className="text md"
-        style={{ fontWeight: "bold", margin: 0, padding: "16px 24px" }}>
+        style={{ margin: 0, padding: "16px 24px" }}>
         Dictionary Options
       </div>
       <div style={{ padding: "0px 24px 20px" }}>
@@ -84,7 +85,8 @@ function SearchSettingsDialog(props: {
             will be disabled.
           </div>
         )}
-        <div className="text md light" style={{ marginTop: "8px" }}>
+        <div className="text md light">Search Settings</div>
+        <div className="text sm light" style={{ marginTop: "8px" }}>
           Dictionaries
         </div>
         <div>
@@ -119,8 +121,8 @@ function SearchSettingsDialog(props: {
             </div>
           ))}
         </div>
-        <div className="text md light" style={{ marginTop: "8px" }}>
-          Settings
+        <div className="text sm light" style={{ marginTop: "8px" }}>
+          Inflection
         </div>
         <div>
           <div>
@@ -141,6 +143,56 @@ function SearchSettingsDialog(props: {
               <span className="text sm">Latin inflected forms</span>
             </label>
           </div>
+          <div className="text md light">Display Settings</div>
+          {!props.isEmbedded && (
+            <div>
+              <div className="text sm" style={{ marginTop: "8px" }}>
+                Mobile dictionary layout:
+              </div>
+              <div style={{ marginLeft: "20px" }}>
+                <div>
+                  <input
+                    id="mobileLayoutDrawer"
+                    type="radio"
+                    name="mobileLayout"
+                    value="Drawer"
+                    checked={mobileLayout === "Drawer"}
+                    onChange={() =>
+                      globalSettings.mergeData({
+                        dictionaryMobileLayout: "Drawer",
+                      })
+                    }
+                  />
+                  <label htmlFor="mobileLayoutDrawer">
+                    <span className="text sm">Drawer</span>
+                  </label>
+                  <div className="text xs light" style={{ marginLeft: "20px" }}>
+                    Table of contents in a bottom drawer
+                  </div>
+                </div>
+                <div>
+                  <input
+                    id="mobileLayoutClassic"
+                    type="radio"
+                    name="mobileLayout"
+                    value="Classic"
+                    checked={mobileLayout === "Classic"}
+                    onChange={() =>
+                      globalSettings.mergeData({
+                        dictionaryMobileLayout: "Classic",
+                      })
+                    }
+                  />
+                  <label htmlFor="mobileLayoutClassic">
+                    <span className="text sm">Classic</span>
+                  </label>
+                  <div className="text xs light" style={{ marginLeft: "20px" }}>
+                    Table of contents above content in single column
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
         <HighlightStrengthSelector
           highlightStrength={
