@@ -179,4 +179,56 @@ describe("DictionarySearch", () => {
     const storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
     expect(storage.highlightStrength).toBe(60);
   });
+
+  it("allows changing the mobile layout setting", async () => {
+    const mockSetDicts = jest.fn();
+    render(
+      <SettingsHandler>
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          setDicts={mockSetDicts}
+          autoFocused
+          onSearchQuery={() => {}}
+        />
+      </SettingsHandler>
+    );
+
+    const settings = screen.getByLabelText("search settings");
+    await user.click(settings);
+    expect(screen.queryByText("Mobile dictionary layout:")).not.toBeNull();
+
+    const classicRadio = screen.getByLabelText("Classic");
+    await user.click(classicRadio);
+
+    const storage = JSON.parse(localStorage.getItem("GlobalSettings")!);
+    expect(storage.dictionaryMobileLayout).toBe("Classic");
+
+    const drawerRadio = screen.getByLabelText("Drawer");
+    await user.click(drawerRadio);
+
+    const updatedStorage = JSON.parse(localStorage.getItem("GlobalSettings")!);
+    expect(updatedStorage.dictionaryMobileLayout).toBe("Drawer");
+  });
+
+  it("doesn't show mobile layout options in embedded mode", async () => {
+    const mockSetDicts = jest.fn();
+    render(
+      <SettingsHandler>
+        <DictionarySearch
+          smallScreen={false}
+          dicts={BOTH_DICTS}
+          setDicts={mockSetDicts}
+          autoFocused
+          onSearchQuery={() => {}}
+          embedded
+        />
+      </SettingsHandler>
+    );
+
+    const settings = screen.getByLabelText("search settings");
+    await user.click(settings);
+
+    expect(screen.queryByText("Mobile dictionary layout:")).toBeNull();
+  });
 });

@@ -1,4 +1,5 @@
 import type { LatinDictInfo } from "@/common/dictionaries/latin_dicts";
+import type { DictionaryMobileLayoutType } from "@/web/client/components/global_flags";
 import type { DictRoute } from "@/web/client/pages/dictionary/dictionary_routing";
 import React from "react";
 
@@ -28,6 +29,7 @@ export interface DictContextOptions {
   fromInternalLink?: React.MutableRefObject<boolean>;
   searchQuery?: string;
   onSearchQuery: OnSearchQuery;
+  mobileLayout?: DictionaryMobileLayoutType;
 }
 
 export const DictContext: React.Context<DictContextOptions> =
