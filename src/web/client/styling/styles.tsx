@@ -372,6 +372,12 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     /** Dictionary specific */
+    ".dictRoot .optionSection": {
+      border: `1px solid ${theme.bgAlt}`,
+      padding: "8px",
+      marginBottom: "8px",
+      borderRadius: "4px",
+    },
     ".dictRoot ol": {
       marginTop: 0,
       marginBottom: 0,

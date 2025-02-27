@@ -196,7 +196,7 @@ describe("DictionarySearch", () => {
 
     const settings = screen.getByLabelText("search settings");
     await user.click(settings);
-    expect(screen.queryByText("Mobile dictionary layout:")).not.toBeNull();
+    expect(screen.queryByText("Mobile dictionary layout")).not.toBeNull();
 
     const classicRadio = screen.getByLabelText("Classic");
     await user.click(classicRadio);

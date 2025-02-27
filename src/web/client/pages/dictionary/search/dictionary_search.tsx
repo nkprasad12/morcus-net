@@ -9,14 +9,20 @@ import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
   GlobalSettingsContext,
+  type DictionaryMobileLayoutType,
 } from "@/web/client/components/global_flags";
 import { SearchBox } from "@/web/client/components/generic/search";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Solarized } from "@/web/client/styling/colors";
-import { SpanButton } from "@/web/client/components/generic/basics";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import type { OnSearchQuery } from "@/web/client/pages/dictionary/dict_context";
+
+const MOBILE_LAYOUT_TYPES: DictionaryMobileLayoutType[] = ["Classic", "Drawer"];
+const MOBILE_LAYOUT_DESCRIPTIONS: Record<DictionaryMobileLayoutType, string> = {
+  Drawer: "Ancillary content in a bottom drawer",
+  Classic: "All content in one column sidebar",
+};
 
 function HighlightStrengthSelector(props: {
   highlightStrength: number;
@@ -25,6 +31,7 @@ function HighlightStrengthSelector(props: {
   return (
     <NumberSelector
       label="Highlight Strength"
+      light
       value={props.highlightStrength}
       setValue={props.setHighlightStrength}
       step={10}
@@ -51,7 +58,142 @@ function useOfflineDictData() {
   };
 }
 
-function SearchSettingsDialog(props: {
+function OptionSubsection(props: { children: React.ReactNode }) {
+  return (
+    <div className="text sm light" style={{ marginTop: "8px" }}>
+      {props.children}
+    </div>
+  );
+}
+
+function SearchSettings(props: {
+  isEmbedded?: boolean;
+  dicts: LatinDictInfo[];
+  setDicts: (newDicts: LatinDictInfo[]) => unknown;
+}) {
+  const globalSettings = useContext(GlobalSettingsContext);
+  const inflectedSetting = props.isEmbedded
+    ? globalSettings.data.embeddedInflectedSearch
+    : globalSettings.data.inflectedSearch;
+  const inflectedSearch = inflectedSetting === true;
+  const { shouldDisable, offlineModeOn } = useOfflineDictData();
+
+  return (
+    <details open className="optionSection">
+      <summary className="text sm light">Search Settings</summary>
+      {offlineModeOn && (
+        <div className="text xs">
+          Note: Offline Mode is enabled, so features that are not downloaded
+          will be disabled.
+        </div>
+      )}
+      <OptionSubsection>Dictionaries</OptionSubsection>
+      <div>
+        {LatinDict.AVAILABLE.map((dict) => (
+          <div key={dict.key}>
+            <input
+              id={dict.key + "option"}
+              type="checkbox"
+              checked={!shouldDisable[dict.key] && props.dicts.includes(dict)}
+              disabled={shouldDisable[dict.key]}
+              onChange={(e) => {
+                const dicts = new Set(props.dicts);
+                if (e.currentTarget.checked) {
+                  dicts.add(dict);
+                } else {
+                  dicts.delete(dict);
+                }
+                props.setDicts([...dicts]);
+              }}
+            />
+            <label htmlFor={dict.key + "option"}>
+              <span>
+                <DictChip label={dict.key} />{" "}
+                <span
+                  className={
+                    "text sm" + (shouldDisable[dict.key] ? " light" : "")
+                  }>
+                  {dict.displayName}
+                </span>
+              </span>
+            </label>
+          </div>
+        ))}
+      </div>
+      <OptionSubsection>Inflection</OptionSubsection>
+      <div>
+        <div>
+          <input
+            id="inflectionOption"
+            type="checkbox"
+            checked={!shouldDisable.inflections && inflectedSearch}
+            disabled={shouldDisable.inflections}
+            onChange={() =>
+              globalSettings.mergeData({
+                ...(props.isEmbedded
+                  ? { embeddedInflectedSearch: !inflectedSearch }
+                  : { inflectedSearch: !inflectedSearch }),
+              })
+            }
+          />
+          <label htmlFor="inflectionOption">
+            <span className="text sm">Latin inflected forms</span>
+          </label>
+        </div>
+      </div>
+    </details>
+  );
+}
+
+function DisplaySettings(props: { isEmbedded?: boolean; isSmall?: boolean }) {
+  const globalSettings = useContext(GlobalSettingsContext);
+  const mobileLayout = globalSettings.data.dictionaryMobileLayout ?? "Drawer";
+
+  return (
+    <details open className="optionSection">
+      <summary className="text sm light">Display Settings</summary>
+      {!props.isEmbedded && props.isSmall && (
+        <>
+          <OptionSubsection>Mobile dictionary layout</OptionSubsection>
+          <>
+            {MOBILE_LAYOUT_TYPES.map((layout) => (
+              <div key={layout}>
+                <input
+                  id={"mobileLayout" + layout}
+                  type="radio"
+                  name="mobileLayout"
+                  value={layout}
+                  checked={mobileLayout === layout}
+                  onChange={() =>
+                    globalSettings.mergeData({ dictionaryMobileLayout: layout })
+                  }
+                />
+                <label
+                  htmlFor={"mobileLayout" + layout}
+                  style={{ marginLeft: "4px" }}>
+                  <span className="text sm">{layout}</span>
+                </label>
+                <div className="text xs light" style={{ marginLeft: "8px" }}>
+                  {MOBILE_LAYOUT_DESCRIPTIONS[layout]}
+                </div>
+              </div>
+            ))}
+          </>
+        </>
+      )}
+      <HighlightStrengthSelector
+        highlightStrength={
+          globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
+        }
+        setHighlightStrength={(v) => {
+          globalSettings.mergeData({ highlightStrength: v });
+        }}
+      />
+    </details>
+  );
+}
+
+function DictSettingsDialog(props: {
   open: boolean;
   onClose: () => unknown;
   dicts: LatinDictInfo[];
@@ -59,14 +201,6 @@ function SearchSettingsDialog(props: {
   isEmbedded?: boolean;
   isSmall?: boolean;
 }) {
-  const globalSettings = useContext(GlobalSettingsContext);
-  const inflectedSetting = props.isEmbedded
-    ? globalSettings.data.embeddedInflectedSearch
-    : globalSettings.data.inflectedSearch;
-  const inflectedSearch = inflectedSetting === true;
-  const { offlineModeOn, shouldDisable } = useOfflineDictData();
-  const mobileLayout = globalSettings.data.dictionaryMobileLayout ?? "Drawer";
-
   return (
     <ModalDialog
       open={props.open}
@@ -76,140 +210,29 @@ function SearchSettingsDialog(props: {
       <div
         id="dictOptTitle"
         className="text md"
-        style={{ margin: 0, padding: "16px 24px" }}>
+        style={{ margin: "12px", display: "flex", justifyContent: "center" }}>
         Dictionary Options
       </div>
-      <div style={{ padding: "0px 24px 20px" }}>
-        {offlineModeOn && (
-          <div className="text xs">
-            Note: Offline Mode is enabled, so features that are not downloaded
-            will be disabled.
-          </div>
-        )}
-        <div className="text md light">Search Settings</div>
-        <div className="text sm light" style={{ marginTop: "8px" }}>
-          Dictionaries
-        </div>
-        <div>
-          {LatinDict.AVAILABLE.map((dict) => (
-            <div key={dict.key}>
-              <input
-                id={dict.key + "option"}
-                type="checkbox"
-                checked={!shouldDisable[dict.key] && props.dicts.includes(dict)}
-                disabled={shouldDisable[dict.key]}
-                onChange={(e) => {
-                  const dicts = new Set(props.dicts);
-                  if (e.currentTarget.checked) {
-                    dicts.add(dict);
-                  } else {
-                    dicts.delete(dict);
-                  }
-                  props.setDicts([...dicts]);
-                }}
-              />
-              <label htmlFor={dict.key + "option"}>
-                <span>
-                  <DictChip label={dict.key} />{" "}
-                  <span
-                    className={
-                      "text sm" + (shouldDisable[dict.key] ? " light" : "")
-                    }>
-                    {dict.displayName}
-                  </span>
-                </span>
-              </label>
-            </div>
-          ))}
-        </div>
-        <div className="text sm light" style={{ marginTop: "8px" }}>
-          Inflection
-        </div>
-        <div>
-          <div>
-            <input
-              id="inflectionOption"
-              type="checkbox"
-              checked={!shouldDisable.inflections && inflectedSearch}
-              disabled={shouldDisable.inflections}
-              onChange={() =>
-                globalSettings.mergeData({
-                  ...(props.isEmbedded
-                    ? { embeddedInflectedSearch: !inflectedSearch }
-                    : { inflectedSearch: !inflectedSearch }),
-                })
-              }
-            />
-            <label htmlFor="inflectionOption">
-              <span className="text sm">Latin inflected forms</span>
-            </label>
-          </div>
-          <div className="text md light">Display Settings</div>
-          {!props.isEmbedded && props.isSmall && (
-            <div>
-              <div className="text sm" style={{ marginTop: "8px" }}>
-                Mobile dictionary layout:
-              </div>
-              <div style={{ marginLeft: "20px" }}>
-                <div>
-                  <input
-                    id="mobileLayoutDrawer"
-                    type="radio"
-                    name="mobileLayout"
-                    value="Drawer"
-                    checked={mobileLayout === "Drawer"}
-                    onChange={() =>
-                      globalSettings.mergeData({
-                        dictionaryMobileLayout: "Drawer",
-                      })
-                    }
-                  />
-                  <label htmlFor="mobileLayoutDrawer">
-                    <span className="text sm">Drawer</span>
-                  </label>
-                  <div className="text xs light" style={{ marginLeft: "20px" }}>
-                    Table of contents in a bottom drawer
-                  </div>
-                </div>
-                <div>
-                  <input
-                    id="mobileLayoutClassic"
-                    type="radio"
-                    name="mobileLayout"
-                    value="Classic"
-                    checked={mobileLayout === "Classic"}
-                    onChange={() =>
-                      globalSettings.mergeData({
-                        dictionaryMobileLayout: "Classic",
-                      })
-                    }
-                  />
-                  <label htmlFor="mobileLayoutClassic">
-                    <span className="text sm">Classic</span>
-                  </label>
-                  <div className="text xs light" style={{ marginLeft: "20px" }}>
-                    Table of contents above content in single column
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-        <HighlightStrengthSelector
-          highlightStrength={
-            globalSettings.data.highlightStrength || DEFAULT_HIGHLIGHT_STRENGTH
-          }
-          setHighlightStrength={(v) => {
-            globalSettings.mergeData({ highlightStrength: v });
-          }}
+      <div
+        style={{
+          margin: "0px 12px",
+          height: props.isSmall ? "60vh" : "40vh",
+          overflowY: "auto",
+        }}>
+        <SearchSettings
+          dicts={props.dicts}
+          setDicts={props.setDicts}
+          isEmbedded={props.isEmbedded}
+        />
+        <DisplaySettings
+          isEmbedded={props.isEmbedded}
+          isSmall={props.isSmall}
         />
       </div>
       <div className="dialogActions">
-        <SpanButton
-          onClick={props.onClose}
-          className="text md light button simple">
+        <button onClick={props.onClose} className="text sm light button simple">
           Close
-        </SpanButton>
+        </button>
       </div>
     </ModalDialog>
   );
@@ -288,7 +311,7 @@ export function DictionarySearch(props: {
           marginBottom: spacing(0.5),
         }}
       />
-      <SearchSettingsDialog
+      <DictSettingsDialog
         open={dialogOpen}
         onClose={() => setDialogOpen(false)}
         dicts={props.dicts}
