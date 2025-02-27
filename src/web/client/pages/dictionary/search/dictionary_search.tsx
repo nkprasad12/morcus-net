@@ -21,7 +21,7 @@ import type { OnSearchQuery } from "@/web/client/pages/dictionary/dict_context";
 const MOBILE_LAYOUT_TYPES: DictionaryMobileLayoutType[] = ["Classic", "Drawer"];
 const MOBILE_LAYOUT_DESCRIPTIONS: Record<DictionaryMobileLayoutType, string> = {
   Drawer: "Ancillary content in a bottom drawer",
-  Classic: "All content in one column sidebar",
+  Classic: "All content in one column",
 };
 
 function HighlightStrengthSelector(props: {
