@@ -50,15 +50,10 @@ test.describe("screenshot tests", () => {
     await expect(page).toHaveScreenshot();
   });
 
-  // screenshotTest("library landing", async ({ page }) => {
-  //   await page.goto("/library");
-  //   await expect(page).toHaveScreenshot();
-  // });
-
-  // screenshotTest("about page", async ({ page }) => {
-  //   await page.goto("/about");
-  //   await expect(page).toHaveScreenshot();
-  // });
+  screenshotTest("library landing", async ({ page }) => {
+    await page.goto("/library");
+    await expect(page).toHaveScreenshot();
+  });
 });
 
 test.describe("general navigation", () => {
