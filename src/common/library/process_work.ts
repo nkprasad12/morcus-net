@@ -33,6 +33,7 @@ const FORCE_CTS = new Set([
   LatinWorks.TIBULLUS_ELEGIAE,
   LatinWorks.SUPLICIA_CARMINA,
   EnglishTranslations[LatinWorks.OVID_AMORES],
+  EnglishTranslations[LatinWorks.OVID_EPISTULAE],
 ]);
 
 // For regular nodes
@@ -41,6 +42,7 @@ const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 const HANDLED_REND = new Set<string>([
   "indent",
+  "ital",
   "italic",
   "blockquote",
   "uppercase",
@@ -564,7 +566,10 @@ function transformContentNode(
     if (node.name === "emph") {
       assertEqual(rend, "italic");
     }
-    attrs.push(["rend", rend], ["rendParent", node.name]);
+    const finalRend = rend === "ital" ? "italic" : rend;
+    if (rend === "ital") {
+      attrs.push(["rend", finalRend], ["rendParent", node.name]);
+    }
   }
   if (node.name === "l") {
     attrs.push(["l", "1"]);
