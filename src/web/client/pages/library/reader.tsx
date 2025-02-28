@@ -999,6 +999,9 @@ function displayForLibraryChunk(
   if (rend === "italic") {
     style.fontStyle = "italic";
   }
+  if (rend === "uppercase") {
+    style.textTransform = "uppercase";
+  }
   if (root.getAttr("l") !== undefined) {
     className = "l";
   }
