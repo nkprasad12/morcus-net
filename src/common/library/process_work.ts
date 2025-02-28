@@ -567,9 +567,7 @@ function transformContentNode(
       assertEqual(rend, "italic");
     }
     const finalRend = rend === "ital" ? "italic" : rend;
-    if (rend === "ital") {
-      attrs.push(["rend", finalRend], ["rendParent", node.name]);
-    }
+    attrs.push(["rend", finalRend], ["rendParent", node.name]);
   }
   if (node.name === "l") {
     attrs.push(["l", "1"]);
