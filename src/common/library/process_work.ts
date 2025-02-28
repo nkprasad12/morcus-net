@@ -28,6 +28,7 @@ const FORCE_CTS = new Set([
   LatinWorks.NEPOS_MILTIADES,
   LatinWorks.NEPOS_THEMISTOCLES,
   LatinWorks.TIBULLUS_ELEGIAE,
+  LatinWorks.SUPLICIA_CARMINA,
 ]);
 
 // For regular nodes
