@@ -7,7 +7,10 @@ import {
   checkSatisfies,
 } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import { LatinWorks } from "@/common/library/library_constants";
+import {
+  EnglishTranslations,
+  LatinWorks,
+} from "@/common/library/library_constants";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import {
   type NavTreeNode,
@@ -29,6 +32,7 @@ const FORCE_CTS = new Set([
   LatinWorks.NEPOS_THEMISTOCLES,
   LatinWorks.TIBULLUS_ELEGIAE,
   LatinWorks.SUPLICIA_CARMINA,
+  EnglishTranslations[LatinWorks.OVID_AMORES],
 ]);
 
 // For regular nodes
@@ -83,6 +87,7 @@ const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
   "anchored",
   "place",
+  "resp",
   "sid",
   "uid",
   "parent",
@@ -377,7 +382,9 @@ function preprocessTree(
       top.attrs.push(["leader", "1"]);
     }
     if (top.name === "note") {
-      top.attrs.forEach((attr) => assert(KNOWN_NOTE_ATTRS.has(attr[0])));
+      top.attrs.forEach((attr) =>
+        assert(KNOWN_NOTE_ATTRS.has(attr[0]), attr[0])
+      );
       const noteId = notes.length.toString();
       notes.push(top.deepcopy());
       top.attrs.push(["noteId", noteId]);
