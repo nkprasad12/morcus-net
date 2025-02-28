@@ -1,12 +1,6 @@
 import { checkPresent } from "@/common/assert";
 import { repeatedTest } from "@/integration/utils/playwright_utils";
-import {
-  test,
-  expect,
-  type Locator,
-  type ViewportSize,
-  type Page,
-} from "@playwright/test";
+import { test, expect, type ViewportSize, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ context, browserName }) => {
   if (browserName === "chromium") {
@@ -25,13 +19,6 @@ function skipIfWebkit(reason: string) {
   test.skip(checkPresent(currentBrowserName === "webkit"), reason);
 }
 
-/**
- * @deprecated Call `click` directly on the locator instead.
- */
-async function click(locator: Locator) {
-  return locator.click();
-}
-
 async function goToTab(
   tabName: string,
   page: Page,
@@ -40,9 +27,9 @@ async function goToTab(
 ) {
   if (isMobile || checkPresent(viewport?.width) < 400) {
     // Click into the hamburger menu
-    await click(page.getByLabel("site pages"));
+    await page.getByLabel("site pages").click();
   }
-  await click(page.locator(`button:text("${tabName}")`).nth(0));
+  await page.locator(`button:text("${tabName}")`).nth(0).click();
 }
 
 test.describe("general navigation", () => {
@@ -73,7 +60,7 @@ test.describe("dictionary search", () => {
   repeatedTest("loads results by typing and enter", 5, async ({ page }) => {
     await page.goto("/dicts");
 
-    await click(page.locator(`[aria-label="Dictionary search box"]`));
+    await page.locator(`[aria-label="Dictionary search box"]`).click();
     await page.keyboard.type("canaba", { delay: 20 });
     await page.keyboard.press("Enter");
 
@@ -84,7 +71,7 @@ test.describe("dictionary search", () => {
   repeatedTest("loads results by arrow nav", 5, async ({ page }) => {
     await page.goto("/dicts");
 
-    await click(page.locator(`[aria-label="Dictionary search box"]`));
+    await page.locator(`[aria-label="Dictionary search box"]`).click();
     await page.keyboard.type("can", { delay: 20 });
     await expect(page.getByText("cānăba").nth(0)).toBeVisible();
 
@@ -100,10 +87,10 @@ test.describe("dictionary search", () => {
 
   repeatedTest("loads results by autocomplete click", 5, async ({ page }) => {
     await page.goto("/dicts");
-    await click(page.locator(`[aria-label="Dictionary search box"]`));
+    await page.locator(`[aria-label="Dictionary search box"]`).click();
     await page.keyboard.type("can", { delay: 20 });
 
-    await click(page.getByText("cānăba").nth(0));
+    await page.getByText("cānăba").nth(0).click();
 
     await expect(page.getByText("a hovel, hut").nth(0)).toBeVisible();
     await expect(page).toHaveTitle("cānăba | Morcus Latin Tools");
@@ -176,7 +163,7 @@ test.describe("dictionary main entries", () => {
   test("allows queries from the new ID page", async ({ page }) => {
     await page.goto("/dicts/id/sh11673");
 
-    await click(page.locator(`[aria-label="Dictionary search box"]`));
+    await page.locator(`[aria-label="Dictionary search box"]`).click();
     await page.keyboard.type("ăbăgĭō", { delay: 20 });
     await page.keyboard.press("Enter");
 
@@ -190,10 +177,11 @@ test.describe("dictionary main entries", () => {
     skipIfWebkit("page.evaluate doesn't yet work on Webkit.");
     await page.goto("/dicts?q=abiegineus");
 
-    await click(
-      page.locator('[class="lsSenseBullet"]').getByText("ăbĭĕgĭnĕus")
-    );
-    await click(page.getByText("Copy article link"));
+    await page
+      .locator('[class="lsSenseBullet"]')
+      .getByText("ăbĭĕgĭnĕus")
+      .click();
+    await page.getByText("Copy article link").click();
 
     expect(await page.evaluate(() => navigator.clipboard.readText())).toEqual(
       `${process.env.BASE_URL}/dicts/id/gaf-abiegineus`
@@ -204,7 +192,7 @@ test.describe("dictionary main entries", () => {
 test.describe("library landing", () => {
   test("shows library options", async ({ page }) => {
     await page.goto("/library");
-    await click(page.getByText("Gallico"));
+    await page.getByText("Gallico").click();
     // This assumes that the info tab is the first one shown.
     // This is the editor.
     await expect(page.getByText("T. Rice Holmes")).toBeVisible();
@@ -224,7 +212,7 @@ test.describe("main reader", () => {
     await expect(page.getByText("Orgetorix").nth(0)).toBeVisible();
 
     await page.goto("/library");
-    await click(page.getByText("Gallico").nth(0));
+    await page.getByText("Gallico").nth(0).click();
 
     await expect(page.getByText("Orgetorix").nth(0)).toBeVisible();
   });
@@ -232,15 +220,15 @@ test.describe("main reader", () => {
   test("saves spot on quick nav", async ({ page }) => {
     await page.goto("/work/caesar/de_bello_gallico");
     await expect(page.getByText("Gallia").nth(0)).toBeVisible();
-    await click(page.locator(`[aria-label="Outline"]`));
+    await page.locator(`[aria-label="Outline"]`).click();
     // Chosen because there is no other Chapter 90 - otherwise we would
     // have some trouble ambiguating between all of the links.
-    await click(page.getByText("Book 7").nth(0));
-    await click(page.getByText("Chapter 90").nth(0));
+    await page.getByText("Book 7").nth(0).click();
+    await page.getByText("Chapter 90").nth(0).click();
     await expect(page.getByText("Aeduos").nth(0)).toBeVisible();
 
     await page.goto("/library");
-    await click(page.getByText("Gallico").nth(0));
+    await page.getByText("Gallico").nth(0).click();
 
     await expect(page.getByText("Aeduos").nth(0)).toBeVisible();
   });
@@ -270,7 +258,7 @@ test.describe("main reader", () => {
 
   test("handles clicky vocab", async ({ page }) => {
     await page.goto("/work/caesar/de_bello_gallico");
-    await click(page.getByText("divisa"));
+    await page.getByText("divisa").click();
 
     // This is part of the entry for `divido`.
     await expect(
@@ -279,18 +267,16 @@ test.describe("main reader", () => {
   });
 
   test("has working scroll to line from UI from URL", async ({ page }) => {
-    skipIfWebkit("viewport assertions don't yet work on Webkit.");
     await page.goto("/work/juvenal/saturae?id=1.2.161");
     await expect(page.getByText("Britannos")).toBeInViewport();
   });
 
   test("has working scroll to line from UI", async ({ page }) => {
-    skipIfWebkit("viewport assertions don't yet work on Webkit.");
     await page.goto("/work/juvenal/saturae?id=1.2");
     await expect(page.getByText("Britannos")).toBeVisible();
     await expect(page.getByText("Britannos")).not.toBeInViewport();
 
-    await click(page.locator(`[aria-label="jump to id"]`));
+    await page.locator(`[aria-label="jump to id"]`).click();
     // It should be pre-populated with `1.2`, the current ID.
     await page.keyboard.type(".161");
     await page.keyboard.press("Enter");
@@ -311,13 +297,13 @@ test.describe("main reader", () => {
 
   test.fixme("text search has expected results", async ({ page }) => {
     await page.goto("/work/caesar/de_bello_gallico");
-    await click(page.locator(`[aria-label="TextSearch"]`));
-    await click(page.locator(`[aria-label="search this work"]`));
+    await page.locator(`[aria-label="TextSearch"]`).click();
+    await page.locator(`[aria-label="search this work"]`).click();
     await page.keyboard.type("est in Britanniam");
     await page.keyboard.press("Enter");
 
     await expect(page.getByText("diem quartum quam")).toBeVisible();
-    await click(page.getByText("atque ex Gallia"));
+    await page.getByText("atque ex Gallia").click();
 
     await expect(page.getByText("Insula natura triquetra")).toBeVisible();
     await expect(page).toHaveURL(
@@ -368,14 +354,14 @@ test.describe("offline mode", () => {
   }) => {
     test.setTimeout(60000);
     await page.goto("/settings");
-    await click(page.getByText("Experiments"));
-    await click(page.getByLabel("Enable experimental features"));
-    await click(page.getByLabel("Offline mode enabled"));
+    await page.getByText("Experiments").click();
+    await page.getByLabel("Enable experimental features").click();
+    await page.getByLabel("Offline mode enabled").click();
     await expect(page.getByLabel("Smith and Hall")).toBeVisible({
       timeout: 10000,
     });
 
-    await click(page.getByLabel("Smith and Hall"));
+    await page.getByLabel("Smith and Hall").click();
     await expect(page.getByText("You can use S&H offline.")).toBeVisible({
       timeout: 45000,
     });
@@ -385,7 +371,7 @@ test.describe("offline mode", () => {
     await context.route(/.*api.*$/, (route) => route.abort());
 
     await goToTab("Dictionary", page, isMobile, viewport);
-    await click(page.locator(`[aria-label="Dictionary search box"]`));
+    await page.locator(`[aria-label="Dictionary search box"]`).click();
     await page.keyboard.type("habiliment", { delay: 20 });
     await page.keyboard.press("Enter");
 
