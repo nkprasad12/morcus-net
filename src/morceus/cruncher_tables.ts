@@ -27,10 +27,10 @@ export namespace MorceusTables {
 function makeTables(config?: CruncherConfig): CruncherTables {
   // This would ideally be a module constant, but we define it here so that
   // we can dynamically swap it out in unit tests
-  const ends_root = envVar("MORCEUS_DATA_ROOT") + "/latin/ends";
+  const endsRoot = envVar("MORCEUS_DATA_ROOT") + "/latin/ends";
   const [endIndices, endTables] =
     config?.existing?.endsResult ??
-    makeEndIndex([`${ends_root}/target`, `${ends_root}/dependency`]);
+    makeEndIndex([`${endsRoot}/target`, `${endsRoot}/dependency`]);
   const allLemmata =
     config?.existing?.lemmata ??
     allNounStems(config?.generate?.nomStemFiles).concat(
@@ -38,7 +38,26 @@ function makeTables(config?: CruncherConfig): CruncherTables {
     );
   const endsMap = makeEndsMap(endIndices);
   const stemMap = makeStemsMap(allLemmata);
-  return { endsMap, stemMap, inflectionLookup: endTables };
+  return {
+    endsMap,
+    stemMap,
+    inflectionLookup: endTables,
+    numerals: allLemmata.filter(isNumeral),
+  };
+}
+
+function isNumeral(lemma: Lemma) {
+  for (const stem of lemma.stems ?? []) {
+    if (stem.internalTags?.includes("numeral")) {
+      return true;
+    }
+  }
+  for (const stem of lemma.irregularForms ?? []) {
+    if (stem.internalTags?.includes("numeral")) {
+      return true;
+    }
+  }
+  return false;
 }
 
 async function saveTables(config?: CruncherConfig) {

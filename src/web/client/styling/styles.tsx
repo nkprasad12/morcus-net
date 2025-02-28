@@ -372,6 +372,18 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     /** Dictionary specific */
+    ".numeralTable": {
+      marginTop: "4px",
+      borderCollapse: "collapse",
+      border: "1px solid",
+      borderColor: theme.bgAlt,
+    },
+    ".numeralTable td": {
+      padding: "2px 4px",
+      borderCollapse: "collapse",
+      border: "1px solid",
+      borderColor: theme.bgAlt,
+    },
     ".dictRoot .optionSection": {
       border: `1px solid ${theme.bgAlt}`,
       padding: "8px",
