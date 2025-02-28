@@ -92,6 +92,14 @@ function testRootWithNote(noteBody: string): XmlNode {
   );
 }
 
+function testRootWithBookAndChapter(content: string): XmlNode {
+  return testRoot(
+    `<div n="1" type="textpart" subtype="book">
+      <div n="1" type="textpart" subtype="chapter">${content}</div>
+    </div>`
+  );
+}
+
 const BODY_WITH_BOOK_ONLY = `<div n="1" type="textpart" subtype="book">Gallia est</div>`;
 const BODY_WITH_CHOICE = `<div n="1" type="textpart" subtype="book"><choice><reg>FooBar</reg><orig>BazBap</orig></choice></div>`;
 const BODY_WITH_CHOICE_AND_CORR = `<div n="1" type="textpart" subtype="book"><choice><corr>FooBar</corr><orig>BazBap</orig></choice></div>`;
@@ -421,6 +429,23 @@ describe("processTei2", () => {
       "more text",
       ">",
     ]);
+  });
+
+  it("handles normal leaf section with rend", () => {
+    const work = processTei2(
+      testRootWithBookAndChapter(
+        `<div n="1" type="textpart" subtype="section" rend="indent">Text 1</div>
+         <div n="1" type="textpart" subtype="section" rend="ital">Text 2</div>
+         <div n="1" type="textpart" subtype="section" rend="italic">Text 3</div>`
+      ),
+      {
+        workId: WORK_ID,
+      }
+    );
+
+    expect(work.rows?.[0][1].getAttr("rend")).toBe("indent");
+    expect(work.rows?.[1][1].getAttr("rend")).toBe("italic");
+    expect(work.rows?.[2][1].getAttr("rend")).toBe("italic");
   });
 });
 
