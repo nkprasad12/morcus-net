@@ -665,6 +665,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       display: "flex",
       alignItems: "center",
     },
+    "input.customSearchBox::placeholder": {
+      color: theme.nonDictText + "80",
+    },
     ".customSearchBox": {
       backgroundColor,
       width: "100%",
