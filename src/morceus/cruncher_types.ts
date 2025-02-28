@@ -32,6 +32,7 @@ export interface CruncherTables {
   endsMap: Map<string, string[]>;
   stemMap: StemMap;
   inflectionLookup: InflectionLookup;
+  numerals: Lemma[];
 }
 
 export interface CruncherOptions {
