@@ -6,6 +6,7 @@ export const LatinWorks = {
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
   OVID_AMORES: "phi0959.phi001.perseus-lat2",
+  OVID_EPISTULAE: "phi0959.phi002.perseus-lat2",
   TACITUS_GERMANIA: "phi1351.phi002.perseus-lat1",
   JUVENAL_SATURAE: "phi1276.phi001.perseus-lat2",
   SALLUST_CATALINA1: "phi0631.phi001.perseus-lat4",
