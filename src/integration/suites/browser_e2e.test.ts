@@ -1,5 +1,9 @@
 import { checkPresent } from "@/common/assert";
-import { repeatedTest } from "@/integration/utils/playwright_utils";
+import {
+  DARK_TAG,
+  repeatedTest,
+  screenshotTest,
+} from "@/integration/utils/playwright_utils";
 import { test, expect, type ViewportSize, type Page } from "@playwright/test";
 
 test.beforeEach(async ({ context, browserName }) => {
@@ -31,6 +35,31 @@ async function goToTab(
   }
   await page.locator(`button:text("${tabName}")`).nth(0).click();
 }
+
+test.describe("screenshot tests", () => {
+  test.beforeEach(async ({ page }, testInfo) => {
+    if (!testInfo.tags.includes(DARK_TAG)) {
+      return;
+    }
+    await page.goto("/");
+    await page.getByLabel("dark mode").click();
+  });
+
+  screenshotTest("dicts landing", async ({ page }) => {
+    await page.goto("/");
+    await expect(page).toHaveScreenshot();
+  });
+
+  // screenshotTest("library landing", async ({ page }) => {
+  //   await page.goto("/library");
+  //   await expect(page).toHaveScreenshot();
+  // });
+
+  // screenshotTest("about page", async ({ page }) => {
+  //   await page.goto("/about");
+  //   await expect(page).toHaveScreenshot();
+  // });
+});
 
 test.describe("general navigation", () => {
   test("should load the landing page", async ({ page }) => {
