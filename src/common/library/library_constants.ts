@@ -14,6 +14,7 @@ export const LatinWorks = {
   NEPOS_MILTIADES: "phi0588.abo001.perseus-lat2",
   NEPOS_THEMISTOCLES: "phi0588.abo002.perseus-lat2",
   AMMIANUS_MARCELLINUS: "stoa0023.stoa001.perseus-lat2",
+  TIBULLUS_ELEGIAE: "phi0660.phi001.perseus-lat2",
 };
 
 export const EnglishTranslations: Record<string, string> = {
