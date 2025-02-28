@@ -54,6 +54,7 @@ import { getCommitHash } from "@/web/client/define_vars";
 import { textCallback } from "@/web/client/utils/callback_utils";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
+const TRANSLATION_ID = "translationTab";
 
 type WorkState = PaginatedWork | "Loading" | "Error";
 
@@ -213,6 +214,8 @@ export function ReadingPage() {
     window.scrollTo({ top: 0, behavior: "instant" });
     const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
     twoColumnMain?.scrollTo({ top: 0, behavior: "instant" });
+    const translationTab = document.getElementById(TRANSLATION_ID);
+    translationTab?.scrollIntoView({ behavior: "instant", block: "start" });
   }, [urlId, work]);
 
   useEffect(() => {
@@ -353,6 +356,7 @@ function TranslationTab(props: {
       page={props.translationPage}
       isMobile={props.isMobile}
       setDictWord={() => {}}
+      id={TRANSLATION_ID}
     />
   );
 }
@@ -625,6 +629,7 @@ export function WorkTextPage(props: {
   page: number;
   isMobile: boolean;
   setDictWord: (work: string) => unknown;
+  id?: string;
 }) {
   const { isMobile, work, setDictWord } = props;
 
@@ -693,6 +698,7 @@ export function WorkTextPage(props: {
   return (
     <WorkColumnContext.Provider value={workColumnContext}>
       <div
+        id={props.id}
         onClick={textCallback((w) => {
           if (hasTooltip.current.size > 0) {
             return false;
