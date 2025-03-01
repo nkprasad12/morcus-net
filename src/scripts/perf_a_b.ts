@@ -293,7 +293,7 @@ function runPerformanceTest(tag: string): PerformanceTestResult[] {
     args.push("--project=chromium");
   }
   if (screenSize !== "large") {
-    args.push("--project='Mobile Chrome'");
+    args.push("--project='MobileChrome'");
   }
   const filter = findArg("filter", false);
   if (filter) {

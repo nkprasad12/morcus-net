@@ -54,6 +54,7 @@ import { getCommitHash } from "@/web/client/define_vars";
 import { textCallback } from "@/web/client/utils/callback_utils";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
+const TRANSLATION_ID = "translationTab";
 
 type WorkState = PaginatedWork | "Loading" | "Error";
 
@@ -213,6 +214,8 @@ export function ReadingPage() {
     window.scrollTo({ top: 0, behavior: "instant" });
     const twoColumnMain = document.getElementById(LARGE_VIEW_MAIN_COLUMN_ID);
     twoColumnMain?.scrollTo({ top: 0, behavior: "instant" });
+    const translationTab = document.getElementById(TRANSLATION_ID);
+    translationTab?.scrollIntoView({ behavior: "instant", block: "start" });
   }, [urlId, work]);
 
   useEffect(() => {
@@ -314,17 +317,30 @@ function TranslationTab(props: {
   if (typeof work === "string") {
     return <span>Main work not yet loaded.</span>;
   }
-  const translationId = work.info.translationId;
+  const info = work.info.translationInfo;
+  const translationId = info?.id ?? work.info.translationId;
   if (translationId === undefined) {
     return <span>No translation available for this text.</span>;
   }
+
+  const blurb =
+    info === undefined ? null : (
+      <div className="text sm">
+        <div>Title: {info.title}</div>
+        {info.translator && <div>Translator: {info.translator}</div>}
+        <div>ID: {info.id}</div>
+      </div>
+    );
   if (translation === undefined) {
     return (
-      <button
-        onClick={() => props.loadTranslation(translationId)}
-        className="text md outline">
-        Load translation [Beta]
-      </button>
+      <>
+        {blurb}
+        <button
+          onClick={() => props.loadTranslation(translationId)}
+          className="text sm light outline">
+          Load translation [Beta]
+        </button>
+      </>
     );
   }
   if (translation === "Error" || props.translationPage === undefined) {
@@ -340,6 +356,7 @@ function TranslationTab(props: {
       page={props.translationPage}
       isMobile={props.isMobile}
       setDictWord={() => {}}
+      id={TRANSLATION_ID}
     />
   );
 }
@@ -612,6 +629,7 @@ export function WorkTextPage(props: {
   page: number;
   isMobile: boolean;
   setDictWord: (work: string) => unknown;
+  id?: string;
 }) {
   const { isMobile, work, setDictWord } = props;
 
@@ -680,6 +698,7 @@ export function WorkTextPage(props: {
   return (
     <WorkColumnContext.Provider value={workColumnContext}>
       <div
+        id={props.id}
         onClick={textCallback((w) => {
           if (hasTooltip.current.size > 0) {
             return false;
@@ -979,6 +998,9 @@ function displayForLibraryChunk(
   }
   if (rend === "italic") {
     style.fontStyle = "italic";
+  }
+  if (rend === "uppercase") {
+    style.textTransform = "uppercase";
   }
   if (root.getAttr("l") !== undefined) {
     className = "l";

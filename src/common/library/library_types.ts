@@ -11,15 +11,29 @@ import {
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
+export interface TranslationInfo {
+  title: string;
+  id: string;
+  translator?: string;
+}
+
+const isTranslationInfo = matchesObject<TranslationInfo>({
+  title: isString,
+  id: isString,
+  translator: maybeUndefined(isString),
+});
+
 export interface DocumentInfo {
   title: string;
   shortTitle?: string;
   author: string;
   editor?: string;
+  translator?: string;
   sponsor?: string;
   funder?: string;
   workId: string;
   translationId?: string;
+  translationInfo?: TranslationInfo;
 }
 
 export namespace DocumentInfo {
@@ -28,10 +42,12 @@ export namespace DocumentInfo {
     shortTitle: maybeUndefined(isString),
     author: isString,
     editor: maybeUndefined(isString),
+    translator: maybeUndefined(isString),
     sponsor: maybeUndefined(isString),
     funder: maybeUndefined(isString),
     workId: isString,
     translationId: maybeUndefined(isString),
+    translationInfo: maybeUndefined(isTranslationInfo),
   });
 }
 

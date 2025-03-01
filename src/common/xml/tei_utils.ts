@@ -147,10 +147,15 @@ function firstTextOfChild(
 
 export function extractInfo(teiRoot: XmlNode) {
   const titleStatement = findChild(teiRoot, TITLE_STATEMENT_PATH);
+  const editor: XmlNode | undefined = titleStatement.findChildren("editor")[0];
+  const translator = editor?.getAttr("role") === "translator";
   return {
     title: XmlNode.getSoleText(titleStatement.findChildren("title")[0]),
     author: XmlNode.getSoleText(titleStatement.findChildren("author")[0]),
-    editor: firstTextOfChild(titleStatement, "editor"),
+    editor: translator
+      ? undefined
+      : editor?.children.find((c) => typeof c === "string"),
+    translator: translator ? XmlNode.getSoleText(editor) : undefined,
     sponsor: firstTextOfChild(titleStatement, "sponsor"),
     funder: firstTextOfChild(titleStatement, "funder"),
   };

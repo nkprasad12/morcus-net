@@ -141,6 +141,23 @@ const PROCESSED_WORK_MULTI_CHAPTER: ProcessedWork2 = {
   navTree: TWO_CHAPTER_NAV_TREE,
 };
 
+const PROCESSED_WORK_LEGACY_TRANSLATION_ID: ProcessedWork2 = {
+  ...PROCESSED_WORK_MULTI_CHAPTER,
+  info: { ...DBG_INFO, translationId: "a.b.c" },
+};
+
+const PROCESSED_WORK_TRANSLATION_INFO: ProcessedWork2 = {
+  ...PROCESSED_WORK_MULTI_CHAPTER,
+  info: {
+    ...DBG_INFO,
+    translationInfo: {
+      title: "Foo Title",
+      translator: "Bar Translator",
+      id: "a.b.c",
+    },
+  },
+};
+
 const PROCESSED_WORK_VARIANTS: ProcessedWork2 = {
   info: DBG_INFO,
   textParts: ["chapter", "section"],
@@ -570,6 +587,73 @@ describe("Reading UI", () => {
 
     await screen.findByText(/Author/);
     await screen.findByText(/CC-BY-SA-4.0/);
+  });
+
+  it("shows translation tab with no translation", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("dbg"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Translation")!);
+
+    await screen.findByText(/No translation available/);
+  });
+
+  it("shows translation tab with legacy translation", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_LEGACY_TRANSLATION_ID);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("dbg"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+
+    await user.click(screen.queryByLabelText("Translation")!);
+
+    await screen.findByText(/Load translation/);
+  });
+
+  it("shows translation tab with translation info", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_TRANSLATION_INFO);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("dbg"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+    await screen.findByText(/Gallia/);
+    mockCallApi.mockReset();
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+
+    await user.click(screen.queryByLabelText("Translation")!);
+
+    await screen.findByText(/Foo Title/);
+    await screen.findByText(/Bar Translator/);
+    await user.click(screen.queryByText(/Load translation/)!);
+    await waitFor(() =>
+      expect(mockCallApi).toHaveBeenCalledWith(
+        expect.anything(),
+        expect.objectContaining({ id: "a.b.c" })
+      )
+    );
   });
 
   it("shows settings tab on desktop", async () => {

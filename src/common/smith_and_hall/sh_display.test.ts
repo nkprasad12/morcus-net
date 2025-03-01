@@ -51,7 +51,7 @@ function verifyLinkMarkup(
   expect(result.toString()).toEqual(
     [
       `<div>`,
-      `<div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57">  •  </span> `,
+      `<div id="sh57"><span class="lsSenseBullet" senseid="sh57">  •  </span> `,
       `<span class="dLink" to="${to}" text="${
         text || link.toLowerCase()
       }"></span></div>`,
@@ -67,10 +67,10 @@ describe("displayShEntry", () => {
     expect(result.toString()).toEqual(
       [
         `<div>`,
-        `<div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57">  •  </span> <span class="lsOrth">Greetings</span></div>`,
-        `<ol class="lsTopSense"><li id="sh57.0" class="QNA"><span class="lsSenseBullet" senseid="sh57.0"> I </span>'lo</li>`,
-        `<ol><li id="sh57.1" class="QNA"><span class="lsSenseBullet" senseid="sh57.1"> 1 </span>heeelo</li></ol>`,
-        `<li id="sh57.2" class="QNA"><span class="lsSenseBullet" senseid="sh57.2"> II </span><i>suup</i></li></ol>`,
+        `<div id="sh57"><span class="lsSenseBullet" senseid="sh57">  •  </span> <span class="lsOrth">Greetings</span></div>`,
+        `<ol class="lsTopSense"><li id="sh57.0"><span class="lsSenseBullet" senseid="sh57.0"> I </span>'lo</li>`,
+        `<ol><li id="sh57.1"><span class="lsSenseBullet" senseid="sh57.1"> 1 </span>heeelo</li></ol>`,
+        `<li id="sh57.2"><span class="lsSenseBullet" senseid="sh57.2"> II </span><i>suup</i></li></ol>`,
         `</div>`,
       ].join("")
     );
@@ -81,8 +81,8 @@ describe("displayShEntry", () => {
     expect(result.toString()).toEqual(
       [
         `<div>`,
-        `<div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57">  •  </span> <span>GREETINGS</span></div>`,
-        `<ol class="lsTopSense"><li id="sh57.0" class="QNA">`,
+        `<div id="sh57"><span class="lsSenseBullet" senseid="sh57">  •  </span> <span>GREETINGS</span></div>`,
+        `<ol class="lsTopSense"><li id="sh57.0">`,
         `<span class="lsSenseBullet" senseid="sh57.0"> I </span><span>LO</span>`,
         `</li></ol>`,
         `</div>`,
@@ -101,8 +101,8 @@ describe("displayShEntry", () => {
     expect(result.toString()).toEqual(
       [
         `<div>`,
-        `<div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57">  •  </span> <span class="dLink" to="greetings" text="greetings"></span></div>`,
-        `<ol class="lsTopSense"><li id="sh57.0" class="QNA">`,
+        `<div id="sh57"><span class="lsSenseBullet" senseid="sh57">  •  </span> <span class="dLink" to="greetings" text="greetings"></span></div>`,
+        `<ol class="lsTopSense"><li id="sh57.0">`,
         `<span class="lsSenseBullet" senseid="sh57.0"> I </span><span class="dLink" to="lo" text="lo"></span>`,
         `</li></ol>`,
         `</div>`,
@@ -119,7 +119,7 @@ describe("displayShEntry", () => {
     const result = displayShEntry(entry, 57, new ShLinkResolver([]));
     expect(result.toString()).toEqual(
       [
-        '<div><div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57">  •  </span>',
+        '<div><div id="sh57"><span class="lsSenseBullet" senseid="sh57">  •  </span>',
         ' <span class="lsOrth">Hi</span>: ',
         '<span class="lsHover" title="see">v.</span>',
         " <span>Hello</span></div><div></div></div>",
@@ -136,7 +136,7 @@ describe("displayShEntry", () => {
     const result = displayShEntry(entry, 57, new ShLinkResolver([]));
     expect(result.toString()).toEqual(
       [
-        '<div><div id="sh57" class="QNA"><span class="lsSenseBullet" senseid="sh57">  •  </span>',
+        '<div><div id="sh57"><span class="lsSenseBullet" senseid="sh57">  •  </span>',
         ' <span class="lsOrth">Hi</span>: ',
         '<span class="lsHover" title="quod vide, videas (look it up in that entry)">q. v.</span>',
         "</div><div></div></div>",

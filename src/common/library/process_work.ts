@@ -7,6 +7,10 @@ import {
   checkSatisfies,
 } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import {
+  EnglishTranslations,
+  LatinWorks,
+} from "@/common/library/library_constants";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import {
   type NavTreeNode,
@@ -21,18 +25,28 @@ import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
 const IGNORE_SUBTYPES = new Map<string, Set<string>>([
-  ["phi0472.phi001.perseus-lat2", new Set(["Lyrics", "longpoems", "Elegies"])],
+  [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies"])],
 ]);
 const FORCE_CTS = new Set([
-  "phi0588.abo001.perseus-lat2",
-  "phi0588.abo002.perseus-lat2",
+  LatinWorks.NEPOS_MILTIADES,
+  LatinWorks.NEPOS_THEMISTOCLES,
+  LatinWorks.TIBULLUS_ELEGIAE,
+  LatinWorks.SUPLICIA_CARMINA,
+  EnglishTranslations[LatinWorks.OVID_AMORES],
+  EnglishTranslations[LatinWorks.OVID_EPISTULAE],
 ]);
 
 // For regular nodes
 const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr"]);
 const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
-const HANDLED_REND = new Set<string>(["indent", "italic", "blockquote"]);
+const HANDLED_REND = new Set<string>([
+  "indent",
+  "ital",
+  "italic",
+  "blockquote",
+  "uppercase",
+]);
 // `merge` occurs only one time. It happens when we have a continued quote:
 // <l>blah blah <q>blah </q></l>
 // <l><q rend="merge">blah</q> blah</l>
@@ -75,6 +89,7 @@ const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
   "anchored",
   "place",
+  "resp",
   "sid",
   "uid",
   "parent",
@@ -369,7 +384,9 @@ function preprocessTree(
       top.attrs.push(["leader", "1"]);
     }
     if (top.name === "note") {
-      top.attrs.forEach((attr) => assert(KNOWN_NOTE_ATTRS.has(attr[0])));
+      top.attrs.forEach((attr) =>
+        assert(KNOWN_NOTE_ATTRS.has(attr[0]), attr[0])
+      );
       const noteId = notes.length.toString();
       notes.push(top.deepcopy());
       top.attrs.push(["noteId", noteId]);
@@ -549,7 +566,8 @@ function transformContentNode(
     if (node.name === "emph") {
       assertEqual(rend, "italic");
     }
-    attrs.push(["rend", rend], ["rendParent", node.name]);
+    const finalRend = rend === "ital" ? "italic" : rend;
+    attrs.push(["rend", finalRend], ["rendParent", node.name]);
   }
   if (node.name === "l") {
     attrs.push(["l", "1"]);
@@ -616,6 +634,7 @@ function transformContentNode(
       assert(children.length === 1);
       return new XmlNode("b", attrs, children);
     case "l":
+    case "hi":
     case "add":
     case "sic":
     case "said":

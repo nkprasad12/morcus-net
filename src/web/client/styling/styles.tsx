@@ -164,9 +164,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     "button.outline": {
       borderRadius: "4px",
-      backgroundColor: `${theme.bgAlt}20`,
-      padding: "4px 8px",
-      border: `2px solid ${theme.bgAlt}`,
+      backgroundColor: `${theme.bgAlt}60`,
+      padding: "2px 6px",
+      border: `1px solid ${theme.bgAlt}`,
     },
     ".button": {
       borderRadius: 4,
@@ -372,6 +372,24 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     /** Dictionary specific */
+    ".numeralTable": {
+      marginTop: "4px",
+      borderCollapse: "collapse",
+      border: "1px solid",
+      borderColor: theme.bgAlt,
+    },
+    ".numeralTable td": {
+      padding: "2px 4px",
+      borderCollapse: "collapse",
+      border: "1px solid",
+      borderColor: theme.bgAlt,
+    },
+    ".dictRoot .optionSection": {
+      border: `1px solid ${theme.bgAlt}`,
+      padding: "8px",
+      marginBottom: "8px",
+      borderRadius: "4px",
+    },
     ".dictRoot ol": {
       marginTop: 0,
       marginBottom: 0,
@@ -537,9 +555,6 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       color: theme.mobileNavButtonHover,
       cursor: "pointer",
     },
-    ".QNAEmbedded": {
-      scrollMarginTop: "40px",
-    },
 
     /** Reader specific */
     ".readerIconBar": {
@@ -556,14 +571,14 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       width: "100vw",
       backgroundColor: theme.bgAlt,
     },
-    ".readerMobileDragger": {
+    ".mobileDragger": {
       width: "100vw",
       borderTopLeftRadius: "12px",
       borderTopRightRadius: "12px",
       backgroundColor: theme.bgAlt,
       height: "15px",
     },
-    ".readerDrawerContainer": {
+    ".drawerContainer": {
       backgroundClip: "content-box, padding-box;",
       backgroundImage: `linear-gradient(to bottom, ${theme.bg} 0%, ${theme.bg} 100%), linear-gradient(to bottom, ${theme.bgAlt} 0%, ${theme.bgAlt} 100%);`,
     },
@@ -661,6 +676,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundColor: theme.bgAlt + 40,
       display: "flex",
       alignItems: "center",
+    },
+    "input.customSearchBox::placeholder": {
+      color: theme.nonDictText + "80",
     },
     ".customSearchBox": {
       backgroundColor,

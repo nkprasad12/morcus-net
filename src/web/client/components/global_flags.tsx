@@ -5,6 +5,8 @@ const SETTINGS_STORAGE_KEY = "GlobalSettings";
 
 export const DEFAULT_HIGHLIGHT_STRENGTH = 40;
 
+export type DictionaryMobileLayoutType = "Drawer" | "Classic";
+
 export interface GlobalBooleans {
   experimentalMode?: boolean;
   darkMode?: boolean;
@@ -15,6 +17,7 @@ export interface GlobalSettings extends GlobalBooleans {
   inflectedSearch?: boolean;
   embeddedInflectedSearch?: boolean;
   fontFamily?: string;
+  dictionaryMobileLayout?: DictionaryMobileLayoutType;
 }
 
 function toGlobalSettings(input: unknown): GlobalSettings {

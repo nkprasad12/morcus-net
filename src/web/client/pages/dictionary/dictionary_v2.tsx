@@ -21,8 +21,6 @@ import { FullDictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   ElementAndKey,
   InflectionDataSection,
-  QUICK_NAV_ANCHOR,
-  QNA_EMBEDDED,
   SCROLL_JUMP,
   SCROLL_SMOOTH,
   SearchSettings,
@@ -64,6 +62,7 @@ import { StoredCheckBox } from "@/web/client/components/generic/settings_basics"
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 import { getCommitHash } from "@/web/client/define_vars";
 import { textCallback } from "@/web/client/utils/callback_utils";
+import { BottomDrawer } from "@/web/client/components/bottom_drawer";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +
@@ -71,6 +70,7 @@ export const ERROR_STATE_MESSAGE =
   " If the issue persists, contact Mórcus.";
 export const NO_RESULTS_MESSAGE = "No results found";
 
+const DRAWER_DEFAULT_HEIGHT = 0.3;
 const EMBEDDED_LOGEION_SETTING_LABEL =
   "Automatically open embedded Logeion searches";
 
@@ -191,7 +191,9 @@ function LandingContent(props: {
     props.inflectedSearch && dicts.some((d) => d.languages.from === "La");
 
   return (
-    <div className="text xs light" style={{ margin: "12px 16px" }}>
+    <div
+      className="text xs light"
+      style={{ margin: "12px 16px", maxWidth: 550 }}>
       <details>
         <summary className="text xs light">
           You are searching {dicts.length} dictionaries
@@ -353,45 +355,58 @@ function LoadingMessage() {
   );
 }
 
-function ResponsiveLayout(props: {
-  oneCol?: React.ReactNode;
-  twoColSide?: React.ReactNode;
-  twoColMain?: React.ReactNode;
-  content?: React.ReactNode;
+interface ResponsiveLayoutComponents {
+  mainContent: React.ReactNode;
+  sideContent?: React.ReactNode;
+  combinedContent?: React.ReactNode;
+}
+
+interface ResponsiveLayoutProps extends ResponsiveLayoutComponents {
   contextValues: DictContextOptions;
-}) {
-  const { oneCol, twoColSide, twoColMain, content } = props;
+}
+
+function ResponsiveLayout(props: ResponsiveLayoutProps) {
   return (
     <DictContext.Provider value={props.contextValues}>
       {props.contextValues.isSmall ? (
-        <OneColumnLayout>{oneCol ?? content ?? <></>}</OneColumnLayout>
+        <NarrowScreenLayout {...props} />
       ) : (
         <TwoColumnLayout>
-          {twoColSide ?? <></>}
-          {twoColMain ?? content ?? <></>}
+          {props.sideContent ?? <></>}
+          {props.mainContent}
         </TwoColumnLayout>
       )}
     </DictContext.Provider>
   );
 }
 
-function OneColumnLayout(props: { children: React.ReactNode }) {
-  const { isEmbedded } = React.useContext(DictContext);
+function NarrowScreenLayout(props: ResponsiveLayoutProps) {
+  const { isEmbedded, mobileLayout } = React.useContext(DictContext);
+  const [drawerHeight, setDrawerHeight] = React.useState<number>(
+    window.innerHeight * DRAWER_DEFAULT_HEIGHT
+  );
+  const classicView = mobileLayout === "Classic" || isEmbedded;
+
   return (
-    <Container className="dictRoot" maxWidth="lg" disableGutters={isEmbedded}>
-      <SearchBar
-        maxWidth="lg"
-        id={"SearchBox"}
-        className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-      />
-      {props.children}
-      {!isEmbedded && (
-        <Footer
-          id={"Footer"}
-          className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-        />
+    <>
+      <Container className="dictRoot" maxWidth="lg" disableGutters={isEmbedded}>
+        <SearchBar maxWidth="lg" id="SearchBox" />
+        {classicView && props.combinedContent
+          ? props.combinedContent
+          : props.mainContent}
+        {!isEmbedded && <Footer id="Footer" />}
+      </Container>
+      {!classicView && props.sideContent && (
+        <BottomDrawer
+          containerClass="dictRoot"
+          drawerHeight={drawerHeight}
+          defaultHeightRatio={DRAWER_DEFAULT_HEIGHT}
+          setDrawerHeight={setDrawerHeight}>
+          <div className="bgAlt" style={{ height: "16px" }} />
+          {props.sideContent}
+        </BottomDrawer>
       )}
-    </Container>
+    </>
   );
 }
 
@@ -716,7 +731,6 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   );
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
-  const entriesRef = React.useRef<HTMLDivElement>(null);
   const scrollTopRef = React.useRef<HTMLDivElement>(null);
 
   const settings = React.useContext(GlobalSettingsContext);
@@ -842,6 +856,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       fromInternalLink,
       searchQuery: query,
       onSearchQuery,
+      mobileLayout: settings.data.dictionaryMobileLayout,
     }),
     [
       isEmbedded,
@@ -854,6 +869,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
       fromInternalLink,
       query,
       onSearchQuery,
+      settings.data.dictionaryMobileLayout,
     ]
   );
 
@@ -883,7 +899,10 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
 
   if (simpleContent !== null) {
     return (
-      <ResponsiveLayout content={simpleContent} contextValues={contextValues} />
+      <ResponsiveLayout
+        mainContent={simpleContent}
+        contextValues={contextValues}
+      />
     );
   }
 
@@ -897,32 +916,28 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     />
   );
   const dictionaryEntries = <DictionaryEntries entries={entries} />;
+  const helpSection = <HelpSection />;
+  const mainContent = (
+    <>
+      {helpSection}
+      {summarySection}
+      {dictionaryEntries}
+    </>
+  );
+  const combinedContent = (
+    <>
+      {helpSection}
+      {summarySection}
+      {tableOfContents}
+      {dictionaryEntries}
+    </>
+  );
   return (
     <ResponsiveLayout
       contextValues={contextValues}
-      oneCol={
-        <>
-          <HelpSection
-            id="HelpSection"
-            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}
-          />
-          <div
-            id="Toc"
-            className={isEmbedded ? QNA_EMBEDDED : QUICK_NAV_ANCHOR}>
-            {summarySection}
-            {tableOfContents}
-          </div>
-          <div ref={entriesRef}>{dictionaryEntries}</div>
-        </>
-      }
-      twoColSide={tableOfContents}
-      twoColMain={
-        <>
-          <HelpSection />
-          {summarySection}
-          {dictionaryEntries}
-        </>
-      }
+      mainContent={mainContent}
+      sideContent={tableOfContents}
+      combinedContent={combinedContent}
     />
   );
 }
