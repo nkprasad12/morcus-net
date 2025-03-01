@@ -1,5 +1,4 @@
 import json
-import os
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
@@ -30,7 +29,7 @@ class _LemmaHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers["Content-Length"])
         post_data = self.rfile.read(content_length).decode("utf-8")
-        doc = self.server.nlp(post_data)
+        doc = self.server.nlp(post_data)  # pytype: disable=attribute-error
 
         result = []
         for token in doc:
@@ -59,6 +58,6 @@ def create_server(nlp, port: int):
 
 
 if __name__ == "__main__":
-    import spacy
+    import spacy  # type: ignore # pytype: disable=import-error
 
     create_server(spacy.load("la_core_web_lg"), 8000).serve_forever()
