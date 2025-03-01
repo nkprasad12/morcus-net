@@ -1,9 +1,10 @@
 import dataclasses
 import threading
-import requests
+import json
 import time
 import socket
 import unittest
+import urllib.request
 from unittest.mock import Mock
 
 from src.py.latincy import latincy_server
@@ -48,21 +49,25 @@ class TestLatincyServer(unittest.TestCase):
             # Give the server a moment to start
             time.sleep(0.1)
 
-            # Send a request to the server
+            # Send a request to the server using urllib.request instead of requests
             url = f"http://localhost:{port}"
             test_text = "Gallia est"
-            response = requests.post(url, data=test_text)
+            data = test_text.encode("utf-8")
+            req = urllib.request.Request(url, data=data, method="POST")
+            with urllib.request.urlopen(req) as response:
+                # Check the response
+                self.assertEqual(response.status, 200)
+                self.assertEqual(response.getheader("Content-Type"), "application/json")
 
-            # Check the response
-            self.assertEqual(response.status_code, 200)
-            self.assertEqual(response.headers["Content-Type"], "application/json")
+                # Read and parse the JSON response
+                response_data = response.read().decode("utf-8")
+                result = json.loads(response_data)
 
-            result = response.json()
-            self.assertEqual(len(result), 2)
-            self.assertEqual(result[0]["text"], "Gallia")
-            self.assertEqual(result[0]["lemma"], "Gallia")
-            self.assertEqual(result[1]["text"], "est")
-            self.assertEqual(result[1]["lemma"], "sum")
+                self.assertEqual(len(result), 2)
+                self.assertEqual(result[0]["text"], "Gallia")
+                self.assertEqual(result[0]["lemma"], "Gallia")
+                self.assertEqual(result[1]["text"], "est")
+                self.assertEqual(result[1]["lemma"], "sum")
 
         finally:
             # Clean up: shut down the server
