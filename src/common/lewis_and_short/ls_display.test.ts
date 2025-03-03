@@ -23,7 +23,7 @@ import {
   BIMATRIS,
 } from "@/common/lewis_and_short/sample_entries";
 import { XmlNode } from "@/common/xml/xml_node";
-import { parseXmlStrings } from "../xml/xml_utils";
+import { parseXmlStrings } from "@/common/xml/xml_utils";
 
 console.debug = jest.fn();
 

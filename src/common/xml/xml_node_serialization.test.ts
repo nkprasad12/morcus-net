@@ -3,7 +3,7 @@ import { displayEntryFree } from "@/common/lewis_and_short/ls_display";
 import { CANABA, HABEO } from "@/common/lewis_and_short/sample_entries";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { parseXmlStrings } from "./xml_utils";
+import { parseXmlStrings } from "@/common/xml/xml_utils";
 
 console.debug = jest.fn();
 

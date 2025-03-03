@@ -105,7 +105,17 @@ export default [
 
       "no-constant-condition": "off",
       "no-inner-declarations": "off",
-
+      "no-restricted-imports": [
+        "error",
+        {
+          "patterns": [
+            {
+              "group": ["./", "../"],
+              "message": "Relative imports are not allowed."
+            }
+          ]
+        }
+      ],
       "no-empty": [
         "error",
         {
