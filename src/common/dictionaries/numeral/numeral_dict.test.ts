@@ -1,4 +1,7 @@
-import { NumeralDict, buildEntryFor } from "./numeral_dict";
+import {
+  NumeralDict,
+  buildEntryFor,
+} from "@/common/dictionaries/numeral/numeral_dict";
 import { XmlNode } from "@/common/xml/xml_node";
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
 

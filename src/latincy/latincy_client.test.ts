@@ -1,6 +1,6 @@
 import http from "http";
 import { AddressInfo } from "net";
-import { LatinToken, latincyAnalysis } from "./latincy_client";
+import { LatinToken, latincyAnalysis } from "@/latincy/latincy_client";
 
 const FAKE_RESPONSE: LatinToken[] = [
   {

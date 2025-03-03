@@ -6,7 +6,7 @@ import ReactDOM from "react-dom/client";
 import { serializeStyles } from "@emotion/serialize";
 import { SinglePageApp } from "@/web/client/components/single_page_app";
 import { SettingsHandler } from "@/web/client/components/global_flags";
-import { TitleHandler } from "./components/title";
+import { TitleHandler } from "@/web/client/components/title";
 import { ACTIVE_PAGES, DICT_PAGE } from "@/web/client/routing/active_pages";
 import {
   getBackgroundColor,

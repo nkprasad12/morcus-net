@@ -1,6 +1,6 @@
 import { ShEntry, ShSense } from "@/common/smith_and_hall/sh_entry";
 import { XmlChild, XmlNode } from "@/common/xml/xml_node";
-import { parseXmlStrings } from "../xml/xml_utils";
+import { parseXmlStrings } from "@/common/xml/xml_utils";
 import { assertEqual } from "@/common/assert";
 import { LINK_EDGE_CASES, SH_SKIPS } from "@/common/smith_and_hall/sh_links";
 import { expandShAbbreviationsIn } from "@/common/smith_and_hall/sh_abbreviations";
