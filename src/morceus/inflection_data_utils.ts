@@ -735,6 +735,10 @@ export function convertUpos(upos: string): WordInflectionData {
           case "Sub":
             result.mood = LatinMood.Subjunctive;
             break;
+          // LatinCy does this even though it's not technically legal.
+          case "Gdv":
+            result.mood = LatinMood.Gerundive;
+            break;
           default:
             throw new Error(
               `Unrecognized value "${value}" for key "Mood" in UPOS tag: ${part}`

@@ -139,6 +139,7 @@ export function TextField(props: {
   minRows?: number;
   autoFocus?: boolean;
   defaultValue?: string;
+  size?: "sm" | "md" | "lg";
 }) {
   const onNewValue = props.onNewValue;
   const onChange =
@@ -146,10 +147,9 @@ export function TextField(props: {
       ? undefined
       : (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) =>
           onNewValue(e.currentTarget.value);
-  const width = "calc(100% - 12px)";
   const baseProps = {
     id: props.id,
-    className: "text md textField",
+    className: `text ${props.size ?? "md"} textField`,
     spellcheck: false,
     autoCapitalize: "none",
     autoComplete: "off",
@@ -159,7 +159,7 @@ export function TextField(props: {
     onChange,
     placeholder: props.placeholder,
     style: {
-      ...(props.fullWidth ? { width, maxWidth: width } : {}),
+      ...(props.fullWidth ? { width: "100%" } : {}),
       ...props.styles,
     },
   } as const;
