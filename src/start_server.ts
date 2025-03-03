@@ -16,6 +16,7 @@ import {
   GetWork,
   ListLibraryWorks,
   LogClientEventApi,
+  MacronizeApi,
   ReportApi,
   ScrapeUrlApi,
 } from "@/web/api_routes";
@@ -40,6 +41,7 @@ import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arn
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
 import { singletonOf } from "@/common/misc_utils";
+import { macronizeInput } from "@/macronizer/morcronizer";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -204,6 +206,7 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(LogClientEventApi, async (eventData) => {
         (await telemetry).logClientEvent(eventData);
       }),
+      RouteDefinition.create(MacronizeApi, macronizeInput),
     ],
     telemetry: telemetry,
     buildDir,

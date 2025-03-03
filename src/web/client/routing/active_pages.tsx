@@ -8,6 +8,7 @@ import { ExternalContentReader } from "@/web/client/pages/library/external_conte
 import { Library } from "@/web/client/pages/library/library";
 import { ReadingPage } from "@/web/client/pages/library/reader";
 import { SiteSettings } from "@/web/client/pages/site_settings";
+import { Macronizer } from "@/web/client/pages/macron";
 
 export const ABOUT_PAGE: SinglePageApp.Page = {
   Content: About,
@@ -51,6 +52,11 @@ export const EXTERNAL_CONTENT_READER_PAGE: SinglePageApp.Page = {
   paths: [ClientPaths.EXTERNAL_CONTENT_READER],
 };
 
+const MACRONIZE_PAGE: SinglePageApp.Page = {
+  Content: Macronizer,
+  paths: [ClientPaths.MACRONIZER_PATH],
+};
+
 export const ACTIVE_PAGES = [
   // Visible in top navigation
   DICT_PAGE,
@@ -60,4 +66,5 @@ export const ACTIVE_PAGES = [
   SETTINGS_PAGE,
   READING_PAGE,
   EXTERNAL_CONTENT_READER_PAGE,
+  MACRONIZE_PAGE,
 ];
