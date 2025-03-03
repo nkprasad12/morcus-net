@@ -594,6 +594,214 @@ function toMorpheusMood(data: LatinMood): string {
   }
 }
 
+export function convertUpos(upos: string): WordInflectionData {
+  const result: WordInflectionData = {};
+  const parts = upos.trim().split("|");
+
+  for (const part of parts) {
+    if (!part) continue;
+
+    const [key, value] = part.split("=").map((x) => x.trim());
+    if (!key || !value) continue;
+
+    switch (key) {
+      case "Case":
+        switch (value) {
+          case "Nom":
+            result.case = LatinCase.Nominative;
+            break;
+          case "Acc":
+            result.case = LatinCase.Accusative;
+            break;
+          case "Gen":
+            result.case = LatinCase.Genitive;
+            break;
+          case "Dat":
+            result.case = LatinCase.Dative;
+            break;
+          case "Abl":
+            result.case = LatinCase.Ablative;
+            break;
+          case "Voc":
+            result.case = LatinCase.Vocative;
+            break;
+          case "Loc":
+            result.case = LatinCase.Locative;
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Case" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "Number":
+        switch (value) {
+          case "Sing":
+            result.number = LatinNumber.Singular;
+            break;
+          case "Plur":
+            result.number = LatinNumber.Plural;
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Number" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "Gender":
+        switch (value) {
+          case "Masc":
+            result.gender = LatinGender.Masculine;
+            break;
+          case "Fem":
+            result.gender = LatinGender.Feminine;
+            break;
+          case "Neut":
+            result.gender = LatinGender.Neuter;
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Gender" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "Person":
+        switch (value) {
+          case "1":
+            result.person = LatinPerson.FIRST;
+            break;
+          case "2":
+            result.person = LatinPerson.SECOND;
+            break;
+          case "3":
+            result.person = LatinPerson.THIRD;
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Person" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "Voice":
+        switch (value) {
+          case "Act":
+            result.voice = LatinVoice.Active;
+            break;
+          case "Pass":
+            result.voice = LatinVoice.Passive;
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Voice" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "VerbForm":
+        switch (value) {
+          case "Part":
+            result.mood = LatinMood.Participle;
+            break;
+          case "Gdv":
+            result.mood = LatinMood.Gerundive;
+            break;
+          case "Inf":
+            result.mood = LatinMood.Infinitive;
+            break;
+          case "Sup":
+            result.mood = LatinMood.Supine;
+            break;
+          case "Fin":
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "VerbForm" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "Mood":
+        switch (value) {
+          case "Ind":
+            result.mood = LatinMood.Indicative;
+            break;
+          case "Imp":
+            result.mood = LatinMood.Imperative;
+            break;
+          case "Sub":
+            result.mood = LatinMood.Subjunctive;
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Mood" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "Tense":
+        switch (value) {
+          // TODO: UPOS has Aspect which should also be used in this computation.
+          // Perfective / Imperfective are Aspects in UPOS.
+          case "Pres":
+            result.tense = LatinTense.Present;
+            break;
+          case "Imp":
+            // result.tense = LatinTense.Imperfect;
+            break;
+          case "Perf":
+            // result.tense = LatinTense.Perfect;
+            break;
+          case "Fut":
+            result.tense = LatinTense.Future;
+            break;
+          case "Pqp":
+            result.tense = LatinTense.Pluperfect;
+            break;
+          case "Ftp":
+            // result.tense = LatinTense.FuturePerfect;
+            break;
+          case "Past":
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Tense" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      case "Degree":
+        switch (value) {
+          case "Pos":
+            result.degree = LatinDegree.Positive;
+            break;
+          case "Cmp":
+            result.degree = LatinDegree.Comparative;
+            break;
+          case "Sup":
+            result.degree = LatinDegree.Superlative;
+            break;
+          default:
+            throw new Error(
+              `Unrecognized value "${value}" for key "Degree" in UPOS tag: ${part}`
+            );
+        }
+        break;
+
+      // Add a default case to catch unrecognized keys
+      default:
+        throw new Error(
+          `Unrecognized key "${key}" in UPOS tag: ${part} (from full tag: ${upos})`
+        );
+    }
+  }
+
+  return result;
+}
+
 export function wordInflectionDataToArray(data: WordInflectionData): string[] {
   return [
     coerceToArray(data.tense).map(toMorpheusTense),
