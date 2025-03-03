@@ -13,7 +13,7 @@ import { silenceErroneousWarnings } from "@/web/client/test_utils";
 console.debug = jest.fn();
 
 jest.mock("@/web/utils/rpc/client_rpc");
-
+window.HTMLElement.prototype.scrollIntoView = jest.fn();
 silenceErroneousWarnings();
 
 // @ts-ignore
