@@ -108,13 +108,13 @@ export default [
       "no-restricted-imports": [
         "error",
         {
-          "patterns": [
+          patterns: [
             {
-              "group": ["./", "../"],
-              "message": "Relative imports are not allowed."
-            }
-          ]
-        }
+              group: ["./", "../"],
+              message: "Relative imports are not allowed.",
+            },
+          ],
+        },
       ],
       "no-empty": [
         "error",

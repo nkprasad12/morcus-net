@@ -66,7 +66,7 @@ describe("Macronizer View", () => {
   });
 
   test("shows result on success", async () => {
-    mockCallApi.mockReturnValue(Promise.resolve("in partēs trēs"));
+    mockCallApi.mockReturnValue(Promise.resolve(["in partēs trēs"]));
 
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");

@@ -50,7 +50,9 @@ const rsbuildConfig: RsbuildConfig = {
     .concat(envOptions.compress ? [compress()] : [])
     .concat(envOptions.typeCheck ? [typeCheck(envOptions)] : []),
   performance: {
-    bundleAnalyze: { analyzerMode: "server", openAnalyzer: true },
+    bundleAnalyze: envOptions.analyzeBundle
+      ? { analyzerMode: "server", openAnalyzer: true }
+      : undefined,
     chunkSplit: {
       // For now, prevent splitting.
       strategy: "all-in-one",
