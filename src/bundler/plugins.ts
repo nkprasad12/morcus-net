@@ -1,7 +1,7 @@
 /* istanbul ignore file */
 
 import { assertEqual, checkPresent } from "@/common/assert";
-import type { BundleOptions } from "@/esbuild/utils";
+import type { BundleOptions } from "@/bundler/utils";
 import { runCommand } from "@/scripts/script_utils";
 import esbuild from "esbuild";
 import fs from "fs";
