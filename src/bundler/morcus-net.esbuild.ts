@@ -18,6 +18,7 @@ const envOptions = BundleOptions.get();
 
 const options: BuildOptions = {
   entryPoints: [SPA_ROOT],
+  target: "es2018",
   bundle: true,
   minify: envOptions.minify,
   // We need the `client-bundle` suffix because that's the prefix we use
