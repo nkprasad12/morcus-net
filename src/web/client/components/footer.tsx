@@ -29,8 +29,8 @@ export function Footer(props: {
           MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
           General Public License for more details.
         </p>
-        See <SelfLink to="https://www.gnu.org/licenses/gpl-3.0.en.html" /> for a
-        copy of the GNU General Public License.
+        See <SelfLink to="www.gnu.org/licenses/gpl-3.0.en.html" /> for a copy of
+        the GNU General Public License.
       </div>
     </footer>
   );

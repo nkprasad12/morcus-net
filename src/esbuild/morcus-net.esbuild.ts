@@ -40,8 +40,6 @@ const options: BuildOptions = {
   publicPath: "/",
   define: {
     COMMIT_HASH: `"${getHash()}"`,
-    BUILD_DATE: `"${new Date().toString()}"`,
-    DEFAULT_EXPERIMENTAL_MODE: `${!envOptions.minify}`,
   },
   plugins: [
     printStatsPlugin(envOptions),
