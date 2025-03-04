@@ -1,26 +1,20 @@
 /* istanbul ignore file */
 
-import fs from "fs";
 import { htmlPlugin } from "@craftamap/esbuild-plugin-html";
 import clear from "esbuild-plugin-output-reset";
-import { BundleOptions, runBundler } from "@/bundler/utils";
+import { BundleOptions, getHash } from "@/bundler/utils";
 import {
   compressPlugin,
   printStatsPlugin,
   typeCheckPlugin,
-} from "@/bundler/plugins";
+} from "@/bundler/esbuild_plugins";
 import { type BuildOptions } from "esbuild";
+import { runBundler } from "@/bundler/run_esbuild";
 
 const OUT_DIR = "build/client";
 const SPA_ROOT = "src/web/client/root.tsx";
 
 const envOptions = BundleOptions.get();
-
-function getHash(): string {
-  const hash = fs.readFileSync("build/morcusnet.commit.txt").toString();
-  console.log(`Client commit hash: "${hash}"`);
-  return hash;
-}
 
 const options: BuildOptions = {
   entryPoints: [SPA_ROOT],

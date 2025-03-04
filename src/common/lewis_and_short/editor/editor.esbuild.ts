@@ -2,8 +2,9 @@
 
 import { htmlPlugin } from "@craftamap/esbuild-plugin-html";
 import clear from "esbuild-plugin-output-reset";
-import { BundleOptions, runBundler } from "@/bundler/utils";
-import { printStatsPlugin } from "@/bundler/plugins";
+import { BundleOptions } from "@/bundler/utils";
+import { printStatsPlugin } from "@/bundler/esbuild_plugins";
+import { runBundler } from "@/bundler/run_esbuild";
 
 const OUT_DIR = "genfiles_static/";
 const ENTRY_POINT = "src/common/lewis_and_short/editor/ls_interactive_view.tsx";
