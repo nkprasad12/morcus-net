@@ -1,6 +1,7 @@
-export function SelfLink(props: { to: string }) {
+export function SelfLink(props: { to: string; nohttps?: true }) {
+  const prefix = props.nohttps ? "" : "https://";
   return (
-    <a href={props.to} style={{ wordBreak: "break-all" }}>
+    <a href={prefix + props.to} style={{ wordBreak: "break-all" }}>
       {props.to}
     </a>
   );
