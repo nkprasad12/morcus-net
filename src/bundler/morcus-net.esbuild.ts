@@ -3,12 +3,12 @@
 import fs from "fs";
 import { htmlPlugin } from "@craftamap/esbuild-plugin-html";
 import clear from "esbuild-plugin-output-reset";
-import { BundleOptions, runBundler } from "@/esbuild/utils";
+import { BundleOptions, runBundler } from "@/bundler/utils";
 import {
   compressPlugin,
   printStatsPlugin,
   typeCheckPlugin,
-} from "@/esbuild/plugins";
+} from "@/bundler/plugins";
 import { type BuildOptions } from "esbuild";
 
 const OUT_DIR = "build/client";

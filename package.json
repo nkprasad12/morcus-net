@@ -7,7 +7,7 @@
     "node": "22.x"
   },
   "scripts": {
-    "build": "MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && npm run tsnp src/esbuild/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
+    "build": "MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && npm run tsnp src/bundler/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
     "start": "node build/server.js",
     "format": "npx eslint . && npx prettier . --write && python -m black .",
     "format-check": "npx eslint . && npx prettier . --check && python -m black . --check",

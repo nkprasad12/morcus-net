@@ -103,7 +103,7 @@ const MAKE_BUNDLE: StepConfig = {
       COMPRESS: "1",
     };
     return shellStep(
-      "npm run tsnp src/esbuild/morcus-net.esbuild.ts",
+      "npm run tsnp src/bundler/morcus-net.esbuild.ts",
       childEnv
     );
   },
