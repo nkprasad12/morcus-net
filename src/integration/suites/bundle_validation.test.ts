@@ -8,7 +8,7 @@ async function listBundleFiles(): Promise<string[]> {
   const req = await fetch(`${baseUrl}/`);
   const rootHtml = await req.text();
 
-  const pattern = /script src="\/([\w0-9.-]+\.js)"/g;
+  const pattern = /script[\w\s]* src="\/([\w0-9.-]+\.js)"/g;
   const matches = [...rootHtml.matchAll(pattern)];
   return matches.map((matchArray) => matchArray[1]);
 }
@@ -53,6 +53,7 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
   test("bundle size is within limit", async () => {
     let totalSize = 0;
     for await (const [jsFile, jsRes] of getBundleFiles()) {
+      console.log(jsFile);
       const contents = await jsRes.arrayBuffer();
       const gzipped = gzipSync(contents).byteLength;
       console.debug(`${jsFile}: ${gzipped / 1000} KB`);

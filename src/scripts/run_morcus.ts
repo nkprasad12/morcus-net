@@ -302,7 +302,7 @@ function buildBundle(args: any): Promise<boolean> {
 
 function bundleConfig(args: any, priority?: number): StepConfig {
   const executor = args.bun ? ["bun"] : TS_NODE;
-  const buildCommand = executor.concat(["src/bundler/morcus-net.esbuild.ts"]);
+  const buildCommand = executor.concat(["src/bundler/morcus-net.rsbuild.ts"]);
   const childEnv = { ...process.env };
   childEnv.NODE_ENV = "production";
   if (args.minify) {

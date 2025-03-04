@@ -10,6 +10,21 @@ import { ReadingPage } from "@/web/client/pages/library/reader";
 import { SiteSettings } from "@/web/client/pages/site_settings";
 import { Macronizer } from "@/web/client/pages/macron";
 
+// To use lazy loading, you can use the following code:
+// import { Suspense, lazy } from "react";
+// const Macronizer2 = lazy(() =>
+//   import("@/web/client/pages/macron").then((module) => ({
+//     default: module.Macronizer,
+//   }))
+// );
+// function Macronizer() {
+//   return (
+//     <Suspense fallback={<div>loading...</div>}>
+//       <Macronizer2 />
+//     </Suspense>
+//   );
+// }
+
 export const ABOUT_PAGE: SinglePageApp.Page = {
   Content: About,
   paths: [ClientPaths.ABOUT_PATH],
