@@ -2,12 +2,14 @@
 
 import { assertEqual, checkPresent } from "@/common/assert";
 import type { BundleOptions } from "@/bundler/utils";
-import { runCommand } from "@/scripts/script_utils";
 import esbuild from "esbuild";
 import fs from "fs";
 import path from "path";
-import { brotliCompress, gzip, constants } from "zlib";
-import { promisify } from "node:util";
+import {
+  compressJsOutputs,
+  typeCheckCommon,
+  type CommonPlugin,
+} from "@/bundler/plugin_utils";
 
 export interface RenameOptions {
   renameMap: Map<string, string>;
@@ -27,28 +29,22 @@ export interface InjectBuildInfoOptions {
   }[];
 }
 
-export function typeCheckPlugin(options?: BundleOptions): esbuild.Plugin {
+function convertPlugin(plugin: CommonPlugin): esbuild.Plugin {
   return {
-    name: "typeCheck",
+    name: plugin.name,
     setup(build) {
-      let tscPromise: Promise<number> | undefined = undefined;
-      build.onStart(() => {
-        tscPromise = runCommand("npx tsc")
-          .catch(() => 1)
-          .then((rc) => rc ?? 1);
-      });
-      build.onEnd(async () => {
-        const returnCode = await checkPresent(tscPromise);
-        const success = returnCode === 0;
-        if (success) {
-          console.log("Checked types successfully!");
-        }
-        if (!success && !options?.watch) {
-          process.exit(1);
-        }
-      });
+      if (plugin.onBuildStart) {
+        build.onStart(plugin.onBuildStart);
+      }
+      if (plugin.onBuildEnd) {
+        build.onEnd(plugin.onBuildEnd);
+      }
     },
   };
+}
+
+export function typeCheckPlugin(options?: BundleOptions): esbuild.Plugin {
+  return convertPlugin(typeCheckCommon(options));
 }
 
 export function injectBuildInfo(
@@ -129,6 +125,14 @@ export function printStatsPlugin(options?: BundleOptions): esbuild.Plugin {
   };
 }
 
+async function compressResults(result: esbuild.BuildResult) {
+  const metafile = result.metafile;
+  if (metafile === undefined) {
+    return;
+  }
+  compressJsOutputs(Object.keys(metafile.outputs));
+}
+
 export function compressPlugin(): esbuild.Plugin {
   return {
     name: "compressJs",
@@ -158,43 +162,5 @@ function printBuildResult(
       const metaPath = `${data.entryPoint}.esbuild.meta.json`;
       fs.writeFileSync(metaPath, JSON.stringify(metafile));
     }
-  }
-}
-
-async function compressFile(
-  buffer: Buffer,
-  fileName: string,
-  ext: string,
-  compressor: (buf: Buffer) => Promise<Buffer>
-) {
-  const outFile = `${fileName}.${ext}`;
-  const start = performance.now();
-  const compressed = await compressor(buffer);
-  const elapsed = (performance.now() - start).toFixed(2);
-  const size = (compressed.byteLength / 1000).toFixed(2);
-  console.log(`${ext} compressed: ${outFile} [${size} kB, ${elapsed} ms]`);
-  return fs.promises.writeFile(outFile, compressed);
-}
-
-async function compressResults(result: esbuild.BuildResult) {
-  const metafile = result.metafile;
-  if (metafile === undefined) {
-    return;
-  }
-  for (const output in metafile.outputs) {
-    if (!output.endsWith(".js")) {
-      continue;
-    }
-    const rawFile = await fs.promises.readFile(output);
-    await Promise.all([
-      compressFile(rawFile, output, "gz", (buf) =>
-        promisify(gzip)(buf, { level: 9 })
-      ),
-      compressFile(rawFile, output, "br", (buf) =>
-        promisify(brotliCompress)(buf, {
-          params: { [constants.BROTLI_PARAM_QUALITY]: 11 },
-        })
-      ),
-    ]);
   }
 }

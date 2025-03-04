@@ -1,8 +1,9 @@
 /* istanbul ignore file */
 
 import esbuild from "esbuild";
-import { BundleOptions, runBundler } from "@/bundler/utils";
-import { printStatsPlugin, typeCheckPlugin } from "@/bundler/plugins";
+import { BundleOptions } from "@/bundler/utils";
+import { printStatsPlugin, typeCheckPlugin } from "@/bundler/esbuild_plugins";
+import { runBundler } from "@/bundler/run_esbuild";
 
 const OUT_FILE = "build/server.js";
 const ENTRY_POINT = "src/start_server.ts";
