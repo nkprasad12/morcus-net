@@ -811,8 +811,9 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
     }
   }, [title, isEmbedded, query]);
 
+  const skipJumpToResult = props.embeddedOptions?.skipJumpToResult;
   React.useEffect(() => {
-    if (state !== "Results" && greekTerm === null) {
+    if (skipJumpToResult || (state !== "Results" && greekTerm === null)) {
       return;
     }
     const highlighted =
@@ -826,7 +827,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         : SCROLL_JUMP;
     scrollElement?.scrollIntoView(scrollType);
     fromInternalLink.current = false;
-  }, [state, isEmbedded, hash, greekTerm]);
+  }, [state, isEmbedded, hash, greekTerm, skipJumpToResult]);
 
   const onSearchQuery: OnSearchQuery = useCallback(
     (query, options) => {
