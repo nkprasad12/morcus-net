@@ -38,6 +38,7 @@ export const DictContext: React.Context<DictContextOptions> =
 export interface EmbeddedDictOptions {
   hideableOutline?: boolean;
   hideSearch?: boolean;
+  skipJumpToResult?: boolean;
 }
 export interface DictionaryV2Props {
   /** Whether the dictionary is embedded in another view. */
