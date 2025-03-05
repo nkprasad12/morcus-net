@@ -1,4 +1,7 @@
+import logging
 import json
+import signal
+import sys
 from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
@@ -60,4 +63,14 @@ def create_server(nlp, port: int):
 if __name__ == "__main__":
     import spacy  # type: ignore # pytype: disable=import-error
 
+    logging.basicConfig(level=logging.INFO)
+
+    def signal_handler():
+        logging.info("Shutting down LatinCy server")
+        sys.exit(0)
+
+    signal.signal(signal.SIGINT, signal_handler)
+    signal.signal(signal.SIGTERM, signal_handler)
+
+    logging.info("Starting LatinCy server on port 8000")
     create_server(spacy.load("la_core_web_lg"), 8000).serve_forever()
