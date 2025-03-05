@@ -65,7 +65,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO)
 
-    def signal_handler():
+    def signal_handler(_signal, _frame):
         logging.info("Shutting down LatinCy server")
         sys.exit(0)
 
