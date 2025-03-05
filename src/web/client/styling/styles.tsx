@@ -752,9 +752,6 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     /** Macronizer specific */
-    ".macronBox": {
-      borderColor: theme.macronBox,
-    },
     ".macronLabel": {
       color: Solarized.base1,
     },

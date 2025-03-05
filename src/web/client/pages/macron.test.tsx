@@ -13,7 +13,7 @@ import { silenceErroneousWarnings } from "@/web/client/test_utils";
 console.debug = jest.fn();
 
 jest.mock("@/web/utils/rpc/client_rpc");
-
+window.HTMLElement.prototype.scrollIntoView = jest.fn();
 silenceErroneousWarnings();
 
 // @ts-ignore
@@ -66,7 +66,7 @@ describe("Macronizer View", () => {
   });
 
   test("shows result on success", async () => {
-    mockCallApi.mockReturnValue(Promise.resolve("in partēs trēs"));
+    mockCallApi.mockReturnValue(Promise.resolve(["in partēs trēs"]));
 
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");

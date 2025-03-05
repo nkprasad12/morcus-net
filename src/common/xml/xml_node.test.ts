@@ -10,8 +10,8 @@ import {
 
 import { XmlNode } from "@/common/xml/xml_node";
 import { extractEntries } from "@/common/lewis_and_short/ls_xml_utils";
-import { XmlNodeSerialization } from "./xml_node_serialization";
-import { parseXmlStrings } from "./xml_utils";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { parseXmlStrings } from "@/common/xml/xml_utils";
 
 console.debug = jest.fn();
 

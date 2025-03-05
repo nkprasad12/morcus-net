@@ -1,5 +1,4 @@
 declare const COMMIT_HASH: string;
-declare const BUILD_DATE: string;
 
 export function tryOr<T>(f: () => T, fallback: T): T {
   try {
@@ -11,8 +10,4 @@ export function tryOr<T>(f: () => T, fallback: T): T {
 
 export function getCommitHash(): string | undefined {
   return tryOr(() => COMMIT_HASH.trim(), undefined);
-}
-
-export function getBuildDate(): string {
-  return tryOr(() => BUILD_DATE.trim(), "undefined");
 }

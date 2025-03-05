@@ -40,7 +40,7 @@ const DIACRITICS = new Map<string, string>([
 ]);
 
 const TEXT_BREAK_CHAR_SET = new Set(" ()[];:.,?!'\n\t—\"†‘“”’");
-function isTextBreakChar(c: string): boolean {
+export function isTextBreakChar(c: string): boolean {
   return TEXT_BREAK_CHAR_SET.has(c);
 }
 

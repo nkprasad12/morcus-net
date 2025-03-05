@@ -6,7 +6,10 @@ export function Footer(props: {
   marginRatio?: number;
 }) {
   return (
-    <div style={{ padding: "2em" }} id={props.id} className={props.className}>
+    <footer
+      style={{ padding: "2em" }}
+      id={props.id}
+      className={props.className}>
       <div
         className="footer text xs compact"
         style={{
@@ -26,9 +29,9 @@ export function Footer(props: {
           MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
           General Public License for more details.
         </p>
-        See <SelfLink to="https://www.gnu.org/licenses/gpl-3.0.en.html" /> for a
-        copy of the GNU General Public License.
+        See <SelfLink to="www.gnu.org/licenses/gpl-3.0.en.html" /> for a copy of
+        the GNU General Public License.
       </div>
-    </div>
+    </footer>
   );
 }

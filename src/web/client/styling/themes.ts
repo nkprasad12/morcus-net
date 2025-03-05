@@ -39,7 +39,6 @@ export interface SiteColors {
   inputBorder: ColorString;
   searchPopupText: ColorString;
   searchPopupBg: ColorString;
-  macronBox: ColorString;
 }
 
 export const DEFAULT_DARK: SiteColors = {
@@ -74,7 +73,6 @@ export const DEFAULT_DARK: SiteColors = {
   inputBorder: Solarized.base01 + "80",
   searchPopupText: Solarized.base1,
   searchPopupBg: Solarized.base02,
-  macronBox: Solarized.base01,
 };
 
 export const DEFAULT_LIGHT: SiteColors = {
@@ -109,5 +107,4 @@ export const DEFAULT_LIGHT: SiteColors = {
   inputBorder: Solarized.base15,
   searchPopupText: Solarized.base01,
   searchPopupBg: "#fafafa",
-  macronBox: Solarized.base2,
 };

@@ -2,6 +2,8 @@ import { ApiRoute } from "@/web/utils/rpc/rpc";
 import {
   isAny,
   isArray,
+  isNumber,
+  isOneOf,
   isString,
   matchesObject,
   maybeUndefined,
@@ -20,11 +22,36 @@ import {
 } from "@/common/library/library_types";
 import type { ClientEventData } from "@/web/telemetry/telemetry";
 
-export const MacronizeApi: ApiRoute<string, string> = {
+export interface FormOptions {
+  lemma: string;
+  morph: string[];
+}
+
+export interface MacronizedWord {
+  word: string;
+  options: {
+    form: string;
+    options: FormOptions[];
+  }[];
+  suggested?: number;
+}
+
+export type MacronizedResult = (MacronizedWord | string)[];
+
+export const MacronizeApi: ApiRoute<string, MacronizedResult> = {
   path: "/api/macronize",
   method: "POST",
   inputValidator: isString,
-  outputValidator: isString,
+  outputValidator: isArray(
+    isOneOf(
+      isString,
+      matchesObject<MacronizedWord>({
+        word: isString,
+        options: isArray(isAny),
+        suggested: maybeUndefined(isNumber),
+      })
+    )
+  ),
 };
 
 export const DictsFusedApi: ApiRoute<DictsFusedRequest, DictsFusedResponse> = {

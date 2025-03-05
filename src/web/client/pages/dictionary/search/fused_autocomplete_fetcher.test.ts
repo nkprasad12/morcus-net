@@ -3,7 +3,7 @@
  */
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
-import { FusedAutocompleteFetcher } from "./fused_autocomplete_fetcher";
+import { FusedAutocompleteFetcher } from "@/web/client/pages/dictionary/search/fused_autocomplete_fetcher";
 
 console.debug = jest.fn();
 

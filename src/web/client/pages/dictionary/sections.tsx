@@ -1,6 +1,5 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SelfLink } from "@/web/client/components/misc";
-import { getBuildDate } from "@/web/client/define_vars";
 import * as React from "react";
 import { Divider } from "@/web/client/components/generic/basics";
 
@@ -51,17 +50,12 @@ function LsAttribution() {
     <>
       <div>
         Text provided under a CC BY-SA license by Perseus Digital Library,{" "}
-        <SelfLink to="http://www.perseus.tufts.edu" />, with funding from The
-        National Endowment for the Humanities.
+        <SelfLink to="www.perseus.tufts.edu" />, with funding from The National
+        Endowment for the Humanities.
       </div>
       <div>
-        Data originally from{" "}
-        <SelfLink to="https://github.com/PerseusDL/lexica/" />.
-      </div>
-      <div>
-        Data accessed from{" "}
-        <SelfLink to="https://github.com/nkprasad12/lexica/" /> {getBuildDate()}
-        .
+        Data originally from <SelfLink to="github.com/PerseusDL/lexica/" /> and
+        accessed from <SelfLink to="github.com/nkprasad12/lexica/" />.
       </div>
     </>
   );
@@ -72,8 +66,7 @@ function ShAttribution() {
     <div>
       This text was digitized by the Distributed Proofreaders and generously
       placed into the public domain. See project page at{" "}
-      <SelfLink to="https://www.pgdp.net/c/project.php?id=projectID5775aeccac0c7" />
-      .
+      <SelfLink to="www.pgdp.net/c/project.php?id=projectID5775aeccac0c7" />.
     </div>
   );
 }
@@ -98,7 +91,7 @@ function AttributionContent(props: { dictKey: string }) {
     return (
       <div>
         Data for Riddle and Arnold was retrieved from{" "}
-        <SelfLink to="https://github.com/FergusJPWalsh/riddle-arnold" /> and is
+        <SelfLink to="github.com/FergusJPWalsh/riddle-arnold" /> and is
         available under a CC-BY-SA-4.0 license.
       </div>
     );
