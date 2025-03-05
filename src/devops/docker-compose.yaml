@@ -31,6 +31,17 @@ services:
         max-size: "500k"
         max-file: "2"
 
+  latincy:
+    image: "${CONTAINER_REGISTRY}morcus-latincy:latest"
+    labels: ["com.centurylinklabs.watchtower.enable=true"]
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "5m"
+        max-file: "2"
+    profiles: [nlp]
+
   dev:
     image: "${CONTAINER_REGISTRY}morcus:dev-latest"
     environment:
@@ -38,6 +49,7 @@ services:
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
       PWA_SHORT_NAME_SUFFIX: " D"
+      LATINCY_SERVER_ADDRESS: "http://latincy:8000"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
     logging:
@@ -53,6 +65,7 @@ services:
       DB_SOURCE: "${DB_TAG:-prod}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"
       MONGODB_URI: "${MONGODB_URI}"
+      LATINCY_SERVER_ADDRESS: "http://latincy:8000"
     labels: ["com.centurylinklabs.watchtower.enable=true"]
     restart: unless-stopped
     logging:
