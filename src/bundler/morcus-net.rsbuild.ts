@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { rspack, type RsbuildConfig, createRsbuild } from "@rsbuild/core";
 import { pluginPreact } from "@rsbuild/plugin-preact";
 import { BundleOptions, getHash } from "@/bundler/utils";

@@ -33,6 +33,20 @@ describe("convertUpos", () => {
     });
   });
 
+  it("should handle error for unknown values", () => {
+    expect(() => convertUpos("Number=Dual")).toThrow();
+    expect(() => convertUpos("Person=4")).toThrow();
+    expect(() => convertUpos("Voice=Med")).toThrow();
+    expect(() => convertUpos("Case=Adl")).toThrow();
+    expect(() => convertUpos("Tense=WoahDude")).toThrow();
+    expect(() => convertUpos("Degree=Inf")).toThrow();
+  });
+
+  it("should accept gerundive from either verb form or mood", () => {
+    expect(convertUpos("VerbForm=Gdv").mood).toEqual(LatinMood.Gerundive);
+    expect(convertUpos("Mood=Gdv").mood).toEqual(LatinMood.Gerundive);
+  });
+
   it("should handle tense correctly", () => {
     expect(convertUpos("Tense=Pres|Mood=Ind").tense).toBe(LatinTense.Present);
     expect(convertUpos("Tense=Imp|Mood=Ind").tense).toBe(undefined);
@@ -64,6 +78,56 @@ describe("convertUpos", () => {
       case: LatinCase.Nominative,
       number: LatinNumber.Singular,
     });
+  });
+
+  it("pipes cases as expected", () => {
+    expect(convertUpos("Case=Nom").case).toEqual(LatinCase.Nominative);
+    expect(convertUpos("Case=Voc").case).toEqual(LatinCase.Vocative);
+    expect(convertUpos("Case=Acc").case).toEqual(LatinCase.Accusative);
+    expect(convertUpos("Case=Gen").case).toEqual(LatinCase.Genitive);
+    expect(convertUpos("Case=Dat").case).toEqual(LatinCase.Dative);
+    expect(convertUpos("Case=Abl").case).toEqual(LatinCase.Ablative);
+    expect(convertUpos("Case=Loc").case).toEqual(LatinCase.Locative);
+  });
+
+  it("pipes numbers as expected", () => {
+    expect(convertUpos("Number=Sing").number).toEqual(LatinNumber.Singular);
+    expect(convertUpos("Number=Plur").number).toEqual(LatinNumber.Plural);
+  });
+
+  it("pipes person  as expected", () => {
+    expect(convertUpos("Person=1").person).toEqual(LatinPerson.FIRST);
+    expect(convertUpos("Person=2").person).toEqual(LatinPerson.SECOND);
+    expect(convertUpos("Person=3").person).toEqual(LatinPerson.THIRD);
+  });
+
+  it("pipes voice as expected", () => {
+    expect(convertUpos("Voice=Act").voice).toEqual(LatinVoice.Active);
+    expect(convertUpos("Voice=Pass").voice).toEqual(LatinVoice.Passive);
+  });
+
+  it("pipes mood as expected", () => {
+    expect(convertUpos("Mood=Ind").mood).toEqual(LatinMood.Indicative);
+    expect(convertUpos("Mood=Sub").mood).toEqual(LatinMood.Subjunctive);
+    expect(convertUpos("Mood=Imp").mood).toEqual(LatinMood.Imperative);
+  });
+
+  it("pipes tense as expected", () => {
+    expect(convertUpos("Tense=Pres").tense).toEqual(LatinTense.Present);
+    expect(convertUpos("Tense=Fut").tense).toEqual(LatinTense.Future);
+    expect(convertUpos("Tense=Pqp").tense).toEqual(LatinTense.Pluperfect);
+
+    // These aspectual ones should be covered by aspect. Need to see how
+    // LatinCy handles these.
+    expect(convertUpos("Tense=Ftp").tense).toBeUndefined();
+    expect(convertUpos("Tense=Imp").tense).toBeUndefined();
+    expect(convertUpos("Tense=Perf").tense).toBeUndefined();
+  });
+
+  it("pipes verb form as expected", () => {
+    expect(convertUpos("VerbForm=Inf").mood).toBe(LatinMood.Infinitive);
+    expect(convertUpos("VerbForm=Part").mood).toEqual(LatinMood.Participle);
+    expect(convertUpos("VerbForm=Sup").mood).toEqual(LatinMood.Supine);
   });
 
   it("should throw error for unrecognized keys", () => {
