@@ -10,4 +10,6 @@ COPY latincy_server.py .
 RUN chown -R appuser:appuser /app && chmod -R 755 /app
 USER appuser
 EXPOSE 8000
-CMD ["sh", "-c", "python latincy_server.py"]
+
+# Use python directly instead of sh to ensure signal propagation
+CMD ["python", "latincy_server.py"]
