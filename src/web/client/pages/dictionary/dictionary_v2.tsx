@@ -147,15 +147,18 @@ function NoResultsContent(props: {
   dicts: LatinDictInfo[];
   inflectedSearch: boolean | undefined;
 }) {
+  const { embeddedOptions } = React.useContext(DictContext);
   return (
     <>
       <div className="text md" style={{ margin: "6px 12px" }}>
         {NO_RESULTS_MESSAGE + (props.word ? ` for ${props.word}.` : ".")}
       </div>
-      <LandingContent
-        dictsToUse={props.dicts}
-        inflectedSearch={props.inflectedSearch}
-      />
+      {!embeddedOptions?.hideSearch && (
+        <LandingContent
+          dictsToUse={props.dicts}
+          inflectedSearch={props.inflectedSearch}
+        />
+      )}
     </>
   );
 }
@@ -266,6 +269,7 @@ interface SearchBarProps {
 function SearchBar(props: SearchBarProps) {
   const {
     isEmbedded,
+    embeddedOptions,
     isSmall,
     dictsToUse,
     setDictsToUse,
@@ -273,6 +277,10 @@ function SearchBar(props: SearchBarProps) {
     searchQuery,
     onSearchQuery,
   } = React.useContext(DictContext);
+
+  if (embeddedOptions?.hideSearch) {
+    return null;
+  }
 
   return (
     <Container
