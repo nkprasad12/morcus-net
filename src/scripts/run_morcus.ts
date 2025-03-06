@@ -426,7 +426,7 @@ function startWebServer(args: any) {
     baseCommand = ["bun"];
     serverEnv.BUN = "1";
     if (args.watch) {
-      baseCommand.push("--watch");
+      // Watch mode seems to have problems.
     }
   } else if (args.transpile_only === true) {
     baseCommand.push("--swc");
