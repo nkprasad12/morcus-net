@@ -67140,7 +67140,7 @@ eon
 
 E_o_s		
 :le:Eos
-:no:E_	os_i fem
+:no:E_	os_i fem sg
 
 
 E_^o_us		
@@ -119534,8 +119534,8 @@ Mandu_ri^a
 
 ma_ne		<itype>indecl.</itype>	<gen>n.</gen>
 :le:mane
-:wd:ma_ne	irreg_nom3 fem sg
-:wd:ma_ni	irreg_nom3 fem abl sg early
+:wd:ma_ne	irreg_nom3 neut sg
+:wd:ma_ni	irreg_nom3 neut abl sg early
 
 
 manenti^a		
