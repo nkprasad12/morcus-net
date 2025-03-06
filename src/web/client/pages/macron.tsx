@@ -124,7 +124,7 @@ function InputSection(props: {
       <div style={{ margin: "8px 0" }}>
         <div className="text xs light" id="lengthLimit">
           Due to server constraints, you can only process 10000 characters at a
-          time.
+          time ({rawInput?.length ?? 0} / 10000)
         </div>
         <button
           onClick={handleClick}
