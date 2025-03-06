@@ -47,11 +47,11 @@ function MacronizedOutput(
     if (typeof word === "string") {
       return word;
     }
-    const options = word.options;
-    if (options.length === 0) {
+    const forms = new Set(word.options.map((option) => option.form));
+    if (forms.size === 0) {
       return <Unknown key={i} word={word.word} />;
     }
-    if (options.length === 1) {
+    if (forms.size === 1) {
       return <span key={i}>{word.options[0].form}</span>;
     }
     return (
@@ -191,21 +191,28 @@ function AnalysisSection(props: {
   setDictWord: (word: string) => void;
 }) {
   const infoBlurb = props.hasContent ? (
-    <ul className="text xs light unselectable">
-      <li>
-        Words in <Unknown word="red" /> are unknown to us, and no attempt was
-        made to add macra to them.
-      </li>
-      <li>
-        Words in <Ambiguous word="blue" /> have multiple options. Click on them
-        for more details.
-      </li>
-    </ul>
+    <details open>
+      <summary>
+        <span className="text xs light">Usage guide ⓘ</span>
+      </summary>
+      <ul className="text xs light unselectable" style={{ marginTop: 0 }}>
+        <li>
+          Words in <Unknown word="red" /> are unknown to the system, and no
+          attempt was made to add macra to them.
+        </li>
+        <li>
+          Words in <Ambiguous word="blue" /> have multiple options. Click on
+          them for more details.
+        </li>
+      </ul>
+    </details>
   ) : (
     <div className="text xs light">Enter text in the box to get started.</div>
   );
   return (
-    <section style={{ whiteSpace: "pre-wrap" }} className="text md">
+    <section
+      style={{ whiteSpace: "pre-wrap", padding: "0 8px" }}
+      className="text md">
       <h1 className="text md" style={{ margin: "8px 0" }}>
         Analysis
       </h1>
