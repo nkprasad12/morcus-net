@@ -62,7 +62,7 @@ import { StoredCheckBox } from "@/web/client/components/generic/settings_basics"
 import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
 import { getCommitHash } from "@/web/client/define_vars";
 import { textCallback } from "@/web/client/utils/callback_utils";
-import { BottomDrawer } from "@/web/client/components/bottom_drawer";
+import { BottomDrawer } from "@/web/client/components/draggables";
 
 export const ERROR_STATE_MESSAGE =
   "Lookup failed. Please check your internet connection" +

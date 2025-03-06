@@ -9,7 +9,6 @@ import {
   isDefaultSidebarTab,
 } from "@/web/client/pages/library/reader_sidebar_components";
 import React, {
-  CSSProperties,
   PropsWithChildren,
   useEffect,
   useState,
@@ -28,8 +27,8 @@ import { useWakeLock } from "@/web/client/mobile/wake_lock";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import {
   BottomDrawer,
-  DragHelper,
-} from "@/web/client/components/bottom_drawer";
+  ResizeablePanels,
+} from "@/web/client/components/draggables";
 
 export const SWIPE_NAV_KEY = "RD_MB_NAV_SWIPE";
 export const TAP_NAV_KEY = "RD_MB_NAV_SIDE_TAP";
@@ -258,59 +257,6 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
   );
 }
 
-// We need to come up a with a better way to deal with this, since
-// Experimentally for large screen mode this is 64 but honestly who knows
-// about the true range.
-const APP_BAR_MAX_HEIGHT = 64;
-const COLUMN_TOP_MARGIN = 8;
-const COLUMN_BOTTON_MARGIN = 8;
-const BASE_COLUMN_STYLE: CSSProperties = {
-  height: "100%",
-  float: "left",
-  boxSizing: "border-box",
-};
-const COLUMN_STYLE: CSSProperties = {
-  ...BASE_COLUMN_STYLE,
-  overflow: "auto",
-  marginTop: COLUMN_TOP_MARGIN,
-  marginBottom: COLUMN_BOTTON_MARGIN,
-  scrollPaddingTop: 48,
-};
-const DRAGGER_SIZE = 24;
-const DRAGGER_STYLE: CSSProperties = {
-  ...BASE_COLUMN_STYLE,
-  width: `${DRAGGER_SIZE}px`,
-  marginTop: "16px",
-  opacity: "60%",
-  cursor: "col-resize",
-};
-
-function ResizingDragger(props: {
-  currentLen: number;
-  setCurrentLen: (callback: (old: number) => number) => unknown;
-  reverse?: boolean;
-  minRatio?: number;
-  maxRatio?: number;
-  getMax?: () => number;
-}) {
-  return (
-    <DragHelper
-      currentLen={props.currentLen}
-      setCurrentLen={props.setCurrentLen}
-      style={DRAGGER_STYLE}
-      horizontal
-      minRatio={props.minRatio}
-      maxRatio={props.maxRatio}
-      reverse={props.reverse}
-      getMax={props.getMax}>
-      <div
-        style={{ height: "100%", margin: "auto", width: "4px" }}
-        className="bgAlt"
-      />
-    </DragHelper>
-  );
-}
-
 type BaseReaderLayoutProps = PropsWithChildren<{
   sidebarRef?: React.RefObject<HTMLDivElement>;
 }>;
@@ -320,93 +266,18 @@ function BaseReaderLayout(props: NonMobileReaderLayoutProps): JSX.Element {
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
   const { sidebarRef } = props;
-  const [windowHeight, setWindowHeight] = useState(window.innerHeight);
-  const [mainWidthPercent, setMainWidthPercent] = usePersistedState<number>(
-    56,
-    "RD_WORK_WIDTH2"
-  );
-  const [gutterSize, setGutterSize] = usePersistedState<number>(
-    100,
-    "RD_TOTAL_WIDTH2"
-  );
-  const containerRef = React.useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const onResize = () => setWindowHeight(window.innerHeight);
-    window.addEventListener("resize", onResize);
-    return () => window.removeEventListener("resize", onResize);
-  }, []);
-
-  const containerWidth = React.useCallback(
-    () => containerRef.current?.clientWidth ?? window.innerWidth,
-    []
-  );
-
-  function mainWidth() {
-    return (mainWidthPercent * containerWidth()) / 100;
-  }
-
-  function setMainWidth(newWidth: number) {
-    setMainWidthPercent((newWidth / containerWidth()) * 100);
-  }
 
   return (
-    <div
-      ref={containerRef}
-      style={{
-        boxSizing: "border-box",
-        display: "block",
-        margin: "0 auto",
-        width: "100%",
-        maxWidth: `calc(100% - ${gutterSize * 2}px`,
-        height:
-          windowHeight -
-          APP_BAR_MAX_HEIGHT -
-          COLUMN_TOP_MARGIN -
-          COLUMN_BOTTON_MARGIN,
-      }}>
-      <ResizingDragger
-        currentLen={gutterSize}
-        reverse
-        setCurrentLen={setGutterSize}
-        maxRatio={0.3}
-      />
-      <div
-        className="readerMain"
-        id={LARGE_VIEW_MAIN_COLUMN_ID}
-        style={{
-          ...COLUMN_STYLE,
-          width: `${mainWidthPercent}%`,
-        }}>
-        {mainContent}
-      </div>
-      <ResizingDragger
-        currentLen={mainWidth()}
-        setCurrentLen={(update) => setMainWidth(update(mainWidth()))}
-        reverse
-        minRatio={0.2}
-        maxRatio={0.8}
-        getMax={() => containerWidth()}
-      />
-      <div
-        className="readerSide"
-        style={{
-          ...COLUMN_STYLE,
-          width: `calc(${100 - mainWidthPercent}% - ${3 * DRAGGER_SIZE}px)`,
-        }}
-        ref={sidebarRef}>
-        <ContentBox isSmall>
-          <>
-            {sidebarBar}
-            <div style={{ paddingRight: "8px" }}>{sidebarContent}</div>
-          </>
-        </ContentBox>
-      </div>
-      <ResizingDragger
-        currentLen={gutterSize}
-        setCurrentLen={setGutterSize}
-        maxRatio={0.3}
-      />
-    </div>
+    <ResizeablePanels
+      mainClass="readerMain"
+      sideClass="readerSide"
+      mainId={LARGE_VIEW_MAIN_COLUMN_ID}
+      sideRef={sidebarRef}>
+      {mainContent}
+      <ContentBox isSmall>
+        {sidebarBar}
+        <div style={{ paddingRight: "8px" }}>{sidebarContent}</div>
+      </ContentBox>
+    </ResizeablePanels>
   );
 }
