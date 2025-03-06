@@ -4,6 +4,7 @@ import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import React, {
   useCallback,
   useEffect,
+  useState,
   type CSSProperties,
   type PropsWithChildren,
 } from "react";
@@ -197,5 +198,162 @@ export function BottomDrawer(
         </ContentBox>
       </Container>
     </Container>
+  );
+}
+
+// We need to come up a with a better way to deal with this, since
+// Experimentally for large screen mode this is 64 but honestly who knows
+// about the true range.
+const APP_BAR_MAX_HEIGHT = 64;
+const COLUMN_TOP_MARGIN = 8;
+const COLUMN_BOTTON_MARGIN = 8;
+const BASE_COLUMN_STYLE: CSSProperties = {
+  height: "100%",
+  float: "left",
+  boxSizing: "border-box",
+};
+const COLUMN_STYLE: CSSProperties = {
+  ...BASE_COLUMN_STYLE,
+  overflow: "auto",
+  marginTop: COLUMN_TOP_MARGIN,
+  marginBottom: COLUMN_BOTTON_MARGIN,
+  scrollPaddingTop: 48,
+};
+const DRAGGER_SIZE = 24;
+const DRAGGER_STYLE: CSSProperties = {
+  ...BASE_COLUMN_STYLE,
+  width: `${DRAGGER_SIZE}px`,
+  marginTop: "16px",
+  opacity: "60%",
+  cursor: "col-resize",
+};
+
+export function ResizingDragger(props: {
+  currentLen: number;
+  setCurrentLen: (callback: (old: number) => number) => unknown;
+  reverse?: boolean;
+  minRatio?: number;
+  maxRatio?: number;
+  getMax?: () => number;
+}) {
+  return (
+    <DragHelper
+      currentLen={props.currentLen}
+      setCurrentLen={props.setCurrentLen}
+      style={DRAGGER_STYLE}
+      horizontal
+      minRatio={props.minRatio}
+      maxRatio={props.maxRatio}
+      reverse={props.reverse}
+      getMax={props.getMax}>
+      <div
+        style={{ height: "100%", margin: "auto", width: "4px" }}
+        className="bgAlt"
+      />
+    </DragHelper>
+  );
+}
+
+export interface ResizeablePanelProps {
+  mainRef?: React.RefObject<HTMLDivElement>;
+  sideRef?: React.RefObject<HTMLDivElement>;
+  mainId?: string;
+  sideId?: string;
+  mainClass?: string;
+  sideClass?: string;
+}
+export function ResizeablePanels(
+  props: PropsWithChildren<ResizeablePanelProps>
+) {
+  const children = React.Children.toArray(props.children);
+  assertEqual(children.length, 2);
+
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  const [windowHeight, setWindowHeight] = React.useState(window.innerHeight);
+  const windowWidthRef = React.useRef(window.innerWidth);
+  const [gutterSize, setGutterSize] = useState<number>(100);
+  const [mainWidthPercent, setMainWidthPercent] = useState<number>(56);
+
+  useEffect(() => {
+    const onResize = () => {
+      setWindowHeight(window.innerHeight);
+      const diff = window.innerWidth - windowWidthRef.current;
+      windowWidthRef.current = window.innerWidth;
+      if (diff < 0) {
+        setGutterSize((old) => old + diff / 2);
+      }
+    };
+    window.addEventListener("resize", onResize);
+    return () => window.removeEventListener("resize", onResize);
+  }, []);
+
+  const containerWidth = React.useCallback(
+    () => containerRef.current?.clientWidth ?? window.innerWidth,
+    []
+  );
+
+  function mainWidth() {
+    return (mainWidthPercent * containerWidth()) / 100;
+  }
+
+  function setMainWidth(newWidth: number) {
+    setMainWidthPercent((newWidth / containerWidth()) * 100);
+  }
+
+  return (
+    <div
+      ref={containerRef}
+      style={{
+        boxSizing: "border-box",
+        display: "block",
+        margin: "0 auto",
+        width: "100%",
+        maxWidth: `calc(100% - ${gutterSize * 2}px`,
+        height:
+          windowHeight -
+          APP_BAR_MAX_HEIGHT -
+          COLUMN_TOP_MARGIN -
+          COLUMN_BOTTON_MARGIN,
+      }}>
+      <ResizingDragger
+        currentLen={gutterSize}
+        reverse
+        setCurrentLen={setGutterSize}
+        maxRatio={0.3}
+      />
+      <div
+        className={props.mainClass}
+        id={props.mainId}
+        style={{
+          ...COLUMN_STYLE,
+          width: `${mainWidthPercent}%`,
+        }}>
+        {children[0]}
+      </div>
+      <ResizingDragger
+        currentLen={mainWidth()}
+        setCurrentLen={(update) => setMainWidth(update(mainWidth()))}
+        reverse
+        minRatio={0.2}
+        maxRatio={0.8}
+        getMax={() => containerWidth()}
+      />
+      <div
+        className={props.sideClass}
+        id={props.sideId}
+        style={{
+          ...COLUMN_STYLE,
+          width: `calc(${100 - mainWidthPercent}% - ${3 * DRAGGER_SIZE}px)`,
+        }}
+        ref={props.sideRef}>
+        {children[1]}
+      </div>
+      <ResizingDragger
+        currentLen={gutterSize}
+        setCurrentLen={setGutterSize}
+        maxRatio={0.3}
+      />
+    </div>
   );
 }

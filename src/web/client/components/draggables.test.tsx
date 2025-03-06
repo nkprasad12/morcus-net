@@ -2,7 +2,7 @@
  * @jest-environment jsdom
  */
 
-import { makeOnDrag } from "@/web/client/components/bottom_drawer";
+import { makeOnDrag } from "@/web/client/components/draggables";
 
 describe("makeOnDrag", () => {
   const MAX_SIZE = 500;
