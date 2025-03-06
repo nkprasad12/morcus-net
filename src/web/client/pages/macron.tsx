@@ -97,7 +97,7 @@ function InputSection(props: {
       );
     } catch (e) {
       // TODO: Have better errors.
-      props.setProcessed(<div>Error: please try again later.</div>);
+      props.setProcessed(<div>An error occurred.</div>);
       console.debug(e);
     } finally {
       setLoading(false);
@@ -152,7 +152,7 @@ export function Macronizer() {
   }, [processed]);
 
   return (
-    <ResizeablePanels>
+    <ResizeablePanels sideClass="macronSide">
       <div style={{ padding: "0px 8px" }}>
         <InputSection
           setProcessed={setProcessed}
@@ -184,6 +184,24 @@ function ResultSection(props: { processed: JSX.Element }) {
         <h1 className="text md" style={{ margin: "12px 0" }} id="results">
           Results
         </h1>
+        <details style={{ margin: "12px 0" }}>
+          <summary>
+            <span className="text xs light">Highlight guide ⓘ</span>
+          </summary>
+          <ul className="text xs light unselectable" style={{ marginTop: 0 }}>
+            <li>
+              Words in <Unknown word="red" /> are unknown to the system, and no
+              attempt was made to add macra to them.
+            </li>
+            <li>
+              Words in{" "}
+              <span className="gafAuth" style={AMBIGUOUS_STYLE}>
+                blue
+              </span>{" "}
+              have multiple options. Click on them for more details.
+            </li>
+          </ul>
+        </details>
         {props.processed}
       </section>
     </>
@@ -202,28 +220,6 @@ function AnalysisSection(props: {
   dictWord: string | undefined;
   setDictWord: (word: string) => void;
 }) {
-  const infoBlurb = props.hasContent ? (
-    <details open>
-      <summary>
-        <span className="text xs light">Usage guide ⓘ</span>
-      </summary>
-      <ul className="text xs light unselectable" style={{ marginTop: 0 }}>
-        <li>
-          Words in <Unknown word="red" /> are unknown to the system, and no
-          attempt was made to add macra to them.
-        </li>
-        <li>
-          Words in{" "}
-          <span className="gafAuth" style={AMBIGUOUS_STYLE}>
-            blue
-          </span>{" "}
-          have multiple options. Click on them for more details.
-        </li>
-      </ul>
-    </details>
-  ) : (
-    <div className="text xs light">Enter text in the box to get started.</div>
-  );
   return (
     <section
       style={{ whiteSpace: "pre-wrap", padding: "0 8px" }}
@@ -231,7 +227,11 @@ function AnalysisSection(props: {
       <h1 className="text md" style={{ margin: "8px 0" }}>
         Analysis
       </h1>
-      <div style={{ margin: "12px 0" }}>{infoBlurb}</div>
+      {!props.hasContent && (
+        <div className="text xs light" style={{ margin: "12px 0" }}>
+          Enter text in the box to get started.
+        </div>
+      )}
       {props.currentWord && (
         <WordAnalysis
           word={props.currentWord}
@@ -240,6 +240,7 @@ function AnalysisSection(props: {
       )}
       {props.dictWord && (
         <DictionaryViewV2
+          textScale={80}
           embedded
           embeddedOptions={DICT_OPTIONS}
           initial={props.dictWord}

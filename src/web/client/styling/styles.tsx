@@ -755,6 +755,18 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".macronLabel": {
       color: Solarized.base1,
     },
+    ".macronSide .dictRoot .text.md": {
+      fontSize: FontSizes.SMALL_SCREEN * 0.8,
+    },
+    ".macronSide .dictRoot .text.sm": {
+      fontSize: FontSizes.SECONDARY * 0.8,
+    },
+    ".macronSide .dictRoot .text.xs": {
+      fontSize: FontSizes.TERTIARY * 0.8,
+    },
+    ".macronSide .dictRoot .text.xxs": {
+      fontSize: 12 * 0.8,
+    },
 
     /** Size specific */
     "@media (min-width: 600px)": {
