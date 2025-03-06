@@ -12,6 +12,7 @@ import { Footer } from "@/web/client/components/footer";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import type { EmbeddedDictOptions } from "@/web/client/pages/dictionary/dict_context";
 import { SvgIcon } from "@/web/client/components/generic/icons";
+import { ResizeablePanels } from "@/web/client/components/draggables";
 
 const UNKNOWN_STYLE: React.CSSProperties = {
   borderBottom: "1px dashed",
@@ -139,24 +140,25 @@ export function Macronizer() {
   }, [processed]);
 
   return (
-    <div style={{ margin: "16px" }}>
-      <InputSection
-        setProcessed={setProcessed}
-        setCurrentWord={(word) => {
-          setCurrentWord(word);
-          setDictWord(undefined);
-        }}
-      />
-      {processed && <ResultSection processed={processed} />}
-      {processed && (
-        <AnalysisSection
-          currentWord={currentWord}
-          dictWord={dictWord}
-          setDictWord={setDictWord}
+    <ResizeablePanels>
+      <div style={{ padding: "0px 8px" }}>
+        <InputSection
+          setProcessed={setProcessed}
+          setCurrentWord={(word) => {
+            setCurrentWord(word);
+            setDictWord(undefined);
+          }}
         />
-      )}
-      <Footer />
-    </div>
+        {processed && <ResultSection processed={processed} />}
+        <Footer />
+      </div>
+      <AnalysisSection
+        hasContent={processed !== undefined}
+        currentWord={currentWord}
+        dictWord={dictWord}
+        setDictWord={setDictWord}
+      />
+    </ResizeablePanels>
   );
 }
 
@@ -183,47 +185,46 @@ const DICT_OPTIONS: EmbeddedDictOptions = {
 };
 
 function AnalysisSection(props: {
+  hasContent: boolean;
   currentWord: MacronizedWord | undefined;
   dictWord: string | undefined;
   setDictWord: (word: string) => void;
 }) {
+  const infoBlurb = props.hasContent ? (
+    <ul className="text xs light unselectable">
+      <li>
+        Words in <Unknown word="red" /> are unknown to us, and no attempt was
+        made to add macra to them.
+      </li>
+      <li>
+        Words in <Ambiguous word="blue" /> have multiple options. Click on them
+        for more details.
+      </li>
+    </ul>
+  ) : (
+    <div className="text xs light">Enter text in the box to get started.</div>
+  );
   return (
-    <>
-      <Divider style={{ margin: "24px 0" }} />
-      <section
-        style={{ whiteSpace: "pre-wrap", margin: "18px 0" }}
-        className="text md">
-        <h1 className="text md" style={{ margin: "12px 0" }}>
-          Analysis
-        </h1>
-        <div style={{ margin: "12px 0" }}>
-          <ul className="text xs light unselectable">
-            <li>
-              Words in <Unknown word="red" /> are unknown to us, and no attempt
-              was made to add macra to them.
-            </li>
-            <li>
-              Words in <Ambiguous word="blue" /> have multiple options. Click on
-              them for more details.
-            </li>
-          </ul>
-        </div>
-        {props.currentWord && (
-          <WordAnalysis
-            word={props.currentWord}
-            setDictWord={props.setDictWord}
-          />
-        )}
-        {props.dictWord && (
-          <DictionaryViewV2
-            embedded
-            embeddedOptions={DICT_OPTIONS}
-            initial={props.dictWord}
-            setInitial={props.setDictWord}
-          />
-        )}
-      </section>
-    </>
+    <section style={{ whiteSpace: "pre-wrap" }} className="text md">
+      <h1 className="text md" style={{ margin: "8px 0" }}>
+        Analysis
+      </h1>
+      <div style={{ margin: "12px 0" }}>{infoBlurb}</div>
+      {props.currentWord && (
+        <WordAnalysis
+          word={props.currentWord}
+          setDictWord={props.setDictWord}
+        />
+      )}
+      {props.dictWord && (
+        <DictionaryViewV2
+          embedded
+          embeddedOptions={DICT_OPTIONS}
+          initial={props.dictWord}
+          setInitial={props.setDictWord}
+        />
+      )}
+    </section>
   );
 }
 
