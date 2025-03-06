@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import {
@@ -31,10 +31,28 @@ function Unknown(props: { word: string }) {
   );
 }
 
-function Ambiguous(props: { word: string; onClick?: () => unknown }) {
+function getIdx(word: MacronizedWord) {
+  const suggested = word.options[word.suggested ?? 0].form;
+  const idx = word.options.findIndex((w) => w.form === suggested);
+  return idx === -1 ? 0 : idx;
+}
+
+function Ambiguous(props: {
+  word: MacronizedWord;
+  showOptions: (options: MacronizedWord) => unknown;
+}) {
+  const options = useRef(props.word.options.map((o) => o.form));
+  const [idx, setIdx] = useState<number>(getIdx(props.word));
+
   return (
-    <span style={AMBIGUOUS_STYLE} className="gafAuth" onClick={props.onClick}>
-      {props.word}
+    <span
+      style={AMBIGUOUS_STYLE}
+      className="gafAuth"
+      onClick={() => {
+        props.showOptions(props.word);
+        setIdx((idx + 1) % options.current.length);
+      }}>
+      {options.current[idx]}
     </span>
   );
 }
@@ -54,13 +72,7 @@ function MacronizedOutput(
     if (forms.size === 1) {
       return <span key={i}>{word.options[0].form}</span>;
     }
-    return (
-      <Ambiguous
-        key={i}
-        word={word.options[word.suggested ?? 0].form}
-        onClick={() => showOptions(word)}
-      />
-    );
+    return <Ambiguous key={i} word={word} showOptions={showOptions} />;
   });
 }
 
@@ -201,8 +213,11 @@ function AnalysisSection(props: {
           attempt was made to add macra to them.
         </li>
         <li>
-          Words in <Ambiguous word="blue" /> have multiple options. Click on
-          them for more details.
+          Words in{" "}
+          <span className="gafAuth" style={AMBIGUOUS_STYLE}>
+            blue
+          </span>{" "}
+          have multiple options. Click on them for more details.
         </li>
       </ul>
     </details>
@@ -241,9 +256,7 @@ function WordAnalysis(props: {
 }) {
   return (
     <div className="text sm light">
-      <div>
-        Original: <Ambiguous word={props.word.word} />
-      </div>
+      <div>Original: {props.word.word}</div>
       <div>Known options:</div>
       <ul style={{ marginTop: 0 }}>
         {props.word.options.map((option) => {
@@ -270,7 +283,17 @@ function WordAnalysis(props: {
                       />
                       <span style={{ gridColumn: "2" }}> {o.lemma}</span>
                     </span>{" "}
-                    <i>{o.morph}</i>
+                    {o.morph.length === 1 ? (
+                      <i>{o.morph}</i>
+                    ) : (
+                      <ul>
+                        {o.morph.map((m, k) => (
+                          <li key={k}>
+                            <i>{m}</i>
+                          </li>
+                        ))}
+                      </ul>
+                    )}
                   </li>
                 ))}
               </ul>
