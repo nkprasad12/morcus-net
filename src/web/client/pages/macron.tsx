@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 
 import { callApi } from "@/web/utils/rpc/client_rpc";
 import {
@@ -7,7 +7,6 @@ import {
   type MacronizedWord,
 } from "@/web/api_routes";
 import { Divider, TextField } from "@/web/client/components/generic/basics";
-import type { ComponentChildren } from "preact";
 import { Footer } from "@/web/client/components/footer";
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";
 import type { EmbeddedDictOptions } from "@/web/client/pages/dictionary/dict_context";
@@ -43,6 +42,9 @@ function Ambiguous(props: {
   const options = useRef(
     Array.from(new Set(props.word.options.map((o) => o.form)))
   );
+  const spanRef = useRef<HTMLSpanElement>(null);
+  const savedSelection = useRef<{ range: Range; offset: number } | null>(null);
+  const shouldRestoreCursor = useRef<boolean>(false);
   const [resolved, setResolved] = useState<boolean>(false);
   const [idx, setIdx] = useState<number>(getIdx(props.word));
   const classes = ["macAmbig"];
@@ -50,19 +52,68 @@ function Ambiguous(props: {
     classes.push("unresolved");
   }
 
+  useLayoutEffect(() => {
+    if (
+      !shouldRestoreCursor.current ||
+      !savedSelection.current ||
+      !spanRef.current
+    ) {
+      return;
+    }
+    const selection = window.getSelection();
+    if (!selection) {
+      return;
+    }
+
+    shouldRestoreCursor.current = false;
+    selection.removeAllRanges();
+    const range = document.createRange();
+    const textNode = spanRef.current.firstChild;
+    if (!textNode) {
+      return;
+    }
+
+    // Set the range to the appropriate position in the text node
+    const offset = Math.min(
+      savedSelection.current.offset,
+      textNode.textContent?.length ?? 0
+    );
+    range.setStart(textNode, offset);
+    range.setEnd(textNode, offset);
+    selection.addRange(range);
+  }, [idx]);
+
+  function saveCaretPosition() {
+    const selection = window.getSelection();
+    if (!selection || selection.rangeCount === 0 || !spanRef.current) {
+      return;
+    }
+    const range = selection.getRangeAt(0);
+    if (range.startContainer.parentNode !== spanRef.current) {
+      return;
+    }
+    savedSelection.current = {
+      range: range.cloneRange(),
+      offset: range.startOffset,
+    };
+    shouldRestoreCursor.current = true;
+  }
+
   return (
     <span
+      ref={spanRef}
       contentEditable
       className={classes.join(" ")}
       spellcheck={false}
       onClick={(e) => {
         e.preventDefault();
+        saveCaretPosition();
         if (e.altKey) {
           setResolved((r) => !r);
           return;
         }
         if (e.ctrlKey) {
-          setIdx((idx + 1) % options.current.length);
+          setIdx((prevIdx) => (prevIdx + 1) % options.current.length);
         }
         props.showOptions(props.word);
       }}>

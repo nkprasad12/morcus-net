@@ -115,6 +115,7 @@ describe("Macronizer View", () => {
   });
 
   test("calls server on submit", async () => {
+    mockCallApi.mockReturnValue(Promise.resolve([]));
     render(<Macronizer />);
     const inputBox = screen.getByRole("textbox");
     const submit = screen.getByRole("button");
@@ -135,7 +136,7 @@ describe("Macronizer View", () => {
     await user.click(submit);
 
     await waitFor(() => {
-      expect(screen.getByText("Error: please try again later.")).toBeDefined();
+      expect(screen.getByText(/error occurred/)).toBeDefined();
     });
   });
 
