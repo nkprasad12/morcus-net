@@ -758,7 +758,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       cursor: "pointer",
     },
     ".macAmbig.unresolved": {
-      backgroundColor: Solarized.orange + modifiedStrength(theme.lsBiblAlpha),
+      backgroundColor: "#0022AA18",
     },
     ".macronLabel": {
       color: Solarized.base1,

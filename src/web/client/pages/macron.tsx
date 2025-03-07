@@ -267,8 +267,8 @@ function ResultSection(props: { processed: JSX.Element }) {
               attempt was made to add macra to them.
             </li>
             <li>
-              Words in {AMBIG_SPAN} are ambiguous and have multiple known
-              options.
+              Words in <span className={AMBIG_UNRESOLVED}>blue</span> are
+              ambiguous and have multiple known options.
             </li>
             <li>Click on an {AMBIG_SPAN} word to see the known options.</li>
             <li>
@@ -364,11 +364,13 @@ function WordAnalysis(props: {
                       <i>{o.morph}</i>
                     ) : (
                       <ul>
-                        {o.morph.map((m, k) => (
-                          <li key={k}>
-                            <i>{m}</i>
-                          </li>
-                        ))}
+                        {o.morph
+                          .filter((m) => m.trim().length > 0)
+                          .map((m, k) => (
+                            <li key={k}>
+                              <i>{m}</i>
+                            </li>
+                          ))}
                       </ul>
                     )}
                   </li>
