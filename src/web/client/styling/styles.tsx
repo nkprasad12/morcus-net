@@ -752,6 +752,14 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     /** Macronizer specific */
+    ".macAmbig": {
+      borderRadius: 4,
+      borderBottom: "1px dotted",
+      cursor: "pointer",
+    },
+    ".macAmbig.unresolved": {
+      backgroundColor: Solarized.orange + modifiedStrength(theme.lsBiblAlpha),
+    },
     ".macronLabel": {
       color: Solarized.base1,
     },
