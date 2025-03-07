@@ -14,12 +14,11 @@ import type { EmbeddedDictOptions } from "@/web/client/pages/dictionary/dict_con
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { ResizeablePanels } from "@/web/client/components/draggables";
 
+const AMBIG_UNRESOLVED = "macAmbig unresolved";
+const AMBIG_SPAN = <span className={AMBIG_UNRESOLVED}>ambiguous</span>;
+
 const UNKNOWN_STYLE: React.CSSProperties = {
   borderBottom: "1px dashed",
-  cursor: "pointer",
-};
-const AMBIGUOUS_STYLE = {
-  borderBottom: "1px dotted",
   cursor: "pointer",
 };
 
@@ -41,16 +40,31 @@ function Ambiguous(props: {
   word: MacronizedWord;
   showOptions: (options: MacronizedWord) => unknown;
 }) {
-  const options = useRef(props.word.options.map((o) => o.form));
+  const options = useRef(
+    Array.from(new Set(props.word.options.map((o) => o.form)))
+  );
+  const [resolved, setResolved] = useState<boolean>(false);
   const [idx, setIdx] = useState<number>(getIdx(props.word));
+  const classes = ["macAmbig"];
+  if (!resolved) {
+    classes.push("unresolved");
+  }
 
   return (
     <span
-      style={AMBIGUOUS_STYLE}
-      className="gafAuth"
-      onClick={() => {
+      contentEditable
+      className={classes.join(" ")}
+      spellcheck={false}
+      onClick={(e) => {
+        e.preventDefault();
+        if (e.altKey) {
+          setResolved((r) => !r);
+          return;
+        }
+        if (e.ctrlKey) {
+          setIdx((idx + 1) % options.current.length);
+        }
         props.showOptions(props.word);
-        setIdx((idx + 1) % options.current.length);
       }}>
       {options.current[idx]}
     </span>
@@ -91,7 +105,11 @@ function InputSection(props: {
     try {
       const result = await callApi(MacronizeApi, rawInput);
       props.setProcessed(
-        <div className="text sm">
+        <div
+          className="text sm"
+          style={{ padding: "8px" }}
+          contentEditable
+          spellcheck={false}>
           {MacronizedOutput(result, props.setCurrentWord)}
         </div>
       );
@@ -184,9 +202,9 @@ function ResultSection(props: { processed: JSX.Element }) {
         <h1 className="text md" style={{ margin: "12px 0" }} id="results">
           Results
         </h1>
-        <details style={{ margin: "12px 0" }}>
+        <details open style={{ margin: "12px 0" }}>
           <summary>
-            <span className="text xs light">Highlight guide ⓘ</span>
+            <span className="text xs light">Instructions ⓘ</span>
           </summary>
           <ul className="text xs light unselectable" style={{ marginTop: 0 }}>
             <li>
@@ -194,12 +212,15 @@ function ResultSection(props: { processed: JSX.Element }) {
               attempt was made to add macra to them.
             </li>
             <li>
-              Words in{" "}
-              <span className="gafAuth" style={AMBIGUOUS_STYLE}>
-                blue
-              </span>{" "}
-              have multiple options. Click on them for more details.
+              Words in {AMBIG_SPAN} are ambiguous and have multiple known
+              options.
             </li>
+            <li>Click on an {AMBIG_SPAN} word to see the known options.</li>
+            <li>
+              Ctrl + Click on an {AMBIG_SPAN} word to cycle through known
+              options.
+            </li>
+            <li>Alt + Click on an {AMBIG_SPAN} word to mark it as resolved.</li>
           </ul>
         </details>
         {props.processed}
