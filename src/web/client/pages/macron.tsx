@@ -71,23 +71,33 @@ function Ambiguous(props: {
   );
 }
 
-function MacronizedOutput(
-  results: MacronizedResult,
-  showOptions: (options: MacronizedWord) => unknown
-): ComponentChildren[] {
-  return results.map((word, i) => {
-    if (typeof word === "string") {
-      return word;
-    }
-    const forms = new Set(word.options.map((option) => option.form));
-    if (forms.size === 0) {
-      return <Unknown key={i} word={word.word} />;
-    }
-    if (forms.size === 1) {
-      return <span key={i}>{word.options[0].form}</span>;
-    }
-    return <Ambiguous key={i} word={word} showOptions={showOptions} />;
-  });
+function MacronizedOutput(props: {
+  results: MacronizedResult;
+  showOptions: (options: MacronizedWord) => unknown;
+}) {
+  return (
+    <div
+      className="text sm"
+      style={{ padding: "8px" }}
+      contentEditable
+      spellcheck={false}>
+      {props.results.map((word, i) => {
+        if (typeof word === "string") {
+          return word;
+        }
+        const forms = new Set(word.options.map((option) => option.form));
+        if (forms.size === 0) {
+          return <Unknown key={i} word={word.word} />;
+        }
+        if (forms.size === 1) {
+          return <span key={i}>{word.options[0].form}</span>;
+        }
+        return (
+          <Ambiguous key={i} word={word} showOptions={props.showOptions} />
+        );
+      })}
+    </div>
+  );
 }
 
 function InputSection(props: {
@@ -105,13 +115,7 @@ function InputSection(props: {
     try {
       const result = await callApi(MacronizeApi, rawInput);
       props.setProcessed(
-        <div
-          className="text sm"
-          style={{ padding: "8px" }}
-          contentEditable
-          spellcheck={false}>
-          {MacronizedOutput(result, props.setCurrentWord)}
-        </div>
+        <MacronizedOutput results={result} showOptions={props.setCurrentWord} />
       );
     } catch (e) {
       // TODO: Have better errors.
