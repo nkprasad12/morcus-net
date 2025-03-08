@@ -25,15 +25,20 @@ const isLatincyResponse = isArray(isLatinToken);
 /**
  * Analyze Latin text using the LatinCy server
  * @param text The Latin text to analyze
+ * @param spaces An array of booleans indicating whether each token is a non-work character.
+ *
  * @returns A promise resolving to an array of analyzed tokens
  * @throws Error if the server request fails
  */
-export async function latincyAnalysis(text: string): Promise<LatinToken[]> {
+export async function latincyAnalysis(
+  text: string[],
+  spaces: boolean[]
+): Promise<LatinToken[]> {
   const address = envVar("LATINCY_SERVER_ADDRESS");
   const request: RequestInit = {
     method: "POST",
-    body: text,
-    headers: { "Content-Type": "text/plain" },
+    body: JSON.stringify({ text, spaces }),
+    headers: { "Content-Type": "application/json" },
   };
   const response = await fetch(address, request);
   const responseJson = await response.json();

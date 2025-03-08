@@ -48,7 +48,10 @@ describe("latincyAnalysis", () => {
   });
 
   it("should pipe expected results", async () => {
-    const result = await latincyAnalysis("Deditque oscula nato.");
+    const result = await latincyAnalysis(
+      ["Deditque", " ", "oscula", " ", "nato"],
+      [false, true, false, true, false]
+    );
     expect(result).toEqual(FAKE_RESPONSE);
   });
 });
