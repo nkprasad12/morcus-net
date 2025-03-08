@@ -1,45 +1,4 @@
-const DIACRITICS = new Map<string, string>([
-  ["ā", "a"],
-  ["ă", "a"],
-  ["á", "a"],
-  ["ē", "e"],
-  ["ĕ", "e"],
-  ["ë", "e"],
-  ["è", "e"],
-  ["é", "e"],
-  ["ī", "i"],
-  ["ĭ", "i"],
-  ["ï", "i"],
-  ["ì", "i"],
-  ["ō", "o"],
-  ["ŏ", "o"],
-  ["ô", "o"],
-  ["ö", "o"],
-  ["ū", "u"],
-  ["ŭ", "u"],
-  ["ü", "u"],
-  ["ú", "u"],
-  ["ù", "u"],
-  ["ȳ", "y"],
-  ["ў", "y"],
-  ["ÿ", "y"],
-  // This is A with a tilde.
-  ["Ã", "A"],
-  // This is A with a macron.
-  ["Ā", "A"],
-  ["Ă", "A"],
-  ["Ē", "E"],
-  ["Ĕ", "E"],
-  ["Ī", "I"],
-  ["Ĭ", "I"],
-  ["Ō", "O"],
-  ["Õ", "O"],
-  ["Ŏ", "O"],
-  ["Ū", "U"],
-  ["Ŭ", "U"],
-]);
-
-const TEXT_BREAK_CHAR_SET = new Set(" ()[];:.,?!'\n\t—\"†‘“”’");
+const TEXT_BREAK_CHAR_SET = new Set(" ()[];:.,?!'\n\t—\"†‘“”’<>");
 export function isTextBreakChar(c: string): boolean {
   return TEXT_BREAK_CHAR_SET.has(c);
 }
@@ -72,9 +31,45 @@ export function processWords<T>(
 }
 
 export function removeDiacritics(input: string): string {
-  let result = "";
-  for (const c of input) {
-    result += DIACRITICS.get(c) || c;
+  return stripDiacritics(input).word;
+}
+
+export interface DiacriticStripped {
+  word: string;
+  diacritics?: string[];
+  positions?: number[];
+}
+
+/**
+ * Strips and stores diacritics from the input text.
+ *
+ * @param word The input word to strip diacritics from
+ * @returns An object containing the stripped word and information to restore diacritics
+ */
+export function stripDiacritics(word: string): DiacriticStripped {
+  // Normalize the string to NFD to separate base characters from combining marks
+  const normalized = word.normalize("NFD");
+  const result: DiacriticStripped = { word: "" };
+  const diacritics: string[] = [];
+  const positions: number[] = [];
+
+  let strippedPos = 0;
+
+  for (let i = 0; i < normalized.length; i++) {
+    const char = normalized[i];
+    if (/[\u0300-\u036f\u1dc0-\u1dff\u20d0-\u20ff]/.test(char)) {
+      diacritics.push(char);
+      positions.push(strippedPos - 1); // Position is the last base character.
+    } else {
+      result.word += char;
+      strippedPos++;
+    }
   }
+
+  if (diacritics.length > 0) {
+    result.diacritics = diacritics;
+    result.positions = positions;
+  }
+
   return result;
 }
