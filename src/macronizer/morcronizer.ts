@@ -2,7 +2,6 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { singletonOf } from "@/common/misc_utils";
 import {
-  isTextBreakChar,
   processWords,
   stripDiacritics,
   type DiacriticStripped,
@@ -23,11 +22,6 @@ import type {
 } from "@/web/api_routes";
 
 const INPUT_MAX_LENGTH = 10000;
-
-interface IntermediateResult {
-  word: string;
-  crunched: CrunchResult[];
-}
 
 const INFLECTION_PROVIDER = singletonOf(() => {
   const tables = MorceusTables.CACHED.get();
@@ -71,22 +65,6 @@ function processWord(crunchResults: CrunchResult[]): MacronizedWord["options"] {
   return options;
 }
 
-function extractNlpTokenText(nlp: LatinToken): string {
-  const raw = nlp.text;
-  let i = 0;
-  while (i < raw.length && isTextBreakChar(raw[i])) {
-    i++;
-  }
-  if (i === raw.length) {
-    return raw;
-  }
-  let j = raw.length - 1;
-  while (i < j && isTextBreakChar(raw[j])) {
-    j--;
-  }
-  return raw.substring(i, j + 1);
-}
-
 function findBestMatch(
   crunched: CrunchResult[],
   nlp: Omit<LatinToken, "text">
@@ -110,68 +88,6 @@ function findBestMatch(
   return undefined;
 }
 
-/**
- * Attaches guesses for each token in the Morceus result.
- *
- * @param rawResult The (non-statistical) results from a morphological analyzer.
- * @param nlpResult Statistical POS guesses from NLP analyiss.
- * @returns The formatted macronized result.
- */
-function attachGuesses(
-  rawResult: (string | IntermediateResult)[],
-  nlpResult: LatinToken[]
-): MacronizedResult {
-  const result: MacronizedResult = [];
-  let j = 0;
-  for (let i = 0; i < rawResult.length; i++) {
-    const raw = rawResult[i];
-    if (typeof raw === "string") {
-      result.push(raw);
-      continue;
-    }
-    const macronized: MacronizedWord = {
-      word: raw.word,
-      options: processWord(raw.crunched),
-    };
-
-    // The NLP tokenizer has some odd behavior - for example in the
-    // text "[Hello hi]", it will produce ["[Hello", "hi", "]"]. This
-    // code attempts to remove the extra bits and makes sure we are advancing
-    // in both token lists correctly.
-    let nlpText = extractNlpTokenText(nlpResult[j]);
-    while (!raw.word.startsWith(nlpText)) {
-      j++;
-      nlpText = extractNlpTokenText(nlpResult[j]);
-    }
-    const nlpToken: Omit<LatinToken, "text"> = nlpResult[j];
-    j++;
-
-    // Handle enclitics. LatinCy splits them off.
-    if (raw.word !== nlpText) {
-      const extra = raw.word.substring(nlpText.length);
-      assertEqual(extra, extractNlpTokenText(nlpResult[j]));
-      j++;
-    }
-
-    // If there aren't options to choose from, we don't need to guess.
-    const forms = macronized.options.map((o) => o.form.toLowerCase());
-    if (new Set(forms).size <= 1) {
-      result.push(macronized);
-      continue;
-    }
-
-    const guessForm = findBestMatch(raw.crunched, nlpToken);
-    const guessIndex = macronized.options.findIndex(
-      (o) => o.form === guessForm
-    );
-    if (guessIndex !== -1) {
-      macronized.suggested = guessIndex;
-    }
-    result.push(macronized);
-  }
-  return result;
-}
-
 function restoreOriginalCase(macronized: MacronizedResult) {
   macronized.forEach((t) => {
     if (typeof t === "string") {
@@ -192,6 +108,51 @@ function restoreOriginalCase(macronized: MacronizedResult) {
       form.form = wordChunks.join("\u0304");
     }
   });
+}
+
+function attachGuesses(
+  preprocessed: (string | TokenResult)[],
+  nlpResult: LatinToken[]
+) {
+  const result: MacronizedResult = [];
+  let j = 0;
+  for (let i = 0; i < preprocessed.length; i++) {
+    const raw = preprocessed[i];
+    if (typeof raw === "string") {
+      result.push(raw);
+      j++;
+      continue;
+    }
+    const nlpToken = nlpResult[j];
+    j++;
+    assert(raw.word.startsWith(nlpToken.text));
+    if (raw.nlpEnclitic !== undefined) {
+      assertEqual(raw.nlpEnclitic, nlpResult[j].text);
+      j++;
+    }
+
+    const macronized: MacronizedWord = {
+      word: raw.word,
+      options: processWord(raw.crunched),
+    };
+
+    // If there aren't options to choose from, we don't need to guess.
+    const forms = macronized.options.map((o) => o.form.toLowerCase());
+    if (new Set(forms).size <= 1) {
+      result.push(macronized);
+      continue;
+    }
+
+    const guessForm = findBestMatch(raw.crunched, nlpToken);
+    const guessIndex = macronized.options.findIndex(
+      (o) => o.form === guessForm
+    );
+    if (guessIndex !== -1) {
+      macronized.suggested = guessIndex;
+    }
+    result.push(macronized);
+  }
+  return result;
 }
 
 /** For unit tests only. */
@@ -241,13 +202,9 @@ export async function macronizeInput(text: string): Promise<MacronizedResult> {
     text.length <= INPUT_MAX_LENGTH,
     `Input longer than ${INPUT_MAX_LENGTH} characters.`
   );
-  // Kick this off first so it can run in parallel with the Morceus call.
-  const nlpPromise = latincyAnalysis(text);
-  const crunched = processWords(text, (word) => ({
-    word,
-    crunched: INFLECTION_PROVIDER.get()(word),
-  }));
-  const macronized = attachGuesses(crunched, await nlpPromise);
+  const [processed, words, spaces] = preprocessText(text);
+  const nlpResult = await latincyAnalysis(words, spaces);
+  const macronized = attachGuesses(processed, nlpResult);
   restoreOriginalCase(macronized);
   return macronized;
 }
