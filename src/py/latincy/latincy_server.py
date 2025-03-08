@@ -31,8 +31,23 @@ class _LatinCyServer(HTTPServer):
 class _LemmaHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         content_length = int(self.headers["Content-Length"])
-        post_data = self.rfile.read(content_length).decode("utf-8")
-        doc = self.server.nlp(post_data)  # pytype: disable=attribute-error
+        content_type = self.headers["Content-Type"]
+        data = self.rfile.read(content_length)
+        if content_type == "application/json":
+            json_data = json.loads(data)
+            input = Doc(
+                self.server.nlp.vocab,
+                words=json_data["words"],
+                spaces=json_data["spaces"],
+            )  # pytype: disable=attribute-error
+        elif content_type == "text/plain":
+            input = data.decode("utf-8")
+        else:
+            self.send_response(400)
+            self.end_headers()
+            self.wfile.write(b"Content-Type must be application/json or text/plain")
+            return
+        doc = self.server.nlp(input)  # pytype: disable=attribute-error
 
         result = []
         for token in doc:
@@ -62,6 +77,7 @@ def create_server(nlp, port: int):
 
 if __name__ == "__main__":
     import spacy  # type: ignore # pytype: disable=import-error
+    from spacy.tokens import Doc  # type: ignore # pytype: disable=import-error
 
     logging.basicConfig(level=logging.INFO)
 

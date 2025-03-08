@@ -13,5 +13,6 @@ docker run -d -p 127.0.0.1:5758:8000 ghcr.io/nkprasad12/morcus-latincy
 Verify it's up
 
 ```
-curl --request POST --data 'Gallia est omnis' http://localhost:5758
+curl --request POST --data '{"words":["Galliā"," ","est"],"spaces":[false,true,false]}' \
+  http://localhost:5758 -H "Content-Type: application/json"
 ```
