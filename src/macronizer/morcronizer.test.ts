@@ -41,6 +41,7 @@ describe("macronizeInput", () => {
     const input = "Panthia acclinat";
     mockLatincyAnalysis.mockResolvedValue([
       { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
+      { text: " " },
       { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
     ]);
 
@@ -65,12 +66,12 @@ describe("macronizeInput", () => {
     const input = "Panthia].\nAcclinat";
     mockLatincyAnalysis.mockResolvedValue([
       { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
+      { text: "].\n" },
       { text: "Acclinat", lemma: "acclino", morph: "Tense=Pres" },
     ]);
 
     const result = await macronizeInput(input);
 
-    expect(mockLatincyAnalysis).toHaveBeenCalledWith(input);
     expect(result).toHaveLength(3);
 
     const panthia = result[0] as MacronizedWord;
@@ -90,12 +91,16 @@ describe("macronizeInput", () => {
     const input = "Acclinat Panthia";
     mockLatincyAnalysis.mockResolvedValue([
       { text: "Acclinat", lemma: "acclino", morph: "Tense=Pres" },
+      { text: " " },
       { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
     ]);
 
     const result = await macronizeInput(input);
 
-    expect(mockLatincyAnalysis).toHaveBeenCalledWith(input);
+    expect(mockLatincyAnalysis).toHaveBeenCalledWith(
+      ["Acclinat", " ", "Panthia"],
+      [false, true, false]
+    );
     expect(result).toHaveLength(3);
 
     expect(result[1]).toBe(" ");
@@ -114,31 +119,6 @@ describe("macronizeInput", () => {
     ]);
   });
 
-  it("should handle odd tokenization.", async () => {
-    const input = "Panthia].\nAcclinat";
-    mockLatincyAnalysis.mockResolvedValue([
-      { text: "Panthia].", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
-      { text: "\nAcclinat", lemma: "acclino", morph: "Tense=Pres" },
-    ]);
-
-    const result = await macronizeInput(input);
-
-    expect(mockLatincyAnalysis).toHaveBeenCalledWith(input);
-    expect(result).toHaveLength(3);
-
-    const panthia = result[0] as MacronizedWord;
-    expect(panthia.word).toBe("Panthia");
-    expect(panthia.options).toStrictEqual(PANTHIA_OPTIONS);
-    expect(panthia.suggested).toBe(1);
-
-    expect(result[1]).toBe("].\n");
-
-    const acclinat = result[2] as MacronizedWord;
-    expect(acclinat.word).toBe("Acclinat");
-    expect(acclinat.options).toHaveLength(1);
-    expect(acclinat.suggested).toBeUndefined();
-  });
-
   it("should raise on missing nlp tokens", async () => {
     const input = "Panthia acclinat";
     mockLatincyAnalysis.mockResolvedValue([
@@ -152,6 +132,7 @@ describe("macronizeInput", () => {
     mockLatincyAnalysis.mockResolvedValue([
       { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
       { text: "que", lemma: "que" },
+      { text: " " },
       { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
     ]);
 
@@ -173,6 +154,7 @@ describe("macronizeInput", () => {
     const input = "Blah acclinat";
     mockLatincyAnalysis.mockResolvedValue([
       { text: "Blah" },
+      { text: " " },
       { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
     ]);
 
