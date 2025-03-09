@@ -236,9 +236,14 @@ export function crunchAndMaybeRelaxCase(
   tables: CruncherTables,
   options?: CruncherOptions
 ): CrunchResult[] {
-  const results: CrunchResult[] = crunchExactMatch(word, tables, options);
+  const body = word.slice(1).toLowerCase();
+  const results: CrunchResult[] = crunchExactMatch(
+    word[0] + body,
+    tables,
+    options
+  );
   if (word[0] === "V") {
-    const relaxedWord = "U" + word.slice(1);
+    const relaxedWord = "U" + body;
     for (const relaxedResult of crunchExactMatch(
       relaxedWord,
       tables,
@@ -252,7 +257,7 @@ export function crunchAndMaybeRelaxCase(
     const relaxedFirst = isUpperCase
       ? word[0].toLowerCase()
       : word[0].toUpperCase();
-    const relaxedWord = relaxedFirst + word.slice(1);
+    const relaxedWord = relaxedFirst + body;
     for (const relaxedResult of crunchExactMatch(
       relaxedWord,
       tables,
@@ -262,7 +267,7 @@ export function crunchAndMaybeRelaxCase(
     }
     // Handle e.g. Vt for ut
     if (word[0] === "V") {
-      const relaxedWord = "u" + word.slice(1);
+      const relaxedWord = "u" + body;
       for (const relaxedResult of crunchExactMatch(
         relaxedWord,
         tables,
