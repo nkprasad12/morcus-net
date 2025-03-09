@@ -5,7 +5,7 @@ import time
 import socket
 import unittest
 import urllib.request
-from unittest.mock import Mock
+from unittest.mock import Mock, ANY
 
 from src.py.latincy import latincy_server
 
@@ -26,8 +26,13 @@ class _FakeToken:
 class TestLatincyServer(unittest.TestCase):
     """Test the public API of the latincy_server module."""
 
-    def test_create_server_functionality(self):
-        """Test the server created by create_server can process text."""
+    port: int
+    server: latincy_server._LatinCyServer
+    server_thread: threading.Thread
+    Doc: Mock
+
+    def setUp(self):
+        super().setUp()
         # Setup mock for spacy
         mock_nlp = Mock()
         fake_tokens = [
@@ -35,45 +40,58 @@ class TestLatincyServer(unittest.TestCase):
             _FakeToken("est", "sum", "Mood=Ind|Number=Sing|Tense=Pres"),
         ]
         mock_nlp.return_value = fake_tokens
-        port = _find_free_port()
+        self.port = _find_free_port()
 
         # Create a server with our specified port using the public function
-        server = latincy_server.create_server(mock_nlp, port)
+        self.Doc = Mock()
+        self.server = latincy_server.create_server(mock_nlp, self.Doc, self.port)
 
         # Start server in a separate thread
-        server_thread = threading.Thread(target=server.serve_forever)
-        server_thread.daemon = True
-        server_thread.start()
+        self.server_thread = threading.Thread(target=self.server.serve_forever)
+        self.server_thread.daemon = True
+        self.server_thread.start()
+        time.sleep(0.1)
 
-        try:
-            # Give the server a moment to start
-            time.sleep(0.1)
+    def tearDown(self):
+        self.server.shutdown()
+        self.server.server_close()
+        self.server_thread.join(timeout=5)
+        super().tearDown()
 
-            # Send a request to the server using urllib.request instead of requests
-            url = f"http://localhost:{port}"
-            test_text = "Gallia est"
-            data = test_text.encode("utf-8")
-            req = urllib.request.Request(url, data=data, method="POST")
-            with urllib.request.urlopen(req) as response:
-                # Check the response
-                self.assertEqual(response.status, 200)
-                self.assertEqual(response.getheader("Content-Type"), "application/json")
+    def _validateResponse(self, response):
+        self.assertEqual(response.status, 200)
+        self.assertEqual(response.getheader("Content-Type"), "application/json")
 
-                # Read and parse the JSON response
-                response_data = response.read().decode("utf-8")
-                result = json.loads(response_data)
+        response_data = response.read().decode("utf-8")
+        result = json.loads(response_data)
 
-                self.assertEqual(len(result), 2)
-                self.assertEqual(result[0]["text"], "Gallia")
-                self.assertEqual(result[0]["lemma"], "Gallia")
-                self.assertEqual(result[1]["text"], "est")
-                self.assertEqual(result[1]["lemma"], "sum")
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0]["text"], "Gallia")
+        self.assertEqual(result[0]["lemma"], "Gallia")
+        self.assertEqual(result[1]["text"], "est")
+        self.assertEqual(result[1]["lemma"], "sum")
 
-        finally:
-            # Clean up: shut down the server
-            server.shutdown()
-            server.server_close()
-            server_thread.join(timeout=5)
+    def test_handles_json(self):
+        """Test the server created by create_server can process text."""
+        url = f"http://localhost:{self.port}"
+        headers = {"Content-Type": "application/json"}
+        words = ["Gallia", " ", "est"]
+        spaces = [False, True, False]
+        data = json.dumps({"words": words, "spaces": spaces}).encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req) as response:
+            self._validateResponse(response)
+            self.Doc.assert_called_once_with(ANY, words=words, spaces=spaces)
+
+    def test_handles_plain_text(self):
+        """Test the server created by create_server can process text."""
+        url = f"http://localhost:{self.port}"
+        headers = {"Content-Type": "text/plain"}
+        data = "Gallia est".encode("utf-8")
+        req = urllib.request.Request(url, data=data, headers=headers, method="POST")
+        with urllib.request.urlopen(req) as response:
+            self._validateResponse(response)
+            self.Doc.assert_not_called()
 
 
 if __name__ == "__main__":
