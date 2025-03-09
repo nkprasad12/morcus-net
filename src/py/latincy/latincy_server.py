@@ -6,7 +6,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 
 
 class _LatinCyServer(HTTPServer):
-    def __init__(self, address, handler, nlp):
+    def __init__(self, address, handler, nlp, docClass):
         """
         Initialize the LatinCy server.
 
@@ -14,18 +14,11 @@ class _LatinCyServer(HTTPServer):
             address: Address tuple (host, port)
             handler: HTTP request handler class
             nlp: pre-loaded spaCy NLP model.
+            docClass: The spaCy Doc class.
         """
         self.nlp = nlp
+        self.docClass = docClass
         super().__init__(address, handler)
-
-    def process(self, text: str) -> str:
-        doc = self.nlp(text)
-        result = []
-        for token in doc:
-            result.append(
-                {"text": token.text, "lemma": token.lemma_, "morph": str(token.morph)}
-            )
-        return json.dumps(result)
 
 
 class _LemmaHandler(BaseHTTPRequestHandler):
@@ -35,7 +28,7 @@ class _LemmaHandler(BaseHTTPRequestHandler):
         data = self.rfile.read(content_length)
         if content_type == "application/json":
             json_data = json.loads(data)
-            input = Doc(
+            input = self.server.docClass(
                 self.server.nlp.vocab,  # pytype: disable=attribute-error
                 words=json_data["words"],
                 spaces=json_data["spaces"],
@@ -61,18 +54,19 @@ class _LemmaHandler(BaseHTTPRequestHandler):
         self.wfile.write(json.dumps(result).encode("utf-8"))
 
 
-def create_server(nlp, port: int):
+def create_server(nlp, docClass, port: int):
     """
     Create and return a LatinCy server instance ready to be started.
 
     Args:
         nlp:  pre-loaded spaCy NLP model.
+        docClass:  The spaCy Doc class.
         port: Port number for the server (default: 8000, can be overridden by PORT env var)
 
     Returns:
         An HTTP server instance that can analyze Latin text
     """
-    return _LatinCyServer(("0.0.0.0", port), _LemmaHandler, nlp)
+    return _LatinCyServer(("0.0.0.0", port), _LemmaHandler, nlp, docClass)
 
 
 if __name__ == "__main__":
@@ -89,4 +83,4 @@ if __name__ == "__main__":
     signal.signal(signal.SIGTERM, signal_handler)
 
     logging.info("Starting LatinCy server on port 8000")
-    create_server(spacy.load("la_core_web_lg"), 8000).serve_forever()
+    create_server(spacy.load("la_core_web_lg"), Doc, 8000).serve_forever()
