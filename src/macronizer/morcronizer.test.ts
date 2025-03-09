@@ -62,6 +62,128 @@ describe("macronizeInput", () => {
     expect(acclinat.suggested).toBeUndefined();
   });
 
+  it("should group different case with same vowels", async () => {
+    const input = "Gallus acclinat";
+    mockLatincyAnalysis.mockResolvedValue([
+      { text: "Gallus", lemma: "Gallus", morph: "Gender=Masc" },
+      { text: " " },
+      { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
+    ]);
+
+    const result = await macronizeInput(input);
+    expect(result).toHaveLength(3);
+
+    const gallus = result[0] as MacronizedWord;
+    expect(gallus.word).toBe("Gallus");
+    expect(gallus.options).toEqual([
+      {
+        form: "Gallus",
+        options: [
+          { lemma: "Gallus", morph: ["masc nom sg"] },
+          { lemma: "gallus", morph: ["masc nom sg"] },
+        ],
+      },
+    ]);
+  });
+
+  it("should preserve case of all-caps word", async () => {
+    const input = "EOS";
+    mockLatincyAnalysis.mockResolvedValue([
+      { text: "EOS", lemma: "Eos", morph: "Gender=Fem" },
+    ]);
+
+    const result = await macronizeInput(input);
+    expect(result).toHaveLength(1);
+
+    const eos = result[0] as MacronizedWord;
+    expect(eos.word).toBe("EOS");
+    expect(eos.options).toEqual([
+      {
+        form: "E\u0304OS",
+        options: [{ lemma: "Eos", morph: ["fem nom sg"] }],
+      },
+      { form: "EO\u0304S", options: [{ lemma: "is", morph: ["masc acc pl"] }] },
+    ]);
+  });
+
+  it("should separate different case with different vowels", async () => {
+    const input = "Eos acclinat";
+    mockLatincyAnalysis.mockResolvedValue([
+      { text: "Eos", lemma: "Eos", morph: "Gender=Fem" },
+      { text: " " },
+      { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
+    ]);
+
+    const result = await macronizeInput(input);
+    expect(result).toHaveLength(3);
+
+    const eos = result[0] as MacronizedWord;
+    expect(eos.word).toBe("Eos");
+    expect(eos.options).toEqual([
+      {
+        form: "E\u0304os",
+        options: [{ lemma: "Eos", morph: ["fem nom sg"] }],
+      },
+      { form: "Eo\u0304s", options: [{ lemma: "is", morph: ["masc acc pl"] }] },
+    ]);
+  });
+
+  it("should respect NLP result if matches", async () => {
+    const input = "Eos";
+    mockLatincyAnalysis.mockResolvedValue([
+      { text: "Eos", lemma: "Eos", morph: "Gender=Fem" },
+    ]);
+
+    const result = await macronizeInput(input);
+
+    const eos = result[0] as MacronizedWord;
+    expect(eos.word).toBe("Eos");
+    expect(eos.options).toHaveLength(2);
+    expect(eos.suggested).toBe(0);
+  });
+
+  it("should ignore NLP result if morphology doesn't match", async () => {
+    const input = "Eos";
+    mockLatincyAnalysis.mockResolvedValue([
+      { text: "Eos", lemma: "Eos", morph: "Gender=Masc" },
+    ]);
+
+    const result = await macronizeInput(input);
+
+    const eos = result[0] as MacronizedWord;
+    expect(eos.word).toBe("Eos");
+    expect(eos.options).toHaveLength(2);
+    expect(eos.suggested).toBeUndefined();
+  });
+
+  it("should ignore NLP result if lemma doesn't match", async () => {
+    const input = "Eos";
+    mockLatincyAnalysis.mockResolvedValue([
+      { text: "Eos", lemma: "Error", morph: "Gender=Fem" },
+    ]);
+
+    const result = await macronizeInput(input);
+
+    const eos = result[0] as MacronizedWord;
+    expect(eos.word).toBe("Eos");
+    expect(eos.options).toHaveLength(2);
+    expect(eos.suggested).toBeUndefined();
+  });
+
+  it("should respect initial macronization over NLP result if available", async () => {
+    const input = "Eōs";
+    mockLatincyAnalysis.mockResolvedValue([
+      { text: "Eos", lemma: "Eos", morph: "Gender=Fem" },
+    ]);
+
+    const result = await macronizeInput(input);
+
+    const eos = result[0] as MacronizedWord;
+    expect(eos.word).toBe("Eos");
+    expect(eos.options).toHaveLength(1);
+    expect(eos.options[0].form).toBe("Eo\u0304s");
+  });
+
   it("should preserve spacing and ignored characters.", async () => {
     const input = "Panthia].\nAcclinat";
     mockLatincyAnalysis.mockResolvedValue([
