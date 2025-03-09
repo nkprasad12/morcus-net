@@ -752,9 +752,14 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
 
     /** Macronizer specific */
+    ".macUnknown": {
+      border: "1px dotted",
+      cursor: "pointer",
+      backgroundColor: "#AA220018",
+    },
     ".macAmbig": {
       borderRadius: 4,
-      borderBottom: "1px dotted",
+      borderBottom: "1px dashed",
       cursor: "pointer",
     },
     ".macAmbig.unresolved": {
