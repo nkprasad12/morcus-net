@@ -16,17 +16,8 @@ import { ResizeablePanels } from "@/web/client/components/draggables";
 const AMBIG_UNRESOLVED = "macAmbig unresolved";
 const AMBIG_SPAN = <span className={AMBIG_UNRESOLVED}>ambiguous</span>;
 
-const UNKNOWN_STYLE: React.CSSProperties = {
-  borderBottom: "1px dashed",
-  cursor: "pointer",
-};
-
 function Unknown(props: { word: string }) {
-  return (
-    <span style={UNKNOWN_STYLE} className="lsOrth">
-      {props.word}
-    </span>
-  );
+  return <span className="macUnknown">{props.word}</span>;
 }
 
 function getIdx(word: MacronizedWord) {
