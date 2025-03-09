@@ -101,11 +101,22 @@ function sortCrunchResults(
   return options;
 }
 
+function safeConvertUpos(morph: string): WordInflectionData | undefined {
+  try {
+    return convertUpos(morph);
+  } catch {
+    return undefined;
+  }
+}
+
 function findBestMatch(
   crunched: OptionsForForm[],
   nlp: Omit<LatinToken, "text">
 ): number | undefined {
-  const nlpInflection = convertUpos(nlp.morph);
+  const nlpInflection = safeConvertUpos(nlp.morph);
+  if (nlpInflection === undefined) {
+    return undefined;
+  }
   for (let i = 0; i < crunched.length; i++) {
     const options = crunched[i].options;
     for (const option of options) {

@@ -641,6 +641,7 @@ export function convertUpos(upos: string): WordInflectionData {
             result.number = LatinNumber.Singular;
             break;
           case "Plur":
+          case "Plural":
             result.number = LatinNumber.Plural;
             break;
           default:
