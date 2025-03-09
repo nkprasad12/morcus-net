@@ -15,6 +15,7 @@ import {
   convertUpos,
   wordInflectionDataToArray,
 } from "@/morceus/inflection_data_utils";
+import type { WordInflectionData } from "@/morceus/types";
 import type {
   MacronizedResult,
   MacronizedWord,
@@ -28,34 +29,69 @@ const INFLECTION_PROVIDER = singletonOf(() => {
   return (word: string) => crunchWord(word, tables, CruncherOptions.DEFAULT);
 });
 
-function sortByLemma(results: CrunchResult[]): FormOptions[] {
+type InternalFormOptions = Omit<FormOptions, "morph"> & {
+  morph: WordInflectionData[];
+};
+
+interface OptionsForForm {
+  form: string;
+  options: InternalFormOptions[];
+}
+
+function convertOptionsForForm(
+  options: OptionsForForm[]
+): MacronizedWord["options"] {
+  return options.map((option) => ({
+    form: option.form,
+    options: option.options.map((o) => ({
+      lemma: o.lemma,
+      morph: o.morph.map((m) => wordInflectionDataToArray(m).join(" ")),
+    })),
+  }));
+}
+
+function sortByLemma(results: CrunchResult[]): InternalFormOptions[] {
   const byLemma = arrayMap<string, CrunchResult>();
   for (const result of results) {
     byLemma.add(result.lemma, result);
   }
-  const options: FormOptions[] = [];
+  const options: InternalFormOptions[] = [];
   for (const [lemma, results] of byLemma.map) {
     options.push({
       lemma,
-      morph: results.map((r) =>
-        wordInflectionDataToArray(r.grammaticalData).join(" ")
-      ),
+      morph: results.map((r) => r.grammaticalData),
     });
   }
   return options;
 }
 
-function formDisplayText(crunched: CrunchResult): string {
-  const form = crunched.form + (crunched.enclitic ?? "");
-  return form.replaceAll(/[+^-]/g, "").replaceAll("_", "\u0304");
+function formDisplayText(crunched: CrunchResult, strippedWord: string): string {
+  const baseForm = crunched.form + (crunched.enclitic ?? "");
+  const longsOnly = baseForm.replaceAll(/[+^-]/g, "");
+  const formChunks = longsOnly.split("_");
+  const formLen = formChunks.reduce((acc, c) => acc + c.length, 0);
+  assertEqual(formLen, strippedWord.length);
+
+  let i = 0;
+  const resultChunks: string[] = [];
+  for (const formChunk of formChunks) {
+    const wordChunk = strippedWord.substring(i, i + formChunk.length);
+    resultChunks.push(wordChunk);
+    i += formChunk.length;
+  }
+
+  return resultChunks.join("\u0304");
 }
 
-function processWord(crunchResults: CrunchResult[]): MacronizedWord["options"] {
+function sortCrunchResults(
+  crunchResults: CrunchResult[],
+  strippedWord: string
+): OptionsForForm[] {
   const byForm = arrayMap<string, CrunchResult>();
   for (const crunched of crunchResults) {
-    byForm.add(formDisplayText(crunched), crunched);
+    byForm.add(formDisplayText(crunched, strippedWord), crunched);
   }
-  const options: MacronizedWord["options"] = [];
+  const options: OptionsForForm[] = [];
   for (const [form, results] of byForm.map) {
     options.push({
       form,
@@ -66,48 +102,49 @@ function processWord(crunchResults: CrunchResult[]): MacronizedWord["options"] {
 }
 
 function findBestMatch(
-  crunched: CrunchResult[],
+  crunched: OptionsForForm[],
   nlp: Omit<LatinToken, "text">
-): string | undefined {
+): number | undefined {
   const nlpInflection = convertUpos(nlp.morph);
-  for (const result of crunched) {
-    const lemma = result.lemma.split("#")[0];
-    if (lemma !== nlp.lemma) {
-      continue;
-    }
-    const comparison = compareGrammaticalData(
-      nlpInflection,
-      result.grammaticalData
-    );
-    if (comparison === -1 || comparison === 0) {
-      // We could have other matches, later in the list, but with no way
-      // to decide which one is better, we just return this match.
-      return formDisplayText(result);
+  for (let i = 0; i < crunched.length; i++) {
+    const options = crunched[i].options;
+    for (const option of options) {
+      const lemma = option.lemma.split("#")[0];
+      if (lemma !== nlp.lemma) {
+        continue;
+      }
+      for (const morph of option.morph) {
+        const comparison = compareGrammaticalData(nlpInflection, morph);
+        if (comparison === -1 || comparison === 0) {
+          return i;
+        }
+      }
     }
   }
   return undefined;
 }
 
-function restoreOriginalCase(macronized: MacronizedResult) {
-  macronized.forEach((t) => {
-    if (typeof t === "string") {
-      return;
+function vowelsMatches(
+  stripped: DiacriticStripped,
+  longs: Set<number>,
+  shorts: Set<number>
+): number {
+  let longMatches = 0;
+  for (let i = 0; i < (stripped.diacritics?.length ?? 0); i++) {
+    const c = checkPresent(stripped?.diacritics?.[i]);
+    const p = checkPresent(stripped?.positions?.[i]);
+    const isLong = c === "\u0304";
+    if (isLong && shorts.has(p)) {
+      return -1;
     }
-    for (const form of t.options) {
-      const wordChunks: string[] = [];
-      const formChunks = form.form.split("\u0304");
-      const formLen = formChunks.reduce((acc, c) => acc + c.length, 0);
-      assertEqual(formLen, t.word.length);
-
-      let i = 0;
-      for (const formChunk of formChunks) {
-        const wordChunk = t.word.substring(i, i + formChunk.length);
-        wordChunks.push(wordChunk);
-        i += formChunk.length;
-      }
-      form.form = wordChunks.join("\u0304");
+    if (c === "\u0306" && longs.has(p)) {
+      return -1;
     }
-  });
+    if (isLong && longs.has(p)) {
+      longMatches++;
+    }
+  }
+  return longMatches;
 }
 
 function attachGuesses(
@@ -131,23 +168,42 @@ function attachGuesses(
       j++;
     }
 
+    const diacritics = raw.diacritics ?? [];
+    const positions = raw.positions ?? [];
+    const long = new Set<number>();
+    const short = new Set<number>();
+    for (let i = 0; i < diacritics.length; i++) {
+      if (diacritics[i] === "\u0304") {
+        long.add(positions[i]);
+      } else if (diacritics[i] === "\u0306") {
+        short.add(positions[i]);
+      }
+    }
+    const rawOptionsByForm = sortCrunchResults(raw.crunched, raw.word)
+      .map((form) => {
+        const stripped = stripDiacritics(form.form);
+        const matches = vowelsMatches(stripped, long, short);
+        return { form, matches };
+      })
+      .filter(({ matches }) => matches !== -1);
+    const maxMatches = Math.max(...rawOptionsByForm.map((o) => o.matches));
+    const optionsByForm = rawOptionsByForm
+      .filter((o) => o.matches === maxMatches)
+      .map((o) => o.form);
+
     const macronized: MacronizedWord = {
       word: raw.word,
-      options: processWord(raw.crunched),
+      options: convertOptionsForForm(optionsByForm),
     };
 
     // If there aren't options to choose from, we don't need to guess.
-    const forms = macronized.options.map((o) => o.form.toLowerCase());
-    if (new Set(forms).size <= 1) {
+    if (optionsByForm.length <= 1) {
       result.push(macronized);
       continue;
     }
 
-    const guessForm = findBestMatch(raw.crunched, nlpToken);
-    const guessIndex = macronized.options.findIndex(
-      (o) => o.form === guessForm
-    );
-    if (guessIndex !== -1) {
+    const guessIndex = findBestMatch(optionsByForm, nlpToken);
+    if (guessIndex !== undefined) {
       macronized.suggested = guessIndex;
     }
     result.push(macronized);
@@ -205,6 +261,5 @@ export async function macronizeInput(text: string): Promise<MacronizedResult> {
   const [processed, words, spaces] = preprocessText(text);
   const nlpResult = await latincyAnalysis(words, spaces);
   const macronized = attachGuesses(processed, nlpResult);
-  restoreOriginalCase(macronized);
   return macronized;
 }

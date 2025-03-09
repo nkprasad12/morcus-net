@@ -3,3 +3,19 @@
 
 :le:marmor
 :no:marmor 0_is neut
+
+:le:Gallus
+:no:Gall us_i masc
+
+:le:gallus
+:no:gall us_i masc
+
+:le:is
+:wd:eo_s masc pl acc
+
+:le:Eos
+:wd:E_os fem sg nom
+
+# This file must end with a newline to be parsed correctly.
+# Keep this comment and add new lemmata above this so you don't
+# accidentally omit it.
