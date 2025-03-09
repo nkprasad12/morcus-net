@@ -36,7 +36,7 @@ class _LemmaHandler(BaseHTTPRequestHandler):
         if content_type == "application/json":
             json_data = json.loads(data)
             input = Doc(
-                self.server.nlp.vocab,
+                self.server.nlp.vocab,  # pytype: disable=attribute-error
                 words=json_data["words"],
                 spaces=json_data["spaces"],
             )  # pytype: disable=attribute-error
