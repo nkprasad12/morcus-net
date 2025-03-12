@@ -211,6 +211,7 @@ compareResults(getGoldens(), [NoOpMacronizer, Morcronizer, Alatius]).then(
         console.log("Correct:", detail.correct);
         console.log("Incorrect:", detail.incorrect);
         console.log("Total:", detail.total);
+        console.log("");
         for (const incorrect of detail.incorrectWords) {
           console.log(incorrect.expected, "->", incorrect.actual);
         }

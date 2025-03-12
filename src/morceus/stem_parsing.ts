@@ -98,13 +98,13 @@ export function parseRegularStemFile(
   };
 
   for (const rawLine of lines) {
-    current[1]?.rawLines.push(rawLine);
     const line = rawLine.trim();
-    if (line.length === 0 || line[0] !== ":") {
-      continue;
-    }
     if (line.startsWith(":le:")) {
       addLemma();
+    }
+    current[1]?.rawLines.push(rawLine);
+    if (line.length === 0 || line[0] !== ":") {
+      continue;
     }
     current[0].push(line);
   }
