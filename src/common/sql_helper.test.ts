@@ -1,7 +1,7 @@
 import fs from "fs";
 
 import { ARRAY_INDEX, DbConfig, ReadOnlyDb } from "@/common/sql_helper";
-import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
+import { cleanupSqlTableFiles } from "@/common/test_helpers";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 
 console.debug = jest.fn();

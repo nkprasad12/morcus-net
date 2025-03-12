@@ -2,6 +2,7 @@ import { EntryResult } from "@/common/dictionaries/dict_result";
 import { processRiddleArnold } from "@/common/dictionaries/riddle_arnold/process_riddle_arnold";
 import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
+import { replaceEnvVar } from "@/common/test_helpers";
 import fs from "fs";
 
 console.debug = jest.fn();
@@ -17,16 +18,6 @@ const RA_ENTRIES: string[] = [
 ];
 
 const FAKE_MORCEUS_DATA_ROOT = "src/morceus/testdata";
-
-function replaceEnvVar(key: string, value: string) {
-  const original = process.env[key];
-  beforeAll(() => {
-    process.env[key] = value;
-  });
-  afterAll(() => {
-    process.env[key] = original;
-  });
-}
 
 replaceEnvVar("MORCEUS_DATA_ROOT", FAKE_MORCEUS_DATA_ROOT);
 replaceEnvVar("RA_PATH", FAKE_RAW_FILE);

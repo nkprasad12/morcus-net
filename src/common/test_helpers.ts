@@ -11,3 +11,13 @@ export function cleanupSqlTableFiles(name: string): void {
     fs.unlinkSync(`${name}-wal`);
   } catch (e) {}
 }
+
+export function replaceEnvVar(key: string, value: string) {
+  const original = process.env[key];
+  beforeAll(() => {
+    process.env[key] = value;
+  });
+  afterAll(() => {
+    process.env[key] = original;
+  });
+}

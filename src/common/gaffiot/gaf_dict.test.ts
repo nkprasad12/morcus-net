@@ -7,7 +7,7 @@ import {
 } from "@/common/dictionaries/sqlite_backing";
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import { processGaffiot } from "@/common/gaffiot/process_gaffiot";
-import { cleanupSqlTableFiles } from "@/common/sql_test_helper";
+import { cleanupSqlTableFiles } from "@/common/test_helpers";
 import { XmlNode } from "@/common/xml/xml_node";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
