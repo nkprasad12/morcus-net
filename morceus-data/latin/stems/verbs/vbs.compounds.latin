@@ -33,10 +33,10 @@
 :vs:pe^ra_ru^ perfstem act
 
 :le:consaepi^o
-:vs:consaep conj4
-:vs:conse_p conj4 orth
-:vs:consaept pp4
-:vs:consipt pp4 orth
+:vs:co_nsaep conj4
+:vs:co_nse_p conj4 orth
+:vs:co_nsaept pp4
+:vs:co_nsipt pp4 orth
 
 :le:decalco
 :de:de_calc are_vb
@@ -70,9 +70,9 @@
 
 :le:dispando
 :vs:dispand conj3
-:vs:dispans pp4
+:vs:dispa_ns pp4
 :vs:dispend conj3 orth
-:vs:dispens pp4 orth
+:vs:dispe_ns pp4 orth
 :vs:dispenn conj3 archaic
 :vs:dispess pp4 archaic
 
@@ -129,9 +129,9 @@
 :vs:illa_t pp4 orth
 
 :le:infligo
-:vs:infli_g	conj3
-:vs:infli_x	perfstem
-:vs:infli_ct	pp4
+:vs:i_nfli_g conj3
+:vs:i_nfli_x perfstem
+:vs:i_nfli_ct pp4
 
 :le:ingre^di^or
 :vs:ingre^d	conj3_io dep
@@ -576,9 +576,9 @@
 #circum-tondeo circumtonde^o
 #circum + tondeo -> circum + tonde^o 
 :le:circumtondeo
-:vs:circumtond conj2 
-:vs:circumto^tond perfstem 
-:vs:circumtons pp4 
+:vs:circumtond conj2
+:vs:circumto^tond perfstem
+:vs:circumto_ns pp4
 
 #circum-verro circumverro
 #circum + verro -> circum + verro 
@@ -619,12 +619,12 @@
 #con-fabricor confa^bri^cor
 #con + fabricor -> con + fa^bri^cor 
 :le:confabricor
-:de:confa_^bri^c are_vb dep
+:de:co_nfa_^bri^c are_vb dep
 
 #con-fabulor confa_bu^lor
 #con + fabulor -> con + fa_bu^lor 
 :le:confabulor
-:de:confa_bu^l are_vb dep
+:de:co_nfa_bu^l are_vb dep
 
 #con-fero confe^ro
 #con + fero -> con + fe^ro 
@@ -637,27 +637,27 @@
 #con-fervesco confervesco
 #con + fervesco -> con + fervesco 
 :le:confervesco
-:vs:conferve_sc conj3 
+:vs:co_nferve_sc conj3
 
 #con-figuro confi^gu_ro <- no perfect
 #con + figuro -> con + fi^gu_ro  [no_perf]
 :le:configuro
-:de:confi^gu_r are_vb 
+:de:co_nfi^gu_r are_vb
 
 #con-foedero confoede^ro <- no perfect
 #con + foedero -> con + foede^ro  [no_perf]
 :le:confoedero
-:de:confoede^r are_vb 
+:de:co_nfoede^r are_vb
 
 #con-frequento confrequento <- no perfect
 #con + frequento -> con + frequento  [no_perf]
 :le:confrequento
-:de:confre^quent are_vb 
+:de:co_nfre^quent are_vb
 
 #con-frio confri^o <- no perfect
 #con + frio -> con + fri^o  [no_perf]
 :le:confrio
-:de:confri are_vb 
+:de:co_nfri are_vb
 
 #con-gratulor congra_tu^lor
 #con + gratulor -> con + gra_tu^lor 
@@ -679,37 +679,37 @@
 #con-scindo conscindo
 #con + scindo -> con + scindo 
 :le:conscindo
-:vs:conscind conj3 
-:vs:consci^d perfstem 
-:vs:consciss pp4 
+:vs:co_nscind conj3
+:vs:co_nsci^d perfstem
+:vs:co_nsciss pp4
 
 #con-sepelio conse^pe^li^o <- no perfect
 #con + sepelio -> con + se^pe^li^o  [no_perf]
 :le:consepelio
-:vs:conse^pe^l conj4 
-:vs:conse^pult pp4 
+:vs:co_nse^pe^l conj4
+:vs:co_nse^pult pp4
 
 #con-solido conso^li^do <- no perfect
 #con + solido -> con + so^li^do  [no_perf]
 :le:consolido
-:de:conso^li^d are_vb 
+:de:co_nso^li^d are_vb
 
 #con-sopio conso_pi^o <- no perfect
 #con + sopio -> con + so_pi^o  [no_perf]
 :le:consopio
-:vs:conso_p conj4 
-:vs:conso_pi_t pp4 
+:vs:co_nso_p conj4
+:vs:co_nso_pi_t pp4
 
 #con-spuo conspu^o <- no perfect
 #con + spuo -> con + spu^o  [no_perf]
 :le:conspuo
-:vs:conspu^ conj3 
-:vs:conspu_t pp4 
+:vs:co_nspu^ conj3
+:vs:co_nspu_t pp4
 
 #con-spurco conspurco <- no perfect
 #con + spurco -> con + spurco  [no_perf]
 :le:conspurco
-:de:conspurc are_vb 
+:de:co_nspurc are_vb
 
 #con-temero conte^me^ro
 #con + temero -> con + te^me^ro 
@@ -969,9 +969,9 @@
 #de-tendo de_tendo <- no perfect
 #de + tendo -> de_ + tendo  [no_perf]
 :le:detendo
-:vs:de_tend conj3 
+:vs:de_tend conj3
 :vs:de_tenn conj3 orth
-:vs:de_tens pp4 
+:vs:de_te_ns pp4
 :vs:de_tent pp4 orth
 
 #de-torno de_torno <- no perfect
@@ -1199,9 +1199,9 @@
 #in-flecto inflecto
 #in + flecto -> in + flecto 
 :le:inflecto
-:vs:inflect conj3 
-:vs:inflex perfstem 
-:vs:inflex pp4 
+:vs:i_nflect conj3
+:vs:i_nflex perfstem
+:vs:i_nflex pp4
 
 #in-generasco inge^ne^rasco
 #in + generasco -> in + ge^ne^rasco 
@@ -1219,12 +1219,12 @@
 #in-saepio insaepi^o
 #in + saepio -> in + saepi^o 
 :le:insaepio
-:vs:insaep conj4 
-:vs:insaeps perfstem 
-:vs:insaept pp4 
-:vs:inse_p conj4 orth
-:vs:inse_ps perfstem orth
-:vs:inse_pt pp4 orth
+:vs:i_nsaep conj4
+:vs:i_nsaeps perfstem
+:vs:i_nsaept pp4
+:vs:i_nse_p conj4 orth
+:vs:i_nse_ps perfstem orth
+:vs:i_nse_pt pp4 orth
 
 #in-urgeo i^nurge^o
 #in + urgeo -> i^n + urge^o 
@@ -1468,10 +1468,10 @@
 #prae-ostendo praeostendo
 #prae + ostendo -> prae + ostendo 
 :le:praeostendo
-:vs:praeostend conj3 
-:vs:praeostend perfstem 
-:vs:praeostens pp4 
-:vs:praeostent pp4 
+:vs:praeostend conj3
+:vs:praeostend perfstem
+:vs:praeoste_ns pp4
+:vs:praeostent pp4
 
 #prae-patior praepa^ti^or
 #prae + patior -> prae + pa^ti^or 
