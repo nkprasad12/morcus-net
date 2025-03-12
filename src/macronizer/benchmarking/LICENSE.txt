@@ -1,0 +1,12 @@
+Raw test data were not created by the owner of this repository and have the
+following licenses (both in `macronized_goldens` and in `alatius_goldens`):
+
+=============
+
+`dcc_dbg.txt`
+
+Content taken from https://dcc.dickinson.edu
+
+This website is intended for free educational use. The authors would like to see it distributed, used, and enjoyed as widely as possible. Users are free to use and reproduce this electronic content, as long as they give credit and share the material under the same terms. We ask that you send an email (dickinsoncommentaries@gmail.com) to let us know how you use the site. The authors put considerable time, effort, and expertise into this content, so if you make it available elsewhere for another public purpose you must give full and explicit credit to them.
+
+Dickinson College Commentaries by Dickinson College is licensed under a Creative Commons Attribution-ShareAlike License (CC BY-SA)
