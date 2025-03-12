@@ -65,74 +65,59 @@ export interface Lemma {
   stems?: Stem[];
   irregularForms?: IrregularForm[];
   isVerb?: true;
+  sourceData?: {
+    fileName: string;
+    index: number;
+    rawLines: string[];
+  };
 }
 
-export function parseNounStemFile(filePath: string): Lemma[] {
-  const content = fs.readFileSync(filePath).toString();
-  const lines = content.split("\n");
-  const results: string[][] = [];
-  let current: string[] = [];
-
-  for (const line of lines) {
-    const isEmpty = line.trim().length === 0;
-    const isValid = line[0] === ":";
-    if (!isValid && !isEmpty) {
-      continue;
-    }
-
-    if (isEmpty) {
-      if (current.length > 0) {
-        results.push(current);
-        current = [];
-      }
-      continue;
-    }
-
-    assert(isEmpty === false);
-    assert(isValid === true);
-    if (line.startsWith(":le:")) {
-      if (current.length > 0) {
-        results.push(current);
-        current = [];
-      }
-    }
-    current.push(line);
-  }
-  return results.map((lines) => processStem(lines));
+export interface ParseLemmaFileOptions {
+  collectSourceData?: boolean;
 }
 
-// TODO: Consolidate this with `parseNounStemFile`.
-export function parseVerbStemFile(filePath: string): Lemma[] {
+export function parseRegularStemFile(
+  filePath: string,
+  isVerb: boolean,
+  options?: ParseLemmaFileOptions
+): Lemma[] {
   const content = fs.readFileSync(filePath).toString();
   const lines = content.split("\n");
-  const results: string[][] = [];
-  let current: string[] = [];
+  const lemmata: Lemma[] = [];
+
+  const makeSourceData = () =>
+    options?.collectSourceData
+      ? { fileName: filePath, index: lemmata.length, rawLines: [] }
+      : undefined;
+  let current: [string[], Lemma["sourceData"]] = [[], makeSourceData()];
+  const addLemma = () => {
+    if (current[0].length > 0) {
+      lemmata.push(processStem(current[0], current[1], isVerb));
+      current = [[], makeSourceData()];
+    }
+  };
 
   for (const rawLine of lines) {
+    current[1]?.rawLines.push(rawLine);
     const line = rawLine.trim();
-    if (line[0] === "#") {
+    if (line.length === 0 || line[0] !== ":") {
       continue;
     }
-    if (line.length === 0) {
-      continue;
-    }
-    assert(line[0] === ":", line[0]);
     if (line.startsWith(":le:")) {
-      if (current.length > 0) {
-        results.push(current);
-        current = [];
-      }
+      addLemma();
     }
-    current.push(line);
+    current[0].push(line);
   }
-  if (current.length > 0) {
-    results.push(current);
-  }
-  return results.map((lines) => processStem(lines, true));
+  addLemma();
+  return lemmata;
 }
 
-function processStem(lines: string[], isVerb?: boolean): Lemma {
-  assert(lines.length > 1);
+function processStem(
+  lines: string[],
+  sourceData?: Lemma["sourceData"],
+  isVerb?: boolean
+): Lemma {
+  assert(lines.length > 1, lines.join("\n"));
   assert(lines[0].startsWith(":le:"));
   const stems: Stem[] = [];
   const irregulars: IrregularForm[] = [];
@@ -171,6 +156,9 @@ function processStem(lines: string[], isVerb?: boolean): Lemma {
   if (irregulars.length > 0) {
     result.irregularForms = irregulars;
   }
+  if (sourceData !== undefined) {
+    result.sourceData = sourceData;
+  }
   return result;
 }
 
@@ -183,22 +171,28 @@ function findStemFiles(mode: "vbs" | "nom"): string[] {
     .map((dirent) => path.join(STEMS_SUBDIR, parent, dirent.name));
 }
 
-export function allNounStems(stemFiles?: string[]): Lemma[] {
+export function regularStems(
+  stemType: "nom" | "vbs",
+  stemFiles?: string[],
+  options?: ParseLemmaFileOptions
+): Lemma[] {
   const root = envVar("MORCEUS_DATA_ROOT");
-  const stemPaths = (stemFiles ?? findStemFiles("nom")).map((fileName) =>
+  const stemPaths = (stemFiles ?? findStemFiles(stemType)).map((fileName) =>
     path.join(root, fileName)
   );
-  const regulars = stemPaths.flatMap(parseNounStemFile);
+  return stemPaths.flatMap((s) =>
+    parseRegularStemFile(s, stemType === "vbs", options)
+  );
+}
+
+export function allNounStems(stemFiles?: string[]): Lemma[] {
+  const regulars = regularStems("nom", stemFiles);
   const irregulars = processNomIrregEntries();
   return [...regulars, ...irregulars];
 }
 
 export function allVerbStems(stemFiles?: string[]): Lemma[] {
-  const root = envVar("MORCEUS_DATA_ROOT");
-  const stemPaths = (stemFiles ?? findStemFiles("vbs")).map((fileName) =>
-    path.join(root, fileName)
-  );
-  const regulars = stemPaths.flatMap(parseVerbStemFile);
+  const regulars = regularStems("vbs", stemFiles);
   const irregulars = processVerbIrregEntries();
   return [...regulars, ...irregulars];
 }

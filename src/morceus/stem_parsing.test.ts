@@ -1,12 +1,12 @@
-import { toInflectionData } from "@/morceus/inflection_data_utils";
-import {
-  parseNounStemFile,
-  parseVerbStemFile,
-  type Lemma,
-} from "@/morceus/stem_parsing";
+import fs from "fs";
 
-describe("parseNounStemFile", () => {
-  const nom01 = parseNounStemFile("src/morceus/stems/nom.01");
+import { toInflectionData } from "@/morceus/inflection_data_utils";
+import { parseRegularStemFile, type Lemma } from "@/morceus/stem_parsing";
+
+const VBS_TEST_FILE = "src/morceus/testdata/latin/stems/verbs/vbs.latin";
+
+describe("parseRegularStemFile on nouns", () => {
+  const nom01 = parseRegularStemFile("src/morceus/stems/nom.01", false);
 
   it("has expected lemmata", () => expect(nom01).toHaveLength(31));
 
@@ -69,10 +69,8 @@ describe("parseNounStemFile", () => {
   });
 });
 
-describe("parseVerbStemFile", () => {
-  const verbs = parseVerbStemFile(
-    "src/morceus/testdata/latin/stems/verbs/vbs.latin"
-  );
+describe("parseRegularStemFile on verbs", () => {
+  const verbs = parseRegularStemFile(VBS_TEST_FILE, true);
 
   it("has expected lemmata", () => expect(verbs).toHaveLength(6));
 
@@ -113,5 +111,24 @@ describe("parseVerbStemFile", () => {
         },
       ],
     });
+  });
+});
+
+describe("captures required source data if requested", () => {
+  const verbs = parseRegularStemFile(VBS_TEST_FILE, true, {
+    collectSourceData: true,
+  });
+
+  it("has expected lemmata", () => expect(verbs).toHaveLength(6));
+
+  it("can restore to original", () => {
+    const reconstructedContent = verbs
+      .sort((a, b) => (a.sourceData?.index ?? 0) - (b.sourceData?.index ?? 0))
+      .flatMap((v) => v.sourceData?.rawLines ?? [])
+      .join("\n");
+
+    const originalContent = fs.readFileSync(VBS_TEST_FILE).toString();
+
+    expect(reconstructedContent).toEqual(originalContent);
   });
 });
