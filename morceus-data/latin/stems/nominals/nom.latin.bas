@@ -44,7 +44,7 @@
 :no:inter-re_	x_gis masc
 
 :le:transmontanus
-:aj:transmonta_n	us_a_um
+:aj:tra_nsmonta_n us_a_um
 
 
 :le:abacus
@@ -106,7 +106,7 @@
 :wd:su^a_pte dat abl fem sg
 
 :le:proconsul
-:no:pro_consul 0_is masc
+:no:pro_co_nsul 0_is masc
 
 :le:haud
 :wd:haudqua_quam adverb
@@ -167,7 +167,7 @@
 
 :le:opties
 :wd:optie_s adverb
-:wd:optiens adverb
+:wd:optie_ns adverb
 
 :le:obses
 :no:obs es_idis masc fem
@@ -182,7 +182,7 @@
 :wd:intro_rsus	adverb
 
 :le:infrequens
-:aj:in-fre^qu	ens_adj
+:aj:i_n-fre^qu ens_adj
 
 :le:index
 :no:ind ex_icis masc fem
@@ -432,7 +432,7 @@
 
 
 :le:consul
-:no:consul	0_is masc
+:no:co_nsul 0_is masc
 
 :le:contra
 :wd:contra_	adverb
@@ -570,7 +570,7 @@
 :wd:enim	conj
 
 :le:ensis
-:no:ens 	is_is masc
+:no:e_ns is_is masc
 
 :le:Epicrates
 :no:Epi_crat	es_ae fem
@@ -740,8 +740,8 @@
 :wd:hono_s	irreg_nom3 masc nom sg
 
 :le:Hortensius
-:no:Hortens	ius_i masc
-:no:Horte_s	ius_i masc
+:no:Horte_ns ius_i masc
+:no:Horte_s ius_i masc
 
 :le:Hymenaeus
 :no:hymenae	us_i masc
@@ -776,7 +776,7 @@
 :aj:inop 	s_is
 
 :le:Insuber
-:aj:Insub	er_ris_re
+:aj:I_nsub er_ris_re
 
 :le:integer
 :aj:inte^g 	er_ra_rum
@@ -789,7 +789,7 @@
 :aj:inter	ior_ius_comp
 
 :le:insolenter
-:wd:insolenter	adverb
+:wd:i_nsolenter adverb
 
 :le:igitur
 :wd:igitur	conj
@@ -842,7 +842,7 @@
 :no:Laev	us_i masc pers_name
 
 :le:Laterensis
-:no:Laterens	is_is masc
+:no:Latere_ns is_is masc
 
 :le:laus
 :no:lau	s_dis fem
@@ -898,9 +898,9 @@
 :no:ma_t	er_ris fem
 
 :le:mensis
-:no:mens	is_is masc
-:wd:mensum	irreg_nom3 masc gen pl
-:wd:mensuum	irreg_nom3 masc gen pl
+:no:me_ns is_is masc
+:wd:me_nsum irreg_nom3 masc gen pl
+:wd:me_nsuum irreg_nom3 masc gen pl
 
 :le:mens
 :no:m	ens_entis fem
@@ -1373,8 +1373,8 @@
 :wd:tot		indecl
 
 :le:totiens
-:wd:totiens	adverb
-:wd:totie_s	adverb orth
+:wd:totie_ns adverb
+:wd:totie_s adverb orth
 
 :le:totidem
 :wd:totidem	adverb
@@ -1384,11 +1384,11 @@
 :no:trab	is_is fem
 
 :le:trans
-:wd:trans	prep
+:wd:tra_ns prep
 
 :le:translaticius
-:aj:transla_ti_ci	us_a_um
-:aj:tra_la_ti_ci	us_a_um
+:aj:tra_nsla_ti_ci us_a_um
+:aj:tra_la_ti_ci us_a_um
 
 
 :le:tum

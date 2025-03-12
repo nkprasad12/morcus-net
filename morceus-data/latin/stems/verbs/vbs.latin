@@ -132,11 +132,11 @@
 :vs:ab-sci^d perfstem
 :vs:ab-sciss pp4
 :le:abscondo
-:vs:abs-cond	conj3
+:vs:abs-cond conj3
 :vs:abs-cond perfstem
 :vs:abs-condi^d perfstem
 :vs:abs-condi^t pp4
-:vs:abs-cons pp4
+:vs:abs-co_ns pp4
 :le:absento
 :de:absent	are_vb
 :le:absisto
@@ -185,12 +185,12 @@
 :le:accelero
 :de:ac-ce^le^r	are_vb
 :le:accendo#2
-:vs:ac-cend	conj3
+:vs:ac-cend conj3
 :vs:ac-cend perfstem
-:vs:ac-cens pp4
+:vs:ac-ce_ns pp4
 :le:accenseo
-:vs:ac-cens	conj2
-:vs:ac-cens pp4
+:vs:ac-ce_ns conj2
+:vs:ac-ce_ns pp4
 :le:acceptito
 :de:accepti^t	are_vb
 :le:accepto
@@ -360,9 +360,9 @@
 :le:addecimo
 :de:ad-de^ci^m	are_vb
 :le:addenseo
-:vs:ad-dens	conj2
+:vs:ad-de_ns conj2
 :le:addenso
-:de:a^d-dens	are_vb
+:de:a^d-de_ns are_vb
 :le:addico
 :vs:ad-di_c	conj3
 :vs:ad-di_x perfstem
@@ -439,7 +439,7 @@
 :le:adindo
 :vs:a^d-ind	conj2
 :le:adinflo
-:de:a^d-infl	are_vb
+:de:a^d-i_nfl are_vb
 :le:adingero
 :vs:a^d-inge^r	conj3
 :le:adinquiro
@@ -482,8 +482,8 @@
 :le:admeo
 :de:ad-me	are_vb
 :le:admetior
-:vs:ad-me_t	conj4
-:vs:ad-mens pp4
+:vs:ad-me_t conj4
+:vs:ad-me_ns pp4
 :le:admigro
 :de:ad-mi_^gr	are_vb
 :le:adminiculo
@@ -1131,9 +1131,9 @@
 :le:appingo#1
 :vs:ap-ping	conj3
 :le:appingo#2
-:vs:ap-ping	conj3
-:vs:ap-pins perfstem
-:vs:ap-pins pp4
+:vs:ap-ping conj3
+:vs:ap-pi_ns perfstem
+:vs:ap-pi_ns pp4
 :le:apploro
 :de:ap-plo_r	are_vb
 :le:applumbo
@@ -1153,14 +1153,14 @@
 :le:apprecor
 :de:ap-pre^c	are_vb dep
 :le:apprehendo
-:vs:ap-pre^hend	conj3
+:vs:ap-pre^hend conj3
 :vs:ap-pre^hend perfstem
-:vs:ap-pre^hens pp4
-:vs:ap-pre^nd	conj3 orth
+:vs:ap-pre^he_ns pp4
+:vs:ap-pre^nd conj3 orth
 :vs:ap-pre^nd perfstem orth
 :vs:ap-pre^ns pp4 orth
 :le:apprenso
-:de:apprens	are_vb
+:de:appre_ns are_vb
 :le:appretio
 :de:ap-pre^ti	are_vb
 :le:apprimo
@@ -1276,14 +1276,14 @@
 :vs:a-scalp	conj3
 
 :le:ascendo
-:vs:a-scend	conj3
-:vs:a-scens perfstem
+:vs:a-scend conj3
+:vs:a-sce_ns perfstem
 :vs:a-scend perfstem
-:vs:a-scens pp4
-:vs:ad-scend	conj3
-:vs:ad-scens perfstem
+:vs:a-sce_ns pp4
+:vs:ad-scend conj3
+:vs:ad-sce_ns perfstem
 :vs:ad-scend perfstem
-:vs:ad-scens pp4
+:vs:ad-sce_ns pp4
 
 :le:ardesco
 :vs:a_rde_sc	conj3
@@ -1317,8 +1317,8 @@
 :le:assenesco
 :vs:as-se^ne_sc	conj3
 :le:assentior
-:vs:as-sent	conj4
-:vs:as-sens pp4
+:vs:as-sent conj4
+:vs:as-se_ns pp4
 :le:assequor
 :vs:as-se^qu	conj3 dep
 :vs:as-se^cu_t pp4 dep
@@ -1536,9 +1536,9 @@
 :vs:at-tol	conj3 old
 
 :le:attondeo
-:vs:at-tond	conj2
+:vs:at-tond conj2
 :vs:at-tond perfstem
-:vs:at-tons pp4
+:vs:at-to_ns pp4
 :le:attono
 :vs:at-to^n	conj1
 :vs:at-to^nu^ perfstem
@@ -1976,7 +1976,7 @@
 :le:censeo#1
 :vs:ce_ns	conj2
 :le:censeo#2
-:vs:cens	conj2
+:vs:ce_ns conj2
 :le:centesimo
 :de:cente_si^m	are_vb
 :le:centuplico
@@ -2656,8 +2656,8 @@
 :le:commalaxo
 :de:com-ma^lax	are_vb
 :le:commando
-:vs:com-mand	conj3
-:vs:com-mans pp4
+:vs:com-mand conj3
+:vs:com-ma_ns pp4
 :le:commanduco
 :de:com-mandu_c	are_vb
 :le:commanducor
@@ -2705,8 +2705,8 @@
 :vs:com-me^ru^ perfstem
 :vs:com-me^ri^t pp4
 :le:commetior
-:vs:com-me_t	conj4
-:vs:com-mens pp4
+:vs:com-me_t conj4
+:vs:com-me_ns pp4
 :le:commeto#1
 :de:comme_t	are_vb
 :le:commeto#2
@@ -2761,7 +2761,7 @@
 :vs:com-mo^nu^ perfstem
 :vs:com-mo^ni^t pp4
 :le:commonstro
-:de:com-monstr	are_vb
+:de:com-mo_nstr are_vb
 :le:commordeo
 :vs:com-mord	conj2
 :le:commorior
@@ -2852,7 +2852,7 @@
 :le:compendo
 :vs:com-pend	conj3
 :le:compenso
-:de:com-pens	are_vb
+:de:com-pe_ns are_vb
 :le:comperendino
 :de:compe^rendi^n	are_vb
 :le:comperio
@@ -2932,14 +2932,14 @@
 :le:compraecido
 :vs:com-praeci_d	conj3
 :le:comprehendo
-:vs:com-pre^hend	conj3
-:vs:com-pre_nd	conj3
+:vs:com-pre^hend conj3
+:vs:com-pre_nd conj3
 :vs:com-pre^hend perfstem
 :vs:com-pre_nd perfstem
-:vs:com-pre^hens pp4
+:vs:com-pre^he_ns pp4
 :vs:com-pre_ns pp4
 :le:comprehenso
-:de:compre^hens	are_vb
+:de:compre^he_ns are_vb
 :le:compresso
 :de:compress	are_vb
 :le:comprimo
@@ -3144,8 +3144,8 @@
 :le:condemno
 :de:con-demn	are_vb
 :le:condenso
-:de:condens	are_vb
-:vs:condens conj2 orth
+:de:conde_ns are_vb
+:vs:conde_ns conj2 orth
 :le:condepso
 :vs:con-deps	conj3
 :vs:con-depsu^ perfstem
@@ -3207,112 +3207,112 @@
 :vs:co_nex pp4
 :vs:connex pp4 orth
 :le:confacio
-:vs:con-fa^c	conj3_io
-:vs:con-fe_c perfstem
+:vs:co_n-fa^c conj3_io
+:vs:co_n-fe_c perfstem
 :le:confarreo
-:de:con-farr	are_vb
+:de:co_n-farr are_vb
 :le:confercio
 :vs:co_n-ferc	conj4
 :vs:co_n-fers perfstem
 :vs:co_n-fert pp4
 :le:confermento
-:de:con-ferment	are_vb
+:de:co_n-ferment are_vb
 :le:conferrumino
-:de:con-ferru_mi^n	are_vb
+:de:co_n-ferru_mi^n are_vb
 :le:confervefacio
-:vs:conferve_-fa^c	conj3_io
+:vs:co_nferve_-fa^c conj3_io
 :le:conferveo
-:vs:con-ferv	conj2
+:vs:co_n-ferv conj2
 :le:conficio
-:vs:confi^c	conj3_io
-:vs:confe_c perfstem
-:vs:confect pp4
+:vs:co_nfi^c conj3_io
+:vs:co_nfe_c perfstem
+:vs:co_nfect pp4
 :le:conficto
-:de:confict	are_vb
+:de:co_nfict are_vb
 :le:confido
-:vs:con-fi_d	conj3
-:vs:con-fi_s pp4
+:vs:co_n-fi_d conj3
+:vs:co_n-fi_s pp4
 :le:configo
-:vs:con-fi_g	conj3
-:vs:con-fi_x perfstem
-:vs:con-fi_x pp4
+:vs:co_n-fi_g conj3
+:vs:co_n-fi_x perfstem
+:vs:co_n-fi_x pp4
 :le:confindo
-:vs:con-find	conj3
+:vs:co_n-find conj3
 :le:confingo
-:vs:con-fing	conj3
-:vs:con-finx perfstem
-:vs:con-fict pp4
+:vs:co_n-fing conj3
+:vs:co_n-finx perfstem
+:vs:co_n-fict pp4
 :le:confirmo
 :de:co_n-fi_rm	are_vb
 :le:confisco
-:de:confisc	are_vb
+:de:co_nfisc are_vb
 :le:confiteor
-:vs:confi^t	conj2
-:vs:confess pp4
+:vs:co_nfi^t conj2
+:vs:co_nfess pp4
 :le:conflabello
-:de:con-fla_bell	are_vb
+:de:co_n-fla_bell are_vb
 :le:conflaccesco
-:vs:con-flacce_sc	conj3
+:vs:co_n-flacce_sc conj3
 :le:conflagro
-:de:con-fla_^gr	are_vb
+:de:co_n-fla_^gr are_vb
 :le:conflammo
-:de:con-flamm	are_vb
+:de:co_n-flamm are_vb
 :le:conflicto
-:de:confli_ct	are_vb
+:de:co_nfli_ct are_vb
 :le:confligo
-:vs:con-fli_g	conj3
-:vs:con-fli_x perfstem
-:vs:con-fli_ct pp4
+:vs:co_n-fli_g conj3
+:vs:co_n-fli_x perfstem
+:vs:co_n-fli_ct pp4
 :le:conflo
-:de:con-fl	are_vb
+:de:co_n-fl are_vb
 :le:confluctuo
-:de:con-fluctu^	are_vb
+:de:co_n-fluctu^ are_vb
 :le:confluo
-:vs:con-flu^	conj3
-:vs:con-flu_x perfstem
+:vs:co_n-flu^ conj3
+:vs:co_n-flu_x perfstem
 :le:confodio
-:vs:con-fo^d	conj3_io
-:vs:con-fo_d perfstem
-:vs:con-foss pp4
+:vs:co_n-fo^d conj3_io
+:vs:co_n-fo_d perfstem
+:vs:co_n-foss pp4
 :le:confoedo
-:de:con-foed	are_vb
+:de:co_n-foed are_vb
 :le:conforio
-:vs:confo^r	conj4
-:vs:confo^ri_v perfstem
+:vs:co_nfo^r conj4
+:vs:co_nfo^ri_v perfstem
 :le:conformo
-:de:con-fo_rm	are_vb
+:de:co_n-fo_rm are_vb
 :le:confornico
-:de:con-forni^c	are_vb
+:de:co_n-forni^c are_vb
 :le:conforto
-:de:confort	are_vb
+:de:co_nfort are_vb
 :le:confoveo
-:vs:con-fo^v	conj2
+:vs:co_n-fo^v conj2
 :le:confremo
-:vs:con-fre^m	conj3
-:vs:con-fre^mu^ perfstem
+:vs:co_n-fre^m conj3
+:vs:co_n-fre^mu^ perfstem
 :le:confrico
-:de:con-fri^c	are_vb
+:de:co_n-fri^c are_vb
 :le:confringo
-:vs:confring	conj3
-:vs:confre_g perfstem
-:vs:confra_ct pp4
+:vs:co_nfring conj3
+:vs:co_nfre_g perfstem
+:vs:co_nfra_ct pp4
 :le:confrixo
-:de:confrix	are_vb
+:de:co_nfrix are_vb
 :le:confugio
-:vs:con-fu^g	conj3_io
-:vs:con-fu_g perfstem
+:vs:co_n-fu^g conj3_io
+:vs:co_n-fu_g perfstem
 :le:confulgeo
-:vs:con-fulg	conj2
+:vs:co_n-fulg conj2
 :le:confundo
-:vs:con-fund	conj3
-:vs:con-fu_d perfstem
-:vs:con-fu_s pp4
+:vs:co_n-fund conj3
+:vs:co_n-fu_d perfstem
+:vs:co_n-fu_s pp4
 :le:confunero
-:de:con-fu_ne^r	are_vb
+:de:co_n-fu_ne^r are_vb
 :le:confuto
-:de:con-fu_t	are_vb
+:de:co_n-fu_t are_vb
 :le:confutuo
-:vs:con-fu^tu^	conj3
+:vs:co_n-fu^tu^ conj3
 :le:congarrio
 :de:con-garr	ire_vb
 :le:congaudeo
@@ -3436,208 +3436,208 @@
 :vs:conquaesi_v perfstem orth
 :vs:conquaesi_t pp4 orth
 :le:consaepto
-:de:consaept	are_vb
+:de:co_nsaept are_vb
 :le:consaluto
-:de:con-sa^lu_t	are_vb
+:de:co_n-sa^lu_t are_vb
 :le:consanesco
-:vs:con-sa_ne_sc	conj3
-:vs:con-sa_nu^ perfstem
+:vs:co_n-sa_ne_sc conj3
+:vs:co_n-sa_nu^ perfstem
 :le:consano
-:de:con-sa_n	are_vb
+:de:co_n-sa_n are_vb
 :le:consarrio
-:de:con-sarr	ire_vb
+:de:co_n-sarr ire_vb
 :le:consaucio
-:de:con-sauci	are_vb
+:de:co_n-sauci are_vb
 :le:conscelero
-:de:con-sce^le^r	are_vb
+:de:co_n-sce^le^r are_vb
 :le:conscendo
-:vs:con-scend	conj3
-:vs:con-scend perfstem
-:vs:con-scens pp4
+:vs:co_n-scend conj3
+:vs:co_n-scend perfstem
+:vs:co_n-sce_ns pp4
 :le:conscio
-:de:con-sc	ire_vb
+:de:co_n-sc ire_vb
 :le:conscisco
-:vs:con-sci_sc	conj3
-:vs:con-sci_v perfstem
-:vs:con-sci^ perfstem
-:vs:con-sci_t pp4
+:vs:co_n-sci_sc conj3
+:vs:co_n-sci_v perfstem
+:vs:co_n-sci^ perfstem
+:vs:co_n-sci_t pp4
 :le:conscreor
-:de:conscr	are_vb dep
+:de:co_nscr are_vb dep
 :le:conscribillo
-:de:conscri_bill	are_vb
+:de:co_nscri_bill are_vb
 :le:conscribo
-:vs:con-scri_b	conj3
-:vs:con-scri_ps perfstem
-:vs:con-scri_pt pp4
+:vs:co_n-scri_b conj3
+:vs:co_n-scri_ps perfstem
+:vs:co_n-scri_pt pp4
 :le:conseco
-:vs:con-se^c	conj1
-:vs:con-se^cu^ perfstem
-:vs:con-se^ct pp4
+:vs:co_n-se^c conj1
+:vs:co_n-se^cu^ perfstem
+:vs:co_n-se^ct pp4
 :le:consecro
-:de:conse_^cr	are_vb
-:de:consa^cr	are_vb orth
+:de:co_nse_^cr are_vb
+:de:co_nsa^cr are_vb orth
 :le:consector
-:de:con-sect	are_vb dep
+:de:co_n-sect are_vb dep
 :le:consenesco
-:vs:con-se^ne_sc	conj3
-:vs:con-se^nu^ perfstem
+:vs:co_n-se^ne_sc conj3
+:vs:co_n-se^nu^ perfstem
 :le:consentio
-:vs:con-sent	conj4
-:vs:con-sens perfstem
-:vs:con-sens pp4
+:vs:co_n-sent conj4
+:vs:co_n-se_ns perfstem
+:vs:co_n-se_ns pp4
 :le:consequor
-:vs:con-se^qu	conj3 dep
-:vs:con-se^cu_t pp4 dep
+:vs:co_n-se^qu conj3 dep
+:vs:co_n-se^cu_t pp4 dep
 :le:consermonor
-:de:con-sermo_n	are_vb dep
+:de:co_n-sermo_n are_vb dep
 :le:consero#1
-:vs:con-se^r	conj3
-:vs:con-se_v perfstem
-:vs:con-si^t pp4
+:vs:co_n-se^r conj3
+:vs:co_n-se_v perfstem
+:vs:co_n-si^t pp4
 :le:consero#2
-:vs:con-se^r	conj3
-:vs:con-se^ru^ perfstem
-:vs:con-sert pp4
+:vs:co_n-se^r conj3
+:vs:co_n-se^ru^ perfstem
+:vs:co_n-sert pp4
 :le:conservo
-:de:con-serv	are_vb
+:de:co_n-serv are_vb
 :le:considero
-:de:con-si_de^r	are_vb
+:de:co_n-si_de^r are_vb
 :le:consigno
-:de:con-sign	are_vb
+:de:co_n-sign are_vb
 :le:consilesco
-:vs:con-si^le_sc	conj3
-:vs:con-si^lu^ perfstem
+:vs:co_n-si^le_sc conj3
+:vs:co_n-si^lu^ perfstem
 :le:consilior
-:de:consi^li	are_vb
+:de:co_nsi^li are_vb
 :le:consimilo
-:de:con-si^mi^l	are_vb
+:de:co_n-si^mi^l are_vb
 :le:consipio
-:vs:consi^p	conj3_io
+:vs:co_nsi^p conj3_io
 :le:consisto
-:vs:con-sist	conj3
-:vs:con-sisti^t perfstem
-:vs:con-sisti^t pp4
+:vs:co_n-sist conj3
+:vs:co_n-sisti^t perfstem
+:vs:co_n-sisti^t pp4
 :le:consocio
-:de:con-so^ci	are_vb
+:de:co_n-so^ci are_vb
 :le:consolo
-:de:con-so_l	are_vb
+:de:co_n-so_l are_vb
 :le:consolor
-:de:con-so_l	are_vb dep
+:de:co_n-so_l are_vb dep
 :le:consomnio
-:de:con-somni	are_vb
+:de:co_n-somni are_vb
 :le:consono
-:vs:con-so^n	conj1
-:vs:con-so^nu^ perfstem
+:vs:co_n-so^n conj1
+:vs:co_n-so^nu^ perfstem
 :le:conspergo
-:vs:consperg	conj3
-:vs:conspers perfstem
-:vs:conspers pp4
-:vs:consparg	conj3 orth
-:vs:conspars perfstem orth
-:vs:conspars pp4 orth
+:vs:co_nsperg conj3
+:vs:co_nspers perfstem
+:vs:co_nspers pp4
+:vs:co_nsparg conj3 orth
+:vs:co_nspars perfstem orth
+:vs:co_nspars pp4 orth
 :le:conspicio#1
-:vs:con-spi^c	conj3_io
-:vs:con-spex perfstem
-:vs:con-spect pp4
+:vs:co_n-spi^c conj3_io
+:vs:co_n-spex perfstem
+:vs:co_n-spect pp4
 :le:conspicor
-:de:conspi^c	are_vb dep
+:de:co_nspi^c are_vb dep
 :le:conspiro#1
-:de:con-spi_r	are_vb
+:de:co_n-spi_r are_vb
 :le:conspiro#2
-:de:con-spi_r	are_vb
+:de:co_n-spi_r are_vb
 :le:consplendesco
-:vs:con-splende_sc	conj3
+:vs:co_n-splende_sc conj3
 :le:conspolio
-:de:con-spo^li	are_vb
+:de:co_n-spo^li are_vb
 :le:conspondeo
-:vs:con-spond	conj2
-:vs:con-spond perfstem
-:vs:con-spons pp4
+:vs:co_n-spond conj2
+:vs:co_n-spond perfstem
+:vs:co_n-spo_ns pp4
 :le:consputo
-:de:con-spu_t	are_vb
+:de:co_n-spu_t are_vb
 :le:constabilio
-:vs:con-sta^bi^l	conj4
-:vs:con-sta^bi^li_v perfstem
+:vs:co_n-sta^bi^l conj4
+:vs:co_n-sta^bi^li_v perfstem
 :le:constagno
-:de:con-stagn	are_vb
+:de:co_n-stagn are_vb
 :le:consterno#1
-:vs:con-stern	conj3
-:vs:con-stra_v perfstem
-:vs:con-stra_t pp4
+:vs:co_n-stern conj3
+:vs:co_n-stra_v perfstem
+:vs:co_n-stra_t pp4
 :le:consterno#2
-:de:constern	are_vb
+:de:co_nstern are_vb
 :le:constipo
-:de:con-sti_p	are_vb
+:de:co_n-sti_p are_vb
 :le:constituo
-:vs:con-sti^tu^	conj3
-:vs:con-sti^tu^ perfstem
-:vs:con-sti^tu_t pp4
+:vs:co_n-sti^tu^ conj3
+:vs:co_n-sti^tu^ perfstem
+:vs:co_n-sti^tu_t pp4
 :le:consto
-:vs:con-st	conj1
-:vs:con-sti^t perfstem
-:vs:con-sta_t pp4
+:vs:co_n-st conj1
+:vs:co_n-sti^t perfstem
+:vs:co_n-sta_t pp4
 :le:constrepo
-:vs:con-stre^p	conj3
+:vs:co_n-stre^p conj3
 :le:constricto
-:de:constrict	are_vb
+:de:co_nstrict are_vb
 :le:constringo
-:vs:con-string	conj3
-:vs:con-strinx perfstem
-:vs:con-strict pp4
+:vs:co_n-string conj3
+:vs:co_n-strinx perfstem
+:vs:co_n-strict pp4
 :le:construo
-:vs:con-stru^	conj3
-:vs:con-stru_x perfstem
-:vs:con-stru_ct pp4
+:vs:co_n-stru^ conj3
+:vs:co_n-stru_x perfstem
+:vs:co_n-stru_ct pp4
 :le:constupeo
-:vs:con-stu^p	conj2
-:vs:con-stu^pu^ perfstem
+:vs:co_n-stu^p conj2
+:vs:co_n-stu^pu^ perfstem
 :le:constupro
-:de:con-stu_^pr	are_vb
+:de:co_n-stu_^pr are_vb
 :le:consuadeo
-:vs:con-sua_d	conj2
+:vs:co_n-sua_d conj2
 :le:consuavio
-:de:con-sua_vi	are_vb
+:de:co_n-sua_vi are_vb
 :le:consubigo
-:vs:con-su^bi^g	conj2
+:vs:co_n-su^bi^g conj2
 :le:consudasco
-:vs:consu_da_sc	conj3
+:vs:co_nsu_da_sc conj3
 :le:consudo
-:de:con-su_d	are_vb
+:de:co_n-su_d are_vb
 :le:consuefacio
-:vs:consue_-fa^c	conj3_io
-:vs:consue_-fe_c perfstem
-:vs:consu_-fact pp4
+:vs:co_nsue_-fa^c conj3_io
+:vs:co_nsue_-fe_c perfstem
+:vs:co_nsu_-fact pp4
 :le:consueo
-:vs:con-su^	conj2
+:vs:co_n-su^ conj2
 :le:consuesco
-:vs:consue_sc	conj3
-:vs:consue_v perfstem
-:vb:consue_sse perf inf act syncope
-:vs:consue_t pp4
+:vs:co_nsue_sc conj3
+:vs:co_nsue_v perfstem
+:vs:co_nsue_t pp4
+:vb:co_nsue_sse perf inf act syncope
 :le:consulo
-:vs:consu^l	conj3
-:vs:consu^lu^ perfstem
-:vs:consu^lt pp4
+:vs:co_nsu^l conj3
+:vs:co_nsu^lu^ perfstem
+:vs:co_nsu^lt pp4
 :le:consulto#2
-:de:consult	are_vb
+:de:co_nsult are_vb
 :le:consultor
-:de:consult	are_vb dep
+:de:co_nsult are_vb dep
 :le:consummo
-:de:con-summ	are_vb
+:de:co_n-summ are_vb
 :le:consumo
-:vs:con-su_m	conj3
-:vs:con-su_mps perfstem
-:vs:con-su_mpt pp4
+:vs:co_n-su_m conj3
+:vs:co_n-su_mps perfstem
+:vs:co_n-su_mpt pp4
 :le:consuo
-:vs:con-su^	conj3
-:vs:con-su^ perfstem
-:vs:con-su_t pp4
+:vs:co_n-su^ conj3
+:vs:co_n-su^ perfstem
+:vs:co_n-su_t pp4
 :le:consurgo
-:vs:con-surg	conj3
-:vs:con-surre_x perfstem
-:vs:con-surre_ct pp4
+:vs:co_n-surg conj3
+:vs:co_n-surre_x perfstem
+:vs:co_n-surre_ct pp4
 :le:consusurro
-:de:con-su^surr	are_vb
+:de:co_n-su^surr are_vb
 :le:contabefacio
 :vs:con-ta_be^fa^c	conj3_io
 :le:contabesco
@@ -4271,15 +4271,15 @@
 :le:defatigo
 :de:de_-fa^ti_g	are_vb
 :le:defendo
-:vs:de_-fend	conj3
+:vs:de_-fend conj3
 :vs:de_-fend perfstem
-:vs:de_-fens pp4
+:vs:de_-fe_ns pp4
 :le:defenero
 :de:de_-fe_ne^r	are_vb
 :le:defensito
-:de:de_fensi^t	are_vb
+:de:de_fe_nsi^t are_vb
 :le:defenso
-:de:de_fens	are_vb
+:de:de_fe_ns are_vb
 :le:defervefacio
 :vs:de_-ferve^fa^c	conj3_io
 :vs:de_-ferve^fe_c perfstem
@@ -4536,8 +4536,8 @@
 :vs:de_-mers perfstem
 :vs:de_-mers pp4
 :le:demetior
-:vs:de_-me_t	conj4
-:vs:de_-mens pp4
+:vs:de_-me_t conj4
+:vs:de_-me_ns pp4
 :le:demeto#1
 :vs:de_-me^t	conj3
 :vs:de_-messu^ perfstem
@@ -4570,7 +4570,7 @@
 :vs:de_-mo_l	conj4
 :vs:de_-mo_li_t pp4
 :le:demonstro
-:de:de_-monstr	are_vb
+:de:de_-mo_nstr are_vb
 :le:demorior
 :vs:de_-mo^r	conj3_io
 :vs:de_-mortu pp4
@@ -4651,9 +4651,9 @@
 :le:dependeo
 :vs:de_-pend	conj2
 :le:dependo
-:vs:de_-pend	conj3
+:vs:de_-pend conj3
 :vs:de_-pend perfstem
-:vs:de_-pens pp4
+:vs:de_-pe_ns pp4
 :le:deperdo
 :vs:de_-perd	conj3
 :vs:de_-perdi^d perfstem
@@ -4705,12 +4705,12 @@
 :le:deprecor
 :de:de_-pre^c	are_vb dep
 :le:deprehendo
-:vs:de_-pre^hend	conj3
+:vs:de_-pre^hend conj3
 :vs:de_-pre^hend perfstem
-:vs:de_-pre^hens pp4
-:vs:de_-prend	conj3 orth
+:vs:de_-pre^he_ns pp4
+:vs:de_-prend conj3 orth
 :vs:de_-prend perfstem orth
-:vs:de_-prens pp4 orth
+:vs:de_-pre_ns pp4 orth
 :le:depretio
 :de:de_pre^ti	are_vb
 :le:deprimo
@@ -4783,9 +4783,9 @@
 :le:desacro
 :de:de_-sa_^cr	are_vb
 :le:descendo
-:vs:de_-scend	conj3
+:vs:de_-scend conj3
 :vs:de_-scend perfstem
-:vs:de_-scens pp4
+:vs:de_-sce_ns pp4
 :le:descindo
 :vs:de_-scind	conj3
 :le:descisco
@@ -4867,10 +4867,10 @@
 :le:despolio
 :de:de_-spo^li	are_vb
 :le:despondeo
-:vs:de_-spond	conj2
-:vs:de_-spond	perfstem
-:vs:de_-spopond	perfstem
-:vs:de_-spons	pp4
+:vs:de_-spond conj2
+:vs:de_-spond perfstem
+:vs:de_-spopond perfstem
+:vs:de_-spo_ns pp4
 :le:despumo
 :de:de_-spu_m	are_vb
 :le:despuo
@@ -4963,15 +4963,15 @@
 :vs:de_-ti^nu^ perfstem
 :vs:de_-tent pp4
 :le:detondeo
-:vs:de_-tond	conj2
+:vs:de_-tond conj2
 :vs:de_-to^tond perfstem
 :vs:de_-tond perfstem
-:vs:de_-tons pp4
+:vs:de_-to_ns pp4
 :le:detono
 :vs:de_-to^n	conj1
 :vs:de_-to^nu^ perfstem
 :le:detonso
-:de:de_tons	are_vb
+:de:de_to_ns are_vb
 :le:detorqueo
 :vs:de_-torqu	conj2
 :vs:de_-tors perfstem
@@ -5184,8 +5184,8 @@
 :le:dimano
 :de:di_-ma_n	are_vb
 :le:dimetior
-:vs:di_-me_t	conj4
-:vs:di_-mens pp4
+:vs:di_-me_t conj4
+:vs:di_-me_ns pp4
 :le:dimeto
 :de:di_-me_t	are_vb
 :le:dimetor
@@ -5357,7 +5357,7 @@
 :le:dispendo#1
 :vs:dis-pend	conj3
 :le:dispenso
-:de:dis-pens	are_vb
+:de:dis-pe_ns are_vb
 :le:dispercutio
 :vs:dis-percu^t	conj3_io
 :le:disperdo
@@ -5415,9 +5415,9 @@
 :le:dissemino
 :de:dis-se_mi^n	are_vb
 :le:dissentio
-:vs:dis-sent	conj4
-:vs:dis-sens perfstem
-:vs:dis-sens pp4
+:vs:dis-sent conj4
+:vs:dis-se_ns perfstem
+:vs:dis-se_ns pp4
 :le:disseparo
 :de:dis-se_pa^r	are_vb
 :le:dissereno
@@ -5595,7 +5595,7 @@
 :le:doto#1
 :de:do_t	are_vb
 :le:drenso
-:de:drens	are_vb
+:de:dre_ns are_vb
 :le:drindio
 :de:drind	ire_vb
 :le:dropaco
@@ -5978,8 +5978,8 @@
 :vs:e_-mers perfstem
 :vs:e_-mers pp4
 :le:emetior
-:vs:e_-me_t	conj4
-:vs:e_-mens pp4
+:vs:e_-me_t conj4
+:vs:e_-me_ns pp4
 :le:emeto
 :vs:e_-me^t	conj3
 :le:emico
@@ -6149,9 +6149,9 @@
 :vs:e_-ru^ perfstem
 :vs:e_-ru^t pp4
 :le:escendo
-:vs:e_-scend	conj3
+:vs:e_-scend conj3
 :vs:e_-scend perfstem
-:vs:e_-scens pp4
+:vs:e_-sce_ns pp4
 :le:esco
 :de:esc	are_vb
 :le:esito
@@ -6577,9 +6577,9 @@
 :le:expalpor
 :de:expalp	are_vb dep
 :le:expando
-:vs:ex-pand	conj3
+:vs:ex-pand conj3
 :vs:ex-pand perfstem
-:vs:ex-pans pp4
+:vs:ex-pa_ns pp4
 :le:expatro
 :de:ex-pa_^tr	are_vb
 :le:expavefacio
@@ -6603,11 +6603,11 @@
 :vs:ex-pu^l perfstem
 :vs:ex-puls pp4
 :le:expendo
-:vs:ex-pend	conj3
+:vs:ex-pend conj3
 :vs:ex-pend perfstem
-:vs:ex-pens pp4
+:vs:ex-pe_ns pp4
 :le:expenso
-:de:expens	are_vb
+:de:expe_ns are_vb
 :le:expergefacio
 :vs:experge_-fa^c	conj3_io
 :vs:experge_-fe_c perfstem
@@ -6635,7 +6635,7 @@
 :vs:ex-pinx perfstem
 :vs:ex-pict pp4
 :le:expinso
-:vs:ex-pins	conj3
+:vs:ex-pi_ns conj3
 :le:expio
 :de:ex-pi	are_vb
 :le:expiscor
@@ -6866,10 +6866,10 @@
 :vs:ex-ta_be_sc	conj3
 :vs:ex-ta_bu^ perfstem
 :le:extendo
-:vs:ex-tend	conj3
+:vs:ex-tend conj3
 :vs:ex-tend perfstem
 :vs:ex-tent pp4
-:vs:ex-tens pp4 orth
+:vs:ex-te_ns pp4 orth
 :le:extento
 :de:extent	are_vb
 :le:extenuo
@@ -7901,12 +7901,12 @@
 :le:impendeo
 :vs:impend	conj2
 :le:impendo
-:vs:impend	conj3
+:vs:impend conj3
 :vs:impend perfstem
-:vs:impens pp4
-:vs:inpend	conj3 orth
+:vs:impe_ns pp4
+:vs:inpend conj3 orth
 :vs:inpend perfstem orth
-:vs:inpens pp4 orth
+:vs:inpe_ns pp4 orth
 
 :le:imperco
 :vs:imperc	conj3
@@ -8091,9 +8091,9 @@
 :vs:incende^fa^c	conj3_io
 :vs:incende^fe_c perfstem
 :le:incendo
-:vs:incend	conj3
+:vs:incend conj3
 :vs:incend perfstem
-:vs:incens pp4
+:vs:ince_ns pp4
 :le:inceno
 :de:in-ce_n	are_vb
 :le:incepto
@@ -8168,7 +8168,7 @@
 :le:inconcilio
 :de:in-conci^li	are_vb
 :le:inconstruo
-:vs:inconstru^	conj3
+:vs:inco_nstru^ conj3
 :le:incoprio
 :de:inco_^pri	are_vb
 :le:incoquo
@@ -8315,121 +8315,121 @@
 :le:inesco
 :de:i^n-esc	are_vb
 :le:infaeco
-:de:in-faec	are_vb
+:de:i_n-faec are_vb
 :le:infamo
-:de:in-fa_m	are_vb
+:de:i_n-fa_m are_vb
 :le:infanto
-:de:infant	are_vb
+:de:i_nfant are_vb
 :le:infarcio
-:vs:in-farc	conj4
-:vs:in-farcs perfstem
-:vs:in-farcs pp4
+:vs:i_n-farc conj4
+:vs:i_n-farcs perfstem
+:vs:i_n-farcs pp4
 :le:infatigo
-:de:in-fa^ti_g	are_vb
+:de:i_n-fa^ti_g are_vb
 :le:infatuo
-:de:infa^tu^	are_vb
+:de:i_nfa^tu^ are_vb
 :le:infelicito
-:de:infe_li_ci^t	are_vb
+:de:i_nfe_li_ci^t are_vb
 :le:infenso
-:de:infens	are_vb
+:de:i_nfe_ns are_vb
 :le:infervefacio
-:vs:in-ferve^fa^c	conj3_io
-:vs:in-ferve^fe_c perfstem
-:vs:in-ferve^fact pp4
+:vs:i_n-ferve^fa^c conj3_io
+:vs:i_n-ferve^fe_c perfstem
+:vs:i_n-ferve^fact pp4
 :le:inferveo
-:vs:in-ferv	conj2
+:vs:i_n-ferv conj2
 :le:infervesco
-:vs:in-ferve_sc	conj3
-:vs:in-ferbu^ perfstem
+:vs:i_n-ferve_sc conj3
+:vs:i_n-ferbu^ perfstem
 :le:infesto
-:de:infest	are_vb
+:de:i_nfest are_vb
 :le:infibulo
-:de:in-fi_bu^l	are_vb
+:de:i_n-fi_bu^l are_vb
 :le:inficio
-:vs:in-fi^c	conj3_io
-:vs:in-fe_c perfstem
-:vs:in-fect pp4
+:vs:i_n-fi^c conj3_io
+:vs:i_n-fe_c perfstem
+:vs:i_n-fect pp4
 :le:infigo
-:vs:in-fi_g	conj3
-:vs:in-fi_x perfstem
-:vs:in-fi_x pp4
+:vs:i_n-fi_g conj3
+:vs:i_n-fi_x perfstem
+:vs:i_n-fi_x pp4
 :le:infimo
-:de:infi^m	are_vb
+:de:i_nfi^m are_vb
 :le:infindo
-:vs:in-find	conj3
-:vs:in-fi^d perfstem
-:vs:in-fiss pp4
+:vs:i_n-find conj3
+:vs:i_n-fi^d perfstem
+:vs:i_n-fiss pp4
 :le:infirmo#1
-:de:infirm	are_vb
+:de:i_nfirm are_vb
 :le:infirmo#2
-:de:in-firm	are_vb
+:de:i_n-firm are_vb
 :le:infitior
-:de:infi^ti	are_vb
+:de:i_nfi^ti are_vb
 :le:inflacceo
-:vs:in-flacc	conj2
+:vs:i_n-flacc conj2
 :le:inflagro
-:de:in-fla_gr	are_vb
+:de:i_n-fla_gr are_vb
 :le:inflammo
-:de:in-flamm	are_vb
+:de:i_n-flamm are_vb
 :le:inflo
-:de:in-fl	are_vb
+:de:i_n-fl are_vb
 :le:infloresco
-:vs:in-flo_re_sc	conj3
-:vs:in-flo_ru^ perfstem
+:vs:i_n-flo_re_sc conj3
+:vs:i_n-flo_ru^ perfstem
 :le:influo
-:vs:in-flu^	conj3
-:vs:in-flu_x perfstem
-:vs:in-flu_x pp4
+:vs:i_n-flu^ conj3
+:vs:i_n-flu_x perfstem
+:vs:i_n-flu_x pp4
 :le:infodio
-:vs:in-fo^d	conj3_io
-:vs:in-fo_d perfstem
-:vs:in-foss pp4
+:vs:i_n-fo^d conj3_io
+:vs:i_n-fo_d perfstem
+:vs:i_n-foss pp4
 :le:informo
-:de:in-fo_rm	are_vb
+:de:i_n-fo_rm are_vb
 :le:inforo#1
-:de:in-fo^r	are_vb
+:de:i_n-fo^r are_vb
 :le:inforo#2
-:de:info^r	are_vb
+:de:i_nfo^r are_vb
 :le:infremo
-:vs:in-fre^m	conj3
-:vs:in-fre^mu^ perfstem
+:vs:i_n-fre^m conj3
+:vs:i_n-fre^mu^ perfstem
 :le:infrendeo
-:vs:in-frend	conj2
+:vs:i_n-frend conj2
 :le:infrendo
-:vs:in-frend	conj3
+:vs:i_n-frend conj3
 :le:infreno
-:de:in-fre_n	are_vb
+:de:i_n-fre_n are_vb
 :le:infrico
-:vs:in-fri^c	conj1
-:vs:in-fri^cu^ perfstem
-:vs:in-fri^ct pp4
+:vs:i_n-fri^c conj1
+:vs:i_n-fri^cu^ perfstem
+:vs:i_n-fri^ct pp4
 :le:infricolo
-:de:infri^co^l	are_vb
+:de:i_nfri^co^l are_vb
 :le:infrigesco
-:vs:in-fri_ge_sc	conj3
-:vs:in-fri_x perfstem
+:vs:i_n-fri_ge_sc conj3
+:vs:i_n-fri_x perfstem
 :le:infrigido
-:de:in-fri_gi^d	are_vb
+:de:i_n-fri_gi^d are_vb
 :le:infringo
-:vs:in-fring	conj3
-:vs:in-fre_g perfstem
-:vs:in-fra_ct pp4
+:vs:i_n-fring conj3
+:vs:i_n-fre_g perfstem
+:vs:i_n-fra_ct pp4
 :le:infrio
-:de:in-fri	are_vb
+:de:i_n-fri are_vb
 :le:infulcio
-:vs:in-fulc	conj4
-:vs:in-fulcs perfstem
-:vs:in-fulct pp4
+:vs:i_n-fulc conj4
+:vs:i_n-fulcs perfstem
+:vs:i_n-fulct pp4
 :le:infulcio
-:de:in-fulc	are_vb
+:de:i_n-fulc are_vb
 :le:infumo
-:de:in-fu_m	are_vb
+:de:i_n-fu_m are_vb
 :le:infundo
-:vs:in-fund	conj3
-:vs:in-fu_d perfstem
-:vs:in-fu_s pp4
+:vs:i_n-fund conj3
+:vs:i_n-fu_d perfstem
+:vs:i_n-fu_s pp4
 :le:infusco
-:de:in-fusc	are_vb
+:de:i_n-fusc are_vb
 :le:ingemino
 :de:in-ge^mi^n	are_vb
 :le:ingemisco
@@ -8626,212 +8626,212 @@
 :vs:inqui_si_v perfstem
 :vs:inqui_si_t pp4
 :le:insaevio
-:de:in-saev	ire_vb
+:de:i_n-saev ire_vb
 :le:insanio
-:vs:insa_n	conj4
-:vs:insa_ni_v perfstem
-:vs:insa_ni^ perfstem
-:vs:insa_ni_t pp4
+:vs:i_nsa_n conj4
+:vs:i_nsa_ni_v perfstem
+:vs:i_nsa_ni^ perfstem
+:vs:i_nsa_ni_t pp4
 :le:insarcio
-:de:in-sarc	ire_vb
+:de:i_n-sarc ire_vb
 :le:inscendo
-:vs:inscend	conj3
-:vs:inscend perfstem
-:vs:inscens pp4
+:vs:i_nscend conj3
+:vs:i_nscend perfstem
+:vs:i_nsce_ns pp4
 :le:inscribo
-:vs:in-scri_b	conj3
-:vs:in-scri_ps perfstem
-:vs:in-scri_pt pp4
+:vs:i_n-scri_b conj3
+:vs:i_n-scri_ps perfstem
+:vs:i_n-scri_pt pp4
 :le:inscrutor
-:de:in-scru_t	are_vb dep
+:de:i_n-scru_t are_vb dep
 :le:insculpo
-:vs:in-sculp	conj3
-:vs:in-sculps perfstem
-:vs:in-sculpt pp4
+:vs:i_n-sculp conj3
+:vs:i_n-sculps perfstem
+:vs:i_n-sculpt pp4
 :le:inseco#1
-:vs:in-se^c	conj1
-:vs:in-se^cu^ perfstem
-:vs:in-se^ct pp4
+:vs:i_n-se^c conj1
+:vs:i_n-se^cu^ perfstem
+:vs:i_n-se^ct pp4
 :le:insecto
-:de:insect	are_vb
+:de:i_nsect are_vb
 :le:insector
-:de:insect	are_vb dep
+:de:i_nsect are_vb dep
 :le:insemino
-:de:in-se_mi^n	are_vb
+:de:i_n-se_mi^n are_vb
 :le:insenesco
-:vs:in-se^ne_sc	conj3
-:vs:in-se^nu perfstem
+:vs:i_n-se^ne_sc conj3
+:vs:i_n-se^nu perfstem
 :le:insequor
-:vs:in-se^qu	conj3
-:vs:in-se^c	conj3
-:vs:in-se^cu_t pp4
+:vs:i_n-se^qu conj3
+:vs:i_n-se^c conj3
+:vs:i_n-se^cu_t pp4
 :le:insero#1
-:vs:in-se^r	conj3
-:vs:in-se_v perfstem
-:vs:in-si^t pp4
+:vs:i_n-se^r conj3
+:vs:i_n-se_v perfstem
+:vs:i_n-si^t pp4
 :le:insero#2
-:vs:in-se^r	conj3
-:vs:in-se^ru^ perfstem
-:vs:in-sert pp4
+:vs:i_n-se^r conj3
+:vs:i_n-se^ru^ perfstem
+:vs:i_n-sert pp4
 :le:inserpo
-:vs:in-serp	conj3
-:vs:in-serps perfstem
-:vs:in-serpt pp4
+:vs:i_n-serp conj3
+:vs:i_n-serps perfstem
+:vs:i_n-serpt pp4
 :le:inserto
-:de:insert	are_vb
+:de:i_nsert are_vb
 :le:inservio
-:vs:in-serv	conj4
-:vs:in-servi_v perfstem
-:vs:in-servi^ perfstem
-:vs:in-servi_t pp4
+:vs:i_n-serv conj4
+:vs:i_n-servi_v perfstem
+:vs:i_n-servi^ perfstem
+:vs:i_n-servi_t pp4
 :le:inservo
-:de:in-serv	are_vb
+:de:i_n-serv are_vb
 :le:insibilo
-:de:in-si_bi^l	are_vb
+:de:i_n-si_bi^l are_vb
 :le:insideo
-:vs:insi^d	conj2
-:vs:insi^se_d perfstem
-:vs:insi^sess pp4
+:vs:i_nsi^d conj2
+:vs:i_nsi^se_d perfstem
+:vs:i_nsi^sess pp4
 :le:insidior
-:de:insi^di	are_vb
+:de:i_nsi^di are_vb
 :le:insido
-:vs:in-si_d	conj3
-:vs:in-se_d perfstem
-:vs:in-sess pp4
+:vs:i_n-si_d conj3
+:vs:i_n-se_d perfstem
+:vs:i_n-sess pp4
 :le:insignio
-:vs:insign	conj4
-:vs:insigni_v perfstem
-:vs:insigni^ perfstem
-:vs:insigni_t pp4
+:vs:i_nsign conj4
+:vs:i_nsigni_v perfstem
+:vs:i_nsigni^ perfstem
+:vs:i_nsigni_t pp4
 :le:insigno
-:de:in-sign	are_vb
+:de:i_n-sign are_vb
 :le:insimulo
-:de:in-si^mu^l	are_vb
-:de:in-si^mi^l	are_vb orth
+:de:i_n-si^mu^l are_vb
+:de:i_n-si^mi^l are_vb orth
 :le:insinuo
-:de:in-si^nu^	are_vb
+:de:i_n-si^nu^ are_vb
 :le:insipo
-:vs:insi^p	conj3
-:vs:insi^pu^ perfstem
+:vs:i_nsi^p conj3
+:vs:i_nsi^pu^ perfstem
 :le:insisto
-:vs:in-sist	conj3
-:vs:in-sisti^t perfstem
+:vs:i_n-sist conj3
+:vs:i_n-sisti^t perfstem
 :le:insoleo
-:vs:in-so^l	conj2
+:vs:i_n-so^l conj2
 :le:insolesco
-:vs:inso^le_sc	conj3
+:vs:i_nso^le_sc conj3
 :le:insolo
-:de:in-so_l	are_vb
+:de:i_n-so_l are_vb
 :le:insono
-:vs:in-so^n	conj1
-:vs:in-so^nu^ perfstem
+:vs:i_n-so^n conj1
+:vs:i_n-so^nu^ perfstem
 :le:insordesco
-:vs:in-sorde_sc	conj3
-:vs:in-sordu^ perfstem
+:vs:i_n-sorde_sc conj3
+:vs:i_n-sordu^ perfstem
 :le:inspatior
-:de:in-spa^ti	are_vb dep
+:de:i_n-spa^ti are_vb dep
 :le:inspecto
-:de:inspect	are_vb
+:de:i_nspect are_vb
 :le:inspargo
-:vs:in-sparg	conj3
+:vs:i_n-sparg conj3
 :le:inspicio
-:vs:inspi^c	conj3_io
-:vs:inspex perfstem
-:vs:inspect pp4
+:vs:i_nspi^c conj3_io
+:vs:i_nspex perfstem
+:vs:i_nspect pp4
 :le:inspico
-:de:in-spi_c	are_vb
+:de:i_n-spi_c are_vb
 :le:inspiro
-:de:in-spi_r	are_vb
+:de:i_n-spi_r are_vb
 :le:insplendesco
-:vs:in-splende_sc	conj3
+:vs:i_n-splende_sc conj3
 :le:inspumo
-:de:in-spu_m	are_vb
+:de:i_n-spu_m are_vb
 :le:inspuo
-:vs:in-spu^	conj3
-:vs:in-spu^ perfstem
+:vs:i_n-spu^ conj3
+:vs:i_n-spu^ perfstem
 :le:inspurco
-:de:in-spurc	are_vb
+:de:i_n-spurc are_vb
 :le:insputo
-:de:in-spu_t	are_vb
+:de:i_n-spu_t are_vb
 :le:instabilio
-:de:in-sta^bi^l	ire_vb
+:de:i_n-sta^bi^l ire_vb
 :le:instagno
-:de:in-sta_gn	are_vb
+:de:i_n-sta_gn are_vb
 :le:instauro
-:de:in-staur	are_vb
+:de:i_n-staur are_vb
 :le:insterno
-:vs:in-stern	conj3
-:vs:in-stra_v perfstem
-:vs:in-stra_t pp4
+:vs:i_n-stern conj3
+:vs:i_n-stra_v perfstem
+:vs:i_n-stra_t pp4
 :le:instigo
-:de:insti_g	are_vb
+:de:i_nsti_g are_vb
 :le:instillo
-:de:instill	are_vb
+:de:i_nstill are_vb
 :le:instimulo
-:de:in-sti^mu^l	are_vb
+:de:i_n-sti^mu^l are_vb
 :le:instinguo
-:vs:in-stingu	conj3
-:vs:in-stinx perfstem
-:vs:in-stinct pp4
+:vs:i_n-stingu conj3
+:vs:i_n-stinx perfstem
+:vs:i_n-stinct pp4
 :le:instipo
-:de:in-sti_p	are_vb
+:de:i_n-sti_p are_vb
 :le:instipulor
-:de:in-sti^pu^l	are_vb dep
+:de:i_n-sti^pu^l are_vb dep
 :le:instituo
-:vs:insti^tu^	conj3
-:vs:insti^tu^ perfstem
-:vs:insti^tu_t pp4
+:vs:i_nsti^tu^ conj3
+:vs:i_nsti^tu^ perfstem
+:vs:i_nsti^tu_t pp4
 :le:insto
-:vs:in-st	conj1
-:vs:in-sti^t perfstem
-:vs:in-sta_t pp4
+:vs:i_n-st conj1
+:vs:i_n-sti^t perfstem
+:vs:i_n-sta_t pp4
 :le:instrepito
-:de:instre^pi^t	are_vb
+:de:i_nstre^pi^t are_vb
 :le:instrepo
-:vs:in-stre^p	conj3
-:vs:in-stre^pu^ perfstem
-:vs:in-stre^pi^t pp4
+:vs:i_n-stre^p conj3
+:vs:i_n-stre^pu^ perfstem
+:vs:i_n-stre^pi^t pp4
 :le:instrido
-:vs:in-stri_d	conj3
+:vs:i_n-stri_d conj3
 :le:instringo
-:vs:in-string	conj3
-:vs:in-strinx perfstem
-:vs:in-strict pp4
+:vs:i_n-string conj3
+:vs:i_n-strinx perfstem
+:vs:i_n-strict pp4
 :le:instruo
-:vs:in-stru^	conj3
-:vs:in-stru_x perfstem
-:vs:in-stru_ct pp4
+:vs:i_n-stru^ conj3
+:vs:i_n-stru_x perfstem
+:vs:i_n-stru_ct pp4
 :le:instupeo
-:vs:in-stu^p	conj2
+:vs:i_n-stu^p conj2
 :le:insuco
-:de:insu_c	are_vb
+:de:i_nsu_c are_vb
 :le:insudo
-:de:in-su_d	are_vb
+:de:i_n-su_d are_vb
 :le:insuesco
-:vs:in-sue_sc	conj3
-:vs:in-sue_v perfstem
-:vs:in-sue_t pp4
+:vs:i_n-sue_sc conj3
+:vs:i_n-sue_v perfstem
+:vs:i_n-sue_t pp4
 :le:insufflo
-:de:in-suffl	are_vb
+:de:i_n-suffl are_vb
 :le:insulco
-:de:in-sulc	are_vb
+:de:i_n-sulc are_vb
 :le:insulto
-:de:insult	are_vb
+:de:i_nsult are_vb
 :le:insumo
-:vs:in-su_m	conj3
-:vs:in-su_mps perfstem
-:vs:in-su_mpt pp4
+:vs:i_n-su_m conj3
+:vs:i_n-su_mps perfstem
+:vs:i_n-su_mpt pp4
 :le:insuo
-:vs:in-su^	conj3
-:vs:in-su^ perfstem
+:vs:i_n-su^ conj3
+:vs:i_n-su^ perfstem
 :le:insupero
-:de:in-su^pe^r	are_vb
+:de:i_n-su^pe^r are_vb
 :le:insurgo
-:vs:in-surg	conj3
-:vs:in-surre_x perfstem
-:vs:in-surre_ct pp4
+:vs:i_n-surg conj3
+:vs:i_n-surre_x perfstem
+:vs:i_n-surre_ct pp4
 :le:insusurro
-:de:in-su^surr	are_vb
+:de:i_n-su^surr are_vb
 :le:intabesco
 :vs:in-ta_be_sc	conj3
 :vs:in-ta_bu perfstem
@@ -9206,9 +9206,9 @@
 :le:intollo
 :vs:in-toll	conj3
 :le:intondeo
-:vs:in-tond	conj2
+:vs:in-tond conj2
 :vs:in-tond perfstem
-:vs:in-tons pp4
+:vs:in-to_ns pp4
 :le:intono
 :vs:in-to^n	conj1
 :vs:in-to^nu^ perfstem
@@ -9983,9 +9983,9 @@
 :le:mando#1
 :de:mand	are_vb
 :le:mando#2
-:vs:mand	conj3
+:vs:mand conj3
 :vs:mand perfstem
-:vs:mans pp4
+:vs:ma_ns pp4
 :le:manduco#1
 :de:mandu_c	are_vb
 :le:maneo
@@ -10001,19 +10001,19 @@
 :le:mano
 :de:ma_n	are_vb
 :le:mansito
-:de:mansi^t	are_vb
+:de:ma_nsi^t are_vb
 :le:mansuefacio
-:vs:mansu^e_fa^c	conj3_io
-:vs:mansu^e_fe_c perfstem
-:vs:mansu^e_fact pp4
+:vs:ma_nsu^e_fa^c conj3_io
+:vs:ma_nsu^e_fe_c perfstem
+:vs:ma_nsu^e_fact pp4
 
 :le:mansuesco
-:vs:mansue_sc	conj3
-:vs:mansue_v perfstem
-:vs:mansue_t pp4
+:vs:ma_nsue_sc conj3
+:vs:ma_nsue_v perfstem
+:vs:ma_nsue_t pp4
 
 :le:mansueto
-:de:mansue_t	are_vb
+:de:ma_nsue_t are_vb
 :le:manticinor
 :de:manti^ci^n	are_vb dep
 :le:manticulor
@@ -10090,9 +10090,9 @@
 :le:mendicor
 :de:mendi_c	are_vb dep
 :le:menstruo
-:de:menstru^	are_vb
+:de:me_nstru^ are_vb
 :le:mensuro
-:de:mensu_r	are_vb
+:de:me_nsu_r are_vb
 :le:mentior
 :vs:ment	conj4
 :vs:menti_t pp4
@@ -10130,8 +10130,8 @@
 :le:merto
 :de:mert	are_vb
 :le:metior
-:vs:me_t	conj4
-:vs:mens pp4
+:vs:me_t conj4
+:vs:me_ns pp4
 :le:meto#2
 :vs:me^t	conj3
 :vs:messu^ perfstem
@@ -10278,7 +10278,7 @@
 :le:monito
 :de:mo^ni^t	are_vb
 :le:monstro
-:de:monstr	are_vb
+:de:mo_nstr are_vb
 :le:morbifico
 :de:morbi^fi^c	are_vb
 :le:mordeo
@@ -11047,11 +11047,11 @@
 :le:offaveo
 :vs:offa^v	conj2
 :le:offendo#1
-:vs:offend	conj3
+:vs:offend conj3
 :vs:offend perfstem
-:vs:offens pp4
+:vs:offe_ns pp4
 :le:offenso
-:de:offens	are_vb
+:de:offe_ns are_vb
 :le:offigo
 :vs:offi_g	conj3
 :vs:offi_x perfstem
@@ -11129,9 +11129,9 @@
 :vs:oppalle_sc	conj3
 :vs:oppallu^ perfstem
 :le:oppando
-:vs:oppand	conj3
+:vs:oppand conj3
 :vs:oppand perfstem
-:vs:oppans pp4
+:vs:oppa_ns pp4
 :le:oppango
 :vs:oppang	conj3
 :vs:oppe_g perfstem
@@ -11432,9 +11432,9 @@
 :vs:pend	conj2
 :vs:pe^pend perfstem
 :le:pendo
-:vs:pend	conj3
+:vs:pend conj3
 :vs:pe^pend perfstem
-:vs:pens pp4
+:vs:pe_ns pp4
 :le:penetro
 :de:pe^ne_^tr	are_vb
 :le:pennesco
@@ -11442,11 +11442,11 @@
 :le:pennor
 :de:penn	are_vb dep
 :le:pensiculo
-:de:pensi^cu^l	are_vb
+:de:pe_nsi^cu^l are_vb
 :le:pensito
-:de:pensi^t	are_vb
+:de:pe_nsi^t are_vb
 :le:penso
-:de:pens	are_vb
+:de:pe_ns are_vb
 :le:peraequo
 :de:pe^r-aequ	are_vb
 :le:peraestimo
@@ -11508,8 +11508,8 @@
 :vs:per-cu^l perfstem
 :vs:per-culs pp4
 :le:percenseo
-:vs:per-cens	conj2
-:vs:per-censu^ perfstem
+:vs:per-ce_ns conj2
+:vs:per-ce_nsu^ perfstem
 :le:percido
 :vs:per-ci_d	conj3
 :vs:per-ci_d perfstem
@@ -11835,9 +11835,9 @@
 :le:permanasco
 :vs:perma_na_sc	conj3
 :le:permaneo
-:vs:per-ma^n	conj2
-:vs:per-mans perfstem
-:vs:per-mans pp4
+:vs:per-ma^n conj2
+:vs:per-ma_ns perfstem
+:vs:per-ma_ns pp4
 :le:permano
 :de:per-ma_n	are_vb
 :le:permaturesco
@@ -11851,8 +11851,8 @@
 :vs:per-me^r	conj2
 :vs:per-me^ru^ perfstem
 :le:permetior
-:vs:per-me_t	conj4
-:vs:per-mens pp4
+:vs:per-me_t conj4
+:vs:per-me_ns pp4
 :le:permilito
 :de:per-mi_li^t	are_vb
 :le:permingo
@@ -11941,11 +11941,11 @@
 :vs:per-pu^l perfstem
 :vs:per-puls pp4
 :le:perpendo
-:vs:per-pend	conj3
+:vs:per-pend conj3
 :vs:per-pend perfstem
-:vs:per-pens pp4
+:vs:per-pe_ns pp4
 :le:perpenso
-:de:perpens	are_vb
+:de:perpe_ns are_vb
 :le:perpetior
 :vs:per-pe^t	conj3_io
 :vs:per-pess pp4
@@ -12047,9 +12047,9 @@
 :vs:per-se^ne_sc	conj3
 :vs:per-se^nu^ perfstem
 :le:persentio
-:vs:per-sent	conj4
-:vs:per-sens perfstem
-:vs:per-sens pp4
+:vs:per-sent conj4
+:vs:per-se_ns perfstem
+:vs:per-se_ns pp4
 :le:persentisco
 :vs:per-senti_sc	conj3
 :le:persequor
@@ -12163,9 +12163,9 @@
 :vs:per-te_x perfstem
 :vs:per-te_ct pp4
 :le:pertendo
-:vs:per-tend	conj3
+:vs:per-tend conj3
 :vs:per-tend perfstem
-:vs:per-tens pp4
+:vs:per-te_ns pp4
 :le:perteneo
 :vs:per-te^n	conj2
 :vs:per-te^nu^ perfstem
@@ -12221,8 +12221,8 @@
 :vs:per-tra_x perfstem
 :vs:per-tra^ct pp4
 :le:pertranseo
-:vs:per-trans	conj4
-:vs:per-transi_v perfstem
+:vs:per-tra_ns conj4
+:vs:per-tra_nsi_v perfstem
 :le:pertremisco
 :vs:per-tre^mi_sc	conj3
 :le:pertribuo
@@ -12632,8 +12632,8 @@
 :le:praeconor
 :de:praeco_n	are_vb dep
 :le:praeconsumo
-:vs:prae-consu_m	conj3
-:vs:prae-consu_mpt pp4
+:vs:prae-co_nsu_m conj3
+:vs:prae-co_nsu_mpt pp4
 :le:praecontrecto
 :de:prae-con-trect	are_vb
 :le:praecoquo
@@ -12666,7 +12666,7 @@
 :le:praedelasso
 :de:prae-de_lass	are_vb
 :le:praedemonstro
-:de:prae-de_monstr	are_vb
+:de:prae-de_mo_nstr are_vb
 :le:praedestino
 :de:prae-de_sti^n	are_vb
 :le:praedetermino
@@ -12796,9 +12796,9 @@
 :vs:prae-je_c perfstem
 :vs:prae-jact pp4
 :le:praeinfundo
-:vs:prae-infund	conj3
-:vs:prae-infu_d perfstem
-:vs:prae-infu_s pp4
+:vs:prae-i_nfund conj3
+:vs:prae-i_nfu_d perfstem
+:vs:prae-i_nfu_s pp4
 :le:praeinnuo
 :vs:prae-innu^	conj3
 :le:praejaceo
@@ -12888,7 +12888,7 @@
 :vs:prae-mo^nu^ perfstem
 :vs:prae-mo^ni^t pp4
 :le:praemonstro
-:de:prae-monstr	are_vb
+:de:prae-mo_nstr are_vb
 :le:praemordeo
 :vs:prae-mord	conj2
 :vs:prae-mors perfstem
@@ -13025,9 +13025,9 @@
 :le:praesemino
 :de:prae-se_mi^n	are_vb
 :le:praesentio
-:vs:prae-sent	conj4
-:vs:prae-sens perfstem
-:vs:prae-sens pp4
+:vs:prae-sent conj4
+:vs:prae-se_ns perfstem
+:vs:prae-se_ns pp4
 :le:praesentisco
 :vs:praesenti_sc	conj3
 :le:praesento
@@ -13241,27 +13241,27 @@
 :le:praevolo
 :de:prae-vo^l	are_vb
 :le:prandeo
-:vs:prand	conj2
+:vs:prand conj2
 :vs:prand perfstem
-:vs:prans pp4
+:vs:pra_ns pp4
 :le:pransito
-:de:pransi^t	are_vb
+:de:pra_nsi^t are_vb
 :le:precor
 :de:pre^c	are_vb dep
 :le:preco
 :de:pre^c	are_vb
 :le:prehendo
-:vs:pre^hend	conj3
+:vs:pre^hend conj3
 :vs:pre^hend perfstem
-:vs:pre^hens pp4
+:vs:pre^he_ns pp4
 :le:prehenso
-:de:pre^hens	are_vb
+:de:pre^he_ns are_vb
 :le:premo
 :vs:pre^m	conj3
 :vs:press perfstem
 :vs:press pp4
 :le:prensito
-:de:prensi^t	are_vb
+:de:pre_nsi^t are_vb
 :le:presso
 :de:press	are_vb
 :le:pretio
@@ -13532,9 +13532,9 @@
 :vs:pro_-pu^l perfstem
 :vs:pro_-puls pp4
 :le:propendeo
-:vs:pro_-pend	conj2
+:vs:pro_-pend conj2
 :vs:pro_-pend perfstem
-:vs:pro_-pens pp4
+:vs:pro_-pe_ns pp4
 :le:propero
 :de:pro^pe^r	are_vb
 :le:prophetizo
@@ -13606,8 +13606,8 @@
 :le:prosemino
 :de:pro_-se_mi^n	are_vb
 :le:prosentio
-:vs:pro_-sent	conj4
-:vs:pro_-sens perfstem
+:vs:pro_-sent conj4
+:vs:pro_-se_ns perfstem
 :le:prosequor
 :vs:pro_-se^qu	conj3
 :vs:pro_-se^cu_t pp4
@@ -13663,9 +13663,9 @@
 :le:protelo
 :de:pro_-te_l	are_vb
 :le:protendo
-:vs:pro_-tend	conj3
+:vs:pro_-tend conj3
 :vs:pro_-tend perfstem
-:vs:pro_-tens pp4
+:vs:pro_-te_ns pp4
 :le:protermino
 :de:pro_-termi^n	are_vb
 :le:protero
@@ -13974,9 +13974,9 @@
 :le:recello
 :vs:re^-cell	conj3
 :le:recenseo
-:vs:re^-cens	conj2
-:vs:re^-censu^ perfstem
-:vs:re^-cens pp4
+:vs:re^-ce_ns conj2
+:vs:re^-ce_nsu^ perfstem
+:vs:re^-ce_ns pp4
 :le:recentor
 :de:re^cent	are_vb dep
 :le:recepto
@@ -14062,13 +14062,13 @@
 :vs:re^-condu_x perfstem
 :vs:re^-conduct pp4
 :le:reconfirmo
-:de:re^confirm	are_vb
+:de:re^co_nfirm are_vb
 :le:reconflo
-:de:re^-confl	are_vb
+:de:re^-co_nfl are_vb
 :le:reconsigno
-:de:re^-consign	are_vb
+:de:re^-co_nsign are_vb
 :le:reconstringo
-:vs:re^-constring	conj3
+:vs:re^-co_nstring conj3
 :le:reconvalesco
 :vs:re^-conva^le_sc	conj3
 :le:reconverto
@@ -14122,8 +14122,8 @@
 :vs:re^-cu^t	conj3_io
 :vs:re^-cuss pp4
 :le:redaccendo
-:vs:re^d-accend	conj3
-:vs:re^d-accens pp4
+:vs:re^d-accend conj3
+:vs:re^d-acce_ns pp4
 :le:redadopto
 :de:re^d-a^dopt	are_vb
 :le:redambulo
@@ -14396,8 +14396,8 @@
 :le:remando#2
 :vs:re^-mand	conj3
 :le:remaneo
-:vs:re^-ma^n	conj2
-:vs:re^-mans perfstem
+:vs:re^-ma^n conj2
+:vs:re^-ma_ns perfstem
 :le:remano#1
 :de:re^-ma_n	are_vb
 :le:remano#2
@@ -14413,8 +14413,8 @@
 :le:remergo
 :vs:re^-merg	conj3
 :le:remetior
-:vs:re^-me_t	conj4
-:vs:re^-mens pp4
+:vs:re^-me_t conj4
+:vs:re^-me_ns pp4
 :le:remigo
 :de:re_mi^g	are_vb
 :le:remigro
@@ -14527,11 +14527,11 @@
 :vs:repu^l perfstem orth
 :vs:re^puls pp4
 :le:rependo
-:vs:re^-pend	conj3
+:vs:re^-pend conj3
 :vs:re^-pend perfstem
-:vs:re^-pens pp4
+:vs:re^-pe_ns pp4
 :le:repenso
-:de:re^pens	are_vb
+:de:re^pe_ns are_vb
 :le:repercutio
 :vs:re^-percu^t	conj3_io
 :vs:re^-percuss perfstem
@@ -14583,14 +14583,14 @@
 :le:repraesento
 :de:re^-praesent	are_vb
 :le:reprehendo
-:vs:re^-pre^hend	conj3
-:vs:re^-pre_nd	conj3
+:vs:re^-pre^hend conj3
+:vs:re^-pre_nd conj3
 :vs:re^-pre^hend perfstem
 :vs:re^-pre_nd perfstem
-:vs:re^-pre^hens pp4
+:vs:re^-pre^he_ns pp4
 :vs:re^-pre_ns pp4
 :le:reprehenso
-:de:re^pre^hens	are_vb
+:de:re^pre^he_ns are_vb
 :le:reprimo
 :vs:re^-pri^m	conj3
 :vs:re^-press perfstem
@@ -14728,13 +14728,13 @@
 :le:resplendeo
 :vs:re-splend	conj2
 :le:respondeo
-:vs:re-spond	conj2
+:vs:re-spond conj2
 :vs:re-spond perfstem
-:vs:re-spons pp4
+:vs:re-spo_ns pp4
 :le:responsito
-:de:responsi^t	are_vb
+:de:respo_nsi^t are_vb
 :le:responso
-:de:respons	are_vb
+:de:respo_ns are_vb
 :le:respuo
 :vs:re-spu^	conj3
 :vs:re-spu^ perfstem
@@ -14800,10 +14800,10 @@
 :vs:re^-te_x perfstem
 :vs:re^-te_ct pp4
 :le:retendo
-:vs:re^-tend	conj3
+:vs:re^-tend conj3
 :vs:re^-tend perfstem
 :vs:re^-tent pp4
-:vs:re^-tens pp4 variant
+:vs:re^-te_ns pp4 variant
 :le:retento#1
 :de:re^tent	are_vb
 :le:retento#2
@@ -15296,15 +15296,15 @@
 :vs:se^ne_sc	conj3
 :vs:se^nu^ perfstem
 :le:sensifico
-:de:sensi^fi^c	are_vb
+:de:se_nsi^fi^c are_vb
 :le:sentifico
 :de:senti^fi^c	are_vb
 :le:sentino
 :de:senti_n	are_vb
 :le:sentio
-:vs:sent	conj4
-:vs:sens perfstem
-:vs:sens pp4
+:vs:sent conj4
+:vs:se_ns perfstem
+:vs:se_ns pp4
 :le:sentisco
 :vs:senti_sc	conj3
 :le:separo
@@ -15535,15 +15535,15 @@
 :le:spolio
 :de:spo^li	are_vb
 :le:spondeo
-:vs:spond	conj2
+:vs:spond conj2
 :vs:spo^pond perfstem
-:vs:spons pp4
+:vs:spo_ns pp4
 :le:spongio
 :de:spongi	are_vb
 :le:spongizo
 :de:spongi_z	are_vb
 :le:sponso
-:de:spons	are_vb
+:de:spo_ns are_vb
 :le:sportulo
 :de:sportu^l	are_vb
 :le:spumesco
@@ -15770,9 +15770,9 @@
 :le:subindo
 :vs:su^b-ind	conj3
 :le:subinflo
-:de:su^b-infl	are_vb
+:de:su^b-i_nfl are_vb
 :le:subinscribo
-:vs:su^b-inscri_b	conj3
+:vs:su^b-i_nscri_b conj3
 :le:subintellego
 :vs:su^b-intelle^g	conj3
 :le:subintro
@@ -15865,9 +15865,9 @@
 :le:suborno
 :de:su^b-o_rn	are_vb
 :le:subostendo
-:vs:su^b-ostend	conj3
+:vs:su^b-ostend conj3
 :vs:su^b-ostend perfstem
-:vs:su^b-ostens pp4
+:vs:su^b-oste_ns pp4
 :le:subsanno
 :de:sub-sann	are_vb
 :le:subsarcino
@@ -15883,8 +15883,8 @@
 :vs:sub-se^cu perfstem
 :vs:sub-se^ct pp4
 :le:subsentio
-:vs:sub-sent	conj4
-:vs:sub-sens perfstem
+:vs:sub-sent conj4
+:vs:sub-se_ns perfstem
 :le:subsequor
 :vs:sub-se^qu	conj3
 :vs:sub-se^cu_t pp4
@@ -15959,7 +15959,7 @@
 :le:subterfundo
 :de:subter-fund	are_vb
 :le:subterinsero
-:vs:subte^r-inse^r	conj3
+:vs:subte^r-i_nse^r conj3
 :le:subterintendo
 :vs:subte^r-intend	conj3
 :le:subterjaceo
@@ -16044,15 +16044,15 @@
 :vs:suc-cess perfstem
 :vs:suc-cess pp4
 :le:succendo
-:vs:suc-cend	conj3
+:vs:suc-cend conj3
 :vs:suc-cend perfstem
-:vs:suc-cens pp4
+:vs:suc-ce_ns pp4
 :le:succeno
 :de:suc-ce_n	are_vb
 :le:succenseo
-:vs:succens	conj2
-:vs:succensu^ perfstem
-:vs:succens pp4
+:vs:succe_ns conj2
+:vs:succe_nsu^ perfstem
+:vs:succe_ns pp4
 :le:succenturio#1
 :de:suc-centu^ri	are_vb
 :le:succerno
@@ -16220,7 +16220,7 @@
 :vs:sum-mo^n	conj2
 :vs:sum-mo^nu^ perfstem
 :le:summonstro
-:de:sum-monstr	are_vb
+:de:sum-mo_nstr are_vb
 :le:summoveo
 :vs:sum-mo^v	conj2
 :vs:sum-mo_v perfstem
@@ -16416,8 +16416,8 @@
 :vs:su^pe^r-indu^ perfstem
 :vs:su^pe^r-indu_t pp4
 :le:superinfundo
-:vs:su^pe^r-infund	conj3
-:vs:su^pe^r-infu_s pp4
+:vs:su^pe^r-i_nfund conj3
+:vs:su^pe^r-i_nfu_s pp4
 :le:superingero
 :vs:su^pe^r-inge^r	conj3
 :vs:su^pe^r-ingest pp4
@@ -16427,17 +16427,17 @@
 :vs:su^pe^r-inje_c perfstem
 :vs:su^pe^r-inject pp4
 :le:superinspicio
-:vs:su^pe^r-inspi^c	conj3_io
+:vs:su^pe^r-i_nspi^c conj3_io
 :le:superinsterno
-:vs:su^pe^r-instern	conj3
-:vs:su^pe^r-instra_v perfstem
+:vs:su^pe^r-i_nstern conj3
+:vs:su^pe^r-i_nstra_v perfstem
 :le:superinstillo
-:de:su^pe^r-instill	are_vb
+:de:su^pe^r-i_nstill are_vb
 :le:superinstrepo
-:vs:su^pe^r-instre^p	conj3
+:vs:su^pe^r-i_nstre^p conj3
 :le:superinstruo
-:vs:su^pe^r-instru^	conj3
-:vs:su^pe^r-instru^ct pp4
+:vs:su^pe^r-i_nstru^ conj3
+:vs:su^pe^r-i_nstru^ct pp4
 :le:superintego
 :vs:su^pe^r-inte^g	conj3
 :le:superintendo
@@ -16476,8 +16476,8 @@
 :le:supermeo
 :de:su^per-me	are_vb
 :le:supermetior
-:vs:su^per-me_t	conj4
-:vs:su^per-mens pp4
+:vs:su^per-me_t conj4
+:vs:su^per-me_ns pp4
 :le:supermico
 :de:su^per-mi^c	are_vb
 :le:supermitto
@@ -16569,7 +16569,7 @@
 :le:supertraho
 :vs:su^per-tra^h	conj3
 :le:supertranseo
-:de:su^per-trans	ire_vb
+:de:su^per-tra_ns ire_vb
 :le:superundo
 :de:su^pe^r-und	are_vb
 :le:superungo
@@ -16718,9 +16718,9 @@
 :le:surrutilo
 :de:sur-ru^ti^l	are_vb
 :le:suscenseo
-:vs:suscens	conj2
-:vs:suscensu^ perfstem
-:vs:suscens pp4
+:vs:susce_ns conj2
+:vs:susce_nsu^ perfstem
+:vs:susce_ns pp4
 :le:suscepto
 :de:suscept	are_vb
 :le:suscipio
@@ -16732,9 +16732,9 @@
 :le:suspecto#1
 :de:suspect	are_vb
 :le:suspendo
-:vs:suspend	conj3
+:vs:suspend conj3
 :vs:suspend perfstem
-:vs:suspens pp4
+:vs:suspe_ns pp4
 :le:suspicio#1
 :vs:suspi^c	conj3_io
 :vs:suspex perfstem
@@ -16912,9 +16912,9 @@
 :vs:sustu^l perfstem
 :vs:subla_t pp4
 :le:tondeo
-:vs:tond	conj2
+:vs:tond conj2
 :vs:to^tond perfstem
-:vs:tons pp4
+:vs:to_ns pp4
 :le:tonesco
 :vs:to^ne_sc	conj3
 :le:tonitruo
@@ -16923,7 +16923,7 @@
 :vs:to^n	conj1
 :vs:to^nu^ perfstem
 :le:tonsito
-:de:tonsi^t	are_vb
+:de:to_nsi^t are_vb
 :le:torculo
 :de:torcu^l	are_vb
 :le:torno
@@ -16977,159 +16977,159 @@
 :le:trajecto
 :de:tra_ject	are_vb
 :le:trano
-:vs:tra_n	conj1
-:vs:tra_na_v    perfstem
-:vs:tra_na_t    pp4
-:vs:transn  conj1 orth
-:vs:transna_v   perfstem orth
-:vs:transna_t   pp4 orth
+:vs:tra_n conj1
+:vs:tra_na_v perfstem
+:vs:tra_na_t pp4
+:vs:tra_nsn conj1 orth
+:vs:tra_nsna_v perfstem orth
+:vs:tra_nsna_t pp4 orth
 :le:tranquillo#2
 :de:tranquill	are_vb
 :le:transadigo
-:vs:trans-a^di^g	conj3
-:vs:trans-a^de_g perfstem
-:vs:trans-a^da_ct pp4
+:vs:tra_ns-a^di^g conj3
+:vs:tra_ns-a^de_g perfstem
+:vs:tra_ns-a^da_ct pp4
 :le:transbibo
-:vs:trans-bi^b	conj3
+:vs:tra_ns-bi^b conj3
 :le:transcendo
-:vs:transcend	conj3
-:vs:transcend perfstem
-:vs:transcens pp4
+:vs:tra_nscend conj3
+:vs:tra_nscend perfstem
+:vs:tra_nsce_ns pp4
 :le:transcido
-:vs:transci_d	conj3
-:vs:transci_d perfstem
+:vs:tra_nsci_d conj3
+:vs:tra_nsci_d perfstem
 :le:transcribo
-:vs:transcri_b	conj3
-:vs:transcri_ps perfstem
-:vs:transcri_pt pp4
+:vs:tra_nscri_b conj3
+:vs:tra_nscri_ps perfstem
+:vs:tra_nscri_pt pp4
 :le:transcurro
-:vs:trans-curr	conj3
-:vs:trans-curr perfstem
-:vs:trans-cu^curr perfstem
-:vs:trans-curs pp4
+:vs:tra_ns-curr conj3
+:vs:tra_ns-curr perfstem
+:vs:tra_ns-cu^curr perfstem
+:vs:tra_ns-curs pp4
 :le:transduco
-:vs:transdu_c	conj3
+:vs:tra_nsdu_c conj3
 :le:transero
-:vs:transe^r	conj3
-:vs:transse^r	conj3 orth
-:vs:transert pp4
+:vs:tra_nse^r conj3
+:vs:tra_nsse^r conj3 orth
+:vs:tra_nsert pp4
 :le:transfigo
-:vs:trans-fi_g	conj3
-:vs:trans-fi_x perfstem
-:vs:trans-fi_x pp4
+:vs:tra_ns-fi_g conj3
+:vs:tra_ns-fi_x perfstem
+:vs:tra_ns-fi_x pp4
 :le:transfiguro
-:de:trans-fi^gu_r	are_vb
+:de:tra_ns-fi^gu_r are_vb
 :le:transfluo
-:vs:trans-flu^	conj3
-:vs:trans-flu_x perfstem
+:vs:tra_ns-flu^ conj3
+:vs:tra_ns-flu_x perfstem
 :le:transfodio
-:vs:trans-fo^d	conj3_io
-:vs:trans-fo_d perfstem
-:vs:trans-foss pp4
+:vs:tra_ns-fo^d conj3_io
+:vs:tra_ns-fo_d perfstem
+:vs:tra_ns-foss pp4
 :le:transformo
-:de:trans-fo_rm	are_vb
+:de:tra_ns-fo_rm are_vb
 :le:transforo
-:de:trans-fo^r	are_vb
+:de:tra_ns-fo^r are_vb
 :le:transfreto
-:de:trans-fre^t	are_vb
+:de:tra_ns-fre^t are_vb
 :le:transfugio
-:vs:trans-fu^g	conj3_io
-:vs:trans-fu_g perfstem
+:vs:tra_ns-fu^g conj3_io
+:vs:tra_ns-fu_g perfstem
 :le:transfulgeo
-:vs:trans-fulg	conj2
+:vs:tra_ns-fulg conj2
 :le:transfumo
-:de:trans-fu_m	are_vb
+:de:tra_ns-fu_m are_vb
 :le:transfundo
-:vs:trans-fund	conj3
-:vs:trans-fu_d perfstem
-:vs:trans-fu_s pp4
+:vs:tra_ns-fund conj3
+:vs:tra_ns-fu_d perfstem
+:vs:tra_ns-fu_s pp4
 :le:transglutio
-:de:trans-glu_t	ire_vb
+:de:tra_ns-glu_t ire_vb
 :le:transgredior
-:vs:trans-gre^d	conj3_io
-:vs:trans-gress pp4
+:vs:tra_ns-gre^d conj3_io
+:vs:tra_ns-gress pp4
 :le:transigo
-:vs:trans-i^g	conj3
-:vs:trans-e_g perfstem
-:vs:trans-a_ct pp4
+:vs:tra_ns-i^g conj3
+:vs:tra_ns-e_g perfstem
+:vs:tra_ns-a_ct pp4
 :le:transjungo
-:vs:trans-jung	conj2
+:vs:tra_ns-jung conj2
 :le:translego
-:vs:trans-le^g	conj3
+:vs:tra_ns-le^g conj3
 :le:transluceo
-:vs:trans-lu_c	conj2
+:vs:tra_ns-lu_c conj2
 :le:transmeo
-:de:trans-me	are_vb
+:de:tra_ns-me are_vb
 :le:transmigro
-:de:trans-mi_^gr	are_vb
+:de:tra_ns-mi_^gr are_vb
 :le:transmitto
-:vs:trans-mitt	conj3
-:vs:trans-mi_s perfstem
-:vs:trans-miss pp4
+:vs:tra_ns-mitt conj3
+:vs:tra_ns-mi_s perfstem
+:vs:tra_ns-miss pp4
 :le:transmuto
-:de:trans-mu_t	are_vb
+:de:tra_ns-mu_t are_vb
 :le:transnato
-:vs:trans-na^t	conj1
-:vs:trans-na^ta_v   perfstem
-:vs:trans-na^ta_t  pp4
-:vs:tra_na^t    conj1 orth
-:vs:tra_na^ta_v    perfstem orth
-:vs:tra_na^ta_t    pp4 orth
+:vs:tra_ns-na^t conj1
+:vs:tra_ns-na^ta_v perfstem
+:vs:tra_ns-na^ta_t pp4
+:vs:tra_na^t conj1 orth
+:vs:tra_na^ta_v perfstem orth
+:vs:tra_na^ta_t pp4 orth
 :le:transnavigo
-:de:trans-na_vi^g	are_vb
+:de:tra_ns-na_vi^g are_vb
 :le:transnomino
-:de:trans-no_mi^n	are_vb
+:de:tra_ns-no_mi^n are_vb
 :le:transnumero
-:de:trans-nu^me^r	are_vb
+:de:tra_ns-nu^me^r are_vb
 :le:transpicio
-:vs:transpi^c	conj3_io
+:vs:tra_nspi^c conj3_io
 :le:transplanto
-:de:trans-plant	are_vb
+:de:tra_ns-plant are_vb
 :le:transpono
-:vs:trans-po_n	conj3
-:vs:trans-po^su^ perfstem
-:vs:trans-po^si^t pp4
+:vs:tra_ns-po_n conj3
+:vs:tra_ns-po^su^ perfstem
+:vs:tra_ns-po^si^t pp4
 :le:transporto
-:de:trans-port	are_vb
+:de:tra_ns-port are_vb
 :le:transpungo
-:vs:trans-pung	conj3
+:vs:tra_ns-pung conj3
 :le:transtineo
-:vs:trans-ti^n	conj2
+:vs:tra_ns-ti^n conj2
 :le:transulto
-:de:transult	are_vb
+:de:tra_nsult are_vb
 :le:transumo
-:vs:transu_m	conj3
-:vs:transu_m	conj3 orth
+:vs:tra_nsu_m conj3
+:vs:tra_nsu_m conj3 orth
 :le:transuo
-:vs:transu^	conj3
-:vs:transu^ perfstem
-:vs:transu_t pp4
+:vs:tra_nsu^ conj3
+:vs:tra_nsu^ perfstem
+:vs:tra_nsu_t pp4
 :le:transvado
-:de:trans-va^d	are_vb
+:de:tra_ns-va^d are_vb
 :le:transvarico
-:de:trans-va^ri^c	are_vb
+:de:tra_ns-va^ri^c are_vb
 :le:transveho
-:vs:trans-ve^h	conj3
-:vs:trans-ve_x perfstem
-:vs:trans-ve^ct pp4
+:vs:tra_ns-ve^h conj3
+:vs:tra_ns-ve_x perfstem
+:vs:tra_ns-ve^ct pp4
 :le:transvendo
-:vs:trans-ve_nd	conj3
+:vs:tra_ns-ve_nd conj3
 :le:transvenio
-:de:trans-ve^n	ire_vb
+:de:tra_ns-ve^n ire_vb
 :le:transverbero
-:de:trans-verbe^r	are_vb
+:de:tra_ns-verbe^r are_vb
 :le:transverto
-:vs:trans-vert	conj3
-:vs:trans-vert perfstem
-:vs:trans-vers pp4
+:vs:tra_ns-vert conj3
+:vs:tra_ns-vert perfstem
+:vs:tra_ns-vers pp4
 :le:transvolito
-:de:trans-vo^li^t	are_vb
+:de:tra_ns-vo^li^t are_vb
 :le:transvolo
-:de:trans-vo^l	are_vb
+:de:tra_ns-vo^l are_vb
 :le:transvolvo
-:vs:trans-volv	conj3
+:vs:tra_ns-volv conj3
 :le:transvoro
-:de:trans-vo^r	are_vb
+:de:tra_ns-vo^r are_vb
 :le:traveho
 :vs:tra_ve^h	conj3
 :le:tremefacio

@@ -1,5 +1,5 @@
 :le:insilio
-:de:insil ire_vb
+:de:i_nsil ire_vb
 
 :le:aboleo
 :vs:a^bo^l	conj2
@@ -50,9 +50,9 @@
 :vs:adspers	pp4 orth
 
 :le:transilio
-:de:transi^l	ire_vb
-:vs:transi^l	conj3_io
-:vs:transi^li	perfstem
+:de:tra_nsi^l ire_vb
+:vs:tra_nsi^l conj3_io
+:vs:tra_nsi^li perfstem
 
 :le:comminiscor
 :vs:com-mi^ni_sc	conj3
@@ -210,9 +210,9 @@
 :de:cele_^br	are_vb
 
 :le:censeo#1
-:vs:cens	conj2
-:vs:censu^	perfstem
-:vs:cens	pp4
+:vs:ce_ns conj2
+:vs:ce_nsu^ perfstem
+:vs:ce_ns pp4
 
 :le:cieo
 :vs:ci	conj2
@@ -235,10 +235,10 @@
 :vs:conpre_ns	pp4
 
 :le:consido
-:vs:consi_d 	conj3
-:vs:conse_d	perfstem
-:vs:consi_d	perfstem
-:vs:consess	pp4
+:vs:co_nsi_d conj3
+:vs:co_nse_d perfstem
+:vs:co_nsi_d perfstem
+:vs:co_nsess pp4
 
 :le:contemno
 :vs:contemn	conj3
@@ -284,7 +284,7 @@
 :vs:de_mt pp4
 
 :le:denso
-:de:dens are_vb
+:de:de_ns are_vb
 
 :le:despicio
 :vs:de_-spic	conj3_io
@@ -660,10 +660,10 @@
 :vs:ort		pp4
 
 :le:ostendo
-:vs:ostend	conj3
-:vs:ostend	perfstem
-:vs:ostens	pp4
-:vs:ostent	pp4
+:vs:ostend conj3
+:vs:ostend perfstem
+:vs:oste_ns pp4
+:vs:ostent pp4
 
 :le:ovo
 :vs:ov		conj1
@@ -742,15 +742,15 @@
 :vs:po_t	pp4 comp_only
 
 :le:prehenso
-:de:prehens	are_vb
-:de:pre_ns	are_vb
+:de:prehe_ns are_vb
+:de:pre_ns are_vb
 
 :le:prehendo
-:vs:pre^hend	conj3
-:vs:praehend	conj3
-:vs:pre_nd	conj3
+:vs:pre^hend conj3
+:vs:praehend conj3
+:vs:pre_nd conj3
 :vs:pre^hend perfstem
-:vs:pre^hens pp4
+:vs:pre^he_ns pp4
 :vs:pre_nd perfstem
 :vs:pre_ns pp4
 
@@ -950,11 +950,11 @@
 :vs:ti^ci^t pp4 comp_only
 
 :le:tendo
-:vs:tend        conj3
-:vs:tenn        conj3 orth
-:vs:te^tend	perfstem
-:vs:tens 	pp4
-:vs:tent 	pp4 orth
+:vs:tend conj3
+:vs:tenn conj3 orth
+:vs:te^tend perfstem
+:vs:te_ns pp4
+:vs:tent pp4 orth
 
 :le:tento
 :de:tent	are_vb
@@ -1009,11 +1009,11 @@
 :vs:optu_t	pp4 orth
 
 :le:tundo
-:vs:tund	conj3
-:vs:tutud	perfstem
-:vs:tuns	pp4
-:vs:tu_ss	pp4
-:vs:tu_s	pp4
+:vs:tund conj3
+:vs:tutud perfstem
+:vs:tu_ns pp4
+:vs:tu_ss pp4
+:vs:tu_s pp4
 
 :le:urgeo
 :vs:urg conj2
