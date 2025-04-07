@@ -597,6 +597,8 @@ function toMorpheusMood(data: LatinMood): string {
 export function convertUpos(upos: string): WordInflectionData {
   const result: WordInflectionData = {};
   const parts = upos.trim().split("|");
+  let aspect: string | undefined;
+  let tense: string | undefined;
 
   for (const part of parts) {
     if (!part) continue;
@@ -604,7 +606,34 @@ export function convertUpos(upos: string): WordInflectionData {
     const [key, value] = part.split("=").map((x) => x.trim());
     if (!key || !value) continue;
 
+    if (key.includes("[") && key.includes("]")) {
+      continue;
+    }
+
+    if (key === "Aspect") {
+      aspect = value;
+    }
+
+    if (key === "Tense") {
+      tense = value;
+    }
+
     switch (key) {
+      // Stanza sometimes produces these. We don't care (for now).
+      case "InflClass":
+      case "PronType":
+      case "Aspect":
+      case "NumType":
+      case "NumValue":
+      case "Form":
+      case "Polarity":
+      case "AdvType":
+      case "Variant":
+      case "NameType":
+      case "Poss":
+      case "NumForm":
+      case "Reflex":
+        continue;
       case "Case":
         switch (value) {
           case "Nom":
@@ -789,6 +818,9 @@ export function convertUpos(upos: string): WordInflectionData {
           case "Sup":
             result.degree = LatinDegree.Superlative;
             break;
+          case "Abs":
+            // TODO: Stanza
+            break;
           default:
             throw new Error(
               `Unrecognized value "${value}" for key "Degree" in UPOS tag: ${part}`
@@ -801,6 +833,18 @@ export function convertUpos(upos: string): WordInflectionData {
         throw new Error(
           `Unrecognized key "${key}" in UPOS tag: ${part} (from full tag: ${upos})`
         );
+    }
+  }
+
+  if (aspect && tense) {
+    if (tense === "Future" && aspect === "Perf") {
+      result.tense = LatinTense.FuturePerfect;
+    }
+    if (tense === "Past" && aspect === "Perf") {
+      result.tense = LatinTense.Pluperfect;
+    }
+    if (tense === "Past" && aspect === "Imp") {
+      result.tense = LatinTense.Imperfect;
     }
   }
 
