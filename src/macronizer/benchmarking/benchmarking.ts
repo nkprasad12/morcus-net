@@ -5,6 +5,7 @@ import path from "path";
 
 import { processWords, removeDiacritics } from "@/common/text_cleaning";
 import { macronizeInput } from "@/macronizer/morcronizer";
+import type { MacronizedResult } from "@/web/api_routes";
 
 const GOLDENS_DIR = "src/macronizer/benchmarking/macronized_goldens";
 const ALATIUS_GOLDENS_DIR = "src/macronizer/benchmarking/alatius_goldens";
@@ -13,17 +14,31 @@ const ALLOWED_ALTERNATES = new Map<string, string[]>([
   ["sibi", ["sibī"]],
   ["cūius", ["cuius"]],
   ["āc", ["ac"]],
+  ["ēius", ["eius"]],
+  ["ubi", ["ubī"]],
+  ["Ubi", ["Ubī"]],
+  ["ibi", ["ibī"]],
+  ["Ibi", ["Ibī"]],
 ]);
 
-type Macronizer = [string, (input: string) => Promise<string>];
+interface MacronizerOutput {
+  text: string;
+  raw?: MacronizedResult;
+}
+
+type Macronizer = [
+  string,
+  (input: [string, string]) => Promise<MacronizerOutput>
+];
 
 interface MacronizerDetailedResult {
-  inputId: number;
+  inputId: string;
   accuracy: number;
   correct: number;
   incorrect: number;
   total: number;
-  incorrectWords: Array<{ expected: string; actual: string }>;
+  incorrectWords: Array<{ expected: string; actual: string; extras?: object }>;
+  runtimeMs?: number;
 }
 
 interface MacronizerResult {
@@ -37,11 +52,10 @@ interface MacronizerResult {
 
 async function safeRunMacronizer(
   macronizer: Macronizer,
-  input: string
-): Promise<string | undefined> {
+  input: [string, string]
+): Promise<MacronizerOutput | undefined> {
   try {
-    const result = await macronizer[1](input);
-    return result;
+    return await macronizer[1](input);
   } catch (error) {
     console.error(`Error running macronizer:`, error);
     return undefined;
@@ -55,14 +69,14 @@ async function safeRunMacronizer(
  * @returns Array of results with accuracy statistics for each macronizer
  */
 export async function compareResults(
-  macronizedInputs: string[],
+  macronizedInputs: [string, string][],
   macronizers: Macronizer[]
 ): Promise<MacronizerResult[]> {
-  const plainInputs = macronizedInputs.map((text) => removeDiacritics(text));
+  const plainInputs = macronizedInputs.map((text) => removeDiacritics(text[1]));
 
   const referenceWordSets = macronizedInputs.map((text) => {
     const words: string[] = [];
-    processWords(text.normalize("NFC"), (word) => {
+    processWords(text[1].normalize("NFC"), (word) => {
       words.push(word);
       return word;
     });
@@ -83,13 +97,14 @@ export async function compareResults(
     };
 
     for (let j = 0; j < plainInputs.length; j++) {
-      const macronizedResult = await safeRunMacronizer(
-        macronizer,
-        plainInputs[j]
-      );
+      const start = performance.now();
+      const macronizedResult = await safeRunMacronizer(macronizer, [
+        macronizedInputs[j][0],
+        plainInputs[j],
+      ]);
       if (macronizedResult === undefined) {
         macronizerResult.details!.push({
-          inputId: j,
+          inputId: macronizedInputs[j][0],
           accuracy: 0,
           correct: 0,
           incorrect: 0,
@@ -99,22 +114,27 @@ export async function compareResults(
         continue;
       }
 
+      const runtimeMs = performance.now() - start;
       const resultWords: string[] = [];
-      processWords(macronizedResult.normalize("NFC"), (word) => {
+      processWords(macronizedResult.text.normalize("NFC"), (word) => {
         resultWords.push(word);
         return word;
       });
 
       const referenceWords = referenceWordSets[j];
       const detailResult: MacronizerDetailedResult = {
-        inputId: j,
+        inputId: macronizedInputs[j][0],
         accuracy: 0,
         correct: 0,
         incorrect: 0,
         total: Math.max(referenceWords.length, resultWords.length),
         incorrectWords: [],
+        runtimeMs,
       };
 
+      const rawWords = macronizedResult.raw?.filter(
+        (w) => typeof w !== "string"
+      );
       const minLength = Math.min(referenceWords.length, resultWords.length);
       for (let k = 0; k < minLength; k++) {
         if (
@@ -128,6 +148,12 @@ export async function compareResults(
             expected: referenceWords[k],
             actual: resultWords[k],
           });
+          const extraInfo = rawWords?.[k];
+          if (extraInfo) {
+            detailResult.incorrectWords[
+              detailResult.incorrectWords.length - 1
+            ].extras = extraInfo;
+          }
         }
       }
 
@@ -156,66 +182,93 @@ export async function compareResults(
   return results;
 }
 
-function getGoldens(): string[] {
+function getGoldens(): [string, string][] {
   return fs
     .readdirSync(GOLDENS_DIR)
     .filter((file) => file.endsWith(".txt"))
-    .map((file) => fs.readFileSync(path.join(GOLDENS_DIR, file), "utf8"));
+    .map((file) => [
+      file,
+      fs.readFileSync(path.join(GOLDENS_DIR, file), "utf8"),
+    ]);
 }
-
-const NoOpMacronizer: Macronizer = ["NoOp", async (input: string) => input];
 
 const Alatius: Macronizer = [
   "Alatius",
-  async (input: string) => {
-    return fs.readFileSync(
-      path.join(ALATIUS_GOLDENS_DIR, "dcc_dbg.txt"),
-      "utf8"
-    );
+  async (input) => {
+    return {
+      text: fs.readFileSync(path.join(ALATIUS_GOLDENS_DIR, input[0]), "utf8"),
+    };
   },
 ];
 
-const Morcronizer: Macronizer = [
-  "Morcronizer",
-  async (input: string) =>
-    macronizeInput(input).then((result) =>
-      result
-        .map((t) => {
-          if (typeof t === "string") {
-            return t;
-          }
-          if (t.options.length === 0) {
-            return t.word;
-          }
-          return t.options[t.suggested ?? 0].form;
-        })
-        .join("")
-    ),
+const MorcronizerStanza: Macronizer = [
+  "MorcronizerStanza",
+  async (input) => {
+    const macronized = await macronizeInput(input[1], true);
+    return {
+      text: macronized
+        .map((w) =>
+          typeof w === "string"
+            ? w
+            : w.options.length === 0
+            ? w.word
+            : w.options[w.suggested ?? 0].form
+        )
+        .join(""),
+      raw: macronized,
+    };
+  },
 ];
 
-compareResults(getGoldens(), [NoOpMacronizer, Morcronizer, Alatius]).then(
-  (results) => {
-    for (const result of results) {
-      console.log("\n\n=====================");
-      console.log("Macronizer ID:", result.macronizerId);
-      console.log("Accuracy:", result.accuracy);
-      console.log("Correct:", result.correct);
-      console.log("Incorrect:", result.incorrect);
-      console.log("Total:", result.total);
-      if (result.macronizerId === "NoOp") {
-        continue;
-      }
-      for (const detail of result.details ?? []) {
-        console.log("\nInput ID:", detail.inputId);
-        console.log("Accuracy:", detail.accuracy);
-        console.log("Correct:", detail.correct);
-        console.log("Incorrect:", detail.incorrect);
-        console.log("Total:", detail.total);
-        console.log("");
-        for (const incorrect of detail.incorrectWords) {
-          console.log(incorrect.expected, "->", incorrect.actual);
-        }
-      }
+const MorcronizerLatinCy: Macronizer = [
+  "MorcronizerLatinCy",
+  async (input) => {
+    const macronized = await macronizeInput(input[1], false);
+    return {
+      text: macronized
+        .map((w) =>
+          typeof w === "string"
+            ? w
+            : w.options.length === 0
+            ? w.word
+            : w.options[w.suggested ?? 0].form
+        )
+        .join(""),
+      raw: macronized,
+    };
+  },
+];
+
+compareResults(getGoldens(), [
+  MorcronizerStanza,
+  MorcronizerLatinCy,
+  Alatius,
+]).then((results) => {
+  for (const result of results) {
+    console.log("\n\n=====================");
+    console.log("Macronizer ID:", result.macronizerId);
+    console.log("Accuracy:", result.accuracy);
+    console.log("Correct:", result.correct);
+    console.log("Incorrect:", result.incorrect);
+    console.log("Total:", result.total);
+    if (result.macronizerId === "NoOp") {
+      continue;
+    }
+    for (const detail of result.details ?? []) {
+      console.log("\nInput ID:", detail.inputId);
+      console.log("Runtime:", detail.runtimeMs);
+      console.log("Accuracy:", detail.accuracy);
+      console.log("Correct:", detail.correct);
+      console.log("Incorrect:", detail.incorrect);
+      console.log("Total:", detail.total);
+      const outputName = `output_${result.macronizerId}_${detail.inputId}.txt`;
+      fs.writeFileSync(
+        outputName,
+        detail.incorrectWords
+          .map((iw) => `${iw.expected} -> ${iw.actual}`)
+          .join("\n")
+      );
+      console.log("Wrote to ", outputName);
     }
   }
-);
+});

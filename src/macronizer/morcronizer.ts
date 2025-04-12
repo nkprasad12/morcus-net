@@ -6,7 +6,11 @@ import {
   stripDiacritics,
   type DiacriticStripped,
 } from "@/common/text_cleaning";
-import { latincyAnalysis, type LatinToken } from "@/latincy/latincy_client";
+import {
+  latincyAnalysis,
+  stanzaAnalysis,
+  type LatinToken,
+} from "@/latincy/latincy_client";
 import { crunchWord } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions, type CrunchResult } from "@/morceus/cruncher_types";
@@ -22,7 +26,7 @@ import type {
   FormOptions,
 } from "@/web/api_routes";
 
-const INPUT_MAX_LENGTH = 10000;
+const INPUT_MAX_LENGTH = 20000;
 
 const INFLECTION_PROVIDER = singletonOf(() => {
   const tables = MorceusTables.CACHED.get();
@@ -126,7 +130,21 @@ function findBestMatch(
       }
       for (const morph of option.morph) {
         const comparison = compareGrammaticalData(nlpInflection, morph);
-        if (comparison === -1 || comparison === 0) {
+        if (comparison !== undefined) {
+          return i;
+        }
+      }
+    }
+  }
+
+  // let mostMatches = -1;
+  // let bestIndex = -1;
+  for (let i = 0; i < crunched.length; i++) {
+    const options = crunched[i].options;
+    for (const option of options) {
+      for (const morph of option.morph) {
+        const comparison = compareGrammaticalData(nlpInflection, morph);
+        if (comparison === 0) {
           return i;
         }
       }
@@ -264,13 +282,35 @@ export function preprocessText(
   return [processed, words, spaces];
 }
 
-export async function macronizeInput(text: string): Promise<MacronizedResult> {
+function sentenceSegement(words: string[]): string[][] {
+  const sentences: string[][] = [];
+  let current: string[] = [];
+  for (const word of words) {
+    current.push(word);
+    if (word.includes("?") || word.includes("!") || word.includes(".")) {
+      sentences.push(current);
+      current = [];
+    }
+  }
+  if (current.length > 0) {
+    sentences.push(current);
+  }
+  return sentences;
+}
+
+export async function macronizeInput(
+  text: string,
+  useStanza?: boolean
+): Promise<MacronizedResult> {
   assert(
     text.length <= INPUT_MAX_LENGTH,
     `Input longer than ${INPUT_MAX_LENGTH} characters.`
   );
   const [processed, words, spaces] = preprocessText(text);
+  if (useStanza) {
+    const nlpResult = await stanzaAnalysis(sentenceSegement(words));
+    return attachGuesses(processed, nlpResult);
+  }
   const nlpResult = await latincyAnalysis(words, spaces);
-  const macronized = attachGuesses(processed, nlpResult);
-  return macronized;
+  return attachGuesses(processed, nlpResult);
 }
