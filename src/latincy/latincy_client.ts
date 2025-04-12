@@ -45,3 +45,24 @@ export async function latincyAnalysis(
   assertType(responseJson, isLatincyResponse);
   return responseJson;
 }
+
+/**
+ * Analyze Latin text using the LatinCy server
+ * @param words The Latin text to analyze
+ *
+ * @returns A promise resolving to an array of analyzed tokens
+ * @throws Error if the server request fails
+ */
+export async function stanzaAnalysis(words: string[][]): Promise<LatinToken[]> {
+  const address = "http://localhost:5759";
+
+  const request: RequestInit = {
+    method: "POST",
+    body: JSON.stringify(words),
+    headers: { "Content-Type": "application/json" },
+  };
+  const response = await fetch(address, request);
+  const responseJson = await response.json();
+  assertType(responseJson, isLatincyResponse);
+  return responseJson;
+}
