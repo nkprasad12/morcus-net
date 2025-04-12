@@ -206,7 +206,7 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(LogClientEventApi, async (eventData) => {
         (await telemetry).logClientEvent(eventData);
       }),
-      RouteDefinition.create(MacronizeApi, macronizeInput),
+      RouteDefinition.create(MacronizeApi, (input) => macronizeInput(input)),
     ],
     telemetry: telemetry,
     buildDir,
