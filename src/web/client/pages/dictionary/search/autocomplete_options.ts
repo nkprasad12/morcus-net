@@ -51,23 +51,27 @@ export async function autocompleteOptions(
   const prefix = removeDiacritics(input).toLowerCase();
   const prefixes = getPrefixes(prefix);
 
+  const isSuffixSearch = prefix.length > 1 && prefix.startsWith("-");
   const mainQuery = prefix[0];
   const extraQuery =
     fromLatin.length > 0 ? EXTRA_KEY_LOOKUP.get(mainQuery) : undefined;
-  const allPending = [
-    fetchResults(mainQuery, dicts),
-    fetchResults(extraQuery, fromLatin),
-  ];
+  const allPending = isSuffixSearch
+    ? [fetchResults(prefix, dicts)]
+    : [fetchResults(mainQuery, dicts), fetchResults(extraQuery, fromLatin)];
 
   const allFiltered: [DictLang, DictInfo["key"], string[]][] = [];
   for (const pending of allPending) {
     const allOptions = await pending;
     for (const dictKey in allOptions) {
       const options = allOptions[dictKey];
-      const filtered = options.filter((option) =>
-        prefixes.includes(
-          removeDiacritics(option).toLowerCase().substring(0, prefix.length)
-        )
+      const filtered = options.filter(
+        (option) =>
+          // For suffix searches, we pass along the whole query rather than just the first letter.
+          // Thus we only need to check matches for prefix searches.
+          isSuffixSearch ||
+          prefixes.includes(
+            removeDiacritics(option).toLowerCase().substring(0, prefix.length)
+          )
       );
       allFiltered.push([
         checkPresent(dicts.find((dict) => dict.key === dictKey)).languages.from,

@@ -78,16 +78,16 @@ const FAKE_DICT: RawDictEntry[] = [
 function toDictData(keys: readonly string[]) {
   return keys.map((key, i) => ({
     id: `n${i}`,
-    keys: [key + "_"],
+    keys: [key],
     entry: key,
   }));
 }
 
-function createSqlDict(): StoredDict {
+function storedDict(): StoredDict {
   return new StoredDict(sqliteBacking(TEMP_FILE));
 }
 
-describe("SqlDict", () => {
+describe("StoredDict", () => {
   function expectEntriesWithIds(
     results: readonly StoredEntryAndMetadata[],
     expected: readonly string[]
@@ -113,7 +113,7 @@ describe("SqlDict", () => {
 
   test("getById returns correct entry.", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
 
     expect((await dict.getById("n1"))?.includes("Gallia est omnis")).toBe(true);
     expect(await dict.getById("n112")).toBeUndefined();
@@ -121,7 +121,7 @@ describe("SqlDict", () => {
 
   test("getRawEntry handles expected entries", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
 
     expectEntriesWithIds(await dict.getRawEntry("Julius"), ["Julius"]);
     expectEntriesWithIds(await dict.getRawEntry("Publius"), ["Publius"]);
@@ -129,38 +129,38 @@ describe("SqlDict", () => {
 
   test("getRawEntry handles expected entries with combiners", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
 
     expectEntriesWithIds(await dict.getRawEntry("Juli\u0304us"), ["Julius"]);
   });
 
   test("getRawEntry handles entries by derived key", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
     expectEntriesWithIds(await dict.getRawEntry("Julianus"), ["Julius"]);
   });
 
   test("getRawEntry handles ambiguous queries", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
     expectEntriesWithIds(await dict.getRawEntry("Naso"), ["Publius", "Naso"]);
   });
 
   test("getRawEntry handles unknown queries", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
     expect(await dict.getRawEntry("Foo")).toEqual([]);
   });
 
   test("getRawEntry handles same ascii orths in single article", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
     expectEntriesWithIds(await dict.getRawEntry("ino"), ["Ino"]);
   });
 
   test("getRawEntry without diacritic returns all options", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
     expectEntriesWithIds(await dict.getRawEntry("quis"), [
       "quisNormal",
       "quisBreve",
@@ -170,7 +170,7 @@ describe("SqlDict", () => {
 
   test("getRawEntry with breve returns short and ambiguous", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
     expectEntriesWithIds(await dict.getRawEntry("quĭs"), [
       "quisNormal",
       "quisBreve",
@@ -179,7 +179,7 @@ describe("SqlDict", () => {
 
   test("getRawEntry with macron returns long and ambiguous", async () => {
     SqliteDict.save(FAKE_DICT, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
     expectEntriesWithIds(await dict.getRawEntry("quīs"), [
       "quisNormal",
       "quisMacron",
@@ -189,25 +189,33 @@ describe("SqlDict", () => {
   test("getCompletions returns expected results", async () => {
     const inputKeys = ["aba", "abbas", "abas", "abat", "abbat", "abatta"];
     SqliteDict.save(toDictData(inputKeys), TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
 
     expect(await dict.getCompletions("ab")).toStrictEqual([
-      "aba_",
-      "abas_",
-      "abat_",
-      "abatta_",
-      "abbas_",
-      "abbat_",
+      "aba",
+      "abas",
+      "abat",
+      "abatta",
+      "abbas",
+      "abbat",
     ]);
-    expect(await dict.getCompletions("abat")).toStrictEqual([
-      "abat_",
-      "abatta_",
-    ]);
-    expect(await dict.getCompletions("abba")).toStrictEqual([
-      "abbas_",
-      "abbat_",
-    ]);
+    expect(await dict.getCompletions("abat")).toStrictEqual(["abat", "abatta"]);
+    expect(await dict.getCompletions("abba")).toStrictEqual(["abbas", "abbat"]);
     expect(await dict.getCompletions("abbax")).toStrictEqual([]);
+  });
+
+  test("getCompletions handles suffix searches results", async () => {
+    const inputKeys = ["-us", "Julius", "Alexios"];
+    SqliteDict.save(toDictData(inputKeys), TEMP_FILE);
+    const dict = storedDict();
+
+    expect(await dict.getCompletions("-s")).toStrictEqual([
+      "-us",
+      "Julius",
+      "Alexios",
+    ]);
+    expect(await dict.getCompletions("-os")).toStrictEqual(["Alexios"]);
+    expect(await dict.getCompletions("-us")).toStrictEqual(["-us", "Julius"]);
   });
 
   test("getCompletions handles entries with multiple keys", async () => {
@@ -216,7 +224,7 @@ describe("SqlDict", () => {
       { id: "n2", keys: ["Julus"], entry: "" },
     ];
     SqliteDict.save(data, TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
 
     expect(await dict.getCompletions("Juliu")).toStrictEqual(["Julius"]);
     expect(await dict.getCompletions("Iuliu")).toStrictEqual(["Iulius"]);
@@ -224,19 +232,19 @@ describe("SqlDict", () => {
 
   test("getCompletions handles different capitalization", async () => {
     SqliteDict.save(toDictData(["arbor", "Arbor", "arboris"]), TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
 
     expect(await dict.getCompletions("ar")).toStrictEqual([
-      "arbor_",
-      "Arbor_",
-      "arboris_",
+      "arbor",
+      "Arbor",
+      "arboris",
     ]);
   });
 
   test("getCompletions removes duplicate orths", async () => {
     SqliteDict.save(toDictData(["arbor", "abeo", "abeo"]), TEMP_FILE);
-    const dict = createSqlDict();
+    const dict = storedDict();
 
-    expect(await dict.getCompletions("a")).toStrictEqual(["abeo_", "arbor_"]);
+    expect(await dict.getCompletions("a")).toStrictEqual(["abeo", "arbor"]);
   });
 });

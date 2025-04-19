@@ -51,6 +51,9 @@ export class FusedAutocompleteFetcher {
   async getOptions(
     request: CompletionsFusedRequest
   ): Promise<CompletionsFusedResponse> {
+    if (request.query.startsWith("-")) {
+      return callApi(CompletionsFusedApi, request);
+    }
     assertEqual(request.query.length, 1);
     const queryKey = removeDiacritics(request.query).toLowerCase();
     const response: Record<string, string[]> = {};

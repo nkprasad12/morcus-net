@@ -100,6 +100,17 @@ export class StoredDict {
 
   /** Returns the possible completions for the given prefix. */
   async getCompletions(input: string): Promise<string[]> {
+    // If the input starts with a hyphen, we want to treat it as a suffix.
+    // However, if we have *just* a hyphen, we want to avoid doing a full table
+    // scan (because that would return everything) and just return the
+    // entries that explicitly start with a hyphen.
+    return input.startsWith("-") && input.length > 1
+      ? this.backing.entryNamesBySuffix(input.substring(1))
+      : this.getPrefixCompletions(input);
+  }
+
+  /** Returns the possible completions for the given prefix. */
+  async getPrefixCompletions(input: string): Promise<string[]> {
     const prefix = removeDiacritics(input).toLowerCase();
     const precomputed = (await this.table)?.get(prefix);
     if (precomputed !== undefined) {

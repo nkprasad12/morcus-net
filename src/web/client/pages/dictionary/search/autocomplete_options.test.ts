@@ -15,7 +15,7 @@ jest.mock(
     return {
       ...original,
       FusedAutocompleteFetcher: {
-        ...original.FusedAutoCompleteFetcher,
+        ...original.FusedAutocompleteFetcher,
         get: () => new original.FusedAutocompleteFetcher(),
       },
     };
@@ -34,10 +34,16 @@ function setApiResult(result: Record<string, string[]> | Error) {
     mockCallApi.mockRejectedValue(result);
   } else {
     mockCallApi.mockImplementation((_, request) => {
-      const prefix = request.query;
       const finalResult: Record<string, string[]> = {};
       for (const dict in result) {
-        finalResult[dict] = result[dict].filter((w) => w.startsWith(prefix));
+        if (request.dicts && !request.dicts.includes(dict)) {
+          continue;
+        }
+        finalResult[dict] = result[dict].filter((w) =>
+          request.query.startsWith("-")
+            ? w.endsWith(request.query.slice(1))
+            : w.startsWith(request.query)
+        );
       }
       return Promise.resolve(finalResult);
     });
@@ -106,6 +112,15 @@ describe("autocompleteOptions", () => {
     setApiResult(ALL_DICTS);
     const result = await autocompleteOptions("aba", [LD1]);
     expect(result).toStrictEqual([["La", "abago"]]);
+  });
+
+  it("returns expected suffixes", async () => {
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("-ab", [LD1]);
+    expect(result).toStrictEqual([
+      ["La", "ab"],
+      ["La", "sab"],
+    ]);
   });
 
   it("fetches alternate character completions for Latin only", async () => {
