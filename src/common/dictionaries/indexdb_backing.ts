@@ -1,8 +1,8 @@
 import type {
   EntriesTableRow,
-  OrthsTableRow,
   RawDictEntry,
   StoredDictBacking,
+  StoredOrthsTableRow,
 } from "@/common/dictionaries/stored_dict_interface";
 import { removeDiacritics } from "@/common/text_cleaning";
 import type { DbConfig, Store } from "@/web/client/utils/indexdb/types";
@@ -19,17 +19,17 @@ export const ENTRIES_STORE = {
   validator: matchesObject<EntriesTableRow>({ id: isString, entry: isString }),
 } satisfies Store<EntriesTableRow>;
 
-// TODO: The Sqlite implementation has cleanOrth as an index.
 export const ORTHS_STORE = {
   name: "orthsTable",
-  validator: matchesObject<OrthsTableRow>({
+  validator: matchesObject<StoredOrthsTableRow>({
     id: isString,
     orth: isString,
     cleanOrth: isString,
+    reverseCleanOrth: isString,
     senseId: maybeUndefined(isString),
   }),
-  indices: [{ keyPath: "cleanOrth" }],
-} satisfies Store<OrthsTableRow>;
+  indices: [{ keyPath: "cleanOrth" }, { keyPath: "reverseCleanOrth" }] as const,
+} satisfies Store<StoredOrthsTableRow>;
 
 export interface IndexDbDictConfig extends DbConfig {
   stores: [typeof ENTRIES_STORE, typeof ORTHS_STORE];
@@ -51,6 +51,20 @@ function cleanKey(key: string) {
   return removeDiacritics(key).toLowerCase();
 }
 
+function orthRow(
+  id: string,
+  orth: string,
+  senseId?: string
+): StoredOrthsTableRow {
+  const cleanOrth = cleanKey(orth);
+  const reverseCleanOrth = cleanOrth.split("").reverse().join("");
+  const result: StoredOrthsTableRow = { id, orth, cleanOrth, reverseCleanOrth };
+  if (senseId !== undefined) {
+    result.senseId = senseId;
+  }
+  return result;
+}
+
 /** Saves the given entries to the IndexedDb table. */
 async function saveToIndexedDb(
   entries: RawDictEntry[],
@@ -66,25 +80,12 @@ async function saveToIndexedDb(
   const allPending: Promise<unknown>[] = [];
   for (const entry of entries) {
     allPending.push(entriesStore.add({ id: entry.id, entry: entry.entry }));
-    entry.keys.forEach((key) => {
-      allPending.push(
-        orthsStore.add({
-          id: entry.id,
-          orth: key,
-          cleanOrth: cleanKey(key),
-        })
-      );
-    });
+    entry.keys.forEach((key) =>
+      allPending.push(orthsStore.add(orthRow(entry.id, key)))
+    );
     for (const [senseId, derivedOrths] of entry.derivedKeys ?? []) {
       derivedOrths.forEach((derived) =>
-        allPending.push(
-          orthsStore.add({
-            id: entry.id,
-            orth: derived,
-            cleanOrth: cleanKey(derived),
-            senseId,
-          })
-        )
+        allPending.push(orthsStore.add(orthRow(entry.id, derived, senseId)))
       );
     }
   }
@@ -128,7 +129,22 @@ function indexDbBacking(input: IndexDbDictConfig): StoredDictBacking<"Async"> {
       const store = (await db).singleStore(ORTHS_STORE, "readonly");
       const cleanNameIndex = input.stores[1].indices[0];
       const query = IDBKeyRange.lowerBound(prefix);
-      const stopper = (row: OrthsTableRow) => !row.cleanOrth.startsWith(prefix);
+      const stopper = (row: StoredOrthsTableRow) =>
+        !row.cleanOrth.startsWith(prefix);
+      const results = await store.searchIndex(cleanNameIndex, query, stopper);
+      const lookup = new Set<string>();
+      for (const result of results) {
+        lookup.add(result.orth);
+      }
+      return Array.from(lookup.values());
+    },
+    entryNamesBySuffix: async (suffix: string) => {
+      const store = (await db).singleStore(ORTHS_STORE, "readonly");
+      const cleanNameIndex = input.stores[1].indices[1];
+      const reverseSuffix = suffix.split("").reverse().join("");
+      const query = IDBKeyRange.lowerBound(reverseSuffix);
+      const stopper = (row: StoredOrthsTableRow) =>
+        !row.reverseCleanOrth.startsWith(reverseSuffix);
       const results = await store.searchIndex(cleanNameIndex, query, stopper);
       const lookup = new Set<string>();
       for (const result of results) {

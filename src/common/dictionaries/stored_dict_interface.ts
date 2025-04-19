@@ -40,8 +40,12 @@ export interface EntriesTableRow {
 export interface OrthsTableRow {
   id: string;
   orth: string;
-  cleanOrth: string;
   senseId?: string;
+}
+
+export interface StoredOrthsTableRow extends OrthsTableRow {
+  cleanOrth: string;
+  reverseCleanOrth: string;
 }
 
 export interface StoredDictBacking<IsAsync extends BackingType> {
@@ -56,10 +60,11 @@ export interface StoredDictBacking<IsAsync extends BackingType> {
    */
   matchesForCleanName: (
     cleanName: string
-  ) => MaybeAsync<Omit<OrthsTableRow, "cleanOrth">[], IsAsync>;
+  ) => MaybeAsync<OrthsTableRow[], IsAsync>;
   entriesForIds: (
     ids: string[]
   ) => MaybeAsync<{ id: string; entry: string }[], IsAsync>;
   entryNamesByPrefix: (prefix: string) => MaybeAsync<string[], IsAsync>;
+  entryNamesBySuffix: (suffix: string) => MaybeAsync<string[], IsAsync>;
   lowMemory: boolean;
 }

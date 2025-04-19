@@ -1,7 +1,9 @@
 import type {
+  EntryName,
   OrthsTableRow,
   RawDictEntry,
   StoredDictBacking,
+  StoredOrthsTableRow,
 } from "@/common/dictionaries/stored_dict_interface";
 import { ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
@@ -13,29 +15,32 @@ export function sqliteBacking(
   const db = typeof input === "string" ? ReadOnlyDb.getDatabase(input) : input;
   return {
     allEntryNames: () =>
-      // @ts-expect-error
-      db.prepare(`SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`).all(),
-    matchesForCleanName: (cleanName: string) =>
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       db
+        .prepare(`SELECT orth, cleanOrth FROM orths ORDER BY cleanOrth`)
+        .all() as EntryName[],
+    matchesForCleanName: (cleanName: string) => {
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+      const rawRows = db
         .prepare(
           `SELECT id, orth, senseId FROM orths WHERE cleanOrth = '${cleanName}'`
         )
-        .all()
-        // @ts-expect-error
-        .map(({ id, orth, senseId }) => {
-          const result: Omit<OrthsTableRow, "cleanOrth"> = { id, orth };
-          if (senseId !== null) {
-            result.senseId = senseId;
-          }
-          return result;
-        }),
-    // @ts-expect-error
+        .all() as OrthsTableRow[];
+      return rawRows.map(({ id, orth, senseId }) => {
+        const result: Omit<OrthsTableRow, "cleanOrth"> = { id, orth };
+        if (senseId !== null) {
+          result.senseId = senseId;
+        }
+        return result;
+      });
+    },
     entriesForIds: (ids: string[]) => {
       const filter = ids.map(() => `id=?`).join(" OR ");
       const n = ids.length;
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       return db
         .prepare(`SELECT id, entry FROM entries WHERE ${filter} LIMIT ${n}`)
-        .all(ids);
+        .all(ids) as { id: string; entry: string }[];
     },
     entryNamesByPrefix: (prefix: string) =>
       db
@@ -43,14 +48,39 @@ export function sqliteBacking(
           `SELECT DISTINCT orth FROM orths WHERE cleanOrth GLOB '${prefix}*'`
         )
         .all()
-        // @ts-expect-error
-        .map(({ orth }) => orth),
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        .map((row) => (row as { orth: string }).orth),
+    entryNamesBySuffix: (suffix: string) =>
+      db
+        .prepare(
+          `SELECT DISTINCT orth FROM orths WHERE reverseCleanOrth GLOB '${suffix
+            .split("")
+            .reverse()
+            .join("")}*'`
+        )
+        .all()
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        .map((row) => (row as { orth: string }).orth),
     lowMemory: false,
   };
 }
 
 function cleanKey(key: string): string {
   return removeDiacritics(key).toLowerCase();
+}
+
+function orthRow(
+  id: string,
+  orth: string,
+  senseId?: string
+): StoredOrthsTableRow {
+  const cleanOrth = cleanKey(orth);
+  const reverseCleanOrth = cleanOrth.split("").reverse().join("");
+  const result: StoredOrthsTableRow = { id, orth, cleanOrth, reverseCleanOrth };
+  if (senseId !== undefined) {
+    result.senseId = senseId;
+  }
+  return result;
 }
 
 export namespace SqliteDict {
@@ -69,19 +99,10 @@ export namespace SqliteDict {
         },
         {
           records: entries.flatMap((entry) => {
-            const rows: OrthsTableRow[] = entry.keys.map((key) => ({
-              id: entry.id,
-              orth: key,
-              cleanOrth: cleanKey(key),
-            }));
+            const rows = entry.keys.map((key) => orthRow(entry.id, key));
             for (const [senseId, derivedOrths] of entry.derivedKeys ?? []) {
               derivedOrths.forEach((derived) =>
-                rows.push({
-                  id: entry.id,
-                  orth: derived,
-                  cleanOrth: cleanKey(derived),
-                  senseId,
-                })
+                rows.push(orthRow(entry.id, derived, senseId))
               );
             }
             return rows;
