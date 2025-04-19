@@ -46,6 +46,7 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([
   ["de Origine et Situ Germanorum Liber", "Germania"],
+  ["De Vita Iulii Agricolae", "Agricola"],
   ["The Catilinarian Conspiracy", "Bellum Catilinae"],
   ["Laelius De Amicitia", "De Amicitia"],
   ["Medicamina faciei femineae", "Medicamina"],
@@ -53,6 +54,7 @@ const NAME_TO_DISPLAY_NAME = new Map<string, string>([
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["de Origine et Situ Germanorum Liber", "germania"],
+  ["De Vita Iulii Agricolae", "agricola"],
   ["The Catilinarian Conspiracy", "catalina1"],
   ["Medicamina faciei femineae", "medicamina"],
 ]);

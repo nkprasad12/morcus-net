@@ -30,8 +30,13 @@ const IGNORE_SUBTYPES = new Map<string, Set<string>>([
 const FORCE_CTS = new Set([
   LatinWorks.NEPOS_MILTIADES,
   LatinWorks.NEPOS_THEMISTOCLES,
+  LatinWorks.NEPOS_ARISTIDES,
+  LatinWorks.NEPOS_PAUSANIAS,
+  LatinWorks.NEPOS_CIMON,
   LatinWorks.TIBULLUS_ELEGIAE,
   LatinWorks.SUPLICIA_CARMINA,
+  LatinWorks.PRUDENTIUS_PERISTEPHANON,
+  LatinWorks.MUNICIUS_OCTAVIUS,
   EnglishTranslations[LatinWorks.OVID_AMORES],
   EnglishTranslations[LatinWorks.OVID_EPISTULAE],
 ]);
@@ -93,6 +98,7 @@ const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "sid",
   "uid",
   "parent",
+  "n", // This is just ignored, for now.
 ]);
 
 type QuoteOpen = "‘" | "“" | "'" | '"';
