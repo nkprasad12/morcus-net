@@ -112,7 +112,13 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
       return;
     }
     setLoading(true);
-    setOptions(await props.optionsForInput(value));
+    const fetchedOptions = await props.optionsForInput(value);
+    if (inputRef.current?.value !== value) {
+      // We don't want to set the options if the input has changed
+      // since we started fetching.
+      return;
+    }
+    setOptions(fetchedOptions);
     setCursor(-1);
     setLoading(false);
   }
