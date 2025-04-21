@@ -9,7 +9,7 @@ import {
 } from "@/web/utils/rpc/parsing";
 import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
-export type DictLang = "La" | "En" | "Fr" | "*";
+export type DictLang = "La" | "En" | "Fr" | "De" | "*";
 
 export function isDictLang(input: string): input is DictLang {
   return ["La", "En", "Fr", "*"].includes(input);

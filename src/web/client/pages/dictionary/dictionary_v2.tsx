@@ -179,6 +179,8 @@ function fullLangName(lang: DictLang): string {
       return "English";
     case "Fr":
       return "French";
+    case "De":
+      return "German";
     default:
       return lang;
   }
@@ -197,7 +199,7 @@ function LandingContent(props: {
     <div
       className="text xs light"
       style={{ margin: "12px 16px", maxWidth: 550 }}>
-      <details>
+      <details open>
         <summary className="text xs light">
           You are searching {dicts.length} dictionaries
         </summary>
@@ -212,7 +214,7 @@ function LandingContent(props: {
         ))}
       </details>
       <div>
-        You can type headwords in{" "}
+        You can search headwords in{" "}
         {fromLangs
           .filter((lang) => !inflectedLatin || lang !== "La")
           .map((lang) => fullLangName(lang))

@@ -55,6 +55,7 @@ export interface OfflineSettings {
   morceusDownloaded?: boolean;
   raDownloaded?: boolean;
   gafDownloaded?: boolean;
+  georgesDownloaded?: boolean;
 }
 
 export const OFFLINE_SETTINGS_KEYS: (keyof OfflineSettings)[] = [
