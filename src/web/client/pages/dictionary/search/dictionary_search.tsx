@@ -53,6 +53,7 @@ function useOfflineDictData() {
       "L&S": enabled && settings?.lsDownloaded !== true,
       "R&A": enabled && settings?.raDownloaded !== true,
       GAF: enabled && settings?.gafDownloaded !== true,
+      GRG: enabled && settings?.georgesDownloaded !== true,
       NUM: enabled,
     },
   };
@@ -242,7 +243,13 @@ function LangChip(props: { lang: DictLang }) {
   return (
     <DictChip
       label={props.lang}
-      className={props.lang === "La" ? "lsChip" : "shChip"}
+      className={
+        props.lang === "La"
+          ? "lsChip"
+          : props.lang === "De"
+          ? "deChip"
+          : "shChip"
+      }
     />
   );
 }
