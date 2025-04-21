@@ -104,6 +104,17 @@ function AttributionContent(props: { dictKey: string }) {
       </div>
     );
   }
+  if (props.dictKey === LatinDict.Georges.key) {
+    return (
+      <div>
+        Data for Georges was accessed from{" "}
+        <a href="https://latin-dict.github.io/dictionaries/Georges1910.html">
+          latin-dict.github.io
+        </a>{" "}
+        and is in the public domain.
+      </div>
+    );
+  }
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 

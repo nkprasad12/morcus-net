@@ -6,8 +6,16 @@ import {
   OutlineSection,
 } from "@/common/dictionaries/dict_result";
 
-export function extractOutline(rootNode: XmlNode): EntryOutline {
+export interface ExtractOutlineOptions {
+  senseNameAttr?: string;
+}
+
+export function extractOutline(
+  rootNode: XmlNode,
+  options?: ExtractOutlineOptions
+): EntryOutline {
   assert(rootNode.name === "entryFree");
+  const nAttr = options?.senseNameAttr ?? "n";
   // TODO: Pass a sanitized tree in to reduce duplication.
   const root = sanitizeTree(rootNode);
   const senses = root.findChildren("sense");
@@ -15,7 +23,7 @@ export function extractOutline(rootNode: XmlNode): EntryOutline {
     .map((sense, i): [XmlNode, number] => [sense, i])
     .filter(
       ([sense, _i]) =>
-        sense.getAttr("level") === "1" && sense.getAttr("n") === "I"
+        sense.getAttr("level") === "1" && sense.getAttr(nAttr) === "I"
     );
 
   const mergeFirstSense =
@@ -50,7 +58,7 @@ export function extractOutline(rootNode: XmlNode): EntryOutline {
     return {
       text: getSenseBlurb(sense),
       level: +checkPresent(sense.getAttr("level"), "Sense must have a level"),
-      ordinal: checkPresent(sense.getAttr("n"), "Sense must have an n") + ".",
+      ordinal: checkPresent(sense.getAttr(nAttr), "Sense must have an n") + ".",
       sectionId: senseId,
     };
   });

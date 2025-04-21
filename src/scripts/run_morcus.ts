@@ -77,6 +77,14 @@ function parseArguments() {
       options: { help: "Processes RA and saves to DB.", action: "store_true" },
     },
     {
+      short: "-b_grg",
+      long: "--build_georges",
+      options: {
+        help: "Processes Georges and saves to DB.",
+        action: "store_true",
+      },
+    },
+    {
       short: "-b_sh",
       long: "--build_sh",
       options: { help: "Processes SH and saves to DB.", action: "store_true" },
@@ -361,6 +369,14 @@ function artifactConfig(args: any): StepConfig[] {
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
       label: "Processing RA",
+      priority: 2,
+    });
+  }
+  if (args.build_georges === true) {
+    const command = baseCommand.concat(["src/scripts/process_grg.ts"]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Processing Georges",
       priority: 2,
     });
   }

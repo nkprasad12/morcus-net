@@ -3,6 +3,14 @@ import {
   type LatinDictInfo,
 } from "@/common/dictionaries/latin_dicts";
 
+const BETA_DICTS = [
+  LatinDict.RiddleArnold,
+  LatinDict.Gaffiot,
+  LatinDict.Georges,
+];
+
+const BETA_DISPLAY_NAMES = new Set(BETA_DICTS.map((d) => d.displayName));
+
 function classForDictChip(input: string, property: keyof LatinDictInfo) {
   switch (input) {
     case LatinDict.SmithAndHall[property]:
@@ -37,12 +45,7 @@ function fullChipClass(label: string, size?: string): string {
 }
 
 function fullChipText(label: string): string {
-  return [
-    LatinDict.RiddleArnold.displayName,
-    LatinDict.Gaffiot.displayName,
-  ].includes(label)
-    ? `${label} [Beta]`
-    : label;
+  return BETA_DISPLAY_NAMES.has(label) ? `${label} [Beta]` : label;
 }
 
 export function FullDictChip(props: { label: string; size?: "sm" | "xs" }) {
