@@ -20,6 +20,7 @@ import { MorceusTables } from "@/morceus/cruncher_tables";
 import { processRiddleArnold } from "@/common/dictionaries/riddle_arnold/process_riddle_arnold";
 import { ALL_SUPPORTED_WORKS } from "@/common/library/library_constants";
 import { generateGaffiotArtifacts } from "@/common/gaffiot/gaf_generate";
+import { processGeorges } from "@/common/dictionaries/georges/process_georges";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
@@ -85,6 +86,14 @@ const MAKE_SH: StepConfig = {
     path: envVar("SH_RAW_PATH"),
   },
 };
+const MAKE_GEORGES: StepConfig = {
+  operation: processGeorges,
+  label: "Georges DB creation",
+  dlInfo: {
+    url: "https://raw.githubusercontent.com/nkprasad12/Georges1910/refs/heads/main/Georges1910-ger-lat.xml",
+    path: envVar("GEORGES_RAW_PATH"),
+  },
+};
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
     processLibrary(
@@ -122,6 +131,7 @@ const ALL_STEPS = [
   MAKE_GAF,
   MAKE_LS,
   MAKE_RA,
+  MAKE_GEORGES,
   PROCESS_LAT_LIB,
 ];
 

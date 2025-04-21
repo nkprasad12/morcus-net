@@ -24,9 +24,11 @@ echo "Setting up raw data for dictionaries."
 echo "Downloading Lewis and Short. This may take some time."
 git clone https://github.com/nkprasad12/lexica.git
 
-echo "Setting up raw data for dictionaries."
 echo "Downloading Riddle Arnold. This may take some time."
 git clone https://github.com/nkprasad12/riddle-arnold.git
+
+echo "Downloading Georges. This may take some time."
+git clone https://github.com/nkprasad12/Georges1910.git
 
 echo "Downloading Smith and Hall."
 git clone https://github.com/nkprasad12/smithandhall.git
@@ -44,6 +46,7 @@ echo "PORT=$PORT" >> $dot_env
 echo "LS_PATH=$PWD/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml" >> $dot_env
 echo "RA_PATH=$PWD/riddle-arnold/riddle-arnold.tsv" >> $dot_env
 echo "SH_RAW_PATH=$PWD/smithandhall/sh_F2_latest.txt" >> $dot_env
+ecoo "GEORGES_RAW_PATH=$PWD/Georges1910/Georges1910-ger-lat.xml" >> $dot_env
 echo "LIB_XML_ROOT=$PWD/canonical-latinlit" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."

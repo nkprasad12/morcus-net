@@ -42,6 +42,8 @@ import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
 import { singletonOf } from "@/common/misc_utils";
 import { macronizeInput } from "@/macronizer/morcronizer";
+import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
+import { assertEqual } from "@/common/assert";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -52,6 +54,7 @@ function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   const cachedProvider = () => {
     if (delegate === null) {
       delegate = provider();
+      assertEqual(delegate.info, info, "Bad configuration");
     }
     return delegate;
   };
@@ -137,6 +140,15 @@ export function startMorcusServer(): Promise<http.Server> {
     console.debug(`Gaffiot init: ${elapsed} ms`);
     return result;
   }, LatinDict.Gaffiot);
+  const georges = delayedInit(() => {
+    const start = performance.now();
+    const result = new GeorgesDict(
+      sqliteBacking(envVar("GEORGES_PROCESSED_PATH"))
+    );
+    const elapsed = (performance.now() - start).toFixed(3);
+    console.debug(`Georges init: ${elapsed} ms`);
+    return result;
+  }, LatinDict.Georges);
   const numeralDict = new NumeralDict();
   const riddleArnold = delayedInit(() => {
     const start = performance.now();
@@ -152,6 +164,7 @@ export function startMorcusServer(): Promise<http.Server> {
     smithAndHall,
     riddleArnold,
     gaffiot,
+    georges,
     numeralDict,
   ]);
 
