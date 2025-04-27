@@ -3,6 +3,7 @@ import type { EntryOutline } from "@/common/dictionaries/dict_result";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
+import { safeParseInt } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
@@ -61,7 +62,8 @@ function formatForDisplay(root: XmlNode, parentId: string): XmlNode {
       [` ${marker} `]
     );
     attrs.push(["id", newId]);
-    attrs.push(["grgLevel", checkPresent(root.getAttr("level"))]);
+    const level = checkPresent(safeParseInt(root.getAttr("level")));
+    attrs.push(["indentLevel", `${level - 1}`]);
     extras.push(bullet);
   }
   const children = root.children.map((c) =>
