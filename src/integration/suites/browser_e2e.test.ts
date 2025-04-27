@@ -114,8 +114,26 @@ test.describe("dictionary main entries", () => {
     await expect(page.getByText("a weight").nth(0)).toBeVisible();
   });
 
-  test("should allow loading LS entries by name", async ({ page }) => {
+  test("should allow loading LS entries by name, all dicts", async ({
+    page,
+  }) => {
     await page.goto("/dicts?q=pondus");
+    await expect(page.getByText("pondus").nth(0)).toBeVisible();
+    await expect(page.getByText("a weight").nth(0)).toBeVisible();
+  });
+
+  test("should allow loading LS entries by name, some dicts, old format", async ({
+    page,
+  }) => {
+    await page.goto("/dicts?q=pondus&in=LnS,SnH");
+    await expect(page.getByText("pondus").nth(0)).toBeVisible();
+    await expect(page.getByText("a weight").nth(0)).toBeVisible();
+  });
+
+  test("should allow loading LS entries by name, some dicts, new format", async ({
+    page,
+  }) => {
+    await page.goto("/dicts?q=pondus&in=LnS-SnH");
     await expect(page.getByText("pondus").nth(0)).toBeVisible();
     await expect(page.getByText("a weight").nth(0)).toBeVisible();
   });
