@@ -276,11 +276,11 @@ export namespace SearchSettings {
 
   export function store(dicts: DictInfo[]) {
     const keys = dicts.map((dict) => dict.key);
-    sessionStorage.setItem(SEARCH_SETTINGS_KEY, keys.join(";"));
+    localStorage.setItem(SEARCH_SETTINGS_KEY, keys.join(";"));
   }
 
   export function retrieve(): LatinDictInfo[] {
-    const stored = sessionStorage.getItem(SEARCH_SETTINGS_KEY)?.split(";");
+    const stored = localStorage.getItem(SEARCH_SETTINGS_KEY)?.split(";");
     const rawDicts =
       stored === undefined
         ? LatinDict.AVAILABLE

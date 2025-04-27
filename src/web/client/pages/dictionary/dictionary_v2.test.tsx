@@ -65,7 +65,7 @@ describe("New Dictionary View", () => {
     mockCallApi.mockReset();
   });
 
-  beforeEach(() => window.sessionStorage.clear());
+  beforeEach(() => window.localStorage.clear());
 
   it("shows expected components", () => {
     render(<DictionaryViewV2 />);
