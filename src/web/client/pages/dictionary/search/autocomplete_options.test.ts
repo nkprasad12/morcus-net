@@ -143,6 +143,32 @@ describe("autocompleteOptions", () => {
     ]);
   });
 
+  it("displays correct results on dict settings change to exclude", async () => {
+    setApiResult(ALL_DICTS);
+    await autocompleteOptions("sa", [LD1, ED1]);
+
+    const result = await autocompleteOptions("sa", [LD1]);
+
+    expect(result).toStrictEqual([
+      ["La", "sab"],
+      ["La", "sad"],
+    ]);
+  });
+
+  it("displays correct results on dict settings change to include more", async () => {
+    setApiResult({ LS: LS_LIST });
+    await autocompleteOptions("sa", [LD1]);
+
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("sa", [LD1, ED1]);
+
+    expect(result).toStrictEqual([
+      ["La", "sab"],
+      ["En", "sac"],
+      ["La", "sad"],
+    ]);
+  });
+
   it("displays correct options with internal character", async () => {
     setApiResult(ALL_DICTS);
     const result = await autocompleteOptions("insv", [LD1, ED1]);
