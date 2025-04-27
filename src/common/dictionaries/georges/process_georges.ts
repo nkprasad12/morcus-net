@@ -1,10 +1,13 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import type { EntryOutline } from "@/common/dictionaries/dict_result";
+import type {
+  EntryOutline,
+  OutlineSection,
+} from "@/common/dictionaries/dict_result";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
 import { safeParseInt } from "@/common/misc_utils";
-import { XmlNode } from "@/common/xml/xml_node";
+import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
 
@@ -17,7 +20,11 @@ const NAME_FOR_REND = new Map<string, string>([
   ["superscript", "sup"],
 ]);
 
-function formatForDisplay(root: XmlNode, parentId: string): XmlNode {
+function formatForDisplay(
+  root: XmlNode,
+  parentId: string,
+  outlineSenses: OutlineSection[]
+): XmlNode {
   const extras: XmlNode[] = [];
   let name = "span";
   const attrs: [string, string][] = [];
@@ -65,11 +72,39 @@ function formatForDisplay(root: XmlNode, parentId: string): XmlNode {
     const level = checkPresent(safeParseInt(root.getAttr("level")));
     attrs.push(["indentLevel", `${level - 1}`]);
     extras.push(bullet);
+    outlineSenses.push({
+      text: getContainedText(root),
+      level,
+      sectionId: newId,
+      ordinal: marker,
+    });
   }
   const children = root.children.map((c) =>
-    typeof c === "string" ? c : formatForDisplay(c, newId)
+    typeof c === "string" ? c : formatForDisplay(c, newId, outlineSenses)
   );
   return new XmlNode(name, attrs, [...extras, ...children]);
+}
+
+function getContainedText(root: XmlNode, charsRequested: number = 20): string {
+  const queue: XmlChild[] = [root];
+  let result = "";
+  while (queue.length > 0) {
+    const top = queue.pop()!;
+    if (typeof top === "string") {
+      result += top;
+      if (result.length > charsRequested) {
+        return result + " ...";
+      }
+      continue;
+    }
+    if (top.name === "sense" && top !== root) {
+      return result;
+    }
+    for (let i = 0; i < top.children.length; i++) {
+      queue.push(top.children[top.children.length - i - 1]);
+    }
+  }
+  return result;
 }
 
 function processRawEntry(root: XmlNode): RawDictEntry {
@@ -94,17 +129,18 @@ function processRawEntry(root: XmlNode): RawDictEntry {
   // We can have multiple top level senses!
   assert(defs.length > 0, "No definitions found");
   const processedRoot = new XmlNode("entryFree", [["id", id]], defs);
+  const outlineSenses: OutlineSection[] = [];
+  const formattedEntry = formatForDisplay(processedRoot, id, outlineSenses);
   const outline: EntryOutline = {
     mainKey: keys[0],
     mainSection: { text: "", level: 0, ordinal: "0", sectionId: id },
+    senses: outlineSenses,
   };
   return {
     id,
     keys,
     entry: JSON.stringify({
-      entry: XmlNodeSerialization.DEFAULT.serialize(
-        formatForDisplay(processedRoot, id)
-      ),
+      entry: XmlNodeSerialization.DEFAULT.serialize(formattedEntry),
       outline,
     }),
   };
