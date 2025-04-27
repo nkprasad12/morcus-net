@@ -4,7 +4,7 @@ import {
   type LatinDictInfo,
 } from "@/common/dictionaries/latin_dicts";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
-import { useState, useContext } from "react";
+import { useState, useContext, useCallback } from "react";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
 import {
   DEFAULT_HIGHLIGHT_STRENGTH,
@@ -286,6 +286,11 @@ export function DictionarySearch(props: {
     props.onSearchQuery(searchTerm, { lang });
   }
 
+  const optionsForInput = useCallback(
+    (input: string) => autocompleteOptions(input, props.dicts, 300),
+    [props.dicts]
+  );
+
   return (
     <>
       <SearchBox
@@ -302,9 +307,11 @@ export function DictionarySearch(props: {
         autoFocused={props.autoFocused}
         onRawEnter={(v) => onEnter(v)}
         onOptionSelected={(t) => onEnter(t[1], t[0])}
-        optionsForInput={(input) =>
-          autocompleteOptions(input, props.dicts, 300)
-        }
+        optionsForInput={optionsForInput}
+        // This will cause the component to reset when `optionsForInput` changes, which
+        // in turn is when `props.dicts` changes. Note this also means that the state of the
+        // input field resets, but in practice that shouldn't be a big problem.
+        key={optionsForInput}
         RenderOption={AutocompleteOption}
         toKey={(t) => `${t[1]},${t[0]}`}
         toInputDisplay={(t) => t[1]}
