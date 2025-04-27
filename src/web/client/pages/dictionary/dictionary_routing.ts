@@ -47,7 +47,11 @@ function dictsFromParam(param?: string): DictInfo[] | DictInfo | undefined {
   if (param === undefined) {
     return undefined;
   }
-  const keys = param.split(",").map((part) => part.replace("n", "&"));
+  // Ensure that the parse side supports both "-" and "," as separators.
+  // In the future, we will use "-" as the separator to avoid ugly URLs,
+  // but we need to support "," for backwards compatibility of old clients.
+  const splitter = param.includes("-") ? "-" : ",";
+  const keys = param.split(splitter).map((part) => part.replace("n", "&"));
   const dicts = LatinDict.AVAILABLE.filter((dict) => keys.includes(dict.key));
   return dicts.length === 1 ? dicts[0] : dicts;
 }
