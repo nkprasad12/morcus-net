@@ -160,7 +160,7 @@ export function processGeorges() {
   const ids = new Set<string>();
   for (let i = 0; i < rawEntries.length; i++) {
     if (i % 5000 === 0) {
-      console.log(`[Georges] Processed ${i} of ${rawEntries.length}`);
+      console.debug(`[Georges] Processed ${i} of ${rawEntries.length}`);
     }
     const entry = rawEntries[i];
     const processed = processRawEntry(entry);
