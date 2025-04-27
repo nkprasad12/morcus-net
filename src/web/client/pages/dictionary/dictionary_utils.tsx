@@ -21,6 +21,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { processWords } from "@/common/text_cleaning";
+import { safeParseInt } from "@/common/misc_utils";
 
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -227,7 +228,8 @@ export function xmlNodeToJsx(
         key={key}
       />
     );
-  } else if (className === "lsSenseBullet") {
+  }
+  if (className === "lsSenseBullet") {
     function senseForwardedNode(forwardProps: any, forwardRef: any) {
       const allProps = { ...props, ...forwardProps };
       allProps["ref"] = forwardRef;
@@ -243,7 +245,8 @@ export function xmlNodeToJsx(
         idToEdit={senseId}
       />
     );
-  } else if (className === "dLink") {
+  }
+  if (className === "dLink") {
     const target = root.getAttr("to");
     const text = root.getAttr("text");
     return (
@@ -253,13 +256,19 @@ export function xmlNodeToJsx(
         key={key}
       />
     );
-  } else {
-    const rootId = root.getAttr("id");
-    if (rootId !== undefined && rootId === args.highlightId) {
-      props["className"] = "dictHighlighted";
-    }
-    return React.createElement(root.name, props, children);
   }
+  const rootId = root.getAttr("id");
+  if (rootId !== undefined && rootId === args.highlightId) {
+    props["className"] = "dictHighlighted";
+  }
+  const indentLevel = safeParseInt(props["indentLevel"]);
+  if (indentLevel !== undefined && indentLevel > 0) {
+    props["style"] = {
+      ...props["style"],
+      marginLeft: `${indentLevel * 0.5}em`,
+    };
+  }
+  return React.createElement(root.name, props, children);
 }
 
 export namespace SearchSettings {
