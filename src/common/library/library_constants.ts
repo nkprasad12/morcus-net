@@ -4,6 +4,7 @@ export const LatinWorks = {
   // PLAUTUS_AMPHITRYO: "phi0119.phi001.perseus-lat2",
   CAESAR_DBG: "phi0448.phi001.perseus-lat2",
   CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
+  CICERO_PRO_QUINCTIO: "phi0474.phi001.perseus-lat2",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
   OVID_AMORES: "phi0959.phi001.perseus-lat2",

@@ -52,6 +52,9 @@ const HANDLED_REND = new Set<string>([
   "italic",
   "blockquote",
   "uppercase",
+  // These are used in gaps. We can just ignore them.
+  "* * * *",
+  "...",
 ]);
 // `merge` occurs infrequently, when we have a continued quote:
 // <l>blah blah <q>blah </q></l>
