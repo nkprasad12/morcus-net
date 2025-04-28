@@ -40,7 +40,7 @@ function dictsToParam(rawDicts?: DictInfo[] | DictInfo): string | undefined {
     return undefined;
   }
   const dicts = Array.isArray(rawDicts) ? rawDicts : [rawDicts];
-  return dicts.map((d) => d.key.replace("&", "n")).join(",");
+  return dicts.map((d) => d.key.replace("&", "n")).join("-");
 }
 
 function dictsFromParam(param?: string): DictInfo[] | DictInfo | undefined {
@@ -48,9 +48,9 @@ function dictsFromParam(param?: string): DictInfo[] | DictInfo | undefined {
     return undefined;
   }
   // Ensure that the parse side supports both "-" and "," as separators.
-  // In the future, we will use "-" as the separator to avoid ugly URLs,
-  // but we need to support "," for backwards compatibility of old clients.
-  const splitter = param.includes("-") ? "-" : ",";
+  // We use "-" as the separator to avoid ugly URLs,
+  // but we need to support "," for backwards compatibility of old links.
+  const splitter = param.includes(",") ? "," : "-";
   const keys = param.split(splitter).map((part) => part.replace("n", "&"));
   const dicts = LatinDict.AVAILABLE.filter((dict) => keys.includes(dict.key));
   return dicts.length === 1 ? dicts[0] : dicts;
