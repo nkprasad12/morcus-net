@@ -52,13 +52,24 @@ const HANDLED_REND = new Set<string>([
   "blockquote",
   "uppercase",
 ]);
-// `merge` occurs only one time. It happens when we have a continued quote:
+// `merge` occurs infrequently, when we have a continued quote:
 // <l>blah blah <q>blah </q></l>
 // <l><q rend="merge">blah</q> blah</l>
 // so the `merge` is supposed to indicate that the quote is merged with the
 // previous quote.
-// This is very hard to handle and only occurs once, so we just ignore it.
-const KNOWN_REND = new Set([undefined, "merge"].concat(...HANDLED_REND));
+// This is very hard to handle, so we just ignore it.
+const KNOWN_REND = new Set(
+  [
+    undefined,
+    "merge",
+    "align(indent)",
+    "merge;double",
+    "double",
+    "double; merge",
+    "single",
+    "align(blockquote)",
+  ].concat(...HANDLED_REND)
+);
 
 const TABLE_ITEM_CHILDREN = new Set<string>(["date"]);
 // For `note` nodes. These should be separate since they're
