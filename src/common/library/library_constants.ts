@@ -5,6 +5,7 @@ export const LatinWorks = {
   CAESAR_DBG: "phi0448.phi001.perseus-lat2",
   CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
   CICERO_PRO_QUINCTIO: "phi0474.phi001.perseus-lat2",
+  CICERO_PRO_QUINTO_ROSCIO: "phi0474.phi003.perseus-lat2",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
   OVID_AMORES: "phi0959.phi001.perseus-lat2",
