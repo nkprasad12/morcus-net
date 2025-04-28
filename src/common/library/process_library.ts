@@ -59,6 +59,12 @@ const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["Medicamina faciei femineae", "medicamina"],
 ]);
 
+const PERSEUS_LAT_LIT_DECLARATION = `<!DOCTYPE TEI.2 PUBLIC "-//TEI P4//DTD Main DTD Driver File//EN" "http://www.tei-c.org/Guidelines/DTD/tei2.dtd" [
+<!ENTITY % TEI.XML "INCLUDE">
+<!ENTITY % PersProse PUBLIC "-//Perseus P4//DTD Perseus Prose//EN" "http://www.perseus.tufts.edu/DTD/1.0/PersProse.dtd" >
+%PersProse;
+]>`;
+
 function urlify(input: string, customs: Map<string, string>) {
   const custom = customs.get(input);
   if (custom !== undefined) {
@@ -135,9 +141,18 @@ export function processLibrary(
   for (const workPath of sortedWorks) {
     // We should use the Perseus URN instead.
     const workId = pathToId(workPath);
-    const rawXml = parseRawXml(fs.readFileSync(workPath), {
-      keepWhitespace: true,
-    });
+    const rawXml = parseRawXml(
+      fs
+        .readFileSync(workPath)
+        .toString()
+        // This is a complete hack to skip the declaration.
+        // the fast-xml-parser library has a config option to skip the declaration, but it
+        // doesn't actually work.
+        .replace(PERSEUS_LAT_LIT_DECLARATION, ""),
+      {
+        keepWhitespace: true,
+      }
+    );
     const translationId = EnglishTranslations[workId];
     const result = processTeiCts2(
       rawXml,

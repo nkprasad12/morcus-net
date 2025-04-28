@@ -1,4 +1,5 @@
 import { checkPresent } from "@/common/assert";
+import { LatinWorks } from "@/common/library/library_constants";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import { WorkPage, type ProcessedWork2 } from "@/common/library/library_types";
 import {
@@ -668,6 +669,57 @@ describe("getSectionId", () => {
 
   it("handles empty stack", () => {
     expect(getSectionId([], ["book", "chapter"])).toStrictEqual([[], false]);
+  });
+
+  it("handles no subtypes on parent section", () => {
+    expect(
+      getSectionId(
+        [
+          new XmlNode("span", [
+            ["type", "book"],
+            ["n", "3"],
+          ]),
+        ],
+        ["book", "chapter"],
+        LatinWorks.TACITUS_DIALOGUS
+      )
+    ).toStrictEqual([["3"], true]);
+  });
+
+  it("handles no subtypes on non-parent section", () => {
+    expect(
+      getSectionId(
+        [
+          new XmlNode("span", [
+            ["type", "book"],
+            ["n", "3"],
+          ]),
+          new XmlNode("span"),
+        ],
+        ["book", "chapter"],
+        LatinWorks.TACITUS_DIALOGUS
+      )
+    ).toStrictEqual([["3"], false]);
+  });
+
+  it("handles no subtypes on leaf section", () => {
+    expect(
+      getSectionId(
+        [
+          new XmlNode("span", [
+            ["type", "book"],
+            ["n", "3"],
+          ]),
+          new XmlNode("span"),
+          new XmlNode("span", [
+            ["type", "chapter"],
+            ["n", "14"],
+          ]),
+        ],
+        ["book", "chapter"],
+        LatinWorks.TACITUS_DIALOGUS
+      )
+    ).toStrictEqual([["3", "14"], true]);
   });
 
   it("handles leaf section", () => {

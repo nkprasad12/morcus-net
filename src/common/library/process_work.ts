@@ -40,6 +40,7 @@ const FORCE_CTS = new Set([
   EnglishTranslations[LatinWorks.OVID_AMORES],
   EnglishTranslations[LatinWorks.OVID_EPISTULAE],
 ]);
+const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
 
 // For regular nodes
 const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr"]);
@@ -300,6 +301,7 @@ export function getSectionId(
   let i = 0;
   const sectionId: string[] = [];
   let parentHadSection = false;
+  const noSubtypes = NO_SUBTYPES.has(workId ?? "");
   for (const ancestor of ancestors) {
     const n = ancestor.getAttr("n");
     if (ancestor.name === "seg") {
@@ -309,22 +311,36 @@ export function getSectionId(
       parentHadSection = true;
       continue;
     }
-    const isTextPart = ancestor.getAttr("type") === "textpart";
+    const typeAttr = ancestor.getAttr("type");
+    const subtype = ancestor.getAttr("subtype");
+    const isTextPart = typeAttr === "textpart";
+    if (noSubtypes) {
+      assertEqual(ancestor.getAttr("subtype"), undefined);
+      if (typeAttr === undefined) {
+        parentHadSection = false;
+        continue;
+      }
+    }
     // `l` is sometimes used even if the CTS says `line`, and it is often not marked.
     // However, it is also sometimes used to show poetry in prose when it's not a CTS
     // section.
-    if (!isTextPart && (ancestor.name !== "l" || i >= textParts.length)) {
+    if (
+      !noSubtypes &&
+      !isTextPart &&
+      (ancestor.name !== "l" || i >= textParts.length)
+    ) {
       parentHadSection = false;
       continue;
     }
-    const subtype = ancestor.getAttr("subtype");
     if (IGNORE_SUBTYPES.get(workId ?? "")?.has(subtype ?? "")) {
       parentHadSection = false;
       continue;
     }
     assertEqual(
       textParts[i].toLowerCase(),
-      ancestor.name === "l" ? "line" : subtype?.toLowerCase()
+      ancestor.name === "l"
+        ? "line"
+        : (noSubtypes ? typeAttr : subtype)?.toLowerCase()
     );
     if (n === undefined && ancestor.name === "l") {
       assertEqual(workId, "phi0550.phi001.perseus-lat1");
@@ -672,6 +688,9 @@ function transformContentNode(
     // section where it actually matters, but for now this is fine.
     // eslint-disable-next-line no-fallthrough
     case "div":
+    case "div2":
+    case "div1":
+    case "body":
     case "p":
     // TODO: Eventually we should probably link with these, but for now
     // we don't really need to do anything.
@@ -807,7 +826,7 @@ function getTextparts(root: XmlNode, workId: string) {
   const textParts = nonCts[0].children
     .filter(instanceOf(XmlNode))
     .map((child) => {
-      assertEqual(child.name, "refState");
+      assert(["refState", "state"].includes(child.name));
       return checkPresent(child.getAttr("unit"));
     });
   return textParts;

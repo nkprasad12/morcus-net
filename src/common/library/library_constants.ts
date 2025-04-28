@@ -10,10 +10,9 @@ export const LatinWorks = {
   OVID_EPISTULAE: "phi0959.phi002.perseus-lat2",
   OVID_MEDICAMINA: "phi0959.phi003.perseus-lat2",
   OVID_ARS_AMATORIA: "phi0959.phi004.perseus-lat2",
-  // Has external entites.
   TACITUS_AGRICOLA: "phi1351.phi001.perseus-lat1",
   TACITUS_GERMANIA: "phi1351.phi002.perseus-lat1",
-  // TACITUS_DIALOGUS: "phi1351.phi003.perseus-lat1",
+  TACITUS_DIALOGUS: "phi1351.phi003.perseus-lat1",
   JUVENAL_SATURAE: "phi1276.phi001.perseus-lat2",
   SALLUST_CATALINA1: "phi0631.phi001.perseus-lat4",
   DE_AMICITIA: "phi0474.phi052.perseus-lat2",
