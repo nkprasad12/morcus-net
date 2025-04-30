@@ -13,15 +13,22 @@ const EXTRA_KEY_LOOKUP = new Map<string, string>([
   ["j", "i"],
 ]);
 
-function getPrefixes(prefix: string): string[] {
-  let prefixes: string[] = [""];
-  for (let i = 0; i < prefix.length; i++) {
-    const nextChar = prefix.charAt(i);
-    const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
-    const nextChars = altChar === undefined ? [nextChar] : [nextChar, altChar];
-    prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
+function getPrefixes(prefix: string, fromLang: DictLang): string[] {
+  if (fromLang === "La") {
+    let prefixes: string[] = [""];
+    for (let i = 0; i < prefix.length; i++) {
+      const nextChar = prefix.charAt(i);
+      const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
+      const nextChars =
+        altChar === undefined ? [nextChar] : [nextChar, altChar];
+      prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
+    }
+    return prefixes;
   }
-  return prefixes;
+  if (fromLang === "De") {
+    return [prefix.replaceAll("ß", "ss")];
+  }
+  return [prefix];
 }
 
 function fetchResults(input: string | undefined, dicts: DictInfo[]) {
@@ -38,6 +45,37 @@ function fetchResults(input: string | undefined, dicts: DictInfo[]) {
   });
 }
 
+function filterRawResults(
+  options: string[],
+  limit: number,
+  isSuffixSearch: boolean,
+  fromLang: DictLang,
+  query: string
+): string[] {
+  // For suffix searches, we pass along the whole query rather than just the first letter.
+  // Thus we only need to check matches for prefix searches.
+  if (isSuffixSearch) {
+    return options.slice(0, limit);
+  }
+  const prefixes = getPrefixes(query, fromLang);
+  const prefixLength = checkPresent(prefixes[0]).length;
+  const filtered: string[] = [];
+  for (const option of options) {
+    if (filtered.length >= limit) {
+      break;
+    }
+    let normalized = removeDiacritics(option).toLowerCase();
+    if (fromLang === "De") {
+      normalized = normalized.replaceAll("ß", "ss");
+    }
+    const optionPrefix = normalized.substring(0, prefixLength);
+    if (prefixes.includes(optionPrefix)) {
+      filtered.push(option);
+    }
+  }
+  return filtered;
+}
+
 export async function autocompleteOptions(
   input: string,
   dicts: DictInfo[],
@@ -49,7 +87,6 @@ export async function autocompleteOptions(
 
   const fromLatin = dicts.filter((dict) => dict.languages.from === "La");
   const prefix = removeDiacritics(input).toLowerCase();
-  const prefixes = getPrefixes(prefix);
 
   const isSuffixSearch = prefix.length > 1 && prefix.startsWith("-");
   const mainQuery = prefix[0];
@@ -64,19 +101,12 @@ export async function autocompleteOptions(
     const allOptions = await pending;
     for (const dictKey in allOptions) {
       const options = allOptions[dictKey];
-      const filtered = options.filter(
-        (option) =>
-          // For suffix searches, we pass along the whole query rather than just the first letter.
-          // Thus we only need to check matches for prefix searches.
-          isSuffixSearch ||
-          prefixes.includes(
-            removeDiacritics(option).toLowerCase().substring(0, prefix.length)
-          )
-      );
+      const fromLang = checkPresent(dicts.find((dict) => dict.key === dictKey))
+        .languages.from;
       allFiltered.push([
-        checkPresent(dicts.find((dict) => dict.key === dictKey)).languages.from,
+        fromLang,
         dictKey,
-        filtered.slice(0, limit),
+        filterRawResults(options, limit, isSuffixSearch, fromLang, prefix),
       ]);
     }
   }

@@ -32,22 +32,22 @@ afterEach(() => {
 function setApiResult(result: Record<string, string[]> | Error) {
   if (result instanceof Error) {
     mockCallApi.mockRejectedValue(result);
-  } else {
-    mockCallApi.mockImplementation((_, request) => {
-      const finalResult: Record<string, string[]> = {};
-      for (const dict in result) {
-        if (request.dicts && !request.dicts.includes(dict)) {
-          continue;
-        }
-        finalResult[dict] = result[dict].filter((w) =>
-          request.query.startsWith("-")
-            ? w.endsWith(request.query.slice(1))
-            : w.startsWith(request.query)
-        );
-      }
-      return Promise.resolve(finalResult);
-    });
+    return;
   }
+  mockCallApi.mockImplementation((_, request) => {
+    const finalResult: Record<string, string[]> = {};
+    for (const dict in result) {
+      if (request.dicts && !request.dicts.includes(dict)) {
+        continue;
+      }
+      finalResult[dict] = result[dict].filter((w) =>
+        request.query.startsWith("-")
+          ? w.endsWith(request.query.slice(1))
+          : w.startsWith(request.query)
+      );
+    }
+    return Promise.resolve(finalResult);
+  });
 }
 
 const LD1: DictInfo = {
@@ -90,11 +90,13 @@ const LS_LIST = [
 const SH_LIST = ["away", "now", "dives", "inside", "jab", "sac"];
 const RA_LIST = ["dives"];
 const GAF_LIST = ["abago", "oĭō", "occĭdō", "occīdō"];
+const GEORGES_LIST = ["nuß", "nus", "nusflicht", "nußbaum"];
 const ALL_DICTS = {
   LS: LS_LIST,
   SH: SH_LIST,
   RA: RA_LIST,
   [GAF.key]: GAF_LIST,
+  [LatinDict.Georges.key]: GEORGES_LIST,
 };
 
 describe("autocompleteOptions", () => {
@@ -120,6 +122,35 @@ describe("autocompleteOptions", () => {
     expect(result).toStrictEqual([
       ["La", "ab"],
       ["La", "sab"],
+    ]);
+  });
+
+  it("handles eszett in input for German results", async () => {
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("nuß", [LatinDict.Georges]);
+    expect(result).toStrictEqual([
+      ["De", "nuß"],
+      ["De", "nußbaum"],
+    ]);
+  });
+
+  it("handles ss for eszett for German results", async () => {
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("nuss", [LatinDict.Georges]);
+    expect(result).toStrictEqual([
+      ["De", "nuß"],
+      ["De", "nußbaum"],
+    ]);
+  });
+
+  it("handles partial eszett for German results", async () => {
+    setApiResult(ALL_DICTS);
+    const result = await autocompleteOptions("nus", [LatinDict.Georges]);
+    expect(result).toStrictEqual([
+      ["De", "nus"],
+      ["De", "nusflicht"],
+      ["De", "nuß"],
+      ["De", "nußbaum"],
     ]);
   });
 

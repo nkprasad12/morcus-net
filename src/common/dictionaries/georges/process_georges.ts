@@ -45,8 +45,11 @@ function formatForDisplay(
     name = "i";
   }
   if (root.name === "abbr") {
-    attrs.push(["class", "lsHover"]);
-    attrs.push(["title", checkPresent(root.getAttr("title"))]);
+    const text = XmlNode.getSoleText(root);
+    if (text.replaceAll(".", "").length > 1) {
+      attrs.push(["class", "lsHover"]);
+      attrs.push(["title", checkPresent(root.getAttr("title"))]);
+    }
   }
   if (root.name === "def") {
     name = "div";
