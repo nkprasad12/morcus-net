@@ -107,8 +107,10 @@ jobs:
         run: IMAGE_TAG=${{ github.sha }} npm run integration-tests
       - name: Run Playwright tests
         uses: docker://mcr.microsoft.com/playwright:v1.49.1-jammy
+        env:
+          IMAGE_TAG: ${{ github.sha }}
         with:
-          args: IMAGE_TAG=${{ github.sha }} npm run integration-tests
+          args: npm run integration-tests
       - name: Upload test report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
