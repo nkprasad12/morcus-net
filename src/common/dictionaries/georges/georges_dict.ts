@@ -32,7 +32,7 @@ export class GeorgesDict implements Dictionary {
   }
 
   async getCompletions(input: string): Promise<string[]> {
-    return this.storage.getCompletions(input);
+    return this.storage.getCompletions(input.replaceAll("ß", "ss"));
   }
 
   async getEntryById(id: string): Promise<EntryResult | undefined> {

@@ -66,7 +66,7 @@ export function sqliteBacking(
 }
 
 function cleanKey(key: string): string {
-  return removeDiacritics(key).toLowerCase();
+  return removeDiacritics(key).toLowerCase().replaceAll("ß", "ss");
 }
 
 function orthRow(

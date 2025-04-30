@@ -34,6 +34,11 @@ const GEORGES_XML = `
       <abbr title="Abbreviation Title">abbr.</abbr>
     </def>
   </entryFree>
+    <entryFree id="4">
+    <orth>nuss</orth>
+    <orth>nuß</orth>
+    <def>nut</def>
+  </entryFree>
 </body>
 </root>
 `;
@@ -94,5 +99,7 @@ describe("GeorgesDict dict", () => {
     const dict = new GeorgesDict(sqliteBacking(TEMP_FILE));
 
     expect(await dict.getCompletions("H")).toEqual(["HELLO", "HEYO", "HI"]);
+    expect(await dict.getCompletions("nus")).toEqual(["nuss", "nuß"]);
+    expect(await dict.getCompletions("nuß")).toEqual(["nuss", "nuß"]);
   });
 });
