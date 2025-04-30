@@ -34,9 +34,13 @@ const GEORGES_XML = `
       <abbr title="Abbreviation Title">abbr.</abbr>
     </def>
   </entryFree>
-    <entryFree id="4">
+  <entryFree id="4">
     <orth>nuss</orth>
     <orth>nuß</orth>
+    <def>nut</def>
+  </entryFree>
+  <entryFree id="5">
+    <orth>suß</orth>
     <def>nut</def>
   </entryFree>
 </body>
@@ -59,9 +63,12 @@ async function expectEntriesWithIds(
 }
 
 describe("GeorgesDict dict", () => {
+  let dict: GeorgesDict;
+
   beforeEach(() => {
     fs.writeFileSync(FAKE_RAW_FILE, GEORGES_XML);
     processGeorges();
+    dict = new GeorgesDict(sqliteBacking(TEMP_FILE));
   });
 
   afterEach(() => {
@@ -72,15 +79,16 @@ describe("GeorgesDict dict", () => {
   });
 
   test("getEntry returns expected entries", async () => {
-    const dict = new GeorgesDict(sqliteBacking(TEMP_FILE));
-
     expect(await dict.getEntry("Julius")).toEqual([]);
     await expectEntriesWithIds(dict.getEntry("hello"), ["grg1"]);
   });
 
-  test("processing merges identical keys", async () => {
-    const dict = new GeorgesDict(sqliteBacking(TEMP_FILE));
+  test("getEntry returns expected entries with eszett", async () => {
+    await expectEntriesWithIds(dict.getEntry("suß"), ["grg5"]);
+    await expectEntriesWithIds(dict.getEntry("suss"), ["grg5"]);
+  });
 
+  test("processing merges identical keys", async () => {
     const result = await dict.getEntry("sup");
     expect(result).toHaveLength(1);
     const entry = result[0].entry.toString();
@@ -89,15 +97,11 @@ describe("GeorgesDict dict", () => {
   });
 
   test("getEntryById returns expected entries", async () => {
-    const dict = new GeorgesDict(sqliteBacking(TEMP_FILE));
-
     const result = await dict.getEntryById("grg1");
     expect(result?.entry.toString()).toContain("a greeting");
   });
 
   test("getEntry returns expected completions", async () => {
-    const dict = new GeorgesDict(sqliteBacking(TEMP_FILE));
-
     expect(await dict.getCompletions("H")).toEqual(["HELLO", "HEYO", "HI"]);
     expect(await dict.getCompletions("nus")).toEqual(["nuss", "nuß"]);
     expect(await dict.getCompletions("nuß")).toEqual(["nuss", "nuß"]);

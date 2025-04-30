@@ -27,7 +27,11 @@ export class SmithAndHall implements Dictionary {
     input: string,
     extras?: ServerExtras | undefined
   ): Promise<EntryResult[]> {
-    const rawEntries = await this.storage.getRawEntry(input, extras);
+    const rawEntries = await this.storage.getRawEntry(
+      input,
+      this.info.languages.from,
+      extras
+    );
     return rawEntries.map(({ entry }) => this.reviveRaw(entry));
   }
 

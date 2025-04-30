@@ -6,6 +6,10 @@ import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interf
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import type { ServerExtras } from "@/web/utils/rpc/server_rpc";
 
+function normalize(input: string): string {
+  return input.replaceAll("ß", "ss");
+}
+
 export class GeorgesDict implements Dictionary {
   readonly info = LatinDict.Georges;
 
@@ -27,12 +31,16 @@ export class GeorgesDict implements Dictionary {
     input: string,
     extras?: ServerExtras | undefined
   ): Promise<EntryResult[]> {
-    const rawEntries = await this.storage.getRawEntry(input, extras);
+    const rawEntries = await this.storage.getRawEntry(
+      normalize(input),
+      this.info.languages.from,
+      extras
+    );
     return rawEntries.map(({ entry }) => this.processRaw(entry));
   }
 
   async getCompletions(input: string): Promise<string[]> {
-    return this.storage.getCompletions(input.replaceAll("ß", "ss"));
+    return this.storage.getCompletions(normalize(input));
   }
 
   async getEntryById(id: string): Promise<EntryResult | undefined> {

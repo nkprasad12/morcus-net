@@ -65,7 +65,7 @@ export async function findEntriesForQuery<T extends EntryResult>(
     Pick<EntryResult, "inflections"> &
     Pick<EntryResult, "subsections">;
 
-  const rawEntries = await storage.getRawEntry(input, extras);
+  const rawEntries = await storage.getRawEntry(input, "La", extras);
   const exactMatches: DecodedStoredEntryAndMetadata[] = rawEntries.map(
     (entryAndMetadata) => ({
       ...entryAndMetadata,
@@ -102,7 +102,7 @@ export async function findEntriesForQuery<T extends EntryResult>(
     const lemmaChunks = analysis.lemma.split("#");
     const lemmaBase = lemmaChunks[0];
 
-    const results = (await storage.getRawEntry(lemmaBase, extras))
+    const results = (await storage.getRawEntry(lemmaBase, "La", extras))
       .map((entryAndMetadata) => ({
         ...entryAndMetadata,
         ...decodeStored(entryAndMetadata),

@@ -3,6 +3,7 @@ import { ServerExtras } from "@/web/utils/rpc/server_rpc";
 import { Vowels } from "@/common/character_utils";
 import { setMap } from "@/common/data_structures/collect_map";
 import type { StoredDictBacking } from "@/common/dictionaries/stored_dict_interface";
+import type { DictLang } from "@/common/dictionaries/dictionaries";
 
 interface Subsection {
   id: string;
@@ -43,19 +44,24 @@ export class StoredDict {
    * query.
    *
    * @param input the query to search against keys.
+   * @param lang the language of the input.
    * @param extras any server extras to pass to the function.
    */
   async getRawEntry(
     input: string,
+    lang: DictLang = "La",
     extras?: ServerExtras
   ): Promise<StoredEntryAndMetadata[]> {
     const request = removeDiacritics(input)
       .replaceAll("\u0304", "")
       .replaceAll("\u0306", "")
       .toLowerCase();
-    const candidates = (await this.backing.matchesForCleanName(request)).filter(
-      ({ orth }) => Vowels.haveCompatibleLength(input, orth)
-    );
+    let candidates = await this.backing.matchesForCleanName(request);
+    if (lang === "La") {
+      candidates = candidates.filter(({ orth }) =>
+        Vowels.haveCompatibleLength(input, orth)
+      );
+    }
     extras?.log(`${request}_sqlCandidates`);
     if (candidates.length === 0) {
       return [];
