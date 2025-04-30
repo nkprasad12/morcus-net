@@ -105,6 +105,10 @@ jobs:
         run: docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}
       - name: Running integration checks
         run: IMAGE_TAG=${{ github.sha }} npm run integration-tests
+      - name: Run Playwright tests
+        uses: docker://mcr.microsoft.com/playwright:v1.49.1-jammy
+        with:
+          args: IMAGE_TAG=${{ github.sha }} npm run integration-tests
       - name: Upload test report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
