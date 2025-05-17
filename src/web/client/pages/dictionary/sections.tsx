@@ -115,6 +115,17 @@ function AttributionContent(props: { dictKey: string }) {
       </div>
     );
   }
+  if (props.dictKey === LatinDict.Pozo.key) {
+    return (
+      <div>
+        Data for Diccionario Español-Griego-Latín was accessed from{" "}
+        <a href="https://latin-dict.github.io/dictionaries/LopezPozo1997.html">
+          latin-dict.github.io
+        </a>{" "}
+        and is in the public domain.
+      </div>
+    );
+  }
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 
