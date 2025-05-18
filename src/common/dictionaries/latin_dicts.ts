@@ -68,6 +68,7 @@ export namespace LatinDict {
     SmithAndHall,
     RiddleArnold,
     Georges,
+    Pozo,
     Numeral,
   ];
   export const BY_KEY = new Map<string, LatinDictInfo>(
