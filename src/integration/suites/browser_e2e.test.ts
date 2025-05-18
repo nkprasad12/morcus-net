@@ -79,6 +79,7 @@ test.describe("dictionary search", () => {
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
+    await page.keyboard.press("ArrowDown");
     await page.keyboard.press("Enter");
 
     await expect(page.getByText("a hovel, hut").nth(0)).toBeVisible();
