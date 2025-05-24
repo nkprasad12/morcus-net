@@ -37,29 +37,6 @@ function getRawEntries(): string[][] {
   return rawEntries;
 }
 
-// @ts-expect-error
-function getContainedText(root: XmlNode, charsRequested: number = 20): string {
-  const queue: XmlChild[] = [root];
-  let result = "";
-  while (queue.length > 0) {
-    const top = queue.pop()!;
-    if (typeof top === "string") {
-      result += top;
-      if (result.length > charsRequested) {
-        return result + " ...";
-      }
-      continue;
-    }
-    if (top.name === "sense" && top !== root) {
-      return result;
-    }
-    for (let i = 0; i < top.children.length; i++) {
-      queue.push(top.children[top.children.length - i - 1]);
-    }
-  }
-  return result;
-}
-
 function formatSections(
   blurb: string[],
   senses: string[][],
@@ -85,12 +62,11 @@ function formatSections(
   const outline: EntryOutline = {
     mainKey: key,
     mainSection: {
-      text: blurb[0].substring(0, 20),
+      text: "",
       level: 0,
       ordinal: "0",
       sectionId: id,
     },
-    // senses: outlineSenses,
   };
   const root = new XmlNode("div", [["id", id]], children);
   return JSON.stringify({
