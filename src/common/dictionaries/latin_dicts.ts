@@ -1,6 +1,13 @@
 import { DictInfo } from "@/common/dictionaries/dictionaries";
 
-export type LatinDictKey = "L&S" | "S&H" | "NUM" | "R&A" | "GAF" | "GRG";
+export type LatinDictKey =
+  | "L&S"
+  | "S&H"
+  | "NUM"
+  | "R&A"
+  | "GAF"
+  | "GRG"
+  | "EGL";
 export interface LatinDictInfo extends DictInfo {
   key: LatinDictKey;
 }
@@ -48,12 +55,20 @@ export namespace LatinDict {
     tags: ["Classical"],
   };
 
+  export const Pozo: LatinDictInfo = {
+    key: "EGL",
+    displayName: "Diccionario Español-Griego-Latín",
+    languages: { from: "Es", to: "La" },
+    tags: ["Classical"],
+  };
+
   export const AVAILABLE: LatinDictInfo[] = [
     LewisAndShort,
     Gaffiot,
     SmithAndHall,
     RiddleArnold,
     Georges,
+    Pozo,
     Numeral,
   ];
   export const BY_KEY = new Map<string, LatinDictInfo>(

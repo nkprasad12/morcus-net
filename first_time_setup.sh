@@ -36,6 +36,12 @@ cd smithandhall || exit
 git checkout v1edits
 cd ..
 
+echo "Downloading Nikita Moor's dicts. This may take some time."
+git clone https://github.com/nkprasad12/latin-dictionary.git
+cd latin-dictionary || exit
+git checkout morcus
+cd ..
+
 echo "Downloading the Perseus Library."
 git clone https://github.com/nkprasad12/canonical-latinlit
 
@@ -46,7 +52,8 @@ echo "PORT=$PORT" >> $dot_env
 echo "LS_PATH=$PWD/lexica/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml" >> $dot_env
 echo "RA_PATH=$PWD/riddle-arnold/riddle-arnold.tsv" >> $dot_env
 echo "SH_RAW_PATH=$PWD/smithandhall/sh_F2_latest.txt" >> $dot_env
-ecoo "GEORGES_RAW_PATH=$PWD/Georges1910/Georges1910-ger-lat.xml" >> $dot_env
+echo "GEORGES_RAW_PATH=$PWD/Georges1910/Georges1910-ger-lat.xml" >> $dot_env
+echo "POZO_RAW_PATH=$PWD/latin-dictionary/LopezPozo1997/diccionario.txt" >> $dot_env
 echo "LIB_XML_ROOT=$PWD/canonical-latinlit" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."

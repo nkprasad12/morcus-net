@@ -11,6 +11,8 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["GAFFIOT_PROCESSED_PATH", "build/dbs/gaf.db"],
   ["GEORGES_RAW_PATH", "georges_raw.xml"],
   ["GEORGES_PROCESSED_PATH", "build/dbs/georges.db"],
+  ["POZO_RAW_PATH", "pozo.txt"],
+  ["POZO_PROCESSED_PATH", "build/dbs/pozo.db"],
   ["DB_SOURCE", "unspecified"],
   ["OFFLINE_DATA_DIR", "build/offlineData"],
   ["PWA_SHORT_NAME_SUFFIX", ""],

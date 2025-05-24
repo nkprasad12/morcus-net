@@ -85,6 +85,14 @@ function parseArguments() {
       },
     },
     {
+      short: "-b_pozo",
+      long: "--build_pozo",
+      options: {
+        help: "Processes Pozo and saves to DB.",
+        action: "store_true",
+      },
+    },
+    {
       short: "-b_sh",
       long: "--build_sh",
       options: { help: "Processes SH and saves to DB.", action: "store_true" },
@@ -377,6 +385,14 @@ function artifactConfig(args: any): StepConfig[] {
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
       label: "Processing Georges",
+      priority: 2,
+    });
+  }
+  if (args.build_pozo === true) {
+    const command = baseCommand.concat(["src/scripts/process_pozo.ts"]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Processing Pozo",
       priority: 2,
     });
   }

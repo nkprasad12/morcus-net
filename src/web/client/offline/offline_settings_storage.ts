@@ -56,6 +56,7 @@ export interface OfflineSettings {
   raDownloaded?: boolean;
   gafDownloaded?: boolean;
   georgesDownloaded?: boolean;
+  eglDownloaded?: boolean;
 }
 
 export const OFFLINE_SETTINGS_KEYS: (keyof OfflineSettings)[] = [

@@ -133,6 +133,7 @@ shp.db*
 sh.db*
 latin_inflect.db*
 lat_infl.db*
+pozo.txt
 
 library_processed/
 lat_raw.txt
