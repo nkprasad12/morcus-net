@@ -75,7 +75,7 @@ test.describe("dictionary search", () => {
     await page.keyboard.type("can", { delay: 20 });
     await expect(page.getByText("cānăba").nth(0)).toBeVisible();
 
-    await page.keyboard.press("ArrowDown");
+    // TODO: If we enable Pozo by default, we need an extra Arrow down here.
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
     await page.keyboard.press("ArrowDown");
