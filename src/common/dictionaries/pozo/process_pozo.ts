@@ -8,8 +8,10 @@ import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 
 import fs from "fs";
 
-function getRawEntries(): string[][] {
-  const lines = fs.readFileSync(envVar("POZO_RAW_PATH")).toString().split("\n");
+/** Exported only for processing fixes. */
+export function getRawPozoEntries(inputFilePath?: string): string[][] {
+  const rawFile = inputFilePath ?? envVar("POZO_RAW_PATH");
+  const lines = fs.readFileSync(rawFile).toString().split("\n");
   const rawEntries: string[][] = [];
   let parseState: "firstLine" | "content" | "header" = "content";
   let currentEntry: string[] = [];
@@ -103,7 +105,7 @@ function processRawEntry(
 }
 
 export function processPozo() {
-  const rawEntries = getRawEntries();
+  const rawEntries = getRawPozoEntries();
   const processedEntries: RawDictEntry[] = [];
   const ids = new Set<string>();
   const dupeCounts = new Map<string, number>();
