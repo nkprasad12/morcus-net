@@ -57,7 +57,7 @@ export namespace LatinDict {
 
   export const Pozo: LatinDictInfo = {
     key: "EGL",
-    displayName: "Diccionario Español-Griego-Latín",
+    displayName: "Pozo",
     languages: { from: "Es", to: "La" },
     tags: ["Classical"],
   };
