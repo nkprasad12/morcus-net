@@ -283,7 +283,8 @@ export namespace SearchSettings {
     const stored = localStorage.getItem(SEARCH_SETTINGS_KEY)?.split(";");
     const rawDicts =
       stored === undefined
-        ? LatinDict.AVAILABLE
+        ? // Don't show Pozo by default, but allow it to be selected.
+          LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo)
         : LatinDict.AVAILABLE.filter((d) => stored.includes(d.key));
     return rawDicts;
   }

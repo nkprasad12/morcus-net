@@ -44,6 +44,7 @@ import { singletonOf } from "@/common/misc_utils";
 import { macronizeInput } from "@/macronizer/morcronizer";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
+import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -149,6 +150,13 @@ export function startMorcusServer(): Promise<http.Server> {
     console.debug(`Georges init: ${elapsed} ms`);
     return result;
   }, LatinDict.Georges);
+  const pozo = delayedInit(() => {
+    const start = performance.now();
+    const result = new PozoDict(sqliteBacking(envVar("POZO_PROCESSED_PATH")));
+    const elapsed = (performance.now() - start).toFixed(3);
+    console.debug(`Pozo init: ${elapsed} ms`);
+    return result;
+  }, LatinDict.Pozo);
   const numeralDict = new NumeralDict();
   const riddleArnold = delayedInit(() => {
     const start = performance.now();
@@ -165,6 +173,7 @@ export function startMorcusServer(): Promise<http.Server> {
     riddleArnold,
     gaffiot,
     georges,
+    pozo,
     numeralDict,
   ]);
 

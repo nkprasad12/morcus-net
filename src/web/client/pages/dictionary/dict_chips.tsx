@@ -7,6 +7,7 @@ const BETA_DICTS = [
   LatinDict.RiddleArnold,
   LatinDict.Gaffiot,
   LatinDict.Georges,
+  LatinDict.Pozo,
 ];
 
 const BETA_DISPLAY_NAMES = new Set(BETA_DICTS.map((d) => d.displayName));
@@ -21,6 +22,8 @@ function classForDictChip(input: string, property: keyof LatinDictInfo) {
       return "lsChip";
     case LatinDict.Georges[property]:
       return "deChip";
+    case LatinDict.Pozo[property]:
+      return "esChip";
     case LatinDict.Numeral[property]:
       return "numChip";
   }

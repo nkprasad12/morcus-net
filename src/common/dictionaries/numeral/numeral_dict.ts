@@ -8,10 +8,29 @@ import { MorceusTables } from "@/morceus/cruncher_tables";
 import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
 import type { IrregularForm, Lemma, Stem } from "@/morceus/stem_parsing";
 
-interface Numeral {
-  arabic: number;
+const ROMAN_NUMERALS: [string, number][] = [
+  ["M", 1000],
+  ["CM", 900],
+  ["D", 500],
+  ["CD", 400],
+  ["C", 100],
+  ["XC", 90],
+  ["L", 50],
+  ["XL", 40],
+  ["X", 10],
+  ["IX", 9],
+  ["V", 5],
+  ["IV", 4],
+  ["I", 1],
+];
+
+interface TableNumerals {
   ordinal?: string;
   cardinal?: string;
+}
+interface Numeral extends TableNumerals {
+  arabic: number;
+  roman?: string;
 }
 const ARABIC: keyof Numeral = "arabic";
 
@@ -70,7 +89,7 @@ function numeralMatches(input: number, lemma: Lemma): boolean {
   return true;
 }
 
-function maybeFindNumeralData(input: number): Numeral {
+function maybeFindNumeralData(input: number): TableNumerals {
   const lemmata = MorceusTables.CACHED.get().numerals;
   const matches = lemmata.filter((lemma) => numeralMatches(input, lemma));
   const lemmaByType = arrayMap<NumeralTypeTag, string>();
@@ -83,18 +102,33 @@ function maybeFindNumeralData(input: number): Numeral {
     }
   }
   return {
-    arabic: input,
     cardinal: checkPresent(lemmaByType.get("card")?.[0]),
     ordinal: checkPresent(lemmaByType.get("ord")?.[0]),
   };
 }
 
-function findNumeralData(input: number): Numeral {
-  try {
-    return maybeFindNumeralData(input);
-  } catch {
-    return { arabic: input };
+function arabicToRoman(input: number): string | undefined {
+  if (!Number.isInteger(input) || input < 1 || input > 3999) {
+    return undefined;
   }
+  let result = "";
+  for (const [roman, value] of ROMAN_NUMERALS) {
+    while (input >= value) {
+      result += roman;
+      input -= value;
+    }
+  }
+  return result;
+}
+
+function findNumeralData(input: number): Numeral {
+  let baseData: Numeral = { arabic: input };
+  baseData.roman = arabicToRoman(input);
+  try {
+    const tableForms = maybeFindNumeralData(input);
+    baseData = { ...baseData, ...tableForms };
+  } catch {}
+  return baseData;
 }
 
 function entryContent(input: number): XmlNode {

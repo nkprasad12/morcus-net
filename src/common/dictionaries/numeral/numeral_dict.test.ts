@@ -21,6 +21,7 @@ describe("NumeralDict", () => {
       expect(result[0].outline.mainKey).toBe("3");
       expect(result[0].outline.mainSection.text).toBe("Numeral: 3");
       expect(result[0].outline.mainSection.sectionId).toBe("num3");
+      expect(result[0].entry.toString()).toContain("III");
     });
 
     it("should return an entry for a Roman numeral", async () => {

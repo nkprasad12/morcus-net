@@ -235,13 +235,17 @@ describe("SearchSettings", () => {
   it("returns full list on retrieve without store and experimental on", () => {
     const defaultValue = { experimentalMode: true };
     localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
-    expect(SearchSettings.retrieve()).toStrictEqual(LatinDict.AVAILABLE);
+    expect(SearchSettings.retrieve()).toStrictEqual(
+      LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo)
+    );
   });
 
   it("returns full list with experimental off", () => {
     const defaultValue = { experimentalMode: false };
     localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
-    expect(SearchSettings.retrieve()).toStrictEqual(LatinDict.AVAILABLE);
+    expect(SearchSettings.retrieve()).toStrictEqual(
+      LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo)
+    );
   });
 
   it("returns empty list for empty store", () => {
