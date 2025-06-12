@@ -145,6 +145,32 @@ function firstTextOfChild(
   return typeof content === "string" ? content : undefined;
 }
 
+function findSourceRef(teiRoot: XmlNode): string[] | undefined {
+  const biblStruct = teiRoot.findDescendants("biblStruct");
+  if (biblStruct.length === 0) {
+    return undefined;
+  }
+  assertEqual(biblStruct.length, 1, "Expected exactly one biblStruct child.");
+  const ref = biblStruct[0].findChildren("ref");
+  if (ref.length === 0) {
+    return undefined;
+  }
+  const refs = ref.filter((r) => r.getAttr("target") !== undefined);
+  const targets: string[] = [];
+  for (const ref of refs) {
+    let target = ref.getAttr("target");
+    if (target === undefined) {
+      continue;
+    }
+    if (target === "Open Content Alliance") {
+      target = XmlNode.getSoleText(ref);
+    }
+    assert(target.startsWith("http"), target);
+    targets.push(target);
+  }
+  return targets;
+}
+
 export function extractInfo(teiRoot: XmlNode) {
   const titleStatement = findChild(teiRoot, TITLE_STATEMENT_PATH);
   const editor: XmlNode | undefined = titleStatement.findChildren("editor")[0];
@@ -158,6 +184,7 @@ export function extractInfo(teiRoot: XmlNode) {
     translator: translator ? XmlNode.getSoleText(editor) : undefined,
     sponsor: firstTextOfChild(titleStatement, "sponsor"),
     funder: firstTextOfChild(titleStatement, "funder"),
+    sourceRef: findSourceRef(teiRoot),
   };
 }
 
