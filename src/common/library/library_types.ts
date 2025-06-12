@@ -79,6 +79,7 @@ export type ProcessedWorkContentNodeType =
   | "head"
   | "gap"
   | "b"
+  | "br"
   | "space"
   | "ul"
   | "li"
