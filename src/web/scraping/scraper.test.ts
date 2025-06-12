@@ -23,6 +23,12 @@ describe("Scraper", () => {
     expect(result).toBe("Hello\nHi");
   });
 
+  test("scrapeUrlText with circumflex", async () => {
+    setFetchPage("<html><body>eskammena pêdô misô.</body></html>");
+    const result = await scrapeUrlText(PAGE_URL);
+    expect(result).toBe("eskammena pêdô misô.");
+  });
+
   test("scrapeUrlText url without protocol corrects", async () => {
     setFetchPage("<html><body>Hello<br>Hi</body></html>");
     const result = await scrapeUrlText("foo.bar");
