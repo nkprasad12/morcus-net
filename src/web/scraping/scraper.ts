@@ -1,3 +1,5 @@
+import he from "he";
+
 import { assert, checkPresent } from "@/common/assert";
 import type { XmlNode } from "@/common/xml/xml_node";
 import { parseRawXml } from "@/common/xml/xml_utils";
@@ -53,7 +55,7 @@ function htmlToText(root: XmlNode): string {
     result.push("\n");
   }
   for (const child of root.children) {
-    result.push(isString(child) ? child : htmlToText(child));
+    result.push(isString(child) ? he.decode(child) : htmlToText(child));
   }
   if (BLOCK_STARTS.has(tag)) {
     result.push("\n");
