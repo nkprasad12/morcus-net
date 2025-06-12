@@ -792,6 +792,32 @@ function WorkNavigationSection(props: { work: PaginatedWork }) {
   );
 }
 
+function SourceRefInfo(props: { workInfo: DocumentInfo }) {
+  if (!props.workInfo.sourceRef || props.workInfo.sourceRef.length === 0) {
+    return null;
+  }
+  const sourceLinks = props.workInfo.sourceRef.map((link, i) => (
+    <a href={link} key={i}>
+      Link
+    </a>
+  ));
+  const children: JSX.Element[] = [];
+  for (let i = 0; i < sourceLinks.length; i++) {
+    children.push(
+      <span key={i}>
+        {sourceLinks[i]}
+        {i < sourceLinks.length - 1 ? ", " : ""}
+      </span>
+    );
+  }
+  return (
+    <div className="text sm light">
+      <span>Source(s): </span>
+      {children}
+    </div>
+  );
+}
+
 function WorkInfo(props: { workInfo: DocumentInfo }) {
   return (
     <>
@@ -808,6 +834,7 @@ function WorkInfo(props: { workInfo: DocumentInfo }) {
         )}
         <InfoLine label="ID" value={props.workInfo.workId} />
       </div>
+      <SourceRefInfo workInfo={props.workInfo} />
       <div style={{ lineHeight: 1, marginTop: "8px" }}>
         <span className="text sm light">
           The raw text was provided by the Perseus Digital Library and was

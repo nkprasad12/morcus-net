@@ -34,6 +34,7 @@ export interface DocumentInfo {
   workId: string;
   translationId?: string;
   translationInfo?: TranslationInfo;
+  sourceRef?: string[];
 }
 
 export namespace DocumentInfo {
@@ -48,6 +49,7 @@ export namespace DocumentInfo {
     workId: isString,
     translationId: maybeUndefined(isString),
     translationInfo: maybeUndefined(isTranslationInfo),
+    sourceRef: maybeUndefined(isArray(isString)),
   });
 }
 
