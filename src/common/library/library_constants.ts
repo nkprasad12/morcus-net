@@ -7,6 +7,7 @@ export const LatinWorks = {
   CICERO_PRO_QUINCTIO: "phi0474.phi001.perseus-lat2",
   CICERO_PRO_QUINTO_ROSCIO: "phi0474.phi003.perseus-lat2",
   CICERO_DE_LEGE_AGRARIA: "phi0474.phi011.perseus-lat2",
+  CICERO_PRO_RABIRIO: "phi0474.phi012.perseus-lat2",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
   OVID_AMORES: "phi0959.phi001.perseus-lat2",
@@ -36,6 +37,7 @@ export const EnglishTranslations: Record<string, string> = {
   [LatinWorks.SALLUST_CATALINA1]: "phi0631.phi001.perseus-eng2",
   [LatinWorks.OVID_AMORES]: "phi0959.phi001.perseus-eng2",
   [LatinWorks.CICERO_DE_LEGE_AGRARIA]: "phi0474.phi011.perseus-eng2",
+  [LatinWorks.CICERO_PRO_RABIRIO]: "phi0474.phi012.perseus-eng3",
 } satisfies { [K in keyof typeof LatinWorks]?: string };
 
 function toPerseusPath(workId: string): string {

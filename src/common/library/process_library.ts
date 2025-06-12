@@ -51,6 +51,10 @@ const NAME_TO_DISPLAY_NAME = new Map<string, string>([
   ["Laelius De Amicitia", "De Amicitia"],
   ["Pro P. Quinctio", "Pro Quinctio"],
   ["Medicamina faciei femineae", "Medicamina"],
+  [
+    "Pro C. Rabirio Perduellionis Reo Ad Quirites",
+    "Pro Rabirio Perduellionis Reo",
+  ],
 ]);
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>([
@@ -59,6 +63,10 @@ const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["The Catilinarian Conspiracy", "catalina1"],
   ["Medicamina faciei femineae", "medicamina"],
   ["Pro P. Quinctio", "pro_quinctio"],
+  [
+    "Pro C. Rabirio Perduellionis Reo Ad Quirites",
+    "pro_rabirio_perduellionis_reo",
+  ],
 ]);
 
 const PERSEUS_LAT_LIT_DECLARATION = `<!DOCTYPE TEI.2 PUBLIC "-//TEI P4//DTD Main DTD Driver File//EN" "http://www.tei-c.org/Guidelines/DTD/tei2.dtd" [
