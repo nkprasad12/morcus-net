@@ -95,6 +95,9 @@ const NOTE_NODES = new Set([
   "lb",
   "l",
   "add",
+  "persName",
+  "surname",
+  "milestone",
 ]);
 const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
@@ -562,7 +565,7 @@ function convertToRows(
 }
 
 function transformNoteNode(node: XmlNode): XmlNode {
-  assert(NOTE_NODES.has(node.name));
+  assert(NOTE_NODES.has(node.name), node.name);
   if (node.name === "lb") {
     return new XmlNode("br", [], []);
   }
@@ -661,6 +664,8 @@ function transformContentNode(
     );
   }
   switch (node.name) {
+    case "lb":
+      return new XmlNode("br", [], []);
     case "head":
       return new XmlNode("head", attrs, children);
     case "gap":
@@ -680,6 +685,8 @@ function transformContentNode(
     // eslint-disable-next-line no-fallthrough
     case "placeName":
     case "date":
+    case "surname":
+    case "persName":
     case "num":
     case "orig":
     case "seg":
