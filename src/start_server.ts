@@ -161,7 +161,8 @@ export function startMorcusServer(): Promise<http.Server> {
   const gesner = delayedInit(() => {
     const start = performance.now();
     const result = new GesnerDict(
-      sqliteBacking(envVar("GESNER_PROCESSED_PATH"))
+      sqliteBacking(envVar("GESNER_PROCESSED_PATH")),
+      INFLECTION_PROVIDER.get()
     );
     const elapsed = (performance.now() - start).toFixed(3);
     console.debug(`Gesner init: ${elapsed} ms`);
