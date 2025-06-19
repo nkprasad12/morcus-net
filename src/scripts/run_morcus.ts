@@ -93,6 +93,14 @@ function parseArguments() {
       },
     },
     {
+      short: "-b_ges",
+      long: "--build_gesner",
+      options: {
+        help: "Processes Gesner and saves to DB.",
+        action: "store_true",
+      },
+    },
+    {
       short: "-b_sh",
       long: "--build_sh",
       options: { help: "Processes SH and saves to DB.", action: "store_true" },
@@ -393,6 +401,16 @@ function artifactConfig(args: any): StepConfig[] {
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
       label: "Processing Pozo",
+      priority: 2,
+    });
+  }
+  if (args.build_gesner === true) {
+    const command = baseCommand.concat([
+      "src/scripts/process_gesner_script.ts",
+    ]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Processing Gesner",
       priority: 2,
     });
   }

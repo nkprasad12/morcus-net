@@ -22,6 +22,7 @@ import { ALL_SUPPORTED_WORKS } from "@/common/library/library_constants";
 import { generateGaffiotArtifacts } from "@/common/gaffiot/gaf_generate";
 import { processGeorges } from "@/common/dictionaries/georges/process_georges";
 import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
+import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
@@ -103,6 +104,14 @@ const MAKE_POZO: StepConfig = {
     path: envVar("POZO_RAW_PATH"),
   },
 };
+const MAKE_GESNER: StepConfig = {
+  operation: processGesner,
+  label: "Gesner DB creation",
+  dlInfo: {
+    url: "https://raw.githubusercontent.com/nkprasad12/gesner/refs/heads/master/gesner.json",
+    path: envVar("GESNER_RAW_PATH"),
+  },
+};
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
     processLibrary(
@@ -142,6 +151,7 @@ const ALL_STEPS = [
   MAKE_RA,
   MAKE_GEORGES,
   MAKE_POZO,
+  MAKE_GESNER,
   PROCESS_LAT_LIB,
 ];
 
