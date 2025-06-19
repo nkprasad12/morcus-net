@@ -28,6 +28,13 @@ export namespace LatinDict {
     tags: ["Classical"],
   };
 
+  export const Gesner: LatinDictInfo = {
+    key: "GES",
+    displayName: "Gesner",
+    languages: { from: "La", to: "La" },
+    tags: ["Classical"],
+  };
+
   export const Numeral: LatinDictInfo = {
     key: "NUM",
     displayName: "Numeral",
@@ -63,21 +70,14 @@ export namespace LatinDict {
     tags: ["Classical"],
   };
 
-  export const Gesner: LatinDictInfo = {
-    key: "GES",
-    displayName: "Gesner",
-    languages: { from: "La", to: "La" },
-    tags: ["Classical"],
-  };
-
   export const AVAILABLE: LatinDictInfo[] = [
     LewisAndShort,
     Gaffiot,
+    Gesner,
     SmithAndHall,
     RiddleArnold,
     Georges,
     Pozo,
-    Gesner,
     Numeral,
   ];
   export const BY_KEY = new Map<string, LatinDictInfo>(

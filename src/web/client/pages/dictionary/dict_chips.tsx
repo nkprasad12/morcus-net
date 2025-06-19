@@ -19,6 +19,7 @@ function classForDictChip(input: string, property: keyof LatinDictInfo) {
       return "shChip";
     case LatinDict.LewisAndShort[property]:
     case LatinDict.Gaffiot[property]:
+    case LatinDict.Gesner[property]:
       return "lsChip";
     case LatinDict.Georges[property]:
       return "deChip";

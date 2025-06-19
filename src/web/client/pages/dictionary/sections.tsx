@@ -126,6 +126,18 @@ function AttributionContent(props: { dictKey: string }) {
       </div>
     );
   }
+  if (props.dictKey === LatinDict.Gesner.key) {
+    return (
+      <div>
+        Data for Gesner was accessed from the venerable{" "}
+        <a href="https://latin-dict.github.io/dictionaries/Gesner1749.html">
+          latin-dict.github.io
+        </a>{" "}
+        and transcribed by by the team of Dr. Wilhelm Kühlmann from Heidelberg
+        University. Further processing was kindly done by Justin Dealy.
+      </div>
+    );
+  }
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 
