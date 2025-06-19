@@ -54,6 +54,7 @@ export interface OfflineSettings {
   shDownloaded?: boolean;
   morceusDownloaded?: boolean;
   raDownloaded?: boolean;
+  gesDownloaded?: boolean;
   gafDownloaded?: boolean;
   georgesDownloaded?: boolean;
   eglDownloaded?: boolean;
