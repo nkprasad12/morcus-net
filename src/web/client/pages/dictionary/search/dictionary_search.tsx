@@ -52,6 +52,7 @@ function useOfflineDictData() {
       "S&H": enabled && settings?.shDownloaded !== true,
       "L&S": enabled && settings?.lsDownloaded !== true,
       "R&A": enabled && settings?.raDownloaded !== true,
+      GES: enabled && settings?.gesDownloaded !== true,
       GAF: enabled && settings?.gafDownloaded !== true,
       GRG: enabled && settings?.georgesDownloaded !== true,
       EGL: enabled && settings?.eglDownloaded !== true,
