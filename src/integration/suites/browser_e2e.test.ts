@@ -194,16 +194,13 @@ test.describe("dictionary main entries", () => {
 
   test("allows copying id links via tooltip", async ({ page }) => {
     skipIfWebkit("page.evaluate doesn't yet work on Webkit.");
-    await page.goto("/dicts?q=abiegineus");
+    await page.goto("/dicts?q=abemito");
 
-    await page
-      .locator('[class="lsSenseBullet"]')
-      .getByText("ăbĭĕgĭnĕus")
-      .click();
+    await page.locator('[class="lsSenseBullet"]').getByText("ăbemĭto").click();
     await page.getByText("Copy article link").click();
 
     expect(await page.evaluate(() => navigator.clipboard.readText())).toEqual(
-      `${process.env.BASE_URL}/dicts/id/gaf-abiegineus`
+      `${process.env.BASE_URL}/dicts/id/n64`
     );
   });
 });
