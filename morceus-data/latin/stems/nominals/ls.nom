@@ -11052,7 +11052,6 @@ a^ni^ma_bi^lis
 a^ni^madversi^o		
 :le:animadversio
 :no:a^ni^madversi^	o_oLnis fem
-:no:a^ni^maduersi^	o_oLnis fem
 
 
 a^ni^madversor		
@@ -33318,7 +33317,6 @@ ca^te_na_tus
 ca^terva		
 :le:caterva
 :no:ca^terv	a_ae fem
-:no:ca^teru	a_ae fem
 
 
 ca^terva_ri^us		
@@ -33329,7 +33327,6 @@ ca^terva_ri^us
 ca^terva_tim		
 :le:catervatim
 :wd:ca^terva_tim	adverb
-:wd:ca^terua_tim	adverb
 
 
 ca^tharti^cum		
@@ -35988,7 +35985,6 @@ Ceutrones
 ce_va		<orth>ceua</orth>	
 :le:ceva
 :no:ce_v	a_ae fem
-:no:ceu	a_ae fem orth
 
 
 
@@ -46480,7 +46476,6 @@ conserva_ti^o
 conserva_tor		
 :le:conservator
 :no:co_nserva_t or_oLris masc
-:no:co_nserua_t or_oLris masc
 
 
 conserva_trix		
@@ -55165,7 +55160,6 @@ decem-scalmus
 de^cemvi^ra_lis		
 :le:decemviralis
 :aj:de^cemvi^ra_l	is_e
-:aj:de^cemui^ra_l	is_e
 
 
 de^cemvi^ra_li^ter	
@@ -55175,14 +55169,11 @@ de^cemvi^ra_li^ter
 de^cemvi^ra_tus		
 :le:decemviratus
 :no:de^cemvi^ra_t	us_us masc
-:no:de^cemui^ra_t	us_us masc
 
 
 de^cem-vi^ri		<gen>m.</gen>
 :le:decemviri
-:no:de^cemvi^r	0_i masc 
-:no:de^cemui^r	0_i masc 
-:no:de^cemui^r	0_i masc pl orth
+:no:de^cemvi^r	0_i masc pl
 
 de^cenna_lis		
 :le:decennalis
@@ -72832,7 +72823,6 @@ exu_ti^o
 exu^vi^ae		
 :le:exuviae
 :no:exu^vi^	a_ae fem pl
-:no:exu^ui^	a_ae fem pl
 
 
 F		<orth type=alt>f</orth>	<itype>indecl.</itype>	<gen>n.</gen>	<gen>f.</gen>
@@ -109503,8 +109493,7 @@ la_nu^la
 La_nu^vi^um		<orth type=alt>L&auml;ni^v-</orth>	
 :le:Lanuvium
 :no:La_nu^v	ius_i neut
-:no:La_nu^u	ius_i neut
-:no:L&auml;ni^v	ius_i neut orth
+:no:La+ni^v	ius_i neut orth
 
 
 
@@ -132279,6 +132268,7 @@ nauarchia
 nauarchus		
 :le:nauarchus
 :no:nauarch	us_i masc
+:no:na_varch us_i masc orth
 
 
 nav-	
@@ -132623,11 +132613,6 @@ na_va_-le
 na_va_-li^a		
 :le:navalia
 :no:na_va_-l	is_is neut pl
-
-
-na_varchus		
-:le:navarchus
-:no:na_varch	us_i masc
 
 
 na_ve_		

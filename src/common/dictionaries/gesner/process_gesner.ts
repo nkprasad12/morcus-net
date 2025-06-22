@@ -3,9 +3,16 @@ import type { EntryOutline } from "@/common/dictionaries/dict_result";
 import { SqliteDict } from "@/common/dictionaries/sqlite_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import { envVar } from "@/common/env_vars";
+import { singletonOf } from "@/common/misc_utils";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { parseXmlStrings } from "@/common/xml/xml_utils";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import {
+  CruncherOptions,
+  type LatinWordAnalysis,
+} from "@/morceus/cruncher_types";
 
 import fs from "fs";
 
@@ -30,13 +37,92 @@ function getId(rawKey: string, dupeCounts: Map<string, number>): string {
   return `gesner_${key}_${count}`;
 }
 
+const INFLECTION_PROVIDER = singletonOf<(x: string) => LatinWordAnalysis[]>(
+  () => {
+    const tables = MorceusTables.CACHED.get();
+    const cruncher = MorceusCruncher.make(tables);
+    return (word) =>
+      cruncher(word, { ...CruncherOptions.DEFAULT, relaxUandV: false });
+  }
+);
+
+function uAndVAlts(word: string, i: number = 0): string[] {
+  if (i >= word.length) {
+    return [""];
+  }
+  const tailOptions = uAndVAlts(word, i + 1);
+  const currOptions =
+    word[i] === "u" || word[i] === "v" ? ["u", "v"] : [word[i]];
+  return currOptions.flatMap((curr) => tailOptions.map((tail) => curr + tail));
+}
+
+function filterEncliticOnlyAnalyses(
+  analyses: LatinWordAnalysis[]
+): LatinWordAnalysis[] {
+  return analyses.filter((analysis) => {
+    return (
+      analysis.inflectedForms.filter(
+        (form) =>
+          form.inflectionData.filter((d) => d.enclitic === undefined).length > 0
+      ).length > 0
+    );
+  });
+}
+
+function replaceKnownVs(word: string): string {
+  let replaced = word
+    .replaceAll("qv", "qu")
+    .replaceAll("vs", "us")
+    .replaceAll("sv", "su")
+    .replaceAll("ivm", "ium");
+  replaced = replaced.replace(/^v(?=[^aeiou])/gi, () => "u");
+  replaced.replace(/v(?=[^aeiou])$/gi, () => "u");
+  return replaced.replace(/(?<=[^aeiou])v(?=[^aeiou])/gi, () => "u");
+}
+
 function resolveKey(rawKey: string): string {
   const candidate = rawKey
     .toLowerCase()
     .trim()
-    .replaceAll(/\[\d+\]$/g, "");
-  assert(/[a-z_]+/.test(candidate), `Invalid key: ${rawKey}`);
-  return candidate;
+    .replaceAll(/\s+\[\d+\]$/g, "")
+    .normalize("NFD")
+    .replaceAll(/[\u0300-\u036f]/g, "");
+  assert(/[a-z]+/.test(candidate), `Invalid key: ${rawKey}`);
+  const alts = Array.from(new Set(uAndVAlts(candidate).map(replaceKnownVs)));
+  if (alts.length === 1) {
+    return alts[0];
+  }
+  const knownAlts = alts
+    .map((alt) => ({
+      alt,
+      inflections: filterEncliticOnlyAnalyses(INFLECTION_PROVIDER.get()(alt)),
+    }))
+    .filter((x) => x.inflections.length > 0);
+  if (knownAlts.length === 0) {
+    return candidate.replaceAll("v", "u");
+  }
+  if (knownAlts.length === 1) {
+    return knownAlts[0].alt;
+  }
+  const lemmata = new Set(knownAlts.map((x) => x.inflections[0].lemma));
+  if (lemmata.size === 1) {
+    // All alts have the same lemma, so we can return the first one
+    return knownAlts[0].alt;
+  }
+  //   [
+  //     "ERVO",
+  //     "HELVO",
+  //     "FATVE",
+  //     "SERVITVS",
+  //     "TRANSVENDO",
+  //     "VENTO",
+  //     "VENTVS",
+  //     "VOLVTA",
+  //     "VOLVTO",
+  //   ]
+  // This list is legitimately ambiguous. In the future we should probably handle this but
+  // we won't bother right now.
+  return candidate.replaceAll("v", "u");
 }
 
 function processRawEntry(
