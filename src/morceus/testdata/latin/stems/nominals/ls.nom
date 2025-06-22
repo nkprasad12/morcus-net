@@ -16,6 +16,9 @@
 :le:Eos
 :wd:E_os fem sg nom
 
+:le:servus
+:no:serv us_i masc
+
 # This file must end with a newline to be parsed correctly.
 # Keep this comment and add new lemmata above this so you don't
 # accidentally omit it.
