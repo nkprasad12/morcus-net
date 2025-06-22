@@ -133,7 +133,7 @@ function AttributionContent(props: { dictKey: string }) {
         <a href="https://latin-dict.github.io/dictionaries/Gesner1749.html">
           latin-dict.github.io
         </a>{" "}
-        and transcribed by by the team of Dr. Wilhelm Kühlmann from Heidelberg
+        and transcribed by the team of Dr. Wilhelm Kühlmann from Heidelberg
         University. Further processing was kindly done by Justin Dealy.
       </div>
     );

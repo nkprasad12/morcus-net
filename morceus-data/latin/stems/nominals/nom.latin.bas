@@ -88,7 +88,6 @@
 
 :le:duumvir
 :no:duumvir	0_i masc
-:no:duumuir	0_i masc
 
 :le:colluvio
 :no:collu^vi^	o_oLnis fem
