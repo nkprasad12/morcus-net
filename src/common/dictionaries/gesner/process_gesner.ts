@@ -125,6 +125,10 @@ function resolveKey(rawKey: string): string {
   return candidate.replaceAll("v", "u");
 }
 
+function processEntryForDisplay(root: XmlNode, id: string): XmlNode {
+  return new XmlNode("div", [["id", id]], [root]);
+}
+
 function processRawEntry(
   root: XmlNode,
   dupeCounts: Map<string, number>
@@ -144,8 +148,9 @@ function processRawEntry(
       sectionId: id,
     },
   };
+  const processedRoot = processEntryForDisplay(root, id);
   const entry = JSON.stringify({
-    entry: XmlNodeSerialization.DEFAULT.serialize(root),
+    entry: XmlNodeSerialization.DEFAULT.serialize(processedRoot),
     outline,
   });
   return { keys, id, entry };
