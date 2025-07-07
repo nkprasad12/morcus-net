@@ -97,6 +97,7 @@ export function BaseReader<
   const [drawerHeight, setDrawerHeight] = useState<number>(
     window.innerHeight * 0.15
   );
+  const [drawerMinimized, setDrawerMinimized] = useState<boolean>(false);
   const isScreenSmall = useMediaQuery("(max-width: 900px)");
 
   useLayoutEffect(() => {
@@ -143,8 +144,9 @@ export function BaseReader<
       sidebarRef.current?.scroll({ top: 0, behavior: "instant" });
       setSidebarTab("Dictionary");
       onDictWord(word);
+      setDrawerMinimized(false);
     },
-    [onDictWord]
+    [onDictWord, setDrawerMinimized]
   );
 
   useEffect(
@@ -157,6 +159,8 @@ export function BaseReader<
       sidebarRef={sidebarRef}
       drawerHeight={drawerHeight}
       setDrawerHeight={setDrawerHeight}
+      drawerMinimized={drawerMinimized}
+      setDrawerMinimized={setDrawerMinimized}
       swipeNavigation={swipeNavigation}
       tapNavigation={tapNavigation}
       swipeListeners={swipeListeners}>
@@ -222,13 +226,21 @@ interface MobileReaderLayoutProps
     ReaderExternalLayoutProps {
   drawerHeight: number;
   setDrawerHeight: React.Dispatch<React.SetStateAction<number>>;
+  drawerMinimized?: boolean;
+  setDrawerMinimized?: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
   const children = React.Children.toArray(props.children);
   assert(children.length === 3);
   const [mainContent, sidebarBar, sidebarContent] = children;
-  const { sidebarRef, drawerHeight, setDrawerHeight } = props;
+  const {
+    sidebarRef,
+    drawerHeight,
+    setDrawerHeight,
+    drawerMinimized,
+    setDrawerMinimized,
+  } = props;
   const listeners = useGestureListener(props.swipeListeners);
 
   return (
@@ -248,6 +260,8 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
         containerClass="readerSide"
         drawerHeight={drawerHeight}
         setDrawerHeight={setDrawerHeight}
+        drawerMinimized={drawerMinimized}
+        setDrawerMinimized={setDrawerMinimized}
         maxRatio={DRAWER_MAX_SIZE}
         drawerContentRef={sidebarRef}>
         {sidebarBar}

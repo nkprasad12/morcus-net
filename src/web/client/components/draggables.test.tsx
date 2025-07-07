@@ -2,7 +2,9 @@
  * @jest-environment jsdom
  */
 
-import { makeOnDrag } from "@/web/client/components/draggables";
+import { BottomDrawer, makeOnDrag } from "@/web/client/components/draggables";
+import { fireEvent, render, screen } from "@testing-library/react";
+import React from "react";
 
 describe("makeOnDrag", () => {
   const MAX_SIZE = 500;
@@ -86,5 +88,51 @@ describe("makeOnDrag", () => {
 
     onDrag(80);
     expect(currentLen).toBe(30); // 50 - (100 - 80)
+  });
+});
+
+describe("BottomDrawer", () => {
+  it("shows the drawer when not minimized", () => {
+    const setDrawerMinimized = jest.fn();
+    render(
+      <BottomDrawer
+        drawerHeight={100}
+        setDrawerHeight={() => {}}
+        drawerMinimized={false}
+        setDrawerMinimized={setDrawerMinimized}
+        containerClass="">
+        <div>Bar Content</div>
+        <div>Main Content</div>
+      </BottomDrawer>
+    );
+
+    expect(screen.queryByText("Bar Content")).not.toBeNull();
+    expect(screen.queryByText("Main Content")).not.toBeNull();
+    setDrawerMinimized.mockClear();
+    fireEvent.click(screen.getByLabelText("Hide drawer"));
+
+    expect(setDrawerMinimized).toHaveBeenCalledWith(true);
+  });
+
+  it("shows the opener when minimized", () => {
+    const setDrawerMinimized = jest.fn();
+    render(
+      <BottomDrawer
+        drawerHeight={100}
+        setDrawerHeight={() => {}}
+        drawerMinimized
+        setDrawerMinimized={setDrawerMinimized}
+        containerClass="">
+        <div>Bar Content</div>
+        <div>Main Content</div>
+      </BottomDrawer>
+    );
+
+    expect(screen.queryByText("Bar Content")).toBeNull();
+    expect(screen.queryByText("Main Content")).toBeNull();
+    setDrawerMinimized.mockClear();
+    fireEvent.click(screen.getByLabelText("Show drawer"));
+
+    expect(setDrawerMinimized).toHaveBeenCalledWith(false);
   });
 });

@@ -590,6 +590,17 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundClip: "content-box, padding-box;",
       backgroundImage: `linear-gradient(to bottom, ${theme.bg} 0%, ${theme.bg} 100%), linear-gradient(to bottom, ${theme.bgAlt} 0%, ${theme.bgAlt} 100%);`,
     },
+    ".drawerCloser": {
+      position: "absolute",
+      top: "10px",
+      right: "2px",
+    },
+    ".drawerOpener": {
+      position: "fixed",
+      bottom: "4px",
+      right: "4px",
+      zIndex: 2,
+    },
     ".draggerPuller": {
       width: 30,
       height: 6,

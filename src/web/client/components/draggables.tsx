@@ -1,5 +1,6 @@
 import { assertEqual } from "@/common/assert";
 import { Container } from "@/web/client/components/generic/basics";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import React, {
   useCallback,
@@ -139,6 +140,8 @@ export function DragHelper(
 export interface BottomDrawerProps {
   drawerHeight: number;
   setDrawerHeight: React.Dispatch<React.SetStateAction<number>>;
+  drawerMinimized?: boolean;
+  setDrawerMinimized?: React.Dispatch<React.SetStateAction<boolean>>;
   maxRatio?: number;
   defaultHeightRatio?: number;
   drawerContentRef?: React.RefObject<HTMLDivElement>;
@@ -161,6 +164,17 @@ export function BottomDrawer(
     return () => window.removeEventListener("orientationchange", resetDrawer);
   }, [setDrawerHeight, props.defaultHeightRatio]);
 
+  if (props.drawerMinimized === true) {
+    return (
+      <IconButton
+        onClick={() => props.setDrawerMinimized?.(false)}
+        aria-label="Show drawer"
+        className="bgAlt drawerOpener">
+        <SvgIcon pathD={SvgIcon.KeyboardArrowUp} />
+      </IconButton>
+    );
+  }
+
   return (
     <Container
       className={`bgColor ${props.containerClass}`}
@@ -174,6 +188,15 @@ export function BottomDrawer(
           <div className="mobileDragger">
             <div className="draggerPuller" />
           </div>
+          {props.drawerMinimized === false && (
+            <IconButton
+              size="small"
+              className="menuIcon drawerCloser"
+              aria-label="Hide drawer"
+              onClick={() => props.setDrawerMinimized?.(true)}>
+              <SvgIcon pathD={SvgIcon.Close} />
+            </IconButton>
+          )}
           {children[0]}
         </div>
       </DragHelper>
