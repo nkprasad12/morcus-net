@@ -7,6 +7,7 @@ export const LatinWorks = {
   CICERO_PRO_QUINCTIO: "phi0474.phi001.perseus-lat2",
   CICERO_PRO_QUINTO_ROSCIO: "phi0474.phi003.perseus-lat2",
   CICERO_DE_LEGE_AGRARIA: "phi0474.phi011.perseus-lat2",
+  CICERO_DE_OFFICIIS: "phi0474.phi055.perseus-lat1",
   CICERO_PRO_RABIRIO: "phi0474.phi012.perseus-lat2",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",

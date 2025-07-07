@@ -1026,7 +1026,7 @@ function displayForLibraryChunk(
   if (rend === "italic") {
     style.fontStyle = "italic";
   }
-  if (rend === "uppercase") {
+  if (rend === "uppercase" || rend === "smallcaps") {
     style.textTransform = "uppercase";
   }
   if (root.getAttr("l") !== undefined) {

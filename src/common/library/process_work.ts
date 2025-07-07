@@ -50,8 +50,10 @@ const HANDLED_REND = new Set<string>([
   "indent",
   "ital",
   "italic",
+  "italics",
   "blockquote",
   "uppercase",
+  "smallcaps",
   // These are used in gaps. We can just ignore them.
   "* * * *",
   "...",
@@ -605,7 +607,7 @@ function transformContentNode(
     if (node.name === "emph") {
       assertEqual(rend, "italic");
     }
-    const finalRend = rend === "ital" ? "italic" : rend;
+    const finalRend = rend === "ital" || rend === "italics" ? "italic" : rend;
     attrs.push(["rend", finalRend], ["rendParent", node.name]);
   }
   if (node.name === "l") {
