@@ -29,6 +29,9 @@ git clone https://github.com/nkprasad12/riddle-arnold.git
 
 echo "Downloading Georges. This may take some time."
 git clone https://github.com/nkprasad12/Georges1910.git
+cd Georges1910 || exit
+git checkout morcus-net-branch
+cd ..
 
 echo "Downloading Smith and Hall."
 git clone https://github.com/nkprasad12/smithandhall.git

@@ -92,7 +92,7 @@ const MAKE_GEORGES: StepConfig = {
   operation: processGeorges,
   label: "Georges DB creation",
   dlInfo: {
-    url: "https://raw.githubusercontent.com/nkprasad12/Georges1910/refs/heads/main/Georges1910-ger-lat.xml",
+    url: "https://raw.githubusercontent.com/nkprasad12/Georges1910/refs/heads/morcus-net-branch/Georges1910-ger-lat.xml",
     path: envVar("GEORGES_RAW_PATH"),
   },
 };
