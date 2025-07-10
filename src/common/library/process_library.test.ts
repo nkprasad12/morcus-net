@@ -1,3 +1,4 @@
+import { setupFakeHypotacticData } from "@/common/library/hypotactic_test_helper";
 import {
   retrieveWork,
   retrieveWorksList,
@@ -14,6 +15,8 @@ const DBG_PATH =
 
 const ORIGINAL_MORCEUS_DATA_ROOT = process.env.MORCEUS_DATA_ROOT;
 const FAKE_MORCEUS_DATA_ROOT = "src/morceus/testdata";
+
+setupFakeHypotacticData();
 
 beforeAll(() => {
   process.env.MORCEUS_DATA_ROOT = FAKE_MORCEUS_DATA_ROOT;
@@ -56,9 +59,12 @@ describe("Library Processing", () => {
   });
 
   test("returns correct index", async () => {
+    processLibrary(LIB_DIR, [DBG_PATH]);
     const result = await retrieveWorksList(LIB_DIR);
 
-    expect(result).toHaveLength(1);
+    console.log(result);
+    expect(result).toHaveLength(2);
     expect(result[0].id).toBe("phi0448.phi001.perseus-lat2");
+    expect(result[1].id).toBe("hypotactic_Metamorphoses_Ovid");
   });
 });
