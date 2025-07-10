@@ -13,6 +13,7 @@ import {
 } from "@/common/library/library_constants";
 import type { LibraryPatch } from "@/common/library/library_patches";
 import {
+  type DocumentInfo,
   type NavTreeNode,
   type ProcessedWork2,
   type ProcessedWorkContentNodeType,
@@ -923,10 +924,11 @@ export function processTei2(
   const { rows, notes } = processWorkBody(body[0], textParts, processOptions);
   const pages = divideWork(rows, textParts);
   const navTree = buildNavTree(pages);
-  const info = {
+  const info: DocumentInfo = {
     ...extractInfo(xmlRoot),
     workId: metadata.workId,
     translationId: metadata.translationId,
+    attribution: "perseus",
   };
   return { info, textParts, rows, pages, navTree, notes };
 }

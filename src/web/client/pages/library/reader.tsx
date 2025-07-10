@@ -56,6 +56,36 @@ import { textCallback } from "@/web/client/utils/callback_utils";
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 const TRANSLATION_ID = "translationTab";
 
+const PERSEUS_ATTRIBUTION = (
+  <span className="text sm light">
+    The raw text was provided by the Perseus Digital Library and was accessed
+    originally from{" "}
+    <a href="https://github.com/PerseusDL/canonical-latinLit">
+      https://github.com/PerseusDL/canonical-latinLit
+    </a>
+    . It is provided under Perseus&apos; conditions of the{" "}
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC-BY-SA-4.0</a>{" "}
+    license, and you must offer Perseus any modifications you make.
+  </span>
+);
+
+const HYPOTACTIC_ATTRIBUTION = (
+  <span className="text sm light">
+    The raw text was provided by David Chamberlain of{" "}
+    <a href="https://hypotactic.com">https://hypotactic.com/</a>
+    under the{" "}
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/">
+      CC-BY-SA-4.0
+    </a>{" "}
+    license.
+  </span>
+);
+
+const ATTRIBUTION_MAP: Record<DocumentInfo["attribution"], JSX.Element> = {
+  perseus: PERSEUS_ATTRIBUTION,
+  hypotactic: HYPOTACTIC_ATTRIBUTION,
+};
+
 type WorkState = PaginatedWork | "Loading" | "Error";
 
 function resolveWorkId(path: string): WorkId | undefined {
@@ -836,18 +866,8 @@ function WorkInfo(props: { workInfo: DocumentInfo }) {
       </div>
       <SourceRefInfo workInfo={props.workInfo} />
       <div style={{ lineHeight: 1, marginTop: "8px" }}>
-        <span className="text sm light">
-          The raw text was provided by the Perseus Digital Library and was
-          accessed originally from{" "}
-          <a href="https://github.com/PerseusDL/canonical-latinLit">
-            https://github.com/PerseusDL/canonical-latinLit
-          </a>
-          . It is provided under Perseus&apos; conditions of the{" "}
-          <a href="https://creativecommons.org/licenses/by-sa/4.0/">
-            CC-BY-SA-4.0
-          </a>{" "}
-          license, and you must offer Perseus any modifications you make.
-        </span>
+        {/* Default to `perseus` for backwards compatibility. */}
+        {ATTRIBUTION_MAP[props.workInfo.attribution ?? "perseus"]}
       </div>
     </>
   );
