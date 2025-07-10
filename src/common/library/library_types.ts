@@ -35,6 +35,7 @@ export interface DocumentInfo {
   translationId?: string;
   translationInfo?: TranslationInfo;
   sourceRef?: string[];
+  attribution: "perseus" | "hypotactic";
 }
 
 export namespace DocumentInfo {
@@ -50,6 +51,7 @@ export namespace DocumentInfo {
     translationId: maybeUndefined(isString),
     translationInfo: maybeUndefined(isTranslationInfo),
     sourceRef: maybeUndefined(isArray(isString)),
+    attribution: isString,
   });
 }
 
