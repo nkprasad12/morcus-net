@@ -14,9 +14,11 @@ import {
 } from "@/common/library/library_patches";
 import {
   LibraryWorkMetadata,
+  type DocumentInfo,
   type ProcessedWork2,
   type TranslationInfo,
 } from "@/common/library/library_types";
+import { processHypotactic } from "@/common/library/process_hypotactic";
 import { processTei2 } from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
@@ -136,6 +138,43 @@ function isTranslationId(workId: string): boolean {
   );
 }
 
+function writeWorkFile(
+  work: ProcessedWork2,
+  outputDir: string,
+  workId: string
+): string {
+  const encoded = stringifyMessage(work, [XmlNodeSerialization.DEFAULT]);
+  const outputPath = `${outputDir}/${workId}`;
+  fs.writeFileSync(outputPath, encoded);
+  console.log("Wrote processed file to %s", outputPath);
+  return outputPath;
+}
+
+function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
+  const rawTitle = info.title;
+  const shortName = NAME_TO_DISPLAY_NAME.get(rawTitle);
+  const decorated: DocumentInfo = { ...info };
+  decorated.shortTitle = shortName;
+  return decorated;
+}
+
+function extractWorkMetadata(
+  id: string,
+  info: DocumentInfo,
+  isTranslation?: boolean,
+  translationId?: string
+): LibraryWorkMetadata {
+  return {
+    id,
+    author: info.author,
+    name: info.shortTitle ?? info.title,
+    urlAuthor: urlifyAuthor(info.author),
+    urlName: urlifyName(info.title),
+    translationId,
+    isTranslation,
+  };
+}
+
 export function processLibrary(
   outputDir: string = LIB_DEFAULT_DIR,
   works: string[] = LOCAL_REPO_WORK_PATHS
@@ -170,22 +209,9 @@ export function processLibrary(
       patches.get(workId),
       translationId
     );
-    const rawTitle = result.info.title;
-    const shortName = NAME_TO_DISPLAY_NAME.get(rawTitle);
-    const title = shortName ?? rawTitle;
-    result.info.shortTitle = shortName;
     const isTranslation = isTranslationId(workId);
     result.info.translationInfo = translationDataById.get(translationId);
 
-    const metadata: LibraryWorkMetadata = {
-      id: workId,
-      author: result.info.author,
-      name: title,
-      urlAuthor: urlifyAuthor(result.info.author),
-      urlName: urlifyName(result.info.title),
-      translationId,
-      isTranslation,
-    };
     if (isTranslation) {
       translationDataById.set(workId, {
         id: workId,
@@ -193,11 +219,22 @@ export function processLibrary(
         title: result.info.title,
       });
     }
-    const encoded = stringifyMessage(result, [XmlNodeSerialization.DEFAULT]);
-    const outputPath = `${outputDir}/${workId}`;
+    result.info = decorateDocumentInfo(result.info);
+    const outputPath = writeWorkFile(result, outputDir, workId);
+    const metadata = extractWorkMetadata(
+      workId,
+      result.info,
+      isTranslation,
+      translationId
+    );
     index[workId] = [outputPath, metadata];
-    fs.writeFileSync(outputPath, encoded);
-    console.log("Wrote processed file to %s", outputPath);
+  }
+  for (const work of processHypotactic()) {
+    const workId = work.info.workId;
+    work.info = decorateDocumentInfo(work.info);
+    const outputPath = writeWorkFile(work, outputDir, workId);
+    const metadata = extractWorkMetadata(workId, work.info);
+    index[workId] = [outputPath, metadata];
   }
   // TODO: We should verify here that there are no duplicates.
   fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));

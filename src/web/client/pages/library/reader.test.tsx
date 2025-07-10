@@ -55,6 +55,7 @@ const DBG_INFO: DocumentInfo = {
   title: "DBG",
   author: "Caesar",
   workId: "dbg",
+  attribution: "perseus",
 };
 
 // @ts-ignore
