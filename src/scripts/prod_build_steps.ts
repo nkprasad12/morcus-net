@@ -120,6 +120,9 @@ const PROCESS_LAT_LIB: StepConfig = {
     ),
   label: "Latin library processing",
   dlInfo: PERSEUS_DOWNLOADS,
+  repoInfo: {
+    repoUrl: "https://github.com/nkprasad12/hypotactic.git",
+  },
 };
 const MAKE_BUNDLE: StepConfig = {
   operation: () => {
