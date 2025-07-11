@@ -16,6 +16,9 @@ const LICENSE_KEY = "licence";
 const CREDIT_KEY = "scansion credit";
 const KNOWN_KEYS = new Set([LICENSE_KEY, CREDIT_KEY]);
 
+// These should map Hypotactic author names to Perseus author names.
+const AUTHOR_REMAPPING = new Map<string, string>([["Ovid", "P. Ovidius Naso"]]);
+
 interface HypotacticParsedJson {
   works: HypotacticWork[];
   license: string;
@@ -214,7 +217,7 @@ function processBookAndLineWork(
   const author = fullWork.works[0].author;
   const info: DocumentInfo = {
     title,
-    author,
+    author: AUTHOR_REMAPPING.get(author) ?? author,
     workId: `hypotactic_${title}_${author}`,
     attribution: "hypotactic",
   };

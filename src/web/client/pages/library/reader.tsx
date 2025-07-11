@@ -72,11 +72,8 @@ const PERSEUS_ATTRIBUTION = (
 const HYPOTACTIC_ATTRIBUTION = (
   <span className="text sm light">
     The raw text was provided by David Chamberlain of{" "}
-    <a href="https://hypotactic.com">https://hypotactic.com/</a>
-    under the{" "}
-    <a href="https://creativecommons.org/licenses/by-sa/4.0/">
-      CC-BY-SA-4.0
-    </a>{" "}
+    <a href="https://hypotactic.com">https://hypotactic.com</a> under the{" "}
+    <a href="https://creativecommons.org/licenses/by-sa/4.0/">CC-BY-SA-4.0</a>{" "}
     license.
   </span>
 );
