@@ -24,10 +24,15 @@ export interface DownloadConfig {
   path: string;
 }
 
+export interface RepoConfig {
+  repoUrl: string;
+}
+
 export interface StepConfig {
   operation: () => Promise<void> | void;
   label?: string;
   dlInfo?: DownloadConfig | DownloadConfig[];
+  repoInfo?: RepoConfig;
   priority?: number;
 }
 
@@ -109,12 +114,39 @@ async function downloadAll(configs: DownloadConfig[]): Promise<boolean> {
   return success;
 }
 
+function getRepoNameFromUrl(url: string): string {
+  const nameWithExt = url.substring(url.lastIndexOf("/") + 1);
+  if (nameWithExt.endsWith(".git")) {
+    return nameWithExt.slice(0, -4);
+  }
+  return nameWithExt;
+}
+
+async function cloneRepo(config: RepoConfig): Promise<string | undefined> {
+  const cloneDir = getRepoNameFromUrl(config.repoUrl);
+  try {
+    await shellStep(`git clone ${config.repoUrl} ${cloneDir}`);
+    console.log(chalk.blue(`Cloned ${config.repoUrl} into ${cloneDir}`));
+    return cloneDir;
+  } catch (error) {
+    console.log(chalk.red(`Failed to clone ${config.repoUrl}`));
+    console.log(chalk.red(error));
+    return undefined;
+  }
+}
 async function runStep(config: StepConfig): Promise<boolean> {
   const label = config.label || "operation";
   const dlInfos = resolveDownloads(config);
   const downloadResult = await downloadAll(dlInfos);
   if (!downloadResult) {
     return false;
+  }
+  let repoDir: string | undefined = undefined;
+  if (config.repoInfo !== undefined) {
+    repoDir = await cloneRepo(config.repoInfo);
+    if (repoDir === undefined) {
+      return false;
+    }
   }
 
   let success = true;
@@ -130,6 +162,9 @@ async function runStep(config: StepConfig): Promise<boolean> {
   runtimeMessage(start, success, label);
 
   await cleanupDownloads(dlInfos);
+  if (repoDir !== undefined) {
+    await rm(repoDir, { recursive: true, force: true });
+  }
 
   return success;
 }

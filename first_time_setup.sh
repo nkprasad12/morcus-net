@@ -51,6 +51,9 @@ cd ..
 echo "Downloading the Perseus Library."
 git clone https://github.com/nkprasad12/canonical-latinlit
 
+echo "Downloading the Hypotactic library. This may take some time."
+git clone https://github.com/nkprasad12/hypotactic.git
+
 echo "Populating '.env' file for $APP_NAME."
 dot_env="morcus-net/.env"
 touch $dot_env
@@ -62,6 +65,7 @@ echo "SH_RAW_PATH=$PWD/smithandhall/sh_F2_latest.txt" >> $dot_env
 echo "GEORGES_RAW_PATH=$PWD/Georges1910/Georges1910-ger-lat.xml" >> $dot_env
 echo "POZO_RAW_PATH=$PWD/latin-dictionary/LopezPozo1997/diccionario.txt" >> $dot_env
 echo "LIB_XML_ROOT=$PWD/canonical-latinlit" >> $dot_env
+echo "HYPOTACTIC_ROOT=$PWD/hypotactic" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."
 cd morcus-net || exit
