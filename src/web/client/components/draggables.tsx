@@ -170,7 +170,7 @@ export function BottomDrawer(
         onClick={() => props.setDrawerMinimized?.(false)}
         aria-label="Show drawer"
         className="bgAlt drawerOpener">
-        <SvgIcon pathD={SvgIcon.KeyboardArrowUp} />
+        <SvgIcon pathD={SvgIcon.MenuOpen} />
       </IconButton>
     );
   }
