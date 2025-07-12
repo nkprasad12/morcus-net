@@ -161,8 +161,10 @@ function decorateDocumentInfo(info: DocumentInfo): DocumentInfo {
 function extractWorkMetadata(
   id: string,
   info: DocumentInfo,
-  isTranslation?: boolean,
-  translationId?: string
+  args?: {
+    isTranslation?: boolean;
+    translationId?: string;
+  }
 ): LibraryWorkMetadata {
   return {
     id,
@@ -170,8 +172,9 @@ function extractWorkMetadata(
     name: info.shortTitle ?? info.title,
     urlAuthor: urlifyAuthor(info.author),
     urlName: urlifyName(info.title),
-    translationId,
-    isTranslation,
+    translationId: args?.translationId,
+    isTranslation: args?.isTranslation,
+    attribution: info.attribution ?? "perseus",
   };
 }
 
@@ -221,12 +224,10 @@ export function processLibrary(
     }
     result.info = decorateDocumentInfo(result.info);
     const outputPath = writeWorkFile(result, outputDir, workId);
-    const metadata = extractWorkMetadata(
-      workId,
-      result.info,
+    const metadata = extractWorkMetadata(workId, result.info, {
       isTranslation,
-      translationId
-    );
+      translationId,
+    });
     index[workId] = [outputPath, metadata];
   }
   for (const work of processHypotactic()) {

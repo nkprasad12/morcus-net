@@ -83,6 +83,16 @@ function WorksList(props: { works: WorkListState }) {
             <span className="text sm light" style={WORK_STYLE}>
               {work.author}
             </span>
+            {work.translationId && (
+              <span className="text xs light smallChip shChip">
+                Has Translation
+              </span>
+            )}
+            {work.attribution === "hypotactic" && (
+              <span className="text xs light smallChip numChip">
+                Macronized
+              </span>
+            )}
           </SpanLink>
         </div>
       ))}

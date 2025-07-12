@@ -133,6 +133,8 @@ export interface LibraryWorkMetadata {
   translationId?: string;
   /** Whether this is a translation. */
   isTranslation?: boolean;
+  /** The source of the raw data. */
+  attribution: "perseus" | "hypotactic";
 }
 
 export namespace LibraryWorkMetadata {
@@ -144,6 +146,7 @@ export namespace LibraryWorkMetadata {
     urlName: isString,
     translationId: maybeUndefined(isString),
     isTranslation: maybeUndefined(isBoolean),
+    attribution: isString,
   });
 }
 
