@@ -282,7 +282,7 @@ test.describe("main reader", () => {
     ).toBeVisible();
   });
 
-  test("has working scroll to line from UI from URL", async ({ page }) => {
+  test("has working scroll to line from URL", async ({ page }) => {
     await page.goto("/work/juvenal/saturae?id=1.2.161");
     await expect(page.getByText("Britannos")).toBeInViewport();
   });
@@ -294,11 +294,12 @@ test.describe("main reader", () => {
 
     await page.locator(`[aria-label="jump to id"]`).click();
     // It should be pre-populated with `1.2`, the current ID.
+    await page.keyboard.press("End");
     await page.keyboard.type(".161");
     await page.keyboard.press("Enter");
 
-    await expect(page.getByText("Britannos")).toBeInViewport();
     await expect(page).toHaveURL(/\/work\/juvenal\/saturae\?id=1\.2\.161$/);
+    await expect(page.getByText("Britannos")).toBeInViewport();
   });
 
   test("has working translations", async ({ page }) => {

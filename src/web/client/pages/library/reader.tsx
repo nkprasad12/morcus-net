@@ -567,7 +567,7 @@ function JumpToSection() {
     <>
       {"§ "}
       <input
-        style={{ maxWidth: "24px", borderRadius: "4px" }}
+        style={{ maxWidth: "36px", borderRadius: "4px" }}
         className="bgColor text"
         aria-label="jump to id"
         value={value}
@@ -599,10 +599,13 @@ function macronStorageKey(workId: string): string {
 
 function MacronButton(props: { id: string }) {
   const id = macronStorageKey(props.id);
-  const [on, setOn] = usePersistedState<boolean>(false, id);
+  const [on, setOn] = usePersistedState<boolean>(true, id);
 
   return (
-    <IconButton className="menuIcon" onClick={() => setOn((o) => !o)}>
+    <IconButton
+      className="menuIcon"
+      onClick={() => setOn((o) => !o)}
+      aria-label="toggle macra in text">
       <SvgIcon
         pathD={SvgIcon.MacronIcon}
         viewBox="0 14 24 24"
@@ -707,7 +710,7 @@ export function WorkTextPage(props: {
     [setDictWord, work]
   );
   const macronsOn = usePersistedValue<boolean>(
-    false,
+    true,
     macronStorageKey(work.info.workId)
   );
   const stripMacra = !macronsOn && work.info.attribution === "hypotactic";
