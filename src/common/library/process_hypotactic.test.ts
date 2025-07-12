@@ -9,7 +9,7 @@ describe("Hypotactic Library Processing", () => {
     expect(works).toHaveLength(1);
     const work = works[0];
     expect(work.info.title).toBe("Metamorphoses");
-    expect(work.info.author).toBe("Ovid");
+    expect(work.info.author).toBe("P. Ovidius Naso");
 
     // The fake data has 2 books of 2 lines each.
     expect(work.pages).toHaveLength(2);

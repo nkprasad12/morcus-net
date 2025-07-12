@@ -567,7 +567,7 @@ function JumpToSection() {
     <>
       {"§ "}
       <input
-        style={{ maxWidth: "48px", borderRadius: "4px" }}
+        style={{ maxWidth: "24px", borderRadius: "4px" }}
         className="bgColor text"
         aria-label="jump to id"
         value={value}
@@ -654,9 +654,24 @@ function WorkNavigationBar(props: {
         onClick={() => changePage(-1)}
       />
       <span
-        style={{ flexGrow: 1, textAlign: "center" }}
+        style={{
+          flexGrow: 1,
+          textAlign: "center",
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          minWidth: "12px", // Needed for flex item to shrink and allow ellipsis
+        }}
         className="text sm light">
-        <span>{(work.info.shortTitle ?? work.info.title) + " "}</span>
+        <span
+          style={{
+            whiteSpace: "nowrap",
+            overflow: "hidden",
+            textOverflow: "ellipsis",
+          }}>
+          {work.info.shortTitle ?? work.info.title}
+        </span>
+        <span style={{ whiteSpace: "pre" }}> </span>
         <JumpToSection />
         <CopyLinkTooltip
           forwarded={TooltipNavIcon}
