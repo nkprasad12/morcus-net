@@ -19,6 +19,11 @@ const KNOWN_KEYS = new Set([LICENSE_KEY, CREDIT_KEY]);
 // These should map Hypotactic author names to Perseus author names.
 const AUTHOR_REMAPPING = new Map<string, string>([["Ovid", "P. Ovidius Naso"]]);
 
+const SUPPORTED_WORKS = [
+  ["Ovid", "Metamorphoses"],
+  ["Vergil", "Aeneid"],
+];
+
 interface HypotacticParsedJson {
   works: HypotacticWork[];
   license: string;
@@ -230,6 +235,15 @@ function processBookAndLineWork(
   };
 }
 
+function isSupportedWork(author: string, title: string): boolean {
+  for (const [supportedAuthor, supportedTitle] of SUPPORTED_WORKS) {
+    if (author === supportedAuthor && title === supportedTitle) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function processHypotactic(): ProcessedWork2[] {
   const root = envVar("HYPOTACTIC_ROOT");
   const files = fs.readdirSync(root);
@@ -244,7 +258,7 @@ export function processHypotactic(): ProcessedWork2[] {
     for (const work of works) {
       const author = work.works[0].author.replace(/[^a-zA-Z0-9]/g, "_");
       const title = work.works[0].title.replace(/[^a-zA-Z0-9]/g, "_");
-      if (author !== "Ovid" || title !== "Metamorphoses") {
+      if (!isSupportedWork(author, title)) {
         continue;
       }
       // Uncomment to write debug files.
