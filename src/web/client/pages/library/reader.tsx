@@ -39,8 +39,11 @@ import {
 } from "@/web/client/pages/library/base_reader";
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
 import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
-import { SvgIcon } from "@/web/client/components/generic/icons";
-import { usePersistedValue } from "@/web/client/utils/hooks/persisted_state";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
+import {
+  usePersistedState,
+  usePersistedValue,
+} from "@/web/client/utils/hooks/persisted_state";
 import {
   navigateToSection,
   type PaginatedWork,
@@ -590,6 +593,26 @@ function JumpToSection() {
   );
 }
 
+function macronStorageKey(workId: string): string {
+  return `macronButton-${workId}`;
+}
+
+function MacronButton(props: { id: string }) {
+  const id = macronStorageKey(props.id);
+  const [on, setOn] = usePersistedState<boolean>(false, id);
+
+  return (
+    <IconButton className="menuIcon" onClick={() => setOn((o) => !o)}>
+      <SvgIcon
+        pathD={SvgIcon.MacronIcon}
+        viewBox="0 14 24 24"
+        fontSize="small"
+        offState={!on}
+      />
+    </IconButton>
+  );
+}
+
 function WorkNavigationBar(props: {
   page: number;
   work: PaginatedWork;
@@ -598,6 +621,7 @@ function WorkNavigationBar(props: {
   const { nav } = Router.useRouter();
   const navBarRef = React.useRef<HTMLDivElement>(null);
   const { page, work } = props;
+  const hasMacra = work.info.attribution === "hypotactic";
 
   const changePage = React.useCallback(
     (offset: number) => {
@@ -632,7 +656,7 @@ function WorkNavigationBar(props: {
       <span
         style={{ flexGrow: 1, textAlign: "center" }}
         className="text sm light">
-        {(work.info.shortTitle ?? work.info.title) + " "}
+        <span>{(work.info.shortTitle ?? work.info.title) + " "}</span>
         <JumpToSection />
         <CopyLinkTooltip
           forwarded={TooltipNavIcon}
@@ -640,6 +664,7 @@ function WorkNavigationBar(props: {
           link={window.location.href}
           placement="bottom"
         />
+        {hasMacra && <MacronButton id={work.info.workId} />}
       </span>
       <NavIcon
         Icon={<SvgIcon pathD={SvgIcon.ArrowForward} />}
@@ -666,6 +691,11 @@ export function WorkTextPage(props: {
     () => ({ setDictWord, work }),
     [setDictWord, work]
   );
+  const macronsOn = usePersistedValue<boolean>(
+    false,
+    macronStorageKey(work.info.workId)
+  );
+  const stripMacra = !macronsOn && work.info.attribution === "hypotactic";
 
   const gapSize = (readerMainScale / 100) * 0.65;
   const gap = `${gapSize}em`;
@@ -684,6 +714,7 @@ export function WorkTextPage(props: {
           className="text sm light"
           gridRow={gridRow}
           content={content}
+          stripMacra={stripMacra}
         />
       );
       continue;
@@ -716,7 +747,12 @@ export function WorkTextPage(props: {
             highlighted={shouldHighlight}
           />
         </span>
-        <WorkTextColumn gridRow={gridRow} id={idLabel} content={content} />
+        <WorkTextColumn
+          gridRow={gridRow}
+          id={idLabel}
+          content={content}
+          stripMacra={stripMacra}
+        />
       </React.Fragment>
     );
     i++;
@@ -748,6 +784,7 @@ function WorkTextColumn(props: {
   gridRow: number;
   id?: string;
   className?: string;
+  stripMacra: boolean;
   content: XmlNode<ProcessedWorkContentNodeType>;
 }) {
   return (
@@ -756,7 +793,7 @@ function WorkTextColumn(props: {
       id={props.id}
       className={props.className}>
       <span style={{ whiteSpace: "normal" }}>
-        {displayForLibraryChunk(props.content)}
+        {displayForLibraryChunk(props.content, props.stripMacra)}
       </span>
       {
         "\n" /* Add a newline out of the `whiteSpace: normal` so copy / paste works correctly on Firefox. */
@@ -1010,13 +1047,17 @@ function TextNote(props: { node: XmlNode }) {
 
 function displayForLibraryChunk(
   root: XmlNode<ProcessedWorkContentNodeType>,
+  stripMacra: boolean,
   key?: number
 ): JSX.Element {
   const children = root.children.map((child, i) => {
     if (typeof child === "string") {
-      return <LatLinkify input={child} key={i} />;
+      const stripped = stripMacra
+        ? child.replace(/[\u0304\u0305]/g, "")
+        : child;
+      return <LatLinkify input={stripped} key={i} />;
     }
-    return displayForLibraryChunk(child, i);
+    return displayForLibraryChunk(child, stripMacra, i);
   });
   if (root.name === "note") {
     return <TextNote key={key} node={root} />;

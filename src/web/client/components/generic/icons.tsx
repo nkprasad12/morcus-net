@@ -1,3 +1,5 @@
+import { checkPresent } from "@/common/assert";
+import { safeParseInt } from "@/common/misc_utils";
 import {
   AriaProps,
   type ClickableCoreProps,
@@ -7,21 +9,41 @@ import { type PropsWithChildren } from "react";
 interface SvgIconProps extends ClickableCoreProps {
   pathD: string;
   fontSize?: "small";
+  viewBox?: string;
+  opacity?: number;
+  offState?: boolean;
 }
 export function SvgIcon(props: SvgIconProps) {
   const fontSize = props.fontSize === "small" ? "1.25rem" : "1.5rem";
   const className = ["svgIcon"].concat(props.className || []).join(" ");
+  const viewBox = props.viewBox || "0 0 24 24";
+  const [x, y, dx, dy] = viewBox
+    .split(" ")
+    .map((n) => checkPresent(safeParseInt(n)));
   return (
     <svg
       className={className}
-      viewBox="0 0 24 24"
+      viewBox={viewBox}
       focusable="false"
       fontSize={fontSize}
       style={props.style}
+      fillOpacity={props.opacity}
       onClick={props.onClick}
+      width={24}
+      height={24}
       aria-hidden="true"
       aria-label={props["aria-label"]}>
       <path d={props.pathD} />
+      {props.offState && (
+        <line
+          x1={x}
+          x2={x + dx}
+          y1={y}
+          y2={y + dy}
+          stroke="currentColor"
+          strokeWidth="2"
+        />
+      )}
     </svg>
   );
 }
@@ -71,6 +93,8 @@ export namespace SvgIcon {
     "M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-6h2v6zm0-8h-2V7h2v2z";
   export const OfflineEnabled =
     "M19.35 10.04C18.67 6.59 15.64 4 12 4c-1.48 0-2.85.43-4.01 1.17l1.46 1.46C10.21 6.23 11.08 6 12 6c3.04 0 5.5 2.46 5.5 5.5v.5H19c1.66 0 3 1.34 3 3 0 1.13-.64 2.11-1.56 2.62l1.45 1.45C23.16 18.16 24 16.68 24 15c0-2.64-2.05-4.78-4.65-4.96M3 5.27l2.75 2.74C2.56 8.15 0 10.77 0 14c0 3.31 2.69 6 6 6h11.73l2 2L21 20.73 4.27 4zM7.73 10l8 8H6c-2.21 0-4-1.79-4-4s1.79-4 4-4z";
+  export const MacronIcon =
+    "M24 27.10Q24 28 23.18 29.32Q22.35 30.65 20.95 31.90Q19.55 33.15 17.70 34.02Q15.85 34.90 13.85 34.90Q12.95 34.90 11.95 34.60Q10.95 34.30 10 33.73Q9.05 33.15 8.30 32.33Q7.55 31.50 7.20 30.45Q6.90 30.75 6.47 31.45Q6.05 32.15 5.55 32.88Q5.05 33.60 4.45 34.13Q3.85 34.65 3.20 34.65Q2.55 34.65 2.13 33.98Q1.70 33.30 1.45 32.48Q1.20 31.65 1.10 30.90Q1 30.15 1 30.05Q1 29.45 1.35 27.77Q1.70 26.10 2.40 24.30Q3.10 22.50 4.18 21.10Q5.25 19.70 6.70 19.70Q7.25 19.70 7.43 20.18Q7.60 20.65 7.60 21.10L7.60 22.60Q7.85 22.80 8.13 22.88Q8.40 22.95 8.63 23.07Q8.85 23.20 8.98 23.45Q9.10 23.70 9.10 24.25Q9.10 24.60 9.05 24.88Q9 25.15 9 25.40Q9 26.70 9.20 27.95Q9.40 29.20 10 30.18Q10.60 31.15 11.65 31.77Q12.70 32.40 14.45 32.40Q16.65 32.40 18.18 31.48Q19.70 30.55 20.73 29.42Q21.75 28.30 22.35 27.38Q22.95 26.45 23.35 26.45Q24 26.45 24 27.10M6.45 24.90Q6.45 24.70 6.35 24.52Q6.25 24.35 6.25 24.20Q6.25 24 6.35 23.85Q6.45 23.70 6.45 23.45Q6.45 23.30 6.35 23.23Q6.25 23.15 6.25 23.05Q5.80 23.15 5.33 23.90Q4.85 24.65 4.43 25.65Q4 26.65 3.75 27.67Q3.50 28.70 3.50 29.35Q3.50 29.70 3.70 30.50Q3.90 31.30 4.15 31.55Q5 29.80 5.73 28.15Q6.45 26.50 6.45 24.90M12.75 14.30Q12.70 14.55 11.93 14.77Q11.15 15 9.98 15.20Q8.80 15.40 7.40 15.55Q6 15.70 4.73 15.82Q3.45 15.95 2.50 16Q1.55 16.05 1.25 16.05Q0.60 16.05 0.30 15.67Q0 15.30 0 14.85Q0 14.60 0.20 14Q0.40 13.40 0.80 13.40Q1.05 13.40 1.20 13.60Q1.35 13.80 1.55 13.85Q3.80 13.85 5.98 13.65Q8.15 13.45 10.50 13.45Q10.80 13.45 11.18 13.50Q11.55 13.55 11.88 13.65Q12.20 13.75 12.45 13.90Q12.70 14.05 12.75 14.30Z";
 }
 
 interface IconButtonProps extends ClickableCoreProps {
