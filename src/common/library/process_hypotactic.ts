@@ -22,6 +22,8 @@ const AUTHOR_REMAPPING = new Map<string, string>([["Ovid", "P. Ovidius Naso"]]);
 const SUPPORTED_WORKS = [
   ["Ovid", "Metamorphoses"],
   ["Vergil", "Aeneid"],
+  ["Vergil", "Eclogues"],
+  ["Vergil", "Georgics"],
 ];
 
 interface HypotacticParsedJson {
@@ -199,11 +201,15 @@ function processBookAndLineWork(
     children: [],
   };
   const title = fullWork.works[0].title;
+  const unpluralizedTitle = title.slice(
+    0,
+    title.endsWith("s") ? -1 : title.length
+  );
   const rows: ProcessedWork2["rows"] = [];
   for (const work of fullWork.works) {
     assertEqual(title, work.title);
     for (const poem of work.poems) {
-      assert(poem.title.startsWith(title));
+      assert(poem.title.startsWith(unpluralizedTitle));
       const bookId = checkPresent(
         safeParseInt(poem.title.substring(title.length).trim())
       ).toString();
