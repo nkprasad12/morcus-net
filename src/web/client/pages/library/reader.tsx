@@ -129,10 +129,13 @@ interface ReaderState {
   hasTooltip: React.MutableRefObject<Set<number>>;
   urlId?: string;
   highlightRef?: React.RefObject<HTMLSpanElement>;
+  hideLabels: boolean;
+  setHideLabels?: (hide: boolean) => void;
 }
 
 const ReaderContext = React.createContext<ReaderState>({
   hasTooltip: { current: new Set<number>() },
+  hideLabels: false,
 });
 
 interface WorkColumnContextType {
@@ -169,6 +172,8 @@ export function ReadingPage() {
   );
   const [overlayOpacity, setOverlayOpacity] = useState(0);
   const [swipeDir, setSwipeDir] = useState<SwipeDirection>("Left");
+  const [hideLabels, setHideLabels] = useState<boolean>(false);
+
   const hasTooltip = React.useRef<Set<number>>(new Set<number>());
   const highlightRef = React.useRef<HTMLSpanElement>(null);
 
@@ -253,7 +258,8 @@ export function ReadingPage() {
   }, [currentPage]);
 
   return (
-    <ReaderContext.Provider value={{ hasTooltip, urlId, highlightRef }}>
+    <ReaderContext.Provider
+      value={{ hasTooltip, urlId, highlightRef, hideLabels, setHideLabels }}>
       <BaseReader<WorkColumnProps, CustomTabs, SidebarProps>
         MainColumn={WorkColumn}
         ExtraSidebarContent={Sidebar}
@@ -616,6 +622,24 @@ function MacronButton(props: { id: string }) {
   );
 }
 
+function LabelsButton() {
+  const { hideLabels, setHideLabels } = React.useContext(ReaderContext);
+
+  return (
+    <IconButton
+      className="menuIcon"
+      onClick={() => setHideLabels?.(!hideLabels)}
+      aria-label="toggle labels in text">
+      <SvgIcon
+        pathD={SvgIcon.LabelsIcon}
+        viewBox="0 8 33 45"
+        fontSize="small"
+        offState={hideLabels}
+      />
+    </IconButton>
+  );
+}
+
 function WorkNavigationBar(props: {
   page: number;
   work: PaginatedWork;
@@ -682,6 +706,7 @@ function WorkNavigationBar(props: {
           link={window.location.href}
           placement="bottom"
         />
+        <LabelsButton />
         {hasMacra && <MacronButton id={work.info.workId} />}
       </span>
       <NavIcon
@@ -958,7 +983,7 @@ function WorkChunkHeader(props: {
   latent?: boolean;
   highlighted?: boolean;
 }) {
-  const { hasTooltip } = React.useContext(ReaderContext);
+  const { hasTooltip, hideLabels } = React.useContext(ReaderContext);
   const { route } = Router.useRouter();
 
   const url = RouteInfo.toLink(
@@ -970,22 +995,24 @@ function WorkChunkHeader(props: {
   );
 
   return (
-    <CopyLinkTooltip
-      forwarded={React.forwardRef<HTMLSpanElement>(
-        workSectionHeader(props.text, props.latent, props.highlighted)
-      )}
-      idToEdit={props.idLabel}
-      message={props.blurb}
-      placement="right"
-      link={url}
-      visibleListener={(visible) => {
-        if (visible) {
-          hasTooltip.current.add(props.chunkArrayIndex);
-        } else {
-          hasTooltip.current.delete(props.chunkArrayIndex);
-        }
-      }}
-    />
+    !hideLabels && (
+      <CopyLinkTooltip
+        forwarded={React.forwardRef<HTMLSpanElement>(
+          workSectionHeader(props.text, props.latent, props.highlighted)
+        )}
+        idToEdit={props.idLabel}
+        message={props.blurb}
+        placement="right"
+        link={url}
+        visibleListener={(visible) => {
+          if (visible) {
+            hasTooltip.current.add(props.chunkArrayIndex);
+          } else {
+            hasTooltip.current.delete(props.chunkArrayIndex);
+          }
+        }}
+      />
+    )
   );
 }
 
