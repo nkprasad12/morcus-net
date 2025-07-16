@@ -12,6 +12,10 @@ describe("Hypotactic Library Processing", () => {
     // The fake data has 2 books of 2 lines each.
     expect(work.pages).toHaveLength(2);
     expect(work.rows).toHaveLength(4);
+    expect(work.rows[0][0]).toEqual(["1", "1"]);
+    expect(work.rows[1][0]).toEqual(["1", "2"]);
+    expect(work.rows[2][0]).toEqual(["2", "1"]);
+    expect(work.rows[3][0]).toEqual(["2", "2"]);
   });
 
   test("processes Book / Poem / Line work correctly", async () => {

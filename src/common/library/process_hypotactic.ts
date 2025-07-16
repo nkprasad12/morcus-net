@@ -20,10 +20,14 @@ const KNOWN_KEYS = new Set([LICENSE_KEY, CREDIT_KEY]);
 const AUTHOR_REMAPPING = new Map<string, string>([["Ovid", "P. Ovidius Naso"]]);
 
 const SUPPORTED_WORKS = [
+  ["Lucan", "Bellum_Civile"],
   ["Horace", "Epistulae"],
   ["Horace", "Odes"],
   ["Horace", "Sermones"],
   ["Ovid", "Metamorphoses"],
+  ["Statius", "Achilleid"],
+  ["Statius", "Silvae"],
+  ["Statius", "Thebaid"],
   ["Vergil", "Aeneid"],
   ["Vergil", "Eclogues"],
   ["Vergil", "Georgics"],
