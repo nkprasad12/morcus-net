@@ -1,0 +1,235 @@
+{
+    "licence": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "scansion credit": "David Chamberlain; June 2025; hypotactic.com; davidc@uoregon.edu",
+    "Horace": {
+        "Odes": {
+            "Odes 1": [
+                {
+                    "poem metre": "asc1",
+                    "poem title": "",
+                    "poem number": "1",
+                    "poem content": [
+                        {
+                            "line number": "1",
+                            "metre": "asc1",
+                            "segments": [
+                                {
+                                    "speaker": "",
+                                    "words": [
+                                        {
+                                            "text": "Maecēnās",
+                                            "syllables": [
+                                                {
+                                                    "text": "Mae",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "cē",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "nās",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "atavīs",
+                                            "syllables": [
+                                                {
+                                                    "text": "a",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "ta",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "vīs",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "ēdite",
+                                            "syllables": [
+                                                {
+                                                    "text": "ē",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "di",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "te",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "rēgibus,",
+                                            "syllables": [
+                                                {
+                                                    "text": "rē",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "gi",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "bus,",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "poem metre": "sapadon",
+                    "poem title": "",
+                    "poem number": "2",
+                    "poem content": [
+                        {
+                            "line number": "1",
+                            "metre": "sapadon",
+                            "stanza": "1",
+                            "segments": [
+                                {
+                                    "speaker": "",
+                                    "words": [
+                                        {
+                                            "text": "Jam",
+                                            "syllables": [
+                                                {
+                                                    "text": "Jam",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "satis",
+                                            "syllables": [
+                                                {
+                                                    "text": "sa",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "tis",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "terrīs",
+                                            "syllables": [
+                                                {
+                                                    "text": "ter",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "rīs",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "nivis",
+                                            "syllables": [
+                                                {
+                                                    "text": "ni",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "vis",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "atque",
+                                            "syllables": [
+                                                {
+                                                    "text": "at",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "que",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "dīrae",
+                                            "syllables": [
+                                                {
+                                                    "text": "dī",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "rae",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+        }
+    }
+}

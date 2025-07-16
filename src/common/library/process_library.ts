@@ -190,6 +190,13 @@ export function processLibrary(
     .map((a) => a[0]);
   const translationDataById = new Map<string, TranslationInfo>();
 
+  for (const work of processHypotactic()) {
+    const workId = work.info.workId;
+    work.info = decorateDocumentInfo(work.info);
+    const outputPath = writeWorkFile(work, outputDir, workId);
+    const metadata = extractWorkMetadata(workId, work.info);
+    index[workId] = [outputPath, metadata];
+  }
   for (const workPath of sortedWorks) {
     // We should use the Perseus URN instead.
     const workId = pathToId(workPath);
@@ -228,13 +235,6 @@ export function processLibrary(
       isTranslation,
       translationId,
     });
-    index[workId] = [outputPath, metadata];
-  }
-  for (const work of processHypotactic()) {
-    const workId = work.info.workId;
-    work.info = decorateDocumentInfo(work.info);
-    const outputPath = writeWorkFile(work, outputDir, workId);
-    const metadata = extractWorkMetadata(workId, work.info);
     index[workId] = [outputPath, metadata];
   }
   // TODO: We should verify here that there are no duplicates.

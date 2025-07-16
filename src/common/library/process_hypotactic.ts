@@ -20,6 +20,9 @@ const KNOWN_KEYS = new Set([LICENSE_KEY, CREDIT_KEY]);
 const AUTHOR_REMAPPING = new Map<string, string>([["Ovid", "P. Ovidius Naso"]]);
 
 const SUPPORTED_WORKS = [
+  ["Horace", "Epistulae"],
+  ["Horace", "Odes"],
+  ["Horace", "Sermones"],
   ["Ovid", "Metamorphoses"],
   ["Vergil", "Aeneid"],
   ["Vergil", "Eclogues"],
@@ -192,6 +195,82 @@ function recombineWorks(data: HypotacticParsedJson[]): HypotacticParsedJson[] {
   return groupedWorks.map((works) => ({ works, license, credit }));
 }
 
+function extractInfo(fullWork: HypotacticParsedJson): DocumentInfo {
+  const title = fullWork.works[0].title;
+  const author = fullWork.works[0].author;
+  return {
+    title,
+    author: AUTHOR_REMAPPING.get(author) ?? author,
+    workId: `hypotactic_${title}_${author}`,
+    attribution: "hypotactic",
+  };
+}
+
+function processPoemContent(
+  allContent: HypotacticPoemContent[],
+  parentId: string[]
+): ProcessedWork2["rows"] {
+  return allContent.map((content) => {
+    const lineId = parentId.concat([content.line.trim()]);
+    assertEqual(content.segments.length, 1);
+    assertEqual(content.segments[0].speaker, "");
+    const lineText = content.segments[0].text.normalize("NFD");
+    return [lineId, new XmlNode("span", [], [lineText])];
+  });
+}
+
+function hasMultiPoem(fullWork: HypotacticParsedJson): boolean {
+  return fullWork.works.some((work) => work.poems.length > 1);
+}
+
+function processBookPoemAndLineWork(
+  fullWork: HypotacticParsedJson
+): ProcessedWork2 {
+  const pages: ProcessedWork2["pages"] = [];
+  const navTreeRoot: NavTreeNode = {
+    id: [],
+    children: [],
+  };
+  const info = extractInfo(fullWork);
+  const title = info.title;
+  const unpluralizedTitle = title.slice(
+    0,
+    title.endsWith("s") ? -1 : title.length
+  );
+  const rows: ProcessedWork2["rows"] = [];
+  for (const work of fullWork.works) {
+    assertEqual(title, work.title);
+    const bookId = checkPresent(
+      safeParseInt(work.poems[0].title.substring(title.length).trim())
+    ).toString();
+    const poemNavChildren: NavTreeNode[] = [];
+    navTreeRoot.children.push({ id: [bookId], children: poemNavChildren });
+    for (const poem of work.poems) {
+      assert(poem.title.startsWith(unpluralizedTitle));
+      assertEqual(
+        bookId,
+        checkPresent(
+          safeParseInt(poem.title.substring(title.length).trim())
+        ).toString()
+      );
+      const poemNumber = poem.poemNumber.trim();
+      assert(poemNumber.length > 0);
+      const poemId = [bookId, poemNumber];
+      poemNavChildren.push({ id: poemId, children: [] });
+      const pageStart = rows.length;
+      rows.push(...processPoemContent(poem.content, poemId));
+      pages.push({ id: poemId, rows: [pageStart, rows.length] });
+    }
+  }
+  return {
+    info,
+    textParts: ["book", "poem", "line"],
+    rows,
+    pages,
+    navTree: navTreeRoot,
+  };
+}
+
 function processBookAndLineWork(
   fullWork: HypotacticParsedJson
 ): ProcessedWork2 {
@@ -200,7 +279,8 @@ function processBookAndLineWork(
     id: [],
     children: [],
   };
-  const title = fullWork.works[0].title;
+  const info = extractInfo(fullWork);
+  const title = info.title;
   const unpluralizedTitle = title.slice(
     0,
     title.endsWith("s") ? -1 : title.length
@@ -215,23 +295,10 @@ function processBookAndLineWork(
       ).toString();
       navTreeRoot.children.push({ id: [bookId], children: [] });
       const pageStart = rows.length;
-      for (const content of poem.content) {
-        const lineId = [bookId, content.line.trim()];
-        assertEqual(content.segments.length, 1);
-        assertEqual(content.segments[0].speaker, "");
-        const lineText = content.segments[0].text.normalize("NFD");
-        rows.push([lineId, new XmlNode("span", [], [lineText])]);
-      }
+      rows.push(...processPoemContent(poem.content, [bookId]));
       pages.push({ id: [bookId], rows: [pageStart, rows.length] });
     }
   }
-  const author = fullWork.works[0].author;
-  const info: DocumentInfo = {
-    title,
-    author: AUTHOR_REMAPPING.get(author) ?? author,
-    workId: `hypotactic_${title}_${author}`,
-    attribution: "hypotactic",
-  };
   return {
     info,
     textParts: ["book", "line"],
@@ -265,6 +332,10 @@ export function processHypotactic(): ProcessedWork2[] {
       const author = work.works[0].author.replace(/[^a-zA-Z0-9]/g, "_");
       const title = work.works[0].title.replace(/[^a-zA-Z0-9]/g, "_");
       if (!isSupportedWork(author, title)) {
+        continue;
+      }
+      if (hasMultiPoem(work)) {
+        processedWorks.push(processBookPoemAndLineWork(work));
         continue;
       }
       // Uncomment to write debug files.
