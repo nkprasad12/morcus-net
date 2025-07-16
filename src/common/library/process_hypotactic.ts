@@ -32,6 +32,87 @@ const SUPPORTED_WORKS = [
   ["Vergil", "Eclogues"],
   ["Vergil", "Georgics"],
 ];
+const UNSUPPORTED_WORKS = [
+  ["Tibullus", "Elegies_1"],
+  ["Tibullus", "Messala_Encomium__pseudo_Tibullus_"],
+  ["Plautus", "Amphitruo"],
+  ["Plautus", "Asinaria"],
+  ["Plautus", "Aulularia"],
+  ["Plautus", "Bacchides"],
+  ["Plautus", "Captivi"],
+  ["Plautus", "Casina"],
+  ["Plautus", "Cistellaria"],
+  ["Plautus", "Curculio"],
+  ["Plautus", "Epidicus"],
+  ["Plautus", "Menaechmi"],
+  ["Plautus", "Mercator"],
+  ["Plautus", "Miles_Gloriosus"],
+  ["Plautus", "Mostellaria"],
+  ["Plautus", "Persa"],
+  ["Plautus", "Poenulus"],
+  ["Plautus", "Pseudolus"],
+  ["Plautus", "Rudens"],
+  ["Plautus", "Stichus"],
+  ["Plautus", "Trinummus"],
+  ["Plautus", "Truculentus"],
+  ["Manilius", "Astronomica_1"],
+  ["Catullus", "Poems"],
+  ["Columella", "De_Re_Rustica_10"],
+  ["Phaedrus", "Fabulae_1"],
+  ["Phaedrus", "Fabulae_Appendix"],
+  ["Seneca", "Agamemnon"],
+  ["Seneca", "Hercules_Furens"],
+  ["Seneca", "Hercules_Oetaeus"],
+  ["Seneca", "Medea"],
+  ["Seneca", "Octavia"],
+  ["Seneca", "Oedipus"],
+  ["Seneca", "Phaedra"],
+  ["Seneca", "Phoenissae"],
+  ["Seneca", "Thyestes"],
+  ["Seneca", "Troades"],
+  ["Lucretius", "De_Rerum_Natura_1"],
+  ["Juvenal", "Satires_1"],
+  ["Ovid", "Amores"],
+  ["Ovid", "Ars_Amatoria"],
+  ["Ovid", "Remedia_Amoris"],
+  ["Ovid", "Tristia"],
+  ["Ovid", "Fasti"],
+  ["Ovid", "Epistulae_ex_Ponto"],
+  ["Ovid", "Ibis"],
+  ["Ovid", "Heroides"],
+  ["Ovid", "Medicamina_Faciei_Feminae"],
+  ["Ovid", "Consolatio_Liviae_and_Nux__pseudo_Ovid_"],
+  ["Ovid", "Halieutica__pseudo_Ovid_"],
+  ["Valerius_Flaccus", "Argonautica_1"],
+  ["Calpurnius_Siculus", "Eclogues"],
+  ["Petronius", "Bellum_Civile"],
+  ["Petronius", "Other_Poems"],
+  ["Propertius", "Elegies_1"],
+  ["Cicero", "Aratea"],
+  ["Persius", "Satires"],
+  ["Silius_Italicus", "Punica_1"],
+  ["Grattius", "Cynegetica"],
+  ["Germanicus", "Aratea"],
+  ["Martial", "Epigrams_1"],
+  ["Martial", "De_Spectaculis"],
+  ["Ennius", "Annales_Fragments"],
+  ["Horace", "Epodes"],
+  ["Horace", "Ars_Poetica"],
+  ["Unknown", "Laus_Pisonis"],
+  ["Unknown", "Appendix_Vergiliana"],
+  ["Unknown", "Priapea"],
+  ["Unknown", "Catonis_Disticha"],
+  ["Unknown", "Ilias_Latina"],
+  ["Unknown", "Messala_Encomium__ps__Tibullus_"],
+  ["Unknown", "Halieutica__ps__Ovid_"],
+  ["Unknown", "Consolatio_Liviae_and_Nux__ps__Ovid_"],
+  ["Terence", "Adelphoe"],
+  ["Terence", "Andria"],
+  ["Terence", "Eunuchus"],
+  ["Terence", "Heauton_Timoroumenos"],
+  ["Terence", "Hecyra"],
+  ["Terence", "Phormio"],
+];
 
 interface HypotacticParsedJson {
   works: HypotacticWork[];
@@ -321,6 +402,15 @@ function isSupportedWork(author: string, title: string): boolean {
   return false;
 }
 
+function isUnsupportedWork(author: string, title: string): boolean {
+  for (const [unsupportedAuthor, unsupportedTitle] of UNSUPPORTED_WORKS) {
+    if (author === unsupportedAuthor && title === unsupportedTitle) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export function processHypotactic(): ProcessedWork2[] {
   const root = envVar("HYPOTACTIC_ROOT");
   const files = fs.readdirSync(root);
@@ -336,6 +426,7 @@ export function processHypotactic(): ProcessedWork2[] {
       const author = work.works[0].author.replace(/[^a-zA-Z0-9]/g, "_");
       const title = work.works[0].title.replace(/[^a-zA-Z0-9]/g, "_");
       if (!isSupportedWork(author, title)) {
+        assert(isUnsupportedWork(author, title));
         continue;
       }
       if (hasMultiPoem(work)) {
