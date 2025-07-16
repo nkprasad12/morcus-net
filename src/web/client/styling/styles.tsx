@@ -619,6 +619,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       margin: "8px",
       padding: "8px",
       backgroundColor: Solarized.base1 + "32",
+      border: "2px solid",
+      borderColor: Solarized.base1 + "48",
       display: "block",
       textTransform: "capitalize",
       overflowWrap: "break-word",
