@@ -178,6 +178,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundColor: theme.appBar,
       color: theme.buttonText,
     },
+    ".button.compact": {
+      padding: "3px 6px",
+      fontSize: FontSizes.TERTIARY,
+    },
     ".button.simple": {
       backgroundColor,
     },

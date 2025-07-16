@@ -173,6 +173,26 @@ export function LatLinkify(props: { input: string }) {
   );
 }
 
+function EmbeddableLink(props: { target: string }) {
+  const [embedOpen, setEmbedOpen] = React.useState<boolean>(false);
+  return (
+    <>
+      <button
+        className="button compact"
+        onClick={() => setEmbedOpen(!embedOpen)}>
+        {embedOpen ? "Close" : "Open"} Embed
+      </button>
+      {embedOpen && (
+        <iframe
+          src={props.target}
+          style={{ width: "100%", height: "500px", border: "none" }}
+          title="Embedded Content"
+        />
+      )}
+    </>
+  );
+}
+
 export interface XmlNodeToJsxArgs {
   highlightId?: string;
   isEmbedded?: boolean;
@@ -255,6 +275,17 @@ export function xmlNodeToJsx(
         text={text || "undefined"}
         key={key}
       />
+    );
+  }
+  if (
+    root.name === "a" &&
+    root.getAttr("href")?.startsWith("https://mateo.uni-mannheim.de")
+  ) {
+    const original = React.createElement(root.name, props, children);
+    return (
+      <span>
+        {original} <EmbeddableLink target={root.getAttr("href")!} />
+      </span>
     );
   }
   const rootId = root.getAttr("id");
