@@ -260,6 +260,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     // Drawer
     "dialog.drawer": {
       margin: 0,
+      marginLeft: "auto",
       maxHeight: "100vh",
       height: "100%",
       // This is animated: see `@starting-style`.
@@ -837,7 +838,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
         opacity: 0,
       },
       "dialog[open].drawer": {
-        transform: "translateX(-100%)",
+        transform: "translateX(100%)",
       },
     },
   };

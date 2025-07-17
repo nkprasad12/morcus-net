@@ -115,35 +115,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             }}>
             <LogoImage />
           </div>
-
-          <div
-            style={{ flexGrow: 1, display: isSmall ? "flex" : "none" }}
-            className="text md">
-            <IconButton
-              size={iconSize}
-              aria-label="site pages"
-              aria-controls="menu-appbar"
-              aria-haspopup="true"
-              onClick={() => setDrawerVisible(true)}
-              className="menuIcon">
-              <SvgIcon pathD={SvgIcon.Menu} />
-            </IconButton>
-            <DrawerMenu
-              pages={mainPages}
-              onPageClick={handlePageClick}
-              onClose={() => setDrawerVisible(false)}
-              open={drawerVisible}
-              isCurrentPage={isCurrentPage}
-            />
-          </div>
-          <div
-            style={{
-              marginLeft: "24px",
-              display: isSmall ? "flex" : "none",
-              flexGrow: 1,
-            }}>
-            <LogoImage />
-          </div>
           <div style={{ flexGrow: 1, display: isSmall ? "none" : "flex" }}>
             {mainPages.map((page) => (
               <button
@@ -163,7 +134,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
               </button>
             ))}
           </div>
-          <div>
+          <div style={{ flexGrow: isSmall ? 1 : undefined }}>
             {offlineSettings?.offlineModeEnabled && (
               <IconButton
                 size={iconSize}
@@ -202,6 +173,34 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 <SvgIcon pathD={SvgIcon.Build} />
               </IconButton>
             )}
+          </div>
+          <div
+            style={{
+              marginRight: "24px",
+              display: isSmall ? "flex" : "none",
+              flexGrow: 1,
+            }}>
+            <LogoImage />
+          </div>
+          <div
+            style={{ display: isSmall ? "flex" : "none" }}
+            className="text md">
+            <IconButton
+              size={iconSize}
+              aria-label="site pages"
+              aria-controls="menu-appbar"
+              aria-haspopup="true"
+              onClick={() => setDrawerVisible(true)}
+              className="menuIcon">
+              <SvgIcon pathD={SvgIcon.Menu} />
+            </IconButton>
+            <DrawerMenu
+              pages={mainPages}
+              onPageClick={handlePageClick}
+              onClose={() => setDrawerVisible(false)}
+              open={drawerVisible}
+              isCurrentPage={isCurrentPage}
+            />
           </div>
         </div>
       </Container>
