@@ -217,7 +217,7 @@ export function handleSideTap(
   const edgeDistance = Math.min(position, Math.abs(1 - position));
   if (edgeDistance < 0.075 && listener) {
     const direction = position < 0.5 ? "Right" : "Left";
-    listener(direction, 1);
+    listener(direction, 1, { x: 0.5, y: 0.5 });
   }
 }
 

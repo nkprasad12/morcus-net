@@ -17,12 +17,12 @@ describe("handleSideTap", () => {
   it("invokes the listener on a left tap", () => {
     const listener = jest.fn();
     handleSideTap({ clientX: 20 }, listener);
-    expect(listener).toHaveBeenCalledWith("Right", 1);
+    expect(listener).toHaveBeenCalledWith("Right", 1, expect.anything());
   });
 
   it("invokes the listener on a right tap", () => {
     const listener = jest.fn();
     handleSideTap({ clientX: 400 }, listener);
-    expect(listener).toHaveBeenCalledWith("Left", 1);
+    expect(listener).toHaveBeenCalledWith("Left", 1, expect.anything());
   });
 });

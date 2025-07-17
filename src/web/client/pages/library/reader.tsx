@@ -38,7 +38,11 @@ import {
   TAP_NAV_KEY,
 } from "@/web/client/pages/library/base_reader";
 import { NavHelper, RouteInfo, Router } from "@/web/client/router/router_v2";
-import { MIN_SWIPE_SIZE, SwipeDirection } from "@/web/client/mobile/gestures";
+import {
+  GESTURE_CONSTANTS,
+  MIN_SWIPE_SIZE,
+  SwipeDirection,
+} from "@/web/client/mobile/gestures";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import {
   usePersistedState,
@@ -275,20 +279,25 @@ export function ReadingPage() {
         swipeDir={swipeDir}
         swipeListeners={{
           onSwipeCancel: () => setOverlayOpacity(0),
-          onSwipeProgress: (direction, size) => {
-            if (typeof work === "string" || hasTooltip.current.size > 0) {
+          onSwipeProgress: (direction, size, origin) => {
+            if (
+              typeof work === "string" ||
+              hasTooltip.current.size > 0 ||
+              origin.x > GESTURE_CONSTANTS.RightEdge
+            ) {
               return;
             }
             setSwipeDir(direction);
             const progress = (size - MIN_SWIPE_SIZE) / 0.16;
             setOverlayOpacity(Math.min(progress * progress, 1));
           },
-          onSwipeEnd: (direction, size) => {
+          onSwipeEnd: (direction, size, origin) => {
             if (
               typeof work === "string" ||
               currentPage === undefined ||
               currentPage === -1 ||
-              hasTooltip.current.size > 0
+              hasTooltip.current.size > 0 ||
+              origin.x > GESTURE_CONSTANTS.RightEdge
             ) {
               return;
             }

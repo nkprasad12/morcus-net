@@ -75,7 +75,7 @@ function computeSwipeDetails(
   const maxAbs = Math.max(absDx, absDy);
   const minAbs = Math.min(absDx, absDy);
 
-  const isHorizontal = maxAbs > minAbs * 1.5 && absDx > absDy;
+  const isHorizontal = maxAbs > minAbs * 1.25 && absDx > absDy;
   const isFastEnough = speed > 0.07;
   const isLongEnough = relLength > MIN_SWIPE_SIZE;
   let dir: SwipeDirection | undefined = undefined;
@@ -114,6 +114,10 @@ export function handleTouchEnd(
 const GLOBAL_GESTURE_LISTENERS = singletonOf<Set<SwipeListeners>>(
   () => new Set()
 );
+
+export const GESTURE_CONSTANTS = {
+  RightEdge: 0.85,
+};
 
 export function useSwipeListener(listeners: SwipeListeners) {
   useEffect(() => {

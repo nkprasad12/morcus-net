@@ -7,6 +7,11 @@ import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { Drawer } from "@/web/client/components/generic/overlays";
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
+import {
+  GESTURE_CONSTANTS,
+  useSwipeListener,
+  type SwipeListeners,
+} from "@/web/client/mobile/gestures";
 
 export namespace ResponsiveAppBar {
   export interface Page {
@@ -84,6 +89,18 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
 
   const { route, nav } = Router.useRouter();
   const [drawerVisible, setDrawerVisible] = React.useState<boolean>(false);
+  const swipeListeners: SwipeListeners = React.useMemo(
+    () => ({
+      onSwipeEnd: (direction, _, origin) => {
+        if (direction === "Left" && origin.x > GESTURE_CONSTANTS.RightEdge) {
+          setDrawerVisible(true);
+        }
+      },
+    }),
+    []
+  );
+
+  useSwipeListener(swipeListeners);
 
   const handlePageClick = (path: string) => {
     return () => {
