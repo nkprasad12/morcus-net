@@ -139,7 +139,10 @@ describe("handleTouchEnd", () => {
 
     handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipeEnd).toHaveBeenCalledWith("Left", 0.5);
+    expect(onSwipeEnd).toHaveBeenCalledWith("Left", 0.5, {
+      x: expect.closeTo(0.5119),
+      y: expect.closeTo(0.0012),
+    });
     expect(ref.current).toBeNull();
   });
 
@@ -154,7 +157,11 @@ describe("handleTouchEnd", () => {
 
     handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipeEnd).toHaveBeenCalledWith("Left", expect.closeTo(0.94798));
+    expect(onSwipeEnd).toHaveBeenCalledWith(
+      "Left",
+      expect.closeTo(0.94798),
+      expect.anything()
+    );
     expect(ref.current).toBeNull();
   });
 
@@ -169,7 +176,10 @@ describe("handleTouchEnd", () => {
 
     handleTouchEnd(ref, isSwiping, { onSwipeEnd });
 
-    expect(onSwipeEnd).toHaveBeenCalledWith("Right", 0.5);
+    expect(onSwipeEnd).toHaveBeenCalledWith("Right", 0.5, {
+      x: expect.closeTo(0.011),
+      y: expect.closeTo(0.001),
+    });
     expect(ref.current).toBeNull();
   });
 
@@ -290,10 +300,11 @@ describe("Gesture handling", () => {
         const gestureElement = checkPresent(
           screen.getByText("Swipe Test").parentElement
         );
+        // The touch data for touch start is ignored.
         fireEvent.touchStart(gestureElement, {
-          touches: [{ clientX: clientXes[0], clientY: 400 }],
+          touches: [{ clientX: 1000, clientY: 400 }],
         });
-        for (let i = 1; i < clientXes.length; i++) {
+        for (let i = 0; i < clientXes.length; i++) {
           mockTime += 20; // Simulate time passing
           fireEvent.touchMove(gestureElement, {
             touches: [{ clientX: clientXes[i], clientY: 400 }],
@@ -310,7 +321,7 @@ describe("Gesture handling", () => {
         </SwipeGestureListener>
       );
 
-      simulateTouches([800, 700, 600]);
+      simulateTouches([700, 600]);
 
       expect(mockSwipeProgress).toHaveBeenCalled();
       const direction = mockSwipeProgress.mock.calls[0][0] as SwipeDirection;
@@ -320,6 +331,8 @@ describe("Gesture handling", () => {
       const args = mockSwipeEnd.mock.calls[0];
       expect(args[0]).toBe("Left");
       expect(args[1]).toBeGreaterThan(MIN_SWIPE_SIZE);
+      // The first touch is used in the
+      expect(args[2]).toEqual({ x: 0.7, y: 0.5 });
       expect(mockSwipeCancel).not.toHaveBeenCalled();
     });
 
@@ -330,7 +343,7 @@ describe("Gesture handling", () => {
         </SwipeGestureListener>
       );
 
-      simulateTouches([800, 800, 750, 800]);
+      simulateTouches([800, 750, 800]);
 
       expect(mockSwipeProgress).toHaveBeenCalled();
       expect(mockSwipeEnd).not.toHaveBeenCalled();
