@@ -10,6 +10,7 @@ import { SingleItemStore } from "@/web/client/offline/single_item_store";
 import { isBoolean } from "@/web/utils/rpc/parsing";
 import { SimpleModal } from "@/web/client/components/generic/overlays";
 import { SvgIcon } from "@/web/client/components/generic/icons";
+import { SwipeGestureListener } from "@/web/client/mobile/gestures";
 
 export namespace SinglePageApp {
   export interface Page extends ContentPage {
@@ -86,7 +87,9 @@ export function SinglePageApp(props: SinglePageApp.Props) {
         pages={appBarPages}
         openIssueDialog={() => setShowIssueDialog(true)}
       />
-      <Content usedPages={usedPages} />
+      <SwipeGestureListener>
+        <Content usedPages={usedPages} />
+      </SwipeGestureListener>
     </>
   );
 }

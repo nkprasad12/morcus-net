@@ -21,7 +21,7 @@ import { Footer } from "@/web/client/components/footer";
 import {
   SwipeListener,
   SwipeListeners,
-  useGestureListener,
+  useSwipeListener,
 } from "@/web/client/mobile/gestures";
 import { useWakeLock } from "@/web/client/mobile/wake_lock";
 import { useMediaQuery } from "@/web/client/utils/media_query";
@@ -241,13 +241,16 @@ export function BaseMobileReaderLayout(props: MobileReaderLayoutProps) {
     drawerMinimized,
     setDrawerMinimized,
   } = props;
-  const listeners = useGestureListener(props.swipeListeners);
+  const swipeListeners: SwipeListeners = React.useMemo(
+    () => (props.swipeNavigation ? props.swipeListeners ?? {} : {}),
+    [props.swipeNavigation, props.swipeListeners]
+  );
+  useSwipeListener(swipeListeners);
 
   return (
     <div>
       <div
         className="readerMain"
-        {...(props.swipeNavigation ? listeners : {})}
         onClick={
           props.tapNavigation === true
             ? (e) => handleSideTap(e, props.swipeListeners?.onSwipeEnd)

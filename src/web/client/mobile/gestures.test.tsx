@@ -2,12 +2,19 @@
  * @jest-environment jsdom
  */
 
+import { checkPresent } from "@/common/assert";
 import {
   TouchEndData,
   handleTouchEnd,
   handleTouchMove,
+  MIN_SWIPE_SIZE,
+  SwipeDirection,
+  SwipeGestureListener,
+  SwipeListeners,
+  useSwipeListener,
 } from "@/web/client/mobile/gestures";
-
+import { act, fireEvent, render, screen } from "@testing-library/react";
+import React from "react";
 global.window.innerHeight = 5757;
 global.window.innerWidth = 420;
 
@@ -224,5 +231,110 @@ describe("handleTouchEnd", () => {
 
     expect(onSwipeEnd).not.toHaveBeenCalled();
     expect(ref.current).toBeNull();
+  });
+});
+
+describe("Gesture handling", () => {
+  // Mock Date.now for simulating elapsed time between events
+  const originalDateNow = Date.now;
+  let mockTime = 1000;
+
+  beforeEach(() => {
+    Object.defineProperty(window, "innerWidth", {
+      value: 1000,
+      writable: true,
+    });
+    Object.defineProperty(window, "innerHeight", {
+      value: 800,
+      writable: true,
+    });
+
+    // Mock Date.now to control timing
+    mockTime = 1000;
+    Date.now = jest.fn(() => mockTime);
+  });
+
+  afterEach(() => {
+    // Restore original Date.now
+    Date.now = originalDateNow;
+  });
+
+  describe("SwipeGestureListener", () => {
+    const mockSwipeEnd = jest.fn();
+    const mockSwipeProgress = jest.fn();
+    const mockSwipeCancel = jest.fn();
+
+    const TestComponent = () => {
+      const listeners: SwipeListeners = {
+        onSwipeEnd: mockSwipeEnd,
+        onSwipeProgress: mockSwipeProgress,
+        onSwipeCancel: mockSwipeCancel,
+      };
+      useSwipeListener(listeners);
+
+      return <div>Swipe Test</div>;
+    };
+
+    beforeEach(() => {
+      mockSwipeEnd.mockClear();
+      mockSwipeProgress.mockClear();
+      mockSwipeCancel.mockClear();
+    });
+
+    function simulateTouches(clientXes: number[]) {
+      if (clientXes.length < 2) {
+        throw new Error("At least two clientX values are required");
+      }
+
+      act(() => {
+        const gestureElement = checkPresent(
+          screen.getByText("Swipe Test").parentElement
+        );
+        fireEvent.touchStart(gestureElement, {
+          touches: [{ clientX: clientXes[0], clientY: 400 }],
+        });
+        for (let i = 1; i < clientXes.length; i++) {
+          mockTime += 20; // Simulate time passing
+          fireEvent.touchMove(gestureElement, {
+            touches: [{ clientX: clientXes[i], clientY: 400 }],
+          });
+        }
+        fireEvent.touchEnd(gestureElement);
+      });
+    }
+
+    test("calls back on successful swipes", () => {
+      render(
+        <SwipeGestureListener>
+          <TestComponent />
+        </SwipeGestureListener>
+      );
+
+      simulateTouches([800, 700, 600]);
+
+      expect(mockSwipeProgress).toHaveBeenCalled();
+      const direction = mockSwipeProgress.mock.calls[0][0] as SwipeDirection;
+      expect(direction).toBe("Left");
+
+      expect(mockSwipeEnd).toHaveBeenCalled();
+      const args = mockSwipeEnd.mock.calls[0];
+      expect(args[0]).toBe("Left");
+      expect(args[1]).toBeGreaterThan(MIN_SWIPE_SIZE);
+      expect(mockSwipeCancel).not.toHaveBeenCalled();
+    });
+
+    test("calls back on cancelled swipe", () => {
+      render(
+        <SwipeGestureListener>
+          <TestComponent />
+        </SwipeGestureListener>
+      );
+
+      simulateTouches([800, 800, 750, 800]);
+
+      expect(mockSwipeProgress).toHaveBeenCalled();
+      expect(mockSwipeEnd).not.toHaveBeenCalled();
+      expect(mockSwipeCancel).toHaveBeenCalled();
+    });
   });
 });

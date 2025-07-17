@@ -1,4 +1,5 @@
-import { useRef } from "react";
+import { singletonOf } from "@/common/misc_utils";
+import { useEffect, useMemo, useRef } from "react";
 
 export const MIN_SWIPE_SIZE = 0.04;
 type TouchData = { p: Position; t: number };
@@ -99,4 +100,45 @@ export function handleTouchEnd(
     const onCancel = listeners?.onSwipeCancel;
     onCancel?.();
   }
+}
+
+const GLOBAL_GESTURE_LISTENERS = singletonOf<Set<SwipeListeners>>(
+  () => new Set()
+);
+
+export function useSwipeListener(listeners: SwipeListeners) {
+  useEffect(() => {
+    const allListeners = GLOBAL_GESTURE_LISTENERS.get();
+    if (allListeners.has(listeners)) {
+      return;
+    }
+    allListeners.add(listeners);
+    return () => {
+      allListeners.delete(listeners);
+    };
+  }, [listeners]);
+}
+
+export function SwipeGestureListener(props: React.PropsWithChildren<object>) {
+  const swipeListener: SwipeListeners = useMemo(() => {
+    return {
+      onSwipeEnd: (direction, size) => {
+        GLOBAL_GESTURE_LISTENERS.get().forEach((l) =>
+          l.onSwipeEnd?.(direction, size)
+        );
+      },
+      onSwipeCancel: () => {
+        GLOBAL_GESTURE_LISTENERS.get().forEach((l) => l.onSwipeCancel?.());
+      },
+      onSwipeProgress: (direction, size) => {
+        GLOBAL_GESTURE_LISTENERS.get().forEach((l) =>
+          l.onSwipeProgress?.(direction, size)
+        );
+      },
+    };
+  }, []);
+
+  const listeners = useGestureListener(swipeListener);
+
+  return <div {...listeners}>{props.children}</div>;
 }
