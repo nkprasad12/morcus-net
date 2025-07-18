@@ -643,7 +643,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".terminalNavItem": {
       color: contentTextLightColor,
       textTransform: "capitalize",
-      backgroundColor: Solarized.base1 + "10",
+      backgroundColor: Solarized.base1 + "20",
+      border: `1px solid ${Solarized.base1}80`,
       borderRadius: "4px",
       padding: "2px",
     },

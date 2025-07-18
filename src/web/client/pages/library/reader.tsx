@@ -548,10 +548,12 @@ function HeaderText(props: { data: PaginatedWork; page: number }) {
     const parentId = id.slice(0, i + 1);
     idLabels.push(labelForId(parentId, props.data));
   }
+  const title = props.data.info.shortTitle ?? props.data.info.title;
   return (
     <div
       className="text sm light"
       style={{ textTransform: "capitalize", margin: "0 8px" }}>
+      <div style={{ display: "flex", justifyContent: "center" }}>{title}</div>
       <div style={{ display: "flex", justifyContent: "center" }}>
         {idLabels.join(", ")}
       </div>
