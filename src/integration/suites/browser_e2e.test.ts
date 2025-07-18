@@ -228,7 +228,7 @@ test.describe("main reader", () => {
   test("saves spot on page turns", async ({ page }) => {
     await page.goto("/work/caesar/de_bello_gallico");
     await expect(page.getByText("Gallia").nth(0)).toBeVisible();
-    await page.keyboard.press("ArrowRight");
+    await page.locator(`[aria-label="next section"]`).click();
     await expect(page.getByText("Orgetorix").nth(0)).toBeVisible();
 
     await page.goto("/library");
