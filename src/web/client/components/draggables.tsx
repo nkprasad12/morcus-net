@@ -1,4 +1,4 @@
-import { assertEqual } from "@/common/assert";
+import { assert, assertEqual } from "@/common/assert";
 import { Container } from "@/web/client/components/generic/basics";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import React, {
@@ -152,7 +152,7 @@ export function BottomDrawer(
 ) {
   const { drawerHeight, setDrawerHeight } = props;
   const children = React.Children.toArray(props.children);
-  assertEqual(children.length, 2);
+  assert(1 <= children.length && children.length <= 2);
 
   useEffect(() => {
     const resetDrawer = () =>
@@ -174,6 +174,13 @@ export function BottomDrawer(
     );
   }
 
+  const hasTabs = children.length === 2;
+  const tabsOrGap = hasTabs ? (
+    children[0]
+  ) : (
+    <div className="bgAlt" style={{ height: "20px" }} />
+  );
+
   return (
     <Container
       className={`bgColor ${props.containerClass}`}
@@ -187,16 +194,17 @@ export function BottomDrawer(
           <div className="mobileDragger">
             <div className="draggerPuller" />
           </div>
-          {props.drawerMinimized === false && (
-            <IconButton
-              size="small"
-              className="menuIcon drawerCloser"
-              aria-label="Hide drawer"
-              onClick={() => props.setDrawerMinimized?.(true)}>
-              <SvgIcon pathD={SvgIcon.Close} />
-            </IconButton>
-          )}
-          {children[0]}
+          <IconButton
+            size="small"
+            className="menuIcon drawerCloser"
+            style={{
+              top: `${hasTabs ? 10 : 2}px`,
+            }}
+            aria-label="Hide drawer"
+            onClick={() => props.setDrawerMinimized?.(true)}>
+            <SvgIcon pathD={SvgIcon.Close} />
+          </IconButton>
+          {tabsOrGap}
         </div>
       </DragHelper>
       <Container
@@ -206,7 +214,7 @@ export function BottomDrawer(
         style={{
           height: drawerHeight,
         }}>
-        {children[1]}
+        {children[children.length - 1]}
       </Container>
     </Container>
   );

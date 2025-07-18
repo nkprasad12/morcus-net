@@ -395,6 +395,7 @@ function NarrowScreenLayout(props: ResponsiveLayoutProps) {
   const [drawerHeight, setDrawerHeight] = React.useState<number>(
     window.innerHeight * DRAWER_DEFAULT_HEIGHT
   );
+  const [drawerMinimized, setDrawerMinimized] = React.useState<boolean>(false);
   const classicView = mobileLayout === "Classic" || isEmbedded;
 
   return (
@@ -411,8 +412,9 @@ function NarrowScreenLayout(props: ResponsiveLayoutProps) {
           containerClass="dictRoot"
           drawerHeight={drawerHeight}
           defaultHeightRatio={DRAWER_DEFAULT_HEIGHT}
+          drawerMinimized={drawerMinimized}
+          setDrawerMinimized={setDrawerMinimized}
           setDrawerHeight={setDrawerHeight}>
-          <div className="bgAlt" style={{ height: "16px" }} />
           <div
             style={{ height: "100%", overflowY: "auto", padding: "0px 8px" }}>
             {props.sideContent}
