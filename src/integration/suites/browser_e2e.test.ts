@@ -25,11 +25,15 @@ async function goToTab(
   isMobile: boolean,
   viewport: ViewportSize | null
 ) {
-  if (isMobile || checkPresent(viewport?.width) < 400) {
+  const smallScreen = isMobile || checkPresent(viewport?.width) < 400;
+  if (smallScreen) {
     // Click into the hamburger menu
     await page.getByLabel("site pages").click();
   }
-  await page.locator(`button:text("${tabName}")`).nth(0).click();
+  await page
+    .locator(`button:text("${tabName}")`)
+    .nth(smallScreen ? 1 : 0)
+    .click();
 }
 
 test.describe("general navigation", () => {
