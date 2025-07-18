@@ -5,81 +5,63 @@
 
 import { useCallback, useEffect, useRef } from "react";
 
-const POLL_INTERVAL = 1000 * 60 * 10;
+const EXTENSION_MS = 1000 * 60 * 10;
 
-type Sentinel = WakeLockSentinel | Promise<WakeLockSentinel> | null;
-
-function startWatchdog(
-  sentinelRef: React.MutableRefObject<Sentinel>,
-  lastActionTime: React.MutableRefObject<number>,
-  watchdogActive: React.MutableRefObject<boolean>
-) {
-  watchdogActive.current = true;
-  setTimeout(() => {
-    watchdogActive.current = false;
-    if (sentinelRef.current === null) {
-      return;
-    }
-    const expirationTime = lastActionTime.current + POLL_INTERVAL;
-    if (Date.now() < expirationTime) {
-      startWatchdog(sentinelRef, lastActionTime, watchdogActive);
-      return;
-    }
-    Promise.resolve(sentinelRef.current).then((sentinel) => sentinel.release());
-    sentinelRef.current = null;
-  }, POLL_INTERVAL);
-}
-
-function initialize(
-  sentinelRef: React.MutableRefObject<Sentinel>,
-  lastActionTime: React.MutableRefObject<number>,
-  watchdogActive: React.MutableRefObject<boolean>
-) {
-  const sentinelPromise = navigator?.wakeLock?.request();
-  // Some browsers may not support wake lock.
-  if (sentinelPromise === undefined) {
-    return;
-  }
-  sentinelRef.current = sentinelPromise;
-  sentinelPromise
-    .then((sentinel) => {
-      sentinelRef.current = sentinel;
-      if (!watchdogActive.current) {
-        startWatchdog(sentinelRef, lastActionTime, watchdogActive);
-      }
-    })
-    .catch(() => {
-      sentinelRef.current = null;
-    });
-}
+type Sentinel = Promise<WakeLockSentinel | null>;
 
 export type WakeLockExtender = () => void;
 
+async function requestTimedWakeLock(): Promise<WakeLockSentinel | null> {
+  const wakeLockRequest = navigator?.wakeLock?.request();
+  // Some browsers may not support wake lock.
+  if (wakeLockRequest === undefined) {
+    return null;
+  }
+  try {
+    const sentinel = await wakeLockRequest;
+    setTimeout(() => sentinel.release(), EXTENSION_MS);
+    return sentinel;
+  } catch (error) {
+    return null;
+  }
+}
+
+function releaseLocks(locks: Sentinel[]) {
+  for (const lock of locks) {
+    Promise.resolve(lock).then((sentinel) => sentinel?.release());
+  }
+}
+
 export function useWakeLock(): WakeLockExtender {
-  const wakeLock = useRef<Sentinel>(null);
-  const lastActionTime = useRef<number>(Date.now());
-  const watchdogActive = useRef<boolean>(false);
+  const wakeLocks = useRef<Sentinel[]>([]);
+
+  const cleanup = useCallback(() => {
+    releaseLocks(wakeLocks.current);
+    wakeLocks.current = [];
+  }, []);
+
+  const requestLock = useCallback(() => {
+    const lock = requestTimedWakeLock();
+    releaseLocks(wakeLocks.current);
+    wakeLocks.current = [lock];
+  }, []);
 
   useEffect(() => {
-    initialize(wakeLock, lastActionTime, watchdogActive);
-    return () => {
-      if (wakeLock.current === null) {
-        return;
+    requestLock();
+    // If the Morcus window is moved to the background and then back to the
+    // foreground, we need to re-request the wake lock as if the user came to
+    // the page anew.
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        requestLock();
       }
-      Promise.resolve(wakeLock.current).then((lock) => lock.release());
-      wakeLock.current = null;
     };
-  }, []);
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      cleanup();
+    };
+  }, [cleanup, requestLock]);
 
-  return useCallback(() => {
-    lastActionTime.current = Date.now();
-    if (!watchdogActive.current && wakeLock.current !== null) {
-      // We have the wake lock, but the watchdog has gone to sleep.
-      startWatchdog(wakeLock, lastActionTime, watchdogActive);
-    } else if (wakeLock.current !== null) {
-      // If we don't have the wake lock, then re-initialize. This
-      // will only start the watchdog if needed.
-      initialize(wakeLock, lastActionTime, watchdogActive);
-    }
-  }, []);
+  return requestLock;
 }
