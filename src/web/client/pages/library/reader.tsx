@@ -11,11 +11,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 
 import { useEffect, useState, JSX } from "react";
 import * as React from "react";
-import {
-  areArraysEqual,
-  exhaustiveGuard,
-  safeParseInt,
-} from "@/common/misc_utils";
+import { areArraysEqual, safeParseInt } from "@/common/misc_utils";
 import { ClickableTooltip, CopyLinkTooltip } from "@/web/client/pages/tooltips";
 import {
   SettingsText,
@@ -28,6 +24,7 @@ import {
   DEFAULT_SIDEBAR_TAB_CONFIGS,
   DefaultSidebarTab,
   ReaderInternalTabConfig,
+  ReaderSideTab,
 } from "@/web/client/pages/library/reader_sidebar_components";
 import {
   BaseExtraSidebarTabProps,
@@ -331,24 +328,22 @@ interface SidebarProps {
   translationPage?: number;
 }
 function Sidebar(props: SidebarProps & BaseExtraSidebarTabProps<CustomTabs>) {
-  const tab = props.tab;
   const work = typeof props.work === "string" ? undefined : props.work;
-  switch (tab) {
-    case "Outline":
-      return <>{work && <WorkNavigationSection work={work} />}</>;
-    case "Attribution":
-      return <>{work?.info && <WorkInfo workInfo={work?.info} />}</>;
-    case "Translation":
-      return (
+  return (
+    <>
+      <ReaderSideTab forTab="Outline" currentTab={props.tab}>
+        {work && <WorkNavigationSection work={work} />}
+      </ReaderSideTab>
+      <ReaderSideTab forTab="Attribution" currentTab={props.tab}>
+        {work?.info && <WorkInfo workInfo={work?.info} />}
+      </ReaderSideTab>
+      <ReaderSideTab forTab="Translation" currentTab={props.tab}>
         <div className="text md">
           <TranslationTab {...props} />
         </div>
-      );
-    // case "TextSearch":
-    //   return <>{work && <TextSearchSection work={work} />}</>;
-    default:
-      exhaustiveGuard(tab);
-  }
+      </ReaderSideTab>
+    </>
+  );
 }
 
 function TranslationTab(props: {

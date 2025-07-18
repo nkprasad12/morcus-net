@@ -1,7 +1,6 @@
 import { assertEqual } from "@/common/assert";
 import { Container } from "@/web/client/components/generic/basics";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
-import { ContentBox } from "@/web/client/pages/dictionary/sections";
 import React, {
   useCallback,
   useEffect,
@@ -205,20 +204,9 @@ export function BottomDrawer(
         gutterSize={6}
         innerRef={props.drawerContentRef}
         style={{
-          overflowY: "auto",
           height: drawerHeight,
         }}>
-        <ContentBox
-          isSmall
-          styles={{
-            marginTop: "0px",
-            height: "100%",
-            paddingLeft: "6px",
-            paddingRight: "6px",
-            paddingTop: "2px",
-          }}>
-          {children[1]}
-        </ContentBox>
+        {children[1]}
       </Container>
     </Container>
   );

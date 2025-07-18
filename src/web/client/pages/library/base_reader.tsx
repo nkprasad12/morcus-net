@@ -6,7 +6,6 @@ import {
   DefaultSidebarTab,
   ReaderInternalNavbar,
   ReaderInternalTabConfig,
-  isDefaultSidebarTab,
 } from "@/web/client/pages/library/reader_sidebar_components";
 import React, {
   PropsWithChildren,
@@ -51,7 +50,7 @@ interface SidebarConfig<CustomTabs> {
 }
 /** Configuration for extra tabs to add to the sidebar or drawer. */
 export interface BaseExtraSidebarTabProps<CustomSidebarTab> extends Responsive {
-  tab: CustomSidebarTab;
+  tab: CustomSidebarTab | DefaultSidebarTab;
 }
 /** Properties for the main column. */
 export interface BaseMainColumnProps extends Responsive {
@@ -115,7 +114,6 @@ export function BaseReader<
 
   const sidebarRef = React.useRef<HTMLDivElement>(null);
 
-  const showDefaultTab = isDefaultSidebarTab(sidebarTab);
   const hasCustomTabs = props.ExtraSidebarContent !== undefined;
   const hasCustomTabConfigs = props.sidebarTabConfigs !== undefined;
   assert(
@@ -175,7 +173,7 @@ export function BaseReader<
         tabs={props.sidebarTabConfigs || DEFAULT_SIDEBAR_TAB_CONFIGS}
         location={isScreenSmall ? "Drawer" : undefined}
       />
-      {showDefaultTab ? (
+      <>
         <DefaultReaderSidebarContent
           isSmallScreen={isScreenSmall}
           {...(isScreenSmall && props.showMobileNavSettings
@@ -192,15 +190,14 @@ export function BaseReader<
           setDictWord={onDictWord}
           dictActionMessage={props.dictActionMessage}
         />
-      ) : props.ExtraSidebarContent === undefined ? (
-        <></>
-      ) : (
-        <props.ExtraSidebarContent
-          {...props}
-          tab={sidebarTab}
-          isMobile={isScreenSmall}
-        />
-      )}
+        {props.ExtraSidebarContent && (
+          <props.ExtraSidebarContent
+            {...props}
+            tab={sidebarTab}
+            isMobile={isScreenSmall}
+          />
+        )}
+      </>
     </BaseLayout>
   );
 }

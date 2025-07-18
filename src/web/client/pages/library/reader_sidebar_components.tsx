@@ -4,11 +4,11 @@ import {
   NavIcon,
   SettingsText,
 } from "@/web/client/pages/library/reader_utils";
-import { exhaustiveGuard } from "@/common/misc_utils";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 import { StyleContext } from "@/web/client/styling/style_context";
 import { useContext, JSX } from "react";
+import { Divider } from "@/web/client/components/generic/basics";
 
 export interface EmbeddedDictionaryProps {
   /** The word to look up in the dictionary, if any. */
@@ -231,15 +231,36 @@ export interface DefaultReaderSidebarContentProps<T>
   setDictWord: (word: string) => unknown;
   dictActionMessage?: string;
 }
-export function DefaultReaderSidebarContent(
-  props: DefaultReaderSidebarContentProps<never>
+
+export function ReaderSideTab<T, U extends T>(
+  props: React.PropsWithChildren<{ forTab: U; currentTab: T }>
 ) {
-  const tab = props.currentTab;
-  switch (tab) {
-    case "Reader settings":
-      return <ReaderSettings {...props} />;
-    case "Dictionary":
-      return (
+  return (
+    <div
+      key={props.forTab}
+      style={{
+        display: props.forTab === props.currentTab ? undefined : "none",
+        overflowY: "auto",
+        padding: "2px 4px 0px",
+        height: "100%",
+      }}>
+      {props.children}
+      <Divider style={{ margin: "8px 0px" }} />
+      <div style={{ height: "2px" }} />
+    </div>
+  );
+}
+
+export function DefaultReaderSidebarContent<T>(
+  props: DefaultReaderSidebarContentProps<T>
+) {
+  const currentTab = props.currentTab;
+  return (
+    <>
+      <ReaderSideTab forTab="Reader settings" currentTab={currentTab}>
+        <ReaderSettings {...props} />
+      </ReaderSideTab>
+      <ReaderSideTab forTab="Dictionary" currentTab={currentTab}>
         <EmbeddedDictionary
           dictWord={props.dictWord}
           setDictWord={(target) => {
@@ -248,8 +269,7 @@ export function DefaultReaderSidebarContent(
           }}
           dictActionMessage={props.dictActionMessage}
         />
-      );
-    default:
-      return exhaustiveGuard(tab);
-  }
+      </ReaderSideTab>
+    </>
+  );
 }

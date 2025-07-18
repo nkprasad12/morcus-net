@@ -413,7 +413,10 @@ function NarrowScreenLayout(props: ResponsiveLayoutProps) {
           defaultHeightRatio={DRAWER_DEFAULT_HEIGHT}
           setDrawerHeight={setDrawerHeight}>
           <div className="bgAlt" style={{ height: "16px" }} />
-          {props.sideContent}
+          <div
+            style={{ height: "100%", overflowY: "auto", padding: "0px 8px" }}>
+            {props.sideContent}
+          </div>
         </BottomDrawer>
       )}
     </>

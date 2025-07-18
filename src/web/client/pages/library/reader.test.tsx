@@ -311,7 +311,7 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
 
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
     expect(findOnScreen("I am a header")).not.toBeNull();
   });
 
@@ -328,7 +328,7 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
 
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
     expect(screen.queryByText("I am a note tooltip")).toBeNull();
     const notes = await screen.findAllByLabelText("toggle note");
     // The second stub is not rendered because we only passed 1 note in the `work`.
@@ -352,7 +352,7 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
 
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
     expect(findOnScreen("Gallia est omnis")).not.toBeNull();
   });
 
@@ -371,7 +371,7 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
 
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
     expect(findOnScreen("Gallia est omnis")).not.toBeNull();
   });
 
@@ -411,7 +411,7 @@ describe("Reading UI", () => {
         <ReadingPage />
       </RouteContext.Provider>
     );
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
 
     expect(screen.queryByText(/Gallia/)).toBeNull();
     expect(screen.queryByText(/divisa/)).not.toBeNull();
@@ -428,7 +428,7 @@ describe("Reading UI", () => {
         <ReadingPage />
       </Router.TestRoot>
     );
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
 
     await user.click(screen.queryByLabelText("next section")!);
 
@@ -448,7 +448,7 @@ describe("Reading UI", () => {
         <ReadingPage />
       </Router.TestRoot>
     );
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
 
     await user.keyboard("[ArrowRight]");
 
@@ -468,7 +468,7 @@ describe("Reading UI", () => {
         <ReadingPage />
       </Router.TestRoot>
     );
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
 
     await user.keyboard("[ArrowLeft]");
 
@@ -488,7 +488,7 @@ describe("Reading UI", () => {
         <ReadingPage />
       </Router.TestRoot>
     );
-    await screen.findByText(/DBG/);
+    await screen.findByText(/^DBG$/);
 
     await user.click(screen.queryByLabelText("previous section")!);
 
