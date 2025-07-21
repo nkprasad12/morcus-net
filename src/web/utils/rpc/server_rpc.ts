@@ -51,12 +51,14 @@ function serverMessage<T>(t: T): ServerMessage<T> {
 async function logApi(
   data: Omit<ApiCallData, "latencyMs">,
   timer: Timer,
-  telemetry: Promise<TelemetryLogger>
+  telemetry: Promise<TelemetryLogger>,
+  userAgent: string | undefined
 ) {
   const finalData = {
     ...data,
     latencyMs: timer.event("end"),
     extras: timer.getEvents(),
+    userAgent,
   };
   (await telemetry).logApiCall(finalData);
 }
@@ -108,13 +110,19 @@ function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
   const route = routeDefinition.route;
   const handler = routeDefinition.handler;
   return (req, res) => {
+    const userAgent = req.header("User-Agent");
     const timer = new Timer();
     console.debug(`[${Date.now() / 1000}] ${route.path}`);
     const inputOrError = extractInput(req, route);
     timer.event("extractInputComplete");
     if (inputOrError instanceof Error) {
       res.status(400).send(inputOrError.message);
-      logApi({ name: route.path, status: 400 }, timer, app.telemetry);
+      logApi(
+        { name: route.path, status: 400 },
+        timer,
+        app.telemetry,
+        userAgent
+      );
       return;
     }
     const [input, rawLength] = inputOrError;
@@ -157,7 +165,7 @@ function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
         if (route.method === "GET") {
           telemetryData.params = { input: JSON.stringify(input) };
         }
-        logApi(telemetryData, timer, app.telemetry);
+        logApi(telemetryData, timer, app.telemetry, userAgent);
       });
   };
 }

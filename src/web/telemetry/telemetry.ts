@@ -24,6 +24,8 @@ export interface ApiCallData {
   outputLength?: number;
   /** Any extra data to log. */
   extras?: { [key: string]: unknown };
+  /** The UserAgent that triggered the request initially. */
+  userAgent?: string;
 }
 
 export interface ClientEventData {

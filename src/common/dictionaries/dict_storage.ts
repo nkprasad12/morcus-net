@@ -62,14 +62,16 @@ export class StoredDict {
         Vowels.haveCompatibleLength(input, orth)
       );
     }
-    extras?.log(`${request}_sqlCandidates`);
+    // TODO: Re-enable this if we run into performance issues.
+    // extras?.log(`${request}_sqlCandidates`);
     if (candidates.length === 0) {
       return [];
     }
 
     const allIds = Array.from(new Set(candidates.map(({ id }) => id)));
     const entryStrings = await this.backing.entriesForIds(allIds);
-    extras?.log(`${request}_entriesFetched`);
+    // TODO: Re-enable this if we run into performance issues.
+    // extras?.log(`${request}_entriesFetched`);
     const results: StoredEntryAndMetadata[] = [];
     for (const { id, entry } of entryStrings) {
       const subsections: Subsection[] = [];

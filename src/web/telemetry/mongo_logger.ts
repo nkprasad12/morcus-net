@@ -19,6 +19,39 @@ const CLIENT_OPTIONS: MongoClientOptions = {
   },
 };
 
+// Crawler list is available from:
+// https://raw.githubusercontent.com/monperrus/crawler-user-agents/master/crawler-user-agents.json
+// For now, we will only check a few.
+const USER_AGENTS = new Set<string>([
+  "Googlebot",
+  "AdsBot-Google",
+  "Slurp",
+  "msnbot",
+  "yandex.com/bots",
+  "Baiduspider",
+  "DuckDuckBot",
+  "bingbot",
+  "GPTBot",
+  "ClaudeBot",
+  "claudebot",
+]);
+const LOWER_USER_AGENTS = new Set<string>(
+  Array.from(USER_AGENTS).map((agent) => agent.toLowerCase())
+);
+
+function isCrawler(userAgent?: string): boolean {
+  if (userAgent === undefined) {
+    return false;
+  }
+  const lowerUserAgent = userAgent.toLowerCase();
+  for (const agent of LOWER_USER_AGENTS) {
+    if (lowerUserAgent.includes(agent)) {
+      return true;
+    }
+  }
+  return false;
+}
+
 export class MongoLogger implements TelemetryLogger {
   static async create(
     uri: string = checkPresent(process.env.MONGODB_URI, "No MongoDB URI set."),
@@ -51,6 +84,9 @@ export class MongoLogger implements TelemetryLogger {
 
   async logApiCall(data: Readonly<ApiCallData>): Promise<void> {
     assert(this.initialized, "MongoLogger was not initialized.");
+    if (isCrawler(data.userAgent)) {
+      return;
+    }
     return this.log(data, API_CALL_COLLECTION);
   }
 

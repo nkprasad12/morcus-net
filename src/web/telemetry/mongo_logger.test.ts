@@ -76,6 +76,19 @@ describe("MongoLogger", () => {
     expect(loggedEvent.timestamp).toBeDefined();
   });
 
+  it("skips log on logApiCall from Bot", async () => {
+    const logger = await MongoLogger.create("foo", "bar");
+
+    await logger.logApiCall({
+      name: "lsDict",
+      status: 200,
+      latencyMs: 4,
+      userAgent: "Googlebot Hello Hi",
+    });
+
+    expect(mockInsertOne).not.toHaveBeenCalled();
+  });
+
   it("logs to database on client event", async () => {
     const logger = await MongoLogger.create("foo", "bar");
     await logger.logClientEvent({ name: "clickEvent" });
