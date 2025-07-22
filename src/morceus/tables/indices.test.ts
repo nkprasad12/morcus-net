@@ -155,6 +155,8 @@ describe("makeEndIndex", () => {
           ]),
         ],
       ]),
+      expect.anything(),
     ]);
+    expect(result[2].map((r) => r.name)).toEqual(["decl1", "a_ae"]);
   });
 });

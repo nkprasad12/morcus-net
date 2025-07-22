@@ -61,7 +61,7 @@ describe("crunchWord", () => {
     ]);
     const config: CruncherConfig = {
       existing: {
-        endsResult: [endings, lookup],
+        endsResult: [endings, lookup, []],
         lemmata,
       },
     };
@@ -166,7 +166,7 @@ describe("MorceusCruncher", () => {
     ]);
     const config: CruncherConfig = {
       existing: {
-        endsResult: [endings, lookup],
+        endsResult: [endings, lookup, []],
         lemmata,
       },
     };

@@ -4,6 +4,7 @@ import type {
 } from "@/morceus/inflection_data_utils";
 import type { IrregularForm, Lemma, Stem } from "@/morceus/stem_parsing";
 import type { EndsResult, InflectionLookup } from "@/morceus/tables/indices";
+import type { InflectionTable } from "@/morceus/tables/templates";
 
 export interface CrunchResult extends InflectionContext {
   lemma: string;
@@ -33,6 +34,8 @@ export interface CruncherTables {
   stemMap: StemMap;
   inflectionLookup: InflectionLookup;
   numerals: Lemma[];
+  rawTables: Map<string, InflectionTable>;
+  rawLemmata: Map<string, Lemma[]>;
 }
 
 export interface CruncherOptions {

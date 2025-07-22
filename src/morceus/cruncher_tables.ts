@@ -1,4 +1,5 @@
-import { arrayMap } from "@/common/data_structures/collect_map";
+import { assert } from "@/common/assert";
+import { arrayMap, arrayMapBy } from "@/common/data_structures/collect_map";
 import { envVar } from "@/common/env_vars";
 import { singletonOf } from "@/common/misc_utils";
 import type {
@@ -14,6 +15,7 @@ import {
   type Stem,
 } from "@/morceus/stem_parsing";
 import { makeEndIndex, type EndIndexRow } from "@/morceus/tables/indices";
+import type { InflectionTable } from "@/morceus/tables/templates";
 import fs from "fs/promises";
 import path from "path";
 import { gzip } from "zlib";
@@ -28,7 +30,7 @@ function makeTables(config?: CruncherConfig): CruncherTables {
   // This would ideally be a module constant, but we define it here so that
   // we can dynamically swap it out in unit tests
   const endsRoot = envVar("MORCEUS_DATA_ROOT") + "/latin/ends";
-  const [endIndices, endTables] =
+  const [endIndices, endTables, rawTables] =
     config?.existing?.endsResult ??
     makeEndIndex([`${endsRoot}/target`, `${endsRoot}/dependency`]);
   const allLemmata =
@@ -38,11 +40,19 @@ function makeTables(config?: CruncherConfig): CruncherTables {
     );
   const endsMap = makeEndsMap(endIndices);
   const stemMap = makeStemsMap(allLemmata);
+  const rawTablesMap = new Map<string, InflectionTable>();
+  for (const table of rawTables) {
+    assert(!rawTablesMap.has(table.name), `Duplicate table: ${table.name}`);
+    rawTablesMap.set(table.name, table);
+  }
+  const rawLemmataMap = arrayMapBy(allLemmata, (l) => l.lemma);
   return {
     endsMap,
     stemMap,
     inflectionLookup: endTables,
     numerals: allLemmata.filter(isNumeral),
+    rawTables: rawTablesMap,
+    rawLemmata: rawLemmataMap.map,
   };
 }
 

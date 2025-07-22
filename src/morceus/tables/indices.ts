@@ -33,7 +33,7 @@ export interface EndIndexRow {
   /** The tables that can produce this ending. */
   tableNames: string[];
 }
-export type EndsResult = [EndIndexRow[], InflectionLookup];
+export type EndsResult = [EndIndexRow[], InflectionLookup, InflectionTable[]];
 
 export namespace EndIndexRow {
   export function parse(input: string): EndIndexRow {
@@ -104,6 +104,7 @@ export function makeEndIndex(
         tableNames: [...tableNames],
       })),
     inflectionLookup,
+    tables,
   ];
 }
 
