@@ -142,7 +142,8 @@ function MainColumn(props: BaseMainColumnProps) {
       <div
         style={{
           paddingLeft: props.isMobile ? "12px" : undefined,
-          paddingRight: props.isMobile ? "12px" : undefined,
+          // The non-mobile padding is make some room for the scrollbar.
+          paddingRight: props.isMobile ? "12px" : "8px",
         }}>
         <InternalReaderContext.Provider
           value={{

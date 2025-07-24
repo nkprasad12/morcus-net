@@ -520,6 +520,7 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
             <div
               style={{
                 paddingLeft: isMobile ? "12px" : undefined,
+                // The non-mobile padding is make some room for the scrollbar.
                 paddingRight: isMobile ? "12px" : "8px",
               }}>
               <WorkTextPage
