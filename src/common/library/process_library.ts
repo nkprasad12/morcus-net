@@ -1,6 +1,7 @@
 import { assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
-import { buildCorpusFromProcessedWorks } from "@/common/library/corpus/build_latin_corpus";
+import { buildCorpus } from "@/common/library/corpus/build_corpus";
+import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
 import {
   EnglishTranslations,
   LOCAL_REPO_WORKS,
@@ -183,8 +184,8 @@ function extractWorkMetadata(
 export function processLibrary({
   outputDir = LIB_DEFAULT_DIR,
   works = LOCAL_REPO_WORK_PATHS,
-  buildCorpus = false,
-}: { outputDir?: string; works?: string[]; buildCorpus?: boolean } = {}) {
+  shouldBuildCorpus = false,
+}: { outputDir?: string; works?: string[]; shouldBuildCorpus?: boolean } = {}) {
   const patches = loadPatches();
   const index: LibraryIndex = {};
   const sortedWorks = works
@@ -250,7 +251,7 @@ export function processLibrary({
     "Duplicate work IDs found in library index"
   );
   fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));
-  if (buildCorpus) {
-    buildCorpusFromProcessedWorks(Object.values(index).map(([path]) => path));
+  if (shouldBuildCorpus) {
+    buildCorpus(latinWorksFromLibrary());
   }
 }

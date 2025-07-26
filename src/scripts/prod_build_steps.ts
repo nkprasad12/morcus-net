@@ -117,7 +117,7 @@ const PROCESS_LAT_LIB: StepConfig = {
     processLibrary({
       outputDir: LIB_DEFAULT_DIR,
       works: PERSEUS_DOWNLOADS.map((dl) => dl.path),
-      buildCorpus: true,
+      shouldBuildCorpus: true,
     }),
   label: "Latin library processing",
   dlInfo: PERSEUS_DOWNLOADS,

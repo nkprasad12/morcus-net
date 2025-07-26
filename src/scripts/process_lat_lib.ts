@@ -26,7 +26,7 @@ const buildCorpus = process.env.BUILD_CORPUS === "1";
 processLibrary({
   outputDir: LIB_DEFAULT_DIR,
   works: worksList,
-  buildCorpus,
+  shouldBuildCorpus: buildCorpus,
 });
 
 const runTime = Math.round(performance.now() - startTime);
