@@ -1,5 +1,6 @@
 import { assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
+import { buildCorpusFromProcessedWorks } from "@/common/library/corpus/build_latin_corpus";
 import {
   EnglishTranslations,
   LOCAL_REPO_WORKS,
@@ -222,6 +223,7 @@ export function processLibrary({
       translationId
     );
     const isTranslation = isTranslationId(workId);
+    result.info.isTranslation = isTranslation;
     result.info.translationInfo = translationDataById.get(translationId);
 
     if (isTranslation) {
@@ -249,6 +251,6 @@ export function processLibrary({
   );
   fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));
   if (buildCorpus) {
-    console.log("Building Latin corpus...");
+    buildCorpusFromProcessedWorks(Object.values(index).map(([path]) => path));
   }
 }
