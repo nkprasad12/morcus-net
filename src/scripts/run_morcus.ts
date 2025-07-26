@@ -121,6 +121,14 @@ function parseArguments() {
         action: "store_true",
       },
     },
+    {
+      short: "-b_corp",
+      long: "--build_corpus",
+      options: {
+        help: "Builds the Latin corpus (implies `--build_latin_library`).",
+        action: "store_true",
+      },
+    },
   ];
   build.add_argument("--build_all", {
     help: "Builds all artifacts.",
@@ -377,8 +385,13 @@ function artifactConfig(args: any): StepConfig[] {
     args.build_pozo = true;
     args.build_gesner = true;
     args.build_sh = true;
-    args.build_latin_library = true;
+    args.build_corpus = true;
     args.build_gaffiot = true;
+  }
+
+  // If build_corpus is set, enable build_latin_library
+  if (args.build_corpus === true) {
+    args.build_latin_library = true;
   }
 
   setupSteps.push({
@@ -452,6 +465,9 @@ function artifactConfig(args: any): StepConfig[] {
     });
   }
   if (args.build_latin_library === true) {
+    if (args.build_corpus === true) {
+      childEnv.BUILD_CORPUS = "1";
+    }
     const command = baseCommand.concat(["src/scripts/process_lat_lib.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),

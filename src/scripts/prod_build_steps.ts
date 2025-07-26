@@ -114,10 +114,11 @@ const MAKE_GESNER: StepConfig = {
 };
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
-    processLibrary(
-      LIB_DEFAULT_DIR,
-      PERSEUS_DOWNLOADS.map((dl) => dl.path)
-    ),
+    processLibrary({
+      outputDir: LIB_DEFAULT_DIR,
+      works: PERSEUS_DOWNLOADS.map((dl) => dl.path),
+      buildCorpus: true,
+    }),
   label: "Latin library processing",
   dlInfo: PERSEUS_DOWNLOADS,
   repoInfo: {

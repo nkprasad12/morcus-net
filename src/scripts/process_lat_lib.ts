@@ -20,7 +20,14 @@ const worksList =
   LIB_XML_ROOT === undefined
     ? undefined
     : ALL_SUPPORTED_WORKS.map((work) => `${LIB_XML_ROOT}/${work}`);
-processLibrary(LIB_DEFAULT_DIR, worksList);
+
+const buildCorpus = process.env.BUILD_CORPUS === "1";
+
+processLibrary({
+  outputDir: LIB_DEFAULT_DIR,
+  works: worksList,
+  buildCorpus,
+});
 
 const runTime = Math.round(performance.now() - startTime);
 console.log(`Latin library processing runtime: ${runTime} ms.`);
