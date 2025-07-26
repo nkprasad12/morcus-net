@@ -122,6 +122,10 @@ function parseArguments() {
       },
     },
   ];
+  build.add_argument("--build_all", {
+    help: "Builds all artifacts.",
+    action: "store_true",
+  });
   build.add_argument("-to", "--transpile_only", {
     help: "Skips type checking for the bundle.",
     action: "store_true",
@@ -154,6 +158,10 @@ function parseArguments() {
 
   const web = subparsers.add_parser(WEB_SERVER, {
     help: "Builds artifacts and starts the web server.",
+  });
+  web.add_argument("--build_all", {
+    help: "Builds all artifacts.",
+    action: "store_true",
   });
   web.add_argument("-no_bc", "--no_build_client", {
     help: "The client bundle will not be built.",
@@ -360,6 +368,19 @@ function artifactConfig(args: any): StepConfig[] {
     baseCommand = ["bun"];
     childEnv.BUN = "1";
   }
+
+  // If build_all is set, enable all build flags
+  if (args.build_all === true) {
+    args.build_ls = true;
+    args.build_ra = true;
+    args.build_georges = true;
+    args.build_pozo = true;
+    args.build_gesner = true;
+    args.build_sh = true;
+    args.build_latin_library = true;
+    args.build_gaffiot = true;
+  }
+
   setupSteps.push({
     operation: () => createDir(envVar("OFFLINE_DATA_DIR")),
     label: "Creating output dirs",
