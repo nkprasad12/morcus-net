@@ -3,6 +3,27 @@ export function isTextBreakChar(c: string): boolean {
   return TEXT_BREAK_CHAR_SET.has(c);
 }
 
+export function* processTokens(
+  input: string
+): Generator<[token: string, isWord: boolean]> {
+  if (input.length === 0) {
+    return;
+  }
+  let lastChunkStart = 0;
+  let isInWord = !isTextBreakChar(input[0]);
+  for (let i = 0; i < input.length; i++) {
+    const isBreak = isTextBreakChar(input[i]);
+    const wordEnd = isInWord && isBreak;
+    const breakEnd = !isInWord && !isBreak;
+    if (wordEnd || breakEnd) {
+      yield [input.substring(lastChunkStart, i), isInWord];
+      isInWord = !isInWord;
+      lastChunkStart = i;
+    }
+  }
+  yield [input.substring(lastChunkStart), isInWord];
+}
+
 export function processWords<T>(
   input: string,
   handler: (word: string, i?: number) => T
@@ -11,22 +32,9 @@ export function processWords<T>(
     return [];
   }
   const results: (string | T)[] = [];
-  let lastChunkStart = 0;
-  let isInWord = !isTextBreakChar(input[0]);
-  for (let i = 0; i < input.length; i++) {
-    const isBreak = isTextBreakChar(input[i]);
-    if (isInWord && isBreak) {
-      results.push(handler(input.substring(lastChunkStart, i), i));
-      isInWord = false;
-      lastChunkStart = i;
-    } else if (!isInWord && !isBreak) {
-      results.push(input.substring(lastChunkStart, i));
-      isInWord = true;
-      lastChunkStart = i;
-    }
+  for (const [token, isWord] of processTokens(input)) {
+    results.push(isWord ? handler(token) : token);
   }
-  const finalChunk = input.substring(lastChunkStart);
-  results.push(isInWord ? handler(finalChunk, lastChunkStart) : finalChunk);
   return results;
 }
 
