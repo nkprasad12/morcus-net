@@ -58,14 +58,25 @@ export class CorpusQueryEngine {
     );
   }
 
-  search(word: string) {
+  searchWord(word: string) {
     const matches = this.corpus.indices.word.get(word.toLowerCase());
     if (matches === undefined) {
       return;
     }
     for (const tokenId of matches) {
       const [workId, rowIdx] = this.resolveWorkAndRow(tokenId);
-      console.log(`Found "${word}" in work ${workId} at row ${rowIdx}`);
+      console.log(`work ${workId} at row ${rowIdx}`);
+    }
+  }
+
+  searchLemma(lemma: string) {
+    const matches = this.corpus.indices.lemma.get(lemma);
+    if (matches === undefined) {
+      return;
+    }
+    for (const tokenId of matches) {
+      const [workId, rowIdx] = this.resolveWorkAndRow(tokenId);
+      console.log(`work ${workId} at row ${rowIdx}`);
     }
   }
 }
