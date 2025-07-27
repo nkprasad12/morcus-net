@@ -1,3 +1,4 @@
+import { deserializeWithMaps, serializeWithMaps } from "@/common/misc_utils";
 import fs from "fs";
 
 const CORPUS_DIR = "build/corpus";
@@ -50,23 +51,11 @@ export function writeCorpusToFile(
   if (!fs.existsSync(CORPUS_DIR)) {
     fs.mkdirSync(CORPUS_DIR, { recursive: true });
   }
-  const replacer = (_key: string, value: any) => {
-    if (value instanceof Map) {
-      return Array.from(value.entries());
-    }
-    return value;
-  };
-  fs.writeFileSync(corpusFile, JSON.stringify(corpus, replacer));
+  fs.writeFileSync(corpusFile, serializeWithMaps(corpus));
   console.debug(`Corpus written to ${corpusFile}`);
 }
 
 export function loadCorpus(corpusFile: string = CORPUS_FILE): LatinCorpusIndex {
   const raw = fs.readFileSync(corpusFile, "utf8");
-  const parsed = JSON.parse(raw);
-  const indices = {};
-  for (const [key, value] of Object.entries(parsed.indices)) {
-    // @ts-ignore
-    indices[key] = new Map(value);
-  }
-  return { ...parsed, indices };
+  return deserializeWithMaps(raw);
 }

@@ -1,6 +1,8 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 
+const SPECIAL_SERIALIZATION_TOKEN = "___SERIALIZED_TOKEN_v1___";
+
 export class Tally<T> {
   private readonly counts = new Map<T, number>();
 
@@ -112,6 +114,43 @@ export function areArraysEqual<T>(first: T[], second: T[]): boolean {
     }
   }
   return true;
+}
+
+/**
+ * Serializes an object to a JSON string, correctly handling Map objects.
+ */
+export function serializeWithMaps(obj: any): string {
+  const replacer = (_key: string, value: any) => {
+    if (value instanceof Map) {
+      return {
+        dataType: "Map",
+        serializationKey: SPECIAL_SERIALIZATION_TOKEN,
+        data: Array.from(value.entries()),
+      };
+    }
+    return value;
+  };
+  return JSON.stringify(obj, replacer);
+}
+
+/**
+ * Deserializes a JSON string created by `serializeWithMaps`,
+ * correctly reconstructing Map objects.
+ */
+export function deserializeWithMaps<T>(json: string): T {
+  const reviver = (_key: string, value: any) => {
+    if (
+      value &&
+      typeof value === "object" &&
+      !Array.isArray(value) &&
+      value.dataType === "Map" &&
+      value.serializationKey === SPECIAL_SERIALIZATION_TOKEN
+    ) {
+      return new Map(value.data);
+    }
+    return value;
+  };
+  return JSON.parse(json, reviver);
 }
 
 /**
