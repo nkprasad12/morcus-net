@@ -1,10 +1,17 @@
 import { assert } from "@/common/assert";
+import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   writeCorpusToFile,
   type CorpusInputWork,
   type LatinCorpusIndex,
 } from "@/common/library/corpus/corpus_common";
 import { processTokens } from "@/common/text_cleaning";
+import { MorceusCruncher } from "@/morceus/crunch";
+import { MorceusTables } from "@/morceus/cruncher_tables";
+import {
+  CruncherOptions,
+  type LatinWordAnalysis,
+} from "@/morceus/cruncher_types";
 
 /**
  * Absorbs the given work in the corpus.
@@ -16,8 +23,11 @@ import { processTokens } from "@/common/text_cleaning";
 function absorbWork(
   work: CorpusInputWork,
   corpus: LatinCorpusIndex,
+  getInflections: (word: string) => LatinWordAnalysis[],
   startId: number
 ): number {
+  const wordIndex = arrayMap(corpus.indices.word);
+  const lemmaIndex = arrayMap(corpus.indices.lemma);
   corpus.workRowRanges.push([corpus.workIds.length, []]);
   corpus.workIds.push(work.id);
   let wordsInWork = 0;
@@ -32,10 +42,11 @@ function absorbWork(
         continue;
       }
       const normalized = token.toLowerCase();
-      if (!corpus.reverseIndex.has(normalized)) {
-        corpus.reverseIndex.set(normalized, []);
+      wordIndex.add(normalized, currentId);
+      const lemmata = getInflections(normalized).map((d) => d.lemma);
+      for (const lemma of Array.from(new Set(lemmata))) {
+        lemmaIndex.add(lemma, currentId);
       }
-      corpus.reverseIndex.get(normalized)!.push(currentId);
       wordsInWork += 1;
       currentId += 1;
     }
@@ -51,21 +62,29 @@ function absorbWork(
 }
 
 export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
+  const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
   const startTime = Date.now();
+  const getInflections = (word: string) =>
+    cruncher(word, CruncherOptions.DEFAULT);
   let tokenId = 0;
   const corpus: LatinCorpusIndex = {
     workIds: [],
     workRowRanges: [],
-    reverseIndex: new Map(),
-    stats: { totalWords: 0, totalWorks: 0, uniqueWords: 0 },
+    indices: {
+      word: new Map<string, number[]>(),
+      lemma: new Map<string, number[]>(),
+    },
+    stats: { totalWords: 0, totalWorks: 0, uniqueWords: 0, uniqueLemmata: 0 },
   };
   for (const work of iterableWorks) {
-    tokenId = absorbWork(work, corpus, tokenId);
+    tokenId = absorbWork(work, corpus, getInflections, tokenId);
     // Avoid accidentally finding matches from the end of one work
     // and the start of another.
     tokenId += 100;
   }
-  corpus.stats.uniqueWords = corpus.reverseIndex.size;
+  corpus.stats.uniqueWords = corpus.indices.word.size;
+  corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
+
   writeCorpusToFile(corpus);
   console.log(`Corpus stats:`, corpus.stats);
   console.log(`Corpus indexing runtime: ${Date.now() - startTime}ms`);

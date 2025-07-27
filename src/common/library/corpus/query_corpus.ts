@@ -59,7 +59,7 @@ export class CorpusQueryEngine {
   }
 
   search(word: string) {
-    const matches = this.corpus.reverseIndex.get(word.toLowerCase());
+    const matches = this.corpus.indices.word.get(word.toLowerCase());
     if (matches === undefined) {
       return;
     }

@@ -24,14 +24,19 @@ export interface CorpusStats {
   totalWords: number;
   totalWorks: number;
   uniqueWords: number;
+  uniqueLemmata: number;
 }
 export interface LatinCorpusIndex {
   /** IDs of each processed work in the corpus. */
   workIds: string[];
   /** Ranges of token indices for each work in the corpus, split by row. */
   workRowRanges: WorkRowRange[];
-  /** Reverse index mapping normalized words to their token IDs. */
-  reverseIndex: Map<string, number[]>;
+  indices: {
+    /** Reverse index mapping normalized words to their token IDs. */
+    word: Map<string, number[]>;
+    /** Reverse index mapping lemmata to their token IDs. */
+    lemma: Map<string, number[]>;
+  };
   /** Statistics about the corpus. */
   stats: CorpusStats;
 }
@@ -56,8 +61,10 @@ export function writeCorpusToFile(
 export function loadCorpus(corpusFile: string = CORPUS_FILE): LatinCorpusIndex {
   const raw = fs.readFileSync(corpusFile, "utf8");
   const parsed = JSON.parse(raw);
-  return {
-    ...parsed,
-    reverseIndex: new Map(parsed.reverseIndex),
-  };
+  const indices = {};
+  for (const [key, value] of Object.entries(parsed.indices)) {
+    // @ts-ignore
+    indices[key] = new Map(value);
+  }
+  return { ...parsed, indices };
 }
