@@ -22,6 +22,7 @@ function convertToCorpusInputWork(work: ProcessedWork2): CorpusInputWork {
   return {
     id: work.info.workId,
     rows: work.rows.map(([, content]) => extractRowText(content)),
+    rowIds: work.rows.map(([rowId]) => rowId.join(".")),
   };
 }
 

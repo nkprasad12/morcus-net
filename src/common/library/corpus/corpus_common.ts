@@ -9,6 +9,8 @@ export interface CorpusInputWork {
   id: string;
   /** The text of the work, optionally broken down into chunks. */
   rows: string[];
+  /** IDs for each row in the work. */
+  rowIds: string[];
 }
 
 export type WorkRowRange = [
@@ -27,8 +29,8 @@ export interface CorpusStats {
   uniqueLemmata: number;
 }
 export interface LatinCorpusIndex {
-  /** IDs of each processed work in the corpus. */
-  workIds: string[];
+  /** Data about each work in the corpus. */
+  workLookup: [id: string, rowIds: string[]][];
   /** Ranges of token indices for each work in the corpus, split by row. */
   workRowRanges: WorkRowRange[];
   indices: {

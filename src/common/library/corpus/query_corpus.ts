@@ -6,7 +6,7 @@ export class CorpusQueryEngine {
     this.corpus = corpus;
   }
 
-  resolveWorkAndRow(tokenId: number): [string, number] {
+  resolveWorkAndRow(tokenId: number): [string, string] {
     const workRanges = this.corpus.workRowRanges;
 
     // Binary search for the work.
@@ -43,9 +43,9 @@ export class CorpusQueryEngine {
       const [, startTokenId, endTokenId] = rowData[mid];
 
       if (tokenId >= startTokenId && tokenId < endTokenId) {
-        const workId = this.corpus.workIds[workIdx];
+        const [workId, rowIds] = this.corpus.workLookup[workIdx];
         const rowIdx = rowData[mid][0];
-        return [workId, rowIdx];
+        return [workId, rowIds[rowIdx]];
       } else if (tokenId < startTokenId) {
         high = mid - 1;
       } else {
@@ -64,8 +64,8 @@ export class CorpusQueryEngine {
       return;
     }
     for (const tokenId of matches) {
-      const [workId, rowIdx] = this.resolveWorkAndRow(tokenId);
-      console.log(`work ${workId} at row ${rowIdx}`);
+      const [workId, section] = this.resolveWorkAndRow(tokenId);
+      console.log(`work ${workId} at section ${section}`);
     }
   }
 
@@ -75,8 +75,8 @@ export class CorpusQueryEngine {
       return;
     }
     for (const tokenId of matches) {
-      const [workId, rowIdx] = this.resolveWorkAndRow(tokenId);
-      console.log(`work ${workId} at row ${rowIdx}`);
+      const [workId, section] = this.resolveWorkAndRow(tokenId);
+      console.log(`work ${workId} at section ${section}`);
     }
   }
 }

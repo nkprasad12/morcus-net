@@ -28,8 +28,8 @@ function absorbWork(
 ): number {
   const wordIndex = arrayMap(corpus.indices.word);
   const lemmaIndex = arrayMap(corpus.indices.lemma);
-  corpus.workRowRanges.push([corpus.workIds.length, []]);
-  corpus.workIds.push(work.id);
+  corpus.workRowRanges.push([corpus.workLookup.length, []]);
+  corpus.workLookup.push([work.id, work.rowIds]);
   let wordsInWork = 0;
   let currentId = startId;
 
@@ -41,9 +41,12 @@ function absorbWork(
         currentId += 1;
         continue;
       }
-      const normalized = token.toLowerCase();
-      wordIndex.add(normalized, currentId);
-      const lemmata = getInflections(normalized).map((d) => d.lemma);
+      const stripped = token
+        .normalize("NFD")
+        .replaceAll("\u0304", "")
+        .replaceAll("\u0306", "");
+      wordIndex.add(stripped.toLowerCase(), currentId);
+      const lemmata = getInflections(stripped).map((d) => d.lemma);
       for (const lemma of Array.from(new Set(lemmata))) {
         lemmaIndex.add(lemma, currentId);
       }
@@ -68,7 +71,7 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
     cruncher(word, CruncherOptions.DEFAULT);
   let tokenId = 0;
   const corpus: LatinCorpusIndex = {
-    workIds: [],
+    workLookup: [],
     workRowRanges: [],
     indices: {
       word: new Map<string, number[]>(),
