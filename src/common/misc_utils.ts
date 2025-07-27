@@ -113,3 +113,47 @@ export function areArraysEqual<T>(first: T[], second: T[]): boolean {
   }
   return true;
 }
+
+/**
+ * Estimates the memory size in bytes of a JS object, including Maps and Sets.
+ * Note: This is a rough estimate, not exact.
+ */
+export function estimateObjectSize(obj: any, seen = new Set<any>()): number {
+  if (obj === null || obj === undefined) return 0;
+  if (seen.has(obj)) return 0;
+  seen.add(obj);
+
+  let bytes = 0;
+  const type = typeof obj;
+
+  if (type === "boolean") {
+    bytes += 4;
+  } else if (type === "number") {
+    bytes += 8;
+  } else if (type === "string") {
+    bytes += obj.length * 2;
+  } else if (type === "object") {
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        bytes += estimateObjectSize(item, seen);
+      }
+    } else if (obj instanceof Map) {
+      for (const [key, value] of obj.entries()) {
+        bytes += estimateObjectSize(key, seen);
+        bytes += estimateObjectSize(value, seen);
+      }
+    } else if (obj instanceof Set) {
+      for (const item of obj.values()) {
+        bytes += estimateObjectSize(item, seen);
+      }
+    } else {
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          bytes += estimateObjectSize(key, seen);
+          bytes += estimateObjectSize(obj[key], seen);
+        }
+      }
+    }
+  }
+  return bytes;
+}
