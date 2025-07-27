@@ -1,4 +1,25 @@
 import type { LatinCorpusIndex } from "@/common/library/corpus/corpus_common";
+import { exhaustiveGuard } from "@/common/misc_utils";
+
+interface WordQuery {
+  word: string;
+}
+
+interface LemmaQuery {
+  lemma: string;
+}
+
+type CorpusQueryPart = WordQuery | LemmaQuery;
+
+export interface CorpusQuery {
+  parts: CorpusQueryPart[];
+}
+
+export interface CorpusQueryResult {
+  workId: string;
+  section: string;
+  offset: number;
+}
 
 export class CorpusQueryEngine {
   corpus: LatinCorpusIndex;
@@ -6,7 +27,7 @@ export class CorpusQueryEngine {
     this.corpus = corpus;
   }
 
-  resolveWorkAndRow(tokenId: number): [string, string] {
+  resolveToken(tokenId: number): CorpusQueryResult {
     const workRanges = this.corpus.workRowRanges;
 
     // Binary search for the work.
@@ -45,7 +66,11 @@ export class CorpusQueryEngine {
       if (tokenId >= startTokenId && tokenId < endTokenId) {
         const [workId, rowIds] = this.corpus.workLookup[workIdx];
         const rowIdx = rowData[mid][0];
-        return [workId, rowIds[rowIdx]];
+        return {
+          workId,
+          section: rowIds[rowIdx],
+          offset: tokenId - startTokenId,
+        };
       } else if (tokenId < startTokenId) {
         high = mid - 1;
       } else {
@@ -58,25 +83,26 @@ export class CorpusQueryEngine {
     );
   }
 
-  searchWord(word: string) {
-    const matches = this.corpus.indices.word.get(word.toLowerCase());
-    if (matches === undefined) {
-      return;
+  private resolveQueryPart(part: CorpusQueryPart): number[] {
+    if ("word" in part) {
+      return this.corpus.indices.word.get(part.word.toLowerCase()) ?? [];
+    } else if ("lemma" in part) {
+      return this.corpus.indices.lemma.get(part.lemma) ?? [];
     }
-    for (const tokenId of matches) {
-      const [workId, section] = this.resolveWorkAndRow(tokenId);
-      console.log(`work ${workId} at section ${section}`);
-    }
+    exhaustiveGuard(part);
   }
 
-  searchLemma(lemma: string) {
-    const matches = this.corpus.indices.lemma.get(lemma);
-    if (matches === undefined) {
-      return;
+  queryCorpus(query: CorpusQuery): CorpusQueryResult[] {
+    if (query.parts.length === 0) {
+      return [];
     }
-    for (const tokenId of matches) {
-      const [workId, section] = this.resolveWorkAndRow(tokenId);
-      console.log(`work ${workId} at section ${section}`);
+    let matches = this.resolveQueryPart(query.parts[0]);
+    for (let i = 1; i < query.parts.length; i++) {
+      const partMatches = new Set(
+        this.resolveQueryPart(query.parts[i]).map((t) => t - 2 * i)
+      );
+      matches = matches.filter((tokenId) => partMatches.has(tokenId));
     }
+    return matches.map((tokenId) => this.resolveToken(tokenId));
   }
 }
