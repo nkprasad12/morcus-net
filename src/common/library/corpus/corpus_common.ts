@@ -22,8 +22,12 @@ export interface WordQuery {
 export interface LemmaQuery {
   lemma: string;
 }
+export interface InflectionQuery {
+  category: keyof LatinInflectionTypes;
+  value: LatinInflectionTypes[keyof LatinInflectionTypes];
+}
 
-export type CorpusQueryPart = WordQuery | LemmaQuery;
+export type CorpusQueryPart = WordQuery | LemmaQuery | InflectionQuery;
 
 export interface CorpusQuery {
   parts: CorpusQueryPart[];
@@ -66,13 +70,23 @@ export interface CorpusStats {
 }
 
 export interface GenericReverseIndex<T> {
+  /** Checks if the given key has an index with a cheap membership lookup. */
+  hasCheapMembershipCheck(key: T): boolean;
+  /**
+   * Filters the given candidates based on whether they match the key.
+   *
+   * @param key The key to check membership against.
+   * @param candidates The candidates to filter.
+   * @param offset The offset to apply to the candidates.
+   *
+   * @returns The filtered candidates that match the key.
+   */
+  filterCandidates(key: T, candidates: number[], offset: number): number[];
   formatOf(key: T): "bitmask" | undefined;
   get(key: T): number[] | undefined;
   keys(): Iterable<T>;
 }
-export type CorpusIndexKeyTypes = {
-  word: string;
-  lemma: string;
+export interface LatinInflectionTypes {
   case: LatinCase;
   number: LatinNumber;
   gender: LatinGender;
@@ -80,7 +94,11 @@ export type CorpusIndexKeyTypes = {
   person: LatinPerson;
   mood: LatinMood;
   voice: LatinVoice;
-};
+}
+export interface CorpusIndexKeyTypes extends LatinInflectionTypes {
+  word: string;
+  lemma: string;
+}
 interface CoreCorpusIndex {
   /** Data about each work in the corpus. */
   workLookup: [id: string, rowIds: string[]][];

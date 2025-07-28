@@ -1,3 +1,4 @@
+import { checkPresent } from "@/common/assert";
 import type {
   CorpusQuery,
   CorpusQueryPart,
@@ -65,11 +66,40 @@ export class CorpusQueryEngine {
     );
   }
 
-  private resolveQueryPart(part: CorpusQueryPart): number[] {
+  private getAllMatchesFor(part: CorpusQueryPart): number[] {
     if ("word" in part) {
       return this.corpus.indices.word.get(part.word.toLowerCase()) ?? [];
     } else if ("lemma" in part) {
       return this.corpus.indices.lemma.get(part.lemma) ?? [];
+    } else if ("category" in part) {
+      const index = checkPresent(this.corpus.indices[part.category]);
+      // @ts-ignore
+      return index.get(part.value) ?? [];
+    }
+    exhaustiveGuard(part);
+  }
+
+  private filterCandidatesOn(
+    candidates: number[],
+    part: CorpusQueryPart,
+    offset: number
+  ): number[] {
+    if ("word" in part) {
+      return this.corpus.indices.word.filterCandidates(
+        part.word.toLowerCase(),
+        candidates,
+        offset
+      );
+    } else if ("lemma" in part) {
+      return this.corpus.indices.lemma.filterCandidates(
+        part.lemma,
+        candidates,
+        offset
+      );
+    } else if ("category" in part) {
+      const index = checkPresent(this.corpus.indices[part.category]);
+      // @ts-expect-error
+      return index.filterCandidates(part.value, candidates, offset);
     }
     exhaustiveGuard(part);
   }
@@ -78,12 +108,9 @@ export class CorpusQueryEngine {
     if (query.parts.length === 0) {
       return [];
     }
-    let matches = this.resolveQueryPart(query.parts[0]);
+    let matches = this.getAllMatchesFor(query.parts[0]);
     for (let i = 1; i < query.parts.length; i++) {
-      const partMatches = new Set(
-        this.resolveQueryPart(query.parts[i]).map((t) => t - i)
-      );
-      matches = matches.filter((tokenId) => partMatches.has(tokenId));
+      matches = this.filterCandidatesOn(matches, query.parts[i], -i);
     }
     return matches.map((tokenId) => this.resolveToken(tokenId));
   }

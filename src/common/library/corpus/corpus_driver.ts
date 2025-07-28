@@ -7,9 +7,14 @@ import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_ut
 import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
 import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
 import { getFormattedMemoryUsage } from "@/common/misc_utils";
+import { LatinCase } from "@/morceus/types";
 
 const QUERY: CorpusQuery = {
-  parts: [{ word: "oscula" }, { lemma: "natus" }],
+  parts: [
+    { word: "quam" },
+    { word: "ob" },
+    { category: "case", value: LatinCase.Accusative },
+  ],
 };
 
 function printQuery(query: CorpusQuery): string {
@@ -19,6 +24,8 @@ function printQuery(query: CorpusQuery): string {
         return `[word:${part.word}]`;
       } else if ("lemma" in part) {
         return `[lemma:${part.lemma}]`;
+      } else if ("category" in part) {
+        return `[${part.category}: ${part.value}]`;
       }
       throw new Error(`Unknown query part: ${JSON.stringify(part)}`);
     })
