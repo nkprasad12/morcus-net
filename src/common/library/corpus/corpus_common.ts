@@ -1,4 +1,3 @@
-import { deserializeWithMaps, serializeWithMaps } from "@/common/misc_utils";
 import {
   LatinCase,
   LatinGender,
@@ -8,9 +7,8 @@ import {
   LatinTense,
   LatinVoice,
 } from "@/morceus/types";
-import fs from "fs";
 
-const CORPUS_DIR = "build/corpus";
+export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `${CORPUS_DIR}/latin_corpus.json`;
 
 export interface WordQuery {
@@ -58,7 +56,7 @@ export interface CorpusStats {
   uniqueWords: number;
   uniqueLemmata: number;
 }
-export interface LatinCorpusIndex {
+export interface LatinCorpusIndex<T> {
   /** Data about each work in the corpus. */
   workLookup: [id: string, rowIds: string[]][];
   /** Ranges of token indices for each work in the corpus, split by row. */
@@ -66,29 +64,31 @@ export interface LatinCorpusIndex {
   /** Reverse indices for various corpus features. */
   indices: {
     /** Reverse index mapping normalized words to their token IDs. */
-    word: Map<string, number[]>;
+    word: Map<string, T>;
     /** Reverse index mapping lemmata to their token IDs. */
-    lemma: Map<string, number[]>;
+    lemma: Map<string, T>;
     /** Reverse index mapping cases to their token IDs. */
-    case: Map<LatinCase, number[]>;
+    case: Map<LatinCase, T>;
     /** Reverse index mapping numbers to their token IDs. */
-    number: Map<LatinNumber, number[]>;
+    number: Map<LatinNumber, T>;
     /** Reverse index mapping genders to their token IDs. */
-    gender: Map<LatinGender, number[]>;
+    gender: Map<LatinGender, T>;
     /** Reverse index mapping tenses to their token IDs. */
-    tense: Map<LatinTense, number[]>;
+    tense: Map<LatinTense, T>;
     /** Reverse index mapping persons to their token IDs. */
-    person: Map<LatinPerson, number[]>;
+    person: Map<LatinPerson, T>;
     /** Reverse index mapping moods to their token IDs. */
-    mood: Map<LatinMood, number[]>;
+    mood: Map<LatinMood, T>;
     /** Reverse index mapping voices to their token IDs. */
-    voice: Map<LatinVoice, number[]>;
+    voice: Map<LatinVoice, T>;
+    /** The maximum token ID. */
+    maxTokenId: number;
   };
   /** Statistics about the corpus. */
   stats: CorpusStats;
 }
 
-export function createEmptyCorpusIndex(): LatinCorpusIndex {
+export function createEmptyCorpusIndex(): LatinCorpusIndex<number[]> {
   return {
     workLookup: [],
     workRowRanges: [],
@@ -102,6 +102,7 @@ export function createEmptyCorpusIndex(): LatinCorpusIndex {
       person: new Map(),
       mood: new Map(),
       voice: new Map(),
+      maxTokenId: -1,
     },
     stats: {
       totalWords: 0,
@@ -110,20 +111,4 @@ export function createEmptyCorpusIndex(): LatinCorpusIndex {
       uniqueLemmata: 0,
     },
   };
-}
-
-export function writeCorpusToFile(
-  corpus: LatinCorpusIndex,
-  corpusFile: string = CORPUS_FILE
-) {
-  if (!fs.existsSync(CORPUS_DIR)) {
-    fs.mkdirSync(CORPUS_DIR, { recursive: true });
-  }
-  fs.writeFileSync(corpusFile, serializeWithMaps(corpus));
-  console.debug(`Corpus written to ${corpusFile}`);
-}
-
-export function loadCorpus(corpusFile: string = CORPUS_FILE): LatinCorpusIndex {
-  const raw = fs.readFileSync(corpusFile, "utf8");
-  return deserializeWithMaps(raw);
 }

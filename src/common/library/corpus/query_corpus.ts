@@ -7,10 +7,7 @@ import type {
 import { exhaustiveGuard } from "@/common/misc_utils";
 
 export class CorpusQueryEngine {
-  corpus: LatinCorpusIndex;
-  constructor(corpus: LatinCorpusIndex) {
-    this.corpus = corpus;
-  }
+  constructor(private readonly corpus: LatinCorpusIndex<number[]>) {}
 
   resolveToken(tokenId: number): CorpusQueryResult {
     const workRanges = this.corpus.workRowRanges;

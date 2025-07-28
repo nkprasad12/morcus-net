@@ -1,10 +1,10 @@
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
-import {
-  loadCorpus,
-  type CorpusQuery,
-  type CorpusQueryResult,
+import type {
+  CorpusQuery,
+  CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
 import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
+import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
 import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
 
 const QUERY: CorpusQuery = {

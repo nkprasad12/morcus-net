@@ -2,10 +2,10 @@ import { assert } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   createEmptyCorpusIndex,
-  writeCorpusToFile,
   type CorpusInputWork,
   type LatinCorpusIndex,
 } from "@/common/library/corpus/corpus_common";
+import { writeCorpus } from "@/common/library/corpus/corpus_serialization";
 import { processTokens } from "@/common/text_cleaning";
 import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
@@ -47,7 +47,7 @@ function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
  */
 function absorbWork(
   work: CorpusInputWork,
-  corpus: LatinCorpusIndex,
+  corpus: LatinCorpusIndex<number[]>,
   getInflections: (word: string) => LatinWordAnalysis[],
   startId: number
 ): number {
@@ -157,10 +157,11 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
     // and the start of another.
     tokenId += 100;
   }
+  corpus.indices.maxTokenId = tokenId;
   corpus.stats.uniqueWords = corpus.indices.word.size;
   corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
 
-  writeCorpusToFile(corpus);
+  writeCorpus(corpus);
   console.log(`Corpus stats:`, corpus.stats);
   console.log(`Corpus indexing runtime: ${Date.now() - startTime}ms`);
 }
