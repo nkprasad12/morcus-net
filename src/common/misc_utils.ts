@@ -196,3 +196,19 @@ export function estimateObjectSize(obj: any, seen = new Set<any>()): number {
   }
   return bytes;
 }
+
+function bytesToMib(input: number): number {
+  const inMib = input / (1024 * 1024);
+  return Math.round(inMib * 10) / 10;
+}
+
+export function getFormattedMemoryUsage() {
+  const usage = process.memoryUsage();
+  return {
+    rss: bytesToMib(usage.rss),
+    heapTotal: bytesToMib(usage.heapTotal),
+    heapUsed: bytesToMib(usage.heapUsed),
+    external: bytesToMib(usage.external),
+    arrayBuffers: bytesToMib(usage.arrayBuffers),
+  };
+}

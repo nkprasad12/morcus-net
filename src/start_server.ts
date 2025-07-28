@@ -40,7 +40,7 @@ import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
-import { singletonOf } from "@/common/misc_utils";
+import { getFormattedMemoryUsage, singletonOf } from "@/common/misc_utils";
 import { macronizeInput } from "@/macronizer/morcronizer";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
@@ -75,20 +75,8 @@ function log(message: string) {
   console.log(`[start_server] ${message}`);
 }
 
-function bytesToMib(input: number): number {
-  const inMib = input / (1024 * 1024);
-  return Math.round(inMib * 10) / 10;
-}
-
 function logMemoryUsage(telemetry: TelemetryLogger): void {
-  const usage = process.memoryUsage();
-  telemetry.logServerHealth({
-    rss: bytesToMib(usage.rss),
-    heapTotal: bytesToMib(usage.heapTotal),
-    heapUsed: bytesToMib(usage.heapUsed),
-    external: bytesToMib(usage.external),
-    arrayBuffers: bytesToMib(usage.arrayBuffers),
-  });
+  telemetry.logServerHealth(getFormattedMemoryUsage());
 }
 
 type MaybeCacheable = { commitHash?: string };

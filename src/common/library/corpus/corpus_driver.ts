@@ -29,8 +29,28 @@ function formatQueryResult(result: CorpusQueryResult): string {
 }
 
 function getCorpus(): CorpusQueryEngine {
-  const corpus = loadCorpus();
+  const startTime = Date.now();
+  const corpus = measureMemoryUsage(loadCorpus);
+  console.log(`Corpus loaded in ${Date.now() - startTime} ms`);
   return new CorpusQueryEngine(corpus);
+}
+
+function measureMemoryUsage<T>(runnable: () => T): T {
+  if (typeof global.gc !== "function") {
+    return runnable();
+  }
+
+  global.gc();
+  const memoryBefore = process.memoryUsage().heapUsed;
+  const result = runnable();
+  // Keep the result in memory for the measurement.
+  void result;
+  global.gc();
+  const memoryAfter = process.memoryUsage().heapUsed;
+
+  const memoryUsed = (memoryAfter - memoryBefore) / 1024 / 1024;
+  console.log(`Memory usage is approximately ${memoryUsed.toFixed(2)} MB`);
+  return result;
 }
 
 function runQuery(
@@ -47,12 +67,17 @@ function runQuery(
   return results;
 }
 
-function driver() {
+async function driver() {
   if (process.env.BUILD_CORPUS === "1") {
     buildCorpus(latinWorksFromLibrary());
   }
   const corpus = getCorpus();
   runQuery(corpus, QUERY);
 }
+
+// To profile memory, run:
+// ./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts --bundle --outfile=corpus_driver.js --platform=node --minify
+// to build the driver bundle.
+// Then, run via `node --expose-gc corpus_driver.js` to run.
 
 driver();
