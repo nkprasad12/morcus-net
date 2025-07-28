@@ -1,25 +1,10 @@
-import type { LatinCorpusIndex } from "@/common/library/corpus/corpus_common";
+import type {
+  CorpusQuery,
+  CorpusQueryPart,
+  CorpusQueryResult,
+  LatinCorpusIndex,
+} from "@/common/library/corpus/corpus_common";
 import { exhaustiveGuard } from "@/common/misc_utils";
-
-interface WordQuery {
-  word: string;
-}
-
-interface LemmaQuery {
-  lemma: string;
-}
-
-type CorpusQueryPart = WordQuery | LemmaQuery;
-
-export interface CorpusQuery {
-  parts: CorpusQueryPart[];
-}
-
-export interface CorpusQueryResult {
-  workId: string;
-  section: string;
-  offset: number;
-}
 
 export class CorpusQueryEngine {
   corpus: LatinCorpusIndex;

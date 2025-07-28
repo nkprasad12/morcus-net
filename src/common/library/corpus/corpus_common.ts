@@ -13,6 +13,26 @@ import fs from "fs";
 const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `${CORPUS_DIR}/latin_corpus.json`;
 
+export interface WordQuery {
+  word: string;
+}
+
+export interface LemmaQuery {
+  lemma: string;
+}
+
+export type CorpusQueryPart = WordQuery | LemmaQuery;
+
+export interface CorpusQuery {
+  parts: CorpusQueryPart[];
+}
+
+export interface CorpusQueryResult {
+  workId: string;
+  section: string;
+  offset: number;
+}
+
 /** Defines a work that the corpus can consume. */
 export interface CorpusInputWork {
   /** The unique ID of the work. */
