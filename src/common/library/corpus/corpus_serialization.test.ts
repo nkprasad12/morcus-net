@@ -4,7 +4,8 @@ import {
   writeCorpus,
   loadCorpus,
 } from "@/common/library/corpus/corpus_serialization";
-import { LatinCorpusIndex } from "@/common/library/corpus/corpus_common";
+import { type InProgressLatinCorpus } from "@/common/library/corpus/corpus_common";
+import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 
 console.debug = jest.fn();
 
@@ -12,7 +13,7 @@ const TEST_CORPUS_FILE = path.join(__dirname, "test_latin_corpus.json");
 
 const WHATEVER_ARRAY = [2, 6, 17, 21, 35, 67];
 
-function getTestCorpus(): LatinCorpusIndex<number[]> {
+function getTestCorpus(): InProgressLatinCorpus {
   return {
     workLookup: [["work1", ["row1", "row2"]]],
     workRowRanges: [
@@ -38,8 +39,8 @@ function getTestCorpus(): LatinCorpusIndex<number[]> {
       person: {} as any,
       mood: {} as any,
       voice: {} as any,
-      maxTokenId: 67,
     },
+    maxTokenId: 67,
     stats: {
       totalWords: 4,
       totalWorks: 1,
@@ -66,10 +67,10 @@ describe("writeCorpus and loadCorpus", () => {
     expect(loaded.workRowRanges).toEqual(corpus.workRowRanges);
     expect(loaded.stats).toEqual(corpus.stats);
 
-    // Check that Maps are restored
-    expect(loaded.indices.word).toBeInstanceOf(Map);
+    // Check that Maps are restored to PackedReverseIndex
+    expect(loaded.indices.word).toBeInstanceOf(PackedReverseIndex);
     expect(loaded.indices.word.get("amo")).toEqual([0, 1]);
-    expect(loaded.indices.lemma).toBeInstanceOf(Map);
+    expect(loaded.indices.lemma).toBeInstanceOf(PackedReverseIndex);
     expect(loaded.indices.lemma.get("amare")).toEqual([0, 1, 2]);
     expect(loaded.indices.word.get("whatever")).toEqual(WHATEVER_ARRAY);
   });

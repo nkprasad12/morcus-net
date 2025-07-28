@@ -39,7 +39,6 @@ function measureMemoryUsage<T>(runnable: () => T): T {
   if (typeof global.gc !== "function") {
     return runnable();
   }
-
   global.gc();
   const memoryBefore = process.memoryUsage().heapUsed;
   const result = runnable();
@@ -71,7 +70,12 @@ async function driver() {
   if (process.env.BUILD_CORPUS === "1") {
     buildCorpus(latinWorksFromLibrary());
   }
+  // console.log(getFormattedMemoryUsage());
   const corpus = getCorpus();
+  // for (let i = 0; i < 10; i++) {
+  //   await new Promise((resolve) => setTimeout(resolve, 5000));
+  //   console.log(getFormattedMemoryUsage());
+  // }
   runQuery(corpus, QUERY);
 }
 

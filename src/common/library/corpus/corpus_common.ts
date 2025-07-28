@@ -56,39 +56,47 @@ export interface CorpusStats {
   uniqueWords: number;
   uniqueLemmata: number;
 }
-export interface LatinCorpusIndex<T> {
+
+interface GenericReverseIndex<T> {
+  get(key: T): number[] | undefined;
+}
+type CorpusIndexKeyTypes = {
+  word: string;
+  lemma: string;
+  case: LatinCase;
+  number: LatinNumber;
+  gender: LatinGender;
+  tense: LatinTense;
+  person: LatinPerson;
+  mood: LatinMood;
+  voice: LatinVoice;
+};
+interface CoreCorpusIndex {
   /** Data about each work in the corpus. */
   workLookup: [id: string, rowIds: string[]][];
   /** Ranges of token indices for each work in the corpus, split by row. */
   workRowRanges: WorkRowRange[];
-  /** Reverse indices for various corpus features. */
-  indices: {
-    /** Reverse index mapping normalized words to their token IDs. */
-    word: Map<string, T>;
-    /** Reverse index mapping lemmata to their token IDs. */
-    lemma: Map<string, T>;
-    /** Reverse index mapping cases to their token IDs. */
-    case: Map<LatinCase, T>;
-    /** Reverse index mapping numbers to their token IDs. */
-    number: Map<LatinNumber, T>;
-    /** Reverse index mapping genders to their token IDs. */
-    gender: Map<LatinGender, T>;
-    /** Reverse index mapping tenses to their token IDs. */
-    tense: Map<LatinTense, T>;
-    /** Reverse index mapping persons to their token IDs. */
-    person: Map<LatinPerson, T>;
-    /** Reverse index mapping moods to their token IDs. */
-    mood: Map<LatinMood, T>;
-    /** Reverse index mapping voices to their token IDs. */
-    voice: Map<LatinVoice, T>;
-    /** The maximum token ID. */
-    maxTokenId: number;
-  };
   /** Statistics about the corpus. */
   stats: CorpusStats;
 }
 
-export function createEmptyCorpusIndex(): LatinCorpusIndex<number[]> {
+export interface LatinCorpusIndex extends CoreCorpusIndex {
+  indices: {
+    [K in keyof CorpusIndexKeyTypes]: GenericReverseIndex<
+      CorpusIndexKeyTypes[K]
+    >;
+  };
+}
+
+export type InProgressLatinCorpus = CoreCorpusIndex & {
+  indices: {
+    [K in keyof CorpusIndexKeyTypes]: Map<CorpusIndexKeyTypes[K], number[]>;
+  };
+  /** The maximum token ID. */
+  maxTokenId: number;
+};
+
+export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
     workLookup: [],
     workRowRanges: [],
@@ -102,8 +110,8 @@ export function createEmptyCorpusIndex(): LatinCorpusIndex<number[]> {
       person: new Map(),
       mood: new Map(),
       voice: new Map(),
-      maxTokenId: -1,
     },
+    maxTokenId: -1,
     stats: {
       totalWords: 0,
       totalWorks: 0,

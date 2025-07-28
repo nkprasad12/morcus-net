@@ -3,7 +3,7 @@ import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   createEmptyCorpusIndex,
   type CorpusInputWork,
-  type LatinCorpusIndex,
+  type InProgressLatinCorpus,
 } from "@/common/library/corpus/corpus_common";
 import { writeCorpus } from "@/common/library/corpus/corpus_serialization";
 import { processTokens } from "@/common/text_cleaning";
@@ -47,7 +47,7 @@ function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
  */
 function absorbWork(
   work: CorpusInputWork,
-  corpus: LatinCorpusIndex<number[]>,
+  corpus: InProgressLatinCorpus,
   getInflections: (word: string) => LatinWordAnalysis[],
   startId: number
 ): number {
@@ -157,7 +157,7 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
     // and the start of another.
     tokenId += 100;
   }
-  corpus.indices.maxTokenId = tokenId;
+  corpus.maxTokenId = tokenId;
   corpus.stats.uniqueWords = corpus.indices.word.size;
   corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
 
