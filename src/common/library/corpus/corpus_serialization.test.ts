@@ -11,7 +11,7 @@ console.debug = jest.fn();
 
 const TEST_CORPUS_FILE = path.join(__dirname, "test_latin_corpus.json");
 
-const WHATEVER_ARRAY = [2, 6, 17, 21, 35, 67];
+const LONG_ARRAY = [2, 6, 17, 21, 23, 27, 35, 48, 59, 60, 61, 62];
 
 function getTestCorpus(): InProgressLatinCorpus {
   return {
@@ -29,7 +29,7 @@ function getTestCorpus(): InProgressLatinCorpus {
       word: new Map([
         ["amo", [0, 1]],
         ["amas", [2]],
-        ["whatever", WHATEVER_ARRAY],
+        ["commonWord", LONG_ARRAY],
       ]),
       lemma: new Map([["amare", [0, 1, 2]]]),
       case: {} as any,
@@ -40,7 +40,7 @@ function getTestCorpus(): InProgressLatinCorpus {
       mood: {} as any,
       voice: {} as any,
     },
-    maxTokenId: 67,
+    maxTokenId: 63,
     stats: {
       totalWords: 4,
       totalWorks: 1,
@@ -69,9 +69,15 @@ describe("writeCorpus and loadCorpus", () => {
 
     // Check that Maps are restored to PackedReverseIndex
     expect(loaded.indices.word).toBeInstanceOf(PackedReverseIndex);
-    expect(loaded.indices.word.get("amo")).toEqual([0, 1]);
     expect(loaded.indices.lemma).toBeInstanceOf(PackedReverseIndex);
+
+    expect(loaded.indices.word.get("amo")).toEqual([0, 1]);
+    expect(loaded.indices.word.formatOf("amo")).toBeUndefined();
+
     expect(loaded.indices.lemma.get("amare")).toEqual([0, 1, 2]);
-    expect(loaded.indices.word.get("whatever")).toEqual(WHATEVER_ARRAY);
+    expect(loaded.indices.lemma.formatOf("amare")).toBeUndefined();
+
+    expect(loaded.indices.word.get("commonWord")).toEqual(LONG_ARRAY);
+    expect(loaded.indices.word.formatOf("commonWord")).toEqual("bitmask");
   });
 });

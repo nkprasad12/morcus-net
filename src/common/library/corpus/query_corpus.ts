@@ -7,7 +7,7 @@ import type {
 import { exhaustiveGuard } from "@/common/misc_utils";
 
 export class CorpusQueryEngine {
-  constructor(private readonly corpus: LatinCorpusIndex<number[]>) {}
+  constructor(private readonly corpus: LatinCorpusIndex) {}
 
   resolveToken(tokenId: number): CorpusQueryResult {
     const workRanges = this.corpus.workRowRanges;
@@ -81,7 +81,7 @@ export class CorpusQueryEngine {
     let matches = this.resolveQueryPart(query.parts[0]);
     for (let i = 1; i < query.parts.length; i++) {
       const partMatches = new Set(
-        this.resolveQueryPart(query.parts[i]).map((t) => t - 2 * i)
+        this.resolveQueryPart(query.parts[i]).map((t) => t - i)
       );
       matches = matches.filter((tokenId) => partMatches.has(tokenId));
     }

@@ -61,3 +61,48 @@ What about inflection data?
     - Case, Number, (Gender?)
   - For verbs:
     - Person, number, mood, tense, voice
+
+If we have N tokens, and p% are true then:
+
+- Size of full member list is N _ p _ log N bits
+- Size of member mask is N bits
+
+Thus, N < N _ p _ log N
+or 1 / p < log N
+or N > 2^-p
+
+How big is run length encoding?
+
+If we assume a sparshish index, we have K << N:
+
+- For the number of runs, we have the worst case
+  - The 1s never cluster, maximizing the number of runs.
+  - This gives K runs of 1s (of length 1) and K + 1 runs of 0s (of variable length)
+- In the worst case, we have to assume that we can have run lengths:
+  - Of length K for 1s
+  - Of length N-K for 0s
+- So then we can have a format where:
+  - we have a header that tells us K
+    - We assume we already have N separately.
+    - This is log N bits
+  - We then have alternative sequences of `bit` and `runLength`
+    - runLength is variable length encoded based on the bit.
+    - Then we have:
+      - Total number of runs: 2K + 1
+      - encoding for 1s is K log K bits
+      - encoding for 0s is K log N-K bits
+    - Total: 1 + K (log K + log N-K + 2)
+- How does this compare with N?
+  - Consdider p = the frequency of K, and drop the 1
+  - Then: N _ p (log N _ p + log (N - Np) + 2)
+    - Note N - Np = N (1 - p)
+  - Then: Np (log N + log p + log N + log (1 - p) + 2)
+    - Or Np (2 log N + log p + log(1 - p) + 2)
+    - Note that log p + log (1 - p) has a maximum value when p = 0.5 (of approx -0.602)
+      - However, we are only handle sparse arrays here. We know p is smaller than that.
+      - For this dataset, p will be chosen as as small as the case such that log p + log 1-p is
+        approx -1.4
+    - This means the total bits will at most Np (2 log N + 1.4)
+      - Then, compared with the comparison of a bit mask of length N:
+      - Np (2 log N + 1.4) < N
+      - p < 1 / (2 log N + 1.4)

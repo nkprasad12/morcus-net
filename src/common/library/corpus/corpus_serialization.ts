@@ -1,14 +1,20 @@
+import { assertEqual } from "@/common/assert";
 import { packIntegers } from "@/common/bytedata/packing";
 import {
   LatinCorpusIndex,
   CORPUS_FILE,
   CORPUS_DIR,
   type InProgressLatinCorpus,
+  type PackedIndexData,
 } from "@/common/library/corpus/corpus_common";
 import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 import fs from "fs";
 
-const SPECIAL_SERIALIZATION_TOKEN = "___SERIALIZED_TOKEN_v1___";
+const SERIALIZATION_TOKEN = "___SERIALIZED_KEY_v1___";
+const MAP_TOKEN = `${SERIALIZATION_TOKEN}_MAP`;
+const BIT_MASK = `${SERIALIZATION_TOKEN}_BIT_MASK`;
+
+type StoredMapValue = string | { serializationKey: string; data: string };
 
 export function writeCorpus(
   corpus: InProgressLatinCorpus,
@@ -35,16 +41,23 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
     if (
       value &&
       typeof value === "object" &&
-      value.dataType === "Map" &&
-      value.serializationKey === SPECIAL_SERIALIZATION_TOKEN
+      value.serializationKey === MAP_TOKEN
     ) {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const mapData = value.data as [unknown, string][];
+      const mapData = value.data as [unknown, StoredMapValue][];
       const maxNumber = value.maxNumber;
-      const map = new Map<unknown, Uint8Array>();
+      const map = new Map<unknown, PackedIndexData>();
       for (const [k, v] of mapData) {
-        const buffer = Buffer.from(v, "base64");
-        map.set(k, new Uint8Array(buffer));
+        // We have a packed array.
+        if (typeof v === "string") {
+          const buffer = Buffer.from(v, "base64");
+          map.set(k, new Uint8Array(buffer));
+          continue;
+        }
+        // We have a bitmask.
+        assertEqual(v.serializationKey, BIT_MASK);
+        const buffer = Buffer.from(v.data, "base64");
+        map.set(k, { format: "bitmask", data: new Uint8Array(buffer) });
       }
       return new PackedReverseIndex(map, maxNumber);
     }
@@ -57,13 +70,13 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
  * Serializes an object to a JSON string, correctly handling Map objects.
  */
 function serializeCorpus(obj: InProgressLatinCorpus): string {
+  const packedNumberSize = Math.ceil(Math.log2(obj.maxTokenId + 1));
   const replacer = (_key: string, value: any) => {
     if (value instanceof Map) {
       return {
-        dataType: "Map",
-        serializationKey: SPECIAL_SERIALIZATION_TOKEN,
+        serializationKey: MAP_TOKEN,
         maxNumber: obj.maxTokenId,
-        data: prepareIndexMap(value, obj.maxTokenId),
+        data: prepareIndexMap(value, obj.maxTokenId, packedNumberSize),
       };
     }
     return value;
@@ -73,10 +86,33 @@ function serializeCorpus(obj: InProgressLatinCorpus): string {
 
 function prepareIndexMap(
   indexMap: Map<unknown, number[]>,
-  maxNumber: number
-): [unknown, string][] {
-  return Array.from(indexMap.entries()).map(([key, value]) => [
-    key,
-    Buffer.from(packIntegers(maxNumber, value)).toString("base64"),
-  ]);
+  maxNumber: number,
+  packedNumberSize: number
+): [unknown, StoredMapValue][] {
+  return Array.from(indexMap.entries()).map(([key, value]) => {
+    const useBitMask = value.length * packedNumberSize > maxNumber;
+    const arrToSave = useBitMask
+      ? toBitMask(value, maxNumber)
+      : packIntegers(maxNumber, value);
+    const indexBits = Buffer.from(arrToSave).toString("base64");
+    const storedValue = useBitMask
+      ? { serializationKey: BIT_MASK, data: indexBits }
+      : indexBits;
+    return [key, storedValue];
+  });
+}
+
+function toBitMask(values: number[], maxNumber: number): Uint8Array {
+  const bitMask = new Uint8Array(Math.ceil((maxNumber + 1) / 8));
+  for (const value of values) {
+    if (value < 0 || value > maxNumber) {
+      throw new Error(
+        `Value ${value} out of bounds for maxNumber ${maxNumber}`
+      );
+    }
+    const byteIndex = Math.floor(value / 8);
+    const bitIndex = value % 8;
+    bitMask[byteIndex] |= 1 << bitIndex;
+  }
+  return bitMask;
 }

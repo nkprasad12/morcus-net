@@ -48,6 +48,7 @@ function absorbWork(
   getInflections: (word: string) => CrunchResult[],
   startId: number
 ): number {
+  console.debug(`Processing work: ${work.id}`);
   const wordIndex = arrayMap(corpus.indices.word);
   const lemmaIndex = arrayMap(corpus.indices.lemma);
   const casesIndex = arrayMap(corpus.indices.case);
@@ -68,7 +69,6 @@ function absorbWork(
     const rowStartId = currentId;
     for (const [token, isWord] of processTokens(rowText)) {
       if (!isWord) {
-        currentId += 1;
         continue;
       }
       const stripped = token
@@ -146,9 +146,6 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
   const corpus = createEmptyCorpusIndex();
   for (const work of iterableWorks) {
     tokenId = absorbWork(work, corpus, getInflections, tokenId);
-    // Avoid accidentally finding matches from the end of one work
-    // and the start of another.
-    tokenId += 100;
   }
   corpus.maxTokenId = tokenId;
   corpus.stats.uniqueWords = corpus.indices.word.size;

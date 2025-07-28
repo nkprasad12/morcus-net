@@ -11,6 +11,10 @@ import {
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `${CORPUS_DIR}/latin_corpus.json`;
 
+// // // // // // // // // //
+// Corpus Querying Types   //
+// // // // // // // // // //
+
 export interface WordQuery {
   word: string;
 }
@@ -30,6 +34,10 @@ export interface CorpusQueryResult {
   section: string;
   offset: number;
 }
+
+// // // // // // // // // //
+// Corpus Interface Types  //
+// // // // // // // // // //
 
 /** Defines a work that the corpus can consume. */
 export interface CorpusInputWork {
@@ -57,10 +65,12 @@ export interface CorpusStats {
   uniqueLemmata: number;
 }
 
-interface GenericReverseIndex<T> {
+export interface GenericReverseIndex<T> {
+  formatOf(key: T): "bitmask" | undefined;
   get(key: T): number[] | undefined;
+  keys(): Iterable<T>;
 }
-type CorpusIndexKeyTypes = {
+export type CorpusIndexKeyTypes = {
   word: string;
   lemma: string;
   case: LatinCase;
@@ -120,3 +130,14 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
     },
   };
 }
+
+// // // // // // // // // // //
+// Corpus Serialization Types //
+// // // // // // // // // // //
+
+export type PackedNumbers = Uint8Array;
+export interface PackedBitMask {
+  format: "bitmask";
+  data: Uint8Array;
+}
+export type PackedIndexData = PackedNumbers | PackedBitMask;
