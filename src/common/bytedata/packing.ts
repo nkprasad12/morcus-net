@@ -4,6 +4,8 @@ const DELIMITER_SIZE = 4;
 const METADATA_SIZE = 4;
 const MAX_INT = 2 ** (DELIMITER_SIZE * 8);
 
+const PACKED_NUMBER_HEADER_SIZE = 1; // 8-bit integer for number of unused bits
+
 /** Packs a sequence of buffers into a single length-delimited buffer. */
 export function pack(buffers: ArrayBuffer[]): ArrayBuffer {
   // The initial bytes stores the number of chunks.
@@ -106,18 +108,26 @@ export async function readMetadata(
  *   `<= maxIntSize`.
  * @returns A `Uint8Array` containing the packed bit representation of the numbers.
  */
-export function packIntegers(
-  maxIntSize: number,
-  numbers: number[]
-): Uint8Array {
-  assert(maxIntSize > 0, "maxIntSize must be positive.");
+export function packIntegers(maxIntSize: number, numbers: number[]): Buffer {
+  assert(maxIntSize >= 0, "maxIntSize must be non-negative.");
+  if (numbers.length === 0) {
+    const buffer = Buffer.alloc(1);
+    buffer.writeUInt8(0, 0); // 0 unused bits
+    return buffer;
+  }
+
   // +1 because we need to represent maxIntSize itself (e.g., 0-7 needs 3 bits for 8 values).
-  const bitsPerNumber = Math.ceil(Math.log2(maxIntSize + 1));
+  const bitsPerNumber =
+    maxIntSize === 0 ? 1 : Math.ceil(Math.log2(maxIntSize + 1));
 
   // Calculate the total number of bits and the required buffer size in bytes.
   const totalBits = numbers.length * bitsPerNumber;
-  const bufferSize = Math.ceil(totalBits / 8);
-  const buffer = Buffer.alloc(bufferSize);
+  const dataBufferSize = Math.ceil(totalBits / 8);
+  const buffer = Buffer.alloc(PACKED_NUMBER_HEADER_SIZE + dataBufferSize);
+
+  // Write header: number of unused bits in the last byte.
+  const unusedBits = dataBufferSize * 8 - totalBits;
+  buffer.writeUInt8(unusedBits, 0);
 
   let bitOffset = 0;
 
@@ -136,7 +146,7 @@ export function packIntegers(
         const byteIndex = Math.floor(bitOffset / 8);
         const bitInByte = bitOffset % 8;
         // Set the bit in the buffer. We write bits from left to right (MSB to LSB) in each byte.
-        buffer[byteIndex] |= 1 << (7 - bitInByte);
+        buffer[PACKED_NUMBER_HEADER_SIZE + byteIndex] |= 1 << (7 - bitInByte);
       }
       bitOffset++;
     }
@@ -160,21 +170,38 @@ export function unpackIntegers(
   maxIntSize: number,
   buffer: Uint8Array
 ): number[] {
-  assert(maxIntSize > 0, "maxIntSize must be positive.");
+  assert(maxIntSize >= 0, "maxIntSize must be non-negative.");
+  if (buffer.length < PACKED_NUMBER_HEADER_SIZE) {
+    throw new Error("Invalid buffer: too small to contain header.");
+  }
+
+  const dataBuffer = buffer.subarray(PACKED_NUMBER_HEADER_SIZE);
+  if (dataBuffer.length === 0) {
+    return [];
+  }
+
+  const unusedBits = buffer[0];
+  const totalDataBits = dataBuffer.length * 8;
+  const totalValidBits = totalDataBits - unusedBits;
+
   // +1 because we need to represent maxIntSize itself (e.g., 0-7 needs 3 bits for 8 values).
-  const bitsPerNumber = Math.ceil(Math.log2(maxIntSize + 1));
+  const bitsPerNumber =
+    maxIntSize === 0 ? 1 : Math.ceil(Math.log2(maxIntSize + 1));
+  if (bitsPerNumber === 0 && totalValidBits > 0) {
+    throw new Error("bitsPerNumber is 0 but buffer contains data.");
+  }
+  if (bitsPerNumber === 0) return [];
 
   const numbers: number[] = [];
   let bitOffset = 0;
-  const totalBits = buffer.length * 8;
 
-  while (bitOffset + bitsPerNumber <= totalBits) {
+  while (bitOffset + bitsPerNumber <= totalValidBits) {
     let currentNum = 0;
     for (let j = bitsPerNumber - 1; j >= 0; j--) {
       const byteIndex = Math.floor(bitOffset / 8);
       const bitInByte = bitOffset % 8;
 
-      const bit = (buffer[byteIndex] >> (7 - bitInByte)) & 1;
+      const bit = (dataBuffer[byteIndex] >> (7 - bitInByte)) & 1;
       if (bit === 1) {
         currentNum |= 1 << j;
       }
