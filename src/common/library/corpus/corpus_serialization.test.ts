@@ -1,49 +1,76 @@
+import fs from "fs";
+import path from "path";
 import {
-  serializeWithMaps,
-  deserializeWithMaps,
+  writeCorpus,
+  loadCorpus,
 } from "@/common/library/corpus/corpus_serialization";
+import { LatinCorpusIndex } from "@/common/library/corpus/corpus_common";
 
-describe("Map serialization", () => {
-  it("serializes and deserializes an object with a map", () => {
-    const original = {
-      a: 1,
-      myMap: new Map<string, number>([
-        ["key1", 10],
-        ["key2", 20],
+console.debug = jest.fn();
+
+const TEST_CORPUS_FILE = path.join(__dirname, "test_latin_corpus.json");
+
+const WHATEVER_ARRAY = [2, 6, 17, 21, 35, 67];
+
+function getTestCorpus(): LatinCorpusIndex<number[]> {
+  return {
+    workLookup: [["work1", ["row1", "row2"]]],
+    workRowRanges: [
+      [
+        0,
+        [
+          [0, 0, 2],
+          [1, 2, 4],
+        ],
+      ],
+    ],
+    indices: {
+      word: new Map([
+        ["amo", [0, 1]],
+        ["amas", [2]],
+        ["whatever", WHATEVER_ARRAY],
       ]),
-      nested: {
-        otherMap: new Map<number, boolean>([[1, true]]),
-      },
-    };
+      lemma: new Map([["amare", [0, 1, 2]]]),
+      case: {} as any,
+      number: {} as any,
+      gender: {} as any,
+      tense: {} as any,
+      person: {} as any,
+      mood: {} as any,
+      voice: {} as any,
+      maxTokenId: 67,
+    },
+    stats: {
+      totalWords: 4,
+      totalWorks: 1,
+      uniqueWords: 2,
+      uniqueLemmata: 1,
+    },
+  };
+}
 
-    const json = serializeWithMaps(original);
-    const deserialized = deserializeWithMaps<typeof original>(json);
-
-    expect(deserialized).toEqual(original);
-    expect(deserialized.myMap).toBeInstanceOf(Map);
-    expect(deserialized.myMap.get("key1")).toBe(10);
-    expect(deserialized.nested.otherMap).toBeInstanceOf(Map);
-    expect(deserialized.nested.otherMap.get(1)).toBe(true);
+describe("writeCorpus and loadCorpus", () => {
+  afterEach(() => {
+    if (fs.existsSync(TEST_CORPUS_FILE)) {
+      fs.unlinkSync(TEST_CORPUS_FILE);
+    }
   });
 
-  it("handles an empty map", () => {
-    const original = { emptyMap: new Map() };
-    const json = serializeWithMaps(original);
-    const deserialized = deserializeWithMaps<typeof original>(json);
-    expect(deserialized.emptyMap).toBeInstanceOf(Map);
-    expect(deserialized.emptyMap.size).toBe(0);
-  });
+  it("writes and loads a corpus index correctly", () => {
+    const corpus = getTestCorpus();
+    writeCorpus(corpus, TEST_CORPUS_FILE);
+    expect(fs.existsSync(TEST_CORPUS_FILE)).toBe(true);
 
-  it("does not deserialize if token is incorrect", () => {
-    const objWithBadToken = {
-      dataType: "Map",
-      serializationKey: "___WRONG_TOKEN___",
-      data: [["key", "value"]],
-    };
-    const json = JSON.stringify({ myMap: objWithBadToken });
-    const deserialized = deserializeWithMaps<{ myMap: any }>(json);
+    const loaded = loadCorpus(TEST_CORPUS_FILE);
+    expect(loaded.workLookup).toEqual(corpus.workLookup);
+    expect(loaded.workRowRanges).toEqual(corpus.workRowRanges);
+    expect(loaded.stats).toEqual(corpus.stats);
 
-    expect(deserialized.myMap).not.toBeInstanceOf(Map);
-    expect(deserialized.myMap).toEqual(objWithBadToken);
+    // Check that Maps are restored
+    expect(loaded.indices.word).toBeInstanceOf(Map);
+    expect(loaded.indices.word.get("amo")).toEqual([0, 1]);
+    expect(loaded.indices.lemma).toBeInstanceOf(Map);
+    expect(loaded.indices.lemma.get("amare")).toEqual([0, 1, 2]);
+    expect(loaded.indices.word.get("whatever")).toEqual(WHATEVER_ARRAY);
   });
 });
