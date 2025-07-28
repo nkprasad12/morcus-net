@@ -490,6 +490,13 @@ function mergeIfCompatible(
   return result;
 }
 
+export function cleanLemma(lemma: string): string {
+  return lemma
+    .replaceAll("^", "\u0306")
+    .replaceAll("_", "\u0304")
+    .replaceAll("-", "");
+}
+
 export namespace MorceusCruncher {
   export function make(tables: CruncherTables): Cruncher {
     return (word, options) => convert(crunchWord(word, tables, options));
@@ -507,10 +514,7 @@ export namespace MorceusCruncher {
         byForm.add(result.form, result);
       }
       analyses.push({
-        lemma: lemma
-          .replaceAll("^", "\u0306")
-          .replaceAll("_", "\u0304")
-          .replaceAll("-", ""),
+        lemma: cleanLemma(lemma),
         inflectedForms: Array.from(
           byForm.map.entries(),
           ([form, inflectionData]) => ({

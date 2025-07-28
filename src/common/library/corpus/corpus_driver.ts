@@ -6,6 +6,7 @@ import type {
 import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
 import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
 import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
+import { getFormattedMemoryUsage } from "@/common/misc_utils";
 
 const QUERY: CorpusQuery = {
   parts: [{ word: "oscula" }, { lemma: "natus" }],
@@ -35,19 +36,24 @@ function getCorpus(): CorpusQueryEngine {
   return new CorpusQueryEngine(corpus);
 }
 
+function currentMemoryUsage(): number {
+  const usage = getFormattedMemoryUsage();
+  return usage.heapUsed + usage.external + usage.arrayBuffers;
+}
+
 function measureMemoryUsage<T>(runnable: () => T): T {
   if (typeof global.gc !== "function") {
     return runnable();
   }
   global.gc();
-  const memoryBefore = process.memoryUsage().heapUsed;
+  const memoryBefore = currentMemoryUsage();
   const result = runnable();
   // Keep the result in memory for the measurement.
   void result;
   global.gc();
-  const memoryAfter = process.memoryUsage().heapUsed;
+  const memoryAfter = currentMemoryUsage();
 
-  const memoryUsed = (memoryAfter - memoryBefore) / 1024 / 1024;
+  const memoryUsed = memoryAfter - memoryBefore;
   console.log(`Memory usage is approximately ${memoryUsed.toFixed(2)} MB`);
   return result;
 }

@@ -7,12 +7,9 @@ import {
 } from "@/common/library/corpus/corpus_common";
 import { writeCorpus } from "@/common/library/corpus/corpus_serialization";
 import { processTokens } from "@/common/text_cleaning";
-import { MorceusCruncher } from "@/morceus/crunch";
+import { cleanLemma, crunchWord } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
-import {
-  CruncherOptions,
-  type LatinWordAnalysis,
-} from "@/morceus/cruncher_types";
+import { CruncherOptions, type CrunchResult } from "@/morceus/cruncher_types";
 import {
   LatinCase,
   LatinNumber,
@@ -48,7 +45,7 @@ function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
 function absorbWork(
   work: CorpusInputWork,
   corpus: InProgressLatinCorpus,
-  getInflections: (word: string) => LatinWordAnalysis[],
+  getInflections: (word: string) => CrunchResult[],
   startId: number
 ): number {
   const wordIndex = arrayMap(corpus.indices.word);
@@ -89,20 +86,16 @@ function absorbWork(
       const person = new Set<LatinPerson>();
       const mood = new Set<LatinMood>();
       const voice = new Set<LatinVoice>();
-      for (const lemma of getInflections(stripped)) {
-        lemmata.add(lemma.lemma);
-        for (const form of lemma.inflectedForms) {
-          for (const inflectionData of form.inflectionData) {
-            const inflection = inflectionData.grammaticalData;
-            absorbDataField(cases, inflection.case);
-            absorbDataField(number, inflection.number);
-            absorbDataField(gender, inflection.gender);
-            absorbDataField(tense, inflection.tense);
-            absorbDataField(person, inflection.person);
-            absorbDataField(mood, inflection.mood);
-            absorbDataField(voice, inflection.voice);
-          }
-        }
+      for (const result of getInflections(stripped)) {
+        lemmata.add(cleanLemma(result.lemma));
+        const inflection = result.grammaticalData;
+        absorbDataField(cases, inflection.case);
+        absorbDataField(number, inflection.number);
+        absorbDataField(gender, inflection.gender);
+        absorbDataField(tense, inflection.tense);
+        absorbDataField(person, inflection.person);
+        absorbDataField(mood, inflection.mood);
+        absorbDataField(voice, inflection.voice);
       }
 
       for (const lemma of lemmata) {
@@ -145,10 +138,10 @@ function absorbWork(
 }
 
 export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
-  const cruncher = MorceusCruncher.make(MorceusTables.CACHED.get());
+  const tables = MorceusTables.CACHED.get();
   const startTime = Date.now();
   const getInflections = (word: string) =>
-    cruncher(word, CruncherOptions.DEFAULT);
+    crunchWord(word, tables, CruncherOptions.DEFAULT);
   let tokenId = 0;
   const corpus = createEmptyCorpusIndex();
   for (const work of iterableWorks) {
