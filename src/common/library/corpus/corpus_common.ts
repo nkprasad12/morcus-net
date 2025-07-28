@@ -1,4 +1,13 @@
 import { deserializeWithMaps, serializeWithMaps } from "@/common/misc_utils";
+import {
+  LatinCase,
+  LatinGender,
+  LatinMood,
+  LatinNumber,
+  LatinPerson,
+  LatinTense,
+  LatinVoice,
+} from "@/morceus/types";
 import fs from "fs";
 
 const CORPUS_DIR = "build/corpus";
@@ -34,14 +43,53 @@ export interface LatinCorpusIndex {
   workLookup: [id: string, rowIds: string[]][];
   /** Ranges of token indices for each work in the corpus, split by row. */
   workRowRanges: WorkRowRange[];
+  /** Reverse indices for various corpus features. */
   indices: {
     /** Reverse index mapping normalized words to their token IDs. */
     word: Map<string, number[]>;
     /** Reverse index mapping lemmata to their token IDs. */
     lemma: Map<string, number[]>;
+    /** Reverse index mapping cases to their token IDs. */
+    case: Map<LatinCase, number[]>;
+    /** Reverse index mapping numbers to their token IDs. */
+    number: Map<LatinNumber, number[]>;
+    /** Reverse index mapping genders to their token IDs. */
+    gender: Map<LatinGender, number[]>;
+    /** Reverse index mapping tenses to their token IDs. */
+    tense: Map<LatinTense, number[]>;
+    /** Reverse index mapping persons to their token IDs. */
+    person: Map<LatinPerson, number[]>;
+    /** Reverse index mapping moods to their token IDs. */
+    mood: Map<LatinMood, number[]>;
+    /** Reverse index mapping voices to their token IDs. */
+    voice: Map<LatinVoice, number[]>;
   };
   /** Statistics about the corpus. */
   stats: CorpusStats;
+}
+
+export function createEmptyCorpusIndex(): LatinCorpusIndex {
+  return {
+    workLookup: [],
+    workRowRanges: [],
+    indices: {
+      word: new Map(),
+      lemma: new Map(),
+      case: new Map(),
+      number: new Map(),
+      gender: new Map(),
+      tense: new Map(),
+      person: new Map(),
+      mood: new Map(),
+      voice: new Map(),
+    },
+    stats: {
+      totalWords: 0,
+      totalWorks: 0,
+      uniqueWords: 0,
+      uniqueLemmata: 0,
+    },
+  };
 }
 
 export function writeCorpusToFile(

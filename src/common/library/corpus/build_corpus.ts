@@ -1,6 +1,7 @@
 import { assert } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
+  createEmptyCorpusIndex,
   writeCorpusToFile,
   type CorpusInputWork,
   type LatinCorpusIndex,
@@ -12,6 +13,30 @@ import {
   CruncherOptions,
   type LatinWordAnalysis,
 } from "@/morceus/cruncher_types";
+import {
+  LatinCase,
+  LatinNumber,
+  type DataField,
+  type LatinGender,
+  type LatinMood,
+  type LatinPerson,
+  type LatinTense,
+  type LatinVoice,
+} from "@/morceus/types";
+
+function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
+  if (value === undefined) {
+    return;
+  }
+  if (!Array.isArray(value)) {
+    set.add(value);
+    return;
+  }
+  for (const item of value) {
+    set.add(item);
+  }
+  return;
+}
 
 /**
  * Absorbs the given work in the corpus.
@@ -28,6 +53,14 @@ function absorbWork(
 ): number {
   const wordIndex = arrayMap(corpus.indices.word);
   const lemmaIndex = arrayMap(corpus.indices.lemma);
+  const casesIndex = arrayMap(corpus.indices.case);
+  const numberIndex = arrayMap(corpus.indices.number);
+  const genderIndex = arrayMap(corpus.indices.gender);
+  const tenseIndex = arrayMap(corpus.indices.tense);
+  const personIndex = arrayMap(corpus.indices.person);
+  const moodIndex = arrayMap(corpus.indices.mood);
+  const voiceIndex = arrayMap(corpus.indices.voice);
+
   corpus.workRowRanges.push([corpus.workLookup.length, []]);
   corpus.workLookup.push([work.id, work.rowIds]);
   let wordsInWork = 0;
@@ -46,10 +79,57 @@ function absorbWork(
         .replaceAll("\u0304", "")
         .replaceAll("\u0306", "");
       wordIndex.add(stripped.toLowerCase(), currentId);
-      const lemmata = getInflections(stripped).map((d) => d.lemma);
-      for (const lemma of Array.from(new Set(lemmata))) {
+
+      // Calculate the unique dimensions for the word.
+      const lemmata = new Set<string>();
+      const cases = new Set<LatinCase>();
+      const number = new Set<LatinNumber>();
+      const gender = new Set<LatinGender>();
+      const tense = new Set<LatinTense>();
+      const person = new Set<LatinPerson>();
+      const mood = new Set<LatinMood>();
+      const voice = new Set<LatinVoice>();
+      for (const lemma of getInflections(stripped)) {
+        lemmata.add(lemma.lemma);
+        for (const form of lemma.inflectedForms) {
+          for (const inflectionData of form.inflectionData) {
+            const inflection = inflectionData.grammaticalData;
+            absorbDataField(cases, inflection.case);
+            absorbDataField(number, inflection.number);
+            absorbDataField(gender, inflection.gender);
+            absorbDataField(tense, inflection.tense);
+            absorbDataField(person, inflection.person);
+            absorbDataField(mood, inflection.mood);
+            absorbDataField(voice, inflection.voice);
+          }
+        }
+      }
+
+      for (const lemma of lemmata) {
         lemmaIndex.add(lemma, currentId);
       }
+      for (const c of cases) {
+        casesIndex.add(c, currentId);
+      }
+      for (const n of number) {
+        numberIndex.add(n, currentId);
+      }
+      for (const g of gender) {
+        genderIndex.add(g, currentId);
+      }
+      for (const t of tense) {
+        tenseIndex.add(t, currentId);
+      }
+      for (const p of person) {
+        personIndex.add(p, currentId);
+      }
+      for (const m of mood) {
+        moodIndex.add(m, currentId);
+      }
+      for (const v of voice) {
+        voiceIndex.add(v, currentId);
+      }
+
       wordsInWork += 1;
       currentId += 1;
     }
@@ -70,15 +150,7 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
   const getInflections = (word: string) =>
     cruncher(word, CruncherOptions.DEFAULT);
   let tokenId = 0;
-  const corpus: LatinCorpusIndex = {
-    workLookup: [],
-    workRowRanges: [],
-    indices: {
-      word: new Map<string, number[]>(),
-      lemma: new Map<string, number[]>(),
-    },
-    stats: { totalWords: 0, totalWorks: 0, uniqueWords: 0, uniqueLemmata: 0 },
-  };
+  const corpus = createEmptyCorpusIndex();
   for (const work of iterableWorks) {
     tokenId = absorbWork(work, corpus, getInflections, tokenId);
     // Avoid accidentally finding matches from the end of one work
