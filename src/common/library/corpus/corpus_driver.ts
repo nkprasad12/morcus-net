@@ -1,35 +1,57 @@
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import type {
   CorpusQuery,
+  CorpusQueryAtom,
+  CorpusQueryPart,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
 import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
 import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
 import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
-import { getFormattedMemoryUsage } from "@/common/misc_utils";
-import { LatinCase } from "@/morceus/types";
+import { exhaustiveGuard, getFormattedMemoryUsage } from "@/common/misc_utils";
+import { LatinCase, LatinNumber } from "@/morceus/types";
 
 const QUERY: CorpusQuery = {
   parts: [
-    { word: "quam" },
-    { word: "ob" },
-    { category: "case", value: LatinCase.Accusative },
+    {
+      composition: "and",
+      atoms: [
+        { category: "case", value: LatinCase.Ablative },
+        { category: "number", value: LatinNumber.Plural },
+      ],
+    },
+    { lemma: "cum#1" },
+    {
+      composition: "and",
+      atoms: [
+        { category: "case", value: LatinCase.Ablative },
+        { category: "number", value: LatinNumber.Plural },
+      ],
+    },
   ],
 };
 
+function printAtom(atom: CorpusQueryAtom): string {
+  if ("word" in atom) {
+    return `word:${atom.word}`;
+  } else if ("lemma" in atom) {
+    return `lemma:${atom.lemma}`;
+  } else if ("category" in atom) {
+    return `${atom.category}:${atom.value}`;
+  }
+  exhaustiveGuard(atom);
+}
+
+function printQueryPart(part: CorpusQueryPart): string {
+  if (!("atoms" in part)) {
+    return `[${printAtom(part)}]`;
+  }
+  const joiner = ` ${part.composition} `;
+  return `[${part.atoms.map(printAtom).join(joiner)}]`;
+}
+
 function printQuery(query: CorpusQuery): string {
-  return query.parts
-    .map((part) => {
-      if ("word" in part) {
-        return `[word:${part.word}]`;
-      } else if ("lemma" in part) {
-        return `[lemma:${part.lemma}]`;
-      } else if ("category" in part) {
-        return `[${part.category}: ${part.value}]`;
-      }
-      throw new Error(`Unknown query part: ${JSON.stringify(part)}`);
-    })
-    .join(" ");
+  return query.parts.map(printQueryPart).join(" ");
 }
 
 function formatQueryResult(result: CorpusQueryResult): string {
@@ -92,9 +114,15 @@ async function driver() {
   runQuery(corpus, QUERY);
 }
 
-// To profile memory, run:
-// ./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts --bundle --outfile=corpus_driver.js --platform=node --minify
-// to build the driver bundle.
-// Then, run via `node --expose-gc corpus_driver.js` to run.
+/* To profile memory, run:
+
+./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts --bundle --outfile=corpus_driver.js --platform=node --minify
+
+to build the driver bundle.
+
+Then, use:
+
+node --expose-gc corpus_driver.js
+*/
 
 driver();

@@ -22,12 +22,20 @@ export interface WordQuery {
 export interface LemmaQuery {
   lemma: string;
 }
+
 export interface InflectionQuery {
   category: keyof LatinInflectionTypes;
   value: LatinInflectionTypes[keyof LatinInflectionTypes];
 }
 
-export type CorpusQueryPart = WordQuery | LemmaQuery | InflectionQuery;
+export type CorpusQueryAtom = WordQuery | LemmaQuery | InflectionQuery;
+
+export interface ComposedQuery {
+  composition: "and";
+  atoms: CorpusQueryAtom[];
+}
+
+export type CorpusQueryPart = CorpusQueryAtom | ComposedQuery;
 
 export interface CorpusQuery {
   parts: CorpusQueryPart[];
@@ -84,6 +92,7 @@ export interface GenericReverseIndex<T> {
   filterCandidates(key: T, candidates: number[], offset: number): number[];
   formatOf(key: T): "bitmask" | undefined;
   get(key: T): number[] | undefined;
+  upperBoundFor(key: T): number;
   keys(): Iterable<T>;
 }
 export interface LatinInflectionTypes {

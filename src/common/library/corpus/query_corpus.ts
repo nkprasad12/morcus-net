@@ -1,16 +1,28 @@
-import { checkPresent } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import type {
   CorpusQuery,
-  CorpusQueryPart,
+  CorpusQueryAtom,
   CorpusQueryResult,
   LatinCorpusIndex,
 } from "@/common/library/corpus/corpus_common";
 import { exhaustiveGuard } from "@/common/misc_utils";
 
+interface InternalQueryAtom {
+  atom: CorpusQueryAtom;
+  sizeUpperBound: number;
+}
+interface InternalComposedQuery {
+  composition: "only";
+  atoms: InternalQueryAtom[];
+  sizeUpperBound: number;
+  offset: number;
+}
+type InternalQuery = InternalComposedQuery[];
+
 export class CorpusQueryEngine {
   constructor(private readonly corpus: LatinCorpusIndex) {}
 
-  resolveToken(tokenId: number): CorpusQueryResult {
+  private resolveToken(tokenId: number): CorpusQueryResult {
     const workRanges = this.corpus.workRowRanges;
 
     // Binary search for the work.
@@ -66,7 +78,7 @@ export class CorpusQueryEngine {
     );
   }
 
-  private getAllMatchesFor(part: CorpusQueryPart): number[] {
+  private getAllMatchesFor(part: CorpusQueryAtom): number[] {
     if ("word" in part) {
       return this.corpus.indices.word.get(part.word.toLowerCase()) ?? [];
     } else if ("lemma" in part) {
@@ -81,7 +93,7 @@ export class CorpusQueryEngine {
 
   private filterCandidatesOn(
     candidates: number[],
-    part: CorpusQueryPart,
+    part: CorpusQueryAtom,
     offset: number
   ): number[] {
     if ("word" in part) {
@@ -104,14 +116,84 @@ export class CorpusQueryEngine {
     exhaustiveGuard(part);
   }
 
+  private getUpperSizeBoundForAtom(atom: CorpusQueryAtom): number {
+    if ("word" in atom) {
+      return this.corpus.indices.word.upperBoundFor(atom.word.toLowerCase());
+    } else if ("lemma" in atom) {
+      return this.corpus.indices.lemma.upperBoundFor(atom.lemma);
+    } else if ("category" in atom) {
+      const index = checkPresent(this.corpus.indices[atom.category]);
+      // @ts-expect-error
+      return index.upperBoundFor(atom.value);
+    }
+    exhaustiveGuard(atom);
+  }
+
+  private convertQueryAtom(atom: CorpusQueryAtom): InternalQueryAtom {
+    const sizeUpperBound = this.getUpperSizeBoundForAtom(atom);
+    return { atom, sizeUpperBound };
+  }
+
+  private convertQuery(query: CorpusQuery): InternalQuery {
+    const convertedQuery: InternalQuery = [];
+    for (let i = 0; i < query.parts.length; i++) {
+      const part = query.parts[i];
+      if (!("atoms" in part)) {
+        convertedQuery.push({
+          atoms: [this.convertQueryAtom(part)],
+          composition: "only",
+          sizeUpperBound: this.getUpperSizeBoundForAtom(part),
+          offset: -i,
+        });
+        continue;
+      }
+      if (part.composition === "and") {
+        for (const atom of part.atoms) {
+          convertedQuery.push({
+            atoms: [this.convertQueryAtom(atom)],
+            composition: "only",
+            sizeUpperBound: this.getUpperSizeBoundForAtom(atom),
+            offset: -i,
+          });
+        }
+        continue;
+      }
+      exhaustiveGuard(part.composition);
+    }
+    return convertedQuery;
+  }
+
+  private executeInitialPart(part: InternalComposedQuery): number[] {
+    if (part.composition === "only") {
+      assert(part.atoms.length === 1);
+      return this.getAllMatchesFor(part.atoms[0].atom).map(
+        (x) => x + part.offset
+      );
+    }
+    exhaustiveGuard(part.composition);
+  }
+
   queryCorpus(query: CorpusQuery): CorpusQueryResult[] {
     if (query.parts.length === 0) {
       return [];
     }
-    let matches = this.getAllMatchesFor(query.parts[0]);
-    for (let i = 1; i < query.parts.length; i++) {
-      matches = this.filterCandidatesOn(matches, query.parts[i], -i);
+    const sortedQuery = this.convertQuery(query).sort(
+      (a, b) => a.sizeUpperBound - b.sizeUpperBound
+    );
+    let candidates = this.executeInitialPart(sortedQuery[0]);
+    for (let i = 1; i < sortedQuery.length; i++) {
+      const part = sortedQuery[i];
+      if (part.composition === "only") {
+        assertEqual(part.atoms.length, 1);
+        candidates = this.filterCandidatesOn(
+          candidates,
+          part.atoms[0].atom,
+          part.offset
+        );
+        continue;
+      }
+      exhaustiveGuard(part.composition);
     }
-    return matches.map((tokenId) => this.resolveToken(tokenId));
+    return candidates.map((tokenId) => this.resolveToken(tokenId));
   }
 }

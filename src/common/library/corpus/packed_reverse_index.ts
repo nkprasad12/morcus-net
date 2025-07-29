@@ -11,6 +11,20 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     private readonly maxToken: number
   ) {}
 
+  upperBoundFor(key: T): number {
+    const packedData = this.packedMap.get(key);
+    if (packedData === undefined) {
+      return 0;
+    }
+    if (!("format" in packedData)) {
+      const packingSize = Math.ceil(Math.log2(this.maxToken + 1));
+      return (packedData.length * 8) / packingSize;
+    }
+    assertEqual(packedData.format, "bitmask");
+    const bitmask = packedData.data;
+    return bitmask.length * 8;
+  }
+
   filterCandidates(key: T, candidates: number[], offset: number): number[] {
     const packedData = this.packedMap.get(key);
     if (packedData === undefined) {
