@@ -19,11 +19,16 @@ function extractRowText(node: XmlNode | string): string {
 }
 
 function convertToCorpusInputWork(work: ProcessedWork2): CorpusInputWork {
-  return {
-    id: work.info.workId,
-    rows: work.rows.map(([, content]) => extractRowText(content)),
-    rowIds: work.rows.map(([rowId]) => rowId.join(".")),
-  };
+  const rows: string[] = [];
+  const rowIds: string[][] = [];
+  for (const [id, root] of work.rows) {
+    if (id.length < work.textParts.length) {
+      continue;
+    }
+    rows.push(extractRowText(root));
+    rowIds.push(id);
+  }
+  return { id: work.info.workId, rows, rowIds };
 }
 
 function readFilesFromLibraryIndex(): string[] {

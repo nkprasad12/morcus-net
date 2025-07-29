@@ -63,7 +63,7 @@ export class CorpusQueryEngine {
         const rowIdx = rowData[mid][0];
         return {
           workId,
-          section: rowIds[rowIdx],
+          section: rowIds[rowIdx].join("."),
           offset: tokenId - startTokenId,
         };
       } else if (tokenId < startTokenId) {

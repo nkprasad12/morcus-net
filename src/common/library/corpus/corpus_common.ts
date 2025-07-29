@@ -58,7 +58,7 @@ export interface CorpusInputWork {
   /** The text of the work, optionally broken down into chunks. */
   rows: string[];
   /** IDs for each row in the work. */
-  rowIds: string[];
+  rowIds: string[][];
 }
 
 export type WorkRowRange = [
@@ -110,7 +110,7 @@ export interface CorpusIndexKeyTypes extends LatinInflectionTypes {
 }
 interface CoreCorpusIndex {
   /** Data about each work in the corpus. */
-  workLookup: [id: string, rowIds: string[]][];
+  workLookup: [id: string, rowIds: string[][]][];
   /** Ranges of token indices for each work in the corpus, split by row. */
   workRowRanges: WorkRowRange[];
   /** Statistics about the corpus. */
