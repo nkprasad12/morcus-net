@@ -29,6 +29,7 @@ export default [
       "**/coverage/",
       "**/gaffiot.js",
       "**/eslint.config.mjs",
+      "**/corpus_driver.js",
     ],
   },
   ...fixupConfigRules(

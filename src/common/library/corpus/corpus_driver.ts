@@ -93,7 +93,9 @@ function runQuery(
 ): CorpusQueryResult[] {
   const startTime = Date.now();
   const results = corpus.queryCorpus(query);
-  console.log(`Found results in ${Date.now() - startTime} ms`);
+  console.log(
+    `Found ${results.length} results in ${Date.now() - startTime} ms`
+  );
   console.log("Query: ", printQuery(query));
   results.forEach((result) => {
     console.log(formatQueryResult(result));
