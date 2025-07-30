@@ -260,3 +260,8 @@ The following should be done at regular intervals:
 - Update the `nginx` version, (currently `1.28.0`). Due _before_ it goes EOL in `2026/03`ish.
   - Update the `nginx` version in `src/devops/reverse-proxy/Dockerfile`
   - Follow the build and push instructions [above](#updating-the-reverse-proxy-image)
+
+### Following a reboot
+
+1. Check the firewall is up: `sudo ufw status verbose`
+2. Check the services are up (`docker ps`)

@@ -65,10 +65,41 @@ function absorbWork(
   let currentId = startId;
 
   assert(work.rows.length > 0, "Work must have at least one row.");
+
+  function isHardBreak(rowIdx: number): boolean {
+    if (rowIdx === 0 || currentId === 0) {
+      return false;
+    }
+    const currentRowSectionId = work.rowIds[rowIdx];
+    const prevRowSectionId = work.rowIds[rowIdx - 1];
+    // Break between e.g. 1.2 and 1.2.1
+    // This generates breaks between things like headers.
+    if (currentRowSectionId.length !== prevRowSectionId.length) {
+      return true;
+    }
+    // Only consider matches on leaf siblings, e.g 1.2.1 and 1.2.2
+    for (let i = 0; i < currentRowSectionId.length - 1; i++) {
+      if (currentRowSectionId[i] !== prevRowSectionId[i]) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   work.rows.forEach((rowText, rowIdx) => {
+    if (isHardBreak(rowIdx)) {
+      corpus.hardBreakAfter[currentId - 1] = true;
+    }
+
     const rowStartId = currentId;
     for (const [token, isWord] of processTokens(rowText)) {
       if (!isWord) {
+        // This should handle abbreviations.
+        // We should either generate a list of abbreviations that we exclude,
+        // or we can simply de-rank these matches.
+        if (token.includes(".") && currentId > 0) {
+          corpus.hardBreakAfter[currentId - 1] = true;
+        }
         continue;
       }
       const stripped = token
@@ -125,6 +156,7 @@ function absorbWork(
 
       wordsInWork += 1;
       currentId += 1;
+      corpus.hardBreakAfter.push(false);
     }
     corpus.workRowRanges[corpus.workRowRanges.length - 1][1].push([
       rowIdx,
@@ -134,6 +166,7 @@ function absorbWork(
   });
   corpus.stats.totalWords += wordsInWork;
   corpus.stats.totalWorks += 1;
+  corpus.hardBreakAfter[currentId - 1] = true;
   return currentId;
 }
 

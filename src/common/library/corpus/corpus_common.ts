@@ -59,6 +59,8 @@ export interface CorpusInputWork {
   rows: string[];
   /** IDs for each row in the work. */
   rowIds: string[][];
+  /** The depth of leaf sections in the work. */
+  sectionDepth: number;
 }
 
 export type WorkRowRange = [
@@ -115,6 +117,8 @@ interface CoreCorpusIndex {
   workRowRanges: WorkRowRange[];
   /** Statistics about the corpus. */
   stats: CorpusStats;
+  /** Breaks in the token array */
+  hardBreakAfter: boolean[];
 }
 
 export interface LatinCorpusIndex extends CoreCorpusIndex {
@@ -137,6 +141,7 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
     workLookup: [],
     workRowRanges: [],
+    hardBreakAfter: [],
     indices: {
       word: new Map(),
       lemma: new Map(),

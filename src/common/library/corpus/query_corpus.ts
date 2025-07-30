@@ -173,6 +173,20 @@ export class CorpusQueryEngine {
     exhaustiveGuard(part.composition);
   }
 
+  filterHardBreaks(candidates: number[], queryLength: number): number[] {
+    if (queryLength <= 1) {
+      return candidates;
+    }
+    return candidates.filter((tokenId) => {
+      for (let i = 0; i < queryLength - 1; i++) {
+        if (this.corpus.hardBreakAfter[tokenId + i]) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }
+
   queryCorpus(query: CorpusQuery): CorpusQueryResult[] {
     if (query.parts.length === 0) {
       return [];
@@ -194,6 +208,7 @@ export class CorpusQueryEngine {
       }
       exhaustiveGuard(part.composition);
     }
+    candidates = this.filterHardBreaks(candidates, query.parts.length);
     return candidates.map((tokenId) => this.resolveToken(tokenId));
   }
 }
