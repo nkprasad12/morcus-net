@@ -5,6 +5,7 @@ import {
   Vowels,
 } from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
+import * as Trie from "@/common/data_structures/trie";
 import {
   CruncherTables,
   CrunchResult,
@@ -97,8 +98,7 @@ function crunchExactMatch(
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
   for (let i = 0; i <= word.length; i++) {
-    const maybeStem = word.slice(0, i);
-    const candidates = tables.stemMap.get(maybeStem);
+    const candidates = Trie.find(tables.stemTrie!, word, i);
     if (candidates === undefined) {
       continue;
     }
@@ -416,7 +416,10 @@ export function crunchWord(
       results.push(crunchAndMaybeRelaxCase(modifiedWord, tables, options))
     );
   }
-  return consolidateCrunchResults(results.flatMap((x) => x));
+  if (options?.skipConsolidation !== true) {
+    return consolidateCrunchResults(results.flatMap((x) => x));
+  }
+  return results.flatMap((x) => x);
 }
 
 function mergeIfCompatible(

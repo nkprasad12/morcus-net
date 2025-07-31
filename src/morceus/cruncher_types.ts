@@ -1,3 +1,4 @@
+import type { TrieNode } from "@/common/data_structures/trie";
 import type {
   InflectionContext,
   InflectionEnding,
@@ -27,11 +28,10 @@ export interface LatinWordAnalysis {
 
 // [Stem / Form, lemma, isVerb]
 export type StemMapValue = [Stem | IrregularForm, string, boolean];
-export type StemMap = Map<string, StemMapValue[]>;
 
 export interface CruncherTables {
   endsMap: Map<string, string[]>;
-  stemMap: StemMap;
+  stemTrie: TrieNode<StemMapValue>;
   inflectionLookup: InflectionLookup;
   numerals: Lemma[];
   rawTables: Map<string, InflectionTable>;
@@ -44,6 +44,7 @@ export interface CruncherOptions {
   relaxUandV?: boolean;
   relaxIandJ?: boolean;
   handleEnclitics?: boolean;
+  skipConsolidation?: boolean;
 }
 
 export namespace CruncherOptions {
@@ -53,6 +54,7 @@ export namespace CruncherOptions {
     relaxIandJ: true,
     relaxUandV: true,
     handleEnclitics: true,
+    skipConsolidation: false,
   };
 }
 
