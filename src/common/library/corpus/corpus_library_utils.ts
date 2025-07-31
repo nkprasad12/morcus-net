@@ -54,10 +54,10 @@ export function* latinWorksFromLibrary(): Generator<CorpusInputWork> {
     yield convertToCorpusInputWork(work);
     // Uncomment to simulate a larger corpus.
     // const converted = convertToCorpusInputWork(work);
-    // for (let i = 0; i < 12; i++) {
+    // for (let i = 0; i < 11; i++) {
     //   yield {
     //     ...converted,
-    //     id: `${converted.id}-${i}`,
+    //     id: `${converted.id}-${i + 1}`,
     //   };
     // }
   }

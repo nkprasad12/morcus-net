@@ -1,12 +1,14 @@
 import { assert, assertEqual } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
+  CORPUS_DIR,
   CORPUS_TOKEN_DB,
   createEmptyCorpusIndex,
   type CorpusInputWork,
   type InProgressLatinCorpus,
 } from "@/common/library/corpus/corpus_common";
 import { writeCorpus } from "@/common/library/corpus/corpus_serialization";
+import { bytesToMib } from "@/common/misc_utils";
 import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { processTokens } from "@/common/text_cleaning";
 import { cleanLemma, crunchWord } from "@/morceus/crunch";
@@ -22,6 +24,8 @@ import {
   type LatinTense,
   type LatinVoice,
 } from "@/morceus/types";
+
+import fs from "fs";
 
 function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
   if (value === undefined) {
@@ -185,6 +189,34 @@ function saveTokenDb(tokens: string[], breaks: (string | null)[]) {
   });
 }
 
+function printArtifactSummary() {
+  try {
+    const files = fs.readdirSync(CORPUS_DIR);
+    console.debug("Corpus directory contents:");
+    for (const file of files) {
+      if (file.endsWith("-wal") || file.endsWith("-shm")) {
+        continue; // Skip SQLite WAL and SHM files.
+      }
+      const filePath = `${CORPUS_DIR}/${file}`;
+      const stat = fs.statSync(filePath);
+      if (stat.isFile()) {
+        const content = fs.readFileSync(filePath);
+        let hash = 0;
+        for (let i = 0; i < content.length; i++) {
+          const char = content[i];
+          hash = (hash << 5) - hash + char;
+          hash |= 0; // Convert to 32bit integer
+        }
+        console.debug(
+          `  - ${file}: ${bytesToMib(stat.size)} MB, hash: ${hash.toString(16)}`
+        );
+      }
+    }
+  } catch (e) {
+    console.error("Could not read corpus directory", e);
+  }
+}
+
 export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
   const tables = MorceusTables.CACHED.get();
   const startTime = Date.now();
@@ -210,6 +242,7 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
 
   saveTokenDb(tokens, breaks);
   writeCorpus(corpus);
+  printArtifactSummary();
   console.log(`Corpus stats:`, corpus.stats);
   console.log(`Corpus indexing runtime: ${Date.now() - startTime}ms`);
 }
