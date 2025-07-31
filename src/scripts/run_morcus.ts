@@ -374,7 +374,6 @@ function artifactConfig(args: any): StepConfig[] {
   let baseCommand = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
-    childEnv.BUN = "1";
   }
 
   // If build_all is set, enable all build flags
@@ -511,7 +510,6 @@ function startWebServer(args: any) {
   let baseCommand: string[] = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
-    serverEnv.BUN = "1";
     if (args.watch) {
       // Watch mode seems to have problems.
     }
