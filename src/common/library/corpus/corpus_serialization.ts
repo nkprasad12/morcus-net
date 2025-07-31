@@ -45,7 +45,7 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
     ) {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const mapData = value.data as [unknown, StoredMapValue][];
-      const maxNumber = value.maxNumber;
+      const numTokens = value.numTokens;
       const map = new Map<unknown, PackedIndexData>();
       for (const [k, v] of mapData) {
         // We have a packed array.
@@ -59,7 +59,7 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
         const buffer = Buffer.from(v.data, "base64");
         map.set(k, { format: "bitmask", data: new Uint8Array(buffer) });
       }
-      return new PackedReverseIndex(map, maxNumber);
+      return new PackedReverseIndex(map, numTokens);
     }
     return value;
   };
@@ -70,13 +70,13 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
  * Serializes an object to a JSON string, correctly handling Map objects.
  */
 function serializeCorpus(obj: InProgressLatinCorpus): string {
-  const packedNumberSize = Math.ceil(Math.log2(obj.maxTokenId + 1));
+  const packedNumberSize = Math.ceil(Math.log2(obj.numTokens));
   const replacer = (_key: string, value: any) => {
     if (value instanceof Map) {
       return {
         serializationKey: MAP_TOKEN,
-        maxNumber: obj.maxTokenId,
-        data: prepareIndexMap(value, obj.maxTokenId, packedNumberSize),
+        numTokens: obj.numTokens,
+        data: prepareIndexMap(value, obj.numTokens, packedNumberSize),
       };
     }
     return value;
@@ -86,14 +86,14 @@ function serializeCorpus(obj: InProgressLatinCorpus): string {
 
 function prepareIndexMap(
   indexMap: Map<unknown, number[]>,
-  maxNumber: number,
+  numTokens: number,
   packedNumberSize: number
 ): [unknown, StoredMapValue][] {
   return Array.from(indexMap.entries()).map(([key, value]) => {
-    const useBitMask = value.length * packedNumberSize > maxNumber;
+    const useBitMask = value.length * packedNumberSize > numTokens;
     const arrToSave = useBitMask
-      ? toBitMask(value, maxNumber)
-      : packIntegers(maxNumber, value);
+      ? toBitMask(value, numTokens)
+      : packIntegers(numTokens, value);
     const indexBits = Buffer.from(arrToSave).toString("base64");
     const storedValue = useBitMask
       ? { serializationKey: BIT_MASK, data: indexBits }
@@ -102,13 +102,11 @@ function prepareIndexMap(
   });
 }
 
-function toBitMask(values: number[], maxNumber: number): Uint8Array {
-  const bitMask = new Uint8Array(Math.ceil((maxNumber + 1) / 8));
+function toBitMask(values: number[], numTokens: number): Uint8Array {
+  const bitMask = new Uint8Array(Math.ceil(numTokens / 8));
   for (const value of values) {
-    if (value < 0 || value > maxNumber) {
-      throw new Error(
-        `Value ${value} out of bounds for maxNumber ${maxNumber}`
-      );
+    if (value < 0 || value >= numTokens) {
+      throw new Error(`Value ${value} out of bounds (numTokens: ${numTokens})`);
     }
     const byteIndex = Math.floor(value / 8);
     const bitIndex = value % 8;

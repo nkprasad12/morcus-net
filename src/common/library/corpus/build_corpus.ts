@@ -236,7 +236,7 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
   for (const work of iterableWorks) {
     absorbWork(work, corpus, getInflections, tokens, breaks);
   }
-  corpus.maxTokenId = tokens.length;
+  corpus.numTokens = tokens.length;
   corpus.stats.uniqueWords = corpus.indices.word.size;
   corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
 

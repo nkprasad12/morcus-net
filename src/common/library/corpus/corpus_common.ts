@@ -82,8 +82,6 @@ export interface CorpusStats {
 }
 
 export interface GenericReverseIndex<T> {
-  /** Checks if the given key has an index with a cheap membership lookup. */
-  hasCheapMembershipCheck(key: T): boolean;
   /**
    * Filters the given candidates based on whether they match the key.
    *
@@ -94,9 +92,25 @@ export interface GenericReverseIndex<T> {
    * @returns The filtered candidates that match the key.
    */
   filterCandidates(key: T, candidates: number[], offset: number): number[];
+
+  /**
+   * Information about the format of the index stored for the key.
+   * This is used mostly for unit test verification.
+   */
   formatOf(key: T): "bitmask" | undefined;
+
+  /** Returns unpacked index data for the given key. */
   get(key: T): number[] | undefined;
-  upperBoundFor(key: T): number;
+
+  /**
+   * Returns an upper bound on the number of elements that can be in the index.
+   *
+   * @param key The key to check.
+   * @returns The upper bound for the key.
+   */
+  sizeUpperBoundFor(key: T): number;
+
+  /** Returns an iterable of all keys in the index. */
   keys(): Iterable<T>;
 }
 export interface LatinInflectionTypes {
@@ -143,8 +157,7 @@ export type InProgressLatinCorpus = CoreCorpusIndex & {
   indices: {
     [K in keyof CorpusIndexKeyTypes]: Map<CorpusIndexKeyTypes[K], number[]>;
   };
-  /** The maximum token ID. */
-  maxTokenId: number;
+  numTokens: number;
 };
 
 export function createEmptyCorpusIndex(): InProgressLatinCorpus {
@@ -164,7 +177,7 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
       mood: new Map(),
       voice: new Map(),
     },
-    maxTokenId: -1,
+    numTokens: 0,
     stats: {
       totalWords: 0,
       totalWorks: 0,

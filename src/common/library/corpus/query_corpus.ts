@@ -140,13 +140,15 @@ export class CorpusQueryEngine {
 
   private getUpperSizeBoundForAtom(atom: CorpusQueryAtom): number {
     if ("word" in atom) {
-      return this.corpus.indices.word.upperBoundFor(atom.word.toLowerCase());
+      return this.corpus.indices.word.sizeUpperBoundFor(
+        atom.word.toLowerCase()
+      );
     } else if ("lemma" in atom) {
-      return this.corpus.indices.lemma.upperBoundFor(atom.lemma);
+      return this.corpus.indices.lemma.sizeUpperBoundFor(atom.lemma);
     } else if ("category" in atom) {
       const index = checkPresent(this.corpus.indices[atom.category]);
       // @ts-expect-error
-      return index.upperBoundFor(atom.value);
+      return index.sizeUpperBoundFor(atom.value);
     }
     exhaustiveGuard(atom);
   }

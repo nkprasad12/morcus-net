@@ -8,16 +8,17 @@ import type {
 export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
   constructor(
     private readonly packedMap: Map<T, PackedIndexData>,
-    private readonly maxToken: number
+    /** A strict upper bound on the numbers that can be in the index. */
+    private readonly upperBound: number
   ) {}
 
-  upperBoundFor(key: T): number {
+  sizeUpperBoundFor(key: T): number {
     const packedData = this.packedMap.get(key);
     if (packedData === undefined) {
       return 0;
     }
     if (!("format" in packedData)) {
-      const packingSize = Math.ceil(Math.log2(this.maxToken + 1));
+      const packingSize = Math.ceil(Math.log2(this.upperBound));
       return (packedData.length * 8) / packingSize;
     }
     assertEqual(packedData.format, "bitmask");
@@ -32,7 +33,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     }
     if (!("format" in packedData)) {
       const matches = new Set(
-        unpackIntegers(this.maxToken, packedData).map((x) => x + offset)
+        unpackIntegers(this.upperBound, packedData).map((x) => x + offset)
       );
       return candidates.filter((x) => matches.has(x));
     }
@@ -50,10 +51,6 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     });
   }
 
-  hasCheapMembershipCheck(key: T): boolean {
-    return this.formatOf(key) === "bitmask";
-  }
-
   formatOf(key: T): "bitmask" | undefined {
     const packedData = this.packedMap.get(key);
     if (packedData === undefined || !("format" in packedData)) {
@@ -69,7 +66,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     }
     // The default format is a packed array of tokenIds.
     if (!("format" in packedData)) {
-      return unpackIntegers(this.maxToken, packedData);
+      return unpackIntegers(this.upperBound, packedData);
     }
     assertEqual(packedData.format, "bitmask");
     // If it's a bitmask, we need to convert it to an array of token IDs.

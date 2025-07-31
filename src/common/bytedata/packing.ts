@@ -101,24 +101,22 @@ export async function readMetadata(
  * is smaller than a known maximum, allowing for storage that is more efficient
  * than using standard integer types.
  *
- * @param maxIntSize The maximum possible value for any integer in the array.
+ * @param upperBound The upper bound for any integer in the array.
  *   This is used to determine the number of bits required for each integer.
- *   The number of bits will be `ceil(log2(maxIntSize + 1))`.
+ *   The number of bits will be `ceil(log2(upperBound))`.
  * @param numbers The array of positive integers to pack. Each number must be
  *   `<= maxIntSize`.
  * @returns A `Uint8Array` containing the packed bit representation of the numbers.
  */
-export function packIntegers(maxIntSize: number, numbers: number[]): Buffer {
-  assert(maxIntSize >= 0, "maxIntSize must be non-negative.");
+export function packIntegers(upperBound: number, numbers: number[]): Buffer {
+  assert(upperBound > 0, "upperBound must be positive.");
   if (numbers.length === 0) {
     const buffer = Buffer.alloc(1);
     buffer.writeUInt8(0, 0); // 0 unused bits
     return buffer;
   }
 
-  // +1 because we need to represent maxIntSize itself (e.g., 0-7 needs 3 bits for 8 values).
-  const bitsPerNumber =
-    maxIntSize === 0 ? 1 : Math.ceil(Math.log2(maxIntSize + 1));
+  const bitsPerNumber = upperBound === 1 ? 1 : Math.ceil(Math.log2(upperBound));
 
   // Calculate the total number of bits and the required buffer size in bytes.
   const totalBits = numbers.length * bitsPerNumber;
@@ -132,9 +130,9 @@ export function packIntegers(maxIntSize: number, numbers: number[]): Buffer {
   let bitOffset = 0;
 
   for (const num of numbers) {
-    if (num < 0 || num > maxIntSize) {
+    if (num < 0 || num >= upperBound) {
       throw new Error(
-        `Number ${num} is out of the allowed range [0, ${maxIntSize}].`
+        `Number ${num} is out of the allowed range [0, ${upperBound}).`
       );
     }
 
@@ -161,16 +159,16 @@ export function packIntegers(maxIntSize: number, numbers: number[]): Buffer {
  * This is the companion function to `packIntegers`. It reads the bit-packed
  * data and reconstructs the original array of numbers.
  *
- * @param maxIntSize The maximum possible value for any integer in the array.
+ * @param upperBound A strict upper bound for any integer in the array.
  *   This must be the same value used during packing.
  * @param buffer The `Uint8Array` containing the packed data.
  * @returns An array of the unpacked positive integers.
  */
 export function unpackIntegers(
-  maxIntSize: number,
+  upperBound: number,
   buffer: Uint8Array
 ): number[] {
-  assert(maxIntSize >= 0, "maxIntSize must be non-negative.");
+  assert(upperBound > 0, "upperBound must be positive.");
   if (buffer.length < PACKED_NUMBER_HEADER_SIZE) {
     throw new Error("Invalid buffer: too small to contain header.");
   }
@@ -184,9 +182,7 @@ export function unpackIntegers(
   const totalDataBits = dataBuffer.length * 8;
   const totalValidBits = totalDataBits - unusedBits;
 
-  // +1 because we need to represent maxIntSize itself (e.g., 0-7 needs 3 bits for 8 values).
-  const bitsPerNumber =
-    maxIntSize === 0 ? 1 : Math.ceil(Math.log2(maxIntSize + 1));
+  const bitsPerNumber = upperBound === 1 ? 1 : Math.ceil(Math.log2(upperBound));
   if (bitsPerNumber === 0 && totalValidBits > 0) {
     throw new Error("bitsPerNumber is 0 but buffer contains data.");
   }

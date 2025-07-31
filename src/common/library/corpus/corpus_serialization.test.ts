@@ -41,7 +41,7 @@ function getTestCorpus(): InProgressLatinCorpus {
       mood: {} as any,
       voice: {} as any,
     },
-    maxTokenId: 63,
+    numTokens: 63,
     stats: {
       totalWords: 4,
       totalWorks: 1,
