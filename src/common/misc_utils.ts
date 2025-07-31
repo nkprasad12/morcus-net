@@ -102,6 +102,52 @@ export class AggregateTimer {
   }
 }
 
+export class HotLoopProfiler {
+  private startTime: number;
+  private readonly events: Map<string, number> = new Map();
+  private lastTime: number;
+
+  constructor() {
+    this.startTime = performance.now();
+    this.lastTime = this.startTime;
+    this.reset();
+  }
+
+  public phase(name: string): void {
+    const now = performance.now();
+    const elapsed = now - this.lastTime;
+    if (!this.events.has(name)) {
+      this.events.set(name, elapsed);
+    } else {
+      this.events.set(name, this.events.get(name)! + elapsed);
+    }
+    this.lastTime = now;
+  }
+
+  public printReport(): void {
+    const totalTime = this.lastTime - this.startTime;
+    console.log(`Total time: ${totalTime.toFixed(2)} ms`);
+    const sortedEvents = Array.from(this.events.entries()).sort(
+      (a, b) => b[1] - a[1]
+    );
+    const maxNameLength = Math.max(
+      ...sortedEvents.map(([name]) => name.length)
+    );
+    for (const [name, time] of sortedEvents) {
+      console.log(`- ${name.padEnd(maxNameLength)} : ${time.toFixed(2)} ms`);
+    }
+    this.reset();
+  }
+
+  public reset(): void {
+    this.startTime = performance.now();
+    this.lastTime = this.startTime;
+    this.events.clear();
+  }
+}
+
+export const LOOP_PROFILER = singletonOf(() => new HotLoopProfiler());
+
 export function areArraysEqual<T>(first: T[], second: T[]): boolean {
   if (first.length !== second.length) {
     return false;
@@ -158,7 +204,7 @@ export function estimateObjectSize(obj: any, seen = new Set<any>()): number {
   return bytes;
 }
 
-function bytesToMib(input: number): number {
+export function bytesToMib(input: number): number {
   const inMib = input / (1024 * 1024);
   return Math.round(inMib * 10) / 10;
 }
