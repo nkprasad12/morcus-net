@@ -6,6 +6,8 @@ import type {
   LatinCorpusIndex,
 } from "@/common/library/corpus/corpus_common";
 import { exhaustiveGuard } from "@/common/misc_utils";
+import { ReadOnlyDb } from "@/common/sql_helper";
+import { SqliteDb } from "@/common/sqlite/sql_db";
 
 interface InternalQueryAtom {
   atom: CorpusQueryAtom;
@@ -20,9 +22,16 @@ interface InternalComposedQuery {
 type InternalQuery = InternalComposedQuery[];
 
 export class CorpusQueryEngine {
-  constructor(private readonly corpus: LatinCorpusIndex) {}
+  private readonly tokenDb: SqliteDb;
 
-  private resolveToken(tokenId: number): CorpusQueryResult {
+  constructor(private readonly corpus: LatinCorpusIndex) {
+    this.tokenDb = ReadOnlyDb.getDatabase(this.corpus.rawTextDb);
+  }
+
+  private resolveResult(
+    tokenId: number,
+    queryLength: number
+  ): CorpusQueryResult {
     const workRanges = this.corpus.workRowRanges;
 
     // Binary search for the work.
@@ -61,10 +70,23 @@ export class CorpusQueryEngine {
       if (tokenId >= startTokenId && tokenId < endTokenId) {
         const [workId, rowIds] = this.corpus.workLookup[workIdx];
         const rowIdx = rowData[mid][0];
+
+        // @ts-expect-error
+        const rows: { token: string; break: string }[] = this.tokenDb
+          .prepare(`SELECT * FROM raw_text WHERE rowid >= ? LIMIT ?`)
+          .all(tokenId, queryLength);
+        const result: string[] = [];
+        for (let i = 0; i < queryLength; i++) {
+          result.push(rows[i].token);
+          if (i < queryLength - 1) {
+            result.push(rows[i].break);
+          }
+        }
         return {
           workId,
           section: rowIds[rowIdx].join("."),
           offset: tokenId - startTokenId,
+          text: result.join(""),
         };
       } else if (tokenId < startTokenId) {
         high = mid - 1;
@@ -209,6 +231,8 @@ export class CorpusQueryEngine {
       exhaustiveGuard(part.composition);
     }
     candidates = this.filterHardBreaks(candidates, query.parts.length);
-    return candidates.map((tokenId) => this.resolveToken(tokenId));
+    return candidates.map((tokenId) =>
+      this.resolveResult(tokenId, query.parts.length)
+    );
   }
 }

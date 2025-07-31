@@ -10,6 +10,7 @@ import {
 
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `${CORPUS_DIR}/latin_corpus.json`;
+export const CORPUS_TOKEN_DB = `${CORPUS_DIR}/latin_corpus_tokens.db`;
 
 // // // // // // // // // //
 // Corpus Querying Types   //
@@ -45,6 +46,7 @@ export interface CorpusQueryResult {
   workId: string;
   section: string;
   offset: number;
+  text: string;
 }
 
 // // // // // // // // // //
@@ -119,6 +121,14 @@ interface CoreCorpusIndex {
   stats: CorpusStats;
   /** Breaks in the token array */
   hardBreakAfter: boolean[];
+  /**
+   * SQLITE Database path for raw text.
+   *
+   * It must contain a table named `raw_text` with the following columns:
+   * - `token`: The token text.
+   * - `break`: The break text following that token (can be empty).
+   */
+  rawTextDb: string;
 }
 
 export interface LatinCorpusIndex extends CoreCorpusIndex {
@@ -142,6 +152,7 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
     workLookup: [],
     workRowRanges: [],
     hardBreakAfter: [],
+    rawTextDb: CORPUS_TOKEN_DB,
     indices: {
       word: new Map(),
       lemma: new Map(),

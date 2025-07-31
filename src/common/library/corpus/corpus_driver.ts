@@ -9,24 +9,12 @@ import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_ut
 import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
 import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
 import { exhaustiveGuard, getFormattedMemoryUsage } from "@/common/misc_utils";
-import { LatinCase, LatinNumber } from "@/morceus/types";
 
 const QUERY: CorpusQuery = {
   parts: [
+    { lemma: "amo" },
     {
-      composition: "and",
-      atoms: [
-        { category: "case", value: LatinCase.Ablative },
-        { category: "number", value: LatinNumber.Plural },
-      ],
-    },
-    { lemma: "cum#1" },
-    {
-      composition: "and",
-      atoms: [
-        { category: "case", value: LatinCase.Ablative },
-        { category: "number", value: LatinNumber.Plural },
-      ],
+      lemma: "valeo",
     },
   ],
 };
@@ -55,7 +43,7 @@ function printQuery(query: CorpusQuery): string {
 }
 
 function formatQueryResult(result: CorpusQueryResult): string {
-  return `- ${result.workId} @ ${result.section} (offset: ${result.offset})`;
+  return `- ${result.workId} @ ${result.section} (offset: ${result.offset})\n  ${result.text}`;
 }
 
 function getCorpus(): CorpusQueryEngine {

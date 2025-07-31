@@ -1,11 +1,13 @@
-import { assert } from "@/common/assert";
+import { assert, assertEqual } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
+  CORPUS_TOKEN_DB,
   createEmptyCorpusIndex,
   type CorpusInputWork,
   type InProgressLatinCorpus,
 } from "@/common/library/corpus/corpus_common";
 import { writeCorpus } from "@/common/library/corpus/corpus_serialization";
+import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { processTokens } from "@/common/text_cleaning";
 import { cleanLemma, crunchWord } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
@@ -35,19 +37,14 @@ function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
   return;
 }
 
-/**
- * Absorbs the given work in the corpus.
- *
- * @param work The processed work to absorb.
- * @param corpus The corpus to absorb the work into.
- * @param startId The last ID used in the corpus (not used here, but kept
- */
+/** Absorbs the given work in the corpus. */
 function absorbWork(
   work: CorpusInputWork,
   corpus: InProgressLatinCorpus,
   getInflections: (word: string) => CrunchResult[],
-  startId: number
-): number {
+  tokens: string[],
+  breaks: (string | null)[]
+) {
   console.debug(`Processing work: ${work.id}`);
   const wordIndex = arrayMap(corpus.indices.word);
   const lemmaIndex = arrayMap(corpus.indices.lemma);
@@ -62,12 +59,11 @@ function absorbWork(
   corpus.workRowRanges.push([corpus.workLookup.length, []]);
   corpus.workLookup.push([work.id, work.rowIds]);
   let wordsInWork = 0;
-  let currentId = startId;
 
   assert(work.rows.length > 0, "Work must have at least one row.");
 
   function isHardBreak(rowIdx: number): boolean {
-    if (rowIdx === 0 || currentId === 0) {
+    if (rowIdx === 0 || tokens.length === 0) {
       return false;
     }
     const currentRowSectionId = work.rowIds[rowIdx];
@@ -88,17 +84,19 @@ function absorbWork(
 
   work.rows.forEach((rowText, rowIdx) => {
     if (isHardBreak(rowIdx)) {
-      corpus.hardBreakAfter[currentId - 1] = true;
+      corpus.hardBreakAfter[tokens.length - 1] = true;
     }
 
-    const rowStartId = currentId;
+    const rowStartId = tokens.length;
     for (const [token, isWord] of processTokens(rowText)) {
       if (!isWord) {
+        assertEqual(tokens.length, breaks.length);
+        breaks[tokens.length - 1] = token;
         // This should handle abbreviations.
         // We should either generate a list of abbreviations that we exclude,
         // or we can simply de-rank these matches.
-        if (token.includes(".") && currentId > 0) {
-          corpus.hardBreakAfter[currentId - 1] = true;
+        if (token.includes(".") && tokens.length > 0) {
+          corpus.hardBreakAfter[tokens.length - 1] = true;
         }
         continue;
       }
@@ -106,7 +104,7 @@ function absorbWork(
         .normalize("NFD")
         .replaceAll("\u0304", "")
         .replaceAll("\u0306", "");
-      wordIndex.add(stripped.toLowerCase(), currentId);
+      wordIndex.add(stripped.toLowerCase(), tokens.length);
 
       // Calculate the unique dimensions for the word.
       const lemmata = new Set<string>();
@@ -130,44 +128,61 @@ function absorbWork(
       }
 
       for (const lemma of lemmata) {
-        lemmaIndex.add(lemma, currentId);
+        lemmaIndex.add(lemma, tokens.length);
       }
       for (const c of cases) {
-        casesIndex.add(c, currentId);
+        casesIndex.add(c, tokens.length);
       }
       for (const n of number) {
-        numberIndex.add(n, currentId);
+        numberIndex.add(n, tokens.length);
       }
       for (const g of gender) {
-        genderIndex.add(g, currentId);
+        genderIndex.add(g, tokens.length);
       }
       for (const t of tense) {
-        tenseIndex.add(t, currentId);
+        tenseIndex.add(t, tokens.length);
       }
       for (const p of person) {
-        personIndex.add(p, currentId);
+        personIndex.add(p, tokens.length);
       }
       for (const m of mood) {
-        moodIndex.add(m, currentId);
+        moodIndex.add(m, tokens.length);
       }
       for (const v of voice) {
-        voiceIndex.add(v, currentId);
+        voiceIndex.add(v, tokens.length);
       }
 
       wordsInWork += 1;
-      currentId += 1;
+      tokens.push(stripped);
+      breaks.push(null);
       corpus.hardBreakAfter.push(false);
     }
     corpus.workRowRanges[corpus.workRowRanges.length - 1][1].push([
       rowIdx,
       rowStartId,
-      currentId,
+      tokens.length,
     ]);
   });
   corpus.stats.totalWords += wordsInWork;
   corpus.stats.totalWorks += 1;
-  corpus.hardBreakAfter[currentId - 1] = true;
-  return currentId;
+  corpus.hardBreakAfter[tokens.length - 1] = true;
+}
+
+function saveTokenDb(tokens: string[], breaks: (string | null)[]) {
+  const zippedText = tokens.map((token, index) => ({
+    token,
+    break: breaks[index] ? breaks[index] : "",
+  }));
+  ReadOnlyDb.saveToSql({
+    destination: CORPUS_TOKEN_DB,
+    tables: [
+      {
+        records: zippedText,
+        primaryKey: ARRAY_INDEX,
+        tableName: "raw_text",
+      },
+    ],
+  });
 }
 
 export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
@@ -183,15 +198,17 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
   };
   const getInflections = (word: string) =>
     crunchWord(word, tables, crunchOptions);
-  let tokenId = 0;
+  const tokens: string[] = [];
+  const breaks: (string | null)[] = [];
   const corpus = createEmptyCorpusIndex();
   for (const work of iterableWorks) {
-    tokenId = absorbWork(work, corpus, getInflections, tokenId);
+    absorbWork(work, corpus, getInflections, tokens, breaks);
   }
-  corpus.maxTokenId = tokenId;
+  corpus.maxTokenId = tokens.length;
   corpus.stats.uniqueWords = corpus.indices.word.size;
   corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
 
+  saveTokenDb(tokens, breaks);
   writeCorpus(corpus);
   console.log(`Corpus stats:`, corpus.stats);
   console.log(`Corpus indexing runtime: ${Date.now() - startTime}ms`);
