@@ -59,6 +59,7 @@ function absorbWork(
   const personIndex = arrayMap(corpus.indices.person);
   const moodIndex = arrayMap(corpus.indices.mood);
   const voiceIndex = arrayMap(corpus.indices.voice);
+  const breaksIndex = arrayMap(corpus.indices.breaks);
 
   corpus.workRowRanges.push([corpus.workLookup.length, []]);
   corpus.workLookup.push([work.id, work.rowIds]);
@@ -88,7 +89,7 @@ function absorbWork(
 
   work.rows.forEach((rowText, rowIdx) => {
     if (isHardBreak(rowIdx)) {
-      corpus.hardBreakAfter[tokens.length - 1] = true;
+      breaksIndex.add("hard", tokens.length - 1);
     }
 
     const rowStartId = tokens.length;
@@ -100,7 +101,7 @@ function absorbWork(
         // We should either generate a list of abbreviations that we exclude,
         // or we can simply de-rank these matches.
         if (token.includes(".") && tokens.length > 0) {
-          corpus.hardBreakAfter[tokens.length - 1] = true;
+          breaksIndex.add("hard", tokens.length - 1);
         }
         continue;
       }
@@ -159,7 +160,6 @@ function absorbWork(
       wordsInWork += 1;
       tokens.push(stripped);
       breaks.push(null);
-      corpus.hardBreakAfter.push(false);
     }
     corpus.workRowRanges[corpus.workRowRanges.length - 1][1].push([
       rowIdx,
@@ -169,7 +169,7 @@ function absorbWork(
   });
   corpus.stats.totalWords += wordsInWork;
   corpus.stats.totalWorks += 1;
-  corpus.hardBreakAfter[tokens.length - 1] = true;
+  breaksIndex.add("hard", tokens.length - 1);
 }
 
 function saveTokenDb(tokens: string[], breaks: (string | null)[]) {

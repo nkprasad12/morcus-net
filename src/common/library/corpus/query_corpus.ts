@@ -205,14 +205,13 @@ export class CorpusQueryEngine {
     if (queryLength <= 1) {
       return candidates;
     }
-    return candidates.filter((tokenId) => {
-      for (let i = 0; i < queryLength - 1; i++) {
-        if (this.corpus.hardBreakAfter[tokenId + i]) {
-          return false;
-        }
-      }
-      return true;
-    });
+    return candidates.filter(
+      (tokenId) =>
+        !this.corpus.indices.breaks.hasValueInRange("hard", [
+          tokenId,
+          tokenId + queryLength - 1,
+        ])
+    );
   }
 
   queryCorpus(query: CorpusQuery): CorpusQueryResult[] {

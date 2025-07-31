@@ -1,5 +1,5 @@
 import { assertEqual } from "@/common/assert";
-import { unpackIntegers } from "@/common/bytedata/packing";
+import { PackedNumbers, unpackIntegers } from "@/common/bytedata/packing";
 import type {
   FilterOptions,
   GenericReverseIndex,
@@ -27,21 +27,53 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     return bitmask.length * 8;
   }
 
+  hasValueInRange(key: T, range: [number, number]): boolean {
+    if (range[0] > range[1]) {
+      return false;
+    }
+    const packedData = this.packedMap.get(key);
+    if (packedData === undefined) {
+      return false;
+    }
+
+    if (!("format" in packedData)) {
+      return PackedNumbers.hasValueInRange(packedData, this.upperBound, range);
+    }
+    assertEqual(packedData.format, "bitmask");
+    const bitmask = packedData.data;
+    for (let i = range[0]; i <= range[1]; i++) {
+      const byteIndex = i >> 3; // i / 8
+      const bitIndex = i & 7; // i % 8
+      if ((bitmask[byteIndex] & (1 << bitIndex)) !== 0) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   filterCandidates(
     key: T,
     candidates: number[],
     options: FilterOptions
   ): number[] {
     const packedData = this.packedMap.get(key);
-    const offset = options?.offset ?? 0;
     if (packedData === undefined) {
       return [];
     }
+
+    const offset = options?.offset ?? 0;
+    const maybeNegate = (b: boolean) => (options?.keepMisses ? !b : b);
     if (!("format" in packedData)) {
-      const matches = new Set(
-        unpackIntegers(this.upperBound, packedData).map((x) => x + offset)
-      );
-      return candidates.filter((x) => matches.has(x));
+      // The packed integers are sorted. We can perform a binary search for each
+      // candidate without fully unpacking the array.
+      return candidates.filter((candidate) => {
+        const relativeId = candidate - offset;
+        return maybeNegate(
+          PackedNumbers.hasValueInRange(packedData, this.upperBound, [
+            relativeId,
+          ])
+        );
+      });
     }
     assertEqual(packedData.format, "bitmask");
     const bitmask = packedData.data;
@@ -53,7 +85,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
       }
       const byteIndex = relativeId >> 3;
       const bitIndex = relativeId & 7;
-      return (bitmask[byteIndex] & (1 << bitIndex)) !== 0;
+      return maybeNegate((bitmask[byteIndex] & (1 << bitIndex)) !== 0);
     });
   }
 

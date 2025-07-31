@@ -131,6 +131,15 @@ export interface GenericReverseIndex<T> {
 
   /** Returns an iterable of all keys in the index. */
   keys(): Iterable<T>;
+
+  /**
+   * Checks if the given range contains any values for the specified key.
+   *
+   * @param key The key to check.
+   * @param range The range to check.
+   * @returns True if the range contains any values for the key, false otherwise.
+   */
+  hasValueInRange(key: T, range: [number, number]): boolean;
 }
 export interface LatinInflectionTypes {
   case: LatinCase;
@@ -144,6 +153,7 @@ export interface LatinInflectionTypes {
 export interface CorpusIndexKeyTypes extends LatinInflectionTypes {
   word: string;
   lemma: string;
+  breaks: "hard";
 }
 interface CoreCorpusIndex {
   /** Data about each work in the corpus. */
@@ -152,8 +162,6 @@ interface CoreCorpusIndex {
   workRowRanges: WorkRowRange[];
   /** Statistics about the corpus. */
   stats: CorpusStats;
-  /** Breaks in the token array */
-  hardBreakAfter: boolean[];
   /**
    * SQLITE Database path for raw text.
    *
@@ -183,10 +191,10 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
     workLookup: [],
     workRowRanges: [],
-    hardBreakAfter: [],
     rawTextDb: CORPUS_TOKEN_DB,
     indices: {
       word: new Map(),
+      breaks: new Map(),
       lemma: new Map(),
       case: new Map(),
       number: new Map(),

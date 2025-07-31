@@ -16,7 +16,6 @@ const LONG_ARRAY = [2, 6, 17, 21, 23, 27, 35, 48, 59, 60, 61, 62];
 function getTestCorpus(): InProgressLatinCorpus {
   return {
     workLookup: [["work1", [["row1"], ["row2"]]]],
-    hardBreakAfter: Array(64).fill(false),
     workRowRanges: [
       [
         0,
@@ -33,6 +32,7 @@ function getTestCorpus(): InProgressLatinCorpus {
         ["commonWord", LONG_ARRAY],
       ]),
       lemma: new Map([["amare", [0, 1, 2]]]),
+      breaks: {} as any,
       case: {} as any,
       number: {} as any,
       gender: {} as any,

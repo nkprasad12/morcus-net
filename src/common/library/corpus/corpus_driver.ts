@@ -106,7 +106,7 @@ async function driver() {
 
 /* To profile memory, run:
 
-./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts --bundle --outfile=corpus_driver.js --platform=node --minify
+./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts --bundle --outfile=corpus_driver.js --platform=node --external:bun:sqlite --minify
 
 to build the driver bundle.
 
