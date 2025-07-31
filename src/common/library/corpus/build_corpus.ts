@@ -173,8 +173,16 @@ function absorbWork(
 export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
   const tables = MorceusTables.CACHED.get();
   const startTime = Date.now();
+  const crunchOptions: CruncherOptions = {
+    ...CruncherOptions.DEFAULT,
+    // We don't mind duplicate results because we only mark whether each
+    // token COULD BE intepreted as a particular lemma, case, etc...
+    // This experimentally reduces the total time for all crunch calls
+    // by about 1/3 (or ~5 seconds on my machine).
+    skipConsolidation: true,
+  };
   const getInflections = (word: string) =>
-    crunchWord(word, tables, CruncherOptions.DEFAULT);
+    crunchWord(word, tables, crunchOptions);
   let tokenId = 0;
   const corpus = createEmptyCorpusIndex();
   for (const work of iterableWorks) {
