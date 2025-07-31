@@ -116,7 +116,7 @@ export function packIntegers(upperBound: number, numbers: number[]): Buffer {
     return buffer;
   }
 
-  const bitsPerNumber = upperBound === 1 ? 1 : Math.ceil(Math.log2(upperBound));
+  const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
 
   // Calculate the total number of bits and the required buffer size in bytes.
   const totalBits = numbers.length * bitsPerNumber;
@@ -182,7 +182,7 @@ export function unpackIntegers(
   const totalDataBits = dataBuffer.length * 8;
   const totalValidBits = totalDataBits - unusedBits;
 
-  const bitsPerNumber = upperBound === 1 ? 1 : Math.ceil(Math.log2(upperBound));
+  const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
   if (bitsPerNumber === 0 && totalValidBits > 0) {
     throw new Error("bitsPerNumber is 0 but buffer contains data.");
   }
@@ -207,4 +207,69 @@ export function unpackIntegers(
   }
 
   return numbers;
+}
+
+export namespace PackedNumbers {
+  export function bitsPerNumber(upperBound: number): number {
+    return upperBound === 1 ? 1 : Math.ceil(Math.log2(upperBound));
+  }
+
+  export function numElements(
+    upperBound: number,
+    packedData: Uint8Array
+  ): number {
+    const unusedBits = packedData[0];
+    const totalBits =
+      packedData.length * 8 - unusedBits - PACKED_NUMBER_HEADER_SIZE * 8;
+    return Math.floor(totalBits / bitsPerNumber(upperBound));
+  }
+
+  export function get(
+    packedData: Uint8Array,
+    bitsPerNumber: number,
+    index: number
+  ): number {
+    let value = 0;
+    const startBit = index * bitsPerNumber;
+    for (let i = 0; i < bitsPerNumber; i++) {
+      const bitOffset = startBit + i;
+      const byteIndex = bitOffset >> 3; // bitOffset / 8
+      const bitInByte = bitOffset & 7; // bitOffset % 8
+      const bit = (packedData[byteIndex] >> (7 - bitInByte)) & 1;
+      if (bit) {
+        value |= 1 << (bitsPerNumber - 1 - i);
+      }
+    }
+    return value;
+  }
+
+  export function hasValueInRange(
+    packedData: Uint8Array,
+    upperBound: number,
+    valueRange: [number] | [number, number]
+  ): boolean {
+    const lowTarget = valueRange[0];
+    const highTarget = valueRange[valueRange.length - 1];
+    assert(lowTarget <= highTarget);
+    const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
+    const numElements = PackedNumbers.numElements(upperBound, packedData);
+    let low = 0;
+    let high = numElements - 1;
+    while (low <= high) {
+      const midIndex = (low + high) >> 1;
+      const midVal = PackedNumbers.get(
+        packedData.subarray(PACKED_NUMBER_HEADER_SIZE),
+        bitsPerNumber,
+        midIndex
+      );
+      if (midVal < lowTarget) {
+        low = midIndex + 1;
+      } else if (midVal > highTarget) {
+        high = midIndex - 1;
+      } else {
+        return true;
+      }
+    }
+    return false;
+  }
 }
