@@ -122,18 +122,22 @@ export class CorpusQueryEngine {
       return this.corpus.indices.word.filterCandidates(
         part.word.toLowerCase(),
         candidates,
-        offset
+        { offset }
       );
     } else if ("lemma" in part) {
       return this.corpus.indices.lemma.filterCandidates(
         part.lemma,
         candidates,
-        offset
+        { offset }
       );
     } else if ("category" in part) {
       const index = checkPresent(this.corpus.indices[part.category]);
-      // @ts-expect-error
-      return index.filterCandidates(part.value, candidates, offset);
+      return index.filterCandidates(
+        // @ts-expect-error
+        part.value,
+        candidates,
+        { offset }
+      );
     }
     exhaustiveGuard(part);
   }

@@ -1,6 +1,7 @@
 import { assertEqual } from "@/common/assert";
 import { unpackIntegers } from "@/common/bytedata/packing";
 import type {
+  FilterOptions,
   GenericReverseIndex,
   PackedIndexData,
 } from "@/common/library/corpus/corpus_common";
@@ -26,8 +27,13 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     return bitmask.length * 8;
   }
 
-  filterCandidates(key: T, candidates: number[], offset: number): number[] {
+  filterCandidates(
+    key: T,
+    candidates: number[],
+    options: FilterOptions
+  ): number[] {
     const packedData = this.packedMap.get(key);
+    const offset = options?.offset ?? 0;
     if (packedData === undefined) {
       return [];
     }

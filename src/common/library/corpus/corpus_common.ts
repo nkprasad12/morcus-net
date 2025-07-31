@@ -81,17 +81,36 @@ export interface CorpusStats {
   uniqueLemmata: number;
 }
 
+export interface FilterOptions {
+  /**
+   * The offset to apply to the candidates before filtering.
+   * For example, if the candidates are [1, 5] and the offset is 2, we
+   * would check if the filter matches 3 and 7 to determine membership.
+   */
+  offset?: number;
+  /**
+   * By default, the filter will keep a candidate if the underlying index
+   * contains that candidate. If this is set to true, the filter will remove
+   * the candidate if the underlying index does not contain it.
+   */
+  keepMisses?: boolean;
+}
+
 export interface GenericReverseIndex<T> {
   /**
    * Filters the given candidates based on whether they match the key.
    *
    * @param key The key to check membership against.
    * @param candidates The candidates to filter.
-   * @param offset The offset to apply to the candidates.
+   * @param options: Options to apply to the filtering.
    *
    * @returns The filtered candidates that match the key.
    */
-  filterCandidates(key: T, candidates: number[], offset: number): number[];
+  filterCandidates(
+    key: T,
+    candidates: number[],
+    options?: FilterOptions
+  ): number[];
 
   /**
    * Information about the format of the index stored for the key.

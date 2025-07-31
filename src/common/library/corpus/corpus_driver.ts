@@ -9,13 +9,13 @@ import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_ut
 import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
 import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
 import { exhaustiveGuard, getFormattedMemoryUsage } from "@/common/misc_utils";
+import { LatinCase } from "@/morceus/types";
 
 const QUERY: CorpusQuery = {
   parts: [
-    { lemma: "amo" },
-    {
-      lemma: "valeo",
-    },
+    { word: "quam" },
+    { lemma: "ob" },
+    { category: "case", value: LatinCase.Accusative },
   ],
 };
 
