@@ -9,6 +9,7 @@ import {
 } from "@/common/library/corpus/corpus_common";
 import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 import fs from "fs";
+import path from "path";
 
 const SERIALIZATION_TOKEN = "___SERIALIZED_KEY_v1___";
 const MAP_TOKEN = `${SERIALIZATION_TOKEN}_MAP`;
@@ -18,16 +19,18 @@ type StoredMapValue = string | { serializationKey: string; data: string };
 
 export function writeCorpus(
   corpus: InProgressLatinCorpus,
-  corpusFile: string = CORPUS_FILE
+  corpusDir: string = CORPUS_DIR
 ) {
-  if (!fs.existsSync(CORPUS_DIR)) {
-    fs.mkdirSync(CORPUS_DIR, { recursive: true });
+  if (!fs.existsSync(corpusDir)) {
+    fs.mkdirSync(corpusDir, { recursive: true });
   }
-  fs.writeFileSync(corpusFile, serializeCorpus(corpus));
-  console.debug(`Corpus written to ${corpusFile}`);
+  const destFile = path.join(corpusDir, CORPUS_FILE);
+  fs.writeFileSync(destFile, serializeCorpus(corpus));
+  console.debug(`Corpus written to ${destFile}`);
 }
 
-export function loadCorpus(corpusFile: string = CORPUS_FILE): LatinCorpusIndex {
+export function loadCorpus(corpusDir: string = CORPUS_DIR): LatinCorpusIndex {
+  const corpusFile = path.join(corpusDir, CORPUS_FILE);
   const raw = fs.readFileSync(corpusFile, "utf8");
   return deserializeCorpus(raw);
 }

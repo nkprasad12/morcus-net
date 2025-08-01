@@ -9,8 +9,8 @@ import {
 } from "@/morceus/types";
 
 export const CORPUS_DIR = "build/corpus";
-export const CORPUS_FILE = `${CORPUS_DIR}/latin_corpus.json`;
-export const CORPUS_TOKEN_DB = `${CORPUS_DIR}/latin_corpus_tokens.db`;
+export const CORPUS_FILE = `latin_corpus.json`;
+export const CORPUS_TOKEN_DB = `latin_corpus_tokens.db`;
 
 // // // // // // // // // //
 // Corpus Querying Types   //

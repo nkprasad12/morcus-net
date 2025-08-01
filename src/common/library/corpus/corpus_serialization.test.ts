@@ -4,12 +4,15 @@ import {
   writeCorpus,
   loadCorpus,
 } from "@/common/library/corpus/corpus_serialization";
-import { type InProgressLatinCorpus } from "@/common/library/corpus/corpus_common";
+import {
+  CORPUS_FILE,
+  type InProgressLatinCorpus,
+} from "@/common/library/corpus/corpus_common";
 import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 
 console.debug = jest.fn();
 
-const TEST_CORPUS_FILE = path.join(__dirname, "test_latin_corpus.json");
+const TEST_CORPUS_DIR = path.join(__dirname, "test_latin_corpus");
 
 const LONG_ARRAY = [2, 6, 17, 21, 23, 27, 35, 48, 59, 60, 61, 62];
 
@@ -54,17 +57,18 @@ function getTestCorpus(): InProgressLatinCorpus {
 
 describe("writeCorpus and loadCorpus", () => {
   afterEach(() => {
-    if (fs.existsSync(TEST_CORPUS_FILE)) {
-      fs.unlinkSync(TEST_CORPUS_FILE);
+    if (fs.existsSync(TEST_CORPUS_DIR)) {
+      fs.rmdirSync(TEST_CORPUS_DIR, { recursive: true });
     }
   });
 
   it("writes and loads a corpus index correctly", () => {
     const corpus = getTestCorpus();
-    writeCorpus(corpus, TEST_CORPUS_FILE);
-    expect(fs.existsSync(TEST_CORPUS_FILE)).toBe(true);
+    writeCorpus(corpus, TEST_CORPUS_DIR);
+    const indexPath = path.join(TEST_CORPUS_DIR, CORPUS_FILE);
+    expect(fs.existsSync(indexPath)).toBe(true);
 
-    const loaded = loadCorpus(TEST_CORPUS_FILE);
+    const loaded = loadCorpus(TEST_CORPUS_DIR);
     expect(loaded.workLookup).toEqual(corpus.workLookup);
     expect(loaded.workRowRanges).toEqual(corpus.workRowRanges);
     expect(loaded.stats).toEqual(corpus.stats);

@@ -26,6 +26,7 @@ import {
 } from "@/morceus/types";
 
 import fs from "fs";
+import path from "path";
 
 function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
   if (value === undefined) {
@@ -172,13 +173,18 @@ function absorbWork(
   breaksIndex.add("hard", tokens.length - 1);
 }
 
-function saveTokenDb(tokens: string[], breaks: (string | null)[]) {
+function saveTokenDb(
+  tokens: string[],
+  breaks: (string | null)[],
+  corpusDir: string
+) {
   const zippedText = tokens.map((token, index) => ({
     token,
     break: breaks[index] ? breaks[index] : "",
   }));
+  const destination = path.join(corpusDir, CORPUS_TOKEN_DB);
   ReadOnlyDb.saveToSql({
-    destination: CORPUS_TOKEN_DB,
+    destination,
     tables: [
       {
         records: zippedText,
@@ -187,11 +193,12 @@ function saveTokenDb(tokens: string[], breaks: (string | null)[]) {
       },
     ],
   });
+  return destination;
 }
 
-function printArtifactSummary() {
+function printArtifactSummary(corpusDir: string) {
   try {
-    const files = fs.readdirSync(CORPUS_DIR);
+    const files = fs.readdirSync(corpusDir);
     console.debug("Corpus directory contents:");
     for (const file of files) {
       if (file.endsWith("-wal") || file.endsWith("-shm")) {
@@ -217,7 +224,10 @@ function printArtifactSummary() {
   }
 }
 
-export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
+export function buildCorpus(
+  iterableWorks: Iterable<CorpusInputWork>,
+  corpusDir: string = CORPUS_DIR
+) {
   const tables = MorceusTables.CACHED.get();
   const startTime = Date.now();
   const crunchOptions: CruncherOptions = {
@@ -240,9 +250,10 @@ export function buildCorpus(iterableWorks: Iterable<CorpusInputWork>) {
   corpus.stats.uniqueWords = corpus.indices.word.size;
   corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
 
-  saveTokenDb(tokens, breaks);
-  writeCorpus(corpus);
-  printArtifactSummary();
+  const dbFile = saveTokenDb(tokens, breaks, corpusDir);
+  corpus.rawTextDb = dbFile;
+  writeCorpus(corpus, corpusDir);
+  printArtifactSummary(corpusDir);
   console.log(`Corpus stats:`, corpus.stats);
   console.log(`Corpus indexing runtime: ${Date.now() - startTime}ms`);
 }
