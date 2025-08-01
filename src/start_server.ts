@@ -237,8 +237,11 @@ export function startMorcusServer(): Promise<http.Server> {
         (await telemetry).logClientEvent(eventData);
       }),
       RouteDefinition.create(MacronizeApi, (input) => macronizeInput(input)),
-      RouteDefinition.create(QueryCorpusApi, (query) =>
-        runQuery(corpusQueryEngine.get(), query)
+      RouteDefinition.create(
+        QueryCorpusApi,
+        (query) => runQuery(corpusQueryEngine.get(), query.query),
+        undefined,
+        CACHING_SETTER
       ),
     ],
     telemetry: telemetry,

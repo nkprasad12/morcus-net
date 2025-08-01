@@ -186,6 +186,7 @@ export function ReadingPage() {
   );
 
   const urlId = route.params?.id;
+  const referrer = route.params?.ref;
   const findMatchPage = React.useCallback(
     (loadedWork: WorkState) => {
       if (
@@ -241,7 +242,7 @@ export function ReadingPage() {
     }
     if (highlightRef.current) {
       highlightRef.current.scrollIntoView({
-        behavior: "smooth",
+        behavior: referrer === "corpus" ? "instant" : "smooth",
         block: "start",
       });
       return;
@@ -252,7 +253,7 @@ export function ReadingPage() {
     twoColumnMain?.scrollTo({ top: 0, behavior: "instant" });
     const translationTab = document.getElementById(TRANSLATION_ID);
     translationTab?.scrollIntoView({ behavior: "instant", block: "start" });
-  }, [urlId, work]);
+  }, [urlId, work, referrer]);
 
   useEffect(() => {
     hasTooltip.current = new Set();

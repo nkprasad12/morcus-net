@@ -118,7 +118,7 @@ export const ScrapeUrlApi: ApiRoute<string, string> = {
 
 export const LogClientEventApi: ApiRoute<ClientEventData, any> = {
   path: "/api/logClientEvent",
-  method: "GET",
+  method: "POST",
   inputValidator: matchesObject<ClientEventData>({
     name: isString,
     extras: isAny,
@@ -126,9 +126,18 @@ export const LogClientEventApi: ApiRoute<ClientEventData, any> = {
   outputValidator: isAny,
 };
 
-export const QueryCorpusApi: ApiRoute<string, CorpusQueryResult[]> = {
-  path: "/api/corpus/query",
-  method: "POST",
-  inputValidator: isString,
-  outputValidator: isArray(CorpusQueryResult.isMatch),
-};
+export interface CorpusQueryRequest {
+  query: string;
+  commitHash?: string;
+}
+
+export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult[]> =
+  {
+    path: "/api/corpus/query",
+    method: "GET",
+    inputValidator: matchesObject<CorpusQueryRequest>({
+      query: isString,
+      commitHash: maybeUndefined(isString),
+    }),
+    outputValidator: isArray(CorpusQueryResult.isMatch),
+  };

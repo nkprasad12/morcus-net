@@ -6,6 +6,7 @@ import type {
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
 import type { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
+import { safeParseInt } from "@/common/misc_utils";
 
 export async function runQuery(
   corpus: CorpusQueryEngine,
@@ -47,9 +48,7 @@ function parseQueryAtom(atomStr: string): CorpusQueryAtom {
   if (key === "lemma") {
     return { lemma: value };
   }
-  // This is a simplification. The value might need to be converted to a number
-  // if it's a numeric category from an enum like LatinCase.
-  // For this driver, we'll treat it as a string.
+  const parsedValue = safeParseInt(value);
   // @ts-expect-error
-  return { category: key, value: safeParseInt(value) };
+  return { category: key, value: parsedValue };
 }
