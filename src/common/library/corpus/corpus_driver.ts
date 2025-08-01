@@ -125,13 +125,12 @@ function runQuery(
 ): CorpusQueryResult[] {
   const startTime = Date.now();
   const results = corpus.queryCorpus(query);
-  console.log(
-    `Found ${results.length} results in ${Date.now() - startTime} ms`
-  );
+  const elapsedTime = Date.now() - startTime;
   console.log("Query: ", printQuery(query));
   results.forEach((result) => {
     console.log(formatQueryResult(result));
   });
+  console.log(`Found ${results.length} results in ${elapsedTime} ms`);
   return results;
 }
 

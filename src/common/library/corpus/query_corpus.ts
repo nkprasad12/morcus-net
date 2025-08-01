@@ -209,7 +209,9 @@ export class CorpusQueryEngine {
       (tokenId) =>
         !this.corpus.indices.breaks.hasValueInRange("hard", [
           tokenId,
-          tokenId + queryLength - 1,
+          // -2 because a hard break after the last token isn't counted
+          // (the first -1) and the second -1 is because the range is inclusive.
+          tokenId + queryLength - 2,
         ])
     );
   }

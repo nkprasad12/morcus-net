@@ -254,6 +254,6 @@ export function buildCorpus(
   corpus.rawTextDb = dbFile;
   writeCorpus(corpus, corpusDir);
   printArtifactSummary(corpusDir);
-  console.log(`Corpus stats:`, corpus.stats);
-  console.log(`Corpus indexing runtime: ${Date.now() - startTime}ms`);
+  console.debug(`Corpus stats:`, corpus.stats);
+  console.debug(`Corpus indexing runtime: ${Date.now() - startTime}ms`);
 }
