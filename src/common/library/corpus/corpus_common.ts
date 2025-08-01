@@ -7,6 +7,7 @@ import {
   LatinTense,
   LatinVoice,
 } from "@/morceus/types";
+import { isNumber, isString, matchesObject } from "@/web/utils/rpc/parsing";
 
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
@@ -47,6 +48,15 @@ export interface CorpusQueryResult {
   section: string;
   offset: number;
   text: string;
+}
+
+export namespace CorpusQueryResult {
+  export const isMatch = matchesObject<CorpusQueryResult>({
+    workId: isString,
+    section: isString,
+    offset: isNumber,
+    text: isString,
+  });
 }
 
 // // // // // // // // // //

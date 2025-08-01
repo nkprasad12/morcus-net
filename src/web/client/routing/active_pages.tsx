@@ -9,6 +9,7 @@ import { Library } from "@/web/client/pages/library/library";
 import { ReadingPage } from "@/web/client/pages/library/reader";
 import { SiteSettings } from "@/web/client/pages/site_settings";
 import { Macronizer } from "@/web/client/pages/macron";
+import { CorpusQueryPage } from "@/web/client/pages/corpus/corpus_view";
 
 // To use lazy loading, you can use the following code:
 // import { Suspense, lazy } from "react";
@@ -72,6 +73,11 @@ const MACRONIZE_PAGE: SinglePageApp.Page = {
   paths: [ClientPaths.MACRONIZER_PATH],
 };
 
+const CORPUS_QUERY_PAGE: SinglePageApp.Page = {
+  Content: CorpusQueryPage,
+  paths: [ClientPaths.CORPUS_QUERY_PATH],
+};
+
 export const ACTIVE_PAGES = [
   // Visible in top navigation
   DICT_PAGE,
@@ -82,4 +88,5 @@ export const ACTIVE_PAGES = [
   READING_PAGE,
   EXTERNAL_CONTENT_READER_PAGE,
   MACRONIZE_PAGE,
+  CORPUS_QUERY_PAGE,
 ];

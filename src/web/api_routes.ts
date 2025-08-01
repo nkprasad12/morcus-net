@@ -21,6 +21,7 @@ import {
   WorkId,
 } from "@/common/library/library_types";
 import type { ClientEventData } from "@/web/telemetry/telemetry";
+import { CorpusQueryResult } from "@/common/library/corpus/corpus_common";
 
 export interface FormOptions {
   lemma: string;
@@ -123,4 +124,11 @@ export const LogClientEventApi: ApiRoute<ClientEventData, any> = {
     extras: isAny,
   }),
   outputValidator: isAny,
+};
+
+export const QueryCorpusApi: ApiRoute<string, CorpusQueryResult[]> = {
+  path: "/api/corpus/query",
+  method: "POST",
+  inputValidator: isString,
+  outputValidator: isArray(CorpusQueryResult.isMatch),
 };
