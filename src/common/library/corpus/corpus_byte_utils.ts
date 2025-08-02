@@ -48,3 +48,72 @@ export function applyAndWithBitmasks(
   }
   return result;
 }
+
+/**
+ * Computes the bitwise AND of two indices with an offset for the second index.
+ *
+ * @param bitmask The first index as a bitmask.
+ * @param indices The second index as an array of tokenIds.
+ * @param offset The offset to apply to the second index.
+ *
+ * @returns A packed array for the result.
+ */
+export function applyAndWithBitmaskAndArray(
+  bitmask: Uint32Array,
+  indices: number[],
+  offset: number
+): number[] {
+  const results: number[] = [];
+  for (let i = 0; i < indices.length; i++) {
+    const index = indices[i] + offset;
+    if (index < 0 || index >= bitmask.length * 32) {
+      continue;
+    }
+    const byteIndex = index >> 5; // index / 32
+    const bitIndex = index & 31; // index % 32
+    if ((bitmask[byteIndex] & (1 << (31 - bitIndex))) !== 0) {
+      results.push(index);
+    }
+  }
+  return results;
+}
+
+/**
+ * Returns the numbers that are present in both input arrays, applying an offset to the second array.
+ *
+ * For example, if the first array is [3, 8, 9], the second array is [1, 8], and the offset is 2,
+ * the result will be [3] because 3 is in the first array, and 1 + 2 is in the second array.
+ * Note that 8 is not included because 8 + 2 = 10, which is not in the first array.
+ *
+ * This implementation assumes that both input arrays are sorted in ascending order.
+ *
+ * @param first The first array of numbers.
+ * @param second The second array of numbers.
+ * @param offset The offset to apply to the second array.
+ *
+ * @returns A new array with the "common" elements.
+ */
+export function applyAndWithArrays(
+  first: number[],
+  second: number[],
+  offset: number
+): number[] {
+  const result: number[] = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < first.length && j < second.length) {
+    const firstVal = first[i];
+    const secondVal = second[j] + offset;
+    if (firstVal < secondVal) {
+      i++;
+    } else if (firstVal > secondVal) {
+      j++;
+    } else {
+      result.push(firstVal);
+      i++;
+      j++;
+    }
+  }
+  return result;
+}

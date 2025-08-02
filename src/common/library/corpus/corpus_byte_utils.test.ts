@@ -1,4 +1,8 @@
-import { applyAndWithBitmasks } from "@/common/library/corpus/corpus_byte_utils";
+import {
+  applyAndWithArrays,
+  applyAndWithBitmaskAndArray,
+  applyAndWithBitmasks,
+} from "@/common/library/corpus/corpus_byte_utils";
 
 // Helper to convert Uint32Array to boolean[]
 function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
@@ -131,5 +135,161 @@ describe("applyAndWithBitmasks", () => {
       0b11000011110000111100001111000011
     );
     verifyResults(a, b, 33);
+  });
+});
+
+describe("applyAndWithBitmaskAndArray", () => {
+  it("returns correct intersection with no offset", () => {
+    const bitmask = booleanArrayToBitMask([
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+    ]); // bits 1, 3, 4 are set
+    const indices = [0, 1, 2, 4, 6];
+    const offset = 0;
+    const result = applyAndWithBitmaskAndArray(bitmask, indices, offset);
+    expect(result).toEqual([1, 4]);
+  });
+
+  it("returns correct intersection with a positive offset", () => {
+    const bitmask = booleanArrayToBitMask([
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+    ]); // bits 1, 3, 4, 6 are set
+    const indices = [0, 2, 3, 6];
+    const offset = 1;
+    // indices + offset = [1, 3, 4, 7]
+    const result = applyAndWithBitmaskAndArray(bitmask, indices, offset);
+    expect(result).toEqual([1, 3, 4]);
+  });
+
+  it("returns correct intersection with a negative offset", () => {
+    const bitmask = booleanArrayToBitMask([
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+    ]); // bits 1, 3, 4 are set
+    const indices = [1, 4, 5, 7];
+    const offset = -1;
+    // indices + offset = [0, 3, 4, 6]
+    const result = applyAndWithBitmaskAndArray(bitmask, indices, offset);
+    expect(result).toEqual([3, 4]);
+  });
+
+  it("handles indices that go out of bounds", () => {
+    const bitmask = booleanArrayToBitMask(new Array(32).fill(true));
+    const indices = [-2, 0, 31, 32, 50];
+    const offset = 1;
+    // indices + offset = [-1, 1, 32, 33, 51]
+    const result = applyAndWithBitmaskAndArray(bitmask, indices, offset);
+    expect(result).toEqual([1]); // only 1 is in bounds [0, 31]
+  });
+
+  it("handles empty indices array", () => {
+    const bitmask = booleanArrayToBitMask([true, true, true]);
+    const indices: number[] = [];
+    const offset = 0;
+    const result = applyAndWithBitmaskAndArray(bitmask, indices, offset);
+    expect(result).toEqual([]);
+  });
+
+  it("handles empty bitmask", () => {
+    const bitmask = new Uint32Array([]);
+    const indices = [0, 1, 2];
+    const offset = 0;
+    const result = applyAndWithBitmaskAndArray(bitmask, indices, offset);
+    expect(result).toEqual([]);
+  });
+
+  it("works with bitmasks larger than 32 bits", () => {
+    const bools = new Array(70).fill(false);
+    bools[31] = true;
+    bools[32] = true;
+    bools[65] = true;
+    const bitmask = booleanArrayToBitMask(bools);
+    const indices = [30, 31, 32, 33, 64, 65, 66];
+    const offset = 0;
+    const result = applyAndWithBitmaskAndArray(bitmask, indices, offset);
+    expect(result).toEqual([31, 32, 65]);
+  });
+});
+
+describe("applyAndWithArrays", () => {
+  it("returns correct intersection with no offset", () => {
+    const first = [1, 3, 5, 8, 10];
+    const second = [3, 4, 5, 9, 10];
+    const offset = 0;
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([3, 5, 10]);
+  });
+
+  it("returns correct intersection with a positive offset", () => {
+    const first = [3, 5, 9, 12];
+    const second = [1, 3, 7, 10];
+    const offset = 2;
+    // second + offset = [3, 5, 9, 12]
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([3, 5, 9, 12]);
+  });
+
+  it("returns correct intersection with a negative offset", () => {
+    const first = [1, 3, 7, 10];
+    const second = [3, 5, 9, 12];
+    const offset = -2;
+    // second + offset = [1, 3, 7, 10]
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([1, 3, 7, 10]);
+  });
+
+  it("handles empty first array", () => {
+    const first: number[] = [];
+    const second = [1, 2, 3];
+    const offset = 0;
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([]);
+  });
+
+  it("handles empty second array", () => {
+    const first = [1, 2, 3];
+    const second: number[] = [];
+    const offset = 0;
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([]);
+  });
+
+  it("handles both arrays being empty", () => {
+    const first: number[] = [];
+    const second: number[] = [];
+    const offset = 0;
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([]);
+  });
+
+  it("returns an empty array when there is no intersection", () => {
+    const first = [1, 2, 3];
+    const second = [4, 5, 6];
+    const offset = 0;
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([]);
+  });
+
+  it("handles arrays of different lengths", () => {
+    const first = [1, 5, 10, 15, 20, 25];
+    const second = [0, 10, 20];
+    const offset = 5;
+    // second + offset = [5, 15, 25]
+    const result = applyAndWithArrays(first, second, offset);
+    expect(result).toEqual([5, 15, 25]);
   });
 });
