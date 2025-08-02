@@ -98,7 +98,7 @@ describe("pack and unpacking integer arrays", () => {
       // to exactly 1 element.
       const numbers = [1, 2, 3, 4, 5, 6, 7];
       const packed = packIntegers(upperBound, numbers);
-      const unpacked = unpackIntegers(upperBound, packed);
+      const unpacked = unpackIntegers(packed);
       expect(unpacked).toEqual(numbers);
     });
 
@@ -106,7 +106,7 @@ describe("pack and unpacking integer arrays", () => {
       const upperBound = 16; // 4 bits
       const numbers = [0, 15, 7, 8];
       const packed = packIntegers(upperBound, numbers);
-      const unpacked = unpackIntegers(upperBound, packed);
+      const unpacked = unpackIntegers(packed);
       expect(unpacked).toEqual(numbers);
     });
 
@@ -114,7 +114,7 @@ describe("pack and unpacking integer arrays", () => {
       const upperBound = 4;
       const numbers: number[] = [];
       const packed = packIntegers(upperBound, numbers);
-      const unpacked = unpackIntegers(upperBound, packed);
+      const unpacked = unpackIntegers(packed);
       expect(unpacked).toEqual([]);
     });
 
@@ -128,7 +128,7 @@ describe("pack and unpacking integer arrays", () => {
       const upperBound = 256; // 8 bits
       const numbers = Array.from({ length: 1000 }, (_, i) => i % 256);
       const packed = packIntegers(upperBound, numbers);
-      const unpacked = unpackIntegers(upperBound, packed);
+      const unpacked = unpackIntegers(packed);
       expect(unpacked).toEqual(numbers);
     });
 
@@ -136,7 +136,7 @@ describe("pack and unpacking integer arrays", () => {
       const upperBound = 16; // 4 bits per number
       const numbers = [1, 2, 3, 4, 5, 15];
       const packed = packIntegers(upperBound, numbers);
-      const unpacked = unpackIntegers(upperBound, packed);
+      const unpacked = unpackIntegers(packed);
       expect(unpacked).toEqual(numbers);
     });
 
@@ -144,7 +144,7 @@ describe("pack and unpacking integer arrays", () => {
       const upperBound = 1;
       const numbers = [0, 0, 0];
       const packed = packIntegers(upperBound, numbers);
-      const unpacked = unpackIntegers(upperBound, packed);
+      const unpacked = unpackIntegers(packed);
       expect(unpacked).toEqual(numbers);
     });
 
@@ -157,7 +157,7 @@ describe("pack and unpacking integer arrays", () => {
 
       for (const { upperBound, numbers } of testCases) {
         const packed = packIntegers(upperBound, numbers);
-        const unpacked = unpackIntegers(upperBound, packed);
+        const unpacked = unpackIntegers(packed);
         expect(unpacked).toEqual(numbers);
       }
     });
@@ -181,12 +181,12 @@ describe("pack and unpacking integer arrays", () => {
       it("should return the correct number of elements", () => {
         const numbers = [1, 2, 3, 4, 5];
         const packed = packIntegers(6, numbers);
-        expect(PackedNumbers.numElements(6, packed)).toBe(numbers.length);
+        expect(PackedNumbers.numElements(packed)).toBe(numbers.length);
       });
 
       it("should return 0 for an empty packed array", () => {
         const packed = packIntegers(5, []);
-        expect(PackedNumbers.numElements(5, packed)).toBe(0);
+        expect(PackedNumbers.numElements(packed)).toBe(0);
       });
     });
 
@@ -194,14 +194,12 @@ describe("pack and unpacking integer arrays", () => {
       const upperBound = 30; // 5 bits
       const numbers = [0, 5, 10, 15, 20, 25, 29];
       const packed = packIntegers(upperBound, numbers);
-      const data = packed.subarray(1);
-      const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
 
       it("should retrieve the correct element at a given index", () => {
-        expect(PackedNumbers.get(data, bitsPerNumber, 0)).toBe(0);
-        expect(PackedNumbers.get(data, bitsPerNumber, 1)).toBe(5);
-        expect(PackedNumbers.get(data, bitsPerNumber, 3)).toBe(15);
-        expect(PackedNumbers.get(data, bitsPerNumber, 6)).toBe(29);
+        expect(PackedNumbers.get(packed, 0)).toBe(0);
+        expect(PackedNumbers.get(packed, 1)).toBe(5);
+        expect(PackedNumbers.get(packed, 3)).toBe(15);
+        expect(PackedNumbers.get(packed, 6)).toBe(29);
       });
     });
 
@@ -211,55 +209,39 @@ describe("pack and unpacking integer arrays", () => {
       const packed = packIntegers(upperBound, numbers);
 
       it("should find a value in a single-element range", () => {
-        expect(PackedNumbers.hasValueInRange(packed, upperBound, [30])).toBe(
-          true
-        );
+        expect(PackedNumbers.hasValueInRange(packed, [30])).toBe(true);
       });
 
       it("should not find a value not in a single-element range", () => {
-        expect(PackedNumbers.hasValueInRange(packed, upperBound, [35])).toBe(
-          false
-        );
+        expect(PackedNumbers.hasValueInRange(packed, [35])).toBe(false);
       });
 
       it("should find a value within a given range", () => {
-        expect(
-          PackedNumbers.hasValueInRange(packed, upperBound, [45, 55])
-        ).toBe(true);
+        expect(PackedNumbers.hasValueInRange(packed, [45, 55])).toBe(true);
       });
 
       it("should not find a value if none exists in the range", () => {
-        expect(
-          PackedNumbers.hasValueInRange(packed, upperBound, [31, 39])
-        ).toBe(false);
+        expect(PackedNumbers.hasValueInRange(packed, [31, 39])).toBe(false);
       });
 
       it("should handle ranges that include the first element", () => {
-        expect(
-          PackedNumbers.hasValueInRange(packed, upperBound, [10, 15])
-        ).toBe(true);
+        expect(PackedNumbers.hasValueInRange(packed, [10, 15])).toBe(true);
       });
 
       it("should handle ranges that include the last element", () => {
-        expect(
-          PackedNumbers.hasValueInRange(packed, upperBound, [85, 90])
-        ).toBe(true);
+        expect(PackedNumbers.hasValueInRange(packed, [85, 90])).toBe(true);
       });
 
       it("should handle ranges outside the data", () => {
-        expect(PackedNumbers.hasValueInRange(packed, upperBound, [1, 5])).toBe(
-          false
-        );
-        expect(
-          PackedNumbers.hasValueInRange(packed, upperBound, [95, 105])
-        ).toBe(false);
+        expect(PackedNumbers.hasValueInRange(packed, [1, 5])).toBe(false);
+        expect(PackedNumbers.hasValueInRange(packed, [95, 105])).toBe(false);
       });
 
       it("should return false for an empty packed array", () => {
         const emptyPacked = packIntegers(upperBound, []);
-        expect(
-          PackedNumbers.hasValueInRange(emptyPacked, upperBound, [10, 20])
-        ).toBe(false);
+        expect(PackedNumbers.hasValueInRange(emptyPacked, [10, 20])).toBe(
+          false
+        );
       });
     });
   });

@@ -4,7 +4,9 @@ const DELIMITER_SIZE = 4;
 const METADATA_SIZE = 4;
 const MAX_INT = 2 ** (DELIMITER_SIZE * 8);
 
-const PACKED_NUMBER_HEADER_SIZE = 1; // 8-bit integer for number of unused bits
+const PACKED_NUMBER_HEADER_SIZE = 1; // 1 byte: 3 bits unused, 5 bits bitsPerNumber
+const PACKED_NUMBER_HEADER_UNUSED_BITS_MASK = 0b11100000; // bits 7-5
+const PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK = 0b00011111; // bits 4-0
 
 /** Packs a sequence of buffers into a single length-delimited buffer. */
 export function pack(buffers: ArrayBuffer[]): ArrayBuffer {
@@ -101,76 +103,79 @@ export async function readMetadata(
  * is smaller than a known maximum, allowing for storage that is more efficient
  * than using standard integer types.
  *
- * @param upperBound The upper bound for any integer in the array.
- *   This is used to determine the number of bits required for each integer.
- *   The number of bits will be `ceil(log2(upperBound))`.
- * @param numbers The array of positive integers to pack. Each number must be
- *   `<= maxIntSize`.
+ * @param upperBound The strict upper bound for any integer in the array.
+ *   Must be <= 2^31.
+ * @param numbers The array of positive integers to pack. Each number must be < upperBound.
  * @returns A `Uint8Array` containing the packed bit representation of the numbers.
  */
-export function packIntegers(upperBound: number, numbers: number[]): Buffer {
+export function packIntegers(
+  upperBound: number,
+  numbers: number[]
+): Uint8Array {
   assert(upperBound > 0, "upperBound must be positive.");
-  if (numbers.length === 0) {
-    const buffer = Buffer.alloc(1);
-    buffer.writeUInt8(0, 0); // 0 unused bits
-    return buffer;
-  }
-
   const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
+  assert(
+    bitsPerNumber <= 31,
+    "upperBound too large for packed encoding (max bitsPerNumber = 31)."
+  );
+
+  if (numbers.length === 0) {
+    // Header: unused bits = 0, bitsPerNumber = bitsPerNumber
+    const header = ((0 << 5) | bitsPerNumber) & 0xff;
+    return Uint8Array.of(header);
+  }
 
   // Calculate the total number of bits and the required buffer size in bytes.
   const totalBits = numbers.length * bitsPerNumber;
   const dataBufferSize = Math.ceil(totalBits / 8);
-  const buffer = Buffer.alloc(PACKED_NUMBER_HEADER_SIZE + dataBufferSize);
-
-  // Write header: number of unused bits in the last byte.
   const unusedBits = dataBufferSize * 8 - totalBits;
-  buffer.writeUInt8(unusedBits, 0);
+  assert(unusedBits < 8);
+
+  // Header: 3 bits unused, 5 bits bitsPerNumber
+  const header = ((unusedBits << 5) | bitsPerNumber) & 0xff;
+  const buffer = new Uint8Array(PACKED_NUMBER_HEADER_SIZE + dataBufferSize);
+  buffer[0] = header;
 
   let bitOffset = 0;
-
   for (const num of numbers) {
     if (num < 0 || num >= upperBound) {
       throw new Error(
         `Number ${num} is out of the allowed range [0, ${upperBound}).`
       );
     }
-
-    // Write the bits for the current number, from most significant to least.
     for (let i = bitsPerNumber - 1; i >= 0; i--) {
       const bit = (num >> i) & 1;
-
       if (bit === 1) {
         const byteIndex = Math.floor(bitOffset / 8);
         const bitInByte = bitOffset % 8;
-        // Set the bit in the buffer. We write bits from left to right (MSB to LSB) in each byte.
         buffer[PACKED_NUMBER_HEADER_SIZE + byteIndex] |= 1 << (7 - bitInByte);
       }
       bitOffset++;
     }
   }
-
   return buffer;
 }
 
 /**
  * Unpacks an array of positive integers from a compact bit array (Uint8Array).
+ * The header byte encodes both the number of unused bits (3 bits) and the bit width (5 bits).
  *
- * This is the companion function to `packIntegers`. It reads the bit-packed
- * data and reconstructs the original array of numbers.
- *
- * @param upperBound A strict upper bound for any integer in the array.
- *   This must be the same value used during packing.
  * @param buffer The `Uint8Array` containing the packed data.
  * @returns An array of the unpacked positive integers.
  */
-export function unpackIntegers(
-  upperBound: number,
-  buffer: Uint8Array
-): number[] {
-  assert(upperBound > 0, "upperBound must be positive.");
+export function unpackIntegers(buffer: Uint8Array): number[] {
   if (buffer.length < PACKED_NUMBER_HEADER_SIZE) {
     throw new Error("Invalid buffer: too small to contain header.");
+  }
+  const header = buffer[0];
+  const unusedBits = (header & PACKED_NUMBER_HEADER_UNUSED_BITS_MASK) >> 5;
+  const bitsPerNumber = header & PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK;
+  assert(
+    bitsPerNumber > 0 || buffer.length === PACKED_NUMBER_HEADER_SIZE,
+    "0 bits per number, but buffer contains data."
+  );
+  if (bitsPerNumber === 0) {
+    return [];
   }
 
   const dataBuffer = buffer.subarray(PACKED_NUMBER_HEADER_SIZE);
@@ -178,15 +183,8 @@ export function unpackIntegers(
     return [];
   }
 
-  const unusedBits = buffer[0];
   const totalDataBits = dataBuffer.length * 8;
   const totalValidBits = totalDataBits - unusedBits;
-
-  const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
-  if (bitsPerNumber === 0 && totalValidBits > 0) {
-    throw new Error("bitsPerNumber is 0 but buffer contains data.");
-  }
-  if (bitsPerNumber === 0) return [];
 
   const numbers: number[] = [];
   let bitOffset = 0;
@@ -196,7 +194,6 @@ export function unpackIntegers(
     for (let j = bitsPerNumber - 1; j >= 0; j--) {
       const byteIndex = Math.floor(bitOffset / 8);
       const bitInByte = bitOffset % 8;
-
       const bit = (dataBuffer[byteIndex] >> (7 - bitInByte)) & 1;
       if (bit === 1) {
         currentNum |= 1 << j;
@@ -214,28 +211,26 @@ export namespace PackedNumbers {
     return upperBound === 1 ? 1 : Math.ceil(Math.log2(upperBound));
   }
 
-  export function numElements(
-    upperBound: number,
-    packedData: Uint8Array
-  ): number {
-    const unusedBits = packedData[0];
+  export function numElements(packedData: Uint8Array): number {
+    const header = packedData[0];
+    const unusedBits = (header & PACKED_NUMBER_HEADER_UNUSED_BITS_MASK) >> 5;
+    const bitsPerNumber = header & PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK;
     const totalBits =
-      packedData.length * 8 - unusedBits - PACKED_NUMBER_HEADER_SIZE * 8;
-    return Math.floor(totalBits / bitsPerNumber(upperBound));
+      (packedData.length - PACKED_NUMBER_HEADER_SIZE) * 8 - unusedBits;
+    return bitsPerNumber === 0 ? 0 : Math.floor(totalBits / bitsPerNumber);
   }
 
-  export function get(
-    packedData: Uint8Array,
-    bitsPerNumber: number,
-    index: number
-  ): number {
+  export function get(packedData: Uint8Array, index: number): number {
+    const header = packedData[0];
+    const bitsPerNumber = header & PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK;
+    const dataBuffer = packedData.subarray(PACKED_NUMBER_HEADER_SIZE);
     let value = 0;
     const startBit = index * bitsPerNumber;
     for (let i = 0; i < bitsPerNumber; i++) {
       const bitOffset = startBit + i;
-      const byteIndex = bitOffset >> 3; // bitOffset / 8
-      const bitInByte = bitOffset & 7; // bitOffset % 8
-      const bit = (packedData[byteIndex] >> (7 - bitInByte)) & 1;
+      const byteIndex = Math.floor(bitOffset / 8);
+      const bitInByte = bitOffset % 8;
+      const bit = (dataBuffer[byteIndex] >> (7 - bitInByte)) & 1;
       if (bit) {
         value |= 1 << (bitsPerNumber - 1 - i);
       }
@@ -245,23 +240,17 @@ export namespace PackedNumbers {
 
   export function hasValueInRange(
     packedData: Uint8Array,
-    upperBound: number,
     valueRange: [number] | [number, number]
   ): boolean {
     const lowTarget = valueRange[0];
     const highTarget = valueRange[valueRange.length - 1];
     assert(lowTarget <= highTarget);
-    const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
-    const numElements = PackedNumbers.numElements(upperBound, packedData);
+    const numElements = PackedNumbers.numElements(packedData);
     let low = 0;
     let high = numElements - 1;
     while (low <= high) {
       const midIndex = (low + high) >> 1;
-      const midVal = PackedNumbers.get(
-        packedData.subarray(PACKED_NUMBER_HEADER_SIZE),
-        bitsPerNumber,
-        midIndex
-      );
+      const midVal = PackedNumbers.get(packedData, midIndex);
       if (midVal < lowTarget) {
         low = midIndex + 1;
       } else if (midVal > highTarget) {

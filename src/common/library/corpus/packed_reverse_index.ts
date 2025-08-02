@@ -37,7 +37,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     }
 
     if (!("format" in packedData)) {
-      return PackedNumbers.hasValueInRange(packedData, this.upperBound, range);
+      return PackedNumbers.hasValueInRange(packedData, range);
     }
     assertEqual(packedData.format, "bitmask");
     const bitmask = packedData.data;
@@ -69,9 +69,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
       return candidates.filter((candidate) => {
         const relativeId = candidate - offset;
         return maybeNegate(
-          PackedNumbers.hasValueInRange(packedData, this.upperBound, [
-            relativeId,
-          ])
+          PackedNumbers.hasValueInRange(packedData, [relativeId])
         );
       });
     }
@@ -104,7 +102,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     }
     // The default format is a packed array of tokenIds.
     if (!("format" in packedData)) {
-      return unpackIntegers(this.upperBound, packedData);
+      return unpackIntegers(packedData);
     }
     assertEqual(packedData.format, "bitmask");
     // If it's a bitmask, we need to convert it to an array of token IDs.
