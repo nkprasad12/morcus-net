@@ -21,6 +21,25 @@ interface InternalComposedQuery {
 }
 type InternalQuery = InternalComposedQuery[];
 
+const MAX_QUERY_PARTS = 8;
+const MAX_QUERY_ATOMS = 8;
+
+function checkQueryComplexity(query: CorpusQuery): void {
+  assert(
+    query.parts.length <= MAX_QUERY_PARTS,
+    `Query length ${query.parts.length} exceeds maximum of ${MAX_QUERY_PARTS}.`
+  );
+  for (const part of query.parts) {
+    if (!("atoms" in part)) {
+      continue;
+    }
+    assert(
+      part.atoms.length <= MAX_QUERY_ATOMS,
+      `Query part length ${part.atoms.length} exceeds maximum of ${MAX_QUERY_ATOMS}.`
+    );
+  }
+}
+
 export class CorpusQueryEngine {
   private readonly tokenDb: SqliteDb;
 
@@ -220,6 +239,8 @@ export class CorpusQueryEngine {
     if (query.parts.length === 0) {
       return [];
     }
+    checkQueryComplexity(query);
+
     const sortedQuery = this.convertQuery(query).sort(
       (a, b) => a.sizeUpperBound - b.sizeUpperBound
     );

@@ -228,9 +228,9 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
 // Corpus Serialization Types //
 // // // // // // // // // // //
 
-export type PackedNumbers = Uint8Array;
+export type PackedNumbers = Readonly<Uint8Array>;
 export interface PackedBitMask {
   format: "bitmask";
-  data: Uint8Array;
+  data: Readonly<Uint8Array>;
 }
 export type PackedIndexData = PackedNumbers | PackedBitMask;
