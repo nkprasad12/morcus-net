@@ -1,4 +1,9 @@
 import { assert, assertEqual } from "@/common/assert";
+import { unpackIntegers } from "@/common/bytedata/packing";
+import type {
+  PackedBitMask,
+  PackedIndexData,
+} from "@/common/library/corpus/corpus_common";
 
 /**
  * Computes the bitwise AND of two bitmasks with an offset for the second mask.
@@ -116,4 +121,74 @@ export function applyAndWithArrays(
     }
   }
   return result;
+}
+
+/**
+ * Applies an `and` to determine the intersection between two indices.
+ * The indices can be either packed arrays or bitmasks.
+ *
+ * @param first The candidate indices to filter.
+ * @param firstPosition The position of the candidates.
+ * @param second The filter data to apply.
+ * @param secondPosition The position of the filter data.
+ *
+ * @returns A tuple containing the filtered indices and their position.
+ */
+export function applyAndToIndices(
+  first: PackedIndexData,
+  firstPosition: number,
+  second: PackedIndexData,
+  secondPosition: number
+): [PackedBitMask | number[], number] {
+  const offset = firstPosition - secondPosition;
+
+  if (!("format" in second)) {
+    const unpackedFilterData = unpackIntegers(second);
+    if (!("format" in first)) {
+      // We have two packed arrays.
+      const unpackedCandidates = unpackIntegers(first);
+      const overlaps = applyAndWithArrays(
+        unpackedCandidates,
+        unpackedFilterData,
+        offset
+      );
+      return [overlaps, firstPosition];
+    }
+    // The candidates are a bitmask, the filter data is a packed array.
+    // Notice we negate the offset because in this case the bitmask is
+    // what really needs the offset, so the negative offset is equivalent.
+    const overlaps = applyAndWithBitmaskAndArray(
+      first.data,
+      unpackedFilterData,
+      offset
+    );
+    return [overlaps, firstPosition];
+  }
+
+  assertEqual(second.format, "bitmask");
+  if (!("format" in first)) {
+    console.log("Array and Bitmask");
+    // The filter data is a bitmask.
+    // The candidates are a packed array.
+    const unpacked = unpackIntegers(first);
+    const overlaps = applyAndWithBitmaskAndArray(
+      second.data,
+      unpacked,
+      -offset
+    );
+    return [overlaps, secondPosition];
+  }
+  // We have two bitmasks.
+  assertEqual(first.format, "bitmask");
+  return [
+    {
+      format: "bitmask",
+      data: applyAndWithBitmasks(
+        offset >= 0 ? first.data : second.data,
+        offset < 0 ? first.data : second.data,
+        offset >= 0 ? offset : -offset
+      ),
+    },
+    offset >= 0 ? firstPosition : secondPosition,
+  ];
 }

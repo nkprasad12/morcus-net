@@ -1,7 +1,10 @@
+import { packIntegers } from "@/common/bytedata/packing";
+import type { PackedBitMask } from "@/common/library/corpus/corpus_common";
 import {
   applyAndWithArrays,
   applyAndWithBitmaskAndArray,
   applyAndWithBitmasks,
+  applyAndToIndices,
 } from "@/common/library/corpus/corpus_byte_utils";
 
 // Helper to convert Uint32Array to boolean[]
@@ -291,5 +294,210 @@ describe("applyAndWithArrays", () => {
     // second + offset = [5, 15, 25]
     const result = applyAndWithArrays(first, second, offset);
     expect(result).toEqual([5, 15, 25]);
+  });
+});
+
+describe("filterCandidates", () => {
+  describe("when both candidates and filter are arrays", () => {
+    it("should return correct intersection with no offset", () => {
+      const candidates = packIntegers(10, [1, 3, 5, 8]);
+      const filterData = packIntegers(10, [3, 5, 9]);
+      const [result, position] = applyAndToIndices(
+        candidates,
+        0,
+        filterData,
+        0
+      );
+      expect(result).toEqual([3, 5]);
+      expect(position).toBe(0);
+    });
+
+    it("should return correct intersection with no offset but with positions", () => {
+      const candidates = packIntegers(10, [1, 3, 5, 8]);
+      const filterData = packIntegers(10, [3, 5, 9]);
+      const [result, position] = applyAndToIndices(
+        candidates,
+        2,
+        filterData,
+        2
+      );
+      expect(result).toEqual([3, 5]);
+      expect(position).toBe(2);
+    });
+
+    it("should return correct intersection with a positive offset", () => {
+      const candidates = packIntegers(10, [3, 6, 9]);
+      const filterData = packIntegers(10, [2, 4, 8]);
+      const [result, position] = applyAndToIndices(
+        candidates,
+        2,
+        filterData,
+        1
+      );
+      expect(result).toEqual([3, 9]);
+      expect(position).toBe(2);
+    });
+
+    it("should return correct intersection with a negative offset", () => {
+      const candidates = packIntegers(10, [3, 4, 8, 9]);
+      const filterData = packIntegers(10, [1, 3, 6, 9]);
+      const [result, position] = applyAndToIndices(
+        candidates,
+        1,
+        filterData,
+        3
+      );
+      expect(result).toEqual([4]);
+      expect(position).toBe(1);
+    });
+  });
+
+  // Case 2: Bitmask and Array
+  describe("when candidates is a bitmask and filter is an array", () => {
+    it("should return correct intersection with no offset", () => {
+      const candidates: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
+      };
+      const filterData = packIntegers(5, [1, 2, 4]);
+      const [result, position] = applyAndToIndices(
+        candidates,
+        0,
+        filterData,
+        0
+      );
+      expect(result).toEqual([1, 4]);
+      expect(position).toBe(0);
+    });
+
+    it("should return correct intersection with no offset but with positions", () => {
+      const candidates: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
+      };
+      const filterData = packIntegers(5, [1, 2, 4]);
+      const [result, position] = applyAndToIndices(
+        candidates,
+        1,
+        filterData,
+        1
+      );
+      expect(result).toEqual([1, 4]);
+      expect(position).toBe(1);
+    });
+
+    it("should return correct intersection with a positive offset", () => {
+      const candidates: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
+      };
+      const filterData = packIntegers(5, [0, 2, 3]);
+      const [result, position] = applyAndToIndices(
+        candidates,
+        1,
+        filterData,
+        0
+      ); // offset = 1
+      expect(result).toEqual([1, 3, 4]);
+      expect(position).toBe(1);
+    });
+  });
+
+  // Case 3: Array and Bitmask
+  describe("when candidates is an array and filter is a bitmask", () => {
+    it("should return correct intersection with no offset", () => {
+      const candidates = packIntegers(5, [1, 2, 4]);
+      const filterData: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
+      };
+      const [result, position] = applyAndToIndices(
+        candidates,
+        0,
+        filterData,
+        0
+      );
+      expect(result).toEqual([1, 4]);
+      expect(position).toBe(0);
+    });
+
+    it("should return correct intersection with a negative offset", () => {
+      const candidates = packIntegers(5, [0, 2, 3]);
+      const filterData: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
+      };
+      const [result, position] = applyAndToIndices(
+        candidates,
+        0,
+        filterData,
+        1
+      ); // offset = -1
+      expect(result).toEqual([1, 3, 4]);
+      expect(position).toBe(1);
+    });
+  });
+
+  // Case 4: Bitmask and Bitmask
+  describe("when both candidates and filter are bitmasks", () => {
+    it("should return correct intersection with no offset", () => {
+      const candidates: PackedBitMask = {
+        format: "bitmask",
+        data: Uint32Array.of(0b10101010111100001100110000001111),
+      };
+      const filterData: PackedBitMask = {
+        format: "bitmask",
+        data: Uint32Array.of(0b11001100000011111111000010101010),
+      };
+      const [result, position] = applyAndToIndices(
+        candidates,
+        0,
+        filterData,
+        0
+      );
+      const expectedData = Uint32Array.of(0b10001000000000001100000000001010);
+      expect(result).toEqual({ format: "bitmask", data: expectedData });
+      expect(position).toBe(0);
+    });
+
+    it("should return correct intersection with a positive offset", () => {
+      const candidates: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([false, true, false, true, true]),
+      };
+      const filterData: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([true, false, true, false, true]),
+      };
+      const [result, position] = applyAndToIndices(
+        candidates,
+        3,
+        filterData,
+        2
+      );
+      const expectedData = Uint32Array.of(0b01010000000000000000000000000000);
+      expect(result).toEqual({ format: "bitmask", data: expectedData });
+      expect(position).toBe(3);
+    });
+
+    it("should return correct intersection with a negative offset", () => {
+      const candidates: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([false, true, false, true, true]),
+      };
+      const filterData: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask([true, false, true, false, true]),
+      };
+      const [result, position] = applyAndToIndices(
+        candidates,
+        2,
+        filterData,
+        3
+      );
+      const expectedData = Uint32Array.of(0b10100000000000000000000000000000);
+      expect(result).toEqual({ format: "bitmask", data: expectedData });
+      expect(position).toBe(3);
+    });
   });
 });
