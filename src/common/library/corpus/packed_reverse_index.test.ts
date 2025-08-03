@@ -63,9 +63,9 @@ describe("PackedReverseIndex", () => {
   describe("with bitmask data", () => {
     let index: PackedReverseIndex<string>;
     const values = [2, 5, 8, 15];
-    const bitmask = new Uint8Array(2); // enough for values up to 15
+    const bitmask = new Uint32Array(2); // enough for values up to 63
     values.forEach((v) => {
-      bitmask[v >> 3] |= 1 << (v & 7);
+      bitmask[v >> 5] |= 1 << (v & 31);
     });
     const packedData: PackedIndexData = { format: "bitmask", data: bitmask };
     const packedMap = new Map<string, PackedIndexData>([

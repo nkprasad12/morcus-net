@@ -24,7 +24,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     }
     assertEqual(packedData.format, "bitmask");
     const bitmask = packedData.data;
-    return bitmask.length * 8;
+    return bitmask.length * 32;
   }
 
   hasValueInRange(key: T, range: [number, number]): boolean {
@@ -42,8 +42,8 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     assertEqual(packedData.format, "bitmask");
     const bitmask = packedData.data;
     for (let i = range[0]; i <= range[1]; i++) {
-      const byteIndex = i >> 3; // i / 8
-      const bitIndex = i & 7; // i % 8
+      const byteIndex = i >> 5; // i / 32
+      const bitIndex = i & 31; // i % 32
       if ((bitmask[byteIndex] & (1 << bitIndex)) !== 0) {
         return true;
       }
@@ -75,14 +75,14 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     }
     assertEqual(packedData.format, "bitmask");
     const bitmask = packedData.data;
-    const maxRelativeId = bitmask.length * 8;
+    const maxRelativeId = bitmask.length * 32;
     return candidates.filter((candidate) => {
       const relativeId = candidate - offset;
       if (relativeId < 0 || relativeId >= maxRelativeId) {
         return false;
       }
-      const byteIndex = relativeId >> 3;
-      const bitIndex = relativeId & 7;
+      const byteIndex = relativeId >> 5;
+      const bitIndex = relativeId & 31;
       return maybeNegate((bitmask[byteIndex] & (1 << bitIndex)) !== 0);
     });
   }
@@ -108,8 +108,8 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     // If it's a bitmask, we need to convert it to an array of token IDs.
     const bitmask = packedData.data;
     const result: number[] = [];
-    for (let i = 0; i < bitmask.length * 8; i++) {
-      if ((bitmask[i >> 3] & (1 << (i & 7))) !== 0) {
+    for (let i = 0; i < bitmask.length * 32; i++) {
+      if ((bitmask[i >> 5] & (1 << (i & 31))) !== 0) {
         result.push(i);
       }
     }

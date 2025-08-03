@@ -60,7 +60,14 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
         // We have a bitmask.
         assertEqual(v.serializationKey, BIT_MASK);
         const buffer = Buffer.from(v.data, "base64");
-        map.set(k, { format: "bitmask", data: new Uint8Array(buffer) });
+        map.set(k, {
+          format: "bitmask",
+          data: new Uint32Array(
+            buffer.buffer,
+            buffer.byteOffset,
+            buffer.byteLength / Uint32Array.BYTES_PER_ELEMENT
+          ),
+        });
       }
       return new PackedReverseIndex(map, numTokens);
     }
@@ -94,10 +101,9 @@ function prepareIndexMap(
 ): [unknown, StoredMapValue][] {
   return Array.from(indexMap.entries()).map(([key, value]) => {
     const useBitMask = value.length * packedNumberSize > numTokens;
-    const arrToSave = useBitMask
-      ? toBitMask(value, numTokens)
-      : packIntegers(numTokens, value);
-    const indexBits = Buffer.from(arrToSave).toString("base64");
+    const indexBits = useBitMask
+      ? Buffer.from(toBitMask(value, numTokens).buffer).toString("base64")
+      : Buffer.from(packIntegers(numTokens, value)).toString("base64");
     const storedValue = useBitMask
       ? { serializationKey: BIT_MASK, data: indexBits }
       : indexBits;
@@ -105,14 +111,14 @@ function prepareIndexMap(
   });
 }
 
-function toBitMask(values: number[], numTokens: number): Uint8Array {
-  const bitMask = new Uint8Array(Math.ceil(numTokens / 8));
+function toBitMask(values: number[], numTokens: number): Uint32Array {
+  const bitMask = new Uint32Array(Math.ceil(numTokens / 32));
   for (const value of values) {
     if (value < 0 || value >= numTokens) {
       throw new Error(`Value ${value} out of bounds (numTokens: ${numTokens})`);
     }
-    const byteIndex = Math.floor(value / 8);
-    const bitIndex = value % 8;
+    const byteIndex = value >> 5; // value / 32
+    const bitIndex = value % 32;
     bitMask[byteIndex] |= 1 << bitIndex;
   }
   return bitMask;

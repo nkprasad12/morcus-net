@@ -231,6 +231,6 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
 export type PackedNumbers = Readonly<Uint8Array>;
 export interface PackedBitMask {
   format: "bitmask";
-  data: Readonly<Uint8Array>;
+  data: Readonly<Uint32Array>;
 }
 export type PackedIndexData = PackedNumbers | PackedBitMask;
