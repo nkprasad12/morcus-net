@@ -12,27 +12,23 @@ import {
 
 // Helper to convert Uint32Array to boolean[]
 function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
-  const result: boolean[] = [];
-  for (let i = 0; i < bitmask.length * 32; i++) {
-    const wordIndex = i >> 5; // i / 32
-    const bitIndex = i & 31; // i % 32
-    result.push((bitmask[wordIndex] & (1 << (31 - bitIndex))) !== 0);
+  const unpacked = unpackPackedIndexData({ format: "bitmask", data: bitmask });
+  const result = new Array(bitmask.length * 32).fill(false);
+  for (let i = 0; i < unpacked.length; i++) {
+    result[unpacked[i]] = true;
   }
   return result;
 }
 
 // Helper to convert boolean[] to Uint32Array
-function booleanArrayToBitMask(booleanArray: boolean[]): Uint32Array {
-  const wordLength = Math.ceil(booleanArray.length / 32);
-  const bitmask = new Uint32Array(wordLength);
-  for (let i = 0; i < booleanArray.length; i++) {
-    if (booleanArray[i]) {
-      const wordIndex = i >> 5; // i / 32
-      const bitIndex = i & 31; // i % 32
-      bitmask[wordIndex] |= 1 << (31 - bitIndex);
-    }
-  }
-  return bitmask;
+function booleanArrayToBitMask(bits: boolean[]): Uint32Array {
+  return toBitMask(
+    bits
+      .map((v, i) => [v, i] as [boolean, number])
+      .filter(([v]) => v)
+      .map(([_, i]) => i),
+    bits.length
+  );
 }
 
 function applyAndWithBooleanArrays(
