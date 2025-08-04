@@ -260,3 +260,20 @@ export function hasValueInRange(
   }
   return false;
 }
+
+/**
+ * Returns the maximum number of elements that could be in the packed index.
+ *
+ * @param packedData
+ * @returns
+ */
+export function maxElementsIn(packedData: PackedIndexData | undefined): number {
+  if (packedData === undefined) {
+    return 0;
+  }
+  if (!("format" in packedData)) {
+    return PackedNumbers.numElements(packedData);
+  }
+  assertEqual(packedData.format, "bitmask");
+  return packedData.numSet ?? packedData.data.length * 32;
+}

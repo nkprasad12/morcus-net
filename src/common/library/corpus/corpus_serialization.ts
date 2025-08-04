@@ -16,7 +16,9 @@ const SERIALIZATION_TOKEN = "___SERIALIZED_KEY_v1___";
 const MAP_TOKEN = `${SERIALIZATION_TOKEN}_MAP`;
 const BIT_MASK = `${SERIALIZATION_TOKEN}_BIT_MASK`;
 
-type StoredMapValue = string | { serializationKey: string; data: string };
+type StoredMapValue =
+  | string
+  | { serializationKey: string; data: string; size: number };
 
 export function writeCorpus(
   corpus: InProgressLatinCorpus,
@@ -49,7 +51,6 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
     ) {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       const mapData = value.data as [unknown, StoredMapValue][];
-      const numTokens = value.numTokens;
       const map = new Map<unknown, PackedIndexData>();
       for (const [k, v] of mapData) {
         // We have a packed array.
@@ -68,9 +69,10 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
             buffer.byteOffset,
             buffer.byteLength / Uint32Array.BYTES_PER_ELEMENT
           ),
+          numSet: v.size,
         });
       }
-      return new PackedReverseIndex(map, numTokens);
+      return new PackedReverseIndex(map);
     }
     return value;
   };
@@ -104,9 +106,11 @@ function prepareIndexMap(
     const useBitMask = value.length * packedNumberSize > numTokens;
     const indexBits = useBitMask
       ? Buffer.from(toBitMask(value, numTokens).buffer).toString("base64")
-      : Buffer.from(packIntegers(numTokens, value)).toString("base64");
+      : Buffer.from(packIntegers(value[value.length - 1] + 1, value)).toString(
+          "base64"
+        );
     const storedValue = useBitMask
-      ? { serializationKey: BIT_MASK, data: indexBits }
+      ? { serializationKey: BIT_MASK, data: indexBits, size: value.length }
       : indexBits;
     return [key, storedValue];
   });

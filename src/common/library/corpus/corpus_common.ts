@@ -116,14 +116,6 @@ export interface GenericReverseIndex<T> {
   /** Returns index data for the given key. */
   get(key: T): PackedIndexData | undefined;
 
-  /**
-   * Returns an upper bound on the number of elements that can be in the index.
-   *
-   * @param key The key to check.
-   * @returns The upper bound for the key.
-   */
-  sizeUpperBoundFor(key: T): number;
-
   /** Returns an iterable of all keys in the index. */
   keys(): Iterable<T>;
 }
@@ -209,5 +201,6 @@ export type PackedNumbers = Readonly<Uint8Array>;
 export interface PackedBitMask {
   format: "bitmask";
   data: Readonly<Uint32Array>;
+  numSet?: number;
 }
 export type PackedIndexData = PackedNumbers | PackedBitMask;

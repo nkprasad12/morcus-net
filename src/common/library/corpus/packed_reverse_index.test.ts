@@ -14,7 +14,7 @@ describe("PackedReverseIndex", () => {
     ]);
 
     beforeEach(() => {
-      index = new PackedReverseIndex(packedMap, upperBound);
+      index = new PackedReverseIndex(packedMap);
     });
 
     it("formatOf() should return undefined", () => {
@@ -39,7 +39,7 @@ describe("PackedReverseIndex", () => {
     ]);
 
     beforeEach(() => {
-      index = new PackedReverseIndex(packedMap, upperBound);
+      index = new PackedReverseIndex(packedMap);
     });
 
     it("formatOf() should return 'bitmask'", () => {

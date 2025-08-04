@@ -3,6 +3,7 @@ import { packIntegers } from "@/common/bytedata/packing";
 import {
   applyAndToIndices,
   hasValueInRange,
+  maxElementsIn,
   unpackPackedIndexData,
 } from "@/common/library/corpus/corpus_byte_utils";
 import type {
@@ -175,18 +176,7 @@ export class CorpusQueryEngine {
   }
 
   private getUpperSizeBoundForAtom(atom: CorpusQueryAtom): number {
-    if ("word" in atom) {
-      return this.corpus.indices.word.sizeUpperBoundFor(
-        atom.word.toLowerCase()
-      );
-    } else if ("lemma" in atom) {
-      return this.corpus.indices.lemma.sizeUpperBoundFor(atom.lemma);
-    } else if ("category" in atom) {
-      const index = checkPresent(this.corpus.indices[atom.category]);
-      // @ts-expect-error
-      return index.sizeUpperBoundFor(atom.value);
-    }
-    exhaustiveGuard(atom);
+    return maxElementsIn(this.getAllMatchesFor(atom));
   }
 
   private convertQueryAtom(atom: CorpusQueryAtom): InternalQueryAtom {
@@ -277,8 +267,8 @@ export class CorpusQueryEngine {
         // -2 because a hard break after the last token isn't counted
         // (the first -1) and the second -1 is because the range is inclusive.
         const range: [number, number] = [
-          tokenId,
-          tokenId + query.parts.length - 2,
+          trueId,
+          trueId + query.parts.length - 2,
         ];
         if (hasValueInRange(hardBreaks, range)) {
           continue;
