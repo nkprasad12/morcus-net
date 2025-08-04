@@ -5,6 +5,7 @@ import {
   applyAndWithBitmaskAndArray,
   applyAndWithBitmasks,
   applyAndToIndices,
+  unpackPackedIndexData,
 } from "@/common/library/corpus/corpus_byte_utils";
 
 // Helper to convert Uint32Array to boolean[]
@@ -498,6 +499,33 @@ describe("filterCandidates", () => {
       const expectedData = Uint32Array.of(0b10100000000000000000000000000000);
       expect(result).toEqual({ format: "bitmask", data: expectedData });
       expect(position).toBe(3);
+    });
+  });
+
+  describe("unpackPackedIndexData", () => {
+    it("should return an empty array if packedData is undefined", () => {
+      const result = unpackPackedIndexData(undefined);
+      expect(result).toEqual([]);
+    });
+
+    it("should unpack an array of of packed integers", () => {
+      const originalData = [10, 25, 150, 300];
+      const packedData = packIntegers(301, originalData);
+      const result = unpackPackedIndexData(packedData);
+      expect(result).toEqual(originalData);
+    });
+
+    it("should unpack a bitmask", () => {
+      const bools = new Array(70).fill(false);
+      bools[31] = true;
+      bools[32] = true;
+      bools[65] = true;
+      const packedData: PackedBitMask = {
+        format: "bitmask",
+        data: booleanArrayToBitMask(bools),
+      };
+      const result = unpackPackedIndexData(packedData);
+      expect(result).toEqual([31, 32, 65]);
     });
   });
 });

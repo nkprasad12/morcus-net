@@ -119,7 +119,7 @@ function toBitMask(values: number[], numTokens: number): Uint32Array {
     }
     const byteIndex = value >> 5; // value / 32
     const bitIndex = value % 32;
-    bitMask[byteIndex] |= 1 << bitIndex;
+    bitMask[byteIndex] |= 1 << (31 - bitIndex);
   }
   return bitMask;
 }

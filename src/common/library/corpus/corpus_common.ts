@@ -128,8 +128,8 @@ export interface GenericReverseIndex<T> {
    */
   formatOf(key: T): "bitmask" | undefined;
 
-  /** Returns unpacked index data for the given key. */
-  get(key: T): number[] | undefined;
+  /** Returns index data for the given key. */
+  get(key: T): PackedIndexData | undefined;
 
   /**
    * Returns an upper bound on the number of elements that can be in the index.

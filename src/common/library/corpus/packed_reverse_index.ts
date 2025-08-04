@@ -1,5 +1,5 @@
 import { assertEqual } from "@/common/assert";
-import { PackedNumbers, unpackIntegers } from "@/common/bytedata/packing";
+import { PackedNumbers } from "@/common/bytedata/packing";
 import type {
   FilterOptions,
   GenericReverseIndex,
@@ -43,7 +43,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     const bitmask = packedData.data;
     for (let i = range[0]; i <= range[1]; i++) {
       const byteIndex = i >> 5; // i / 32
-      const bitIndex = i & 31; // i % 32
+      const bitIndex = 31 - (i & 31); // i % 32
       if ((bitmask[byteIndex] & (1 << bitIndex)) !== 0) {
         return true;
       }
@@ -82,7 +82,7 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
         return false;
       }
       const byteIndex = relativeId >> 5;
-      const bitIndex = relativeId & 31;
+      const bitIndex = 31 - (relativeId & 31);
       return maybeNegate((bitmask[byteIndex] & (1 << bitIndex)) !== 0);
     });
   }
@@ -95,25 +95,8 @@ export class PackedReverseIndex<T> implements GenericReverseIndex<T> {
     return packedData.format;
   }
 
-  get(key: T): number[] | undefined {
-    const packedData = this.packedMap.get(key);
-    if (packedData === undefined) {
-      return undefined;
-    }
-    // The default format is a packed array of tokenIds.
-    if (!("format" in packedData)) {
-      return unpackIntegers(packedData);
-    }
-    assertEqual(packedData.format, "bitmask");
-    // If it's a bitmask, we need to convert it to an array of token IDs.
-    const bitmask = packedData.data;
-    const result: number[] = [];
-    for (let i = 0; i < bitmask.length * 32; i++) {
-      if ((bitmask[i >> 5] & (1 << (i & 31))) !== 0) {
-        result.push(i);
-      }
-    }
-    return result;
+  get(key: T): PackedIndexData | undefined {
+    return this.packedMap.get(key);
   }
 
   keys(): Iterable<T> {

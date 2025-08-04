@@ -1,9 +1,11 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
+import { unpackPackedIndexData } from "@/common/library/corpus/corpus_byte_utils";
 import type {
   CorpusQuery,
   CorpusQueryAtom,
   CorpusQueryResult,
   LatinCorpusIndex,
+  PackedIndexData,
 } from "@/common/library/corpus/corpus_common";
 import { exhaustiveGuard } from "@/common/misc_utils";
 import { ReadOnlyDb } from "@/common/sql_helper";
@@ -119,15 +121,15 @@ export class CorpusQueryEngine {
     );
   }
 
-  private getAllMatchesFor(part: CorpusQueryAtom): number[] {
+  private getAllMatchesFor(part: CorpusQueryAtom): PackedIndexData | undefined {
     if ("word" in part) {
-      return this.corpus.indices.word.get(part.word.toLowerCase()) ?? [];
+      return this.corpus.indices.word.get(part.word.toLowerCase());
     } else if ("lemma" in part) {
-      return this.corpus.indices.lemma.get(part.lemma) ?? [];
+      return this.corpus.indices.lemma.get(part.lemma);
     } else if ("category" in part) {
       const index = checkPresent(this.corpus.indices[part.category]);
       // @ts-ignore
-      return index.get(part.value) ?? [];
+      return index.get(part.value);
     }
     exhaustiveGuard(part);
   }
@@ -213,9 +215,9 @@ export class CorpusQueryEngine {
   private executeInitialPart(part: InternalComposedQuery): number[] {
     if (part.composition === "only") {
       assert(part.atoms.length === 1);
-      return this.getAllMatchesFor(part.atoms[0].atom).map(
-        (x) => x + part.offset
-      );
+      return unpackPackedIndexData(
+        this.getAllMatchesFor(part.atoms[0].atom)
+      ).map((x) => x + part.offset);
     }
     exhaustiveGuard(part.composition);
   }

@@ -192,3 +192,26 @@ export function applyAndToIndices(
     offset >= 0 ? firstPosition : secondPosition,
   ];
 }
+
+export function unpackPackedIndexData(
+  packedData: PackedIndexData | undefined
+): number[] {
+  if (packedData === undefined) {
+    return [];
+  }
+  // The default format is a packed array of tokenIds.
+  if (!("format" in packedData)) {
+    return unpackIntegers(packedData);
+  }
+  assertEqual(packedData.format, "bitmask");
+  // If it's a bitmask, we need to convert it to an array of token IDs.
+  const bitmask = packedData.data;
+  const result: number[] = [];
+  for (let i = 0; i < bitmask.length * 32; i++) {
+    const leftShift = 31 - (i & 31); // 31 - (i % 32)
+    if ((bitmask[i >> 5] & (1 << leftShift)) !== 0) {
+      result.push(i);
+    }
+  }
+  return result;
+}

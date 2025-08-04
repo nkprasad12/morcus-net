@@ -17,11 +17,6 @@ describe("PackedReverseIndex", () => {
       index = new PackedReverseIndex(packedMap, upperBound);
     });
 
-    it("get() should unpack and return the correct values", () => {
-      expect(index.get("testKey")).toEqual(values);
-      expect(index.get("nonExistentKey")).toBeUndefined();
-    });
-
     it("hasValueInRange() should correctly check for values in range", () => {
       expect(index.hasValueInRange("testKey", [25, 35])).toBe(true); // 30
       expect(index.hasValueInRange("testKey", [30, 30])).toBe(true);
@@ -65,7 +60,7 @@ describe("PackedReverseIndex", () => {
     const values = [2, 5, 8, 15];
     const bitmask = new Uint32Array(2); // enough for values up to 63
     values.forEach((v) => {
-      bitmask[v >> 5] |= 1 << (v & 31);
+      bitmask[v >> 5] |= 1 << (31 - (v & 31));
     });
     const packedData: PackedIndexData = { format: "bitmask", data: bitmask };
     const packedMap = new Map<string, PackedIndexData>([
@@ -74,11 +69,6 @@ describe("PackedReverseIndex", () => {
 
     beforeEach(() => {
       index = new PackedReverseIndex(packedMap, upperBound);
-    });
-
-    it("get() should decode the bitmask and return correct values", () => {
-      expect(index.get("testKey")).toEqual(values);
-      expect(index.get("nonExistentKey")).toBeUndefined();
     });
 
     it("hasValueInRange() should correctly check for values in range", () => {

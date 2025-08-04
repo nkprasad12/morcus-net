@@ -9,6 +9,7 @@ import {
   type InProgressLatinCorpus,
 } from "@/common/library/corpus/corpus_common";
 import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
+import { unpackPackedIndexData } from "@/common/library/corpus/corpus_byte_utils";
 
 console.debug = jest.fn();
 
@@ -77,13 +78,19 @@ describe("writeCorpus and loadCorpus", () => {
     expect(loaded.indices.word).toBeInstanceOf(PackedReverseIndex);
     expect(loaded.indices.lemma).toBeInstanceOf(PackedReverseIndex);
 
-    expect(loaded.indices.word.get("amo")).toEqual([0, 1]);
+    expect(unpackPackedIndexData(loaded.indices.word.get("amo"))).toEqual([
+      0, 1,
+    ]);
     expect(loaded.indices.word.formatOf("amo")).toBeUndefined();
 
-    expect(loaded.indices.lemma.get("amare")).toEqual([0, 1, 2]);
+    expect(unpackPackedIndexData(loaded.indices.lemma.get("amare"))).toEqual([
+      0, 1, 2,
+    ]);
     expect(loaded.indices.lemma.formatOf("amare")).toBeUndefined();
 
-    expect(loaded.indices.word.get("commonWord")).toEqual(LONG_ARRAY);
+    expect(
+      unpackPackedIndexData(loaded.indices.word.get("commonWord"))
+    ).toEqual(LONG_ARRAY);
     expect(loaded.indices.word.formatOf("commonWord")).toEqual("bitmask");
   });
 });
