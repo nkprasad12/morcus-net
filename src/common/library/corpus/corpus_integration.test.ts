@@ -6,7 +6,7 @@ import {
 } from "@/common/library/corpus/corpus_common";
 import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
 import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
-import { LatinCase } from "@/morceus/types";
+import { LatinCase, LatinTense } from "@/morceus/types";
 import fs from "fs";
 
 console.debug = jest.fn();
@@ -100,15 +100,19 @@ describe("Corpus Integration Test", () => {
 
   it("should handle a multi-part query", () => {
     const query: CorpusQuery = {
-      parts: [{ word: "servum" }, { word: "acclamat" }],
+      parts: [
+        { word: "Gallus" },
+        { lemma: "servus" },
+        { category: "tense", value: LatinTense.Present },
+      ],
     };
     const results = queryEngine.queryCorpus(query);
     expect(results).toHaveLength(1);
     expect(results[0]).toMatchObject({
       workId: "test_work_1",
       section: "1",
-      offset: 1,
-      text: "servum acclamat",
+      offset: 0,
+      text: "Gallus servum acclamat",
     });
   });
 

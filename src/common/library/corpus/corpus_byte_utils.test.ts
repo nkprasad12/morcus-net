@@ -6,6 +6,8 @@ import {
   applyAndWithBitmasks,
   applyAndToIndices,
   unpackPackedIndexData,
+  hasValueInRange,
+  toBitMask,
 } from "@/common/library/corpus/corpus_byte_utils";
 
 // Helper to convert Uint32Array to boolean[]
@@ -527,5 +529,50 @@ describe("filterCandidates", () => {
       const result = unpackPackedIndexData(packedData);
       expect(result).toEqual([31, 32, 65]);
     });
+  });
+});
+
+describe("hasValueInRange", () => {
+  it("returns false for undefined packedData", () => {
+    expect(hasValueInRange(undefined, [0, 10])).toBe(false);
+  });
+
+  it("returns false for invalid range (start > end)", () => {
+    const bitmask = toBitMask([1, 2, 3], 10);
+    expect(hasValueInRange({ format: "bitmask", data: bitmask }, [5, 2])).toBe(
+      false
+    );
+  });
+
+  it("returns true if any value in range is set (bitmask)", () => {
+    const bitmask: PackedBitMask = {
+      format: "bitmask",
+      data: toBitMask([2, 5, 8], 10),
+    };
+    expect(hasValueInRange(bitmask, [5, 5])).toBe(true);
+    expect(hasValueInRange(bitmask, [2, 2])).toBe(true);
+    expect(hasValueInRange(bitmask, [7, 9])).toBe(true);
+    expect(hasValueInRange(bitmask, [0, 1])).toBe(false);
+    expect(hasValueInRange(bitmask, [6, 7])).toBe(false);
+  });
+
+  it("returns true if any value in range is set (packed array)", () => {
+    const packedArray = packIntegers(10, [2, 5, 8]);
+    expect(hasValueInRange(packedArray, [5, 5])).toBe(true);
+    expect(hasValueInRange(packedArray, [2, 2])).toBe(true);
+    expect(hasValueInRange(packedArray, [7, 9])).toBe(true);
+    expect(hasValueInRange(packedArray, [0, 1])).toBe(false);
+    expect(hasValueInRange(packedArray, [6, 7])).toBe(false);
+  });
+
+  it("returns false for empty bitmask", () => {
+    const bitmask = toBitMask([], 10);
+    expect(hasValueInRange({ format: "bitmask", data: bitmask }, [0, 9])).toBe(
+      false
+    );
+  });
+
+  it("returns false for empty packed array", () => {
+    expect(hasValueInRange([] as any, [0, 9])).toBe(false);
   });
 });

@@ -108,21 +108,6 @@ export interface FilterOptions {
 
 export interface GenericReverseIndex<T> {
   /**
-   * Filters the given candidates based on whether they match the key.
-   *
-   * @param key The key to check membership against.
-   * @param candidates The candidates to filter.
-   * @param options: Options to apply to the filtering.
-   *
-   * @returns The filtered candidates that match the key.
-   */
-  filterCandidates(
-    key: T,
-    candidates: number[],
-    options?: FilterOptions
-  ): number[];
-
-  /**
    * Information about the format of the index stored for the key.
    * This is used mostly for unit test verification.
    */
@@ -141,16 +126,8 @@ export interface GenericReverseIndex<T> {
 
   /** Returns an iterable of all keys in the index. */
   keys(): Iterable<T>;
-
-  /**
-   * Checks if the given range contains any values for the specified key.
-   *
-   * @param key The key to check.
-   * @param range The range to check.
-   * @returns True if the range contains any values for the key, false otherwise.
-   */
-  hasValueInRange(key: T, range: [number, number]): boolean;
 }
+
 export interface LatinInflectionTypes {
   case: LatinCase;
   number: LatinNumber;

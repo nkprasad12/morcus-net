@@ -1,10 +1,16 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { unpackPackedIndexData } from "@/common/library/corpus/corpus_byte_utils";
+import { packIntegers } from "@/common/bytedata/packing";
+import {
+  applyAndToIndices,
+  hasValueInRange,
+  unpackPackedIndexData,
+} from "@/common/library/corpus/corpus_byte_utils";
 import type {
   CorpusQuery,
   CorpusQueryAtom,
   CorpusQueryResult,
   LatinCorpusIndex,
+  PackedBitMask,
   PackedIndexData,
 } from "@/common/library/corpus/corpus_common";
 import { exhaustiveGuard } from "@/common/misc_utils";
@@ -19,12 +25,24 @@ interface InternalComposedQuery {
   composition: "only";
   atoms: InternalQueryAtom[];
   sizeUpperBound: number;
-  offset: number;
+  position: number;
 }
 type InternalQuery = InternalComposedQuery[];
 
+interface IntermediateResult<T = PackedIndexData> {
+  data: T;
+  position: number;
+}
+
 const MAX_QUERY_PARTS = 8;
 const MAX_QUERY_ATOMS = 8;
+
+function toPackedIndexData(data: PackedBitMask | number[]): PackedIndexData {
+  if (!Array.isArray(data)) {
+    return data;
+  }
+  return packIntegers(data[data.length - 1] + 1, data);
+}
 
 function checkQueryComplexity(query: CorpusQuery): void {
   assert(
@@ -135,32 +153,25 @@ export class CorpusQueryEngine {
   }
 
   private filterCandidatesOn(
-    candidates: number[],
-    part: CorpusQueryAtom,
-    offset: number
-  ): number[] {
-    if ("word" in part) {
-      return this.corpus.indices.word.filterCandidates(
-        part.word.toLowerCase(),
-        candidates,
-        { offset }
-      );
-    } else if ("lemma" in part) {
-      return this.corpus.indices.lemma.filterCandidates(
-        part.lemma,
-        candidates,
-        { offset }
-      );
-    } else if ("category" in part) {
-      const index = checkPresent(this.corpus.indices[part.category]);
-      return index.filterCandidates(
-        // @ts-expect-error
-        part.value,
-        candidates,
-        { offset }
-      );
+    candidates: IntermediateResult,
+    query: CorpusQueryAtom,
+    queryPartPosition: number
+  ): IntermediateResult | undefined {
+    const filterData = this.getAllMatchesFor(query);
+    if (filterData === undefined) {
+      return undefined;
     }
-    exhaustiveGuard(part);
+    const intersection = applyAndToIndices(
+      candidates.data,
+      candidates.position,
+      filterData,
+      queryPartPosition
+    );
+
+    return {
+      data: toPackedIndexData(intersection[0]),
+      position: intersection[1],
+    };
   }
 
   private getUpperSizeBoundForAtom(atom: CorpusQueryAtom): number {
@@ -192,7 +203,7 @@ export class CorpusQueryEngine {
           atoms: [this.convertQueryAtom(part)],
           composition: "only",
           sizeUpperBound: this.getUpperSizeBoundForAtom(part),
-          offset: -i,
+          position: i,
         });
         continue;
       }
@@ -202,7 +213,7 @@ export class CorpusQueryEngine {
             atoms: [this.convertQueryAtom(atom)],
             composition: "only",
             sizeUpperBound: this.getUpperSizeBoundForAtom(atom),
-            offset: -i,
+            position: i,
           });
         }
         continue;
@@ -212,29 +223,18 @@ export class CorpusQueryEngine {
     return convertedQuery;
   }
 
-  private executeInitialPart(part: InternalComposedQuery): number[] {
+  private executeInitialPart(
+    part: InternalComposedQuery
+  ): IntermediateResult | undefined {
     if (part.composition === "only") {
       assert(part.atoms.length === 1);
-      return unpackPackedIndexData(
-        this.getAllMatchesFor(part.atoms[0].atom)
-      ).map((x) => x + part.offset);
+      const data = this.getAllMatchesFor(part.atoms[0].atom);
+      if (data === undefined) {
+        return undefined;
+      }
+      return { data, position: part.position };
     }
     exhaustiveGuard(part.composition);
-  }
-
-  filterHardBreaks(candidates: number[], queryLength: number): number[] {
-    if (queryLength <= 1) {
-      return candidates;
-    }
-    return candidates.filter(
-      (tokenId) =>
-        !this.corpus.indices.breaks.hasValueInRange("hard", [
-          tokenId,
-          // -2 because a hard break after the last token isn't counted
-          // (the first -1) and the second -1 is because the range is inclusive.
-          tokenId + queryLength - 2,
-        ])
-    );
   }
 
   queryCorpus(query: CorpusQuery): CorpusQueryResult[] {
@@ -247,6 +247,9 @@ export class CorpusQueryEngine {
       (a, b) => a.sizeUpperBound - b.sizeUpperBound
     );
     let candidates = this.executeInitialPart(sortedQuery[0]);
+    if (candidates === undefined) {
+      return [];
+    }
     for (let i = 1; i < sortedQuery.length; i++) {
       const part = sortedQuery[i];
       if (part.composition === "only") {
@@ -254,15 +257,35 @@ export class CorpusQueryEngine {
         candidates = this.filterCandidatesOn(
           candidates,
           part.atoms[0].atom,
-          part.offset
+          part.position
         );
+        if (candidates === undefined) {
+          return [];
+        }
         continue;
       }
       exhaustiveGuard(part.composition);
     }
-    candidates = this.filterHardBreaks(candidates, query.parts.length);
-    return candidates.map((tokenId) =>
-      this.resolveResult(tokenId, query.parts.length)
-    );
+    const hardBreaks = checkPresent(this.corpus.indices.breaks.get("hard"));
+    const results: CorpusQueryResult[] = [];
+    for (const tokenId of unpackPackedIndexData(candidates.data)) {
+      const trueId = tokenId - candidates.position;
+      if (trueId < 0 || trueId >= this.corpus.stats.totalWords) {
+        continue;
+      }
+      if (query.parts.length > 1) {
+        // -2 because a hard break after the last token isn't counted
+        // (the first -1) and the second -1 is because the range is inclusive.
+        const range: [number, number] = [
+          tokenId,
+          tokenId + query.parts.length - 2,
+        ];
+        if (hasValueInRange(hardBreaks, range)) {
+          continue;
+        }
+      }
+      results.push(this.resolveResult(trueId, query.parts.length));
+    }
+    return results;
   }
 }

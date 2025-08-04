@@ -1,5 +1,5 @@
 import { assert, assertEqual } from "@/common/assert";
-import { unpackIntegers } from "@/common/bytedata/packing";
+import { PackedNumbers, unpackIntegers } from "@/common/bytedata/packing";
 import type {
   PackedBitMask,
   PackedIndexData,
@@ -167,7 +167,6 @@ export function applyAndToIndices(
 
   assertEqual(second.format, "bitmask");
   if (!("format" in first)) {
-    console.log("Array and Bitmask");
     // The filter data is a bitmask.
     // The candidates are a packed array.
     const unpacked = unpackIntegers(first);
@@ -227,4 +226,37 @@ export function toBitMask(values: number[], numTokens: number): Uint32Array {
     bitMask[byteIndex] |= 1 << (31 - bitIndex);
   }
   return bitMask;
+}
+
+/**
+ * Checks if the given packed index data has any values in the specified range.
+ *
+ * @param packedData The packed index data to check.
+ * @param range The range to check.
+ * @returns True if the range contains any values for the packed data, false otherwise.
+ */
+export function hasValueInRange(
+  packedData: PackedIndexData | undefined,
+  range: [number, number]
+): boolean {
+  if (range[0] > range[1]) {
+    return false;
+  }
+  if (packedData === undefined) {
+    return false;
+  }
+
+  if (!("format" in packedData)) {
+    return PackedNumbers.hasValueInRange(packedData, range);
+  }
+  assertEqual(packedData.format, "bitmask");
+  const bitmask = packedData.data;
+  for (let i = range[0]; i <= range[1]; i++) {
+    const byteIndex = i >> 5; // i / 32
+    const bitIndex = 31 - (i & 31); // i % 32
+    if ((bitmask[byteIndex] & (1 << bitIndex)) !== 0) {
+      return true;
+    }
+  }
+  return false;
 }
