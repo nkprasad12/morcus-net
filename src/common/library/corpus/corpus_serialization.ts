@@ -1,5 +1,6 @@
 import { assertEqual } from "@/common/assert";
 import { packIntegers } from "@/common/bytedata/packing";
+import { toBitMask } from "@/common/library/corpus/corpus_byte_utils";
 import {
   LatinCorpusIndex,
   CORPUS_FILE,
@@ -109,17 +110,4 @@ function prepareIndexMap(
       : indexBits;
     return [key, storedValue];
   });
-}
-
-function toBitMask(values: number[], numTokens: number): Uint32Array {
-  const bitMask = new Uint32Array(Math.ceil(numTokens / 32));
-  for (const value of values) {
-    if (value < 0 || value >= numTokens) {
-      throw new Error(`Value ${value} out of bounds (numTokens: ${numTokens})`);
-    }
-    const byteIndex = value >> 5; // value / 32
-    const bitIndex = value % 32;
-    bitMask[byteIndex] |= 1 << (31 - bitIndex);
-  }
-  return bitMask;
 }
