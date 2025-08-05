@@ -2,6 +2,7 @@ import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import type {
   CorpusQuery,
   CorpusQueryAtom,
+  CorpusQueryMatch,
   CorpusQueryPart,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
@@ -43,7 +44,7 @@ function printQuery(query: CorpusQuery): string {
   return query.parts.map(printQueryPart).join(" ");
 }
 
-function formatQueryResult(result: CorpusQueryResult): string {
+function formatQueryResult(result: CorpusQueryMatch): string {
   return `- ${result.workId} @ ${result.section} (offset: ${result.offset})\n  ${result.text}`;
 }
 
@@ -78,16 +79,17 @@ function measureMemoryUsage<T>(runnable: () => T): T {
 
 function runQuery(
   corpus: CorpusQueryEngine,
-  query: CorpusQuery
-): CorpusQueryResult[] {
+  query: CorpusQuery,
+  limit?: number
+): CorpusQueryResult {
   const startTime = Date.now();
-  const results = corpus.queryCorpus(query);
+  const results = corpus.queryCorpus(query, 0, limit);
   const elapsedTime = Date.now() - startTime;
   console.log("Query: ", printQuery(query));
-  results.forEach((result) => {
+  results.matches.forEach((result) => {
     console.log(formatQueryResult(result));
   });
-  console.log(`Found ${results.length} results in ${elapsedTime} ms`);
+  console.log(`Found ${results.totalResults} results in ${elapsedTime} ms`);
   return results;
 }
 
@@ -96,6 +98,7 @@ async function driver() {
     buildCorpus(latinWorksFromLibrary());
   }
   const argQuery = process.argv[2];
+  const limit = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
   const query = argQuery === undefined ? QUERY : parseQuery(argQuery);
   // console.log(getFormattedMemoryUsage());
   const corpus = getCorpus();
@@ -103,7 +106,7 @@ async function driver() {
   //   await new Promise((resolve) => setTimeout(resolve, 5000));
   //   console.log(getFormattedMemoryUsage());
   // }
-  runQuery(corpus, query);
+  runQuery(corpus, query, limit);
 }
 
 /* To profile memory, run:

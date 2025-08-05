@@ -129,15 +129,18 @@ export const LogClientEventApi: ApiRoute<ClientEventData, any> = {
 export interface CorpusQueryRequest {
   query: string;
   commitHash?: string;
+  pageStart?: number;
+  pageSize?: number;
 }
 
-export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult[]> =
-  {
-    path: "/api/corpus/query",
-    method: "GET",
-    inputValidator: matchesObject<CorpusQueryRequest>({
-      query: isString,
-      commitHash: maybeUndefined(isString),
-    }),
-    outputValidator: isArray(CorpusQueryResult.isMatch),
-  };
+export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
+  path: "/api/corpus/query",
+  method: "GET",
+  inputValidator: matchesObject<CorpusQueryRequest>({
+    query: isString,
+    commitHash: maybeUndefined(isString),
+    pageStart: maybeUndefined(isNumber),
+    pageSize: maybeUndefined(isNumber),
+  }),
+  outputValidator: CorpusQueryResult.isMatch,
+};

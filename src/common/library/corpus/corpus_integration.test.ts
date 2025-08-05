@@ -52,8 +52,8 @@ describe("Corpus Integration Test", () => {
   it("should find a single word", () => {
     const query: CorpusQuery = { parts: [{ word: "servum" }] };
     const results = queryEngine.queryCorpus(query);
-    expect(results).toHaveLength(1);
-    expect(results[0]).toMatchObject({
+    expect(results.matches).toHaveLength(1);
+    expect(results.matches[0]).toMatchObject({
       workId: "test_work_1",
       section: "1",
       offset: 1,
@@ -64,8 +64,8 @@ describe("Corpus Integration Test", () => {
   it("should find all instances of a lemma", () => {
     const query: CorpusQuery = { parts: [{ lemma: "servus" }] };
     const results = queryEngine.queryCorpus(query);
-    expect(results).toHaveLength(2);
-    expect(results).toEqual(
+    expect(results.totalResults).toBe(2);
+    expect(results.matches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           workId: "test_work_1",
@@ -89,8 +89,8 @@ describe("Corpus Integration Test", () => {
     };
     const results = queryEngine.queryCorpus(query);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
-    expect(results).toHaveLength(2);
-    expect(results).toEqual(
+    expect(results.totalResults).toBe(2);
+    expect(results.matches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ text: "servum" }),
         expect.objectContaining({ text: "Gallum" }),
@@ -107,8 +107,8 @@ describe("Corpus Integration Test", () => {
       ],
     };
     const results = queryEngine.queryCorpus(query);
-    expect(results).toHaveLength(1);
-    expect(results[0]).toMatchObject({
+    expect(results.matches).toHaveLength(1);
+    expect(results.matches[0]).toMatchObject({
       workId: "test_work_1",
       section: "1",
       offset: 0,
@@ -130,8 +130,8 @@ describe("Corpus Integration Test", () => {
       ],
     };
     const results = queryEngine.queryCorpus(query);
-    expect(results).toHaveLength(1);
-    expect(results[0]).toMatchObject({
+    expect(results.matches).toHaveLength(1);
+    expect(results.matches[0]).toMatchObject({
       workId: "test_work_1",
       section: "2",
       offset: 1,
@@ -144,12 +144,16 @@ describe("Corpus Integration Test", () => {
       parts: [{ word: "acclamat" }, { word: "servus" }],
     };
     const results = queryEngine.queryCorpus(query);
-    expect(results).toHaveLength(0);
+
+    expect(results.totalResults).toBe(0);
+    expect(results.matches).toHaveLength(0);
   });
 
   it("should return no results for a query with no matches", () => {
     const query: CorpusQuery = { parts: [{ word: "imperator" }] };
     const results = queryEngine.queryCorpus(query);
-    expect(results).toHaveLength(0);
+
+    expect(results.totalResults).toBe(0);
+    expect(results.matches).toHaveLength(0);
   });
 });

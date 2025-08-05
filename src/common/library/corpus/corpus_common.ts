@@ -7,7 +7,12 @@ import {
   LatinTense,
   LatinVoice,
 } from "@/morceus/types";
-import { isNumber, isString, matchesObject } from "@/web/utils/rpc/parsing";
+import {
+  isArray,
+  isNumber,
+  isString,
+  matchesObject,
+} from "@/web/utils/rpc/parsing";
 
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
@@ -43,19 +48,35 @@ export interface CorpusQuery {
   parts: CorpusQueryPart[];
 }
 
-export interface CorpusQueryResult {
+export interface CorpusQueryMatch {
   workId: string;
   section: string;
   offset: number;
   text: string;
 }
 
-export namespace CorpusQueryResult {
-  export const isMatch = matchesObject<CorpusQueryResult>({
+export namespace CorpusQueryMatch {
+  export const isMatch = matchesObject<CorpusQueryMatch>({
     workId: isString,
     section: isString,
     offset: isNumber,
     text: isString,
+  });
+}
+
+export interface CorpusQueryResult {
+  totalResults: number;
+  matches: CorpusQueryMatch[];
+  pageStart: number;
+  pageSize?: number;
+}
+
+export namespace CorpusQueryResult {
+  export const isMatch = matchesObject<CorpusQueryResult>({
+    totalResults: isNumber,
+    matches: isArray(CorpusQueryMatch.isMatch),
+    pageStart: isNumber,
+    pageSize: isNumber,
   });
 }
 

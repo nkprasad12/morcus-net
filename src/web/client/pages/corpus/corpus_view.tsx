@@ -1,5 +1,8 @@
 import { checkPresent } from "@/common/assert";
-import type { CorpusQueryResult } from "@/common/library/corpus/corpus_common";
+import type {
+  CorpusQueryMatch,
+  CorpusQueryResult,
+} from "@/common/library/corpus/corpus_common";
 import { QueryCorpusApi, type CorpusQueryRequest } from "@/web/api_routes";
 import { SpanLink } from "@/web/client/components/generic/basics";
 import { SearchBoxNoAutocomplete } from "@/web/client/components/generic/search";
@@ -11,7 +14,7 @@ import { useMemo, useState } from "react";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
 
-type Results = "N/A" | "Error" | "Loading" | CorpusQueryResult[];
+type Results = "N/A" | "Error" | "Loading" | CorpusQueryResult;
 
 export function CorpusQueryPage() {
   const [inputText, setInputText] = useState<string>("");
@@ -69,11 +72,15 @@ function ResultsSection(props: {
 
   return (
     <div>
-      <div>
-        Found {props.results.length} results for: {props.query}
+      <div className="text md">
+        Found {props.results.totalResults} results for: {props.query}
+      </div>
+      <div className="text sm light">
+        Showing results {props.results.pageStart + 1} to{" "}
+        {props.results.pageStart + props.results.matches.length}.
       </div>
       <ul>
-        {props.results.map((item, i) => (
+        {props.results.matches.map((item, i) => (
           <li key={i}>
             <SingleResult result={item} />
           </li>
@@ -83,7 +90,7 @@ function ResultsSection(props: {
   );
 }
 
-function SingleResult(props: { result: CorpusQueryResult }) {
+function SingleResult(props: { result: CorpusQueryMatch }) {
   const { nav } = Router.useRouter();
   const id = `${props.result.workId}-${props.result.section}-${props.result.offset}`;
 

@@ -10,10 +10,12 @@ import { safeParseInt } from "@/common/misc_utils";
 
 export async function runQuery(
   corpus: CorpusQueryEngine,
-  query: string
-): Promise<CorpusQueryResult[]> {
+  query: string,
+  pageStart: number,
+  pageSize: number
+): Promise<CorpusQueryResult> {
   const parsedQuery = parseQuery(query);
-  return corpus.queryCorpus(parsedQuery);
+  return corpus.queryCorpus(parsedQuery, pageStart, pageSize);
 }
 
 export function parseQuery(queryStr: string): CorpusQuery {

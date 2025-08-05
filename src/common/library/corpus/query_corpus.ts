@@ -9,6 +9,7 @@ import {
 import type {
   CorpusQuery,
   CorpusQueryAtom,
+  CorpusQueryMatch,
   CorpusQueryResult,
   LatinCorpusIndex,
   PackedBitMask,
@@ -61,6 +62,14 @@ function checkQueryComplexity(query: CorpusQuery): void {
   }
 }
 
+function emptyResult(): CorpusQueryResult {
+  return {
+    totalResults: 0,
+    pageStart: 0,
+    matches: [],
+  };
+}
+
 export class CorpusQueryEngine {
   private readonly tokenDb: SqliteDb;
 
@@ -71,7 +80,7 @@ export class CorpusQueryEngine {
   private resolveResult(
     tokenId: number,
     queryLength: number
-  ): CorpusQueryResult {
+  ): CorpusQueryMatch {
     const workRanges = this.corpus.workRowRanges;
 
     // Binary search for the work.
@@ -213,6 +222,28 @@ export class CorpusQueryEngine {
     return convertedQuery;
   }
 
+  private resolveCandidates(
+    candidates: IntermediateResult,
+    queryLength: number
+  ): number[] {
+    const matches: number[] = [];
+    const hardBreaks = checkPresent(this.corpus.indices.breaks.get("hard"));
+    for (const tokenId of unpackPackedIndexData(candidates.data)) {
+      const trueId = tokenId - candidates.position;
+      if (trueId < 0 || trueId >= this.corpus.stats.totalWords) {
+        continue;
+      }
+      // -2 because a hard break after the last token isn't counted
+      // (the first -1) and the second -1 is because the range is inclusive.
+      const range: [number, number] = [trueId, trueId + queryLength - 2];
+      if (hasValueInRange(hardBreaks, range)) {
+        continue;
+      }
+      matches.push(trueId);
+    }
+    return matches;
+  }
+
   private executeInitialPart(
     part: InternalComposedQuery
   ): IntermediateResult | undefined {
@@ -227,9 +258,13 @@ export class CorpusQueryEngine {
     exhaustiveGuard(part.composition);
   }
 
-  queryCorpus(query: CorpusQuery): CorpusQueryResult[] {
+  queryCorpus(
+    query: CorpusQuery,
+    pageStart: number = 0,
+    pageSize?: number
+  ): CorpusQueryResult {
     if (query.parts.length === 0) {
-      return [];
+      return emptyResult();
     }
     checkQueryComplexity(query);
 
@@ -238,7 +273,7 @@ export class CorpusQueryEngine {
     );
     let candidates = this.executeInitialPart(sortedQuery[0]);
     if (candidates === undefined) {
-      return [];
+      return emptyResult();
     }
     for (let i = 1; i < sortedQuery.length; i++) {
       const part = sortedQuery[i];
@@ -250,32 +285,21 @@ export class CorpusQueryEngine {
           part.position
         );
         if (candidates === undefined) {
-          return [];
+          return emptyResult();
         }
         continue;
       }
       exhaustiveGuard(part.composition);
     }
-    const hardBreaks = checkPresent(this.corpus.indices.breaks.get("hard"));
-    const results: CorpusQueryResult[] = [];
-    for (const tokenId of unpackPackedIndexData(candidates.data)) {
-      const trueId = tokenId - candidates.position;
-      if (trueId < 0 || trueId >= this.corpus.stats.totalWords) {
-        continue;
-      }
-      if (query.parts.length > 1) {
-        // -2 because a hard break after the last token isn't counted
-        // (the first -1) and the second -1 is because the range is inclusive.
-        const range: [number, number] = [
-          trueId,
-          trueId + query.parts.length - 2,
-        ];
-        if (hasValueInRange(hardBreaks, range)) {
-          continue;
-        }
-      }
-      results.push(this.resolveResult(trueId, query.parts.length));
-    }
-    return results;
+    const matches = this.resolveCandidates(candidates, query.parts.length);
+    const end = pageSize === undefined ? matches.length : pageStart + pageSize;
+    return {
+      totalResults: matches.length,
+      pageStart,
+      pageSize,
+      matches: matches
+        .slice(pageStart, end)
+        .map((tokenId) => this.resolveResult(tokenId, query.parts.length)),
+    };
   }
 }
