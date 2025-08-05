@@ -51,6 +51,8 @@ export interface CorpusQuery {
 
 export interface CorpusQueryMatch {
   workId: string;
+  workName: string;
+  author: string;
   section: string;
   offset: number;
   text: string;
@@ -61,6 +63,8 @@ export interface CorpusQueryMatch {
 export namespace CorpusQueryMatch {
   export const isMatch = matchesObject<CorpusQueryMatch>({
     workId: isString,
+    workName: isString,
+    author: isString,
     section: isString,
     offset: isNumber,
     text: isString,
@@ -93,6 +97,10 @@ export namespace CorpusQueryResult {
 export interface CorpusInputWork {
   /** The unique ID of the work. */
   id: string;
+  /** The name of the work. */
+  workName: string;
+  /** The author of the work. */
+  author: string;
   /** The text of the work, optionally broken down into chunks. */
   rows: string[];
   /** IDs for each row in the work. */
@@ -160,9 +168,15 @@ export interface CorpusIndexKeyTypes extends LatinInflectionTypes {
   lemma: string;
   breaks: "hard";
 }
+
+interface WorkData {
+  author: string;
+  name: string;
+}
+
 interface CoreCorpusIndex {
   /** Data about each work in the corpus. */
-  workLookup: [id: string, rowIds: string[][]][];
+  workLookup: [id: string, rowIds: string[][], workData: WorkData][];
   /** Ranges of token indices for each work in the corpus, split by row. */
   workRowRanges: WorkRowRange[];
   /** Statistics about the corpus. */

@@ -105,7 +105,7 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
             params: { id: props.result.section, ref: "corpus" },
           })
         }>
-        {props.result.workId}, {props.result.section}
+        {props.result.workName} {props.result.section} [{props.result.author}]
       </SpanLink>
       <div className="text sm light">
         <span>{props.result.leftContext ?? ""}</span>

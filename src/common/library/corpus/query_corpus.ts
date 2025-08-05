@@ -156,6 +156,8 @@ export class CorpusQueryEngine {
         }
         return {
           workId,
+          workName: this.corpus.workLookup[workIdx][2].name,
+          author: this.corpus.workLookup[workIdx][2].author,
           section: rowIds[rowIdx].join("."),
           offset: tokenId - startTokenId,
           text: result.join(""),

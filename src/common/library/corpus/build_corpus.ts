@@ -63,7 +63,11 @@ function absorbWork(
   const breaksIndex = arrayMap(corpus.indices.breaks);
 
   corpus.workRowRanges.push([corpus.workLookup.length, []]);
-  corpus.workLookup.push([work.id, work.rowIds]);
+  corpus.workLookup.push([
+    work.id,
+    work.rowIds,
+    { name: work.workName, author: work.author },
+  ]);
   let wordsInWork = 0;
 
   assert(work.rows.length > 0, "Work must have at least one row.");

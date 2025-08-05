@@ -21,12 +21,16 @@ const TEST_WORKS: CorpusInputWork[] = [
     rows: ["Gallus servum acclamat.", "servus Gallum accognoscit."],
     rowIds: [["1"], ["2"]],
     sectionDepth: 1,
+    author: "Author 1",
+    workName: "Work 1",
   },
   {
     id: "test_work_2",
     rows: ["rex et regina.", "Gallus regem videt."], // 'rex', 'regina', 'videt' are not in fake data, but good for word-only tests.
     rowIds: [["1"], ["2"]],
     sectionDepth: 1,
+    author: "Author 2",
+    workName: "Work 2",
   },
 ];
 
@@ -58,6 +62,22 @@ describe("Corpus Integration Test", () => {
       section: "1",
       offset: 1,
       text: "servum",
+    });
+  });
+
+  it("should return correct work data", () => {
+    const query: CorpusQuery = { parts: [{ word: "Gallus" }] };
+    const results = queryEngine.queryCorpus(query);
+    expect(results.matches).toHaveLength(2);
+    expect(results.matches[0]).toMatchObject({
+      workId: "test_work_1",
+      author: "Author 1",
+      workName: "Work 1",
+    });
+    expect(results.matches[1]).toMatchObject({
+      workId: "test_work_2",
+      author: "Author 2",
+      workName: "Work 2",
     });
   });
 

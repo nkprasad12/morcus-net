@@ -21,6 +21,8 @@ function extractRowText(node: XmlNode | string): string {
 function convertToCorpusInputWork(work: ProcessedWork2): CorpusInputWork {
   return {
     id: work.info.workId,
+    workName: work.info.title,
+    author: work.info.author,
     rows: work.rows.map(([_, root]) => extractRowText(root)),
     rowIds: work.rows.map(([id]) => id),
     sectionDepth: work.textParts.length,
