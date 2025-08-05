@@ -365,6 +365,17 @@ test.describe("main reader", () => {
   });
 });
 
+test.describe("corpus search", () => {
+  test("loads results by typing and enter", async ({ page }) => {
+    await page.goto("/corpus");
+    await page.locator(`[aria-label="Enter corpus query"]`).click();
+    await page.keyboard.insertText("[lemma:do] [word:oscula] [case:3]");
+    await page.keyboard.press("Enter");
+
+    await expect(page.getByText("dedit oscula nato")).toHaveCount(2);
+  });
+});
+
 test.describe("offline mode", () => {
   // Currently this doesn't work on Firefox.
   test.skip("allows S&H offline", async ({

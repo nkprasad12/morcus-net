@@ -19,7 +19,13 @@ const LONG_ARRAY = [2, 6, 17, 21, 23, 27, 35, 48, 59, 60, 61, 62];
 
 function getTestCorpus(): InProgressLatinCorpus {
   return {
-    workLookup: [["work1", [["row1"], ["row2"]]]],
+    workLookup: [
+      [
+        "work1",
+        [["row1"], ["row2"]],
+        { name: "Test Work", author: "Test Author" },
+      ],
+    ],
     workRowRanges: [
       [
         0,
