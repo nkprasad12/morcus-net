@@ -102,6 +102,56 @@ export class AggregateTimer {
   }
 }
 
+export class TimeProfiler {
+  private startTime: number;
+  private readonly events: Map<string, number> = new Map();
+  private lastTime: number;
+
+  constructor() {
+    this.startTime = performance.now();
+    this.lastTime = this.startTime;
+    this.reset();
+  }
+
+  public phase(name: string): void {
+    const now = performance.now();
+    const elapsed = now - this.lastTime;
+    if (!this.events.has(name)) {
+      this.events.set(name, elapsed);
+    } else {
+      this.events.set(name, this.events.get(name)! + elapsed);
+    }
+    this.lastTime = now;
+  }
+
+  public printReport(): void {
+    const totalTime = this.lastTime - this.startTime;
+    console.log(`Total time: ${totalTime.toFixed(2)} ms`);
+    const sortedEvents = Array.from(this.events.entries()).sort(
+      (a, b) => b[1] - a[1]
+    );
+    const maxNameLength = Math.max(
+      ...sortedEvents.map(([name]) => name.length)
+    );
+    for (const [name, time] of sortedEvents) {
+      console.log(`- ${name.padEnd(maxNameLength)} : ${time.toFixed(2)} ms`);
+    }
+    this.reset();
+  }
+
+  public getStats(): [string, number][] {
+    return Array.from(this.events.entries());
+  }
+
+  public reset(): void {
+    this.startTime = performance.now();
+    this.lastTime = this.startTime;
+    this.events.clear();
+  }
+}
+
+export const LOOP_PROFILER = singletonOf(() => new TimeProfiler());
+
 export function areArraysEqual<T>(first: T[], second: T[]): boolean {
   if (first.length !== second.length) {
     return false;
@@ -112,4 +162,64 @@ export function areArraysEqual<T>(first: T[], second: T[]): boolean {
     }
   }
   return true;
+}
+
+/**
+ * Estimates the memory size in bytes of a JS object, including Maps and Sets.
+ * Note: This is a rough estimate, not exact.
+ */
+export function estimateObjectSize(obj: any, seen = new Set<any>()): number {
+  if (obj === null || obj === undefined) return 0;
+  if (seen.has(obj)) return 0;
+  seen.add(obj);
+
+  let bytes = 0;
+  const type = typeof obj;
+
+  if (type === "boolean") {
+    bytes += 4;
+  } else if (type === "number") {
+    bytes += 8;
+  } else if (type === "string") {
+    bytes += obj.length * 2;
+  } else if (type === "object") {
+    if (Array.isArray(obj)) {
+      for (const item of obj) {
+        bytes += estimateObjectSize(item, seen);
+      }
+    } else if (obj instanceof Map) {
+      for (const [key, value] of obj.entries()) {
+        bytes += estimateObjectSize(key, seen);
+        bytes += estimateObjectSize(value, seen);
+      }
+    } else if (obj instanceof Set) {
+      for (const item of obj.values()) {
+        bytes += estimateObjectSize(item, seen);
+      }
+    } else {
+      for (const key in obj) {
+        if (Object.prototype.hasOwnProperty.call(obj, key)) {
+          bytes += estimateObjectSize(key, seen);
+          bytes += estimateObjectSize(obj[key], seen);
+        }
+      }
+    }
+  }
+  return bytes;
+}
+
+export function bytesToMib(input: number): number {
+  const inMib = input / (1024 * 1024);
+  return Math.round(inMib * 10) / 10;
+}
+
+export function getFormattedMemoryUsage() {
+  const usage = process.memoryUsage();
+  return {
+    rss: bytesToMib(usage.rss),
+    heapTotal: bytesToMib(usage.heapTotal),
+    heapUsed: bytesToMib(usage.heapUsed),
+    external: bytesToMib(usage.external),
+    arrayBuffers: bytesToMib(usage.arrayBuffers),
+  };
 }

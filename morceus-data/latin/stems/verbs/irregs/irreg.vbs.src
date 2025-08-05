@@ -373,7 +373,7 @@ fi_a_tis	irreg_pp1 pres subj act 2nd pl
 fi_ant	irreg_pp1 pres subj act 3rd pl
 :vs:fact pp4 dep
 
-:le:sum#1
+:le:sum
 #
 :vb:sum		irreg_pp1 1st sg pres ind act
 :vb:es		irreg_pp1 2nd sg pres ind act

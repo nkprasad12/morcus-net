@@ -9,8 +9,11 @@ interface CollectMap<K, V, C> {
   get(k: K): C | undefined;
 }
 
-function collectMap<K, V, C>(q: Collectable<C>): CollectMap<K, V, C> {
-  const map = new Map<K, C>();
+function collectMap<K, V, C>(
+  q: Collectable<C>,
+  wrappedMap?: Map<K, C>
+): CollectMap<K, V, C> {
+  const map = wrappedMap ?? new Map<K, C>();
   return {
     map,
     add(k: K, v: V) {
@@ -23,8 +26,11 @@ function collectMap<K, V, C>(q: Collectable<C>): CollectMap<K, V, C> {
   };
 }
 
-export function arrayMap<K, V>() {
-  return collectMap<K, V, V[]>({ make: () => [], add: (c, v) => c.push(v) });
+export function arrayMap<K, V>(wrappedMap?: Map<K, V[]>) {
+  return collectMap<K, V, V[]>(
+    { make: () => [], add: (c, v) => c.push(v) },
+    wrappedMap
+  );
 }
 
 /** Creates an arrayMap initialized with the given list. */

@@ -33,6 +33,7 @@ export interface DocumentInfo {
   funder?: string;
   workId: string;
   translationId?: string;
+  isTranslation?: boolean;
   translationInfo?: TranslationInfo;
   sourceRef?: string[];
   attribution: "perseus" | "hypotactic";
@@ -49,6 +50,7 @@ export namespace DocumentInfo {
     funder: maybeUndefined(isString),
     workId: isString,
     translationId: maybeUndefined(isString),
+    isTranslation: maybeUndefined(isBoolean),
     translationInfo: maybeUndefined(isTranslationInfo),
     sourceRef: maybeUndefined(isArray(isString)),
     attribution: isString,

@@ -21,6 +21,7 @@ import {
   WorkId,
 } from "@/common/library/library_types";
 import type { ClientEventData } from "@/web/telemetry/telemetry";
+import { CorpusQueryResult } from "@/common/library/corpus/corpus_common";
 
 export interface FormOptions {
   lemma: string;
@@ -117,10 +118,29 @@ export const ScrapeUrlApi: ApiRoute<string, string> = {
 
 export const LogClientEventApi: ApiRoute<ClientEventData, any> = {
   path: "/api/logClientEvent",
-  method: "GET",
+  method: "POST",
   inputValidator: matchesObject<ClientEventData>({
     name: isString,
     extras: isAny,
   }),
   outputValidator: isAny,
+};
+
+export interface CorpusQueryRequest {
+  query: string;
+  commitHash?: string;
+  pageStart?: number;
+  pageSize?: number;
+}
+
+export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
+  path: "/api/corpus/query",
+  method: "GET",
+  inputValidator: matchesObject<CorpusQueryRequest>({
+    query: isString,
+    commitHash: maybeUndefined(isString),
+    pageStart: maybeUndefined(isNumber),
+    pageSize: maybeUndefined(isNumber),
+  }),
+  outputValidator: CorpusQueryResult.isMatch,
 };

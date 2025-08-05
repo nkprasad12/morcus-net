@@ -16,3 +16,4 @@ gaffiot.js
 test-results/
 playwright-report/
 e2e_metrics/
+corpus_driver.js

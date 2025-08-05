@@ -5,7 +5,7 @@ import type { Database, Options } from "better-sqlite3";
 export type SqliteDb = Database;
 export namespace SqliteDb {
   export function create(path: string, options?: Options) {
-    if (process.env.BUN === "1") {
+    if (process.argv[0].endsWith("bun")) {
       /* eslint-disable-next-line @typescript-eslint/no-require-imports */
       const { Database } = require("bun:sqlite");
       const db = new Database(path, options);

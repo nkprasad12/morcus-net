@@ -57,7 +57,7 @@ jobs:
 
   build-image:
     runs-on: ubuntu-latest
-    timeout-minutes: 7
+    timeout-minutes: 8
     env:
       CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}
       LATEST: ghcr.io/nkprasad12/morcus:dev-latest

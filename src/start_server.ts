@@ -17,6 +17,7 @@ import {
   ListLibraryWorks,
   LogClientEventApi,
   MacronizeApi,
+  QueryCorpusApi,
   ReportApi,
   ScrapeUrlApi,
 } from "@/web/api_routes";
@@ -40,12 +41,15 @@ import { NumeralDict } from "@/common/dictionaries/numeral/numeral_dict";
 import { RiddleArnoldDict } from "@/common/dictionaries/riddle_arnold/riddle_arnold_dict";
 import { GaffiotDict } from "@/common/gaffiot/gaf_dict";
 import type { InflectionProvider } from "@/common/dictionaries/latin_dict_fetching";
-import { singletonOf } from "@/common/misc_utils";
+import { getFormattedMemoryUsage, singletonOf } from "@/common/misc_utils";
 import { macronizeInput } from "@/macronizer/morcronizer";
 import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
+import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
+import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
+import { runQuery } from "@/common/library/corpus/query_utils";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -62,7 +66,7 @@ function delayedInit(provider: () => Dictionary, info: DictInfo): Dictionary {
   };
   // Allow some fuzz here so that when we start up dev and prod instances at the same time, we are
   // not initializing all databases across all instances at the exact same time.
-  setTimeout(() => cachedProvider(), randInRange(25, 75));
+  setTimeout(() => cachedProvider(), randInRange(25, 150));
   return {
     info: info,
     getEntry: (...args) => cachedProvider().getEntry(...args),
@@ -75,20 +79,8 @@ function log(message: string) {
   console.log(`[start_server] ${message}`);
 }
 
-function bytesToMib(input: number): number {
-  const inMib = input / (1024 * 1024);
-  return Math.round(inMib * 10) / 10;
-}
-
 function logMemoryUsage(telemetry: TelemetryLogger): void {
-  const usage = process.memoryUsage();
-  telemetry.logServerHealth({
-    rss: bytesToMib(usage.rss),
-    heapTotal: bytesToMib(usage.heapTotal),
-    heapUsed: bytesToMib(usage.heapUsed),
-    external: bytesToMib(usage.external),
-    arrayBuffers: bytesToMib(usage.arrayBuffers),
-  });
+  telemetry.logServerHealth(getFormattedMemoryUsage());
 }
 
 type MaybeCacheable = { commitHash?: string };
@@ -188,6 +180,10 @@ export function startMorcusServer(): Promise<http.Server> {
     pozo,
     numeralDict,
   ]);
+  const corpusQueryEngine = singletonOf(
+    () => new CorpusQueryEngine(loadCorpus())
+  );
+  setTimeout(() => corpusQueryEngine.get(), randInRange(250, 500));
 
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;
@@ -241,6 +237,18 @@ export function startMorcusServer(): Promise<http.Server> {
         (await telemetry).logClientEvent(eventData);
       }),
       RouteDefinition.create(MacronizeApi, (input) => macronizeInput(input)),
+      RouteDefinition.create(
+        QueryCorpusApi,
+        (query) =>
+          runQuery(
+            corpusQueryEngine.get(),
+            query.query,
+            query.pageStart ?? 0,
+            query.pageSize ?? 50
+          ),
+        undefined,
+        CACHING_SETTER
+      ),
     ],
     telemetry: telemetry,
     buildDir,

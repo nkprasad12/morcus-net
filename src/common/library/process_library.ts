@@ -1,4 +1,7 @@
+import { assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
+import { buildCorpus } from "@/common/library/corpus/build_corpus";
+import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
 import {
   EnglishTranslations,
   LOCAL_REPO_WORKS,
@@ -178,10 +181,11 @@ function extractWorkMetadata(
   };
 }
 
-export function processLibrary(
-  outputDir: string = LIB_DEFAULT_DIR,
-  works: string[] = LOCAL_REPO_WORK_PATHS
-) {
+export function processLibrary({
+  outputDir = LIB_DEFAULT_DIR,
+  works = LOCAL_REPO_WORK_PATHS,
+  shouldBuildCorpus = false,
+}: { outputDir?: string; works?: string[]; shouldBuildCorpus?: boolean } = {}) {
   const patches = loadPatches();
   const index: LibraryIndex = {};
   const sortedWorks = works
@@ -220,6 +224,7 @@ export function processLibrary(
       translationId
     );
     const isTranslation = isTranslationId(workId);
+    result.info.isTranslation = isTranslation;
     result.info.translationInfo = translationDataById.get(translationId);
 
     if (isTranslation) {
@@ -237,6 +242,16 @@ export function processLibrary(
     });
     index[workId] = [outputPath, metadata];
   }
-  // TODO: We should verify here that there are no duplicates.
+  const duplicateIds = Object.entries(index)
+    .map(([id]) => id)
+    .filter((id, i, arr) => arr.indexOf(id) !== i);
+  assertEqual(
+    duplicateIds.length,
+    0,
+    "Duplicate work IDs found in library index"
+  );
   fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));
+  if (shouldBuildCorpus) {
+    buildCorpus(latinWorksFromLibrary());
+  }
 }

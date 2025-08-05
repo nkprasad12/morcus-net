@@ -93,7 +93,7 @@ export namespace ReadOnlyDb {
           ", "
         )}) VALUES (${columnNames.map((n) => "@" + n).join(", ")})`
       );
-      const isBun = process.env.BUN === "1";
+      const isBun = process.argv[0].endsWith("bun");
       const insertAll = db.transaction(() => {
         records.forEach((record, index) => {
           const row: Record<string, any> = {};

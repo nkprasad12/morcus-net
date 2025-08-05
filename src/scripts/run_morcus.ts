@@ -121,7 +121,19 @@ function parseArguments() {
         action: "store_true",
       },
     },
+    {
+      short: "-b_corp",
+      long: "--build_corpus",
+      options: {
+        help: "Builds the Latin corpus (implies `--build_latin_library`).",
+        action: "store_true",
+      },
+    },
   ];
+  build.add_argument("--build_all", {
+    help: "Builds all artifacts.",
+    action: "store_true",
+  });
   build.add_argument("-to", "--transpile_only", {
     help: "Skips type checking for the bundle.",
     action: "store_true",
@@ -154,6 +166,10 @@ function parseArguments() {
 
   const web = subparsers.add_parser(WEB_SERVER, {
     help: "Builds artifacts and starts the web server.",
+  });
+  web.add_argument("--build_all", {
+    help: "Builds all artifacts.",
+    action: "store_true",
   });
   web.add_argument("-no_bc", "--no_build_client", {
     help: "The client bundle will not be built.",
@@ -358,8 +374,25 @@ function artifactConfig(args: any): StepConfig[] {
   let baseCommand = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
-    childEnv.BUN = "1";
   }
+
+  // If build_all is set, enable all build flags
+  if (args.build_all === true) {
+    args.build_ls = true;
+    args.build_ra = true;
+    args.build_georges = true;
+    args.build_pozo = true;
+    args.build_gesner = true;
+    args.build_sh = true;
+    args.build_corpus = true;
+    args.build_gaffiot = true;
+  }
+
+  // If build_corpus is set, enable build_latin_library
+  if (args.build_corpus === true) {
+    args.build_latin_library = true;
+  }
+
   setupSteps.push({
     operation: () => createDir(envVar("OFFLINE_DATA_DIR")),
     label: "Creating output dirs",
@@ -431,6 +464,9 @@ function artifactConfig(args: any): StepConfig[] {
     });
   }
   if (args.build_latin_library === true) {
+    if (args.build_corpus === true) {
+      childEnv.BUILD_CORPUS = "1";
+    }
     const command = baseCommand.concat(["src/scripts/process_lat_lib.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
@@ -474,7 +510,6 @@ function startWebServer(args: any) {
   let baseCommand: string[] = [...TS_NODE];
   if (args.bun === true) {
     baseCommand = ["bun"];
-    serverEnv.BUN = "1";
     if (args.watch) {
       // Watch mode seems to have problems.
     }

@@ -1,19 +1,16 @@
-import { arrayMap } from "@/common/data_structures/collect_map";
+import { assert } from "@/common/assert";
+import { arrayMapBy } from "@/common/data_structures/collect_map";
 import { envVar } from "@/common/env_vars";
 import { singletonOf } from "@/common/misc_utils";
 import type {
   CruncherConfig,
   CruncherTables,
-  StemMap,
+  StemMapValue,
 } from "@/morceus/cruncher_types";
-import {
-  allNounStems,
-  allVerbStems,
-  type IrregularForm,
-  type Lemma,
-  type Stem,
-} from "@/morceus/stem_parsing";
+import { allNounStems, allVerbStems, type Lemma } from "@/morceus/stem_parsing";
+import * as Trie from "@/common/data_structures/trie";
 import { makeEndIndex, type EndIndexRow } from "@/morceus/tables/indices";
+import type { InflectionTable } from "@/morceus/tables/templates";
 import fs from "fs/promises";
 import path from "path";
 import { gzip } from "zlib";
@@ -28,7 +25,7 @@ function makeTables(config?: CruncherConfig): CruncherTables {
   // This would ideally be a module constant, but we define it here so that
   // we can dynamically swap it out in unit tests
   const endsRoot = envVar("MORCEUS_DATA_ROOT") + "/latin/ends";
-  const [endIndices, endTables] =
+  const [endIndices, endTables, rawTables] =
     config?.existing?.endsResult ??
     makeEndIndex([`${endsRoot}/target`, `${endsRoot}/dependency`]);
   const allLemmata =
@@ -37,12 +34,20 @@ function makeTables(config?: CruncherConfig): CruncherTables {
       allVerbStems(config?.generate?.verbStemFiles)
     );
   const endsMap = makeEndsMap(endIndices);
-  const stemMap = makeStemsMap(allLemmata);
+  const stemTrie = makeStemsTrie(allLemmata);
+  const rawTablesMap = new Map<string, InflectionTable>();
+  for (const table of rawTables) {
+    assert(!rawTablesMap.has(table.name), `Duplicate table: ${table.name}`);
+    rawTablesMap.set(table.name, table);
+  }
+  const rawLemmataMap = arrayMapBy(allLemmata, (l) => l.lemma);
   return {
     endsMap,
-    stemMap,
+    stemTrie,
     inflectionLookup: endTables,
     numerals: allLemmata.filter(isNumeral),
+    rawTables: rawTablesMap,
+    rawLemmata: rawLemmataMap.map,
   };
 }
 
@@ -91,18 +96,18 @@ function normalizeKey(input: string): string {
     .replaceAll("+", "");
 }
 
-function makeStemsMap(lemmata: Lemma[]): StemMap {
-  const stemMap = arrayMap<string, [Stem | IrregularForm, string, boolean]>();
+function makeStemsTrie(lemmata: Lemma[]): Trie.TrieNode<StemMapValue> {
+  const root: Trie.TrieNode<StemMapValue> = {};
   for (const lemma of lemmata) {
     const isVerb = lemma.isVerb === true;
     for (const stem of lemma.stems || []) {
-      stemMap.add(normalizeKey(stem.stem), [stem, lemma.lemma, isVerb]);
+      Trie.add(root, normalizeKey(stem.stem), [stem, lemma.lemma, isVerb]);
     }
     for (const form of lemma.irregularForms || []) {
-      stemMap.add(normalizeKey(form.form), [form, lemma.lemma, isVerb]);
+      Trie.add(root, normalizeKey(form.form), [form, lemma.lemma, isVerb]);
     }
   }
-  return stemMap.map;
+  return root;
 }
 
 function makeEndsMap(endings: EndIndexRow[]): Map<string, string[]> {

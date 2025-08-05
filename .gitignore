@@ -149,3 +149,4 @@ gaffiot.js
 /blob-report/
 /playwright/.cache/
 e2e_metrics/*
+corpus_driver.js

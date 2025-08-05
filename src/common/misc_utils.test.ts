@@ -6,6 +6,7 @@ import {
   mergeMaps,
   safeParseInt,
   singletonOf,
+  estimateObjectSize,
 } from "@/common/misc_utils";
 
 describe("exhaustiveGuard", () => {
@@ -164,5 +165,37 @@ describe("areArraysEqual", () => {
 
   test("true on equal", () => {
     expect(areArraysEqual([1, 3], [1, 3])).toBe(true);
+  });
+});
+
+describe("estimateObjectSize", () => {
+  it("estimates size of primitives", () => {
+    expect(estimateObjectSize(42)).toBe(8);
+    expect(estimateObjectSize(true)).toBe(4);
+    expect(estimateObjectSize("abcd")).toBe(8); // 4 chars * 2 bytes
+  });
+
+  it("estimates size of arrays", () => {
+    expect(estimateObjectSize([1, 2, 3])).toBe(24);
+  });
+
+  it("estimates size of objects", () => {
+    expect(estimateObjectSize({ a: 1, b: "x" })).toBeGreaterThan(0);
+  });
+
+  it("estimates size of Map and Set", () => {
+    const m = new Map();
+    m.set("foo", 123);
+    m.set("bar", [1, 2]);
+    expect(estimateObjectSize(m)).toBeGreaterThan(0);
+
+    const s = new Set(["a", "b", "c"]);
+    expect(estimateObjectSize(s)).toBeGreaterThan(0);
+  });
+
+  it("handles circular references", () => {
+    const obj: any = {};
+    obj.self = obj;
+    expect(estimateObjectSize(obj)).toBeGreaterThan(0);
   });
 });
