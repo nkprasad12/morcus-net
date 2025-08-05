@@ -90,6 +90,11 @@ function runQuery(
     console.log(formatQueryResult(result));
   });
   console.log(`Found ${results.totalResults} results in ${elapsedTime} ms`);
+  console.log(
+    results.timing
+      ?.map(([name, time]) => `- ${time.toFixed(2)} ms [${name}]`)
+      .join("\n")
+  );
   return results;
 }
 
@@ -111,13 +116,11 @@ async function driver() {
 
 /* To profile memory, run:
 
-./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts --bundle --outfile=corpus_driver.js --platform=node --external:bun:sqlite --minify
+./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts \
+  --bundle --outfile=corpus_driver.js --platform=node --external:bun:sqlite --minify \
+&& node --expose-gc corpus_driver.js "[case:3] [case:2] [case:1] [case:2]" \
+&& rm corpus_driver.js
 
-to build the driver bundle.
-
-Then, use:
-
-node --expose-gc corpus_driver.js "[word:et] [case:1 and lemma:puella]"
 */
 
 driver();

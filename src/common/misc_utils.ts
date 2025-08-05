@@ -102,7 +102,7 @@ export class AggregateTimer {
   }
 }
 
-export class HotLoopProfiler {
+export class TimeProfiler {
   private startTime: number;
   private readonly events: Map<string, number> = new Map();
   private lastTime: number;
@@ -139,6 +139,10 @@ export class HotLoopProfiler {
     this.reset();
   }
 
+  public getStats(): [string, number][] {
+    return Array.from(this.events.entries());
+  }
+
   public reset(): void {
     this.startTime = performance.now();
     this.lastTime = this.startTime;
@@ -146,7 +150,7 @@ export class HotLoopProfiler {
   }
 }
 
-export const LOOP_PROFILER = singletonOf(() => new HotLoopProfiler());
+export const LOOP_PROFILER = singletonOf(() => new TimeProfiler());
 
 export function areArraysEqual<T>(first: T[], second: T[]): boolean {
   if (first.length !== second.length) {

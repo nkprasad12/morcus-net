@@ -15,7 +15,7 @@ import type {
   PackedBitMask,
   PackedIndexData,
 } from "@/common/library/corpus/corpus_common";
-import { exhaustiveGuard } from "@/common/misc_utils";
+import { exhaustiveGuard, TimeProfiler } from "@/common/misc_utils";
 import { ReadOnlyDb } from "@/common/sql_helper";
 import { SqliteDb } from "@/common/sqlite/sql_db";
 
@@ -34,6 +34,10 @@ type InternalQuery = InternalComposedQuery[];
 interface IntermediateResult<T = PackedIndexData> {
   data: T;
   position: number;
+}
+
+interface InternalQueryResult extends CorpusQueryResult {
+  timing?: [string, number][];
 }
 
 const MAX_QUERY_PARTS = 8;
@@ -72,6 +76,7 @@ function emptyResult(): CorpusQueryResult {
 
 export class CorpusQueryEngine {
   private readonly tokenDb: SqliteDb;
+  private readonly profiler = new TimeProfiler();
 
   constructor(private readonly corpus: LatinCorpusIndex) {
     this.tokenDb = ReadOnlyDb.getDatabase(this.corpus.rawTextDb);
@@ -262,16 +267,17 @@ export class CorpusQueryEngine {
     query: CorpusQuery,
     pageStart: number = 0,
     pageSize?: number
-  ): CorpusQueryResult {
+  ): InternalQueryResult {
     if (query.parts.length === 0) {
       return emptyResult();
     }
     checkQueryComplexity(query);
-
     const sortedQuery = this.convertQuery(query).sort(
       (a, b) => a.sizeUpperBound - b.sizeUpperBound
     );
+    this.profiler.reset();
     let candidates = this.executeInitialPart(sortedQuery[0]);
+    this.profiler.phase("Initial");
     if (candidates === undefined) {
       return emptyResult();
     }
@@ -284,6 +290,7 @@ export class CorpusQueryEngine {
           part.atoms[0].atom,
           part.position
         );
+        this.profiler.phase(`Filter ${i}`);
         if (candidates === undefined) {
           return emptyResult();
         }
@@ -291,15 +298,19 @@ export class CorpusQueryEngine {
       }
       exhaustiveGuard(part.composition);
     }
-    const matches = this.resolveCandidates(candidates, query.parts.length);
-    const end = pageSize === undefined ? matches.length : pageStart + pageSize;
+    const matchIds = this.resolveCandidates(candidates, query.parts.length);
+    this.profiler.phase("Check Candidates");
+    const end = pageSize === undefined ? matchIds.length : pageStart + pageSize;
+    const matches = matchIds
+      .slice(pageStart, end)
+      .map((tokenId) => this.resolveResult(tokenId, query.parts.length));
+    this.profiler.phase("Build Matches");
     return {
-      totalResults: matches.length,
+      totalResults: matchIds.length,
       pageStart,
       pageSize,
-      matches: matches
-        .slice(pageStart, end)
-        .map((tokenId) => this.resolveResult(tokenId, query.parts.length)),
+      matches,
+      timing: this.profiler.getStats(),
     };
   }
 }
