@@ -10,7 +10,6 @@ import {
   toBitMask,
 } from "@/common/library/corpus/corpus_byte_utils";
 
-// Helper to convert Uint32Array to boolean[]
 function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
   const unpacked = unpackPackedIndexData({ format: "bitmask", data: bitmask });
   const result = new Array(bitmask.length * 32).fill(false);
@@ -20,7 +19,6 @@ function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
   return result;
 }
 
-// Helper to convert boolean[] to Uint32Array
 function booleanArrayToBitMask(bits: boolean[]): Uint32Array {
   return toBitMask(
     bits
@@ -38,19 +36,61 @@ function applyAndWithBooleanArrays(
 ): boolean[] {
   const result: boolean[] = [];
   for (let i = 0; i < first.length; i++) {
-    result.push(first[i] && (second[i + offset] ?? false));
+    result.push(first[i] && (second[i - offset] ?? false));
   }
   return result;
 }
 
+describe("All `applyAnd` data types make equal results", () => {
+  test.each([[0], [1], [2], [3], [4], [8], [16], [32], [33]])(
+    "with data at offset %d",
+    (offset) => {
+      const first: PackedBitMask = {
+        format: "bitmask",
+        data: Uint32Array.of(0xd1a1c613, 0xf931e3ab),
+      };
+      const second: PackedBitMask = {
+        format: "bitmask",
+        data: Uint32Array.of(0x8363063b, 0x4fa44a4a),
+      };
+
+      const resultBitmasks: PackedBitMask = {
+        format: "bitmask",
+        data: applyAndWithBitmasks(first.data, second.data, offset),
+      };
+      const resultBitmaskArray = applyAndWithBitmaskAndArray(
+        first.data,
+        unpackPackedIndexData(second),
+        offset
+      );
+      const resultArrays = applyAndWithArrays(
+        unpackPackedIndexData(first),
+        unpackPackedIndexData(second),
+        offset
+      );
+
+      // console.log("Result Bitmasks: ", unpackPackedIndexData(resultBitmasks));
+      // console.log("Result Bitmask Array: ", resultBitmaskArray);
+      // console.log("Result Arrays: ", resultArrays);
+      expect(resultBitmaskArray).toEqual(resultArrays);
+      expect(unpackPackedIndexData(resultBitmasks)).toEqual(resultBitmaskArray);
+    }
+  );
+});
+
 describe("applyAndWithBitmasks", () => {
+  function bitsToStr(bits: boolean[]): string {
+    return bits.map((v) => (v ? "1" : "0")).join("");
+  }
+
   function verifyResults(a: Uint32Array, b: Uint32Array, offset: number) {
     const result = applyAndWithBitmasks(a, b, offset);
     const aBits = bitMaskToBooleanArray(a);
     const bBits = bitMaskToBooleanArray(b);
     const expectedBits = applyAndWithBooleanArrays(aBits, bBits, offset);
-    const expectedResult = booleanArrayToBitMask(expectedBits);
-    expect(Array.from(result)).toEqual(Array.from(expectedResult));
+    expect(bitsToStr(bitMaskToBooleanArray(result))).toEqual(
+      bitsToStr(expectedBits)
+    );
   }
 
   it("returns correct AND with no offset", () => {
@@ -73,7 +113,7 @@ describe("applyAndWithBitmasks", () => {
 
   it("returns correct AND with bit offset within word", () => {
     const a = Uint32Array.of(0xffffffff, 0xffffffff);
-    const b = Uint32Array.of(0xaaaaaaaa, 0x55555555);
+    const b = Uint32Array.of(0xaaaaaaaa, 0xaaaaaaaa);
     verifyResults(a, b, 4);
   });
 
@@ -494,7 +534,7 @@ describe("filterCandidates", () => {
         filterData,
         3
       );
-      const expectedData = Uint32Array.of(0b10100000000000000000000000000000);
+      const expectedData = Uint32Array.of(0b00101000000000000000000000000000);
       expect(result).toEqual({ format: "bitmask", data: expectedData });
       expect(position).toBe(3);
     });

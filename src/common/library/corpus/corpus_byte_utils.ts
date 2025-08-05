@@ -28,27 +28,52 @@ export function applyAndWithBitmasks(
   const result = new Uint32Array(len);
 
   // We have separate paths for byte-aligned offsets and non-byte-aligned offsets.
-  // Note: we don't bother bounds checking because array accesses outside of the bounds
-  // will return undefined, which acts as 0 for bitwise operations.
-  // This is all for performance optimization to minimize the operations per loop.
-
+  // This really only matters for the 0 case, as we likely won't do queries with a
+  // 32+ offset.
   if (bitOffset === 0) {
     for (let i = 0; i < len; i++) {
-      result[i] = first[i] & second[i + wordOffset];
+      // Note: we don't bother bounds checking because array accesses outside of the bounds
+      // will return undefined, which acts as 0 for bitwise operations.
+      // This is all for performance optimization to minimize the operations per loop.
+      result[i] = first[i] & second[i - wordOffset];
     }
     return result;
   }
 
-  const rightShift = 32 - bitOffset;
+  const leftShift = 32 - bitOffset;
   for (let i = 0; i < len; i++) {
-    const j = i + wordOffset;
-    let mask = 0;
-    // Get the right 32 - bitOffset bits from second[j] and put
-    // then in the leftmost bits of mask.
-    mask |= second[j] << bitOffset;
-    // Get the left bitOffset bits from second[j + 1] and put
-    // them in the rightmost bits of mask.
-    mask |= second[j + 1] >>> rightShift;
+    const j = i - wordOffset;
+    // Note: we don't bother bounds checking because array accesses outside of the bounds
+    // will return undefined, which acts as 0 for bitwise operations.
+    // This is all for performance optimization to minimize the operations per loop.
+
+    // Suppose we have (with 4 bit words for brevity):
+    // 1st: 0110 1010
+    // 2nd: 1101 0110
+    // For the example below, we will work on the second word (so i = 1)
+    // and assume wordOffset is 0 and bitOffset is 2.
+
+    // Get the right `wordSize - bitOffset` bits and move them to the left:
+    let mask = second[j] >>> bitOffset;
+    //      = 0110 >>> 2 = 0001
+    // mask |= second[j] >>> bitOffset;
+
+    // Then get the remaining bits from the previous word:
+    mask |= second[j - 1] << leftShift;
+    // second[j - 1] << leftShift
+    // = 1100 << 2 = 0100
+    // Finally, combine them with a bitwise OR:
+    // mask |= second[j - 1] << leftShift
+    // = 0001 | 0100 = 0101, as expected.
+
+    // NOTE: When assembling the mask, the order seems to matter slightly for performance.
+    // Getting the bits from the current word first and then the previous word seems
+    // to be ~5% faster than the other way around.
+    // This is counterintuitive because it makes the access pattern:
+    // - second[0], second[-1], second[1], second[0], ...
+    // instead of:
+    // - second[-1], second[0], second[0], second[1],
+    // but it seems to be faster in practice.
     result[i] = first[i] & mask;
   }
   return result;
