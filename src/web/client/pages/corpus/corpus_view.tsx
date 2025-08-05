@@ -79,13 +79,9 @@ function ResultsSection(props: {
         Showing results {props.results.pageStart + 1} to{" "}
         {props.results.pageStart + props.results.matches.length}.
       </div>
-      <ul>
-        {props.results.matches.map((item, i) => (
-          <li key={i}>
-            <SingleResult result={item} />
-          </li>
-        ))}
-      </ul>
+      {props.results.matches.map((item, i) => (
+        <SingleResult result={item} key={i} />
+      ))}
     </div>
   );
 }
@@ -111,7 +107,11 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
         }>
         {props.result.workId}, {props.result.section}
       </SpanLink>
-      <div className="text sm light">{props.result.text}</div>
+      <div className="text sm light">
+        <span>{props.result.leftContext ?? ""}</span>
+        <b>{props.result.text}</b>
+        <span>{props.result.rightContext ?? ""}</span>
+      </div>
     </div>
   );
 }

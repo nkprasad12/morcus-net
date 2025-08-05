@@ -74,6 +74,12 @@ function emptyResult(): CorpusQueryResult {
   };
 }
 
+function fixBreak(breakStr: string): string {
+  // We should encode when the breaks correspond to section breaks so that
+  // we can fix that here and add spaces if needed.
+  return breakStr;
+}
+
 export class CorpusQueryEngine {
   private readonly tokenDb: SqliteDb;
   private readonly profiler = new TimeProfiler();
@@ -125,22 +131,36 @@ export class CorpusQueryEngine {
         const [workId, rowIds] = this.corpus.workLookup[workIdx];
         const rowIdx = rowData[mid][0];
 
+        const contextLen = 4;
         // @ts-expect-error
-        const rows: { token: string; break: string }[] = this.tokenDb
+        const rows: { token: string; break: string; n: number }[] = this.tokenDb
           .prepare(`SELECT * FROM raw_text WHERE rowid >= ? LIMIT ?`)
-          .all(tokenId, queryLength);
+          .all(tokenId - contextLen, queryLength + contextLen * 2);
+        const leftContext: string[] = [];
         const result: string[] = [];
-        for (let i = 0; i < queryLength; i++) {
-          result.push(rows[i].token);
-          if (i < queryLength - 1) {
-            result.push(rows[i].break);
+        const rightContext: string[] = [];
+        for (let i = 0; i < rows.length; i++) {
+          const breakStr = fixBreak(rows[i].break);
+          if (rows[i].n < tokenId) {
+            leftContext.push(rows[i].token, breakStr);
+            continue;
           }
+          if (rows[i].n >= tokenId + queryLength) {
+            rightContext.push(rows[i].token, breakStr);
+            continue;
+          }
+          result.push(rows[i].token);
+          const isLastResultToken = rows[i].n === tokenId + queryLength - 1;
+          const breakHolder = isLastResultToken ? rightContext : result;
+          breakHolder.push(breakStr);
         }
         return {
           workId,
           section: rowIds[rowIdx].join("."),
           offset: tokenId - startTokenId,
           text: result.join(""),
+          leftContext: leftContext.join(""),
+          rightContext: rightContext.join(""),
         };
       } else if (tokenId < startTokenId) {
         high = mid - 1;

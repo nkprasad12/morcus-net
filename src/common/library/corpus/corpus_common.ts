@@ -12,6 +12,7 @@ import {
   isNumber,
   isString,
   matchesObject,
+  maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
 export const CORPUS_DIR = "build/corpus";
@@ -53,6 +54,8 @@ export interface CorpusQueryMatch {
   section: string;
   offset: number;
   text: string;
+  leftContext?: string;
+  rightContext?: string;
 }
 
 export namespace CorpusQueryMatch {
@@ -61,6 +64,8 @@ export namespace CorpusQueryMatch {
     section: isString,
     offset: isNumber,
     text: isString,
+    leftContext: maybeUndefined(isString),
+    rightContext: maybeUndefined(isString),
   });
 }
 
