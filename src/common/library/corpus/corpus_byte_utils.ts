@@ -31,22 +31,20 @@ export function applyAndWithBitmasks(
   // This really only matters for the 0 case, as we likely won't do queries with a
   // 32+ offset.
   if (bitOffset === 0) {
-    for (let i = 0; i < len; i++) {
-      // Note: we don't bother bounds checking because array accesses outside of the bounds
-      // will return undefined, which acts as 0 for bitwise operations.
-      // This is all for performance optimization to minimize the operations per loop.
+    for (let i = wordOffset; i < len; i++) {
+      // i - wordOffset is always >= 0
       result[i] = first[i] & second[i - wordOffset];
     }
     return result;
   }
 
   const leftShift = 32 - bitOffset;
-  for (let i = 0; i < len; i++) {
+  // The first few words are 0 or would require range checks
+  // to do safely, so handle them outside of the loop and then start
+  // with `let i = wordOffset + 1`.
+  result[wordOffset] = first[wordOffset] & (second[0] >>> bitOffset);
+  for (let i = wordOffset + 1; i < len; i++) {
     const j = i - wordOffset;
-    // Note: we don't bother bounds checking because array accesses outside of the bounds
-    // will return undefined, which acts as 0 for bitwise operations.
-    // This is all for performance optimization to minimize the operations per loop.
-
     // Suppose we have (with 4 bit words for brevity):
     // 1st: 0110 1010
     // 2nd: 1101 0110
