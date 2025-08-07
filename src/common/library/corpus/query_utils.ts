@@ -7,6 +7,7 @@ import type {
 } from "@/common/library/corpus/corpus_common";
 import type { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
 import { safeParseInt } from "@/common/misc_utils";
+import { INFLECTION_MAP } from "@/common/library/corpus/inflection_constants";
 
 export async function runQuery(
   corpus: CorpusQueryEngine,
@@ -50,6 +51,19 @@ function parseQueryAtom(atomStr: string): CorpusQueryAtom {
   if (key === "lemma") {
     return { lemma: value };
   }
+
+  const inflectionMap = INFLECTION_MAP[key];
+  if (inflectionMap) {
+    const parsedValue = safeParseInt(value);
+    if (parsedValue !== undefined) {
+      return { category: key, value: parsedValue };
+    }
+    const mappedValue = inflectionMap[value.toLowerCase()];
+    if (mappedValue !== undefined) {
+      return { category: key, value: mappedValue };
+    }
+  }
+
   const parsedValue = safeParseInt(value);
   // @ts-expect-error
   return { category: key, value: parsedValue };
