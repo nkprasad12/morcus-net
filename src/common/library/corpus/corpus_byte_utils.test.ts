@@ -1,4 +1,4 @@
-import { packIntegers } from "@/common/bytedata/packing";
+import { packSortedNats } from "@/common/bytedata/packing";
 import type { PackedBitMask } from "@/common/library/corpus/corpus_common";
 import {
   applyAndWithArrays,
@@ -339,8 +339,8 @@ describe("applyAndWithArrays", () => {
 describe("filterCandidates", () => {
   describe("when both candidates and filter are arrays", () => {
     it("should return correct intersection with no offset", () => {
-      const candidates = packIntegers(10, [1, 3, 5, 8]);
-      const filterData = packIntegers(10, [3, 5, 9]);
+      const candidates = packSortedNats([1, 3, 5, 8]);
+      const filterData = packSortedNats([3, 5, 9]);
       const [result, position] = applyAndToIndices(
         candidates,
         0,
@@ -352,8 +352,8 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with no offset but with positions", () => {
-      const candidates = packIntegers(10, [1, 3, 5, 8]);
-      const filterData = packIntegers(10, [3, 5, 9]);
+      const candidates = packSortedNats([1, 3, 5, 8]);
+      const filterData = packSortedNats([3, 5, 9]);
       const [result, position] = applyAndToIndices(
         candidates,
         2,
@@ -365,8 +365,8 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with a positive offset", () => {
-      const candidates = packIntegers(10, [3, 6, 9]);
-      const filterData = packIntegers(10, [2, 4, 8]);
+      const candidates = packSortedNats([3, 6, 9]);
+      const filterData = packSortedNats([2, 4, 8]);
       const [result, position] = applyAndToIndices(
         candidates,
         2,
@@ -378,8 +378,8 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with a negative offset", () => {
-      const candidates = packIntegers(10, [3, 4, 8, 9]);
-      const filterData = packIntegers(10, [1, 3, 6, 9]);
+      const candidates = packSortedNats([3, 4, 8, 9]);
+      const filterData = packSortedNats([1, 3, 6, 9]);
       const [result, position] = applyAndToIndices(
         candidates,
         1,
@@ -398,7 +398,7 @@ describe("filterCandidates", () => {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
       };
-      const filterData = packIntegers(5, [1, 2, 4]);
+      const filterData = packSortedNats([1, 2, 4]);
       const [result, position] = applyAndToIndices(
         candidates,
         0,
@@ -414,7 +414,7 @@ describe("filterCandidates", () => {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
       };
-      const filterData = packIntegers(5, [1, 2, 4]);
+      const filterData = packSortedNats([1, 2, 4]);
       const [result, position] = applyAndToIndices(
         candidates,
         1,
@@ -430,7 +430,7 @@ describe("filterCandidates", () => {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
       };
-      const filterData = packIntegers(5, [0, 2, 3]);
+      const filterData = packSortedNats([0, 2, 3]);
       const [result, position] = applyAndToIndices(
         candidates,
         1,
@@ -445,7 +445,7 @@ describe("filterCandidates", () => {
   // Case 3: Array and Bitmask
   describe("when candidates is an array and filter is a bitmask", () => {
     it("should return correct intersection with no offset", () => {
-      const candidates = packIntegers(5, [1, 2, 4]);
+      const candidates = packSortedNats([1, 2, 4]);
       const filterData: PackedBitMask = {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
@@ -461,7 +461,7 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with a negative offset", () => {
-      const candidates = packIntegers(5, [0, 2, 3]);
+      const candidates = packSortedNats([0, 2, 3]);
       const filterData: PackedBitMask = {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
@@ -548,7 +548,7 @@ describe("filterCandidates", () => {
 
     it("should unpack an array of of packed integers", () => {
       const originalData = [10, 25, 150, 300];
-      const packedData = packIntegers(301, originalData);
+      const packedData = packSortedNats(originalData);
       const result = unpackPackedIndexData(packedData);
       expect(result).toEqual(originalData);
     });
@@ -593,7 +593,7 @@ describe("hasValueInRange", () => {
   });
 
   it("returns true if any value in range is set (packed array)", () => {
-    const packedArray = packIntegers(10, [2, 5, 8]);
+    const packedArray = packSortedNats([2, 5, 8]);
     expect(hasValueInRange(packedArray, [5, 5])).toBe(true);
     expect(hasValueInRange(packedArray, [2, 2])).toBe(true);
     expect(hasValueInRange(packedArray, [7, 9])).toBe(true);

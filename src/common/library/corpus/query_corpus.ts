@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { packIntegers } from "@/common/bytedata/packing";
+import { packSortedNats } from "@/common/bytedata/packing";
 import {
   applyAndToIndices,
   hasValueInRange,
@@ -47,7 +47,7 @@ function toPackedIndexData(data: PackedBitMask | number[]): PackedIndexData {
   if (!Array.isArray(data)) {
     return data;
   }
-  return packIntegers(data[data.length - 1] + 1, data);
+  return packSortedNats(data);
 }
 
 function checkQueryComplexity(query: CorpusQuery): void {

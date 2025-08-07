@@ -1,5 +1,5 @@
 import { assertEqual } from "@/common/assert";
-import { packIntegers } from "@/common/bytedata/packing";
+import { packSortedNats } from "@/common/bytedata/packing";
 import { toBitMask } from "@/common/library/corpus/corpus_byte_utils";
 import {
   LatinCorpusIndex,
@@ -106,9 +106,7 @@ function prepareIndexMap(
     const useBitMask = value.length * packedNumberSize > numTokens;
     const indexBits = useBitMask
       ? Buffer.from(toBitMask(value, numTokens).buffer).toString("base64")
-      : Buffer.from(packIntegers(value[value.length - 1] + 1, value)).toString(
-          "base64"
-        );
+      : Buffer.from(packSortedNats(value)).toString("base64");
     const storedValue = useBitMask
       ? { serializationKey: BIT_MASK, data: indexBits, size: value.length }
       : indexBits;
