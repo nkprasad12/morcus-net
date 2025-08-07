@@ -97,33 +97,29 @@ export async function readMetadata(
 }
 
 /**
- * Packs an array of positive integers into a compact bit array (Uint8Array).
+ * Packs an array of sorted natural numbers into a compact bit array (Uint8Array).
  *
  * This function is useful for serializing lists of numbers where each number
  * is smaller than a known maximum, allowing for storage that is more efficient
  * than using standard integer types.
  *
- * @param upperBound The strict upper bound for any integer in the array.
- *   Must be <= 2^31.
- * @param numbers The array of positive integers to pack. Each number must be < upperBound.
+ * @param numbers The array of sorted natural numbers to pack.
  * @returns A `Uint8Array` containing the packed bit representation of the numbers.
  */
-export function packIntegers(
-  upperBound: number,
-  numbers: number[]
-): Uint8Array {
+export function packSortedNats(numbers: number[]): Uint8Array {
+  if (numbers.length === 0) {
+    // Header: unused bits = 0, bitsPerNumber = 0
+    const header = ((0 << 5) | 0) & 0xff;
+    return Uint8Array.of(header);
+  }
+
+  const upperBound = numbers[numbers.length - 1] + 1;
   assert(upperBound > 0, "upperBound must be positive.");
   const bitsPerNumber = PackedNumbers.bitsPerNumber(upperBound);
   assert(
     bitsPerNumber <= 31,
     "upperBound too large for packed encoding (max bitsPerNumber = 31)."
   );
-
-  if (numbers.length === 0) {
-    // Header: unused bits = 0, bitsPerNumber = bitsPerNumber
-    const header = ((0 << 5) | bitsPerNumber) & 0xff;
-    return Uint8Array.of(header);
-  }
 
   // Calculate the total number of bits and the required buffer size in bytes.
   const totalBits = numbers.length * bitsPerNumber;
@@ -137,7 +133,11 @@ export function packIntegers(
   buffer[0] = header;
 
   let bitOffset = 0;
-  for (const num of numbers) {
+  for (let i = 0; i < numbers.length; i++) {
+    const num = numbers[i];
+    if (i > 0 && num < numbers[i - 1]) {
+      throw new Error("Numbers must be sorted.");
+    }
     if (num < 0 || num >= upperBound) {
       throw new Error(
         `Number ${num} is out of the allowed range [0, ${upperBound}).`
