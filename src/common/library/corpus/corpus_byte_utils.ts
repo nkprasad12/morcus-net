@@ -77,6 +77,90 @@ export function applyAndWithBitmasks(
   return result;
 }
 
+function bitmaskOr_InPlace_right(
+  data: Uint32Array,
+  offset: number
+): Uint32Array {
+  assert(offset > 0 && offset < 16, "Offset must be in (0, 16).");
+  const len = data.length;
+  const leftShift = 32 - offset;
+
+  // Handle the first word separately (there's no `last` word here) to avoid
+  // range checks and branching in the hot loop.
+  let last = data[0];
+  data[0] = data[0] | (data[0] >>> offset);
+  for (let i = 1; i < len; i++) {
+    // Construct the mask, save the current word for the next iteration, and apply the mask.
+    // See `applyAndWithBitmasks` for an explanation of the mask construction, with an example.
+    const mask = (data[i] >>> offset) | (last << leftShift);
+    last = data[i];
+    data[i] = data[i] | mask;
+  }
+  return data;
+}
+
+function bitmaskOr_InPlace_left(
+  data: Uint32Array,
+  offset: number
+): Uint32Array {
+  assert(offset > 0 && offset < 16, "Offset must be in (0, 16).");
+  const len = data.length;
+  const rightShift = 32 - offset;
+
+  // Handle the first word separately (there's no `last` word here) to avoid
+  // range checks and branching in the hot loop.
+  let last = data[len - 1];
+  data[len - 1] = data[len - 1] | (data[len - 1] << offset);
+  for (let i = len - 2; i >= 0; i--) {
+    // Construct the mask, save the current word for the next iteration, and apply the mask.
+    // See `applyAndWithBitmasks` for an explanation of the mask construction, with an example.
+    const mask = (data[i] << offset) | (last >>> rightShift);
+    last = data[i];
+    data[i] = data[i] | mask;
+  }
+  return data;
+}
+
+function bitmaskOr_InPlace(data: Uint32Array, offset: number): Uint32Array {
+  return offset > 0
+    ? bitmaskOr_InPlace_right(data, offset)
+    : bitmaskOr_InPlace_left(data, -offset);
+}
+
+/**
+ * Performs a bit smear on the given bitmask with the specified window size and direction.
+ *
+ * This operates on a bit level. If the original bitmask has a bit set at position `i`,
+ * the smeared bitmask will have bits set in the range:
+ * - If direction is "left": [i - window, i].
+ * - If direction is "right": [i, i + window].
+ * - If direction is "both": [i - window, i + window].
+ *
+ * @param original The original bitmask to smear.
+ * @param window The size of the window to use for smearing. The maximum value is 15.
+ * @param direction The direction to smear the bits (left, right, or both).
+ *
+ * @returns the smeared bitmask.
+ */
+export function smearBitmask(
+  original: Uint32Array,
+  window: number,
+  direction: "left" | "right" | "both"
+): Uint32Array {
+  assert(window > 0 && window < 16, "Window must be in (0, 16).");
+  const sign = direction === "left" ? -1 : 1;
+  const result = bitmaskOr_InPlace(original.slice(), sign);
+  let r = 1;
+  while (r < window) {
+    const offset = Math.min(r, window - r);
+    bitmaskOr_InPlace(result, offset * sign);
+    r += offset;
+  }
+  // If the direction is "both", we did the smear to the right and now
+  // we just need to apply a single left smear to complete the operation.
+  return direction === "both" ? bitmaskOr_InPlace(result, -window) : result;
+}
+
 /**
  * Computes the bitwise AND of two indices with an offset for the second index.
  *

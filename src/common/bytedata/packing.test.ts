@@ -147,7 +147,9 @@ describe("pack and unpacking integer arrays", () => {
       ];
 
       for (const numbers of testCases) {
-        if (numbers.some((val, index) => index > 0 && val < numbers[index - 1])) {
+        if (
+          numbers.some((val, index) => index > 0 && val < numbers[index - 1])
+        ) {
           expect(() => packSortedNats(numbers)).toThrow();
           continue;
         }

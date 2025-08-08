@@ -3,8 +3,6 @@ import type { PackedIndexData } from "@/common/library/corpus/corpus_common";
 import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 
 describe("PackedReverseIndex", () => {
-  const upperBound = 1000;
-
   describe("with packed array data", () => {
     let index: PackedReverseIndex<string>;
     const values = [10, 20, 30, 100, 200];

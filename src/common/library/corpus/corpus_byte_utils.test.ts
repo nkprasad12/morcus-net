@@ -8,6 +8,7 @@ import {
   unpackPackedIndexData,
   hasValueInRange,
   toBitMask,
+  smearBitmask,
 } from "@/common/library/corpus/corpus_byte_utils";
 
 function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
@@ -610,5 +611,92 @@ describe("hasValueInRange", () => {
 
   it("returns false for empty packed array", () => {
     expect(hasValueInRange([] as any, [0, 9])).toBe(false);
+  });
+});
+
+describe("smearBitmask", () => {
+  it("should smear to the right within a single word", () => {
+    const original = toBitMask([5], 64); // 0...1000... at bit 5
+    const smeared = smearBitmask(original, 3, "right");
+    // Expect bits 5, 6, 7, 8 to be set
+    const expected = toBitMask([5, 6, 7, 8], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear to the left within a single word", () => {
+    const original = toBitMask([5], 64); // 0...1000... at bit 5
+    const smeared = smearBitmask(original, 3, "left");
+    // Expect bits 2, 3, 4, 5 to be set
+    const expected = toBitMask([2, 3, 4, 5], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear in both directions within a single word", () => {
+    const original = toBitMask([5], 64);
+    const smeared = smearBitmask(original, 2, "both");
+    // Expect bits 3, 4, 5, 6, 7 to be set
+    const expected = toBitMask([3, 4, 5, 6, 7], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear to the right across word boundaries", () => {
+    const original = toBitMask([30], 64);
+    const smeared = smearBitmask(original, 3, "right");
+    // Expect bits 30, 31, 32, 33 to be set
+    const expected = toBitMask([30, 31, 32, 33], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear to the left across word boundaries", () => {
+    const original = toBitMask([33], 64);
+    const smeared = smearBitmask(original, 3, "left");
+    // Expect bits 30, 31, 32, 33 to be set
+    const expected = toBitMask([30, 31, 32, 33], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear in both directions across word boundaries", () => {
+    const original = toBitMask([31], 64);
+    const smeared = smearBitmask(original, 2, "both");
+    // Expect bits 29, 30, 31, 32, 33 to be set
+    const expected = toBitMask([29, 30, 31, 32, 33], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle multiple bits set, smearing right", () => {
+    const original = toBitMask([5, 15], 64);
+    const smeared = smearBitmask(original, 2, "right");
+    const expected = toBitMask([5, 6, 7, 15, 16, 17], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle multiple bits set, smearing left", () => {
+    const original = toBitMask([5, 15], 64);
+    const smeared = smearBitmask(original, 2, "left");
+    const expected = toBitMask([3, 4, 5, 13, 14, 15], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle multiple bits set, smearing both", () => {
+    const original = toBitMask([5, 15], 64);
+    const smeared = smearBitmask(original, 1, "both");
+    const expected = toBitMask([4, 5, 6, 14, 15, 16], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle overlapping smears", () => {
+    const original = toBitMask([5, 8], 64);
+    const smeared = smearBitmask(original, 2, "right");
+    // Smear from 5: [5, 6, 7]. Smear from 8: [8, 9, 10].
+    const expected = toBitMask([5, 6, 7, 8, 9, 10], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle overlapping smears with 'both'", () => {
+    const original = toBitMask([5, 8], 64);
+    const smeared = smearBitmask(original, 2, "both");
+    // Smear from 5: [3,4,5,6,7]. Smear from 8: [6,7,8,9,10].
+    const expected = toBitMask([3, 4, 5, 6, 7, 8, 9, 10], 64);
+    expect(smeared).toEqual(expected);
   });
 });
