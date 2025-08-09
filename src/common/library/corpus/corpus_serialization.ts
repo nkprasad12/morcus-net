@@ -8,7 +8,6 @@ import {
   type InProgressLatinCorpus,
   type PackedIndexData,
 } from "@/common/library/corpus/corpus_common";
-import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 import fs from "fs";
 import path from "path";
 
@@ -72,7 +71,7 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
           numSet: v.size,
         });
       }
-      return new PackedReverseIndex(map);
+      return map;
     }
     return value;
   };

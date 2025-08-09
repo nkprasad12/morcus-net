@@ -140,20 +140,6 @@ export interface FilterOptions {
   keepMisses?: boolean;
 }
 
-export interface GenericReverseIndex<T> {
-  /**
-   * Information about the format of the index stored for the key.
-   * This is used mostly for unit test verification.
-   */
-  formatOf(key: T): "bitmask" | undefined;
-
-  /** Returns index data for the given key. */
-  get(key: T): PackedIndexData | undefined;
-
-  /** Returns an iterable of all keys in the index. */
-  keys(): Iterable<T>;
-}
-
 export interface LatinInflectionTypes {
   case: LatinCase;
   number: LatinNumber;
@@ -193,8 +179,9 @@ interface CoreCorpusIndex {
 
 export interface LatinCorpusIndex extends CoreCorpusIndex {
   indices: {
-    [K in keyof CorpusIndexKeyTypes]: GenericReverseIndex<
-      CorpusIndexKeyTypes[K]
+    [K in keyof CorpusIndexKeyTypes]: Map<
+      CorpusIndexKeyTypes[K],
+      PackedIndexData
     >;
   };
 }
