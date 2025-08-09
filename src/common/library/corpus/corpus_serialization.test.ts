@@ -8,7 +8,6 @@ import {
   CORPUS_FILE,
   type InProgressLatinCorpus,
 } from "@/common/library/corpus/corpus_common";
-import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 import { unpackPackedIndexData } from "@/common/library/corpus/corpus_byte_utils";
 
 console.debug = jest.fn();
@@ -80,23 +79,24 @@ describe("writeCorpus and loadCorpus", () => {
     expect(loaded.workRowRanges).toEqual(corpus.workRowRanges);
     expect(loaded.stats).toEqual(corpus.stats);
 
-    // Check that Maps are restored to PackedReverseIndex
-    expect(loaded.indices.word).toBeInstanceOf(PackedReverseIndex);
-    expect(loaded.indices.lemma).toBeInstanceOf(PackedReverseIndex);
+    expect(loaded.indices.word).toBeInstanceOf(Map);
+    expect(loaded.indices.lemma).toBeInstanceOf(Map);
 
     expect(unpackPackedIndexData(loaded.indices.word.get("amo"))).toEqual([
       0, 1,
     ]);
-    expect(loaded.indices.word.formatOf("amo")).toBeUndefined();
+    expect(loaded.indices.word.get("amo")).toBeInstanceOf(Uint8Array);
 
     expect(unpackPackedIndexData(loaded.indices.lemma.get("amare"))).toEqual([
       0, 1, 2,
     ]);
-    expect(loaded.indices.lemma.formatOf("amare")).toBeUndefined();
+    expect(loaded.indices.lemma.get("amare")).toBeInstanceOf(Uint8Array);
 
     expect(
       unpackPackedIndexData(loaded.indices.word.get("commonWord"))
     ).toEqual(LONG_ARRAY);
-    expect(loaded.indices.word.formatOf("commonWord")).toEqual("bitmask");
+    expect(loaded.indices.word.get("commonWord")).toEqual(
+      expect.objectContaining({ format: "bitmask" })
+    );
   });
 });
