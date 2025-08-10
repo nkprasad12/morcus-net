@@ -313,10 +313,16 @@ export function unpackPackedIndexData(
   // If it's a bitmask, we need to convert it to an array of token IDs.
   const bitmask = packedData.data;
   const result: number[] = [];
-  for (let i = 0; i < bitmask.length * 32; i++) {
-    const leftShift = 31 - (i & 31); // 31 - (i % 32)
-    if ((bitmask[i >> 5] & (1 << leftShift)) !== 0) {
-      result.push(i);
+  for (let i = 0; i < bitmask.length; i++) {
+    const word = bitmask[i];
+    if (word === 0) {
+      continue; // Skip empty words as an optimization.
+    }
+    const wordOffset = i * 32;
+    for (let j = 0; j < 32; j++) {
+      if ((word & (1 << (31 - j))) !== 0) {
+        result.push(wordOffset + j);
+      }
     }
   }
   return result;
