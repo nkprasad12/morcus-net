@@ -197,6 +197,8 @@ export function applyAndWithArrays(
  * @param first The first array of numbers.
  * @param second The second array of numbers.
  * @param offset The offset to apply to the second array.
+ * @param maxDistance The maximum distance to consider a match.
+ * @param direction The direction to apply the fuzzy distance.
  *
  * @returns A new array with the elements of the first array that match the second array.
  */
@@ -204,9 +206,12 @@ export function findFuzzyMatchesWithArrays(
   first: number[],
   second: number[],
   offset: number,
-  maxDistance: number
+  maxDistance: number,
+  direction: "left" | "right" | "both"
 ): number[] {
   const results: number[] = [];
+  const leftFuzz = direction === "right" ? 0 : maxDistance;
+  const rightFuzz = direction === "left" ? 0 : maxDistance;
   let i = 0;
   let j = 0;
 
@@ -223,12 +228,11 @@ export function findFuzzyMatchesWithArrays(
     //   to find a larger secondVal.
     // - firstVal is within the window, so we add it to the results and
     //   increment just i and see if we are still in the same window.
-
-    if (firstVal < secondVal - maxDistance) {
+    if (firstVal < secondVal - leftFuzz) {
       i++;
       continue;
     }
-    if (firstVal > secondVal + maxDistance) {
+    if (firstVal > secondVal + rightFuzz) {
       j++;
       continue;
     }
