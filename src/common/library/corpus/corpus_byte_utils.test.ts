@@ -10,6 +10,8 @@ import {
   toBitMask,
   smearBitmask,
   findFuzzyMatchesWithArrays,
+  maxElementsIn,
+  findFuzzyMatchesWithBitmasks,
 } from "@/common/library/corpus/corpus_byte_utils";
 
 function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
@@ -803,5 +805,140 @@ describe("findFuzzyMatchesWithArrays", () => {
     // second val 1: range [-1, 3]. Matches 3.
     // second val 12: range [10, 14]. No matches.
     expect(findFuzzyMatchesWithArrays([3, 8, 9], [0, 11], 1, 2)).toEqual([3]);
+  });
+});
+
+describe("maxElementsIn", () => {
+  it("should return 0 for undefined packedData", () => {
+    expect(maxElementsIn(undefined)).toBe(0);
+  });
+
+  it("should return the number of elements for a packed array", () => {
+    const data = [1, 5, 10, 20, 100];
+    const packedData = packSortedNats(data);
+    expect(maxElementsIn(packedData)).toBe(data.length);
+  });
+
+  it("should return 0 for an empty packed array", () => {
+    const packedData = packSortedNats([]);
+    expect(maxElementsIn(packedData)).toBe(0);
+  });
+
+  it("should return numSet when it is defined in a PackedBitMask", () => {
+    const packedData: PackedBitMask = {
+      format: "bitmask",
+      data: new Uint32Array([1, 2, 3]),
+      numSet: 42,
+    };
+    expect(maxElementsIn(packedData)).toBe(42);
+  });
+
+  it("should return the total possible bits when numSet is not defined", () => {
+    const packedData: PackedBitMask = {
+      format: "bitmask",
+      data: new Uint32Array(3), // 3 words * 32 bits/word = 96
+    };
+    expect(maxElementsIn(packedData)).toBe(96);
+  });
+
+  it("should return 0 for a bitmask with an empty data array and no numSet", () => {
+    const packedData: PackedBitMask = {
+      format: "bitmask",
+      data: new Uint32Array([]),
+    };
+    expect(maxElementsIn(packedData)).toBe(0);
+  });
+});
+
+describe("findFuzzyMatchesWithBitmasks", () => {
+  const runTest = (
+    firstIndices: number[],
+    secondIndices: number[],
+    offset: number,
+    maxDistance: number,
+    direction: "left" | "right" | "both",
+    expectedIndices: number[],
+    size = 64
+  ) => {
+    const first = toBitMask(firstIndices, size);
+    const second = toBitMask(secondIndices, size);
+    const resultBitmask = findFuzzyMatchesWithBitmasks(
+      first,
+      second,
+      offset,
+      maxDistance,
+      direction
+    );
+    const resultIndices = unpackPackedIndexData({
+      format: "bitmask",
+      data: resultBitmask,
+    });
+    expect(resultIndices).toEqual(expectedIndices);
+  };
+
+  it("should find matches with direction 'right'", () => {
+    // second[3] smeared right by 2 becomes [3,4,5].
+    // first[5] intersects with smeared second.
+    runTest([5], [3], 0, 2, "right", [5]);
+  });
+
+  it("should find matches with direction 'right' and an offset", () => {
+    // second[3] + offset(1) = 4. Smeared right by 2 becomes [4,5,6].
+    // first[5] intersects.
+    runTest([5], [3], 1, 2, "right", [5]);
+  });
+
+  it("should find matches with direction 'left'", () => {
+    // second[5] smeared left by 2 becomes [3,4,5].
+    // first[3] intersects.
+    runTest([3], [5], 0, 2, "left", [3]);
+  });
+
+  it("should find matches with direction 'left' and an offset", () => {
+    // second[5] + offset(1) = 6. Smeared left by 2 becomes [4,5,6].
+    // first[5] intersects.
+    runTest([5], [5], 1, 2, "left", [5]);
+  });
+
+  it("should find matches with direction 'both'", () => {
+    // second[5] smeared both by 2 becomes [3,4,5,6,7].
+    // first[3] and first[7] intersect.
+    runTest([3, 7], [5], 0, 2, "both", [3, 7]);
+  });
+
+  it("should find matches with direction 'both' and an offset", () => {
+    // second[5] + offset(1) = 6. Smeared both by 2 becomes [4,5,6,7,8].
+    // first[4] and first[8] intersect.
+    runTest([4, 8], [5], 1, 2, "both", [4, 8]);
+  });
+
+  it("should return an empty bitmask if no matches are found", () => {
+    runTest([10], [1], 0, 2, "both", []);
+  });
+
+  it("should handle multiple bits and overlapping smears", () => {
+    // second[5] smeared both by 2 -> [3,4,5,6,7]
+    // second[10] smeared both by 2 -> [8,9,10,11,12]
+    // first has bits at [3, 8, 13].
+    // Match at 3 and 8.
+    runTest([3, 8, 13], [5, 10], 0, 2, "both", [3, 8]);
+  });
+
+  it("should handle matches across word boundaries", () => {
+    // second[30] + offset(0) = 30. Smeared both by 3 -> [27..33]
+    // first has bits at [28, 32]. Both should match.
+    runTest([28, 32], [30], 0, 3, "both", [28, 32]);
+  });
+
+  it("should handle matches across word boundaries with an offset", () => {
+    // second[30] + offset(5) = 35. Smeared both by 3 -> [32..38]
+    // first has bits at [33, 37]. Both should match.
+    runTest([33, 37], [30], 5, 3, "both", [33, 37]);
+  });
+
+  it("should handle empty input bitmasks", () => {
+    runTest([], [1, 2, 3], 0, 2, "both", []);
+    runTest([1, 2, 3], [], 0, 2, "both", []);
+    runTest([], [], 0, 2, "both", []);
   });
 });
