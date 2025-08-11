@@ -9,6 +9,7 @@ import {
   hasValueInRange,
   toBitMask,
   smearBitmask,
+  findFuzzyMatchesWithArrays,
 } from "@/common/library/corpus/corpus_byte_utils";
 
 function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
@@ -698,5 +699,109 @@ describe("smearBitmask", () => {
     // Smear from 5: [3,4,5,6,7]. Smear from 8: [6,7,8,9,10].
     const expected = toBitMask([3, 4, 5, 6, 7, 8, 9, 10], 64);
     expect(smeared).toEqual(expected);
+  });
+});
+
+describe("findFuzzyMatchesWithArrays", () => {
+  it("should handle multiple consecutive `first` elements matching one `second` element", () => {
+    const first = [10, 11];
+    const second = [9];
+    const offset = 0;
+    const maxDistance = 2;
+    // The match window for `second` element 9 is [7, 11].
+    // Both 10 and 11 from `first` fall within this window.
+    // An implementation without the inner loop would fail this test and return only [10].
+    expect(
+      findFuzzyMatchesWithArrays(first, second, offset, maxDistance)
+    ).toEqual([10, 11]);
+  });
+
+  it("should return an empty array if the first array is empty", () => {
+    expect(findFuzzyMatchesWithArrays([], [1, 2, 3], 0, 1)).toEqual([]);
+  });
+
+  it("should return an empty array if the second array is empty", () => {
+    expect(findFuzzyMatchesWithArrays([1, 2, 3], [], 0, 1)).toEqual([]);
+  });
+
+  it("should return an empty array if no matches are found", () => {
+    expect(findFuzzyMatchesWithArrays([1, 2, 3], [10, 11, 12], 0, 1)).toEqual(
+      []
+    );
+  });
+
+  it("should find exact matches with zero offset and zero distance", () => {
+    expect(findFuzzyMatchesWithArrays([1, 5, 10], [1, 6, 10], 0, 0)).toEqual([
+      1, 10,
+    ]);
+  });
+
+  it("should find exact matches with a non-zero offset and zero distance", () => {
+    expect(findFuzzyMatchesWithArrays([3, 7, 12], [1, 6, 10], 2, 0)).toEqual([
+      3, 12,
+    ]);
+  });
+
+  it("should find fuzzy matches with a zero offset", () => {
+    // second becomes [1, 12].
+    // 3 is in range of 1 (1-2 to 1+2 => [-1, 3]).
+    // 8,9 are not in range of 12 (12-2 to 12+2 => [10, 14]).
+    expect(findFuzzyMatchesWithArrays([3, 8, 9], [0, 11], 1, 2)).toEqual([3]);
+  });
+
+  it("should find fuzzy matches with a non-zero offset", () => {
+    // second becomes [4, 9, 19].
+    // 5 is in range of 4. 10 is in range of 9. 15 is not in range of 19.
+    expect(findFuzzyMatchesWithArrays([5, 10, 15], [3, 8, 18], 1, 1)).toEqual([
+      5, 10,
+    ]);
+  });
+
+  it("should handle multiple matches for a single element in the first array", () => {
+    // first: [10], second: [8, 9, 10] -> offset 0, dist 1.
+    // second vals are 8,9,10. 10 matches all of them.
+    expect(findFuzzyMatchesWithArrays([10], [8, 9, 10], 0, 1)).toEqual([10]);
+  });
+
+  it("should handle multiple matches for a single element in the second array", () => {
+    // first: [8, 9, 10], second: [9] -> offset 0, dist 1.
+    // second val is 9. Its range [8, 10] matches all elements in first.
+    expect(findFuzzyMatchesWithArrays([8, 9, 10], [9], 0, 1)).toEqual([
+      8, 9, 10,
+    ]);
+  });
+
+  it("should handle overlapping fuzzy matches", () => {
+    // first: [5, 6], second: [7], offset: 0, dist: 2.
+    // second val is 7. Its range [5, 9] matches both 5 and 6.
+    expect(findFuzzyMatchesWithArrays([5, 6], [7], 0, 2)).toEqual([5, 6]);
+  });
+
+  it("should handle complex cases with multiple overlapping matches", () => {
+    // first: [10, 11, 15, 20], second: [12, 18], offset: 0, dist: 2.
+    // second val 12: range [10, 14]. Matches 10, 11.
+    // second val 18: range [16, 20]. Matches 20. (15 is not in range).
+    expect(
+      findFuzzyMatchesWithArrays([10, 11, 15, 20], [12, 18], 0, 2)
+    ).toEqual([10, 11, 20]);
+  });
+
+  it("should handle another complex case correctly", () => {
+    const first = [10, 20, 30, 40, 50];
+    const second = [12, 33, 48];
+    // second val 12: range [9, 15]. Matches 10.
+    // second val 33: range [30, 36]. Matches 30.
+    // second val 48: range [45, 51]. Matches 50.
+    expect(findFuzzyMatchesWithArrays(first, second, 0, 3)).toEqual([
+      10, 30, 50,
+    ]);
+  });
+
+  it("should handle the case from the original code comments", () => {
+    // first: [3, 8, 9], second: [0, 11], offset: 1, maxDistance: 2.
+    // second becomes [1, 12].
+    // second val 1: range [-1, 3]. Matches 3.
+    // second val 12: range [10, 14]. No matches.
+    expect(findFuzzyMatchesWithArrays([3, 8, 9], [0, 11], 1, 2)).toEqual([3]);
   });
 });
