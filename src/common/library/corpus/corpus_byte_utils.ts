@@ -231,6 +231,62 @@ export function applyAndWithArrays(
 }
 
 /**
+ * Returns the numbers that are present in both input arrays, applying an offset to the second array.
+ * and which has a maximum fuzz distance applied.
+ *
+ * For example, if the first array is [3, 8, 9], the second array is [0, 11], and the offset is 1
+ * and the maxDistance is 2, the result will be [3] because the [0] in the second array is offset by
+ * 1 to 1, which is within the maxDistance of 2 from 3. On the other hand, 11 + 1 = 12, which is
+ * not within the maxDistance of 2 from 9.
+ *
+ * This implementation assumes that both input arrays are sorted in ascending order.
+ *
+ * @param first The first array of numbers.
+ * @param second The second array of numbers.
+ * @param offset The offset to apply to the second array.
+ *
+ * @returns A new array with the "common" elements.
+ */
+export function findFuzzyMatchesWithArrays(
+  first: number[],
+  second: number[],
+  offset: number,
+  maxDistance: number
+): number[] {
+  const results: number[] = [];
+  let i = 0;
+  let j = 0;
+
+  while (i < first.length && j < second.length) {
+    const firstVal = first[i];
+    const secondVal = second[j] + offset;
+
+    // Consider the window of maxDistance around secondVal:
+    // [secondVal - maxDistance, secondVal + maxDistance]
+    // There are three cases:
+    // - firstVal is to the left of the window, so we increment i and try
+    //   to find a larger firstVal.
+    // - firstVal is to the right of the window, so we increment j and try
+    //   to find a larger secondVal.
+    // - firstVal is within the window, so we add it to the results and
+    //   increment just i and see if we are still in the same window.
+
+    if (firstVal < secondVal - maxDistance) {
+      i++;
+      continue;
+    }
+    if (firstVal > secondVal + maxDistance) {
+      j++;
+      continue;
+    }
+    results.push(firstVal);
+    i++;
+  }
+
+  return results;
+}
+
+/**
  * Applies an `and` to determine the intersection between two indices.
  * The indices can be either packed arrays or bitmasks.
  *
