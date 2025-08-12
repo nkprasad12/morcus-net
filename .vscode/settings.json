@@ -52,5 +52,8 @@
     "titleBar.inactiveForeground": "#e7e7e799"
   },
   "peacock.color": "#402B31",
-  "git.openDiffOnClick": false
+  "git.openDiffOnClick": false,
+  "rust-analyzer.linkedProjects": [
+    "src/rust/Cargo.toml"
+  ],
 }
