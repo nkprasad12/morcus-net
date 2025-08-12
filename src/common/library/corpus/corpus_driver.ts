@@ -15,9 +15,9 @@ import { LatinCase } from "@/morceus/types";
 
 const QUERY: CorpusQuery = {
   parts: [
-    { word: "quam" },
-    { lemma: "ob" },
-    { category: "case", value: LatinCase.Accusative },
+    { token: { word: "quam" } },
+    { token: { lemma: "ob" } },
+    { token: { category: "case", value: LatinCase.Accusative } },
   ],
 };
 
@@ -32,7 +32,7 @@ function printAtom(atom: CorpusQueryAtom): string {
   exhaustiveGuard(atom);
 }
 
-function printQueryPart(part: CorpusQueryPart): string {
+function printQueryPart(part: CorpusQueryPart["token"]): string {
   if (!("atoms" in part)) {
     return `[${printAtom(part)}]`;
   }
@@ -41,7 +41,17 @@ function printQueryPart(part: CorpusQueryPart): string {
 }
 
 function printQuery(query: CorpusQuery): string {
-  return query.parts.map(printQueryPart).join(" ");
+  const resultParts: string[] = [];
+  for (let i = 0; i < query.parts.length; i++) {
+    resultParts.push(printQueryPart(query.parts[i].token));
+    const gap = query.parts[i].gap;
+    if (gap === undefined) {
+      resultParts.push(" ");
+      continue;
+    }
+    resultParts.push(` ${gap.maxDistance}~${gap.directed ? ">" : ""} `);
+  }
+  return resultParts.join("");
 }
 
 function formatQueryResult(result: CorpusQueryMatch): string {

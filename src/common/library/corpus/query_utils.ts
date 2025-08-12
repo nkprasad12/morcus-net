@@ -28,12 +28,14 @@ export function parseQuery(queryStr: string): CorpusQuery {
     for (const composition of compositions) {
       const splitter = ` ${composition} `;
       if (!partContent.includes(splitter)) {
-        parts.push(parseQueryAtom(partContent));
+        parts.push({ token: parseQueryAtom(partContent) });
         continue;
       }
       parts.push({
-        atoms: partContent.split(splitter).map(parseQueryAtom),
-        composition,
+        token: {
+          atoms: partContent.split(splitter).map(parseQueryAtom),
+          composition,
+        },
       });
     }
   }
