@@ -1,6 +1,9 @@
+mod bitmask_in_place_utils;
+mod packed_index_utils;
+
 use std::time::{Instant};
-mod packed_index_data;
-use packed_index_data::to_bitmask;
+use packed_index_utils::smear_bitmask;
+use packed_index_utils::to_bitmask;
 
 const POW_2_24: u32 = 1 << 24;
 
@@ -119,18 +122,14 @@ fn run_profiling() {
     for i in 0..reps {
         let k = (i % 2) * 2;
         let a = &data[k];
-        let b = &data[k + 1];
+        // let b = &data[k + 1];
 
         let start = Instant::now();
         // Add the operation to be measured below
-        // Example: intersection count
-        let mut count = 0;
-        for (wa, wb) in a.bitmask.iter().zip(&b.bitmask) {
-            count += (wa & wb).count_ones();
-        }
-        last_len = count as usize;
+        smear_bitmask(&a.bitmask, 15, "both");
         // Add the operation to be measured above
         let elapsed = start.elapsed();
+        last_len = a.bitmask.len();
         times.push(elapsed.as_secs_f64() * 1000.0);
     }
 
