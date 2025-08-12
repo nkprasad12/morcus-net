@@ -1,4 +1,6 @@
 use std::time::{Instant};
+mod packed_index_data;
+use packed_index_data::to_bitmask;
 
 const POW_2_24: u32 = 1 << 24;
 
@@ -46,16 +48,6 @@ struct DataArray {
     upper_bound: u32,
     #[allow(dead_code)]
     num_elements: u32,
-}
-
-fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
-    let mut bitmask = vec![0u64; ((upper_bound + 63) / 64).try_into().unwrap()];
-    for &idx in indices {
-        let word = idx / 64;
-        let bit = idx % 64;
-        bitmask[word as usize] |= 1 << bit;
-    }
-    bitmask
 }
 
 fn create_data_array(count: u32, upper_bound: u32, seed: Option<u32>) -> DataArray {
