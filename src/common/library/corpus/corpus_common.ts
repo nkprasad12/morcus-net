@@ -43,7 +43,15 @@ export interface ComposedQuery {
   atoms: CorpusQueryAtom[];
 }
 
-export type CorpusQueryPart = CorpusQueryAtom | ComposedQuery;
+export interface GapSpec {
+  maxDistance: number;
+  directed: boolean;
+}
+
+export interface CorpusQueryPart {
+  token: CorpusQueryAtom | ComposedQuery;
+  gap?: GapSpec;
+}
 
 export interface CorpusQuery {
   parts: CorpusQueryPart[];

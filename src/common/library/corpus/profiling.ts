@@ -1,9 +1,12 @@
 /* istanbul ignore file */
 
+import { packSortedNats } from "@/common/bytedata/packing";
 import {
-  applyAndWithBitmasks,
+  findFuzzyMatches,
+  findFuzzyMatchesWithBitmaskAndArray,
   toBitMask,
 } from "@/common/library/corpus/corpus_byte_utils";
+import type { PackedBitMask } from "@/common/library/corpus/corpus_common";
 
 const POW_2_24 = Math.pow(2, 24);
 
@@ -52,6 +55,8 @@ interface DataArray {
   indices: number[];
   upperBound: number;
   numElements: number;
+  pdBitmask: PackedBitMask;
+  pdArray: Uint8Array;
 }
 
 function createDataArray(
@@ -62,7 +67,15 @@ function createDataArray(
   const indices = uniqueRandomSortedInts(count, upperBound, seed);
   const bitmask = toBitMask(indices, upperBound);
   const bitmask8 = new Uint8Array(bitmask.buffer);
-  return { bitmask, bitmask8, indices, upperBound, numElements: count };
+  return {
+    bitmask,
+    bitmask8,
+    indices,
+    upperBound,
+    numElements: count,
+    pdBitmask: { format: "bitmask", data: bitmask },
+    pdArray: packSortedNats(indices),
+  };
 }
 
 /**
@@ -135,7 +148,7 @@ function printDataSummary(times: number[]) {
 }
 
 function runProfiling() {
-  const fraction = 1024;
+  const fraction = 32;
   const sizes = Array(4).fill(POW_2_24 / fraction);
   const data = createRandomDataArrays(POW_2_24, sizes, 42);
 
@@ -150,7 +163,13 @@ function runProfiling() {
 
     const start = performance.now();
     // Add the operation to be measured below
-    last = applyAndWithBitmasks(a.bitmask, b.bitmask, 3);
+    last = findFuzzyMatchesWithBitmaskAndArray(
+      b.bitmask,
+      a.indices,
+      3,
+      4,
+      "both"
+    );
     // Add the operation to be measured above
     times.push(performance.now() - start);
   }
