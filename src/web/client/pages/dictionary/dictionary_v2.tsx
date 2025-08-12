@@ -758,7 +758,7 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const idSearch = route.idSearch === true;
 
   const { initial, setInitial } = props;
-  const query = isEmbedded ? initial : route.query;
+  const query = isEmbedded ? initial : route.query?.trim();
   const hash = route.hash;
   const inflectedSetting = isEmbedded
     ? settings.data.embeddedInflectedSearch

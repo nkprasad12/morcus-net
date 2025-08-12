@@ -215,6 +215,28 @@ describe("New Dictionary View", () => {
     expect(spyScrollTo).toHaveBeenCalledTimes(0);
   });
 
+  it("handles whitespace in queries", async () => {
+    const spyScrollTo = jest.fn();
+    HTMLElement.prototype.scrollIntoView = spyScrollTo;
+    mockCallApiMockResolvedValue({ LS: [] });
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: "/", params: { q: " Belgae " } },
+          navigateTo: jest.fn(),
+        }}>
+        <DictionaryViewV2 />
+      </RouteContext.Provider>
+    );
+
+    expect(mockCallApi).toHaveBeenCalledTimes(1);
+    expect(mockCallApi.mock.calls[0][1]).toEqual(
+      expect.objectContaining({
+        query: "Belgae",
+      })
+    );
+  });
+
   it("shows no results case", async () => {
     const spyScrollTo = jest.fn();
     HTMLElement.prototype.scrollIntoView = spyScrollTo;

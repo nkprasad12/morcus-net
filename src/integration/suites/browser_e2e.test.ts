@@ -72,6 +72,19 @@ test.describe("dictionary search", () => {
     await expect(page).toHaveTitle("canaba | Morcus Latin Tools");
   });
 
+  test("loads results by typing with whitespace and enter", async ({
+    page,
+  }) => {
+    await page.goto("/dicts");
+
+    await page.locator(`[aria-label="Dictionary search box"]`).click();
+    await page.keyboard.type(" canaba ", { delay: 20 });
+    await page.keyboard.press("Enter");
+
+    await expect(page.getByText("a hovel, hut").nth(0)).toBeVisible();
+    await expect(page).toHaveTitle("canaba | Morcus Latin Tools");
+  });
+
   repeatedTest("loads results by arrow nav", 5, async ({ page }) => {
     await page.goto("/dicts");
 
