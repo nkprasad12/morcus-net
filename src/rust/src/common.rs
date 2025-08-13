@@ -7,7 +7,7 @@ pub enum PackedIndexData {
     PackedBitMask(PackedBitMask),
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Deserialize, PartialEq)]
 pub struct PackedBitMask {
     pub format: String,
     #[serde(deserialize_with = "deserialize_u64_vec_from_bytes_with_serde")]
