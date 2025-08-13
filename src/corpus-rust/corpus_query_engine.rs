@@ -99,6 +99,28 @@ pub struct CorpusQueryEngine {
     token_db: Connection,
 }
 
+fn validate_query_complexity(query: &CorpusQuery) -> Result<(), String> {
+    if query.parts.len() > MAX_QUERY_PARTS {
+        return Err(format!(
+            "Query length {} exceeds maximum of {}.",
+            query.parts.len(),
+            MAX_QUERY_PARTS
+        ));
+    }
+    for part in &query.parts {
+        if let QueryToken::Composed(composed) = &part.token {
+            if composed.atoms.len() > MAX_QUERY_ATOMS {
+                return Err(format!(
+                    "Query part length {} exceeds maximum of {}.",
+                    composed.atoms.len(),
+                    MAX_QUERY_ATOMS
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
 impl CorpusQueryEngine {
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self> {
         let db_path = Path::new(&corpus.raw_text_db);
@@ -139,7 +161,9 @@ impl CorpusQueryEngine {
                         }]
                     }
                     QueryToken::Composed(composed_query) => {
-                        // Assuming composed_query.composition is "and"
+                        if composed_query.composition != "and" {
+                            panic!("Unsupported composition: {}", composed_query.composition);
+                        }
                         composed_query
                             .atoms
                             .iter()
@@ -320,7 +344,7 @@ impl CorpusQueryEngine {
         if query.parts.is_empty() {
             return Ok(empty_result());
         }
-        // check_query_complexity(query);
+        validate_query_complexity(query).expect("Query is too complex!");
 
         let mut sorted_query = self.convert_query(query);
         sorted_query.sort_by_key(|p| p.atoms[0].size_upper_bound);

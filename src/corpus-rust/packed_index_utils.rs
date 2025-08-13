@@ -2,6 +2,7 @@ use crate::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
 use crate::common::{PackedBitMask, PackedIndexData};
 use crate::packed_arrays;
 
+#[cfg(test)]
 pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
     let mut bitmask = vec![0u64; ((upper_bound + 63) / 64).try_into().unwrap()];
     for &idx in indices {
@@ -20,11 +21,7 @@ pub enum ApplyAndResult {
 }
 
 /// Computes the bitwise AND of a bitmask and an array of indices, with an offset.
-pub fn apply_and_with_bitmask_and_array(
-    bitmask: &[u64],
-    indices: &[u32],
-    offset: i32,
-) -> Vec<u32> {
+pub fn apply_and_with_bitmask_and_array(bitmask: &[u64], indices: &[u32], offset: i32) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
     let bitmask_len_bits = bitmask.len() * 64;
 
@@ -98,7 +95,11 @@ pub fn apply_and_to_indices(
                 )
             } else {
                 (
-                    bitmask_utils::apply_and_with_bitmasks(&bm2.data, &bm1.data, (-offset) as usize),
+                    bitmask_utils::apply_and_with_bitmasks(
+                        &bm2.data,
+                        &bm1.data,
+                        (-offset) as usize,
+                    ),
                     second_position,
                 )
             };
@@ -129,6 +130,7 @@ pub fn apply_and_to_indices(
 /// # Returns
 ///
 /// The smeared bitmask.
+#[allow(dead_code)]
 pub fn smear_bitmask(original: &[u64], window: usize, direction: &str) -> Vec<u64> {
     assert!(window > 0 && window < 16, "Window must be in (0, 16).");
     let sign = if direction == "left" { -1 } else { 1 };
@@ -169,6 +171,7 @@ pub fn smear_bitmask(original: &[u64], window: usize, direction: &str) -> Vec<u6
 /// # Returns
 ///
 /// A new array with the elements of the first array that match the second array.
+#[allow(dead_code)]
 pub fn find_fuzzy_matches_with_arrays(
     first: &[u32],
     second: &[u32],
@@ -177,7 +180,11 @@ pub fn find_fuzzy_matches_with_arrays(
     direction: &str,
 ) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
-    let left_fuzz = if direction == "right" { 0 } else { max_distance };
+    let left_fuzz = if direction == "right" {
+        0
+    } else {
+        max_distance
+    };
     let right_fuzz = if direction == "left" { 0 } else { max_distance };
     let mut i = 0;
     let mut j = 0;
