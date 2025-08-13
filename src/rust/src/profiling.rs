@@ -1,5 +1,7 @@
 mod bitmask_utils;
 mod packed_index_utils;
+mod packed_arrays;
+mod common;
 
 use std::time::{Instant};
 use packed_index_utils::smear_bitmask;

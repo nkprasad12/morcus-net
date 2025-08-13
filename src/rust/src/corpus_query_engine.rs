@@ -42,8 +42,14 @@ pub struct ComposedQuery {
 }
 
 #[derive(Debug)]
+pub enum QueryToken {
+    Atom(CorpusQueryAtom),
+    Composed(ComposedQuery),
+}
+
+#[derive(Debug)]
 pub struct CorpusQueryPart {
-    pub token: CorpusQueryAtom, // Simplified for now, no ComposedQuery here yet
+    pub token: QueryToken,
 }
 
 #[derive(Debug)]
@@ -68,6 +74,7 @@ pub struct CorpusQueryResult {
     pub total_results: usize,
     pub matches: Vec<CorpusQueryMatch>,
     pub page_start: usize,
+    #[expect(unused)]
     pub page_size: Option<usize>,
 }
 
@@ -119,15 +126,35 @@ impl CorpusQueryEngine {
             .parts
             .iter()
             .enumerate()
-            .map(|(i, part)| {
-                let atom = &part.token;
-                let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
-                InternalComposedQuery {
-                    atoms: vec![InternalQueryAtom {
-                        atom: from_query_atom_ref(atom), // A helper to convert &T to T
-                        size_upper_bound,
-                    }],
-                    position: i,
+            .flat_map(|(i, part)| -> Vec<InternalComposedQuery> {
+                match &part.token {
+                    QueryToken::Atom(atom) => {
+                        let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
+                        vec![InternalComposedQuery {
+                            atoms: vec![InternalQueryAtom {
+                                atom: from_query_atom_ref(atom),
+                                size_upper_bound,
+                            }],
+                            position: i,
+                        }]
+                    }
+                    QueryToken::Composed(composed_query) => {
+                        // Assuming composed_query.composition is "and"
+                        composed_query
+                            .atoms
+                            .iter()
+                            .map(|atom| {
+                                let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
+                                InternalComposedQuery {
+                                    atoms: vec![InternalQueryAtom {
+                                        atom: from_query_atom_ref(atom),
+                                        size_upper_bound,
+                                    }],
+                                    position: i,
+                                }
+                            })
+                            .collect()
+                    }
                 }
             })
             .collect()
