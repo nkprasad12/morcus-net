@@ -1,5 +1,8 @@
+mod bitmask_utils;
 mod common;
 mod corpus_serialization;
+mod packed_arrays;
+mod packed_index_utils;
 
 const CORPUS_ROOT: &str = "../../build/corpus/latin_corpus.json";
 
