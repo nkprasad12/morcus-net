@@ -8,6 +8,7 @@ use crate::packed_index_utils::{
 use crate::profiler::TimeProfiler;
 
 use rusqlite::{Connection, Result};
+use serde::Serialize;
 use std::path::Path;
 
 const MAX_QUERY_PARTS: usize = 8;
@@ -59,7 +60,8 @@ pub struct CorpusQuery {
     pub parts: Vec<CorpusQueryPart>,
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CorpusQueryMatch {
     pub work_id: String,
     pub work_name: String,
@@ -71,11 +73,15 @@ pub struct CorpusQueryMatch {
     pub right_context: String,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CorpusQueryResult {
     pub total_results: usize,
     pub matches: Vec<CorpusQueryMatch>,
     pub page_start: usize,
+}
+
+pub struct CorpusQueryResultMetadata {
     pub timing: Option<Vec<(String, u128)>>,
 }
 
@@ -342,7 +348,7 @@ impl CorpusQueryEngine {
         query: &CorpusQuery,
         page_start: usize,
         page_size: Option<usize>,
-    ) -> Result<CorpusQueryResult> {
+    ) -> Result<(CorpusQueryResult, CorpusQueryResultMetadata)> {
         if query.parts.is_empty() {
             return Ok(empty_result());
         }
@@ -384,22 +390,27 @@ impl CorpusQueryEngine {
         };
         profiler.phase("Build Matches");
 
-        Ok(CorpusQueryResult {
+        Ok((CorpusQueryResult {
             total_results,
             matches,
             page_start,
+        }, CorpusQueryResultMetadata {
             timing: Some(profiler.get_stats().clone()),
-        })
+        }))
     }
 }
 
-fn empty_result() -> CorpusQueryResult {
-    CorpusQueryResult {
-        total_results: 0,
-        matches: vec![],
-        page_start: 0,
-        timing: None,
-    }
+fn empty_result() -> (CorpusQueryResult, CorpusQueryResultMetadata) {
+    (
+        CorpusQueryResult {
+            total_results: 0,
+            matches: vec![],
+            page_start: 0,
+        },
+        CorpusQueryResultMetadata {
+            timing: None,
+        },
+    )
 }
 
 // Helper to convert query atom reference to an owned version for storing in InternalQueryAtom
