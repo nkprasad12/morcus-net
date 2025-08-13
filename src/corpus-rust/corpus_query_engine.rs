@@ -1,10 +1,12 @@
 use crate::common::{PackedBitMask, PackedIndexData};
 use crate::corpus_serialization::LatinCorpusIndex;
-use crate::packed_arrays;
+use crate::{packed_arrays};
 use crate::packed_index_utils::{
     apply_and_to_indices, has_value_in_range, max_elements_in, unpack_packed_index_data,
     ApplyAndResult,
 };
+use crate::profiler::TimeProfiler;
+
 use rusqlite::{Connection, Result};
 use std::path::Path;
 
@@ -76,6 +78,7 @@ pub struct CorpusQueryResult {
     pub page_start: usize,
     #[expect(unused)]
     pub page_size: Option<usize>,
+    pub timing: Option<Vec<(String, u128)>>,
 }
 
 // Internal types for query processing
@@ -212,7 +215,7 @@ impl CorpusQueryEngine {
         })
     }
 
-    fn resolve_candidates(&self, candidates: &IntermediateResult, query_length: usize) -> Vec<u32> {
+    fn resolve_candidates(&self, candidates: &IntermediateResult, query_length: usize, profiler: &mut TimeProfiler) -> Vec<u32> {
         let hard_breaks = match self
             .corpus
             .indices
@@ -224,6 +227,7 @@ impl CorpusQueryEngine {
         };
 
         let unpacked = unpack_packed_index_data(&candidates.data);
+        profiler.phase("Unpack Candidates");
         let mut matches: Vec<u32> = Vec::new();
 
         for &token_id in &unpacked {
@@ -345,6 +349,7 @@ impl CorpusQueryEngine {
             return Ok(empty_result());
         }
         validate_query_complexity(query).expect("Query is too complex!");
+        let mut profiler = TimeProfiler::new();
 
         let mut sorted_query = self.convert_query(query);
         sorted_query.sort_by_key(|p| p.atoms[0].size_upper_bound);
@@ -353,16 +358,19 @@ impl CorpusQueryEngine {
             Some(c) => c,
             None => return Ok(empty_result()),
         };
+        profiler.phase("Initial");
 
-        for part in sorted_query.iter().skip(1) {
+        for (i, part) in sorted_query.iter().skip(1).enumerate() {
             candidates =
                 match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
                     Some(c) => c,
                     None => return Ok(empty_result()),
                 };
+            profiler.phase(&format!("Filter {}", i + 1));
         }
 
-        let match_ids = self.resolve_candidates(&candidates, query.parts.len());
+        let match_ids = self.resolve_candidates(&candidates, query.parts.len(), &mut profiler);
+        profiler.phase("Check Candidates");
         let total_results = match_ids.len();
 
         let page_size_val = page_size.unwrap_or(total_results);
@@ -376,12 +384,14 @@ impl CorpusQueryEngine {
         } else {
             vec![]
         };
+        profiler.phase("Build Matches");
 
         Ok(CorpusQueryResult {
             total_results,
             matches,
             page_start,
             page_size,
+            timing: Some(profiler.get_stats().clone()),
         })
     }
 }
@@ -392,6 +402,7 @@ fn empty_result() -> CorpusQueryResult {
         matches: vec![],
         page_start: 0,
         page_size: None,
+        timing: None,
     }
 }
 
