@@ -1,4 +1,6 @@
 use crate::bitmask_utils::bitmask_or_with_self_offset_in_place;
+use crate::common::{PackedBitMask, PackedIndexData};
+use crate::packed_arrays;
 
 pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
     let mut bitmask = vec![0u64; ((upper_bound + 63) / 64).try_into().unwrap()];
@@ -9,7 +11,6 @@ pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
     }
     bitmask
 }
-
 
 /// Performs a bit smear on the given bitmask with the specified window size and direction.
 ///
@@ -109,9 +110,63 @@ pub fn find_fuzzy_matches_with_arrays(
     results
 }
 
+/// Checks if the given packed index data has any values in the specified range.
+///
+/// # Arguments
+///
+/// * `packed_data` - The packed index data to check.
+/// * `range` - The range to check (inclusive).
+///
+/// # Returns
+///
+/// True if the range contains any values for the packed data, false otherwise.
+pub fn has_value_in_range(packed_data: &PackedIndexData, range: (u32, u32)) -> bool {
+    if range.0 > range.1 {
+        return false;
+    }
+
+    match packed_data {
+        PackedIndexData::PackedNumbers(data) => packed_arrays::has_value_in_range(data, range),
+        PackedIndexData::PackedBitMask(bitmask_data) => {
+            let bitmask = &bitmask_data.data;
+            for i in range.0..=range.1 {
+                let word_index = (i / 64) as usize;
+                if word_index >= bitmask.len() {
+                    continue;
+                }
+                let bit_index = 63 - (i % 64);
+                if (bitmask[word_index] & (1 << bit_index)) != 0 {
+                    return true;
+                }
+            }
+            false
+        }
+    }
+}
+
+/// Returns the maximum number of elements that could be in the packed index.
+///
+/// # Arguments
+///
+/// * `packed_data` - The packed index data.
+///
+/// # Returns
+///
+/// The number of elements.
+pub fn max_elements_in(packed_data: &PackedIndexData) -> usize {
+    match packed_data {
+        PackedIndexData::PackedNumbers(data) => packed_arrays::num_elements(data),
+        PackedIndexData::PackedBitMask(bitmask_data) => {
+            bitmask_data.num_set.unwrap_or(bitmask_data.data.len() * 64)
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::common::{PackedBitMask, PackedIndexData};
+    use crate::packed_arrays;
 
     #[test]
     fn should_smear_to_the_right_within_a_single_word() {
@@ -202,7 +257,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_multiple_consecutive_first_elements_matching_one_second_element_both() {
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_consecutive_first_elements_matching_one_second_element_both(
+    ) {
         let first = vec![10, 11];
         let second = vec![9];
         let offset = 0;
@@ -240,7 +296,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_zero_offset_and_zero_distance() {
+    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_zero_offset_and_zero_distance()
+    {
         assert_eq!(
             find_fuzzy_matches_with_arrays(&[1, 5, 10], &[1, 6, 10], 0, 0, "both"),
             vec![1, 10]
@@ -248,7 +305,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_a_non_zero_offset_and_zero_distance() {
+    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_a_non_zero_offset_and_zero_distance(
+    ) {
         assert_eq!(
             find_fuzzy_matches_with_arrays(&[3, 7, 12], &[1, 6, 10], 2, 0, "both"),
             vec![3, 12]
@@ -277,7 +335,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_first_array_both() {
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_first_array_both(
+    ) {
         // first: [10], second: [8, 9, 10] -> offset 0, dist 1.
         // second vals are 8,9,10. 10 matches all of them.
         assert_eq!(
@@ -287,7 +346,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_second_array_both() {
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_second_array_both(
+    ) {
         // first: [8, 9, 10], second: [9] -> offset 0, dist 1.
         // second val is 9. Its range [8, 10] matches all elements in first.
         assert_eq!(
@@ -307,7 +367,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_complex_cases_with_multiple_overlapping_matches_both() {
+    fn find_fuzzy_matches_with_arrays_should_handle_complex_cases_with_multiple_overlapping_matches_both(
+    ) {
         // first: [10, 11, 15, 20], second: [12, 18], offset: 0, dist: 2.
         // second val 12: range [10, 14]. Matches 10, 11.
         // second val 18: range [16, 20]. Matches 20. (15 is not in range).
@@ -331,7 +392,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_the_case_from_the_original_code_comments_both() {
+    fn find_fuzzy_matches_with_arrays_should_handle_the_case_from_the_original_code_comments_both()
+    {
         // first: [3, 8, 9], second: [0, 11], offset: 1, maxDistance: 2.
         // second becomes [1, 12].
         // second val 1: range [-1, 3]. Matches 3.
@@ -378,5 +440,90 @@ mod tests {
             find_fuzzy_matches_with_arrays(&[11], &[10], 0, 2, "left"),
             Vec::<u32>::new()
         );
+    }
+
+    #[test]
+    fn has_value_in_range_bitmask_should_return_true_if_value_in_range() {
+        let bitmask = to_bitmask(&[10, 70], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert!(has_value_in_range(&packed_data, (5, 15)));
+        assert!(has_value_in_range(&packed_data, (65, 75)));
+    }
+
+    #[test]
+    fn has_value_in_range_bitmask_should_return_false_if_value_not_in_range() {
+        let bitmask = to_bitmask(&[10, 70], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert!(!has_value_in_range(&packed_data, (20, 30)));
+        assert!(!has_value_in_range(&packed_data, (0, 5)));
+    }
+
+    #[test]
+    fn has_value_in_range_bitmask_should_handle_word_boundaries() {
+        let bitmask = to_bitmask(&[63, 64], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert!(has_value_in_range(&packed_data, (60, 65)));
+        assert!(!has_value_in_range(&packed_data, (60, 62)));
+        assert!(!has_value_in_range(&packed_data, (65, 70)));
+    }
+
+    #[test]
+    fn has_value_in_range_packed_array_should_return_true_if_value_in_range() {
+        let packed_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 70]));
+        assert!(has_value_in_range(&packed_data, (5, 15)));
+        assert!(has_value_in_range(&packed_data, (65, 75)));
+        assert!(has_value_in_range(&packed_data, (10, 10)));
+        assert!(has_value_in_range(&packed_data, (70, 70)));
+    }
+
+    #[test]
+    fn has_value_in_range_packed_array_should_return_false_if_value_not_in_range() {
+        let packed_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 70]));
+        assert!(!has_value_in_range(&packed_data, (20, 30)));
+        assert!(!has_value_in_range(&packed_data, (0, 9)));
+        assert!(!has_value_in_range(&packed_data, (71, 100)));
+    }
+
+    #[test]
+    fn max_elements_in_should_return_correct_count_for_packed_array() {
+        let packed_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 20, 30]));
+        assert_eq!(max_elements_in(&packed_data), 3);
+    }
+
+    #[test]
+    fn max_elements_in_should_return_num_set_for_bitmask_if_present() {
+        let bitmask = to_bitmask(&[10, 70], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert_eq!(max_elements_in(&packed_data), 2);
+    }
+
+    #[test]
+    fn max_elements_in_should_return_max_capacity_for_bitmask_if_num_set_not_present() {
+        let bitmask = to_bitmask(&[10, 70], 128); // 128 bits = 2 u64 words
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: None,
+        });
+        assert_eq!(max_elements_in(&packed_data), 128);
     }
 }
