@@ -1,3 +1,6 @@
+use crate::common::{
+    deserialize_u64_vec_from_bytes, PackedBitMask, PackedIndexData,
+};
 use serde::{
     de::{self, Deserializer, MapAccess, Visitor},
     Deserialize,
@@ -10,22 +13,6 @@ use std::path::Path;
 
 const MAP_TOKEN: &str = "___SERIALIZED_KEY_v1____MAP";
 const BIT_MASK_TOKEN: &str = "___SERIALIZED_KEY_v1____BIT_MASK";
-
-#[derive(Debug, Deserialize)]
-#[serde(untagged)]
-pub enum PackedIndexData {
-    PackedNumbers(#[serde(with = "serde_bytes")] Vec<u8>),
-    PackedBitMask(PackedBitMask),
-}
-
-#[derive(Debug, Deserialize)]
-pub struct PackedBitMask {
-    pub format: String,
-    #[serde(with = "serde_bytes")]
-    pub data: Vec<u8>,
-    #[serde(rename = "numSet")]
-    pub num_set: Option<usize>,
-}
 
 #[derive(Debug, Deserialize)]
 pub struct CorpusStats {
@@ -115,7 +102,9 @@ where
                     } else if k.is_number() {
                         k.to_string()
                     } else {
-                        return Err(de::Error::custom("Map key must be a string or a number"));
+                        return Err(de::Error::custom(
+                            "Map key must be a string or a number",
+                        ));
                     };
                     let packed_data = match v {
                         StoredMapValue::Base64(b64_data) => {
@@ -131,9 +120,12 @@ where
                                 return Err(de::Error::custom("Invalid bitmask token"));
                             }
                             let bytes = base64::decode(data).map_err(de::Error::custom)?;
+                            let u64_data = deserialize_u64_vec_from_bytes(&bytes)
+                                .map_err(de::Error::custom)?;
+
                             PackedIndexData::PackedBitMask(PackedBitMask {
                                 format: "bitmask".to_string(),
-                                data: bytes,
+                                data: u64_data,
                                 num_set: Some(size),
                             })
                         }
