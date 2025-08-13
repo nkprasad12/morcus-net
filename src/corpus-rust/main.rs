@@ -1,58 +1,45 @@
+use std::time::Instant;
+
 mod bitmask_utils;
 mod common;
 mod corpus_query_engine;
 mod corpus_serialization;
 mod packed_arrays;
 mod packed_index_utils;
+mod query_parsing;
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
+fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex {
+    let start = Instant::now();
+    let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
+    let duration = start.elapsed();
+    println!("Corpus loaded in {:.2?}", duration);
+    corpus
+}
+
+fn query_with_timing(
+    engine: &corpus_query_engine::CorpusQueryEngine,
+    query: &corpus_query_engine::CorpusQuery,
+    page_start: usize,
+    page_size: Option<usize>,
+) -> corpus_query_engine::CorpusQueryResult {
+    let start = Instant::now();
+    let results = engine
+        .query_corpus(query, page_start, page_size)
+        .expect("Query failed");
+    let duration = start.elapsed();
+    println!("Query executed in {:.2?}", duration);
+    results
+}
+
 fn main() {
-    let corpus = corpus_serialization::deserialize_corpus(CORPUS_ROOT)
-        .expect("Failed to deserialize corpus");
+    let corpus = load_corpus_with_timing(CORPUS_ROOT);
     let engine =
         corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
-    let query: corpus_query_engine::CorpusQuery = corpus_query_engine::CorpusQuery {
-        parts: vec![
-            corpus_query_engine::CorpusQueryPart {
-                token: corpus_query_engine::QueryToken::Atom(
-                    corpus_query_engine::CorpusQueryAtom::Lemma(corpus_query_engine::LemmaQuery {
-                        lemma: "do".to_string(),
-                    }),
-                ),
-            },
-            corpus_query_engine::CorpusQueryPart {
-                token: corpus_query_engine::QueryToken::Atom(
-                    corpus_query_engine::CorpusQueryAtom::Word(corpus_query_engine::WordQuery {
-                        word: "oscula".to_string(),
-                    }),
-                ),
-            },
-            corpus_query_engine::CorpusQueryPart {
-                token: corpus_query_engine::QueryToken::Composed(
-                    corpus_query_engine::ComposedQuery {
-                        composition: "and".to_string(),
-                        atoms: vec![
-                            corpus_query_engine::CorpusQueryAtom::Inflection(
-                                corpus_query_engine::InflectionQuery {
-                                    category: "case".to_string(),
-                                    value: "3".to_string(),
-                                },
-                            ),
-                            corpus_query_engine::CorpusQueryAtom::Lemma(
-                                corpus_query_engine::LemmaQuery {
-                                    lemma: "natus".to_string(),
-                                },
-                            ),
-                        ],
-                    },
-                ),
-            },
-        ],
-    };
-    let results = engine
-        .query_corpus(&query, 0, Some(10))
-        .expect("Query failed");
+    let query_str = "[lemma:do] [word:oscula] [case:3]";
+    let query = query_parsing::parse_query(query_str);
+    let results = query_with_timing(&engine, &query, 0, Some(100));
     println!(
         "Showing results {}-{} of {} matches:\n",
         results.page_start + 1,

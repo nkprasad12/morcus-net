@@ -286,7 +286,7 @@ impl CorpusQueryEngine {
         let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
         let row_idx = row_info.0 as usize;
 
-        let context_len = 4;
+        let context_len = 25;
         let start_rowid = token_id.saturating_sub(context_len);
         let limit = query_length + (context_len * 2) as usize;
 
