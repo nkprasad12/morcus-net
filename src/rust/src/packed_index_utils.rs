@@ -1,4 +1,4 @@
-use crate::bitmask_utils::bitmask_or_with_self_offset_in_place;
+use crate::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
 use crate::common::{PackedBitMask, PackedIndexData};
 use crate::packed_arrays;
 
@@ -10,6 +10,106 @@ pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
         bitmask[word as usize] |= 1 << (63 - bit);
     }
     bitmask
+}
+
+/// The result of an `apply_and` operation on two indices.
+#[derive(Debug, PartialEq)]
+pub enum ApplyAndResult {
+    Array(Vec<u32>),
+    Bitmask(PackedBitMask),
+}
+
+/// Computes the bitwise AND of a bitmask and an array of indices, with an offset.
+pub fn apply_and_with_bitmask_and_array(
+    bitmask: &[u64],
+    indices: &[u32],
+    offset: i32,
+) -> Vec<u32> {
+    let mut results: Vec<u32> = Vec::new();
+    let bitmask_len_bits = bitmask.len() * 64;
+
+    for &index in indices {
+        let effective_index = index as i64 + offset as i64;
+        if effective_index < 0 || effective_index as usize >= bitmask_len_bits {
+            continue;
+        }
+        let word_index = (effective_index / 64) as usize;
+        let bit_index = 63 - (effective_index % 64);
+        if (bitmask[word_index] & (1 << bit_index)) != 0 {
+            results.push(effective_index as u32);
+        }
+    }
+    results
+}
+
+/// Returns the numbers that are present in both input arrays, applying an offset to the second array.
+pub fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
+    let mut result: Vec<u32> = Vec::new();
+    let mut i = 0;
+    let mut j = 0;
+
+    while i < first.len() && j < second.len() {
+        let first_val = first[i] as i64;
+        let second_val = second[j] as i64 + offset as i64;
+        if first_val < second_val {
+            i += 1;
+        } else if first_val > second_val {
+            j += 1;
+        } else {
+            result.push(first[i]);
+            i += 1;
+            j += 1;
+        }
+    }
+    result
+}
+
+/// Applies an `and` to determine the intersection between two indices.
+pub fn apply_and_to_indices(
+    first: &PackedIndexData,
+    first_position: i32,
+    second: &PackedIndexData,
+    second_position: i32,
+) -> (ApplyAndResult, i32) {
+    let offset = first_position - second_position;
+
+    match (first, second) {
+        (PackedIndexData::PackedNumbers(d1), PackedIndexData::PackedNumbers(d2)) => {
+            let unpacked1 = packed_arrays::unpack_integers(d1);
+            let unpacked2 = packed_arrays::unpack_integers(d2);
+            let overlaps = apply_and_with_arrays(&unpacked1, &unpacked2, offset);
+            (ApplyAndResult::Array(overlaps), first_position)
+        }
+        (PackedIndexData::PackedBitMask(bm), PackedIndexData::PackedNumbers(d)) => {
+            let unpacked = packed_arrays::unpack_integers(d);
+            let overlaps = apply_and_with_bitmask_and_array(&bm.data, &unpacked, offset);
+            (ApplyAndResult::Array(overlaps), first_position)
+        }
+        (PackedIndexData::PackedNumbers(d), PackedIndexData::PackedBitMask(bm)) => {
+            let unpacked = packed_arrays::unpack_integers(d);
+            let overlaps = apply_and_with_bitmask_and_array(&bm.data, &unpacked, -offset);
+            (ApplyAndResult::Array(overlaps), second_position)
+        }
+        (PackedIndexData::PackedBitMask(bm1), PackedIndexData::PackedBitMask(bm2)) => {
+            let (data, pos) = if offset >= 0 {
+                (
+                    bitmask_utils::apply_and_with_bitmasks(&bm1.data, &bm2.data, offset as usize),
+                    first_position,
+                )
+            } else {
+                (
+                    bitmask_utils::apply_and_with_bitmasks(&bm2.data, &bm1.data, (-offset) as usize),
+                    second_position,
+                )
+            };
+            let result = ApplyAndResult::Bitmask(PackedBitMask {
+                format: "bitmask".to_string(),
+                data,
+                num_set: None, // We don't calculate num_set here for performance.
+            });
+            (result, pos)
+        }
+    }
 }
 
 /// Performs a bit smear on the given bitmask with the specified window size and direction.
@@ -440,6 +540,118 @@ mod tests {
             find_fuzzy_matches_with_arrays(&[11], &[10], 0, 2, "left"),
             Vec::<u32>::new()
         );
+    }
+
+    #[test]
+    fn apply_and_with_arrays_no_offset() {
+        let first = vec![1, 3, 5, 8, 10];
+        let second = vec![3, 4, 5, 9, 10];
+        let result = apply_and_with_arrays(&first, &second, 0);
+        assert_eq!(result, vec![3, 5, 10]);
+    }
+
+    #[test]
+    fn apply_and_with_arrays_positive_offset() {
+        let first = vec![3, 5, 9, 12];
+        let second = vec![1, 3, 7, 10];
+        let result = apply_and_with_arrays(&first, &second, 2);
+        assert_eq!(result, vec![3, 5, 9, 12]);
+    }
+
+    #[test]
+    fn apply_and_with_arrays_negative_offset() {
+        let first = vec![1, 3, 7, 10];
+        let second = vec![3, 5, 9, 12];
+        let result = apply_and_with_arrays(&first, &second, -2);
+        assert_eq!(result, vec![1, 3, 7, 10]);
+    }
+
+    #[test]
+    fn apply_and_with_bitmask_and_array_no_offset() {
+        let bitmask = to_bitmask(&[1, 3, 4], 64);
+        let indices = vec![0, 1, 2, 4, 6];
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0);
+        assert_eq!(result, vec![1, 4]);
+    }
+
+    #[test]
+    fn apply_and_with_bitmask_and_array_positive_offset() {
+        let bitmask = to_bitmask(&[1, 3, 4, 6], 64);
+        let indices = vec![0, 2, 3, 6];
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 1);
+        assert_eq!(result, vec![1, 3, 4]);
+    }
+
+    #[test]
+    fn apply_and_with_bitmask_and_array_word_boundaries() {
+        let bitmask = to_bitmask(&[63, 64, 127], 128);
+        let indices = vec![60, 61, 62, 63, 64, 65];
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0);
+        assert_eq!(result, vec![63, 64]);
+    }
+
+    #[test]
+    fn apply_and_to_indices_array_array() {
+        let candidates =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[3, 6, 9]));
+        let filter_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[2, 4, 8]));
+        let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1);
+        assert_eq!(result, ApplyAndResult::Array(vec![3, 9]));
+        assert_eq!(position, 2);
+    }
+
+    #[test]
+    fn apply_and_to_indices_bitmask_array() {
+        let candidates = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[1, 3, 4], 64),
+            num_set: None,
+        });
+        let filter_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+        let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0);
+        assert_eq!(result, ApplyAndResult::Array(vec![1, 3, 4]));
+        assert_eq!(position, 1);
+    }
+
+    #[test]
+    fn apply_and_to_indices_array_bitmask() {
+        let candidates =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+        let filter_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[1, 3, 4], 64),
+            num_set: None,
+        });
+        let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1);
+        assert_eq!(result, ApplyAndResult::Array(vec![1, 3, 4]));
+        assert_eq!(position, 1);
+    }
+
+    #[test]
+    fn apply_and_to_indices_bitmask_bitmask() {
+        let candidates = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[1, 3, 4], 64),
+            num_set: None,
+        });
+        let filter_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[0, 2, 4], 64),
+            num_set: None,
+        });
+        let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2);
+        let expected_data = to_bitmask(&[4], 64);
+        assert_eq!(
+            result,
+            ApplyAndResult::Bitmask(PackedBitMask {
+                format: "bitmask".to_string(),
+                data: expected_data,
+                num_set: None
+            })
+        );
+        assert_eq!(position, 3);
     }
 
     #[test]
