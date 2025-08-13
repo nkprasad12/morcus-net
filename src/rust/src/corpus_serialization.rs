@@ -19,10 +19,13 @@ pub struct CorpusStats {
     #[serde(rename = "totalWords")]
     pub total_words: u64,
     #[serde(rename = "totalWorks")]
+    #[expect(unused)]
     pub total_works: u64,
     #[serde(rename = "uniqueWords")]
+    #[expect(unused)]
     pub unique_words: u64,
     #[serde(rename = "uniqueLemmata")]
+    #[expect(unused)]
     pub unique_lemmata: u64,
 }
 

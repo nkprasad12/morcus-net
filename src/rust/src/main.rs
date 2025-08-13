@@ -15,20 +15,38 @@ fn main() {
     let query: corpus_query_engine::CorpusQuery = corpus_query_engine::CorpusQuery {
         parts: vec![
             corpus_query_engine::CorpusQueryPart {
-                token: corpus_query_engine::CorpusQueryAtom::Lemma(corpus_query_engine::LemmaQuery {
-                    lemma: "do".to_string(),
-                }),
+                token: corpus_query_engine::QueryToken::Atom(
+                    corpus_query_engine::CorpusQueryAtom::Lemma(corpus_query_engine::LemmaQuery {
+                        lemma: "do".to_string(),
+                    }),
+                ),
             },
             corpus_query_engine::CorpusQueryPart {
-                token: corpus_query_engine::CorpusQueryAtom::Word(corpus_query_engine::WordQuery {
-                    word: "oscula".to_string(),
-                }),
+                token: corpus_query_engine::QueryToken::Atom(
+                    corpus_query_engine::CorpusQueryAtom::Word(corpus_query_engine::WordQuery {
+                        word: "oscula".to_string(),
+                    }),
+                ),
             },
             corpus_query_engine::CorpusQueryPart {
-                token: corpus_query_engine::CorpusQueryAtom::Inflection(corpus_query_engine::InflectionQuery {
-                    category: "case".to_string(),
-                    value: "3".to_string(),
-                }),
+                token: corpus_query_engine::QueryToken::Composed(
+                    corpus_query_engine::ComposedQuery {
+                        composition: "and".to_string(),
+                        atoms: vec![
+                            corpus_query_engine::CorpusQueryAtom::Inflection(
+                                corpus_query_engine::InflectionQuery {
+                                    category: "case".to_string(),
+                                    value: "3".to_string(),
+                                },
+                            ),
+                            corpus_query_engine::CorpusQueryAtom::Lemma(
+                                corpus_query_engine::LemmaQuery {
+                                    lemma: "natus".to_string(),
+                                },
+                            ),
+                        ],
+                    },
+                ),
             },
         ],
     };
