@@ -79,10 +79,7 @@ pub struct CorpusQueryResult {
     pub total_results: usize,
     pub matches: Vec<CorpusQueryMatch>,
     pub page_start: usize,
-}
-
-pub struct CorpusQueryResultMetadata {
-    pub timing: Option<Vec<(String, u128)>>,
+    pub timing: Vec<(String, u128)>,
 }
 
 // Internal types for query processing
@@ -348,7 +345,7 @@ impl CorpusQueryEngine {
         query: &CorpusQuery,
         page_start: usize,
         page_size: Option<usize>,
-    ) -> Result<(CorpusQueryResult, CorpusQueryResultMetadata)> {
+    ) -> Result<CorpusQueryResult> {
         if query.parts.is_empty() {
             return Ok(empty_result());
         }
@@ -390,27 +387,22 @@ impl CorpusQueryEngine {
         };
         profiler.phase("Build Matches");
 
-        Ok((CorpusQueryResult {
+        Ok(CorpusQueryResult {
             total_results,
             matches,
             page_start,
-        }, CorpusQueryResultMetadata {
-            timing: Some(profiler.get_stats().clone()),
-        }))
+            timing: profiler.get_stats().clone(),
+        })
     }
 }
 
-fn empty_result() -> (CorpusQueryResult, CorpusQueryResultMetadata) {
-    (
-        CorpusQueryResult {
-            total_results: 0,
-            matches: vec![],
-            page_start: 0,
-        },
-        CorpusQueryResultMetadata {
-            timing: None,
-        },
-    )
+fn empty_result() -> CorpusQueryResult {
+    CorpusQueryResult {
+        total_results: 0,
+        matches: vec![],
+        page_start: 0,
+        timing: vec![],
+    }
 }
 
 // Helper to convert query atom reference to an owned version for storing in InternalQueryAtom

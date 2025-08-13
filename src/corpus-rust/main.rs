@@ -32,15 +32,15 @@ fn query_with_timing(
         .expect("Query failed");
     let duration = start.elapsed();
     println!("Query executed in {:.2?}", duration);
-    if let Some(timing) = results.1.timing {
+    if results.timing.len() > 0 {
         println!("Query timing breakdown:");
-        for (k, v) in timing {
+        for (k, v) in &results.timing {
             // Convert microseconds to milliseconds for display
-            let ms = (v as f64) / 1000.0;
+            let ms = (*v as f64) / 1000.0;
             println!("  {}: {:.2} ms", k, ms);
         }
     }
-    results.0
+    results
 }
 
 fn get_query_arg_or_exit() -> String {
@@ -88,5 +88,5 @@ fn main() {
 
 /*
 Run with:
-cargo run --release query-engine --query "[case:3] [case:2]" --limit 7
+cargo run --release query-engine --query "[case:3] [case:2] [case:1] [case:2]" --limit 7
 */
