@@ -1,4 +1,5 @@
 use std::time::Instant;
+use std::env;
 
 mod bitmask_utils;
 mod common;
@@ -33,13 +34,36 @@ fn query_with_timing(
     results
 }
 
+fn get_query_arg_or_exit() -> String {
+    let args: Vec<String> = env::args().collect();
+    if let Some(pos) = args.iter().position(|a| a == "--query") {
+        if let Some(q) = args.get(pos + 1) {
+            return q.clone();
+        }
+    }
+    eprintln!("Usage: {} --query <QUERY> [--limit <N>]", args.get(0).unwrap_or(&"program".to_string()));
+    std::process::exit(1);
+}
+
+fn get_limit_arg_or_default() -> usize {
+    let args: Vec<String> = env::args().collect();
+    if let Some(pos) = args.iter().position(|a| a == "--limit") {
+        if let Some(lim) = args.get(pos + 1) {
+            return lim.parse::<usize>().unwrap_or(25);
+        }
+    }
+    25
+}
+
+
 fn main() {
     let corpus = load_corpus_with_timing(CORPUS_ROOT);
     let engine =
         corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
-    let query_str = "[lemma:do] [word:oscula] [case:3]";
-    let query = query_parsing::parse_query(query_str);
-    let results = query_with_timing(&engine, &query, 0, Some(100));
+    let query_str = get_query_arg_or_exit();
+    let page_size = get_limit_arg_or_default();
+    let query = query_parsing::parse_query(&query_str);
+    let results = query_with_timing(&engine, &query, 0, Some(page_size));
     println!(
         "Showing results {}-{} of {} matches:\n",
         results.page_start + 1,
@@ -52,3 +76,8 @@ fn main() {
         println!();
     }
 }
+
+/*
+Run with:
+cargo run --release query-engine --query "[case:3] [case:2]" --limit 7
+*/
