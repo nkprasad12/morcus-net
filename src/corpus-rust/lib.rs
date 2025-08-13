@@ -42,6 +42,6 @@ impl QueryEngineWrapper {
         let result = self.engine
             .query_corpus(&query, page_start as usize, Some(page_size as usize))
             .expect("Query failed");
-        serde_json::to_string(&result.0).expect("Failed to serialize result")
+        serde_json::to_string(&result).expect("Failed to serialize result")
     }
 }
