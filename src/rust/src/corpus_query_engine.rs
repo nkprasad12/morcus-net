@@ -101,7 +101,9 @@ impl CorpusQueryEngine {
 
     fn get_all_matches_for(&self, part: &CorpusQueryAtom) -> Option<&PackedIndexData> {
         match part {
-            CorpusQueryAtom::Word(q) => self.corpus.indices.get("word")?.get(&q.word.to_lowercase()),
+            CorpusQueryAtom::Word(q) => {
+                self.corpus.indices.get("word")?.get(&q.word.to_lowercase())
+            }
             CorpusQueryAtom::Lemma(q) => self.corpus.indices.get("lemma")?.get(&q.lemma),
             CorpusQueryAtom::Inflection(q) => self.corpus.indices.get(&q.category)?.get(&q.value),
         }
@@ -131,10 +133,7 @@ impl CorpusQueryEngine {
             .collect()
     }
 
-    fn execute_initial_part(
-        &self,
-        part: &InternalComposedQuery,
-    ) -> Option<IntermediateResult> {
+    fn execute_initial_part(&self, part: &InternalComposedQuery) -> Option<IntermediateResult> {
         let atom_data = self.get_all_matches_for(&part.atoms[0].atom)?;
         Some(IntermediateResult {
             data: clone_packed_index_data(atom_data),
@@ -162,12 +161,13 @@ impl CorpusQueryEngine {
         })
     }
 
-    fn resolve_candidates(
-        &self,
-        candidates: &IntermediateResult,
-        query_length: usize,
-    ) -> Vec<u32> {
-        let hard_breaks = match self.corpus.indices.get("breaks").and_then(|m| m.get("hard")) {
+    fn resolve_candidates(&self, candidates: &IntermediateResult, query_length: usize) -> Vec<u32> {
+        let hard_breaks = match self
+            .corpus
+            .indices
+            .get("breaks")
+            .and_then(|m| m.get("hard"))
+        {
             Some(b) => b,
             None => return vec![], // No hard breaks index found
         };
@@ -253,22 +253,23 @@ impl CorpusQueryEngine {
             let token: String = row.get(0)?;
             let break_str: String = row.get(1)?;
             let n: u32 = row.get(2)?;
-            let current_token_id = n - 1; // convert back to 0-based
 
-            if current_token_id < token_id {
+            if n < token_id {
                 left_context.push_str(&token);
                 left_context.push_str(&break_str);
-            } else if current_token_id < token_id + query_length as u32 {
+                continue;
+            }
+            if n < token_id + query_length as u32 {
                 text.push_str(&token);
-                if current_token_id < token_id + query_length as u32 - 1 {
+                if n < token_id + query_length as u32 - 1 {
                     text.push_str(&break_str);
                 } else {
                     right_context.push_str(&break_str);
                 }
-            } else {
-                right_context.push_str(&token);
-                right_context.push_str(&break_str);
+                continue;
             }
+            right_context.push_str(&token);
+            right_context.push_str(&break_str);
         }
 
         Ok(CorpusQueryMatch {
@@ -303,10 +304,11 @@ impl CorpusQueryEngine {
         };
 
         for part in sorted_query.iter().skip(1) {
-            candidates = match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
-                Some(c) => c,
-                None => return Ok(empty_result()),
-            };
+            candidates =
+                match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
+                    Some(c) => c,
+                    None => return Ok(empty_result()),
+                };
         }
 
         let match_ids = self.resolve_candidates(&candidates, query.parts.len());
@@ -345,8 +347,12 @@ fn empty_result() -> CorpusQueryResult {
 // Helper to convert query atom reference to an owned version for storing in InternalQueryAtom
 fn from_query_atom_ref(atom: &CorpusQueryAtom) -> CorpusQueryAtom {
     match atom {
-        CorpusQueryAtom::Word(q) => CorpusQueryAtom::Word(WordQuery { word: q.word.clone() }),
-        CorpusQueryAtom::Lemma(q) => CorpusQueryAtom::Lemma(LemmaQuery { lemma: q.lemma.clone() }),
+        CorpusQueryAtom::Word(q) => CorpusQueryAtom::Word(WordQuery {
+            word: q.word.clone(),
+        }),
+        CorpusQueryAtom::Lemma(q) => CorpusQueryAtom::Lemma(LemmaQuery {
+            lemma: q.lemma.clone(),
+        }),
         CorpusQueryAtom::Inflection(q) => CorpusQueryAtom::Inflection(InflectionQuery {
             category: q.category.clone(),
             value: q.value.clone(),
@@ -357,7 +363,9 @@ fn from_query_atom_ref(atom: &CorpusQueryAtom) -> CorpusQueryAtom {
 // Helper to convert ApplyAndResult to PackedIndexData
 fn to_packed_index_data(result: ApplyAndResult) -> PackedIndexData {
     match result {
-        ApplyAndResult::Array(arr) => PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&arr)),
+        ApplyAndResult::Array(arr) => {
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&arr))
+        }
         ApplyAndResult::Bitmask(bm) => PackedIndexData::PackedBitMask(bm),
     }
 }
