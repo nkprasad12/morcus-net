@@ -32,7 +32,15 @@ fn query_with_timing(
         .expect("Query failed");
     let duration = start.elapsed();
     println!("Query executed in {:.2?}", duration);
-    results
+    if let Some(timing) = results.1.timing {
+        println!("Query timing breakdown:");
+        for (k, v) in timing {
+            // Convert microseconds to milliseconds for display
+            let ms = (v as f64) / 1000.0;
+            println!("  {}: {:.2} ms", k, ms);
+        }
+    }
+    results.0
 }
 
 fn get_query_arg_or_exit() -> String {
@@ -75,14 +83,6 @@ fn main() {
         println!("  {} - {} {}", m.author, m.work_name, m.section);
         println!("    {}*{}*{}", m.left_context, m.text, m.right_context,);
         println!();
-    }
-    if let Some(timing) = &results.timing {
-        println!("Query timing breakdown:");
-        for (k, v) in timing {
-            // Convert microseconds to milliseconds for display
-            let ms = (*v as f64) / 1000.0;
-            println!("  {}: {:.2} ms", k, ms);
-        }
     }
 }
 
