@@ -1,4 +1,4 @@
-mod bitmask_in_place_utils;
+mod bitmask_utils;
 mod packed_index_utils;
 
 use std::time::{Instant};
