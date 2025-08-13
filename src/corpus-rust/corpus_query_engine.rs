@@ -76,8 +76,6 @@ pub struct CorpusQueryResult {
     pub total_results: usize,
     pub matches: Vec<CorpusQueryMatch>,
     pub page_start: usize,
-    #[expect(unused)]
-    pub page_size: Option<usize>,
     pub timing: Option<Vec<(String, u128)>>,
 }
 
@@ -390,7 +388,6 @@ impl CorpusQueryEngine {
             total_results,
             matches,
             page_start,
-            page_size,
             timing: Some(profiler.get_stats().clone()),
         })
     }
@@ -401,7 +398,6 @@ fn empty_result() -> CorpusQueryResult {
         total_results: 0,
         matches: vec![],
         page_start: 0,
-        page_size: None,
         timing: None,
     }
 }
