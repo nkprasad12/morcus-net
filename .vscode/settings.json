@@ -53,7 +53,4 @@
   },
   "peacock.color": "#402B31",
   "git.openDiffOnClick": false,
-  "rust-analyzer.linkedProjects": [
-    "src/rust/Cargo.toml"
-  ],
 }

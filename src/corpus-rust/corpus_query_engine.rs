@@ -101,7 +101,7 @@ pub struct CorpusQueryEngine {
 
 impl CorpusQueryEngine {
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self> {
-        let db_path = Path::new("../..").join(&corpus.raw_text_db);
+        let db_path = Path::new(&corpus.raw_text_db);
         let token_db = Connection::open(db_path)?;
         Ok(CorpusQueryEngine { corpus, token_db })
     }
