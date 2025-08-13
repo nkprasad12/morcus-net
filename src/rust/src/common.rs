@@ -17,9 +17,7 @@ pub struct PackedBitMask {
 }
 
 // Renamed to avoid conflict when calling directly.
-fn deserialize_u64_vec_from_bytes_with_serde<'de, D>(
-    deserializer: D,
-) -> Result<Vec<u64>, D::Error>
+fn deserialize_u64_vec_from_bytes_with_serde<'de, D>(deserializer: D) -> Result<Vec<u64>, D::Error>
 where
     D: serde::Deserializer<'de>,
 {
@@ -36,17 +34,24 @@ pub fn deserialize_u64_vec_from_bytes(bytes: &[u8]) -> Result<Vec<u64>, String> 
     }
 
     let mut u64_vec = Vec::with_capacity(bytes.len() / 8 + 1);
-    let mut chunks = bytes.chunks_exact(8);
-
-    for chunk in &mut chunks {
-        u64_vec.push(u64::from_le_bytes(chunk.try_into().unwrap()));
+    // Process full 8-byte chunks
+    let mut i = 0;
+    while i + 8 <= bytes.len() {
+        let value = u64::from_le_bytes([
+            bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7],
+            bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3],
+        ]);
+        u64_vec.push(value);
+        i += 8;
     }
 
-    let remainder = chunks.remainder();
-    if !remainder.is_empty() {
-        let mut padded_chunk = [0u8; 8];
-        padded_chunk[..remainder.len()].copy_from_slice(remainder);
-        u64_vec.push(u64::from_le_bytes(padded_chunk));
+    // Handle the remainder if there's a 4-byte chunk left
+    if i + 4 <= bytes.len() {
+        let value = u64::from_le_bytes([
+            0, 0, 0, 0,
+            bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3],
+        ]);
+        u64_vec.push(value);
     }
 
     Ok(u64_vec)
