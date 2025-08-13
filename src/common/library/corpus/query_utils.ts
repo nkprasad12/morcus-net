@@ -2,11 +2,30 @@ import type {
   ComposedQuery,
   CorpusQuery,
   CorpusQueryAtom,
+  CorpusQueryHandler,
   CorpusQueryPart,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
-import type { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
-import { safeParseInt } from "@/common/misc_utils";
+import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
+import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
+import { safeParseInt, singletonOf } from "@/common/misc_utils";
+import { timed } from "@/common/timing/timed_invocation";
+
+export function jsCorpusApiHandler(): CorpusQueryHandler {
+  const engine = singletonOf(() =>
+    timed(() => new CorpusQueryEngine(loadCorpus()), "JavaScript corpus init")
+  );
+  return {
+    initialize: () => engine.get(),
+    runQuery: (request) =>
+      runQuery(
+        engine.get(),
+        request.query,
+        request.pageStart ?? 0,
+        request.pageSize ?? 50
+      ),
+  };
+}
 
 export async function runQuery(
   corpus: CorpusQueryEngine,

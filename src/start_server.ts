@@ -47,9 +47,8 @@ import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
-import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
-import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
-import { runQuery } from "@/common/library/corpus/query_utils";
+import type { CorpusQueryHandler } from "@/common/library/corpus/corpus_common";
+import { jsCorpusApiHandler } from "@/common/library/corpus/query_utils";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -180,10 +179,8 @@ export function startMorcusServer(): Promise<http.Server> {
     pozo,
     numeralDict,
   ]);
-  const corpusQueryEngine = singletonOf(
-    () => new CorpusQueryEngine(loadCorpus())
-  );
-  setTimeout(() => corpusQueryEngine.get(), randInRange(250, 500));
+  const corpusHandler: CorpusQueryHandler = jsCorpusApiHandler();
+  setTimeout(corpusHandler.initialize, randInRange(250, 500));
 
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;
@@ -239,13 +236,7 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(MacronizeApi, (input) => macronizeInput(input)),
       RouteDefinition.create(
         QueryCorpusApi,
-        (query) =>
-          runQuery(
-            corpusQueryEngine.get(),
-            query.query,
-            query.pageStart ?? 0,
-            query.pageSize ?? 50
-          ),
+        corpusHandler.runQuery,
         undefined,
         CACHING_SETTER
       ),

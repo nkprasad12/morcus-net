@@ -7,6 +7,7 @@ import {
   LatinTense,
   LatinVoice,
 } from "@/morceus/types";
+import type { CorpusQueryRequest } from "@/web/api_routes";
 import {
   isArray,
   isNumber,
@@ -237,3 +238,8 @@ export interface PackedBitMask {
   numSet?: number;
 }
 export type PackedIndexData = PackedNumbers | PackedBitMask;
+
+export interface CorpusQueryHandler {
+  initialize: () => void;
+  runQuery: (request: CorpusQueryRequest) => Promise<CorpusQueryResult>;
+}
