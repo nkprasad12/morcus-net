@@ -1,6 +1,6 @@
-use crate::common::{
-    deserialize_u64_vec_from_bytes, PackedBitMask, PackedIndexData,
-};
+use crate::common::{deserialize_u64_vec_from_bytes, PackedBitMask, PackedIndexData};
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use base64::engine::Engine as _;
 use serde::{
     de::{self, Deserializer, MapAccess, Visitor},
     Deserialize,
@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fmt;
 use std::fs;
-use std::path::Path;
+use std::path::Path; // Import a specific engine
 
 const MAP_TOKEN: &str = "___SERIALIZED_KEY_v1____MAP";
 const BIT_MASK_TOKEN: &str = "___SERIALIZED_KEY_v1____BIT_MASK";
@@ -105,13 +105,13 @@ where
                     } else if k.is_number() {
                         k.to_string()
                     } else {
-                        return Err(de::Error::custom(
-                            "Map key must be a string or a number",
-                        ));
+                        return Err(de::Error::custom("Map key must be a string or a number"));
                     };
                     let packed_data = match v {
                         StoredMapValue::Base64(b64_data) => {
-                            let bytes = base64::decode(b64_data).map_err(de::Error::custom)?;
+                            let bytes = BASE64_STANDARD
+                                .decode(b64_data)
+                                .map_err(de::Error::custom)?;
                             PackedIndexData::PackedNumbers(bytes)
                         }
                         StoredMapValue::BitMask {
@@ -122,7 +122,7 @@ where
                             if serialization_key != BIT_MASK_TOKEN {
                                 return Err(de::Error::custom("Invalid bitmask token"));
                             }
-                            let bytes = base64::decode(data).map_err(de::Error::custom)?;
+                            let bytes = BASE64_STANDARD.decode(data).map_err(de::Error::custom)?;
                             let u64_data = deserialize_u64_vec_from_bytes(&bytes)
                                 .map_err(de::Error::custom)?;
 
@@ -144,9 +144,7 @@ where
     deserializer.deserialize_map(IndicesVisitor)
 }
 
-pub fn deserialize_corpus<P: AsRef<Path>>(
-    path: P,
-) -> Result<LatinCorpusIndex, Box<dyn Error>> {
+pub fn deserialize_corpus<P: AsRef<Path>>(path: P) -> Result<LatinCorpusIndex, Box<dyn Error>> {
     let json_string = fs::read_to_string(path)?;
     let corpus = serde_json::from_str(&json_string)?;
     Ok(corpus)
