@@ -2,7 +2,6 @@
 
 import { packSortedNats } from "@/common/bytedata/packing";
 import {
-  findFuzzyMatches,
   findFuzzyMatchesWithBitmaskAndArray,
   toBitMask,
 } from "@/common/library/corpus/corpus_byte_utils";

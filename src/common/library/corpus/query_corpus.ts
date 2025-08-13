@@ -333,7 +333,6 @@ export class CorpusQueryEngine {
     return {
       totalResults: matchIds.length,
       pageStart,
-      pageSize,
       matches,
       timing: this.profiler.getStats(),
     };

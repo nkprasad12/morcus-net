@@ -85,7 +85,6 @@ export interface CorpusQueryResult {
   totalResults: number;
   matches: CorpusQueryMatch[];
   pageStart: number;
-  pageSize?: number;
 }
 
 export namespace CorpusQueryResult {
@@ -93,7 +92,6 @@ export namespace CorpusQueryResult {
     totalResults: isNumber,
     matches: isArray(CorpusQueryMatch.isMatch),
     pageStart: isNumber,
-    pageSize: isNumber,
   });
 }
 
