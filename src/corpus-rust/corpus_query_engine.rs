@@ -130,7 +130,7 @@ impl CorpusQueryEngine {
                 self.corpus.indices.get("word")?.get(&word.to_lowercase())
             }
             CorpusQueryAtom::Lemma(lemma) => {
-                self.corpus.indices.get("lemma")?.get(&lemma.to_owned())
+                self.corpus.indices.get("lemma")?.get(lemma)
             }
             CorpusQueryAtom::Inflection(q) => self.corpus.indices.get(&q.category)?.get(&q.value),
         }
