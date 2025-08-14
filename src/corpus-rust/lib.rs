@@ -9,7 +9,7 @@ mod query_parsing;
 
 use node_bindgen::derive::node_bindgen;
 
-const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
+const CORPUS_FILE: &str = "latin_corpus.json";
 
 fn create_engine(path: &str) -> corpus_query_engine::CorpusQueryEngine {
     let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
@@ -25,9 +25,10 @@ struct QueryEngineWrapper {
 #[node_bindgen]
 impl QueryEngineWrapper {
     #[node_bindgen(constructor)]
-    fn new() -> Self {
+    fn new(corpus_dir: String) -> Self {
+        let corpus_path = format!("{}/{}", corpus_dir, CORPUS_FILE);
         Self {
-            engine: create_engine(CORPUS_ROOT),
+            engine: create_engine(&corpus_path),
         }
     }
 
