@@ -1,6 +1,6 @@
 use crate::common::{PackedBitMask, PackedIndexData};
 use crate::corpus_serialization::LatinCorpusIndex;
-use crate::{packed_arrays};
+use crate::packed_arrays;
 use crate::packed_index_utils::{
     apply_and_to_indices, has_value_in_range, max_elements_in, unpack_packed_index_data,
     ApplyAndResult,
@@ -13,6 +13,8 @@ use std::path::Path;
 
 const MAX_QUERY_PARTS: usize = 8;
 const MAX_QUERY_ATOMS: usize = 8;
+const MAX_CONTEXT_LEN: usize = 100;
+const DEFAULT_CONTEXT_LEN: usize = 25;
 
 // Query-related structs, translated from corpus_common.ts
 #[derive(Debug)]
@@ -127,7 +129,9 @@ impl CorpusQueryEngine {
             CorpusQueryAtom::Word(word) => {
                 self.corpus.indices.get("word")?.get(&word.to_lowercase())
             }
-            CorpusQueryAtom::Lemma(lemma) => self.corpus.indices.get("lemma")?.get(&lemma.to_owned()),
+            CorpusQueryAtom::Lemma(lemma) => {
+                self.corpus.indices.get("lemma")?.get(&lemma.to_owned())
+            }
             CorpusQueryAtom::Inflection(q) => self.corpus.indices.get(&q.category)?.get(&q.value),
         }
     }
@@ -206,7 +210,12 @@ impl CorpusQueryEngine {
         })
     }
 
-    fn resolve_candidates(&self, candidates: &IntermediateResult, query_length: usize, profiler: &mut TimeProfiler) -> Vec<u32> {
+    fn resolve_candidates(
+        &self,
+        candidates: &IntermediateResult,
+        query_length: usize,
+        profiler: &mut TimeProfiler,
+    ) -> Vec<u32> {
         let hard_breaks = match self
             .corpus
             .indices
@@ -219,6 +228,10 @@ impl CorpusQueryEngine {
 
         let unpacked = unpack_packed_index_data(&candidates.data);
         profiler.phase("Unpack Candidates");
+        // There can be no hard breaks between tokens without multiple tokens.
+        if query_length < 2 {
+            return unpacked;
+        }
         let mut matches: Vec<u32> = Vec::new();
 
         for &token_id in &unpacked {
@@ -242,6 +255,7 @@ impl CorpusQueryEngine {
         &self,
         token_id: u32,
         query_length: usize,
+        context_len: usize,
     ) -> Result<CorpusQueryMatch, rusqlite::Error> {
         let work_ranges = &self.corpus.work_row_ranges;
         let work_idx = work_ranges
@@ -281,10 +295,8 @@ impl CorpusQueryEngine {
         let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
         let row_idx = row_info.0 as usize;
 
-        let context_len = 25;
-        let start_rowid = token_id.saturating_sub(context_len);
+        let start_rowid = token_id.saturating_sub(context_len as u32);
         let limit = query_length + (context_len * 2) as usize;
-
         let mut stmt = self
             .token_db
             .prepare("SELECT token, break, rowid FROM raw_text WHERE rowid >= ? LIMIT ?")?;
@@ -335,6 +347,7 @@ impl CorpusQueryEngine {
         query: &CorpusQuery,
         page_start: usize,
         page_size: Option<usize>,
+        context_len: Option<usize>,
     ) -> Result<CorpusQueryResult> {
         if query.parts.is_empty() {
             return Ok(empty_result());
@@ -367,10 +380,13 @@ impl CorpusQueryEngine {
         let page_size_val = page_size.unwrap_or(total_results);
         let end = (page_start + page_size_val).min(total_results);
 
+        let context_len = context_len
+            .unwrap_or(DEFAULT_CONTEXT_LEN)
+            .clamp(1, MAX_CONTEXT_LEN);
         let matches = if page_start < total_results {
             match_ids[page_start..end]
                 .iter()
-                .map(|&id| self.resolve_result(id, query.parts.len()))
+                .map(|&id| self.resolve_result(id, query.parts.len(), context_len))
                 .collect::<Result<Vec<_>, _>>()?
         } else {
             vec![]
