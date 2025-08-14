@@ -241,5 +241,5 @@ export type PackedIndexData = PackedNumbers | PackedBitMask;
 
 export interface CorpusQueryHandler {
   initialize: () => void;
-  runQuery: (request: CorpusQueryRequest) => Promise<CorpusQueryResult>;
+  runQuery: (request: CorpusQueryRequest) => CorpusQueryResult;
 }
