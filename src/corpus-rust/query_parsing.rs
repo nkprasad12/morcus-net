@@ -1,6 +1,5 @@
 use crate::corpus_query_engine::{
-    ComposedQuery, CorpusQuery, CorpusQueryAtom, CorpusQueryPart, InflectionQuery,
-    QueryToken,
+    ComposedQuery, CorpusQuery, CorpusQueryAtom, CorpusQueryPart, QueryToken,
 };
 use regex::Regex;
 
@@ -12,10 +11,10 @@ fn parse_query_atom(atom_str: &str) -> CorpusQueryAtom {
     match key {
         "word" => CorpusQueryAtom::Word(value.to_string()),
         "lemma" => CorpusQueryAtom::Lemma(value.to_string()),
-        _ => CorpusQueryAtom::Inflection(InflectionQuery {
+        _ => CorpusQueryAtom::Inflection {
             category: key.to_string(),
             value: value.to_string(),
-        }),
+        },
     }
 }
 
@@ -85,15 +84,15 @@ mod tests {
         if let QueryToken::Composed(cq) = &query.parts[0].token {
             assert_eq!(cq.composition, "and");
             assert_eq!(cq.atoms.len(), 2);
-            if let CorpusQueryAtom::Inflection(iq) = &cq.atoms[0] {
-                assert_eq!(iq.category, "case");
-                assert_eq!(iq.value, "1");
+            if let CorpusQueryAtom::Inflection { category, value } = &cq.atoms[0] {
+                assert_eq!(category, "case");
+                assert_eq!(value, "1");
             } else {
                 panic!("Expected InflectionQuery");
             }
-            if let CorpusQueryAtom::Inflection(iq) = &cq.atoms[1] {
-                assert_eq!(iq.category, "gender");
-                assert_eq!(iq.value, "1");
+            if let CorpusQueryAtom::Inflection { category, value } = &cq.atoms[1] {
+                assert_eq!(category, "gender");
+                assert_eq!(value, "1");
             } else {
                 panic!("Expected InflectionQuery");
             }
@@ -122,9 +121,9 @@ mod tests {
             } else {
                 panic!("Expected LemmaQuery");
             }
-            if let CorpusQueryAtom::Inflection(iq) = &cq.atoms[1] {
-                assert_eq!(iq.category, "case");
-                assert_eq!(iq.value, "2");
+            if let CorpusQueryAtom::Inflection { category, value } = &cq.atoms[1] {
+                assert_eq!(category, "case");
+                assert_eq!(value, "2");
             } else {
                 panic!("Expected InflectionQuery");
             }

@@ -18,16 +18,10 @@ const DEFAULT_CONTEXT_LEN: usize = 25;
 
 // Query-related structs, translated from corpus_common.ts
 #[derive(Debug)]
-pub struct InflectionQuery {
-    pub category: String, // e.g., "case", "gender"
-    pub value: String,    // e.g., "Nox", "Masc"
-}
-
-#[derive(Debug)]
 pub enum CorpusQueryAtom {
     Word(String),
     Lemma(String),
-    Inflection(InflectionQuery),
+    Inflection {category: String, value: String},
 }
 
 #[derive(Debug)]
@@ -132,7 +126,9 @@ impl CorpusQueryEngine {
             CorpusQueryAtom::Lemma(lemma) => {
                 self.corpus.indices.get("lemma")?.get(lemma)
             }
-            CorpusQueryAtom::Inflection(q) => self.corpus.indices.get(&q.category)?.get(&q.value),
+            CorpusQueryAtom::Inflection { category, value } => {
+                self.corpus.indices.get(category)?.get(value)
+            }
         }
     }
 
