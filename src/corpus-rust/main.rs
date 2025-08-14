@@ -20,10 +20,10 @@ fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex
     corpus
 }
 
-fn query_with_timing(
-    engine: &corpus_query_engine::CorpusQueryEngine,
+fn query_with_timing<'a>(
+    engine: &'a corpus_query_engine::CorpusQueryEngine,
     query: &corpus_query_engine::CorpusQuery,
-) -> corpus_query_engine::CorpusQueryResult {
+) -> corpus_query_engine::CorpusQueryResult<'a> {
     let page_start = 0;
     let page_size = Some(get_limit_arg_or_default());
     let context_len = get_context_arg_or_default();

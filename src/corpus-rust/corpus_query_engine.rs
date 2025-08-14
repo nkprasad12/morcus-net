@@ -1,4 +1,4 @@
-use crate::common::{PackedBitMask, PackedIndexData};
+use crate::common::PackedIndexData;
 use crate::corpus_serialization::LatinCorpusIndex;
 use crate::packed_arrays;
 use crate::packed_index_utils::{
@@ -54,10 +54,10 @@ pub struct CorpusQuery {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CorpusQueryMatch {
-    pub work_id: String,
-    pub work_name: String,
-    pub author: String,
+pub struct CorpusQueryMatch<'a> {
+    pub work_id: &'a String,
+    pub work_name: &'a String,
+    pub author: &'a String,
     pub section: String,
     pub offset: u32,
     pub text: String,
@@ -67,21 +67,21 @@ pub struct CorpusQueryMatch {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CorpusQueryResult {
+pub struct CorpusQueryResult<'a> {
     pub total_results: usize,
-    pub matches: Vec<CorpusQueryMatch>,
+    pub matches: Vec<CorpusQueryMatch<'a>>,
     pub page_start: usize,
     pub timing: Vec<(String, f64)>,
 }
 
 // Internal types for query processing
-struct InternalQueryAtom {
-    atom: CorpusQueryAtom,
+struct InternalQueryAtom<'a> {
+    atom: &'a CorpusQueryAtom,
     size_upper_bound: usize,
 }
 
-struct InternalComposedQuery {
-    atoms: Vec<InternalQueryAtom>,
+struct InternalComposedQuery<'a> {
+    atoms: Vec<InternalQueryAtom<'a>>,
     position: usize,
 }
 
@@ -141,7 +141,7 @@ impl CorpusQueryEngine {
             .map_or(0, |data| max_elements_in(data))
     }
 
-    fn convert_query(&self, query: &CorpusQuery) -> Vec<InternalComposedQuery> {
+    fn convert_query<'a>(&self, query: &'a CorpusQuery) -> Vec<InternalComposedQuery<'a>> {
         query
             .parts
             .iter()
@@ -152,7 +152,7 @@ impl CorpusQueryEngine {
                         let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
                         vec![InternalComposedQuery {
                             atoms: vec![InternalQueryAtom {
-                                atom: from_query_atom_ref(atom),
+                                atom: &atom,
                                 size_upper_bound,
                             }],
                             position: i,
@@ -169,7 +169,7 @@ impl CorpusQueryEngine {
                                 let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
                                 InternalComposedQuery {
                                     atoms: vec![InternalQueryAtom {
-                                        atom: from_query_atom_ref(atom),
+                                        atom: &atom,
                                         size_upper_bound,
                                     }],
                                     position: i,
@@ -185,7 +185,7 @@ impl CorpusQueryEngine {
     fn execute_initial_part(&self, part: &InternalComposedQuery) -> Option<IntermediateResult> {
         let atom_data = self.get_all_matches_for(&part.atoms[0].atom)?;
         Some(IntermediateResult {
-            data: clone_packed_index_data(atom_data),
+            data: PackedIndexData::clone(atom_data),
             position: part.position as i32,
         })
     }
@@ -256,7 +256,7 @@ impl CorpusQueryEngine {
         token_id: u32,
         query_length: usize,
         context_len: usize,
-    ) -> Result<CorpusQueryMatch, rusqlite::Error> {
+    ) -> Result<CorpusQueryMatch<'_>, rusqlite::Error> {
         let work_ranges = &self.corpus.work_row_ranges;
         let work_idx = work_ranges
             .binary_search_by(|(_, row_data)| {
@@ -331,9 +331,9 @@ impl CorpusQueryEngine {
         }
 
         Ok(CorpusQueryMatch {
-            work_id: work_id.clone(),
-            work_name: work_data.name.clone(),
-            author: work_data.author.clone(),
+            work_id: &work_id,
+            work_name: &work_data.name,
+            author: &work_data.author,
             section: row_ids[row_idx].join("."),
             offset: token_id - row_info.1,
             text,
@@ -348,7 +348,7 @@ impl CorpusQueryEngine {
         page_start: usize,
         page_size: Option<usize>,
         context_len: Option<usize>,
-    ) -> Result<CorpusQueryResult> {
+    ) -> Result<CorpusQueryResult<'_>> {
         if query.parts.is_empty() {
             return Ok(empty_result());
         }
@@ -402,24 +402,12 @@ impl CorpusQueryEngine {
     }
 }
 
-fn empty_result() -> CorpusQueryResult {
+fn empty_result() -> CorpusQueryResult<'static> {
     CorpusQueryResult {
         total_results: 0,
         matches: vec![],
         page_start: 0,
         timing: vec![],
-    }
-}
-
-// Helper to convert query atom reference to an owned version for storing in InternalQueryAtom
-fn from_query_atom_ref(atom: &CorpusQueryAtom) -> CorpusQueryAtom {
-    match atom {
-        CorpusQueryAtom::Word(q) => CorpusQueryAtom::Word(q.clone()),
-        CorpusQueryAtom::Lemma(q) => CorpusQueryAtom::Lemma(q.clone()),
-        CorpusQueryAtom::Inflection(q) => CorpusQueryAtom::Inflection(InflectionQuery {
-            category: q.category.clone(),
-            value: q.value.clone(),
-        }),
     }
 }
 
@@ -430,17 +418,5 @@ fn to_packed_index_data(result: ApplyAndResult) -> PackedIndexData {
             PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&arr))
         }
         ApplyAndResult::Bitmask(bm) => PackedIndexData::PackedBitMask(bm),
-    }
-}
-
-// Helper to clone PackedIndexData
-fn clone_packed_index_data(data: &PackedIndexData) -> PackedIndexData {
-    match data {
-        PackedIndexData::PackedNumbers(d) => PackedIndexData::PackedNumbers(d.clone()),
-        PackedIndexData::PackedBitMask(bm) => PackedIndexData::PackedBitMask(PackedBitMask {
-            format: bm.format.clone(),
-            data: bm.data.clone(),
-            num_set: bm.num_set,
-        }),
     }
 }
