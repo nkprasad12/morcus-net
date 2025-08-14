@@ -11,7 +11,7 @@ on:
 jobs:
   presubmit-checks:
     runs-on: ubuntu-latest
-    timeout-minutes: 6
+    timeout-minutes: 7
 
     steps:
       - uses: actions/checkout@v4
@@ -25,6 +25,8 @@ jobs:
           node-version-file: package.json
       - name: Installing npm dependencies
         run: npm ci
+      - name: Building Rust bindings
+        run: npm run setup-node-bindgen
       - name: Installing Python dependencies
         run: pip install -r requirements.txt
       - name: Running unit tests
@@ -57,7 +59,7 @@ jobs:
 
   build-image:
     runs-on: ubuntu-latest
-    timeout-minutes: 8
+    timeout-minutes: 9
     env:
       CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}
       LATEST: ghcr.io/nkprasad12/morcus:dev-latest

@@ -52,5 +52,5 @@
     "titleBar.inactiveForeground": "#e7e7e799"
   },
   "peacock.color": "#402B31",
-  "git.openDiffOnClick": false,
+  "git.openDiffOnClick": false
 }
