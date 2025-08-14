@@ -69,8 +69,8 @@ async function driver() {
   if (process.env.BUILD_CORPUS === "1") {
     buildCorpus(latinWorksFromLibrary());
   }
-  const useRust = process.env.IMPL === "rust";
-  const engine = useRust ? rustCorpusApiHandler() : jsCorpusApiHandler();
+  const useJs = process.env.IMPL === "js";
+  const engine = useJs ? jsCorpusApiHandler() : rustCorpusApiHandler();
   // console.log(getFormattedMemoryUsage());
   measureMemoryUsage(() => engine.initialize());
   // for (let i = 0; i < 10; i++) {

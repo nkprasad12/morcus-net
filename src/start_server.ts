@@ -48,7 +48,7 @@ import { assertEqual } from "@/common/assert";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import type { CorpusQueryHandler } from "@/common/library/corpus/corpus_common";
-import { jsCorpusApiHandler } from "@/common/library/corpus/query_utils";
+import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -179,7 +179,7 @@ export function startMorcusServer(): Promise<http.Server> {
     pozo,
     numeralDict,
   ]);
-  const corpusHandler: CorpusQueryHandler = jsCorpusApiHandler();
+  const corpusHandler: CorpusQueryHandler = rustCorpusApiHandler();
   setTimeout(corpusHandler.initialize, randInRange(250, 500));
 
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
