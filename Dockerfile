@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7-labs
-FROM node:22-alpine3.20
-RUN apk add git && apk add curl && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
+FROM node:22-trixie-slim
+RUN apt-get update && apt-get install -y git curl build-essential && mkdir -p /morcus/node_modules && mkdir -p /morcus/build
 WORKDIR /morcus
 # We automatically load a .env file in node commands for the purposes
 # of local development, so just create one so that we don't need to make separate
@@ -13,7 +13,7 @@ USER node
 RUN npm ci
 RUN npm run build
 
-FROM node:22-alpine3.20
+FROM node:22-trixie-slim
 WORKDIR /morcus
 COPY --from=0 /morcus/public public
 COPY --from=0 /morcus/build build
@@ -24,7 +24,7 @@ RUN mv build/dbs/ /morcus_dbs/
 RUN chown -R node:node /morcus
 RUN find /morcus_dbs/ -exec touch -amt 200001010000.00 {} +
 
-FROM node:22-alpine3.20
+FROM node:22-trixie-slim
 # We have to do this elaborate dance because Docker annoyingly has
 # no way to copy the database files without invalidating the layer cache,
 # (even the the `.db` hash is exactly the same) except to the root directory.
