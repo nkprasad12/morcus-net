@@ -1,6 +1,6 @@
 use crate::corpus_query_engine::{
-    ComposedQuery, CorpusQuery, CorpusQueryAtom, CorpusQueryPart, InflectionQuery, LemmaQuery,
-    QueryToken, WordQuery,
+    ComposedQuery, CorpusQuery, CorpusQueryAtom, CorpusQueryPart, InflectionQuery,
+    QueryToken,
 };
 use regex::Regex;
 
@@ -10,12 +10,8 @@ fn parse_query_atom(atom_str: &str) -> CorpusQueryAtom {
     let value = parts.get(1).map_or("", |v| *v);
 
     match key {
-        "word" => CorpusQueryAtom::Word(WordQuery {
-            word: value.to_string(),
-        }),
-        "lemma" => CorpusQueryAtom::Lemma(LemmaQuery {
-            lemma: value.to_string(),
-        }),
+        "word" => CorpusQueryAtom::Word(value.to_string()),
+        "lemma" => CorpusQueryAtom::Lemma(value.to_string()),
         _ => CorpusQueryAtom::Inflection(InflectionQuery {
             category: key.to_string(),
             value: value.to_string(),
@@ -70,12 +66,12 @@ mod tests {
         let query = parse_query(query_str);
         assert_eq!(query.parts.len(), 2);
         if let QueryToken::Atom(CorpusQueryAtom::Word(wq)) = &query.parts[0].token {
-            assert_eq!(wq.word, "arma");
+            assert_eq!(wq, "arma");
         } else {
             panic!("Expected WordQuery");
         }
         if let QueryToken::Atom(CorpusQueryAtom::Lemma(lq)) = &query.parts[1].token {
-            assert_eq!(lq.lemma, "virumque");
+            assert_eq!(lq, "virumque");
         } else {
             panic!("Expected LemmaQuery");
         }
@@ -113,7 +109,7 @@ mod tests {
         assert_eq!(query.parts.len(), 2);
 
         if let QueryToken::Atom(CorpusQueryAtom::Word(wq)) = &query.parts[0].token {
-            assert_eq!(wq.word, "test");
+            assert_eq!(wq, "test");
         } else {
             panic!("Expected WordQuery");
         }
@@ -122,7 +118,7 @@ mod tests {
             assert_eq!(cq.composition, "and");
             assert_eq!(cq.atoms.len(), 2);
             if let CorpusQueryAtom::Lemma(lq) = &cq.atoms[0] {
-                assert_eq!(lq.lemma, "foo");
+                assert_eq!(lq, "foo");
             } else {
                 panic!("Expected LemmaQuery");
             }
@@ -150,7 +146,7 @@ mod tests {
         let query = parse_query(query_str);
         assert_eq!(query.parts.len(), 2);
         if let QueryToken::Atom(CorpusQueryAtom::Word(wq)) = &query.parts[0].token {
-            assert_eq!(wq.word, "spaced");
+            assert_eq!(wq, "spaced");
         } else {
             panic!("Expected WordQuery");
         }

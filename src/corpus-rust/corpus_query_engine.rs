@@ -16,16 +16,6 @@ const MAX_QUERY_ATOMS: usize = 8;
 
 // Query-related structs, translated from corpus_common.ts
 #[derive(Debug)]
-pub struct WordQuery {
-    pub word: String,
-}
-
-#[derive(Debug)]
-pub struct LemmaQuery {
-    pub lemma: String,
-}
-
-#[derive(Debug)]
 pub struct InflectionQuery {
     pub category: String, // e.g., "case", "gender"
     pub value: String,    // e.g., "Nox", "Masc"
@@ -33,8 +23,8 @@ pub struct InflectionQuery {
 
 #[derive(Debug)]
 pub enum CorpusQueryAtom {
-    Word(WordQuery),
-    Lemma(LemmaQuery),
+    Word(String),
+    Lemma(String),
     Inflection(InflectionQuery),
 }
 
@@ -134,10 +124,10 @@ impl CorpusQueryEngine {
 
     fn get_all_matches_for(&self, part: &CorpusQueryAtom) -> Option<&PackedIndexData> {
         match part {
-            CorpusQueryAtom::Word(q) => {
-                self.corpus.indices.get("word")?.get(&q.word.to_lowercase())
+            CorpusQueryAtom::Word(word) => {
+                self.corpus.indices.get("word")?.get(&word.to_lowercase())
             }
-            CorpusQueryAtom::Lemma(q) => self.corpus.indices.get("lemma")?.get(&q.lemma),
+            CorpusQueryAtom::Lemma(lemma) => self.corpus.indices.get("lemma")?.get(&lemma.to_owned()),
             CorpusQueryAtom::Inflection(q) => self.corpus.indices.get(&q.category)?.get(&q.value),
         }
     }
@@ -408,12 +398,8 @@ fn empty_result() -> CorpusQueryResult {
 // Helper to convert query atom reference to an owned version for storing in InternalQueryAtom
 fn from_query_atom_ref(atom: &CorpusQueryAtom) -> CorpusQueryAtom {
     match atom {
-        CorpusQueryAtom::Word(q) => CorpusQueryAtom::Word(WordQuery {
-            word: q.word.clone(),
-        }),
-        CorpusQueryAtom::Lemma(q) => CorpusQueryAtom::Lemma(LemmaQuery {
-            lemma: q.lemma.clone(),
-        }),
+        CorpusQueryAtom::Word(q) => CorpusQueryAtom::Word(q.clone()),
+        CorpusQueryAtom::Lemma(q) => CorpusQueryAtom::Lemma(q.clone()),
         CorpusQueryAtom::Inflection(q) => CorpusQueryAtom::Inflection(InflectionQuery {
             category: q.category.clone(),
             value: q.value.clone(),
