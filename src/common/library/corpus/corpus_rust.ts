@@ -10,7 +10,7 @@ export function rustCorpusApiHandler(): CorpusQueryHandler {
   const engine = singletonOf(() =>
     timed(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const query_engine = require(`${process.cwd()}/dist`);
+      const query_engine = require(`${process.cwd()}/build/corpus-rust`);
       return new query_engine.QueryEngineWrapper();
     }, "Rust corpus init")
   );

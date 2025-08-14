@@ -2,7 +2,7 @@
 
 import { packSortedNats } from "@/common/bytedata/packing";
 import {
-  findFuzzyMatchesWithBitmaskAndArray,
+  findFuzzyMatchesWithBitmasks,
   toBitMask,
 } from "@/common/library/corpus/corpus_byte_utils";
 import type { PackedBitMask } from "@/common/library/corpus/corpus_common";
@@ -162,13 +162,7 @@ function runProfiling() {
 
     const start = performance.now();
     // Add the operation to be measured below
-    last = findFuzzyMatchesWithBitmaskAndArray(
-      b.bitmask,
-      a.indices,
-      3,
-      4,
-      "both"
-    );
+    last = findFuzzyMatchesWithBitmasks(b.bitmask, a.bitmask, 3, 4, "both");
     // Add the operation to be measured above
     times.push(performance.now() - start);
   }
