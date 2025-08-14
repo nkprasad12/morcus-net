@@ -391,7 +391,7 @@ impl CorpusQueryEngine {
             total_results,
             matches,
             page_start,
-            timing: profiler.get_stats().clone(),
+            timing: profiler.get_stats().to_vec(),
         })
     }
 }

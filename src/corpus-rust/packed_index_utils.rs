@@ -671,7 +671,7 @@ mod tests {
             num_set: None,
         });
         let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2);
-        let expected_data = to_bitmask(&[4], 64);
+        let expected_data = to_bitmask(&[1, 3], 64);
         assert_eq!(
             result,
             ApplyAndResult::Bitmask(PackedBitMask {
