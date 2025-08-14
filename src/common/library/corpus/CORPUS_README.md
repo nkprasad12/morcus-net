@@ -93,6 +93,7 @@ If we assume a sparshish index, we have K << N:
       - encoding for 0s is K log N-K bits
     - Total: 1 + K (log K + log N-K + 2)
 - How does this compare with N?
+
   - Consdider p = the frequency of K, and drop the 1
   - Then: N _ p (log N _ p + log (N - Np) + 2)
     - Note N - Np = N (1 - p)
@@ -106,3 +107,60 @@ If we assume a sparshish index, we have K << N:
       - Then, compared with the comparison of a bit mask of length N:
       - Np (2 log N + 1.4) < N
       - p < 1 / (2 log N + 1.4)
+
+- Query language!
+  - Things we want to support:
+    - Search by:
+      - Exact match
+      - Lemma
+      - Inflection category
+      - Punctuation
+        - Section / Line Break
+        - Question Mark
+        - Comma or Semicolon
+        - Period or Exclamation
+        - Quotes
+    - Proximity
+      - Configurable
+    - Compositions
+      - And
+      - Or
+      - Not
+    - Filters
+      - Work
+      - Author
+      - Time period
+    - Configurations
+      - Context size
+      - Page size
+
+Configurations can be settings in the UI and don't need to be part of the query syntax.
+
+Exact match can be without anything - just the bare string.
+
+Everything else must have @ as a prefix.
+
+- @lemma:whatever
+- @case:whatever
+  - @gender
+  - @tense
+  - @mood
+  - @person
+  - @number
+  - @voice
+  - @degree
+- @exact:whatever (for completeness)
+- @punct
+
+- @author
+- @work
+
+#and
+#or
+#not
+
+Groupings (for convenience):
+
+- [ ]
+- { }
+- ( )

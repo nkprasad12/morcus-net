@@ -15,8 +15,11 @@ const EXTRA_KEY_LOOKUP = new Map<string, string>([
 
 function getPrefixes(prefix: string, fromLang: DictLang): string[] {
   if (fromLang === "La") {
+    // This results in exponential blowup if it's too long, so only go up to 25.
+    // Anything longer is likely a mistake.
+    const maxDepth = Math.min(25, prefix.length);
     let prefixes: string[] = [""];
-    for (let i = 0; i < prefix.length; i++) {
+    for (let i = 0; i < maxDepth; i++) {
       const nextChar = prefix.charAt(i);
       const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
       const nextChars =

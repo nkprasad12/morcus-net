@@ -7,6 +7,7 @@ import {
   LatinTense,
   LatinVoice,
 } from "@/morceus/types";
+import type { CorpusQueryRequest } from "@/web/api_routes";
 import {
   isArray,
   isNumber,
@@ -43,7 +44,15 @@ export interface ComposedQuery {
   atoms: CorpusQueryAtom[];
 }
 
-export type CorpusQueryPart = CorpusQueryAtom | ComposedQuery;
+export interface GapSpec {
+  maxDistance: number;
+  directed: boolean;
+}
+
+export interface CorpusQueryPart {
+  token: CorpusQueryAtom | ComposedQuery;
+  gap?: GapSpec;
+}
 
 export interface CorpusQuery {
   parts: CorpusQueryPart[];
@@ -77,7 +86,6 @@ export interface CorpusQueryResult {
   totalResults: number;
   matches: CorpusQueryMatch[];
   pageStart: number;
-  pageSize?: number;
 }
 
 export namespace CorpusQueryResult {
@@ -85,7 +93,6 @@ export namespace CorpusQueryResult {
     totalResults: isNumber,
     matches: isArray(CorpusQueryMatch.isMatch),
     pageStart: isNumber,
-    pageSize: isNumber,
   });
 }
 
@@ -140,20 +147,6 @@ export interface FilterOptions {
   keepMisses?: boolean;
 }
 
-export interface GenericReverseIndex<T> {
-  /**
-   * Information about the format of the index stored for the key.
-   * This is used mostly for unit test verification.
-   */
-  formatOf(key: T): "bitmask" | undefined;
-
-  /** Returns index data for the given key. */
-  get(key: T): PackedIndexData | undefined;
-
-  /** Returns an iterable of all keys in the index. */
-  keys(): Iterable<T>;
-}
-
 export interface LatinInflectionTypes {
   case: LatinCase;
   number: LatinNumber;
@@ -193,8 +186,9 @@ interface CoreCorpusIndex {
 
 export interface LatinCorpusIndex extends CoreCorpusIndex {
   indices: {
-    [K in keyof CorpusIndexKeyTypes]: GenericReverseIndex<
-      CorpusIndexKeyTypes[K]
+    [K in keyof CorpusIndexKeyTypes]: Map<
+      CorpusIndexKeyTypes[K],
+      PackedIndexData
     >;
   };
 }
@@ -244,3 +238,8 @@ export interface PackedBitMask {
   numSet?: number;
 }
 export type PackedIndexData = PackedNumbers | PackedBitMask;
+
+export interface CorpusQueryHandler {
+  initialize: () => void;
+  runQuery: (request: CorpusQueryRequest) => CorpusQueryResult;
+}

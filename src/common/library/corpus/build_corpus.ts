@@ -208,7 +208,7 @@ function printArtifactSummary(corpusDir: string) {
       if (file.endsWith("-wal") || file.endsWith("-shm")) {
         continue; // Skip SQLite WAL and SHM files.
       }
-      const filePath = `${CORPUS_DIR}/${file}`;
+      const filePath = `${corpusDir}/${file}`;
       const stat = fs.statSync(filePath);
       if (stat.isFile()) {
         const content = fs.readFileSync(filePath);

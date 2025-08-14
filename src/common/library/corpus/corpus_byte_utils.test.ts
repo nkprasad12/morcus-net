@@ -1,4 +1,4 @@
-import { packIntegers } from "@/common/bytedata/packing";
+import { packSortedNats } from "@/common/bytedata/packing";
 import type { PackedBitMask } from "@/common/library/corpus/corpus_common";
 import {
   applyAndWithArrays,
@@ -8,6 +8,10 @@ import {
   unpackPackedIndexData,
   hasValueInRange,
   toBitMask,
+  smearBitmask,
+  findFuzzyMatchesWithArrays,
+  maxElementsIn,
+  findFuzzyMatchesWithBitmasks,
 } from "@/common/library/corpus/corpus_byte_utils";
 
 function bitMaskToBooleanArray(bitmask: Uint32Array): boolean[] {
@@ -339,8 +343,8 @@ describe("applyAndWithArrays", () => {
 describe("filterCandidates", () => {
   describe("when both candidates and filter are arrays", () => {
     it("should return correct intersection with no offset", () => {
-      const candidates = packIntegers(10, [1, 3, 5, 8]);
-      const filterData = packIntegers(10, [3, 5, 9]);
+      const candidates = packSortedNats([1, 3, 5, 8]);
+      const filterData = packSortedNats([3, 5, 9]);
       const [result, position] = applyAndToIndices(
         candidates,
         0,
@@ -352,8 +356,8 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with no offset but with positions", () => {
-      const candidates = packIntegers(10, [1, 3, 5, 8]);
-      const filterData = packIntegers(10, [3, 5, 9]);
+      const candidates = packSortedNats([1, 3, 5, 8]);
+      const filterData = packSortedNats([3, 5, 9]);
       const [result, position] = applyAndToIndices(
         candidates,
         2,
@@ -365,8 +369,8 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with a positive offset", () => {
-      const candidates = packIntegers(10, [3, 6, 9]);
-      const filterData = packIntegers(10, [2, 4, 8]);
+      const candidates = packSortedNats([3, 6, 9]);
+      const filterData = packSortedNats([2, 4, 8]);
       const [result, position] = applyAndToIndices(
         candidates,
         2,
@@ -378,8 +382,8 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with a negative offset", () => {
-      const candidates = packIntegers(10, [3, 4, 8, 9]);
-      const filterData = packIntegers(10, [1, 3, 6, 9]);
+      const candidates = packSortedNats([3, 4, 8, 9]);
+      const filterData = packSortedNats([1, 3, 6, 9]);
       const [result, position] = applyAndToIndices(
         candidates,
         1,
@@ -398,7 +402,7 @@ describe("filterCandidates", () => {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
       };
-      const filterData = packIntegers(5, [1, 2, 4]);
+      const filterData = packSortedNats([1, 2, 4]);
       const [result, position] = applyAndToIndices(
         candidates,
         0,
@@ -414,7 +418,7 @@ describe("filterCandidates", () => {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
       };
-      const filterData = packIntegers(5, [1, 2, 4]);
+      const filterData = packSortedNats([1, 2, 4]);
       const [result, position] = applyAndToIndices(
         candidates,
         1,
@@ -430,7 +434,7 @@ describe("filterCandidates", () => {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
       };
-      const filterData = packIntegers(5, [0, 2, 3]);
+      const filterData = packSortedNats([0, 2, 3]);
       const [result, position] = applyAndToIndices(
         candidates,
         1,
@@ -445,7 +449,7 @@ describe("filterCandidates", () => {
   // Case 3: Array and Bitmask
   describe("when candidates is an array and filter is a bitmask", () => {
     it("should return correct intersection with no offset", () => {
-      const candidates = packIntegers(5, [1, 2, 4]);
+      const candidates = packSortedNats([1, 2, 4]);
       const filterData: PackedBitMask = {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
@@ -461,7 +465,7 @@ describe("filterCandidates", () => {
     });
 
     it("should return correct intersection with a negative offset", () => {
-      const candidates = packIntegers(5, [0, 2, 3]);
+      const candidates = packSortedNats([0, 2, 3]);
       const filterData: PackedBitMask = {
         format: "bitmask",
         data: booleanArrayToBitMask([false, true, false, true, true]), // 1, 3, 4
@@ -548,7 +552,7 @@ describe("filterCandidates", () => {
 
     it("should unpack an array of of packed integers", () => {
       const originalData = [10, 25, 150, 300];
-      const packedData = packIntegers(301, originalData);
+      const packedData = packSortedNats(originalData);
       const result = unpackPackedIndexData(packedData);
       expect(result).toEqual(originalData);
     });
@@ -593,7 +597,7 @@ describe("hasValueInRange", () => {
   });
 
   it("returns true if any value in range is set (packed array)", () => {
-    const packedArray = packIntegers(10, [2, 5, 8]);
+    const packedArray = packSortedNats([2, 5, 8]);
     expect(hasValueInRange(packedArray, [5, 5])).toBe(true);
     expect(hasValueInRange(packedArray, [2, 2])).toBe(true);
     expect(hasValueInRange(packedArray, [7, 9])).toBe(true);
@@ -610,5 +614,364 @@ describe("hasValueInRange", () => {
 
   it("returns false for empty packed array", () => {
     expect(hasValueInRange([] as any, [0, 9])).toBe(false);
+  });
+});
+
+describe("smearBitmask", () => {
+  it("should smear to the right within a single word", () => {
+    const original = toBitMask([5], 64); // 0...1000... at bit 5
+    const smeared = smearBitmask(original, 3, "right");
+    // Expect bits 5, 6, 7, 8 to be set
+    const expected = toBitMask([5, 6, 7, 8], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear to the left within a single word", () => {
+    const original = toBitMask([5], 64); // 0...1000... at bit 5
+    const smeared = smearBitmask(original, 3, "left");
+    // Expect bits 2, 3, 4, 5 to be set
+    const expected = toBitMask([2, 3, 4, 5], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear in both directions within a single word", () => {
+    const original = toBitMask([5], 64);
+    const smeared = smearBitmask(original, 2, "both");
+    // Expect bits 3, 4, 5, 6, 7 to be set
+    const expected = toBitMask([3, 4, 5, 6, 7], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear to the right across word boundaries", () => {
+    const original = toBitMask([30], 64);
+    const smeared = smearBitmask(original, 3, "right");
+    // Expect bits 30, 31, 32, 33 to be set
+    const expected = toBitMask([30, 31, 32, 33], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear to the left across word boundaries", () => {
+    const original = toBitMask([33], 64);
+    const smeared = smearBitmask(original, 3, "left");
+    // Expect bits 30, 31, 32, 33 to be set
+    const expected = toBitMask([30, 31, 32, 33], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should smear in both directions across word boundaries", () => {
+    const original = toBitMask([31], 64);
+    const smeared = smearBitmask(original, 2, "both");
+    // Expect bits 29, 30, 31, 32, 33 to be set
+    const expected = toBitMask([29, 30, 31, 32, 33], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle multiple bits set, smearing right", () => {
+    const original = toBitMask([5, 15], 64);
+    const smeared = smearBitmask(original, 2, "right");
+    const expected = toBitMask([5, 6, 7, 15, 16, 17], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle multiple bits set, smearing left", () => {
+    const original = toBitMask([5, 15], 64);
+    const smeared = smearBitmask(original, 2, "left");
+    const expected = toBitMask([3, 4, 5, 13, 14, 15], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle multiple bits set, smearing both", () => {
+    const original = toBitMask([5, 15], 64);
+    const smeared = smearBitmask(original, 1, "both");
+    const expected = toBitMask([4, 5, 6, 14, 15, 16], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle overlapping smears", () => {
+    const original = toBitMask([5, 8], 64);
+    const smeared = smearBitmask(original, 2, "right");
+    // Smear from 5: [5, 6, 7]. Smear from 8: [8, 9, 10].
+    const expected = toBitMask([5, 6, 7, 8, 9, 10], 64);
+    expect(smeared).toEqual(expected);
+  });
+
+  it("should handle overlapping smears with 'both'", () => {
+    const original = toBitMask([5, 8], 64);
+    const smeared = smearBitmask(original, 2, "both");
+    // Smear from 5: [3,4,5,6,7]. Smear from 8: [6,7,8,9,10].
+    const expected = toBitMask([3, 4, 5, 6, 7, 8, 9, 10], 64);
+    expect(smeared).toEqual(expected);
+  });
+});
+
+describe("findFuzzyMatchesWithArrays", () => {
+  it("should handle multiple consecutive `first` elements matching one `second` element (both)", () => {
+    const first = [10, 11];
+    const second = [9];
+    const offset = 0;
+    const maxDistance = 2;
+    // The match window for `second` element 9 is [7, 11].
+    // Both 10 and 11 from `first` fall within this window.
+    expect(
+      findFuzzyMatchesWithArrays(first, second, offset, maxDistance, "both")
+    ).toEqual([10, 11]);
+  });
+
+  it("should return an empty array if the first array is empty", () => {
+    expect(findFuzzyMatchesWithArrays([], [1, 2, 3], 0, 1, "both")).toEqual([]);
+  });
+
+  it("should return an empty array if the second array is empty", () => {
+    expect(findFuzzyMatchesWithArrays([1, 2, 3], [], 0, 1, "both")).toEqual([]);
+  });
+
+  it("should return an empty array if no matches are found", () => {
+    expect(
+      findFuzzyMatchesWithArrays([1, 2, 3], [10, 11, 12], 0, 1, "both")
+    ).toEqual([]);
+  });
+
+  it("should find exact matches with zero offset and zero distance", () => {
+    expect(
+      findFuzzyMatchesWithArrays([1, 5, 10], [1, 6, 10], 0, 0, "both")
+    ).toEqual([1, 10]);
+  });
+
+  it("should find exact matches with a non-zero offset and zero distance", () => {
+    expect(
+      findFuzzyMatchesWithArrays([3, 7, 12], [1, 6, 10], 2, 0, "both")
+    ).toEqual([3, 12]);
+  });
+
+  it("should find fuzzy matches with a zero offset (both)", () => {
+    // second becomes [1, 12].
+    // 3 is in range of 1 (1-2 to 1+2 => [-1, 3]).
+    // 8,9 are not in range of 12 (12-2 to 12+2 => [10, 14]).
+    expect(
+      findFuzzyMatchesWithArrays([3, 8, 9], [0, 11], 1, 2, "both")
+    ).toEqual([3]);
+  });
+
+  it("should find fuzzy matches with a non-zero offset (both)", () => {
+    // second becomes [4, 9, 19].
+    // 5 is in range of 4. 10 is in range of 9. 15 is not in range of 19.
+    expect(
+      findFuzzyMatchesWithArrays([5, 10, 15], [3, 8, 18], 1, 1, "both")
+    ).toEqual([5, 10]);
+  });
+
+  it("should handle multiple matches for a single element in the first array (both)", () => {
+    // first: [10], second: [8, 9, 10] -> offset 0, dist 1.
+    // second vals are 8,9,10. 10 matches all of them.
+    expect(findFuzzyMatchesWithArrays([10], [8, 9, 10], 0, 1, "both")).toEqual([
+      10,
+    ]);
+  });
+
+  it("should handle multiple matches for a single element in the second array (both)", () => {
+    // first: [8, 9, 10], second: [9] -> offset 0, dist 1.
+    // second val is 9. Its range [8, 10] matches all elements in first.
+    expect(findFuzzyMatchesWithArrays([8, 9, 10], [9], 0, 1, "both")).toEqual([
+      8, 9, 10,
+    ]);
+  });
+
+  it("should handle overlapping fuzzy matches (both)", () => {
+    // first: [5, 6], second: [7], offset: 0, dist: 2.
+    // second val is 7. Its range [5, 9] matches both 5 and 6.
+    expect(findFuzzyMatchesWithArrays([5, 6], [7], 0, 2, "both")).toEqual([
+      5, 6,
+    ]);
+  });
+
+  it("should handle complex cases with multiple overlapping matches (both)", () => {
+    // first: [10, 11, 15, 20], second: [12, 18], offset: 0, dist: 2.
+    // second val 12: range [10, 14]. Matches 10, 11.
+    // second val 18: range [16, 20]. Matches 20. (15 is not in range).
+    expect(
+      findFuzzyMatchesWithArrays([10, 11, 15, 20], [12, 18], 0, 2, "both")
+    ).toEqual([10, 11, 20]);
+  });
+
+  it("should handle another complex case correctly (both)", () => {
+    const first = [10, 20, 30, 40, 50];
+    const second = [12, 33, 48];
+    // second val 12: range [9, 15]. Matches 10.
+    // second val 33: range [30, 36]. Matches 30.
+    // second val 48: range [45, 51]. Matches 50.
+    expect(findFuzzyMatchesWithArrays(first, second, 0, 3, "both")).toEqual([
+      10, 30, 50,
+    ]);
+  });
+
+  it("should handle the case from the original code comments (both)", () => {
+    // first: [3, 8, 9], second: [0, 11], offset: 1, maxDistance: 2.
+    // second becomes [1, 12].
+    // second val 1: range [-1, 3]. Matches 3.
+    // second val 12: range [10, 14]. No matches.
+    expect(
+      findFuzzyMatchesWithArrays([3, 8, 9], [0, 11], 1, 2, "both")
+    ).toEqual([3]);
+  });
+
+  it("should find fuzzy matches with direction 'right'", () => {
+    // second val 5: range [5, 7]. Matches 5, 7.
+    // second val 10: range [10, 12]. Matches 10.
+    expect(
+      findFuzzyMatchesWithArrays([5, 7, 9, 10], [5, 10], 0, 2, "right")
+    ).toEqual([5, 7, 10]);
+  });
+
+  it("should find fuzzy matches with direction 'left'", () => {
+    // second val 5: range [3, 5]. Matches 3, 5.
+    // second val 10: range [8, 10]. Matches 9, 10.
+    expect(
+      findFuzzyMatchesWithArrays([3, 5, 7, 9, 10], [5, 10], 0, 2, "left")
+    ).toEqual([3, 5, 9, 10]);
+  });
+
+  it("should find no matches if direction restricts range (right)", () => {
+    // second val 10: range [10, 12]. No match for 9.
+    expect(findFuzzyMatchesWithArrays([9], [10], 0, 2, "right")).toEqual([]);
+  });
+
+  it("should find no matches if direction restricts range (left)", () => {
+    // second val 10: range [8, 10]. No match for 11.
+    expect(findFuzzyMatchesWithArrays([11], [10], 0, 2, "left")).toEqual([]);
+  });
+});
+
+describe("maxElementsIn", () => {
+  it("should return 0 for undefined packedData", () => {
+    expect(maxElementsIn(undefined)).toBe(0);
+  });
+
+  it("should return the number of elements for a packed array", () => {
+    const data = [1, 5, 10, 20, 100];
+    const packedData = packSortedNats(data);
+    expect(maxElementsIn(packedData)).toBe(data.length);
+  });
+
+  it("should return 0 for an empty packed array", () => {
+    const packedData = packSortedNats([]);
+    expect(maxElementsIn(packedData)).toBe(0);
+  });
+
+  it("should return numSet when it is defined in a PackedBitMask", () => {
+    const packedData: PackedBitMask = {
+      format: "bitmask",
+      data: new Uint32Array([1, 2, 3]),
+      numSet: 42,
+    };
+    expect(maxElementsIn(packedData)).toBe(42);
+  });
+
+  it("should return the total possible bits when numSet is not defined", () => {
+    const packedData: PackedBitMask = {
+      format: "bitmask",
+      data: new Uint32Array(3), // 3 words * 32 bits/word = 96
+    };
+    expect(maxElementsIn(packedData)).toBe(96);
+  });
+
+  it("should return 0 for a bitmask with an empty data array and no numSet", () => {
+    const packedData: PackedBitMask = {
+      format: "bitmask",
+      data: new Uint32Array([]),
+    };
+    expect(maxElementsIn(packedData)).toBe(0);
+  });
+});
+
+describe("findFuzzyMatchesWithBitmasks", () => {
+  const runTest = (
+    firstIndices: number[],
+    secondIndices: number[],
+    offset: number,
+    maxDistance: number,
+    direction: "left" | "right" | "both",
+    expectedIndices: number[],
+    size = 64
+  ) => {
+    const first = toBitMask(firstIndices, size);
+    const second = toBitMask(secondIndices, size);
+    const resultBitmask = findFuzzyMatchesWithBitmasks(
+      first,
+      second,
+      offset,
+      maxDistance,
+      direction
+    );
+    const resultIndices = unpackPackedIndexData({
+      format: "bitmask",
+      data: resultBitmask,
+    });
+    expect(resultIndices).toEqual(expectedIndices);
+  };
+
+  it("should find matches with direction 'right'", () => {
+    // second[3] smeared right by 2 becomes [3,4,5].
+    // first[5] intersects with smeared second.
+    runTest([5], [3], 0, 2, "right", [5]);
+  });
+
+  it("should find matches with direction 'right' and an offset", () => {
+    // second[3] + offset(1) = 4. Smeared right by 2 becomes [4,5,6].
+    // first[5] intersects.
+    runTest([5], [3], 1, 2, "right", [5]);
+  });
+
+  it("should find matches with direction 'left'", () => {
+    // second[5] smeared left by 2 becomes [3,4,5].
+    // first[3] intersects.
+    runTest([3], [5], 0, 2, "left", [3]);
+  });
+
+  it("should find matches with direction 'left' and an offset", () => {
+    // second[5] + offset(1) = 6. Smeared left by 2 becomes [4,5,6].
+    // first[5] intersects.
+    runTest([5], [5], 1, 2, "left", [5]);
+  });
+
+  it("should find matches with direction 'both'", () => {
+    // second[5] smeared both by 2 becomes [3,4,5,6,7].
+    // first[3] and first[7] intersect.
+    runTest([3, 7], [5], 0, 2, "both", [3, 7]);
+  });
+
+  it("should find matches with direction 'both' and an offset", () => {
+    // second[5] + offset(1) = 6. Smeared both by 2 becomes [4,5,6,7,8].
+    // first[4] and first[8] intersect.
+    runTest([4, 8], [5], 1, 2, "both", [4, 8]);
+  });
+
+  it("should return an empty bitmask if no matches are found", () => {
+    runTest([10], [1], 0, 2, "both", []);
+  });
+
+  it("should handle multiple bits and overlapping smears", () => {
+    // second[5] smeared both by 2 -> [3,4,5,6,7]
+    // second[10] smeared both by 2 -> [8,9,10,11,12]
+    // first has bits at [3, 8, 13].
+    // Match at 3 and 8.
+    runTest([3, 8, 13], [5, 10], 0, 2, "both", [3, 8]);
+  });
+
+  it("should handle matches across word boundaries", () => {
+    // second[30] + offset(0) = 30. Smeared both by 3 -> [27..33]
+    // first has bits at [28, 32]. Both should match.
+    runTest([28, 32], [30], 0, 3, "both", [28, 32]);
+  });
+
+  it("should handle matches across word boundaries with an offset", () => {
+    // second[30] + offset(5) = 35. Smeared both by 3 -> [32..38]
+    // first has bits at [33, 37]. Both should match.
+    runTest([33, 37], [30], 5, 3, "both", [33, 37]);
+  });
+
+  it("should handle empty input bitmasks", () => {
+    runTest([], [1, 2, 3], 0, 2, "both", []);
+    runTest([1, 2, 3], [], 0, 2, "both", []);
+    runTest([], [], 0, 2, "both", []);
   });
 });

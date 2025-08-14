@@ -2,18 +2,37 @@ import type {
   ComposedQuery,
   CorpusQuery,
   CorpusQueryAtom,
+  CorpusQueryHandler,
   CorpusQueryPart,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
-import type { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
-import { safeParseInt } from "@/common/misc_utils";
+import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
+import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
+import { safeParseInt, singletonOf } from "@/common/misc_utils";
+import { timed } from "@/common/timing/timed_invocation";
 
-export async function runQuery(
+export function jsCorpusApiHandler(): CorpusQueryHandler {
+  const engine = singletonOf(() =>
+    timed(() => new CorpusQueryEngine(loadCorpus()), "JavaScript corpus init")
+  );
+  return {
+    initialize: () => engine.get(),
+    runQuery: (request) =>
+      runQuery(
+        engine.get(),
+        request.query,
+        request.pageStart ?? 0,
+        request.pageSize ?? 50
+      ),
+  };
+}
+
+function runQuery(
   corpus: CorpusQueryEngine,
   query: string,
   pageStart: number,
   pageSize: number
-): Promise<CorpusQueryResult> {
+): CorpusQueryResult {
   const parsedQuery = parseQuery(query);
   return corpus.queryCorpus(parsedQuery, pageStart, pageSize);
 }
@@ -28,12 +47,14 @@ export function parseQuery(queryStr: string): CorpusQuery {
     for (const composition of compositions) {
       const splitter = ` ${composition} `;
       if (!partContent.includes(splitter)) {
-        parts.push(parseQueryAtom(partContent));
+        parts.push({ token: parseQueryAtom(partContent) });
         continue;
       }
       parts.push({
-        atoms: partContent.split(splitter).map(parseQueryAtom),
-        composition,
+        token: {
+          atoms: partContent.split(splitter).map(parseQueryAtom),
+          composition,
+        },
       });
     }
   }

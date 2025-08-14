@@ -1,0 +1,791 @@
+use crate::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
+use crate::common::{PackedBitMask, PackedIndexData};
+use crate::packed_arrays;
+
+#[cfg(test)]
+pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
+    let mut bitmask = vec![0u64; ((upper_bound + 63) / 64).try_into().unwrap()];
+    for &idx in indices {
+        let word = idx / 64;
+        let bit = idx % 64;
+        bitmask[word as usize] |= 1 << (63 - bit);
+    }
+    bitmask
+}
+
+/// The result of an `apply_and` operation on two indices.
+#[derive(Debug, PartialEq)]
+pub enum ApplyAndResult {
+    Array(Vec<u32>),
+    Bitmask(PackedBitMask),
+}
+
+/// Computes the bitwise AND of a bitmask and an array of indices, with an offset.
+pub fn apply_and_with_bitmask_and_array(bitmask: &[u64], indices: &[u32], offset: i32) -> Vec<u32> {
+    let mut results: Vec<u32> = Vec::new();
+    let bitmask_len_bits = bitmask.len() * 64;
+
+    for &index in indices {
+        let effective_index = index as i64 + offset as i64;
+        if effective_index < 0 || effective_index as usize >= bitmask_len_bits {
+            continue;
+        }
+        let word_index = (effective_index / 64) as usize;
+        let bit_index = 63 - (effective_index % 64);
+        if (bitmask[word_index] & (1 << bit_index)) != 0 {
+            results.push(effective_index as u32);
+        }
+    }
+    results
+}
+
+/// Returns the numbers that are present in both input arrays, applying an offset to the second array.
+pub fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
+    let mut result: Vec<u32> = Vec::new();
+    let mut i = 0;
+    let mut j = 0;
+
+    while i < first.len() && j < second.len() {
+        let first_val = first[i] as i64;
+        let second_val = second[j] as i64 + offset as i64;
+        if first_val < second_val {
+            i += 1;
+        } else if first_val > second_val {
+            j += 1;
+        } else {
+            result.push(first[i]);
+            i += 1;
+            j += 1;
+        }
+    }
+    result
+}
+
+/// Applies an `and` to determine the intersection between two indices.
+pub fn apply_and_to_indices(
+    first: &PackedIndexData,
+    first_position: i32,
+    second: &PackedIndexData,
+    second_position: i32,
+) -> (ApplyAndResult, i32) {
+    let offset = first_position - second_position;
+
+    match (first, second) {
+        (PackedIndexData::PackedNumbers(d1), PackedIndexData::PackedNumbers(d2)) => {
+            let unpacked1 = packed_arrays::unpack_integers(d1);
+            let unpacked2 = packed_arrays::unpack_integers(d2);
+            let overlaps = apply_and_with_arrays(&unpacked1, &unpacked2, offset);
+            (ApplyAndResult::Array(overlaps), first_position)
+        }
+        (PackedIndexData::PackedBitMask(bm), PackedIndexData::PackedNumbers(d)) => {
+            let unpacked = packed_arrays::unpack_integers(d);
+            let overlaps = apply_and_with_bitmask_and_array(&bm.data, &unpacked, offset);
+            (ApplyAndResult::Array(overlaps), first_position)
+        }
+        (PackedIndexData::PackedNumbers(d), PackedIndexData::PackedBitMask(bm)) => {
+            let unpacked = packed_arrays::unpack_integers(d);
+            let overlaps = apply_and_with_bitmask_and_array(&bm.data, &unpacked, -offset);
+            (ApplyAndResult::Array(overlaps), second_position)
+        }
+        (PackedIndexData::PackedBitMask(bm1), PackedIndexData::PackedBitMask(bm2)) => {
+            let (data, pos) = if offset >= 0 {
+                (
+                    bitmask_utils::apply_and_with_bitmasks(&bm1.data, &bm2.data, offset as usize),
+                    first_position,
+                )
+            } else {
+                (
+                    bitmask_utils::apply_and_with_bitmasks(
+                        &bm2.data,
+                        &bm1.data,
+                        (-offset) as usize,
+                    ),
+                    second_position,
+                )
+            };
+            let result = ApplyAndResult::Bitmask(PackedBitMask {
+                format: "bitmask".to_string(),
+                data,
+                num_set: None, // We don't calculate num_set here for performance.
+            });
+            (result, pos)
+        }
+    }
+}
+
+/// Performs a bit smear on the given bitmask with the specified window size and direction.
+///
+/// This operates on a bit level. If the original bitmask has a bit set at position `i`,
+/// the smeared bitmask will have bits set in the range:
+/// - If direction is "left": [i - window, i].
+/// - If direction is "right": [i, i + window].
+/// - If direction is "both": [i - window, i + window].
+///
+/// # Arguments
+///
+/// * `original` - The original bitmask to smear.
+/// * `window` - The size of the window to use for smearing. The maximum value is 15.
+/// * `direction` - The direction to smear the bits ("left", "right", or "both").
+///
+/// # Returns
+///
+/// The smeared bitmask.
+#[allow(dead_code)]
+pub fn smear_bitmask(original: &[u64], window: usize, direction: &str) -> Vec<u64> {
+    assert!(window > 0 && window < 16, "Window must be in (0, 16).");
+    let sign = if direction == "left" { -1 } else { 1 };
+    let mut result = original.to_vec();
+    bitmask_or_with_self_offset_in_place(&mut result, sign);
+    let mut r = 1;
+    while r < window {
+        let offset = std::cmp::min(r, window - r);
+        bitmask_or_with_self_offset_in_place(&mut result, (offset as isize) * sign);
+        r += offset;
+    }
+    // If the direction is "both", we did the smear to the right and now
+    // we just need to apply a single left smear to complete the operation.
+    if direction == "both" {
+        bitmask_or_with_self_offset_in_place(&mut result, -(window as isize));
+    }
+    result
+}
+
+/// Returns the numbers that are present in both input arrays, applying an offset to the second array.
+/// and which has a maximum fuzz distance applied.
+///
+/// For example, if the first array is [3, 8, 9], the second array is [0, 11], and the offset is 1
+/// and the maxDistance is 2, the result will be [3] because the [0] in the second array is offset by
+/// 1 to 1, which is within the maxDistance of 2 from 3. On the other hand, 11 + 1 = 12, which is
+/// not within the maxDistance of 2 from 9.
+///
+/// This implementation assumes that both input arrays are sorted in ascending order.
+///
+/// # Arguments
+///
+/// * `first` - The first array of numbers.
+/// * `second` - The second array of numbers.
+/// * `offset` - The offset to apply to the second array.
+/// * `max_distance` - The maximum distance to consider a match.
+/// * `direction` - The direction to apply the fuzzy distance.
+///
+/// # Returns
+///
+/// A new array with the elements of the first array that match the second array.
+#[allow(dead_code)]
+pub fn find_fuzzy_matches_with_arrays(
+    first: &[u32],
+    second: &[u32],
+    offset: i32,
+    max_distance: u32,
+    direction: &str,
+) -> Vec<u32> {
+    let mut results: Vec<u32> = Vec::new();
+    let left_fuzz = if direction == "right" {
+        0
+    } else {
+        max_distance
+    };
+    let right_fuzz = if direction == "left" { 0 } else { max_distance };
+    let mut i = 0;
+    let mut j = 0;
+
+    while i < first.len() && j < second.len() {
+        let first_val = first[i] as i64;
+        let second_val = second[j] as i64 + offset as i64;
+
+        // Consider the window of maxDistance around secondVal:
+        // [secondVal - maxDistance, secondVal + maxDistance]
+        // There are three cases:
+        // - firstVal is to the left of the window, so we increment i and try
+        //   to find a larger firstVal.
+        // - firstVal is to the right of the window, so we increment j and try
+        //   to find a larger secondVal.
+        // - firstVal is within the window, so we add it to the results and
+        //   increment just i and see if we are still in the same window.
+        if first_val < second_val - left_fuzz as i64 {
+            i += 1;
+            continue;
+        }
+        if first_val > second_val + right_fuzz as i64 {
+            j += 1;
+            continue;
+        }
+        results.push(first[i]);
+        i += 1;
+    }
+
+    results
+}
+
+/// Unpacks packed index data (either a bitmask or a packed array) into a vector of integers.
+pub fn unpack_packed_index_data(packed_data: &PackedIndexData) -> Vec<u32> {
+    match packed_data {
+        PackedIndexData::PackedNumbers(data) => packed_arrays::unpack_integers(data),
+        PackedIndexData::PackedBitMask(bitmask_data) => {
+            let mut result = Vec::new();
+            for (i, &word) in bitmask_data.data.iter().enumerate() {
+                if word == 0 {
+                    continue;
+                }
+                let word_offset = (i * 64) as u32;
+                for j in 0..64 {
+                    if (word & (1 << (63 - j))) != 0 {
+                        result.push(word_offset + j as u32);
+                    }
+                }
+            }
+            result
+        }
+    }
+}
+
+/// Checks if the given packed index data has any values in the specified range.
+///
+/// # Arguments
+///
+/// * `packed_data` - The packed index data to check.
+/// * `range` - The range to check (inclusive).
+///
+/// # Returns
+///
+/// True if the range contains any values for the packed data, false otherwise.
+pub fn has_value_in_range(packed_data: &PackedIndexData, range: (u32, u32)) -> bool {
+    if range.0 > range.1 {
+        return false;
+    }
+
+    match packed_data {
+        PackedIndexData::PackedNumbers(data) => packed_arrays::has_value_in_range(data, range),
+        PackedIndexData::PackedBitMask(bitmask_data) => {
+            let bitmask = &bitmask_data.data;
+            for i in range.0..=range.1 {
+                let word_index = (i / 64) as usize;
+                if word_index >= bitmask.len() {
+                    continue;
+                }
+                let bit_index = 63 - (i % 64);
+                if (bitmask[word_index] & (1 << bit_index)) != 0 {
+                    return true;
+                }
+            }
+            false
+        }
+    }
+}
+
+/// Returns the maximum number of elements that could be in the packed index.
+///
+/// # Arguments
+///
+/// * `packed_data` - The packed index data.
+///
+/// # Returns
+///
+/// The number of elements.
+pub fn max_elements_in(packed_data: &PackedIndexData) -> usize {
+    match packed_data {
+        PackedIndexData::PackedNumbers(data) => packed_arrays::num_elements(data),
+        PackedIndexData::PackedBitMask(bitmask_data) => {
+            bitmask_data.num_set.unwrap_or(bitmask_data.data.len() * 64)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::common::{PackedBitMask, PackedIndexData};
+    use crate::packed_arrays;
+
+    #[test]
+    fn should_smear_to_the_right_within_a_single_word() {
+        let original = to_bitmask(&[5], 64);
+        let smeared = smear_bitmask(&original, 3, "right");
+        let expected = to_bitmask(&[5, 6, 7, 8], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_smear_to_the_left_within_a_single_word() {
+        let original = to_bitmask(&[5], 64);
+        let smeared = smear_bitmask(&original, 3, "left");
+        let expected = to_bitmask(&[2, 3, 4, 5], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_smear_in_both_directions_within_a_single_word() {
+        let original = to_bitmask(&[5], 64);
+        let smeared = smear_bitmask(&original, 2, "both");
+        let expected = to_bitmask(&[3, 4, 5, 6, 7], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_smear_to_the_right_across_word_boundaries() {
+        let original = to_bitmask(&[62], 128);
+        let smeared = smear_bitmask(&original, 3, "right");
+        let expected = to_bitmask(&[62, 63, 64, 65], 128);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_smear_to_the_left_across_word_boundaries() {
+        let original = to_bitmask(&[65], 128);
+        let smeared = smear_bitmask(&original, 3, "left");
+        let expected = to_bitmask(&[62, 63, 64, 65], 128);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_smear_in_both_directions_across_word_boundaries() {
+        let original = to_bitmask(&[63], 128);
+        let smeared = smear_bitmask(&original, 2, "both");
+        let expected = to_bitmask(&[61, 62, 63, 64, 65], 128);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_handle_multiple_bits_set_smearing_right() {
+        let original = to_bitmask(&[5, 15], 64);
+        let smeared = smear_bitmask(&original, 2, "right");
+        let expected = to_bitmask(&[5, 6, 7, 15, 16, 17], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_handle_multiple_bits_set_smearing_left() {
+        let original = to_bitmask(&[5, 15], 64);
+        let smeared = smear_bitmask(&original, 2, "left");
+        let expected = to_bitmask(&[3, 4, 5, 13, 14, 15], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_handle_multiple_bits_set_smearing_both() {
+        let original = to_bitmask(&[5, 15], 64);
+        let smeared = smear_bitmask(&original, 1, "both");
+        let expected = to_bitmask(&[4, 5, 6, 14, 15, 16], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_handle_overlapping_smears() {
+        let original = to_bitmask(&[5, 8], 64);
+        let smeared = smear_bitmask(&original, 2, "right");
+        let expected = to_bitmask(&[5, 6, 7, 8, 9, 10], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn should_handle_overlapping_smears_with_both() {
+        let original = to_bitmask(&[5, 8], 64);
+        let smeared = smear_bitmask(&original, 2, "both");
+        let expected = to_bitmask(&[3, 4, 5, 6, 7, 8, 9, 10], 64);
+        assert_eq!(smeared, expected);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_consecutive_first_elements_matching_one_second_element_both(
+    ) {
+        let first = vec![10, 11];
+        let second = vec![9];
+        let offset = 0;
+        let max_distance = 2;
+        // The match window for `second` element 9 is [7, 11].
+        // Both 10 and 11 from `first` fall within this window.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&first, &second, offset, max_distance, "both"),
+            vec![10, 11]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_return_an_empty_array_if_the_first_array_is_empty() {
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[], &[1, 2, 3], 0, 1, "both"),
+            Vec::<u32>::new()
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_return_an_empty_array_if_the_second_array_is_empty() {
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[1, 2, 3], &[], 0, 1, "both"),
+            Vec::<u32>::new()
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_return_an_empty_array_if_no_matches_are_found() {
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[1, 2, 3], &[10, 11, 12], 0, 1, "both"),
+            Vec::<u32>::new()
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_zero_offset_and_zero_distance()
+    {
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[1, 5, 10], &[1, 6, 10], 0, 0, "both"),
+            vec![1, 10]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_a_non_zero_offset_and_zero_distance(
+    ) {
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[3, 7, 12], &[1, 6, 10], 2, 0, "both"),
+            vec![3, 12]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_fuzzy_matches_with_a_zero_offset_both() {
+        // second becomes [1, 12].
+        // 3 is in range of 1 (1-2 to 1+2 => [-1, 3]).
+        // 8,9 are not in range of 12 (12-2 to 12+2 => [10, 14]).
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[3, 8, 9], &[0, 11], 1, 2, "both"),
+            vec![3]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_fuzzy_matches_with_a_non_zero_offset_both() {
+        // second becomes [4, 9, 19].
+        // 5 is in range of 4. 10 is in range of 9. 15 is not in range of 19.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[5, 10, 15], &[3, 8, 18], 1, 1, "both"),
+            vec![5, 10]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_first_array_both(
+    ) {
+        // first: [10], second: [8, 9, 10] -> offset 0, dist 1.
+        // second vals are 8,9,10. 10 matches all of them.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[10], &[8, 9, 10], 0, 1, "both"),
+            vec![10]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_second_array_both(
+    ) {
+        // first: [8, 9, 10], second: [9] -> offset 0, dist 1.
+        // second val is 9. Its range [8, 10] matches all elements in first.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[8, 9, 10], &[9], 0, 1, "both"),
+            vec![8, 9, 10]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_handle_overlapping_fuzzy_matches_both() {
+        // first: [5, 6], second: [7], offset: 0, dist: 2.
+        // second val is 7. Its range [5, 9] matches both 5 and 6.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[5, 6], &[7], 0, 2, "both"),
+            vec![5, 6]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_handle_complex_cases_with_multiple_overlapping_matches_both(
+    ) {
+        // first: [10, 11, 15, 20], second: [12, 18], offset: 0, dist: 2.
+        // second val 12: range [10, 14]. Matches 10, 11.
+        // second val 18: range [16, 20]. Matches 20. (15 is not in range).
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[10, 11, 15, 20], &[12, 18], 0, 2, "both"),
+            vec![10, 11, 20]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_handle_another_complex_case_correctly_both() {
+        let first = vec![10, 20, 30, 40, 50];
+        let second = vec![12, 33, 48];
+        // second val 12: range [9, 15]. Matches 10.
+        // second val 33: range [30, 36]. Matches 30.
+        // second val 48: range [45, 51]. Matches 50.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&first, &second, 0, 3, "both"),
+            vec![10, 30, 50]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_handle_the_case_from_the_original_code_comments_both()
+    {
+        // first: [3, 8, 9], second: [0, 11], offset: 1, maxDistance: 2.
+        // second becomes [1, 12].
+        // second val 1: range [-1, 3]. Matches 3.
+        // second val 12: range [10, 14]. No matches.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[3, 8, 9], &[0, 11], 1, 2, "both"),
+            vec![3]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_fuzzy_matches_with_direction_right() {
+        // second val 5: range [5, 7]. Matches 5, 7.
+        // second val 10: range [10, 12]. Matches 10.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[5, 7, 9, 10], &[5, 10], 0, 2, "right"),
+            vec![5, 7, 10]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_fuzzy_matches_with_direction_left() {
+        // second val 5: range [3, 5]. Matches 3, 5.
+        // second val 10: range [8, 10]. Matches 9, 10.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[3, 5, 7, 9, 10], &[5, 10], 0, 2, "left"),
+            vec![3, 5, 9, 10]
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_no_matches_if_direction_restricts_range_right() {
+        // second val 10: range [10, 12]. No match for 9.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[9], &[10], 0, 2, "right"),
+            Vec::<u32>::new()
+        );
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_arrays_should_find_no_matches_if_direction_restricts_range_left() {
+        // second val 10: range [8, 10]. No match for 11.
+        assert_eq!(
+            find_fuzzy_matches_with_arrays(&[11], &[10], 0, 2, "left"),
+            Vec::<u32>::new()
+        );
+    }
+
+    #[test]
+    fn apply_and_with_arrays_no_offset() {
+        let first = vec![1, 3, 5, 8, 10];
+        let second = vec![3, 4, 5, 9, 10];
+        let result = apply_and_with_arrays(&first, &second, 0);
+        assert_eq!(result, vec![3, 5, 10]);
+    }
+
+    #[test]
+    fn apply_and_with_arrays_positive_offset() {
+        let first = vec![3, 5, 9, 12];
+        let second = vec![1, 3, 7, 10];
+        let result = apply_and_with_arrays(&first, &second, 2);
+        assert_eq!(result, vec![3, 5, 9, 12]);
+    }
+
+    #[test]
+    fn apply_and_with_arrays_negative_offset() {
+        let first = vec![1, 3, 7, 10];
+        let second = vec![3, 5, 9, 12];
+        let result = apply_and_with_arrays(&first, &second, -2);
+        assert_eq!(result, vec![1, 3, 7, 10]);
+    }
+
+    #[test]
+    fn apply_and_with_bitmask_and_array_no_offset() {
+        let bitmask = to_bitmask(&[1, 3, 4], 64);
+        let indices = vec![0, 1, 2, 4, 6];
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0);
+        assert_eq!(result, vec![1, 4]);
+    }
+
+    #[test]
+    fn apply_and_with_bitmask_and_array_positive_offset() {
+        let bitmask = to_bitmask(&[1, 3, 4, 6], 64);
+        let indices = vec![0, 2, 3, 6];
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 1);
+        assert_eq!(result, vec![1, 3, 4]);
+    }
+
+    #[test]
+    fn apply_and_with_bitmask_and_array_word_boundaries() {
+        let bitmask = to_bitmask(&[63, 64, 127], 128);
+        let indices = vec![60, 61, 62, 63, 64, 65];
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0);
+        assert_eq!(result, vec![63, 64]);
+    }
+
+    #[test]
+    fn apply_and_to_indices_array_array() {
+        let candidates =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[3, 6, 9]));
+        let filter_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[2, 4, 8]));
+        let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1);
+        assert_eq!(result, ApplyAndResult::Array(vec![3, 9]));
+        assert_eq!(position, 2);
+    }
+
+    #[test]
+    fn apply_and_to_indices_bitmask_array() {
+        let candidates = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[1, 3, 4], 64),
+            num_set: None,
+        });
+        let filter_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+        let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0);
+        assert_eq!(result, ApplyAndResult::Array(vec![1, 3, 4]));
+        assert_eq!(position, 1);
+    }
+
+    #[test]
+    fn apply_and_to_indices_array_bitmask() {
+        let candidates =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+        let filter_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[1, 3, 4], 64),
+            num_set: None,
+        });
+        let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1);
+        assert_eq!(result, ApplyAndResult::Array(vec![1, 3, 4]));
+        assert_eq!(position, 1);
+    }
+
+    #[test]
+    fn apply_and_to_indices_bitmask_bitmask() {
+        let candidates = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[1, 3, 4], 64),
+            num_set: None,
+        });
+        let filter_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&[0, 2, 4], 64),
+            num_set: None,
+        });
+        let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2);
+        let expected_data = to_bitmask(&[4], 64);
+        assert_eq!(
+            result,
+            ApplyAndResult::Bitmask(PackedBitMask {
+                format: "bitmask".to_string(),
+                data: expected_data,
+                num_set: None
+            })
+        );
+        assert_eq!(position, 3);
+    }
+
+    #[test]
+    fn unpack_packed_index_data_from_array() {
+        let original_data = vec![10, 25, 150, 300];
+        let packed_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&original_data));
+        let result = unpack_packed_index_data(&packed_data);
+        assert_eq!(result, original_data);
+    }
+
+    #[test]
+    fn unpack_packed_index_data_from_bitmask() {
+        let original_data = vec![31, 32, 65, 127];
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: to_bitmask(&original_data, 128),
+            num_set: None,
+        });
+        let result = unpack_packed_index_data(&packed_data);
+        assert_eq!(result, original_data);
+    }
+
+    #[test]
+    fn has_value_in_range_bitmask_should_return_true_if_value_in_range() {
+        let bitmask = to_bitmask(&[10, 70], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert!(has_value_in_range(&packed_data, (5, 15)));
+        assert!(has_value_in_range(&packed_data, (65, 75)));
+    }
+
+    #[test]
+    fn has_value_in_range_bitmask_should_return_false_if_value_not_in_range() {
+        let bitmask = to_bitmask(&[10, 70], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert!(!has_value_in_range(&packed_data, (20, 30)));
+        assert!(!has_value_in_range(&packed_data, (0, 5)));
+    }
+
+    #[test]
+    fn has_value_in_range_bitmask_should_handle_word_boundaries() {
+        let bitmask = to_bitmask(&[63, 64], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert!(has_value_in_range(&packed_data, (60, 65)));
+        assert!(!has_value_in_range(&packed_data, (60, 62)));
+        assert!(!has_value_in_range(&packed_data, (65, 70)));
+    }
+
+    #[test]
+    fn has_value_in_range_packed_array_should_return_true_if_value_in_range() {
+        let packed_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 70]));
+        assert!(has_value_in_range(&packed_data, (5, 15)));
+        assert!(has_value_in_range(&packed_data, (65, 75)));
+        assert!(has_value_in_range(&packed_data, (10, 10)));
+        assert!(has_value_in_range(&packed_data, (70, 70)));
+    }
+
+    #[test]
+    fn has_value_in_range_packed_array_should_return_false_if_value_not_in_range() {
+        let packed_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 70]));
+        assert!(!has_value_in_range(&packed_data, (20, 30)));
+        assert!(!has_value_in_range(&packed_data, (0, 9)));
+        assert!(!has_value_in_range(&packed_data, (71, 100)));
+    }
+
+    #[test]
+    fn max_elements_in_should_return_correct_count_for_packed_array() {
+        let packed_data =
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 20, 30]));
+        assert_eq!(max_elements_in(&packed_data), 3);
+    }
+
+    #[test]
+    fn max_elements_in_should_return_num_set_for_bitmask_if_present() {
+        let bitmask = to_bitmask(&[10, 70], 128);
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: Some(2),
+        });
+        assert_eq!(max_elements_in(&packed_data), 2);
+    }
+
+    #[test]
+    fn max_elements_in_should_return_max_capacity_for_bitmask_if_num_set_not_present() {
+        let bitmask = to_bitmask(&[10, 70], 128); // 128 bits = 2 u64 words
+        let packed_data = PackedIndexData::PackedBitMask(PackedBitMask {
+            format: "bitmask".to_string(),
+            data: bitmask,
+            num_set: None,
+        });
+        assert_eq!(max_elements_in(&packed_data), 128);
+    }
+}

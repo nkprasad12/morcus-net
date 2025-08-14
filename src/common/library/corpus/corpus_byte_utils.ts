@@ -1,5 +1,6 @@
 import { assert, assertEqual } from "@/common/assert";
 import { PackedNumbers, unpackIntegers } from "@/common/bytedata/packing";
+import { bitmaskOrWithSelfOffset_InPlace } from "@/common/library/corpus/bitmask_in_place_utils";
 import type {
   PackedBitMask,
   PackedIndexData,
@@ -31,22 +32,20 @@ export function applyAndWithBitmasks(
   // This really only matters for the 0 case, as we likely won't do queries with a
   // 32+ offset.
   if (bitOffset === 0) {
-    for (let i = 0; i < len; i++) {
-      // Note: we don't bother bounds checking because array accesses outside of the bounds
-      // will return undefined, which acts as 0 for bitwise operations.
-      // This is all for performance optimization to minimize the operations per loop.
+    for (let i = wordOffset; i < len; i++) {
+      // i - wordOffset is always >= 0
       result[i] = first[i] & second[i - wordOffset];
     }
     return result;
   }
 
   const leftShift = 32 - bitOffset;
-  for (let i = 0; i < len; i++) {
+  // The first few words are 0 or would require range checks
+  // to do safely, so handle them outside of the loop and then start
+  // with `let i = wordOffset + 1`.
+  result[wordOffset] = first[wordOffset] & (second[0] >>> bitOffset);
+  for (let i = wordOffset + 1; i < len; i++) {
     const j = i - wordOffset;
-    // Note: we don't bother bounds checking because array accesses outside of the bounds
-    // will return undefined, which acts as 0 for bitwise operations.
-    // This is all for performance optimization to minimize the operations per loop.
-
     // Suppose we have (with 4 bit words for brevity):
     // 1st: 0110 1010
     // 2nd: 1101 0110
@@ -77,6 +76,42 @@ export function applyAndWithBitmasks(
     result[i] = first[i] & mask;
   }
   return result;
+}
+
+/**
+ * Performs a bit smear on the given bitmask with the specified window size and direction.
+ *
+ * This operates on a bit level. If the original bitmask has a bit set at position `i`,
+ * the smeared bitmask will have bits set in the range:
+ * - If direction is "left": [i - window, i].
+ * - If direction is "right": [i, i + window].
+ * - If direction is "both": [i - window, i + window].
+ *
+ * @param original The original bitmask to smear.
+ * @param window The size of the window to use for smearing. The maximum value is 15.
+ * @param direction The direction to smear the bits (left, right, or both).
+ *
+ * @returns the smeared bitmask.
+ */
+export function smearBitmask(
+  original: Uint32Array,
+  window: number,
+  direction: "left" | "right" | "both"
+): Uint32Array {
+  assert(window > 0 && window < 16, "Window must be in (0, 16).");
+  const sign = direction === "left" ? -1 : 1;
+  const result = bitmaskOrWithSelfOffset_InPlace(original.slice(), sign);
+  let r = 1;
+  while (r < window) {
+    const offset = Math.min(r, window - r);
+    bitmaskOrWithSelfOffset_InPlace(result, offset * sign);
+    r += offset;
+  }
+  // If the direction is "both", we did the smear to the right and now
+  // we just need to apply a single left smear to complete the operation.
+  return direction === "both"
+    ? bitmaskOrWithSelfOffset_InPlace(result, -window)
+    : result;
 }
 
 /**
@@ -146,6 +181,94 @@ export function applyAndWithArrays(
     }
   }
   return result;
+}
+
+/**
+ * Returns the numbers that are present in both input arrays, applying an offset to the second array.
+ * and which has a maximum fuzz distance applied.
+ *
+ * For example, if the first array is [3, 8, 9], the second array is [0, 11], and the offset is 1
+ * and the maxDistance is 2, the result will be [3] because the [0] in the second array is offset by
+ * 1 to 1, which is within the maxDistance of 2 from 3. On the other hand, 11 + 1 = 12, which is
+ * not within the maxDistance of 2 from 9.
+ *
+ * This implementation assumes that both input arrays are sorted in ascending order.
+ *
+ * @param first The first array of numbers.
+ * @param second The second array of numbers.
+ * @param offset The offset to apply to the second array.
+ * @param maxDistance The maximum distance to consider a match.
+ * @param direction The direction to apply the fuzzy distance.
+ *
+ * @returns A new array with the elements of the first array that match the second array.
+ */
+export function findFuzzyMatchesWithArrays(
+  first: number[],
+  second: number[],
+  offset: number,
+  maxDistance: number,
+  direction: "left" | "right" | "both"
+): number[] {
+  const results: number[] = [];
+  const leftFuzz = direction === "right" ? 0 : maxDistance;
+  const rightFuzz = direction === "left" ? 0 : maxDistance;
+  let i = 0;
+  let j = 0;
+
+  while (i < first.length && j < second.length) {
+    const firstVal = first[i];
+    const secondVal = second[j] + offset;
+
+    // Consider the window of maxDistance around secondVal:
+    // [secondVal - maxDistance, secondVal + maxDistance]
+    // There are three cases:
+    // - firstVal is to the left of the window, so we increment i and try
+    //   to find a larger firstVal.
+    // - firstVal is to the right of the window, so we increment j and try
+    //   to find a larger secondVal.
+    // - firstVal is within the window, so we add it to the results and
+    //   increment just i and see if we are still in the same window.
+    if (firstVal < secondVal - leftFuzz) {
+      i++;
+      continue;
+    }
+    if (firstVal > secondVal + rightFuzz) {
+      j++;
+      continue;
+    }
+    results.push(firstVal);
+    i++;
+  }
+
+  return results;
+}
+
+/**
+ * Returns the values set in both bitmasks, applying an offset to the second bitmask.
+ * and which has a maximum fuzz distance applied.
+ *
+ * For example, if the first bitmask has [3, 8, 9], the second bitmask is [0, 11], and the offset is 1
+ * and the maxDistance is 2, the result will be [3] because the [0] in the second bitmask is offset by
+ * 1 to 1, which is within the maxDistance of 2 from 3. On the other hand, 11 + 1 = 12, which is
+ * not within the maxDistance of 2 from 9.
+ *
+ * @param first The first bitmask.
+ * @param second The second bitmask.
+ * @param offset The offset to apply to the second bitmask.
+ * @param maxDistance The maximum distance to consider a match.
+ * @param direction The direction to apply the fuzzy distance.
+ *
+ * @returns A new bitmask with the "common" elements set.
+ */
+export function findFuzzyMatchesWithBitmasks(
+  first: Uint32Array,
+  second: Uint32Array,
+  offset: number,
+  maxDistance: number,
+  direction: "left" | "right" | "both"
+): Uint32Array {
+  const smeared = smearBitmask(second, maxDistance, direction);
+  return applyAndWithBitmasks(first, smeared, offset);
 }
 
 /**
@@ -231,10 +354,16 @@ export function unpackPackedIndexData(
   // If it's a bitmask, we need to convert it to an array of token IDs.
   const bitmask = packedData.data;
   const result: number[] = [];
-  for (let i = 0; i < bitmask.length * 32; i++) {
-    const leftShift = 31 - (i & 31); // 31 - (i % 32)
-    if ((bitmask[i >> 5] & (1 << leftShift)) !== 0) {
-      result.push(i);
+  for (let i = 0; i < bitmask.length; i++) {
+    const word = bitmask[i];
+    if (word === 0) {
+      continue; // Skip empty words as an optimization.
+    }
+    const wordOffset = i * 32;
+    for (let j = 0; j < 32; j++) {
+      if ((word & (1 << (31 - j))) !== 0) {
+        result.push(wordOffset + j);
+      }
     }
   }
   return result;

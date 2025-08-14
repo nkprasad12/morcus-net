@@ -1,5 +1,5 @@
 import { assertEqual } from "@/common/assert";
-import { packIntegers } from "@/common/bytedata/packing";
+import { packSortedNats } from "@/common/bytedata/packing";
 import { toBitMask } from "@/common/library/corpus/corpus_byte_utils";
 import {
   LatinCorpusIndex,
@@ -8,7 +8,6 @@ import {
   type InProgressLatinCorpus,
   type PackedIndexData,
 } from "@/common/library/corpus/corpus_common";
-import { PackedReverseIndex } from "@/common/library/corpus/packed_reverse_index";
 import fs from "fs";
 import path from "path";
 
@@ -72,7 +71,7 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
           numSet: v.size,
         });
       }
-      return new PackedReverseIndex(map);
+      return map;
     }
     return value;
   };
@@ -106,9 +105,7 @@ function prepareIndexMap(
     const useBitMask = value.length * packedNumberSize > numTokens;
     const indexBits = useBitMask
       ? Buffer.from(toBitMask(value, numTokens).buffer).toString("base64")
-      : Buffer.from(packIntegers(value[value.length - 1] + 1, value)).toString(
-          "base64"
-        );
+      : Buffer.from(packSortedNats(value)).toString("base64");
     const storedValue = useBitMask
       ? { serializationKey: BIT_MASK, data: indexBits, size: value.length }
       : indexBits;

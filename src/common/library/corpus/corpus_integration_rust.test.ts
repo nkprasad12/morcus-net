@@ -1,19 +1,14 @@
 import { setupMorceusWithFakeData } from "@/common/dictionaries/dict_test_utils";
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
-import {
-  type CorpusInputWork,
-  type CorpusQuery,
-} from "@/common/library/corpus/corpus_common";
-import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
-import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
-import { LatinCase, LatinTense } from "@/morceus/types";
+import { type CorpusInputWork } from "@/common/library/corpus/corpus_common";
+import { RustCorpusQueryEngine } from "@/common/library/corpus/corpus_rust";
 import fs from "fs";
 
 console.debug = jest.fn();
 
 setupMorceusWithFakeData();
 
-const TEST_CORPUS_DIR = "corpus_integration_test_dir";
+const TEST_CORPUS_DIR = "rust_corpus_integration_test_dir";
 
 const TEST_WORKS: CorpusInputWork[] = [
   {
@@ -35,7 +30,7 @@ const TEST_WORKS: CorpusInputWork[] = [
 ];
 
 describe("Corpus Integration Test", () => {
-  let queryEngine: CorpusQueryEngine;
+  let queryEngine: RustCorpusQueryEngine;
 
   beforeAll(() => {
     if (fs.existsSync(TEST_CORPUS_DIR)) {
@@ -43,8 +38,7 @@ describe("Corpus Integration Test", () => {
     }
     fs.mkdirSync(TEST_CORPUS_DIR, { recursive: true });
     buildCorpus(TEST_WORKS, TEST_CORPUS_DIR);
-    const corpus = loadCorpus(TEST_CORPUS_DIR);
-    queryEngine = new CorpusQueryEngine(corpus);
+    queryEngine = new RustCorpusQueryEngine(TEST_CORPUS_DIR);
   });
 
   afterAll(() => {
@@ -54,7 +48,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should find a single word", () => {
-    const query: CorpusQuery = { parts: [{ token: { word: "servum" } }] };
+    const query = "[word:servum]";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
@@ -66,7 +60,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should return correct work data", () => {
-    const query: CorpusQuery = { parts: [{ token: { word: "Gallus" } }] };
+    const query = "[word:Gallus]";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(2);
     expect(results.matches[0]).toMatchObject({
@@ -82,7 +76,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should find all instances of a lemma", () => {
-    const query: CorpusQuery = { parts: [{ token: { lemma: "servus" } }] };
+    const query = "[lemma:servus]";
     const results = queryEngine.queryCorpus(query);
     expect(results.totalResults).toBe(2);
     expect(results.matches).toEqual(
@@ -104,9 +98,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should find all instances of a grammatical case", () => {
-    const query: CorpusQuery = {
-      parts: [{ token: { category: "case", value: LatinCase.Accusative } }],
-    };
+    const query = "[case:2]";
     const results = queryEngine.queryCorpus(query);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
     expect(results.totalResults).toBe(2);
@@ -119,13 +111,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should handle a multi-part query", () => {
-    const query: CorpusQuery = {
-      parts: [
-        { token: { word: "Gallus" } },
-        { token: { lemma: "servus" } },
-        { token: { category: "tense", value: LatinTense.Present } },
-      ],
-    };
+    const query = "[word:Gallus] [lemma:servus] [tense:1]";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
@@ -137,20 +123,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should handle a composed 'and' query", () => {
-    const query: CorpusQuery = {
-      parts: [
-        {
-          token: {
-            composition: "and",
-            atoms: [
-              { lemma: "Gallus" },
-              { category: "case", value: LatinCase.Accusative },
-            ],
-          },
-        },
-        { token: { lemma: "accognosco" } },
-      ],
-    };
+    const query = "[lemma:Gallus and case:2] [lemma:accognosco]";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
@@ -162,9 +135,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should return no results for a query that crosses a hard break", () => {
-    const query: CorpusQuery = {
-      parts: [{ token: { word: "acclamat" } }, { token: { word: "servus" } }],
-    };
+    const query = "[word:acclamat] [word:servus]";
     const results = queryEngine.queryCorpus(query);
 
     expect(results.totalResults).toBe(0);
@@ -172,7 +143,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should return no results for a query with no matches", () => {
-    const query: CorpusQuery = { parts: [{ token: { word: "imperator" } }] };
+    const query = "[word:imperator]";
     const results = queryEngine.queryCorpus(query);
 
     expect(results.totalResults).toBe(0);

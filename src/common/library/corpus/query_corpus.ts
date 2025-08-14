@@ -1,5 +1,5 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { packIntegers } from "@/common/bytedata/packing";
+import { packSortedNats } from "@/common/bytedata/packing";
 import {
   applyAndToIndices,
   hasValueInRange,
@@ -47,7 +47,7 @@ function toPackedIndexData(data: PackedBitMask | number[]): PackedIndexData {
   if (!Array.isArray(data)) {
     return data;
   }
-  return packIntegers(data[data.length - 1] + 1, data);
+  return packSortedNats(data);
 }
 
 function checkQueryComplexity(query: CorpusQuery): void {
@@ -56,12 +56,13 @@ function checkQueryComplexity(query: CorpusQuery): void {
     `Query length ${query.parts.length} exceeds maximum of ${MAX_QUERY_PARTS}.`
   );
   for (const part of query.parts) {
-    if (!("atoms" in part)) {
+    if (!("atoms" in part.token)) {
       continue;
     }
+    const atoms = part.token.atoms;
     assert(
-      part.atoms.length <= MAX_QUERY_ATOMS,
-      `Query part length ${part.atoms.length} exceeds maximum of ${MAX_QUERY_ATOMS}.`
+      atoms.length <= MAX_QUERY_ATOMS,
+      `Query part length ${atoms.length} exceeds maximum of ${MAX_QUERY_ATOMS}.`
     );
   }
 }
@@ -131,7 +132,7 @@ export class CorpusQueryEngine {
         const [workId, rowIds] = this.corpus.workLookup[workIdx];
         const rowIdx = rowData[mid][0];
 
-        const contextLen = 4;
+        const contextLen = 25;
         // @ts-expect-error
         const rows: { token: string; break: string; n: number }[] = this.tokenDb
           .prepare(`SELECT * FROM raw_text WHERE rowid >= ? LIMIT ?`)
@@ -224,17 +225,17 @@ export class CorpusQueryEngine {
     const convertedQuery: InternalQuery = [];
     for (let i = 0; i < query.parts.length; i++) {
       const part = query.parts[i];
-      if (!("atoms" in part)) {
+      if (!("atoms" in part.token)) {
         convertedQuery.push({
-          atoms: [this.convertQueryAtom(part)],
+          atoms: [this.convertQueryAtom(part.token)],
           composition: "only",
-          sizeUpperBound: this.getUpperSizeBoundForAtom(part),
+          sizeUpperBound: this.getUpperSizeBoundForAtom(part.token),
           position: i,
         });
         continue;
       }
-      if (part.composition === "and") {
-        for (const atom of part.atoms) {
+      if (part.token.composition === "and") {
+        for (const atom of part.token.atoms) {
           convertedQuery.push({
             atoms: [this.convertQueryAtom(atom)],
             composition: "only",
@@ -244,7 +245,7 @@ export class CorpusQueryEngine {
         }
         continue;
       }
-      exhaustiveGuard(part.composition);
+      exhaustiveGuard(part.token.composition);
     }
     return convertedQuery;
   }
@@ -255,7 +256,9 @@ export class CorpusQueryEngine {
   ): number[] {
     const matches: number[] = [];
     const hardBreaks = checkPresent(this.corpus.indices.breaks.get("hard"));
-    for (const tokenId of unpackPackedIndexData(candidates.data)) {
+    const unpacked = unpackPackedIndexData(candidates.data);
+    this.profiler.phase("Unpack Candidates");
+    for (const tokenId of unpacked) {
       const trueId = tokenId - candidates.position;
       if (trueId < 0 || trueId >= this.corpus.stats.totalWords) {
         continue;
@@ -330,7 +333,6 @@ export class CorpusQueryEngine {
     return {
       totalResults: matchIds.length,
       pageStart,
-      pageSize,
       matches,
       timing: this.profiler.getStats(),
     };
