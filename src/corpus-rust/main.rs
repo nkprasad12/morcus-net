@@ -35,9 +35,7 @@ fn query_with_timing(
     if results.timing.len() > 0 {
         println!("Query timing breakdown:");
         for (k, v) in &results.timing {
-            // Convert microseconds to milliseconds for display
-            let ms = (*v as f64) / 1000.0;
-            println!("  {}: {:.2} ms", k, ms);
+            println!("  {}: {:.2} ms", k, *v);
         }
     }
     results

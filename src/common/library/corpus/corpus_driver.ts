@@ -1,73 +1,23 @@
+import { checkPresent } from "@/common/assert";
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import type {
-  CorpusQuery,
-  CorpusQueryAtom,
+  CorpusQueryHandler,
   CorpusQueryMatch,
-  CorpusQueryPart,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
 import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
-import { loadCorpus } from "@/common/library/corpus/corpus_serialization";
-import { CorpusQueryEngine } from "@/common/library/corpus/query_corpus";
-import { parseQuery } from "@/common/library/corpus/query_utils";
-import { exhaustiveGuard, getFormattedMemoryUsage } from "@/common/misc_utils";
-import { LatinCase } from "@/morceus/types";
-
-const QUERY: CorpusQuery = {
-  parts: [
-    { token: { word: "quam" } },
-    { token: { lemma: "ob" } },
-    { token: { category: "case", value: LatinCase.Accusative } },
-  ],
-};
-
-function printAtom(atom: CorpusQueryAtom): string {
-  if ("word" in atom) {
-    return `word:${atom.word}`;
-  } else if ("lemma" in atom) {
-    return `lemma:${atom.lemma}`;
-  } else if ("category" in atom) {
-    return `${atom.category}:${atom.value}`;
-  }
-  exhaustiveGuard(atom);
-}
-
-function printQueryPart(part: CorpusQueryPart["token"]): string {
-  if (!("atoms" in part)) {
-    return `[${printAtom(part)}]`;
-  }
-  const joiner = ` ${part.composition} `;
-  return `[${part.atoms.map(printAtom).join(joiner)}]`;
-}
-
-function printQuery(query: CorpusQuery): string {
-  const resultParts: string[] = [];
-  for (let i = 0; i < query.parts.length; i++) {
-    resultParts.push(printQueryPart(query.parts[i].token));
-    const gap = query.parts[i].gap;
-    if (gap === undefined) {
-      resultParts.push(" ");
-      continue;
-    }
-    resultParts.push(` ${gap.maxDistance}~${gap.directed ? ">" : ""} `);
-  }
-  return resultParts.join("");
-}
+import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
+import { jsCorpusApiHandler } from "@/common/library/corpus/query_utils";
+import { getFormattedMemoryUsage } from "@/common/misc_utils";
+import type { CorpusQueryRequest } from "@/web/api_routes";
 
 function formatQueryResult(result: CorpusQueryMatch): string {
   return `- ${result.workId} @ ${result.section} (offset: ${result.offset})\n  ${result.text}`;
 }
 
-function getCorpus(): CorpusQueryEngine {
-  const startTime = Date.now();
-  const corpus = measureMemoryUsage(loadCorpus);
-  console.log(`Corpus loaded in ${Date.now() - startTime} ms`);
-  return new CorpusQueryEngine(corpus);
-}
-
 function currentMemoryUsage(): number {
   const usage = getFormattedMemoryUsage();
-  return usage.heapUsed + usage.external + usage.arrayBuffers;
+  return usage.rss;
 }
 
 function measureMemoryUsage<T>(runnable: () => T): T {
@@ -87,24 +37,31 @@ function measureMemoryUsage<T>(runnable: () => T): T {
   return result;
 }
 
-function runQuery(
-  corpus: CorpusQueryEngine,
-  query: CorpusQuery,
-  limit?: number
-): CorpusQueryResult {
+function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
+  const pageSize = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
+  const request: CorpusQueryRequest = {
+    query: checkPresent(process.argv[2]),
+    pageStart: 0,
+    pageSize,
+  };
   const startTime = Date.now();
-  const results = corpus.queryCorpus(query, 0, limit);
+  const results = handler.runQuery(request);
   const elapsedTime = Date.now() - startTime;
-  console.log("Query: ", printQuery(query));
+  console.log("Query: ", request.query);
   results.matches.forEach((result) => {
     console.log(formatQueryResult(result));
   });
   console.log(`Found ${results.totalResults} results in ${elapsedTime} ms`);
-  console.log(
-    results.timing
-      ?.map(([name, time]) => `- ${time.toFixed(2)} ms [${name}]`)
-      .join("\n")
-  );
+  if ("timing" in results) {
+    // @ts-expect-error
+    const timing: [string, number][] = results.timing;
+    console.log(
+      timing
+        ?.map(([name, time]) => `- ${time.toFixed(2)} ms [${name}]`)
+        .join("\n")
+    );
+  }
+
   return results;
 }
 
@@ -112,16 +69,15 @@ async function driver() {
   if (process.env.BUILD_CORPUS === "1") {
     buildCorpus(latinWorksFromLibrary());
   }
-  const argQuery = process.argv[2];
-  const limit = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
-  const query = argQuery === undefined ? QUERY : parseQuery(argQuery);
+  const useRust = process.env.IMPL === "rust";
+  const engine = useRust ? rustCorpusApiHandler() : jsCorpusApiHandler();
   // console.log(getFormattedMemoryUsage());
-  const corpus = getCorpus();
+  measureMemoryUsage(() => engine.initialize());
   // for (let i = 0; i < 10; i++) {
   //   await new Promise((resolve) => setTimeout(resolve, 5000));
   //   console.log(getFormattedMemoryUsage());
   // }
-  runQuery(corpus, query, limit);
+  runQuery(engine);
 }
 
 /* To profile memory, run:

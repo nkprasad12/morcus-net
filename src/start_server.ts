@@ -236,7 +236,7 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(MacronizeApi, (input) => macronizeInput(input)),
       RouteDefinition.create(
         QueryCorpusApi,
-        corpusHandler.runQuery,
+        async (r) => corpusHandler.runQuery(r),
         undefined,
         CACHING_SETTER
       ),

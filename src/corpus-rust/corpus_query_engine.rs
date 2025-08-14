@@ -79,7 +79,7 @@ pub struct CorpusQueryResult {
     pub total_results: usize,
     pub matches: Vec<CorpusQueryMatch>,
     pub page_start: usize,
-    pub timing: Vec<(String, u128)>,
+    pub timing: Vec<(String, f64)>,
 }
 
 // Internal types for query processing

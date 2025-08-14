@@ -27,12 +27,12 @@ export function jsCorpusApiHandler(): CorpusQueryHandler {
   };
 }
 
-export async function runQuery(
+function runQuery(
   corpus: CorpusQueryEngine,
   query: string,
   pageStart: number,
   pageSize: number
-): Promise<CorpusQueryResult> {
+): CorpusQueryResult {
   const parsedQuery = parseQuery(query);
   return corpus.queryCorpus(parsedQuery, pageStart, pageSize);
 }

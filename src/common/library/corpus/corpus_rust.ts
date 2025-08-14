@@ -10,13 +10,13 @@ export function rustCorpusApiHandler(): CorpusQueryHandler {
   const engine = singletonOf(() =>
     timed(() => {
       // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const query_engine = require("../../../../dist");
+      const query_engine = require(`${process.cwd()}/dist`);
       return new query_engine.QueryEngineWrapper();
     }, "Rust corpus init")
   );
   return {
     initialize: () => engine.get(),
-    runQuery: async (request) => {
+    runQuery: (request) => {
       const pageStart = request.pageStart ?? 0;
       const pageSize = request.pageSize ?? 50;
       const raw = engine.get().query(request.query, pageStart, pageSize);
