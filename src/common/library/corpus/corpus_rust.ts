@@ -7,6 +7,15 @@ import {
 import { singletonOf } from "@/common/misc_utils";
 import { timed } from "@/common/timing/timed_invocation";
 
+/**
+ * A query engine that uses Rust for querying the corpus.
+ * This is a wrapper around the Rust implementation that allows it to be used in JavaScript.
+ *
+ * Build the Rust bindings with:
+ * `npm run setup-node-bindgen`.
+ *
+ * The rust code is located in `src/corpus-rust/`.
+ */
 export class RustCorpusQueryEngine {
   private readonly engine: any;
 

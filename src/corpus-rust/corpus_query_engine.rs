@@ -1,6 +1,6 @@
-use crate::common::{PackedBitMask, PackedIndexData};
+use crate::common::PackedIndexData;
 use crate::corpus_serialization::LatinCorpusIndex;
-use crate::{packed_arrays};
+use crate::packed_arrays;
 use crate::packed_index_utils::{
     apply_and_to_indices, has_value_in_range, max_elements_in, unpack_packed_index_data,
     ApplyAndResult,
@@ -13,34 +13,20 @@ use std::path::Path;
 
 const MAX_QUERY_PARTS: usize = 8;
 const MAX_QUERY_ATOMS: usize = 8;
+const MAX_CONTEXT_LEN: usize = 100;
+const DEFAULT_CONTEXT_LEN: usize = 25;
 
 // Query-related structs, translated from corpus_common.ts
 #[derive(Debug)]
-pub struct WordQuery {
-    pub word: String,
-}
-
-#[derive(Debug)]
-pub struct LemmaQuery {
-    pub lemma: String,
-}
-
-#[derive(Debug)]
-pub struct InflectionQuery {
-    pub category: String, // e.g., "case", "gender"
-    pub value: String,    // e.g., "Nox", "Masc"
-}
-
-#[derive(Debug)]
 pub enum CorpusQueryAtom {
-    Word(WordQuery),
-    Lemma(LemmaQuery),
-    Inflection(InflectionQuery),
+    Word(String),
+    Lemma(String),
+    Inflection {category: String, value: String},
 }
 
 #[derive(Debug)]
 pub struct ComposedQuery {
-    pub composition: String, // "and"
+    pub composition: String,
     pub atoms: Vec<CorpusQueryAtom>,
 }
 
@@ -62,10 +48,10 @@ pub struct CorpusQuery {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CorpusQueryMatch {
-    pub work_id: String,
-    pub work_name: String,
-    pub author: String,
+pub struct CorpusQueryMatch<'a> {
+    pub work_id: &'a String,
+    pub work_name: &'a String,
+    pub author: &'a String,
     pub section: String,
     pub offset: u32,
     pub text: String,
@@ -75,21 +61,22 @@ pub struct CorpusQueryMatch {
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CorpusQueryResult {
+pub struct CorpusQueryResult<'a> {
     pub total_results: usize,
-    pub matches: Vec<CorpusQueryMatch>,
+    pub matches: Vec<CorpusQueryMatch<'a>>,
     pub page_start: usize,
     pub timing: Vec<(String, f64)>,
 }
 
 // Internal types for query processing
-struct InternalQueryAtom {
-    atom: CorpusQueryAtom,
+struct InternalQueryAtom<'a> {
+    atom: &'a CorpusQueryAtom,
     size_upper_bound: usize,
 }
 
-struct InternalComposedQuery {
-    atoms: Vec<InternalQueryAtom>,
+struct InternalComposedQuery<'a> {
+    composition: String,
+    atoms: Vec<InternalQueryAtom<'a>>,
     position: usize,
 }
 
@@ -134,11 +121,15 @@ impl CorpusQueryEngine {
 
     fn get_all_matches_for(&self, part: &CorpusQueryAtom) -> Option<&PackedIndexData> {
         match part {
-            CorpusQueryAtom::Word(q) => {
-                self.corpus.indices.get("word")?.get(&q.word.to_lowercase())
+            CorpusQueryAtom::Word(word) => {
+                self.corpus.indices.get("word")?.get(&word.to_lowercase())
             }
-            CorpusQueryAtom::Lemma(q) => self.corpus.indices.get("lemma")?.get(&q.lemma),
-            CorpusQueryAtom::Inflection(q) => self.corpus.indices.get(&q.category)?.get(&q.value),
+            CorpusQueryAtom::Lemma(lemma) => {
+                self.corpus.indices.get("lemma")?.get(lemma)
+            }
+            CorpusQueryAtom::Inflection { category, value } => {
+                self.corpus.indices.get(category)?.get(value)
+            }
         }
     }
 
@@ -147,7 +138,7 @@ impl CorpusQueryEngine {
             .map_or(0, |data| max_elements_in(data))
     }
 
-    fn convert_query(&self, query: &CorpusQuery) -> Vec<InternalComposedQuery> {
+    fn convert_query<'a>(&self, query: &'a CorpusQuery) -> Vec<InternalComposedQuery<'a>> {
         query
             .parts
             .iter()
@@ -157,15 +148,16 @@ impl CorpusQueryEngine {
                     QueryToken::Atom(atom) => {
                         let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
                         vec![InternalComposedQuery {
+                            composition: "and".to_string(),
                             atoms: vec![InternalQueryAtom {
-                                atom: from_query_atom_ref(atom),
+                                atom: &atom,
                                 size_upper_bound,
                             }],
                             position: i,
                         }]
                     }
                     QueryToken::Composed(composed_query) => {
-                        if composed_query.composition != "and" {
+                        if composed_query.composition != "and" && composed_query.composition != "or" {
                             panic!("Unsupported composition: {}", composed_query.composition);
                         }
                         composed_query
@@ -174,8 +166,9 @@ impl CorpusQueryEngine {
                             .map(|atom| {
                                 let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
                                 InternalComposedQuery {
+                                    composition: composed_query.composition.clone(),
                                     atoms: vec![InternalQueryAtom {
-                                        atom: from_query_atom_ref(atom),
+                                        atom: &atom,
                                         size_upper_bound,
                                     }],
                                     position: i,
@@ -191,7 +184,7 @@ impl CorpusQueryEngine {
     fn execute_initial_part(&self, part: &InternalComposedQuery) -> Option<IntermediateResult> {
         let atom_data = self.get_all_matches_for(&part.atoms[0].atom)?;
         Some(IntermediateResult {
-            data: clone_packed_index_data(atom_data),
+            data: PackedIndexData::clone(atom_data),
             position: part.position as i32,
         })
     }
@@ -216,7 +209,12 @@ impl CorpusQueryEngine {
         })
     }
 
-    fn resolve_candidates(&self, candidates: &IntermediateResult, query_length: usize, profiler: &mut TimeProfiler) -> Vec<u32> {
+    fn resolve_candidates(
+        &self,
+        candidates: &IntermediateResult,
+        query_length: usize,
+        profiler: &mut TimeProfiler,
+    ) -> Vec<u32> {
         let hard_breaks = match self
             .corpus
             .indices
@@ -229,6 +227,10 @@ impl CorpusQueryEngine {
 
         let unpacked = unpack_packed_index_data(&candidates.data);
         profiler.phase("Unpack Candidates");
+        // There can be no hard breaks between tokens without multiple tokens.
+        if query_length < 2 {
+            return unpacked;
+        }
         let mut matches: Vec<u32> = Vec::new();
 
         for &token_id in &unpacked {
@@ -252,7 +254,8 @@ impl CorpusQueryEngine {
         &self,
         token_id: u32,
         query_length: usize,
-    ) -> Result<CorpusQueryMatch, rusqlite::Error> {
+        context_len: usize,
+    ) -> Result<CorpusQueryMatch<'_>, rusqlite::Error> {
         let work_ranges = &self.corpus.work_row_ranges;
         let work_idx = work_ranges
             .binary_search_by(|(_, row_data)| {
@@ -291,10 +294,8 @@ impl CorpusQueryEngine {
         let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
         let row_idx = row_info.0 as usize;
 
-        let context_len = 25;
-        let start_rowid = token_id.saturating_sub(context_len);
+        let start_rowid = token_id.saturating_sub(context_len as u32);
         let limit = query_length + (context_len * 2) as usize;
-
         let mut stmt = self
             .token_db
             .prepare("SELECT token, break, rowid FROM raw_text WHERE rowid >= ? LIMIT ?")?;
@@ -329,9 +330,9 @@ impl CorpusQueryEngine {
         }
 
         Ok(CorpusQueryMatch {
-            work_id: work_id.clone(),
-            work_name: work_data.name.clone(),
-            author: work_data.author.clone(),
+            work_id: &work_id,
+            work_name: &work_data.name,
+            author: &work_data.author,
             section: row_ids[row_idx].join("."),
             offset: token_id - row_info.1,
             text,
@@ -345,7 +346,8 @@ impl CorpusQueryEngine {
         query: &CorpusQuery,
         page_start: usize,
         page_size: Option<usize>,
-    ) -> Result<CorpusQueryResult> {
+        context_len: Option<usize>,
+    ) -> Result<CorpusQueryResult<'_>> {
         if query.parts.is_empty() {
             return Ok(empty_result());
         }
@@ -362,6 +364,9 @@ impl CorpusQueryEngine {
         profiler.phase("Initial");
 
         for (i, part) in sorted_query.iter().skip(1).enumerate() {
+            if part.composition != "and" {
+                panic!("Unsupported composition: {}", part.composition);
+            }
             candidates =
                 match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
                     Some(c) => c,
@@ -377,10 +382,13 @@ impl CorpusQueryEngine {
         let page_size_val = page_size.unwrap_or(total_results);
         let end = (page_start + page_size_val).min(total_results);
 
+        let context_len = context_len
+            .unwrap_or(DEFAULT_CONTEXT_LEN)
+            .clamp(1, MAX_CONTEXT_LEN);
         let matches = if page_start < total_results {
             match_ids[page_start..end]
                 .iter()
-                .map(|&id| self.resolve_result(id, query.parts.len()))
+                .map(|&id| self.resolve_result(id, query.parts.len(), context_len))
                 .collect::<Result<Vec<_>, _>>()?
         } else {
             vec![]
@@ -391,33 +399,17 @@ impl CorpusQueryEngine {
             total_results,
             matches,
             page_start,
-            timing: profiler.get_stats().clone(),
+            timing: profiler.get_stats().to_vec(),
         })
     }
 }
 
-fn empty_result() -> CorpusQueryResult {
+fn empty_result() -> CorpusQueryResult<'static> {
     CorpusQueryResult {
         total_results: 0,
         matches: vec![],
         page_start: 0,
         timing: vec![],
-    }
-}
-
-// Helper to convert query atom reference to an owned version for storing in InternalQueryAtom
-fn from_query_atom_ref(atom: &CorpusQueryAtom) -> CorpusQueryAtom {
-    match atom {
-        CorpusQueryAtom::Word(q) => CorpusQueryAtom::Word(WordQuery {
-            word: q.word.clone(),
-        }),
-        CorpusQueryAtom::Lemma(q) => CorpusQueryAtom::Lemma(LemmaQuery {
-            lemma: q.lemma.clone(),
-        }),
-        CorpusQueryAtom::Inflection(q) => CorpusQueryAtom::Inflection(InflectionQuery {
-            category: q.category.clone(),
-            value: q.value.clone(),
-        }),
     }
 }
 
@@ -428,17 +420,5 @@ fn to_packed_index_data(result: ApplyAndResult) -> PackedIndexData {
             PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&arr))
         }
         ApplyAndResult::Bitmask(bm) => PackedIndexData::PackedBitMask(bm),
-    }
-}
-
-// Helper to clone PackedIndexData
-fn clone_packed_index_data(data: &PackedIndexData) -> PackedIndexData {
-    match data {
-        PackedIndexData::PackedNumbers(d) => PackedIndexData::PackedNumbers(d.clone()),
-        PackedIndexData::PackedBitMask(bm) => PackedIndexData::PackedBitMask(PackedBitMask {
-            format: bm.format.clone(),
-            data: bm.data.clone(),
-            num_set: bm.num_set,
-        }),
     }
 }

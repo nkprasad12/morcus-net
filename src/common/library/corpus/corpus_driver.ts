@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { checkPresent } from "@/common/assert";
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import type {

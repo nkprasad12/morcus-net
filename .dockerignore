@@ -10,3 +10,5 @@ src/libs
 .env
 venv
 __pycache__
+target
+
