@@ -61,6 +61,57 @@ pub fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<
     result
 }
 
+/// Merges two sorted arrays of numbers, applying an offset to the second array.
+///
+/// This function computes the union of two sorted arrays. An offset is added to each element
+/// of the `second` array before the merge. If the offset results in a negative value for an
+/// element from the `second` array, that element is ignored. Duplicates are handled, appearing
+/// only once in the output.
+///
+/// # Arguments
+///
+/// * `first` - The first sorted array of numbers.
+/// * `second` - The second sorted array of numbers.
+/// * `offset` - The offset to apply to each element of the `second` array.
+///
+/// # Returns
+///
+/// A new sorted array containing the merged elements.
+pub fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
+    let mut result: Vec<u32> = Vec::new();
+    let mut i = 0;
+    let mut j = 0;
+
+    while i < first.len() && j < second.len() {
+        let first_val = first[i] as i32;
+        let second_val = second[j] as i32 + offset as i32;
+        if first_val <= second_val {
+            result.push(first[i]);
+            i += 1;
+            if first_val == second_val {
+                j += 1;
+            }
+            continue;
+        }
+        if second_val >= 0 {
+            result.push(second_val as u32);
+        }
+        j += 1;
+    }
+    while i < first.len() {
+        result.push(first[i]);
+        i += 1;
+    }
+    while j < second.len() {
+        let second_val = second[j] as i32 + offset as i32;
+        if second_val >= 0 {
+            result.push(second_val as u32);
+        }
+        j += 1;
+    }
+    result
+}
+
 /// Applies an `and` to determine the intersection between two indices.
 pub fn apply_and_to_indices(
     first: &PackedIndexData,
@@ -569,6 +620,70 @@ mod tests {
             find_fuzzy_matches_with_arrays(&[11], &[10], 0, 2, "left"),
             Vec::<u32>::new()
         );
+    }
+
+    #[test]
+    fn apply_or_with_arrays_no_offset() {
+        let first = vec![1, 3, 5, 8, 10];
+        let second = vec![3, 4, 5, 9, 10];
+        let result = apply_or_with_arrays(&first, &second, 0);
+        assert_eq!(result, vec![1, 3, 4, 5, 8, 9, 10]);
+    }
+
+    #[test]
+    fn apply_or_with_arrays_positive_offset() {
+        let first = vec![3, 5, 9, 12];
+        let second = vec![1, 3, 7, 10]; // becomes [3, 5, 9, 12]
+        let result = apply_or_with_arrays(&first, &second, 2);
+        assert_eq!(result, vec![3, 5, 9, 12]);
+    }
+
+    #[test]
+    fn apply_or_with_arrays_negative_offset() {
+        let first = vec![1, 3, 7, 10];
+        let second = vec![3, 5, 9, 12]; // becomes [1, 3, 7, 10]
+        let result = apply_or_with_arrays(&first, &second, -2);
+        assert_eq!(result, vec![1, 3, 7, 10]);
+    }
+
+    #[test]
+    fn apply_or_with_arrays_with_empty_first() {
+        let first = vec![];
+        let second = vec![1, 2, 3];
+        let result = apply_or_with_arrays(&first, &second, 0);
+        assert_eq!(result, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn apply_or_with_arrays_with_empty_second() {
+        let first = vec![1, 2, 3];
+        let second = vec![];
+        let result = apply_or_with_arrays(&first, &second, 0);
+        assert_eq!(result, vec![1, 2, 3]);
+    }
+
+    #[test]
+    fn apply_or_with_arrays_with_negative_offset_resulting_in_negative_values() {
+        let first = vec![1, 5];
+        let second = vec![3, 8]; // becomes [-2, 3]
+        let result = apply_or_with_arrays(&first, &second, -5);
+        assert_eq!(result, vec![1, 3, 5]);
+    }
+
+    #[test]
+    fn apply_or_with_arrays_disjoint_sets() {
+        let first = vec![1, 2, 3];
+        let second = vec![4, 5, 6];
+        let result = apply_or_with_arrays(&first, &second, 0);
+        assert_eq!(result, vec![1, 2, 3, 4, 5, 6]);
+    }
+
+    #[test]
+    fn apply_or_with_arrays_interleaved_sets() {
+        let first = vec![1, 3, 5, 7];
+        let second = vec![2, 4, 6, 8];
+        let result = apply_or_with_arrays(&first, &second, 0);
+        assert_eq!(result, vec![1, 2, 3, 4, 5, 6, 7, 8]);
     }
 
     #[test]

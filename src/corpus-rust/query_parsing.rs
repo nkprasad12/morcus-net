@@ -24,7 +24,7 @@ pub fn parse_query(query_str: &str) -> CorpusQuery {
 
     for cap in part_regex.captures_iter(query_str) {
         let part_content = cap[1].trim();
-        let compositions = ["and"]; // Currently only "and" is supported
+        let compositions = ["and", "or"];
         let mut handled = false;
 
         for composition in &compositions {
