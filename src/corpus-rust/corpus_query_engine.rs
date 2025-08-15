@@ -26,7 +26,7 @@ pub enum CorpusQueryAtom {
 
 #[derive(Debug)]
 pub struct ComposedQuery {
-    pub composition: String, // "and"
+    pub composition: String,
     pub atoms: Vec<CorpusQueryAtom>,
 }
 
@@ -75,6 +75,7 @@ struct InternalQueryAtom<'a> {
 }
 
 struct InternalComposedQuery<'a> {
+    composition: String,
     atoms: Vec<InternalQueryAtom<'a>>,
     position: usize,
 }
@@ -147,6 +148,7 @@ impl CorpusQueryEngine {
                     QueryToken::Atom(atom) => {
                         let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
                         vec![InternalComposedQuery {
+                            composition: "and".to_string(),
                             atoms: vec![InternalQueryAtom {
                                 atom: &atom,
                                 size_upper_bound,
@@ -155,7 +157,7 @@ impl CorpusQueryEngine {
                         }]
                     }
                     QueryToken::Composed(composed_query) => {
-                        if composed_query.composition != "and" {
+                        if composed_query.composition != "and" && composed_query.composition != "or" {
                             panic!("Unsupported composition: {}", composed_query.composition);
                         }
                         composed_query
@@ -164,6 +166,7 @@ impl CorpusQueryEngine {
                             .map(|atom| {
                                 let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
                                 InternalComposedQuery {
+                                    composition: composed_query.composition.clone(),
                                     atoms: vec![InternalQueryAtom {
                                         atom: &atom,
                                         size_upper_bound,
@@ -361,6 +364,9 @@ impl CorpusQueryEngine {
         profiler.phase("Initial");
 
         for (i, part) in sorted_query.iter().skip(1).enumerate() {
+            if part.composition != "and" {
+                panic!("Unsupported composition: {}", part.composition);
+            }
             candidates =
                 match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
                     Some(c) => c,
