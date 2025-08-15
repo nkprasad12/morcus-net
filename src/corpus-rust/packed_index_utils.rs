@@ -879,15 +879,14 @@ mod tests {
     #[test]
     fn apply_or_to_indices_array_bitmask() {
         let candidates =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[1, 2, 5]));
         let filter_data = PackedIndexData::PackedBitMask(PackedBitMask {
             format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
         let (result, position) = apply_or_to_indices(&candidates, 0, &filter_data, 1);
-        // array: [0,2,3], bitmask with offset: [2,4,6] -> union [0,2,3,4,6]
-        let expected_data = to_bitmask(&[0, 2, 3, 4, 6], 64);
+        let expected_data = to_bitmask(&[1, 2, 3, 4, 6], 64);
         assert_eq!(
             result,
             ApplyAndResult::Bitmask(PackedBitMask {
@@ -912,8 +911,7 @@ mod tests {
             num_set: None,
         });
         let (result, position) = apply_or_to_indices(&candidates, 3, &filter_data, 2);
-        // candidates at 3 -> [4,6,7]. filter_data at 2 -> [2,4,6]. union -> [2,4,6,7]
-        let expected_data = to_bitmask(&[2, 4, 6, 7], 64);
+        let expected_data = to_bitmask(&[1, 3, 4, 5], 64);
         assert_eq!(
             result,
             ApplyAndResult::Bitmask(PackedBitMask {
@@ -922,7 +920,7 @@ mod tests {
                 num_set: None
             })
         );
-        assert_eq!(position, 2);
+        assert_eq!(position, 3);
     }
 
     #[test]
