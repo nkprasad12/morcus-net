@@ -64,8 +64,10 @@ pub fn bitmask_or_with_self_offset_in_place(data: &mut [u64], offset: isize) {
 }
 
 macro_rules! define_apply_op_with_bitmasks {
-    ($fn_name:ident, $op:tt) => {
-        /// Computes a bitwise operation on two bitmasks with an offset for the second mask.
+    ($fn_name:ident, $op:tt, $name:literal) => {
+        #[doc = "Computes a bitwise "]
+        #[doc = $name]
+        /// on two bitmasks with an offset for the second mask.
         ///
         /// # Arguments
         ///
@@ -76,7 +78,9 @@ macro_rules! define_apply_op_with_bitmasks {
         /// # Returns
         ///
         /// A new `Vec<u64>` with the result of the operation.
-        /// For example: `Result[i] = a[i] & b[i + k]` for each bit `i`.
+        /// `Result[i] = a[i]
+        #[doc = $name]
+        /// b[i - k]` for each bit `i`.
         pub fn $fn_name(first: &[u64], second: &[u64], offset: usize) -> Vec<u64> {
             assert_eq!(
                 first.len(),
@@ -136,8 +140,8 @@ macro_rules! define_apply_op_with_bitmasks {
     };
 }
 
-define_apply_op_with_bitmasks!(apply_and_with_bitmasks, &);
-define_apply_op_with_bitmasks!(apply_or_with_bitmasks, |);
+define_apply_op_with_bitmasks!(apply_and_with_bitmasks, &, "&");
+define_apply_op_with_bitmasks!(apply_or_with_bitmasks, |, "|");
 
 #[cfg(test)]
 mod tests {
