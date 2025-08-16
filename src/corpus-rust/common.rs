@@ -38,8 +38,14 @@ pub fn deserialize_u64_vec_from_bytes(bytes: &[u8]) -> Result<Vec<u64>, String> 
     let mut i = 0;
     while i + 8 <= bytes.len() {
         let value = u64::from_le_bytes([
-            bytes[i + 4], bytes[i + 5], bytes[i + 6], bytes[i + 7],
-            bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3],
+            bytes[i + 4],
+            bytes[i + 5],
+            bytes[i + 6],
+            bytes[i + 7],
+            bytes[i],
+            bytes[i + 1],
+            bytes[i + 2],
+            bytes[i + 3],
         ]);
         u64_vec.push(value);
         i += 8;
@@ -48,8 +54,14 @@ pub fn deserialize_u64_vec_from_bytes(bytes: &[u8]) -> Result<Vec<u64>, String> 
     // Handle the remainder if there's a 4-byte chunk left
     if i + 4 <= bytes.len() {
         let value = u64::from_le_bytes([
-            0, 0, 0, 0,
-            bytes[i], bytes[i + 1], bytes[i + 2], bytes[i + 3],
+            0,
+            0,
+            0,
+            0,
+            bytes[i],
+            bytes[i + 1],
+            bytes[i + 2],
+            bytes[i + 3],
         ]);
         u64_vec.push(value);
     }

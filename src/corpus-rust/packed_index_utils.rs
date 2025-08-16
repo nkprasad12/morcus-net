@@ -40,11 +40,7 @@ pub fn apply_and_with_bitmask_and_array(bitmask: &[u64], indices: &[u32], offset
 }
 
 /// Computes the bitwise AND of a bitmask and an array of indices, with an offset.
-pub fn apply_or_with_bitmask_and_array(
-    bitmask: &[u64],
-    indices: &[u32],
-    offset: i32,
-) -> Vec<u64> {
+pub fn apply_or_with_bitmask_and_array(bitmask: &[u64], indices: &[u32], offset: i32) -> Vec<u64> {
     let mut result = bitmask.to_vec();
     let mut bitmask_len_bits = result.len() * 64;
 
@@ -211,12 +207,26 @@ pub fn apply_or_to_indices(
         (PackedIndexData::PackedBitMask(bm), PackedIndexData::PackedNumbers(d)) => {
             let unpacked = packed_arrays::unpack_integers(d);
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, offset);
-            (ApplyAndResult::Bitmask(PackedBitMask { format: "bitmask".to_string(), data: overlaps, num_set: None }), first_position)
+            (
+                ApplyAndResult::Bitmask(PackedBitMask {
+                    format: "bitmask".to_string(),
+                    data: overlaps,
+                    num_set: None,
+                }),
+                first_position,
+            )
         }
         (PackedIndexData::PackedNumbers(d), PackedIndexData::PackedBitMask(bm)) => {
             let unpacked = packed_arrays::unpack_integers(d);
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, -offset);
-            (ApplyAndResult::Bitmask(PackedBitMask { format: "bitmask".to_string(), data: overlaps, num_set: None }), second_position)
+            (
+                ApplyAndResult::Bitmask(PackedBitMask {
+                    format: "bitmask".to_string(),
+                    data: overlaps,
+                    num_set: None,
+                }),
+                second_position,
+            )
         }
         (PackedIndexData::PackedBitMask(bm1), PackedIndexData::PackedBitMask(bm2)) => {
             let (data, pos) = if offset >= 0 {
@@ -226,11 +236,7 @@ pub fn apply_or_to_indices(
                 )
             } else {
                 (
-                    bitmask_utils::apply_or_with_bitmasks(
-                        &bm2.data,
-                        &bm1.data,
-                        (-offset) as usize,
-                    ),
+                    bitmask_utils::apply_or_with_bitmasks(&bm2.data, &bm1.data, (-offset) as usize),
                     second_position,
                 )
             };
@@ -517,8 +523,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_multiple_consecutive_first_elements_matching_one_second_element_both(
-    ) {
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_consecutive_first_elements_matching_one_second_element_both()
+     {
         let first = vec![10, 11];
         let second = vec![9];
         let offset = 0;
@@ -565,8 +571,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_a_non_zero_offset_and_zero_distance(
-    ) {
+    fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_a_non_zero_offset_and_zero_distance()
+     {
         assert_eq!(
             find_fuzzy_matches_with_arrays(&[3, 7, 12], &[1, 6, 10], 2, 0, "both"),
             vec![3, 12]
@@ -595,8 +601,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_first_array_both(
-    ) {
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_first_array_both()
+     {
         // first: [10], second: [8, 9, 10] -> offset 0, dist 1.
         // second vals are 8,9,10. 10 matches all of them.
         assert_eq!(
@@ -606,8 +612,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_second_array_both(
-    ) {
+    fn find_fuzzy_matches_with_arrays_should_handle_multiple_matches_for_a_single_element_in_the_second_array_both()
+     {
         // first: [8, 9, 10], second: [9] -> offset 0, dist 1.
         // second val is 9. Its range [8, 10] matches all elements in first.
         assert_eq!(
@@ -627,8 +633,8 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_arrays_should_handle_complex_cases_with_multiple_overlapping_matches_both(
-    ) {
+    fn find_fuzzy_matches_with_arrays_should_handle_complex_cases_with_multiple_overlapping_matches_both()
+     {
         // first: [10, 11, 15, 20], second: [12, 18], offset: 0, dist: 2.
         // second val 12: range [10, 14]. Matches 10, 11.
         // second val 18: range [16, 20]. Matches 20. (15 is not in range).

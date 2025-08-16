@@ -268,7 +268,7 @@ mod tests {
     fn apply_op_with_bitmasks_offset_out_of_bounds() {
         let a = vec![u64::MAX, u64::MAX];
         let b = vec![u64::MAX, u64::MAX];
-        verify_results(&a, &b, 128, 128); 
+        verify_results(&a, &b, 128, 128);
         verify_results_or(&a, &b, 128, 128);
     }
 

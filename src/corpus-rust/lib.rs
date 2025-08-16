@@ -33,14 +33,10 @@ impl QueryEngineWrapper {
     }
 
     #[node_bindgen]
-    fn query(
-        &self,
-        query_str: String,
-        page_start: u32,
-        page_size: u32,
-    ) -> String {
+    fn query(&self, query_str: String, page_start: u32, page_size: u32) -> String {
         let query = query_parsing::parse_query(&query_str);
-        let result = self.engine
+        let result = self
+            .engine
             .query_corpus(&query, page_start as usize, Some(page_size as usize), None)
             .expect("Query failed");
         serde_json::to_string(&result).expect("Failed to serialize result")

@@ -40,7 +40,7 @@ pub fn parse_query(query_str: &str) -> CorpusQuery {
             in_segment = true;
             continue;
         }
-        // If we have a close, we must be in a segment. 
+        // If we have a close, we must be in a segment.
         assert_eq!(c, ']');
         if !in_segment {
             panic!("Found segment end without a start: {}", query_str);

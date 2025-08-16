@@ -2,8 +2,8 @@ use crate::common::PackedIndexData;
 use crate::corpus_serialization::LatinCorpusIndex;
 use crate::packed_arrays;
 use crate::packed_index_utils::{
-    apply_and_to_indices, has_value_in_range, max_elements_in, unpack_packed_index_data,
-    ApplyAndResult,
+    ApplyAndResult, apply_and_to_indices, has_value_in_range, max_elements_in,
+    unpack_packed_index_data,
 };
 use crate::profiler::TimeProfiler;
 
@@ -21,7 +21,7 @@ const DEFAULT_CONTEXT_LEN: usize = 25;
 pub enum CorpusQueryAtom {
     Word(String),
     Lemma(String),
-    Inflection {category: String, value: String},
+    Inflection { category: String, value: String },
 }
 
 #[derive(Debug)]
@@ -124,9 +124,7 @@ impl CorpusQueryEngine {
             CorpusQueryAtom::Word(word) => {
                 self.corpus.indices.get("word")?.get(&word.to_lowercase())
             }
-            CorpusQueryAtom::Lemma(lemma) => {
-                self.corpus.indices.get("lemma")?.get(lemma)
-            }
+            CorpusQueryAtom::Lemma(lemma) => self.corpus.indices.get("lemma")?.get(lemma),
             CorpusQueryAtom::Inflection { category, value } => {
                 self.corpus.indices.get(category)?.get(value)
             }
@@ -157,7 +155,8 @@ impl CorpusQueryEngine {
                         }]
                     }
                     QueryToken::Composed(composed_query) => {
-                        if composed_query.composition != "and" && composed_query.composition != "or" {
+                        if composed_query.composition != "and" && composed_query.composition != "or"
+                        {
                             panic!("Unsupported composition: {}", composed_query.composition);
                         }
                         composed_query
@@ -222,7 +221,7 @@ impl CorpusQueryEngine {
             .and_then(|m| m.get("hard"))
         {
             Some(b) => b,
-            None => return vec![], // No hard breaks index found
+            _none => return vec![], // No hard breaks index found
         };
 
         let unpacked = unpack_packed_index_data(&candidates.data);
@@ -359,7 +358,7 @@ impl CorpusQueryEngine {
 
         let mut candidates = match self.execute_initial_part(&sorted_query[0]) {
             Some(c) => c,
-            None => return Ok(empty_result()),
+            _none => return Ok(empty_result()),
         };
         profiler.phase("Initial");
 
@@ -370,7 +369,7 @@ impl CorpusQueryEngine {
             candidates =
                 match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
                     Some(c) => c,
-                    None => return Ok(empty_result()),
+                    _none => return Ok(empty_result()),
                 };
             profiler.phase(&format!("Filter {}", i + 1));
         }

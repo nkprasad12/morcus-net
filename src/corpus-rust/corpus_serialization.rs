@@ -1,9 +1,9 @@
-use crate::common::{deserialize_u64_vec_from_bytes, PackedBitMask, PackedIndexData};
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
+use crate::common::{PackedBitMask, PackedIndexData, deserialize_u64_vec_from_bytes};
 use base64::engine::Engine as _;
+use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use serde::{
-    de::{self, Deserializer, MapAccess, Visitor},
     Deserialize,
+    de::{self, Deserializer, MapAccess, Visitor},
 };
 use std::collections::HashMap;
 use std::error::Error;

@@ -1,5 +1,5 @@
-use std::time::Instant;
 use std::env;
+use std::time::Instant;
 
 mod bitmask_utils;
 mod common;
@@ -7,8 +7,8 @@ mod corpus_query_engine;
 mod corpus_serialization;
 mod packed_arrays;
 mod packed_index_utils;
-mod query_parsing;
 mod profiler;
+mod query_parsing;
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
@@ -54,7 +54,10 @@ fn get_query_arg_or_exit() -> String {
             return q.clone();
         }
     }
-    eprintln!("Usage: {} --query <QUERY> [--limit <N>] [--context <N>] [--quiet]", args.get(0).unwrap_or(&"program".to_string()));
+    eprintln!(
+        "Usage: {} --query <QUERY> [--limit <N>] [--context <N>] [--quiet]",
+        args.get(0).unwrap_or(&"program".to_string())
+    );
     std::process::exit(1);
 }
 
@@ -77,7 +80,6 @@ fn get_limit_arg_or_default() -> usize {
     }
     25
 }
-
 
 fn main() {
     let corpus = load_corpus_with_timing(CORPUS_ROOT);
