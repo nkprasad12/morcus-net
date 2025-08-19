@@ -1,3 +1,4 @@
+mod analyzer_types;
 mod bitmask_utils;
 mod common;
 mod corpus_query_engine;
@@ -6,6 +7,7 @@ mod packed_arrays;
 mod packed_index_utils;
 mod profiler;
 mod query_parsing;
+mod query_parsing_v2;
 
 use node_bindgen::derive::node_bindgen;
 
