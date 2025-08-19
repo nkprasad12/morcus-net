@@ -144,7 +144,10 @@ fn parse_relation(raw_input: &str) -> Result<QueryRelation, QueryParseError> {
     check_equal!(if is_directed { penult } else { ult }, Some('~'), "");
     let leading = &input[..n - (if is_directed { 2 } else { 1 })];
     let distance = leading.parse::<u8>().unwrap_or(DEFAULT_PROXIMITY);
-    Ok(QueryRelation::Proximity { distance, is_directed })
+    Ok(QueryRelation::Proximity {
+        distance,
+        is_directed,
+    })
 }
 
 /// Parse a token constraint (potentially complex with AND/OR/NOT operations)
@@ -159,7 +162,11 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
         let inner = input[1..].trim();
         let has_parens = inner.starts_with('(') && inner.ends_with(')');
         let i = if has_parens { 1 } else { 0 };
-        let j = if has_parens { inner.len() - 1 } else { inner.len() };
+        let j = if has_parens {
+            inner.len() - 1
+        } else {
+            inner.len()
+        };
         let inner_constraint = parse_token_constraint(&inner[i..j])?;
         return Ok(TokenConstraint::Negated(Box::new(inner_constraint)));
     }
@@ -184,7 +191,11 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
         // Check for balanced parentheses before stripping
         let mut balance = 0;
         let mut fully_wrapped = true;
-        for (_i, c) in effective_input.char_indices().skip(1).take(effective_input.len() - 2) {
+        for (_i, c) in effective_input
+            .char_indices()
+            .skip(1)
+            .take(effective_input.len() - 2)
+        {
             if c == '(' {
                 balance += 1;
             } else if c == ')' {
