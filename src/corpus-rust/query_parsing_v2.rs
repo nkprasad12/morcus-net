@@ -280,6 +280,99 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
     }
 }
 
+/// Returns the index of the close parenthesis for the given open parenthesis.
+fn find_close_paren(input: &str, open_idx: usize) -> Result<usize, QueryParseError> {
+    check_equal!(input.chars().nth(open_idx), Some('('), "Expected '('");
+    let mut balance = 1;
+    for (i, c) in input.char_indices().skip(open_idx + 1) {
+        if c == '(' {
+            balance += 1;
+        } else if c == ')' {
+            balance -= 1;
+            if balance == 0 {
+                return Ok(i);
+            }
+        }
+    }
+    Err(QueryParseError::new("Unmatched opening parenthesis"))
+}
+
+/// Returns the index of the end of the "word" starting at the `start_idx`.
+/// This is defined as the last character before a space or the end of the string.
+fn find_word_end(input: &str, start_idx: usize) -> usize {
+    let n = input.chars().count();
+    if start_idx >= n {
+        return n;
+    }
+    for (char_idx, c) in input.chars().enumerate().skip(start_idx) {
+        if c == ' ' {
+            return char_idx - 1;
+        }
+    }
+    n - 1
+}
+
+/// Finds the start of the next constraint after `start_idx`.
+/// This is defined as the first `!`, `(`, `@`, or alphabet letter.
+fn find_next_constraint(input: &str, start_idx: isize) -> Option<usize> {
+    if start_idx < -1 {
+        return None;
+    }
+    for (i, c) in input.char_indices().skip((start_idx + 1) as usize) {
+        match c {
+            '!' | '@' | '(' | 'a'..='z' | 'A'..='Z' => return Some(i),
+            _ => {}
+        }
+    }
+    None
+}
+
+/// Splits the query into terms.
+fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParseError> {
+    let input = raw_input.trim();
+    let n = input.chars().count();
+
+    let mut constraints: Vec<String> = Vec::new();
+    let mut relations: Vec<String> = Vec::new();
+    let mut i = find_next_constraint(input, -1).ok_or(QueryParseError::new("No constraints!."))?;
+    check_equal!(i, 0, "Unexpected start of query.");
+    let mut splits = 0;
+
+    while i < n {
+        if splits % 2 != 0 {
+            let end = find_next_constraint(input, i as isize)
+                .ok_or(QueryParseError::new("Unexpected end of query."))?;
+            relations.push(input.chars().skip(i).take(end - i).collect());
+            i = end;
+            splits += 1;
+            continue;
+        }
+        let start = i;
+        // If we have negation, skip that and try the next character.
+        if input.chars().nth(i) == Some('!') {
+            i += 1;
+        }
+        let c = input.chars().nth(i);
+        match c {
+            Some('(') => {
+                i = find_close_paren(input, i)?;
+            }
+            Some('@') => {
+                i = find_word_end(input, i);
+            }
+            Some(c) if c.is_alphabetic() => {
+                i = find_word_end(input, i);
+            }
+            _ => {
+                return Err(QueryParseError::new("Unexpected character in query."));
+            }
+        }
+        i += 1;
+        constraints.push(input.chars().skip(start).take(i - start).collect());
+        splits += 1;
+    }
+    Ok((constraints, relations))
+}
 
 /// Parses a query string into a `Query` object.
 ///
@@ -344,7 +437,21 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
 ///
 /// There is no bound in the length of the allowed query.
 pub fn parse_query(input: &str) -> Result<Query, QueryParseError> {
-    unimplemented!();
+    let (constraints, relations) = split_query(input)?;
+    let n = constraints.len();
+    check_equal!(n, relations.len() + 1, "Unexpected query split");
+    let mut terms: Vec<QueryTerm> = vec![];
+    terms.push(QueryTerm {
+        constraint: parse_token_constraint(&constraints[0])?,
+        relation: QueryRelation::First,
+    });
+    for i in 1..n {
+        terms.push(QueryTerm {
+            constraint: parse_token_constraint(&constraints[i])?,
+            relation: parse_relation(&relations[i - 1])?,
+        });
+    }
+    Ok(Query { terms })
 }
 
 #[cfg(test)]
@@ -645,5 +752,184 @@ mod tests {
     fn parse_token_constraint_empty_input() {
         assert!(parse_token_constraint("").is_err());
         assert!(parse_token_constraint("   ").is_err());
+    }
+
+    //
+    // Tests for `parse_query`
+    //
+    #[test]
+    fn parse_query_single_term() {
+        let query = parse_query("amoris").unwrap();
+        assert_eq!(query.terms.len(), 1);
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("amoris".to_string()))
+        );
+        assert_eq!(query.terms[0].relation, QueryRelation::First);
+    }
+
+    #[test]
+    fn parse_query_two_terms_after() {
+        let query = parse_query("amor est").unwrap();
+        assert_eq!(query.terms.len(), 2);
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("amor".to_string()))
+        );
+        assert_eq!(query.terms[0].relation, QueryRelation::First);
+        assert_eq!(
+            query.terms[1].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("est".to_string()))
+        );
+        assert_eq!(query.terms[1].relation, QueryRelation::After);
+    }
+
+    #[test]
+    fn parse_query_proximity() {
+        let query = parse_query("amor 10~> est").unwrap();
+        assert_eq!(query.terms.len(), 2);
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("amor".to_string()))
+        );
+        assert_eq!(query.terms[0].relation, QueryRelation::First);
+        assert_eq!(
+            query.terms[1].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("est".to_string()))
+        );
+        assert_eq!(
+            query.terms[1].relation,
+            QueryRelation::Proximity {
+                distance: 10,
+                is_directed: true
+            }
+        );
+    }
+
+    #[test]
+    fn parse_query_complex() {
+        let query = parse_query(
+            "(@lemma:amo or @lemma:habeo) 10~ (@case:genitive and !@gender:neuter) ~> est",
+        )
+        .unwrap();
+        assert_eq!(query.terms.len(), 3);
+
+        // Term 1
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Composed {
+                op: TokenConstraintOperation::Or,
+                children: vec![
+                    TokenConstraint::Atom(TokenConstraintAtom::Lemma("amo".to_string())),
+                    TokenConstraint::Atom(TokenConstraintAtom::Lemma("habeo".to_string())),
+                ]
+            }
+        );
+        assert_eq!(query.terms[0].relation, QueryRelation::First);
+
+        // Term 2
+        assert_eq!(
+            query.terms[1].constraint,
+            TokenConstraint::Composed {
+                op: TokenConstraintOperation::And,
+                children: vec![
+                    TokenConstraint::Atom(TokenConstraintAtom::Inflection(LatinInflection::Case(
+                        LatinCase::Genitive
+                    ))),
+                    TokenConstraint::Negated(Box::new(TokenConstraint::Atom(
+                        TokenConstraintAtom::Inflection(LatinInflection::Gender(
+                            LatinGender::Neuter
+                        ))
+                    )))
+                ]
+            }
+        );
+        assert_eq!(
+            query.terms[1].relation,
+            QueryRelation::Proximity {
+                distance: 10,
+                is_directed: false
+            }
+        );
+
+        // Term 3
+        assert_eq!(
+            query.terms[2].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("est".to_string()))
+        );
+        assert_eq!(
+            query.terms[2].relation,
+            QueryRelation::Proximity {
+                distance: 5,
+                is_directed: true
+            }
+        );
+    }
+
+    #[test]
+    fn parse_query_invalid_trailing_relation() {
+        assert!(parse_query("amor est ~").is_err());
+    }
+
+    #[test]
+    fn parse_query_invalid_leading_relation() {
+        assert!(parse_query("~ amor est").is_err());
+    }
+
+    #[test]
+    fn parse_query_invalid_between_relation() {
+        assert!(parse_query("amor\test").is_err());
+    }
+
+    #[test]
+    fn parse_query_with_nested_parens() {
+        let query = parse_query("((@lemma:amo)) est").unwrap();
+        assert_eq!(query.terms.len(), 2);
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Lemma("amo".to_string()))
+        );
+        assert_eq!(query.terms[0].relation, QueryRelation::First);
+        assert_eq!(
+            query.terms[1].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("est".to_string()))
+        );
+        assert_eq!(query.terms[1].relation, QueryRelation::After);
+    }
+
+    #[test]
+    fn parse_query_negated_atom_no_parens() {
+        let query = parse_query("!@case:genitive est").unwrap();
+        assert_eq!(query.terms.len(), 2);
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Negated(Box::new(TokenConstraint::Atom(
+                TokenConstraintAtom::Inflection(LatinInflection::Case(LatinCase::Genitive))
+            )))
+        );
+        assert_eq!(query.terms[0].relation, QueryRelation::First);
+        assert_eq!(
+            query.terms[1].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("est".to_string()))
+        );
+        assert_eq!(query.terms[1].relation, QueryRelation::After);
+    }
+
+    #[test]
+    fn parse_query_negated_atom_with_parens() {
+        let query = parse_query("!(@case:genitive) est").unwrap();
+        assert_eq!(query.terms.len(), 2);
+        assert_eq!(
+            query.terms[0].constraint,
+            TokenConstraint::Negated(Box::new(TokenConstraint::Atom(
+                TokenConstraintAtom::Inflection(LatinInflection::Case(LatinCase::Genitive))
+            )))
+        );
+        assert_eq!(query.terms[0].relation, QueryRelation::First);
+        assert_eq!(
+            query.terms[1].constraint,
+            TokenConstraint::Atom(TokenConstraintAtom::Word("est".to_string()))
+        );
+        assert_eq!(query.terms[1].relation, QueryRelation::After);
     }
 }
