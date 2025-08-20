@@ -1,5 +1,5 @@
 use crate::core::query_parsing_v2::{
-    QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
+    QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation, parse_query,
 };
 
 use super::common::PackedIndexData;
@@ -337,16 +337,18 @@ impl CorpusQueryEngine {
 
     pub fn query_corpus(
         &self,
-        query: &Query,
+        query_str: &str,
         page_start: usize,
         page_size: Option<usize>,
         context_len: Option<usize>,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
+        let mut profiler = TimeProfiler::new();
+        let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
+        profiler.phase("Parse query");
         if query.terms.is_empty() {
             return Ok(empty_result());
         }
-        let mut profiler = TimeProfiler::new();
-        let mut sorted_query = self.convert_query_v2(query)?;
+        let mut sorted_query = self.convert_query_v2(&query)?;
         sorted_query.sort_by_key(|p| p.atoms[0].size_upper_bound);
 
         let mut candidates = match self.execute_initial_part(&sorted_query[0]) {

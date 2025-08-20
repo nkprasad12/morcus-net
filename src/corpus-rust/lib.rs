@@ -8,7 +8,6 @@ mod core;
 use crate::core::{
     corpus_query_engine::{CorpusQueryEngine, CorpusQueryResult},
     corpus_serialization::deserialize_corpus,
-    query_parsing_v2,
 };
 
 use node_bindgen::derive::node_bindgen;
@@ -27,13 +26,12 @@ struct QueryEngineWrapper {
 
 fn get_results<'a>(
     engine: &'a CorpusQueryEngine,
-    query_str: &str,
+    query: &str,
     page_start: u32,
     page_size: u32,
 ) -> Result<CorpusQueryResult<'a>, String> {
-    let query = query_parsing_v2::parse_query(query_str).map_err(|e| e.message)?;
     engine
-        .query_corpus(&query, page_start as usize, Some(page_size as usize), None)
+        .query_corpus(query, page_start as usize, Some(page_size as usize), None)
         .map_err(|e| e.message)
 }
 
