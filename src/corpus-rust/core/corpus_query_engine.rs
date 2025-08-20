@@ -1,12 +1,12 @@
-use crate::common::PackedIndexData;
-use crate::corpus_serialization::LatinCorpusIndex;
-use crate::packed_arrays;
-use crate::packed_index_utils::{
+use super::common::PackedIndexData;
+use super::corpus_serialization::LatinCorpusIndex;
+use super::packed_arrays;
+use super::packed_index_utils::{
     ApplyAndResult, apply_and_to_indices, has_value_in_range, max_elements_in,
     unpack_packed_index_data,
 };
-use crate::profiler::TimeProfiler;
-use crate::query_parsing_v2::Query;
+use super::profiler::TimeProfiler;
+use super::query_parsing_v2::Query;
 
 use rusqlite::{Connection, Result};
 use serde::Serialize;

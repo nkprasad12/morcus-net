@@ -1,6 +1,6 @@
 use std::str::FromStr;
 
-use crate::analyzer_types::LatinInflection;
+use super::analyzer_types::LatinInflection;
 
 const DEFAULT_PROXIMITY: u8 = 5;
 const SIMPLE_PREFIXES: [&str; 2] = ["@lemma:", "@word:"];
@@ -456,7 +456,7 @@ pub fn parse_query(input: &str) -> Result<Query, QueryParseError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::analyzer_types::{LatinCase, LatinGender, LatinMood};
+    use crate::core::analyzer_types::{LatinCase, LatinGender, LatinMood};
 
     use super::*;
 

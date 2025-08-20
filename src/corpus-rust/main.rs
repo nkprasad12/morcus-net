@@ -1,18 +1,10 @@
+mod core;
+
 use std::env;
 use std::time::Instant;
 
-use crate::query_parsing_v2::Query;
-
-mod analyzer_types;
-mod bitmask_utils;
-mod common;
-mod corpus_query_engine;
-mod corpus_serialization;
-mod packed_arrays;
-mod packed_index_utils;
-mod profiler;
-mod query_parsing;
-mod query_parsing_v2;
+use crate::core::query_parsing_v2::Query;
+use crate::core::{corpus_query_engine, corpus_serialization, query_parsing, query_parsing_v2};
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 

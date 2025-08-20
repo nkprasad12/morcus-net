@@ -1,6 +1,6 @@
-use crate::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
-use crate::common::{PackedBitMask, PackedIndexData};
-use crate::packed_arrays;
+use super::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
+use super::common::{PackedBitMask, PackedIndexData};
+use super::packed_arrays;
 
 #[cfg(test)]
 pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
@@ -430,9 +430,9 @@ pub fn max_elements_in(packed_data: &PackedIndexData) -> usize {
 
 #[cfg(test)]
 mod tests {
+    use super::packed_arrays;
     use super::*;
-    use crate::common::{PackedBitMask, PackedIndexData};
-    use crate::packed_arrays;
+    use crate::core::common::{PackedBitMask, PackedIndexData};
 
     #[test]
     fn should_smear_to_the_right_within_a_single_word() {
