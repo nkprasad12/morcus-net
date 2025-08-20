@@ -1,27 +1,36 @@
+#![cfg_attr(
+    not(test),
+    deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
+)]
+
 mod core;
 
-use crate::core::{corpus_query_engine, corpus_serialization, query_parsing_v2};
+use crate::core::{
+    corpus_query_engine::{CorpusQueryEngine, CorpusQueryResult},
+    corpus_serialization::deserialize_corpus,
+    query_parsing_v2,
+};
 
 use node_bindgen::derive::node_bindgen;
 
 const CORPUS_FILE: &str = "latin_corpus.json";
 
-fn create_engine(path: &str) -> corpus_query_engine::CorpusQueryEngine {
-    let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
-    
-    corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine")
+fn create_engine(corpus_dir: String) -> Result<CorpusQueryEngine, String> {
+    let corpus_path = format!("{}/{}", corpus_dir, CORPUS_FILE);
+    let corpus = deserialize_corpus(corpus_path).map_err(|e| e.to_string())?;
+    CorpusQueryEngine::new(corpus).map_err(|e| e.to_string())
 }
 
 struct QueryEngineWrapper {
-    engine: corpus_query_engine::CorpusQueryEngine,
+    engine: CorpusQueryEngine,
 }
 
 fn get_results<'a>(
-    engine: &'a corpus_query_engine::CorpusQueryEngine,
+    engine: &'a CorpusQueryEngine,
     query_str: &str,
     page_start: u32,
     page_size: u32,
-) -> Result<corpus_query_engine::CorpusQueryResult<'a>, String> {
+) -> Result<CorpusQueryResult<'a>, String> {
     let query = query_parsing_v2::parse_query(query_str).map_err(|e| e.message)?;
     engine
         .query_corpus(&query, page_start as usize, Some(page_size as usize), None)
@@ -32,10 +41,12 @@ fn get_results<'a>(
 impl QueryEngineWrapper {
     #[node_bindgen(constructor)]
     fn new(corpus_dir: String) -> Self {
-        let corpus_path = format!("{}/{}", corpus_dir, CORPUS_FILE);
-        Self {
-            engine: create_engine(&corpus_path),
-        }
+        // `node_bindgen` does not seem to support returning a `Result` from a constructor.
+        // An error here will cause the Node process to crash, but it's not that bad since this
+        // will only be called once.
+        #[allow(clippy::expect_used)]
+        let engine = create_engine(corpus_dir).expect("Failed to create query engine");
+        Self { engine }
     }
 
     #[node_bindgen]

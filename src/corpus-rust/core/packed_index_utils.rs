@@ -4,7 +4,7 @@ use super::packed_arrays;
 
 #[cfg(test)]
 pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
-    let mut bitmask = vec![0u64; ((upper_bound + 63) / 64).try_into().unwrap()];
+    let mut bitmask = vec![0u64; upper_bound.div_ceil(64).try_into().unwrap()];
     for &idx in indices {
         let word = idx / 64;
         let bit = idx % 64;
@@ -143,25 +143,25 @@ pub fn apply_and_to_indices(
     first_position: i32,
     second: &PackedIndexData,
     second_position: i32,
-) -> (ApplyAndResult, i32) {
+) -> Result<(ApplyAndResult, i32), String> {
     let offset = first_position - second_position;
 
     match (first, second) {
         (PackedIndexData::PackedNumbers(d1), PackedIndexData::PackedNumbers(d2)) => {
-            let unpacked1 = packed_arrays::unpack_integers(d1);
-            let unpacked2 = packed_arrays::unpack_integers(d2);
+            let unpacked1 = packed_arrays::unpack_integers(d1)?;
+            let unpacked2 = packed_arrays::unpack_integers(d2)?;
             let overlaps = apply_and_with_arrays(&unpacked1, &unpacked2, offset);
-            (ApplyAndResult::Array(overlaps), first_position)
+            Ok((ApplyAndResult::Array(overlaps), first_position))
         }
         (PackedIndexData::PackedBitMask(bm), PackedIndexData::PackedNumbers(d)) => {
-            let unpacked = packed_arrays::unpack_integers(d);
+            let unpacked = packed_arrays::unpack_integers(d)?;
             let overlaps = apply_and_with_bitmask_and_array(&bm.data, &unpacked, offset);
-            (ApplyAndResult::Array(overlaps), first_position)
+            Ok((ApplyAndResult::Array(overlaps), first_position))
         }
         (PackedIndexData::PackedNumbers(d), PackedIndexData::PackedBitMask(bm)) => {
-            let unpacked = packed_arrays::unpack_integers(d);
+            let unpacked = packed_arrays::unpack_integers(d)?;
             let overlaps = apply_and_with_bitmask_and_array(&bm.data, &unpacked, -offset);
-            (ApplyAndResult::Array(overlaps), second_position)
+            Ok((ApplyAndResult::Array(overlaps), second_position))
         }
         (PackedIndexData::PackedBitMask(bm1), PackedIndexData::PackedBitMask(bm2)) => {
             let (data, pos) = if offset >= 0 {
@@ -184,7 +184,7 @@ pub fn apply_and_to_indices(
                 data,
                 num_set: None, // We don't calculate num_set here for performance.
             });
-            (result, pos)
+            Ok((result, pos))
         }
     }
 }
@@ -194,39 +194,39 @@ pub fn apply_or_to_indices(
     first_position: i32,
     second: &PackedIndexData,
     second_position: i32,
-) -> (ApplyAndResult, i32) {
+) -> Result<(ApplyAndResult, i32), String> {
     let offset = first_position - second_position;
 
     match (first, second) {
         (PackedIndexData::PackedNumbers(d1), PackedIndexData::PackedNumbers(d2)) => {
-            let unpacked1 = packed_arrays::unpack_integers(d1);
-            let unpacked2 = packed_arrays::unpack_integers(d2);
+            let unpacked1 = packed_arrays::unpack_integers(d1)?;
+            let unpacked2 = packed_arrays::unpack_integers(d2)?;
             let overlaps = apply_or_with_arrays(&unpacked1, &unpacked2, offset);
-            (ApplyAndResult::Array(overlaps), first_position)
+            Ok((ApplyAndResult::Array(overlaps), first_position))
         }
         (PackedIndexData::PackedBitMask(bm), PackedIndexData::PackedNumbers(d)) => {
-            let unpacked = packed_arrays::unpack_integers(d);
+            let unpacked = packed_arrays::unpack_integers(d)?;
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, offset);
-            (
+            Ok((
                 ApplyAndResult::Bitmask(PackedBitMask {
                     format: "bitmask".to_string(),
                     data: overlaps,
                     num_set: None,
                 }),
                 first_position,
-            )
+            ))
         }
         (PackedIndexData::PackedNumbers(d), PackedIndexData::PackedBitMask(bm)) => {
-            let unpacked = packed_arrays::unpack_integers(d);
+            let unpacked = packed_arrays::unpack_integers(d)?;
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, -offset);
-            (
+            Ok((
                 ApplyAndResult::Bitmask(PackedBitMask {
                     format: "bitmask".to_string(),
                     data: overlaps,
                     num_set: None,
                 }),
                 second_position,
-            )
+            ))
         }
         (PackedIndexData::PackedBitMask(bm1), PackedIndexData::PackedBitMask(bm2)) => {
             let (data, pos) = if offset >= 0 {
@@ -245,7 +245,7 @@ pub fn apply_or_to_indices(
                 data,
                 num_set: None, // We don't calculate num_set here for performance.
             });
-            (result, pos)
+            Ok((result, pos))
         }
     }
 }
@@ -355,7 +355,7 @@ pub fn find_fuzzy_matches_with_arrays(
 }
 
 /// Unpacks packed index data (either a bitmask or a packed array) into a vector of integers.
-pub fn unpack_packed_index_data(packed_data: &PackedIndexData) -> Vec<u32> {
+pub fn unpack_packed_index_data(packed_data: &PackedIndexData) -> Result<Vec<u32>, String> {
     match packed_data {
         PackedIndexData::PackedNumbers(data) => packed_arrays::unpack_integers(data),
         PackedIndexData::PackedBitMask(bitmask_data) => {
@@ -371,7 +371,7 @@ pub fn unpack_packed_index_data(packed_data: &PackedIndexData) -> Vec<u32> {
                     }
                 }
             }
-            result
+            Ok(result)
         }
     }
 }
@@ -855,7 +855,7 @@ mod tests {
     fn apply_or_to_indices_array_array() {
         let candidates = PackedIndexData::PackedNumbers(pack_nats(&[3, 6, 9]));
         let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[2, 4, 8]));
-        let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 1);
+        let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 1).unwrap();
         // candidates: [3,6,9], filter: [3,5,9] -> union [3,5,6,9]
         assert_eq!(result, ApplyAndResult::Array(vec![3, 5, 6, 9]));
         assert_eq!(position, 2);
@@ -869,7 +869,7 @@ mod tests {
             num_set: None,
         });
         let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
-        let (result, position) = apply_or_to_indices(&candidates, 1, &filter_data, 0);
+        let (result, position) = apply_or_to_indices(&candidates, 1, &filter_data, 0).unwrap();
         // bitmask: [1,3,4], array with offset: [1,3,4] -> union [1,3,4]
         let expected_data = to_bitmask(&[1, 3, 4], 64);
         assert_eq!(
@@ -891,7 +891,7 @@ mod tests {
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
-        let (result, position) = apply_or_to_indices(&candidates, 0, &filter_data, 1);
+        let (result, position) = apply_or_to_indices(&candidates, 0, &filter_data, 1).unwrap();
         let expected_data = to_bitmask(&[1, 2, 3, 4, 6], 64);
         assert_eq!(
             result,
@@ -916,7 +916,7 @@ mod tests {
             data: to_bitmask(&[0, 2, 4], 64),
             num_set: None,
         });
-        let (result, position) = apply_or_to_indices(&candidates, 3, &filter_data, 2);
+        let (result, position) = apply_or_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3, 4, 5], 64);
         assert_eq!(
             result,
@@ -933,7 +933,7 @@ mod tests {
     fn apply_and_to_indices_array_array() {
         let candidates = PackedIndexData::PackedNumbers(pack_nats(&[3, 6, 9]));
         let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[2, 4, 8]));
-        let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1);
+        let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1).unwrap();
         assert_eq!(result, ApplyAndResult::Array(vec![3, 9]));
         assert_eq!(position, 2);
     }
@@ -946,7 +946,7 @@ mod tests {
             num_set: None,
         });
         let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
-        let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0);
+        let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0).unwrap();
         assert_eq!(result, ApplyAndResult::Array(vec![1, 3, 4]));
         assert_eq!(position, 1);
     }
@@ -959,7 +959,7 @@ mod tests {
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
-        let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1);
+        let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1).unwrap();
         assert_eq!(result, ApplyAndResult::Array(vec![1, 3, 4]));
         assert_eq!(position, 1);
     }
@@ -976,7 +976,7 @@ mod tests {
             data: to_bitmask(&[0, 2, 4], 64),
             num_set: None,
         });
-        let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2);
+        let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3], 64);
         assert_eq!(
             result,
@@ -993,7 +993,7 @@ mod tests {
     fn unpack_packed_index_data_from_array() {
         let original_data = vec![10, 25, 150, 300];
         let packed_data = PackedIndexData::PackedNumbers(pack_nats(&original_data));
-        let result = unpack_packed_index_data(&packed_data);
+        let result = unpack_packed_index_data(&packed_data).unwrap();
         assert_eq!(result, original_data);
     }
 
@@ -1005,7 +1005,7 @@ mod tests {
             data: to_bitmask(&original_data, 128),
             num_set: None,
         });
-        let result = unpack_packed_index_data(&packed_data);
+        let result = unpack_packed_index_data(&packed_data).unwrap();
         assert_eq!(result, original_data);
     }
 

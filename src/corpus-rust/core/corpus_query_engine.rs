@@ -33,6 +33,18 @@ impl QueryExecError {
     }
 }
 
+impl From<rusqlite::Error> for QueryExecError {
+    fn from(e: rusqlite::Error) -> Self {
+        QueryExecError::new(&format!("SQLite error: {}", e))
+    }
+}
+
+impl From<String> for QueryExecError {
+    fn from(e: String) -> Self {
+        QueryExecError::new(&e)
+    }
+}
+
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorpusQueryMatch<'a> {
@@ -170,16 +182,16 @@ impl CorpusQueryEngine {
         query_atom: &TokenConstraintAtom,
         query_part_position: usize,
     ) -> Result<Option<IntermediateResult>, QueryExecError> {
-        let filter_data = self.get_all_matches_for(query_atom);
-        if filter_data.is_none() {
-            return Ok(None);
-        }
+        let filter_data = match self.get_all_matches_for(query_atom) {
+            Some(data) => data,
+            None => return Ok(None),
+        };
         let (intersection, position) = apply_and_to_indices(
             &candidates.data,
             candidates.position,
-            filter_data.unwrap(),
+            filter_data,
             query_part_position as i32,
-        );
+        )?;
 
         let packed = to_packed_index_data(intersection)?;
 
@@ -194,7 +206,7 @@ impl CorpusQueryEngine {
         candidates: &IntermediateResult,
         query_length: usize,
         profiler: &mut TimeProfiler,
-    ) -> Vec<u32> {
+    ) -> Result<Vec<u32>, QueryExecError> {
         let hard_breaks = match self
             .corpus
             .indices
@@ -202,14 +214,14 @@ impl CorpusQueryEngine {
             .and_then(|m| m.get("hard"))
         {
             Some(b) => b,
-            _none => return vec![], // No hard breaks index found
+            _none => return Err(QueryExecError::new("No hard breaks index found")),
         };
 
-        let unpacked = unpack_packed_index_data(&candidates.data);
+        let unpacked = unpack_packed_index_data(&candidates.data)?;
         profiler.phase("Unpack Candidates");
         // There can be no hard breaks between tokens without multiple tokens.
         if query_length < 2 {
-            return unpacked;
+            return Ok(unpacked);
         }
         let mut matches: Vec<u32> = Vec::new();
 
@@ -227,7 +239,7 @@ impl CorpusQueryEngine {
             }
             matches.push(true_id as u32);
         }
-        matches
+        Ok(matches)
     }
 
     fn resolve_result(
@@ -235,7 +247,7 @@ impl CorpusQueryEngine {
         token_id: u32,
         query_length: usize,
         context_len: usize,
-    ) -> Result<CorpusQueryMatch<'_>, rusqlite::Error> {
+    ) -> Result<CorpusQueryMatch<'_>, QueryExecError> {
         let work_ranges = &self.corpus.work_row_ranges;
         let work_idx = work_ranges
             .binary_search_by(|(_, row_data)| {
@@ -250,7 +262,9 @@ impl CorpusQueryEngine {
                 }
             })
             .map(|i| work_ranges[i].0 as usize)
-            .unwrap_or_else(|_| panic!("TokenId {} not found in any work.", token_id));
+            .map_err(|_| {
+                QueryExecError::new(&format!("TokenId {} not found in any work.", token_id))
+            })?;
 
         let row_data = &work_ranges[work_idx].1;
         let row_info = row_data
@@ -264,12 +278,12 @@ impl CorpusQueryEngine {
                 }
             })
             .map(|i| row_data[i])
-            .unwrap_or_else(|_| {
-                panic!(
+            .map_err(|_| {
+                QueryExecError::new(&format!(
                     "TokenId {} not found in any row for work index {}.",
                     token_id, work_idx
-                )
-            });
+                ))
+            })?;
 
         let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
         let row_idx = row_info.0 as usize;
@@ -343,7 +357,10 @@ impl CorpusQueryEngine {
 
         for (i, part) in sorted_query.iter().skip(1).enumerate() {
             if part.composition != "and" {
-                panic!("Unsupported composition: {}", part.composition);
+                return Err(QueryExecError::new(&format!(
+                    "Unsupported composition: {}",
+                    part.composition
+                )));
             }
             candidates =
                 match self.filter_candidates_on(candidates, part.atoms[0].atom, part.position) {
@@ -355,7 +372,7 @@ impl CorpusQueryEngine {
         }
 
         let num_terms = query.terms.len();
-        let match_ids = self.resolve_candidates(&candidates, num_terms, &mut profiler);
+        let match_ids = self.resolve_candidates(&candidates, num_terms, &mut profiler)?;
         profiler.phase("Check Candidates");
         let total_results = match_ids.len();
 
@@ -369,8 +386,7 @@ impl CorpusQueryEngine {
             match_ids[page_start..end]
                 .iter()
                 .map(|&id| self.resolve_result(id, num_terms, context_len))
-                .collect::<Result<Vec<_>, _>>()
-                .map_err(|e| QueryExecError::new(&e.to_string()))?
+                .collect::<Result<Vec<_>, _>>()?
         } else {
             vec![]
         };

@@ -64,9 +64,9 @@ pub fn pack_sorted_nats(numbers: &[u32]) -> Result<Vec<u8>, String> {
 }
 
 /// Unpacks an array of positive integers from a compact bit array (Vec<u8>).
-pub fn unpack_integers(buffer: &[u8]) -> Vec<u32> {
+pub fn unpack_integers(buffer: &[u8]) -> Result<Vec<u32>, String> {
     if buffer.len() < PACKED_NUMBER_HEADER_SIZE {
-        panic!("Invalid buffer: too small to contain header.");
+        return Err("Invalid buffer: too small to contain header.".into());
     }
     let header = buffer[0];
     let unused_bits = (header & PACKED_NUMBER_HEADER_UNUSED_BITS_MASK) >> 5;
@@ -76,12 +76,12 @@ pub fn unpack_integers(buffer: &[u8]) -> Vec<u32> {
         "0 bits per number, but buffer contains data."
     );
     if bits_per_number == 0 {
-        return vec![];
+        return Ok(vec![]);
     }
 
     let data_buffer = &buffer[PACKED_NUMBER_HEADER_SIZE..];
     if data_buffer.is_empty() {
-        return vec![];
+        return Ok(vec![]);
     }
 
     let total_data_bits = data_buffer.len() * 8;
@@ -104,7 +104,7 @@ pub fn unpack_integers(buffer: &[u8]) -> Vec<u32> {
         numbers.push(current_num);
     }
 
-    numbers
+    Ok(numbers)
 }
 
 /// Returns the number of elements in a packed array.
@@ -191,7 +191,7 @@ mod tests {
         let packed = pack_sorted_nats(&[]).unwrap();
         assert_eq!(packed, vec![0]);
         let unpacked = unpack_integers(&packed);
-        assert_eq!(unpacked, Vec::<u32>::new());
+        assert_eq!(unpacked, Ok(vec![]));
     }
 
     #[test]
@@ -199,7 +199,7 @@ mod tests {
         let numbers = vec![1, 2, 3, 4, 5, 15];
         let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
-        assert_eq!(unpacked, numbers);
+        assert_eq!(unpacked, Ok(numbers));
     }
 
     #[test]
@@ -207,7 +207,7 @@ mod tests {
         let numbers = vec![1, 2, 3, 4, 5, 15];
         let packed = pack_sorted_nats(&numbers).unwrap();
         let expected_size = PACKED_NUMBER_HEADER_SIZE
-            + (numbers.len() * bits_per_number(numbers[numbers.len() - 1] + 1) + 7) / 8;
+            + (numbers.len() * bits_per_number(numbers[numbers.len() - 1] + 1)).div_ceil(8);
         assert_eq!(packed.len(), expected_size);
     }
 
@@ -216,7 +216,7 @@ mod tests {
         let numbers = vec![1, 2, 3, 4, 5, 6, 7];
         let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
-        assert_eq!(unpacked, numbers);
+        assert_eq!(unpacked, Ok(numbers));
     }
 
     #[test]
@@ -224,7 +224,7 @@ mod tests {
         let numbers = vec![0, 7, 8, 15];
         let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
-        assert_eq!(unpacked, numbers);
+        assert_eq!(unpacked, Ok(numbers));
     }
 
     #[test]
@@ -232,7 +232,7 @@ mod tests {
         let numbers: Vec<u32> = (0..1000).collect();
         let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
-        assert_eq!(unpacked, numbers);
+        assert_eq!(unpacked, Ok(numbers));
     }
 
     #[test]
@@ -240,7 +240,7 @@ mod tests {
         let numbers = vec![0, 0, 0];
         let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
-        assert_eq!(unpacked, numbers);
+        assert_eq!(unpacked, Ok(numbers));
     }
 
     #[test]
@@ -250,7 +250,7 @@ mod tests {
         for numbers in test_cases {
             let packed = pack_sorted_nats(&numbers).unwrap();
             let unpacked = unpack_integers(&packed);
-            assert_eq!(unpacked, numbers);
+            assert_eq!(unpacked, Ok(numbers));
         }
     }
 

@@ -220,11 +220,10 @@ impl FromStr for LatinInflection {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
         // Try labeled form: "label:value" or "label=value"
-        let label_idx = s.find([':', '=']);
-        if label_idx.is_none() {
-            return Err("Unlabeled inflection parsing not supported".to_string());
-        }
-        let (label, val) = s.split_at(label_idx.unwrap());
+        let label_idx = s
+            .find([':', '='])
+            .ok_or("Unlabeled inflection parsing not supported".to_string())?;
+        let (label, val) = s.split_at(label_idx);
         let value = val[1..].trim();
         match label.trim().to_lowercase().as_str() {
             "case" => Ok(LatinInflection::Case(value.parse()?)),

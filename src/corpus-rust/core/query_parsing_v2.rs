@@ -160,8 +160,7 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
     }
 
     // Handle negation using recursion.
-    if input.starts_with('!') {
-        let inner = input.strip_prefix('!').unwrap().trim();
+    if let Some(inner) = input.strip_prefix('!').map(|s| s.trim()) {
         let has_parens = inner.starts_with('(') && inner.ends_with(')');
         let n = inner.chars().count();
         let i = if has_parens { 1 } else { 0 };
