@@ -88,7 +88,10 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
         if !input.starts_with(simple_prefix) {
             continue;
         }
-        let content = &input[simple_prefix.len()..];
+        let content = input
+            .chars()
+            .skip(simple_prefix.chars().count())
+            .collect::<String>();
         if content.is_empty() {
             return Err(QueryParseError::new("Empty token atom not allowed"));
         }
@@ -113,7 +116,7 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
     }
 
     // Default to word for plain text that matches Latin alphabet
-    if input.chars().all(|c| c.is_ascii_alphabetic()) && input.len() > 0 {
+    if input.chars().all(|c| c.is_ascii_alphabetic()) && !input.is_empty() {
         return Ok(TokenConstraintAtom::Word(input.to_string()));
     }
 
@@ -125,7 +128,7 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
 
 fn parse_relation(raw_input: &str) -> Result<QueryRelation, QueryParseError> {
     let input = raw_input.trim();
-    let n = input.len();
+    let n = input.chars().count();
     if n == 0 {
         return Ok(QueryRelation::After);
     }
@@ -161,13 +164,11 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
     if input.starts_with('!') {
         let inner = input[1..].trim();
         let has_parens = inner.starts_with('(') && inner.ends_with(')');
+        let n = inner.chars().count();
         let i = if has_parens { 1 } else { 0 };
-        let j = if has_parens {
-            inner.len() - 1
-        } else {
-            inner.len()
-        };
-        let inner_constraint = parse_token_constraint(&inner[i..j])?;
+        let j = if has_parens { n - 1 } else { n };
+        let substr = inner.chars().skip(i).take(j - i).collect::<String>();
+        let inner_constraint = parse_token_constraint(&substr)?;
         return Ok(TokenConstraint::Negated(Box::new(inner_constraint)));
     }
 
@@ -191,11 +192,8 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
         // Check for balanced parentheses before stripping
         let mut balance = 0;
         let mut fully_wrapped = true;
-        for (_i, c) in effective_input
-            .char_indices()
-            .skip(1)
-            .take(effective_input.len() - 2)
-        {
+        let n = effective_input.chars().count();
+        for (_i, c) in effective_input.char_indices().skip(1).take(n - 2) {
             if c == '(' {
                 balance += 1;
             } else if c == ')' {
@@ -208,7 +206,7 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
         }
 
         if fully_wrapped && balance == 0 {
-            effective_input = &effective_input[1..effective_input.len() - 1].trim();
+            effective_input = &effective_input[1..n - 1].trim();
         } else {
             break;
         }
@@ -217,7 +215,7 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
     let mut last_split = 0;
     let mut children_str = vec![];
 
-    for i in 0..effective_input.len() {
+    for i in 0..effective_input.chars().count() {
         match effective_input.chars().nth(i) {
             Some('(') => paren_level += 1,
             Some(')') => {
