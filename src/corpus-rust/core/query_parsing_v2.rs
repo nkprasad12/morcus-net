@@ -74,7 +74,7 @@ macro_rules! check_equal {
     (
         $first:expr,
         $second:expr,
-        $message:literal
+        $message:expr
     ) => {
         if $first != $second {
             return Err(QueryParseError::new($message));
@@ -335,7 +335,7 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
     let mut constraints: Vec<String> = Vec::new();
     let mut relations: Vec<String> = Vec::new();
     let mut i = find_next_constraint(input, -1).ok_or(QueryParseError::new("No constraints!."))?;
-    check_equal!(i, 0, "Unexpected start of query.");
+    check_equal!(i, 0, raw_input);
     let mut splits = 0;
 
     while i < n {

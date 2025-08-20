@@ -6,5 +6,4 @@ pub mod corpus_serialization;
 pub mod packed_arrays;
 pub mod packed_index_utils;
 pub mod profiler;
-pub mod query_parsing;
 pub mod query_parsing_v2;

@@ -7,8 +7,6 @@ import {
 import { singletonOf } from "@/common/misc_utils";
 import { timed } from "@/common/timing/timed_invocation";
 
-const USE_V2 = false;
-
 /**
  * A query engine that uses Rust for querying the corpus.
  * This is a wrapper around the Rust implementation that allows it to be used in JavaScript.
@@ -24,7 +22,7 @@ export class RustCorpusQueryEngine {
   constructor(corpusDir: string) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
     const query_engine = require(`${process.cwd()}/build/corpus-rust`);
-    this.engine = new query_engine.QueryEngineWrapper(corpusDir, USE_V2);
+    this.engine = new query_engine.QueryEngineWrapper(corpusDir);
   }
 
   queryCorpus(

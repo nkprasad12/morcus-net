@@ -3,8 +3,7 @@ mod core;
 use std::env;
 use std::time::Instant;
 
-use crate::core::query_parsing_v2::Query;
-use crate::core::{corpus_query_engine, corpus_serialization, query_parsing, query_parsing_v2};
+use crate::core::{corpus_query_engine, corpus_serialization, query_parsing_v2};
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
@@ -18,7 +17,7 @@ fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex
 
 fn query_with_timing<'a>(
     engine: &'a corpus_query_engine::CorpusQueryEngine,
-    query: &corpus_query_engine::CorpusQuery,
+    query: &query_parsing_v2::Query,
 ) -> corpus_query_engine::CorpusQueryResult<'a> {
     let page_start = 0;
     let page_size = Some(get_limit_arg_or_default());
@@ -38,34 +37,9 @@ fn query_with_timing<'a>(
     results
 }
 
-fn query_with_timing_v2<'a>(
-    engine: &'a corpus_query_engine::CorpusQueryEngine,
-    query: &Query,
-) -> corpus_query_engine::CorpusQueryResult<'a> {
-    // let page_start = 0;
-    // let page_size = Some(get_limit_arg_or_default());
-    // let context_len = get_context_arg_or_default();
-    let start = Instant::now();
-    let results = engine.query_corpus_v2(query).expect("Query failed");
-    let duration = start.elapsed();
-    println!("Query executed in {:.2?}", duration);
-    if results.timing.len() > 0 {
-        println!("Query timing breakdown:");
-        for (k, v) in &results.timing {
-            println!("  {}: {:.2} ms", k, *v);
-        }
-    }
-    results
-}
-
 fn get_quiet_arg() -> bool {
     let args: Vec<String> = env::args().collect();
     args.contains(&"--quiet".to_string())
-}
-
-fn get_v2_arg() -> bool {
-    let args: Vec<String> = env::args().collect();
-    args.contains(&"--v2".to_string())
 }
 
 fn get_query_arg_or_exit() -> String {
@@ -106,11 +80,7 @@ fn get_results<'a>(
     engine: &'a corpus_query_engine::CorpusQueryEngine,
     query_str: &str,
 ) -> corpus_query_engine::CorpusQueryResult<'a> {
-    if get_v2_arg() {
-        let query_v2 = query_parsing_v2::parse_query(&query_str);
-        return query_with_timing_v2(engine, &query_v2.expect(""));
-    }
-    let query = query_parsing::parse_query(&query_str);
+    let query = query_parsing_v2::parse_query(&query_str).expect("Error parsing query");
     query_with_timing(&engine, &query)
 }
 

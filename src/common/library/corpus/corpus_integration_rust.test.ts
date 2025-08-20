@@ -48,7 +48,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should find a single word", () => {
-    const query = "[word:servum]";
+    const query = "@word:servum";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
@@ -60,7 +60,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should return correct work data", () => {
-    const query = "[word:Gallus]";
+    const query = "Gallus";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(2);
     expect(results.matches[0]).toMatchObject({
@@ -76,7 +76,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should find all instances of a lemma", () => {
-    const query = "[lemma:servus]";
+    const query = "@lemma:servus";
     const results = queryEngine.queryCorpus(query);
     expect(results.totalResults).toBe(2);
     expect(results.matches).toEqual(
@@ -98,7 +98,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should find all instances of a grammatical case", () => {
-    const query = "[case:2]";
+    const query = "@case:acc";
     const results = queryEngine.queryCorpus(query);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
     expect(results.totalResults).toBe(2);
@@ -111,7 +111,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should handle a multi-part query", () => {
-    const query = "[word:Gallus] [lemma:servus] [tense:1]";
+    const query = "Gallus @lemma:servus @tense:pres";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
@@ -123,7 +123,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should handle a composed 'and' query", () => {
-    const query = "[lemma:Gallus and case:2] [lemma:accognosco]";
+    const query = "(@lemma:Gallus and @case:acc) @lemma:accognosco";
     const results = queryEngine.queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
@@ -135,7 +135,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should return no results for a query that crosses a hard break", () => {
-    const query = "[word:acclamat] [word:servus]";
+    const query = "acclamat servus";
     const results = queryEngine.queryCorpus(query);
 
     expect(results.totalResults).toBe(0);
@@ -143,7 +143,7 @@ describe("Corpus Integration Test", () => {
   });
 
   it("should return no results for a query with no matches", () => {
-    const query = "[word:imperator]";
+    const query = "imperator";
     const results = queryEngine.queryCorpus(query);
 
     expect(results.totalResults).toBe(0);

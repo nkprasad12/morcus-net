@@ -1,3 +1,7 @@
+use crate::core::query_parsing_v2::{
+    QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
+};
+
 use super::common::PackedIndexData;
 use super::corpus_serialization::LatinCorpusIndex;
 use super::packed_arrays;
@@ -12,8 +16,6 @@ use rusqlite::Connection;
 use serde::Serialize;
 use std::path::Path;
 
-const MAX_QUERY_PARTS: usize = 8;
-const MAX_QUERY_ATOMS: usize = 8;
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
 
@@ -29,36 +31,6 @@ impl QueryExecError {
             message: message.to_string(),
         }
     }
-}
-
-// Query-related structs, translated from corpus_common.ts
-#[derive(Debug)]
-pub enum CorpusQueryAtom {
-    Word(String),
-    Lemma(String),
-    Inflection { category: String, value: String },
-}
-
-#[derive(Debug)]
-pub struct ComposedQuery {
-    pub composition: String,
-    pub atoms: Vec<CorpusQueryAtom>,
-}
-
-#[derive(Debug)]
-pub enum QueryToken {
-    Atom(CorpusQueryAtom),
-    Composed(ComposedQuery),
-}
-
-#[derive(Debug)]
-pub struct CorpusQueryPart {
-    pub token: QueryToken,
-}
-
-#[derive(Debug)]
-pub struct CorpusQuery {
-    pub parts: Vec<CorpusQueryPart>,
 }
 
 #[derive(Debug, PartialEq, Serialize)]
@@ -85,7 +57,7 @@ pub struct CorpusQueryResult<'a> {
 
 // Internal types for query processing
 struct InternalQueryAtom<'a> {
-    atom: &'a CorpusQueryAtom,
+    atom: &'a TokenConstraintAtom,
     size_upper_bound: usize,
 }
 
@@ -105,26 +77,31 @@ pub struct CorpusQueryEngine {
     token_db: Connection,
 }
 
-fn validate_query_complexity(query: &CorpusQuery) -> Result<(), String> {
-    if query.parts.len() > MAX_QUERY_PARTS {
-        return Err(format!(
-            "Query length {} exceeds maximum of {}.",
-            query.parts.len(),
-            MAX_QUERY_PARTS
-        ));
-    }
-    for part in &query.parts {
-        if let QueryToken::Composed(composed) = &part.token {
-            if composed.atoms.len() > MAX_QUERY_ATOMS {
-                return Err(format!(
-                    "Query part length {} exceeds maximum of {}.",
-                    composed.atoms.len(),
-                    MAX_QUERY_ATOMS
+fn flatten_term(query_term: &TokenConstraint) -> Result<Vec<&TokenConstraintAtom>, QueryExecError> {
+    let mut queue = vec![query_term];
+    let mut atoms = vec![];
+    while !queue.is_empty() {
+        let current = queue.pop().unwrap();
+        match current {
+            TokenConstraint::Atom(atom) => {
+                atoms.push(atom);
+            }
+            TokenConstraint::Composed { op, children } => {
+                if *op != TokenConstraintOperation::And {
+                    return Err(QueryExecError::new(
+                        "Only 'and' operations are supported for now.",
+                    ));
+                }
+                queue.extend(children);
+            }
+            TokenConstraint::Negated(_) => {
+                return Err(QueryExecError::new(
+                    "Negated queries are not supported yet.",
                 ));
             }
         }
     }
-    Ok(())
+    Ok(atoms)
 }
 
 impl CorpusQueryEngine {
@@ -134,65 +111,51 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryEngine { corpus, token_db })
     }
 
-    fn get_all_matches_for(&self, part: &CorpusQueryAtom) -> Option<&PackedIndexData> {
+    fn get_all_matches_for(&self, part: &TokenConstraintAtom) -> Option<&PackedIndexData> {
         match part {
-            CorpusQueryAtom::Word(word) => {
+            TokenConstraintAtom::Word(word) => {
                 self.corpus.indices.get("word")?.get(&word.to_lowercase())
             }
-            CorpusQueryAtom::Lemma(lemma) => self.corpus.indices.get("lemma")?.get(lemma),
-            CorpusQueryAtom::Inflection { category, value } => {
-                self.corpus.indices.get(category)?.get(value)
-            }
+            TokenConstraintAtom::Lemma(lemma) => self.corpus.indices.get("lemma")?.get(lemma),
+            &TokenConstraintAtom::Inflection(inflection) => self
+                .corpus
+                .indices
+                .get(inflection.get_label())?
+                .get(&inflection.to_code()),
         }
     }
 
-    fn get_upper_size_bound_for_atom(&self, atom: &CorpusQueryAtom) -> usize {
+    fn get_upper_size_bound_for_atom(&self, atom: &TokenConstraintAtom) -> usize {
         self.get_all_matches_for(atom)
             .map_or(0, |data| max_elements_in(data))
     }
 
-    fn convert_query<'a>(&self, query: &'a CorpusQuery) -> Vec<InternalComposedQuery<'a>> {
-        query
-            .parts
-            .iter()
-            .enumerate()
-            .flat_map(|(i, part)| -> Vec<InternalComposedQuery> {
-                match &part.token {
-                    QueryToken::Atom(atom) => {
-                        let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
-                        vec![InternalComposedQuery {
-                            composition: "and".to_string(),
-                            atoms: vec![InternalQueryAtom {
-                                atom: &atom,
-                                size_upper_bound,
-                            }],
-                            position: i,
-                        }]
-                    }
-                    QueryToken::Composed(composed_query) => {
-                        if composed_query.composition != "and" && composed_query.composition != "or"
-                        {
-                            panic!("Unsupported composition: {}", composed_query.composition);
-                        }
-                        composed_query
-                            .atoms
-                            .iter()
-                            .map(|atom| {
-                                let size_upper_bound = self.get_upper_size_bound_for_atom(atom);
-                                InternalComposedQuery {
-                                    composition: composed_query.composition.clone(),
-                                    atoms: vec![InternalQueryAtom {
-                                        atom: &atom,
-                                        size_upper_bound,
-                                    }],
-                                    position: i,
-                                }
-                            })
-                            .collect()
-                    }
-                }
-            })
-            .collect()
+    fn convert_query_v2<'a>(
+        &self,
+        query: &'a Query,
+    ) -> Result<Vec<InternalComposedQuery<'a>>, QueryExecError> {
+        let mut parts = vec![];
+        for i in 0..query.terms.len() {
+            let term = &query.terms[i];
+            if term.relation != QueryRelation::First && term.relation != QueryRelation::After {
+                return Err(QueryExecError::new(
+                    "Proximity relations are not yet supported.",
+                ));
+            }
+
+            let atoms = flatten_term(&term.constraint)?;
+            for atom in atoms {
+                parts.push(InternalComposedQuery {
+                    composition: "and".to_string(),
+                    atoms: vec![InternalQueryAtom {
+                        atom,
+                        size_upper_bound: self.get_upper_size_bound_for_atom(atom),
+                    }],
+                    position: i,
+                });
+            }
+        }
+        Ok(parts)
     }
 
     fn execute_initial_part(&self, part: &InternalComposedQuery) -> Option<IntermediateResult> {
@@ -206,7 +169,7 @@ impl CorpusQueryEngine {
     fn filter_candidates_on(
         &self,
         candidates: IntermediateResult,
-        query_atom: &CorpusQueryAtom,
+        query_atom: &TokenConstraintAtom,
         query_part_position: usize,
     ) -> Result<Option<IntermediateResult>, QueryExecError> {
         let filter_data = self.get_all_matches_for(query_atom);
@@ -360,27 +323,18 @@ impl CorpusQueryEngine {
         })
     }
 
-    pub fn query_corpus_v2(&self, query: &Query) -> Result<CorpusQueryResult<'_>, String> {
-        if query.terms.len() == 0 {
-            return Ok(empty_result());
-        }
-        unimplemented!();
-    }
-
     pub fn query_corpus(
         &self,
-        query: &CorpusQuery,
+        query: &Query,
         page_start: usize,
         page_size: Option<usize>,
         context_len: Option<usize>,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
-        if query.parts.is_empty() {
+        if query.terms.len() == 0 {
             return Ok(empty_result());
         }
-        validate_query_complexity(query).expect("Query is too complex!");
         let mut profiler = TimeProfiler::new();
-
-        let mut sorted_query = self.convert_query(query);
+        let mut sorted_query = self.convert_query_v2(query)?;
         sorted_query.sort_by_key(|p| p.atoms[0].size_upper_bound);
 
         let mut candidates = match self.execute_initial_part(&sorted_query[0]) {
@@ -402,7 +356,8 @@ impl CorpusQueryEngine {
             profiler.phase(&format!("Filter {}", i + 1));
         }
 
-        let match_ids = self.resolve_candidates(&candidates, query.parts.len(), &mut profiler);
+        let num_terms = query.terms.len();
+        let match_ids = self.resolve_candidates(&candidates, num_terms, &mut profiler);
         profiler.phase("Check Candidates");
         let total_results = match_ids.len();
 
@@ -415,7 +370,7 @@ impl CorpusQueryEngine {
         let matches = if page_start < total_results {
             match_ids[page_start..end]
                 .iter()
-                .map(|&id| self.resolve_result(id, query.parts.len(), context_len))
+                .map(|&id| self.resolve_result(id, num_terms, context_len))
                 .collect::<Result<Vec<_>, _>>()
                 .map_err(|e| QueryExecError::new(&e.to_string()))?
         } else {
