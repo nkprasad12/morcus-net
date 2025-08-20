@@ -30,7 +30,7 @@ fn query_with_timing<'a>(
     let results = engine.query_corpus(query, page_start, page_size, context_len)?;
     let duration = start.elapsed();
     println!("Query executed in {:.2?}", duration);
-    if results.timing.len() > 0 {
+    if !results.timing.is_empty() {
         println!("Query timing breakdown:");
         for (k, v) in &results.timing {
             println!("  {}: {:.2} ms", k, *v);
@@ -46,40 +46,37 @@ fn get_quiet_arg() -> bool {
 
 fn get_query_arg_or_exit() -> String {
     let args: Vec<String> = env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--query") {
-        if let Some(q) = args.get(pos + 1) {
+    if let Some(pos) = args.iter().position(|a| a == "--query")
+        && let Some(q) = args.get(pos + 1) {
             return q.clone();
         }
-    }
     eprintln!(
         "Usage: {} --query <QUERY> [--limit <N>] [--context <N>] [--quiet]",
-        args.get(0).unwrap_or(&"program".to_string())
+        args.first().unwrap_or(&"program".to_string())
     );
     std::process::exit(1);
 }
 
 fn get_context_arg_or_default() -> Option<usize> {
     let args: Vec<String> = env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--context") {
-        if let Some(ctx) = args.get(pos + 1) {
+    if let Some(pos) = args.iter().position(|a| a == "--context")
+        && let Some(ctx) = args.get(pos + 1) {
             return ctx.parse::<usize>().ok();
         }
-    }
     None
 }
 
 fn get_limit_arg_or_default() -> usize {
     let args: Vec<String> = env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--limit") {
-        if let Some(lim) = args.get(pos + 1) {
+    if let Some(pos) = args.iter().position(|a| a == "--limit")
+        && let Some(lim) = args.get(pos + 1) {
             return lim.parse::<usize>().unwrap_or(25);
         }
-    }
     25
 }
 
 fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQueryResult<'a> {
-    let query = query_parsing_v2::parse_query(&query_str);
+    let query = query_parsing_v2::parse_query(query_str);
     if query.is_err() {
         eprintln!(
             "Error parsing query: {}",
@@ -87,7 +84,7 @@ fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQuer
         );
         std::process::exit(1);
     }
-    let result = query_with_timing(&engine, &query.unwrap());
+    let result = query_with_timing(engine, &query.unwrap());
     if result.is_err() {
         eprintln!(
             "Error executing query: {}",

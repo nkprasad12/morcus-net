@@ -18,7 +18,7 @@ pub fn bits_per_number(upper_bound: u32) -> usize {
 /// Packs an array of sorted natural numbers into a compact bit array (Vec<u8>).
 pub fn pack_sorted_nats(numbers: &[u32]) -> Result<Vec<u8>, String> {
     if numbers.is_empty() {
-        let header = ((0 << 5) | 0) & 0xff;
+        let header = 0;
         return Ok(vec![header]);
     }
 
@@ -31,7 +31,7 @@ pub fn pack_sorted_nats(numbers: &[u32]) -> Result<Vec<u8>, String> {
     );
 
     let total_bits = numbers.len() * bits_per_number;
-    let data_buffer_size = (total_bits + 7) / 8;
+    let data_buffer_size = total_bits.div_ceil(8);
     let unused_bits = data_buffer_size * 8 - total_bits;
     assert!(unused_bits < 8);
 

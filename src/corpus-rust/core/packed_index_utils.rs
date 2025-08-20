@@ -109,7 +109,7 @@ pub fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u
 
     while i < first.len() && j < second.len() {
         let first_val = first[i] as i32;
-        let second_val = second[j] as i32 + offset as i32;
+        let second_val = second[j] as i32 + offset;
         if first_val <= second_val {
             result.push(first[i]);
             i += 1;
@@ -128,7 +128,7 @@ pub fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u
         i += 1;
     }
     while j < second.len() {
-        let second_val = second[j] as i32 + offset as i32;
+        let second_val = second[j] as i32 + offset;
         if second_val >= 0 {
             result.push(second_val as u32);
         }

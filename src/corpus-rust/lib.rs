@@ -8,9 +8,8 @@ const CORPUS_FILE: &str = "latin_corpus.json";
 
 fn create_engine(path: &str) -> corpus_query_engine::CorpusQueryEngine {
     let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
-    let engine =
-        corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
-    engine
+    
+    corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine")
 }
 
 struct QueryEngineWrapper {
@@ -23,10 +22,10 @@ fn get_results<'a>(
     page_start: u32,
     page_size: u32,
 ) -> Result<corpus_query_engine::CorpusQueryResult<'a>, String> {
-    let query = query_parsing_v2::parse_query(&query_str).map_err(|e| e.message)?;
-    return engine
+    let query = query_parsing_v2::parse_query(query_str).map_err(|e| e.message)?;
+    engine
         .query_corpus(&query, page_start as usize, Some(page_size as usize), None)
-        .map_err(|e| e.message);
+        .map_err(|e| e.message)
 }
 
 #[node_bindgen]

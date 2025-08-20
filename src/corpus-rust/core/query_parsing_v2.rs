@@ -105,9 +105,8 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
         }
     }
 
-    if input.starts_with('@') {
+    if let Some(inflection_str) = input.strip_prefix('@') {
         // Handle inflection categories
-        let inflection_str = &input[1..];
         if let Ok(inflection) = LatinInflection::from_str(inflection_str) {
             return Ok(TokenConstraintAtom::Inflection(inflection));
         } else {
@@ -134,7 +133,7 @@ fn parse_relation(raw_input: &str) -> Result<QueryRelation, QueryParseError> {
     }
 
     if n == 1 {
-        check_equal!(input.chars().nth(0), Some('~'), "");
+        check_equal!(input.chars().next(), Some('~'), "");
         return Ok(QueryRelation::Proximity {
             distance: 5,
             is_directed: false,
@@ -206,7 +205,7 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
         }
 
         if fully_wrapped && balance == 0 {
-            effective_input = &effective_input[1..n - 1].trim();
+            effective_input = effective_input[1..n - 1].trim();
         } else {
             break;
         }
@@ -264,7 +263,7 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
     if let Some(op) = op {
         let children: Result<Vec<TokenConstraint>, _> = children_str
             .into_iter()
-            .map(|s| parse_token_constraint(s))
+            .map(parse_token_constraint)
             .collect();
 
         Ok(TokenConstraint::Composed {

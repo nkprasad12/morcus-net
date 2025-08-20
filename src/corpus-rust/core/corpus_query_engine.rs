@@ -80,8 +80,8 @@ pub struct CorpusQueryEngine {
 fn flatten_term(query_term: &TokenConstraint) -> Result<Vec<&TokenConstraintAtom>, QueryExecError> {
     let mut queue = vec![query_term];
     let mut atoms = vec![];
-    while !queue.is_empty() {
-        let current = queue.pop().unwrap();
+    while let Some(current) = queue.pop() {
+        
         match current {
             TokenConstraint::Atom(atom) => {
                 atoms.push(atom);
@@ -127,7 +127,7 @@ impl CorpusQueryEngine {
 
     fn get_upper_size_bound_for_atom(&self, atom: &TokenConstraintAtom) -> usize {
         self.get_all_matches_for(atom)
-            .map_or(0, |data| max_elements_in(data))
+            .map_or(0, max_elements_in)
     }
 
     fn convert_query_v2<'a>(
@@ -159,7 +159,7 @@ impl CorpusQueryEngine {
     }
 
     fn execute_initial_part(&self, part: &InternalComposedQuery) -> Option<IntermediateResult> {
-        let atom_data = self.get_all_matches_for(&part.atoms[0].atom)?;
+        let atom_data = self.get_all_matches_for(part.atoms[0].atom)?;
         Some(IntermediateResult {
             data: PackedIndexData::clone(atom_data),
             position: part.position as i32,
@@ -277,7 +277,7 @@ impl CorpusQueryEngine {
         let row_idx = row_info.0 as usize;
 
         let start_rowid = token_id.saturating_sub(context_len as u32);
-        let limit = query_length + (context_len * 2) as usize;
+        let limit = query_length + (context_len * 2);
         let mut stmt = self
             .token_db
             .prepare("SELECT token, break, rowid FROM raw_text WHERE rowid >= ? LIMIT ?")?;
@@ -312,7 +312,7 @@ impl CorpusQueryEngine {
         }
 
         Ok(CorpusQueryMatch {
-            work_id: &work_id,
+            work_id,
             work_name: &work_data.name,
             author: &work_data.author,
             section: row_ids[row_idx].join("."),
@@ -330,7 +330,7 @@ impl CorpusQueryEngine {
         page_size: Option<usize>,
         context_len: Option<usize>,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
-        if query.terms.len() == 0 {
+        if query.terms.is_empty() {
             return Ok(empty_result());
         }
         let mut profiler = TimeProfiler::new();
@@ -348,7 +348,7 @@ impl CorpusQueryEngine {
                 panic!("Unsupported composition: {}", part.composition);
             }
             candidates =
-                match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
+                match self.filter_candidates_on(candidates, part.atoms[0].atom, part.position) {
                     Ok(Some(c)) => c,
                     Ok(_none) => return Ok(empty_result()),
                     Err(e) => return Err(e),

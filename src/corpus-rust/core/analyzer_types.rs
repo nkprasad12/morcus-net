@@ -220,7 +220,7 @@ impl FromStr for LatinInflection {
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let s = s.trim();
         // Try labeled form: "label:value" or "label=value"
-        let label_idx = s.find(|c| c == ':' || c == '=');
+        let label_idx = s.find([':', '=']);
         if label_idx.is_none() {
             return Err("Unlabeled inflection parsing not supported".to_string());
         }
