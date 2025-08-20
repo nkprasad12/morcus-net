@@ -434,6 +434,10 @@ mod tests {
     use super::*;
     use crate::core::common::{PackedBitMask, PackedIndexData};
 
+    fn pack_nats(numbers: &[u32]) -> Vec<u8> {
+        packed_arrays::pack_sorted_nats(numbers).unwrap()
+    }
+
     #[test]
     fn should_smear_to_the_right_within_a_single_word() {
         let original = to_bitmask(&[5], 64);
@@ -849,10 +853,8 @@ mod tests {
 
     #[test]
     fn apply_or_to_indices_array_array() {
-        let candidates =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[3, 6, 9]));
-        let filter_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[2, 4, 8]));
+        let candidates = PackedIndexData::PackedNumbers(pack_nats(&[3, 6, 9]));
+        let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[2, 4, 8]));
         let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 1);
         // candidates: [3,6,9], filter: [3,5,9] -> union [3,5,6,9]
         assert_eq!(result, ApplyAndResult::Array(vec![3, 5, 6, 9]));
@@ -866,8 +868,7 @@ mod tests {
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
-        let filter_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+        let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
         let (result, position) = apply_or_to_indices(&candidates, 1, &filter_data, 0);
         // bitmask: [1,3,4], array with offset: [1,3,4] -> union [1,3,4]
         let expected_data = to_bitmask(&[1, 3, 4], 64);
@@ -884,8 +885,7 @@ mod tests {
 
     #[test]
     fn apply_or_to_indices_array_bitmask() {
-        let candidates =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[1, 2, 5]));
+        let candidates = PackedIndexData::PackedNumbers(pack_nats(&[1, 2, 5]));
         let filter_data = PackedIndexData::PackedBitMask(PackedBitMask {
             format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
@@ -931,10 +931,8 @@ mod tests {
 
     #[test]
     fn apply_and_to_indices_array_array() {
-        let candidates =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[3, 6, 9]));
-        let filter_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[2, 4, 8]));
+        let candidates = PackedIndexData::PackedNumbers(pack_nats(&[3, 6, 9]));
+        let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[2, 4, 8]));
         let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1);
         assert_eq!(result, ApplyAndResult::Array(vec![3, 9]));
         assert_eq!(position, 2);
@@ -947,8 +945,7 @@ mod tests {
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
-        let filter_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+        let filter_data = PackedIndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
         let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0);
         assert_eq!(result, ApplyAndResult::Array(vec![1, 3, 4]));
         assert_eq!(position, 1);
@@ -956,8 +953,7 @@ mod tests {
 
     #[test]
     fn apply_and_to_indices_array_bitmask() {
-        let candidates =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[0, 2, 3]));
+        let candidates = PackedIndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
         let filter_data = PackedIndexData::PackedBitMask(PackedBitMask {
             format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
@@ -996,8 +992,7 @@ mod tests {
     #[test]
     fn unpack_packed_index_data_from_array() {
         let original_data = vec![10, 25, 150, 300];
-        let packed_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&original_data));
+        let packed_data = PackedIndexData::PackedNumbers(pack_nats(&original_data));
         let result = unpack_packed_index_data(&packed_data);
         assert_eq!(result, original_data);
     }
@@ -1053,8 +1048,7 @@ mod tests {
 
     #[test]
     fn has_value_in_range_packed_array_should_return_true_if_value_in_range() {
-        let packed_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 70]));
+        let packed_data = PackedIndexData::PackedNumbers(pack_nats(&[10, 70]));
         assert!(has_value_in_range(&packed_data, (5, 15)));
         assert!(has_value_in_range(&packed_data, (65, 75)));
         assert!(has_value_in_range(&packed_data, (10, 10)));
@@ -1063,8 +1057,7 @@ mod tests {
 
     #[test]
     fn has_value_in_range_packed_array_should_return_false_if_value_not_in_range() {
-        let packed_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 70]));
+        let packed_data = PackedIndexData::PackedNumbers(pack_nats(&[10, 70]));
         assert!(!has_value_in_range(&packed_data, (20, 30)));
         assert!(!has_value_in_range(&packed_data, (0, 9)));
         assert!(!has_value_in_range(&packed_data, (71, 100)));
@@ -1072,8 +1065,7 @@ mod tests {
 
     #[test]
     fn max_elements_in_should_return_correct_count_for_packed_array() {
-        let packed_data =
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&[10, 20, 30]));
+        let packed_data = PackedIndexData::PackedNumbers(pack_nats(&[10, 20, 30]));
         assert_eq!(max_elements_in(&packed_data), 3);
     }
 

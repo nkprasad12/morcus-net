@@ -8,7 +8,7 @@ use super::packed_index_utils::{
 use super::profiler::TimeProfiler;
 use super::query_parsing_v2::Query;
 
-use rusqlite::{Connection, Result};
+use rusqlite::Connection;
 use serde::Serialize;
 use std::path::Path;
 
@@ -16,6 +16,20 @@ const MAX_QUERY_PARTS: usize = 8;
 const MAX_QUERY_ATOMS: usize = 8;
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
+
+/// An error that occurs while executing a query.
+#[derive(Debug, Clone)]
+pub struct QueryExecError {
+    message: String,
+}
+
+impl QueryExecError {
+    fn new(message: &str) -> Self {
+        QueryExecError {
+            message: message.to_string(),
+        }
+    }
+}
 
 // Query-related structs, translated from corpus_common.ts
 #[derive(Debug)]
@@ -114,7 +128,7 @@ fn validate_query_complexity(query: &CorpusQuery) -> Result<(), String> {
 }
 
 impl CorpusQueryEngine {
-    pub fn new(corpus: LatinCorpusIndex) -> Result<Self> {
+    pub fn new(corpus: LatinCorpusIndex) -> Result<Self, rusqlite::Error> {
         let db_path = Path::new(&corpus.raw_text_db);
         let token_db = Connection::open(db_path)?;
         Ok(CorpusQueryEngine { corpus, token_db })
@@ -194,19 +208,24 @@ impl CorpusQueryEngine {
         candidates: IntermediateResult,
         query_atom: &CorpusQueryAtom,
         query_part_position: usize,
-    ) -> Option<IntermediateResult> {
-        let filter_data = self.get_all_matches_for(query_atom)?;
+    ) -> Result<Option<IntermediateResult>, QueryExecError> {
+        let filter_data = self.get_all_matches_for(query_atom);
+        if filter_data.is_none() {
+            return Ok(None);
+        }
         let (intersection, position) = apply_and_to_indices(
             &candidates.data,
             candidates.position,
-            filter_data,
+            filter_data.unwrap(),
             query_part_position as i32,
         );
 
-        Some(IntermediateResult {
-            data: to_packed_index_data(intersection),
+        let packed = to_packed_index_data(intersection)?;
+
+        Ok(Some(IntermediateResult {
+            data: packed,
             position,
-        })
+        }))
     }
 
     fn resolve_candidates(
@@ -341,7 +360,7 @@ impl CorpusQueryEngine {
         })
     }
 
-    pub fn query_corpus_v2(&self, query: &Query) -> Result<CorpusQueryResult<'_>> {
+    pub fn query_corpus_v2(&self, query: &Query) -> Result<CorpusQueryResult<'_>, String> {
         if query.terms.len() == 0 {
             return Ok(empty_result());
         }
@@ -354,7 +373,7 @@ impl CorpusQueryEngine {
         page_start: usize,
         page_size: Option<usize>,
         context_len: Option<usize>,
-    ) -> Result<CorpusQueryResult<'_>> {
+    ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         if query.parts.is_empty() {
             return Ok(empty_result());
         }
@@ -376,8 +395,9 @@ impl CorpusQueryEngine {
             }
             candidates =
                 match self.filter_candidates_on(candidates, &part.atoms[0].atom, part.position) {
-                    Some(c) => c,
-                    _none => return Ok(empty_result()),
+                    Ok(Some(c)) => c,
+                    Ok(_none) => return Ok(empty_result()),
+                    Err(e) => return Err(e),
                 };
             profiler.phase(&format!("Filter {}", i + 1));
         }
@@ -396,7 +416,8 @@ impl CorpusQueryEngine {
             match_ids[page_start..end]
                 .iter()
                 .map(|&id| self.resolve_result(id, query.parts.len(), context_len))
-                .collect::<Result<Vec<_>, _>>()?
+                .collect::<Result<Vec<_>, _>>()
+                .map_err(|e| QueryExecError::new(&e.to_string()))?
         } else {
             vec![]
         };
@@ -421,11 +442,13 @@ fn empty_result() -> CorpusQueryResult<'static> {
 }
 
 // Helper to convert ApplyAndResult to PackedIndexData
-fn to_packed_index_data(result: ApplyAndResult) -> PackedIndexData {
+fn to_packed_index_data(result: ApplyAndResult) -> Result<PackedIndexData, QueryExecError> {
     match result {
         ApplyAndResult::Array(arr) => {
-            PackedIndexData::PackedNumbers(packed_arrays::pack_sorted_nats(&arr))
+            let packed =
+                packed_arrays::pack_sorted_nats(&arr).map_err(|e| QueryExecError::new(&e))?;
+            Ok(PackedIndexData::PackedNumbers(packed))
         }
-        ApplyAndResult::Bitmask(bm) => PackedIndexData::PackedBitMask(bm),
+        ApplyAndResult::Bitmask(bm) => Ok(PackedIndexData::PackedBitMask(bm)),
     }
 }

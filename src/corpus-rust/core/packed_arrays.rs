@@ -16,10 +16,10 @@ pub fn bits_per_number(upper_bound: u32) -> usize {
 }
 
 /// Packs an array of sorted natural numbers into a compact bit array (Vec<u8>).
-pub fn pack_sorted_nats(numbers: &[u32]) -> Vec<u8> {
+pub fn pack_sorted_nats(numbers: &[u32]) -> Result<Vec<u8>, String> {
     if numbers.is_empty() {
         let header = ((0 << 5) | 0) & 0xff;
-        return vec![header];
+        return Ok(vec![header]);
     }
 
     let upper_bound = numbers[numbers.len() - 1] + 1;
@@ -42,13 +42,13 @@ pub fn pack_sorted_nats(numbers: &[u32]) -> Vec<u8> {
     let mut bit_offset = 0;
     for (i, &num) in numbers.iter().enumerate() {
         if i > 0 && num < numbers[i - 1] {
-            panic!("Numbers must be sorted.");
+            return Err("Numbers must be sorted.".to_string());
         }
         if num >= upper_bound {
-            panic!(
+            return Err(format!(
                 "Number {} is out of the allowed range [0, {}).",
                 num, upper_bound
-            );
+            ));
         }
         for j in (0..bits_per_number).rev() {
             let bit = (num >> j) & 1;
@@ -60,7 +60,7 @@ pub fn pack_sorted_nats(numbers: &[u32]) -> Vec<u8> {
             bit_offset += 1;
         }
     }
-    buffer
+    Ok(buffer)
 }
 
 /// Unpacks an array of positive integers from a compact bit array (Vec<u8>).
@@ -188,7 +188,7 @@ mod tests {
 
     #[test]
     fn pack_unpack_roundtrip_empty() {
-        let packed = pack_sorted_nats(&[]);
+        let packed = pack_sorted_nats(&[]).unwrap();
         assert_eq!(packed, vec![0]);
         let unpacked = unpack_integers(&packed);
         assert_eq!(unpacked, Vec::<u32>::new());
@@ -197,7 +197,7 @@ mod tests {
     #[test]
     fn pack_unpack_roundtrip_simple() {
         let numbers = vec![1, 2, 3, 4, 5, 15];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
         assert_eq!(unpacked, numbers);
     }
@@ -205,7 +205,7 @@ mod tests {
     #[test]
     fn pack_should_compress_data() {
         let numbers = vec![1, 2, 3, 4, 5, 15];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         let expected_size = PACKED_NUMBER_HEADER_SIZE
             + (numbers.len() * bits_per_number(numbers[numbers.len() - 1] + 1) + 7) / 8;
         assert_eq!(packed.len(), expected_size);
@@ -214,7 +214,7 @@ mod tests {
     #[test]
     fn pack_unpack_roundtrip_with_padding_equal_to_element_size() {
         let numbers = vec![1, 2, 3, 4, 5, 6, 7];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
         assert_eq!(unpacked, numbers);
     }
@@ -222,7 +222,7 @@ mod tests {
     #[test]
     fn pack_unpack_roundtrip_with_zero_and_max_value() {
         let numbers = vec![0, 7, 8, 15];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
         assert_eq!(unpacked, numbers);
     }
@@ -230,7 +230,7 @@ mod tests {
     #[test]
     fn pack_unpack_roundtrip_large_array() {
         let numbers: Vec<u32> = (0..1000).collect();
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
         assert_eq!(unpacked, numbers);
     }
@@ -238,7 +238,7 @@ mod tests {
     #[test]
     fn pack_unpack_roundtrip_upper_bound_one() {
         let numbers = vec![0, 0, 0];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         let unpacked = unpack_integers(&packed);
         assert_eq!(unpacked, numbers);
     }
@@ -248,16 +248,16 @@ mod tests {
         let test_cases = vec![vec![0, 1, 2, 3, 4, 5, 6], vec![10, 20, 30, 254]];
 
         for numbers in test_cases {
-            let packed = pack_sorted_nats(&numbers);
+            let packed = pack_sorted_nats(&numbers).unwrap();
             let unpacked = unpack_integers(&packed);
             assert_eq!(unpacked, numbers);
         }
     }
 
     #[test]
-    #[should_panic(expected = "Numbers must be sorted.")]
     fn pack_should_panic_on_unsorted_input() {
-        pack_sorted_nats(&[3, 2, 5]);
+        let packed = pack_sorted_nats(&[3, 2, 5]);
+        assert!(packed.is_err());
     }
 
     #[test]
@@ -275,20 +275,20 @@ mod tests {
     #[test]
     fn num_elements_should_return_correct_count() {
         let numbers = vec![1, 2, 3, 4, 5];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         assert_eq!(num_elements(&packed), numbers.len());
     }
 
     #[test]
     fn num_elements_should_return_zero_for_empty() {
-        let packed = pack_sorted_nats(&[]);
+        let packed = pack_sorted_nats(&[]).unwrap();
         assert_eq!(num_elements(&packed), 0);
     }
 
     #[test]
     fn get_should_retrieve_correct_element() {
         let numbers = vec![0, 5, 10, 15, 20, 25, 29];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
         assert_eq!(get(&packed, 0), 0);
         assert_eq!(get(&packed, 1), 5);
         assert_eq!(get(&packed, 3), 15);
@@ -298,7 +298,7 @@ mod tests {
     #[test]
     fn has_value_in_range_should_work_correctly() {
         let numbers = vec![10, 20, 30, 40, 50, 60, 70, 80, 90];
-        let packed = pack_sorted_nats(&numbers);
+        let packed = pack_sorted_nats(&numbers).unwrap();
 
         // Single-element range
         assert!(has_value_in_range(&packed, (30, 30)));
@@ -319,7 +319,7 @@ mod tests {
 
     #[test]
     fn has_value_in_range_should_return_false_for_empty() {
-        let empty_packed = pack_sorted_nats(&[]);
+        let empty_packed = pack_sorted_nats(&[]).unwrap();
         assert!(!has_value_in_range(&empty_packed, (10, 20)));
     }
 }
