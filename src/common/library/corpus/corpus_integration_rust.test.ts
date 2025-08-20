@@ -47,6 +47,11 @@ describe("Corpus Integration Test", () => {
     }
   });
 
+  it("should gracefully handle errors", () => {
+    const query = "[word:servum]";
+    expect(() => queryEngine.queryCorpus(query)).toThrow();
+  });
+
   it("should find a single word", () => {
     const query = "@word:servum";
     const results = queryEngine.queryCorpus(query);

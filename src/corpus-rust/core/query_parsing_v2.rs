@@ -14,7 +14,7 @@ pub struct Query {
 /// An error that occurs while parsing a query.
 #[derive(Debug, Clone)]
 pub struct QueryParseError {
-    message: String,
+    pub message: String,
 }
 
 impl QueryParseError {

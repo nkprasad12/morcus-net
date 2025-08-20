@@ -3,7 +3,11 @@ mod core;
 use std::env;
 use std::time::Instant;
 
-use crate::core::{corpus_query_engine, corpus_serialization, query_parsing_v2};
+use crate::core::{
+    corpus_query_engine::{self, CorpusQueryEngine, CorpusQueryResult, QueryExecError},
+    corpus_serialization,
+    query_parsing_v2::{self, Query},
+};
 
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
@@ -16,16 +20,14 @@ fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex
 }
 
 fn query_with_timing<'a>(
-    engine: &'a corpus_query_engine::CorpusQueryEngine,
-    query: &query_parsing_v2::Query,
-) -> corpus_query_engine::CorpusQueryResult<'a> {
+    engine: &'a CorpusQueryEngine,
+    query: &Query,
+) -> Result<CorpusQueryResult<'a>, QueryExecError> {
     let page_start = 0;
     let page_size = Some(get_limit_arg_or_default());
     let context_len = get_context_arg_or_default();
     let start = Instant::now();
-    let results = engine
-        .query_corpus(query, page_start, page_size, context_len)
-        .expect("Query failed");
+    let results = engine.query_corpus(query, page_start, page_size, context_len)?;
     let duration = start.elapsed();
     println!("Query executed in {:.2?}", duration);
     if results.timing.len() > 0 {
@@ -34,7 +36,7 @@ fn query_with_timing<'a>(
             println!("  {}: {:.2} ms", k, *v);
         }
     }
-    results
+    Ok(results)
 }
 
 fn get_quiet_arg() -> bool {
@@ -76,12 +78,24 @@ fn get_limit_arg_or_default() -> usize {
     25
 }
 
-fn get_results<'a>(
-    engine: &'a corpus_query_engine::CorpusQueryEngine,
-    query_str: &str,
-) -> corpus_query_engine::CorpusQueryResult<'a> {
-    let query = query_parsing_v2::parse_query(&query_str).expect("Error parsing query");
-    query_with_timing(&engine, &query)
+fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQueryResult<'a> {
+    let query = query_parsing_v2::parse_query(&query_str);
+    if query.is_err() {
+        eprintln!(
+            "Error parsing query: {}",
+            query.as_ref().err().unwrap().message
+        );
+        std::process::exit(1);
+    }
+    let result = query_with_timing(&engine, &query.unwrap());
+    if result.is_err() {
+        eprintln!(
+            "Error executing query: {}",
+            result.as_ref().err().unwrap().message
+        );
+        std::process::exit(1);
+    }
+    result.unwrap()
 }
 
 fn main() {
@@ -110,5 +124,5 @@ fn main() {
 
 /*
 Run with:
-cargo run --release query-engine --query "[case:3] [case:2] [case:1] [case:2]" --limit 7
+cargo run --release query-engine --query "@lemma:do oscula @case:dat" --limit 7
 */

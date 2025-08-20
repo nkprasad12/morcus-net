@@ -22,7 +22,7 @@ const DEFAULT_CONTEXT_LEN: usize = 25;
 /// An error that occurs while executing a query.
 #[derive(Debug, Clone)]
 pub struct QueryExecError {
-    message: String,
+    pub message: String,
 }
 
 impl QueryExecError {

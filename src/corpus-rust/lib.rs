@@ -22,11 +22,11 @@ fn get_results<'a>(
     query_str: &str,
     page_start: u32,
     page_size: u32,
-) -> corpus_query_engine::CorpusQueryResult<'a> {
-    let query = query_parsing_v2::parse_query(&query_str).expect("");
+) -> Result<corpus_query_engine::CorpusQueryResult<'a>, String> {
+    let query = query_parsing_v2::parse_query(&query_str).map_err(|e| e.message)?;
     return engine
         .query_corpus(&query, page_start as usize, Some(page_size as usize), None)
-        .expect("Query failed");
+        .map_err(|e| e.message);
 }
 
 #[node_bindgen]
@@ -40,8 +40,8 @@ impl QueryEngineWrapper {
     }
 
     #[node_bindgen]
-    fn query(&self, query_str: String, page_start: u32, page_size: u32) -> String {
-        let result = get_results(&self.engine, &query_str, page_start, page_size);
-        serde_json::to_string(&result).expect("Failed to serialize result")
+    fn query(&self, query_str: String, page_start: u32, page_size: u32) -> Result<String, String> {
+        let result = get_results(&self.engine, &query_str, page_start, page_size)?;
+        serde_json::to_string(&result).map_err(|_| "Failed to serialize result".to_string())
     }
 }
