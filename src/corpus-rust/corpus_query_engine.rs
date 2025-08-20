@@ -6,6 +6,7 @@ use crate::packed_index_utils::{
     unpack_packed_index_data,
 };
 use crate::profiler::TimeProfiler;
+use crate::query_parsing_v2::Query;
 
 use rusqlite::{Connection, Result};
 use serde::Serialize;
@@ -338,6 +339,13 @@ impl CorpusQueryEngine {
             left_context,
             right_context,
         })
+    }
+
+    pub fn query_corpus_v2(&self, query: &Query) -> Result<CorpusQueryResult<'_>> {
+        if query.terms.len() == 0 {
+            return Ok(empty_result());
+        }
+        unimplemented!();
     }
 
     pub fn query_corpus(

@@ -1,6 +1,8 @@
 use std::env;
 use std::time::Instant;
 
+use crate::query_parsing_v2::Query;
+
 mod analyzer_types;
 mod bitmask_utils;
 mod common;
@@ -44,9 +46,34 @@ fn query_with_timing<'a>(
     results
 }
 
+fn query_with_timing_v2<'a>(
+    engine: &'a corpus_query_engine::CorpusQueryEngine,
+    query: &Query,
+) -> corpus_query_engine::CorpusQueryResult<'a> {
+    // let page_start = 0;
+    // let page_size = Some(get_limit_arg_or_default());
+    // let context_len = get_context_arg_or_default();
+    let start = Instant::now();
+    let results = engine.query_corpus_v2(query).expect("Query failed");
+    let duration = start.elapsed();
+    println!("Query executed in {:.2?}", duration);
+    if results.timing.len() > 0 {
+        println!("Query timing breakdown:");
+        for (k, v) in &results.timing {
+            println!("  {}: {:.2} ms", k, *v);
+        }
+    }
+    results
+}
+
 fn get_quiet_arg() -> bool {
     let args: Vec<String> = env::args().collect();
     args.contains(&"--quiet".to_string())
+}
+
+fn get_v2_arg() -> bool {
+    let args: Vec<String> = env::args().collect();
+    args.contains(&"--v2".to_string())
 }
 
 fn get_query_arg_or_exit() -> String {
@@ -83,13 +110,25 @@ fn get_limit_arg_or_default() -> usize {
     25
 }
 
+fn get_results<'a>(
+    engine: &'a corpus_query_engine::CorpusQueryEngine,
+    query_str: &str,
+) -> corpus_query_engine::CorpusQueryResult<'a> {
+    if get_v2_arg() {
+        let query_v2 = query_parsing_v2::parse_query(&query_str);
+        return query_with_timing_v2(engine, &query_v2.expect(""));
+    }
+    let query = query_parsing::parse_query(&query_str);
+    query_with_timing(&engine, &query)
+}
+
 fn main() {
     let corpus = load_corpus_with_timing(CORPUS_ROOT);
     let engine =
         corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
     let query_str = get_query_arg_or_exit();
-    let query = query_parsing::parse_query(&query_str);
-    let results = query_with_timing(&engine, &query);
+    let results = get_results(&engine, &query_str);
+
     println!(
         "Showing results {}-{} of {} matches:\n",
         results.page_start + 1,
