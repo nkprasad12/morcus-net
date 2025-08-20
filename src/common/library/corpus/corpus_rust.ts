@@ -30,6 +30,9 @@ export class RustCorpusQueryEngine {
     pageStart?: number,
     pageSize?: number
   ): CorpusQueryResult {
+    if (query.length > 100) {
+      throw new Error("Query is too long");
+    }
     const raw = this.engine.query(query, pageStart ?? 0, pageSize ?? 50);
     return assertType(JSON.parse(raw), CorpusQueryResult.isMatch);
   }

@@ -47,7 +47,12 @@ describe("Corpus Integration Test", () => {
     }
   });
 
-  it("should gracefully handle errors", () => {
+  it("should reject queries that are too long", () => {
+    const query = "habeo ".repeat(100);
+    expect(() => queryEngine.queryCorpus(query)).toThrow(/.*too long.*/);
+  });
+
+  it("should gracefully handle query errors", () => {
     const query = "[word:servum]";
     expect(() => queryEngine.queryCorpus(query)).toThrow();
   });
