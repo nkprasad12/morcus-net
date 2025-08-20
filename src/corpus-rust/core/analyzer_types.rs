@@ -92,7 +92,7 @@ impl LatinInflection {
         }
     }
 
-    pub fn to_code(&self) -> String {
+    pub fn get_code(&self) -> String {
         let num = match self {
             LatinInflection::Case(c) => *c as u8,
             LatinInflection::Number(n) => *n as u8,

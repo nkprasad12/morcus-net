@@ -161,7 +161,7 @@ fn parse_token_constraint(input: &str) -> Result<TokenConstraint, QueryParseErro
 
     // Handle negation using recursion.
     if input.starts_with('!') {
-        let inner = input[1..].trim();
+        let inner = input.strip_prefix('!').unwrap().trim();
         let has_parens = inner.starts_with('(') && inner.ends_with(')');
         let n = inner.chars().count();
         let i = if has_parens { 1 } else { 0 };
@@ -388,9 +388,9 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
 /// The following syntax is used to define a token atom:
 /// - `@lemma:<lemma>`
 /// - `@word:<word>` or simply `<word>`. Note that `<word>` can only be
-///    composed of characters in the Latin alphabet (a-z, A-Z).
+///   composed of characters in the Latin alphabet (a-z, A-Z).
 /// - `@case:<case>`, `@tense:<tense>` etc... for each inflection
-///    category in `LatinInflection`.
+///   category in `LatinInflection`.
 ///
 /// ### Examples
 ///
@@ -405,7 +405,7 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
 /// constraint can be as follows:
 /// - A plain token atom
 /// - `!<token_atom>` or `!(<token-atom>)` or `!(<token-constraint>)` to
-///    represent negation.
+///   represent negation.
 /// - `(<token-atom> and <token-atom> ... and <token-atom>)` to represent the
 ///   conjunction of several constraints.
 /// - `(<token-atom> or <token-atom> ... or <token-atom>)` to represent the

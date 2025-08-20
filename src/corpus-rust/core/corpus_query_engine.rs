@@ -81,7 +81,6 @@ fn flatten_term(query_term: &TokenConstraint) -> Result<Vec<&TokenConstraintAtom
     let mut queue = vec![query_term];
     let mut atoms = vec![];
     while let Some(current) = queue.pop() {
-        
         match current {
             TokenConstraint::Atom(atom) => {
                 atoms.push(atom);
@@ -121,13 +120,12 @@ impl CorpusQueryEngine {
                 .corpus
                 .indices
                 .get(inflection.get_label())?
-                .get(&inflection.to_code()),
+                .get(&inflection.get_code()),
         }
     }
 
     fn get_upper_size_bound_for_atom(&self, atom: &TokenConstraintAtom) -> usize {
-        self.get_all_matches_for(atom)
-            .map_or(0, max_elements_in)
+        self.get_all_matches_for(atom).map_or(0, max_elements_in)
     }
 
     fn convert_query_v2<'a>(
