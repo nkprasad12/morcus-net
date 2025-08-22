@@ -23,6 +23,7 @@ const CAN_SKIP_SPEAKERS = new Set(["hypotactic_Eclogues_Calpurnius Siculus"]);
 
 const SUPPORTED_WORKS = [
   ["Calpurnius_Siculus", "Eclogues"],
+  ["Germanicus", "Aratea"],
   ["Lucan", "Bellum_Civile"],
   ["Horace", "Epistulae"],
   ["Horace", "Odes"],
@@ -94,7 +95,6 @@ const UNSUPPORTED_WORKS = [
   ["Persius", "Satires"],
   ["Silius_Italicus", "Punica_1"],
   ["Grattius", "Cynegetica"],
-  ["Germanicus", "Aratea"],
   ["Martial", "Epigrams_1"],
   ["Martial", "De_Spectaculis"],
   ["Ennius", "Annales_Fragments"],
@@ -407,6 +407,35 @@ function processPoemAndLineWork(
   };
 }
 
+function isOnlyLinesWork(fullWork: HypotacticParsedJson): boolean {
+  return fullWork.works.flatMap((work) => work.poems).length === 1;
+}
+
+function processOnlyLinesWork(fullWork: HypotacticParsedJson): ProcessedWork2 {
+  const pages: ProcessedWork2["pages"] = [];
+  const navTreeRoot: NavTreeNode = {
+    id: ["1"],
+    children: [],
+  };
+  const info = extractInfo(fullWork);
+  const poems = fullWork.works.flatMap((work) => work.poems);
+  assertEqual(poems.length, 1);
+  const poem = poems[0];
+  const rows: ProcessedWork2["rows"] = [];
+
+  const pageStart = rows.length;
+  rows.push(...processPoemContent(poem.content, ["1"]));
+  pages.push({ id: ["1"], rows: [pageStart, rows.length] });
+
+  return {
+    info,
+    textParts: ["poem", "line"],
+    rows,
+    pages,
+    navTree: navTreeRoot,
+  };
+}
+
 function processBookAndLineWork(
   fullWork: HypotacticParsedJson
 ): ProcessedWork2 {
@@ -478,6 +507,10 @@ export function processHypotactic(): ProcessedWork2[] {
       const title = work.works[0].title.replace(/[^a-zA-Z0-9]/g, "_");
       if (!isSupportedWork(author, title)) {
         assert(isUnsupportedWork(author, title));
+        continue;
+      }
+      if (isOnlyLinesWork(work)) {
+        processedWorks.push(processOnlyLinesWork(work));
         continue;
       }
       if (isPoemAndLineWork(work)) {

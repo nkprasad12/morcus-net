@@ -539,26 +539,36 @@ function WorkColumn(props: WorkColumnProps & BaseMainColumnProps) {
   );
 }
 
+function headerIdLabel(id: string[], data: PaginatedWork): string | undefined {
+  if (id.length === 0 || (id.length === 1 && id[0] === "_")) {
+    return undefined;
+  }
+  const idLabels: string[] = [];
+  for (let i = 0; i < data.textParts.length - 1; i++) {
+    const parentId = id.slice(0, i + 1);
+    idLabels.push(labelForId(parentId, data));
+  }
+  return idLabels.join(", ");
+}
+
 function HeaderText(props: { data: PaginatedWork; page: number }) {
   if (props.page < 0) {
     return <></>;
   }
 
   const id = props.data.pages[props.page].id;
-  const idLabels: string[] = [];
-  for (let i = 0; i < props.data.textParts.length - 1; i++) {
-    const parentId = id.slice(0, i + 1);
-    idLabels.push(labelForId(parentId, props.data));
-  }
+  const idLabel = headerIdLabel(id, props.data);
   const title = props.data.info.shortTitle ?? props.data.info.title;
   return (
     <div
       className="text sm light"
       style={{ textTransform: "capitalize", margin: "0 8px" }}>
       <div style={{ display: "flex", justifyContent: "center" }}>{title}</div>
-      <div style={{ display: "flex", justifyContent: "center" }}>
-        {idLabels.join(", ")}
-      </div>
+      {idLabel && (
+        <div style={{ display: "flex", justifyContent: "center" }}>
+          {idLabel}
+        </div>
+      )}
     </div>
   );
 }
@@ -770,11 +780,13 @@ export function WorkTextPage(props: {
       );
       continue;
     }
-    const idLabelParts = id.map((idPart) =>
-      safeParseInt(idPart) !== undefined
-        ? idPart
-        : capitalizeWords(idPart.substring(0, isMobile ? 2 : 3))
-    );
+    const idLabelParts = id
+      .filter((part, i) => !(part === "_" && i === 0))
+      .map((idPart) =>
+        safeParseInt(idPart) !== undefined
+          ? idPart
+          : capitalizeWords(idPart.substring(0, isMobile ? 2 : 3))
+      );
     const idLabel = idLabelParts.join(".");
     const shortLabel = idLabelParts
       .slice(isMobile && id.length > 2 ? 2 : 0)
