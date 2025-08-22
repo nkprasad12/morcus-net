@@ -1,0 +1,554 @@
+{
+    "licence": "https://creativecommons.org/licenses/by-sa/4.0/",
+    "scansion credit": "David Chamberlain; June 2025; hypotactic.com; davidc@uoregon.edu",
+    "Calpurnius Siculus": {
+        "Eclogues": {
+            "poems": [
+                {
+                    "poem metre": "hexameter",
+                    "poem title": "",
+                    "poem number": "1",
+                    "poem content": [
+                        {
+                            "line number": "1",
+                            "metre": "hexameter",
+                            "segments": [
+                                {
+                                    "speaker": "Corydon",
+                                    "words": [
+                                        {
+                                            "text": "Nōndum",
+                                            "syllables": [
+                                                {
+                                                    "text": "Nōn",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "dum",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "sōlis",
+                                            "syllables": [
+                                                {
+                                                    "text": "sō",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "lis",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "equōs",
+                                            "syllables": [
+                                                {
+                                                    "text": "e",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "quōs",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "dēclīnis",
+                                            "syllables": [
+                                                {
+                                                    "text": "dē",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "clī",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "nis",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "mītigat",
+                                            "syllables": [
+                                                {
+                                                    "text": "mī",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "ti",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "gat",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "aestās,",
+                                            "syllables": [
+                                                {
+                                                    "text": "aes",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "tās,",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "line number": "2",
+                            "metre": "hexameter",
+                            "segments": [
+                                {
+                                    "speaker": "Corydon",
+                                    "words": [
+                                        {
+                                            "text": "quamvīs",
+                                            "syllables": [
+                                                {
+                                                    "text": "quam",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "vīs",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "et",
+                                            "syllables": [
+                                                {
+                                                    "text": "et",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "madidīs",
+                                            "syllables": [
+                                                {
+                                                    "text": "ma",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "di",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "dīs",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "incumbant",
+                                            "syllables": [
+                                                {
+                                                    "text": "in",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "cum",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "bant",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "prēla",
+                                            "syllables": [
+                                                {
+                                                    "text": "prē",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "la",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "racēmīs",
+                                            "syllables": [
+                                                {
+                                                    "text": "ra",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "cē",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "mīs",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                },
+                {
+                    "poem metre": "hexameter",
+                    "poem title": "",
+                    "poem number": "2",
+                    "poem content": [
+                        {
+                            "line number": "1",
+                            "metre": "hexameter",
+                            "segments": [
+                                {
+                                    "speaker": "",
+                                    "words": [
+                                        {
+                                            "text": "Intāctam",
+                                            "syllables": [
+                                                {
+                                                    "text": "In",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "tāc",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "tam",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "Crocalēn",
+                                            "syllables": [
+                                                {
+                                                    "text": "Cro",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "ca",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "lēn",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "puer",
+                                            "syllables": [
+                                                {
+                                                    "text": "pu",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "er",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "Astacus",
+                                            "syllables": [
+                                                {
+                                                    "text": "A",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "sta",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "cus",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "et",
+                                            "syllables": [
+                                                {
+                                                    "text": "et",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "puer",
+                                            "syllables": [
+                                                {
+                                                    "text": "pu",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "er",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "Īdās,",
+                                            "syllables": [
+                                                {
+                                                    "text": "Ī",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "dās,",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        },
+                        {
+                            "line number": "2",
+                            "metre": "hexameter",
+                            "segments": [
+                                {
+                                    "speaker": "",
+                                    "words": [
+                                        {
+                                            "text": "Īdās",
+                                            "syllables": [
+                                                {
+                                                    "text": "Ī",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "dās",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "lānigerī",
+                                            "syllables": [
+                                                {
+                                                    "text": "lā",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "ni",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "ge",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "rī",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "dominus",
+                                            "syllables": [
+                                                {
+                                                    "text": "do",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "mi",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "nus",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "gregis,",
+                                            "syllables": [
+                                                {
+                                                    "text": "gre",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "gis,",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "Astacus",
+                                            "syllables": [
+                                                {
+                                                    "text": "A",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "sta",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "cus",
+                                                    "length": "short",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        },
+                                        {
+                                            "text": "hortī,",
+                                            "syllables": [
+                                                {
+                                                    "text": "hor",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                },
+                                                {
+                                                    "text": "tī,",
+                                                    "length": "long",
+                                                    "resolution": "",
+                                                    "features": ""
+                                                }
+                                            ]
+                                        }
+                                    ]
+                                }
+                            ]
+                        }
+                    ]
+                }
+            ]
+
+        }
+    }
+}

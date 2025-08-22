@@ -19,7 +19,10 @@ const KNOWN_KEYS = new Set([LICENSE_KEY, CREDIT_KEY]);
 // These should map Hypotactic author names to Perseus author names.
 const AUTHOR_REMAPPING = new Map<string, string>([["Ovid", "P. Ovidius Naso"]]);
 
+const CAN_SKIP_SPEAKERS = new Set(["hypotactic_Eclogues_Calpurnius Siculus"]);
+
 const SUPPORTED_WORKS = [
+  ["Calpurnius_Siculus", "Eclogues"],
   ["Lucan", "Bellum_Civile"],
   ["Horace", "Epistulae"],
   ["Horace", "Odes"],
@@ -84,7 +87,6 @@ const UNSUPPORTED_WORKS = [
   ["Ovid", "Consolatio_Liviae_and_Nux__pseudo_Ovid_"],
   ["Ovid", "Halieutica__pseudo_Ovid_"],
   ["Valerius_Flaccus", "Argonautica_1"],
-  ["Calpurnius_Siculus", "Eclogues"],
   ["Petronius", "Bellum_Civile"],
   ["Petronius", "Other_Poems"],
   ["Propertius", "Elegies_1"],
@@ -180,8 +182,6 @@ function resolvePoemTitle(
   data: Record<string, any>
 ): string {
   const nominalTitle = data["poem title"];
-  // @ts-expect-error
-  const poemNumber = data["poem number"];
   if (nominalTitle !== "" && workSubtitle === "poems") {
     return nominalTitle;
   }
@@ -293,12 +293,15 @@ function extractInfo(fullWork: HypotacticParsedJson): DocumentInfo {
 
 function processPoemContent(
   allContent: HypotacticPoemContent[],
-  parentId: string[]
+  parentId: string[],
+  workId: string = ""
 ): ProcessedWork2["rows"] {
   return allContent.map((content) => {
     const lineId = parentId.concat([content.line.trim()]);
     assertEqual(content.segments.length, 1);
-    assertEqual(content.segments[0].speaker, "");
+    if (!CAN_SKIP_SPEAKERS.has(workId)) {
+      assertEqual("", content.segments[0].speaker, workId);
+    }
     const lineText = content.segments[0].text.normalize("NFD");
     return [lineId, new XmlNode("span", [], [lineText])];
   });
@@ -350,6 +353,54 @@ function processBookPoemAndLineWork(
   return {
     info,
     textParts: ["book", "poem", "line"],
+    rows,
+    pages,
+    navTree: navTreeRoot,
+  };
+}
+
+function isPoemAndLineWork(work: HypotacticParsedJson): boolean {
+  if (work.works.length !== 1) {
+    return false;
+  }
+  const poems = work.works[0].poems;
+  if (poems.length < 2) {
+    return false;
+  }
+  for (const poem of poems) {
+    if (poem.title !== work.works[0].title) {
+      return false;
+    }
+  }
+  return true;
+}
+
+function processPoemAndLineWork(
+  fullWork: HypotacticParsedJson
+): ProcessedWork2 {
+  assertEqual(fullWork.works.length, 1);
+  const pages: ProcessedWork2["pages"] = [];
+  const navTreeRoot: NavTreeNode = {
+    id: [],
+    children: [],
+  };
+  const info = extractInfo(fullWork);
+  const title = info.title;
+  const rows: ProcessedWork2["rows"] = [];
+  const work = fullWork.works[0];
+  assertEqual(title, work.title);
+
+  for (const poem of work.poems) {
+    const poemId = poem.poemNumber.trim();
+    navTreeRoot.children.push({ id: [poemId], children: [] });
+    const pageStart = rows.length;
+    rows.push(...processPoemContent(poem.content, [poemId], info.workId));
+    pages.push({ id: [poemId], rows: [pageStart, rows.length] });
+  }
+
+  return {
+    info,
+    textParts: ["poem", "line"],
     rows,
     pages,
     navTree: navTreeRoot,
@@ -427,6 +478,10 @@ export function processHypotactic(): ProcessedWork2[] {
       const title = work.works[0].title.replace(/[^a-zA-Z0-9]/g, "_");
       if (!isSupportedWork(author, title)) {
         assert(isUnsupportedWork(author, title));
+        continue;
+      }
+      if (isPoemAndLineWork(work)) {
+        processedWorks.push(processPoemAndLineWork(work));
         continue;
       }
       if (hasMultiPoem(work)) {
