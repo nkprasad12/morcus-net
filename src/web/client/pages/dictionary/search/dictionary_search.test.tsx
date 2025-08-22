@@ -88,6 +88,27 @@ describe("DictionarySearch", () => {
     expect(mockCallback).toHaveBeenCalledWith("a", { lang: undefined });
   });
 
+  it("handles trimming on input box enter", async () => {
+    const mockCallback = jest.fn(() => {});
+    render(
+      <DictionarySearch
+        smallScreen={false}
+        dicts={BOTH_DICTS}
+        setDicts={() => {}}
+        autoFocused
+        onSearchQuery={mockCallback}
+      />
+    );
+    const search = screen.getByRole("combobox");
+    await user.click(search);
+
+    // Enter without input should be a no-op
+    await user.type(search, "{enter}");
+    expect(mockCallback).not.toHaveBeenCalled();
+    await user.type(search, ", a! {enter}");
+    expect(mockCallback).toHaveBeenCalledWith("a", { lang: undefined });
+  });
+
   it("handles navigation on option click", async () => {
     const mockCallback = jest.fn(() => {});
     render(

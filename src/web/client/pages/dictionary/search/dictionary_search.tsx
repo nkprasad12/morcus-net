@@ -272,6 +272,15 @@ function spacing(level: number): string {
   return `${level * 8}px`;
 }
 
+function trimRawQuery(query: string): string {
+  // Remove any leading or trailing clusters that contain punctuation or whitespace.
+  // Also remove adjacent combining marks so we don't leave dangling diacritics.
+  // Uses Unicode property escapes; keep the 'u' flag and global to handle both ends.
+  const LEAD_TRIM_RE = /^(?:[\p{P}\p{Z}\s]+[\p{M}]*)/u;
+  const TRAIL_TRIM_RE = /(?:[\p{M}]*[\p{P}\p{Z}\s]+)$/u;
+  return query.replace(LEAD_TRIM_RE, "").replace(TRAIL_TRIM_RE, "");
+}
+
 export function DictionarySearch(props: {
   smallScreen: boolean;
   dicts: LatinDictInfo[];
@@ -309,7 +318,7 @@ export function DictionarySearch(props: {
           />
         }
         autoFocused={props.autoFocused}
-        onRawEnter={(v) => onEnter(v)}
+        onRawEnter={(v) => onEnter(trimRawQuery(v))}
         onOptionSelected={(t) => onEnter(t[1], t[0])}
         optionsForInput={optionsForInput}
         // This will cause the component to reset when `optionsForInput` changes, which
