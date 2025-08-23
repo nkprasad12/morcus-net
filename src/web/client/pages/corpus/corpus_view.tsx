@@ -3,16 +3,19 @@ import type {
   CorpusQueryMatch,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
+import { safeParseInt } from "@/common/misc_utils";
 import { QueryCorpusApi, type CorpusQueryRequest } from "@/web/api_routes";
-import { SpanLink } from "@/web/client/components/generic/basics";
+import { Divider, SpanLink } from "@/web/client/components/generic/basics";
+import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import { SearchBoxNoAutocomplete } from "@/web/client/components/generic/search";
 import { getCommitHash } from "@/web/client/define_vars";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
-import { useMemo, useState } from "react";
+import { Fragment, useMemo, useState } from "react";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
+const PAGE_SIZE = 50;
 
 type Results = "N/A" | "Error" | "Loading" | CorpusQueryResult;
 
@@ -23,12 +26,18 @@ export function CorpusQueryPage() {
   const { nav, route } = Router.useRouter();
 
   const urlQuery = route.params?.q;
+  const urlStartIdx = safeParseInt(route.params?.n) ?? 0;
   const apiRequest: CorpusQueryRequest | null = useMemo(() => {
     if (!urlQuery) {
       return null;
     }
-    return { query: urlQuery, commitHash: getCommitHash() };
-  }, [urlQuery]);
+    return {
+      query: urlQuery,
+      pageSize: PAGE_SIZE,
+      pageStart: urlStartIdx,
+      commitHash: getCommitHash(),
+    };
+  }, [urlQuery, urlStartIdx]);
 
   useApiCall(QueryCorpusApi, apiRequest, {
     onResult: setResults,
@@ -63,6 +72,8 @@ function ResultsSection(props: {
   results: Exclude<Results, "N/A">;
   query: string;
 }) {
+  const { nav } = Router.useRouter();
+
   if (props.results === "Error") {
     return <div>Error occurred on query: {props.query}</div>;
   }
@@ -70,18 +81,50 @@ function ResultsSection(props: {
     return <div>Loading results for: {props.query}</div>;
   }
 
+  const firstPage = props.results.pageStart === 0;
+  const lastPage =
+    props.results.pageStart + props.results.matches.length >=
+    props.results.totalResults;
+
+  const changePage = (increment: boolean) => {
+    nav.to((current) => {
+      const n = safeParseInt(current.params?.n) ?? 0;
+      const newN = increment ? n + PAGE_SIZE : n - PAGE_SIZE;
+      const newParams = {
+        ...current.params,
+        n: newN.toString(),
+      };
+      return { ...current, params: newParams };
+    });
+  };
+
   return (
     <div>
       <div className="text md">
-        Found {props.results.totalResults} results for: {props.query}
+        Found {props.results.totalResults} results matching:
+        <div>{props.query}</div>
       </div>
       <div className="text sm light">
         Showing results {props.results.pageStart + 1} to{" "}
         {props.results.pageStart + props.results.matches.length}.
       </div>
+      {props.results.matches.length > 0 && (
+        <Divider style={{ margin: "12px 0" }} />
+      )}
       {props.results.matches.map((item, i) => (
-        <SingleResult result={item} key={i} />
+        <Fragment key={i}>
+          <SingleResult result={item} />
+          <Divider style={{ margin: "12px 0" }} />
+        </Fragment>
       ))}
+      <div style={{ paddingBottom: "16px", textAlign: "center" }}>
+        <IconButton disabled={firstPage} onClick={() => changePage(false)}>
+          <SvgIcon pathD={SvgIcon.ArrowBack} />
+        </IconButton>
+        <IconButton disabled={lastPage} onClick={() => changePage(true)}>
+          <SvgIcon pathD={SvgIcon.ArrowForward} />
+        </IconButton>
+      </div>
     </div>
   );
 }
@@ -107,9 +150,9 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
         }>
         {props.result.workName} {props.result.section} [{props.result.author}]
       </SpanLink>
-      <div className="text sm light">
+      <div className="text sm light" style={{ textAlign: "justify" }}>
         <span>{props.result.leftContext ?? ""}</span>
-        <b>{props.result.text}</b>
+        <b className="corpusResult">{props.result.text}</b>
         <span>{props.result.rightContext ?? ""}</span>
       </div>
     </div>

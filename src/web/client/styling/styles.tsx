@@ -298,6 +298,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".tooltipMenuItem:hover": {
       backgroundColor: theme.bgAlt + "80",
     },
+
     /** Basic content primitives */
     ".bgColor": { backgroundColor },
     ".bgAlt": { backgroundColor: theme.bgAlt },
@@ -374,6 +375,11 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     ".menuItem.active": {
       color: theme.menuItemBase + theme.menuItemActiveAlpha,
+    },
+
+    /** Corpus specific */
+    ".corpusResult": {
+      color: Solarized.red + "A0",
     },
 
     /** Dictionary specific */
