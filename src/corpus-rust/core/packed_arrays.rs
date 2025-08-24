@@ -5,6 +5,7 @@ const PACKED_NUMBER_HEADER_SIZE: usize = 1;
 const PACKED_NUMBER_HEADER_UNUSED_BITS_MASK: u8 = 0b11100000; // bits 7-5
 const PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK: u8 = 0b00011111; // bits 4-0
 
+#[allow(dead_code)]
 /// Calculates the number of bits required to store numbers up to `upper_bound`.
 pub fn bits_per_number(upper_bound: u32) -> usize {
     if upper_bound <= 1 {
@@ -15,6 +16,7 @@ pub fn bits_per_number(upper_bound: u32) -> usize {
     }
 }
 
+#[allow(dead_code)]
 /// Packs an array of sorted natural numbers into a compact bit array (Vec<u8>).
 pub fn pack_sorted_nats(numbers: &[u32]) -> Result<Vec<u8>, String> {
     if numbers.is_empty() {

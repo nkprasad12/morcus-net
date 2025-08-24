@@ -1,10 +1,11 @@
 use serde::Deserialize;
 
-#[derive(Debug, Deserialize, Clone)]
+#[derive(Debug, Deserialize, PartialEq, Clone)]
 #[serde(untagged)]
-pub enum PackedIndexData {
+pub enum IndexData {
     PackedNumbers(#[serde(with = "serde_bytes")] Vec<u8>),
     PackedBitMask(PackedBitMask),
+    Unpacked(Vec<u32>),
 }
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]

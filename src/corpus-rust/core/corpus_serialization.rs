@@ -1,4 +1,4 @@
-use super::common::{PackedBitMask, PackedIndexData, deserialize_u64_vec_from_bytes};
+use super::common::{IndexData, PackedBitMask, deserialize_u64_vec_from_bytes};
 
 use base64::engine::Engine as _;
 use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
@@ -47,7 +47,7 @@ pub struct LatinCorpusIndex {
     pub stats: CorpusStats,
     pub raw_text_db: String,
     #[serde(deserialize_with = "deserialize_indices")]
-    pub indices: HashMap<String, HashMap<String, PackedIndexData>>,
+    pub indices: HashMap<String, HashMap<String, IndexData>>,
 }
 
 #[derive(Deserialize)]
@@ -73,14 +73,14 @@ struct SerializedMap {
 
 fn deserialize_indices<'de, D>(
     deserializer: D,
-) -> Result<HashMap<String, HashMap<String, PackedIndexData>>, D::Error>
+) -> Result<HashMap<String, HashMap<String, IndexData>>, D::Error>
 where
     D: Deserializer<'de>,
 {
     struct IndicesVisitor;
 
     impl<'de> Visitor<'de> for IndicesVisitor {
-        type Value = HashMap<String, HashMap<String, PackedIndexData>>;
+        type Value = HashMap<String, HashMap<String, IndexData>>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             formatter.write_str("a map of serialized index maps")
@@ -113,7 +113,7 @@ where
                             let bytes = BASE64_STANDARD
                                 .decode(b64_data)
                                 .map_err(de::Error::custom)?;
-                            PackedIndexData::PackedNumbers(bytes)
+                            IndexData::PackedNumbers(bytes)
                         }
                         StoredMapValue::BitMask {
                             serialization_key,
@@ -127,7 +127,7 @@ where
                             let u64_data = deserialize_u64_vec_from_bytes(&bytes)
                                 .map_err(de::Error::custom)?;
 
-                            PackedIndexData::PackedBitMask(PackedBitMask {
+                            IndexData::PackedBitMask(PackedBitMask {
                                 format: "bitmask".to_string(),
                                 data: u64_data,
                                 num_set: Some(size),

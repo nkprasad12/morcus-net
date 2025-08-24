@@ -4,12 +4,10 @@ use crate::core::query_parsing_v2::{
     parse_query,
 };
 
-use super::common::PackedIndexData;
+use super::common::IndexData;
 use super::corpus_serialization::LatinCorpusIndex;
-use super::packed_arrays;
 use super::packed_index_utils::{
-    ApplyAndResult, apply_and_to_indices, has_value_in_range, max_elements_in,
-    unpack_packed_index_data,
+    apply_and_to_indices, has_value_in_range, max_elements_in, unpack_packed_index_data,
 };
 use super::profiler::TimeProfiler;
 
@@ -102,7 +100,7 @@ struct InternalQueryTerm<'a> {
 }
 
 struct IntermediateResult {
-    data: PackedIndexData,
+    data: IndexData,
     position: i32,
 }
 
@@ -216,7 +214,7 @@ impl CorpusQueryEngine {
         &self,
         children: &[TokenConstraint],
         op: &TokenConstraintOperation,
-    ) -> Result<Option<PackedIndexData>, QueryExecError> {
+    ) -> Result<Option<IndexData>, QueryExecError> {
         // Sort the children by their upper size bounds. For `and` operations, we want the
         // smallest upper bound first so the most constrained children are considered first.
         // For `or` operations, we want the largest upper bound first so that we hopefully
@@ -247,7 +245,7 @@ impl CorpusQueryEngine {
                 TokenConstraintOperation::And => apply_and_to_indices(&data, 0, &child_data, 0),
                 TokenConstraintOperation::Or => apply_or_to_indices(&data, 0, &child_data, 0),
             };
-            data = to_packed_index_data(combined?.0)?;
+            data = combined?.0;
         }
         Ok(Some(data))
     }
@@ -256,7 +254,7 @@ impl CorpusQueryEngine {
     fn compute_index_for(
         &self,
         constraint: &TokenConstraint,
-    ) -> Result<Option<PackedIndexData>, QueryExecError> {
+    ) -> Result<Option<IndexData>, QueryExecError> {
         match constraint {
             TokenConstraint::Atom(atom) => Ok(self.get_index_for(atom).cloned()),
             TokenConstraint::Composed { children, op } => {
@@ -292,20 +290,18 @@ impl CorpusQueryEngine {
                 Some(data) => data,
                 _ => return Ok(None),
             };
-            let result = match term.relation {
+            (data, position) = match term.relation {
                 QueryRelation::After | QueryRelation::First => {
                     apply_and_to_indices(&data, position, &term_data, *original_index as i32)
                 }
                 _ => return Err(QueryExecError::new("Unsupported query relation")),
             }?;
-            data = to_packed_index_data(result.0)?;
             profiler.phase(format!("Filter from {}", original_index).as_str());
-            position = result.1;
         }
         Ok(Some(IntermediateResult { data, position }))
     }
 
-    fn get_index_for(&self, part: &TokenConstraintAtom) -> Option<&PackedIndexData> {
+    fn get_index_for(&self, part: &TokenConstraintAtom) -> Option<&IndexData> {
         match part {
             TokenConstraintAtom::Word(word) => {
                 self.corpus.indices.get("word")?.get(&word.to_lowercase())
@@ -509,17 +505,5 @@ fn empty_result() -> CorpusQueryResult<'static> {
         matches: vec![],
         page_start: 0,
         timing: vec![],
-    }
-}
-
-// Helper to convert ApplyAndResult to PackedIndexData
-fn to_packed_index_data(result: ApplyAndResult) -> Result<PackedIndexData, QueryExecError> {
-    match result {
-        ApplyAndResult::Array(arr) => {
-            let packed =
-                packed_arrays::pack_sorted_nats(&arr).map_err(|e| QueryExecError::new(&e))?;
-            Ok(PackedIndexData::PackedNumbers(packed))
-        }
-        ApplyAndResult::Bitmask(bm) => Ok(PackedIndexData::PackedBitMask(bm)),
     }
 }
