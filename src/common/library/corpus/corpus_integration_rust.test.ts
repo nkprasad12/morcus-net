@@ -144,6 +144,24 @@ describe("Corpus Integration Test", () => {
     });
   });
 
+  it("should handle a composed 'or' query", () => {
+    const query = "Gallus (servum or regem)";
+    const results = queryEngine.queryCorpus(query);
+    expect(results.matches).toHaveLength(2);
+    expect(results.matches[0]).toMatchObject({
+      workId: "test_work_1",
+      section: "1",
+      offset: 0,
+      text: "Gallus servum",
+    });
+    expect(results.matches[1]).toMatchObject({
+      workId: "test_work_2",
+      section: "2",
+      offset: 0,
+      text: "Gallus regem",
+    });
+  });
+
   it("should return no results for a query that crosses a hard break", () => {
     const query = "acclamat servus";
     const results = queryEngine.queryCorpus(query);

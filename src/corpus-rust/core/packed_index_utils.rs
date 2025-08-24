@@ -419,12 +419,10 @@ pub fn has_value_in_range(packed_data: &PackedIndexData, range: (u32, u32)) -> b
 /// # Returns
 ///
 /// The number of elements.
-pub fn max_elements_in(packed_data: &PackedIndexData) -> usize {
+pub fn max_elements_in(packed_data: &PackedIndexData) -> Option<usize> {
     match packed_data {
-        PackedIndexData::PackedNumbers(data) => packed_arrays::num_elements(data),
-        PackedIndexData::PackedBitMask(bitmask_data) => {
-            bitmask_data.num_set.unwrap_or(bitmask_data.data.len() * 64)
-        }
+        PackedIndexData::PackedNumbers(data) => Some(packed_arrays::num_elements(data)),
+        PackedIndexData::PackedBitMask(bitmask_data) => bitmask_data.num_set,
     }
 }
 
@@ -1066,7 +1064,7 @@ mod tests {
     #[test]
     fn max_elements_in_should_return_correct_count_for_packed_array() {
         let packed_data = PackedIndexData::PackedNumbers(pack_nats(&[10, 20, 30]));
-        assert_eq!(max_elements_in(&packed_data), 3);
+        assert_eq!(max_elements_in(&packed_data), Some(3));
     }
 
     #[test]
@@ -1077,7 +1075,7 @@ mod tests {
             data: bitmask,
             num_set: Some(2),
         });
-        assert_eq!(max_elements_in(&packed_data), 2);
+        assert_eq!(max_elements_in(&packed_data), Some(2));
     }
 
     #[test]
@@ -1088,6 +1086,6 @@ mod tests {
             data: bitmask,
             num_set: None,
         });
-        assert_eq!(max_elements_in(&packed_data), 128);
+        assert_eq!(max_elements_in(&packed_data), None);
     }
 }

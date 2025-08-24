@@ -1,5 +1,7 @@
+use crate::core::packed_index_utils::apply_or_to_indices;
 use crate::core::query_parsing_v2::{
-    QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation, parse_query,
+    QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
+    parse_query,
 };
 
 use super::common::PackedIndexData;
@@ -10,10 +12,10 @@ use super::packed_index_utils::{
     unpack_packed_index_data,
 };
 use super::profiler::TimeProfiler;
-use super::query_parsing_v2::Query;
 
 use rusqlite::Connection;
 use serde::Serialize;
+use std::cmp::{max, min};
 use std::path::Path;
 
 const MAX_CONTEXT_LEN: usize = 100;
@@ -68,15 +70,35 @@ pub struct CorpusQueryResult<'a> {
 }
 
 // Internal types for query processing
-struct InternalQueryAtom<'a> {
-    atom: &'a TokenConstraintAtom,
-    size_upper_bound: usize,
+#[derive(Debug, Clone)]
+struct SizeBounds {
+    upper: usize,
+    lower: usize,
 }
 
-struct InternalComposedQuery<'a> {
-    composition: String,
-    atoms: Vec<InternalQueryAtom<'a>>,
-    position: usize,
+#[derive(Debug, Clone)]
+struct InternalAtom<'a> {
+    inner: &'a TokenConstraintAtom,
+    size_bounds: SizeBounds,
+}
+
+#[derive(Debug, Clone)]
+enum InternalAtomOrConstraint<'a> {
+    Atom(InternalAtom<'a>),
+    Constraint(InternalConstraint<'a>),
+}
+
+#[derive(Debug, Clone)]
+struct InternalConstraint<'a> {
+    inner: &'a TokenConstraint,
+    constraints: Vec<InternalAtomOrConstraint<'a>>,
+    size_bounds: SizeBounds,
+}
+
+#[derive(Debug, Clone)]
+struct InternalQueryTerm<'a> {
+    relation: &'a QueryRelation,
+    constraint: InternalConstraint<'a>,
 }
 
 struct IntermediateResult {
@@ -89,32 +111,6 @@ pub struct CorpusQueryEngine {
     token_db: Connection,
 }
 
-fn flatten_term(query_term: &TokenConstraint) -> Result<Vec<&TokenConstraintAtom>, QueryExecError> {
-    let mut queue = vec![query_term];
-    let mut atoms = vec![];
-    while let Some(current) = queue.pop() {
-        match current {
-            TokenConstraint::Atom(atom) => {
-                atoms.push(atom);
-            }
-            TokenConstraint::Composed { op, children } => {
-                if *op != TokenConstraintOperation::And {
-                    return Err(QueryExecError::new(
-                        "Only 'and' operations are supported for now.",
-                    ));
-                }
-                queue.extend(children);
-            }
-            TokenConstraint::Negated(_) => {
-                return Err(QueryExecError::new(
-                    "Negated queries are not supported yet.",
-                ));
-            }
-        }
-    }
-    Ok(atoms)
-}
-
 impl CorpusQueryEngine {
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, rusqlite::Error> {
         let db_path = Path::new(&corpus.raw_text_db);
@@ -122,7 +118,160 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryEngine { corpus, token_db })
     }
 
-    fn get_all_matches_for(&self, part: &TokenConstraintAtom) -> Option<&PackedIndexData> {
+    fn get_bounds_for_atom(&self, atom: &TokenConstraintAtom) -> SizeBounds {
+        let Some(index) = self.get_index_for(atom) else {
+            return SizeBounds { upper: 0, lower: 0 };
+        };
+        let Some(upper) = max_elements_in(index) else {
+            return SizeBounds {
+                upper: self.corpus.stats.total_words as usize,
+                lower: 0,
+            };
+        };
+        SizeBounds {
+            upper,
+            lower: upper,
+        }
+    }
+
+    fn convert_atom<'a>(&self, atom: &'a TokenConstraintAtom) -> InternalAtom<'a> {
+        InternalAtom {
+            inner: atom,
+            size_bounds: self.get_bounds_for_atom(atom),
+        }
+    }
+
+    fn convert_constraint<'a>(
+        &self,
+        constraint: &'a TokenConstraint,
+    ) -> Result<InternalConstraint<'a>, QueryExecError> {
+        match constraint {
+            TokenConstraint::Atom(atom) => {
+                let internal_atom = self.convert_atom(atom);
+                let size_bounds = internal_atom.size_bounds.clone();
+                Ok(InternalConstraint {
+                    inner: constraint,
+                    constraints: vec![InternalAtomOrConstraint::Atom(internal_atom)],
+                    size_bounds,
+                })
+            }
+            TokenConstraint::Composed { op, children } => {
+                let first = self.convert_constraint(
+                    children
+                        .first()
+                        .ok_or(QueryExecError::new("Empty composed query"))?,
+                )?;
+                let mut lower = first.size_bounds.lower;
+                let mut upper = first.size_bounds.upper;
+                let mut constraints = vec![InternalAtomOrConstraint::Constraint(first)];
+                for child in children.iter().skip(1) {
+                    let converted = self.convert_constraint(child)?;
+                    if *op == TokenConstraintOperation::And {
+                        // These bounds are not quite tight due to the pigeonhole principle
+                        // if the upper bounds are more than half the number of tokens,
+                        // but we can ignore that for now.
+                        lower = 0;
+                        upper = min(upper, converted.size_bounds.upper);
+                    } else {
+                        lower = max(lower, converted.size_bounds.lower);
+                        upper = max(upper, converted.size_bounds.upper);
+                    }
+                    constraints.push(InternalAtomOrConstraint::Constraint(converted));
+                }
+                Ok(InternalConstraint {
+                    inner: constraint,
+                    constraints,
+                    size_bounds: SizeBounds { upper, lower },
+                })
+            }
+            TokenConstraint::Negated(inner) => {
+                let converted = self.convert_constraint(inner)?;
+                let n = self.corpus.stats.total_words as usize;
+                let upper = n - converted.size_bounds.lower;
+                let lower = n - converted.size_bounds.upper;
+                Ok(InternalConstraint {
+                    inner,
+                    constraints: vec![InternalAtomOrConstraint::Constraint(converted)],
+                    size_bounds: SizeBounds { upper, lower },
+                })
+            }
+        }
+    }
+
+    fn convert_query_term<'a>(
+        &self,
+        term: &'a QueryTerm,
+    ) -> Result<InternalQueryTerm<'a>, QueryExecError> {
+        let constraint = self.convert_constraint(&term.constraint)?;
+        Ok(InternalQueryTerm {
+            relation: &term.relation,
+            constraint,
+        })
+    }
+
+    fn compute_index_for(
+        &self,
+        constraint: &TokenConstraint,
+    ) -> Result<Option<PackedIndexData>, QueryExecError> {
+        match constraint {
+            TokenConstraint::Atom(atom) => Ok(self.get_index_for(atom).cloned()),
+            TokenConstraint::Composed { children, op } => {
+                let first = children
+                    .first()
+                    .ok_or(QueryExecError::new("Empty composed query"))?;
+                let mut data = match self.compute_index_for(first)? {
+                    Some(data) => data,
+                    None => return Ok(None),
+                };
+                for child in children.iter().skip(1) {
+                    let child_data = match self.compute_index_for(child)? {
+                        Some(data) => data,
+                        None => return Ok(None),
+                    };
+                    let combined = match op {
+                        TokenConstraintOperation::And => {
+                            apply_and_to_indices(&data, 0, &child_data, 0)
+                        }
+                        TokenConstraintOperation::Or => {
+                            apply_or_to_indices(&data, 0, &child_data, 0)
+                        }
+                    };
+                    data = to_packed_index_data(combined?.0)?;
+                }
+                Ok(Some(data))
+            }
+            TokenConstraint::Negated(_) => {
+                Err(QueryExecError::new("Negated constraints are not supported"))
+            }
+        }
+    }
+
+    fn compute_query_result(
+        &self,
+        query: &Vec<InternalQueryTerm>,
+    ) -> Result<Option<IntermediateResult>, QueryExecError> {
+        let first_term = query.first().ok_or(QueryExecError::new("Empty query"))?;
+        let mut data = match self.compute_index_for(first_term.constraint.inner)? {
+            Some(data) => data,
+            _ => return Ok(None),
+        };
+        let mut position = 0;
+        for (i, term) in query.iter().enumerate().skip(1) {
+            let term_data = match self.compute_index_for(term.constraint.inner)? {
+                Some(data) => data,
+                _ => return Ok(None),
+            };
+            let result = match term.relation {
+                QueryRelation::After => apply_and_to_indices(&data, position, &term_data, i as i32),
+                _ => return Err(QueryExecError::new("Unsupported query relation")),
+            }?;
+            data = to_packed_index_data(result.0)?;
+            position = result.1
+        }
+        Ok(Some(IntermediateResult { data, position }))
+    }
+
+    fn get_index_for(&self, part: &TokenConstraintAtom) -> Option<&PackedIndexData> {
         match part {
             TokenConstraintAtom::Word(word) => {
                 self.corpus.indices.get("word")?.get(&word.to_lowercase())
@@ -134,71 +283,6 @@ impl CorpusQueryEngine {
                 .get(inflection.get_label())?
                 .get(&inflection.get_code()),
         }
-    }
-
-    fn get_upper_size_bound_for_atom(&self, atom: &TokenConstraintAtom) -> usize {
-        self.get_all_matches_for(atom).map_or(0, max_elements_in)
-    }
-
-    fn convert_query_v2<'a>(
-        &self,
-        query: &'a Query,
-    ) -> Result<Vec<InternalComposedQuery<'a>>, QueryExecError> {
-        let mut parts = vec![];
-        for i in 0..query.terms.len() {
-            let term = &query.terms[i];
-            if term.relation != QueryRelation::First && term.relation != QueryRelation::After {
-                return Err(QueryExecError::new(
-                    "Proximity relations are not yet supported.",
-                ));
-            }
-
-            let atoms = flatten_term(&term.constraint)?;
-            for atom in atoms {
-                parts.push(InternalComposedQuery {
-                    composition: "and".to_string(),
-                    atoms: vec![InternalQueryAtom {
-                        atom,
-                        size_upper_bound: self.get_upper_size_bound_for_atom(atom),
-                    }],
-                    position: i,
-                });
-            }
-        }
-        Ok(parts)
-    }
-
-    fn execute_initial_part(&self, part: &InternalComposedQuery) -> Option<IntermediateResult> {
-        let atom_data = self.get_all_matches_for(part.atoms[0].atom)?;
-        Some(IntermediateResult {
-            data: PackedIndexData::clone(atom_data),
-            position: part.position as i32,
-        })
-    }
-
-    fn filter_candidates_on(
-        &self,
-        candidates: IntermediateResult,
-        query_atom: &TokenConstraintAtom,
-        query_part_position: usize,
-    ) -> Result<Option<IntermediateResult>, QueryExecError> {
-        let filter_data = match self.get_all_matches_for(query_atom) {
-            Some(data) => data,
-            None => return Ok(None),
-        };
-        let (intersection, position) = apply_and_to_indices(
-            &candidates.data,
-            candidates.position,
-            filter_data,
-            query_part_position as i32,
-        )?;
-
-        let packed = to_packed_index_data(intersection)?;
-
-        Ok(Some(IntermediateResult {
-            data: packed,
-            position,
-        }))
     }
 
     fn resolve_candidates(
@@ -344,37 +428,19 @@ impl CorpusQueryEngine {
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let mut profiler = TimeProfiler::new();
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
-        profiler.phase("Parse query");
-        if query.terms.is_empty() {
-            return Ok(empty_result());
-        }
-        let mut sorted_query = self.convert_query_v2(&query)?;
-        sorted_query.sort_by_key(|p| p.atoms[0].size_upper_bound);
-
-        let mut candidates = match self.execute_initial_part(&sorted_query[0]) {
-            Some(c) => c,
-            _none => return Ok(empty_result()),
-        };
-        profiler.phase("Initial");
-
-        for (i, part) in sorted_query.iter().skip(1).enumerate() {
-            if part.composition != "and" {
-                return Err(QueryExecError::new(&format!(
-                    "Unsupported composition: {}",
-                    part.composition
-                )));
-            }
-            candidates =
-                match self.filter_candidates_on(candidates, part.atoms[0].atom, part.position) {
-                    Ok(Some(c)) => c,
-                    Ok(_none) => return Ok(empty_result()),
-                    Err(e) => return Err(e),
-                };
-            profiler.phase(&format!("Filter {}", i + 1));
-        }
-
         let num_terms = query.terms.len();
-        let match_ids = self.resolve_candidates(&candidates, num_terms, &mut profiler)?;
+        let terms = query
+            .terms
+            .iter()
+            .map(|term| self.convert_query_term(term))
+            .collect::<Result<Vec<_>, _>>()?;
+        profiler.phase("Parse query");
+        let result = match self.compute_query_result(&terms)? {
+            Some(res) => res,
+            None => return Ok(empty_result()),
+        };
+
+        let match_ids = self.resolve_candidates(&result, num_terms, &mut profiler)?;
         profiler.phase("Check Candidates");
         let total_results = match_ids.len();
 
