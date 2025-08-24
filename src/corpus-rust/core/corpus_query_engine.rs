@@ -118,6 +118,7 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryEngine { corpus, token_db })
     }
 
+    /// Get the size bounds for a token constraint atom. This should be present in the raw data.
     fn get_bounds_for_atom(&self, atom: &TokenConstraintAtom) -> SizeBounds {
         let Some(index) = self.get_index_for(atom) else {
             return SizeBounds { upper: 0, lower: 0 };
@@ -134,6 +135,7 @@ impl CorpusQueryEngine {
         }
     }
 
+    /// Converts an atom to its internal representation.
     fn convert_atom<'a>(&self, atom: &'a TokenConstraintAtom) -> InternalAtom<'a> {
         InternalAtom {
             inner: atom,
@@ -141,6 +143,7 @@ impl CorpusQueryEngine {
         }
     }
 
+    /// Converts a constraint to its internal representation, calculating size bounds appropriately.
     fn convert_constraint<'a>(
         &self,
         constraint: &'a TokenConstraint,
@@ -209,6 +212,47 @@ impl CorpusQueryEngine {
         })
     }
 
+    fn compute_index_for_composed(
+        &self,
+        children: &[TokenConstraint],
+        op: &TokenConstraintOperation,
+    ) -> Result<Option<PackedIndexData>, QueryExecError> {
+        // Sort the children by their upper size bounds. For `and` operations, we want the
+        // smallest upper bound first so the most constrained children are considered first.
+        // For `or` operations, we want the largest upper bound first so that we hopefully
+        // start and stick with a bitmask.
+        let mut internal_children = children
+            .iter()
+            .map(|c| self.convert_constraint(c))
+            .collect::<Result<Vec<_>, _>>()?;
+        internal_children.sort_by_key(|c| c.size_bounds.upper);
+        if *op == TokenConstraintOperation::Or {
+            internal_children.reverse();
+        }
+
+        let first = internal_children
+            .first()
+            .ok_or(QueryExecError::new("Empty composed query"))?;
+        let mut data = match self.compute_index_for(first.inner)? {
+            Some(data) => data,
+            None => return Ok(None),
+        };
+
+        for child in internal_children.iter().skip(1) {
+            let child_data = match self.compute_index_for(child.inner)? {
+                Some(data) => data,
+                None => return Ok(None),
+            };
+            let combined = match op {
+                TokenConstraintOperation::And => apply_and_to_indices(&data, 0, &child_data, 0),
+                TokenConstraintOperation::Or => apply_or_to_indices(&data, 0, &child_data, 0),
+            };
+            data = to_packed_index_data(combined?.0)?;
+        }
+        Ok(Some(data))
+    }
+
+    /// Computes the candidate index for a particular token constraint.
     fn compute_index_for(
         &self,
         constraint: &TokenConstraint,
@@ -216,29 +260,7 @@ impl CorpusQueryEngine {
         match constraint {
             TokenConstraint::Atom(atom) => Ok(self.get_index_for(atom).cloned()),
             TokenConstraint::Composed { children, op } => {
-                let first = children
-                    .first()
-                    .ok_or(QueryExecError::new("Empty composed query"))?;
-                let mut data = match self.compute_index_for(first)? {
-                    Some(data) => data,
-                    None => return Ok(None),
-                };
-                for child in children.iter().skip(1) {
-                    let child_data = match self.compute_index_for(child)? {
-                        Some(data) => data,
-                        None => return Ok(None),
-                    };
-                    let combined = match op {
-                        TokenConstraintOperation::And => {
-                            apply_and_to_indices(&data, 0, &child_data, 0)
-                        }
-                        TokenConstraintOperation::Or => {
-                            apply_or_to_indices(&data, 0, &child_data, 0)
-                        }
-                    };
-                    data = to_packed_index_data(combined?.0)?;
-                }
-                Ok(Some(data))
+                self.compute_index_for_composed(children, op)
             }
             TokenConstraint::Negated(_) => {
                 Err(QueryExecError::new("Negated constraints are not supported"))
