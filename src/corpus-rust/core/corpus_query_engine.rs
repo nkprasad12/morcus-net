@@ -250,19 +250,28 @@ impl CorpusQueryEngine {
         &self,
         query: &Vec<InternalQueryTerm>,
     ) -> Result<Option<IntermediateResult>, QueryExecError> {
-        let first_term = query.first().ok_or(QueryExecError::new("Empty query"))?;
+        let mut indexed_terms: Vec<(usize, &InternalQueryTerm)> =
+            query.iter().enumerate().collect();
+        indexed_terms.sort_by_key(|(_, term)| term.constraint.size_bounds.upper);
+
+        let (first_original_index, first_term) = indexed_terms
+            .first()
+            .ok_or(QueryExecError::new("Empty query"))?;
         let mut data = match self.compute_index_for(first_term.constraint.inner)? {
             Some(data) => data,
             _ => return Ok(None),
         };
-        let mut position = 0;
-        for (i, term) in query.iter().enumerate().skip(1) {
+        let mut position = *first_original_index as i32;
+
+        for (original_index, term) in indexed_terms.iter().skip(1) {
             let term_data = match self.compute_index_for(term.constraint.inner)? {
                 Some(data) => data,
                 _ => return Ok(None),
             };
             let result = match term.relation {
-                QueryRelation::After => apply_and_to_indices(&data, position, &term_data, i as i32),
+                QueryRelation::After | QueryRelation::First => {
+                    apply_and_to_indices(&data, position, &term_data, *original_index as i32)
+                }
                 _ => return Err(QueryExecError::new("Unsupported query relation")),
             }?;
             data = to_packed_index_data(result.0)?;
