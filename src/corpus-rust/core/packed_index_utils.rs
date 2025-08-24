@@ -165,7 +165,6 @@ pub fn apply_and_to_indices(
                 )
             };
             let result = IndexData::PackedBitMask(PackedBitMask {
-                format: "bitmask".to_string(),
                 data,
                 num_set: None, // We don't calculate num_set here for performance.
             });
@@ -214,7 +213,6 @@ pub fn apply_or_to_indices(
                 )
             };
             let result = IndexData::PackedBitMask(PackedBitMask {
-                format: "bitmask".to_string(),
                 data,
                 num_set: None, // We don't calculate num_set here for performance.
             });
@@ -225,7 +223,6 @@ pub fn apply_or_to_indices(
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, offset);
             Ok((
                 IndexData::PackedBitMask(PackedBitMask {
-                    format: "bitmask".to_string(),
                     data: overlaps,
                     num_set: None,
                 }),
@@ -237,7 +234,6 @@ pub fn apply_or_to_indices(
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, -offset);
             Ok((
                 IndexData::PackedBitMask(PackedBitMask {
-                    format: "bitmask".to_string(),
                     data: overlaps,
                     num_set: None,
                 }),
@@ -891,7 +887,6 @@ mod tests {
     #[test]
     fn apply_or_to_indices_bitmask_array() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
@@ -902,7 +897,6 @@ mod tests {
         assert_eq!(
             result,
             IndexData::PackedBitMask(PackedBitMask {
-                format: "bitmask".to_string(),
                 data: expected_data,
                 num_set: None
             })
@@ -914,7 +908,6 @@ mod tests {
     fn apply_or_to_indices_array_bitmask() {
         let candidates = IndexData::PackedNumbers(pack_nats(&[1, 2, 5]));
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
@@ -923,7 +916,6 @@ mod tests {
         assert_eq!(
             result,
             IndexData::PackedBitMask(PackedBitMask {
-                format: "bitmask".to_string(),
                 data: expected_data,
                 num_set: None
             })
@@ -934,12 +926,10 @@ mod tests {
     #[test]
     fn apply_or_to_indices_bitmask_bitmask() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[0, 2, 4], 64),
             num_set: None,
         });
@@ -948,7 +938,6 @@ mod tests {
         assert_eq!(
             result,
             IndexData::PackedBitMask(PackedBitMask {
-                format: "bitmask".to_string(),
                 data: expected_data,
                 num_set: None
             })
@@ -968,7 +957,6 @@ mod tests {
     #[test]
     fn apply_and_to_indices_bitmask_array() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
@@ -982,7 +970,6 @@ mod tests {
     fn apply_and_to_indices_array_bitmask() {
         let candidates = IndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
@@ -994,12 +981,10 @@ mod tests {
     #[test]
     fn apply_and_to_indices_bitmask_bitmask() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[1, 3, 4], 64),
             num_set: None,
         });
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&[0, 2, 4], 64),
             num_set: None,
         });
@@ -1008,7 +993,6 @@ mod tests {
         assert_eq!(
             result,
             IndexData::PackedBitMask(PackedBitMask {
-                format: "bitmask".to_string(),
                 data: expected_data,
                 num_set: None
             })
@@ -1028,7 +1012,6 @@ mod tests {
     fn unpack_packed_index_data_from_bitmask() {
         let original_data = vec![31, 32, 65, 127];
         let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: to_bitmask(&original_data, 128),
             num_set: None,
         });
@@ -1040,7 +1023,6 @@ mod tests {
     fn has_value_in_range_bitmask_should_return_true_if_value_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
         let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: bitmask,
             num_set: Some(2),
         });
@@ -1052,7 +1034,6 @@ mod tests {
     fn has_value_in_range_bitmask_should_return_false_if_value_not_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
         let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: bitmask,
             num_set: Some(2),
         });
@@ -1064,7 +1045,6 @@ mod tests {
     fn has_value_in_range_bitmask_should_handle_word_boundaries() {
         let bitmask = to_bitmask(&[63, 64], 128);
         let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: bitmask,
             num_set: Some(2),
         });
@@ -1100,7 +1080,6 @@ mod tests {
     fn max_elements_in_should_return_num_set_for_bitmask_if_present() {
         let bitmask = to_bitmask(&[10, 70], 128);
         let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: bitmask,
             num_set: Some(2),
         });
@@ -1111,7 +1090,6 @@ mod tests {
     fn max_elements_in_should_return_max_capacity_for_bitmask_if_num_set_not_present() {
         let bitmask = to_bitmask(&[10, 70], 128); // 128 bits = 2 u64 words
         let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            format: "bitmask".to_string(),
             data: bitmask,
             num_set: None,
         });

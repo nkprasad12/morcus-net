@@ -128,7 +128,6 @@ where
                                 .map_err(de::Error::custom)?;
 
                             IndexData::PackedBitMask(PackedBitMask {
-                                format: "bitmask".to_string(),
                                 data: u64_data,
                                 num_set: Some(size),
                             })

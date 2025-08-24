@@ -10,7 +10,6 @@ pub enum IndexData {
 
 #[derive(Debug, Deserialize, PartialEq, Clone)]
 pub struct PackedBitMask {
-    pub format: String,
     #[serde(deserialize_with = "deserialize_u64_vec_from_bytes_with_serde")]
     pub data: Vec<u64>,
     #[serde(rename = "numSet")]
