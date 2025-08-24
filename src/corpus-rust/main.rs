@@ -32,7 +32,7 @@ fn query_with_timing<'a>(
     if !results.timing.is_empty() {
         println!("Query timing breakdown:");
         for (k, v) in &results.timing {
-            println!("  {}: {:.2} ms", k, *v);
+            println!("  {}: {:.3} ms", k, *v);
         }
     }
     Ok(results)

@@ -249,6 +249,7 @@ impl CorpusQueryEngine {
     fn compute_query_result(
         &self,
         query: &Vec<InternalQueryTerm>,
+        profiler: &mut TimeProfiler,
     ) -> Result<Option<IntermediateResult>, QueryExecError> {
         let mut indexed_terms: Vec<(usize, &InternalQueryTerm)> =
             query.iter().enumerate().collect();
@@ -261,6 +262,7 @@ impl CorpusQueryEngine {
             Some(data) => data,
             _ => return Ok(None),
         };
+        profiler.phase("Initial candidates");
         let mut position = *first_original_index as i32;
 
         for (original_index, term) in indexed_terms.iter().skip(1) {
@@ -275,7 +277,8 @@ impl CorpusQueryEngine {
                 _ => return Err(QueryExecError::new("Unsupported query relation")),
             }?;
             data = to_packed_index_data(result.0)?;
-            position = result.1
+            profiler.phase(format!("Filter from {}", original_index).as_str());
+            position = result.1;
         }
         Ok(Some(IntermediateResult { data, position }))
     }
@@ -444,7 +447,7 @@ impl CorpusQueryEngine {
             .map(|term| self.convert_query_term(term))
             .collect::<Result<Vec<_>, _>>()?;
         profiler.phase("Parse query");
-        let result = match self.compute_query_result(&terms)? {
+        let result = match self.compute_query_result(&terms, &mut profiler)? {
             Some(res) => res,
             None => return Ok(empty_result()),
         };
