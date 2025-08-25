@@ -14,7 +14,6 @@ use super::profiler::TimeProfiler;
 use rusqlite::Connection;
 use serde::Serialize;
 use std::cmp::{max, min};
-use std::path::Path;
 
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
@@ -109,10 +108,35 @@ pub struct CorpusQueryEngine {
     token_db: Connection,
 }
 
+fn load_token_db(path: &str, in_memory: bool) -> Result<Connection, rusqlite::Error> {
+    let disk_db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+    if !in_memory {
+        disk_db.pragma_update(None, "journal_mode", "WAL")?;
+        disk_db.pragma_update(None, "synchronous", "OFF")?;
+        disk_db.pragma_update(None, "temp_store", "MEMORY")?;
+        // Allow 32 MB of cached pages in memory.
+        disk_db.pragma_update(None, "cache_size", "-32000")?;
+        return Ok(disk_db);
+    }
+
+    let mut mem_db = Connection::open_in_memory()?;
+    // Perform the backup in a new scope. The backup operation won't release the borrow of mem_db until
+    // it is dropped.
+    {
+        let backup = rusqlite::backup::Backup::new(&disk_db, &mut mem_db)?;
+        backup.step(-1)?;
+    }
+
+    mem_db.pragma_update(None, "journal_mode", "OFF")?;
+    mem_db.pragma_update(None, "synchronous", "OFF")?;
+    mem_db.pragma_update(None, "temp_store", "MEMORY")?;
+    // The same as above, but note that we don't need to set the cache size for in-memory databases.
+    Ok(mem_db)
+}
+
 impl CorpusQueryEngine {
-    pub fn new(corpus: LatinCorpusIndex) -> Result<Self, rusqlite::Error> {
-        let db_path = Path::new(&corpus.raw_text_db);
-        let token_db = Connection::open(db_path)?;
+    pub fn new(corpus: LatinCorpusIndex, high_memory: bool) -> Result<Self, rusqlite::Error> {
+        let token_db = load_token_db(&corpus.raw_text_db, high_memory)?;
         Ok(CorpusQueryEngine { corpus, token_db })
     }
 
