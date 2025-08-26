@@ -3,23 +3,30 @@ name = "morcus-rust"
 version = "0.1.0"
 edition = "2024"
 
-[[bin]]
-name = "query-engine"
-path = "src/corpus-rust/main.rs"
+[workspace]
+members = ["corpus_rust_wrapper"]
+
+[workspace.dependencies]
+node-bindgen = "6.0"
+serde_json = "1.0"
 
 [dependencies]
 base64 = "0.21.5"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
-serde_bytes = "0.11"
-rusqlite = { version = "0.30", features = ["backup", "bundled"] }
+node-bindgen.workspace = true
 regex = "1"
-node-bindgen = { version = "6.0" }
+rusqlite = { version = "0.30", features = ["backup", "bundled"] }
+serde = { version = "1.0", features = ["derive"] }
+serde_bytes = "0.11"
+serde_json.workspace = true
 
 [build-dependencies]
 node-bindgen = { version = "6.0", default-features = false, features = ["build"] }
 
+[[bin]]
+name = "cli"
+path = "src/corpus-rust/main.rs"
+
 [lib]
-crate-type = ["cdylib"]
+crate-type = ["rlib"]
 path = "src/corpus-rust/lib.rs"
 

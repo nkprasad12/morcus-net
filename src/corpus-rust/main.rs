@@ -123,5 +123,5 @@ fn main() {
 
 /*
 Run with:
-cargo run --release query-engine --query "@lemma:do oscula @case:dat" --limit 7
+cargo run --release cli --query "@lemma:do oscula @case:dat" --limit 7
 */

@@ -21,7 +21,7 @@ export class RustCorpusQueryEngine {
 
   constructor(corpusDir: string) {
     // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const query_engine = require(`${process.cwd()}/build/corpus-rust`);
+    const query_engine = require(`${process.cwd()}/build/corpus-rust-bindings`);
     this.engine = new query_engine.QueryEngineWrapper(corpusDir);
   }
 
