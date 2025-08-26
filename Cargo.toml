@@ -19,6 +19,9 @@ serde = { version = "1.0", features = ["derive"] }
 serde_bytes = "0.11"
 serde_json.workspace = true
 
+[dev-dependencies]
+criterion = "0.3"
+
 [build-dependencies]
 node-bindgen = { version = "6.0", default-features = false, features = ["build"] }
 
@@ -26,7 +29,10 @@ node-bindgen = { version = "6.0", default-features = false, features = ["build"]
 name = "cli"
 path = "src/corpus-rust/main.rs"
 
+[[bench]]
+name = "corpus_bench"
+harness = false
+
 [lib]
 crate-type = ["rlib"]
 path = "src/corpus-rust/lib.rs"
-
