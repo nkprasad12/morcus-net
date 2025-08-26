@@ -26,3 +26,9 @@ impl TimeProfiler {
         &self.stats
     }
 }
+
+impl Default for TimeProfiler {
+    fn default() -> Self {
+        Self::new()
+    }
+}
