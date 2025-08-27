@@ -20,9 +20,13 @@ export class RustCorpusQueryEngine {
   private readonly engine: any;
 
   constructor(corpusDir: string) {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const query_engine = require(`${process.cwd()}/build/corpus-rust-bindings`);
-    this.engine = new query_engine.QueryEngineWrapper(corpusDir);
+    try {
+      // eslint-disable-next-line @typescript-eslint/no-require-imports
+      const query_engine = require(`${process.cwd()}/build/corpus-rust-bindings`);
+      this.engine = new query_engine.QueryEngineWrapper(corpusDir);
+    } catch (error) {
+      throw "Missing Rust corpus bindings. Run `npm run setup-node-bindgen`.";
+    }
   }
 
   queryCorpus(
@@ -33,7 +37,7 @@ export class RustCorpusQueryEngine {
     if (query.length > 100) {
       throw new Error("Query is too long");
     }
-    const raw = this.engine.query(query, pageStart ?? 0, pageSize ?? 50);
+    const raw = this.engine.query(query, pageStart ?? 0, pageSize ?? 50, 25);
     return assertType(JSON.parse(raw), CorpusQueryResult.isMatch);
   }
 }
