@@ -10,7 +10,7 @@ edition = "2024"
 serde_json = "1.0"
 
 [dependencies]
-corpus_rust = { path = "corpus_rust" }
+corpus = { path = "corpus_rust" }
 node-bindgen = "6.0"
 serde_json.workspace = true
 

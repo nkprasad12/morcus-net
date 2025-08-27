@@ -127,5 +127,5 @@ fn main() {
 
 /*
 Run with:
-cargo run --package corpus_rust --release cli --query "@lemma:do oscula @case:dat" --limit 7
+cargo run --package corpus --release cli --query "@lemma:do oscula @case:dat" --limit 7
 */
