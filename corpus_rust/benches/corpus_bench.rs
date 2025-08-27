@@ -1,5 +1,5 @@
+use corpus_rust::core::packed_index_utils::smear_bitmask;
 use criterion::{Criterion, criterion_group, criterion_main};
-use morcus_rust::core::packed_index_utils::smear_bitmask;
 
 const POW_2_24: u32 = 1 << 24;
 

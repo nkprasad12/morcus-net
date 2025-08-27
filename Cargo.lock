@@ -324,10 +324,23 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "773648b94d0e5d620f64f280777445740e61fe701025087ec8b57f45c791888b"
 
 [[package]]
+name = "corpus_rust"
+version = "0.1.0"
+dependencies = [
+ "base64",
+ "criterion",
+ "regex",
+ "rusqlite",
+ "serde",
+ "serde_bytes",
+ "serde_json",
+]
+
+[[package]]
 name = "corpus_rust_wrapper"
 version = "0.1.0"
 dependencies = [
- "morcus-rust",
+ "corpus_rust",
  "node-bindgen",
  "serde_json",
 ]
@@ -751,20 +764,6 @@ name = "memchr"
 version = "2.7.5"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "32a282da65faaf38286cf3be983213fcf1d2e2a58700e808f83f4ea9a4804bc0"
-
-[[package]]
-name = "morcus-rust"
-version = "0.1.0"
-dependencies = [
- "base64",
- "criterion",
- "node-bindgen",
- "regex",
- "rusqlite",
- "serde",
- "serde_bytes",
- "serde_json",
-]
 
 [[package]]
 name = "native-tls"
