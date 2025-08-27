@@ -52,11 +52,6 @@ fn get_quiet_arg() -> bool {
     args.contains(&"--quiet".to_string())
 }
 
-fn get_high_mem_arg() -> bool {
-    let args: Vec<String> = env::args().collect();
-    args.contains(&"--high-mem".to_string())
-}
-
 fn get_query_arg_or_exit() -> String {
     let args: Vec<String> = env::args().collect();
     if let Some(pos) = args.iter().position(|a| a == "--query")
@@ -65,7 +60,7 @@ fn get_query_arg_or_exit() -> String {
         return q.clone();
     }
     eprintln!(
-        "Usage: {} --query <QUERY> [--limit <N>] [--context <N>] [--high-mem] [--quiet]",
+        "Usage: {} --query <QUERY> [--limit <N>] [--context <N>] [--quiet]",
         args.first().unwrap_or(&"program".to_string())
     );
     std::process::exit(1);
@@ -124,8 +119,8 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
 
 fn main() {
     let corpus = load_corpus_with_timing(CORPUS_ROOT);
-    let engine = corpus_query_engine::CorpusQueryEngine::new(corpus, get_high_mem_arg())
-        .expect("Failed to create query engine");
+    let engine =
+        corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
     let query_str = get_query_arg_or_exit();
     print_query_results(&engine, &query_str);
 }

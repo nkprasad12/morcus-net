@@ -103,41 +103,44 @@ struct IntermediateResult {
     position: i32,
 }
 
-pub struct CorpusQueryEngine {
-    corpus: LatinCorpusIndex,
-    token_db: Connection,
+struct TokenData {
+    tokens: Vec<u32>,
+    breaks: Vec<u32>,
+    text: String,
 }
 
-fn load_token_db(path: &str, in_memory: bool) -> Result<Connection, rusqlite::Error> {
-    let disk_db = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
-    if !in_memory {
-        disk_db.pragma_update(None, "journal_mode", "WAL")?;
-        disk_db.pragma_update(None, "synchronous", "OFF")?;
-        disk_db.pragma_update(None, "temp_store", "MEMORY")?;
-        // Allow 32 MB of cached pages in memory.
-        disk_db.pragma_update(None, "cache_size", "-32000")?;
-        return Ok(disk_db);
+pub struct CorpusQueryEngine {
+    corpus: LatinCorpusIndex,
+    token_data: TokenData,
+}
+
+fn load_token_data(path: &str, num_tokens: usize) -> Result<TokenData, rusqlite::Error> {
+    let conn = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
+    let mut stmt = conn.prepare("SELECT token, break FROM raw_text")?;
+    let mut rows = stmt.query([])?;
+
+    let mut tokens = Vec::with_capacity(num_tokens);
+    let mut breaks = Vec::with_capacity(num_tokens);
+    let mut text = String::new();
+
+    while let Some(row) = rows.next()? {
+        tokens.push(text.len() as u32);
+        text.push_str(&row.get::<_, String>(0)?);
+        breaks.push(text.len() as u32);
+        text.push_str(&row.get::<_, String>(1)?);
     }
 
-    let mut mem_db = Connection::open_in_memory()?;
-    // Perform the backup in a new scope. The backup operation won't release the borrow of mem_db until
-    // it is dropped.
-    {
-        let backup = rusqlite::backup::Backup::new(&disk_db, &mut mem_db)?;
-        backup.step(-1)?;
-    }
-
-    mem_db.pragma_update(None, "journal_mode", "OFF")?;
-    mem_db.pragma_update(None, "synchronous", "OFF")?;
-    mem_db.pragma_update(None, "temp_store", "MEMORY")?;
-    // The same as above, but note that we don't need to set the cache size for in-memory databases.
-    Ok(mem_db)
+    Ok(TokenData {
+        tokens,
+        breaks,
+        text,
+    })
 }
 
 impl CorpusQueryEngine {
-    pub fn new(corpus: LatinCorpusIndex, high_memory: bool) -> Result<Self, rusqlite::Error> {
-        let token_db = load_token_db(&corpus.raw_text_db, high_memory)?;
-        Ok(CorpusQueryEngine { corpus, token_db })
+    pub fn new(corpus: LatinCorpusIndex) -> Result<Self, rusqlite::Error> {
+        let token_data = load_token_data(&corpus.raw_text_db, corpus.stats.total_words as usize)?;
+        Ok(CorpusQueryEngine { corpus, token_data })
     }
 
     /// Get the size bounds for a token constraint atom. This should be present in the raw data.
@@ -426,40 +429,21 @@ impl CorpusQueryEngine {
         let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
         let row_idx = row_info.0 as usize;
 
-        let start_rowid = token_id.saturating_sub(context_len as u32);
-        let limit = query_length + (context_len * 2);
-        let mut stmt = self
-            .token_db
-            .prepare("SELECT token, break, rowid FROM raw_text WHERE rowid >= ? LIMIT ?")?;
+        let left_start_idx = max(0, token_id.saturating_sub(context_len as u32)) as usize;
+        let right_end_idx = min(
+            token_id as usize + query_length + context_len,
+            self.corpus.stats.total_words as usize,
+        );
 
-        let mut rows = stmt.query([start_rowid, limit as u32])?;
+        let left_start_byte = self.token_data.tokens[left_start_idx] as usize;
+        let text_start_byte = self.token_data.tokens[token_id as usize] as usize;
+        let right_start_byte =
+            self.token_data.breaks[token_id as usize + query_length - 1] as usize;
+        let right_end_byte = self.token_data.breaks[right_end_idx - 1] as usize;
 
-        let mut left_context = String::new();
-        let mut text = String::new();
-        let mut right_context = String::new();
-
-        while let Some(row) = rows.next()? {
-            let token: String = row.get(0)?;
-            let break_str: String = row.get(1)?;
-            let n: u32 = row.get(2)?;
-
-            if n < token_id {
-                left_context.push_str(&token);
-                left_context.push_str(&break_str);
-                continue;
-            }
-            if n < token_id + query_length as u32 {
-                text.push_str(&token);
-                if n < token_id + query_length as u32 - 1 {
-                    text.push_str(&break_str);
-                } else {
-                    right_context.push_str(&break_str);
-                }
-                continue;
-            }
-            right_context.push_str(&token);
-            right_context.push_str(&break_str);
-        }
+        let left_context = self.token_data.text[left_start_byte..text_start_byte].to_string();
+        let text = self.token_data.text[text_start_byte..right_start_byte].to_string();
+        let right_context = self.token_data.text[right_start_byte..right_end_byte].to_string();
 
         Ok(CorpusQueryMatch {
             work_id,
