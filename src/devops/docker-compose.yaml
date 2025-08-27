@@ -60,7 +60,7 @@ services:
     profiles: [staging]
 
   prod:
-    image: "${CONTAINER_REGISTRY}morcus:main-latest"
+    image: "${CONTAINER_REGISTRY}morcus:${PROD_TAG:-main-latest}"
     environment:
       DB_SOURCE: "${DB_TAG:-prod}"
       GITHUB_TOKEN: "${GITHUB_TOKEN}"

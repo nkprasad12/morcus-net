@@ -10,7 +10,7 @@ on:
 
 jobs:
   presubmit-checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 7
 
     steps:
@@ -43,7 +43,7 @@ jobs:
           directory: ./coverage
 
   pytype-checks:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 6
 
     steps:
@@ -58,13 +58,22 @@ jobs:
         run: npm run pytype
 
   build-image:
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-24.04
+            tag_suffix: ""
+          - arch: arm64
+            os: ubuntu-24.04-arm
+            tag_suffix: -arm
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 9
     env:
-      CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}
-      LATEST: ghcr.io/nkprasad12/morcus:dev-latest
-      PREVIOUS: ghcr.io/nkprasad12/morcus:dev-previous
-      PR_LATEST: ghcr.io/nkprasad12/morcus:pr-latest
+      CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}
+      LATEST: ghcr.io/nkprasad12/morcus:dev-latest${{ matrix.tag_suffix }}
+      PREVIOUS: ghcr.io/nkprasad12/morcus:dev-previous${{ matrix.tag_suffix }}
+      PR_LATEST: ghcr.io/nkprasad12/morcus:pr-latest${{ matrix.tag_suffix }}
 
     steps:
       - uses: actions/checkout@v4
@@ -90,7 +99,16 @@ jobs:
 
   validate-image:
     needs: [build-image]
-    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - arch: amd64
+            os: ubuntu-24.04
+            tag_suffix: ""
+          - arch: arm64
+            os: ubuntu-24.04-arm
+            tag_suffix: -arm
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 10
 
     steps:
@@ -104,19 +122,19 @@ jobs:
       - name: Installing browsers
         run: npx playwright install --with-deps
       - name: Pulling docker image
-        run: docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}
+        run: docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}
       - name: Running integration checks
-        run: IMAGE_TAG=${{ github.sha }} npm run integration-tests
+        run: IMAGE_TAG=${{ github.sha }}${{ matrix.tag_suffix }} npm run integration-tests
       - name: Upload test report
         uses: actions/upload-artifact@v4
         if: ${{ !cancelled() }}
         with:
-          name: functional-test-report
+          name: functional-test-report-${{ matrix.arch }}
           path: playwright-report/
 
   e2e-performance:
     needs: [build-image]
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 10
     strategy:
       matrix:
