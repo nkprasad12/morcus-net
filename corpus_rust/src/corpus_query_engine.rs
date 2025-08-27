@@ -1,5 +1,5 @@
-use crate::core::packed_index_utils::apply_or_to_indices;
-use crate::core::query_parsing_v2::{
+use crate::packed_index_utils::apply_or_to_indices;
+use crate::query_parsing_v2::{
     QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
     parse_query,
 };

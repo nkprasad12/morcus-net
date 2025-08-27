@@ -455,7 +455,7 @@ pub fn max_elements_in(packed_data: &IndexData) -> Option<usize> {
 mod tests {
     use super::packed_arrays;
     use super::*;
-    use crate::core::common::{IndexData, PackedBitMask};
+    use crate::common::{IndexData, PackedBitMask};
 
     fn pack_nats(numbers: &[u32]) -> Vec<u8> {
         packed_arrays::pack_sorted_nats(numbers).unwrap()

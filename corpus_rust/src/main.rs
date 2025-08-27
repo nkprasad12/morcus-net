@@ -1,9 +1,7 @@
-mod core;
-
 use std::env;
 use std::time::Instant;
 
-use crate::core::{
+use corpus::{
     corpus_query_engine::{self, CorpusQueryEngine, CorpusQueryResult, QueryExecError},
     corpus_serialization,
 };

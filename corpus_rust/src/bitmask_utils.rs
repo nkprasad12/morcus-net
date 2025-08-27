@@ -146,7 +146,7 @@ define_apply_op_with_bitmasks!(apply_or_with_bitmasks, |, "|");
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::core::packed_index_utils::to_bitmask;
+    use crate::packed_index_utils::to_bitmask;
 
     fn apply_and_with_boolean_arrays(first: &[bool], second: &[bool], offset: usize) -> Vec<bool> {
         let mut result = vec![false; first.len()];

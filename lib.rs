@@ -3,9 +3,7 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 
-use corpus::core::{
-    corpus_query_engine::CorpusQueryEngine, corpus_serialization::deserialize_corpus,
-};
+use corpus::{corpus_query_engine::CorpusQueryEngine, corpus_serialization::deserialize_corpus};
 
 use node_bindgen::derive::node_bindgen;
 

@@ -1,4 +1,4 @@
-use corpus::core::packed_index_utils::smear_bitmask;
+use corpus::packed_index_utils::smear_bitmask;
 use criterion::{Criterion, criterion_group, criterion_main};
 
 const POW_2_24: u32 = 1 << 24;

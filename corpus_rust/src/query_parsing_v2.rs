@@ -454,7 +454,7 @@ pub fn parse_query(input: &str) -> Result<Query, QueryParseError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::core::analyzer_types::{LatinCase, LatinGender, LatinMood};
+    use crate::analyzer_types::{LatinCase, LatinGender, LatinMood};
 
     use super::*;
 
