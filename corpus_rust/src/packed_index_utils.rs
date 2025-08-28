@@ -141,11 +141,11 @@ fn unpack_known_numbers(data: &IndexData) -> Result<Vec<u32>, String> {
 /// Applies an `and` to determine the intersection between two indices.
 pub fn apply_and_to_indices(
     first: &IndexData,
-    first_position: i32,
+    first_position: u32,
     second: &IndexData,
-    second_position: i32,
-) -> Result<(IndexData, i32), String> {
-    let offset = first_position - second_position;
+    second_position: u32,
+) -> Result<(IndexData, u32), String> {
+    let offset = first_position as i32 - second_position as i32;
 
     match (first, second) {
         (IndexData::PackedBitMask(bm1), IndexData::PackedBitMask(bm2)) => {
@@ -193,11 +193,11 @@ pub fn apply_and_to_indices(
 
 pub fn apply_or_to_indices(
     first: &IndexData,
-    first_position: i32,
+    first_position: u32,
     second: &IndexData,
-    second_position: i32,
-) -> Result<(IndexData, i32), String> {
-    let offset = first_position - second_position;
+    second_position: u32,
+) -> Result<(IndexData, u32), String> {
+    let offset = first_position as i32 - second_position as i32;
 
     match (first, second) {
         (IndexData::PackedBitMask(bm1), IndexData::PackedBitMask(bm2)) => {
