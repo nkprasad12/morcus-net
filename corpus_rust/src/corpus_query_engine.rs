@@ -137,12 +137,8 @@ fn load_token_data(path: &str, num_tokens: usize) -> Result<TokenData, rusqlite:
     })
 }
 
+// Methods for converting a query to an internal form.
 impl CorpusQueryEngine {
-    pub fn new(corpus: LatinCorpusIndex) -> Result<Self, rusqlite::Error> {
-        let token_data = load_token_data(&corpus.raw_text_db, corpus.stats.total_words as usize)?;
-        Ok(CorpusQueryEngine { corpus, token_data })
-    }
-
     /// Get the size bounds for a token constraint atom. This should be present in the raw data.
     fn get_bounds_for_atom(&self, atom: &TokenConstraintAtom) -> SizeBounds {
         let Some(index) = self.get_index_for(atom) else {
@@ -236,7 +232,10 @@ impl CorpusQueryEngine {
             constraint,
         })
     }
+}
 
+// Basic methods for calculating indices corresponding to query terms.
+impl CorpusQueryEngine {
     fn compute_index_for_composed(
         &self,
         children: &[TokenConstraint],
@@ -293,7 +292,7 @@ impl CorpusQueryEngine {
         }
     }
 
-    fn compute_query_result(
+    fn compute_query_candidates(
         &self,
         query: &Vec<InternalQueryTerm>,
         profiler: &mut TimeProfiler,
@@ -330,34 +329,36 @@ impl CorpusQueryEngine {
 
     fn get_index_for(&self, part: &TokenConstraintAtom) -> Option<&IndexData> {
         match part {
-            TokenConstraintAtom::Word(word) => {
-                self.corpus.indices.get("word")?.get(&word.to_lowercase())
+            TokenConstraintAtom::Word(word) => self.get_index("word", &word.to_lowercase()),
+            TokenConstraintAtom::Lemma(lemma) => self.get_index("lemma", lemma),
+            &TokenConstraintAtom::Inflection(inflection) => {
+                self.get_index(inflection.get_label(), &inflection.get_code())
             }
-            TokenConstraintAtom::Lemma(lemma) => self.corpus.indices.get("lemma")?.get(lemma),
-            &TokenConstraintAtom::Inflection(inflection) => self
-                .corpus
-                .indices
-                .get(inflection.get_label())?
-                .get(&inflection.get_code()),
         }
     }
 
-    fn resolve_candidates(
+    fn get_index(&self, key: &str, value: &str) -> Option<&IndexData> {
+        self.corpus.indices.get(key)?.get(value)
+    }
+}
+
+// Core, high level logic for query execution.
+impl CorpusQueryEngine {
+    pub fn new(corpus: LatinCorpusIndex) -> Result<Self, rusqlite::Error> {
+        let token_data = load_token_data(&corpus.raw_text_db, corpus.stats.total_words as usize)?;
+        Ok(CorpusQueryEngine { corpus, token_data })
+    }
+
+    /// Filters a list of candidates into just the actual matches.
+    fn filter_candidates(
         &self,
         candidates: &IntermediateResult,
         query_length: usize,
         profiler: &mut TimeProfiler,
     ) -> Result<Vec<u32>, QueryExecError> {
-        let hard_breaks = match self
-            .corpus
-            .indices
-            .get("breaks")
-            .and_then(|m| m.get("hard"))
-        {
-            Some(b) => b,
-            _none => return Err(QueryExecError::new("No hard breaks index found")),
-        };
-
+        let hard_breaks = self
+            .get_index("breaks", "hard")
+            .ok_or(QueryExecError::new("No hard breaks index found"))?;
         let unpacked = unpack_packed_index_data(&candidates.data)?;
         profiler.phase("Unpack Candidates");
         // There can be no hard breaks between tokens without multiple tokens.
@@ -383,7 +384,8 @@ impl CorpusQueryEngine {
         Ok(matches)
     }
 
-    fn resolve_result(
+    /// Resolves a match token into a full result.
+    fn resolve_match_token(
         &self,
         token_id: u32,
         query_length: usize,
@@ -465,6 +467,7 @@ impl CorpusQueryEngine {
         context_len: Option<usize>,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let mut profiler = TimeProfiler::new();
+        // Assemble the query
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
         let num_terms = query.terms.len();
         let terms = query
@@ -473,25 +476,26 @@ impl CorpusQueryEngine {
             .map(|term| self.convert_query_term(term))
             .collect::<Result<Vec<_>, _>>()?;
         profiler.phase("Parse query");
-        let result = match self.compute_query_result(&terms, &mut profiler)? {
+
+        // Find the possible matches, then filter them
+        let candidates = match self.compute_query_candidates(&terms, &mut profiler)? {
             Some(res) => res,
             None => return Ok(empty_result()),
         };
+        let match_ids = self.filter_candidates(&candidates, num_terms, &mut profiler)?;
+        profiler.phase("Filter Candidates");
 
-        let match_ids = self.resolve_candidates(&result, num_terms, &mut profiler)?;
-        profiler.phase("Check Candidates");
+        // Turn the match IDs into actual matches (with the text and locations).
         let total_results = match_ids.len();
-
-        let page_size_val = page_size.unwrap_or(total_results);
-        let end = (page_start + page_size_val).min(total_results);
-
+        let page_size = page_size.unwrap_or(total_results);
+        let end = (page_start + page_size).min(total_results);
         let context_len = context_len
             .unwrap_or(DEFAULT_CONTEXT_LEN)
             .clamp(1, MAX_CONTEXT_LEN);
         let matches = if page_start < total_results {
             match_ids[page_start..end]
                 .iter()
-                .map(|&id| self.resolve_result(id, num_terms, context_len))
+                .map(|&id| self.resolve_match_token(id, num_terms, context_len))
                 .collect::<Result<Vec<_>, _>>()?
         } else {
             vec![]
