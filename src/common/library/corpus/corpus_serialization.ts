@@ -83,12 +83,12 @@ function deserializeCorpus(jsonString: string): LatinCorpusIndex {
  */
 function serializeCorpus(obj: InProgressLatinCorpus): string {
   const packedNumberSize = Math.ceil(Math.log2(obj.numTokens));
-  const replacer = (_key: string, value: any) => {
+  const replacer = (key: string, value: any) => {
     if (value instanceof Map) {
       return {
         serializationKey: MAP_TOKEN,
         numTokens: obj.numTokens,
-        data: prepareIndexMap(value, obj.numTokens, packedNumberSize),
+        data: prepareIndexMap(value, obj.numTokens, packedNumberSize, key),
       };
     }
     return value;
@@ -99,10 +99,13 @@ function serializeCorpus(obj: InProgressLatinCorpus): string {
 function prepareIndexMap(
   indexMap: Map<unknown, number[]>,
   numTokens: number,
-  packedNumberSize: number
+  packedNumberSize: number,
+  outerKey: string
 ): [unknown, StoredMapValue][] {
   return Array.from(indexMap.entries()).map(([key, value]) => {
-    const useBitMask = value.length * packedNumberSize > numTokens;
+    const useBitMask =
+      value.length * packedNumberSize > numTokens ||
+      (outerKey === "breaks" && key === "hard");
     const indexBits = useBitMask
       ? Buffer.from(toBitMask(value, numTokens).buffer).toString("base64")
       : Buffer.from(packSortedNats(value)).toString("base64");

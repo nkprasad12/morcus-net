@@ -1,4 +1,5 @@
-use crate::packed_index_utils::apply_or_to_indices;
+use crate::common::PackedBitMask;
+use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask};
 use crate::query_parsing_v2::{
     QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
     parse_query,
@@ -6,9 +7,7 @@ use crate::query_parsing_v2::{
 
 use super::common::IndexData;
 use super::corpus_serialization::LatinCorpusIndex;
-use super::packed_index_utils::{
-    apply_and_to_indices, has_value_in_range, max_elements_in, unpack_packed_index_data,
-};
+use super::packed_index_utils::{apply_and_to_indices, max_elements_in, unpack_packed_index_data};
 use super::profiler::TimeProfiler;
 
 use rusqlite::Connection;
@@ -349,39 +348,97 @@ impl CorpusQueryEngine {
         Ok(CorpusQueryEngine { corpus, token_data })
     }
 
+    /// Returns the hard breaks, verifying that it is a bitmask.
+    fn get_hard_breaks(&self) -> Result<&PackedBitMask, QueryExecError> {
+        let index = self
+            .get_index("breaks", "hard")
+            .ok_or(QueryExecError::new("No hard breaks index found"))?;
+        match index {
+            IndexData::PackedBitMask(pbm) => Ok(pbm),
+            _ => Err(QueryExecError::new("Hard breaks index is not a bitmask")),
+        }
+    }
+
+    /// Computes the page of results for the given parameters.
+    fn compute_page_result(
+        &self,
+        match_results: &IntermediateResult,
+        page_start: usize,
+        page_size: Option<usize>,
+    ) -> Result<(Vec<u32>, usize), QueryExecError> {
+        let position = match_results.position;
+        let matches = unpack_packed_index_data(&match_results.data)?;
+        // Skip any illegal matches
+        let mut i: usize = 0;
+        while i < matches.len() && matches[i] < position {
+            i += 1;
+        }
+
+        let total_results = matches.len() - i;
+        let page_size = page_size.unwrap_or(total_results);
+        let end = (page_start + page_size).min(total_results) + i;
+
+        let filtered = &matches[i..end]
+            .iter()
+            .map(|&x| x - position)
+            .collect::<Vec<_>>();
+        Ok((filtered.to_vec(), total_results))
+    }
+
     /// Filters a list of candidates into just the actual matches.
     fn filter_candidates(
         &self,
         candidates: &IntermediateResult,
         query_length: usize,
+        page_start: usize,
+        page_size: Option<usize>,
         profiler: &mut TimeProfiler,
-    ) -> Result<Vec<u32>, QueryExecError> {
-        let hard_breaks = self
-            .get_index("breaks", "hard")
-            .ok_or(QueryExecError::new("No hard breaks index found"))?;
-        let unpacked = unpack_packed_index_data(&candidates.data)?;
-        profiler.phase("Unpack Candidates");
+    ) -> Result<(Vec<u32>, usize), QueryExecError> {
         // There can be no hard breaks between tokens without multiple tokens.
         if query_length < 2 {
-            return Ok(unpacked);
+            return self.compute_page_result(candidates, page_start, page_size);
         }
-        let mut matches: Vec<u32> = Vec::new();
+        // We compute a break mask, which is the negation of the hard breaks smeared left.
+        // We will eventually do an index AND with this.
+        // For example, consider a query length of 3.
+        // We would smear 3 - 2 = 1 unit to the left.
+        //
+        // Below we have
+        // - tokens
+        // - hard breaks
+        // - smeared breaks
+        // - negated breaks
+        // A B C D. E F G
+        // 0 0 0 1  0 0 0
+        // 0 0 1 1  0 0 0
+        // 1 1 0 0  1 1 1
+        //
+        // Thus a candidate that started at A would be
+        // legal, because A B C doesn't contain a break.
+        // But C D E and D E F both have a period in the middle,
+        // so they have the 0 bit set.
 
-        for &token_id in &unpacked {
-            let true_id = (token_id as i64) - (candidates.position as i64);
-            if true_id < 0 || true_id as u64 >= self.corpus.stats.total_words {
-                continue;
-            }
+        let hard_breaks = self.get_hard_breaks()?;
+        let break_mask = if query_length == 2 {
+            hard_breaks.data.iter().map(|x| !*x).collect::<Vec<_>>()
+        } else {
+            smear_bitmask(&hard_breaks.data, query_length - 2, "left")
+                .iter()
+                .map(|x| !*x)
+                .collect::<Vec<_>>()
+        };
+        let break_mask = IndexData::PackedBitMask(PackedBitMask {
+            data: break_mask,
+            num_set: None,
+        });
+        profiler.phase("Compute break mask");
 
-            if query_length > 1 {
-                let range_end = true_id as u32 + query_length as u32 - 2;
-                if has_value_in_range(hard_breaks, (true_id as u32, range_end)) {
-                    continue;
-                }
-            }
-            matches.push(true_id as u32);
-        }
-        Ok(matches)
+        // As a future optimization, we can apply the AND in-place on the break mask since we never use it again.
+        let (data, position) =
+            apply_and_to_indices(&candidates.data, candidates.position, &break_mask, 0)?;
+
+        let match_results = IntermediateResult { data, position };
+        self.compute_page_result(&match_results, page_start, page_size)
     }
 
     /// Resolves a match token into a full result.
@@ -482,24 +539,18 @@ impl CorpusQueryEngine {
             Some(res) => res,
             None => return Ok(empty_result()),
         };
-        let match_ids = self.filter_candidates(&candidates, num_terms, &mut profiler)?;
+        let (match_ids, total_results) =
+            self.filter_candidates(&candidates, num_terms, page_start, page_size, &mut profiler)?;
         profiler.phase("Filter Candidates");
 
         // Turn the match IDs into actual matches (with the text and locations).
-        let total_results = match_ids.len();
-        let page_size = page_size.unwrap_or(total_results);
-        let end = (page_start + page_size).min(total_results);
         let context_len = context_len
             .unwrap_or(DEFAULT_CONTEXT_LEN)
             .clamp(1, MAX_CONTEXT_LEN);
-        let matches = if page_start < total_results {
-            match_ids[page_start..end]
-                .iter()
-                .map(|&id| self.resolve_match_token(id, num_terms, context_len))
-                .collect::<Result<Vec<_>, _>>()?
-        } else {
-            vec![]
-        };
+        let matches = match_ids
+            .iter()
+            .map(|&id| self.resolve_match_token(id, num_terms, context_len))
+            .collect::<Result<Vec<_>, _>>()?;
         profiler.phase("Build Matches");
 
         Ok(CorpusQueryResult {

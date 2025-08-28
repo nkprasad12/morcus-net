@@ -8,6 +8,16 @@ pub enum IndexData {
     Unpacked(Vec<u32>),
 }
 
+impl IndexData {
+    pub fn format(&self) -> String {
+        match self {
+            IndexData::PackedNumbers(_) => "PackedNumbers".to_string(),
+            IndexData::PackedBitMask(_) => "PackedBitMask".to_string(),
+            IndexData::Unpacked(_) => "Unpacked".to_string(),
+        }
+    }
+}
+
 #[derive(Debug, Deserialize, PartialEq, Clone)]
 pub struct PackedBitMask {
     #[serde(deserialize_with = "deserialize_u64_vec_from_bytes_with_serde")]
