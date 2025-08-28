@@ -175,8 +175,22 @@ in your hosts file:
 This is updated so infrequently that doing it as part of the CI workflow (where it would rebuild with every commit) was not really worth it. In order to update:
 
 1. `cd src/devops/reverse_proxy`
-2. `docker build ./ -t ghcr.io/nkprasad12/morcus-proxy:latest`
-3. `docker push ghcr.io/nkprasad12/morcus-proxy:latest`
+2. `docker buildx build --platform linux/amd64,linux/arm64 -t ghcr.io/nkprasad12/morcus-proxy:latest --push .`
+
+#### New VM Checklist
+
+A list of things that may be good to do when setting up a new VM.
+
+1. (On a machine with SSH keys generated) `ssh-copy-id` to copy the credentials
+2. Disable password login via SSH:
+   a. Set `UsePAM no` and `PasswordAuthentication no` in `/etc/ssh/sshd_config`.
+3. Set up a firewall to block unused ports. For `ufw`
+   a. `sudo apt update && sudo apt install ufw`
+   b. `sudo ufw enable` (turns it on)
+   c. `sudo ufw default deny incoming`
+   d. `sudo ufw default allow outgoing`
+   e. `sudo ufw allow 22/tcp && sudo ufw allow 443/tcp`
+   f. `sudo ufw status verbose` to double check
 
 ### Play Store
 
