@@ -365,9 +365,12 @@ impl CorpusQueryEngine {
         match_results: &IntermediateResult,
         page_start: usize,
         page_size: Option<usize>,
+        profiler: &mut TimeProfiler,
     ) -> Result<(Vec<u32>, usize), QueryExecError> {
         let position = match_results.position;
+        // TODO: We would want to avoid unpacking the entire thing here, because we only need `page_size` of them.
         let matches = unpack_packed_index_data(&match_results.data)?;
+        profiler.phase("Unpack match results");
         // Skip any illegal matches
         let mut i: usize = 0;
         while i < matches.len() && matches[i] < position {
@@ -382,6 +385,7 @@ impl CorpusQueryEngine {
             .iter()
             .map(|&x| x - position)
             .collect::<Vec<_>>();
+        profiler.phase("Compute page token IDs");
         Ok((filtered.to_vec(), total_results))
     }
 
@@ -396,7 +400,7 @@ impl CorpusQueryEngine {
     ) -> Result<(Vec<u32>, usize), QueryExecError> {
         // There can be no hard breaks between tokens without multiple tokens.
         if query_length < 2 {
-            return self.compute_page_result(candidates, page_start, page_size);
+            return self.compute_page_result(candidates, page_start, page_size, profiler);
         }
         // We compute a break mask, which is the negation of the hard breaks smeared left.
         // We will eventually do an index AND with this.
@@ -438,7 +442,8 @@ impl CorpusQueryEngine {
             apply_and_to_indices(&candidates.data, candidates.position, &break_mask, 0)?;
 
         let match_results = IntermediateResult { data, position };
-        self.compute_page_result(&match_results, page_start, page_size)
+        profiler.phase("Apply break mask");
+        self.compute_page_result(&match_results, page_start, page_size, profiler)
     }
 
     /// Resolves a match token into a full result.
@@ -541,7 +546,6 @@ impl CorpusQueryEngine {
         };
         let (match_ids, total_results) =
             self.filter_candidates(&candidates, num_terms, page_start, page_size, &mut profiler)?;
-        profiler.phase("Filter Candidates");
 
         // Turn the match IDs into actual matches (with the text and locations).
         let context_len = context_len

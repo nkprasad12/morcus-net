@@ -56,15 +56,20 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   results.matches.forEach((result) => {
     console.log(formatQueryResult(result));
   });
-  console.log(`Found ${results.totalResults} results in ${elapsedTime} ms`);
+  console.log(
+    `Found ${results.totalResults} results in ${elapsedTime.toFixed(3)} ms`
+  );
   if ("timing" in results) {
     // @ts-expect-error
     const timing: [string, number][] = results.timing;
     console.log(
       timing
-        ?.map(([name, time]) => `- ${time.toFixed(2)} ms [${name}]`)
+        ?.map(([name, time]) => `- ${time.toFixed(3)} ms [${name}]`)
         .join("\n")
     );
+    const overhead =
+      elapsedTime - timing.reduce((sum, [, time]) => sum + time, 0);
+    console.log(`Unaccounted: ${overhead.toFixed(3)} ms`);
   }
 
   return results;
