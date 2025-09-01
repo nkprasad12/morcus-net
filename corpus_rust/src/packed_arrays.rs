@@ -125,7 +125,7 @@ pub fn num_elements(packed_data: &[u8]) -> usize {
 }
 
 /// Gets the value at a specific index from a packed array.
-fn get(packed_data: &[u8], index: usize) -> u32 {
+pub fn get(packed_data: &[u8], index: usize) -> u32 {
     let header = packed_data[0];
     let bits_per_number = (header & PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK) as usize;
     if bits_per_number == 0 {
