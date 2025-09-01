@@ -1,11 +1,7 @@
-import { assertType } from "@/common/assert";
-import {
-  CORPUS_DIR,
-  CorpusQueryResult,
-  type CorpusQueryHandler,
-} from "@/common/library/corpus/corpus_common";
+import { CORPUS_DIR } from "@/common/library/corpus/corpus_common";
 import { singletonOf } from "@/common/misc_utils";
 import { timed } from "@/common/timing/timed_invocation";
+import type { CorpusQueryRequest } from "@/web/api_routes";
 
 /**
  * A query engine that uses Rust for querying the corpus.
@@ -29,17 +25,17 @@ export class RustCorpusQueryEngine {
     }
   }
 
-  queryCorpus(
-    query: string,
-    pageStart?: number,
-    pageSize?: number
-  ): CorpusQueryResult {
+  queryCorpus(query: string, pageStart?: number, pageSize?: number): string {
     if (query.length > 100) {
       throw new Error("Query is too long");
     }
-    const raw = this.engine.query(query, pageStart ?? 0, pageSize ?? 50, 25);
-    return assertType(JSON.parse(raw), CorpusQueryResult.isMatch);
+    return this.engine.query(query, pageStart ?? 0, pageSize ?? 50, 25);
   }
+}
+
+export interface CorpusQueryHandler {
+  initialize: () => void;
+  runQuery: (request: CorpusQueryRequest) => string;
 }
 
 export function rustCorpusApiHandler(): CorpusQueryHandler {

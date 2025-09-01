@@ -1,15 +1,16 @@
 /* istanbul ignore file */
 
-import { checkPresent } from "@/common/assert";
+import { assertType, checkPresent } from "@/common/assert";
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
-import type {
-  CorpusQueryHandler,
+import {
   CorpusQueryMatch,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
 import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
-import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
-import { jsCorpusApiHandler } from "@/common/library/corpus/query_utils";
+import {
+  rustCorpusApiHandler,
+  type CorpusQueryHandler,
+} from "@/common/library/corpus/corpus_rust";
 import { getFormattedMemoryUsage } from "@/common/misc_utils";
 import type { CorpusQueryRequest } from "@/web/api_routes";
 
@@ -46,9 +47,11 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
     pageStart: 0,
     pageSize,
   };
-  const startTime = Date.now();
-  const results = handler.runQuery(request);
-  const elapsedTime = Date.now() - startTime;
+  const startTime = performance.now();
+  const resultsRaw = handler.runQuery(request);
+  const elapsedTime = performance.now() - startTime;
+  const results = assertType(JSON.parse(resultsRaw), CorpusQueryResult.isMatch);
+
   console.log("Query: ", request.query);
   results.matches.forEach((result) => {
     console.log(formatQueryResult(result));
@@ -71,8 +74,7 @@ async function driver() {
   if (process.env.BUILD_CORPUS === "1") {
     buildCorpus(latinWorksFromLibrary());
   }
-  const useJs = process.env.IMPL === "js";
-  const engine = useJs ? jsCorpusApiHandler() : rustCorpusApiHandler();
+  const engine = rustCorpusApiHandler();
   // console.log(getFormattedMemoryUsage());
   measureMemoryUsage(() => engine.initialize());
   // for (let i = 0; i < 10; i++) {
@@ -86,7 +88,7 @@ async function driver() {
 
 ./node_modules/.bin/esbuild src/common/library/corpus/corpus_driver.ts \
   --bundle --outfile=corpus_driver.js --platform=node --external:bun:sqlite --minify \
-&& node --expose-gc corpus_driver.js "[case:3] [case:2] [case:1] [case:2]" \
+&& node --expose-gc corpus_driver.js "@case:3 @case:2 @case:1 @case:2" \
 && rm corpus_driver.js
 
 */
