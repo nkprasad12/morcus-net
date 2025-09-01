@@ -31,13 +31,23 @@ const TEST_WORKS: CorpusInputWork[] = [
     author: "Author 2",
     workName: "Work 2",
   },
+  {
+    id: "test_work_3",
+    rows: [
+      "Marmor et marmoris et marmorem. Et marmore et marmoribus et marmora et.",
+    ],
+    rowIds: [["1"]],
+    sectionDepth: 1,
+    author: "Author 2",
+    workName: "Work 3",
+  },
 ];
 
 describe("Corpus Integration Test", () => {
   let queryEngine: RustCorpusQueryEngine;
 
-  function queryCorpus(query: string) {
-    const raw = queryEngine.queryCorpus(query);
+  function queryCorpus(query: string, pageStart?: number, pageSize?: number) {
+    const raw = queryEngine.queryCorpus(query, pageStart, pageSize);
     const parsed = JSON.parse(raw);
     return assertType(parsed, CorpusQueryResult.isMatch);
   }
@@ -117,11 +127,11 @@ describe("Corpus Integration Test", () => {
     );
   });
 
-  it("should find all instances of a grammatical case", () => {
+  it("should find instances of a grammatical case", () => {
     const query = "@case:acc";
-    const results = queryCorpus(query);
+    const results = queryCorpus(query, undefined, 2);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
-    expect(results.totalResults).toBe(2);
+    expect(results.totalResults).toBe(4);
     expect(results.matches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({ text: "servum" }),
@@ -180,11 +190,55 @@ describe("Corpus Integration Test", () => {
     expect(results.matches).toHaveLength(0);
   });
 
+  it("should allow matches around a hard break", () => {
+    const results = [
+      "et marmoris et",
+      "marmoris et marmorem",
+      "et marmorem et",
+      "marmorem et marmore",
+      "et marmore et",
+      "marmore et marmoribus",
+    ].map((text) => queryCorpus(text));
+
+    console.log(results[0].matches);
+    expect(results[0].totalResults).toBe(1);
+    expect(results[1].totalResults).toBe(1);
+    // There's a period between the words now.
+    expect(results[2].totalResults).toBe(0);
+    expect(results[3].totalResults).toBe(0);
+    expect(results[4].totalResults).toBe(1);
+    expect(results[5].totalResults).toBe(1);
+  });
+
   it("should return no results for a query with no matches", () => {
     const query = "imperator";
     const results = queryCorpus(query);
 
     expect(results.totalResults).toBe(0);
     expect(results.matches).toHaveLength(0);
+  });
+
+  it("should handle paginated results", () => {
+    const query = "@lemma:marmor et";
+    const startIds = new Set<number>();
+
+    let results = queryCorpus(query, 0, 2);
+    expect(results.totalResults).toBe(5);
+    expect(results.matches).toHaveLength(2);
+    results.matches.forEach((match) => startIds.add(match.offset));
+
+    results = queryCorpus(query, 2, 2);
+    expect(results.totalResults).toBe(5);
+    expect(results.matches).toHaveLength(2);
+    results.matches.forEach((match) => startIds.add(match.offset));
+
+    results = queryCorpus(query, 4, 2);
+    expect(results.totalResults).toBe(5);
+    expect(results.matches).toHaveLength(1);
+    results.matches.forEach((match) => startIds.add(match.offset));
+
+    const sortedIds = Array.from(startIds).sort((a, b) => a - b);
+    // Marmorem is not valid because marmor is neuter.
+    expect(sortedIds).toEqual([0, 2, 6, 8, 10]);
   });
 });

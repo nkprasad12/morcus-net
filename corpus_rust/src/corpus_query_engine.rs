@@ -1,5 +1,6 @@
 use crate::common::PackedBitMask;
-use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask};
+use crate::packed_arrays;
+use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
 use crate::query_parsing_v2::{
     QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
     parse_query,
@@ -7,7 +8,7 @@ use crate::query_parsing_v2::{
 
 use super::common::IndexData;
 use super::corpus_serialization::LatinCorpusIndex;
-use super::packed_index_utils::{apply_and_to_indices, max_elements_in, unpack_packed_index_data};
+use super::packed_index_utils::{apply_and_to_indices, max_elements_in};
 use super::profiler::TimeProfiler;
 
 use rusqlite::Connection;
@@ -367,26 +368,86 @@ impl CorpusQueryEngine {
         page_size: Option<usize>,
         profiler: &mut TimeProfiler,
     ) -> Result<(Vec<u32>, usize), QueryExecError> {
-        let position = match_results.position;
-        // TODO: We would want to avoid unpacking the entire thing here, because we only need `page_size` of them.
-        let matches = unpack_packed_index_data(&match_results.data)?;
-        profiler.phase("Unpack match results");
-        // Skip any illegal matches
-        let mut i: usize = 0;
-        while i < matches.len() && matches[i] < position {
-            i += 1;
+        let page_size = match page_size {
+            Some(size) => size,
+            // If no page size is given, return all results.
+            None => {
+                // Unpack all the results.
+                let position = match_results.position;
+                let matches = unpack_packed_index_data(&match_results.data)?;
+                profiler.phase("Unpack match results");
+                // Skip any illegal matches
+                let mut i: usize = 0;
+                while i < matches.len() && matches[i] < position {
+                    i += 1;
+                }
+
+                let total_results = matches.len() - i;
+                let page_size = page_size.unwrap_or(total_results);
+                let end = (page_start + page_size).min(total_results) + i;
+
+                let filtered = &matches[i..end]
+                    .iter()
+                    .map(|&x| x - position)
+                    .collect::<Vec<_>>();
+                profiler.phase("Compute page token IDs");
+                return Ok((filtered.to_vec(), total_results));
+            }
+        };
+
+        // Get to the start of the page.
+        let mut results: Vec<u32> = vec![];
+        let mut i: usize = match &match_results.data {
+            IndexData::Unpacked(_) | IndexData::PackedNumbers(_) => page_start,
+            IndexData::PackedBitMask(bitmask) => {
+                let mut start_idx = 0;
+                for _ in 0..page_start {
+                    start_idx = bitmask
+                        .next_one_bit(start_idx)
+                        .ok_or(QueryExecError::new("Not enough results for page"))?
+                        + 1;
+                }
+                start_idx
+            }
+        };
+
+        let n = match_results.data.num_elements();
+        while results.len() < page_size {
+            let token_id = match match_results.data {
+                IndexData::Unpacked(ref data) => {
+                    if i >= n {
+                        break;
+                    }
+                    let id = data[i];
+                    i += 1;
+                    id
+                }
+                IndexData::PackedNumbers(ref data) => {
+                    if i >= n {
+                        break;
+                    }
+                    let id = packed_arrays::get(data, i);
+                    i += 1;
+                    id
+                }
+
+                IndexData::PackedBitMask(ref bitmask_data) => {
+                    let id = match bitmask_data.next_one_bit(i) {
+                        Some(v) => v,
+                        None => break,
+                    };
+                    i = id + 1;
+                    id as u32
+                }
+            };
+
+            if token_id < match_results.position {
+                return Err(QueryExecError::new("Token ID is less than match position"));
+            }
+            results.push(token_id - match_results.position);
         }
-
-        let total_results = matches.len() - i;
-        let page_size = page_size.unwrap_or(total_results);
-        let end = (page_start + page_size).min(total_results) + i;
-
-        let filtered = &matches[i..end]
-            .iter()
-            .map(|&x| x - position)
-            .collect::<Vec<_>>();
         profiler.phase("Compute page token IDs");
-        Ok((filtered.to_vec(), total_results))
+        Ok((results, n))
     }
 
     /// Filters a list of candidates into just the actual matches.
