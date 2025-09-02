@@ -54,13 +54,14 @@ export function* latinWorksFromLibrary(): Generator<CorpusInputWork> {
   const filePaths = readFilesFromLibraryIndex();
   for (const work of latinWorksInFiles(filePaths)) {
     yield convertToCorpusInputWork(work);
-    // Uncomment to simulate a larger corpus.
-    // const converted = convertToCorpusInputWork(work);
-    // for (let i = 0; i < 11; i++) {
-    //   yield {
-    //     ...converted,
-    //     id: `${converted.id}-${i + 1}`,
-    //   };
-    // }
+    if (process.env.SIMULATE_LARGE_CORPUS === "1") {
+      const converted = convertToCorpusInputWork(work);
+      for (let i = 0; i < 11; i++) {
+        yield {
+          ...converted,
+          id: `${converted.id}-${i + 1}`,
+        };
+      }
+    }
   }
 }
