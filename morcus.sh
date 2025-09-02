@@ -13,16 +13,22 @@ has_param() {
 
 COMMAND="node --max-old-space-size=4096 --env-file=.env node_modules/.bin/ts-node -P tsconfig.json -r tsconfig-paths/register --swc"
 ARGS="$@"
+EXTRA_ARG=""
 
 if has_param '--node' "$@"; then
   # If node is explicitly specified, don't try anything else.
   true
 elif has_param '--bun' "$@"; then
   COMMAND="bun"
+  EXTRA_ARG="--bun"
 elif command -v bun 2>&1 >/dev/null; then
   echo -e "\033[0;31mNote: bun detected, so automatically using bun. Pass --node to override this.\033[0m"
   COMMAND="bun"
-  ARGS="$@ --bun"
+  EXTRA_ARG="--bun"
 fi
 
-export NODE_ENV=production && $COMMAND src/scripts/run_morcus.ts $ARGS
+if [ -n "$EXTRA_ARG" ]; then
+  export NODE_ENV=production && $COMMAND src/scripts/run_morcus.ts "$@" "$EXTRA_ARG"
+else
+  export NODE_ENV=production && $COMMAND src/scripts/run_morcus.ts "$@"
+fi

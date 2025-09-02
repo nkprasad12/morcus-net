@@ -21,6 +21,7 @@ const EDITOR = "editor";
 const BUNDLE = "bundle";
 const BUILD = "build";
 const E2E = "e2e";
+const CORPUS = "corpus";
 
 const cleanupOperations: (() => unknown)[] = [];
 
@@ -38,6 +39,8 @@ if (args.command === WEB_SERVER) {
   buildArtifacts(args).then(assert);
 } else if (args.command === E2E) {
   runE2eTests(args).then(assert);
+} else if (args.command === CORPUS) {
+  runCorpusCommand(args).then(assert);
 }
 
 interface CommandArgument {
@@ -249,7 +252,35 @@ function parseArguments() {
     default: "itests",
   });
 
-  for (const subcommand of [editor, worker, bundle, web, build, e2e]) {
+  const corpus = subparsers.add_parser(CORPUS, {
+    help: "Convenience commands for the corpus.",
+  });
+  corpus.add_argument("-r", "--rust", {
+    help: "Runs the Rust CLI.",
+    action: "store_true",
+  });
+  corpus.add_argument("-b", "--build", {
+    help: "Builds the corpus.",
+    action: "store_true",
+  });
+  corpus.add_argument("-s", "--simulate_large", {
+    help: "Simulates a large corpus when building.",
+    action: "store_true",
+  });
+  corpus.add_argument("-q", "--query", {
+    help: "The query to run on the corpus.",
+    default: "@lemma:do oscula @case:dat",
+  });
+  corpus.add_argument("-l", "--limit", {
+    help: "The maximum number of results to return.",
+    default: "50",
+  });
+  corpus.add_argument("-c", "--context", {
+    help: "The context length to use for the query.",
+    default: "10",
+  });
+
+  for (const subcommand of [editor, worker, bundle, web, build, e2e, corpus]) {
     subcommand.add_argument("--bun", {
       help: "Runs supported commands with bun.",
       action: "store_true",
@@ -559,6 +590,44 @@ async function runE2eTests(args: any) {
   steps.push({
     operation: () => shellStep("npm run integration-tests", childEnv),
     label: "Running E2E tests",
+  });
+  return runPipeline(steps);
+}
+
+async function runCorpusCommand(args: any) {
+  const command = args.rust
+    ? ["cargo", "run", "--package", "corpus", "--release", "cli"]
+    : args.bun
+    ? ["bun"]
+    : [...TS_NODE];
+  if (!args.rust) {
+    command.push("src/common/library/corpus/corpus_driver.ts");
+  }
+  if (args.rust) {
+    command.push(`--query`);
+  }
+  command.push(`'${args.query}'`);
+  if (args.rust) {
+    if (args.limit) {
+      command.push(`--limit ${args.limit}`);
+    }
+    if (args.context) {
+      command.push(`--context ${args.context}`);
+    }
+  }
+
+  const childEnv = { ...process.env };
+  childEnv.NODE_ENV = "production";
+  const steps: StepConfig[] = [];
+  if (args.build) {
+    childEnv.BUILD_CORPUS = "1";
+  }
+  if (args.simulate_large) {
+    childEnv.SIMULATE_LARGE_CORPUS = "1";
+  }
+  steps.push({
+    operation: () => shellStep(command.join(" "), childEnv),
+    label: "Building corpus",
   });
   return runPipeline(steps);
 }
