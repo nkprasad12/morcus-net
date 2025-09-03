@@ -6,13 +6,14 @@ use corpus::{
     corpus_serialization,
 };
 
+const ARG_QUIET: &str = "--quiet";
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
 fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex {
     let start = Instant::now();
     let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
     let duration = start.elapsed();
-    if !get_quiet_arg() {
+    if !has_arg(ARG_QUIET) {
         println!("Corpus loaded in {:.2?}", duration);
         println!(
             "- Tokens: {}, Words: {}, Lemmata: {}, Works: {}",
@@ -45,9 +46,9 @@ fn query_with_timing<'a>(
     Ok(results)
 }
 
-fn get_quiet_arg() -> bool {
+fn has_arg(tag: &str) -> bool {
     let args: Vec<String> = env::args().collect();
-    args.contains(&"--quiet".to_string())
+    args.contains(&tag.to_string())
 }
 
 fn get_query_arg_or_exit() -> String {
@@ -104,7 +105,7 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
         results.page_start + results.matches.len(),
         results.total_results
     );
-    if get_quiet_arg() {
+    if has_arg(ARG_QUIET) {
         println!("- Omitted matches due to --quiet flag.\n");
         return;
     }
@@ -115,10 +116,53 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
     }
 }
 
+fn print_top_snapshot_for(pid: u32, show_header: bool) {
+    let pid_arg = pid.to_string();
+    let output = std::process::Command::new("top")
+        .args(["-e", "m", "-b", "-n", "1", "-p", &pid_arg])
+        .output()
+        .map(|mut o| {
+            let s = String::from_utf8_lossy(&o.stdout);
+            let processed = s
+                .lines()
+                .skip(if show_header { 6 } else { 7 }) // remove first 6 header lines
+                .map(|l| format!("    {}", l)) // indent remaining lines
+                .collect::<Vec<_>>()
+                .join("\n");
+            o.stdout = processed.into_bytes();
+            o
+        });
+    match output {
+        Ok(o) => {
+            if !o.stdout.is_empty() {
+                eprintln!("{}", String::from_utf8_lossy(&o.stdout));
+            }
+            if !o.stderr.is_empty() {
+                eprintln!("top stderr: {}", String::from_utf8_lossy(&o.stderr));
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to run top: {}", e);
+        }
+    }
+}
+
+fn print_mem_summary(tag: String, delay_secs: u64) {
+    eprintln!("--- Memory summary ({}) ---", tag);
+    print_top_snapshot_for(std::process::id(), true);
+    std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
+    print_top_snapshot_for(std::process::id(), false);
+    std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
+    print_top_snapshot_for(std::process::id(), false);
+}
+
 fn main() {
     let corpus = load_corpus_with_timing(CORPUS_ROOT);
     let engine =
         corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
+    if has_arg("--mem") {
+        print_mem_summary("Before query execution".to_string(), 2);
+    }
     let query_str = get_query_arg_or_exit();
     print_query_results(&engine, &query_str);
 }
