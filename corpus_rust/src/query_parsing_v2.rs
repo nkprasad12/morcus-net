@@ -3,7 +3,7 @@ use std::str::FromStr;
 use super::analyzer_types::LatinInflection;
 
 const DEFAULT_PROXIMITY: u8 = 5;
-const SIMPLE_PREFIXES: [&str; 2] = ["@lemma:", "@word:"];
+const SIMPLE_PREFIXES: [&str; 4] = ["@lemma:", "@word:", "@l:", "@w:"];
 
 /// A query on the corpus.
 #[derive(Debug, Clone)]
@@ -99,8 +99,8 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
             return Err(QueryParseError::new("Token atom must be alphabetic"));
         }
         match *simple_prefix {
-            "@lemma:" => return Ok(TokenConstraintAtom::Lemma(content.to_string())),
-            "@word:" => return Ok(TokenConstraintAtom::Word(content.to_string())),
+            "@l:" | "@lemma:" => return Ok(TokenConstraintAtom::Lemma(content.to_string())),
+            "@w:" | "@word:" => return Ok(TokenConstraintAtom::Word(content.to_string())),
             _ => unreachable!(), // We only have two prefixes defined
         }
     }

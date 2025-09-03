@@ -207,9 +207,9 @@ impl FromStr for LatinDegree {
     type Err = String;
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s.trim().to_lowercase().as_str() {
-            "positive" | "pos" | "1" => Ok(LatinDegree::Positive),
-            "comparative" | "comp" | "2" => Ok(LatinDegree::Comparative),
-            "superlative" | "sup" | "3" => Ok(LatinDegree::Superlative),
+            "positive" | "pos" | "p" | "1" => Ok(LatinDegree::Positive),
+            "comparative" | "com" | "cmp" | "comp" | "c" | "2" => Ok(LatinDegree::Comparative),
+            "superlative" | "sup" | "s" | "3" => Ok(LatinDegree::Superlative),
             other => Err(format!("Unknown LatinDegree: {other}")),
         }
     }
@@ -226,14 +226,14 @@ impl FromStr for LatinInflection {
         let (label, val) = s.split_at(label_idx);
         let value = val[1..].trim();
         match label.trim().to_lowercase().as_str() {
-            "case" => Ok(LatinInflection::Case(value.parse()?)),
-            "number" => Ok(LatinInflection::Number(value.parse()?)),
-            "gender" => Ok(LatinInflection::Gender(value.parse()?)),
-            "person" => Ok(LatinInflection::Person(value.parse()?)),
-            "mood" => Ok(LatinInflection::Mood(value.parse()?)),
-            "voice" => Ok(LatinInflection::Voice(value.parse()?)),
-            "tense" => Ok(LatinInflection::Tense(value.parse()?)),
-            "degree" => Ok(LatinInflection::Degree(value.parse()?)),
+            "c" | "case" => Ok(LatinInflection::Case(value.parse()?)),
+            "d" | "degree" => Ok(LatinInflection::Degree(value.parse()?)),
+            "g" | "gender" => Ok(LatinInflection::Gender(value.parse()?)),
+            "m" | "mood" => Ok(LatinInflection::Mood(value.parse()?)),
+            "n" | "number" => Ok(LatinInflection::Number(value.parse()?)),
+            "p" | "person" => Ok(LatinInflection::Person(value.parse()?)),
+            "t" | "tense" => Ok(LatinInflection::Tense(value.parse()?)),
+            "v" | "voice" => Ok(LatinInflection::Voice(value.parse()?)),
             other => Err(format!("Unknown inflection label: {other}")),
         }
     }
