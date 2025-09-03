@@ -10,7 +10,7 @@ use node_bindgen::derive::node_bindgen;
 const CORPUS_FILE: &str = "latin_corpus.json";
 
 fn create_engine(corpus_dir: String) -> Result<CorpusQueryEngine, String> {
-    let corpus_path = format!("{}/{}", corpus_dir, CORPUS_FILE);
+    let corpus_path = format!("{corpus_dir}/{CORPUS_FILE}");
     let corpus = deserialize_corpus(corpus_path).map_err(|e| e.to_string())?;
     CorpusQueryEngine::new(corpus).map_err(|e| e.to_string())
 }

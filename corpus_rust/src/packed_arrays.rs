@@ -48,8 +48,7 @@ pub fn pack_sorted_nats(numbers: &[u32]) -> Result<Vec<u8>, String> {
         }
         if num >= upper_bound {
             return Err(format!(
-                "Number {} is out of the allowed range [0, {}).",
-                num, upper_bound
+                "Number {num} is out of the allowed range [0, {upper_bound})."
             ));
         }
         for j in (0..bits_per_number).rev() {

@@ -120,8 +120,7 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
     }
 
     Err(QueryParseError::new(&format!(
-        "Invalid token atom: {}",
-        input
+        "Invalid token atom: {input}"
     )))
 }
 
