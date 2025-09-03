@@ -121,7 +121,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     pre: { margin: "0" },
     summary: {
       cursor: "pointer",
-      color: contentTextLightColor + "80",
+      color: contentTextLightColor,
     },
     ".unselectable": { ...UNSELECTABLE },
     ".svgIcon": {
@@ -381,6 +381,29 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".corpusResult": {
       color: Solarized.red + "A0",
     },
+    ".queryHelp": {
+      margin: "12px 0px",
+      borderRadius: "4px",
+    },
+    ".queryHelp[open]": {
+      border: "1px solid #ccc",
+    },
+    ".queryHelp > summary": {
+      padding: "4px 8px",
+    },
+    ".queryHelpContent": {
+      borderTop: "1px solid #ccc",
+      paddingLeft: "12px",
+    },
+    ".queryHelpContent > details": {
+      margin: "4px",
+    },
+    ".queryHelp th": {
+      border: "1px solid #ccc",
+      padding: "4px",
+      textAlign: "left",
+    },
+    ".queryHelp td": { border: "1px solid #ccc", padding: "4px" },
 
     /** Dictionary specific */
     ".numeralTable": {
