@@ -14,7 +14,7 @@ fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex
     let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
     let duration = start.elapsed();
     if !has_arg(ARG_QUIET) {
-        println!("Corpus loaded in {:.2?}", duration);
+        println!("Corpus loaded in {duration:.2?}");
         println!(
             "- Tokens: {}, Words: {}, Lemmata: {}, Works: {}",
             corpus.stats.total_words,
@@ -36,7 +36,7 @@ fn query_with_timing<'a>(
     let start = Instant::now();
     let results = engine.query_corpus(query, page_start, page_size, context_len)?;
     let duration = start.elapsed();
-    println!("Query executed in {:.2?}", duration);
+    println!("Query executed in {duration:.2?}");
     if !results.timing.is_empty() {
         println!("Query timing breakdown:");
         for (k, v) in &results.timing {

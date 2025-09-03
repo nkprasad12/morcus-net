@@ -118,7 +118,7 @@ impl FromStr for LatinCase {
             "ablative" | "abl" | "ab" | "5" => Ok(LatinCase::Ablative),
             "vocative" | "voc" | "v" | "6" => Ok(LatinCase::Vocative),
             "locative" | "loc" | "l" | "7" => Ok(LatinCase::Locative),
-            other => Err(format!("Unknown LatinCase: {}", other)),
+            other => Err(format!("Unknown LatinCase: {other}")),
         }
     }
 }
@@ -129,7 +129,7 @@ impl FromStr for LatinNumber {
         match s.trim().to_lowercase().as_str() {
             "singular" | "sg" | "s" | "1" => Ok(LatinNumber::Singular),
             "plural" | "pl" | "p" | "2" => Ok(LatinNumber::Plural),
-            other => Err(format!("Unknown LatinNumber: {}", other)),
+            other => Err(format!("Unknown LatinNumber: {other}")),
         }
     }
 }
@@ -142,7 +142,7 @@ impl FromStr for LatinGender {
             "feminine" | "f" | "fem" | "2" => Ok(LatinGender::Feminine),
             "neuter" | "n" | "neu" | "neut" | "3" => Ok(LatinGender::Neuter),
             "adverbial" | "adv" | "a" | "4" => Ok(LatinGender::Adverbial),
-            other => Err(format!("Unknown LatinGender: {}", other)),
+            other => Err(format!("Unknown LatinGender: {other}")),
         }
     }
 }
@@ -154,7 +154,7 @@ impl FromStr for LatinPerson {
             "first" | "1st" | "1" | "i" => Ok(LatinPerson::First),
             "second" | "2nd" | "2" | "ii" => Ok(LatinPerson::Second),
             "third" | "3rd" | "3" | "iii" => Ok(LatinPerson::Third),
-            other => Err(format!("Unknown LatinPerson: {}", other)),
+            other => Err(format!("Unknown LatinPerson: {other}")),
         }
     }
 }
@@ -170,7 +170,7 @@ impl FromStr for LatinMood {
             "gerundive" | "ger" | "5" => Ok(LatinMood::Gerundive),
             "infinitive" | "inf" | "6" => Ok(LatinMood::Infinitive),
             "supine" | "sup" | "7" => Ok(LatinMood::Supine),
-            other => Err(format!("Unknown LatinMood: {}", other)),
+            other => Err(format!("Unknown LatinMood: {other}")),
         }
     }
 }
@@ -181,7 +181,7 @@ impl FromStr for LatinVoice {
         match s.trim().to_lowercase().as_str() {
             "active" | "act" | "a" | "1" => Ok(LatinVoice::Active),
             "passive" | "pass" | "p" | "2" => Ok(LatinVoice::Passive),
-            other => Err(format!("Unknown LatinVoice: {}", other)),
+            other => Err(format!("Unknown LatinVoice: {other}")),
         }
     }
 }
@@ -198,7 +198,7 @@ impl FromStr for LatinTense {
             }
             "future" | "fut" | "f" | "5" => Ok(LatinTense::Future),
             "pluperfect" | "plup" | "pp" | "6" => Ok(LatinTense::Pluperfect),
-            other => Err(format!("Unknown LatinTense: {}", other)),
+            other => Err(format!("Unknown LatinTense: {other}")),
         }
     }
 }
@@ -210,7 +210,7 @@ impl FromStr for LatinDegree {
             "positive" | "pos" | "1" => Ok(LatinDegree::Positive),
             "comparative" | "comp" | "2" => Ok(LatinDegree::Comparative),
             "superlative" | "sup" | "3" => Ok(LatinDegree::Superlative),
-            other => Err(format!("Unknown LatinDegree: {}", other)),
+            other => Err(format!("Unknown LatinDegree: {other}")),
         }
     }
 }
@@ -234,7 +234,7 @@ impl FromStr for LatinInflection {
             "voice" => Ok(LatinInflection::Voice(value.parse()?)),
             "tense" => Ok(LatinInflection::Tense(value.parse()?)),
             "degree" => Ok(LatinInflection::Degree(value.parse()?)),
-            other => Err(format!("Unknown inflection label: {}", other)),
+            other => Err(format!("Unknown inflection label: {other}")),
         }
     }
 }

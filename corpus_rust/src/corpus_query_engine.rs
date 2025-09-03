@@ -34,7 +34,7 @@ impl QueryExecError {
 
 impl From<rusqlite::Error> for QueryExecError {
     fn from(e: rusqlite::Error) -> Self {
-        QueryExecError::new(&format!("SQLite error: {}", e))
+        QueryExecError::new(&format!("SQLite error: {e}"))
     }
 }
 
@@ -322,7 +322,7 @@ impl CorpusQueryEngine {
                 }
                 _ => return Err(QueryExecError::new("Unsupported query relation")),
             }?;
-            profiler.phase(format!("Filter from {}", original_index).as_str());
+            profiler.phase(format!("Filter from {original_index}").as_str());
         }
         Ok(Some(IntermediateResult { data, position }))
     }
@@ -529,7 +529,7 @@ impl CorpusQueryEngine {
             })
             .map(|i| work_ranges[i].0 as usize)
             .map_err(|_| {
-                QueryExecError::new(&format!("TokenId {} not found in any work.", token_id))
+                QueryExecError::new(&format!("TokenId {token_id} not found in any work."))
             })?;
 
         let row_data = &work_ranges[work_idx].1;
@@ -546,8 +546,7 @@ impl CorpusQueryEngine {
             .map(|i| row_data[i])
             .map_err(|_| {
                 QueryExecError::new(&format!(
-                    "TokenId {} not found in any row for work index {}.",
-                    token_id, work_idx
+                    "TokenId {token_id} not found in any row for work index {work_idx}."
                 ))
             })?;
 
