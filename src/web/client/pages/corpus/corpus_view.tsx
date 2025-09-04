@@ -53,7 +53,7 @@ export function CorpusQueryPage() {
         onInput={setInputText}
         placeholderText={SEARCH_PLACEHOLDER}
         // Left and right are not equal to account for the border.
-        style={{ padding: "8px 12px 4px 8px" }}
+        style={{ padding: "8px 12px 4px 8px", margin: "4px 8px" }}
         ariaLabel={SEARCH_PLACEHOLDER}
         onRawEnter={() => {
           nav.to({
@@ -100,10 +100,10 @@ function ResultsSection(props: {
   };
 
   return (
-    <div>
+    <div style={{ margin: "0px 16px" }}>
       <div className="text md">
         Found {props.results.totalResults} results matching:
-        <div>{props.query}</div>
+        <div className="corpusResult">{props.query}</div>
       </div>
       <div className="text sm light">
         Showing results {props.results.pageStart + 1} to{" "}
@@ -236,8 +236,8 @@ function QueryHelpSection() {
               <code>~</code> - Implies that the previous and next items are
               within a few words of each other. For example,{" "}
               <code>@lemma:amo ~ @case:genitive</code> would match any
-              inflection of
-              <code>amo</code> within a few words of any genitive word.
+              inflection of <code>amo</code> within a few words of any genitive
+              word.
               <ul>
                 <li>
                   You can specify the exact proximity by adding a number; for
@@ -273,7 +273,7 @@ function QueryHelpSection() {
               </tr>
               <tr>
                 <td>
-                  <code>@lemma:do @case:dative</code>
+                  <code>@lemma:do @case:dat</code>
                 </td>
                 <td>
                   Any inflection of <code>do</code> followed by a dative word.
@@ -284,10 +284,11 @@ function QueryHelpSection() {
               </tr>
               <tr>
                 <td>
-                  <code>(@lemma:do or @lemma:habeo) ~ @case:accusative</code>
+                  <code>(@lemma:do or @lemma:habeo) ~ @case:acc</code>
                 </td>
                 <td>
-                  <code>do</code> or <code>habeo</code> near an accusative word.
+                  Any inflection of <code>do</code> or <code>habeo</code> near
+                  an accusative word.
                 </td>
                 <td>
                   <code>dedi saepe panem</code> or{" "}

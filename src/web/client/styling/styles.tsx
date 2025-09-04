@@ -382,8 +382,15 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       color: Solarized.red + "A0",
     },
     ".queryHelp": {
-      margin: "12px 0px",
+      margin: "12px 16px",
       borderRadius: "4px",
+    },
+    ".queryHelp code": {
+      color: theme.contentTextLight,
+      backgroundColor: Solarized.blue + "20",
+      borderRadius: "4px",
+      // Allow code examples to wrap on small screens so tables don't force page width.
+      whiteSpace: "pre-wrap",
     },
     ".queryHelp[open]": {
       border: "1px solid #ccc",
@@ -395,13 +402,37 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderTop: "1px solid #ccc",
       paddingLeft: "12px",
     },
-    ".queryHelpContent > details": {
-      margin: "4px",
+    ".queryHelpContent ul": {
+      marginTop: "0",
+      paddingLeft: "24px",
+    },
+    // Make the examples table responsive on narrow viewports:
+    ".queryHelp table": {
+      width: "100%",
+      maxWidth: "100%",
+      borderCollapse: "collapse",
+      // Treat table as a scrollable block so it can scroll horizontally inside the details
+      // instead of forcing the whole page to scroll.
+      display: "block",
+      overflowX: "auto",
+      WebkitOverflowScrolling: "touch",
+      padding: "4px",
+      marginBottom: "4px",
+      marginRight: "12px",
+    },
+    ".queryHelp th, .queryHelp td": {
+      // Allow long tokens (including inline <code>) to wrap/break so cell content doesn't overflow.
+      wordBreak: "break-word",
+      whiteSpace: "normal",
     },
     ".queryHelp th": {
       border: "1px solid #ccc",
       padding: "4px",
+      fontWeight: "normal",
       textAlign: "left",
+      // Ensure header cells wrap on small screens.
+      wordBreak: "break-word",
+      whiteSpace: "normal",
     },
     ".queryHelp td": { border: "1px solid #ccc", padding: "4px" },
 
@@ -860,6 +891,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       },
       "::-webkit-scrollbar-thumb": {
         borderRadius: "4px",
+      },
+      ".queryHelp code": {
+        // Keep code examples unbroken on wider screens.
+        whiteSpace: "nowrap",
       },
     },
     // For reasons I don't understand, this has to be at the bottom.
