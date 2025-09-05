@@ -113,14 +113,14 @@ There is a `Procfile` in the root directory for use with Heroku. There are some 
 
 ### Docker Images
 
-Docker images are generated for each push. These can be downloaded from the registry at ghcr.io/nkprasad12/morcus. There are eight tags of note:
+Docker images are generated for each push. These can be downloaded from the registry at ghcr.io/nkprasad12/morcus. There are four tags of note:
 
 1. `main-latest` is the most up-to-date image of the `main` branch.
 2. `main-previous` is a backup of the previous `main-latest`.
 3. `dev-latest` is the most up-to-date image of the `dev` branch.
 4. `dev-previous` is a backup of the previous `dev-latest`.
 
-Each of these also has `-arm` variants for use on ARM64-based machines (`main-latest-arm`, etc...)
+Please contact Morcus if you are interested in images built for `arm64` architechtures.
 
 Note that the `latest` tag is not used.
 
