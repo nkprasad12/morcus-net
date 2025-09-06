@@ -134,7 +134,7 @@ function AttributionContent(props: { dictKey: string }) {
           latin-dict.github.io
         </a>{" "}
         and transcribed by the team of Dr. Wilhelm Kühlmann from Heidelberg
-        University. Further processing was kindly done by Justin Dealy.
+        University.
       </div>
     );
   }
