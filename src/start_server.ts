@@ -184,7 +184,7 @@ export function startMorcusServer(): Promise<http.Server> {
   const consoleTelemetry = process.env.CONSOLE_TELEMETRY === "yes";
   const mongodbUri = process.env.MONGODB_URI;
   const mongodbUriEmpty = mongodbUri === undefined || mongodbUri.length === 0;
-  if (mongodbUriEmpty && !consoleTelemetry) {
+  if (mongodbUriEmpty && consoleTelemetry) {
     log("No `MONGODB_URI` environment variable set. Logging to console.");
   }
   if (!mongodbUriEmpty && consoleTelemetry) {
@@ -193,6 +193,8 @@ export function startMorcusServer(): Promise<http.Server> {
   const telemetry =
     !mongodbUriEmpty && !consoleTelemetry
       ? MongoLogger.create(mongodbUri, envVar("DB_SOURCE"))
+      : consoleTelemetry
+      ? Promise.resolve(TelemetryLogger.ConsoleLogger)
       : Promise.resolve(TelemetryLogger.NoOp);
   const githubToken = process.env.GITHUB_TOKEN;
   const githubTokenEmpty =
