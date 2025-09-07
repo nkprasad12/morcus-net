@@ -120,7 +120,7 @@ Docker images are generated for each push. These can be downloaded from the regi
 3. `dev-latest` is the most up-to-date image of the `dev` branch.
 4. `dev-previous` is a backup of the previous `dev-latest`.
 
-Please contact Morcus if you are interested in images built for `arm64` architechtures.
+Please contact Morcus if you are interested in images built for `arm64`.
 
 Note that the `latest` tag is not used.
 
@@ -147,6 +147,9 @@ unset MORCUS_REPO
 ```
 
 By default, the `main-latest` tag will be used for the production instance. For ARM-based systems, you should specify `PROD_TAG=main-latest-arm` in the `.env` file to use the ARM image.
+
+Please contact Morcus if you are interested in images built for `arm64`. These builds are currently not made, but can be
+added easily.
 
 #### Local testing
 

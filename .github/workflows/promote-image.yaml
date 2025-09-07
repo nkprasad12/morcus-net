@@ -9,33 +9,28 @@ jobs:
   promote-image:
     runs-on: ubuntu-24.04
     timeout-minutes: 3
+    strategy:
+      matrix:
+      include:
+        - arch: x86
+          tag_suffix: ""
+        # We don't need arm builds right now.
+        # - arch: arm
+        #   tag_suffix: "-arm"
 
     steps:
       - name: Log in to registry
         run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u $ --password-stdin
       - name: Fetch dev image
-        run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}; do sleep 10; done'
-      - name: Fetch dev image (ARM)
-        run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}-arm; do sleep 10; done'
+        run: timeout 2m bash -c 'until docker pull ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}; do sleep 10; done'
       - name: Backup current image
         run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest
-          PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous
-          docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
-      - name: Backup current image (ARM)
-        run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest-arm
-          PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous-arm
+          LATEST=ghcr.io/nkprasad12/morcus:main-latest${{ matrix.tag_suffix }}
+          PREVIOUS=ghcr.io/nkprasad12/morcus:main-previous${{ matrix.tag_suffix }}
           docker pull $LATEST && docker tag $LATEST $PREVIOUS && docker push $PREVIOUS || true
       - name: Promote dev image
         run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest
-          CANDIDATE=ghcr.io/nkprasad12/morcus:${{ github.sha }}
-          docker tag $CANDIDATE $LATEST
-          docker push $LATEST
-      - name: Promote dev image (ARM)
-        run: |
-          LATEST=ghcr.io/nkprasad12/morcus:main-latest-arm
-          CANDIDATE=ghcr.io/nkprasad12/morcus:${{ github.sha }}-arm
+          LATEST=ghcr.io/nkprasad12/morcus:main-latest${{ matrix.tag_suffix }}
+          CANDIDATE=ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}
           docker tag $CANDIDATE $LATEST
           docker push $LATEST
