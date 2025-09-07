@@ -11,12 +11,12 @@ jobs:
     timeout-minutes: 3
     strategy:
       matrix:
-      include:
-        - arch: x86
-          tag_suffix: ""
-        # We don't need arm builds right now.
-        # - arch: arm
-        #   tag_suffix: "-arm"
+        include:
+          - arch: x86
+            tag_suffix: ""
+          # We don't need arm builds right now.
+          # - arch: arm
+          #   tag_suffix: "-arm"
 
     steps:
       - name: Log in to registry
