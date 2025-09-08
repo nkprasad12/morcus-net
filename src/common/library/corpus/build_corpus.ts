@@ -206,6 +206,9 @@ function saveTokenDb(
   };
 
   const destination = path.join(corpusDir, CORPUS_TOKEN_DB);
+  if (!fs.existsSync(corpusDir)) {
+    fs.mkdirSync(corpusDir, { recursive: true });
+  }
   fs.writeFileSync(destination, JSON.stringify(result));
   return destination;
 }
