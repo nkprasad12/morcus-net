@@ -64,7 +64,7 @@ function getTestCorpus(): InProgressLatinCorpus {
 describe("writeCorpus and loadCorpus", () => {
   afterEach(() => {
     if (fs.existsSync(TEST_CORPUS_DIR)) {
-      fs.rmdirSync(TEST_CORPUS_DIR, { recursive: true });
+      fs.rmSync(TEST_CORPUS_DIR, { recursive: true });
     }
   });
 
