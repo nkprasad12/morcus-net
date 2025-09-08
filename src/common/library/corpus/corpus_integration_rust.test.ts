@@ -200,7 +200,6 @@ describe("Corpus Integration Test", () => {
       "marmore et marmoribus",
     ].map((text) => queryCorpus(text));
 
-    console.log(results[0].matches);
     expect(results[0].totalResults).toBe(1);
     expect(results[1].totalResults).toBe(1);
     // There's a period between the words now.

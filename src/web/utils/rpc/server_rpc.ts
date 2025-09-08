@@ -41,7 +41,7 @@ class Timer {
   }
 }
 
-function serverMessage<T>(t: T): ServerMessage<T> {
+export function serverMessage<T>(t: T): ServerMessage<T> {
   return {
     data: t,
     metadata: { commit: process.env.COMMIT_ID },
@@ -101,6 +101,34 @@ function extractInput<I, O>(
   }
 }
 
+function validateRpcResponseType<
+  I,
+  O extends Data,
+  T extends RouteDefinitionType
+>(routeDefinition: RouteDefinition<I, O, T>, output: unknown) {
+  const route = routeDefinition.route;
+  if (
+    routeDefinition.encodingMode === "PreStringified" &&
+    typeof output !== "string"
+  ) {
+    throw {
+      message:
+        `Handler for route ${route.path} is marked as` +
+        ` PreStringified, but returned a non-string result.`,
+    };
+  }
+  if (
+    routeDefinition.encodingMode === "PreEncoded" &&
+    !Buffer.isBuffer(output)
+  ) {
+    throw {
+      message:
+        `Handler for route ${route.path} is marked as` +
+        ` PreEncoded, but returned a non-buffer result.`,
+    };
+  }
+}
+
 type ExpressApiHandler = (req: Request, res: Response) => void;
 
 function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
@@ -128,12 +156,14 @@ function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
     const [input, rawLength] = inputOrError;
 
     let status: number = 200;
-    let body: O | string | HandlerError | undefined = undefined;
-    handler(input, { log: (tag) => timer.event(tag) })
+    let body: O | string | Buffer | HandlerError | undefined = undefined;
+    const acceptEncoding = req.header("Accept-Encoding");
+    handler(input, { log: (tag) => timer.event(tag) }, { acceptEncoding })
       .then((output) => {
         if (output === undefined || output === null) {
           return;
         }
+        validateRpcResponseType(routeDefinition, output);
         body = output;
       })
       .catch((reason: HandlerError) => {
@@ -144,17 +174,27 @@ function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
       .finally(() => {
         timer.event("handlerComplete");
         const isPreStringified =
-          status === 200 && routeDefinition.preStringified;
-        let result = encodeMessage(
-          serverMessage(isPreStringified ? DATA_PLACEHOLDER : body),
-          route.registry
-        );
-        if (isPreStringified) {
-          // @ts-ignore
-          result = result.replace(`"${DATA_PLACEHOLDER}"`, body);
-        }
+          status === 200 && routeDefinition.encodingMode === "PreStringified";
+        const isPreEncoded =
+          status === 200 && routeDefinition.encodingMode === "PreEncoded";
+        const result = isPreEncoded
+          ? //  Due to `validateRpcResponseType`, we know that `body` is a Buffer in this branch.
+            // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+            (body as Buffer)
+          : isPreStringified
+          ? encodeMessage(
+              serverMessage(DATA_PLACEHOLDER),
+              route.registry
+              // Due to `validateRpcResponseType`, we know that `body` is a string in this branch.
+              // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+            ).replace(`"${DATA_PLACEHOLDER}"`, body as string)
+          : encodeMessage(serverMessage(body), route.registry);
         timer.event("encodeMessageComplete");
         routeDefinition.reponseSetter?.(res, input);
+        if (isPreEncoded && acceptEncoding?.includes("gzip")) {
+          res.setHeader("Content-Encoding", "gzip");
+          res.setHeader("Cache-Control", "immutable, no-transform");
+        }
         res.status(status).send(result);
         const telemetryData: Omit<ApiCallData, "latencyMs"> = {
           name: route.path,
@@ -177,13 +217,23 @@ export type HandlerError = {
 export interface ServerExtras {
   log: (tag: string) => unknown;
 }
-export type ApiHandler<I, O> = (input: I, extras?: ServerExtras) => Promise<O>;
+export interface RequestData {
+  acceptEncoding?: string;
+}
+export type ApiHandler<I, O> = (
+  input: I,
+  extras?: ServerExtras,
+  requestData?: RequestData
+) => Promise<O>;
 export type PreStringifiedRpc = "PreStringified";
-export type RouteDefinitionType = undefined | PreStringifiedRpc;
+export type PreEncodedRpc = "PreEncoded";
+export type RouteDefinitionType = undefined | PreStringifiedRpc | PreEncodedRpc;
 export type ResponseSetter<I> = (res: Response, input: I) => unknown;
 
 type HandlerType<I, O, T> = T extends PreStringifiedRpc
   ? ApiHandler<I, string>
+  : T extends PreEncodedRpc
+  ? ApiHandler<I, Buffer>
   : ApiHandler<I, O>;
 interface RouteDefinitionBase<I, O, T extends RouteDefinitionType = undefined> {
   route: ApiRoute<I, O>;
@@ -196,29 +246,41 @@ export type RouteDefinition<
   T extends RouteDefinitionType = undefined
 > = RouteDefinitionBase<I, O, T> &
   (T extends PreStringifiedRpc
-    ? { preStringified: true }
-    : { preStringified?: undefined });
+    ? { encodingMode: "PreStringified" }
+    : T extends PreEncodedRpc
+    ? { encodingMode: "PreEncoded" }
+    : { encodingMode?: undefined });
 export namespace RouteDefinition {
   export function create<I, O>(
     route: ApiRoute<I, O>,
     handler: ApiHandler<I, O>,
-    preStringified?: undefined,
+    encodingMode?: undefined,
     reponseSetter?: ResponseSetter<I>
   ): RouteDefinition<I, O>;
   export function create<I, O>(
     route: ApiRoute<I, O>,
     handler: ApiHandler<I, string>,
-    preStringified: true,
+    encodingMode: "PreStringified",
     reponseSetter?: ResponseSetter<I>
   ): RouteDefinition<I, O, "PreStringified">;
+  export function create<I, O>(
+    route: ApiRoute<I, O>,
+    handler: ApiHandler<I, Buffer>,
+    encodingMode: "PreEncoded",
+    reponseSetter?: ResponseSetter<I>
+  ): RouteDefinition<I, O, "PreEncoded">;
   export function create<I, O, T extends RouteDefinitionType>(
     route: ApiRoute<I, O>,
     handler: HandlerType<I, O, T>,
-    preStringified?: T extends PreStringifiedRpc ? true : undefined,
+    encodingMode?: T extends PreEncodedRpc
+      ? "PreEncoded"
+      : T extends PreStringifiedRpc
+      ? "PreStringified"
+      : undefined,
     reponseSetter?: ResponseSetter<I>
   ): RouteDefinition<I, O, T> {
     // @ts-ignore
-    return { route, handler, preStringified, reponseSetter };
+    return { route, handler, encodingMode, reponseSetter };
   }
 }
 

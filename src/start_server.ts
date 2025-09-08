@@ -224,7 +224,7 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(
         GetWork,
         (workId) => retrieveWorkStringified(workId),
-        true,
+        "PreStringified",
         CACHING_SETTER
       ),
       RouteDefinition.create(ListLibraryWorks, (_unused) =>
@@ -238,7 +238,7 @@ export function startMorcusServer(): Promise<http.Server> {
       RouteDefinition.create(
         QueryCorpusApi,
         async (r) => corpusHandler.runQuery(r),
-        true,
+        "PreStringified",
         CACHING_SETTER
       ),
     ],

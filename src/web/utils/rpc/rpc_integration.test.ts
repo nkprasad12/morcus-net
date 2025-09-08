@@ -2,14 +2,17 @@ import bodyParser from "body-parser";
 import express from "express";
 import http from "http";
 import {
+  PreEncodedRpc,
   PreStringifiedRpc,
   RouteDefinition,
   addApi,
+  serverMessage,
 } from "@/web/utils/rpc/server_rpc";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   Serialization,
   Validator,
+  encodeMessage,
   instanceOf,
   isArray,
   isBoolean,
@@ -18,6 +21,7 @@ import {
   stringifyMessage,
 } from "@/web/utils/rpc/parsing";
 import { callApi } from "@/web/utils/rpc/client_rpc";
+import zlib from "zlib";
 
 const PORT = 1594;
 
@@ -75,13 +79,7 @@ function isTestType(x: unknown): x is TestType {
 function appBundle() {
   const app = express();
   app.use(bodyParser.text());
-  const telemetryLogger: TelemetryLogger = {
-    logApiCall: () => Promise.resolve(),
-    teardown: () => Promise.resolve(),
-    logServerHealth: () => Promise.resolve(),
-    logClientEvent: () => Promise.resolve(),
-  };
-  return { webApp: app, telemetry: Promise.resolve(telemetryLogger) };
+  return { webApp: app, telemetry: Promise.resolve(TelemetryLogger.NoOp) };
 }
 
 // Routes and Handlers
@@ -175,7 +173,7 @@ const JsonGetPreStringified: RouteDefinition<
       nested: { str: x.nested.str + " JsonGetPreStringified" },
       arr: x.arr.concat(["JsonGetPreStringified"]),
     }),
-  preStringified: true,
+  encodingMode: "PreStringified",
 };
 
 const JsonPost: RouteDefinition<TestType, TestType> = {
@@ -189,6 +187,28 @@ const JsonPost: RouteDefinition<TestType, TestType> = {
     nested: { str: x.nested.str + " JsonPost" },
     arr: x.arr.concat(["JsonPost"]),
   }),
+};
+
+const PreEncodedGet: RouteDefinition<string, string, PreEncodedRpc> = {
+  route: {
+    path: "/PreEncodedGet",
+    method: "GET",
+    inputValidator: isString,
+    outputValidator: isString,
+  },
+  handler: async (s, _, requestData) => {
+    const shouldGzip = requestData?.acceptEncoding?.includes("gzip");
+    const responseText = `${s} PreEncodedGet ${
+      shouldGzip ? "gzip" : ""
+    }`.trim();
+    const responseString = encodeMessage(serverMessage(responseText));
+    const encoded = Buffer.from(responseString);
+    if (!shouldGzip) {
+      return encoded;
+    }
+    return zlib.gzipSync(encoded);
+  },
+  encodingMode: "PreEncoded",
 };
 
 const ThrowingHandler: RouteDefinition<string, string> = {
@@ -260,7 +280,7 @@ const ClassObjectRoutePreStringified: RouteDefinition<
   },
   handler: async (sw) =>
     stringifyMessage(sw.double(), [StringWrapper.SERIALIZATION]),
-  preStringified: true,
+  encodingMode: "PreStringified",
 };
 
 const handlers: RouteDefinition<any, any, any>[] = [
@@ -279,6 +299,7 @@ const handlers: RouteDefinition<any, any, any>[] = [
   InputValidationError,
   ClassObjectRoute,
   ClassObjectRoutePreStringified,
+  PreEncodedGet,
 ];
 
 function setupApp(): Promise<http.Server> {
@@ -404,6 +425,31 @@ describe("RPC library", () => {
     });
   });
 
+  test("handles pre-encoded route without gzip", async () => {
+    server = await setupApp();
+    const result = await callApi(PreEncodedGet.route, "foo", {
+      "Accept-Encoding": "",
+    });
+    expect(result).toBe("foo PreEncodedGet");
+  });
+
+  // For reasons I don't understand, this test fails if it is after the `without gzip` test.
+  // The error is:
+  // ```
+  // TypeError: fetch failed
+  // ...
+  // Cause:
+  // SocketError: other side closed
+  // ```
+  // However, it passes when run with `bun` and it's not clear why it fails with Jest.
+  test("handles pre-encoded route with gzip", async () => {
+    server = await setupApp();
+    const result = await callApi(PreEncodedGet.route, "foo", {
+      "Accept-Encoding": "gzip",
+    });
+    expect(result).toBe("foo PreEncodedGet gzip");
+  });
+
   test("addApi on unsupported type raises", () => {
     const bundle = appBundle();
     const Connect: RouteDefinition<string, string> = {
@@ -445,7 +491,11 @@ describe("RPC library", () => {
         resolve();
         return;
       }
-      server.close(() => {
+      server.close((e) => {
+        if (e) {
+          console.error("Error closing server", e);
+        }
+        server = undefined;
         resolve();
       });
     });

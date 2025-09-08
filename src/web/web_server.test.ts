@@ -6,8 +6,13 @@ import request from "supertest";
 import { setupServer, WebServerParams } from "@/web/web_server";
 import path from "path";
 import { TelemetryLogger } from "@/web/telemetry/telemetry";
-import { encodeMessage, isNumber } from "@/web/utils/rpc/parsing";
-import { PreStringifiedRpc, RouteDefinition } from "@/web/utils/rpc/server_rpc";
+import { encodeMessage, isNumber, isString } from "@/web/utils/rpc/parsing";
+import {
+  PreEncodedRpc,
+  PreStringifiedRpc,
+  RouteDefinition,
+} from "@/web/utils/rpc/server_rpc";
+import zlib from "zlib";
 
 console.debug = jest.fn();
 
@@ -60,14 +65,35 @@ const NumberGetPreStringified: RouteDefinition<
     outputValidator: isNumber,
   },
   handler: async (x) => `${x * 3}`,
-  preStringified: true,
+  encodingMode: "PreStringified",
+};
+
+const NumberGetPreEncoded: RouteDefinition<string, string, PreEncodedRpc> = {
+  route: {
+    path: "/api/NumberGetPreEncoded",
+    method: "GET",
+    inputValidator: isString,
+    outputValidator: isString,
+  },
+  handler: async (x, _, requestData) => {
+    if (requestData?.acceptEncoding?.includes("gzip")) {
+      return zlib.gzipSync(Buffer.from(`${x}PreEncodedGet gzip`));
+    }
+    return Buffer.from(`${x} PreEncodedGet`);
+  },
+  encodingMode: "PreEncoded",
 };
 
 function getServer(): express.Express {
   const app = express();
   const params: WebServerParams = {
     webApp: app,
-    routes: [NumberGet, NumberPost, NumberGetPreStringified],
+    routes: [
+      NumberGet,
+      NumberPost,
+      NumberGetPreStringified,
+      NumberGetPreEncoded,
+    ],
     buildDir: path.resolve(TEMP_DIR),
     telemetry: Promise.resolve(TelemetryLogger.NoOp),
   };
@@ -125,6 +151,28 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.text).toContain("171");
+  });
+
+  test("handles pre-encoded get route with gzip", async () => {
+    const path = `${NumberGetPreEncoded.route.path}/${encodeMessage("foo")}`;
+    const response = await request(app)
+      .get(path)
+      .set("accept-encoding", "gzip");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-encoding"]).toBe("gzip");
+    expect(response.headers["cache-control"]).toBe("immutable, no-transform");
+    expect(response.body.toString()).toBe("fooPreEncodedGet gzip");
+  });
+
+  test("handles pre-encoded get route without gzip", async () => {
+    const path = `${NumberGetPreEncoded.route.path}/${encodeMessage("foo")}`;
+    const response = await request(app).get(path).set("accept-encoding", "");
+
+    expect(response.status).toBe(200);
+    expect(response.headers["content-encoding"]).toBe(undefined);
+    expect(response.headers["cache-control"]).toBe(undefined);
+    expect(response.body.toString()).toBe("foo PreEncodedGet");
   });
 
   test("sends unknown requests to index", async () => {
