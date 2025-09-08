@@ -1,4 +1,5 @@
 use crate::common::PackedBitMask;
+use crate::corpus_serialization::{TokenData, load_token_data};
 use crate::packed_arrays;
 use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
 use crate::query_parsing_v2::{
@@ -11,9 +12,9 @@ use super::corpus_serialization::LatinCorpusIndex;
 use super::packed_index_utils::{apply_and_to_indices, max_elements_in};
 use super::profiler::TimeProfiler;
 
-use rusqlite::Connection;
 use serde::Serialize;
 use std::cmp::{max, min};
+use std::error::Error;
 
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
@@ -29,12 +30,6 @@ impl QueryExecError {
         QueryExecError {
             message: message.to_string(),
         }
-    }
-}
-
-impl From<rusqlite::Error> for QueryExecError {
-    fn from(e: rusqlite::Error) -> Self {
-        QueryExecError::new(&format!("SQLite error: {e}"))
     }
 }
 
@@ -103,38 +98,9 @@ struct IntermediateResult {
     position: u32,
 }
 
-struct TokenData {
-    tokens: Vec<u32>,
-    breaks: Vec<u32>,
-    text: String,
-}
-
 pub struct CorpusQueryEngine {
     corpus: LatinCorpusIndex,
     token_data: TokenData,
-}
-
-fn load_token_data(path: &str, num_tokens: usize) -> Result<TokenData, rusqlite::Error> {
-    let conn = Connection::open_with_flags(path, rusqlite::OpenFlags::SQLITE_OPEN_READ_ONLY)?;
-    let mut stmt = conn.prepare("SELECT token, break FROM raw_text")?;
-    let mut rows = stmt.query([])?;
-
-    let mut tokens = Vec::with_capacity(num_tokens);
-    let mut breaks = Vec::with_capacity(num_tokens);
-    let mut text = String::new();
-
-    while let Some(row) = rows.next()? {
-        tokens.push(text.len() as u32);
-        text.push_str(&row.get::<_, String>(0)?);
-        breaks.push(text.len() as u32);
-        text.push_str(&row.get::<_, String>(1)?);
-    }
-
-    Ok(TokenData {
-        tokens,
-        breaks,
-        text,
-    })
 }
 
 // Methods for converting a query to an internal form.
@@ -344,8 +310,8 @@ impl CorpusQueryEngine {
 
 // Core, high level logic for query execution.
 impl CorpusQueryEngine {
-    pub fn new(corpus: LatinCorpusIndex) -> Result<Self, rusqlite::Error> {
-        let token_data = load_token_data(&corpus.raw_text_db, corpus.stats.total_words as usize)?;
+    pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
+        let token_data = load_token_data(&corpus.raw_text_db)?;
         Ok(CorpusQueryEngine { corpus, token_data })
     }
 

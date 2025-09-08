@@ -33,6 +33,14 @@ pub struct WorkData {
     pub name: String,
 }
 
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TokenData {
+    pub text: String,
+    pub tokens: Vec<u32>,
+    pub breaks: Vec<u32>,
+}
+
 pub type WorkLookupEntry = (String, Vec<Vec<String>>, WorkData);
 pub type WorkRowRange = (u32, Vec<(u32, u32, u32)>);
 
@@ -143,6 +151,10 @@ where
 
 pub fn deserialize_corpus<P: AsRef<Path>>(path: P) -> Result<LatinCorpusIndex, Box<dyn Error>> {
     let json_string = fs::read_to_string(path)?;
-    let corpus = serde_json::from_str(&json_string)?;
-    Ok(corpus)
+    Ok(serde_json::from_str(&json_string)?)
+}
+
+pub fn load_token_data<P: AsRef<Path>>(path: P) -> Result<TokenData, Box<dyn Error>> {
+    let json_string = fs::read_to_string(path)?;
+    Ok(serde_json::from_str(&json_string)?)
 }

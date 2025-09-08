@@ -9,7 +9,6 @@ import {
 } from "@/common/library/corpus/corpus_common";
 import { writeCorpus } from "@/common/library/corpus/corpus_serialization";
 import { bytesToMib } from "@/common/misc_utils";
-import { ARRAY_INDEX, ReadOnlyDb } from "@/common/sql_helper";
 import { processTokens } from "@/common/text_cleaning";
 import { cleanLemma, crunchWord } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
@@ -182,21 +181,32 @@ function saveTokenDb(
   breaks: (string | null)[],
   corpusDir: string
 ) {
-  const zippedText = tokens.map((token, index) => ({
-    token,
-    break: breaks[index] ? breaks[index] : "",
-  }));
+  assertEqual(tokens.length, breaks.length);
+
+  const all: string[] = [];
+  const tokenStarts: number[] = new Array(tokens.length);
+  const breakStarts: number[] = new Array(tokens.length);
+  let bytesRead = 0;
+
+  for (let i = 0; i < tokens.length; i++) {
+    tokenStarts[i] = bytesRead;
+    all.push(tokens[i]);
+    bytesRead += Buffer.from(tokens[i], "utf-8").byteLength;
+    breakStarts[i] = bytesRead;
+    const breakText = breaks[i] ?? "";
+    all.push(breakText);
+    bytesRead += Buffer.from(breakText, "utf-8").byteLength;
+  }
+
+  const allText = all.join("");
+  const result = {
+    text: allText,
+    tokens: tokenStarts,
+    breaks: breakStarts,
+  };
+
   const destination = path.join(corpusDir, CORPUS_TOKEN_DB);
-  ReadOnlyDb.saveToSql({
-    destination,
-    tables: [
-      {
-        records: zippedText,
-        primaryKey: ARRAY_INDEX,
-        tableName: "raw_text",
-      },
-    ],
-  });
+  fs.writeFileSync(destination, JSON.stringify(result));
   return destination;
 }
 
