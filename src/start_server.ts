@@ -27,7 +27,7 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { SmithAndHall } from "@/common/smith_and_hall/sh_dict";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import {
-  retrieveWorkStringified,
+  retrieveWorkPreEncoded,
   retrieveWorksList,
 } from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
@@ -223,8 +223,9 @@ export function startMorcusServer(): Promise<http.Server> {
       ),
       RouteDefinition.create(
         GetWork,
-        (workId) => retrieveWorkStringified(workId),
-        "PreStringified",
+        (workId, _, requestData) =>
+          retrieveWorkPreEncoded(workId, undefined, requestData),
+        "PreEncoded",
         CACHING_SETTER
       ),
       RouteDefinition.create(ListLibraryWorks, (_unused) =>

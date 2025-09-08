@@ -30,9 +30,11 @@ import { MorceusCruncher } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions } from "@/morceus/cruncher_types";
 import { parseRomanNumeral } from "@/morceus/numerals/roman_numerals";
-import { stringifyMessage } from "@/web/utils/rpc/parsing";
+import { encodeMessage } from "@/web/utils/rpc/parsing";
+import { serverMessage } from "@/web/utils/rpc/server_rpc";
 import fs from "fs";
 import path from "path";
+import zlib from "zlib";
 
 // TODO: We should just crawl some root.
 const LOCAL_REPO_ROOT = "texts/latin/perseus";
@@ -146,9 +148,15 @@ function writeWorkFile(
   outputDir: string,
   workId: string
 ): string {
-  const encoded = stringifyMessage(work, [XmlNodeSerialization.DEFAULT]);
+  const encoded = encodeMessage(serverMessage(work), [
+    XmlNodeSerialization.DEFAULT,
+  ]);
   const outputPath = `${outputDir}/${workId}`;
-  fs.writeFileSync(outputPath, encoded);
+  // gzip at max compression level and write binary file
+  const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
+    level: 9,
+  });
+  fs.writeFileSync(outputPath, compressed);
   console.log("Wrote processed file to %s", outputPath);
   return outputPath;
 }

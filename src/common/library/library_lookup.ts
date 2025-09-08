@@ -1,11 +1,8 @@
-import {
-  LibraryWorkMetadata,
-  ProcessedWork2,
-  WorkId,
-} from "@/common/library/library_types";
-import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { parseMessage } from "@/web/utils/rpc/parsing";
+import { LibraryWorkMetadata, WorkId } from "@/common/library/library_types";
+import type { RequestData } from "@/web/utils/rpc/server_rpc";
+
 import { readFile } from "fs/promises";
+import zlib from "zlib";
 
 export const LIB_DEFAULT_DIR = "build/library_processed";
 export const LIBRARY_INDEX = "morcus_library_index.json";
@@ -58,10 +55,11 @@ async function resolveWork(
   return undefined;
 }
 
-export async function retrieveWorkStringified(
+export async function retrieveWorkPreEncoded(
   workId: WorkId,
-  resultDir: string = LIB_DEFAULT_DIR
-): Promise<string> {
+  resultDir: string = LIB_DEFAULT_DIR,
+  requestData?: RequestData
+): Promise<Buffer> {
   const workPath = await resolveWork(workId, resultDir);
   if (workPath === undefined) {
     return Promise.reject({
@@ -69,16 +67,9 @@ export async function retrieveWorkStringified(
       message: `Invalid id: ${JSON.stringify(workId)}`,
     });
   }
-  return (await readFile(workPath)).toString();
-}
-
-export async function retrieveWork(
-  workId: WorkId,
-  resultDir: string = LIB_DEFAULT_DIR
-): Promise<ProcessedWork2> {
-  return parseMessage(
-    await retrieveWorkStringified(workId, resultDir),
-    ProcessedWork2.isMatch,
-    [XmlNodeSerialization.DEFAULT]
-  );
+  const compressed = await readFile(workPath);
+  if (requestData?.acceptEncoding?.includes("gzip")) {
+    return compressed;
+  }
+  return Promise.resolve(zlib.gunzipSync(compressed));
 }

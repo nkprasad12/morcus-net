@@ -1,10 +1,15 @@
 import { setupFakeHypotacticData } from "@/common/library/hypotactic_test_helper";
 import {
-  retrieveWork,
+  retrieveWorkPreEncoded,
   retrieveWorksList,
 } from "@/common/library/library_lookup";
+import { ProcessedWork2, WorkId } from "@/common/library/library_types";
 import { processLibrary } from "@/common/library/process_library";
+import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
+import { decodeMessage } from "@/web/utils/rpc/parsing";
+import { ServerMessage } from "@/web/utils/rpc/rpc";
 import fs from "fs";
+import zlib from "zlib";
 
 console.debug = jest.fn();
 console.log = jest.fn();
@@ -32,21 +37,41 @@ afterAll(() => {
   process.env.MORCEUS_DATA_ROOT = ORIGINAL_MORCEUS_DATA_ROOT;
 });
 
+async function retrieveWork(
+  workId: WorkId,
+  acceptEncoding?: string
+): Promise<ProcessedWork2> {
+  const requestData = { acceptEncoding: acceptEncoding ?? "gzip" };
+  const response = await retrieveWorkPreEncoded(workId, LIB_DIR, requestData);
+  const isGzipped = requestData.acceptEncoding?.includes("gzip");
+  const decoded = (isGzipped ? zlib.gunzipSync(response) : response).toString();
+  return decodeMessage(
+    decoded,
+    ServerMessage.validator(ProcessedWork2.isMatch),
+    [XmlNodeSerialization.DEFAULT]
+  ).data;
+}
+
 describe("Library Processing", () => {
   test("stores and retrieves by id correctly", async () => {
     processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
-    const result = await retrieveWork(
-      { id: "phi0448.phi001.perseus-lat2" },
-      LIB_DIR
-    );
+    const result = await retrieveWork({ id: "phi0448.phi001.perseus-lat2" });
     expect(result.info.author).toBe("Julius Caesar");
   });
 
   test("stores and retrieves by name and author correctly", async () => {
     processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
+    const result = await retrieveWork({
+      nameAndAuthor: { urlName: "de_bello_gallico", urlAuthor: "caesar" },
+    });
+    expect(result.info.author).toBe("Julius Caesar");
+  });
+
+  test("stores and retrieves uncompressed correctly", async () => {
+    processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     const result = await retrieveWork(
-      { nameAndAuthor: { urlName: "de_bello_gallico", urlAuthor: "caesar" } },
-      LIB_DIR
+      { id: "phi0448.phi001.perseus-lat2" },
+      ""
     );
     expect(result.info.author).toBe("Julius Caesar");
   });
@@ -54,7 +79,7 @@ describe("Library Processing", () => {
   test("handles invalid request correctly", async () => {
     processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     await expect(
-      retrieveWork({ id: "phi0448.phi001.perseus-lat" }, LIB_DIR)
+      retrieveWork({ id: "phi0448.phi001.perseus-lat" })
     ).rejects.toHaveProperty("status", 404);
   });
 
