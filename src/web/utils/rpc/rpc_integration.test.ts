@@ -318,47 +318,39 @@ describe("RPC library", () => {
   let server: http.Server | undefined = undefined;
 
   test("handles strings with GET", async () => {
-    server = await setupApp();
     const result = await callApi(StringGet.route, "foo");
     expect(result).toBe("foo StringToStringGet");
   });
 
   test("handles strings with GET and special characters", async () => {
-    server = await setupApp();
     const result = await callApi(StringGet.route, "foo?bar");
     expect(result).toBe("foo?bar StringToStringGet");
   });
 
   test("handles strings with POST", async () => {
-    server = await setupApp();
     const result = await callApi(StringPost.route, "foo");
     expect(result).toBe("foo StringToStringPost");
   });
 
   test("handles numbers with GET", async () => {
-    server = await setupApp();
     const result = await callApi(NumberGet.route, 57);
     expect(result).toBe(171);
   });
 
   test("handles numbers with POST", async () => {
-    server = await setupApp();
     const result = await callApi(NumberPost.route, 57);
     expect(result).toBe(228);
   });
 
   test.each([true, false])("handles boolean with GET %s", async (value) => {
-    server = await setupApp();
     expect(await callApi(BoolGet.route, value)).toBe(value);
   });
 
   test.each([true, false])("handles boolean with POST %s", async (value) => {
-    server = await setupApp();
     expect(await callApi(BoolPost.route, value)).toBe(!value);
   });
 
   test("handles JSON with GET", async () => {
-    server = await setupApp();
     const input = { nested: { str: "foo" }, arr: ["foo"] };
 
     const result = await callApi(JsonGet.route, input);
@@ -370,7 +362,6 @@ describe("RPC library", () => {
   });
 
   test("handles pre-serialized JSON with GET", async () => {
-    server = await setupApp();
     const input = { nested: { str: "foo" }, arr: ["foo"] };
 
     const result = await callApi(JsonGetPreStringified.route, input);
@@ -382,7 +373,6 @@ describe("RPC library", () => {
   });
 
   test("handles JSON with POST", async () => {
-    server = await setupApp();
     const input = { nested: { str: "foo" }, arr: ["foo"] };
 
     const result = await callApi(JsonPost.route, input);
@@ -394,7 +384,6 @@ describe("RPC library", () => {
   });
 
   test("handles server side error", async () => {
-    server = await setupApp();
     const result = callApi(ThrowingHandler.route, "foo");
     await expect(result).rejects.toMatchObject({
       message: expect.stringMatching("500"),
@@ -402,7 +391,6 @@ describe("RPC library", () => {
   });
 
   test("handles output validation throwing", async () => {
-    server = await setupApp();
     const result = callApi(OutputValidationThrows.route, "foo");
     await expect(result).rejects.toMatchObject({
       message: expect.stringMatching("Unable to decode"),
@@ -410,7 +398,6 @@ describe("RPC library", () => {
   });
 
   test("handler with server error status propagates error", async () => {
-    server = await setupApp();
     const result = callApi(ErroringHandler.route, "foo");
     await expect(result).rejects.toMatchObject({
       message: expect.stringMatching("404"),
@@ -418,36 +405,24 @@ describe("RPC library", () => {
   });
 
   test("handles input validation throwing", async () => {
-    server = await setupApp();
     const result = callApi(InputValidationError.route, "foo");
     await expect(result).rejects.toMatchObject({
       message: expect.stringMatching("400"),
     });
   });
 
-  test("handles pre-encoded route without gzip", async () => {
-    server = await setupApp();
-    const result = await callApi(PreEncodedGet.route, "foo", {
-      "Accept-Encoding": "",
-    });
-    expect(result).toBe("foo PreEncodedGet");
-  });
-
-  // For reasons I don't understand, this test fails if it is after the `without gzip` test.
-  // The error is:
-  // ```
-  // TypeError: fetch failed
-  // ...
-  // Cause:
-  // SocketError: other side closed
-  // ```
-  // However, it passes when run with `bun` and it's not clear why it fails with Jest.
   test("handles pre-encoded route with gzip", async () => {
-    server = await setupApp();
     const result = await callApi(PreEncodedGet.route, "foo", {
       "Accept-Encoding": "gzip",
     });
     expect(result).toBe("foo PreEncodedGet gzip");
+  });
+
+  test("handles pre-encoded route without gzip", async () => {
+    const result = await callApi(PreEncodedGet.route, "foo", {
+      "Accept-Encoding": "",
+    });
+    expect(result).toBe("foo PreEncodedGet");
   });
 
   test("addApi on unsupported type raises", () => {
@@ -467,7 +442,6 @@ describe("RPC library", () => {
   });
 
   test("handles data with serialization registry", async () => {
-    server = await setupApp();
     const result = callApi(ClassObjectRoute.route, new StringWrapper("foo"));
     await expect(result).resolves.toStrictEqual<StringWrapper>(
       new StringWrapper("foofoo")
@@ -475,7 +449,6 @@ describe("RPC library", () => {
   });
 
   test("handles pre-serialized data with serialization registry", async () => {
-    server = await setupApp();
     const result = callApi(
       ClassObjectRoutePreStringified.route,
       new StringWrapper("foo")
@@ -485,7 +458,11 @@ describe("RPC library", () => {
     );
   });
 
-  afterEach(async () => {
+  beforeAll(async () => {
+    server = await setupApp();
+  });
+
+  afterAll(async () => {
     await new Promise<void>((resolve) => {
       if (server === undefined) {
         resolve();
