@@ -192,8 +192,9 @@ function adaptHandler<I, O extends Data, T extends RouteDefinitionType>(
         timer.event("encodeMessageComplete");
         routeDefinition.reponseSetter?.(res, input);
         if (isPreEncoded && acceptEncoding?.includes("gzip")) {
+          // Set the Content-Encoding header so the compression middleware doesn't
+          // try to compress this again.
           res.setHeader("Content-Encoding", "gzip");
-          res.setHeader("Cache-Control", "immutable, no-transform");
         }
         res.status(status).send(result);
         const telemetryData: Omit<ApiCallData, "latencyMs"> = {

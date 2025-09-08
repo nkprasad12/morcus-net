@@ -161,7 +161,6 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers["content-encoding"]).toBe("gzip");
-    expect(response.headers["cache-control"]).toBe("immutable, no-transform");
     expect(response.body.toString()).toBe("fooPreEncodedGet gzip");
   });
 
@@ -171,7 +170,6 @@ describe("WebServer", () => {
 
     expect(response.status).toBe(200);
     expect(response.headers["content-encoding"]).toBe(undefined);
-    expect(response.headers["cache-control"]).toBe(undefined);
     expect(response.body.toString()).toBe("foo PreEncodedGet");
   });
 
