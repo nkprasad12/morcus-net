@@ -50,7 +50,7 @@ function absorbWork(
   tokens: string[],
   breaks: (string | null)[]
 ) {
-  console.debug(`Processing work: ${work.id}`);
+  console.debug(`Ingesting into corpus: ${work.id}`);
   const wordIndex = arrayMap(corpus.indices.word);
   const lemmaIndex = arrayMap(corpus.indices.lemma);
   const casesIndex = arrayMap(corpus.indices.case);

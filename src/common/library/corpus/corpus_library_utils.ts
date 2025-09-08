@@ -7,9 +7,11 @@ import {
 import { ProcessedWork2 } from "@/common/library/library_types";
 import type { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
-import { parseMessage } from "@/web/utils/rpc/parsing";
+import { decodeMessage } from "@/web/utils/rpc/parsing";
+import { ServerMessage } from "@/web/utils/rpc/rpc";
 
 import fs from "fs";
+import { gunzipSync } from "zlib";
 
 function extractRowText(node: XmlNode | string): string {
   if (typeof node === "string") {
@@ -37,12 +39,12 @@ function readFilesFromLibraryIndex(): string[] {
 }
 
 function* latinWorksInFiles(filePaths: string[]): Generator<ProcessedWork2> {
+  const validator = ServerMessage.validator(ProcessedWork2.isMatch);
+  const registry = [XmlNodeSerialization.DEFAULT];
   for (const workPath of filePaths) {
-    const work = parseMessage(
-      fs.readFileSync(workPath, "utf8"),
-      ProcessedWork2.isMatch,
-      [XmlNodeSerialization.DEFAULT]
-    );
+    const compressed = fs.readFileSync(workPath);
+    const raw = gunzipSync(compressed).toString();
+    const work = decodeMessage(raw, validator, registry).data;
     if (work.info.isTranslation) {
       continue;
     }
