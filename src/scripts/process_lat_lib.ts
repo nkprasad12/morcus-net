@@ -1,6 +1,6 @@
 /* istanbul ignore file */
 
-import fs from "fs";
+import fs, { readFileSync } from "fs";
 import { processLibrary } from "@/common/library/process_library";
 import { LIB_DEFAULT_DIR } from "@/common/library/library_lookup";
 import { envVar } from "@/common/env_vars";
@@ -22,6 +22,7 @@ const worksList =
     : ALL_SUPPORTED_WORKS.map((work) => `${LIB_XML_ROOT}/${work}`);
 
 const buildCorpus = process.env.BUILD_CORPUS === "1";
+process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
 processLibrary({
   outputDir: LIB_DEFAULT_DIR,

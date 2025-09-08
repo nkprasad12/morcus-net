@@ -25,4 +25,6 @@ export function writeCommitId() {
   }
   console.log(`Storing commit hash: "${id}"`);
   writeFileSync(COMMIT_ID_FILE, id);
+  // Save this for other build steps in the process.
+  process.env.COMMIT_ID = id;
 }
