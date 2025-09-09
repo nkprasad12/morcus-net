@@ -69,21 +69,13 @@ struct SizeBounds {
 }
 
 #[derive(Debug, Clone)]
-struct InternalAtom<'a> {
-    inner: &'a TokenConstraintAtom,
+struct InternalAtom {
     size_bounds: SizeBounds,
-}
-
-#[derive(Debug, Clone)]
-enum InternalAtomOrConstraint<'a> {
-    Atom(InternalAtom<'a>),
-    Constraint(InternalConstraint<'a>),
 }
 
 #[derive(Debug, Clone)]
 struct InternalConstraint<'a> {
     inner: &'a TokenConstraint,
-    constraints: Vec<InternalAtomOrConstraint<'a>>,
     size_bounds: SizeBounds,
 }
 
@@ -123,9 +115,8 @@ impl CorpusQueryEngine {
     }
 
     /// Converts an atom to its internal representation.
-    fn convert_atom<'a>(&self, atom: &'a TokenConstraintAtom) -> InternalAtom<'a> {
+    fn convert_atom(&self, atom: &TokenConstraintAtom) -> InternalAtom {
         InternalAtom {
-            inner: atom,
             size_bounds: self.get_bounds_for_atom(atom),
         }
     }
@@ -141,7 +132,6 @@ impl CorpusQueryEngine {
                 let size_bounds = internal_atom.size_bounds.clone();
                 Ok(InternalConstraint {
                     inner: constraint,
-                    constraints: vec![InternalAtomOrConstraint::Atom(internal_atom)],
                     size_bounds,
                 })
             }
@@ -153,7 +143,6 @@ impl CorpusQueryEngine {
                 )?;
                 let mut lower = first.size_bounds.lower;
                 let mut upper = first.size_bounds.upper;
-                let mut constraints = vec![InternalAtomOrConstraint::Constraint(first)];
                 for child in children.iter().skip(1) {
                     let converted = self.convert_constraint(child)?;
                     if *op == TokenConstraintOperation::And {
@@ -166,11 +155,9 @@ impl CorpusQueryEngine {
                         lower = max(lower, converted.size_bounds.lower);
                         upper = max(upper, converted.size_bounds.upper);
                     }
-                    constraints.push(InternalAtomOrConstraint::Constraint(converted));
                 }
                 Ok(InternalConstraint {
                     inner: constraint,
-                    constraints,
                     size_bounds: SizeBounds { upper, lower },
                 })
             }
@@ -181,7 +168,6 @@ impl CorpusQueryEngine {
                 let lower = n - converted.size_bounds.upper;
                 Ok(InternalConstraint {
                     inner,
-                    constraints: vec![InternalAtomOrConstraint::Constraint(converted)],
                     size_bounds: SizeBounds { upper, lower },
                 })
             }
