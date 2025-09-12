@@ -57,12 +57,24 @@ export interface CorpusQuery {
   parts: CorpusQueryPart[];
 }
 
-export interface CorpusQueryMatch {
+export interface CorpusQueryMatchMetadata {
   workId: string;
   workName: string;
   author: string;
   section: string;
   offset: number;
+}
+
+const isCorpusQueryMatchMetadata = matchesObject<CorpusQueryMatchMetadata>({
+  workId: isString,
+  workName: isString,
+  author: isString,
+  section: isString,
+  offset: isNumber,
+});
+
+export interface CorpusQueryMatch {
+  metadata: CorpusQueryMatchMetadata;
   text: string;
   leftContext?: string;
   rightContext?: string;
@@ -70,11 +82,7 @@ export interface CorpusQueryMatch {
 
 export namespace CorpusQueryMatch {
   export const isMatch = matchesObject<CorpusQueryMatch>({
-    workId: isString,
-    workName: isString,
-    author: isString,
-    section: isString,
-    offset: isNumber,
+    metadata: isCorpusQueryMatchMetadata,
     text: isString,
     leftContext: maybeUndefined(isString),
     rightContext: maybeUndefined(isString),

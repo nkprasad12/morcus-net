@@ -15,7 +15,8 @@ import { getFormattedMemoryUsage } from "@/common/misc_utils";
 import type { CorpusQueryRequest } from "@/web/api_routes";
 
 function formatQueryResult(result: CorpusQueryMatch): string {
-  return `- ${result.workId} @ ${result.section} (offset: ${result.offset})\n  ${result.text}`;
+  const data = result.metadata;
+  return `- ${data.workId} @ ${data.section} (offset: ${data.offset})\n  ${result.text}`;
 }
 
 function currentMemoryUsage(): number {

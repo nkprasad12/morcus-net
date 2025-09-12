@@ -82,9 +82,11 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
-      workId: "test_work_1",
-      section: "1",
-      offset: 1,
+      metadata: expect.objectContaining({
+        workId: "test_work_1",
+        section: "1",
+        offset: 1,
+      }),
       text: "servum",
     });
   });
@@ -94,14 +96,18 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(2);
     expect(results.matches[0]).toMatchObject({
-      workId: "test_work_1",
-      author: "Author 1",
-      workName: "Work 1",
+      metadata: expect.objectContaining({
+        workId: "test_work_1",
+        author: "Author 1",
+        workName: "Work 1",
+      }),
     });
     expect(results.matches[1]).toMatchObject({
-      workId: "test_work_2",
-      author: "Author 2",
-      workName: "Work 2",
+      metadata: expect.objectContaining({
+        workId: "test_work_2",
+        author: "Author 2",
+        workName: "Work 2",
+      }),
     });
   });
 
@@ -112,15 +118,19 @@ describe("Corpus Integration Test", () => {
     expect(results.matches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
-          workId: "test_work_1",
-          section: "1",
-          offset: 1,
+          metadata: expect.objectContaining({
+            workId: "test_work_1",
+            section: "1",
+            offset: 1,
+          }),
           text: "servum",
         }),
         expect.objectContaining({
-          workId: "test_work_1",
-          section: "2",
-          offset: 0,
+          metadata: expect.objectContaining({
+            workId: "test_work_1",
+            section: "2",
+            offset: 0,
+          }),
           text: "servus",
         }),
       ])
@@ -145,9 +155,11 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
-      workId: "test_work_1",
-      section: "1",
-      offset: 0,
+      metadata: expect.objectContaining({
+        workId: "test_work_1",
+        section: "1",
+        offset: 0,
+      }),
       text: "Gallus servum acclamat",
     });
   });
@@ -157,9 +169,11 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
-      workId: "test_work_1",
-      section: "2",
-      offset: 1,
+      metadata: expect.objectContaining({
+        workId: "test_work_1",
+        section: "2",
+        offset: 1,
+      }),
       text: "Gallum accognoscit",
     });
   });
@@ -169,15 +183,19 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(2);
     expect(results.matches[0]).toMatchObject({
-      workId: "test_work_1",
-      section: "1",
-      offset: 0,
+      metadata: expect.objectContaining({
+        workId: "test_work_1",
+        section: "1",
+        offset: 0,
+      }),
       text: "Gallus servum",
     });
     expect(results.matches[1]).toMatchObject({
-      workId: "test_work_2",
-      section: "2",
-      offset: 0,
+      metadata: expect.objectContaining({
+        workId: "test_work_2",
+        section: "2",
+        offset: 0,
+      }),
       text: "Gallus regem",
     });
   });
@@ -224,17 +242,17 @@ describe("Corpus Integration Test", () => {
     let results = queryCorpus(query, 0, 2);
     expect(results.totalResults).toBe(5);
     expect(results.matches).toHaveLength(2);
-    results.matches.forEach((match) => startIds.add(match.offset));
+    results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
     results = queryCorpus(query, 2, 2);
     expect(results.totalResults).toBe(5);
     expect(results.matches).toHaveLength(2);
-    results.matches.forEach((match) => startIds.add(match.offset));
+    results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
     results = queryCorpus(query, 4, 2);
     expect(results.totalResults).toBe(5);
     expect(results.matches).toHaveLength(1);
-    results.matches.forEach((match) => startIds.add(match.offset));
+    results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
     const sortedIds = Array.from(startIds).sort((a, b) => a - b);
     // Marmorem is not valid because marmor is neuter.

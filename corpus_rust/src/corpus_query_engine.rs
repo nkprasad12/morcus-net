@@ -42,12 +42,18 @@ impl From<String> for QueryExecError {
 
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
-pub struct CorpusQueryMatch<'a> {
+pub struct CorpusQueryMatchMetadata<'a> {
     pub work_id: &'a String,
     pub work_name: &'a String,
     pub author: &'a String,
     pub section: String,
     pub offset: u32,
+}
+
+#[derive(Debug, PartialEq, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct CorpusQueryMatch<'a> {
+    pub metadata: CorpusQueryMatchMetadata<'a>,
     pub text: String,
     pub left_context: String,
     pub right_context: String,
@@ -518,27 +524,46 @@ impl CorpusQueryEngine {
                 right_end_byte,
             ));
         }
+        // Warm up the ranges that we're about to access.
         self.text
             .advise_range(starts[0].0, starts[starts.len() - 1].3);
 
-        token_ids
+        // Compute the metadata while the OS is (hopefully) loading the pages into memory.
+        let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(token_ids.len());
+        for &id in token_ids {
+            metadata.push(self.resolve_match_token(id)?);
+        }
+
+        // Read the text chunks.
+        let text_parts = starts
             .iter()
-            .enumerate()
-            .map(|(i, &id)| {
-                self.resolve_match_token(id, starts[i].0, starts[i].1, starts[i].2, starts[i].3)
+            .map(|&(a, b, c, d)| {
+                let left_context = self.text.slice(a, b);
+                let text = self.text.slice(b, c);
+                let right_context = self.text.slice(c, d);
+                (left_context, text, right_context)
             })
-            .collect()
+            .collect::<Vec<_>>();
+
+        let matches = metadata
+            .into_iter()
+            .zip(text_parts)
+            .map(|(meta, (left, text, right))| CorpusQueryMatch {
+                metadata: meta,
+                left_context: left,
+                text,
+                right_context: right,
+            })
+            .collect();
+
+        Ok(matches)
     }
 
     /// Resolves a match token into a full result.
     fn resolve_match_token(
         &self,
         token_id: u32,
-        left_start_byte: usize,
-        text_start_byte: usize,
-        right_start_byte: usize,
-        right_end_byte: usize,
-    ) -> Result<CorpusQueryMatch<'_>, QueryExecError> {
+    ) -> Result<CorpusQueryMatchMetadata<'_>, QueryExecError> {
         let work_ranges = &self.corpus.work_row_ranges;
         let work_idx = work_ranges
             .binary_search_by(|(_, row_data)| {
@@ -578,19 +603,12 @@ impl CorpusQueryEngine {
         let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
         let row_idx = row_info.0 as usize;
 
-        let left_context = self.text.slice(left_start_byte, text_start_byte);
-        let text = self.text.slice(text_start_byte, right_start_byte);
-        let right_context = self.text.slice(right_start_byte, right_end_byte);
-
-        Ok(CorpusQueryMatch {
+        Ok(CorpusQueryMatchMetadata {
             work_id,
             work_name: &work_data.name,
             author: &work_data.author,
             section: row_ids[row_idx].join("."),
             offset: token_id - row_info.1,
-            text,
-            left_context,
-            right_context,
         })
     }
 

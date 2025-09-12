@@ -132,7 +132,8 @@ function ResultsSection(props: {
 
 function SingleResult(props: { result: CorpusQueryMatch }) {
   const { nav } = Router.useRouter();
-  const id = `${props.result.workId}-${props.result.section}-${props.result.offset}`;
+  const metadata = props.result.metadata;
+  const id = `${metadata.workId}-${metadata.section}-${metadata.offset}`;
 
   return (
     <div>
@@ -143,13 +144,13 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
           nav.to({
             path: checkPresent(
               ClientPaths.WORK_PAGE.toUrlPath({
-                workId: props.result.workId,
+                workId: metadata.workId,
               })
             ),
-            params: { id: props.result.section, ref: "corpus" },
+            params: { id: metadata.section, ref: "corpus" },
           })
         }>
-        {props.result.workName} {props.result.section} [{props.result.author}]
+        {metadata.workName} {metadata.section} [{metadata.author}]
       </SpanLink>
       <div className="text sm light" style={{ textAlign: "justify" }}>
         <span>{props.result.leftContext ?? ""}</span>

@@ -109,9 +109,13 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
         println!("- Omitted matches due to --quiet flag.\n");
         return;
     }
-    for m in results.matches {
+    for match_data in results.matches {
+        let m = &match_data.metadata;
         println!("  {} - {} {}", m.author, m.work_name, m.section);
-        println!("    {}*{}*{}", m.left_context, m.text, m.right_context,);
+        println!(
+            "    {}*{}*{}",
+            match_data.left_context, match_data.text, match_data.right_context,
+        );
         println!();
     }
 }
@@ -161,9 +165,12 @@ fn main() {
     let engine =
         corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
     if has_arg("--mem") {
-        print_mem_summary("Before query execution".to_string(), 2);
+        print_mem_summary("Before query execution".to_string(), 1);
     }
     let query_str = get_query_arg_or_exit();
+    if has_arg("--mem") {
+        print_mem_summary("After query execution".to_string(), 1);
+    }
     print_query_results(&engine, &query_str);
 }
 
