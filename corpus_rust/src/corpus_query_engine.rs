@@ -11,10 +11,11 @@ use super::corpus_serialization::LatinCorpusIndex;
 use super::packed_index_utils::{apply_and_to_indices, max_elements_in};
 use super::profiler::TimeProfiler;
 
+use memmap2::Mmap;
 use serde::Serialize;
 use std::cmp::{max, min};
 use std::error::Error;
-use std::fs;
+use std::fs::File;
 
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
@@ -91,17 +92,29 @@ struct IntermediateResult {
 }
 
 struct CorpusText {
-    raw_text: String,
+    mmap: Mmap,
 }
 
 impl CorpusText {
     pub fn new(raw_text_path: &str) -> Result<Self, Box<dyn Error>> {
-        let raw_text = fs::read_to_string(raw_text_path)?;
-        Ok(CorpusText { raw_text })
+        let file = File::open(raw_text_path)?;
+        let mmap = unsafe { Mmap::map(&file)? };
+        Ok(CorpusText { mmap })
     }
 
     pub fn slice(&self, start: usize, end: usize) -> String {
-        self.raw_text[start..end].to_string()
+        String::from_utf8_lossy(&self.mmap[start..end]).to_string()
+    }
+
+    pub fn advise_range(&self, start: usize, end: usize) {
+        if start >= end {
+            return;
+        }
+        unsafe {
+            let ptr = self.mmap.as_ptr().add(start) as *mut libc::c_void;
+            let len = end - start;
+            libc::madvise(ptr, len, libc::MADV_WILLNEED);
+        }
     }
 }
 
@@ -474,12 +487,57 @@ impl CorpusQueryEngine {
         self.compute_page_result(&match_results, page_start, page_size, profiler)
     }
 
+    fn resolve_match_tokens(
+        &self,
+        token_ids: &[u32],
+        query_length: usize,
+        context_len: usize,
+    ) -> Result<Vec<CorpusQueryMatch<'_>>, QueryExecError> {
+        if token_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
+        // Left start byte, Text start byte, Right start byte, Right end byte
+        let mut starts: Vec<(usize, usize, usize, usize)> = Vec::with_capacity(token_ids.len());
+        for &token_id in token_ids {
+            let left_start_idx = max(0, token_id.saturating_sub(context_len as u32)) as usize;
+            let right_end_idx = min(
+                token_id as usize + query_length + context_len,
+                self.corpus.stats.total_words as usize,
+            );
+
+            let left_start_byte = self.corpus.token_starts[left_start_idx] as usize;
+            let text_start_byte = self.corpus.token_starts[token_id as usize] as usize;
+            let right_start_byte =
+                self.corpus.break_starts[token_id as usize + query_length - 1] as usize;
+            let right_end_byte = self.corpus.break_starts[right_end_idx - 1] as usize;
+            starts.push((
+                left_start_byte,
+                text_start_byte,
+                right_start_byte,
+                right_end_byte,
+            ));
+        }
+        self.text
+            .advise_range(starts[0].0, starts[starts.len() - 1].3);
+
+        token_ids
+            .iter()
+            .enumerate()
+            .map(|(i, &id)| {
+                self.resolve_match_token(id, starts[i].0, starts[i].1, starts[i].2, starts[i].3)
+            })
+            .collect()
+    }
+
     /// Resolves a match token into a full result.
     fn resolve_match_token(
         &self,
         token_id: u32,
-        query_length: usize,
-        context_len: usize,
+        left_start_byte: usize,
+        text_start_byte: usize,
+        right_start_byte: usize,
+        right_end_byte: usize,
     ) -> Result<CorpusQueryMatch<'_>, QueryExecError> {
         let work_ranges = &self.corpus.work_row_ranges;
         let work_idx = work_ranges
@@ -510,7 +568,7 @@ impl CorpusQueryEngine {
                     std::cmp::Ordering::Equal
                 }
             })
-            .map(|i| row_data[i])
+            .map(|i| &row_data[i])
             .map_err(|_| {
                 QueryExecError::new(&format!(
                     "TokenId {token_id} not found in any row for work index {work_idx}."
@@ -519,18 +577,6 @@ impl CorpusQueryEngine {
 
         let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
         let row_idx = row_info.0 as usize;
-
-        let left_start_idx = max(0, token_id.saturating_sub(context_len as u32)) as usize;
-        let right_end_idx = min(
-            token_id as usize + query_length + context_len,
-            self.corpus.stats.total_words as usize,
-        );
-
-        let left_start_byte = self.corpus.token_starts[left_start_idx] as usize;
-        let text_start_byte = self.corpus.token_starts[token_id as usize] as usize;
-        let right_start_byte =
-            self.corpus.break_starts[token_id as usize + query_length - 1] as usize;
-        let right_end_byte = self.corpus.break_starts[right_end_idx - 1] as usize;
 
         let left_context = self.text.slice(left_start_byte, text_start_byte);
         let text = self.text.slice(text_start_byte, right_start_byte);
@@ -578,10 +624,7 @@ impl CorpusQueryEngine {
         let context_len = context_len
             .unwrap_or(DEFAULT_CONTEXT_LEN)
             .clamp(1, MAX_CONTEXT_LEN);
-        let matches = match_ids
-            .iter()
-            .map(|&id| self.resolve_match_token(id, num_terms, context_len))
-            .collect::<Result<Vec<_>, _>>()?;
+        let matches = self.resolve_match_tokens(&match_ids, num_terms, context_len)?;
         profiler.phase("Build Matches");
 
         Ok(CorpusQueryResult {
