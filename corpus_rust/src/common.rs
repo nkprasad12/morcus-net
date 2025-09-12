@@ -26,45 +26,21 @@ where
 }
 
 pub fn deserialize_u64_vec_from_bytes(bytes: &[u8]) -> Result<Vec<u64>, String> {
-    if bytes.len() % 4 != 0 {
+    if bytes.len() % 8 != 0 {
         return Err(format!(
-            "invalid length: {}, expected a byte slice whose length is a multiple of 4",
+            "invalid length: {}, expected a byte slice whose length is a multiple of 8",
             bytes.len()
         ));
     }
-
-    let mut u64_vec = Vec::with_capacity(bytes.len() / 8 + 1);
-    // Process full 8-byte chunks
-    let mut i = 0;
-    while i + 8 <= bytes.len() {
-        let value = u64::from_le_bytes([
-            bytes[i + 4],
-            bytes[i + 5],
-            bytes[i + 6],
-            bytes[i + 7],
-            bytes[i],
-            bytes[i + 1],
-            bytes[i + 2],
-            bytes[i + 3],
-        ]);
-        u64_vec.push(value);
-        i += 8;
-    }
-
-    // Handle the remainder if there's a 4-byte chunk left
-    if i + 4 <= bytes.len() {
-        let value = u64::from_le_bytes([
-            0,
-            0,
-            0,
-            0,
-            bytes[i],
-            bytes[i + 1],
-            bytes[i + 2],
-            bytes[i + 3],
-        ]);
-        u64_vec.push(value);
-    }
+    let u64_vec: Vec<u64> = bytes
+        .chunks_exact(8)
+        .map(|chunk| -> Result<u64, String> {
+            let arr: [u8; 8] = chunk
+                .try_into()
+                .map_err(|_| "slice with incorrect length".to_string())?;
+            Ok(u64::from_le_bytes(arr))
+        })
+        .collect::<Result<Vec<u64>, String>>()?;
 
     Ok(u64_vec)
 }
