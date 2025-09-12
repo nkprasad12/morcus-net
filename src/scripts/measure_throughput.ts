@@ -4,12 +4,12 @@
  * Simple throughput/latency tester for an HTTP API (TypeScript).
  *
  * Usage (Node 18+):
- *   bun ./src/scripts/measure_throughput.ts --url http://localhost:5757/api/foo --concurrency 2 --duration 10
+ *   bun ./src/scripts/measure_throughput.ts --url http://localhost:5757/api/foo
  *
  * Options:
  *   --url         (required) target URL
  *   --concurrency number of concurrent workers (default 2)
- *   --duration    test duration in seconds (default 10)
+ *   --duration    test duration in seconds (default 5)
  *   --method      e.g. GET or POST
  */
 
@@ -49,7 +49,7 @@ function parseArgs(): Args {
   const concurrency = Number(
     out.concurrency === undefined ? "2" : out.concurrency
   );
-  const duration = Number(out.duration === undefined ? "10" : out.duration);
+  const duration = Number(out.duration === undefined ? "5" : out.duration);
   return { url, method, concurrency, duration };
 }
 
@@ -111,7 +111,7 @@ function percentile(sorted: number[], p: number) {
   console.log("---- RESULTS ----");
   console.log(`Ran ${args.concurrency} workers for ${args.duration} seconds.`);
   console.log(
-    `${totalRequests} requests made, ${successCount} successful (${errorCount} failed).`
+    `${totalRequests} requests made, ${successCount} successful (\x1b[31m${errorCount} failed\x1b[0m).`
   );
   console.log(`Requests / second: ${rps.toFixed(2)}`);
   console.log(`Mean latency (ms): ${mean.toFixed(3)}`);
