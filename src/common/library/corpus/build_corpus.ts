@@ -2,7 +2,7 @@ import { assert, assertEqual } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   CORPUS_DIR,
-  CORPUS_TOKEN_DB,
+  CORPUS_RAW_TEXT,
   createEmptyCorpusIndex,
   type CorpusInputWork,
   type InProgressLatinCorpus,
@@ -198,19 +198,12 @@ function saveTokenDb(
     bytesRead += Buffer.from(breakText, "utf-8").byteLength;
   }
 
-  const allText = all.join("");
-  const result = {
-    text: allText,
-    tokens: tokenStarts,
-    breaks: breakStarts,
-  };
-
-  const destination = path.join(corpusDir, CORPUS_TOKEN_DB);
+  const destination = path.join(corpusDir, CORPUS_RAW_TEXT);
   if (!fs.existsSync(corpusDir)) {
     fs.mkdirSync(corpusDir, { recursive: true });
   }
-  fs.writeFileSync(destination, JSON.stringify(result));
-  return destination;
+  fs.writeFileSync(destination, all.join(""), "utf-8");
+  return [tokenStarts, breakStarts, destination] as const;
 }
 
 function printArtifactSummary(corpusDir: string) {
@@ -267,8 +260,10 @@ export function buildCorpus(
   corpus.stats.uniqueWords = corpus.indices.word.size;
   corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
 
-  const dbFile = saveTokenDb(tokens, breaks, corpusDir);
-  corpus.rawTextDb = dbFile;
+  const tokenDb = saveTokenDb(tokens, breaks, corpusDir);
+  corpus.rawTextPath = tokenDb[2];
+  corpus.tokenStarts = tokenDb[0];
+  corpus.breakStarts = tokenDb[1];
   writeCorpus(corpus, corpusDir);
   printArtifactSummary(corpusDir);
   console.debug(`Corpus stats:`, corpus.stats);

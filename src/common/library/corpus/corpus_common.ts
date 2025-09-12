@@ -17,7 +17,7 @@ import {
 
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
-export const CORPUS_TOKEN_DB = `latin_corpus_tokens.json`;
+export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;
 
 // // // // // // // // // //
 // Corpus Querying Types   //
@@ -173,14 +173,12 @@ interface CoreCorpusIndex {
   workRowRanges: WorkRowRange[];
   /** Statistics about the corpus. */
   stats: CorpusStats;
-  /**
-   * SQLITE Database path for raw text.
-   *
-   * It must contain a table named `raw_text` with the following columns:
-   * - `token`: The token text.
-   * - `break`: The break text following that token (can be empty).
-   */
-  rawTextDb: string;
+  /** The utf-8 encoded text of the full corpus. */
+  rawTextPath: string;
+  /** The start indices of each token in the raw text. */
+  tokenStarts: number[];
+  /** The start indices of each break in the raw text. */
+  breakStarts: number[];
 }
 
 export interface LatinCorpusIndex extends CoreCorpusIndex {
@@ -203,7 +201,9 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
     workLookup: [],
     workRowRanges: [],
-    rawTextDb: CORPUS_TOKEN_DB,
+    rawTextPath: CORPUS_RAW_TEXT,
+    tokenStarts: [],
+    breakStarts: [],
     indices: {
       word: new Map(),
       breaks: new Map(),

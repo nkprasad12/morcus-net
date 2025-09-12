@@ -57,7 +57,9 @@ function getTestCorpus(): InProgressLatinCorpus {
       uniqueWords: 2,
       uniqueLemmata: 1,
     },
-    rawTextDb: "placeholder.db",
+    rawTextPath: "placeholder.db",
+    tokenStarts: [],
+    breakStarts: [],
   };
 }
 

@@ -1,5 +1,4 @@
 use crate::common::PackedBitMask;
-use crate::corpus_serialization::{TokenData, load_token_data};
 use crate::packed_arrays;
 use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
 use crate::query_parsing_v2::{
@@ -15,6 +14,7 @@ use super::profiler::TimeProfiler;
 use serde::Serialize;
 use std::cmp::{max, min};
 use std::error::Error;
+use std::fs;
 
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
@@ -90,9 +90,24 @@ struct IntermediateResult {
     position: u32,
 }
 
+struct CorpusText {
+    raw_text: String,
+}
+
+impl CorpusText {
+    pub fn new(raw_text_path: &str) -> Result<Self, Box<dyn Error>> {
+        let raw_text = fs::read_to_string(raw_text_path)?;
+        Ok(CorpusText { raw_text })
+    }
+
+    pub fn slice(&self, start: usize, end: usize) -> String {
+        self.raw_text[start..end].to_string()
+    }
+}
+
 pub struct CorpusQueryEngine {
     corpus: LatinCorpusIndex,
-    token_data: TokenData,
+    text: CorpusText,
 }
 
 // Methods for converting a query to an internal form.
@@ -297,8 +312,8 @@ impl CorpusQueryEngine {
 // Core, high level logic for query execution.
 impl CorpusQueryEngine {
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
-        let token_data = load_token_data(&corpus.raw_text_db)?;
-        Ok(CorpusQueryEngine { corpus, token_data })
+        let text = CorpusText::new(&corpus.raw_text_path)?;
+        Ok(CorpusQueryEngine { corpus, text })
     }
 
     /// Returns the hard breaks, verifying that it is a bitmask.
@@ -511,15 +526,15 @@ impl CorpusQueryEngine {
             self.corpus.stats.total_words as usize,
         );
 
-        let left_start_byte = self.token_data.tokens[left_start_idx] as usize;
-        let text_start_byte = self.token_data.tokens[token_id as usize] as usize;
+        let left_start_byte = self.corpus.token_starts[left_start_idx] as usize;
+        let text_start_byte = self.corpus.token_starts[token_id as usize] as usize;
         let right_start_byte =
-            self.token_data.breaks[token_id as usize + query_length - 1] as usize;
-        let right_end_byte = self.token_data.breaks[right_end_idx - 1] as usize;
+            self.corpus.break_starts[token_id as usize + query_length - 1] as usize;
+        let right_end_byte = self.corpus.break_starts[right_end_idx - 1] as usize;
 
-        let left_context = self.token_data.text[left_start_byte..text_start_byte].to_string();
-        let text = self.token_data.text[text_start_byte..right_start_byte].to_string();
-        let right_context = self.token_data.text[right_start_byte..right_end_byte].to_string();
+        let left_context = self.text.slice(left_start_byte, text_start_byte);
+        let text = self.text.slice(text_start_byte, right_start_byte);
+        let right_context = self.text.slice(right_start_byte, right_end_byte);
 
         Ok(CorpusQueryMatch {
             work_id,

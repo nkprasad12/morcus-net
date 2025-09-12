@@ -1,4 +1,4 @@
-import { assertEqual } from "@/common/assert";
+import { assert, assertEqual } from "@/common/assert";
 import { unpackIntegers } from "@/common/bytedata/packing";
 import type { PackedIndexData } from "@/common/library/corpus/corpus_common";
 
@@ -16,12 +16,18 @@ export function unpackPackedIndexData(
   // If it's a bitmask, we need to convert it to an array of token IDs.
   const bitmask = packedData.data;
   const result: number[] = [];
-  for (let i = 0; i < bitmask.length; i++) {
-    const word = bitmask[i];
+  // Stored bitmask uses swapped pairs of 32-bit words. toBitMask stored at
+  // index "stored" = raw + (raw % 2 === 0 ? 1 : -1).
+  // To emit tokens in ascending order we iterate rawWordIndex in increasing order
+  // and read the corresponding stored word.
+  for (let rawWordIndex = 0; rawWordIndex < bitmask.length; rawWordIndex++) {
+    const storedIndex = rawWordIndex + (rawWordIndex % 2 === 0 ? 1 : -1);
+    assert(storedIndex >= 0 && storedIndex < bitmask.length);
+    const word = bitmask[storedIndex];
     if (word === 0) {
-      continue; // Skip empty words as an optimization.
+      continue;
     }
-    const wordOffset = i * 32;
+    const wordOffset = rawWordIndex * 32;
     for (let j = 0; j < 32; j++) {
       if ((word & (1 << (31 - j))) !== 0) {
         result.push(wordOffset + j);

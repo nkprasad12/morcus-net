@@ -33,14 +33,6 @@ pub struct WorkData {
     pub name: String,
 }
 
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct TokenData {
-    pub text: String,
-    pub tokens: Vec<u32>,
-    pub breaks: Vec<u32>,
-}
-
 pub type WorkLookupEntry = (String, Vec<Vec<String>>, WorkData);
 pub type WorkRowRange = (u32, Vec<(u32, u32, u32)>);
 
@@ -50,7 +42,9 @@ pub struct LatinCorpusIndex {
     pub work_lookup: Vec<WorkLookupEntry>,
     pub work_row_ranges: Vec<WorkRowRange>,
     pub stats: CorpusStats,
-    pub raw_text_db: String,
+    pub raw_text_path: String,
+    pub token_starts: Vec<u32>,
+    pub break_starts: Vec<u32>,
     #[serde(deserialize_with = "deserialize_indices")]
     pub indices: HashMap<String, HashMap<String, IndexData>>,
 }
@@ -150,11 +144,6 @@ where
 }
 
 pub fn deserialize_corpus<P: AsRef<Path>>(path: P) -> Result<LatinCorpusIndex, Box<dyn Error>> {
-    let json_string = fs::read_to_string(path)?;
-    Ok(serde_json::from_str(&json_string)?)
-}
-
-pub fn load_token_data<P: AsRef<Path>>(path: P) -> Result<TokenData, Box<dyn Error>> {
     let json_string = fs::read_to_string(path)?;
     Ok(serde_json::from_str(&json_string)?)
 }
