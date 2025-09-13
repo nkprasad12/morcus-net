@@ -109,7 +109,8 @@ impl CorpusText {
     }
 
     pub fn slice(&self, start: usize, end: usize) -> String {
-        String::from_utf8_lossy(&self.mmap[start..end]).to_string()
+        // We store the starts of each word as byte offsets, so this should always be valid UTF-8.
+        unsafe { String::from_utf8_unchecked(self.mmap[start..end].to_vec()) }
     }
 
     pub fn advise_range(&self, start: usize, end: usize) {
