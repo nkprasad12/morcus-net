@@ -1,3 +1,5 @@
+use std::borrow::Cow;
+
 use super::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
 use super::common::{IndexData, PackedBitMask};
 use super::packed_arrays;
@@ -130,10 +132,10 @@ pub fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u
     result
 }
 
-fn unpack_known_numbers(data: &IndexData) -> Result<Vec<u32>, String> {
+fn unpack_known_numbers<'a>(data: &'a IndexData) -> Result<Cow<'a, [u32]>, String> {
     match data {
-        IndexData::PackedNumbers(d) => packed_arrays::unpack_integers(d),
-        IndexData::Unpacked(d) => Ok(d.clone()),
+        IndexData::PackedNumbers(d) => Ok(Cow::Owned(packed_arrays::unpack_integers(d)?)),
+        IndexData::Unpacked(d) => Ok(Cow::Borrowed(d.as_slice())),
         _ => Err("Illegal use of unpack_known_numbers".into()),
     }
 }
