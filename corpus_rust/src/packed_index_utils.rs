@@ -270,7 +270,6 @@ pub fn apply_or_to_indices(
 /// # Returns
 ///
 /// The smeared bitmask.
-#[allow(dead_code)]
 pub fn smear_bitmask(original: &[u64], window: usize, direction: &str) -> Vec<u64> {
     assert!(window > 0 && window < 16, "Window must be in (0, 16).");
     let sign = if direction == "left" { -1 } else { 1 };
