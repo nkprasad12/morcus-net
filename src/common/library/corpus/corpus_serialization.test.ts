@@ -58,6 +58,7 @@ function getTestCorpus(): InProgressLatinCorpus {
       uniqueLemmata: 1,
     },
     rawTextPath: "placeholder.db",
+    rawBufferPath: "placeholder.bin",
     tokenStarts: [],
     breakStarts: [],
   };
@@ -70,9 +71,9 @@ describe("writeCorpus and loadCorpus", () => {
     }
   });
 
-  it("writes and loads a corpus index correctly", () => {
+  it("writes and loads a corpus index correctly", async () => {
     const corpus = getTestCorpus();
-    writeCorpus(corpus, TEST_CORPUS_DIR);
+    await writeCorpus(corpus, TEST_CORPUS_DIR);
     const indexPath = path.join(TEST_CORPUS_DIR, CORPUS_FILE);
     expect(fs.existsSync(indexPath)).toBe(true);
 

@@ -234,7 +234,7 @@ function printArtifactSummary(corpusDir: string) {
   }
 }
 
-export function buildCorpus(
+export async function buildCorpus(
   iterableWorks: Iterable<CorpusInputWork>,
   corpusDir: string = CORPUS_DIR
 ) {
@@ -264,7 +264,7 @@ export function buildCorpus(
   corpus.rawTextPath = tokenDb[2];
   corpus.tokenStarts = tokenDb[0];
   corpus.breakStarts = tokenDb[1];
-  writeCorpus(corpus, corpusDir);
+  await writeCorpus(corpus, corpusDir);
   printArtifactSummary(corpusDir);
   console.debug(`Corpus stats:`, corpus.stats);
   console.debug(`Corpus indexing runtime: ${Date.now() - startTime}ms`);

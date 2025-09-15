@@ -189,7 +189,7 @@ function extractWorkMetadata(
   };
 }
 
-export function processLibrary({
+export async function processLibrary({
   outputDir = LIB_DEFAULT_DIR,
   works = LOCAL_REPO_WORK_PATHS,
   shouldBuildCorpus = false,
@@ -260,6 +260,6 @@ export function processLibrary({
   );
   fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));
   if (shouldBuildCorpus) {
-    buildCorpus(latinWorksFromLibrary());
+    await buildCorpus(latinWorksFromLibrary());
   }
 }

@@ -52,12 +52,12 @@ describe("Corpus Integration Test", () => {
     return assertType(parsed, CorpusQueryResult.isMatch);
   }
 
-  beforeAll(() => {
+  beforeAll(async () => {
     if (fs.existsSync(TEST_CORPUS_DIR)) {
       fs.rmSync(TEST_CORPUS_DIR, { recursive: true, force: true });
     }
     fs.mkdirSync(TEST_CORPUS_DIR, { recursive: true });
-    buildCorpus(TEST_WORKS, TEST_CORPUS_DIR);
+    await buildCorpus(TEST_WORKS, TEST_CORPUS_DIR);
     queryEngine = new RustCorpusQueryEngine(TEST_CORPUS_DIR);
   });
 

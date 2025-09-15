@@ -18,6 +18,7 @@ import {
 export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
 export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;
+export const CORPUS_BUFFERS = `latin_corpus_buffers.bin`;
 
 // // // // // // // // // //
 // Corpus Querying Types   //
@@ -139,21 +140,6 @@ export interface CorpusStats {
   uniqueLemmata: number;
 }
 
-export interface FilterOptions {
-  /**
-   * The offset to apply to the candidates before filtering.
-   * For example, if the candidates are [1, 5] and the offset is 2, we
-   * would check if the filter matches 3 and 7 to determine membership.
-   */
-  offset?: number;
-  /**
-   * By default, the filter will keep a candidate if the underlying index
-   * contains that candidate. If this is set to true, the filter will remove
-   * the candidate if the underlying index does not contain it.
-   */
-  keepMisses?: boolean;
-}
-
 export interface LatinInflectionTypes {
   case: LatinCase;
   number: LatinNumber;
@@ -183,6 +169,8 @@ interface CoreCorpusIndex {
   stats: CorpusStats;
   /** The utf-8 encoded text of the full corpus. */
   rawTextPath: string;
+  /** The binary buffers for the corpus (e.g., packed indices). */
+  rawBufferPath: string;
   /** The start indices of each token in the raw text. */
   tokenStarts: number[];
   /** The start indices of each break in the raw text. */
@@ -209,6 +197,7 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
     workLookup: [],
     workRowRanges: [],
+    rawBufferPath: CORPUS_BUFFERS,
     rawTextPath: CORPUS_RAW_TEXT,
     tokenStarts: [],
     breakStarts: [],

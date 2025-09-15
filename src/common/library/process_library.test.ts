@@ -54,13 +54,13 @@ async function retrieveWork(
 
 describe("Library Processing", () => {
   test("stores and retrieves by id correctly", async () => {
-    processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
+    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     const result = await retrieveWork({ id: "phi0448.phi001.perseus-lat2" });
     expect(result.info.author).toBe("Julius Caesar");
   });
 
   test("stores and retrieves by name and author correctly", async () => {
-    processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
+    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     const result = await retrieveWork({
       nameAndAuthor: { urlName: "de_bello_gallico", urlAuthor: "caesar" },
     });
@@ -68,7 +68,7 @@ describe("Library Processing", () => {
   });
 
   test("stores and retrieves uncompressed correctly", async () => {
-    processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
+    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     const result = await retrieveWork(
       { id: "phi0448.phi001.perseus-lat2" },
       ""
@@ -77,14 +77,14 @@ describe("Library Processing", () => {
   });
 
   test("handles invalid request correctly", async () => {
-    processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
+    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     await expect(
       retrieveWork({ id: "phi0448.phi001.perseus-lat" })
     ).rejects.toHaveProperty("status", 404);
   });
 
   test("returns correct index", async () => {
-    processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
+    await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     const result = await retrieveWorksList(LIB_DIR);
 
     expect(result).toHaveLength(4);

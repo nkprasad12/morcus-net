@@ -78,7 +78,7 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
 
 async function driver() {
   if (process.env.BUILD_CORPUS === "1") {
-    buildCorpus(latinWorksFromLibrary());
+    await buildCorpus(latinWorksFromLibrary());
   }
   const engine = rustCorpusApiHandler();
   // console.log(getFormattedMemoryUsage());

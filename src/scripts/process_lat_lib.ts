@@ -28,7 +28,7 @@ processLibrary({
   outputDir: LIB_DEFAULT_DIR,
   works: worksList,
   shouldBuildCorpus: buildCorpus,
+}).then(() => {
+  const runTime = Math.round(performance.now() - startTime);
+  console.log(`Latin library processing runtime: ${runTime} ms.`);
 });
-
-const runTime = Math.round(performance.now() - startTime);
-console.log(`Latin library processing runtime: ${runTime} ms.`);
