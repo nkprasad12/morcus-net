@@ -1,7 +1,3 @@
-use super::common::{IndexData, PackedBitMask, deserialize_u64_vec_from_bytes};
-
-use base64::engine::Engine as _;
-use base64::engine::general_purpose::STANDARD as BASE64_STANDARD;
 use serde::{
     Deserialize,
     de::{self, Deserializer, MapAccess, Visitor},
@@ -13,18 +9,17 @@ use std::fs;
 use std::path::Path;
 
 const MAP_TOKEN: &str = "___SERIALIZED_KEY_v1____MAP";
-const BIT_MASK_TOKEN: &str = "___SERIALIZED_KEY_v1____BIT_MASK";
 
 #[derive(Debug, Deserialize)]
 pub struct CorpusStats {
     #[serde(rename = "totalWords")]
-    pub total_words: u64,
+    pub total_words: u32,
     #[serde(rename = "totalWorks")]
-    pub total_works: u64,
+    pub total_works: u32,
     #[serde(rename = "uniqueWords")]
-    pub unique_words: u64,
+    pub unique_words: u32,
     #[serde(rename = "uniqueLemmata")]
-    pub unique_lemmata: u64,
+    pub unique_lemmata: u32,
 }
 
 #[derive(Debug, Deserialize)]
@@ -43,21 +38,24 @@ pub struct LatinCorpusIndex {
     pub work_row_ranges: Vec<WorkRowRange>,
     pub stats: CorpusStats,
     pub raw_text_path: String,
+    pub raw_buffer_path: String,
     pub token_starts: Vec<u32>,
     pub break_starts: Vec<u32>,
     #[serde(deserialize_with = "deserialize_indices")]
-    pub indices: HashMap<String, HashMap<String, IndexData>>,
+    pub indices: HashMap<String, HashMap<String, StoredMapValue>>,
 }
 
-#[derive(Deserialize)]
+#[derive(Debug, Deserialize)]
 #[serde(untagged)]
-enum StoredMapValue {
-    Base64(String),
+pub enum StoredMapValue {
+    Packed {
+        offset: u32,
+        len: u32,
+    },
     BitMask {
-        #[serde(rename = "serializationKey")]
-        serialization_key: String,
-        data: String,
-        size: usize,
+        offset: u32,
+        #[serde(rename = "numSet")]
+        num_set: u32,
     },
 }
 
@@ -72,14 +70,14 @@ struct SerializedMap {
 
 fn deserialize_indices<'de, D>(
     deserializer: D,
-) -> Result<HashMap<String, HashMap<String, IndexData>>, D::Error>
+) -> Result<HashMap<String, HashMap<String, StoredMapValue>>, D::Error>
 where
     D: Deserializer<'de>,
 {
     struct IndicesVisitor;
 
     impl<'de> Visitor<'de> for IndicesVisitor {
-        type Value = HashMap<String, HashMap<String, IndexData>>;
+        type Value = HashMap<String, HashMap<String, StoredMapValue>>;
 
         fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
             formatter.write_str("a map of serialized index maps")
@@ -107,32 +105,7 @@ where
                     } else {
                         return Err(de::Error::custom("Map key must be a string or a number"));
                     };
-                    let packed_data = match v {
-                        StoredMapValue::Base64(b64_data) => {
-                            let bytes = BASE64_STANDARD
-                                .decode(b64_data)
-                                .map_err(de::Error::custom)?;
-                            IndexData::PackedNumbers(bytes)
-                        }
-                        StoredMapValue::BitMask {
-                            serialization_key,
-                            data,
-                            size,
-                        } => {
-                            if serialization_key != BIT_MASK_TOKEN {
-                                return Err(de::Error::custom("Invalid bitmask token"));
-                            }
-                            let bytes = BASE64_STANDARD.decode(data).map_err(de::Error::custom)?;
-                            let u64_data = deserialize_u64_vec_from_bytes(&bytes)
-                                .map_err(de::Error::custom)?;
-
-                            IndexData::PackedBitMask(PackedBitMask {
-                                data: u64_data,
-                                num_set: Some(size),
-                            })
-                        }
-                    };
-                    inner_map.insert(map_key, packed_data);
+                    inner_map.insert(map_key, v);
                 }
                 outer_map.insert(key, inner_map);
             }

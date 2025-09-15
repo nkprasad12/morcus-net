@@ -1,4 +1,5 @@
-use crate::common::PackedBitMask;
+use crate::common::{PackedBitMask, deserialize_u64_vec_from_bytes};
+use crate::corpus_serialization::StoredMapValue;
 use crate::packed_arrays;
 use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
 use crate::query_parsing_v2::{
@@ -125,9 +126,42 @@ impl CorpusText {
     }
 }
 
+struct RawBuffers {
+    mmap: Mmap,
+}
+
+impl RawBuffers {
+    pub fn new(raw_buffer_path: &str) -> Result<Self, Box<dyn Error>> {
+        let file = File::open(raw_buffer_path)?;
+        let mmap = unsafe { Mmap::map(&file)? };
+        Ok(RawBuffers { mmap })
+    }
+
+    pub fn resolve_index(
+        &self,
+        data: &StoredMapValue,
+        num_tokens: u32,
+    ) -> Result<IndexData, String> {
+        match data {
+            StoredMapValue::Packed { offset, len } => Ok(IndexData::PackedNumbers(
+                self.mmap[*offset as usize..(*offset + *len) as usize].to_vec(),
+            )),
+            StoredMapValue::BitMask { offset, num_set } => {
+                let num_words = (num_tokens as usize).div_ceil(64);
+                let bytes = &self.mmap[*offset as usize..(*offset as usize + (num_words * 8))];
+                Ok(IndexData::PackedBitMask(PackedBitMask {
+                    data: deserialize_u64_vec_from_bytes(bytes)?,
+                    num_set: Some(*num_set as usize),
+                }))
+            }
+        }
+    }
+}
+
 pub struct CorpusQueryEngine {
     corpus: LatinCorpusIndex,
     text: CorpusText,
+    raw_buffers: RawBuffers,
 }
 
 // Methods for converting a query to an internal form.
@@ -137,7 +171,7 @@ impl CorpusQueryEngine {
         let Some(index) = self.get_index_for(atom) else {
             return SizeBounds { upper: 0, lower: 0 };
         };
-        let Some(upper) = max_elements_in(index) else {
+        let Some(upper) = max_elements_in(&index) else {
             return SizeBounds {
                 upper: self.corpus.stats.total_words as usize,
                 lower: 0,
@@ -269,7 +303,7 @@ impl CorpusQueryEngine {
         constraint: &TokenConstraint,
     ) -> Result<Option<IndexData>, QueryExecError> {
         match constraint {
-            TokenConstraint::Atom(atom) => Ok(self.get_index_for(atom).cloned()),
+            TokenConstraint::Atom(atom) => Ok(self.get_index_for(atom)),
             TokenConstraint::Composed { children, op } => {
                 self.compute_index_for_composed(children, op)
             }
@@ -314,7 +348,7 @@ impl CorpusQueryEngine {
         Ok(Some(IntermediateResult { data, position }))
     }
 
-    fn get_index_for(&self, part: &TokenConstraintAtom) -> Option<&IndexData> {
+    fn get_index_for(&self, part: &TokenConstraintAtom) -> Option<IndexData> {
         match part {
             TokenConstraintAtom::Word(word) => self.get_index("word", &word.to_lowercase()),
             TokenConstraintAtom::Lemma(lemma) => self.get_index("lemma", lemma),
@@ -324,8 +358,15 @@ impl CorpusQueryEngine {
         }
     }
 
-    fn get_index(&self, key: &str, value: &str) -> Option<&IndexData> {
-        self.corpus.indices.get(key)?.get(value)
+    fn get_index(&self, key: &str, value: &str) -> Option<IndexData> {
+        match self.corpus.indices.get(key)?.get(value).map(|v| {
+            self.raw_buffers
+                .resolve_index(v, self.corpus.stats.total_words)
+        }) {
+            Some(Ok(data)) => Some(data),
+            Some(Err(_)) => None,
+            None => None,
+        }
     }
 }
 
@@ -333,11 +374,16 @@ impl CorpusQueryEngine {
 impl CorpusQueryEngine {
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
         let text = CorpusText::new(&corpus.raw_text_path)?;
-        Ok(CorpusQueryEngine { corpus, text })
+        let raw_buffers = RawBuffers::new(&corpus.raw_buffer_path)?;
+        Ok(CorpusQueryEngine {
+            corpus,
+            text,
+            raw_buffers,
+        })
     }
 
     /// Returns the hard breaks, verifying that it is a bitmask.
-    fn get_hard_breaks(&self) -> Result<&PackedBitMask, QueryExecError> {
+    fn get_hard_breaks(&self) -> Result<PackedBitMask, QueryExecError> {
         let index = self
             .get_index("breaks", "hard")
             .ok_or(QueryExecError::new("No hard breaks index found"))?;
