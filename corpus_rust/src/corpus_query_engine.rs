@@ -1,6 +1,5 @@
-use crate::common::{PackedBitMask, u64_from_bytes};
+use crate::common::{PackedBitMask, u32_from_bytes, u64_from_bytes};
 use crate::corpus_serialization::StoredMapValue;
-use crate::packed_arrays::{self, read_header};
 use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
 use crate::query_parsing_v2::{
     QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
@@ -145,8 +144,11 @@ impl RawBuffers {
         num_tokens: u32,
     ) -> Result<IndexData, String> {
         match data {
-            StoredMapValue::Packed { offset, len } => Ok(IndexData::PackedNumbers(
-                self.index_buffer[*offset as usize..(*offset + *len) as usize].to_vec(),
+            StoredMapValue::Packed { offset, len } => Ok(IndexData::Unpacked(
+                u32_from_bytes(
+                    &self.index_buffer[*offset as usize..(*offset + (4 * *len)) as usize],
+                )?
+                .to_vec(),
             )),
             StoredMapValue::BitMask { offset, .. } => {
                 let num_words = (num_tokens as usize).div_ceil(64);
@@ -161,12 +163,7 @@ impl RawBuffers {
 
     pub fn num_elements(&self, data: &StoredMapValue) -> u32 {
         match data {
-            StoredMapValue::Packed { offset, len } => {
-                let header = self.index_buffer[*offset as usize];
-                let (unused_bits, bits_per_number) = read_header(header);
-                let total_bits = ((*len as usize) * 8) - (unused_bits as usize);
-                (total_bits / bits_per_number) as u32
-            }
+            StoredMapValue::Packed { len, .. } => *len,
             StoredMapValue::BitMask { num_set, .. } => *num_set,
         }
     }
@@ -450,7 +447,7 @@ impl CorpusQueryEngine {
         // Get to the start of the page.
         let mut results: Vec<u32> = vec![];
         let mut i: usize = match &match_results.data {
-            IndexData::Unpacked(_) | IndexData::PackedNumbers(_) => page_start,
+            IndexData::Unpacked(_) => page_start,
             IndexData::PackedBitMask(bitmask) => {
                 let mut start_idx = 0;
                 for _ in 0..page_start {
@@ -474,15 +471,6 @@ impl CorpusQueryEngine {
                     i += 1;
                     id
                 }
-                IndexData::PackedNumbers(ref data) => {
-                    if i >= n {
-                        break;
-                    }
-                    let id = packed_arrays::get(data, i);
-                    i += 1;
-                    id
-                }
-
                 IndexData::PackedBitMask(ref bitmask_data) => {
                     let id = match bitmask_data.next_one_bit(i) {
                         Some(v) => v,

@@ -1,4 +1,3 @@
-import { packSortedNats } from "@/common/bytedata/packing";
 import { toBitMask } from "@/common/library/corpus/corpus_byte_utils";
 import {
   CORPUS_FILE,
@@ -55,13 +54,11 @@ async function serializeCorpus(
   }
   rawWriteStream.write(new Uint32Array([numTokens]));
   let offset = 4;
-  const packedNumberSize = Math.ceil(Math.log2(obj.numTokens));
   const replacer = (key: string, value: any) => {
     if (value instanceof Map) {
       const [mapData, newOffset] = prepareIndexMap(
         value,
         obj.numTokens,
-        packedNumberSize,
         key,
         rawWriteStream,
         offset
@@ -82,7 +79,6 @@ async function serializeCorpus(
 function prepareIndexMap(
   indexMap: Map<unknown, number[]>,
   numTokens: number,
-  packedNumberSize: number,
   outerKey: string,
   writer: fs.WriteStream,
   offset: number
@@ -91,7 +87,7 @@ function prepareIndexMap(
   const entries: Record<string, StoredMapValue> = {};
   for (const [key, value] of indexMap.entries()) {
     const useBitMask =
-      value.length * packedNumberSize > numTokens ||
+      value.length * 32 > numTokens ||
       (outerKey === "breaks" && key === "hard");
     // Bitmasks are interpreted on the Rust side as a vector of 64 bit integers.
     // To avoid having to handle misaligned data, make sure it's 64-bit aligned.
@@ -106,11 +102,11 @@ function prepareIndexMap(
 
     const indexBytes = useBitMask
       ? Buffer.from(toBitMask(value, numTokens).buffer)
-      : Buffer.from(packSortedNats(value));
+      : Buffer.from(new Uint32Array(value).buffer);
     const indexLen = indexBytes.byteLength;
     const storedValue: StoredMapValue = useBitMask
       ? { offset: newOffset, numSet: value.length }
-      : { offset: newOffset, len: indexLen };
+      : { offset: newOffset, len: value.length };
     writer.write(indexBytes);
     newOffset += indexLen;
     entries[String(key)] = storedValue;
