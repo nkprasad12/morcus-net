@@ -1,6 +1,6 @@
 use crate::common::{PackedBitMask, u32_from_bytes, u64_from_bytes};
 use crate::corpus_serialization::StoredMapValue;
-use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
+use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask};
 use crate::query_parsing_v2::{
     QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
     parse_query,
@@ -417,32 +417,7 @@ impl CorpusQueryEngine {
         page_size: Option<usize>,
         profiler: &mut TimeProfiler,
     ) -> Result<(Vec<u32>, usize), QueryExecError> {
-        let page_size = match page_size {
-            Some(size) => size,
-            // If no page size is given, return all results.
-            None => {
-                // Unpack all the results.
-                let position = match_results.position;
-                let matches = unpack_packed_index_data(&match_results.data)?;
-                profiler.phase("Unpack match results");
-                // Skip any illegal matches
-                let mut i: usize = 0;
-                while i < matches.len() && matches[i] < position {
-                    i += 1;
-                }
-
-                let total_results = matches.len() - i;
-                let page_size = page_size.unwrap_or(total_results);
-                let end = (page_start + page_size).min(total_results) + i;
-
-                let filtered = &matches[i..end]
-                    .iter()
-                    .map(|&x| x - position)
-                    .collect::<Vec<_>>();
-                profiler.phase("Compute page token IDs");
-                return Ok((filtered.to_vec(), total_results));
-            }
-        };
+        let page_size = page_size.unwrap_or(10000);
 
         // Get to the start of the page.
         let mut results: Vec<u32> = vec![];

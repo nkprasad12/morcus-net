@@ -321,28 +321,6 @@ pub fn find_fuzzy_matches_with_arrays(
     results
 }
 
-/// Unpacks packed index data (either a bitmask or a packed array) into a vector of integers.
-pub fn unpack_packed_index_data(packed_data: &IndexData) -> Result<Vec<u32>, String> {
-    match packed_data {
-        IndexData::PackedBitMask(bitmask_data) => {
-            let mut result = Vec::new();
-            for (i, &word) in bitmask_data.data.iter().enumerate() {
-                if word == 0 {
-                    continue;
-                }
-                let word_offset = (i * 64) as u32;
-                for j in 0..64 {
-                    if (word & (1 << (63 - j))) != 0 {
-                        result.push(word_offset + j as u32);
-                    }
-                }
-            }
-            Ok(result)
-        }
-        IndexData::Unpacked(data) => Ok(data.clone()),
-    }
-}
-
 /// Checks if the given packed index data has any values in the specified range.
 ///
 /// # Arguments
@@ -928,24 +906,6 @@ mod tests {
             })
         );
         assert_eq!(position, 3);
-    }
-
-    #[test]
-    fn unpack_packed_index_data_from_array() {
-        let original_data = vec![10, 25, 150, 300];
-        let packed_data = IndexData::Unpacked(original_data.clone());
-        let result = unpack_packed_index_data(&packed_data).unwrap();
-        assert_eq!(result, original_data);
-    }
-
-    #[test]
-    fn unpack_packed_index_data_from_bitmask() {
-        let original_data = vec![31, 32, 65, 127];
-        let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            data: to_bitmask(&original_data, 128),
-        });
-        let result = unpack_packed_index_data(&packed_data).unwrap();
-        assert_eq!(result, original_data);
     }
 
     #[test]
