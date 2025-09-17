@@ -17,6 +17,7 @@ use serde::Serialize;
 use std::cmp::{max, min};
 use std::error::Error;
 use std::fs::File;
+use std::io::Read;
 
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
@@ -127,14 +128,15 @@ impl CorpusText {
 }
 
 struct RawBuffers {
-    mmap: Mmap,
+    index_buffer: Vec<u8>,
 }
 
 impl RawBuffers {
     pub fn new(raw_buffer_path: &str) -> Result<Self, Box<dyn Error>> {
-        let file = File::open(raw_buffer_path)?;
-        let mmap = unsafe { Mmap::map(&file)? };
-        Ok(RawBuffers { mmap })
+        let mut file = File::open(raw_buffer_path)?;
+        let mut index_buffer = vec![];
+        file.read_to_end(&mut index_buffer)?;
+        Ok(RawBuffers { index_buffer })
     }
 
     pub fn resolve_index(
@@ -144,11 +146,12 @@ impl RawBuffers {
     ) -> Result<IndexData, String> {
         match data {
             StoredMapValue::Packed { offset, len } => Ok(IndexData::PackedNumbers(
-                self.mmap[*offset as usize..(*offset + *len) as usize].to_vec(),
+                self.index_buffer[*offset as usize..(*offset + *len) as usize].to_vec(),
             )),
             StoredMapValue::BitMask { offset, num_set } => {
                 let num_words = (num_tokens as usize).div_ceil(64);
-                let bytes = &self.mmap[*offset as usize..(*offset as usize + (num_words * 8))];
+                let bytes =
+                    &self.index_buffer[*offset as usize..(*offset as usize + (num_words * 8))];
                 Ok(IndexData::PackedBitMask(PackedBitMask {
                     data: deserialize_u64_vec_from_bytes(bytes)?,
                     num_set: Some(*num_set as usize),
