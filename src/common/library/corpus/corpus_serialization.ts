@@ -1,18 +1,13 @@
 import { packSortedNats } from "@/common/bytedata/packing";
 import { toBitMask } from "@/common/library/corpus/corpus_byte_utils";
 import {
-  LatinCorpusIndex,
   CORPUS_FILE,
   CORPUS_DIR,
   type InProgressLatinCorpus,
-  type PackedIndexData,
   CORPUS_BUFFERS,
 } from "@/common/library/corpus/corpus_common";
 import fs from "fs";
 import path from "path";
-
-const SERIALIZATION_TOKEN = "___SERIALIZED_KEY_v1___";
-const MAP_TOKEN = `${SERIALIZATION_TOKEN}_MAP`;
 
 interface StoredArray {
   offset: number;
@@ -36,63 +31,6 @@ export async function writeCorpus(
   const destFile = path.join(corpusDir, CORPUS_FILE);
   fs.writeFileSync(destFile, await serializeCorpus(corpus, corpusDir));
   console.debug(`Corpus written to ${destFile}`);
-}
-
-export function loadCorpus(corpusDir: string = CORPUS_DIR): LatinCorpusIndex {
-  const corpusFile = path.join(corpusDir, CORPUS_FILE);
-  const raw = fs.readFileSync(corpusFile, "utf8");
-  return deserializeCorpus(raw, corpusDir);
-}
-
-/**
- * Deserializes a JSON string into an object, correctly handling Map objects
- * that were serialized with `serializeCorpus`.
- */
-function deserializeCorpus(
-  jsonString: string,
-  corpusDir: string = CORPUS_DIR
-): LatinCorpusIndex {
-  const rawBufferFile = path.join(corpusDir, CORPUS_BUFFERS);
-  const rawBuffer = fs.readFileSync(rawBufferFile);
-  if (rawBuffer.length < 4) {
-    throw new Error(`Corpus buffers file too small: ${rawBufferFile}`);
-  }
-  // Read the first 4 bytes as an unsigned 32-bit integer (little-endian)
-  const numTokens = rawBuffer.readUInt32LE(0);
-  const bitmaskBytes = Math.floor((numTokens + 63) / 64) * 8;
-  const reviver = (_key: string, value: any) => {
-    if (
-      value &&
-      typeof value === "object" &&
-      value.serializationKey === MAP_TOKEN
-    ) {
-      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-      const mapData = value.data as [unknown, StoredMapValue][];
-      const map = new Map<unknown, PackedIndexData>();
-      for (const [k, v] of mapData) {
-        // We have a packed array.
-        if ("len" in v) {
-          const buffer = rawBuffer.subarray(v.offset, v.offset + v.len);
-          map.set(k, new Uint8Array(buffer));
-          continue;
-        }
-        // We have a bitmask.
-        const buffer = rawBuffer.subarray(v.offset, v.offset + bitmaskBytes);
-        map.set(k, {
-          format: "bitmask",
-          data: new Uint32Array(
-            buffer.buffer,
-            buffer.byteOffset,
-            buffer.byteLength / Uint32Array.BYTES_PER_ELEMENT
-          ),
-          numSet: v.numSet,
-        });
-      }
-      return map;
-    }
-    return value;
-  };
-  return JSON.parse(jsonString, reviver);
 }
 
 /**
@@ -129,11 +67,7 @@ async function serializeCorpus(
         offset
       );
       offset = newOffset;
-      return {
-        serializationKey: MAP_TOKEN,
-        numTokens: obj.numTokens,
-        data: mapData,
-      };
+      return mapData;
     }
     return value;
   };
@@ -152,11 +86,10 @@ function prepareIndexMap(
   outerKey: string,
   writer: fs.WriteStream,
   offset: number
-): [[unknown, StoredMapValue][], number] {
+): [Record<string, StoredMapValue>, number] {
   let newOffset = offset;
-  const entries: [unknown, StoredMapValue][] = Array.from(
-    indexMap.entries()
-  ).map(([key, value]) => {
+  const entries: Record<string, StoredMapValue> = {};
+  for (const [key, value] of indexMap.entries()) {
     const useBitMask =
       value.length * packedNumberSize > numTokens ||
       (outerKey === "breaks" && key === "hard");
@@ -169,7 +102,7 @@ function prepareIndexMap(
       : { offset: newOffset, len: indexLen };
     writer.write(indexBytes);
     newOffset += indexLen;
-    return [key, storedValue];
-  });
+    entries[String(key)] = storedValue;
+  }
   return [entries, newOffset];
 }
