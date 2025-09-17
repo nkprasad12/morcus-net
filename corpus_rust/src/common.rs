@@ -10,22 +10,10 @@ pub struct PackedBitMask {
     pub data: Vec<u64>,
 }
 
-pub fn deserialize_u64_vec_from_bytes(bytes: &[u8]) -> Result<Vec<u64>, String> {
-    if bytes.len() % 8 != 0 {
-        return Err(format!(
-            "invalid length: {}, expected a byte slice whose length is a multiple of 8",
-            bytes.len()
-        ));
+pub fn u64_from_bytes(bytes: &[u8]) -> Result<&[u64], String> {
+    let (left, data, right) = unsafe { bytes.align_to::<u64>() };
+    if !left.is_empty() || !right.is_empty() {
+        return Err("data is not properly aligned".to_string());
     }
-    let u64_vec: Vec<u64> = bytes
-        .chunks_exact(8)
-        .map(|chunk| -> Result<u64, String> {
-            let arr: [u8; 8] = chunk
-                .try_into()
-                .map_err(|_| "slice with incorrect length".to_string())?;
-            Ok(u64::from_le_bytes(arr))
-        })
-        .collect::<Result<Vec<u64>, String>>()?;
-
-    Ok(u64_vec)
+    Ok(data)
 }

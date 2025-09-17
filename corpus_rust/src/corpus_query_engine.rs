@@ -1,4 +1,4 @@
-use crate::common::{PackedBitMask, deserialize_u64_vec_from_bytes};
+use crate::common::{PackedBitMask, u64_from_bytes};
 use crate::corpus_serialization::StoredMapValue;
 use crate::packed_arrays::{self, read_header};
 use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
@@ -153,7 +153,7 @@ impl RawBuffers {
                 let bytes =
                     &self.index_buffer[*offset as usize..(*offset as usize + (num_words * 8))];
                 Ok(IndexData::PackedBitMask(PackedBitMask {
-                    data: deserialize_u64_vec_from_bytes(bytes)?,
+                    data: u64_from_bytes(bytes)?.to_vec(),
                 }))
             }
         }

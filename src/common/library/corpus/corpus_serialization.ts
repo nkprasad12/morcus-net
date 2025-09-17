@@ -93,6 +93,17 @@ function prepareIndexMap(
     const useBitMask =
       value.length * packedNumberSize > numTokens ||
       (outerKey === "breaks" && key === "hard");
+    // Bitmasks are interpreted on the Rust side as a vector of 64 bit integers.
+    // To avoid having to handle misaligned data, make sure it's 64-bit aligned.
+    if (useBitMask) {
+      const alignment = 8;
+      const padding = (alignment - (newOffset % alignment)) % alignment;
+      if (padding > 0) {
+        writer.write(Buffer.alloc(padding));
+        newOffset += padding;
+      }
+    }
+
     const indexBytes = useBitMask
       ? Buffer.from(toBitMask(value, numTokens).buffer)
       : Buffer.from(packSortedNats(value));
