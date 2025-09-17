@@ -1,6 +1,6 @@
 use crate::common::{PackedBitMask, deserialize_u64_vec_from_bytes};
 use crate::corpus_serialization::StoredMapValue;
-use crate::packed_arrays;
+use crate::packed_arrays::{self, read_header};
 use crate::packed_index_utils::{apply_or_to_indices, smear_bitmask, unpack_packed_index_data};
 use crate::query_parsing_v2::{
     QueryRelation, QueryTerm, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,
@@ -9,7 +9,7 @@ use crate::query_parsing_v2::{
 
 use super::common::IndexData;
 use super::corpus_serialization::LatinCorpusIndex;
-use super::packed_index_utils::{apply_and_to_indices, max_elements_in};
+use super::packed_index_utils::apply_and_to_indices;
 use super::profiler::TimeProfiler;
 
 use memmap2::Mmap;
@@ -148,15 +148,26 @@ impl RawBuffers {
             StoredMapValue::Packed { offset, len } => Ok(IndexData::PackedNumbers(
                 self.index_buffer[*offset as usize..(*offset + *len) as usize].to_vec(),
             )),
-            StoredMapValue::BitMask { offset, num_set } => {
+            StoredMapValue::BitMask { offset, .. } => {
                 let num_words = (num_tokens as usize).div_ceil(64);
                 let bytes =
                     &self.index_buffer[*offset as usize..(*offset as usize + (num_words * 8))];
                 Ok(IndexData::PackedBitMask(PackedBitMask {
                     data: deserialize_u64_vec_from_bytes(bytes)?,
-                    num_set: Some(*num_set as usize),
                 }))
             }
+        }
+    }
+
+    pub fn num_elements(&self, data: &StoredMapValue) -> u32 {
+        match data {
+            StoredMapValue::Packed { offset, len } => {
+                let header = self.index_buffer[*offset as usize];
+                let (unused_bits, bits_per_number) = read_header(header);
+                let total_bits = ((*len as usize) * 8) - (unused_bits as usize);
+                (total_bits / bits_per_number) as u32
+            }
+            StoredMapValue::BitMask { num_set, .. } => *num_set,
         }
     }
 }
@@ -171,18 +182,16 @@ pub struct CorpusQueryEngine {
 impl CorpusQueryEngine {
     /// Get the size bounds for a token constraint atom. This should be present in the raw data.
     fn get_bounds_for_atom(&self, atom: &TokenConstraintAtom) -> SizeBounds {
-        let Some(index) = self.get_index_for(atom) else {
-            return SizeBounds { upper: 0, lower: 0 };
+        let metadata = match self.get_metadata_for(atom) {
+            Some(m) => m,
+            None => {
+                return SizeBounds { upper: 0, lower: 0 };
+            }
         };
-        let Some(upper) = max_elements_in(&index) else {
-            return SizeBounds {
-                upper: self.corpus.stats.total_words as usize,
-                lower: 0,
-            };
-        };
+        let elements_in_index = self.raw_buffers.num_elements(metadata);
         SizeBounds {
-            upper,
-            lower: upper,
+            upper: elements_in_index as usize,
+            lower: elements_in_index as usize,
         }
     }
 
@@ -306,7 +315,7 @@ impl CorpusQueryEngine {
         constraint: &TokenConstraint,
     ) -> Result<Option<IndexData>, QueryExecError> {
         match constraint {
-            TokenConstraint::Atom(atom) => Ok(self.get_index_for(atom)),
+            TokenConstraint::Atom(atom) => Ok(self.index_for_atom(atom)),
             TokenConstraint::Composed { children, op } => {
                 self.compute_index_for_composed(children, op)
             }
@@ -351,25 +360,32 @@ impl CorpusQueryEngine {
         Ok(Some(IntermediateResult { data, position }))
     }
 
-    fn get_index_for(&self, part: &TokenConstraintAtom) -> Option<IndexData> {
+    fn get_metadata_for(&self, part: &TokenConstraintAtom) -> Option<&StoredMapValue> {
         match part {
-            TokenConstraintAtom::Word(word) => self.get_index("word", &word.to_lowercase()),
-            TokenConstraintAtom::Lemma(lemma) => self.get_index("lemma", lemma),
+            TokenConstraintAtom::Word(word) => self.get_metadata("word", &word.to_lowercase()),
+            TokenConstraintAtom::Lemma(lemma) => self.get_metadata("lemma", lemma),
             &TokenConstraintAtom::Inflection(inflection) => {
-                self.get_index(inflection.get_label(), &inflection.get_code())
+                self.get_metadata(inflection.get_label(), &inflection.get_code())
             }
         }
     }
 
+    fn index_for_atom(&self, part: &TokenConstraintAtom) -> Option<IndexData> {
+        self.index_for_metadata(self.get_metadata_for(part)?)
+    }
+
+    fn index_for_metadata(&self, metadata: &StoredMapValue) -> Option<IndexData> {
+        self.raw_buffers
+            .resolve_index(metadata, self.corpus.stats.total_words)
+            .ok()
+    }
+
+    fn get_metadata(&self, key: &str, value: &str) -> Option<&StoredMapValue> {
+        self.corpus.indices.get(key)?.get(value)
+    }
+
     fn get_index(&self, key: &str, value: &str) -> Option<IndexData> {
-        match self.corpus.indices.get(key)?.get(value).map(|v| {
-            self.raw_buffers
-                .resolve_index(v, self.corpus.stats.total_words)
-        }) {
-            Some(Ok(data)) => Some(data),
-            Some(Err(_)) => None,
-            None => None,
-        }
+        self.index_for_metadata(self.get_metadata(key, value)?)
     }
 }
 
@@ -528,10 +544,7 @@ impl CorpusQueryEngine {
                 .map(|x| !*x)
                 .collect::<Vec<_>>()
         };
-        let break_mask = IndexData::PackedBitMask(PackedBitMask {
-            data: break_mask,
-            num_set: None,
-        });
+        let break_mask = IndexData::PackedBitMask(PackedBitMask { data: break_mask });
         profiler.phase("Compute break mask");
 
         // As a future optimization, we can apply the AND in-place on the break mask since we never use it again.

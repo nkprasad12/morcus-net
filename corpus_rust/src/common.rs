@@ -8,7 +8,6 @@ pub enum IndexData {
 #[derive(Debug, PartialEq, Clone)]
 pub struct PackedBitMask {
     pub data: Vec<u64>,
-    pub num_set: Option<usize>,
 }
 
 pub fn deserialize_u64_vec_from_bytes(bytes: &[u8]) -> Result<Vec<u64>, String> {

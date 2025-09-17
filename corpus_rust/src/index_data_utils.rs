@@ -67,7 +67,7 @@ mod tests {
         let bitmask_data = vec![0b11, 0b1 << 63]; // 2 bits in first word, 1 in second
         let data = IndexData::PackedBitMask(PackedBitMask {
             data: bitmask_data,
-            num_set: None,
+            
         });
         assert_eq!(data.num_elements(), 3);
     }
@@ -77,7 +77,7 @@ mod tests {
         let bitmask_data = vec![0u64, 0u64];
         let data = IndexData::PackedBitMask(PackedBitMask {
             data: bitmask_data,
-            num_set: None,
+            
         });
         assert_eq!(data.num_elements(), 0);
     }
@@ -87,7 +87,7 @@ mod tests {
         let bitmask_data = vec![0b10101010]; // 4 bits set
         let data = IndexData::PackedBitMask(PackedBitMask {
             data: bitmask_data,
-            num_set: None,
+            
         });
         assert_eq!(data.num_elements(), 4);
     }

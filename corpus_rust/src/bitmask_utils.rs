@@ -349,17 +349,13 @@ mod tests {
     fn next_one_bit_from_start_with_bit_set() {
         let bitmask = PackedBitMask {
             data: vec![1 << 63], // Bit 0 set (MSB)
-            num_set: None,
         };
         assert_eq!(bitmask.next_one_bit(0), Some(0));
     }
 
     #[test]
     fn next_one_bit_from_start_no_bits_set() {
-        let bitmask = PackedBitMask {
-            data: vec![0],
-            num_set: None,
-        };
+        let bitmask = PackedBitMask { data: vec![0] };
         assert_eq!(bitmask.next_one_bit(0), None);
     }
 
@@ -367,7 +363,6 @@ mod tests {
     fn next_one_bit_from_middle_of_word() {
         let bitmask = PackedBitMask {
             data: vec![(1 << 63) | (1 << 62)], // Bits 0 and 1 set
-            num_set: None,
         };
         assert_eq!(bitmask.next_one_bit(0), Some(0));
         assert_eq!(bitmask.next_one_bit(1), Some(1));
@@ -378,7 +373,6 @@ mod tests {
     fn next_one_bit_across_words() {
         let bitmask = PackedBitMask {
             data: vec![0, 1 << 63], // Bit 64 set
-            num_set: None,
         };
         assert_eq!(bitmask.next_one_bit(0), Some(64));
         assert_eq!(bitmask.next_one_bit(64), Some(64));
@@ -389,7 +383,6 @@ mod tests {
     fn next_one_bit_start_at_exact_bit() {
         let bitmask = PackedBitMask {
             data: vec![1 << 63], // Bit 0 set
-            num_set: None,
         };
         assert_eq!(bitmask.next_one_bit(0), Some(0));
     }
@@ -398,7 +391,6 @@ mod tests {
     fn next_one_bit_start_beyond_last_bit() {
         let bitmask = PackedBitMask {
             data: vec![1 << 63], // Bit 0 set
-            num_set: None,
         };
         assert_eq!(bitmask.next_one_bit(1), None);
     }
@@ -407,7 +399,6 @@ mod tests {
     fn next_one_bit_multiple_bits_in_word() {
         let bitmask = PackedBitMask {
             data: vec![(1 << 63) | (1 << 60) | (1 << 50)], // Bits 0, 3, 13 set
-            num_set: None,
         };
         assert_eq!(bitmask.next_one_bit(0), Some(0));
         assert_eq!(bitmask.next_one_bit(1), Some(3));
@@ -417,10 +408,7 @@ mod tests {
 
     #[test]
     fn next_one_bit_empty_bitmask() {
-        let bitmask = PackedBitMask {
-            data: vec![],
-            num_set: None,
-        };
+        let bitmask = PackedBitMask { data: vec![] };
         assert_eq!(bitmask.next_one_bit(0), None);
     }
 }

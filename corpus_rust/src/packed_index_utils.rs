@@ -166,10 +166,7 @@ pub fn apply_and_to_indices(
                     second_position,
                 )
             };
-            let result = IndexData::PackedBitMask(PackedBitMask {
-                data,
-                num_set: None, // We don't calculate num_set here for performance.
-            });
+            let result = IndexData::PackedBitMask(PackedBitMask { data });
             Ok((result, pos))
         }
         (IndexData::PackedBitMask(bm), _) => {
@@ -214,20 +211,14 @@ pub fn apply_or_to_indices(
                     second_position,
                 )
             };
-            let result = IndexData::PackedBitMask(PackedBitMask {
-                data,
-                num_set: None, // We don't calculate num_set here for performance.
-            });
+            let result = IndexData::PackedBitMask(PackedBitMask { data });
             Ok((result, pos))
         }
         (IndexData::PackedBitMask(bm), _) => {
             let unpacked = unpack_known_numbers(second)?;
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, offset);
             Ok((
-                IndexData::PackedBitMask(PackedBitMask {
-                    data: overlaps,
-                    num_set: None,
-                }),
+                IndexData::PackedBitMask(PackedBitMask { data: overlaps }),
                 first_position,
             ))
         }
@@ -235,10 +226,7 @@ pub fn apply_or_to_indices(
             let unpacked = unpack_known_numbers(first)?;
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, &unpacked, -offset);
             Ok((
-                IndexData::PackedBitMask(PackedBitMask {
-                    data: overlaps,
-                    num_set: None,
-                }),
+                IndexData::PackedBitMask(PackedBitMask { data: overlaps }),
                 second_position,
             ))
         }
@@ -432,23 +420,6 @@ pub fn has_value_in_range(packed_data: &IndexData, range: (u32, u32)) -> bool {
             }
             false
         }
-    }
-}
-
-/// Returns the maximum number of elements that could be in the packed index.
-///
-/// # Arguments
-///
-/// * `packed_data` - The packed index data.
-///
-/// # Returns
-///
-/// The number of elements.
-pub fn max_elements_in(packed_data: &IndexData) -> Option<usize> {
-    match packed_data {
-        IndexData::PackedNumbers(data) => Some(packed_arrays::num_elements(data)),
-        IndexData::PackedBitMask(bitmask_data) => bitmask_data.num_set,
-        IndexData::Unpacked(data) => Some(data.len()),
     }
 }
 
@@ -889,7 +860,6 @@ mod tests {
     fn apply_or_to_indices_bitmask_array() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[1, 3, 4], 64),
-            num_set: None,
         });
         let filter_data = IndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
         let (result, position) = apply_or_to_indices(&candidates, 1, &filter_data, 0).unwrap();
@@ -899,7 +869,6 @@ mod tests {
             result,
             IndexData::PackedBitMask(PackedBitMask {
                 data: expected_data,
-                num_set: None
             })
         );
         assert_eq!(position, 1);
@@ -910,7 +879,6 @@ mod tests {
         let candidates = IndexData::PackedNumbers(pack_nats(&[1, 2, 5]));
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[1, 3, 4], 64),
-            num_set: None,
         });
         let (result, position) = apply_or_to_indices(&candidates, 0, &filter_data, 1).unwrap();
         let expected_data = to_bitmask(&[1, 2, 3, 4, 6], 64);
@@ -918,7 +886,6 @@ mod tests {
             result,
             IndexData::PackedBitMask(PackedBitMask {
                 data: expected_data,
-                num_set: None
             })
         );
         assert_eq!(position, 1);
@@ -928,11 +895,9 @@ mod tests {
     fn apply_or_to_indices_bitmask_bitmask() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[1, 3, 4], 64),
-            num_set: None,
         });
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[0, 2, 4], 64),
-            num_set: None,
         });
         let (result, position) = apply_or_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3, 4, 5], 64);
@@ -940,7 +905,6 @@ mod tests {
             result,
             IndexData::PackedBitMask(PackedBitMask {
                 data: expected_data,
-                num_set: None
             })
         );
         assert_eq!(position, 3);
@@ -959,7 +923,6 @@ mod tests {
     fn apply_and_to_indices_bitmask_array() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[1, 3, 4], 64),
-            num_set: None,
         });
         let filter_data = IndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
         let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0).unwrap();
@@ -972,7 +935,6 @@ mod tests {
         let candidates = IndexData::PackedNumbers(pack_nats(&[0, 2, 3]));
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[1, 3, 4], 64),
-            num_set: None,
         });
         let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1).unwrap();
         assert_eq!(result, IndexData::Unpacked(vec![1, 3, 4]));
@@ -983,11 +945,9 @@ mod tests {
     fn apply_and_to_indices_bitmask_bitmask() {
         let candidates = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[1, 3, 4], 64),
-            num_set: None,
         });
         let filter_data = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&[0, 2, 4], 64),
-            num_set: None,
         });
         let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3], 64);
@@ -995,7 +955,6 @@ mod tests {
             result,
             IndexData::PackedBitMask(PackedBitMask {
                 data: expected_data,
-                num_set: None
             })
         );
         assert_eq!(position, 3);
@@ -1014,7 +973,6 @@ mod tests {
         let original_data = vec![31, 32, 65, 127];
         let packed_data = IndexData::PackedBitMask(PackedBitMask {
             data: to_bitmask(&original_data, 128),
-            num_set: None,
         });
         let result = unpack_packed_index_data(&packed_data).unwrap();
         assert_eq!(result, original_data);
@@ -1023,10 +981,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_return_true_if_value_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            data: bitmask,
-            num_set: Some(2),
-        });
+        let packed_data = IndexData::PackedBitMask(PackedBitMask { data: bitmask });
         assert!(has_value_in_range(&packed_data, (5, 15)));
         assert!(has_value_in_range(&packed_data, (65, 75)));
     }
@@ -1034,10 +989,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_return_false_if_value_not_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            data: bitmask,
-            num_set: Some(2),
-        });
+        let packed_data = IndexData::PackedBitMask(PackedBitMask { data: bitmask });
         assert!(!has_value_in_range(&packed_data, (20, 30)));
         assert!(!has_value_in_range(&packed_data, (0, 5)));
     }
@@ -1045,10 +997,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_handle_word_boundaries() {
         let bitmask = to_bitmask(&[63, 64], 128);
-        let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            data: bitmask,
-            num_set: Some(2),
-        });
+        let packed_data = IndexData::PackedBitMask(PackedBitMask { data: bitmask });
         assert!(has_value_in_range(&packed_data, (60, 65)));
         assert!(!has_value_in_range(&packed_data, (60, 62)));
         assert!(!has_value_in_range(&packed_data, (65, 70)));
@@ -1069,31 +1018,5 @@ mod tests {
         assert!(!has_value_in_range(&packed_data, (20, 30)));
         assert!(!has_value_in_range(&packed_data, (0, 9)));
         assert!(!has_value_in_range(&packed_data, (71, 100)));
-    }
-
-    #[test]
-    fn max_elements_in_should_return_correct_count_for_packed_array() {
-        let packed_data = IndexData::PackedNumbers(pack_nats(&[10, 20, 30]));
-        assert_eq!(max_elements_in(&packed_data), Some(3));
-    }
-
-    #[test]
-    fn max_elements_in_should_return_num_set_for_bitmask_if_present() {
-        let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            data: bitmask,
-            num_set: Some(2),
-        });
-        assert_eq!(max_elements_in(&packed_data), Some(2));
-    }
-
-    #[test]
-    fn max_elements_in_should_return_max_capacity_for_bitmask_if_num_set_not_present() {
-        let bitmask = to_bitmask(&[10, 70], 128); // 128 bits = 2 u64 words
-        let packed_data = IndexData::PackedBitMask(PackedBitMask {
-            data: bitmask,
-            num_set: None,
-        });
-        assert_eq!(max_elements_in(&packed_data), None);
     }
 }

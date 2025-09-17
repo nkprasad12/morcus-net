@@ -64,14 +64,18 @@ pub fn pack_sorted_nats(numbers: &[u32]) -> Result<Vec<u8>, String> {
     Ok(buffer)
 }
 
+pub fn read_header(header: u8) -> (u8, usize) {
+    let unused_bits = (header & PACKED_NUMBER_HEADER_UNUSED_BITS_MASK) >> 5;
+    let bits_per_number = header & PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK;
+    (unused_bits, bits_per_number as usize)
+}
+
 /// Unpacks an array of positive integers from a compact bit array (Vec<u8>).
 pub fn unpack_integers(buffer: &[u8]) -> Result<Vec<u32>, String> {
     if buffer.len() < PACKED_NUMBER_HEADER_SIZE {
         return Err("Invalid buffer: too small to contain header.".into());
     }
-    let header = buffer[0];
-    let unused_bits = (header & PACKED_NUMBER_HEADER_UNUSED_BITS_MASK) >> 5;
-    let bits_per_number = (header & PACKED_NUMBER_HEADER_BITS_PER_NUMBER_MASK) as usize;
+    let (unused_bits, bits_per_number) = read_header(buffer[0]);
     assert!(
         bits_per_number > 0 || buffer.len() == PACKED_NUMBER_HEADER_SIZE,
         "0 bits per number, but buffer contains data."

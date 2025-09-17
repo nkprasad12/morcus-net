@@ -36,6 +36,7 @@ pub struct LatinCorpusIndex {
     pub token_starts: Vec<u32>,
     pub break_starts: Vec<u32>,
     pub indices: HashMap<String, HashMap<String, StoredMapValue>>,
+    pub num_tokens: u32,
 }
 
 #[derive(Debug, Deserialize)]
