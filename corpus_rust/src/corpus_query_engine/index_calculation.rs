@@ -1,5 +1,5 @@
 use crate::{
-    common::IndexData,
+    common::{IndexData, IndexDataRoO},
     corpus_query_engine::{
         CorpusQueryEngine, IntermediateResult, QueryExecError, query_conversion::InternalQueryTerm,
     },
@@ -14,10 +14,10 @@ use crate::{
 // Basic methods for calculating indices corresponding to query terms.
 impl CorpusQueryEngine {
     fn compute_index_for_composed(
-        &self,
+        &'_ self,
         children: &[TokenConstraint],
         op: &TokenConstraintOperation,
-    ) -> Result<Option<IndexData>, QueryExecError> {
+    ) -> Result<Option<IndexDataRoO<'_>>, QueryExecError> {
         // Sort the children by their upper size bounds. For `and` operations, we want the
         // smallest upper bound first so the most constrained children are considered first.
         // For `or` operations, we want the largest upper bound first so that we hopefully
@@ -45,19 +45,23 @@ impl CorpusQueryEngine {
                 None => return Ok(None),
             };
             let combined = match op {
-                TokenConstraintOperation::And => apply_and_to_indices(&data, 0, &child_data, 0),
-                TokenConstraintOperation::Or => apply_or_to_indices(&data, 0, &child_data, 0),
+                TokenConstraintOperation::And => {
+                    apply_and_to_indices(&data.to_ref(), 0, &child_data.to_ref(), 0)
+                }
+                TokenConstraintOperation::Or => {
+                    apply_or_to_indices(&data.to_ref(), 0, &child_data.to_ref(), 0)
+                }
             };
-            data = combined?.0;
+            data = IndexDataRoO::Owned(combined?.0);
         }
         Ok(Some(data))
     }
 
     /// Computes the candidate index for a particular token constraint.
     fn compute_index_for(
-        &self,
+        &'_ self,
         constraint: &TokenConstraint,
-    ) -> Result<Option<IndexData>, QueryExecError> {
+    ) -> Result<Option<IndexDataRoO<'_>>, QueryExecError> {
         match constraint {
             TokenConstraint::Atom(atom) => Ok(self.index_for_atom(atom)),
             TokenConstraint::Composed { children, op } => {
@@ -70,10 +74,10 @@ impl CorpusQueryEngine {
     }
 
     pub(super) fn compute_query_candidates(
-        &self,
+        &'_ self,
         query: &Vec<InternalQueryTerm>,
         profiler: &mut TimeProfiler,
-    ) -> Result<Option<IntermediateResult>, QueryExecError> {
+    ) -> Result<Option<IntermediateResult<'_>>, QueryExecError> {
         let mut indexed_terms: Vec<(usize, &InternalQueryTerm)> =
             query.iter().enumerate().collect();
         indexed_terms.sort_by_key(|(_, term)| term.constraint.size_bounds.upper);
@@ -93,24 +97,29 @@ impl CorpusQueryEngine {
                 Some(data) => data,
                 _ => return Ok(None),
             };
-            (data, position) = match term.relation {
-                QueryRelation::After | QueryRelation::First => {
-                    apply_and_to_indices(&data, position, &term_data, *original_index as u32)
-                }
+            let result = match term.relation {
+                QueryRelation::After | QueryRelation::First => apply_and_to_indices(
+                    &data.to_ref(),
+                    position,
+                    &term_data.to_ref(),
+                    *original_index as u32,
+                ),
                 _ => return Err(QueryExecError::new("Unsupported query relation")),
             }?;
+            data = IndexDataRoO::Owned(result.0);
+            position = result.1;
             profiler.phase(format!("Filter from {original_index}").as_str());
         }
         Ok(Some(IntermediateResult { data, position }))
     }
 
     /// Returns the hard breaks, verifying that it is a bitmask.
-    pub(super) fn get_hard_breaks(&self) -> Result<Vec<u64>, QueryExecError> {
+    pub(super) fn get_hard_breaks(&self) -> Result<&[u64], QueryExecError> {
         let index = self
             .get_index("breaks", "hard")
             .ok_or(QueryExecError::new("No hard breaks index found"))?;
         match index {
-            IndexData::BitMask(bm) => Ok(bm),
+            IndexDataRoO::Ref(IndexData::BitMask(bm)) => Ok(bm),
             _ => Err(QueryExecError::new("Hard breaks index is not a bitmask")),
         }
     }
@@ -125,21 +134,22 @@ impl CorpusQueryEngine {
         }
     }
 
-    fn index_for_atom(&self, part: &TokenConstraintAtom) -> Option<IndexData> {
+    fn index_for_atom(&'_ self, part: &TokenConstraintAtom) -> Option<IndexDataRoO<'_>> {
         self.index_for_metadata(self.get_metadata_for(part)?)
     }
 
-    fn index_for_metadata(&self, metadata: &StoredMapValue) -> Option<IndexData> {
+    fn index_for_metadata(&'_ self, metadata: &StoredMapValue) -> Option<IndexDataRoO<'_>> {
         self.raw_buffers
             .resolve_index(metadata, self.corpus.num_tokens)
             .ok()
+            .map(IndexDataRoO::Ref)
     }
 
     fn get_metadata(&self, key: &str, value: &str) -> Option<&StoredMapValue> {
         self.corpus.indices.get(key)?.get(value)
     }
 
-    fn get_index(&self, key: &str, value: &str) -> Option<IndexData> {
+    fn get_index(&'_ self, key: &str, value: &str) -> Option<IndexDataRoO<'_>> {
         self.index_for_metadata(self.get_metadata(key, value)?)
     }
 }

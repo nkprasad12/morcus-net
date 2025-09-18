@@ -3,6 +3,7 @@ mod index_calculation;
 mod query_conversion;
 
 use crate::bitmask_utils::next_one_bit;
+use crate::common::IndexDataRoO;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::packed_index_utils::smear_bitmask;
 use crate::query_parsing_v2::parse_query;
@@ -67,8 +68,8 @@ pub struct CorpusQueryResult<'a> {
     pub timing: Vec<(String, f64)>,
 }
 
-struct IntermediateResult {
-    data: IndexData,
+struct IntermediateResult<'a> {
+    data: IndexDataRoO<'a>,
     position: u32,
 }
 
@@ -101,10 +102,11 @@ impl CorpusQueryEngine {
         profiler: &mut TimeProfiler,
     ) -> Result<(Vec<u32>, usize), QueryExecError> {
         let page_size = page_size.unwrap_or(10000);
+        let matches = match_results.data.to_ref();
 
         // Get to the start of the page.
         let mut results: Vec<u32> = vec![];
-        let mut i: usize = match &match_results.data {
+        let mut i: usize = match &matches {
             IndexData::List(_) => page_start,
             IndexData::BitMask(bitmask) => {
                 let mut start_idx = 0;
@@ -117,10 +119,10 @@ impl CorpusQueryEngine {
             }
         };
 
-        let n = match_results.data.num_elements();
+        let n = matches.num_elements();
         while results.len() < page_size {
-            let token_id = match match_results.data {
-                IndexData::List(ref data) => {
+            let token_id = match matches {
+                IndexData::List(data) => {
                     if i >= n {
                         break;
                     }
@@ -128,7 +130,7 @@ impl CorpusQueryEngine {
                     i += 1;
                     id
                 }
-                IndexData::BitMask(ref bitmask) => {
+                IndexData::BitMask(bitmask) => {
                     let id = match next_one_bit(bitmask, i) {
                         Some(v) => v,
                         None => break,
@@ -184,20 +186,27 @@ impl CorpusQueryEngine {
         let break_mask = if query_length == 2 {
             hard_breaks.iter().map(|x| !*x).collect::<Vec<_>>()
         } else {
-            let mut smeared = smear_bitmask(&hard_breaks, query_length - 2, "left");
+            let mut smeared = smear_bitmask(hard_breaks, query_length - 2, "left");
             for elem in &mut smeared {
                 *elem = !*elem;
             }
             smeared
         };
-        let break_mask = IndexData::BitMask(break_mask);
+        let break_mask = IndexData::BitMask(&break_mask);
         profiler.phase("Compute break mask");
 
         // As a future optimization, we can apply the AND in-place on the break mask since we never use it again.
-        let (data, position) =
-            apply_and_to_indices(&candidates.data, candidates.position, &break_mask, 0)?;
+        let (data, position) = apply_and_to_indices(
+            &candidates.data.to_ref(),
+            candidates.position,
+            &break_mask,
+            0,
+        )?;
 
-        let match_results = IntermediateResult { data, position };
+        let match_results = IntermediateResult {
+            data: IndexDataRoO::Owned(data),
+            position,
+        };
         profiler.phase("Apply break mask");
         self.compute_page_result(&match_results, page_start, page_size, profiler)
     }

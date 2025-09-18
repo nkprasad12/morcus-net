@@ -56,24 +56,21 @@ impl IndexBuffers {
     }
 
     pub fn resolve_index(
-        &self,
+        &'_ self,
         data: &StoredMapValue,
         num_tokens: u32,
-    ) -> Result<IndexData, String> {
+    ) -> Result<IndexData<'_>, String> {
         match data {
-            StoredMapValue::Packed { offset, len } => Ok(IndexData::List(
-                u32_from_bytes(
-                    self.reader
-                        .bytes(*offset as usize, (*offset + (4 * *len)) as usize),
-                )?
-                .to_vec(),
-            )),
+            StoredMapValue::Packed { offset, len } => Ok(IndexData::List(u32_from_bytes(
+                self.reader
+                    .bytes(*offset as usize, (*offset + (4 * *len)) as usize),
+            )?)),
             StoredMapValue::BitMask { offset, .. } => {
                 let num_words = (num_tokens as usize).div_ceil(64);
                 let bytes = self
                     .reader
                     .bytes(*offset as usize, *offset as usize + (num_words * 8));
-                Ok(IndexData::BitMask(u64_from_bytes(bytes)?.to_vec()))
+                Ok(IndexData::BitMask(u64_from_bytes(bytes)?))
             }
         }
     }

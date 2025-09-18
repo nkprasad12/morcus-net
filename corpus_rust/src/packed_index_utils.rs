@@ -1,3 +1,5 @@
+use crate::common::IndexDataOwned;
+
 use super::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
 use super::common::IndexData;
 
@@ -135,7 +137,7 @@ pub fn apply_and_to_indices(
     first_position: u32,
     second: &IndexData,
     second_position: u32,
-) -> Result<(IndexData, u32), String> {
+) -> Result<(IndexDataOwned, u32), String> {
     let offset = first_position as i32 - second_position as i32;
 
     match (first, second) {
@@ -151,20 +153,20 @@ pub fn apply_and_to_indices(
                     second_position,
                 )
             };
-            let result = IndexData::BitMask(data);
+            let result = IndexDataOwned::BitMask(data);
             Ok((result, pos))
         }
         (IndexData::BitMask(bm), IndexData::List(arr)) => {
             let overlaps = apply_and_with_bitmask_and_array(bm, arr, offset);
-            Ok((IndexData::List(overlaps), first_position))
+            Ok((IndexDataOwned::List(overlaps), first_position))
         }
         (IndexData::List(arr), IndexData::BitMask(bm)) => {
             let overlaps = apply_and_with_bitmask_and_array(bm, arr, -offset);
-            Ok((IndexData::List(overlaps), second_position))
+            Ok((IndexDataOwned::List(overlaps), second_position))
         }
         (IndexData::List(arr1), IndexData::List(arr2)) => {
             let overlaps = apply_and_with_arrays(arr1, arr2, offset);
-            Ok((IndexData::List(overlaps), first_position))
+            Ok((IndexDataOwned::List(overlaps), first_position))
         }
     }
 }
@@ -174,7 +176,7 @@ pub fn apply_or_to_indices(
     first_position: u32,
     second: &IndexData,
     second_position: u32,
-) -> Result<(IndexData, u32), String> {
+) -> Result<(IndexDataOwned, u32), String> {
     let offset = first_position as i32 - second_position as i32;
 
     match (first, second) {
@@ -190,20 +192,20 @@ pub fn apply_or_to_indices(
                     second_position,
                 )
             };
-            let result = IndexData::BitMask(data);
+            let result = IndexDataOwned::BitMask(data);
             Ok((result, pos))
         }
         (IndexData::BitMask(bm), IndexData::List(arr)) => {
             let overlaps = apply_or_with_bitmask_and_array(bm, arr, offset);
-            Ok((IndexData::BitMask(overlaps), first_position))
+            Ok((IndexDataOwned::BitMask(overlaps), first_position))
         }
         (IndexData::List(arr), IndexData::BitMask(bm)) => {
             let overlaps = apply_or_with_bitmask_and_array(bm, arr, -offset);
-            Ok((IndexData::BitMask(overlaps), second_position))
+            Ok((IndexDataOwned::BitMask(overlaps), second_position))
         }
         (IndexData::List(arr1), IndexData::List(arr2)) => {
             let overlaps = apply_or_with_arrays(arr1, arr2, offset);
-            Ok((IndexData::List(overlaps), first_position))
+            Ok((IndexDataOwned::List(overlaps), first_position))
         }
     }
 }
@@ -786,86 +788,86 @@ mod tests {
 
     #[test]
     fn apply_or_to_indices_array_array() {
-        let candidates = IndexData::List(vec![3, 6, 9]);
-        let filter_data = IndexData::List(vec![2, 4, 8]);
+        let candidates = IndexData::List(&[3, 6, 9]);
+        let filter_data = IndexData::List(&[2, 4, 8]);
         let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 1).unwrap();
         // candidates: [3,6,9], filter: [3,5,9] -> union [3,5,6,9]
-        assert_eq!(result, IndexData::List(vec![3, 5, 6, 9]));
+        assert_eq!(result, IndexDataOwned::List(vec![3, 5, 6, 9]));
         assert_eq!(position, 2);
     }
 
     #[test]
     fn apply_or_to_indices_bitmask_array() {
-        let candidates = IndexData::BitMask(to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::List(vec![0, 2, 3]);
+        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let filter_data = IndexData::List(&[0, 2, 3]);
         let (result, position) = apply_or_to_indices(&candidates, 1, &filter_data, 0).unwrap();
         // bitmask: [1,3,4], array with offset: [1,3,4] -> union [1,3,4]
         let expected_data = to_bitmask(&[1, 3, 4], 64);
-        assert_eq!(result, IndexData::BitMask(expected_data));
+        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_or_to_indices_array_bitmask() {
-        let candidates = IndexData::List(vec![1, 2, 5]);
-        let filter_data = IndexData::BitMask(to_bitmask(&[1, 3, 4], 64));
+        let candidates = IndexData::List(&[1, 2, 5]);
+        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
         let (result, position) = apply_or_to_indices(&candidates, 0, &filter_data, 1).unwrap();
         let expected_data = to_bitmask(&[1, 2, 3, 4, 6], 64);
-        assert_eq!(result, IndexData::BitMask(expected_data));
+        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_or_to_indices_bitmask_bitmask() {
-        let candidates = IndexData::BitMask(to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::BitMask(to_bitmask(&[0, 2, 4], 64));
+        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let filter_data = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
         let (result, position) = apply_or_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3, 4, 5], 64);
-        assert_eq!(result, IndexData::BitMask(expected_data));
+        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
         assert_eq!(position, 3);
     }
 
     #[test]
     fn apply_and_to_indices_array_array() {
-        let candidates = IndexData::List(vec![3, 6, 9]);
-        let filter_data = IndexData::List(vec![2, 4, 8]);
+        let candidates = IndexData::List(&[3, 6, 9]);
+        let filter_data = IndexData::List(&[2, 4, 8]);
         let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1).unwrap();
-        assert_eq!(result, IndexData::List(vec![3, 9]));
+        assert_eq!(result, IndexDataOwned::List(vec![3, 9]));
         assert_eq!(position, 2);
     }
 
     #[test]
     fn apply_and_to_indices_bitmask_array() {
-        let candidates = IndexData::BitMask(to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::List(vec![0, 2, 3]);
+        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let filter_data = IndexData::List(&[0, 2, 3]);
         let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0).unwrap();
-        assert_eq!(result, IndexData::List(vec![1, 3, 4]));
+        assert_eq!(result, IndexDataOwned::List(vec![1, 3, 4]));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_and_to_indices_array_bitmask() {
-        let candidates = IndexData::List(vec![0, 2, 3]);
-        let filter_data = IndexData::BitMask(to_bitmask(&[1, 3, 4], 64));
+        let candidates = IndexData::List(&[0, 2, 3]);
+        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
         let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1).unwrap();
-        assert_eq!(result, IndexData::List(vec![1, 3, 4]));
+        assert_eq!(result, IndexDataOwned::List(vec![1, 3, 4]));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_and_to_indices_bitmask_bitmask() {
-        let candidates = IndexData::BitMask(to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::BitMask(to_bitmask(&[0, 2, 4], 64));
+        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let filter_data = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
         let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3], 64);
-        assert_eq!(result, IndexData::BitMask(expected_data));
+        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
         assert_eq!(position, 3);
     }
 
     #[test]
     fn has_value_in_range_bitmask_should_return_true_if_value_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::BitMask(bitmask);
+        let packed_data = IndexData::BitMask(&bitmask);
         assert!(has_value_in_range(&packed_data, (5, 15)));
         assert!(has_value_in_range(&packed_data, (65, 75)));
     }
@@ -873,7 +875,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_return_false_if_value_not_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::BitMask(bitmask);
+        let packed_data = IndexData::BitMask(&bitmask);
         assert!(!has_value_in_range(&packed_data, (20, 30)));
         assert!(!has_value_in_range(&packed_data, (0, 5)));
     }
@@ -881,7 +883,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_handle_word_boundaries() {
         let bitmask = to_bitmask(&[63, 64], 128);
-        let packed_data = IndexData::BitMask(bitmask);
+        let packed_data = IndexData::BitMask(&bitmask);
         assert!(has_value_in_range(&packed_data, (60, 65)));
         assert!(!has_value_in_range(&packed_data, (60, 62)));
         assert!(!has_value_in_range(&packed_data, (65, 70)));
@@ -889,7 +891,7 @@ mod tests {
 
     #[test]
     fn has_value_in_range_packed_array_should_return_true_if_value_in_range() {
-        let packed_data = IndexData::List(vec![10, 70]);
+        let packed_data = IndexData::List(&[10, 70]);
         assert!(has_value_in_range(&packed_data, (5, 15)));
         assert!(has_value_in_range(&packed_data, (65, 75)));
         assert!(has_value_in_range(&packed_data, (10, 10)));
@@ -898,7 +900,7 @@ mod tests {
 
     #[test]
     fn has_value_in_range_packed_array_should_return_false_if_value_not_in_range() {
-        let packed_data = IndexData::List(vec![10, 70]);
+        let packed_data = IndexData::List(&[10, 70]);
         assert!(!has_value_in_range(&packed_data, (20, 30)));
         assert!(!has_value_in_range(&packed_data, (0, 9)));
         assert!(!has_value_in_range(&packed_data, (71, 100)));
