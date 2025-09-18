@@ -11,12 +11,11 @@ use super::corpus_serialization::LatinCorpusIndex;
 use super::packed_index_utils::apply_and_to_indices;
 use super::profiler::TimeProfiler;
 
-use memmap2::Mmap;
+use crate::byte_readers::{InMemoryReader, MmapReader, RawByteReader};
+
 use serde::Serialize;
 use std::cmp::{max, min};
 use std::error::Error;
-use std::fs::File;
-use std::io::Read;
 
 const MAX_CONTEXT_LEN: usize = 100;
 const DEFAULT_CONTEXT_LEN: usize = 25;
@@ -99,65 +98,54 @@ struct IntermediateResult {
 }
 
 struct TokenStarts {
-    mmap: Mmap,
+    reader: MmapReader,
 }
 
 impl TokenStarts {
     pub fn new(token_starts_path: &str) -> Result<Self, Box<dyn Error>> {
-        let file = File::open(token_starts_path)?;
-        let mmap = unsafe { Mmap::map(&file)? };
-        Ok(TokenStarts { mmap })
+        let reader = MmapReader::new(token_starts_path)?;
+        Ok(TokenStarts { reader })
     }
 
     pub fn token_start(&self, token_id: u32) -> Result<usize, String> {
         let i = ((token_id * 2) * 4) as usize;
-        Ok(u32_from_bytes(&self.mmap[(i)..(i + 4)])?[0] as usize)
+        Ok(u32_from_bytes(self.reader.bytes(i, i + 4))?[0] as usize)
     }
 
     pub fn break_start(&self, token_id: u32) -> Result<usize, String> {
         let i = ((token_id * 2 + 1) * 4) as usize;
-        Ok(u32_from_bytes(&self.mmap[(i)..(i + 4)])?[0] as usize)
+        Ok(u32_from_bytes(self.reader.bytes(i, i + 4))?[0] as usize)
     }
 }
 
 struct CorpusText {
-    mmap: Mmap,
+    reader: MmapReader,
 }
 
 impl CorpusText {
     pub fn new(raw_text_path: &str) -> Result<Self, Box<dyn Error>> {
-        let file = File::open(raw_text_path)?;
-        let mmap = unsafe { Mmap::map(&file)? };
-        Ok(CorpusText { mmap })
+        let reader = MmapReader::new(raw_text_path)?;
+        Ok(CorpusText { reader })
     }
 
     pub fn slice(&self, start: usize, end: usize) -> String {
         // We store the starts of each word as byte offsets, so this should always be valid UTF-8.
-        unsafe { String::from_utf8_unchecked(self.mmap[start..end].to_vec()) }
+        unsafe { String::from_utf8_unchecked(self.reader.bytes(start, end).to_vec()) }
     }
 
     pub fn advise_range(&self, start: usize, end: usize) {
-        if start >= end {
-            return;
-        }
-        unsafe {
-            let ptr = self.mmap.as_ptr().add(start) as *mut libc::c_void;
-            let len = end - start;
-            libc::madvise(ptr, len, libc::MADV_WILLNEED);
-        }
+        self.reader.advise_range(start, end);
     }
 }
 
 struct RawBuffers {
-    index_buffer: Vec<u8>,
+    reader: InMemoryReader,
 }
 
 impl RawBuffers {
     pub fn new(raw_buffer_path: &str) -> Result<Self, Box<dyn Error>> {
-        let mut file = File::open(raw_buffer_path)?;
-        let mut index_buffer = vec![];
-        file.read_to_end(&mut index_buffer)?;
-        Ok(RawBuffers { index_buffer })
+        let reader = InMemoryReader::new(raw_buffer_path)?;
+        Ok(RawBuffers { reader })
     }
 
     pub fn resolve_index(
@@ -168,14 +156,16 @@ impl RawBuffers {
         match data {
             StoredMapValue::Packed { offset, len } => Ok(IndexData::Unpacked(
                 u32_from_bytes(
-                    &self.index_buffer[*offset as usize..(*offset + (4 * *len)) as usize],
+                    self.reader
+                        .bytes(*offset as usize, (*offset + (4 * *len)) as usize),
                 )?
                 .to_vec(),
             )),
             StoredMapValue::BitMask { offset, .. } => {
                 let num_words = (num_tokens as usize).div_ceil(64);
-                let bytes =
-                    &self.index_buffer[*offset as usize..(*offset as usize + (num_words * 8))];
+                let bytes = self
+                    .reader
+                    .bytes(*offset as usize, *offset as usize + (num_words * 8));
                 Ok(IndexData::PackedBitMask(PackedBitMask {
                     data: u64_from_bytes(bytes)?.to_vec(),
                 }))

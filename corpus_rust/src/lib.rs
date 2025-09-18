@@ -5,6 +5,7 @@
 
 pub mod analyzer_types;
 pub mod bitmask_utils;
+mod byte_readers;
 pub mod common;
 pub mod corpus_query_engine;
 pub mod corpus_serialization;
