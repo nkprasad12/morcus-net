@@ -2,7 +2,6 @@ use serde::Deserialize;
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
-use std::path::Path;
 
 #[derive(Debug, Deserialize)]
 pub struct CorpusStats {
@@ -52,7 +51,14 @@ pub enum StoredMapValue {
     },
 }
 
-pub fn deserialize_corpus<P: AsRef<Path>>(path: P) -> Result<LatinCorpusIndex, Box<dyn Error>> {
-    let json_string = fs::read_to_string(path)?;
+pub fn file_read_err<T: Error>(e: T, path: &str, label: &str) -> String {
+    let cwd = std::env::current_dir()
+        .map(|p| p.display().to_string())
+        .unwrap_or_else(|_| "<unknown>".to_string());
+    format!("Failed to read {label} file {path} (in {cwd}) due to: {e}")
+}
+
+pub fn deserialize_corpus(path: &str) -> Result<LatinCorpusIndex, Box<dyn Error>> {
+    let json_string = fs::read_to_string(path).map_err(|e| file_read_err(e, path, "corpus"))?;
     Ok(serde_json::from_str(&json_string)?)
 }
