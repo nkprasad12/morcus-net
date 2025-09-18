@@ -115,11 +115,13 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
             "  \x1b[34m{}\x1b[0m - \x1b[32m{} {}\x1b[0m",
             m.author, m.work_name, m.section
         );
-        println!(
-            "    \x1b[90m{}\x1b[0m\x1b[31m{}\x1b[0m\x1b[90m{}\x1b[0m",
-            match_data.left_context, match_data.text, match_data.right_context,
-        );
-        println!();
+        let mut chunks = vec!["    ".to_string()];
+        for (text, is_core) in &match_data.text {
+            let color = if *is_core { "[31m" } else { "[90m" };
+            chunks.push(format!("\x1b{}{}\x1b[0m", color, text));
+        }
+        chunks.push("\n".to_string());
+        print!("{}", chunks.join(""));
     }
 }
 

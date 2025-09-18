@@ -55,9 +55,7 @@ pub struct CorpusQueryMatchMetadata<'a> {
 #[serde(rename_all = "camelCase")]
 pub struct CorpusQueryMatch<'a> {
     pub metadata: CorpusQueryMatchMetadata<'a>,
-    pub text: String,
-    pub left_context: String,
-    pub right_context: String,
+    pub text: Vec<(String, bool)>,
 }
 
 #[derive(Debug, Serialize)]
@@ -223,7 +221,7 @@ impl CorpusQueryEngine {
         }
 
         // Left start byte, Text start byte, Right start byte, Right end byte
-        let mut starts: Vec<(usize, usize, usize, usize)> = Vec::with_capacity(token_ids.len());
+        let mut starts: Vec<(Vec<usize>, Vec<bool>)> = Vec::with_capacity(token_ids.len());
         for &token_id in token_ids {
             let left_start_idx = max(0, token_id.saturating_sub(context_len));
             let right_end_idx = min(
@@ -231,20 +229,23 @@ impl CorpusQueryEngine {
                 self.corpus.num_tokens,
             );
 
-            let left_start_byte = self.starts.token_start(left_start_idx)?;
-            let text_start_byte = self.starts.token_start(token_id)?;
-            let right_start_byte = self.starts.break_start(token_id + (query_length - 1))?;
-            let right_end_byte = self.starts.break_start(right_end_idx - 1)?;
-            starts.push((
-                left_start_byte,
-                text_start_byte,
-                right_start_byte,
-                right_end_byte,
-            ));
+            let offsets = vec![
+                self.starts.token_start(left_start_idx)?,
+                self.starts.token_start(token_id)?,
+                self.starts.break_start(token_id + (query_length - 1))?,
+                self.starts.break_start(right_end_idx - 1)?,
+            ];
+            let is_core_match = vec![false, true, false];
+            starts.push((offsets, is_core_match));
         }
+
         // Warm up the ranges that we're about to access.
-        self.text
-            .advise_range(starts[0].0, starts[starts.len() - 1].3);
+        let start = starts[0].0[0];
+        let end = match starts[starts.len() - 1].0.last() {
+            Some(v) => *v,
+            None => return Err(QueryExecError::new("No end offset found")),
+        };
+        self.text.advise_range(start, end);
 
         // Compute the metadata while the OS is (hopefully) loading the pages into memory.
         let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(token_ids.len());
@@ -255,23 +256,20 @@ impl CorpusQueryEngine {
         // Read the text chunks.
         let text_parts = starts
             .iter()
-            .map(|&(a, b, c, d)| {
-                let left_context = self.text.slice(a, b);
-                let text = self.text.slice(b, c);
-                let right_context = self.text.slice(c, d);
-                (left_context, text, right_context)
+            .map(|(byte_offsets, is_core)| {
+                let mut chunks = Vec::with_capacity(is_core.len());
+                for i in 0..(byte_offsets.len() - 1) {
+                    let chunk = self.text.slice(byte_offsets[i], byte_offsets[i + 1]);
+                    chunks.push((chunk, is_core[i]));
+                }
+                chunks
             })
             .collect::<Vec<_>>();
 
         let matches = metadata
             .into_iter()
             .zip(text_parts)
-            .map(|(meta, (left, text, right))| CorpusQueryMatch {
-                metadata: meta,
-                left_context: left,
-                text,
-                right_context: right,
-            })
+            .map(|(metadata, text)| CorpusQueryMatch { metadata, text })
             .collect();
 
         Ok(matches)
