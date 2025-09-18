@@ -4,6 +4,7 @@ import {
   CORPUS_DIR,
   type InProgressLatinCorpus,
   CORPUS_BUFFERS,
+  CORPUS_TOKEN_STARTS,
 } from "@/common/library/corpus/corpus_common";
 import fs from "fs";
 import path from "path";
@@ -32,6 +33,29 @@ export async function writeCorpus(
   console.debug(`Corpus written to ${destFile}`);
 }
 
+function writeTokenStarts(
+  corpus: InProgressLatinCorpus,
+  corpusDir: string = CORPUS_DIR
+) {
+  const destFile = path.join(corpusDir, CORPUS_TOKEN_STARTS);
+  const numTokens = corpus.numTokens;
+  const tokenStarts = corpus.tokenStarts;
+  const breakStarts = corpus.breakStarts;
+
+  const buffer = new Uint32Array(numTokens * 2);
+  for (let i = 0; i < numTokens; i++) {
+    buffer[i * 2] = tokenStarts[i];
+    buffer[i * 2 + 1] = breakStarts[i];
+  }
+  fs.writeFileSync(destFile, Buffer.from(buffer.buffer));
+  // @ts-expect-error
+  delete corpus.tokenStarts;
+  // @ts-expect-error
+  delete corpus.breakStarts;
+  // @ts-expect-error
+  corpus.tokenStartsPath = destFile;
+}
+
 /**
  * Serializes an object to a JSON string, correctly handling Map objects.
  */
@@ -39,6 +63,7 @@ async function serializeCorpus(
   obj: InProgressLatinCorpus,
   corpusDir: string = CORPUS_DIR
 ): Promise<string> {
+  writeTokenStarts(obj, corpusDir);
   const rawDestFile = path.join(corpusDir, CORPUS_BUFFERS);
   obj.rawBufferPath = rawDestFile;
   if (fs.existsSync(rawDestFile)) {

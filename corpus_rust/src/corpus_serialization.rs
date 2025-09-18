@@ -33,8 +33,7 @@ pub struct LatinCorpusIndex {
     pub stats: CorpusStats,
     pub raw_text_path: String,
     pub raw_buffer_path: String,
-    pub token_starts: Vec<u32>,
-    pub break_starts: Vec<u32>,
+    pub token_starts_path: String,
     pub indices: HashMap<String, HashMap<String, StoredMapValue>>,
     pub num_tokens: u32,
 }

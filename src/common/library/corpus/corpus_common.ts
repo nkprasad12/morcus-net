@@ -19,6 +19,7 @@ export const CORPUS_DIR = "build/corpus";
 export const CORPUS_FILE = `latin_corpus.json`;
 export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;
 export const CORPUS_BUFFERS = `latin_corpus_buffers.bin`;
+export const CORPUS_TOKEN_STARTS = `latin_corpus_token_starts.bin`;
 
 // // // // // // // // // //
 // Corpus Querying Types   //

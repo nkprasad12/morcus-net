@@ -98,6 +98,28 @@ struct IntermediateResult {
     position: u32,
 }
 
+struct TokenStarts {
+    mmap: Mmap,
+}
+
+impl TokenStarts {
+    pub fn new(token_starts_path: &str) -> Result<Self, Box<dyn Error>> {
+        let file = File::open(token_starts_path)?;
+        let mmap = unsafe { Mmap::map(&file)? };
+        Ok(TokenStarts { mmap })
+    }
+
+    pub fn token_start(&self, token_id: u32) -> Result<usize, String> {
+        let i = ((token_id * 2) * 4) as usize;
+        Ok(u32_from_bytes(&self.mmap[(i)..(i + 4)])?[0] as usize)
+    }
+
+    pub fn break_start(&self, token_id: u32) -> Result<usize, String> {
+        let i = ((token_id * 2 + 1) * 4) as usize;
+        Ok(u32_from_bytes(&self.mmap[(i)..(i + 4)])?[0] as usize)
+    }
+}
+
 struct CorpusText {
     mmap: Mmap,
 }
@@ -173,6 +195,7 @@ pub struct CorpusQueryEngine {
     corpus: LatinCorpusIndex,
     text: CorpusText,
     raw_buffers: RawBuffers,
+    starts: TokenStarts,
 }
 
 // Methods for converting a query to an internal form.
@@ -241,7 +264,7 @@ impl CorpusQueryEngine {
             }
             TokenConstraint::Negated(inner) => {
                 let converted = self.convert_constraint(inner)?;
-                let n = self.corpus.stats.total_words as usize;
+                let n = self.corpus.num_tokens as usize;
                 let upper = n - converted.size_bounds.lower;
                 let lower = n - converted.size_bounds.upper;
                 Ok(InternalConstraint {
@@ -373,7 +396,7 @@ impl CorpusQueryEngine {
 
     fn index_for_metadata(&self, metadata: &StoredMapValue) -> Option<IndexData> {
         self.raw_buffers
-            .resolve_index(metadata, self.corpus.stats.total_words)
+            .resolve_index(metadata, self.corpus.num_tokens)
             .ok()
     }
 
@@ -391,10 +414,12 @@ impl CorpusQueryEngine {
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
         let text = CorpusText::new(&corpus.raw_text_path)?;
         let raw_buffers = RawBuffers::new(&corpus.raw_buffer_path)?;
+        let starts = TokenStarts::new(&corpus.token_starts_path)?;
         Ok(CorpusQueryEngine {
             corpus,
             text,
             raw_buffers,
+            starts,
         })
     }
 
@@ -522,8 +547,8 @@ impl CorpusQueryEngine {
     fn resolve_match_tokens(
         &self,
         token_ids: &[u32],
-        query_length: usize,
-        context_len: usize,
+        query_length: u32,
+        context_len: u32,
     ) -> Result<Vec<CorpusQueryMatch<'_>>, QueryExecError> {
         if token_ids.is_empty() {
             return Ok(vec![]);
@@ -532,17 +557,16 @@ impl CorpusQueryEngine {
         // Left start byte, Text start byte, Right start byte, Right end byte
         let mut starts: Vec<(usize, usize, usize, usize)> = Vec::with_capacity(token_ids.len());
         for &token_id in token_ids {
-            let left_start_idx = max(0, token_id.saturating_sub(context_len as u32)) as usize;
+            let left_start_idx = max(0, token_id.saturating_sub(context_len));
             let right_end_idx = min(
-                token_id as usize + query_length + context_len,
-                self.corpus.stats.total_words as usize,
+                token_id + query_length + context_len,
+                self.corpus.num_tokens,
             );
 
-            let left_start_byte = self.corpus.token_starts[left_start_idx] as usize;
-            let text_start_byte = self.corpus.token_starts[token_id as usize] as usize;
-            let right_start_byte =
-                self.corpus.break_starts[token_id as usize + query_length - 1] as usize;
-            let right_end_byte = self.corpus.break_starts[right_end_idx - 1] as usize;
+            let left_start_byte = self.starts.token_start(left_start_idx)?;
+            let text_start_byte = self.starts.token_start(token_id)?;
+            let right_start_byte = self.starts.break_start(token_id + (query_length - 1))?;
+            let right_end_byte = self.starts.break_start(right_end_idx - 1)?;
             starts.push((
                 left_start_byte,
                 text_start_byte,
@@ -668,7 +692,8 @@ impl CorpusQueryEngine {
         let context_len = context_len
             .unwrap_or(DEFAULT_CONTEXT_LEN)
             .clamp(1, MAX_CONTEXT_LEN);
-        let matches = self.resolve_match_tokens(&match_ids, num_terms, context_len)?;
+        let matches =
+            self.resolve_match_tokens(&match_ids, num_terms as u32, context_len as u32)?;
         profiler.phase("Build Matches");
 
         Ok(CorpusQueryResult {
