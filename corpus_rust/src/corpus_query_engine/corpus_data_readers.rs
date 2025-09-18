@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use crate::byte_readers::{InMemoryReader, MmapReader, RawByteReader};
-use crate::common::{IndexData, PackedBitMask, u32_from_bytes, u64_from_bytes};
+use crate::common::{BitMask, IndexData, u32_from_bytes, u64_from_bytes};
 use crate::corpus_serialization::StoredMapValue;
 
 pub struct TokenStarts {
@@ -61,7 +61,7 @@ impl IndexBuffers {
         num_tokens: u32,
     ) -> Result<IndexData, String> {
         match data {
-            StoredMapValue::Packed { offset, len } => Ok(IndexData::Unpacked(
+            StoredMapValue::Packed { offset, len } => Ok(IndexData::List(
                 u32_from_bytes(
                     self.reader
                         .bytes(*offset as usize, (*offset + (4 * *len)) as usize),
@@ -73,7 +73,7 @@ impl IndexBuffers {
                 let bytes = self
                     .reader
                     .bytes(*offset as usize, *offset as usize + (num_words * 8));
-                Ok(IndexData::PackedBitMask(PackedBitMask {
+                Ok(IndexData::BitMask(BitMask {
                     data: u64_from_bytes(bytes)?.to_vec(),
                 }))
             }

@@ -2,7 +2,7 @@ mod corpus_data_readers;
 mod index_calculation;
 mod query_conversion;
 
-use crate::common::PackedBitMask;
+use crate::common::BitMask;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::packed_index_utils::smear_bitmask;
 use crate::query_parsing_v2::parse_query;
@@ -105,8 +105,8 @@ impl CorpusQueryEngine {
         // Get to the start of the page.
         let mut results: Vec<u32> = vec![];
         let mut i: usize = match &match_results.data {
-            IndexData::Unpacked(_) => page_start,
-            IndexData::PackedBitMask(bitmask) => {
+            IndexData::List(_) => page_start,
+            IndexData::BitMask(bitmask) => {
                 let mut start_idx = 0;
                 for _ in 0..page_start {
                     start_idx = bitmask
@@ -121,7 +121,7 @@ impl CorpusQueryEngine {
         let n = match_results.data.num_elements();
         while results.len() < page_size {
             let token_id = match match_results.data {
-                IndexData::Unpacked(ref data) => {
+                IndexData::List(ref data) => {
                     if i >= n {
                         break;
                     }
@@ -129,7 +129,7 @@ impl CorpusQueryEngine {
                     i += 1;
                     id
                 }
-                IndexData::PackedBitMask(ref bitmask_data) => {
+                IndexData::BitMask(ref bitmask_data) => {
                     let id = match bitmask_data.next_one_bit(i) {
                         Some(v) => v,
                         None => break,
@@ -191,7 +191,7 @@ impl CorpusQueryEngine {
             }
             smeared
         };
-        let break_mask = IndexData::PackedBitMask(PackedBitMask { data: break_mask });
+        let break_mask = IndexData::BitMask(BitMask { data: break_mask });
         profiler.phase("Compute break mask");
 
         // As a future optimization, we can apply the AND in-place on the break mask since we never use it again.

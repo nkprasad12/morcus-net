@@ -1,11 +1,11 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum IndexData {
-    PackedBitMask(PackedBitMask),
-    Unpacked(Vec<u32>),
+    BitMask(BitMask),
+    List(Vec<u32>),
 }
 
 #[derive(Debug, PartialEq, Clone)]
-pub struct PackedBitMask {
+pub struct BitMask {
     pub data: Vec<u64>,
 }
 

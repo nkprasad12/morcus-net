@@ -1,5 +1,5 @@
 use super::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
-use super::common::{IndexData, PackedBitMask};
+use super::common::{BitMask, IndexData};
 
 #[cfg(test)]
 pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
@@ -139,7 +139,7 @@ pub fn apply_and_to_indices(
     let offset = first_position as i32 - second_position as i32;
 
     match (first, second) {
-        (IndexData::PackedBitMask(bm1), IndexData::PackedBitMask(bm2)) => {
+        (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
             let (data, pos) = if offset >= 0 {
                 (
                     bitmask_utils::apply_and_with_bitmasks(&bm1.data, &bm2.data, offset as usize),
@@ -155,20 +155,20 @@ pub fn apply_and_to_indices(
                     second_position,
                 )
             };
-            let result = IndexData::PackedBitMask(PackedBitMask { data });
+            let result = IndexData::BitMask(BitMask { data });
             Ok((result, pos))
         }
-        (IndexData::PackedBitMask(bm), IndexData::Unpacked(arr)) => {
+        (IndexData::BitMask(bm), IndexData::List(arr)) => {
             let overlaps = apply_and_with_bitmask_and_array(&bm.data, arr, offset);
-            Ok((IndexData::Unpacked(overlaps), first_position))
+            Ok((IndexData::List(overlaps), first_position))
         }
-        (IndexData::Unpacked(arr), IndexData::PackedBitMask(bm)) => {
+        (IndexData::List(arr), IndexData::BitMask(bm)) => {
             let overlaps = apply_and_with_bitmask_and_array(&bm.data, arr, -offset);
-            Ok((IndexData::Unpacked(overlaps), second_position))
+            Ok((IndexData::List(overlaps), second_position))
         }
-        (IndexData::Unpacked(arr1), IndexData::Unpacked(arr2)) => {
+        (IndexData::List(arr1), IndexData::List(arr2)) => {
             let overlaps = apply_and_with_arrays(arr1, arr2, offset);
-            Ok((IndexData::Unpacked(overlaps), first_position))
+            Ok((IndexData::List(overlaps), first_position))
         }
     }
 }
@@ -182,7 +182,7 @@ pub fn apply_or_to_indices(
     let offset = first_position as i32 - second_position as i32;
 
     match (first, second) {
-        (IndexData::PackedBitMask(bm1), IndexData::PackedBitMask(bm2)) => {
+        (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
             let (data, pos) = if offset >= 0 {
                 (
                     bitmask_utils::apply_or_with_bitmasks(&bm1.data, &bm2.data, offset as usize),
@@ -194,26 +194,26 @@ pub fn apply_or_to_indices(
                     second_position,
                 )
             };
-            let result = IndexData::PackedBitMask(PackedBitMask { data });
+            let result = IndexData::BitMask(BitMask { data });
             Ok((result, pos))
         }
-        (IndexData::PackedBitMask(bm), IndexData::Unpacked(arr)) => {
+        (IndexData::BitMask(bm), IndexData::List(arr)) => {
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, arr, offset);
             Ok((
-                IndexData::PackedBitMask(PackedBitMask { data: overlaps }),
+                IndexData::BitMask(BitMask { data: overlaps }),
                 first_position,
             ))
         }
-        (IndexData::Unpacked(arr), IndexData::PackedBitMask(bm)) => {
+        (IndexData::List(arr), IndexData::BitMask(bm)) => {
             let overlaps = apply_or_with_bitmask_and_array(&bm.data, arr, -offset);
             Ok((
-                IndexData::PackedBitMask(PackedBitMask { data: overlaps }),
+                IndexData::BitMask(BitMask { data: overlaps }),
                 second_position,
             ))
         }
-        (IndexData::Unpacked(arr1), IndexData::Unpacked(arr2)) => {
+        (IndexData::List(arr1), IndexData::List(arr2)) => {
             let overlaps = apply_or_with_arrays(arr1, arr2, offset);
-            Ok((IndexData::Unpacked(overlaps), first_position))
+            Ok((IndexData::List(overlaps), first_position))
         }
     }
 }
@@ -337,7 +337,7 @@ pub fn has_value_in_range(packed_data: &IndexData, range: (u32, u32)) -> bool {
     }
 
     match packed_data {
-        IndexData::PackedBitMask(bitmask_data) => {
+        IndexData::BitMask(bitmask_data) => {
             let bitmask = &bitmask_data.data;
             for i in range.0..=range.1 {
                 let word_index = (i / 64) as usize;
@@ -351,7 +351,7 @@ pub fn has_value_in_range(packed_data: &IndexData, range: (u32, u32)) -> bool {
             }
             false
         }
-        IndexData::Unpacked(data) => {
+        IndexData::List(data) => {
             let mut low = 0;
             let mut high = data.len() - 1;
 
@@ -379,7 +379,7 @@ pub fn has_value_in_range(packed_data: &IndexData, range: (u32, u32)) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::{IndexData, PackedBitMask};
+    use crate::common::{BitMask, IndexData};
 
     #[test]
     fn should_smear_to_the_right_within_a_single_word() {
@@ -796,26 +796,26 @@ mod tests {
 
     #[test]
     fn apply_or_to_indices_array_array() {
-        let candidates = IndexData::Unpacked(vec![3, 6, 9]);
-        let filter_data = IndexData::Unpacked(vec![2, 4, 8]);
+        let candidates = IndexData::List(vec![3, 6, 9]);
+        let filter_data = IndexData::List(vec![2, 4, 8]);
         let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 1).unwrap();
         // candidates: [3,6,9], filter: [3,5,9] -> union [3,5,6,9]
-        assert_eq!(result, IndexData::Unpacked(vec![3, 5, 6, 9]));
+        assert_eq!(result, IndexData::List(vec![3, 5, 6, 9]));
         assert_eq!(position, 2);
     }
 
     #[test]
     fn apply_or_to_indices_bitmask_array() {
-        let candidates = IndexData::PackedBitMask(PackedBitMask {
+        let candidates = IndexData::BitMask(BitMask {
             data: to_bitmask(&[1, 3, 4], 64),
         });
-        let filter_data = IndexData::Unpacked(vec![0, 2, 3]);
+        let filter_data = IndexData::List(vec![0, 2, 3]);
         let (result, position) = apply_or_to_indices(&candidates, 1, &filter_data, 0).unwrap();
         // bitmask: [1,3,4], array with offset: [1,3,4] -> union [1,3,4]
         let expected_data = to_bitmask(&[1, 3, 4], 64);
         assert_eq!(
             result,
-            IndexData::PackedBitMask(PackedBitMask {
+            IndexData::BitMask(BitMask {
                 data: expected_data,
             })
         );
@@ -824,15 +824,15 @@ mod tests {
 
     #[test]
     fn apply_or_to_indices_array_bitmask() {
-        let candidates = IndexData::Unpacked(vec![1, 2, 5]);
-        let filter_data = IndexData::PackedBitMask(PackedBitMask {
+        let candidates = IndexData::List(vec![1, 2, 5]);
+        let filter_data = IndexData::BitMask(BitMask {
             data: to_bitmask(&[1, 3, 4], 64),
         });
         let (result, position) = apply_or_to_indices(&candidates, 0, &filter_data, 1).unwrap();
         let expected_data = to_bitmask(&[1, 2, 3, 4, 6], 64);
         assert_eq!(
             result,
-            IndexData::PackedBitMask(PackedBitMask {
+            IndexData::BitMask(BitMask {
                 data: expected_data,
             })
         );
@@ -841,17 +841,17 @@ mod tests {
 
     #[test]
     fn apply_or_to_indices_bitmask_bitmask() {
-        let candidates = IndexData::PackedBitMask(PackedBitMask {
+        let candidates = IndexData::BitMask(BitMask {
             data: to_bitmask(&[1, 3, 4], 64),
         });
-        let filter_data = IndexData::PackedBitMask(PackedBitMask {
+        let filter_data = IndexData::BitMask(BitMask {
             data: to_bitmask(&[0, 2, 4], 64),
         });
         let (result, position) = apply_or_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3, 4, 5], 64);
         assert_eq!(
             result,
-            IndexData::PackedBitMask(PackedBitMask {
+            IndexData::BitMask(BitMask {
                 data: expected_data,
             })
         );
@@ -860,48 +860,48 @@ mod tests {
 
     #[test]
     fn apply_and_to_indices_array_array() {
-        let candidates = IndexData::Unpacked(vec![3, 6, 9]);
-        let filter_data = IndexData::Unpacked(vec![2, 4, 8]);
+        let candidates = IndexData::List(vec![3, 6, 9]);
+        let filter_data = IndexData::List(vec![2, 4, 8]);
         let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1).unwrap();
-        assert_eq!(result, IndexData::Unpacked(vec![3, 9]));
+        assert_eq!(result, IndexData::List(vec![3, 9]));
         assert_eq!(position, 2);
     }
 
     #[test]
     fn apply_and_to_indices_bitmask_array() {
-        let candidates = IndexData::PackedBitMask(PackedBitMask {
+        let candidates = IndexData::BitMask(BitMask {
             data: to_bitmask(&[1, 3, 4], 64),
         });
-        let filter_data = IndexData::Unpacked(vec![0, 2, 3]);
+        let filter_data = IndexData::List(vec![0, 2, 3]);
         let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0).unwrap();
-        assert_eq!(result, IndexData::Unpacked(vec![1, 3, 4]));
+        assert_eq!(result, IndexData::List(vec![1, 3, 4]));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_and_to_indices_array_bitmask() {
-        let candidates = IndexData::Unpacked(vec![0, 2, 3]);
-        let filter_data = IndexData::PackedBitMask(PackedBitMask {
+        let candidates = IndexData::List(vec![0, 2, 3]);
+        let filter_data = IndexData::BitMask(BitMask {
             data: to_bitmask(&[1, 3, 4], 64),
         });
         let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1).unwrap();
-        assert_eq!(result, IndexData::Unpacked(vec![1, 3, 4]));
+        assert_eq!(result, IndexData::List(vec![1, 3, 4]));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_and_to_indices_bitmask_bitmask() {
-        let candidates = IndexData::PackedBitMask(PackedBitMask {
+        let candidates = IndexData::BitMask(BitMask {
             data: to_bitmask(&[1, 3, 4], 64),
         });
-        let filter_data = IndexData::PackedBitMask(PackedBitMask {
+        let filter_data = IndexData::BitMask(BitMask {
             data: to_bitmask(&[0, 2, 4], 64),
         });
         let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2).unwrap();
         let expected_data = to_bitmask(&[1, 3], 64);
         assert_eq!(
             result,
-            IndexData::PackedBitMask(PackedBitMask {
+            IndexData::BitMask(BitMask {
                 data: expected_data,
             })
         );
@@ -911,7 +911,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_return_true_if_value_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::PackedBitMask(PackedBitMask { data: bitmask });
+        let packed_data = IndexData::BitMask(BitMask { data: bitmask });
         assert!(has_value_in_range(&packed_data, (5, 15)));
         assert!(has_value_in_range(&packed_data, (65, 75)));
     }
@@ -919,7 +919,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_return_false_if_value_not_in_range() {
         let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::PackedBitMask(PackedBitMask { data: bitmask });
+        let packed_data = IndexData::BitMask(BitMask { data: bitmask });
         assert!(!has_value_in_range(&packed_data, (20, 30)));
         assert!(!has_value_in_range(&packed_data, (0, 5)));
     }
@@ -927,7 +927,7 @@ mod tests {
     #[test]
     fn has_value_in_range_bitmask_should_handle_word_boundaries() {
         let bitmask = to_bitmask(&[63, 64], 128);
-        let packed_data = IndexData::PackedBitMask(PackedBitMask { data: bitmask });
+        let packed_data = IndexData::BitMask(BitMask { data: bitmask });
         assert!(has_value_in_range(&packed_data, (60, 65)));
         assert!(!has_value_in_range(&packed_data, (60, 62)));
         assert!(!has_value_in_range(&packed_data, (65, 70)));
@@ -935,7 +935,7 @@ mod tests {
 
     #[test]
     fn has_value_in_range_packed_array_should_return_true_if_value_in_range() {
-        let packed_data = IndexData::Unpacked(vec![10, 70]);
+        let packed_data = IndexData::List(vec![10, 70]);
         assert!(has_value_in_range(&packed_data, (5, 15)));
         assert!(has_value_in_range(&packed_data, (65, 75)));
         assert!(has_value_in_range(&packed_data, (10, 10)));
@@ -944,7 +944,7 @@ mod tests {
 
     #[test]
     fn has_value_in_range_packed_array_should_return_false_if_value_not_in_range() {
-        let packed_data = IndexData::Unpacked(vec![10, 70]);
+        let packed_data = IndexData::List(vec![10, 70]);
         assert!(!has_value_in_range(&packed_data, (20, 30)));
         assert!(!has_value_in_range(&packed_data, (0, 9)));
         assert!(!has_value_in_range(&packed_data, (71, 100)));
