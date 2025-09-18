@@ -1,5 +1,3 @@
-use crate::common::BitMask;
-
 macro_rules! define_bitmask_or_with_self_offset_in_place {
     (
         $fn_name:ident,
@@ -145,26 +143,24 @@ macro_rules! define_apply_op_with_bitmasks {
 define_apply_op_with_bitmasks!(apply_and_with_bitmasks, &, "&");
 define_apply_op_with_bitmasks!(apply_or_with_bitmasks, |, "|");
 
-impl BitMask {
-    /// Finds the index of the next set bit (1) in the bitmask starting from the given index.
-    /// Returns `None` if no such bit is found.
-    pub fn next_one_bit(&self, start: usize) -> Option<usize> {
-        let mut word_index = start / 64;
-        let mut bit_index = start % 64;
-        while word_index < self.data.len() {
-            let word = self.data[word_index];
-            if word != 0 {
-                for bit in bit_index..64 {
-                    if (word & (1 << (63 - bit))) != 0 {
-                        return Some(word_index * 64 + bit);
-                    }
+/// Finds the index of the next set bit (1) in the bitmask starting from the given index.
+/// Returns `None` if no such bit is found.
+pub fn next_one_bit(bitmask: &[u64], start: usize) -> Option<usize> {
+    let mut word_index = start / 64;
+    let mut bit_index = start % 64;
+    while word_index < bitmask.len() {
+        let word = bitmask[word_index];
+        if word != 0 {
+            for bit in bit_index..64 {
+                if (word & (1 << (63 - bit))) != 0 {
+                    return Some(word_index * 64 + bit);
                 }
             }
-            word_index += 1;
-            bit_index = 0;
         }
-        None
+        word_index += 1;
+        bit_index = 0;
     }
+    None
 }
 
 #[cfg(test)]
@@ -347,68 +343,56 @@ mod tests {
     // Tests for next_one_bit
     #[test]
     fn next_one_bit_from_start_with_bit_set() {
-        let bitmask = BitMask {
-            data: vec![1 << 63], // Bit 0 set (MSB)
-        };
-        assert_eq!(bitmask.next_one_bit(0), Some(0));
+        let bitmask = vec![1 << 63]; // Bit 0 set (MSB)
+        assert_eq!(next_one_bit(&bitmask, 0), Some(0));
     }
 
     #[test]
     fn next_one_bit_from_start_no_bits_set() {
-        let bitmask = BitMask { data: vec![0] };
-        assert_eq!(bitmask.next_one_bit(0), None);
+        let bitmask = vec![0];
+        assert_eq!(next_one_bit(&bitmask, 0), None);
     }
 
     #[test]
     fn next_one_bit_from_middle_of_word() {
-        let bitmask = BitMask {
-            data: vec![(1 << 63) | (1 << 62)], // Bits 0 and 1 set
-        };
-        assert_eq!(bitmask.next_one_bit(0), Some(0));
-        assert_eq!(bitmask.next_one_bit(1), Some(1));
-        assert_eq!(bitmask.next_one_bit(2), None);
+        let bitmask = vec![(1 << 63) | (1 << 62)];
+        assert_eq!(next_one_bit(&bitmask, 0), Some(0));
+        assert_eq!(next_one_bit(&bitmask, 1), Some(1));
+        assert_eq!(next_one_bit(&bitmask, 2), None);
     }
 
     #[test]
     fn next_one_bit_across_words() {
-        let bitmask = BitMask {
-            data: vec![0, 1 << 63], // Bit 64 set
-        };
-        assert_eq!(bitmask.next_one_bit(0), Some(64));
-        assert_eq!(bitmask.next_one_bit(64), Some(64));
-        assert_eq!(bitmask.next_one_bit(65), None);
+        let bitmask = vec![0, 1 << 63]; // Bit 64 set
+        assert_eq!(next_one_bit(&bitmask, 0), Some(64));
+        assert_eq!(next_one_bit(&bitmask, 64), Some(64));
+        assert_eq!(next_one_bit(&bitmask, 65), None);
     }
 
     #[test]
     fn next_one_bit_start_at_exact_bit() {
-        let bitmask = BitMask {
-            data: vec![1 << 63], // Bit 0 set
-        };
-        assert_eq!(bitmask.next_one_bit(0), Some(0));
+        let bitmask = vec![1 << 63];
+        assert_eq!(next_one_bit(&bitmask, 0), Some(0));
     }
 
     #[test]
     fn next_one_bit_start_beyond_last_bit() {
-        let bitmask = BitMask {
-            data: vec![1 << 63], // Bit 0 set
-        };
-        assert_eq!(bitmask.next_one_bit(1), None);
+        let bitmask = vec![1 << 63];
+        assert_eq!(next_one_bit(&bitmask, 1), None);
     }
 
     #[test]
     fn next_one_bit_multiple_bits_in_word() {
-        let bitmask = BitMask {
-            data: vec![(1 << 63) | (1 << 60) | (1 << 50)], // Bits 0, 3, 13 set
-        };
-        assert_eq!(bitmask.next_one_bit(0), Some(0));
-        assert_eq!(bitmask.next_one_bit(1), Some(3));
-        assert_eq!(bitmask.next_one_bit(4), Some(13));
-        assert_eq!(bitmask.next_one_bit(14), None);
+        let bitmask = vec![(1 << 63) | (1 << 60) | (1 << 50)]; // Bits 0, 3, 13 set
+        assert_eq!(next_one_bit(&bitmask, 0), Some(0));
+        assert_eq!(next_one_bit(&bitmask, 1), Some(3));
+        assert_eq!(next_one_bit(&bitmask, 4), Some(13));
+        assert_eq!(next_one_bit(&bitmask, 14), None);
     }
 
     #[test]
     fn next_one_bit_empty_bitmask() {
-        let bitmask = BitMask { data: vec![] };
-        assert_eq!(bitmask.next_one_bit(0), None);
+        let bitmask = vec![];
+        assert_eq!(next_one_bit(&bitmask, 0), None);
     }
 }

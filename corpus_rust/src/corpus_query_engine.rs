@@ -2,6 +2,7 @@ mod corpus_data_readers;
 mod index_calculation;
 mod query_conversion;
 
+use crate::bitmask_utils::next_one_bit;
 use crate::common::BitMask;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::packed_index_utils::smear_bitmask;
@@ -109,8 +110,7 @@ impl CorpusQueryEngine {
             IndexData::BitMask(bitmask) => {
                 let mut start_idx = 0;
                 for _ in 0..page_start {
-                    start_idx = bitmask
-                        .next_one_bit(start_idx)
+                    start_idx = next_one_bit(&bitmask.data, start_idx)
                         .ok_or(QueryExecError::new("Not enough results for page"))?
                         + 1;
                 }
@@ -129,8 +129,8 @@ impl CorpusQueryEngine {
                     i += 1;
                     id
                 }
-                IndexData::BitMask(ref bitmask_data) => {
-                    let id = match bitmask_data.next_one_bit(i) {
+                IndexData::BitMask(ref bitmask) => {
+                    let id = match next_one_bit(&bitmask.data, i) {
                         Some(v) => v,
                         None => break,
                     };
