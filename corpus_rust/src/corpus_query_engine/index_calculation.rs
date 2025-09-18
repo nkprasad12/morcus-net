@@ -1,5 +1,5 @@
 use crate::{
-    common::{IndexData, PackedBitMask},
+    common::IndexData,
     corpus_query_engine::{
         CorpusQueryEngine, IntermediateResult, QueryExecError, query_conversion::InternalQueryTerm,
     },
@@ -105,12 +105,12 @@ impl CorpusQueryEngine {
     }
 
     /// Returns the hard breaks, verifying that it is a bitmask.
-    pub(super) fn get_hard_breaks(&self) -> Result<PackedBitMask, QueryExecError> {
+    pub(super) fn get_hard_breaks(&self) -> Result<Vec<u64>, QueryExecError> {
         let index = self
             .get_index("breaks", "hard")
             .ok_or(QueryExecError::new("No hard breaks index found"))?;
         match index {
-            IndexData::PackedBitMask(pbm) => Ok(pbm),
+            IndexData::PackedBitMask(pbm) => Ok(pbm.data),
             _ => Err(QueryExecError::new("Hard breaks index is not a bitmask")),
         }
     }

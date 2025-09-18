@@ -183,12 +183,13 @@ impl CorpusQueryEngine {
 
         let hard_breaks = self.get_hard_breaks()?;
         let break_mask = if query_length == 2 {
-            hard_breaks.data.iter().map(|x| !*x).collect::<Vec<_>>()
+            hard_breaks.iter().map(|x| !*x).collect::<Vec<_>>()
         } else {
-            smear_bitmask(&hard_breaks.data, query_length - 2, "left")
-                .iter()
-                .map(|x| !*x)
-                .collect::<Vec<_>>()
+            let mut smeared = smear_bitmask(&hard_breaks, query_length - 2, "left");
+            for elem in &mut smeared {
+                *elem = !*elem;
+            }
+            smeared
         };
         let break_mask = IndexData::PackedBitMask(PackedBitMask { data: break_mask });
         profiler.phase("Compute break mask");
