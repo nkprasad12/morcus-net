@@ -21,7 +21,7 @@ pub struct WorkData {
     pub name: String,
 }
 
-pub type WorkLookupEntry = (String, Vec<Vec<String>>, WorkData);
+pub type WorkLookupEntry = (String, Vec<String>, WorkData);
 pub type WorkRowRange = (u32, Vec<(u32, u32, u32)>);
 
 #[derive(Debug, Deserialize)]

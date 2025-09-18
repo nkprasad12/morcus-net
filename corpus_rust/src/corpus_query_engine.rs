@@ -47,7 +47,7 @@ pub struct CorpusQueryMatchMetadata<'a> {
     pub work_id: &'a String,
     pub work_name: &'a String,
     pub author: &'a String,
-    pub section: String,
+    pub section: &'a String,
     pub offset: u32,
 }
 
@@ -325,7 +325,7 @@ impl CorpusQueryEngine {
             work_id,
             work_name: &work_data.name,
             author: &work_data.author,
-            section: row_ids[row_idx].join("."),
+            section: &row_ids[row_idx],
             offset: token_id - row_info.1,
         })
     }

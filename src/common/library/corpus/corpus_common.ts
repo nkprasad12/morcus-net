@@ -163,7 +163,7 @@ interface WorkData {
 
 interface CoreCorpusIndex {
   /** Data about each work in the corpus. */
-  workLookup: [id: string, rowIds: string[][], workData: WorkData][];
+  workLookup: [id: string, rowIds: string[], workData: WorkData][];
   /** Ranges of token indices for each work in the corpus, split by row. */
   workRowRanges: WorkRowRange[];
   /** Statistics about the corpus. */

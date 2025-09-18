@@ -64,7 +64,7 @@ function absorbWork(
   corpus.workRowRanges.push([corpus.workLookup.length, []]);
   corpus.workLookup.push([
     work.id,
-    work.rowIds,
+    work.rowIds.map((id) => id.join(".")),
     { name: work.workName, author: work.author },
   ]);
   let wordsInWork = 0;
