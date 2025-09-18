@@ -1,16 +1,16 @@
 use std::error::Error;
 
-use crate::byte_readers::{InMemoryReader, MmapReader, RawByteReader};
+use crate::byte_readers::RawByteReader;
 use crate::common::{IndexData, u32_from_bytes, u64_from_bytes};
 use crate::corpus_serialization::StoredMapValue;
 
-pub struct TokenStarts {
-    reader: MmapReader,
+pub struct TokenStarts<T: RawByteReader> {
+    reader: T,
 }
 
-impl TokenStarts {
+impl<T: RawByteReader> TokenStarts<T> {
     pub fn new(token_starts_path: &str) -> Result<Self, Box<dyn Error>> {
-        let reader = MmapReader::new(token_starts_path)?;
+        let reader = T::new(token_starts_path)?;
         Ok(TokenStarts { reader })
     }
 
@@ -25,13 +25,13 @@ impl TokenStarts {
     }
 }
 
-pub struct CorpusText {
-    reader: MmapReader,
+pub struct CorpusText<T: RawByteReader> {
+    reader: T,
 }
 
-impl CorpusText {
+impl<T: RawByteReader> CorpusText<T> {
     pub fn new(raw_text_path: &str) -> Result<Self, Box<dyn Error>> {
-        let reader = MmapReader::new(raw_text_path)?;
+        let reader = T::new(raw_text_path)?;
         Ok(CorpusText { reader })
     }
 
@@ -45,13 +45,13 @@ impl CorpusText {
     }
 }
 
-pub struct IndexBuffers {
-    reader: InMemoryReader,
+pub struct IndexBuffers<T: RawByteReader> {
+    reader: T,
 }
 
-impl IndexBuffers {
+impl<T: RawByteReader> IndexBuffers<T> {
     pub fn new(raw_buffer_path: &str) -> Result<Self, Box<dyn Error>> {
-        let reader = InMemoryReader::new(raw_buffer_path)?;
+        let reader = T::new(raw_buffer_path)?;
         Ok(IndexBuffers { reader })
     }
 
