@@ -93,6 +93,7 @@ export function buttonLikeProps(
 export function SpanLink(
   props: PropsWithChildren<{
     onClick: () => unknown;
+    onAuxClick?: () => unknown;
     className?: string;
     id: string;
   }>
@@ -101,6 +102,7 @@ export function SpanLink(
     <span
       id={props.id}
       className={props.className}
+      onAuxClick={props.onAuxClick}
       {...buttonLikeProps(props.onClick)}
       aria-labelledby={props.id}
       role="link">

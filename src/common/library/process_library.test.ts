@@ -87,10 +87,11 @@ describe("Library Processing", () => {
     await processLibrary({ outputDir: LIB_DIR, works: [DBG_PATH] });
     const result = await retrieveWorksList(LIB_DIR);
 
-    expect(result).toHaveLength(4);
+    expect(result).toHaveLength(5);
     expect(result[0].id).toBe("hypotactic_Eclogues_Calpurnius Siculus");
     expect(result[1].id).toBe("hypotactic_Odes_Horace");
     expect(result[2].id).toBe("hypotactic_Metamorphoses_Ovid");
-    expect(result[3].id).toBe("phi0448.phi001.perseus-lat2");
+    expect(result[3].id).toBe("hypotactic_Heroides_Ovid");
+    expect(result[4].id).toBe("phi0448.phi001.perseus-lat2");
   });
 });

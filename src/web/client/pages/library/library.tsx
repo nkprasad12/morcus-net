@@ -21,14 +21,22 @@ const WORK_STYLE: React.CSSProperties = {
   wordBreak: "break-word",
 };
 
-function onWorkSelected(work: LibraryWorkMetadata, nav: NavHelper<RouteInfo>) {
+function onWorkSelected(
+  work: LibraryWorkMetadata,
+  nav: NavHelper<RouteInfo>,
+  aux?: boolean
+) {
   const params = { author: work.urlAuthor, name: work.urlName };
   const path = ClientPaths.WORK_BY_NAME.toUrlPath(params);
   if (path === null) {
     return;
   }
   const saved = LibrarySavedSpot.get(work.id);
-  nav.to({ path, params: { id: saved } });
+  if (aux) {
+    nav.inNewTab({ path, params: { id: saved } });
+  } else {
+    nav.to({ path, params: { id: saved } });
+  }
 }
 
 type WorkListState = "Loading" | "Error" | LibraryWorkMetadata[];
@@ -78,7 +86,8 @@ function WorksList(props: { works: WorkListState }) {
           <SpanLink
             id={work.id}
             className="latWork"
-            onClick={() => onWorkSelected(work, nav)}>
+            onClick={() => onWorkSelected(work, nav)}
+            onAuxClick={() => onWorkSelected(work, nav, true)}>
             <span style={WORK_STYLE}>{work.name}</span>
             <span className="text sm light" style={WORK_STYLE}>
               {work.author}
