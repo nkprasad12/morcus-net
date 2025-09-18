@@ -58,7 +58,8 @@ export class FusedDictionary {
         return result === undefined ? [] : [result];
       }
       return dict.getEntry(
-        query,
+        // TODO: We should have a more general list of things we remove at storage time.
+        query.replaceAll("'", ""),
         extras,
         (request.mode || 0) === 0 ? undefined : { handleInflections: true }
       );

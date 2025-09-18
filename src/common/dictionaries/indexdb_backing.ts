@@ -48,7 +48,10 @@ export const LS_CONFIG: IndexDbDictConfig = {
 };
 
 function cleanKey(key: string) {
-  return removeDiacritics(key).toLowerCase().replaceAll("ß", "ss");
+  return removeDiacritics(key)
+    .toLowerCase()
+    .replaceAll("ß", "ss")
+    .replaceAll("'", "");
 }
 
 function orthRow(
