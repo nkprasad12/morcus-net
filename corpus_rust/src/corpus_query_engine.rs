@@ -282,11 +282,12 @@ impl CorpusQueryEngine {
         &self,
         token_id: u32,
     ) -> Result<CorpusQueryMatchMetadata<'_>, QueryExecError> {
-        let work_ranges = &self.corpus.work_row_ranges;
+        let work_ranges = &self.corpus.work_lookup;
         let work_idx = work_ranges
-            .binary_search_by(|(_, row_data)| {
-                let work_start_token_id = row_data[0].1;
-                let work_end_token_id = row_data[row_data.len() - 1].2;
+            .binary_search_by(|row_data| {
+                let range = &row_data.1;
+                let work_start_token_id = range[0].1;
+                let work_end_token_id = range[range.len() - 1].2;
                 if token_id < work_start_token_id {
                     std::cmp::Ordering::Greater
                 } else if token_id >= work_end_token_id {
@@ -295,7 +296,6 @@ impl CorpusQueryEngine {
                     std::cmp::Ordering::Equal
                 }
             })
-            .map(|i| work_ranges[i].0 as usize)
             .map_err(|_| {
                 QueryExecError::new(&format!("TokenId {token_id} not found in any work."))
             })?;
@@ -318,14 +318,13 @@ impl CorpusQueryEngine {
                 ))
             })?;
 
-        let (work_id, row_ids, work_data) = &self.corpus.work_lookup[work_idx];
-        let row_idx = row_info.0 as usize;
+        let (work_id, _, work_data) = &self.corpus.work_lookup[work_idx];
 
         Ok(CorpusQueryMatchMetadata {
             work_id,
             work_name: &work_data.name,
             author: &work_data.author,
-            section: &row_ids[row_idx],
+            section: &row_info.0,
             offset: token_id - row_info.1,
         })
     }

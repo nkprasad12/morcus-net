@@ -125,15 +125,6 @@ export interface CorpusInputWork {
   sectionDepth: number;
 }
 
-export type WorkRowRange = [
-  /** Index of the work in the corpus. */
-  workIdx: number,
-  /**
-   * Ranges of token indices for each row in the work.
-   * The startTokenId is inclusive, and the endTokenId is exclusive.
-   */
-  rowData: [rowIdx: number, startTokenId: number, endTokenId: number][]
-];
 export interface CorpusStats {
   totalWords: number;
   totalWorks: number;
@@ -163,9 +154,11 @@ interface WorkData {
 
 interface CoreCorpusIndex {
   /** Data about each work in the corpus. */
-  workLookup: [id: string, rowIds: string[], workData: WorkData][];
-  /** Ranges of token indices for each work in the corpus, split by row. */
-  workRowRanges: WorkRowRange[];
+  workLookup: [
+    id: string,
+    rowData: [rowId: string, startTokenId: number, endTokenId: number][],
+    workData: WorkData
+  ][];
   /** Statistics about the corpus. */
   stats: CorpusStats;
   /** The utf-8 encoded text of the full corpus. */
@@ -197,7 +190,6 @@ export type InProgressLatinCorpus = CoreCorpusIndex & {
 export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
     workLookup: [],
-    workRowRanges: [],
     rawBufferPath: CORPUS_BUFFERS,
     rawTextPath: CORPUS_RAW_TEXT,
     tokenStarts: [],

@@ -21,14 +21,12 @@ pub struct WorkData {
     pub name: String,
 }
 
-pub type WorkLookupEntry = (String, Vec<String>, WorkData);
-pub type WorkRowRange = (u32, Vec<(u32, u32, u32)>);
+pub type WorkLookupEntry = (String, Vec<(String, u32, u32)>, WorkData);
 
 #[derive(Debug, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct LatinCorpusIndex {
     pub work_lookup: Vec<WorkLookupEntry>,
-    pub work_row_ranges: Vec<WorkRowRange>,
     pub stats: CorpusStats,
     pub raw_text_path: String,
     pub raw_buffer_path: String,

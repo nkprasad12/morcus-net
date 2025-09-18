@@ -61,10 +61,9 @@ function absorbWork(
   const voiceIndex = arrayMap(corpus.indices.voice);
   const breaksIndex = arrayMap(corpus.indices.breaks);
 
-  corpus.workRowRanges.push([corpus.workLookup.length, []]);
   corpus.workLookup.push([
     work.id,
-    work.rowIds.map((id) => id.join(".")),
+    work.rowIds.map((id) => [id.join("."), 0, 0] as const),
     { name: work.workName, author: work.author },
   ]);
   let wordsInWork = 0;
@@ -165,11 +164,10 @@ function absorbWork(
       tokens.push(stripped);
       breaks.push(null);
     }
-    corpus.workRowRanges[corpus.workRowRanges.length - 1][1].push([
-      rowIdx,
-      rowStartId,
-      tokens.length,
-    ]);
+    const lookupEntry =
+      corpus.workLookup[corpus.workLookup.length - 1][1][rowIdx];
+    lookupEntry[1] = rowStartId;
+    lookupEntry[2] = tokens.length;
   });
   corpus.stats.totalWords += wordsInWork;
   corpus.stats.totalWorks += 1;
