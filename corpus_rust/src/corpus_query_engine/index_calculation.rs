@@ -110,7 +110,7 @@ impl CorpusQueryEngine {
             .get_index("breaks", "hard")
             .ok_or(QueryExecError::new("No hard breaks index found"))?;
         match index {
-            IndexData::BitMask(bm) => Ok(bm.data),
+            IndexData::BitMask(bm) => Ok(bm),
             _ => Err(QueryExecError::new("Hard breaks index is not a bitmask")),
         }
     }

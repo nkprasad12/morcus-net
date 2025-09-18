@@ -1,12 +1,7 @@
 #[derive(Debug, PartialEq, Clone)]
 pub enum IndexData {
-    BitMask(BitMask),
+    BitMask(Vec<u64>),
     List(Vec<u32>),
-}
-
-#[derive(Debug, PartialEq, Clone)]
-pub struct BitMask {
-    pub data: Vec<u64>,
 }
 
 pub fn u32_from_bytes(bytes: &[u8]) -> Result<&[u32], String> {

@@ -3,7 +3,6 @@ mod index_calculation;
 mod query_conversion;
 
 use crate::bitmask_utils::next_one_bit;
-use crate::common::BitMask;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::packed_index_utils::smear_bitmask;
 use crate::query_parsing_v2::parse_query;
@@ -110,7 +109,7 @@ impl CorpusQueryEngine {
             IndexData::BitMask(bitmask) => {
                 let mut start_idx = 0;
                 for _ in 0..page_start {
-                    start_idx = next_one_bit(&bitmask.data, start_idx)
+                    start_idx = next_one_bit(bitmask, start_idx)
                         .ok_or(QueryExecError::new("Not enough results for page"))?
                         + 1;
                 }
@@ -130,7 +129,7 @@ impl CorpusQueryEngine {
                     id
                 }
                 IndexData::BitMask(ref bitmask) => {
-                    let id = match next_one_bit(&bitmask.data, i) {
+                    let id = match next_one_bit(bitmask, i) {
                         Some(v) => v,
                         None => break,
                     };
@@ -191,7 +190,7 @@ impl CorpusQueryEngine {
             }
             smeared
         };
-        let break_mask = IndexData::BitMask(BitMask { data: break_mask });
+        let break_mask = IndexData::BitMask(break_mask);
         profiler.phase("Compute break mask");
 
         // As a future optimization, we can apply the AND in-place on the break mask since we never use it again.
