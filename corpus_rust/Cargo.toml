@@ -13,7 +13,7 @@ memmap2 = "0.9"
 libc = "0.2"
 
 [dev-dependencies]
-criterion = "0.3"
+criterion = {version = "0.3", features = ["html_reports"]}
 
 [[bin]]
 name = "cli"

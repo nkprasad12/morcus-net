@@ -1,4 +1,4 @@
-use corpus::packed_index_utils::smear_bitmask;
+use corpus::{corpus_query_engine, corpus_serialization, packed_index_utils::smear_bitmask};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 const POW_2_24: u32 = 1 << 24;
@@ -85,26 +85,54 @@ fn create_random_data_arrays(upper_bound: u32, sizes: &[u32], seed: u32) -> Vec<
         .collect()
 }
 
+fn create_query_engine() -> corpus_query_engine::CorpusQueryEngine {
+    const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
+    let corpus =
+        corpus_serialization::deserialize_corpus(CORPUS_ROOT).expect("Failed to load corpus");
+    corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine")
+}
+
 pub fn criterion_benchmark(c: &mut Criterion) {
-    let fraction: u32 = 1024;
-    let size = POW_2_24 / fraction;
-    let sizes = vec![size; 2];
-    let data = create_random_data_arrays(POW_2_24, &sizes, 42);
+    {
+        std::env::set_current_dir("..").unwrap();
+        let mut query_benches = c.benchmark_group("Query Execution");
+        let corpus = create_query_engine();
+        let dedit_oscula_nato = "@lemma:do oscula @case:dat";
+        let bitmask_query = "@case:nom @case:dat @case:acc";
+        let page_size = Some(100);
+        query_benches.bench_function("dedit oscula nato", |b| {
+            b.iter(|| {
+                let _ = corpus.query_corpus(dedit_oscula_nato, 0, page_size, None);
+            })
+        });
 
-    c.bench_function("smear 15 both", |b| {
-        b.iter(|| smear_bitmask(&data[0].bitmask, 15, "both"))
-    });
-
-    c.bench_function("smear 7 both", |b| {
-        b.iter(|| smear_bitmask(&data[0].bitmask, 7, "both"))
-    });
+        query_benches.bench_function("bitmask query", |b| {
+            b.iter(|| {
+                let _ = corpus.query_corpus(bitmask_query, 0, page_size, None);
+            })
+        });
+    }
+    {
+        let mut smear_benches = c.benchmark_group("Smear Bitmask");
+        let fraction: u32 = 1024;
+        let size = POW_2_24 / fraction;
+        let sizes = vec![size; 2];
+        let data = create_random_data_arrays(POW_2_24, &sizes, 42);
+        smear_benches.bench_function("smear 15 both", |b| {
+            b.iter(|| smear_bitmask(&data[0].bitmask, 15, "both"))
+        });
+        smear_benches.bench_function("smear 7 both", |b| {
+            b.iter(|| smear_bitmask(&data[0].bitmask, 7, "both"))
+        });
+        smear_benches.finish();
+    }
 }
 
 criterion_group! {
     name = benches;
     config = Criterion::default()
-        .warm_up_time(std::time::Duration::from_secs(1))
-        .measurement_time(std::time::Duration::from_secs(3));
+        .warm_up_time(std::time::Duration::from_millis(250))
+        .measurement_time(std::time::Duration::from_secs(2));
     targets = criterion_benchmark,
 }
 criterion_main!(benches);
