@@ -54,6 +54,7 @@ async function countLines() {
   const morceusTest: number[] = [];
   const pySource: number[] = [];
   const pyTest: number[] = [];
+  const rsSource: number[] = [];
   for await (const file of walk(ROOT)) {
     const contents = await fs.promises.readFile(file);
     const lines = contents.toString().split("\n").length - 1;
@@ -75,7 +76,17 @@ async function countLines() {
       }
     }
   }
-  const total = [tsSource, tsTest, pySource, pyTest].flatMap((x) => x);
+  for await (const file of walk("corpus_rust")) {
+    const contents = await fs.promises.readFile(file);
+    if (!file.endsWith(".rs")) {
+      continue;
+    }
+    const lines = contents.toString().split("\n").length - 1;
+    rsSource.push(lines);
+  }
+  const total = [tsSource, tsTest, pySource, pyTest, rsSource].flatMap(
+    (x) => x
+  );
   const row = (label: string, lineData: number[]) => {
     return [label, `${sum(lineData)} lines`, `${lineData.length} files`];
   };
@@ -88,6 +99,7 @@ async function countLines() {
     row(" - Morceus tests", morceusTest),
     row("Python source", pySource),
     row("Python tests", pyTest),
+    row("Rust lines", rsSource),
     row("Total", total),
   ];
   console.log(formatCells(cells));
