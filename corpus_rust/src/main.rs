@@ -100,7 +100,7 @@ fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQuer
 fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
     let results = get_results(engine, query_str);
     println!(
-        "\nShowing results {}-{} of {} matches:",
+        "\n\x1b[4mShowing results {}-{} of {} matches:\x1b[0m",
         results.page_start + 1,
         results.page_start + results.matches.len(),
         results.total_results
@@ -111,9 +111,12 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
     }
     for match_data in results.matches {
         let m = &match_data.metadata;
-        println!("  {} - {} {}", m.author, m.work_name, m.section);
         println!(
-            "    {}*{}*{}",
+            "  \x1b[34m{}\x1b[0m - \x1b[32m{} {}\x1b[0m",
+            m.author, m.work_name, m.section
+        );
+        println!(
+            "    \x1b[90m{}\x1b[0m\x1b[31m{}\x1b[0m\x1b[90m{}\x1b[0m",
             match_data.left_context, match_data.text, match_data.right_context,
         );
         println!();

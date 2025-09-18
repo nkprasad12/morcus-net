@@ -58,7 +58,7 @@ export function* latinWorksFromLibrary(): Generator<CorpusInputWork> {
     yield convertToCorpusInputWork(work);
     if (process.env.SIMULATE_LARGE_CORPUS === "1") {
       const converted = convertToCorpusInputWork(work);
-      for (let i = 0; i < 11; i++) {
+      for (let i = 0; i < 10; i++) {
         yield {
           ...converted,
           id: `${converted.id}-${i + 1}`,
