@@ -62,7 +62,7 @@ define_bitmask_or_with_self_offset_in_place!(
 ///
 /// The original data is modified in place.
 ///
-/// # Arguments
+/// ## Arguments
 ///
 /// * `data` - The bitmask data to modify.
 /// * `offset` - The offset to apply. The absolute value must be in the range (0, 64).
@@ -80,13 +80,13 @@ macro_rules! define_apply_op_with_bitmasks {
         #[doc = $name]
         /// on two bitmasks with an offset for the second mask.
         ///
-        /// # Arguments
+        /// ## Arguments
         ///
         /// * `first` - The first bitmask as a slice of u64.
         /// * `second` - The second bitmask as a slice of u64. Must have the same length as `first`.
         /// * `offset` - The bit offset to apply to the second bitmask (right shift). Must be non-negative.
         ///
-        /// # Returns
+        /// ## Returns
         ///
         /// A new `Vec<u64>` with the result of the operation.
         /// `Result[i] = a[i]
@@ -182,13 +182,13 @@ pub fn next_one_bit(bitmask: &[u64], start: usize) -> Option<usize> {
 /// - If direction is "right": [i, i + window].
 /// - If direction is "both": [i - window, i + window].
 ///
-/// # Arguments
+/// ## Arguments
 ///
 /// * `original` - The original bitmask to smear.
 /// * `window` - The size of the window to use for smearing. The maximum value is 15.
 /// * `direction` - The direction to smear the bits ("left", "right", or "both").
 ///
-/// # Returns
+/// ## Returns
 ///
 /// The smeared bitmask.
 pub fn smear_bitmask(original: &[u64], window: usize, direction: &str) -> Vec<u64> {

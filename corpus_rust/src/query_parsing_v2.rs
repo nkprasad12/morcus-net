@@ -373,7 +373,7 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
 
 /// Parses a query string into a `Query` object.
 ///
-/// # Overview
+/// ## Overview
 ///
 /// The query syntax is built up from the following simpler
 /// building blocks:
