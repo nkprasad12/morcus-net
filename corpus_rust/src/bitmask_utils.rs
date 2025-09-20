@@ -84,57 +84,78 @@ macro_rules! define_apply_op_with_bitmasks {
         ///
         /// * `first` - The first bitmask as a slice of u64.
         /// * `second` - The second bitmask as a slice of u64. Must have the same length as `first`.
-        /// * `offset` - The bit offset to apply to the second bitmask (right shift). Must be non-negative.
+        /// * `offset` - The bit offset to apply to the second bitmask. Positive values shift right,
+        ///   negative values shift left. The absolute value must be less than 64.
         ///
         /// ## Returns
         ///
         /// A new `Vec<u64>` with the result of the operation.
-        /// `Result[i] = a[i]
+        /// If offset >= 0: `Result[i] = a[i]
         #[doc = $name]
-        /// b[i - k]` for each bit `i`.
-        pub fn $fn_name(first: &[u64], second: &[u64], offset: usize) -> Vec<u64> {
+        /// b[i - offset]` for each bit `i`.
+        /// If offset < 0: `Result[i] = a[i]
+        #[doc = $name]
+        /// b[i + |offset|]` for each bit `i`.
+        pub fn $fn_name(first: &[u64], second: &[u64], offset: isize) -> Vec<u64> {
             assert_eq!(
                 first.len(),
                 second.len(),
                 "Bitmasks must have the same length."
             );
             assert!(first.len() > 0, "Bitmasks must not be empty.");
-            assert!(offset < 64, "Offset must be less than 64.");
+            assert!(offset.abs() < 64, "Absolute offset must be less than 64.");
             let len = first.len();
 
             let mut result = vec![0u64; len];
 
             if offset == 0 {
                 for i in 0..len {
-                    result[i] = first[i] $op second[i - offset];
+                    result[i] = first[i] $op second[i];
                 }
                 return result;
             }
 
-            let left_shift = 64 - offset;
-            result[0] = first[0] $op (second[0] >> offset);
-            for i in 1..len {
-                // Suppose we have (with 4 bit words for brevity):
-                // 1st: 0110 1010
-                // 2nd: 1101 0110
-                // For the example below, we will work on the second word (so i = 1)
-                // and assume wordOffset is 0 and bitOffset is 2.
+            if offset > 0 {
+                // Positive offset (shift second bitmask right)
+                let offset = offset as usize;
+                let left_shift = 64 - offset;
+                // Handle the first word separately.
+                result[0] = first[0] $op (second[0] >> offset);
+                for i in 1..len {
+                    // Suppose we have (with 4 bit words for brevity):
+                    // 1st: 0110 1010
+                    // 2nd: 1101 0110
+                    // For the example below, we will work on the second word (so i = 1)
+                    // and assume wordOffset is 0 and bitOffset is 2.
 
-                // Get the right `wordSize - bitOffset` bits and move them to the left:
-                // let mask = second[j] >>> bitOffset;
-                //      = 0110 >>> 2 = 0001
-                // mask |= second[j] >>> bitOffset;
+                    // Get the right `wordSize - bitOffset` bits and move them to the left:
+                    // let mask = second[j] >>> bitOffset;
+                    //      = 0110 >>> 2 = 0001
+                    // mask |= second[j] >>> bitOffset;
 
-                // Then get the remaining bits from the previous word:
-                // mask |= second[j - 1] << leftShift;
-                // second[j - 1] << leftShift
-                // = 1100 << 2 = 0100
-                // Finally, combine them with a bitwise OR:
-                // mask |= second[j - 1] << leftShift
-                // = 0001 | 0100 = 0101, as expected.
-                let mask = (second[i] >> offset) | (second[i - 1] << left_shift);
-                result[i] = first[i] $op mask;
+                    // Then get the remaining bits from the previous word:
+                    // mask |= second[j - 1] << leftShift;
+                    // second[j - 1] << leftShift
+                    // = 1100 << 2 = 0100
+                    // Finally, combine them with a bitwise OR:
+                    // mask |= second[j - 1] << leftShift
+                    // = 0001 | 0100 = 0101, as expected.
+                    let mask = (second[i] >> offset) | (second[i - 1] << left_shift);
+                    result[i] = first[i] $op mask;
+                }
+            } else {
+                // Negative offset (shift second bitmask left)
+                let offset = (-offset) as usize;
+                let right_shift = 64 - offset;
+
+                for i in 0..len-1 {
+                    let mask = (second[i] << offset) | (second[i + 1] >> right_shift);
+                    result[i] = first[i] $op mask;
+                }
+                // Handle the last word separately
+                result[len - 1] = first[len - 1] $op (second[len - 1] << offset);
             }
+
             result
         }
     };
@@ -291,29 +312,47 @@ mod tests {
         assert_eq!(smeared, expected);
     }
 
-    fn apply_and_with_boolean_arrays(first: &[bool], second: &[bool], offset: usize) -> Vec<bool> {
+    fn apply_and_with_boolean_arrays(first: &[bool], second: &[bool], offset: isize) -> Vec<bool> {
         let mut result = vec![false; first.len()];
         for i in 0..first.len() {
-            if i >= offset {
-                result[i] = first[i] && second[i - offset];
-            }
-        }
-        result
-    }
-
-    fn apply_or_with_boolean_arrays(first: &[bool], second: &[bool], offset: usize) -> Vec<bool> {
-        let mut result = vec![false; first.len()];
-        for i in 0..first.len() {
-            if i >= offset {
-                result[i] = first[i] || second[i - offset];
+            if offset >= 0 {
+                let offset = offset as usize;
+                if i >= offset {
+                    result[i] = first[i] && second[i - offset];
+                }
             } else {
-                result[i] = first[i];
+                let offset = (-offset) as usize;
+                if i + offset < first.len() {
+                    result[i] = first[i] && second[i + offset];
+                }
             }
         }
         result
     }
 
-    fn verify_results(a: &[u64], b: &[u64], offset: usize, size: usize) {
+    fn apply_or_with_boolean_arrays(first: &[bool], second: &[bool], offset: isize) -> Vec<bool> {
+        let mut result = vec![false; first.len()];
+        for i in 0..first.len() {
+            if offset >= 0 {
+                let offset = offset as usize;
+                if i >= offset {
+                    result[i] = first[i] || second[i - offset];
+                } else {
+                    result[i] = first[i];
+                }
+            } else {
+                let offset = (-offset) as usize;
+                if i + offset < first.len() {
+                    result[i] = first[i] || second[i + offset];
+                } else {
+                    result[i] = first[i];
+                }
+            }
+        }
+        result
+    }
+
+    fn verify_results_and(a: &[u64], b: &[u64], offset: isize, size: usize) {
         let result = apply_and_with_bitmasks(a, b, offset);
 
         let mut a_bits = vec![false; size];
@@ -344,7 +383,7 @@ mod tests {
         assert_eq!(result, result_bits_vec);
     }
 
-    fn verify_results_or(a: &[u64], b: &[u64], offset: usize, size: usize) {
+    fn verify_results_or(a: &[u64], b: &[u64], offset: isize, size: usize) {
         let result = apply_or_with_bitmasks(a, b, offset);
 
         let mut a_bits = vec![false; size];
@@ -379,7 +418,7 @@ mod tests {
     fn apply_op_with_bitmasks_no_offset() {
         let a = vec![0xAAAAAAAAAAAAAAAA, 0xCCCCCCCCCCCCCCCC];
         let b = vec![0xF0F0F0F0F0F0F0F0, 0x0F0F0F0F0F0F0F0F];
-        verify_results(&a, &b, 0, 128);
+        verify_results_and(&a, &b, 0, 128);
         verify_results_or(&a, &b, 0, 128);
     }
 
@@ -387,7 +426,7 @@ mod tests {
     fn apply_op_with_bitmasks_bit_offset_within_word() {
         let a = vec![u64::MAX, u64::MAX];
         let b = vec![0xAAAAAAAAAAAAAAAA, 0xAAAAAAAAAAAAAAAA];
-        verify_results(&a, &b, 4, 128);
+        verify_results_and(&a, &b, 4, 128);
         verify_results_or(&a, &b, 4, 128);
     }
 
@@ -395,7 +434,7 @@ mod tests {
     fn apply_op_with_bitmasks_all_zeros_mask() {
         let a = vec![u64::MAX, u64::MAX, u64::MAX];
         let b = vec![0, 0, 0];
-        verify_results(&a, &b, 0, 192);
+        verify_results_and(&a, &b, 0, 192);
         verify_results_or(&a, &b, 0, 192);
     }
 
@@ -411,7 +450,7 @@ mod tests {
             0b11111111000011110000111100001111,
             0b11000011110000111100001111000011,
         ];
-        verify_results(&a, &b, 0, 192);
+        verify_results_and(&a, &b, 0, 192);
         verify_results_or(&a, &b, 0, 192);
     }
 
@@ -427,7 +466,7 @@ mod tests {
             0b11111111000011110000111100001111,
             0b11000011110000111100001111000011,
         ];
-        verify_results(&a, &b, 1, 192);
+        verify_results_and(&a, &b, 1, 192);
         verify_results_or(&a, &b, 1, 192);
     }
 
@@ -485,5 +524,52 @@ mod tests {
     fn next_one_bit_empty_bitmask() {
         let bitmask = vec![];
         assert_eq!(next_one_bit(&bitmask, 0), None);
+    }
+
+    // New tests for negative offsets
+    #[test]
+    fn apply_op_with_bitmasks_negative_offset() {
+        let a = vec![0xAAAAAAAAAAAAAAAA, 0xCCCCCCCCCCCCCCCC];
+        let b = vec![0xF0F0F0F0F0F0F0F0, 0x0F0F0F0F0F0F0F0F];
+        verify_results_and(&a, &b, -4, 128);
+        verify_results_or(&a, &b, -4, 128);
+    }
+
+    #[test]
+    fn apply_op_with_bitmasks_bit_negative_offset_within_word() {
+        let a = vec![u64::MAX, u64::MAX];
+        let b = vec![0xAAAAAAAAAAAAAAAA, 0xAAAAAAAAAAAAAAAA];
+        verify_results_and(&a, &b, -4, 128);
+        verify_results_or(&a, &b, -4, 128);
+    }
+
+    #[test]
+    fn apply_op_with_bitmasks_negative_offset_multi_word() {
+        let a = vec![
+            0b11110000101010101100110000001111,
+            0b11111111000011110000111100001111,
+            0b10101010101010101010101010101010,
+        ];
+        let b = vec![
+            0b00001111111111111010101001010101,
+            0b11111111000011110000111100001111,
+            0b11000011110000111100001111000011,
+        ];
+        verify_results_and(&a, &b, -1, 192);
+        verify_results_or(&a, &b, -1, 192);
+    }
+
+    #[test]
+    fn apply_op_with_bitmasks_extreme_negative_offset() {
+        let a = vec![
+            0b11110000101010101100110000001111,
+            0b11111111000011110000111100001111,
+        ];
+        let b = vec![
+            0b00001111111111111010101001010101,
+            0b11111111000011110000111100001111,
+        ];
+        verify_results_and(&a, &b, -63, 128);
+        verify_results_or(&a, &b, -63, 128);
     }
 }

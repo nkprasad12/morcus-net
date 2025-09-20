@@ -174,19 +174,9 @@ pub fn apply_and_to_indices(
 
     match (first, second) {
         (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
-            let (data, pos) = if offset >= 0 {
-                (
-                    bitmask_utils::apply_and_with_bitmasks(bm1, bm2, offset as usize),
-                    first_position,
-                )
-            } else {
-                (
-                    bitmask_utils::apply_and_with_bitmasks(bm2, bm1, (-offset) as usize),
-                    second_position,
-                )
-            };
+            let data = bitmask_utils::apply_and_with_bitmasks(bm1, bm2, offset as isize);
             let result = IndexDataOwned::BitMask(data);
-            Ok((result, pos))
+            Ok((result, first_position))
         }
         (IndexData::BitMask(bm), IndexData::List(arr)) => {
             let overlaps = apply_and_with_bitmask_and_array(bm, arr, offset);
@@ -213,19 +203,9 @@ pub fn apply_or_to_indices(
 
     match (first, second) {
         (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
-            let (data, pos) = if offset >= 0 {
-                (
-                    bitmask_utils::apply_or_with_bitmasks(bm1, bm2, offset as usize),
-                    first_position,
-                )
-            } else {
-                (
-                    bitmask_utils::apply_or_with_bitmasks(bm2, bm1, (-offset) as usize),
-                    second_position,
-                )
-            };
+            let data = bitmask_utils::apply_or_with_bitmasks(bm1, bm2, offset as isize);
             let result = IndexDataOwned::BitMask(data);
-            Ok((result, pos))
+            Ok((result, first_position))
         }
         (IndexData::BitMask(bm), IndexData::List(arr)) => {
             let overlaps = apply_or_with_bitmask_and_array(bm, arr, offset);
@@ -793,6 +773,16 @@ mod tests {
     }
 
     #[test]
+    fn apply_or_to_indices_negative_offset() {
+        let candidates = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
+        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 3).unwrap();
+        let expected_data = to_bitmask(&[0, 2, 3, 4], 64);
+        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+        assert_eq!(position, 2);
+    }
+
+    #[test]
     fn apply_and_to_indices_array_array() {
         let candidates = IndexData::List(&[3, 6, 9]);
         let filter_data = IndexData::List(&[2, 4, 8]);
@@ -827,6 +817,16 @@ mod tests {
         let expected_data = to_bitmask(&[1, 3], 64);
         assert_eq!(result, IndexDataOwned::BitMask(expected_data));
         assert_eq!(position, 3);
+    }
+
+    #[test]
+    fn apply_and_to_indices_bitmask_bitmask_negative_offset() {
+        let candidates = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
+        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 3).unwrap();
+        let expected_data = to_bitmask(&[0, 2], 64);
+        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+        assert_eq!(position, 2);
     }
 
     #[test]
