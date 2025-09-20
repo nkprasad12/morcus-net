@@ -1,3 +1,5 @@
+use std::cmp::{max, min};
+
 use crate::bitmask_utils;
 
 #[derive(Debug, PartialEq, Clone)]
@@ -222,6 +224,44 @@ pub fn apply_or_to_indices(
     }
 }
 
+/// Returns the matches that are within a maximum fuzz distance applied.
+///
+/// The results are always returned relative to the `first` index and its positioning.
+pub fn find_fuzzy_matches(
+    first: &IndexData,
+    first_position: u32,
+    second: &IndexData,
+    second_position: u32,
+    max_dist: usize,
+    dir: &str,
+) -> Result<IndexDataOwned, String> {
+    if max_dist == 0 || max_dist >= 16 {
+        return Err("max_distance must be between 1 and 15".to_string());
+    }
+    let offset = first_position as i32 - second_position as i32;
+
+    match (first, second) {
+        (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
+            let result = find_fuzzy_matches_with_bitmasks(bm1, bm2, offset as isize, max_dist, dir);
+            Ok(IndexDataOwned::BitMask(result))
+        }
+        (IndexData::BitMask(bm), IndexData::List(arr)) => {
+            let overlaps =
+                find_fuzzy_matches_with_bitmask_and_array(bm, arr, offset, max_dist, dir);
+            Ok(IndexDataOwned::BitMask(overlaps))
+        }
+        (IndexData::List(arr), IndexData::BitMask(bm)) => {
+            let overlaps =
+                find_fuzzy_matches_with_array_and_bitmask(arr, bm, -offset, max_dist, dir);
+            Ok(IndexDataOwned::List(overlaps))
+        }
+        (IndexData::List(arr1), IndexData::List(arr2)) => {
+            let overlaps = find_fuzzy_matches_with_arrays(arr1, arr2, offset, max_dist, dir);
+            Ok(IndexDataOwned::List(overlaps))
+        }
+    }
+}
+
 /// Returns the numbers that are present in both input arrays, applying an offset to the second array.
 /// and which has a maximum fuzz distance applied.
 ///
@@ -243,12 +283,11 @@ pub fn apply_or_to_indices(
 /// ## Returns
 ///
 /// A new array with the elements of the first array that match the second array.
-#[allow(dead_code)]
-pub fn find_fuzzy_matches_with_arrays(
+fn find_fuzzy_matches_with_arrays(
     first: &[u32],
     second: &[u32],
     offset: i32,
-    max_distance: u32,
+    max_distance: usize,
     direction: &str,
 ) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
@@ -303,11 +342,10 @@ pub fn find_fuzzy_matches_with_arrays(
 /// ## Returns
 ///
 /// A new bitmask containing the positions in the first bitmask that match the fuzzy criteria.
-#[allow(dead_code)]
-pub fn find_fuzzy_matches_with_bitmasks(
+fn find_fuzzy_matches_with_bitmasks(
     first: &[u64],
     second: &[u64],
-    offset: usize,
+    offset: isize,
     max_distance: usize,
     direction: &str,
 ) -> Vec<u64> {
@@ -335,10 +373,9 @@ pub fn find_fuzzy_matches_with_bitmasks(
 /// ## Returns
 ///
 /// A new array containing the elements from the input array that match the fuzzy criteria.
-#[allow(dead_code)]
-pub fn find_fuzzy_matches_with_bitmask_and_array(
-    bitmask: &[u64],
+fn find_fuzzy_matches_with_array_and_bitmask(
     array: &[u32],
+    bitmask: &[u64],
     offset: i32,
     max_distance: usize,
     direction: &str,
@@ -364,6 +401,54 @@ pub fn find_fuzzy_matches_with_bitmask_and_array(
     }
 
     results
+}
+
+/// Finds the elements in the array that are within the specified distance
+/// of set bits in the bitmask, considering the given offset.
+///
+/// ## Arguments
+///
+/// * `bitmask` - The bitmask to check against.
+/// * `array` - The array of indices.
+/// * `offset` - The offset to apply to the array elements. Can be positive or negative.
+/// * `max_distance` - The maximum distance to consider a match.
+/// * `direction` - The direction to apply the fuzzy distance ("left", "right", or "both").
+///
+/// ## Returns
+///
+/// A new bitmask containing the elements from the input bitmask that match the fuzzy criteria.
+fn find_fuzzy_matches_with_bitmask_and_array(
+    bitmask: &[u64],
+    array: &[u32],
+    offset: i32,
+    max_distance: usize,
+    direction: &str,
+) -> Vec<u64> {
+    let mut result: Vec<u64> = vec![0; bitmask.len()];
+
+    let final_bit = bitmask.len() * 64 - 1;
+    let extend_left = direction != "right";
+    let extend_right = direction != "left";
+    let left_mod = if extend_left { max_distance } else { 0 };
+    let right_mod = if extend_right { max_distance } else { 0 };
+    for index in array {
+        let effective_index = *index as i64 + offset as i64;
+        let start = effective_index - left_mod as i64;
+        let end = effective_index + right_mod as i64;
+        if end < 0 || start as usize > final_bit {
+            continue;
+        }
+        let start = max(0, start) as usize;
+        let end = min(end, final_bit as i64) as usize;
+        // We want to copy the bits from start to end (inclusive) from bitmask to result.
+        for bit in start..=end {
+            let word_index = bit / 64;
+            let bit_index = 63 - (bit % 64);
+            result[word_index] |= bitmask[word_index] & (1u64 << bit_index);
+            eprintln!("Set bit {bit}");
+        }
+    }
+    result
 }
 
 #[cfg(test)]
@@ -895,26 +980,25 @@ mod tests {
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_no_offset() {
+    fn find_fuzzy_matches_with_array_and_bitmask_no_offset() {
         let bitmask = to_bitmask(&[5, 10, 15], 64);
         let array = vec![4, 5, 9, 10, 13];
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 1, "both");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
         assert_eq!(result, vec![4, 5, 9, 10]);
     }
-
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_with_offset() {
+    fn find_fuzzy_matches_with_array_and_bitmask_with_offset() {
         let bitmask = to_bitmask(&[5, 10, 15], 64);
         let array = vec![2, 7, 17];
 
         // With offset 3, array becomes [5, 10, 15, 20]
         // With max_distance 0, exact matches with bitmask[5,10,15]
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 2, 2, "both");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 2, 2, "both");
         assert_eq!(result, vec![2, 7]);
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_direction_left() {
+    fn find_fuzzy_matches_with_array_and_bitmask_direction_left() {
         let bitmask = to_bitmask(&[10], 64);
         let array = vec![6, 8, 10, 12, 14];
 
@@ -924,12 +1008,12 @@ mod tests {
         // - array[10] matches bitmask[10] exactly
         // - array[12] is not within left distance 2 of bitmask[10]
         // - array[14] is not within left distance 2 of bitmask[10]
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 2, "left");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 2, "left");
         assert_eq!(result, vec![8, 10]);
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_direction_right() {
+    fn find_fuzzy_matches_with_array_and_bitmask_direction_right() {
         let bitmask = to_bitmask(&[10], 64);
         let array = vec![6, 8, 10, 12, 14];
 
@@ -939,54 +1023,54 @@ mod tests {
         // - array[10] matches bitmask[10] exactly
         // - array[12] is within right distance 2 of bitmask[10]
         // - array[14] is not within right distance 2 of bitmask[10]
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 2, "right");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 2, "right");
         assert_eq!(result, vec![10, 12]);
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_negative_offset() {
+    fn find_fuzzy_matches_with_array_and_bitmask_negative_offset() {
         let bitmask = to_bitmask(&[5, 10], 64);
         let array = vec![11, 15];
 
         // With offset -5, array becomes [6, 10]
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, -5, 1, "both");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, -5, 1, "both");
         assert_eq!(result, vec![11, 15]);
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_across_word_boundaries() {
+    fn find_fuzzy_matches_with_array_and_bitmask_across_word_boundaries() {
         let bitmask = to_bitmask(&[63], 128);
         let array = vec![61, 62, 63, 64, 65];
 
         // With max_distance 1, matches should be [62, 63, 64]
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 1, "both");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
         assert_eq!(result, vec![62, 63, 64]);
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_empty_array() {
+    fn find_fuzzy_matches_with_array_and_bitmask_empty_array() {
         let bitmask = to_bitmask(&[5, 10], 64);
         let array: Vec<u32> = vec![];
 
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 1, "both");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
         assert_eq!(result, Vec::<u32>::new());
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_empty_bitmask() {
+    fn find_fuzzy_matches_with_array_and_bitmask_empty_bitmask() {
         let bitmask = to_bitmask(&[], 64);
         let array = vec![5, 10, 15];
 
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 1, "both");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
         assert_eq!(result, Vec::<u32>::new());
     }
 
     #[test]
-    fn find_fuzzy_matches_with_bitmask_and_array_out_of_range() {
+    fn find_fuzzy_matches_with_array_and_bitmask_out_of_range() {
         let bitmask = to_bitmask(&[5, 10], 64);
         let array = vec![100, 200];
 
-        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 5, "both");
+        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 5, "both");
         assert_eq!(result, Vec::<u32>::new());
     }
 }
