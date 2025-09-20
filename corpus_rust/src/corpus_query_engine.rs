@@ -3,7 +3,6 @@ mod index_calculation;
 mod query_conversion;
 
 use crate::bitmask_utils::next_one_bit;
-use crate::byte_readers::{InMemoryReader, MmapReader};
 use crate::common::IndexDataRoO;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::packed_index_utils::smear_bitmask;
@@ -74,16 +73,14 @@ struct IntermediateResult<'a> {
 
 pub struct CorpusQueryEngine {
     corpus: LatinCorpusIndex,
-    text: CorpusText<MmapReader>,
-    raw_buffers: IndexBuffers<InMemoryReader>,
-    starts: TokenStarts<MmapReader>,
+    text: CorpusText,
+    raw_buffers: IndexBuffers,
+    starts: TokenStarts,
 }
 
 impl CorpusQueryEngine {
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
-        let text = CorpusText::new(&corpus.raw_text_path)?;
-        let raw_buffers = IndexBuffers::new(&corpus.raw_buffer_path)?;
-        let starts = TokenStarts::new(&corpus.token_starts_path)?;
+        let (starts, text, raw_buffers) = corpus_data_readers::data_readers(&corpus)?;
         Ok(CorpusQueryEngine {
             corpus,
             text,

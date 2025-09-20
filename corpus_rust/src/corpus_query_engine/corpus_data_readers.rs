@@ -1,16 +1,22 @@
 use std::error::Error;
 
-use crate::byte_readers::RawByteReader;
+use crate::byte_readers::{RawByteReader, ReaderKind, byte_reader};
 use crate::common::{IndexData, u32_from_bytes, u64_from_bytes};
-use crate::corpus_serialization::StoredMapValue;
+use crate::corpus_serialization::{LatinCorpusIndex, StoredMapValue};
 
-pub struct TokenStarts<T: RawByteReader> {
-    reader: T,
+const IN_MEMORY_BUFFERS: &str = "IN_MEMORY";
+const MMAP_NO_POPULATE: &str = "MMAP_NO_POPULATE";
+const MMAP_POPULATE: &str = "MMAP_POPULATE";
+
+const DEFAULT_READER_KIND: ReaderKind = ReaderKind::MmapPopulated;
+
+pub struct TokenStarts {
+    reader: Box<dyn RawByteReader>,
 }
 
-impl<T: RawByteReader> TokenStarts<T> {
-    pub fn new(token_starts_path: &str) -> Result<Self, Box<dyn Error>> {
-        let reader = T::new(token_starts_path)?;
+impl TokenStarts {
+    fn new(token_starts_path: &str, kind: ReaderKind) -> Result<Self, Box<dyn Error>> {
+        let reader = byte_reader(kind, token_starts_path)?;
         Ok(TokenStarts { reader })
     }
 
@@ -25,13 +31,13 @@ impl<T: RawByteReader> TokenStarts<T> {
     }
 }
 
-pub struct CorpusText<T: RawByteReader> {
-    reader: T,
+pub struct CorpusText {
+    reader: Box<dyn RawByteReader>,
 }
 
-impl<T: RawByteReader> CorpusText<T> {
-    pub fn new(raw_text_path: &str) -> Result<Self, Box<dyn Error>> {
-        let reader = T::new(raw_text_path)?;
+impl CorpusText {
+    fn new(raw_text_path: &str, kind: ReaderKind) -> Result<Self, Box<dyn Error>> {
+        let reader = byte_reader(kind, raw_text_path)?;
         Ok(CorpusText { reader })
     }
 
@@ -45,13 +51,13 @@ impl<T: RawByteReader> CorpusText<T> {
     }
 }
 
-pub struct IndexBuffers<T: RawByteReader> {
-    reader: T,
+pub struct IndexBuffers {
+    reader: Box<dyn RawByteReader>,
 }
 
-impl<T: RawByteReader> IndexBuffers<T> {
-    pub fn new(raw_buffer_path: &str) -> Result<Self, Box<dyn Error>> {
-        let reader = T::new(raw_buffer_path)?;
+impl IndexBuffers {
+    fn new(raw_buffer_path: &str, kind: ReaderKind) -> Result<Self, Box<dyn Error>> {
+        let reader = byte_reader(kind, raw_buffer_path)?;
         Ok(IndexBuffers { reader })
     }
 
@@ -81,4 +87,26 @@ impl<T: RawByteReader> IndexBuffers<T> {
             StoredMapValue::BitMask { num_set, .. } => *num_set,
         }
     }
+}
+
+fn choose_reader_kind() -> ReaderKind {
+    if std::env::var(IN_MEMORY_BUFFERS).is_ok() {
+        ReaderKind::InMemory
+    } else if std::env::var(MMAP_NO_POPULATE).is_ok() {
+        ReaderKind::Mmap
+    } else if std::env::var(MMAP_POPULATE).is_ok() {
+        ReaderKind::MmapPopulated
+    } else {
+        DEFAULT_READER_KIND
+    }
+}
+
+pub fn data_readers(
+    corpus: &LatinCorpusIndex,
+) -> Result<(TokenStarts, CorpusText, IndexBuffers), Box<dyn Error>> {
+    let kind = choose_reader_kind();
+    let text = CorpusText::new(&corpus.raw_text_path, kind)?;
+    let raw_buffers = IndexBuffers::new(&corpus.raw_buffer_path, kind)?;
+    let starts = TokenStarts::new(&corpus.token_starts_path, kind)?;
+    Ok((starts, text, raw_buffers))
 }

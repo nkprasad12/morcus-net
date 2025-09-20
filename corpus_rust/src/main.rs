@@ -13,8 +13,8 @@ fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex
     let start = Instant::now();
     let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
     let duration = start.elapsed();
+    println!("Corpus loaded in {duration:.2?}");
     if !has_arg(ARG_QUIET) {
-        println!("Corpus loaded in {duration:.2?}");
         println!(
             "- Tokens: {}, Words: {}, Lemmata: {}, Works: {}",
             corpus.stats.total_words,
