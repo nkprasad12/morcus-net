@@ -309,6 +309,38 @@ pub fn find_fuzzy_matches_with_arrays(
     results
 }
 
+/// Finds the positions in the first bitmask that are within the specified distance
+/// of positions in the second bitmask, considering the given offset.
+///
+/// ## Arguments
+///
+/// * `first` - The first bitmask.
+/// * `second` - The second bitmask to match against. Must have the same length as `first`.
+/// * `offset` - The offset to apply to the second bitmask.
+/// * `max_distance` - The maximum distance to consider a match.
+/// * `direction` - The direction to apply the fuzzy distance ("left", "right", or "both").
+///
+/// ## Returns
+///
+/// A new bitmask containing the positions in the first bitmask that match the fuzzy criteria.
+#[allow(dead_code)]
+pub fn find_fuzzy_matches_with_bitmasks(
+    first: &[u64],
+    second: &[u64],
+    offset: usize,
+    max_distance: usize,
+    direction: &str,
+) -> Vec<u64> {
+    assert_eq!(
+        first.len(),
+        second.len(),
+        "Bitmasks must have the same length."
+    );
+
+    let smeared_second = bitmask_utils::smear_bitmask(second, max_distance, direction);
+    bitmask_utils::apply_and_with_bitmasks(first, &smeared_second, offset)
+}
+
 #[cfg(test)]
 mod tests {
     use crate::bitmask_utils::to_bitmask;
@@ -750,5 +782,70 @@ mod tests {
         let expected_data = to_bitmask(&[1, 3], 64);
         assert_eq!(result, IndexDataOwned::BitMask(expected_data));
         assert_eq!(position, 3);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmasks_no_offset() {
+        let first = to_bitmask(&[5, 10, 15], 64);
+        let second = to_bitmask(&[4, 12], 64);
+        // With max_distance 1, first[5] should match second[4], first[10] should not match anything,
+        // and first[15] should not match second[12] (distance = 3 > 1)
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 1, "both");
+        let expected = to_bitmask(&[5], 64);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmasks_with_offset() {
+        let first = to_bitmask(&[5, 10, 15], 64);
+        let second = to_bitmask(&[4, 12], 64);
+        // With offset 1, second becomes [5, 13]
+        // With max_distance 2:
+        // - first[5] exactly matches second[5]
+        // - first[10] is not within distance 2 of any second element
+        // - first[15] is within distance 2 of second[13]
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 1, 2, "both");
+        let expected = to_bitmask(&[5, 15], 64);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmasks_direction_left() {
+        let first = to_bitmask(&[5, 7, 10], 64);
+        let second = to_bitmask(&[8], 64);
+        // With direction "left", second[8] matches first[5,7] but not first[10]
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, "left");
+        let expected = to_bitmask(&[5, 7], 64);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmasks_direction_right() {
+        let first = to_bitmask(&[5, 7, 10], 64);
+        let second = to_bitmask(&[4], 64);
+        // With direction "right", second[4] matches first[5,7] but not first[10]
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, "right");
+        let expected = to_bitmask(&[5, 7], 64);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmasks_across_word_boundaries() {
+        let first = to_bitmask(&[62, 65, 68], 128);
+        let second = to_bitmask(&[64], 128);
+        // With max_distance 2 in both directions, second[64] matches first[62,65,66]
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 2, "both");
+        let expected = to_bitmask(&[62, 65], 128);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmasks_empty_result() {
+        let first = to_bitmask(&[5, 10, 15], 64);
+        let second = to_bitmask(&[20, 25], 64);
+        // No matches within distance
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, "both");
+        let expected = to_bitmask(&[], 64);
+        assert_eq!(result, expected);
     }
 }
