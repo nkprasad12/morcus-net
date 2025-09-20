@@ -1,7 +1,7 @@
 use std::error::Error;
 
 use crate::byte_readers::{RawByteReader, ReaderKind, byte_reader};
-use crate::common::{IndexData, u32_from_bytes, u64_from_bytes};
+use crate::corpus_query_engine::IndexData;
 use crate::corpus_serialization::{LatinCorpusIndex, StoredMapValue};
 
 const IN_MEMORY_BUFFERS: &str = "IN_MEMORY";
@@ -9,6 +9,22 @@ const MMAP_NO_POPULATE: &str = "MMAP_NO_POPULATE";
 const MMAP_POPULATE: &str = "MMAP_POPULATE";
 
 const DEFAULT_READER_KIND: ReaderKind = ReaderKind::MmapPopulated;
+
+fn u32_from_bytes(bytes: &[u8]) -> Result<&[u32], String> {
+    let (left, data, right) = unsafe { bytes.align_to::<u32>() };
+    if !left.is_empty() || !right.is_empty() {
+        return Err("data is not properly aligned".to_string());
+    }
+    Ok(data)
+}
+
+fn u64_from_bytes(bytes: &[u8]) -> Result<&[u64], String> {
+    let (left, data, right) = unsafe { bytes.align_to::<u64>() };
+    if !left.is_empty() || !right.is_empty() {
+        return Err("data is not properly aligned".to_string());
+    }
+    Ok(data)
+}
 
 pub struct TokenStarts {
     reader: Box<dyn RawByteReader>,

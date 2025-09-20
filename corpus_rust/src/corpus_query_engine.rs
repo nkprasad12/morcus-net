@@ -1,24 +1,32 @@
+mod corpus_candidate_filtering;
 mod corpus_data_readers;
-mod index_calculation;
-mod query_conversion;
+mod corpus_index_calculation;
+mod corpus_query_conversion;
+mod corpus_result_resolution;
+mod errors;
+mod index_data;
 
-use crate::bitmask_utils::next_one_bit;
-use crate::common::IndexDataRoO;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
-use crate::packed_index_utils::smear_bitmask;
+use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IntermediateResult};
 use crate::query_parsing_v2::parse_query;
 
-use super::common::IndexData;
 use super::corpus_serialization::LatinCorpusIndex;
-use super::packed_index_utils::apply_and_to_indices;
 use super::profiler::TimeProfiler;
 
 use serde::Serialize;
-use std::cmp::{max, min};
 use std::error::Error;
 
-const MAX_CONTEXT_LEN: usize = 100;
+const MAX_CONTEXT_LEN: usize = 500;
 const DEFAULT_CONTEXT_LEN: usize = 25;
+
+fn empty_result() -> CorpusQueryResult<'static> {
+    CorpusQueryResult {
+        total_results: 0,
+        matches: vec![],
+        page_start: 0,
+        timing: vec![],
+    }
+}
 
 /// An error that occurs while executing a query.
 #[derive(Debug, Clone)]
@@ -26,20 +34,7 @@ pub struct QueryExecError {
     pub message: String,
 }
 
-impl QueryExecError {
-    fn new(message: &str) -> Self {
-        QueryExecError {
-            message: message.to_string(),
-        }
-    }
-}
-
-impl From<String> for QueryExecError {
-    fn from(e: String) -> Self {
-        QueryExecError::new(&e)
-    }
-}
-
+/// Extra details about a single query match.
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorpusQueryMatchMetadata<'a> {
@@ -50,6 +45,7 @@ pub struct CorpusQueryMatchMetadata<'a> {
     pub offset: u32,
 }
 
+/// A single match from a corpus query.
 #[derive(Debug, PartialEq, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorpusQueryMatch<'a> {
@@ -57,6 +53,7 @@ pub struct CorpusQueryMatch<'a> {
     pub text: Vec<(String, bool)>,
 }
 
+/// A single page of matches for a query, along with metadata.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorpusQueryResult<'a> {
@@ -66,11 +63,7 @@ pub struct CorpusQueryResult<'a> {
     pub timing: Vec<(String, f64)>,
 }
 
-struct IntermediateResult<'a> {
-    data: IndexDataRoO<'a>,
-    position: u32,
-}
-
+/// An engine for querying a corpus.
 pub struct CorpusQueryEngine {
     corpus: LatinCorpusIndex,
     text: CorpusText,
@@ -79,6 +72,7 @@ pub struct CorpusQueryEngine {
 }
 
 impl CorpusQueryEngine {
+    /// Creates a new query engine from the given corpus index.
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
         let (starts, text, raw_buffers) = corpus_data_readers::data_readers(&corpus)?;
         Ok(CorpusQueryEngine {
@@ -89,241 +83,13 @@ impl CorpusQueryEngine {
         })
     }
 
-    /// Computes the page of results for the given parameters.
-    fn compute_page_result(
-        &self,
-        match_results: &IntermediateResult,
-        page_start: usize,
-        page_size: Option<usize>,
-        profiler: &mut TimeProfiler,
-    ) -> Result<(Vec<u32>, usize), QueryExecError> {
-        let page_size = page_size.unwrap_or(10000);
-        let matches = match_results.data.to_ref();
-
-        // Get to the start of the page.
-        let mut results: Vec<u32> = vec![];
-        let mut i: usize = match &matches {
-            IndexData::List(_) => page_start,
-            IndexData::BitMask(bitmask) => {
-                let mut start_idx = 0;
-                for _ in 0..page_start {
-                    start_idx = next_one_bit(bitmask, start_idx)
-                        .ok_or(QueryExecError::new("Not enough results for page"))?
-                        + 1;
-                }
-                start_idx
-            }
-        };
-
-        let n = matches.num_elements();
-        while results.len() < page_size {
-            let token_id = match matches {
-                IndexData::List(data) => {
-                    if i >= n {
-                        break;
-                    }
-                    let id = data[i];
-                    i += 1;
-                    id
-                }
-                IndexData::BitMask(bitmask) => {
-                    let id = match next_one_bit(bitmask, i) {
-                        Some(v) => v,
-                        None => break,
-                    };
-                    i = id + 1;
-                    id as u32
-                }
-            };
-
-            if token_id < match_results.position {
-                return Err(QueryExecError::new("Token ID is less than match position"));
-            }
-            results.push(token_id - match_results.position);
-        }
-        profiler.phase("Compute page token IDs");
-        Ok((results, n))
-    }
-
-    /// Filters a list of candidates into just the actual matches.
-    fn filter_candidates(
-        &self,
-        candidates: &IntermediateResult,
-        query_length: usize,
-        page_start: usize,
-        page_size: Option<usize>,
-        profiler: &mut TimeProfiler,
-    ) -> Result<(Vec<u32>, usize), QueryExecError> {
-        // There can be no hard breaks between tokens without multiple tokens.
-        if query_length < 2 {
-            return self.compute_page_result(candidates, page_start, page_size, profiler);
-        }
-        // We compute a break mask, which is the negation of the hard breaks smeared left.
-        // We will eventually do an index AND with this.
-        // For example, consider a query length of 3.
-        // We would smear 3 - 2 = 1 unit to the left.
-        //
-        // Below we have
-        // - tokens
-        // - hard breaks
-        // - smeared breaks
-        // - negated breaks
-        // A B C D. E F G
-        // 0 0 0 1  0 0 0
-        // 0 0 1 1  0 0 0
-        // 1 1 0 0  1 1 1
-        //
-        // Thus a candidate that started at A would be
-        // legal, because A B C doesn't contain a break.
-        // But C D E and D E F both have a period in the middle,
-        // so they have the 0 bit set.
-
-        let hard_breaks = self.get_hard_breaks()?;
-        let break_mask = if query_length == 2 {
-            hard_breaks.iter().map(|x| !*x).collect::<Vec<_>>()
-        } else {
-            let mut smeared = smear_bitmask(hard_breaks, query_length - 2, "left");
-            for elem in &mut smeared {
-                *elem = !*elem;
-            }
-            smeared
-        };
-        let break_mask = IndexData::BitMask(&break_mask);
-        profiler.phase("Compute break mask");
-
-        // As a future optimization, we can apply the AND in-place on the break mask since we never use it again.
-        let (data, position) = apply_and_to_indices(
-            &candidates.data.to_ref(),
-            candidates.position,
-            &break_mask,
-            0,
-        )?;
-
-        let match_results = IntermediateResult {
-            data: IndexDataRoO::Owned(data),
-            position,
-        };
-        profiler.phase("Apply break mask");
-        self.compute_page_result(&match_results, page_start, page_size, profiler)
-    }
-
-    fn resolve_match_tokens(
-        &self,
-        token_ids: &[u32],
-        query_length: u32,
-        context_len: u32,
-    ) -> Result<Vec<CorpusQueryMatch<'_>>, QueryExecError> {
-        if token_ids.is_empty() {
-            return Ok(vec![]);
-        }
-
-        // Left start byte, Text start byte, Right start byte, Right end byte
-        let mut starts: Vec<(Vec<usize>, Vec<bool>)> = Vec::with_capacity(token_ids.len());
-        for &token_id in token_ids {
-            let left_start_idx = max(0, token_id.saturating_sub(context_len));
-            let right_end_idx = min(
-                token_id + query_length + context_len,
-                self.corpus.num_tokens,
-            );
-
-            let offsets = vec![
-                self.starts.token_start(left_start_idx)?,
-                self.starts.token_start(token_id)?,
-                self.starts.break_start(token_id + (query_length - 1))?,
-                self.starts.break_start(right_end_idx - 1)?,
-            ];
-            let is_core_match = vec![false, true, false];
-            starts.push((offsets, is_core_match));
-        }
-
-        // Warm up the ranges that we're about to access.
-        let start = starts[0].0[0];
-        let end = match starts[starts.len() - 1].0.last() {
-            Some(v) => *v,
-            None => return Err(QueryExecError::new("No end offset found")),
-        };
-        self.text.advise_range(start, end);
-
-        // Compute the metadata while the OS is (hopefully) loading the pages into memory.
-        let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(token_ids.len());
-        for &id in token_ids {
-            metadata.push(self.resolve_match_token(id)?);
-        }
-
-        // Read the text chunks.
-        let text_parts = starts
-            .iter()
-            .map(|(byte_offsets, is_core)| {
-                let mut chunks = Vec::with_capacity(is_core.len());
-                for i in 0..(byte_offsets.len() - 1) {
-                    let chunk = self.text.slice(byte_offsets[i], byte_offsets[i + 1]);
-                    chunks.push((chunk, is_core[i]));
-                }
-                chunks
-            })
-            .collect::<Vec<_>>();
-
-        let matches = metadata
-            .into_iter()
-            .zip(text_parts)
-            .map(|(metadata, text)| CorpusQueryMatch { metadata, text })
-            .collect();
-
-        Ok(matches)
-    }
-
-    /// Resolves a match token into a full result.
-    fn resolve_match_token(
-        &self,
-        token_id: u32,
-    ) -> Result<CorpusQueryMatchMetadata<'_>, QueryExecError> {
-        let work_ranges = &self.corpus.work_lookup;
-        let work_idx = work_ranges
-            .binary_search_by(|row_data| {
-                let range = &row_data.1;
-                let work_start_token_id = range[0].1;
-                let work_end_token_id = range[range.len() - 1].2;
-                if token_id < work_start_token_id {
-                    std::cmp::Ordering::Greater
-                } else if token_id >= work_end_token_id {
-                    std::cmp::Ordering::Less
-                } else {
-                    std::cmp::Ordering::Equal
-                }
-            })
-            .map_err(|_| {
-                QueryExecError::new(&format!("TokenId {token_id} not found in any work."))
-            })?;
-
-        let row_data = &work_ranges[work_idx].1;
-        let row_info = row_data
-            .binary_search_by(|(_, start, end)| {
-                if token_id < *start {
-                    std::cmp::Ordering::Greater
-                } else if token_id >= *end {
-                    std::cmp::Ordering::Less
-                } else {
-                    std::cmp::Ordering::Equal
-                }
-            })
-            .map(|i| &row_data[i])
-            .map_err(|_| {
-                QueryExecError::new(&format!(
-                    "TokenId {token_id} not found in any row for work index {work_idx}."
-                ))
-            })?;
-
-        let (work_id, _, work_data) = &self.corpus.work_lookup[work_idx];
-
-        Ok(CorpusQueryMatchMetadata {
-            work_id,
-            work_name: &work_data.name,
-            author: &work_data.author,
-            section: &row_info.0,
-            offset: token_id - row_info.1,
-        })
-    }
-
+    /// Queries the corpus with the given parameters.
+    /// - `query_str`: The query string to execute.
+    /// - `page_start`: The index of the first result to return (0-based).
+    /// - `page_size`: The maximum number of results to return. If `None`, a large default is used.
+    /// - `context_len`: The number of tokens of context to include around each match. If `None`, defaults to 25.
+    ///
+    /// Returns matches (and metadata) for the query.
     pub fn query_corpus(
         &self,
         query_str: &str,
@@ -364,14 +130,5 @@ impl CorpusQueryEngine {
             page_start,
             timing: profiler.get_stats().to_vec(),
         })
-    }
-}
-
-fn empty_result() -> CorpusQueryResult<'static> {
-    CorpusQueryResult {
-        total_results: 0,
-        matches: vec![],
-        page_start: 0,
-        timing: vec![],
     }
 }

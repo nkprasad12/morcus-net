@@ -1,10 +1,10 @@
 use crate::{
-    common::{IndexData, IndexDataRoO},
     corpus_query_engine::{
-        CorpusQueryEngine, IntermediateResult, QueryExecError, query_conversion::InternalQueryTerm,
+        CorpusQueryEngine, IndexData, IndexDataRoO, IntermediateResult, QueryExecError,
+        corpus_query_conversion::InternalQueryTerm,
+        index_data::{apply_and_to_indices, apply_or_to_indices},
     },
     corpus_serialization::StoredMapValue,
-    packed_index_utils::{apply_and_to_indices, apply_or_to_indices},
     profiler::TimeProfiler,
     query_parsing_v2::{
         QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,

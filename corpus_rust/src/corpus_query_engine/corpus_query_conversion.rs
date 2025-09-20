@@ -56,7 +56,7 @@ impl CorpusQueryEngine {
     }
 
     /// Converts a constraint to its internal representation, calculating size bounds appropriately.
-    pub fn convert_constraint<'a>(
+    pub(super) fn convert_constraint<'a>(
         &self,
         constraint: &'a TokenConstraint,
     ) -> Result<InternalConstraint<'a>, QueryExecError> {
@@ -108,7 +108,7 @@ impl CorpusQueryEngine {
         }
     }
 
-    pub fn convert_query_term<'a>(
+    pub(super) fn convert_query_term<'a>(
         &self,
         term: &'a QueryTerm,
     ) -> Result<InternalQueryTerm<'a>, QueryExecError> {

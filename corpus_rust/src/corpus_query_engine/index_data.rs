@@ -1,17 +1,49 @@
-use crate::common::IndexDataOwned;
+use crate::bitmask_utils;
 
-use super::bitmask_utils::{self, bitmask_or_with_self_offset_in_place};
-use super::common::IndexData;
+#[derive(Debug, PartialEq, Clone)]
+pub(super) enum IndexData<'a> {
+    BitMask(&'a [u64]),
+    List(&'a [u32]),
+}
 
-#[cfg(test)]
-pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
-    let mut bitmask = vec![0u64; upper_bound.div_ceil(64).try_into().unwrap()];
-    for &idx in indices {
-        let word = idx / 64;
-        let bit = idx % 64;
-        bitmask[word as usize] |= 1 << (63 - bit);
+#[derive(Debug, PartialEq)]
+pub(super) enum IndexDataOwned {
+    BitMask(Vec<u64>),
+    List(Vec<u32>),
+}
+
+pub(super) enum IndexDataRoO<'a> {
+    Ref(IndexData<'a>),
+    Owned(IndexDataOwned),
+}
+
+pub(super) struct IntermediateResult<'a> {
+    pub data: IndexDataRoO<'a>,
+    pub position: u32,
+}
+
+impl IndexData<'_> {
+    /// Returns the number of elements in the index.
+    pub fn num_elements(&self) -> usize {
+        match self {
+            IndexData::BitMask(bitmask_data) => {
+                bitmask_data.iter().map(|x| x.count_ones() as usize).sum()
+            }
+            IndexData::List(data) => data.len(),
+        }
     }
-    bitmask
+}
+
+impl IndexDataRoO<'_> {
+    pub fn to_ref(&'_ self) -> IndexData<'_> {
+        match self {
+            IndexDataRoO::Ref(r) => r.clone(),
+            IndexDataRoO::Owned(o) => match o {
+                IndexDataOwned::BitMask(v) => IndexData::BitMask(v),
+                IndexDataOwned::List(v) => IndexData::List(v),
+            },
+        }
+    }
 }
 
 /// Computes the bitwise AND of a bitmask and an array of indices, with an offset.
@@ -210,42 +242,6 @@ pub fn apply_or_to_indices(
     }
 }
 
-/// Performs a bit smear on the given bitmask with the specified window size and direction.
-///
-/// This operates on a bit level. If the original bitmask has a bit set at position `i`,
-/// the smeared bitmask will have bits set in the range:
-/// - If direction is "left": [i - window, i].
-/// - If direction is "right": [i, i + window].
-/// - If direction is "both": [i - window, i + window].
-///
-/// # Arguments
-///
-/// * `original` - The original bitmask to smear.
-/// * `window` - The size of the window to use for smearing. The maximum value is 15.
-/// * `direction` - The direction to smear the bits ("left", "right", or "both").
-///
-/// # Returns
-///
-/// The smeared bitmask.
-pub fn smear_bitmask(original: &[u64], window: usize, direction: &str) -> Vec<u64> {
-    assert!(window > 0 && window < 16, "Window must be in (0, 16).");
-    let sign = if direction == "left" { -1 } else { 1 };
-    let mut result = original.to_vec();
-    bitmask_or_with_self_offset_in_place(&mut result, sign);
-    let mut r = 1;
-    while r < window {
-        let offset = std::cmp::min(r, window - r);
-        bitmask_or_with_self_offset_in_place(&mut result, (offset as isize) * sign);
-        r += offset;
-    }
-    // If the direction is "both", we did the smear to the right and now
-    // we just need to apply a single left smear to complete the operation.
-    if direction == "both" {
-        bitmask_or_with_self_offset_in_place(&mut result, -(window as isize));
-    }
-    result
-}
-
 /// Returns the numbers that are present in both input arrays, applying an offset to the second array.
 /// and which has a maximum fuzz distance applied.
 ///
@@ -313,152 +309,44 @@ pub fn find_fuzzy_matches_with_arrays(
     results
 }
 
-/// Checks if the given packed index data has any values in the specified range.
-///
-/// # Arguments
-///
-/// * `packed_data` - The packed index data to check.
-/// * `range` - The range to check (inclusive).
-///
-/// # Returns
-///
-/// True if the range contains any values for the packed data, false otherwise.
-pub fn has_value_in_range(packed_data: &IndexData, range: (u32, u32)) -> bool {
-    if range.0 > range.1 {
-        return false;
-    }
-
-    match packed_data {
-        IndexData::BitMask(bitmask_data) => {
-            let bitmask = &bitmask_data;
-            for i in range.0..=range.1 {
-                let word_index = (i / 64) as usize;
-                if word_index >= bitmask.len() {
-                    continue;
-                }
-                let bit_index = 63 - (i % 64);
-                if (bitmask[word_index] & (1 << bit_index)) != 0 {
-                    return true;
-                }
-            }
-            false
-        }
-        IndexData::List(data) => {
-            let mut low = 0;
-            let mut high = data.len() - 1;
-
-            while low <= high {
-                // Avoid overflow with `(low + high) / 2`
-                let mid_index = low + (high - low) / 2;
-                let mid_val = data[mid_index];
-
-                if mid_val < range.0 {
-                    low = mid_index + 1;
-                } else if mid_val > range.1 {
-                    if mid_index == 0 {
-                        return false;
-                    }
-                    high = mid_index - 1;
-                } else {
-                    return true;
-                }
-            }
-            false
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use crate::bitmask_utils::to_bitmask;
+
     use super::*;
-    use crate::common::IndexData;
 
     #[test]
-    fn should_smear_to_the_right_within_a_single_word() {
-        let original = to_bitmask(&[5], 64);
-        let smeared = smear_bitmask(&original, 3, "right");
-        let expected = to_bitmask(&[5, 6, 7, 8], 64);
-        assert_eq!(smeared, expected);
+    fn num_elements_unpacked_should_return_length() {
+        let data = IndexData::List(&[1, 2, 3, 4, 5]);
+        assert_eq!(data.num_elements(), 5);
     }
 
     #[test]
-    fn should_smear_to_the_left_within_a_single_word() {
-        let original = to_bitmask(&[5], 64);
-        let smeared = smear_bitmask(&original, 3, "left");
-        let expected = to_bitmask(&[2, 3, 4, 5], 64);
-        assert_eq!(smeared, expected);
+    fn num_elements_unpacked_empty_should_return_zero() {
+        let data = IndexData::List(&[]);
+        assert_eq!(data.num_elements(), 0);
     }
 
     #[test]
-    fn should_smear_in_both_directions_within_a_single_word() {
-        let original = to_bitmask(&[5], 64);
-        let smeared = smear_bitmask(&original, 2, "both");
-        let expected = to_bitmask(&[3, 4, 5, 6, 7], 64);
-        assert_eq!(smeared, expected);
+    fn num_elements_packed_bitmask_should_return_set_bits_count() {
+        // Bitmask with bits set at positions 0, 1, 63 (across two u64 words)
+        let bitmask_data = vec![0b11, 0b1 << 63]; // 2 bits in first word, 1 in second
+        let data = IndexData::BitMask(&bitmask_data);
+        assert_eq!(data.num_elements(), 3);
     }
 
     #[test]
-    fn should_smear_to_the_right_across_word_boundaries() {
-        let original = to_bitmask(&[62], 128);
-        let smeared = smear_bitmask(&original, 3, "right");
-        let expected = to_bitmask(&[62, 63, 64, 65], 128);
-        assert_eq!(smeared, expected);
+    fn num_elements_packed_bitmask_all_zero_should_return_zero() {
+        let bitmask_data = vec![0u64, 0u64];
+        let data = IndexData::BitMask(&bitmask_data);
+        assert_eq!(data.num_elements(), 0);
     }
 
     #[test]
-    fn should_smear_to_the_left_across_word_boundaries() {
-        let original = to_bitmask(&[65], 128);
-        let smeared = smear_bitmask(&original, 3, "left");
-        let expected = to_bitmask(&[62, 63, 64, 65], 128);
-        assert_eq!(smeared, expected);
-    }
-
-    #[test]
-    fn should_smear_in_both_directions_across_word_boundaries() {
-        let original = to_bitmask(&[63], 128);
-        let smeared = smear_bitmask(&original, 2, "both");
-        let expected = to_bitmask(&[61, 62, 63, 64, 65], 128);
-        assert_eq!(smeared, expected);
-    }
-
-    #[test]
-    fn should_handle_multiple_bits_set_smearing_right() {
-        let original = to_bitmask(&[5, 15], 64);
-        let smeared = smear_bitmask(&original, 2, "right");
-        let expected = to_bitmask(&[5, 6, 7, 15, 16, 17], 64);
-        assert_eq!(smeared, expected);
-    }
-
-    #[test]
-    fn should_handle_multiple_bits_set_smearing_left() {
-        let original = to_bitmask(&[5, 15], 64);
-        let smeared = smear_bitmask(&original, 2, "left");
-        let expected = to_bitmask(&[3, 4, 5, 13, 14, 15], 64);
-        assert_eq!(smeared, expected);
-    }
-
-    #[test]
-    fn should_handle_multiple_bits_set_smearing_both() {
-        let original = to_bitmask(&[5, 15], 64);
-        let smeared = smear_bitmask(&original, 1, "both");
-        let expected = to_bitmask(&[4, 5, 6, 14, 15, 16], 64);
-        assert_eq!(smeared, expected);
-    }
-
-    #[test]
-    fn should_handle_overlapping_smears() {
-        let original = to_bitmask(&[5, 8], 64);
-        let smeared = smear_bitmask(&original, 2, "right");
-        let expected = to_bitmask(&[5, 6, 7, 8, 9, 10], 64);
-        assert_eq!(smeared, expected);
-    }
-
-    #[test]
-    fn should_handle_overlapping_smears_with_both() {
-        let original = to_bitmask(&[5, 8], 64);
-        let smeared = smear_bitmask(&original, 2, "both");
-        let expected = to_bitmask(&[3, 4, 5, 6, 7, 8, 9, 10], 64);
-        assert_eq!(smeared, expected);
+    fn num_elements_packed_bitmask_single_word_should_return_correct_count() {
+        let bitmask_data = vec![0b10101010]; // 4 bits set
+        let data = IndexData::BitMask(&bitmask_data);
+        assert_eq!(data.num_elements(), 4);
     }
 
     #[test]
@@ -862,47 +750,5 @@ mod tests {
         let expected_data = to_bitmask(&[1, 3], 64);
         assert_eq!(result, IndexDataOwned::BitMask(expected_data));
         assert_eq!(position, 3);
-    }
-
-    #[test]
-    fn has_value_in_range_bitmask_should_return_true_if_value_in_range() {
-        let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::BitMask(&bitmask);
-        assert!(has_value_in_range(&packed_data, (5, 15)));
-        assert!(has_value_in_range(&packed_data, (65, 75)));
-    }
-
-    #[test]
-    fn has_value_in_range_bitmask_should_return_false_if_value_not_in_range() {
-        let bitmask = to_bitmask(&[10, 70], 128);
-        let packed_data = IndexData::BitMask(&bitmask);
-        assert!(!has_value_in_range(&packed_data, (20, 30)));
-        assert!(!has_value_in_range(&packed_data, (0, 5)));
-    }
-
-    #[test]
-    fn has_value_in_range_bitmask_should_handle_word_boundaries() {
-        let bitmask = to_bitmask(&[63, 64], 128);
-        let packed_data = IndexData::BitMask(&bitmask);
-        assert!(has_value_in_range(&packed_data, (60, 65)));
-        assert!(!has_value_in_range(&packed_data, (60, 62)));
-        assert!(!has_value_in_range(&packed_data, (65, 70)));
-    }
-
-    #[test]
-    fn has_value_in_range_packed_array_should_return_true_if_value_in_range() {
-        let packed_data = IndexData::List(&[10, 70]);
-        assert!(has_value_in_range(&packed_data, (5, 15)));
-        assert!(has_value_in_range(&packed_data, (65, 75)));
-        assert!(has_value_in_range(&packed_data, (10, 10)));
-        assert!(has_value_in_range(&packed_data, (70, 70)));
-    }
-
-    #[test]
-    fn has_value_in_range_packed_array_should_return_false_if_value_not_in_range() {
-        let packed_data = IndexData::List(&[10, 70]);
-        assert!(!has_value_in_range(&packed_data, (20, 30)));
-        assert!(!has_value_in_range(&packed_data, (0, 9)));
-        assert!(!has_value_in_range(&packed_data, (71, 100)));
     }
 }

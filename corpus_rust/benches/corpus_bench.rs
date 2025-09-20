@@ -1,4 +1,4 @@
-use corpus::{corpus_query_engine, corpus_serialization, packed_index_utils::smear_bitmask};
+use corpus::{bitmask_utils::smear_bitmask, corpus_query_engine, corpus_serialization};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 const POW_2_24: u32 = 1 << 24;
