@@ -251,6 +251,7 @@ pub fn find_fuzzy_matches(
             Ok(IndexDataOwned::BitMask(overlaps))
         }
         (IndexData::List(arr), IndexData::BitMask(bm)) => {
+            // Negative because the offset is applied to the array.
             let overlaps =
                 find_fuzzy_matches_with_array_and_bitmask(arr, bm, -offset, max_dist, dir);
             Ok(IndexDataOwned::List(overlaps))
@@ -445,7 +446,6 @@ fn find_fuzzy_matches_with_bitmask_and_array(
             let word_index = bit / 64;
             let bit_index = 63 - (bit % 64);
             result[word_index] |= bitmask[word_index] & (1u64 << bit_index);
-            eprintln!("Set bit {bit}");
         }
     }
     result
@@ -453,7 +453,7 @@ fn find_fuzzy_matches_with_bitmask_and_array(
 
 #[cfg(test)]
 mod tests {
-    use crate::bitmask_utils::to_bitmask;
+    use crate::bitmask_utils::{from_bitmask, to_bitmask};
 
     use super::*;
 
@@ -979,98 +979,123 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    fn verify_fuzzy_matches_between_array_and_bitmask(
+        first: &[u32],
+        second: &[u32],
+        offset: i32,
+        max_distance: usize,
+        direction: &str,
+        expected: &[u32],
+    ) {
+        let upper_bound = 192;
+        first.iter().for_each(|&x| assert!(x < upper_bound));
+        second.iter().for_each(|&x| assert!(x < upper_bound));
+
+        let first_bitmask = to_bitmask(first, upper_bound);
+        let second_bitmask = to_bitmask(second, upper_bound);
+
+        let array_bitmask_result = find_fuzzy_matches_with_array_and_bitmask(
+            first,
+            &second_bitmask,
+            offset,
+            max_distance,
+            direction,
+        );
+        let bitmask_array_result = find_fuzzy_matches_with_bitmask_and_array(
+            &first_bitmask,
+            second,
+            -offset,
+            max_distance,
+            direction,
+        );
+        assert_eq!(
+            array_bitmask_result, expected,
+            "Array-Bitmask result mismatch"
+        );
+        assert_eq!(
+            from_bitmask(&bitmask_array_result),
+            expected,
+            "Bitmask-Array result mismatch"
+        );
+    }
+
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_no_offset() {
-        let bitmask = to_bitmask(&[5, 10, 15], 64);
-        let array = vec![4, 5, 9, 10, 13];
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
-        assert_eq!(result, vec![4, 5, 9, 10]);
+        let first = &[4, 5, 9, 10, 13];
+        let second = &[5, 10, 15];
+        let expected = &[4, 5, 9, 10];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
     }
+
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_with_offset() {
-        let bitmask = to_bitmask(&[5, 10, 15], 64);
-        let array = vec![2, 7, 17];
-
-        // With offset 3, array becomes [5, 10, 15, 20]
-        // With max_distance 0, exact matches with bitmask[5,10,15]
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 2, 2, "both");
-        assert_eq!(result, vec![2, 7]);
+        let first = &[2, 7, 17];
+        let second = &[5, 10, 15];
+        let expected = &[2, 7];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 2, 2, "both", expected);
     }
 
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_direction_left() {
-        let bitmask = to_bitmask(&[10], 64);
-        let array = vec![6, 8, 10, 12, 14];
-
-        // With direction "left" and max_distance 2:
-        // - array[6] is not within left distance 2 of bitmask[10]
-        // - array[8] is within left distance 2 of bitmask[10]
-        // - array[10] matches bitmask[10] exactly
-        // - array[12] is not within left distance 2 of bitmask[10]
-        // - array[14] is not within left distance 2 of bitmask[10]
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 2, "left");
-        assert_eq!(result, vec![8, 10]);
+        let first = &[6, 8, 10, 12, 14];
+        let second = &[10];
+        let expected = &[8, 10];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 2, "left", expected);
     }
 
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_direction_right() {
-        let bitmask = to_bitmask(&[10], 64);
-        let array = vec![6, 8, 10, 12, 14];
-
-        // With direction "right" and max_distance 2:
-        // - array[6] is not within right distance 2 of bitmask[10]
-        // - array[8] is not within right distance 2 of bitmask[10]
-        // - array[10] matches bitmask[10] exactly
-        // - array[12] is within right distance 2 of bitmask[10]
-        // - array[14] is not within right distance 2 of bitmask[10]
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 2, "right");
-        assert_eq!(result, vec![10, 12]);
+        let first = &[6, 8, 10, 12, 14];
+        let second = &[10];
+        let expected = &[10, 12];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 2, "right", expected);
     }
 
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_negative_offset() {
-        let bitmask = to_bitmask(&[5, 10], 64);
-        let array = vec![11, 15];
-
-        // With offset -5, array becomes [6, 10]
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, -5, 1, "both");
-        assert_eq!(result, vec![11, 15]);
+        let first = &[11, 15];
+        let second = &[5, 10];
+        let expected = &[11, 15];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, -5, 1, "both", expected);
     }
 
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_across_word_boundaries() {
-        let bitmask = to_bitmask(&[63], 128);
-        let array = vec![61, 62, 63, 64, 65];
-
-        // With max_distance 1, matches should be [62, 63, 64]
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
-        assert_eq!(result, vec![62, 63, 64]);
+        let first = &[61, 62, 63, 64, 65];
+        let second = &[63];
+        let expected = &[62, 63, 64];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
     }
 
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_empty_array() {
-        let bitmask = to_bitmask(&[5, 10], 64);
-        let array: Vec<u32> = vec![];
-
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
-        assert_eq!(result, Vec::<u32>::new());
+        let first = &[];
+        let second = &[5, 10];
+        let expected = &[];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
     }
 
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_empty_bitmask() {
-        let bitmask = to_bitmask(&[], 64);
-        let array = vec![5, 10, 15];
+        let first = &[5, 10, 15];
+        let second = &[];
+        let expected = &[];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
+    }
 
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 1, "both");
-        assert_eq!(result, Vec::<u32>::new());
+    #[test]
+    fn find_fuzzy_matches_with_array_and_bitmask_empty_array_and_bitmask() {
+        let first = &[];
+        let second = &[];
+        let expected = &[];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
     }
 
     #[test]
     fn find_fuzzy_matches_with_array_and_bitmask_out_of_range() {
-        let bitmask = to_bitmask(&[5, 10], 64);
-        let array = vec![100, 200];
-
-        let result = find_fuzzy_matches_with_array_and_bitmask(&array, &bitmask, 0, 5, "both");
-        assert_eq!(result, Vec::<u32>::new());
+        let first = &[100, 190];
+        let second = &[5, 10];
+        let expected = &[];
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
     }
 }

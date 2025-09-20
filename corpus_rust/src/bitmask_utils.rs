@@ -9,6 +9,20 @@ pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
     bitmask
 }
 
+#[cfg(test)]
+pub fn from_bitmask(bitmask: &[u64]) -> Vec<u32> {
+    let mut indices = Vec::new();
+    for (word_idx, &word) in bitmask.iter().enumerate() {
+        for bit_idx in 0..64 {
+            if (word & (1 << (63 - bit_idx))) != 0 {
+                let idx = (word_idx * 64 + bit_idx) as u32;
+                indices.push(idx);
+            }
+        }
+    }
+    indices
+}
+
 macro_rules! define_bitmask_or_with_self_offset_in_place {
     (
         $fn_name:ident,
