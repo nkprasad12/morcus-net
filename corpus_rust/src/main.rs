@@ -173,10 +173,10 @@ fn main() {
         print_mem_summary("Before query execution".to_string(), 1);
     }
     let query_str = get_query_arg_or_exit();
+    print_query_results(&engine, &query_str);
     if has_arg("--mem") {
         print_mem_summary("After query execution".to_string(), 1);
     }
-    print_query_results(&engine, &query_str);
 }
 
 /*
