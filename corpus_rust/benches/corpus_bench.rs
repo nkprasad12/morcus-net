@@ -1,4 +1,7 @@
-use corpus::{bitmask_utils::smear_bitmask, corpus_query_engine, corpus_serialization};
+use corpus::{
+    bitmask_utils::{Direction, smear_bitmask},
+    corpus_query_engine, corpus_serialization,
+};
 use criterion::{Criterion, criterion_group, criterion_main};
 
 const POW_2_24: u32 = 1 << 24;
@@ -119,10 +122,10 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let sizes = vec![size; 2];
         let data = create_random_data_arrays(POW_2_24, &sizes, 42);
         smear_benches.bench_function("smear 15 both", |b| {
-            b.iter(|| smear_bitmask(&data[0].bitmask, 15, "both"))
+            b.iter(|| smear_bitmask(&data[0].bitmask, 15, Direction::Both))
         });
         smear_benches.bench_function("smear 7 both", |b| {
-            b.iter(|| smear_bitmask(&data[0].bitmask, 7, "both"))
+            b.iter(|| smear_bitmask(&data[0].bitmask, 7, Direction::Both))
         });
         smear_benches.finish();
     }

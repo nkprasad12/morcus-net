@@ -1,6 +1,6 @@
 use std::cmp::{max, min};
 
-use crate::bitmask_utils;
+use crate::bitmask_utils::{self, Direction};
 
 #[derive(Debug, PartialEq, Clone)]
 pub(super) enum IndexData<'a> {
@@ -233,7 +233,7 @@ pub fn find_fuzzy_matches(
     second: &IndexData,
     second_position: u32,
     max_dist: usize,
-    dir: &str,
+    dir: Direction,
 ) -> Result<IndexDataOwned, String> {
     if max_dist == 0 || max_dist >= 16 {
         return Err("max_distance must be between 1 and 15".to_string());
@@ -289,15 +289,18 @@ fn find_fuzzy_matches_with_arrays(
     second: &[u32],
     offset: i32,
     max_distance: usize,
-    direction: &str,
+    direction: Direction,
 ) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
-    let left_fuzz = if direction == "right" {
-        0
-    } else {
-        max_distance
+    let left_fuzz = match direction {
+        Direction::Right => 0,
+        _ => max_distance,
     };
-    let right_fuzz = if direction == "left" { 0 } else { max_distance };
+    let right_fuzz = match direction {
+        Direction::Left => 0,
+        _ => max_distance,
+    };
+
     let mut i = 0;
     let mut j = 0;
 
@@ -338,7 +341,7 @@ fn find_fuzzy_matches_with_arrays(
 /// * `second` - The second bitmask to match against. Must have the same length as `first`.
 /// * `offset` - The offset to apply to the second bitmask.
 /// * `max_distance` - The maximum distance to consider a match.
-/// * `direction` - The direction to apply the fuzzy distance ("left", "right", or "both").
+/// * `direction` - The direction to apply the fuzzy distance (Left, Right, or Both).
 ///
 /// ## Returns
 ///
@@ -348,7 +351,7 @@ fn find_fuzzy_matches_with_bitmasks(
     second: &[u64],
     offset: isize,
     max_distance: usize,
-    direction: &str,
+    direction: Direction,
 ) -> Vec<u64> {
     assert_eq!(
         first.len(),
@@ -369,7 +372,7 @@ fn find_fuzzy_matches_with_bitmasks(
 /// * `array` - The array of indices.
 /// * `offset` - The offset to apply to the array elements. Can be positive or negative.
 /// * `max_distance` - The maximum distance to consider a match.
-/// * `direction` - The direction to apply the fuzzy distance ("left", "right", or "both").
+/// * `direction` - The direction to apply the fuzzy distance.
 ///
 /// ## Returns
 ///
@@ -379,7 +382,7 @@ fn find_fuzzy_matches_with_array_and_bitmask(
     bitmask: &[u64],
     offset: i32,
     max_distance: usize,
-    direction: &str,
+    direction: Direction,
 ) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
     let bitmask_len_bits = bitmask.len() * 64;
@@ -413,7 +416,7 @@ fn find_fuzzy_matches_with_array_and_bitmask(
 /// * `array` - The array of indices.
 /// * `offset` - The offset to apply to the array elements. Can be positive or negative.
 /// * `max_distance` - The maximum distance to consider a match.
-/// * `direction` - The direction to apply the fuzzy distance ("left", "right", or "both").
+/// * `direction` - The direction to apply the fuzzy distance.
 ///
 /// ## Returns
 ///
@@ -423,13 +426,13 @@ fn find_fuzzy_matches_with_bitmask_and_array(
     array: &[u32],
     offset: i32,
     max_distance: usize,
-    direction: &str,
+    direction: Direction,
 ) -> Vec<u64> {
     let mut result: Vec<u64> = vec![0; bitmask.len()];
 
     let final_bit = bitmask.len() * 64 - 1;
-    let extend_left = direction != "right";
-    let extend_right = direction != "left";
+    let extend_left = direction != Direction::Right;
+    let extend_right = direction != Direction::Left;
     let left_mod = if extend_left { max_distance } else { 0 };
     let right_mod = if extend_right { max_distance } else { 0 };
     for index in array {
@@ -453,7 +456,10 @@ fn find_fuzzy_matches_with_bitmask_and_array(
 
 #[cfg(test)]
 mod tests {
-    use crate::bitmask_utils::{from_bitmask, to_bitmask};
+    use crate::bitmask_utils::{
+        Direction::{Both, Left, Right},
+        from_bitmask, to_bitmask,
+    };
 
     use super::*;
 
@@ -501,7 +507,7 @@ mod tests {
         // The match window for `second` element 9 is [7, 11].
         // Both 10 and 11 from `first` fall within this window.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&first, &second, offset, max_distance, "both"),
+            find_fuzzy_matches_with_arrays(&first, &second, offset, max_distance, Both),
             vec![10, 11]
         );
     }
@@ -509,7 +515,7 @@ mod tests {
     #[test]
     fn find_fuzzy_matches_with_arrays_should_return_an_empty_array_if_the_first_array_is_empty() {
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[], &[1, 2, 3], 0, 1, "both"),
+            find_fuzzy_matches_with_arrays(&[], &[1, 2, 3], 0, 1, Both),
             Vec::<u32>::new()
         );
     }
@@ -517,7 +523,7 @@ mod tests {
     #[test]
     fn find_fuzzy_matches_with_arrays_should_return_an_empty_array_if_the_second_array_is_empty() {
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[1, 2, 3], &[], 0, 1, "both"),
+            find_fuzzy_matches_with_arrays(&[1, 2, 3], &[], 0, 1, Both),
             Vec::<u32>::new()
         );
     }
@@ -525,7 +531,7 @@ mod tests {
     #[test]
     fn find_fuzzy_matches_with_arrays_should_return_an_empty_array_if_no_matches_are_found() {
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[1, 2, 3], &[10, 11, 12], 0, 1, "both"),
+            find_fuzzy_matches_with_arrays(&[1, 2, 3], &[10, 11, 12], 0, 1, Both),
             Vec::<u32>::new()
         );
     }
@@ -534,7 +540,7 @@ mod tests {
     fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_zero_offset_and_zero_distance()
     {
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[1, 5, 10], &[1, 6, 10], 0, 0, "both"),
+            find_fuzzy_matches_with_arrays(&[1, 5, 10], &[1, 6, 10], 0, 0, Both),
             vec![1, 10]
         );
     }
@@ -543,7 +549,7 @@ mod tests {
     fn find_fuzzy_matches_with_arrays_should_find_exact_matches_with_a_non_zero_offset_and_zero_distance()
      {
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[3, 7, 12], &[1, 6, 10], 2, 0, "both"),
+            find_fuzzy_matches_with_arrays(&[3, 7, 12], &[1, 6, 10], 2, 0, Both),
             vec![3, 12]
         );
     }
@@ -554,7 +560,7 @@ mod tests {
         // 3 is in range of 1 (1-2 to 1+2 => [-1, 3]).
         // 8,9 are not in range of 12 (12-2 to 12+2 => [10, 14]).
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[3, 8, 9], &[0, 11], 1, 2, "both"),
+            find_fuzzy_matches_with_arrays(&[3, 8, 9], &[0, 11], 1, 2, Both),
             vec![3]
         );
     }
@@ -564,7 +570,7 @@ mod tests {
         // second becomes [4, 9, 19].
         // 5 is in range of 4. 10 is in range of 9. 15 is not in range of 19.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[5, 10, 15], &[3, 8, 18], 1, 1, "both"),
+            find_fuzzy_matches_with_arrays(&[5, 10, 15], &[3, 8, 18], 1, 1, Both),
             vec![5, 10]
         );
     }
@@ -575,7 +581,7 @@ mod tests {
         // first: [10], second: [8, 9, 10] -> offset 0, dist 1.
         // second vals are 8,9,10. 10 matches all of them.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[10], &[8, 9, 10], 0, 1, "both"),
+            find_fuzzy_matches_with_arrays(&[10], &[8, 9, 10], 0, 1, Both),
             vec![10]
         );
     }
@@ -586,7 +592,7 @@ mod tests {
         // first: [8, 9, 10], second: [9] -> offset 0, dist 1.
         // second val is 9. Its range [8, 10] matches all elements in first.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[8, 9, 10], &[9], 0, 1, "both"),
+            find_fuzzy_matches_with_arrays(&[8, 9, 10], &[9], 0, 1, Both),
             vec![8, 9, 10]
         );
     }
@@ -596,7 +602,7 @@ mod tests {
         // first: [5, 6], second: [7], offset: 0, dist: 2.
         // second val is 7. Its range [5, 9] matches both 5 and 6.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[5, 6], &[7], 0, 2, "both"),
+            find_fuzzy_matches_with_arrays(&[5, 6], &[7], 0, 2, Both),
             vec![5, 6]
         );
     }
@@ -608,7 +614,7 @@ mod tests {
         // second val 12: range [10, 14]. Matches 10, 11.
         // second val 18: range [16, 20]. Matches 20. (15 is not in range).
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[10, 11, 15, 20], &[12, 18], 0, 2, "both"),
+            find_fuzzy_matches_with_arrays(&[10, 11, 15, 20], &[12, 18], 0, 2, Both),
             vec![10, 11, 20]
         );
     }
@@ -621,7 +627,7 @@ mod tests {
         // second val 33: range [30, 36]. Matches 30.
         // second val 48: range [45, 51]. Matches 50.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&first, &second, 0, 3, "both"),
+            find_fuzzy_matches_with_arrays(&first, &second, 0, 3, Both),
             vec![10, 30, 50]
         );
     }
@@ -634,7 +640,7 @@ mod tests {
         // second val 1: range [-1, 3]. Matches 3.
         // second val 12: range [10, 14]. No matches.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[3, 8, 9], &[0, 11], 1, 2, "both"),
+            find_fuzzy_matches_with_arrays(&[3, 8, 9], &[0, 11], 1, 2, Both),
             vec![3]
         );
     }
@@ -644,7 +650,7 @@ mod tests {
         // second val 5: range [5, 7]. Matches 5, 7.
         // second val 10: range [10, 12]. Matches 10.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[5, 7, 9, 10], &[5, 10], 0, 2, "right"),
+            find_fuzzy_matches_with_arrays(&[5, 7, 9, 10], &[5, 10], 0, 2, Right),
             vec![5, 7, 10]
         );
     }
@@ -654,7 +660,7 @@ mod tests {
         // second val 5: range [3, 5]. Matches 3, 5.
         // second val 10: range [8, 10]. Matches 9, 10.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[3, 5, 7, 9, 10], &[5, 10], 0, 2, "left"),
+            find_fuzzy_matches_with_arrays(&[3, 5, 7, 9, 10], &[5, 10], 0, 2, Left),
             vec![3, 5, 9, 10]
         );
     }
@@ -663,7 +669,7 @@ mod tests {
     fn find_fuzzy_matches_with_arrays_should_find_no_matches_if_direction_restricts_range_right() {
         // second val 10: range [10, 12]. No match for 9.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[9], &[10], 0, 2, "right"),
+            find_fuzzy_matches_with_arrays(&[9], &[10], 0, 2, Right),
             Vec::<u32>::new()
         );
     }
@@ -672,7 +678,7 @@ mod tests {
     fn find_fuzzy_matches_with_arrays_should_find_no_matches_if_direction_restricts_range_left() {
         // second val 10: range [8, 10]. No match for 11.
         assert_eq!(
-            find_fuzzy_matches_with_arrays(&[11], &[10], 0, 2, "left"),
+            find_fuzzy_matches_with_arrays(&[11], &[10], 0, 2, Left),
             Vec::<u32>::new()
         );
     }
@@ -920,7 +926,7 @@ mod tests {
         let second = to_bitmask(&[4, 12], 64);
         // With max_distance 1, first[5] should match second[4], first[10] should not match anything,
         // and first[15] should not match second[12] (distance = 3 > 1)
-        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 1, "both");
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 1, Both);
         let expected = to_bitmask(&[5], 64);
         assert_eq!(result, expected);
     }
@@ -934,7 +940,7 @@ mod tests {
         // - first[5] exactly matches second[5]
         // - first[10] is not within distance 2 of any second element
         // - first[15] is within distance 2 of second[13]
-        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 1, 2, "both");
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 1, 2, Both);
         let expected = to_bitmask(&[5, 15], 64);
         assert_eq!(result, expected);
     }
@@ -943,8 +949,8 @@ mod tests {
     fn find_fuzzy_matches_with_bitmasks_direction_left() {
         let first = to_bitmask(&[5, 7, 10], 64);
         let second = to_bitmask(&[8], 64);
-        // With direction "left", second[8] matches first[5,7] but not first[10]
-        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, "left");
+        // With direction Left, second[8] matches first[5,7] but not first[10]
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, Left);
         let expected = to_bitmask(&[5, 7], 64);
         assert_eq!(result, expected);
     }
@@ -953,8 +959,8 @@ mod tests {
     fn find_fuzzy_matches_with_bitmasks_direction_right() {
         let first = to_bitmask(&[5, 7, 10], 64);
         let second = to_bitmask(&[4], 64);
-        // With direction "right", second[4] matches first[5,7] but not first[10]
-        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, "right");
+        // With direction Right, second[4] matches first[5,7] but not first[10]
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, Right);
         let expected = to_bitmask(&[5, 7], 64);
         assert_eq!(result, expected);
     }
@@ -964,7 +970,7 @@ mod tests {
         let first = to_bitmask(&[62, 65, 68], 128);
         let second = to_bitmask(&[64], 128);
         // With max_distance 2 in both directions, second[64] matches first[62,65,66]
-        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 2, "both");
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 2, Both);
         let expected = to_bitmask(&[62, 65], 128);
         assert_eq!(result, expected);
     }
@@ -974,7 +980,7 @@ mod tests {
         let first = to_bitmask(&[5, 10, 15], 64);
         let second = to_bitmask(&[20, 25], 64);
         // No matches within distance
-        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, "both");
+        let result = find_fuzzy_matches_with_bitmasks(&first, &second, 0, 3, Both);
         let expected = to_bitmask(&[], 64);
         assert_eq!(result, expected);
     }
@@ -984,7 +990,7 @@ mod tests {
         second: &[u32],
         offset: i32,
         max_distance: usize,
-        direction: &str,
+        direction: Direction,
         expected: &[u32],
     ) {
         let upper_bound = 192;
@@ -1024,7 +1030,7 @@ mod tests {
         let first = &[4, 5, 9, 10, 13];
         let second = &[5, 10, 15];
         let expected = &[4, 5, 9, 10];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, Both, expected);
     }
 
     #[test]
@@ -1032,7 +1038,7 @@ mod tests {
         let first = &[2, 7, 17];
         let second = &[5, 10, 15];
         let expected = &[2, 7];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 2, 2, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 2, 2, Both, expected);
     }
 
     #[test]
@@ -1040,7 +1046,7 @@ mod tests {
         let first = &[6, 8, 10, 12, 14];
         let second = &[10];
         let expected = &[8, 10];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 2, "left", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 2, Left, expected);
     }
 
     #[test]
@@ -1048,7 +1054,7 @@ mod tests {
         let first = &[6, 8, 10, 12, 14];
         let second = &[10];
         let expected = &[10, 12];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 2, "right", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 2, Right, expected);
     }
 
     #[test]
@@ -1056,7 +1062,7 @@ mod tests {
         let first = &[11, 15];
         let second = &[5, 10];
         let expected = &[11, 15];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, -5, 1, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, -5, 1, Both, expected);
     }
 
     #[test]
@@ -1064,7 +1070,7 @@ mod tests {
         let first = &[61, 62, 63, 64, 65];
         let second = &[63];
         let expected = &[62, 63, 64];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, Both, expected);
     }
 
     #[test]
@@ -1072,7 +1078,7 @@ mod tests {
         let first = &[];
         let second = &[5, 10];
         let expected = &[];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, Both, expected);
     }
 
     #[test]
@@ -1080,7 +1086,7 @@ mod tests {
         let first = &[5, 10, 15];
         let second = &[];
         let expected = &[];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, Both, expected);
     }
 
     #[test]
@@ -1088,7 +1094,7 @@ mod tests {
         let first = &[];
         let second = &[];
         let expected = &[];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, Both, expected);
     }
 
     #[test]
@@ -1096,14 +1102,14 @@ mod tests {
         let first = &[100, 190];
         let second = &[5, 10];
         let expected = &[];
-        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
+        verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, Both, expected);
     }
 
     #[test]
     fn find_fuzzy_matches_list_list() {
         let first = IndexData::List(&[10, 20, 30]);
         let second = IndexData::List(&[12, 28]);
-        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
         assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
     }
 
@@ -1113,7 +1119,7 @@ mod tests {
         let second_bm = to_bitmask(&[12, 28], 64);
         let first = IndexData::BitMask(&first_bm);
         let second = IndexData::BitMask(&second_bm);
-        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
         let expected_bm = to_bitmask(&[10, 30], 64);
         assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
     }
@@ -1123,7 +1129,7 @@ mod tests {
         let first_bm = to_bitmask(&[10, 20, 30], 64);
         let first = IndexData::BitMask(&first_bm);
         let second = IndexData::List(&[12, 28]);
-        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
         let expected_bm = to_bitmask(&[10, 30], 64);
         assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
     }
@@ -1133,7 +1139,7 @@ mod tests {
         let first = IndexData::List(&[10, 20, 30]);
         let second_bm = to_bitmask(&[12, 28], 64);
         let second = IndexData::BitMask(&second_bm);
-        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
         assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
     }
 
@@ -1141,7 +1147,7 @@ mod tests {
     fn find_fuzzy_matches_list_list_with_offset() {
         let first = IndexData::List(&[10, 20, 30]);
         let second = IndexData::List(&[10, 26]);
-        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
         assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
     }
 
@@ -1151,7 +1157,7 @@ mod tests {
         let second_bm = to_bitmask(&[10, 26], 64);
         let first = IndexData::BitMask(&first_bm);
         let second = IndexData::BitMask(&second_bm);
-        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
         let expected_bm = to_bitmask(&[10, 30], 64);
         assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
     }
@@ -1162,7 +1168,7 @@ mod tests {
         let first = IndexData::BitMask(&first_bm);
         let second = IndexData::List(&[10, 26]);
         // offset = 2. second list becomes [12, 28].
-        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
         let expected_bm = to_bitmask(&[10, 30], 64);
         assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
     }
@@ -1173,7 +1179,7 @@ mod tests {
         let second_bm = to_bitmask(&[10, 26], 64);
         let second = IndexData::BitMask(&second_bm);
         // offset = 2. second bitmask is shifted by 2.
-        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
         assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
     }
 }

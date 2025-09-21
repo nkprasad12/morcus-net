@@ -1,5 +1,5 @@
 use crate::{
-    bitmask_utils::{next_one_bit, smear_bitmask},
+    bitmask_utils::{Direction, next_one_bit, smear_bitmask},
     corpus_query_engine::{
         CorpusQueryEngine, IndexData, IndexDataRoO, IntermediateResult, QueryExecError,
         index_data::apply_and_to_indices,
@@ -101,7 +101,7 @@ impl CorpusQueryEngine {
         let break_mask = if query_length == 2 {
             hard_breaks.iter().map(|x| !*x).collect::<Vec<_>>()
         } else {
-            let mut smeared = smear_bitmask(hard_breaks, query_length - 2, "left");
+            let mut smeared = smear_bitmask(hard_breaks, query_length - 2, Direction::Left);
             for elem in &mut smeared {
                 *elem = !*elem;
             }
