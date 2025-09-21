@@ -1098,4 +1098,82 @@ mod tests {
         let expected = &[];
         verify_fuzzy_matches_between_array_and_bitmask(first, second, 0, 1, "both", expected);
     }
+
+    #[test]
+    fn find_fuzzy_matches_list_list() {
+        let first = IndexData::List(&[10, 20, 30]);
+        let second = IndexData::List(&[12, 28]);
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_bitmask_bitmask() {
+        let first_bm = to_bitmask(&[10, 20, 30], 64);
+        let second_bm = to_bitmask(&[12, 28], 64);
+        let first = IndexData::BitMask(&first_bm);
+        let second = IndexData::BitMask(&second_bm);
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        let expected_bm = to_bitmask(&[10, 30], 64);
+        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_bitmask_list() {
+        let first_bm = to_bitmask(&[10, 20, 30], 64);
+        let first = IndexData::BitMask(&first_bm);
+        let second = IndexData::List(&[12, 28]);
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        let expected_bm = to_bitmask(&[10, 30], 64);
+        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_list_bitmask() {
+        let first = IndexData::List(&[10, 20, 30]);
+        let second_bm = to_bitmask(&[12, 28], 64);
+        let second = IndexData::BitMask(&second_bm);
+        let result = find_fuzzy_matches(&first, 0, &second, 0, 2, "both").unwrap();
+        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_list_list_with_offset() {
+        let first = IndexData::List(&[10, 20, 30]);
+        let second = IndexData::List(&[10, 26]);
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_bitmask_bitmask_with_offset() {
+        let first_bm = to_bitmask(&[10, 20, 30], 64);
+        let second_bm = to_bitmask(&[10, 26], 64);
+        let first = IndexData::BitMask(&first_bm);
+        let second = IndexData::BitMask(&second_bm);
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        let expected_bm = to_bitmask(&[10, 30], 64);
+        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_bitmask_list_with_offset() {
+        let first_bm = to_bitmask(&[10, 20, 30], 64);
+        let first = IndexData::BitMask(&first_bm);
+        let second = IndexData::List(&[10, 26]);
+        // offset = 2. second list becomes [12, 28].
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        let expected_bm = to_bitmask(&[10, 30], 64);
+        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_list_bitmask_with_offset() {
+        let first = IndexData::List(&[10, 20, 30]);
+        let second_bm = to_bitmask(&[10, 26], 64);
+        let second = IndexData::BitMask(&second_bm);
+        // offset = 2. second bitmask is shifted by 2.
+        let result = find_fuzzy_matches(&first, 5, &second, 3, 2, "both").unwrap();
+        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+    }
 }
