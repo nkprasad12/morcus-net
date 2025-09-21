@@ -11,6 +11,25 @@ use crate::{
     },
 };
 
+fn split_into_spans<'a>(
+    query: &'a [InternalQueryTerm<'a>],
+) -> Result<Vec<&'a [InternalQueryTerm<'a>]>, QueryExecError> {
+    let mut spans = Vec::new();
+    let mut span_start = 0;
+    for i in 0..=query.len() {
+        if i < query.len() && query[i].is_contiguous() {
+            continue;
+        }
+        let span = &query[span_start..i];
+        if span.is_empty() {
+            return Err(QueryExecError::new("Empty span in query"));
+        }
+        span_start = i;
+        spans.push(span);
+    }
+    Ok(spans)
+}
+
 // Basic methods for calculating indices corresponding to query terms.
 impl CorpusQueryEngine {
     fn compute_index_for_composed(
@@ -151,5 +170,116 @@ impl CorpusQueryEngine {
 
     fn get_index(&'_ self, key: &str, value: &str) -> Option<IndexDataRoO<'_>> {
         self.index_for_metadata(self.get_metadata(key, value)?)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        corpus_query_engine::corpus_query_conversion::{InternalConstraint, SizeBounds},
+        query_parsing_v2::{TokenConstraint, TokenConstraintAtom},
+    };
+
+    fn make_term(relation: QueryRelation) -> InternalQueryTerm<'static> {
+        // This is a bit of a hack to get a 'static TokenConstraint.
+        // In a real scenario, constraints are built within the query context.
+        let constraint = Box::leak(Box::new(TokenConstraint::Atom(TokenConstraintAtom::Word(
+            "test".to_string(),
+        ))));
+        let relation = Box::leak(Box::new(relation));
+
+        InternalQueryTerm {
+            constraint: InternalConstraint {
+                inner: constraint,
+                size_bounds: SizeBounds { lower: 0, upper: 0 },
+            },
+            relation,
+        }
+    }
+
+    #[test]
+    fn test_split_into_spans_single_span() {
+        let query = vec![
+            make_term(QueryRelation::First),
+            make_term(QueryRelation::After),
+        ];
+        let spans = split_into_spans(&query).unwrap();
+        assert_eq!(spans.len(), 1);
+        assert_eq!(spans[0].len(), 2);
+    }
+
+    #[test]
+    fn test_split_into_spans_multiple_spans() {
+        let query = vec![
+            make_term(QueryRelation::First),
+            make_term(QueryRelation::Proximity {
+                distance: 5,
+                is_directed: false,
+            }),
+            make_term(QueryRelation::After),
+        ];
+        let spans = split_into_spans(&query).unwrap();
+        assert_eq!(spans.len(), 2);
+        assert_eq!(spans[0].len(), 1);
+        assert_eq!(spans[1].len(), 2);
+    }
+
+    #[test]
+    fn test_split_into_spans_all_non_contiguous() {
+        let query = vec![
+            make_term(QueryRelation::First),
+            make_term(QueryRelation::Proximity {
+                distance: 2,
+                is_directed: false,
+            }),
+            make_term(QueryRelation::Proximity {
+                distance: 3,
+                is_directed: true,
+            }),
+        ];
+        let spans = split_into_spans(&query).unwrap();
+        assert_eq!(spans.len(), 3);
+        assert_eq!(spans[0].len(), 1);
+        assert_eq!(spans[1].len(), 1);
+        assert_eq!(spans[2].len(), 1);
+    }
+
+    #[test]
+    fn test_split_into_spans_multiple_spans_with_multiple_parts() {
+        let query = vec![
+            make_term(QueryRelation::First),
+            make_term(QueryRelation::After),
+            make_term(QueryRelation::Proximity {
+                distance: 2,
+                is_directed: false,
+            }),
+            make_term(QueryRelation::After),
+            make_term(QueryRelation::After),
+            make_term(QueryRelation::Proximity {
+                distance: 3,
+                is_directed: true,
+            }),
+        ];
+        let spans = split_into_spans(&query).unwrap();
+        assert_eq!(spans.len(), 3);
+        assert_eq!(spans[0].len(), 2);
+        assert_eq!(spans[1].len(), 3);
+        assert_eq!(spans[2].len(), 1);
+    }
+
+    #[test]
+    fn test_split_into_spans_empty_query() {
+        let query = vec![];
+        let spans = split_into_spans(&query);
+        assert!(spans.is_err());
+    }
+
+    #[test]
+    fn test_split_into_spans_single_term() {
+        let query = vec![make_term(QueryRelation::After)];
+        let spans = split_into_spans(&query).unwrap();
+        assert_eq!(spans.len(), 1);
+        assert_eq!(spans[0].len(), 1);
     }
 }

@@ -31,6 +31,13 @@ pub struct InternalQueryTerm<'a> {
     pub constraint: InternalConstraint<'a>,
 }
 
+impl InternalQueryTerm<'_> {
+    /// Whether this term must be contiguous with the previous term.
+    pub fn is_contiguous(&self) -> bool {
+        matches!(self.relation, QueryRelation::After | QueryRelation::First)
+    }
+}
+
 // Methods for converting a query to an internal form.
 impl CorpusQueryEngine {
     /// Get the size bounds for a token constraint atom. This should be present in the raw data.
