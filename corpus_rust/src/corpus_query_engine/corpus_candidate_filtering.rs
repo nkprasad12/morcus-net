@@ -9,7 +9,7 @@ use crate::{
 
 impl CorpusQueryEngine {
     /// Computes the page of results for the given parameters.
-    fn compute_page_result(
+    pub(super) fn compute_page_result(
         &self,
         match_results: &IntermediateResult,
         page_start: usize,
@@ -65,17 +65,17 @@ impl CorpusQueryEngine {
     }
 
     /// Filters a list of candidates into just the actual matches.
-    pub(super) fn filter_candidates(
-        &self,
+    pub(super) fn filter_breaks(
+        &'_ self,
         candidates: &IntermediateResult,
         query_length: usize,
-        page_start: usize,
-        page_size: Option<usize>,
         profiler: &mut TimeProfiler,
-    ) -> Result<(Vec<u32>, usize), QueryExecError> {
+    ) -> Result<IntermediateResult<'_>, QueryExecError> {
         // There can be no hard breaks between tokens without multiple tokens.
         if query_length < 2 {
-            return self.compute_page_result(candidates, page_start, page_size, profiler);
+            return Err(QueryExecError::new(
+                "Query length must be at least 2 to filter breaks",
+            ));
         }
         // We compute a break mask, which is the negation of the hard breaks smeared left.
         // We will eventually do an index AND with this.
@@ -123,6 +123,6 @@ impl CorpusQueryEngine {
             position,
         };
         profiler.phase("Apply break mask");
-        self.compute_page_result(&match_results, page_start, page_size, profiler)
+        Ok(match_results)
     }
 }

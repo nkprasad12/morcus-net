@@ -1,8 +1,9 @@
 use crate::{
+    bitmask_utils::Direction,
     corpus_query_engine::{
         CorpusQueryEngine, IndexData, IndexDataRoO, IntermediateResult, QueryExecError,
         corpus_query_conversion::InternalQueryTerm,
-        index_data::{apply_and_to_indices, apply_or_to_indices},
+        index_data::{apply_and_to_indices, apply_or_to_indices, find_fuzzy_matches},
     },
     corpus_serialization::StoredMapValue,
     profiler::TimeProfiler,
@@ -11,7 +12,13 @@ use crate::{
     },
 };
 
-fn split_into_spans<'a>(
+struct SpanResult<'a> {
+    candidates: IntermediateResult<'a>,
+    length: usize,
+    relation: QueryRelation,
+}
+
+pub(super) fn split_into_spans<'a>(
     query: &'a [InternalQueryTerm<'a>],
 ) -> Result<Vec<&'a [InternalQueryTerm<'a>]>, QueryExecError> {
     let mut spans = Vec::new();
@@ -94,12 +101,94 @@ impl CorpusQueryEngine {
 
     pub(super) fn compute_query_candidates(
         &'_ self,
-        query: &Vec<InternalQueryTerm>,
+        query_spans: &[&[InternalQueryTerm]],
+        profiler: &mut TimeProfiler,
+    ) -> Result<Option<IntermediateResult<'_>>, QueryExecError> {
+        let mut spans = match self.candidates_for_spans(query_spans, profiler)? {
+            Some(res) => res,
+            None => return Ok(None),
+        };
+        if spans.is_empty() {
+            return Err(QueryExecError::new("No spans found in query"));
+        }
+        let mut previous = spans.remove(spans.len() - 1);
+        while !spans.is_empty() {
+            let current = spans.remove(spans.len() - 1);
+            let (distance, is_directed) = match previous.relation {
+                QueryRelation::Proximity {
+                    distance,
+                    is_directed,
+                } => (distance, is_directed),
+                _ => {
+                    return Err(QueryExecError::new(
+                        "Only proximity relations are supported between spans",
+                    ));
+                }
+            };
+            if distance == 0 || distance >= 16 {
+                return Err(QueryExecError::new(
+                    "Proximity distance must be between 1 and 15",
+                ));
+            }
+            let dir = if is_directed {
+                Direction::Left
+            } else {
+                Direction::Both
+            };
+            let combined = find_fuzzy_matches(
+                &current.candidates.data.to_ref(),
+                current.candidates.position,
+                &previous.candidates.data.to_ref(),
+                previous.candidates.position - previous.length as u32,
+                distance as usize,
+                dir,
+            )?;
+            previous = SpanResult {
+                candidates: IntermediateResult {
+                    data: IndexDataRoO::Owned(combined),
+                    position: current.candidates.position,
+                },
+                ..current
+            }
+        }
+        Ok(Some(previous.candidates))
+    }
+
+    /// Computes candidates for each span.
+    fn candidates_for_spans(
+        &'_ self,
+        spans: &[&[InternalQueryTerm]],
+        profiler: &mut TimeProfiler,
+    ) -> Result<Option<Vec<SpanResult<'_>>>, QueryExecError> {
+        let mut span_results = Vec::new();
+        for span in spans {
+            let candidates = match self.candidates_for_single_span(span, profiler)? {
+                Some(res) => res,
+                None => return Ok(None),
+            };
+            span_results.push(SpanResult {
+                candidates,
+                length: span.len(),
+                relation: span[0].relation.clone(),
+            });
+        }
+        Ok(Some(span_results))
+    }
+
+    fn candidates_for_single_span(
+        &'_ self,
+        query: &[InternalQueryTerm],
         profiler: &mut TimeProfiler,
     ) -> Result<Option<IntermediateResult<'_>>, QueryExecError> {
         let mut indexed_terms: Vec<(usize, &InternalQueryTerm)> =
             query.iter().enumerate().collect();
         indexed_terms.sort_by_key(|(_, term)| term.constraint.size_bounds.upper);
+        let prt = query
+            .iter()
+            .map(|t| t.to_string())
+            .collect::<Vec<_>>()
+            .join("");
+        eprintln!("{}", prt);
 
         let (first_original_index, first_term) = indexed_terms
             .first()
@@ -116,18 +205,25 @@ impl CorpusQueryEngine {
                 Some(data) => data,
                 _ => return Ok(None),
             };
-            let result = match term.relation {
-                QueryRelation::After | QueryRelation::First => apply_and_to_indices(
-                    &data.to_ref(),
-                    position,
-                    &term_data.to_ref(),
-                    *original_index as u32,
-                ),
-                _ => return Err(QueryExecError::new("Unsupported query relation")),
-            }?;
+            let result = apply_and_to_indices(
+                &data.to_ref(),
+                position,
+                &term_data.to_ref(),
+                *original_index as u32,
+            )?;
             data = IndexDataRoO::Owned(result.0);
             position = result.1;
             profiler.phase(format!("Filter from {original_index}").as_str());
+        }
+        if query.len() > 1 {
+            let result = self.filter_breaks(
+                &IntermediateResult { data, position },
+                query.len(),
+                profiler,
+            )?;
+            data = result.data;
+            position = result.position;
+            profiler.phase("Filter breaks");
         }
         Ok(Some(IntermediateResult { data, position }))
     }

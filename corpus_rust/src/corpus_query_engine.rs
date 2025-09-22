@@ -100,28 +100,30 @@ impl CorpusQueryEngine {
         let mut profiler = TimeProfiler::new();
         // Assemble the query
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
-        let num_terms = query.terms.len();
         let terms = query
             .terms
             .iter()
             .map(|term| self.convert_query_term(term))
             .collect::<Result<Vec<_>, _>>()?;
+        let query_spans = corpus_index_calculation::split_into_spans(&terms)?;
         profiler.phase("Parse query");
 
         // Find the possible matches, then filter them
-        let candidates = match self.compute_query_candidates(&terms, &mut profiler)? {
+        let candidates = match self.compute_query_candidates(&query_spans, &mut profiler)? {
             Some(res) => res,
             None => return Ok(empty_result()),
         };
+        // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
+        // technically giving matching within N tokens but they're not distinct terms. For now,
+        // just include these misleading results.
         let (match_ids, total_results) =
-            self.filter_candidates(&candidates, num_terms, page_start, page_size, &mut profiler)?;
+            self.compute_page_result(&candidates, page_start, page_size, &mut profiler)?;
 
         // Turn the match IDs into actual matches (with the text and locations).
         let context_len = context_len
             .unwrap_or(DEFAULT_CONTEXT_LEN)
             .clamp(1, MAX_CONTEXT_LEN);
-        let matches =
-            self.resolve_match_tokens(&match_ids, num_terms as u32, context_len as u32)?;
+        let matches = self.resolve_match_tokens(&match_ids, &query_spans, context_len as u32)?;
         profiler.phase("Build Matches");
 
         Ok(CorpusQueryResult {
