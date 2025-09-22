@@ -46,6 +46,19 @@ pub enum QueryRelation {
     First,
 }
 
+impl std::fmt::Display for QueryRelation {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            QueryRelation::After => write!(f, " "),
+            QueryRelation::First => write!(f, ""),
+            QueryRelation::Proximity {
+                distance,
+                is_directed,
+            } => write!(f, " {}~{} ", distance, if *is_directed { ">" } else { "" }),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq)]
 pub enum TokenConstraintAtom {
     Word(String),
@@ -68,6 +81,29 @@ pub enum TokenConstraint {
         children: Vec<TokenConstraint>,
     },
     Negated(Box<TokenConstraint>),
+}
+
+impl std::fmt::Display for TokenConstraint {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            TokenConstraint::Atom(atom) => match atom {
+                TokenConstraintAtom::Word(w) => write!(f, "{}", w),
+                TokenConstraintAtom::Lemma(l) => write!(f, "@lemma:{}", l),
+                TokenConstraintAtom::Inflection(inf) => {
+                    write!(f, "@{}:{}", inf.get_label(), inf.get_code())
+                }
+            },
+            TokenConstraint::Composed { op, children } => {
+                let op_str = match op {
+                    TokenConstraintOperation::And => " and ",
+                    TokenConstraintOperation::Or => " or ",
+                };
+                let child_strs: Vec<String> = children.iter().map(|c| c.to_string()).collect();
+                write!(f, "({})", child_strs.join(op_str))
+            }
+            TokenConstraint::Negated(inner) => write!(f, "!({})", inner),
+        }
+    }
 }
 
 macro_rules! check_equal {

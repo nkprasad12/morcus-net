@@ -38,6 +38,12 @@ impl InternalQueryTerm<'_> {
     }
 }
 
+impl std::fmt::Display for InternalQueryTerm<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.relation, self.constraint.inner)
+    }
+}
+
 // Methods for converting a query to an internal form.
 impl CorpusQueryEngine {
     /// Get the size bounds for a token constraint atom. This should be present in the raw data.
