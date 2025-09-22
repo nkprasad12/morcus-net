@@ -43,6 +43,10 @@ const TEST_WORKS: CorpusInputWork[] = [
   },
 ];
 
+function getMatchText(match: CorpusQueryResult["matches"][number]) {
+  return match.text.filter(([, isMatch]) => isMatch).map(([text]) => text);
+}
+
 describe("Corpus Integration Test", () => {
   let queryEngine: RustCorpusQueryEngine;
 
@@ -87,8 +91,9 @@ describe("Corpus Integration Test", () => {
         section: "1",
         offset: 1,
       }),
-      text: "servum",
     });
+    const matchText = getMatchText(results.matches[0]);
+    expect(matchText).toEqual(["servum"]);
   });
 
   it("should return correct work data", () => {
@@ -123,7 +128,6 @@ describe("Corpus Integration Test", () => {
             section: "1",
             offset: 1,
           }),
-          text: "servum",
         }),
         expect.objectContaining({
           metadata: expect.objectContaining({
@@ -131,10 +135,11 @@ describe("Corpus Integration Test", () => {
             section: "2",
             offset: 0,
           }),
-          text: "servus",
         }),
       ])
     );
+    expect(getMatchText(results.matches[0])).toEqual(["servum"]);
+    expect(getMatchText(results.matches[1])).toEqual(["servus"]);
   });
 
   it("should find instances of a grammatical case", () => {
@@ -142,12 +147,9 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query, undefined, 2);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
     expect(results.totalResults).toBe(4);
-    expect(results.matches).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ text: "servum" }),
-        expect.objectContaining({ text: "Gallum" }),
-      ])
-    );
+    expect(results.matches).toHaveLength(2);
+    expect(getMatchText(results.matches[0])).toEqual(["servum"]);
+    expect(getMatchText(results.matches[1])).toEqual(["Gallum"]);
   });
 
   it("should handle a multi-part query", () => {
@@ -160,8 +162,10 @@ describe("Corpus Integration Test", () => {
         section: "1",
         offset: 0,
       }),
-      text: "Gallus servum acclamat",
     });
+    expect(getMatchText(results.matches[0])).toEqual([
+      "Gallus servum acclamat",
+    ]);
   });
 
   it("should handle a composed 'and' query", () => {
@@ -174,8 +178,8 @@ describe("Corpus Integration Test", () => {
         section: "2",
         offset: 1,
       }),
-      text: "Gallum accognoscit",
     });
+    expect(getMatchText(results.matches[0])).toEqual(["Gallum accognoscit"]);
   });
 
   it("should handle a composed 'or' query", () => {
@@ -188,7 +192,6 @@ describe("Corpus Integration Test", () => {
         section: "1",
         offset: 0,
       }),
-      text: "Gallus servum",
     });
     expect(results.matches[1]).toMatchObject({
       metadata: expect.objectContaining({
@@ -196,8 +199,9 @@ describe("Corpus Integration Test", () => {
         section: "2",
         offset: 0,
       }),
-      text: "Gallus regem",
     });
+    expect(getMatchText(results.matches[0])).toEqual(["Gallus servum"]);
+    expect(getMatchText(results.matches[1])).toEqual(["Gallus regem"]);
   });
 
   it("should return no results for a query that crosses a hard break", () => {

@@ -9,10 +9,11 @@ import {
 } from "@/morceus/types";
 import {
   isArray,
+  isBoolean,
   isNumber,
+  isPair,
   isString,
   matchesObject,
-  maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
 export const CORPUS_DIR = "build/corpus";
@@ -77,17 +78,13 @@ const isCorpusQueryMatchMetadata = matchesObject<CorpusQueryMatchMetadata>({
 
 export interface CorpusQueryMatch {
   metadata: CorpusQueryMatchMetadata;
-  text: string;
-  leftContext?: string;
-  rightContext?: string;
+  text: [content: string, isMatchText: boolean][];
 }
 
 export namespace CorpusQueryMatch {
   export const isMatch = matchesObject<CorpusQueryMatch>({
     metadata: isCorpusQueryMatchMetadata,
-    text: isString,
-    leftContext: maybeUndefined(isString),
-    rightContext: maybeUndefined(isString),
+    text: isArray(isPair(isString, isBoolean)),
   });
 }
 
