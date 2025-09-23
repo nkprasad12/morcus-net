@@ -1,5 +1,5 @@
 use corpus::{
-    bitmask_utils::{Direction, smear_bitmask},
+    bitmask_utils::{Direction, apply_and_with_bitmasks, smear_bitmask},
     corpus_query_engine, corpus_serialization,
 };
 use criterion::{Criterion, criterion_group, criterion_main};
@@ -129,13 +129,30 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         });
         smear_benches.finish();
     }
+    {
+        let mut and_benches = c.benchmark_group("Bitmask Bitwise AND");
+        let fraction: u32 = 1024;
+        let size = POW_2_24 / fraction;
+        let sizes = vec![size; 2];
+        let data = create_random_data_arrays(POW_2_24, &sizes, 42);
+        and_benches.bench_function("and with negative offset", |b| {
+            b.iter(|| apply_and_with_bitmasks(&data[0].bitmask, &data[1].bitmask, -3))
+        });
+        and_benches.bench_function("and with no offset", |b| {
+            b.iter(|| apply_and_with_bitmasks(&data[0].bitmask, &data[1].bitmask, 0))
+        });
+        and_benches.bench_function("and with positive offset", |b| {
+            b.iter(|| apply_and_with_bitmasks(&data[0].bitmask, &data[1].bitmask, 3))
+        });
+        and_benches.finish();
+    }
 }
 
 criterion_group! {
     name = benches;
     config = Criterion::default()
-        .warm_up_time(std::time::Duration::from_millis(250))
-        .measurement_time(std::time::Duration::from_secs(2));
+        .warm_up_time(std::time::Duration::from_millis(1000))
+        .measurement_time(std::time::Duration::from_secs(5));
     targets = criterion_benchmark,
 }
 criterion_main!(benches);
