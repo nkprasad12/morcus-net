@@ -26,7 +26,6 @@ pub fn from_bitmask(bitmask: &[u64]) -> Vec<u32> {
 macro_rules! define_bitmask_or_with_self_offset_in_place {
     (
         $fn_name:ident,
-        $iter:expr,
         $first_idx_expr:expr,
         $main_shift:tt,
         $last_shift_op:tt
@@ -45,19 +44,28 @@ macro_rules! define_bitmask_or_with_self_offset_in_place {
             let mut last = data[first_idx];
             data[first_idx] |= data[first_idx] $main_shift offset;
 
-            for i in $iter(len) {
-                // Construct the mask, save the current word for the next iteration, and apply the mask.
-                let mask = (data[i] $main_shift offset) | (last $last_shift_op last_shift);
-                last = data[i];
-                data[i] |= mask;
+            // Construct the mask, save the current word for the next iteration, and apply the mask.
+            // The duplication is regrettable, but we want to use an iterator here so that the compiler
+            // can optimize range checks (at least, I think that's why it's faster).
+            if first_idx == 0 {
+                for item in data.iter_mut().skip(1) {
+                let mask = (*item $main_shift offset) | (last $last_shift_op last_shift);
+                last = *item;
+                *item |= mask;
+                }
+            } else {
+                for item in data.iter_mut().rev().skip(1) {
+                let mask = (*item $main_shift offset) | (last $last_shift_op last_shift);
+                last = *item;
+                *item |= mask;
             }
+        }
         }
     };
 }
 
 define_bitmask_or_with_self_offset_in_place!(
     bitmask_or_with_self_offset_in_place_right,
-    |len| 1..len,
     |_len| 0,
     >>,
     <<
@@ -65,7 +73,6 @@ define_bitmask_or_with_self_offset_in_place!(
 
 define_bitmask_or_with_self_offset_in_place!(
     bitmask_or_with_self_offset_in_place_left,
-    |len| (0..len - 1).rev(),
     |len| len - 1,
     <<,
     >>
