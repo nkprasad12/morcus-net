@@ -2,6 +2,57 @@ use std::cmp::{max, min};
 
 use crate::bitmask_utils::{self, Direction};
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct IndexRange {
+    // The start of the range, inclusive.
+    pub start: u32,
+    // The end of the range, exclusive.
+    pub end: u32,
+}
+
+impl IndexRange {
+    pub fn has_word_bounds(&self) -> bool {
+        self.start.is_multiple_of(64) && self.end.is_multiple_of(64)
+    }
+}
+
+#[derive(Debug, PartialEq)]
+pub struct IndexSlice<'a> {
+    pub data: IndexDataRoO<'a>,
+    pub range: &'a IndexRange,
+}
+
+impl IndexSlice<'_> {
+    pub fn from<'a>(
+        index: &IndexData<'a>,
+        range: &'a IndexRange,
+    ) -> Result<IndexSlice<'a>, String> {
+        if range.start >= range.end {
+            return Err("Range start must be less than range end".to_string());
+        }
+        if !range.has_word_bounds() {
+            return Err("Range must be aligned to 64-bit word boundaries".to_string());
+        }
+        let data = match index {
+            IndexData::BitMask(bitmask) => {
+                let start_word = (range.start / 64) as usize;
+                let end_word = min((range.end / 64) as usize, bitmask.len());
+                IndexDataRoO::Ref(IndexData::BitMask(&bitmask[start_word..end_word]))
+            }
+            IndexData::List(list) => {
+                // We use binary search instead of partition_point because we know these are unique.
+                let start_idx = list.binary_search(&range.start).unwrap_or_else(|x| x);
+                // +1 - 1 because: in the case where the number is not found in the index, we want that point
+                // to be the end of the range. If the number *is* found, then the end range is exclusive, so we
+                // want to exclude it (thus the -1).
+                let end_idx = list.binary_search(&range.end).unwrap_or_else(|x| x + 1) - 1;
+                IndexDataRoO::Ref(IndexData::List(&list[start_idx..end_idx]))
+            }
+        };
+        Ok(IndexSlice { data, range })
+    }
+}
+
 #[derive(Debug, PartialEq, Clone)]
 pub(super) enum IndexData<'a> {
     BitMask(&'a [u64]),
@@ -14,13 +65,14 @@ pub(super) enum IndexDataOwned {
     List(Vec<u32>),
 }
 
+#[derive(Debug, PartialEq)]
 pub(super) enum IndexDataRoO<'a> {
     Ref(IndexData<'a>),
     Owned(IndexDataOwned),
 }
 
 pub(super) struct IntermediateResult<'a> {
-    pub data: IndexDataRoO<'a>,
+    pub data: IndexSlice<'a>,
     pub position: u32,
 }
 
@@ -49,17 +101,23 @@ impl IndexDataRoO<'_> {
 }
 
 /// Computes the bitwise AND of a bitmask and an array of indices, with an offset.
-pub fn apply_and_with_bitmask_and_array(bitmask: &[u64], indices: &[u32], offset: i32) -> Vec<u32> {
+fn apply_and_with_bitmask_and_array(
+    bitmask: &[u64],
+    indices: &[u32],
+    offset: i32,
+    bitmask_start: u32,
+) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
-    let bitmask_len_bits = bitmask.len() * 64;
+    let bitmask_end = bitmask.len() * 64 + bitmask_start as usize;
 
     for &index in indices {
         let effective_index = index as i64 + offset as i64;
-        if effective_index < 0 || effective_index as usize >= bitmask_len_bits {
+        if effective_index < bitmask_start as i64 || effective_index as usize >= bitmask_end {
             continue;
         }
-        let word_index = (effective_index / 64) as usize;
-        let bit_index = 63 - (effective_index % 64);
+        let bitmask_index = effective_index as u32 - bitmask_start;
+        let word_index = (bitmask_index / 64) as usize;
+        let bit_index = 63 - (bitmask_index % 64);
         if (bitmask[word_index] & (1 << bit_index)) != 0 {
             results.push(effective_index as u32);
         }
@@ -67,33 +125,44 @@ pub fn apply_and_with_bitmask_and_array(bitmask: &[u64], indices: &[u32], offset
     results
 }
 
-/// Computes the bitwise AND of a bitmask and an array of indices, with an offset.
-pub fn apply_or_with_bitmask_and_array(bitmask: &[u64], indices: &[u32], offset: i32) -> Vec<u64> {
-    let mut result = bitmask.to_vec();
-    let mut bitmask_len_bits = result.len() * 64;
-
-    for &index in indices {
-        let effective_index = index as i64 + offset as i64;
-        if effective_index < 0 {
-            continue;
-        }
-        let effective_index_usize = effective_index as usize;
-
-        if effective_index_usize >= bitmask_len_bits {
-            let new_len_words = (effective_index_usize + 64) / 64;
-            result.resize(new_len_words, 0);
-            bitmask_len_bits = result.len() * 64;
-        }
-
-        let word_index = (effective_index / 64) as usize;
-        let bit_index = 63 - (effective_index % 64);
-        result[word_index] |= 1 << bit_index;
+/// Computes the bitwise AND of a bitmask and a vector of ids in list format, with an offset.
+fn apply_or_with_bitmask_and_array(
+    bitmask: &[u64],
+    list: &[u32],
+    offset: i32,
+    bitmask_start: u32,
+) -> Result<Vec<u64>, String> {
+    if list.is_empty() {
+        return Ok(bitmask.to_vec());
     }
-    result
+    let offset = offset as i64;
+    let bitmask_end = bitmask.len() * 64 + bitmask_start as usize;
+    if list[list.len() - 1] as i64 + offset >= bitmask_end as i64 {
+        return Err("Offset results in index out of bounds".to_string());
+    }
+    let mut i = 0;
+    while i < list.len() && (list[i] as i64 + offset) < bitmask_start as i64 {
+        i += 1;
+    }
+
+    let mut result = bitmask.to_vec();
+    while i < list.len() {
+        let offset_id = list[i] as i64 + offset;
+        // We know this is positive because of the while loop above.
+        let bitmask_id = (offset_id - bitmask_start as i64) as usize;
+        let word_index = bitmask_id / 64;
+        if word_index >= result.len() {
+            break;
+        }
+        let bit_index = 63 - (bitmask_id % 64);
+        result[word_index] |= 1 << bit_index;
+        i += 1;
+    }
+    Ok(result)
 }
 
 /// Returns the numbers that are present in both input arrays, applying an offset to the second array.
-pub fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
+fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
     let mut result: Vec<u32> = Vec::new();
     let mut i = 0;
     let mut j = 0;
@@ -130,7 +199,7 @@ pub fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<
 /// ## Returns
 ///
 /// A new sorted array containing the merged elements.
-pub fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
+fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
     let mut result: Vec<u32> = Vec::new();
     let mut i = 0;
     let mut j = 0;
@@ -166,101 +235,139 @@ pub fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u
 }
 
 /// Applies an `and` to determine the intersection between two indices.
-pub fn apply_and_to_indices(
-    first: &IndexData,
+pub fn apply_and_to_indices<'a, 'b>(
+    first: &IndexSlice<'a>,
     first_position: u32,
-    second: &IndexData,
+    second: &IndexSlice<'b>,
     second_position: u32,
-) -> Result<(IndexDataOwned, u32), String> {
+) -> Result<(IndexSlice<'a>, u32), String> {
+    // TODO: We actually can, and it's not that hard.
+    if first.range != second.range {
+        return Err("Cannot apply AND to indices with different ranges".to_string());
+    }
     let offset = first_position as i32 - second_position as i32;
 
-    match (first, second) {
+    let (index, position) = match (first.data.to_ref(), second.data.to_ref()) {
         (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
             let data = bitmask_utils::apply_and_with_bitmasks(bm1, bm2, offset as isize);
             let result = IndexDataOwned::BitMask(data);
-            Ok((result, first_position))
+            (result, first_position)
         }
         (IndexData::BitMask(bm), IndexData::List(arr)) => {
-            let overlaps = apply_and_with_bitmask_and_array(bm, arr, offset);
-            Ok((IndexDataOwned::List(overlaps), first_position))
+            let overlaps = apply_and_with_bitmask_and_array(bm, arr, offset, first.range.start);
+            (IndexDataOwned::List(overlaps), first_position)
         }
         (IndexData::List(arr), IndexData::BitMask(bm)) => {
-            let overlaps = apply_and_with_bitmask_and_array(bm, arr, -offset);
-            Ok((IndexDataOwned::List(overlaps), second_position))
+            let overlaps = apply_and_with_bitmask_and_array(bm, arr, -offset, second.range.start);
+            (IndexDataOwned::List(overlaps), second_position)
         }
         (IndexData::List(arr1), IndexData::List(arr2)) => {
             let overlaps = apply_and_with_arrays(arr1, arr2, offset);
-            Ok((IndexDataOwned::List(overlaps), first_position))
+            (IndexDataOwned::List(overlaps), first_position)
         }
-    }
+    };
+    Ok((
+        IndexSlice {
+            data: IndexDataRoO::Owned(index),
+            range: first.range,
+        },
+        position,
+    ))
 }
 
-pub fn apply_or_to_indices(
-    first: &IndexData,
+pub fn apply_or_to_indices<'a, 'b>(
+    first: &IndexSlice<'a>,
     first_position: u32,
-    second: &IndexData,
+    second: &IndexSlice<'b>,
     second_position: u32,
-) -> Result<(IndexDataOwned, u32), String> {
+) -> Result<(IndexSlice<'a>, u32), String> {
+    // TODO: We actually can, and it's not that hard.
+    if first.range != second.range {
+        return Err("Cannot apply AND to indices with different ranges".to_string());
+    }
     let offset = first_position as i32 - second_position as i32;
 
-    match (first, second) {
+    let (index, position) = match (first.data.to_ref(), second.data.to_ref()) {
         (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
             let data = bitmask_utils::apply_or_with_bitmasks(bm1, bm2, offset as isize);
             let result = IndexDataOwned::BitMask(data);
-            Ok((result, first_position))
+            (result, first_position)
         }
         (IndexData::BitMask(bm), IndexData::List(arr)) => {
-            let overlaps = apply_or_with_bitmask_and_array(bm, arr, offset);
-            Ok((IndexDataOwned::BitMask(overlaps), first_position))
+            let overlaps = apply_or_with_bitmask_and_array(bm, arr, offset, first.range.start)?;
+            (IndexDataOwned::BitMask(overlaps), first_position)
         }
         (IndexData::List(arr), IndexData::BitMask(bm)) => {
-            let overlaps = apply_or_with_bitmask_and_array(bm, arr, -offset);
-            Ok((IndexDataOwned::BitMask(overlaps), second_position))
+            let overlaps = apply_or_with_bitmask_and_array(bm, arr, -offset, second.range.start)?;
+            (IndexDataOwned::BitMask(overlaps), second_position)
         }
         (IndexData::List(arr1), IndexData::List(arr2)) => {
             let overlaps = apply_or_with_arrays(arr1, arr2, offset);
-            Ok((IndexDataOwned::List(overlaps), first_position))
+            (IndexDataOwned::List(overlaps), first_position)
         }
-    }
+    };
+    Ok((
+        IndexSlice {
+            data: IndexDataRoO::Owned(index),
+            range: first.range,
+        },
+        position,
+    ))
 }
 
 /// Returns the matches that are within a maximum fuzz distance applied.
 ///
 /// The results are always returned relative to the `first` index and its positioning.
-pub fn find_fuzzy_matches(
-    first: &IndexData,
+pub fn find_fuzzy_matches<'a>(
+    first: &IndexSlice<'a>,
     first_position: u32,
-    second: &IndexData,
+    second: &IndexSlice<'a>,
     second_position: u32,
     max_dist: usize,
     dir: Direction,
-) -> Result<IndexDataOwned, String> {
+) -> Result<IndexSlice<'a>, String> {
     if max_dist == 0 || max_dist >= 16 {
         return Err("max_distance must be between 1 and 15".to_string());
     }
     let offset = first_position as i32 - second_position as i32;
 
-    match (first, second) {
+    let index = match (first.data.to_ref(), second.data.to_ref()) {
         (IndexData::BitMask(bm1), IndexData::BitMask(bm2)) => {
             let result = find_fuzzy_matches_with_bitmasks(bm1, bm2, offset as isize, max_dist, dir);
-            Ok(IndexDataOwned::BitMask(result))
+            IndexDataOwned::BitMask(result)
         }
         (IndexData::BitMask(bm), IndexData::List(arr)) => {
-            let overlaps =
-                find_fuzzy_matches_with_bitmask_and_array(bm, arr, offset, max_dist, dir);
-            Ok(IndexDataOwned::BitMask(overlaps))
+            let overlaps = find_fuzzy_matches_with_bitmask_and_array(
+                bm,
+                arr,
+                offset,
+                max_dist,
+                dir,
+                first.range.start,
+            );
+            IndexDataOwned::BitMask(overlaps)
         }
         (IndexData::List(arr), IndexData::BitMask(bm)) => {
             // Negative because the offset is applied to the array.
-            let overlaps =
-                find_fuzzy_matches_with_array_and_bitmask(arr, bm, -offset, max_dist, dir);
-            Ok(IndexDataOwned::List(overlaps))
+            let overlaps = find_fuzzy_matches_with_array_and_bitmask(
+                arr,
+                bm,
+                -offset,
+                max_dist,
+                dir,
+                first.range.start,
+            );
+            IndexDataOwned::List(overlaps)
         }
         (IndexData::List(arr1), IndexData::List(arr2)) => {
             let overlaps = find_fuzzy_matches_with_arrays(arr1, arr2, offset, max_dist, dir);
-            Ok(IndexDataOwned::List(overlaps))
+            IndexDataOwned::List(overlaps)
         }
-    }
+    };
+    Ok(IndexSlice {
+        data: IndexDataRoO::Owned(index),
+        range: first.range,
+    })
 }
 
 /// Returns the numbers that are present in both input arrays, applying an offset to the second array.
@@ -383,16 +490,17 @@ fn find_fuzzy_matches_with_array_and_bitmask(
     offset: i32,
     max_distance: usize,
     direction: Direction,
+    bitmask_start: u32,
 ) -> Vec<u32> {
     let mut results: Vec<u32> = Vec::new();
-    let bitmask_len_bits = bitmask.len() * 64;
+    let bitmask_end_bit = bitmask.len() * 64 + bitmask_start as usize;
 
     // Smear the bitmask according to the max_distance and direction
     let smeared_bitmask = bitmask_utils::smear_bitmask(bitmask, max_distance, direction);
 
     for &index in array {
-        let effective_index = index as i64 + offset as i64;
-        if effective_index < 0 || effective_index as usize >= bitmask_len_bits {
+        let effective_index = index as i64 + offset as i64 - bitmask_start as i64;
+        if effective_index < 0 || effective_index as usize >= bitmask_end_bit {
             continue;
         }
 
@@ -427,6 +535,7 @@ fn find_fuzzy_matches_with_bitmask_and_array(
     offset: i32,
     max_distance: usize,
     direction: Direction,
+    bitmask_start: u32,
 ) -> Vec<u64> {
     let mut result: Vec<u64> = vec![0; bitmask.len()];
 
@@ -436,7 +545,7 @@ fn find_fuzzy_matches_with_bitmask_and_array(
     let left_mod = if extend_left { max_distance } else { 0 };
     let right_mod = if extend_right { max_distance } else { 0 };
     for index in array {
-        let effective_index = *index as i64 + offset as i64;
+        let effective_index = *index as i64 + offset as i64 - bitmask_start as i64;
         let start = effective_index - left_mod as i64;
         let end = effective_index + right_mod as i64;
         if end < 0 || start as usize > final_bit {
@@ -444,6 +553,7 @@ fn find_fuzzy_matches_with_bitmask_and_array(
         }
         let start = max(0, start) as usize;
         let end = min(end, final_bit as i64) as usize;
+        // TODO: Optimize this to copy a whole range using bitwise operations.
         // We want to copy the bits from start to end (inclusive) from bitmask to result.
         for bit in start..=end {
             let word_index = bit / 64;
@@ -775,7 +885,7 @@ mod tests {
     fn apply_and_with_bitmask_and_array_no_offset() {
         let bitmask = to_bitmask(&[1, 3, 4], 64);
         let indices = vec![0, 1, 2, 4, 6];
-        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0);
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0, 0);
         assert_eq!(result, vec![1, 4]);
     }
 
@@ -783,7 +893,7 @@ mod tests {
     fn apply_and_with_bitmask_and_array_positive_offset() {
         let bitmask = to_bitmask(&[1, 3, 4, 6], 64);
         let indices = vec![0, 2, 3, 6];
-        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 1);
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 1, 0);
         assert_eq!(result, vec![1, 3, 4]);
     }
 
@@ -791,7 +901,7 @@ mod tests {
     fn apply_and_with_bitmask_and_array_word_boundaries() {
         let bitmask = to_bitmask(&[63, 64, 127], 128);
         let indices = vec![60, 61, 62, 63, 64, 65];
-        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0);
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0, 0);
         assert_eq!(result, vec![63, 64]);
     }
 
@@ -799,124 +909,186 @@ mod tests {
     fn apply_or_with_bitmask_and_array_no_offset() {
         let bitmask = to_bitmask(&[1, 3, 4], 64);
         let indices = vec![0, 2, 4];
-        let result = apply_or_with_bitmask_and_array(&bitmask, &indices, 0);
+        let result = apply_or_with_bitmask_and_array(&bitmask, &indices, 0, 0);
         let expected = to_bitmask(&[0, 1, 2, 3, 4], 64);
-        assert_eq!(result, expected);
+        assert_eq!(result, Ok(expected));
+    }
+
+    #[test]
+    fn apply_and_with_bitmask_and_array_bitmask_start_nonzero() {
+        // bitmask relative positions [1,6] with bitmask_start=64 represent absolute [65,70]
+        let bitmask = to_bitmask(&[1, 6], 128);
+        let indices = vec![60, 65, 70, 72];
+        let result = apply_and_with_bitmask_and_array(&bitmask, &indices, 0, 64);
+        assert_eq!(result, vec![65, 70]);
     }
 
     #[test]
     fn apply_or_with_bitmask_and_array_positive_offset() {
         let bitmask = to_bitmask(&[1, 3, 4], 64);
         let indices = vec![0, 2, 5];
-        let result = apply_or_with_bitmask_and_array(&bitmask, &indices, 1);
+        let result = apply_or_with_bitmask_and_array(&bitmask, &indices, 1, 0);
         let expected = to_bitmask(&[1, 3, 4, 6], 64);
-        assert_eq!(result, expected);
+        assert_eq!(result, Ok(expected));
     }
 
     #[test]
     fn apply_or_with_bitmask_and_array_resize() {
         let bitmask = to_bitmask(&[10], 64);
         let indices = vec![70];
-        let result = apply_or_with_bitmask_and_array(&bitmask, &indices, 0);
-        let expected = to_bitmask(&[10, 70], 128);
-        assert_eq!(result, expected);
+        let result = apply_or_with_bitmask_and_array(&bitmask, &indices, 0, 0);
+
+        assert!(result.is_err());
+    }
+
+    const DEFAULT_RANGE: IndexRange = IndexRange { start: 0, end: 192 };
+    fn to_slice<'a>(index: IndexData<'a>) -> IndexSlice<'a> {
+        IndexSlice {
+            data: IndexDataRoO::Ref(index),
+            range: &DEFAULT_RANGE,
+        }
+    }
+
+    fn to_slice_bitmask(indices: &[u32], bound: u32) -> IndexSlice<'_> {
+        let bitmask = to_bitmask(indices, bound);
+        IndexSlice {
+            data: IndexDataRoO::Owned(IndexDataOwned::BitMask(bitmask)),
+            range: &DEFAULT_RANGE,
+        }
+    }
+
+    fn to_slice_list(indices: &[u32]) -> IndexSlice<'_> {
+        IndexSlice {
+            data: IndexDataRoO::Owned(IndexDataOwned::List(indices.to_vec())),
+            range: &DEFAULT_RANGE,
+        }
     }
 
     #[test]
     fn apply_or_to_indices_array_array() {
-        let candidates = IndexData::List(&[3, 6, 9]);
-        let filter_data = IndexData::List(&[2, 4, 8]);
+        let candidates = to_slice(IndexData::List(&[3, 6, 9]));
+        let filter_data = to_slice(IndexData::List(&[2, 4, 8]));
+
         let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 1).unwrap();
+
         // candidates: [3,6,9], filter: [3,5,9] -> union [3,5,6,9]
-        assert_eq!(result, IndexDataOwned::List(vec![3, 5, 6, 9]));
+        assert_eq!(result, to_slice_list(&[3, 5, 6, 9]));
         assert_eq!(position, 2);
     }
 
     #[test]
     fn apply_or_to_indices_bitmask_array() {
-        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::List(&[0, 2, 3]);
+        let candidates = to_slice_bitmask(&[1, 3, 4], 64);
+        let filter_data = to_slice(IndexData::List(&[0, 2, 3]));
+
         let (result, position) = apply_or_to_indices(&candidates, 1, &filter_data, 0).unwrap();
+
         // bitmask: [1,3,4], array with offset: [1,3,4] -> union [1,3,4]
-        let expected_data = to_bitmask(&[1, 3, 4], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+        assert_eq!(result, to_slice_bitmask(&[1, 3, 4], 64));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_or_to_indices_array_bitmask() {
-        let candidates = IndexData::List(&[1, 2, 5]);
-        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let candidates = to_slice(IndexData::List(&[1, 2, 5]));
+        let filter_data = to_slice_bitmask(&[1, 3, 4], 64);
+
         let (result, position) = apply_or_to_indices(&candidates, 0, &filter_data, 1).unwrap();
-        let expected_data = to_bitmask(&[1, 2, 3, 4, 6], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+
+        assert_eq!(result, to_slice_bitmask(&[1, 2, 3, 4, 6], 64));
         assert_eq!(position, 1);
     }
 
     #[test]
+    fn apply_or_with_bitmask_and_array_bitmask_start_nonzero() {
+        // indices [64,66,69] with offset 1 become [65,67,70] -> bitmask relative [1, 3, 6]
+        let bitmask = to_bitmask(&[1, 3, 4], 128);
+        let indices = vec![64, 66, 69];
+        let result = apply_or_with_bitmask_and_array(&bitmask, &indices, 1, 64).unwrap();
+
+        assert_eq!(from_bitmask(&result), &[1, 3, 4, 6]);
+    }
+
+    #[test]
     fn apply_or_to_indices_bitmask_bitmask() {
-        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
+        let candidates = to_slice_bitmask(&[1, 3, 4], 64);
+        let filter_data = to_slice_bitmask(&[0, 2, 4], 64);
+
         let (result, position) = apply_or_to_indices(&candidates, 3, &filter_data, 2).unwrap();
-        let expected_data = to_bitmask(&[1, 3, 4, 5], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+
+        assert_eq!(result, to_slice_bitmask(&[1, 3, 4, 5], 64));
         assert_eq!(position, 3);
     }
 
     #[test]
     fn apply_or_to_indices_negative_offset() {
-        let candidates = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
-        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
+        let candidates = to_slice_bitmask(&[0, 2, 4], 64);
+        let filter_data = to_slice_bitmask(&[1, 3, 4], 64);
+
         let (result, position) = apply_or_to_indices(&candidates, 2, &filter_data, 3).unwrap();
-        let expected_data = to_bitmask(&[0, 2, 3, 4], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+
+        assert_eq!(result, to_slice_bitmask(&[0, 2, 3, 4], 64));
         assert_eq!(position, 2);
     }
 
     #[test]
     fn apply_and_to_indices_array_array() {
-        let candidates = IndexData::List(&[3, 6, 9]);
-        let filter_data = IndexData::List(&[2, 4, 8]);
-        let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 1).unwrap();
-        assert_eq!(result, IndexDataOwned::List(vec![3, 9]));
+        let first = to_slice(IndexData::List(&[3, 6, 9]));
+        let second = to_slice(IndexData::List(&[2, 4, 8]));
+
+        let (result, position) = apply_and_to_indices(&first, 2, &second, 1).unwrap();
+
+        assert_eq!(result, to_slice_list(&[3, 9]));
         assert_eq!(position, 2);
     }
 
     #[test]
     fn apply_and_to_indices_bitmask_array() {
-        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::List(&[0, 2, 3]);
-        let (result, position) = apply_and_to_indices(&candidates, 1, &filter_data, 0).unwrap();
-        assert_eq!(result, IndexDataOwned::List(vec![1, 3, 4]));
+        let bitmask = to_bitmask(&[1, 3, 4], 64);
+        let first = to_slice(IndexData::BitMask(&bitmask));
+        let second = to_slice(IndexData::List(&[0, 2, 3]));
+
+        let (result, position) = apply_and_to_indices(&first, 1, &second, 0).unwrap();
+
+        assert_eq!(result, to_slice_list(&[1, 3, 4]));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_and_to_indices_array_bitmask() {
-        let candidates = IndexData::List(&[0, 2, 3]);
-        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
-        let (result, position) = apply_and_to_indices(&candidates, 0, &filter_data, 1).unwrap();
-        assert_eq!(result, IndexDataOwned::List(vec![1, 3, 4]));
+        let first: IndexSlice<'_> = to_slice(IndexData::List(&[0, 2, 3]));
+        let bitmask = to_bitmask(&[1, 3, 4], 64);
+        let second = to_slice(IndexData::BitMask(&bitmask));
+
+        let (result, position) = apply_and_to_indices(&first, 0, &second, 1).unwrap();
+
+        assert_eq!(result, to_slice_list(&[1, 3, 4]));
         assert_eq!(position, 1);
     }
 
     #[test]
     fn apply_and_to_indices_bitmask_bitmask() {
-        let candidates = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
-        let filter_data = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
-        let (result, position) = apply_and_to_indices(&candidates, 3, &filter_data, 2).unwrap();
-        let expected_data = to_bitmask(&[1, 3], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+        let bitmask1 = to_bitmask(&[1, 3, 4], 64);
+        let bitmask2 = to_bitmask(&[0, 2, 4], 64);
+        let first = to_slice(IndexData::BitMask(&bitmask1));
+        let second = to_slice(IndexData::BitMask(&bitmask2));
+
+        let (result, position) = apply_and_to_indices(&first, 3, &second, 2).unwrap();
+
+        assert_eq!(result, to_slice_bitmask(&[1, 3], 64));
         assert_eq!(position, 3);
     }
 
     #[test]
     fn apply_and_to_indices_bitmask_bitmask_negative_offset() {
-        let candidates = IndexData::BitMask(&to_bitmask(&[0, 2, 4], 64));
-        let filter_data = IndexData::BitMask(&to_bitmask(&[1, 3, 4], 64));
-        let (result, position) = apply_and_to_indices(&candidates, 2, &filter_data, 3).unwrap();
-        let expected_data = to_bitmask(&[0, 2], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_data));
+        let bitmask1 = to_bitmask(&[1, 3, 4], 64);
+        let bitmask2 = to_bitmask(&[0, 2, 4], 64);
+        let first = to_slice(IndexData::BitMask(&bitmask1));
+        let second = to_slice(IndexData::BitMask(&bitmask2));
+
+        let (result, position) = apply_and_to_indices(&second, 2, &first, 3).unwrap();
+
+        assert_eq!(result, to_slice_bitmask(&[0, 2], 64));
         assert_eq!(position, 2);
     }
 
@@ -1006,6 +1178,7 @@ mod tests {
             offset,
             max_distance,
             direction,
+            0,
         );
         let bitmask_array_result = find_fuzzy_matches_with_bitmask_and_array(
             &first_bitmask,
@@ -1013,6 +1186,7 @@ mod tests {
             -offset,
             max_distance,
             direction,
+            0,
         );
         assert_eq!(
             array_bitmask_result, expected,
@@ -1107,79 +1281,111 @@ mod tests {
 
     #[test]
     fn find_fuzzy_matches_list_list() {
-        let first = IndexData::List(&[10, 20, 30]);
-        let second = IndexData::List(&[12, 28]);
+        let first = to_slice(IndexData::List(&[10, 20, 30]));
+        let second = to_slice(IndexData::List(&[12, 28]));
         let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
-        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+        assert_eq!(result, to_slice_list(&[10, 30]));
     }
 
     #[test]
     fn find_fuzzy_matches_bitmask_bitmask() {
         let first_bm = to_bitmask(&[10, 20, 30], 64);
         let second_bm = to_bitmask(&[12, 28], 64);
-        let first = IndexData::BitMask(&first_bm);
-        let second = IndexData::BitMask(&second_bm);
+        let first = to_slice(IndexData::BitMask(&first_bm));
+        let second = to_slice(IndexData::BitMask(&second_bm));
+
         let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
-        let expected_bm = to_bitmask(&[10, 30], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+
+        assert_eq!(result, to_slice_bitmask(&[10, 30], 64));
     }
 
     #[test]
     fn find_fuzzy_matches_bitmask_list() {
         let first_bm = to_bitmask(&[10, 20, 30], 64);
-        let first = IndexData::BitMask(&first_bm);
-        let second = IndexData::List(&[12, 28]);
+        let first = to_slice(IndexData::BitMask(&first_bm));
+        let second = to_slice(IndexData::List(&[12, 28]));
+
         let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
-        let expected_bm = to_bitmask(&[10, 30], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+
+        assert_eq!(result, to_slice_bitmask(&[10, 30], 64));
     }
 
     #[test]
     fn find_fuzzy_matches_list_bitmask() {
-        let first = IndexData::List(&[10, 20, 30]);
+        let first = to_slice(IndexData::List(&[10, 20, 30]));
         let second_bm = to_bitmask(&[12, 28], 64);
-        let second = IndexData::BitMask(&second_bm);
+        let second = to_slice(IndexData::BitMask(&second_bm));
+
         let result = find_fuzzy_matches(&first, 0, &second, 0, 2, Both).unwrap();
-        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+
+        assert_eq!(result, to_slice_list(&[10, 30]));
     }
 
     #[test]
     fn find_fuzzy_matches_list_list_with_offset() {
-        let first = IndexData::List(&[10, 20, 30]);
-        let second = IndexData::List(&[10, 26]);
+        let first = to_slice(IndexData::List(&[10, 20, 30]));
+        let second = to_slice(IndexData::List(&[10, 26]));
+
         let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
-        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+
+        assert_eq!(result, to_slice_list(&[10, 30]));
     }
 
     #[test]
     fn find_fuzzy_matches_bitmask_bitmask_with_offset() {
         let first_bm = to_bitmask(&[10, 20, 30], 64);
         let second_bm = to_bitmask(&[10, 26], 64);
-        let first = IndexData::BitMask(&first_bm);
-        let second = IndexData::BitMask(&second_bm);
+        let first = to_slice(IndexData::BitMask(&first_bm));
+        let second = to_slice(IndexData::BitMask(&second_bm));
+
         let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
-        let expected_bm = to_bitmask(&[10, 30], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+
+        assert_eq!(result, to_slice_bitmask(&[10, 30], 64));
     }
 
     #[test]
     fn find_fuzzy_matches_bitmask_list_with_offset() {
         let first_bm = to_bitmask(&[10, 20, 30], 64);
-        let first = IndexData::BitMask(&first_bm);
-        let second = IndexData::List(&[10, 26]);
-        // offset = 2. second list becomes [12, 28].
+        let first = to_slice(IndexData::BitMask(&first_bm));
+        let second = to_slice(IndexData::List(&[10, 26]));
+
         let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
-        let expected_bm = to_bitmask(&[10, 30], 64);
-        assert_eq!(result, IndexDataOwned::BitMask(expected_bm));
+
+        // offset = 2. second list becomes [12, 28].
+        assert_eq!(result, to_slice_bitmask(&[10, 30], 64));
     }
 
     #[test]
     fn find_fuzzy_matches_list_bitmask_with_offset() {
-        let first = IndexData::List(&[10, 20, 30]);
+        let first = to_slice(IndexData::List(&[10, 20, 30]));
         let second_bm = to_bitmask(&[10, 26], 64);
-        let second = IndexData::BitMask(&second_bm);
-        // offset = 2. second bitmask is shifted by 2.
+        let second = to_slice(IndexData::BitMask(&second_bm));
+
         let result = find_fuzzy_matches(&first, 5, &second, 3, 2, Both).unwrap();
-        assert_eq!(result, IndexDataOwned::List(vec![10, 30]));
+
+        // offset = 2. second bitmask is shifted by 2.
+        assert_eq!(result, to_slice_list(&[10, 30]));
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_array_and_bitmask_bitmask_start_nonzero() {
+        // bitmask relative [1,6] with start 64 => absolute [65,70]
+        // first array contains absolute positions; radius 1 should match 65 and 70
+        let first = &[65, 70, 80];
+        let second_bitmask = to_bitmask(&[1, 6], 128);
+        let result =
+            find_fuzzy_matches_with_array_and_bitmask(first, &second_bitmask, 0, 1, Both, 64);
+        assert_eq!(result, vec![65, 70]);
+    }
+
+    #[test]
+    fn find_fuzzy_matches_with_bitmask_and_array_bitmask_start_nonzero() {
+        // bitmask relative [1,6] with start 64 => absolute [65,70]
+        // array contains absolute positions; radius 1 should produce a bitmask with the relative bits set
+        let bitmask = to_bitmask(&[1, 6], 128);
+        let array = vec![65u32, 70u32];
+        let result = find_fuzzy_matches_with_bitmask_and_array(&bitmask, &array, 0, 1, Both, 64);
+        let expected = to_bitmask(&[1, 6], 128);
+        assert_eq!(result, expected);
     }
 }

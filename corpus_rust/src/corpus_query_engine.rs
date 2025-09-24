@@ -7,7 +7,9 @@ mod errors;
 mod index_data;
 
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
-use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IntermediateResult};
+use crate::corpus_query_engine::index_data::{
+    IndexData, IndexDataRoO, IndexRange, IntermediateResult,
+};
 use crate::query_parsing_v2::parse_query;
 
 use super::corpus_serialization::LatinCorpusIndex;
@@ -109,7 +111,12 @@ impl CorpusQueryEngine {
         profiler.phase("Parse query");
 
         // Find the possible matches, then filter them
-        let candidates = match self.compute_query_candidates(&query_spans, &mut profiler)? {
+        let num_words = self.corpus.num_tokens.div_ceil(64);
+        let range = IndexRange {
+            start: 0,
+            end: num_words * 64,
+        };
+        let candidates = match self.compute_query_candidates(&query_spans, &range, &mut profiler)? {
             Some(res) => res,
             None => return Ok(empty_result()),
         };

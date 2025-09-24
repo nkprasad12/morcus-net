@@ -3,7 +3,9 @@ use crate::{
     corpus_query_engine::{
         CorpusQueryEngine, IndexData, IndexDataRoO, IntermediateResult, QueryExecError,
         corpus_query_conversion::InternalQueryTerm,
-        index_data::{apply_and_to_indices, apply_or_to_indices, find_fuzzy_matches},
+        index_data::{
+            IndexRange, IndexSlice, apply_and_to_indices, apply_or_to_indices, find_fuzzy_matches,
+        },
     },
     corpus_serialization::StoredMapValue,
     profiler::TimeProfiler,
@@ -39,11 +41,12 @@ pub(super) fn split_into_spans<'a>(
 
 // Basic methods for calculating indices corresponding to query terms.
 impl CorpusQueryEngine {
-    fn compute_index_for_composed(
-        &'_ self,
-        children: &[TokenConstraint],
-        op: &TokenConstraintOperation,
-    ) -> Result<Option<IndexDataRoO<'_>>, QueryExecError> {
+    fn compute_index_for_composed<'a>(
+        &'a self,
+        children: &'a [TokenConstraint],
+        op: &'a TokenConstraintOperation,
+        range: &'a IndexRange,
+    ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
         // Sort the children by their upper size bounds. For `and` operations, we want the
         // smallest upper bound first so the most constrained children are considered first.
         // For `or` operations, we want the largest upper bound first so that we hopefully
@@ -60,38 +63,34 @@ impl CorpusQueryEngine {
         let first = internal_children
             .first()
             .ok_or(QueryExecError::new("Empty composed query"))?;
-        let mut data = match self.compute_index_for(first.inner)? {
+        let mut data = match self.compute_index_for(first.inner, range)? {
             Some(data) => data,
             None => return Ok(None),
         };
 
         for child in internal_children.iter().skip(1) {
-            let child_data = match self.compute_index_for(child.inner)? {
+            let child_data = match self.compute_index_for(child.inner, range)? {
                 Some(data) => data,
                 None => return Ok(None),
             };
-            let combined = match op {
-                TokenConstraintOperation::And => {
-                    apply_and_to_indices(&data.to_ref(), 0, &child_data.to_ref(), 0)
-                }
-                TokenConstraintOperation::Or => {
-                    apply_or_to_indices(&data.to_ref(), 0, &child_data.to_ref(), 0)
-                }
-            };
-            data = IndexDataRoO::Owned(combined?.0);
+            (data, _) = match op {
+                TokenConstraintOperation::And => apply_and_to_indices(&data, 0, &child_data, 0),
+                TokenConstraintOperation::Or => apply_or_to_indices(&data, 0, &child_data, 0),
+            }?;
         }
         Ok(Some(data))
     }
 
     /// Computes the candidate index for a particular token constraint.
-    fn compute_index_for(
-        &'_ self,
-        constraint: &TokenConstraint,
-    ) -> Result<Option<IndexDataRoO<'_>>, QueryExecError> {
+    fn compute_index_for<'a>(
+        &'a self,
+        constraint: &'a TokenConstraint,
+        range: &'a IndexRange,
+    ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
         match constraint {
-            TokenConstraint::Atom(atom) => Ok(self.index_for_atom(atom)),
+            TokenConstraint::Atom(atom) => Ok(self.index_for_atom(atom, range)),
             TokenConstraint::Composed { children, op } => {
-                self.compute_index_for_composed(children, op)
+                self.compute_index_for_composed(children, op, range)
             }
             TokenConstraint::Negated(_) => {
                 Err(QueryExecError::new("Negated constraints are not supported"))
@@ -99,12 +98,13 @@ impl CorpusQueryEngine {
         }
     }
 
-    pub(super) fn compute_query_candidates(
-        &'_ self,
-        query_spans: &[&[InternalQueryTerm]],
+    pub(super) fn compute_query_candidates<'a>(
+        &'a self,
+        query_spans: &'a [&[InternalQueryTerm]],
+        range: &'a IndexRange,
         profiler: &mut TimeProfiler,
-    ) -> Result<Option<IntermediateResult<'_>>, QueryExecError> {
-        let mut spans = match self.candidates_for_spans(query_spans, profiler)? {
+    ) -> Result<Option<IntermediateResult<'a>>, QueryExecError> {
+        let mut spans = match self.candidates_for_spans(query_spans, range, profiler)? {
             Some(res) => res,
             None => return Ok(None),
         };
@@ -136,16 +136,16 @@ impl CorpusQueryEngine {
                 Direction::Both
             };
             let combined = find_fuzzy_matches(
-                &current.candidates.data.to_ref(),
+                &current.candidates.data,
                 current.candidates.position,
-                &previous.candidates.data.to_ref(),
+                &previous.candidates.data,
                 previous.candidates.position - previous.length as u32,
                 distance as usize,
                 dir,
             )?;
             previous = SpanResult {
                 candidates: IntermediateResult {
-                    data: IndexDataRoO::Owned(combined),
+                    data: combined,
                     position: current.candidates.position,
                 },
                 ..current
@@ -155,14 +155,15 @@ impl CorpusQueryEngine {
     }
 
     /// Computes candidates for each span.
-    fn candidates_for_spans(
-        &'_ self,
-        spans: &[&[InternalQueryTerm]],
+    fn candidates_for_spans<'a>(
+        &'a self,
+        spans: &'a [&[InternalQueryTerm]],
+        range: &'a IndexRange,
         profiler: &mut TimeProfiler,
-    ) -> Result<Option<Vec<SpanResult<'_>>>, QueryExecError> {
+    ) -> Result<Option<Vec<SpanResult<'a>>>, QueryExecError> {
         let mut span_results = Vec::new();
         for span in spans {
-            let candidates = match self.candidates_for_single_span(span, profiler)? {
+            let candidates = match self.candidates_for_single_span(span, range, profiler)? {
                 Some(res) => res,
                 None => return Ok(None),
             };
@@ -175,25 +176,20 @@ impl CorpusQueryEngine {
         Ok(Some(span_results))
     }
 
-    fn candidates_for_single_span(
-        &'_ self,
-        query: &[InternalQueryTerm],
+    fn candidates_for_single_span<'a>(
+        &'a self,
+        query: &'a [InternalQueryTerm],
+        range: &'a IndexRange,
         profiler: &mut TimeProfiler,
-    ) -> Result<Option<IntermediateResult<'_>>, QueryExecError> {
+    ) -> Result<Option<IntermediateResult<'a>>, QueryExecError> {
         let mut indexed_terms: Vec<(usize, &InternalQueryTerm)> =
             query.iter().enumerate().collect();
         indexed_terms.sort_by_key(|(_, term)| term.constraint.size_bounds.upper);
-        let prt = query
-            .iter()
-            .map(|t| t.to_string())
-            .collect::<Vec<_>>()
-            .join("");
-        eprintln!("{}", prt);
 
         let (first_original_index, first_term) = indexed_terms
             .first()
             .ok_or(QueryExecError::new("Empty query"))?;
-        let mut data = match self.compute_index_for(first_term.constraint.inner)? {
+        let mut data = match self.compute_index_for(first_term.constraint.inner, range)? {
             Some(data) => data,
             _ => return Ok(None),
         };
@@ -201,18 +197,12 @@ impl CorpusQueryEngine {
         let mut position = *first_original_index as u32;
 
         for (original_index, term) in indexed_terms.iter().skip(1) {
-            let term_data = match self.compute_index_for(term.constraint.inner)? {
+            let term_data = match self.compute_index_for(term.constraint.inner, range)? {
                 Some(data) => data,
                 _ => return Ok(None),
             };
-            let result = apply_and_to_indices(
-                &data.to_ref(),
-                position,
-                &term_data.to_ref(),
-                *original_index as u32,
-            )?;
-            data = IndexDataRoO::Owned(result.0);
-            position = result.1;
+            (data, position) =
+                apply_and_to_indices(&data, position, &term_data, *original_index as u32)?;
             profiler.phase(format!("Filter from {original_index}").as_str());
         }
         if query.len() > 1 {
@@ -221,22 +211,25 @@ impl CorpusQueryEngine {
                 query.len(),
                 profiler,
             )?;
-            data = result.data;
-            position = result.position;
             profiler.phase("Filter breaks");
+            return Ok(Some(result));
         }
         Ok(Some(IntermediateResult { data, position }))
     }
 
     /// Returns the hard breaks, verifying that it is a bitmask.
-    pub(super) fn get_hard_breaks(&self) -> Result<&[u64], QueryExecError> {
+    pub(super) fn get_hard_breaks<'a>(
+        &'a self,
+        range: &'a IndexRange,
+    ) -> Result<&'a [u64], QueryExecError> {
         let index = self
-            .get_index("breaks", "hard")
+            .get_index("breaks", "hard", range)
             .ok_or(QueryExecError::new("No hard breaks index found"))?;
-        match index {
+        let bitmask = match index.data {
             IndexDataRoO::Ref(IndexData::BitMask(bm)) => Ok(bm),
             _ => Err(QueryExecError::new("Hard breaks index is not a bitmask")),
-        }
+        }?;
+        Ok(bitmask)
     }
 
     pub(super) fn get_metadata_for(&self, part: &TokenConstraintAtom) -> Option<&StoredMapValue> {
@@ -249,23 +242,37 @@ impl CorpusQueryEngine {
         }
     }
 
-    fn index_for_atom(&'_ self, part: &TokenConstraintAtom) -> Option<IndexDataRoO<'_>> {
-        self.index_for_metadata(self.get_metadata_for(part)?)
+    fn index_for_atom<'a>(
+        &'a self,
+        part: &'a TokenConstraintAtom,
+        range: &'a IndexRange,
+    ) -> Option<IndexSlice<'a>> {
+        self.index_for_metadata(self.get_metadata_for(part)?, range)
     }
 
-    fn index_for_metadata(&'_ self, metadata: &StoredMapValue) -> Option<IndexDataRoO<'_>> {
-        self.raw_buffers
+    fn index_for_metadata<'a>(
+        &'a self,
+        metadata: &'a StoredMapValue,
+        range: &'a IndexRange,
+    ) -> Option<IndexSlice<'a>> {
+        let full = self
+            .raw_buffers
             .resolve_index(metadata, self.corpus.num_tokens)
-            .ok()
-            .map(IndexDataRoO::Ref)
+            .ok()?;
+        IndexSlice::from(&full, range).ok()
     }
 
     fn get_metadata(&self, key: &str, value: &str) -> Option<&StoredMapValue> {
         self.corpus.indices.get(key)?.get(value)
     }
 
-    fn get_index(&'_ self, key: &str, value: &str) -> Option<IndexDataRoO<'_>> {
-        self.index_for_metadata(self.get_metadata(key, value)?)
+    fn get_index<'a>(
+        &'a self,
+        key: &'a str,
+        value: &'a str,
+        range: &'a IndexRange,
+    ) -> Option<IndexSlice<'a>> {
+        self.index_for_metadata(self.get_metadata(key, value)?, range)
     }
 }
 
