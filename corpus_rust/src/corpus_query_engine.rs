@@ -5,6 +5,7 @@ mod corpus_query_conversion;
 mod corpus_result_resolution;
 mod errors;
 mod index_data;
+mod reference_impl;
 
 use crate::api::{CorpusQueryResult, QueryExecError};
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
@@ -102,5 +103,59 @@ impl CorpusQueryEngine {
             page_start,
             timing: profiler.get_stats().to_vec(),
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::env::set_current_dir;
+
+    use crate::corpus_index::deserialize_corpus;
+
+    use super::*;
+
+    const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
+
+    const TEST_QUERIES: &[(&str, usize, Option<usize>, Option<usize>)] =
+        &[("@lemma:do", 0, Some(1), Some(1))];
+
+    #[test]
+    fn validate_queries() {
+        // Note: for now we are OK silently passing the test if the corpus
+        // fails to load, because the CI doesn't handle building the index yet.
+        set_current_dir("..").unwrap();
+        let index = match deserialize_corpus(CORPUS_ROOT) {
+            Ok(index) => index,
+            Err(e) => {
+                eprintln!("Failed to load corpus: {}", e);
+                return;
+            }
+        };
+        let engine = match CorpusQueryEngine::new(index) {
+            Ok(e) => e,
+            Err(e) => {
+                eprintln!("Failed to create query engine: {}", e);
+                return;
+            }
+        };
+
+        for (query, page_start, page_size, context_len) in TEST_QUERIES {
+            let result_prod = engine
+                .query_corpus(query, *page_start, *page_size, *context_len)
+                .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
+            let result_ref = engine
+                .query_corpus_ref_impl(query, *page_start, *page_size, *context_len)
+                .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
+
+            assert_eq!(
+                result_prod.page_start, result_ref.page_start,
+                "Different `page_start`s for query {query}"
+            );
+            assert_eq!(
+                result_prod.total_results, result_ref.total_results,
+                "Different `total_result`s for {query}"
+            );
+            assert_eq!(result_prod.matches, result_ref.matches);
+        }
     }
 }
