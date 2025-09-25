@@ -1,8 +1,8 @@
 use std::error::Error;
 
 use crate::byte_readers::{RawByteReader, ReaderKind, byte_reader};
+use crate::corpus_index::{LatinCorpusIndex, StoredMapValue};
 use crate::corpus_query_engine::IndexData;
-use crate::corpus_serialization::{LatinCorpusIndex, StoredMapValue};
 
 const IN_MEMORY_BUFFERS: &str = "IN_MEMORY";
 const MMAP_NO_POPULATE: &str = "MMAP_NO_POPULATE";

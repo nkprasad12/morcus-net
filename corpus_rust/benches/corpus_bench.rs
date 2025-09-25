@@ -1,6 +1,6 @@
 use corpus::{
     bitmask_utils::{Direction, apply_and_with_bitmasks, smear_bitmask},
-    corpus_query_engine, corpus_serialization,
+    corpus_query_engine, corpus_index,
 };
 use criterion::{Criterion, criterion_group, criterion_main};
 
@@ -91,7 +91,7 @@ fn create_random_data_arrays(upper_bound: u32, sizes: &[u32], seed: u32) -> Vec<
 fn create_query_engine() -> corpus_query_engine::CorpusQueryEngine {
     const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
     let corpus =
-        corpus_serialization::deserialize_corpus(CORPUS_ROOT).expect("Failed to load corpus");
+        corpus_index::deserialize_corpus(CORPUS_ROOT).expect("Failed to load corpus");
     corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine")
 }
 

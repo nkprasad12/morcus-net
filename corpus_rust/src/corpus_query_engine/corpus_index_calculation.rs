@@ -7,7 +7,7 @@ use crate::{
             IndexRange, IndexSlice, apply_and_to_indices, apply_or_to_indices, find_fuzzy_matches,
         },
     },
-    corpus_serialization::StoredMapValue,
+    corpus_index::StoredMapValue,
     profiler::TimeProfiler,
     query_parsing_v2::{
         QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,

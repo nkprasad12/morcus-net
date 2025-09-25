@@ -11,7 +11,7 @@ use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, 
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
 use crate::query_parsing_v2::parse_query;
 
-use super::corpus_serialization::LatinCorpusIndex;
+use super::corpus_index::LatinCorpusIndex;
 use super::profiler::TimeProfiler;
 
 use std::error::Error;

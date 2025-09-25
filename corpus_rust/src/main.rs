@@ -4,15 +4,15 @@ use std::time::Instant;
 use corpus::{
     api::{CorpusQueryResult, QueryExecError},
     corpus_query_engine::{self, CorpusQueryEngine},
-    corpus_serialization,
+    corpus_index,
 };
 
 const ARG_QUIET: &str = "--quiet";
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
-fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex {
+fn load_corpus_with_timing(path: &str) -> corpus_index::LatinCorpusIndex {
     let start = Instant::now();
-    let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
+    let corpus = corpus_index::deserialize_corpus(path).expect("Failed to load corpus");
     let duration = start.elapsed();
     println!("Corpus loaded in {duration:.2?}");
     if !has_arg(ARG_QUIET) {
