@@ -21,20 +21,6 @@ pub struct WorkData {
     pub name: String,
 }
 
-pub type WorkLookupEntry = (String, Vec<(String, u32, u32)>, WorkData);
-
-#[derive(Debug, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct LatinCorpusIndex {
-    pub work_lookup: Vec<WorkLookupEntry>,
-    pub stats: CorpusStats,
-    pub raw_text_path: String,
-    pub raw_buffer_path: String,
-    pub token_starts_path: String,
-    pub indices: HashMap<String, HashMap<String, StoredMapValue>>,
-    pub num_tokens: u32,
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(untagged)]
 pub enum StoredMapValue {
@@ -49,7 +35,21 @@ pub enum StoredMapValue {
     },
 }
 
-pub fn file_read_err<T: Error>(e: T, path: &str, label: &str) -> String {
+pub type WorkLookupEntry = (String, Vec<(String, u32, u32)>, WorkData);
+
+#[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
+pub struct LatinCorpusIndex {
+    pub work_lookup: Vec<WorkLookupEntry>,
+    pub stats: CorpusStats,
+    pub raw_text_path: String,
+    pub raw_buffer_path: String,
+    pub token_starts_path: String,
+    pub indices: HashMap<String, HashMap<String, StoredMapValue>>,
+    pub num_tokens: u32,
+}
+
+fn file_read_err<T: Error>(e: T, path: &str, label: &str) -> String {
     let cwd = std::env::current_dir()
         .map(|p| p.display().to_string())
         .unwrap_or_else(|_| "<unknown>".to_string());
