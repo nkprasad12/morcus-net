@@ -1,7 +1,7 @@
 use crate::{
     bitmask_utils::Direction,
     corpus_query_engine::{
-        CorpusQueryEngine, IndexData, IndexDataRoO, IntermediateResult, QueryExecError,
+        CorpusQueryEngine, IndexData, IndexDataRoO, QueryExecError,
         corpus_query_conversion::InternalQueryTerm,
         index_data::{
             IndexRange, IndexSlice, apply_and_to_indices, apply_or_to_indices, find_fuzzy_matches,
@@ -15,7 +15,7 @@ use crate::{
 };
 
 struct SpanResult<'a> {
-    candidates: IntermediateResult<'a>,
+    candidates: IndexSlice<'a>,
     length: usize,
     relation: QueryRelation,
 }
@@ -73,9 +73,9 @@ impl CorpusQueryEngine {
                 Some(data) => data,
                 None => return Ok(None),
             };
-            (data, _) = match op {
-                TokenConstraintOperation::And => apply_and_to_indices(&data, 0, &child_data, 0),
-                TokenConstraintOperation::Or => apply_or_to_indices(&data, 0, &child_data, 0),
+            data = match op {
+                TokenConstraintOperation::And => apply_and_to_indices(&data, &child_data),
+                TokenConstraintOperation::Or => apply_or_to_indices(&data, &child_data),
             }?;
         }
         Ok(Some(data))
@@ -103,7 +103,7 @@ impl CorpusQueryEngine {
         query_spans: &'a [&[InternalQueryTerm]],
         range: &'a IndexRange,
         profiler: &mut TimeProfiler,
-    ) -> Result<Option<IntermediateResult<'a>>, QueryExecError> {
+    ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
         let mut spans = match self.candidates_for_spans(query_spans, range, profiler)? {
             Some(res) => res,
             None => return Ok(None),
@@ -135,19 +135,14 @@ impl CorpusQueryEngine {
             } else {
                 Direction::Both
             };
-            let combined = find_fuzzy_matches(
-                &current.candidates.data,
-                current.candidates.position,
-                &previous.candidates.data,
-                previous.candidates.position - previous.length as u32,
-                distance as usize,
-                dir,
-            )?;
+            let second = IndexSlice {
+                position: previous.candidates.position - previous.length as u32,
+                ..previous.candidates
+            };
+            let combined =
+                find_fuzzy_matches(&current.candidates, &second, distance as usize, dir)?;
             previous = SpanResult {
-                candidates: IntermediateResult {
-                    data: combined,
-                    position: current.candidates.position,
-                },
+                candidates: combined,
                 ..current
             }
         }
@@ -181,7 +176,7 @@ impl CorpusQueryEngine {
         query: &'a [InternalQueryTerm],
         range: &'a IndexRange,
         profiler: &mut TimeProfiler,
-    ) -> Result<Option<IntermediateResult<'a>>, QueryExecError> {
+    ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
         let mut indexed_terms: Vec<(usize, &InternalQueryTerm)> =
             query.iter().enumerate().collect();
         indexed_terms.sort_by_key(|(_, term)| term.constraint.size_bounds.upper);
@@ -193,28 +188,31 @@ impl CorpusQueryEngine {
             Some(data) => data,
             _ => return Ok(None),
         };
+        data = IndexSlice {
+            position: *first_original_index as u32,
+            ..data
+        };
+
         profiler.phase("Initial candidates");
-        let mut position = *first_original_index as u32;
 
         for (original_index, term) in indexed_terms.iter().skip(1) {
             let term_data = match self.compute_index_for(term.constraint.inner, range)? {
                 Some(data) => data,
                 _ => return Ok(None),
             };
-            (data, position) =
-                apply_and_to_indices(&data, position, &term_data, *original_index as u32)?;
+            let term_data = IndexSlice {
+                position: *original_index as u32,
+                ..term_data
+            };
+            data = apply_and_to_indices(&data, &term_data)?;
             profiler.phase(format!("Filter from {original_index}").as_str());
         }
         if query.len() > 1 {
-            let result = self.filter_breaks(
-                &IntermediateResult { data, position },
-                query.len(),
-                profiler,
-            )?;
+            let result = self.filter_breaks(&data, query.len(), profiler)?;
             profiler.phase("Filter breaks");
             return Ok(Some(result));
         }
-        Ok(Some(IntermediateResult { data, position }))
+        Ok(Some(data))
     }
 
     /// Returns the hard breaks, verifying that it is a bitmask.
@@ -259,7 +257,7 @@ impl CorpusQueryEngine {
             .raw_buffers
             .resolve_index(metadata, self.corpus.num_tokens)
             .ok()?;
-        IndexSlice::from(&full, range).ok()
+        IndexSlice::from(&full, range, 0).ok()
     }
 
     fn get_metadata(&self, key: &str, value: &str) -> Option<&StoredMapValue> {

@@ -1,7 +1,7 @@
 use crate::{
     bitmask_utils::{Direction, next_one_bit, smear_bitmask},
     corpus_query_engine::{
-        CorpusQueryEngine, IndexData, IndexDataRoO, IntermediateResult, QueryExecError,
+        CorpusQueryEngine, IndexData, IndexDataRoO, QueryExecError,
         index_data::{IndexSlice, apply_and_to_indices},
     },
     profiler::TimeProfiler,
@@ -11,13 +11,13 @@ impl CorpusQueryEngine {
     /// Computes the page of results for the given parameters.
     pub(super) fn compute_page_result(
         &self,
-        match_results: &IntermediateResult,
+        match_results: &IndexSlice,
         page_start: usize,
         page_size: Option<usize>,
         profiler: &mut TimeProfiler,
     ) -> Result<(Vec<u32>, usize), QueryExecError> {
         let page_size = page_size.unwrap_or(10000);
-        let matches = match_results.data.data.to_ref();
+        let matches = match_results.data.to_ref();
 
         // Get to the start of the page.
         let mut results: Vec<u32> = vec![];
@@ -51,7 +51,7 @@ impl CorpusQueryEngine {
                         None => break,
                     };
                     i = id + 1;
-                    id as u32 + match_results.data.range.start
+                    id as u32 + match_results.range.start
                 }
             };
 
@@ -67,10 +67,10 @@ impl CorpusQueryEngine {
     /// Filters a list of candidates into just the actual matches.
     pub(super) fn filter_breaks<'a>(
         &'a self,
-        candidates: &IntermediateResult<'a>,
+        candidates: &IndexSlice<'a>,
         query_length: usize,
         profiler: &mut TimeProfiler,
-    ) -> Result<IntermediateResult<'a>, QueryExecError> {
+    ) -> Result<IndexSlice<'a>, QueryExecError> {
         // There can be no hard breaks between tokens without multiple tokens.
         if query_length < 2 {
             return Err(QueryExecError::new(
@@ -97,7 +97,7 @@ impl CorpusQueryEngine {
         // But C D E and D E F both have a period in the middle,
         // so they have the 0 bit set.
 
-        let hard_breaks = self.get_hard_breaks(candidates.data.range)?;
+        let hard_breaks = self.get_hard_breaks(candidates.range)?;
         let break_mask = if query_length == 2 {
             hard_breaks.iter().map(|x| !*x).collect::<Vec<_>>()
         } else {
@@ -109,15 +109,13 @@ impl CorpusQueryEngine {
         };
         let break_mask = IndexSlice {
             data: IndexDataRoO::Ref(IndexData::BitMask(break_mask.as_slice())),
-            range: candidates.data.range,
+            range: candidates.range,
+            position: 0,
         };
         profiler.phase("Compute break mask");
 
         // As a future optimization, we can apply the AND in-place on the break mask since we never use it again.
-        let (data, position) =
-            apply_and_to_indices(&candidates.data, candidates.position, &break_mask, 0)?;
-
-        let match_results = IntermediateResult { data, position };
+        let match_results = apply_and_to_indices(candidates, &break_mask)?;
         profiler.phase("Apply break mask");
         Ok(match_results)
     }

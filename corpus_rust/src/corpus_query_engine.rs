@@ -7,9 +7,7 @@ mod errors;
 mod index_data;
 
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
-use crate::corpus_query_engine::index_data::{
-    IndexData, IndexDataRoO, IndexRange, IntermediateResult,
-};
+use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
 use crate::query_parsing_v2::parse_query;
 
 use super::corpus_serialization::LatinCorpusIndex;
