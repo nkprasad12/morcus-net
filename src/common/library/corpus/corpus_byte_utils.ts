@@ -8,10 +8,9 @@ export function toBitMask(values: number[], numTokens: number): Uint32Array {
     if (value < 0 || value >= numTokens) {
       throw new Error(`Value ${value} out of bounds (numTokens: ${numTokens})`);
     }
-    const rawWordIndex = value >> 5; // value / 32
+    const wordIndex = value >> 5; // value / 32
     const bitIndex = value % 32;
-    const wordIndex = rawWordIndex + (rawWordIndex % 2 === 0 ? 1 : -1);
-    bitMask[wordIndex] |= 1 << (31 - bitIndex);
+    bitMask[wordIndex] |= 1 << bitIndex;
   }
   return bitMask;
 }

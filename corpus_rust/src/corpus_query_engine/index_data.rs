@@ -124,7 +124,7 @@ fn apply_and_with_bitmask_and_array(
         let effective_index = (id as i64 + offset as i64) as u32;
         let bitmask_index = effective_index - bitmask_start;
         let word_index = (bitmask_index / 64) as usize;
-        let bit_index = 63 - (bitmask_index % 64);
+        let bit_index = bitmask_index % 64;
         if (bitmask[word_index] & (1 << bit_index)) != 0 {
             results.push(effective_index);
         }
@@ -161,7 +161,7 @@ fn apply_or_with_bitmask_and_array(
         if word_index >= result.len() {
             break;
         }
-        let bit_index = 63 - (bitmask_id % 64);
+        let bit_index = bitmask_id % 64;
         result[word_index] |= 1 << bit_index;
         i += 1;
     }
@@ -503,7 +503,7 @@ fn find_fuzzy_matches_with_array_and_bitmask(
         }
 
         let word_index = (effective_index / 64) as usize;
-        let bit_index = 63 - (effective_index % 64) as usize;
+        let bit_index = effective_index % 64;
 
         if (smeared_bitmask[word_index] & (1u64 << bit_index)) != 0 {
             results.push(index);
@@ -555,7 +555,7 @@ fn find_fuzzy_matches_with_bitmask_and_array(
         // We want to copy the bits from start to end (inclusive) from bitmask to result.
         for bit in start..=end {
             let word_index = bit / 64;
-            let bit_index = 63 - (bit % 64);
+            let bit_index = bit % 64;
             result[word_index] |= bitmask[word_index] & (1u64 << bit_index);
         }
     }

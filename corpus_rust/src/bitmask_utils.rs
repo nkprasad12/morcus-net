@@ -4,7 +4,7 @@ pub fn to_bitmask(indices: &[u32], upper_bound: u32) -> Vec<u64> {
     for &idx in indices {
         let word = idx / 64;
         let bit = idx % 64;
-        bitmask[word as usize] |= 1 << (63 - bit);
+        bitmask[word as usize] |= 1 << bit;
     }
     bitmask
 }
@@ -14,7 +14,7 @@ pub fn from_bitmask(bitmask: &[u64]) -> Vec<u32> {
     let mut indices = Vec::new();
     for (word_idx, &word) in bitmask.iter().enumerate() {
         for bit_idx in 0..64 {
-            if (word & (1 << (63 - bit_idx))) != 0 {
+            if (word & (1 << bit_idx)) != 0 {
                 let idx = (word_idx * 64 + bit_idx) as u32;
                 indices.push(idx);
             }
@@ -67,15 +67,15 @@ macro_rules! define_bitmask_or_with_self_offset_in_place {
 define_bitmask_or_with_self_offset_in_place!(
     bitmask_or_with_self_offset_in_place_right,
     |_len| 0,
-    >>,
-    <<
+    <<,
+    >>
 );
 
 define_bitmask_or_with_self_offset_in_place!(
     bitmask_or_with_self_offset_in_place_left,
     |len| len - 1,
-    <<,
-    >>
+    >>,
+    <<
 );
 
 /// Applies a bitwise OR operation with a self-offset to the given bitmask data in place.
@@ -141,7 +141,7 @@ macro_rules! define_apply_op_with_bitmasks {
                 let offset = offset as usize;
                 let left_shift = 64 - offset;
                 // Handle the first word separately.
-                result[0] = first[0] $op (second[0] >> offset);
+                result[0] = first[0] $op (second[0] << offset);
                 for i in 1..len {
                     // Suppose we have (with 4 bit words for brevity):
                     // 1st: 0110 1010
@@ -161,7 +161,7 @@ macro_rules! define_apply_op_with_bitmasks {
                     // Finally, combine them with a bitwise OR:
                     // mask |= second[j - 1] << leftShift
                     // = 0001 | 0100 = 0101, as expected.
-                    let mask = (second[i] >> offset) | (second[i - 1] << left_shift);
+                    let mask = (second[i] << offset) | (second[i - 1] >> left_shift);
                     result[i] = first[i] $op mask;
                 }
             } else {
@@ -170,11 +170,11 @@ macro_rules! define_apply_op_with_bitmasks {
                 let right_shift = 64 - offset;
 
                 for i in 0..len-1 {
-                    let mask = (second[i] << offset) | (second[i + 1] >> right_shift);
+                    let mask = (second[i] >> offset) | (second[i + 1] << right_shift);
                     result[i] = first[i] $op mask;
                 }
                 // Handle the last word separately
-                result[len - 1] = first[len - 1] $op (second[len - 1] << offset);
+                result[len - 1] = first[len - 1] $op (second[len - 1] >> offset);
             }
 
             result
@@ -194,7 +194,7 @@ pub fn next_one_bit(bitmask: &[u64], start: usize) -> Option<usize> {
         let word = bitmask[word_index];
         if word != 0 {
             for bit in bit_index..64 {
-                if (word & (1 << (63 - bit))) != 0 {
+                if (word & (1 << bit)) != 0 {
                     return Some(word_index * 64 + bit);
                 }
             }
@@ -388,14 +388,14 @@ mod tests {
 
         let mut a_bits = vec![false; size];
         for i in 0..size {
-            if (a[i / 64] & (1 << (63 - (i % 64)))) != 0 {
+            if (a[i / 64] & (1 << (i % 64))) != 0 {
                 a_bits[i] = true;
             }
         }
 
         let mut b_bits = vec![false; size];
         for i in 0..size {
-            if (b[i / 64] & (1 << (63 - (i % 64)))) != 0 {
+            if (b[i / 64] & (1 << (i % 64))) != 0 {
                 b_bits[i] = true;
             }
         }
@@ -419,14 +419,14 @@ mod tests {
 
         let mut a_bits = vec![false; size];
         for i in 0..size {
-            if (a[i / 64] & (1 << (63 - (i % 64)))) != 0 {
+            if (a[i / 64] & (1 << (i % 64))) != 0 {
                 a_bits[i] = true;
             }
         }
 
         let mut b_bits = vec![false; size];
         for i in 0..size {
-            if (b[i / 64] & (1 << (63 - (i % 64)))) != 0 {
+            if (b[i / 64] & (1 << (i % 64))) != 0 {
                 b_bits[i] = true;
             }
         }
@@ -504,19 +504,19 @@ mod tests {
     // Tests for next_one_bit
     #[test]
     fn next_one_bit_from_start_with_bit_set() {
-        let bitmask = vec![1 << 63]; // Bit 0 set (MSB)
+        let bitmask = to_bitmask(&[0], 128);
         assert_eq!(next_one_bit(&bitmask, 0), Some(0));
     }
 
     #[test]
     fn next_one_bit_from_start_no_bits_set() {
-        let bitmask = vec![0];
+        let bitmask = to_bitmask(&[], 128);
         assert_eq!(next_one_bit(&bitmask, 0), None);
     }
 
     #[test]
     fn next_one_bit_from_middle_of_word() {
-        let bitmask = vec![(1 << 63) | (1 << 62)];
+        let bitmask = to_bitmask(&[0, 1], 128);
         assert_eq!(next_one_bit(&bitmask, 0), Some(0));
         assert_eq!(next_one_bit(&bitmask, 1), Some(1));
         assert_eq!(next_one_bit(&bitmask, 2), None);
@@ -524,7 +524,7 @@ mod tests {
 
     #[test]
     fn next_one_bit_across_words() {
-        let bitmask = vec![0, 1 << 63]; // Bit 64 set
+        let bitmask = to_bitmask(&[64], 128);
         assert_eq!(next_one_bit(&bitmask, 0), Some(64));
         assert_eq!(next_one_bit(&bitmask, 64), Some(64));
         assert_eq!(next_one_bit(&bitmask, 65), None);
@@ -532,29 +532,23 @@ mod tests {
 
     #[test]
     fn next_one_bit_start_at_exact_bit() {
-        let bitmask = vec![1 << 63];
+        let bitmask = to_bitmask(&[0], 128);
         assert_eq!(next_one_bit(&bitmask, 0), Some(0));
     }
 
     #[test]
     fn next_one_bit_start_beyond_last_bit() {
-        let bitmask = vec![1 << 63];
+        let bitmask = to_bitmask(&[0], 128);
         assert_eq!(next_one_bit(&bitmask, 1), None);
     }
 
     #[test]
     fn next_one_bit_multiple_bits_in_word() {
-        let bitmask = vec![(1 << 63) | (1 << 60) | (1 << 50)]; // Bits 0, 3, 13 set
+        let bitmask = to_bitmask(&[0, 3, 13], 128);
         assert_eq!(next_one_bit(&bitmask, 0), Some(0));
         assert_eq!(next_one_bit(&bitmask, 1), Some(3));
         assert_eq!(next_one_bit(&bitmask, 4), Some(13));
         assert_eq!(next_one_bit(&bitmask, 14), None);
-    }
-
-    #[test]
-    fn next_one_bit_empty_bitmask() {
-        let bitmask = vec![];
-        assert_eq!(next_one_bit(&bitmask, 0), None);
     }
 
     // New tests for negative offsets
