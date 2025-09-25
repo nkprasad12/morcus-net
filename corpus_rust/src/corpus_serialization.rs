@@ -3,6 +3,8 @@ use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
+use crate::api::CorpusQueryMatchMetadata;
+
 #[derive(Debug, Deserialize)]
 pub struct CorpusStats {
     #[serde(rename = "totalWords")]
@@ -47,6 +49,56 @@ pub struct LatinCorpusIndex {
     pub token_starts_path: String,
     pub indices: HashMap<String, HashMap<String, StoredMapValue>>,
     pub num_tokens: u32,
+}
+
+impl LatinCorpusIndex {
+    /// Resolves a match token into its metadata.
+    pub fn resolve_match_token(
+        &self,
+        token_id: u32,
+    ) -> Result<CorpusQueryMatchMetadata<'_>, String> {
+        let work_ranges = &self.work_lookup;
+        let work_idx = work_ranges
+            .binary_search_by(|row_data| {
+                let range = &row_data.1;
+                let work_start_token_id = range[0].1;
+                let work_end_token_id = range[range.len() - 1].2;
+                if token_id < work_start_token_id {
+                    std::cmp::Ordering::Greater
+                } else if token_id >= work_end_token_id {
+                    std::cmp::Ordering::Less
+                } else {
+                    std::cmp::Ordering::Equal
+                }
+            })
+            .map_err(|_| format!("TokenId {token_id} not found in any work."))?;
+
+        let row_data = &work_ranges[work_idx].1;
+        let row_info = row_data
+            .binary_search_by(|(_, start, end)| {
+                if token_id < *start {
+                    std::cmp::Ordering::Greater
+                } else if token_id >= *end {
+                    std::cmp::Ordering::Less
+                } else {
+                    std::cmp::Ordering::Equal
+                }
+            })
+            .map(|i| &row_data[i])
+            .map_err(|_| {
+                format!("TokenId {token_id} not found in any row for work index {work_idx}.")
+            })?;
+
+        let (work_id, _, work_data) = &self.work_lookup[work_idx];
+
+        Ok(CorpusQueryMatchMetadata {
+            work_id,
+            work_name: &work_data.name,
+            author: &work_data.author,
+            section: &row_info.0,
+            offset: token_id - row_info.1,
+        })
+    }
 }
 
 fn file_read_err<T: Error>(e: T, path: &str, label: &str) -> String {

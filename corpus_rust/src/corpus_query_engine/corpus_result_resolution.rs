@@ -119,7 +119,7 @@ impl CorpusQueryEngine {
         // Compute the metadata while the OS is (hopefully) loading the pages into memory.
         let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(token_ids.len());
         for &id in token_ids {
-            metadata.push(self.resolve_match_token(id)?);
+            metadata.push(self.corpus.resolve_match_token(id)?);
         }
 
         // Read the text chunks.
@@ -142,57 +142,5 @@ impl CorpusQueryEngine {
             .collect();
 
         Ok(matches)
-    }
-
-    /// Resolves a match token into a full result.
-    fn resolve_match_token(
-        &self,
-        token_id: u32,
-    ) -> Result<CorpusQueryMatchMetadata<'_>, QueryExecError> {
-        let work_ranges = &self.corpus.work_lookup;
-        let work_idx = work_ranges
-            .binary_search_by(|row_data| {
-                let range = &row_data.1;
-                let work_start_token_id = range[0].1;
-                let work_end_token_id = range[range.len() - 1].2;
-                if token_id < work_start_token_id {
-                    std::cmp::Ordering::Greater
-                } else if token_id >= work_end_token_id {
-                    std::cmp::Ordering::Less
-                } else {
-                    std::cmp::Ordering::Equal
-                }
-            })
-            .map_err(|_| {
-                QueryExecError::new(&format!("TokenId {token_id} not found in any work."))
-            })?;
-
-        let row_data = &work_ranges[work_idx].1;
-        let row_info = row_data
-            .binary_search_by(|(_, start, end)| {
-                if token_id < *start {
-                    std::cmp::Ordering::Greater
-                } else if token_id >= *end {
-                    std::cmp::Ordering::Less
-                } else {
-                    std::cmp::Ordering::Equal
-                }
-            })
-            .map(|i| &row_data[i])
-            .map_err(|_| {
-                QueryExecError::new(&format!(
-                    "TokenId {token_id} not found in any row for work index {work_idx}."
-                ))
-            })?;
-
-        let (work_id, _, work_data) = &self.corpus.work_lookup[work_idx];
-
-        Ok(CorpusQueryMatchMetadata {
-            work_id,
-            work_name: &work_data.name,
-            author: &work_data.author,
-            section: &row_info.0,
-            offset: token_id - row_info.1,
-        })
     }
 }
