@@ -1,9 +1,9 @@
 use std::cmp::{max, min};
 
 use crate::{
+    api::{CorpusQueryMatch, CorpusQueryMatchMetadata},
     corpus_query_engine::{
-        CorpusQueryEngine, CorpusQueryMatch, CorpusQueryMatchMetadata, QueryExecError,
-        corpus_query_conversion::InternalQueryTerm,
+        CorpusQueryEngine, QueryExecError, corpus_query_conversion::InternalQueryTerm,
     },
     query_parsing_v2::QueryRelation,
 };

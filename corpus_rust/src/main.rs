@@ -2,7 +2,8 @@ use std::env;
 use std::time::Instant;
 
 use corpus::{
-    corpus_query_engine::{self, CorpusQueryEngine, CorpusQueryResult, QueryExecError},
+    api::{CorpusQueryResult, QueryExecError},
+    corpus_query_engine::{self, CorpusQueryEngine},
     corpus_serialization,
 };
 
