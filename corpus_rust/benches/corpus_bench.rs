@@ -1,6 +1,6 @@
 use corpus::{
     bitmask_utils::{Direction, apply_and_with_bitmasks, smear_bitmask},
-    corpus_query_engine, corpus_index,
+    corpus_index, corpus_query_engine,
 };
 use criterion::{Criterion, criterion_group, criterion_main};
 
@@ -90,8 +90,7 @@ fn create_random_data_arrays(upper_bound: u32, sizes: &[u32], seed: u32) -> Vec<
 
 fn create_query_engine() -> corpus_query_engine::CorpusQueryEngine {
     const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
-    let corpus =
-        corpus_index::deserialize_corpus(CORPUS_ROOT).expect("Failed to load corpus");
+    let corpus = corpus_index::deserialize_corpus(CORPUS_ROOT).expect("Failed to load corpus");
     corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine")
 }
 
@@ -102,16 +101,16 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let corpus = create_query_engine();
         let dedit_oscula_nato = "@lemma:do oscula @case:dat";
         let bitmask_query = "@case:nom @case:dat @case:acc";
-        let page_size = Some(100);
+        let page_size = 100;
         query_benches.bench_function("dedit oscula nato", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(dedit_oscula_nato, 0, page_size, None);
+                let _ = corpus.query_corpus(dedit_oscula_nato, 0, page_size, 25);
             })
         });
 
         query_benches.bench_function("bitmask query", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(bitmask_query, 0, page_size, None);
+                let _ = corpus.query_corpus(bitmask_query, 0, page_size, 25);
             })
         });
     }

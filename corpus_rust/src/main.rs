@@ -3,8 +3,8 @@ use std::time::Instant;
 
 use corpus::{
     api::{CorpusQueryResult, QueryExecError},
-    corpus_query_engine::{self, CorpusQueryEngine},
     corpus_index,
+    corpus_query_engine::{self, CorpusQueryEngine},
 };
 
 const ARG_QUIET: &str = "--quiet";
@@ -32,7 +32,7 @@ fn query_with_timing<'a>(
     query: &str,
 ) -> Result<CorpusQueryResult<'a>, QueryExecError> {
     let page_start = 0;
-    let page_size = Some(get_limit_arg_or_default());
+    let page_size = get_limit_arg_or_default();
     let context_len = get_context_arg_or_default();
     let start = Instant::now();
     let results = engine.query_corpus(query, page_start, page_size, context_len)?;
@@ -66,14 +66,14 @@ fn get_query_arg_or_exit() -> String {
     std::process::exit(1);
 }
 
-fn get_context_arg_or_default() -> Option<usize> {
+fn get_context_arg_or_default() -> usize {
     let args: Vec<String> = env::args().collect();
     if let Some(pos) = args.iter().position(|a| a == "--context")
         && let Some(ctx) = args.get(pos + 1)
     {
-        return ctx.parse::<usize>().ok();
+        return ctx.parse::<usize>().ok().unwrap_or(15);
     }
-    None
+    15
 }
 
 fn get_limit_arg_or_default() -> usize {

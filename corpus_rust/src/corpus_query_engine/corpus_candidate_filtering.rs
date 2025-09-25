@@ -13,10 +13,9 @@ impl CorpusQueryEngine {
         &self,
         match_results: &IndexSlice,
         page_start: usize,
-        page_size: Option<usize>,
+        page_size: usize,
         profiler: &mut TimeProfiler,
     ) -> Result<(Vec<u32>, usize), QueryExecError> {
-        let page_size = page_size.unwrap_or(10000);
         let matches = match_results.data.to_ref();
 
         // Get to the start of the page.

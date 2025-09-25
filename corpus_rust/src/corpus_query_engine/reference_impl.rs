@@ -6,9 +6,6 @@ use crate::{
     query_parsing_v2::{QueryTerm, TokenConstraint, parse_query},
 };
 
-const DEFAULT_CONTEXT_LEN: usize = 25;
-const DEFAULT_PAGE_SIZE: usize = 10000;
-
 impl QueryExecError {
     fn unimplemented() -> Self {
         QueryExecError {
@@ -76,16 +73,14 @@ impl CorpusQueryEngine {
         &self,
         query_str: &str,
         page_start: usize,
-        page_size: Option<usize>,
-        context_len: Option<usize>,
+        page_size: usize,
+        context_len: usize,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let query =
             parse_query(query_str).map_err(|_| QueryExecError::new("Failed to parse query"))?;
         let first = &query.terms[0];
         let index = self.index_for_term(first)?;
 
-        let page_size = page_size.unwrap_or(DEFAULT_PAGE_SIZE);
-        let context_len = context_len.unwrap_or(DEFAULT_CONTEXT_LEN);
         if page_start != 0 {
             return Err(QueryExecError::unimplemented());
         }

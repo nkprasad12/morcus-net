@@ -17,9 +17,6 @@ use super::profiler::TimeProfiler;
 
 use std::error::Error;
 
-const MAX_CONTEXT_LEN: usize = 500;
-const DEFAULT_CONTEXT_LEN: usize = 25;
-
 fn empty_result() -> CorpusQueryResult<'static> {
     CorpusQueryResult {
         total_results: 0,
@@ -60,8 +57,8 @@ impl CorpusQueryEngine {
         &self,
         query_str: &str,
         page_start: usize,
-        page_size: Option<usize>,
-        context_len: Option<usize>,
+        page_size: usize,
+        context_len: usize,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let mut profiler = TimeProfiler::new();
         // Assemble the query
@@ -91,9 +88,6 @@ impl CorpusQueryEngine {
             self.compute_page_result(&candidates, page_start, page_size, &mut profiler)?;
 
         // Turn the match IDs into actual matches (with the text and locations).
-        let context_len = context_len
-            .unwrap_or(DEFAULT_CONTEXT_LEN)
-            .clamp(1, MAX_CONTEXT_LEN);
         let matches = self.resolve_match_tokens(&match_ids, &query_spans, context_len as u32)?;
         profiler.phase("Build Matches");
 
@@ -116,8 +110,7 @@ mod tests {
 
     const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
-    const TEST_QUERIES: &[(&str, usize, Option<usize>, Option<usize>)] =
-        &[("@lemma:do", 0, Some(1), Some(1))];
+    const TEST_QUERIES: &[(&str, usize, usize, usize)] = &[("@lemma:do", 0, 1, 1)];
 
     #[test]
     fn validate_queries() {
