@@ -327,7 +327,6 @@ export function DictionarySearch(props: {
         key={optionsForInput}
         RenderOption={AutocompleteOption}
         toKey={(t) => `${t[1]},${t[0]}`}
-        toInputDisplay={(t) => t[1]}
         style={{
           padding: spacing(smallScreen ? 0 : 1),
           paddingTop: spacing(embedded ? 1 : 2),

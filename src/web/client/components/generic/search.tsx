@@ -12,9 +12,8 @@ function mod(n: number, m: number): number {
 interface AutoCompleteSearchProps<T> {
   optionsForInput: (input: string) => T[] | Promise<T[]>;
   onOptionSelected: (t: T) => unknown;
-  RenderOption: (props: { option: T }) => JSX.Element;
+  RenderOption: (props: { option: T; current: string }) => JSX.Element;
   toKey: (t: T) => string;
-  toInputDisplay: (t: T) => string;
 }
 
 interface BaseSearchBoxProps {
@@ -39,7 +38,6 @@ export function SearchBoxNoAutocomplete(props: BaseSearchBoxProps) {
     <SearchBox
       onOptionSelected={unimplemented}
       RenderOption={unimplemented}
-      toInputDisplay={unimplemented}
       optionsForInput={() => []}
       toKey={unimplemented}
       {...props}
@@ -160,7 +158,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                     onClick={() => onOptionChosen(t)}
                     onTouchStart={() => setCursor(i)}
                     onMouseOver={() => setCursor(i)}>
-                    <props.RenderOption option={t} />
+                    <props.RenderOption option={t} current={input} />
                   </div>
                 ))}
             </div>

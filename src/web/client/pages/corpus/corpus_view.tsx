@@ -20,7 +20,7 @@ const PAGE_SIZE = 50;
 type Results = "N/A" | "Error" | "Loading" | CorpusQueryResult;
 
 export function CorpusQueryPage() {
-  const [inputText, setInputText] = useState<string>("");
+  const [requestQuery, setRequestQuery] = useState<string>("");
   const [results, setResults] = useState<Results>("N/A");
 
   const { nav, route } = Router.useRouter();
@@ -50,7 +50,7 @@ export function CorpusQueryPage() {
   return (
     <div style={{ maxWidth: "800px", margin: "auto", marginTop: "16px" }}>
       <SearchBoxNoAutocomplete
-        onInput={setInputText}
+        onInput={setRequestQuery}
         placeholderText={SEARCH_PLACEHOLDER}
         // Left and right are not equal to account for the border.
         style={{ padding: "8px 12px 4px 8px", margin: "4px 8px" }}
@@ -58,7 +58,7 @@ export function CorpusQueryPage() {
         onRawEnter={() => {
           nav.to({
             path: ClientPaths.CORPUS_QUERY_PATH.path,
-            params: { q: inputText },
+            params: { q: requestQuery },
           });
         }}
         autoFocused
