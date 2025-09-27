@@ -169,7 +169,7 @@ fn apply_or_with_bitmask_and_array(
 }
 
 /// Returns the numbers that are present in both input arrays, applying an offset to the second array.
-fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
+pub(super) fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
     let mut result: Vec<u32> = Vec::new();
     let mut i = 0;
     let mut j = 0;
@@ -206,7 +206,7 @@ fn apply_and_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32>
 /// ## Returns
 ///
 /// A new sorted array containing the merged elements.
-fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
+pub(super) fn apply_or_with_arrays(first: &[u32], second: &[u32], offset: i32) -> Vec<u32> {
     let mut result: Vec<u32> = Vec::new();
     let mut i = 0;
     let mut j = 0;

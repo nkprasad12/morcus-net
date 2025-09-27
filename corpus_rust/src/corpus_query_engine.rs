@@ -110,7 +110,13 @@ mod tests {
 
     const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
-    const TEST_QUERIES: &[(&str, usize, usize, usize)] = &[("@lemma:do", 0, 1, 1)];
+    // (query, page_start, page_size, context_len)
+    const TEST_QUERIES: &[(&str, usize, usize, usize)] = &[
+        ("@lemma:do", 0, 25, 10),
+        ("(@lemma:habeo and @voice:passive)", 0, 50, 20),
+        ("(@case:dat or @voice:passive)", 0, 5, 20),
+        ("(@case:dat or (@voice:passive and @lemma:do))", 0, 25, 20),
+    ];
 
     #[test]
     fn validate_queries() {

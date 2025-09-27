@@ -2,7 +2,11 @@
 
 use crate::{
     api::CorpusQueryMatch,
-    corpus_query_engine::{CorpusQueryEngine, CorpusQueryResult, IndexData, QueryExecError},
+    bitmask_utils::from_bitmask,
+    corpus_query_engine::{
+        CorpusQueryEngine, CorpusQueryResult, IndexData, QueryExecError,
+        index_data::{apply_and_with_arrays, apply_or_with_arrays},
+    },
     query_parsing_v2::{QueryTerm, TokenConstraint, parse_query},
 };
 
@@ -28,8 +32,26 @@ impl CorpusQueryEngine {
                     .unwrap();
                 match index {
                     IndexData::List(list) => Ok(list.to_vec()),
-                    _ => Err(QueryExecError::unimplemented()),
+                    IndexData::BitMask(bitmask) => Ok(from_bitmask(bitmask)),
                 }
+            }
+            TokenConstraint::Composed { op, children } => {
+                if children.is_empty() {
+                    return Ok(vec![]);
+                }
+                let mut results = self.index_for_constraint(&children[0])?;
+                for child in &children[1..] {
+                    let child_results = self.index_for_constraint(child)?;
+                    results = match op {
+                        crate::query_parsing_v2::TokenConstraintOperation::And => {
+                            apply_and_with_arrays(&results, &child_results, 0)
+                        }
+                        crate::query_parsing_v2::TokenConstraintOperation::Or => {
+                            apply_or_with_arrays(&results, &child_results, 0)
+                        }
+                    };
+                }
+                Ok(results)
             }
             _ => Err(QueryExecError {
                 message: "Unimplemented".to_string(),
