@@ -232,13 +232,20 @@ impl CorpusQueryEngine {
         page_size: usize,
         context_len: usize,
     ) {
+        let start = std::time::Instant::now();
         let result_prod = self
             .query_corpus(query, page_start, page_size, context_len)
             .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
+        let prod_time = start.elapsed().as_secs_f64();
+        let start = std::time::Instant::now();
         let result_ref = self
             .query_corpus_ref_impl(query, page_start, page_size, context_len)
             .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
-
+        let fraction_time = start.elapsed().as_secs_f64() / prod_time;
+        println!(
+            "Ref impl is {fraction_time:.2}x\n - [{} {} {} {}]",
+            query, page_start, page_size, context_len
+        );
         let query_details = format!(
             "Query: {query}, page_start: {page_start}, page_size: {page_size}, context_len: {context_len}"
         );
