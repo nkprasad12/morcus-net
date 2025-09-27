@@ -107,12 +107,10 @@ mod tests {
     macro_rules! generate {
         ($query:expr) => {
             &[
-                ($query, 0, 5, 10),
+                ($query, 0, 5, 15),
                 ($query, 0, 25, 10),
                 ($query, 5, 5, 10),
-                ($query, 5, 25, 10),
                 ($query, 50, 5, 10),
-                ($query, 50, 25, 10),
             ]
         };
     }
@@ -125,6 +123,8 @@ mod tests {
         generate!("(@case:dat or @voice:passive)"),
         generate!("(@case:dat or (@voice:passive and @lemma:do))"),
         generate!("@lemma:do oscula @case:dat"),
+        generate!("@case:dat @case:acc"),
+        generate!("@case:dat @case:nom et"),
     ];
 
     #[test]

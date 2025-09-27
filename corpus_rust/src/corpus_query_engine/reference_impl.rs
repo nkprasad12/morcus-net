@@ -190,8 +190,11 @@ impl CorpusQueryEngine {
                 ));
             }
             let term_index = self.index_for_term(term)?;
-            let term_set: std::collections::HashSet<u32> =
-                term_index.iter().map(|x| *x - i as u32).collect();
+            let term_set: std::collections::HashSet<u32> = term_index
+                .iter()
+                .filter(|x| **x >= i as u32)
+                .map(|x| *x - i as u32)
+                .collect();
             candidates = candidates
                 .iter()
                 .filter(|entry| term_set.contains(&(entry[0].0)))
