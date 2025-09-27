@@ -1,5 +1,7 @@
 #![cfg(test)]
 
+use std::cmp::min;
+
 use crate::{
     api::CorpusQueryMatch,
     bitmask_utils::from_bitmask,
@@ -57,28 +59,57 @@ impl CorpusQueryEngine {
 
     fn resolve_match_ref_impl(
         &'_ self,
-        id: u32,
+        id_ranges: &[(u32, u32)],
         context_len: usize,
     ) -> Result<CorpusQueryMatch<'_>, QueryExecError> {
-        let id = id as usize;
-        let left_start_id = self
-            .starts
-            .token_start(id.saturating_sub(context_len).try_into().unwrap())?;
-        let left_end_id = self.starts.token_start(id.try_into().unwrap())?;
-        let right_start_id = self.starts.break_start(id as u32)?;
-        let right_end_id = self.starts.break_start(
-            (id + context_len)
-                .min((self.corpus.num_tokens - 1).try_into().unwrap())
-                .try_into()
-                .unwrap(),
-        )?;
-        let text = vec![
-            (self.text.slice(left_start_id, left_end_id), false),
-            (self.text.slice(left_end_id, right_start_id), true),
-            (self.text.slice(right_start_id, right_end_id), false),
-        ];
+        let sorted_ranges = {
+            let mut v = id_ranges.to_vec();
+            v.sort_by_key(|k| k.0);
+            v
+        };
+        // (ID, should_use_token, is_match_text_start)
+        let mut id_chunks = vec![];
+        id_chunks.push((
+            sorted_ranges[0].0.saturating_sub(context_len as u32),
+            true,
+            false,
+        ));
+        for &(start, end) in &sorted_ranges {
+            let last = id_chunks.last().unwrap();
+            assert!(start >= last.0);
+            // Start at the start of the token
+            id_chunks.push((start, true, true));
+            // End at the start of the break.
+            id_chunks.push((end, false, false));
+        }
+        id_chunks.push((
+            min(
+                id_chunks.last().unwrap().0 + context_len as u32,
+                self.corpus.num_tokens - 1,
+            ),
+            false,
+            false,
+        ));
+
+        let mut text = vec![];
+        for i in 0..id_chunks.len() - 1 {
+            let (start_id, use_token, is_match_start) = id_chunks[i];
+            let start = if use_token {
+                self.starts.token_start(start_id)?
+            } else {
+                self.starts.break_start(start_id)?
+            };
+            let (end_id, use_token, _) = id_chunks[i + 1];
+            let end = if use_token {
+                self.starts.token_start(end_id)?
+            } else {
+                self.starts.break_start(end_id)?
+            };
+            text.push((self.text.slice(start, end), is_match_start));
+        }
+
         Ok(CorpusQueryMatch {
-            metadata: self.corpus.resolve_match_token(id as u32)?,
+            metadata: self.corpus.resolve_match_token(sorted_ranges[0].0)?,
             text,
         })
     }
@@ -93,13 +124,17 @@ impl CorpusQueryEngine {
         let query =
             parse_query(query_str).map_err(|_| QueryExecError::new("Failed to parse query"))?;
         let first = &query.terms[0];
-        let index = self.index_for_term(first)?;
+        let index: Vec<Vec<(u32, u32)>> = self
+            .index_for_term(first)?
+            .iter()
+            .map(|x| vec![(*x, *x)])
+            .collect();
 
         let matches = index
             .iter()
             .skip(page_start)
             .take(page_size)
-            .map(|id| self.resolve_match_ref_impl(*id, context_len).unwrap())
+            .map(|x| self.resolve_match_ref_impl(x, context_len).unwrap())
             .collect();
         let result = CorpusQueryResult {
             total_results: index.len(),

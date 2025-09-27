@@ -158,15 +158,32 @@ mod tests {
                 .query_corpus_ref_impl(query, page_start, page_size, context_len)
                 .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
 
+            let query_details = format!(
+                "Query: {query}, page_start: {page_start}, page_size: {page_size}, context_len: {context_len}"
+            );
             assert_eq!(
                 result_prod.page_start, result_ref.page_start,
-                "Different `page_start`s for query {query}"
+                "Different `page_start`s for query {query_details}"
             );
             assert_eq!(
                 result_prod.total_results, result_ref.total_results,
-                "Different `total_result`s for {query}"
+                "Different `total_result`s for {query_details}"
             );
-            assert_eq!(result_prod.matches, result_ref.matches);
+            let mut prod_iter = result_prod.matches.iter();
+            let mut ref_iter = result_ref.matches.iter();
+            let mut i = 0;
+            loop {
+                i += 1;
+                let prod_next = prod_iter.next();
+                let ref_next = ref_iter.next();
+                assert_eq!(
+                    prod_next, ref_next,
+                    "Mismatch at result {i} [{query_details}]"
+                );
+                if prod_next.is_none() || ref_next.is_none() {
+                    break;
+                }
+            }
         }
     }
 }
