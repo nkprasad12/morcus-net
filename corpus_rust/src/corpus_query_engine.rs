@@ -102,13 +102,7 @@ impl CorpusQueryEngine {
 
 #[cfg(test)]
 mod tests {
-    use std::env::set_current_dir;
-
-    use crate::corpus_index::deserialize_corpus;
-
     use super::*;
-
-    const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
     macro_rules! generate {
         ($query:expr, $page_size:expr, $context_len:expr) => {
@@ -130,60 +124,15 @@ mod tests {
 
     #[test]
     fn validate_queries() {
-        // Note: for now we are OK silently passing the test if the corpus
-        // fails to load, because the CI doesn't handle building the index yet.
-        set_current_dir("..").unwrap();
-        let index = match deserialize_corpus(CORPUS_ROOT) {
-            Ok(index) => index,
-            Err(e) => {
-                eprintln!("Failed to load corpus: {}", e);
-                return;
-            }
+        let engine = match reference_impl::get_engine_unsafe() {
+            Some(e) => e,
+            // Note: for now we are OK silently passing the test if the corpus
+            // fails to load, because the CI doesn't handle building the index yet
+            None => return,
         };
-        let engine = match CorpusQueryEngine::new(index) {
-            Ok(e) => e,
-            Err(e) => {
-                eprintln!("Failed to create query engine: {}", e);
-                return;
-            }
-        };
-
-        for (query, page_start, page_size, context_len) in
-            TEST_QUERIES.iter().flat_map(|s| s.iter().copied())
-        {
-            let result_prod = engine
-                .query_corpus(query, page_start, page_size, context_len)
-                .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
-            let result_ref = engine
-                .query_corpus_ref_impl(query, page_start, page_size, context_len)
-                .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
-
-            let query_details = format!(
-                "Query: {query}, page_start: {page_start}, page_size: {page_size}, context_len: {context_len}"
-            );
-            assert_eq!(
-                result_prod.page_start, result_ref.page_start,
-                "Different `page_start`s for query {query_details}"
-            );
-            assert_eq!(
-                result_prod.total_results, result_ref.total_results,
-                "Different `total_result`s for {query_details}"
-            );
-            let mut prod_iter = result_prod.matches.iter();
-            let mut ref_iter = result_ref.matches.iter();
-            let mut i = 0;
-            loop {
-                i += 1;
-                let prod_next = prod_iter.next();
-                let ref_next = ref_iter.next();
-                assert_eq!(
-                    prod_next, ref_next,
-                    "Mismatch at result {i} [{query_details}]"
-                );
-                if prod_next.is_none() || ref_next.is_none() {
-                    break;
-                }
-            }
+        let test_queries = TEST_QUERIES.iter().flat_map(|s| s.iter());
+        for (query, page_start, page_size, context_len) in test_queries {
+            engine.compare_ref_impl_results(query, *page_start, *page_size, *context_len);
         }
     }
 }

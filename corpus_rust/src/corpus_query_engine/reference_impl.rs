@@ -1,7 +1,9 @@
 #![cfg(test)]
 
 use std::cmp::min;
+use std::env::set_current_dir;
 
+use crate::corpus_index::deserialize_corpus;
 use crate::{
     api::CorpusQueryMatch,
     bitmask_utils::from_bitmask,
@@ -11,6 +13,26 @@ use crate::{
     },
     query_parsing_v2::{QueryTerm, TokenConstraint, parse_query},
 };
+
+const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
+
+pub(super) fn get_engine_unsafe() -> Option<CorpusQueryEngine> {
+    set_current_dir("..").unwrap();
+    let index = match deserialize_corpus(CORPUS_ROOT) {
+        Ok(index) => index,
+        Err(e) => {
+            eprintln!("Failed to load corpus: {}", e);
+            return None;
+        }
+    };
+    match CorpusQueryEngine::new(index) {
+        Ok(e) => Some(e),
+        Err(e) => {
+            eprintln!("Failed to create query engine: {}", e);
+            None
+        }
+    }
+}
 
 impl CorpusQueryEngine {
     fn index_for_constraint(
@@ -114,7 +136,7 @@ impl CorpusQueryEngine {
         })
     }
 
-    pub(super) fn query_corpus_ref_impl(
+    fn query_corpus_ref_impl(
         &self,
         query_str: &str,
         page_start: usize,
@@ -144,5 +166,47 @@ impl CorpusQueryEngine {
         };
 
         Ok(result)
+    }
+
+    pub(super) fn compare_ref_impl_results(
+        &self,
+        query: &str,
+        page_start: usize,
+        page_size: usize,
+        context_len: usize,
+    ) {
+        let result_prod = self
+            .query_corpus(query, page_start, page_size, context_len)
+            .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
+        let result_ref = self
+            .query_corpus_ref_impl(query, page_start, page_size, context_len)
+            .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
+
+        let query_details = format!(
+            "Query: {query}, page_start: {page_start}, page_size: {page_size}, context_len: {context_len}"
+        );
+        assert_eq!(
+            result_prod.page_start, result_ref.page_start,
+            "Different `page_start`s for query {query_details}"
+        );
+        assert_eq!(
+            result_prod.total_results, result_ref.total_results,
+            "Different `total_result`s for {query_details}"
+        );
+        let mut prod_iter = result_prod.matches.iter();
+        let mut ref_iter = result_ref.matches.iter();
+        let mut i = 0;
+        loop {
+            i += 1;
+            let prod_next = prod_iter.next();
+            let ref_next = ref_iter.next();
+            assert_eq!(
+                prod_next, ref_next,
+                "Mismatch at result {i} [{query_details}]"
+            );
+            if prod_next.is_none() || ref_next.is_none() {
+                break;
+            }
+        }
     }
 }
