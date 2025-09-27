@@ -1,5 +1,6 @@
 use crate::{
     bitmask_utils::Direction,
+    corpus_index::StoredMapValue,
     corpus_query_engine::{
         CorpusQueryEngine, IndexData, IndexDataRoO, QueryExecError,
         corpus_query_conversion::InternalQueryTerm,
@@ -7,7 +8,6 @@ use crate::{
             IndexRange, IndexSlice, apply_and_to_indices, apply_or_to_indices, find_fuzzy_matches,
         },
     },
-    corpus_index::StoredMapValue,
     profiler::TimeProfiler,
     query_parsing_v2::{
         QueryRelation, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation,

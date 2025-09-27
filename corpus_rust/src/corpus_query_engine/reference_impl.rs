@@ -4,6 +4,7 @@ use std::cmp::min;
 use std::env::set_current_dir;
 
 use crate::corpus_index::deserialize_corpus;
+use crate::query_parsing_v2::QueryRelation;
 use crate::{
     api::CorpusQueryMatch,
     bitmask_utils::from_bitmask,
@@ -34,7 +35,37 @@ pub(super) fn get_engine_unsafe() -> Option<CorpusQueryEngine> {
     }
 }
 
+fn arr_has_any_in_range(arr: &[u32], range: &(u32, u32)) -> bool {
+    let (start, end) = range;
+    if start > end || arr.is_empty() {
+        return false;
+    }
+    let idx = match arr.binary_search(start) {
+        Ok(i) => i,
+        Err(i) => i,
+    };
+    idx < arr.len() && arr[idx] <= *end
+}
+
 impl CorpusQueryEngine {
+    fn hard_breaks_ref_impl(&self) -> Result<Vec<u32>, QueryExecError> {
+        let breaks_metadata = self
+            .corpus
+            .indices
+            .get("breaks")
+            .unwrap()
+            .get("hard")
+            .unwrap();
+        let hard_breaks = self
+            .raw_buffers
+            .resolve_index(breaks_metadata, self.corpus.num_tokens)
+            .unwrap();
+        match hard_breaks {
+            IndexData::List(list) => Ok(list.to_vec()),
+            IndexData::BitMask(bitmask) => Ok(from_bitmask(bitmask)),
+        }
+    }
+
     fn index_for_constraint(
         &self,
         constraint: &TokenConstraint,
@@ -146,20 +177,43 @@ impl CorpusQueryEngine {
         let query =
             parse_query(query_str).map_err(|_| QueryExecError::new("Failed to parse query"))?;
         let first = &query.terms[0];
-        let index: Vec<Vec<(u32, u32)>> = self
+        let mut candidates: Vec<Vec<(u32, u32)>> = self
             .index_for_term(first)?
             .iter()
             .map(|x| vec![(*x, *x)])
             .collect();
 
-        let matches = index
+        for (i, term) in query.terms.iter().enumerate().skip(1) {
+            if term.relation != QueryRelation::After && term.relation != QueryRelation::First {
+                return Err(QueryExecError::new(
+                    "Reference impl doesn't support proximity",
+                ));
+            }
+            let term_index = self.index_for_term(term)?;
+            let term_set: std::collections::HashSet<u32> =
+                term_index.iter().map(|x| *x - i as u32).collect();
+            candidates = candidates
+                .iter()
+                .filter(|entry| term_set.contains(&(entry[0].0)))
+                // Extend the range by 1 to include the new term.
+                .map(|entry| vec![(entry[0].0, entry[0].1 + 1)])
+                .collect();
+        }
+
+        let hard_breaks = self.hard_breaks_ref_impl()?;
+        let match_ids: Vec<&Vec<(u32, u32)>> = candidates
+            .iter()
+            // -1 because we only care about breaks between tokens, not after the last token.
+            .filter(|x| !arr_has_any_in_range(&hard_breaks, &(x[0].0, x[0].1 - 1)))
+            .collect();
+        let matches: Vec<CorpusQueryMatch<'_>> = match_ids
             .iter()
             .skip(page_start)
             .take(page_size)
             .map(|x| self.resolve_match_ref_impl(x, context_len).unwrap())
             .collect();
         let result = CorpusQueryResult {
-            total_results: index.len(),
+            total_results: match_ids.len(),
             page_start,
             timing: vec![],
             matches,

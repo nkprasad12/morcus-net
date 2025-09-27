@@ -105,21 +105,26 @@ mod tests {
     use super::*;
 
     macro_rules! generate {
-        ($query:expr, $page_size:expr, $context_len:expr) => {
+        ($query:expr) => {
             &[
-                ($query, 0, $page_size, $context_len),
-                ($query, 5, $page_size, $context_len),
-                ($query, 50, $page_size, $context_len),
+                ($query, 0, 5, 10),
+                ($query, 0, 25, 10),
+                ($query, 5, 5, 10),
+                ($query, 5, 25, 10),
+                ($query, 50, 5, 10),
+                ($query, 50, 25, 10),
             ]
         };
     }
 
     // (query, page_start, page_size, context_len)
     const TEST_QUERIES: &[&[(&str, usize, usize, usize)]] = &[
-        generate!("@lemma:do", 25, 10),
-        generate!("(@lemma:habeo and @voice:passive)", 50, 20),
-        generate!("(@case:dat or @voice:passive)", 5, 20),
-        generate!("(@case:dat or (@voice:passive and @lemma:do))", 25, 20),
+        generate!("@lemma:do"),
+        generate!("@case:dat"),
+        generate!("(@lemma:habeo and @voice:passive)"),
+        generate!("(@case:dat or @voice:passive)"),
+        generate!("(@case:dat or (@voice:passive and @lemma:do))"),
+        generate!("@lemma:do oscula @case:dat"),
     ];
 
     #[test]
