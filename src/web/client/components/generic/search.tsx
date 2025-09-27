@@ -1,4 +1,4 @@
-import { useRef, useState, useEffect, JSX } from "react";
+import { useRef, useState, useEffect, JSX, useCallback } from "react";
 
 import Popper from "@mui/base/PopperUnstyled";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
@@ -10,10 +10,20 @@ function mod(n: number, m: number): number {
 }
 
 interface AutoCompleteSearchProps<T> {
+  /** A provider for the autocomplete options for a particular input state. */
   optionsForInput: (input: string) => T[] | Promise<T[]>;
-  onOptionSelected: (t: T) => unknown;
+  /**
+   * Called when an option is selected.
+   *
+   * If a string is returned, then the input state will be set to that string.
+   */
+  onOptionSelected: (t: T, current: string) => unknown | string;
+  /** Renderer for an option. The `current` parameter is the current input text. */
   RenderOption: (props: { option: T; current: string }) => JSX.Element;
+  /** A converter function to a key. It must be unique for each option. */
   toKey: (t: T) => string;
+  /** Whether to check for autocomplete options on the initial view. */
+  showOptionsInitially?: true;
 }
 
 interface BaseSearchBoxProps {
@@ -56,7 +66,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   const [loading, setLoading] = useState<boolean>(false);
   const [options, setOptions] = useState<T[]>([]);
 
-  const { toKey } = props;
+  const { toKey, optionsForInput, onInput } = props;
 
   useEffect(() => {
     if (cursor < 0 || options.length === 0) {
@@ -70,6 +80,34 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
     // @ts-ignore
     element.scrollIntoView({ behavior: "instant", block: "nearest" });
   }, [cursor, toKey, options]);
+
+  const onInputInternal = useCallback(
+    async (value: string) => {
+      onInput?.(value);
+      setInput(value);
+      if (optionsForInput === undefined) {
+        return;
+      }
+      setLoading(true);
+      const fetchedOptions = await optionsForInput(value);
+      if (inputRef.current?.value !== value) {
+        // We don't want to set the options if the input has changed
+        // since we started fetching.
+        return;
+      }
+      setOptions(fetchedOptions);
+      setCursor(-1);
+      setLoading(false);
+    },
+    [onInput, optionsForInput]
+  );
+
+  useEffect(() => {
+    if (props.showOptionsInitially !== true || optionsForInput === undefined) {
+      return;
+    }
+    onInputInternal("");
+  }, [props.showOptionsInitially, optionsForInput, onInputInternal]);
 
   const interactingWithPopup = mouseOnPopup;
   const popperOpen =
@@ -99,26 +137,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
     setMouseOnPopup(false);
     setCursor(-1);
     setFocused(false);
-    props.onOptionSelected(t);
-    inputRef.current?.blur();
-  }
-
-  async function onInput(value: string) {
-    props.onInput?.(value);
-    setInput(value);
-    if (props.optionsForInput === undefined) {
-      return;
+    const result = props.onOptionSelected(t, input);
+    if (typeof result === "string") {
+      // If the result is a string, we interpret this as a request for the result to be able
+      // to chain, and return focus to the input.
+      onInputInternal(result);
+      setFocused(true);
+    } else {
+      inputRef.current?.blur();
     }
-    setLoading(true);
-    const fetchedOptions = await props.optionsForInput(value);
-    if (inputRef.current?.value !== value) {
-      // We don't want to set the options if the input has changed
-      // since we started fetching.
-      return;
-    }
-    setOptions(fetchedOptions);
-    setCursor(-1);
-    setLoading(false);
   }
 
   return (
@@ -177,7 +204,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             autoComplete="off"
             aria-label={props.ariaLabel}
             value={input}
-            onChange={async (e) => onInput(e.currentTarget.value)}
+            onChange={async (e) => onInputInternal(e.currentTarget.value)}
             onKeyUp={(event) => {
               if (event.key !== "Enter") {
                 return;
@@ -222,7 +249,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             style={{ marginRight: "4px" }}
             onClick={() => {
               inputRef.current?.focus();
-              onInput("");
+              onInputInternal("");
             }}>
             <SvgIcon pathD={SvgIcon.Clear} className="menuIcon" />
           </IconButton>
