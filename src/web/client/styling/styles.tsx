@@ -384,6 +384,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".queryHelp": {
       margin: "12px 16px",
       borderRadius: "4px",
+      border: `1px solid ${backgroundColor}`,
     },
     ".queryHelp code": {
       color: theme.contentTextLight,
@@ -393,13 +394,13 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       whiteSpace: "pre-wrap",
     },
     ".queryHelp[open]": {
-      border: "1px solid #ccc",
+      border: `1px solid ${theme.bgAlt}`,
     },
     ".queryHelp > summary": {
       padding: "4px 8px",
     },
     ".queryHelpContent": {
-      borderTop: "1px solid #ccc",
+      borderTop: `1px solid ${theme.bgAlt}`,
       paddingLeft: "12px",
     },
     ".queryHelpContent ul": {
@@ -426,7 +427,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       whiteSpace: "normal",
     },
     ".queryHelp th": {
-      border: "1px solid #ccc",
+      border: `1px solid ${theme.bgAlt}`,
       padding: "4px",
       fontWeight: "normal",
       textAlign: "left",
@@ -434,7 +435,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       wordBreak: "break-word",
       whiteSpace: "normal",
     },
-    ".queryHelp td": { border: "1px solid #ccc", padding: "4px" },
+    ".queryHelp td": { border: `1px solid ${theme.bgAlt}`, padding: "4px" },
 
     /** Dictionary specific */
     ".numeralTable": {

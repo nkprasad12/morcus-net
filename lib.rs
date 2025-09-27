@@ -3,7 +3,7 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 
-use corpus::{corpus_query_engine::CorpusQueryEngine, corpus_serialization::deserialize_corpus};
+use corpus::{corpus_index::deserialize_corpus, corpus_query_engine::CorpusQueryEngine};
 
 use node_bindgen::derive::node_bindgen;
 
@@ -44,8 +44,8 @@ impl QueryEngineWrapper {
             .query_corpus(
                 &query_str,
                 page_start as usize,
-                Some(page_size as usize),
-                Some(context_len as usize),
+                page_size as usize,
+                context_len as usize,
             )
             .map_err(|e| e.message)?;
         serde_json::to_string(&result).map_err(|_| "Failed to serialize result".to_string())

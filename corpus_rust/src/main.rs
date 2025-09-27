@@ -2,19 +2,20 @@ use std::env;
 use std::time::Instant;
 
 use corpus::{
-    corpus_query_engine::{self, CorpusQueryEngine, CorpusQueryResult, QueryExecError},
-    corpus_serialization,
+    api::{CorpusQueryResult, QueryExecError},
+    corpus_index,
+    corpus_query_engine::{self, CorpusQueryEngine},
 };
 
 const ARG_QUIET: &str = "--quiet";
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
-fn load_corpus_with_timing(path: &str) -> corpus_serialization::LatinCorpusIndex {
+fn load_corpus_with_timing(path: &str) -> corpus_index::LatinCorpusIndex {
     let start = Instant::now();
-    let corpus = corpus_serialization::deserialize_corpus(path).expect("Failed to load corpus");
+    let corpus = corpus_index::deserialize_corpus(path).expect("Failed to load corpus");
     let duration = start.elapsed();
+    println!("Corpus loaded in {duration:.2?}");
     if !has_arg(ARG_QUIET) {
-        println!("Corpus loaded in {duration:.2?}");
         println!(
             "- Tokens: {}, Words: {}, Lemmata: {}, Works: {}",
             corpus.stats.total_words,
@@ -31,7 +32,7 @@ fn query_with_timing<'a>(
     query: &str,
 ) -> Result<CorpusQueryResult<'a>, QueryExecError> {
     let page_start = 0;
-    let page_size = Some(get_limit_arg_or_default());
+    let page_size = get_limit_arg_or_default();
     let context_len = get_context_arg_or_default();
     let start = Instant::now();
     let results = engine.query_corpus(query, page_start, page_size, context_len)?;
@@ -65,14 +66,14 @@ fn get_query_arg_or_exit() -> String {
     std::process::exit(1);
 }
 
-fn get_context_arg_or_default() -> Option<usize> {
+fn get_context_arg_or_default() -> usize {
     let args: Vec<String> = env::args().collect();
     if let Some(pos) = args.iter().position(|a| a == "--context")
         && let Some(ctx) = args.get(pos + 1)
     {
-        return ctx.parse::<usize>().ok();
+        return ctx.parse::<usize>().ok().unwrap_or(15);
     }
-    None
+    15
 }
 
 fn get_limit_arg_or_default() -> usize {
@@ -100,7 +101,7 @@ fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQuer
 fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
     let results = get_results(engine, query_str);
     println!(
-        "\nShowing results {}-{} of {} matches:",
+        "\n\x1b[4mShowing results {}-{} of {} matches:\x1b[0m",
         results.page_start + 1,
         results.page_start + results.matches.len(),
         results.total_results
@@ -111,12 +112,17 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
     }
     for match_data in results.matches {
         let m = &match_data.metadata;
-        println!("  {} - {} {}", m.author, m.work_name, m.section);
         println!(
-            "    {}*{}*{}",
-            match_data.left_context, match_data.text, match_data.right_context,
+            "  \x1b[34m{}\x1b[0m - \x1b[32m{} {}\x1b[0m",
+            m.author, m.work_name, m.section
         );
-        println!();
+        let mut chunks = vec!["    ".to_string()];
+        for (text, is_core) in &match_data.text {
+            let color = if *is_core { "[31m" } else { "[90m" };
+            chunks.push(format!("\x1b{}{}\x1b[0m", color, text));
+        }
+        chunks.push("\n".to_string());
+        print!("{}", chunks.join(""));
     }
 }
 
@@ -168,10 +174,10 @@ fn main() {
         print_mem_summary("Before query execution".to_string(), 1);
     }
     let query_str = get_query_arg_or_exit();
+    print_query_results(&engine, &query_str);
     if has_arg("--mem") {
         print_mem_summary("After query execution".to_string(), 1);
     }
-    print_query_results(&engine, &query_str);
 }
 
 /*

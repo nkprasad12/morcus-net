@@ -31,6 +31,19 @@ pub struct InternalQueryTerm<'a> {
     pub constraint: InternalConstraint<'a>,
 }
 
+impl InternalQueryTerm<'_> {
+    /// Whether this term must be contiguous with the previous term.
+    pub fn is_contiguous(&self) -> bool {
+        matches!(self.relation, QueryRelation::After | QueryRelation::First)
+    }
+}
+
+impl std::fmt::Display for InternalQueryTerm<'_> {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}{}", self.relation, self.constraint.inner)
+    }
+}
+
 // Methods for converting a query to an internal form.
 impl CorpusQueryEngine {
     /// Get the size bounds for a token constraint atom. This should be present in the raw data.
@@ -56,7 +69,7 @@ impl CorpusQueryEngine {
     }
 
     /// Converts a constraint to its internal representation, calculating size bounds appropriately.
-    pub fn convert_constraint<'a>(
+    pub(super) fn convert_constraint<'a>(
         &self,
         constraint: &'a TokenConstraint,
     ) -> Result<InternalConstraint<'a>, QueryExecError> {
@@ -108,7 +121,7 @@ impl CorpusQueryEngine {
         }
     }
 
-    pub fn convert_query_term<'a>(
+    pub(super) fn convert_query_term<'a>(
         &self,
         term: &'a QueryTerm,
     ) -> Result<InternalQueryTerm<'a>, QueryExecError> {

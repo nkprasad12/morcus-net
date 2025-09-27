@@ -100,7 +100,12 @@ const isApiResponse = matchesObject<ApiResponse>({
 ## Conventions
 
 - Use TypeScript for all new code
+  - Always use absolute imports for Typescript code. For example, the module
+    - `src/web/client/pages/library/reader/library_reader.tsx` should be imported as
+      `@/web/client/pages/library/reader/library_reader`.
 - Tests should be named `*.test.ts` or `*.test.tsx`
+  - Tests that require DOM should include `@jest-environment jsdom` at the top
+  - Client side unit tests that need to mock backend server APIs should use `jest.mock("@/web/utils/rpc/client_rpc");`
 - Follow ESLint/Prettier formatting (run `npm run format` before committing)
 - Python code should use black formatting
 - Use strict validation for API request/response data

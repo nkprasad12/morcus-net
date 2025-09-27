@@ -7,8 +7,13 @@ import { safeParseInt } from "@/common/misc_utils";
 import { QueryCorpusApi, type CorpusQueryRequest } from "@/web/api_routes";
 import { Divider, SpanLink } from "@/web/client/components/generic/basics";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
-import { SearchBoxNoAutocomplete } from "@/web/client/components/generic/search";
+import { SearchBox } from "@/web/client/components/generic/search";
 import { getCommitHash } from "@/web/client/define_vars";
+import {
+  CorpusAutocompleteOption,
+  optionsForInput,
+  CorpusAutocompleteItem,
+} from "@/web/client/pages/corpus/corpus_autocomplete";
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
@@ -19,8 +24,12 @@ const PAGE_SIZE = 50;
 
 type Results = "N/A" | "Error" | "Loading" | CorpusQueryResult;
 
+function toKey(o: CorpusAutocompleteOption) {
+  return o.option;
+}
+
 export function CorpusQueryPage() {
-  const [inputText, setInputText] = useState<string>("");
+  const [requestQuery, setRequestQuery] = useState<string>("");
   const [results, setResults] = useState<Results>("N/A");
 
   const { nav, route } = Router.useRouter();
@@ -49,8 +58,8 @@ export function CorpusQueryPage() {
 
   return (
     <div style={{ maxWidth: "800px", margin: "auto", marginTop: "16px" }}>
-      <SearchBoxNoAutocomplete
-        onInput={setInputText}
+      <SearchBox
+        onInput={setRequestQuery}
         placeholderText={SEARCH_PLACEHOLDER}
         // Left and right are not equal to account for the border.
         style={{ padding: "8px 12px 4px 8px", margin: "4px 8px" }}
@@ -58,10 +67,15 @@ export function CorpusQueryPage() {
         onRawEnter={() => {
           nav.to({
             path: ClientPaths.CORPUS_QUERY_PATH.path,
-            params: { q: inputText },
+            params: { q: requestQuery },
           });
         }}
+        onOptionSelected={(o, current) => `${current}${o.option}`}
+        RenderOption={CorpusAutocompleteItem}
+        optionsForInput={optionsForInput}
+        toKey={toKey}
         autoFocused
+        showOptionsInitially
       />
       <QueryHelpSection />
       {showResults && <ResultsSection results={results} query={urlQuery} />}
@@ -153,9 +167,15 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
         {metadata.workName} {metadata.section} [{metadata.author}]
       </SpanLink>
       <div className="text sm light" style={{ textAlign: "justify" }}>
-        <span>{props.result.leftContext ?? ""}</span>
-        <b className="corpusResult">{props.result.text}</b>
-        <span>{props.result.rightContext ?? ""}</span>
+        {props.result.text.map(([content, isMatch], i) =>
+          isMatch ? (
+            <b key={i} className="corpusResult">
+              {content}
+            </b>
+          ) : (
+            <span key={i}>{content}</span>
+          )
+        )}
       </div>
     </div>
   );

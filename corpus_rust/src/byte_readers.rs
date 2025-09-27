@@ -1,29 +1,34 @@
-use memmap2::Mmap;
+use memmap2::{Mmap, MmapOptions};
 use std::{error::Error, fs::File, io::Read};
 
 pub trait RawByteReader {
-    fn new(path: &str) -> Result<Self, Box<dyn Error>>
-    where
-        Self: Sized;
     fn bytes(&self, i: usize, j: usize) -> &[u8];
     fn advise_range(&self, _start: usize, _end: usize) {}
 }
 
-pub struct MmapReader {
+struct MmapReader {
     mmap: Mmap,
 }
 
-pub struct InMemoryReader {
+struct InMemoryReader {
     buffer: Vec<u8>,
 }
 
-impl RawByteReader for MmapReader {
-    fn new(path: &str) -> Result<Self, Box<dyn Error>> {
+impl MmapReader {
+    fn new(path: &str, pre_populate: bool) -> Result<Self, Box<dyn Error>> {
         let file = File::open(path)?;
-        let mmap = unsafe { Mmap::map(&file)? };
+        let mmap = unsafe {
+            if pre_populate {
+                MmapOptions::new().populate().map(&file)?
+            } else {
+                Mmap::map(&file)?
+            }
+        };
         Ok(MmapReader { mmap })
     }
+}
 
+impl RawByteReader for MmapReader {
     #[inline(always)]
     fn bytes(&self, i: usize, j: usize) -> &[u8] {
         &self.mmap[i..j]
@@ -41,16 +46,33 @@ impl RawByteReader for MmapReader {
     }
 }
 
-impl RawByteReader for InMemoryReader {
+impl InMemoryReader {
     fn new(path: &str) -> Result<Self, Box<dyn Error>> {
         let mut file = File::open(path)?;
         let mut buffer = vec![];
         file.read_to_end(&mut buffer)?;
         Ok(InMemoryReader { buffer })
     }
+}
 
+impl RawByteReader for InMemoryReader {
     #[inline(always)]
     fn bytes(&self, i: usize, j: usize) -> &[u8] {
         &self.buffer[i..j]
+    }
+}
+
+#[derive(PartialEq, Eq, Clone, Copy)]
+pub enum ReaderKind {
+    Mmap,
+    MmapPopulated,
+    InMemory,
+}
+
+pub fn byte_reader(kind: ReaderKind, path: &str) -> Result<Box<dyn RawByteReader>, Box<dyn Error>> {
+    match kind {
+        ReaderKind::Mmap => Ok(Box::new(MmapReader::new(path, false)?)),
+        ReaderKind::MmapPopulated => Ok(Box::new(MmapReader::new(path, true)?)),
+        ReaderKind::InMemory => Ok(Box::new(InMemoryReader::new(path)?)),
     }
 }
