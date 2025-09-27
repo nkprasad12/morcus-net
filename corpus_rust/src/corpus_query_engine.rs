@@ -110,12 +110,22 @@ mod tests {
 
     const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
+    macro_rules! generate {
+        ($query:expr, $page_size:expr, $context_len:expr) => {
+            &[
+                ($query, 0, $page_size, $context_len),
+                ($query, 5, $page_size, $context_len),
+                ($query, 50, $page_size, $context_len),
+            ]
+        };
+    }
+
     // (query, page_start, page_size, context_len)
-    const TEST_QUERIES: &[(&str, usize, usize, usize)] = &[
-        ("@lemma:do", 0, 25, 10),
-        ("(@lemma:habeo and @voice:passive)", 0, 50, 20),
-        ("(@case:dat or @voice:passive)", 0, 5, 20),
-        ("(@case:dat or (@voice:passive and @lemma:do))", 0, 25, 20),
+    const TEST_QUERIES: &[&[(&str, usize, usize, usize)]] = &[
+        generate!("@lemma:do", 25, 10),
+        generate!("(@lemma:habeo and @voice:passive)", 50, 20),
+        generate!("(@case:dat or @voice:passive)", 5, 20),
+        generate!("(@case:dat or (@voice:passive and @lemma:do))", 25, 20),
     ];
 
     #[test]
@@ -138,12 +148,14 @@ mod tests {
             }
         };
 
-        for (query, page_start, page_size, context_len) in TEST_QUERIES {
+        for (query, page_start, page_size, context_len) in
+            TEST_QUERIES.iter().flat_map(|s| s.iter().copied())
+        {
             let result_prod = engine
-                .query_corpus(query, *page_start, *page_size, *context_len)
+                .query_corpus(query, page_start, page_size, context_len)
                 .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
             let result_ref = engine
-                .query_corpus_ref_impl(query, *page_start, *page_size, *context_len)
+                .query_corpus_ref_impl(query, page_start, page_size, context_len)
                 .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
 
             assert_eq!(

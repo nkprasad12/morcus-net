@@ -10,14 +10,6 @@ use crate::{
     query_parsing_v2::{QueryTerm, TokenConstraint, parse_query},
 };
 
-impl QueryExecError {
-    fn unimplemented() -> Self {
-        QueryExecError {
-            message: "Unimplemented".to_string(),
-        }
-    }
-}
-
 impl CorpusQueryEngine {
     fn index_for_constraint(
         &self,
@@ -103,17 +95,15 @@ impl CorpusQueryEngine {
         let first = &query.terms[0];
         let index = self.index_for_term(first)?;
 
-        if page_start != 0 {
-            return Err(QueryExecError::unimplemented());
-        }
         let matches = index
             .iter()
+            .skip(page_start)
             .take(page_size)
             .map(|id| self.resolve_match_ref_impl(*id, context_len).unwrap())
             .collect();
         let result = CorpusQueryResult {
             total_results: index.len(),
-            page_start: 0,
+            page_start,
             timing: vec![],
             matches,
         };
