@@ -60,7 +60,7 @@ const FORCE_CTS = new Set([
 const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
 
 // For regular nodes
-const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr"]);
+const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr", "abbr"]);
 const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
 const HANDLED_REND = new Set<string>([
@@ -117,9 +117,13 @@ const NOTE_NODES = new Set([
   "persName",
   "surname",
   "milestone",
+  "app",
+  "lem",
+  "rdg",
 ]);
 const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
+  "italics",
   "sup",
   "overline",
 ]);
@@ -598,7 +602,8 @@ function transformNoteNode(node: XmlNode): XmlNode {
   const rend = node.getAttr("rend");
   assert(KNOWN_NOTE_REND.has(rend), rend);
   if (HANDLED_NOTE_REND.has(rend)) {
-    attrs.push(["rend", checkPresent(rend)]);
+    const finalRend = rend === "italics" ? "italic" : rend;
+    attrs.push(["rend", checkPresent(finalRend)]);
   }
   if (QUOTE_NODES.has(node.name)) {
     attrs.push(["rend", "italic"]);
@@ -608,7 +613,11 @@ function transformNoteNode(node: XmlNode): XmlNode {
   );
 
   const children =
-    node.name === "add" ? ["<", ...baseChildren, ">"] : baseChildren;
+    node.name === "add"
+      ? ["<", ...baseChildren, ">"]
+      : node.name === "lem"
+      ? [...baseChildren, " ]"]
+      : baseChildren;
   return new XmlNode("span", attrs, children);
 }
 
@@ -652,6 +661,10 @@ function transformContentNode(
   }
   if (node.name === "corr") {
     assertType(children[0], isString);
+    assertEqual(parent?.name, "choice");
+    attrs.push(["origName", node.name]);
+  }
+  if (node.name === "abbr") {
     assertEqual(parent?.name, "choice");
     attrs.push(["origName", node.name]);
   }
@@ -727,6 +740,12 @@ function transformContentNode(
     case "bibl":
     case "cit":
     case "corr":
+    case "abbr":
+    // We are ignoring `expan` and `ex` for now, instead choosing to use
+    // the abbreviated form `abbr` that is in the original text.
+    // eslint-disable-next-line no-fallthrough
+    case "expan":
+    case "ex":
       return new XmlNode("span", attrs, children);
     case "del":
       return new XmlNode("span", attrs, ["[", ...children, "]"]);
