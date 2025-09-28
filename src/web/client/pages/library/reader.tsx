@@ -1152,6 +1152,9 @@ function displayForLibraryChunk(
   if (rend === "uppercase" || rend === "smallcaps") {
     style.textTransform = "uppercase";
   }
+  if (rend === "overline") {
+    style.textDecoration = "overline";
+  }
   if (root.getAttr("l") !== undefined) {
     className = "l";
   }

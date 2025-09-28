@@ -71,6 +71,7 @@ const HANDLED_REND = new Set<string>([
   "blockquote",
   "uppercase",
   "smallcaps",
+  "overline",
   // These are used in gaps. We can just ignore them.
   "* * * *",
   "...",
@@ -120,6 +121,7 @@ const NOTE_NODES = new Set([
   "app",
   "lem",
   "rdg",
+  "del",
 ]);
 const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
@@ -617,6 +619,8 @@ function transformNoteNode(node: XmlNode): XmlNode {
       ? ["<", ...baseChildren, ">"]
       : node.name === "lem"
       ? [...baseChildren, " ]"]
+      : node.name === "del"
+      ? ["[", ...baseChildren, "]"]
       : baseChildren;
   return new XmlNode("span", attrs, children);
 }
