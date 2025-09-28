@@ -1060,7 +1060,7 @@ function renderTooltip(root: XmlNode): JSX.Element {
   if (rend === "overline") {
     style.textDecoration = "overline";
   }
-  if (rend === "sup") {
+  if (rend === "sup" || rend === "superscript") {
     style.verticalAlign = "super";
   }
   if (root.getAttr("block") === "1") {

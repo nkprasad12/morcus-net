@@ -122,11 +122,13 @@ const NOTE_NODES = new Set([
   "lem",
   "rdg",
   "del",
+  "w",
 ]);
 const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
   "italics",
   "sup",
+  "superscript",
   "overline",
 ]);
 const KNOWN_NOTE_REND = new Set<string | undefined>([
@@ -613,11 +615,19 @@ function transformNoteNode(node: XmlNode): XmlNode {
   const baseChildren = node.children.map((c) =>
     typeof c === "string" ? c : transformNoteNode(c)
   );
+  let isAppCritLem = false;
+  if (node.name === "lem") {
+    isAppCritLem = true;
+  }
+  if (node.name === "w") {
+    assertEqual(node.getAttr("type"), "lemma");
+    isAppCritLem = true;
+  }
 
   const children =
     node.name === "add"
       ? ["<", ...baseChildren, ">"]
-      : node.name === "lem"
+      : isAppCritLem
       ? [...baseChildren, " ]"]
       : node.name === "del"
       ? ["[", ...baseChildren, "]"]
