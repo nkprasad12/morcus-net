@@ -177,38 +177,65 @@ impl CorpusQueryEngine {
         let query =
             parse_query(query_str).map_err(|_| QueryExecError::new("Failed to parse query"))?;
         let first = &query.terms[0];
-        let mut candidates: Vec<Vec<(u32, u32)>> = self
-            .index_for_term(first)?
-            .iter()
-            .map(|x| vec![(*x, *x)])
-            .collect();
+
+        struct SpanCandidate {
+            ids: Vec<u32>,
+            span_length: u32,
+        }
+
+        let first = SpanCandidate {
+            ids: self.index_for_term(first)?,
+            span_length: 1,
+        };
+
+        let mut candidates: Vec<SpanCandidate> = vec![first];
 
         for (i, term) in query.terms.iter().enumerate().skip(1) {
-            if term.relation != QueryRelation::After && term.relation != QueryRelation::First {
-                return Err(QueryExecError::new(
-                    "Reference impl doesn't support proximity",
-                ));
-            }
             let term_index = self.index_for_term(term)?;
-            let term_set: std::collections::HashSet<u32> = term_index
-                .iter()
-                .filter(|x| **x >= i as u32)
-                .map(|x| *x - i as u32)
-                .collect();
-            candidates = candidates
-                .iter()
-                .filter(|entry| term_set.contains(&(entry[0].0)))
-                // Extend the range by 1 to include the new term.
-                .map(|entry| vec![(entry[0].0, entry[0].1 + 1)])
-                .collect();
+            match term.relation {
+                QueryRelation::After | QueryRelation::First => {
+                    let term_set: std::collections::HashSet<u32> = term_index
+                        .iter()
+                        .filter(|x| **x >= i as u32)
+                        .map(|x| *x - i as u32)
+                        .collect();
+                    let last = candidates.remove(candidates.len() - 1);
+                    let updated_ids = last
+                        .ids
+                        .iter()
+                        .filter(|x| term_set.contains(*x))
+                        .copied()
+                        .collect();
+                    candidates.push(SpanCandidate {
+                        ids: updated_ids,
+                        span_length: last.span_length + 1,
+                    });
+                }
+                _ => panic!("Unimplemented (proximity relation"),
+            }
         }
 
         let hard_breaks = self.hard_breaks_ref_impl()?;
-        let match_ids: Vec<&Vec<(u32, u32)>> = candidates
+        let match_ids: Vec<SpanCandidate> = candidates
             .iter()
-            // -1 because we only care about breaks between tokens, not after the last token.
-            .filter(|x| !arr_has_any_in_range(&hard_breaks, &(x[0].0, x[0].1 - 1)))
+            .map(|SpanCandidate { ids, span_length }| SpanCandidate {
+                ids: ids
+                    .iter()
+                    // -2 because we only care about breaks between tokens, not after the last token.
+                    .filter(|x| !arr_has_any_in_range(&hard_breaks, &(**x, **x + span_length - 2)))
+                    .copied()
+                    .collect(),
+                span_length: *span_length,
+            })
             .collect();
+
+        // For now, only take the first span. When we support proximity, we will need to handle multiple spans.
+        let match_ids = match_ids[0]
+            .ids
+            .iter()
+            .map(|&x| vec![(x, x + match_ids[0].span_length - 1)])
+            .collect::<Vec<_>>();
+
         let matches: Vec<CorpusQueryMatch<'_>> = match_ids
             .iter()
             .skip(page_start)
