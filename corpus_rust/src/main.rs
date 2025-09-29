@@ -119,6 +119,8 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
         let mut chunks = vec!["    ".to_string()];
         for (text, is_core) in &match_data.text {
             let color = if *is_core { "[31m" } else { "[90m" };
+            // indent lines after any newline so subsequent lines align correctly
+            let text = text.replace("\n", "\n    ");
             chunks.push(format!("\x1b{}{}\x1b[0m", color, text));
         }
         chunks.push("\n".to_string());

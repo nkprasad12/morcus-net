@@ -70,36 +70,44 @@ function absorbWork(
 
   assert(work.rows.length > 0, "Work must have at least one row.");
 
-  function isHardBreak(rowIdx: number): boolean {
+  type HardBreak = 2;
+  type SoftBreak = 1;
+  type NoBreak = 0;
+  type BreakType = HardBreak | SoftBreak | NoBreak;
+  function isBreak(rowIdx: number): BreakType {
     if (rowIdx === 0 || tokens.length === 0) {
-      return false;
+      return 0;
     }
     const currentRowSectionId = work.rowIds[rowIdx];
     const prevRowSectionId = work.rowIds[rowIdx - 1];
     // Break between e.g. 1.2 and 1.2.1
     // This generates breaks between things like headers.
     if (currentRowSectionId.length !== prevRowSectionId.length) {
-      return true;
+      return 2;
     }
     // Only consider matches on leaf siblings, e.g 1.2.1 and 1.2.2
     for (let i = 0; i < currentRowSectionId.length - 1; i++) {
       if (currentRowSectionId[i] !== prevRowSectionId[i]) {
-        return true;
+        return 2;
       }
     }
-    return false;
+    return 1;
   }
 
   work.rows.forEach((rowText, rowIdx) => {
-    if (isHardBreak(rowIdx)) {
+    const breakType = isBreak(rowIdx);
+    if (breakType === 2) {
       breaksIndex.add("hard", tokens.length - 1);
+    }
+    if (breakType === 1) {
+      breaks[tokens.length - 1] += "\n";
     }
 
     const rowStartId = tokens.length;
     for (const [token, isWord] of processTokens(rowText)) {
       if (!isWord) {
         assertEqual(tokens.length, breaks.length);
-        breaks[tokens.length - 1] = token;
+        breaks[tokens.length - 1] += token;
         // This should handle abbreviations.
         // We should either generate a list of abbreviations that we exclude,
         // or we can simply de-rank these matches.

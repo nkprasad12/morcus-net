@@ -166,7 +166,9 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
         }>
         {metadata.workName} {metadata.section} [{metadata.author}]
       </SpanLink>
-      <div className="text sm light" style={{ textAlign: "justify" }}>
+      <div
+        className="text sm light"
+        style={{ textAlign: "justify", whiteSpace: "pre-line" }}>
         {props.result.text.map(([content, isMatch], i) =>
           isMatch ? (
             <b key={i} className="corpusResult">
