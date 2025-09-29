@@ -13,6 +13,9 @@ import { ServerMessage } from "@/web/utils/rpc/rpc";
 import fs from "fs";
 import { gunzipSync } from "zlib";
 
+// This is a duplicate of Heroides, which we have the macronized edition of.
+const SKIPS = new Set(["phi0959.phi002.perseus-lat2"]);
+
 function extractRowText(node: XmlNode | string): string {
   if (typeof node === "string") {
     return node;
@@ -55,6 +58,9 @@ function* latinWorksInFiles(filePaths: string[]): Generator<ProcessedWork2> {
 export function* latinWorksFromLibrary(): Generator<CorpusInputWork> {
   const filePaths = readFilesFromLibraryIndex();
   for (const work of latinWorksInFiles(filePaths)) {
+    if (SKIPS.has(work.info.workId)) {
+      continue;
+    }
     yield convertToCorpusInputWork(work);
     if (process.env.SIMULATE_LARGE_CORPUS === "1") {
       const converted = convertToCorpusInputWork(work);
