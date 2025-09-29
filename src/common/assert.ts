@@ -8,8 +8,8 @@ export function assert(
 }
 
 export function assertEqual(
-  expected: unknown,
   actual: unknown,
+  expected: unknown,
   details?: string
 ) {
   const extra = details === undefined ? "" : `\n${details}`;

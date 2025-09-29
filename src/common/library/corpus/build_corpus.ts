@@ -47,7 +47,7 @@ function absorbWork(
   corpus: InProgressLatinCorpus,
   getInflections: (word: string) => CrunchResult[],
   tokens: string[],
-  breaks: (string | null)[]
+  breaks: string[]
 ) {
   console.debug(`Ingesting into corpus: ${work.id}`);
   const wordIndex = arrayMap(corpus.indices.word);
@@ -162,7 +162,8 @@ function absorbWork(
 
       wordsInWork += 1;
       tokens.push(stripped);
-      breaks.push(null);
+      // Add a space as a placeholder.
+      breaks.push("");
     }
     const lookupEntry =
       corpus.workLookup[corpus.workLookup.length - 1][1][rowIdx];
@@ -174,11 +175,7 @@ function absorbWork(
   breaksIndex.add("hard", tokens.length - 1);
 }
 
-function saveTokenDb(
-  tokens: string[],
-  breaks: (string | null)[],
-  corpusDir: string
-) {
+function saveTokenDb(tokens: string[], breaks: string[], corpusDir: string) {
   assertEqual(tokens.length, breaks.length);
 
   const all: string[] = [];
@@ -191,9 +188,8 @@ function saveTokenDb(
     all.push(tokens[i]);
     bytesRead += Buffer.from(tokens[i], "utf-8").byteLength;
     breakStarts[i] = bytesRead;
-    const breakText = breaks[i] ?? "";
-    all.push(breakText);
-    bytesRead += Buffer.from(breakText, "utf-8").byteLength;
+    all.push(breaks[i]);
+    bytesRead += Buffer.from(breaks[i], "utf-8").byteLength;
   }
 
   const destination = path.join(corpusDir, CORPUS_RAW_TEXT);
@@ -249,7 +245,7 @@ export async function buildCorpus(
   const getInflections = (word: string) =>
     crunchWord(word, tables, crunchOptions);
   const tokens: string[] = [];
-  const breaks: (string | null)[] = [];
+  const breaks: string[] = [];
   const corpus = createEmptyCorpusIndex();
   for (const work of iterableWorks) {
     absorbWork(work, corpus, getInflections, tokens, breaks);
