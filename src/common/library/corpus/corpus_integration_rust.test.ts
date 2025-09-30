@@ -57,7 +57,7 @@ describe("Corpus Integration Test", () => {
   let queryEngine: RustCorpusQueryEngine;
 
   function queryCorpus(query: string, pageStart?: number, pageSize?: number) {
-    const raw = queryEngine.queryCorpus(query, pageStart, pageSize);
+    const raw = queryEngine.queryCorpus({ query, pageStart, pageSize });
     const parsed = JSON.parse(raw);
     return assertType(parsed, CorpusQueryResult.isMatch);
   }

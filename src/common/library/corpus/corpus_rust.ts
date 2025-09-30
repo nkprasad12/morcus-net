@@ -25,11 +25,17 @@ export class RustCorpusQueryEngine {
     }
   }
 
-  queryCorpus(query: string, pageStart?: number, pageSize?: number): string {
-    if (query.length > 100) {
+  queryCorpus(request: CorpusQueryRequest): string {
+    if (request.query.length > 100) {
       throw new Error("Query is too long");
     }
-    return this.engine.query(query, pageStart ?? 0, pageSize ?? 50, 25);
+    const contextLen = Math.max(1, Math.min(100, request.contextLen ?? 25));
+    return this.engine.query(
+      request.query,
+      request.pageStart ?? 0,
+      request.pageSize ?? 50,
+      contextLen
+    );
   }
 }
 
@@ -44,9 +50,6 @@ export function rustCorpusApiHandler(): CorpusQueryHandler {
   );
   return {
     initialize: () => engine.get(),
-    runQuery: (request) =>
-      engine
-        .get()
-        .queryCorpus(request.query, request.pageStart, request.pageSize),
+    runQuery: (request) => engine.get().queryCorpus(request),
   };
 }
