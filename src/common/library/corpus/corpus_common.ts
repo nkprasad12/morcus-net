@@ -23,42 +23,8 @@ export const CORPUS_BUFFERS = `latin_corpus_buffers.bin`;
 export const CORPUS_TOKEN_STARTS = `latin_corpus_token_starts.bin`;
 
 // // // // // // // // // //
-// Corpus Querying Types   //
+// Corpus Result Types   //
 // // // // // // // // // //
-
-export interface WordQuery {
-  word: string;
-}
-
-export interface LemmaQuery {
-  lemma: string;
-}
-
-export interface InflectionQuery {
-  category: keyof LatinInflectionTypes;
-  value: LatinInflectionTypes[keyof LatinInflectionTypes];
-}
-
-export type CorpusQueryAtom = WordQuery | LemmaQuery | InflectionQuery;
-
-export interface ComposedQuery {
-  composition: "and";
-  atoms: CorpusQueryAtom[];
-}
-
-export interface GapSpec {
-  maxDistance: number;
-  directed: boolean;
-}
-
-export interface CorpusQueryPart {
-  token: CorpusQueryAtom | ComposedQuery;
-  gap?: GapSpec;
-}
-
-export interface CorpusQuery {
-  parts: CorpusQueryPart[];
-}
 
 export interface CorpusQueryMatchMetadata {
   workId: string;
@@ -114,6 +80,8 @@ export interface CorpusInputWork {
   workName: string;
   /** The author of the work. */
   author: string;
+  /** A short and single-word code for the author. */
+  authorCode: string;
   /** The text of the work, optionally broken down into chunks. */
   rows: string[];
   /** IDs for each row in the work. */
@@ -156,6 +124,8 @@ interface CoreCorpusIndex {
     rowData: [rowId: string, startTokenId: number, endTokenId: number][],
     workData: WorkData
   ][];
+  /** Maps author names to their ranges in the `workLookup` array. */
+  authorLookup: Record<string, [startIdx: number, endIdx: number]>;
   /** Statistics about the corpus. */
   stats: CorpusStats;
   /** The utf-8 encoded text of the full corpus. */
@@ -187,6 +157,7 @@ export type InProgressLatinCorpus = CoreCorpusIndex & {
 export function createEmptyCorpusIndex(): InProgressLatinCorpus {
   return {
     workLookup: [],
+    authorLookup: {},
     rawBufferPath: CORPUS_BUFFERS,
     rawTextPath: CORPUS_RAW_TEXT,
     tokenStarts: [],

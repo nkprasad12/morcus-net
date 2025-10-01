@@ -21,6 +21,7 @@ const TEST_WORKS: CorpusInputWork[] = [
     rowIds: [["1"], ["2"]],
     sectionDepth: 1,
     author: "Author 1",
+    authorCode: "Author1",
     workName: "Work 1",
   },
   {
@@ -29,6 +30,7 @@ const TEST_WORKS: CorpusInputWork[] = [
     rowIds: [["1"], ["2"]],
     sectionDepth: 1,
     author: "Author 2",
+    authorCode: "Author2",
     workName: "Work 2",
   },
   {
@@ -45,6 +47,7 @@ const TEST_WORKS: CorpusInputWork[] = [
     rowIds: [["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"]],
     sectionDepth: 1,
     author: "Author 2",
+    authorCode: "Author2",
     workName: "Work 3",
   },
 ];

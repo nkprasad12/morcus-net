@@ -257,12 +257,23 @@ export async function buildCorpus(
   const tokens: string[] = [];
   const breaks: string[] = [];
   const corpus = createEmptyCorpusIndex();
-  const authors: string[] = [];
+
+  let i = 0;
   for (const work of iterableWorks) {
-    const author = work.author;
-    assert(authors[authors.length - 1] === author || !authors.includes(author));
     absorbWork(work, corpus, getInflections, tokens, breaks);
-    authors.push(work.author);
+    const author = work.authorCode;
+    const authorData = corpus.authorLookup[author];
+    if (authorData === undefined) {
+      corpus.authorLookup[author] = [i, i];
+    } else {
+      assertEqual(
+        authorData[1],
+        i - 1,
+        `Author works are not contiguous: ${author}`
+      );
+      authorData[1] = i;
+    }
+    i += 1;
   }
   corpus.numTokens = tokens.length;
   corpus.stats.uniqueWords = corpus.indices.word.size;
