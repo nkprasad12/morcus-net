@@ -21,6 +21,7 @@ const TEST_WORKS: CorpusInputWork[] = [
     rowIds: [["1"], ["2"]],
     sectionDepth: 1,
     author: "Author 1",
+    authorCode: "Author1",
     workName: "Work 1",
   },
   {
@@ -29,16 +30,24 @@ const TEST_WORKS: CorpusInputWork[] = [
     rowIds: [["1"], ["2"]],
     sectionDepth: 1,
     author: "Author 2",
+    authorCode: "Author2",
     workName: "Work 2",
   },
   {
     id: "test_work_3",
     rows: [
       "Marmor et marmoris et marmorem. Et marmore et marmoribus et marmora et.",
+      "dedit oscula nato,",
+      "non iterum repetenda suo",
+      "dedit oscula saxo",
+      '"res" ait',
+      "dedit oscula vesti,",
+      '"accipe nunc"',
     ],
-    rowIds: [["1"]],
+    rowIds: [["1"], ["2"], ["3"], ["4"], ["5"], ["6"], ["7"]],
     sectionDepth: 1,
     author: "Author 2",
+    authorCode: "Author2",
     workName: "Work 3",
   },
 ];
@@ -51,7 +60,7 @@ describe("Corpus Integration Test", () => {
   let queryEngine: RustCorpusQueryEngine;
 
   function queryCorpus(query: string, pageStart?: number, pageSize?: number) {
-    const raw = queryEngine.queryCorpus(query, pageStart, pageSize);
+    const raw = queryEngine.queryCorpus({ query, pageStart, pageSize });
     const parsed = JSON.parse(raw);
     return assertType(parsed, CorpusQueryResult.isMatch);
   }
@@ -261,5 +270,47 @@ describe("Corpus Integration Test", () => {
     const sortedIds = Array.from(startIds).sort((a, b) => a - b);
     // Marmorem is not valid because marmor is neuter.
     expect(sortedIds).toEqual([0, 2, 6, 8, 10]);
+  });
+
+  it("should break lines across leaf sections with break after punct", () => {
+    const query = "oscula nato";
+
+    const results = queryCorpus(query);
+
+    expect(results.totalResults).toBe(1);
+    const resultParts = results.matches[0].text;
+    expect(resultParts).toHaveLength(3);
+    expect(resultParts[0][1]).toBe(false);
+    expect(resultParts[0][0]).toMatch(/dedit $/);
+    expect(resultParts[2][1]).toBe(false);
+    expect(resultParts[2][0]).toMatch(/^,\nnon iterum/);
+  });
+
+  it("should break lines across leaf sections with break before punct", () => {
+    const query = "oscula saxo";
+
+    const results = queryCorpus(query);
+
+    expect(results.totalResults).toBe(1);
+    const resultParts = results.matches[0].text;
+    expect(resultParts).toHaveLength(3);
+    expect(resultParts[0][1]).toBe(false);
+    expect(resultParts[0][0]).toMatch(/dedit $/);
+    expect(resultParts[2][1]).toBe(false);
+    expect(resultParts[2][0]).toMatch(/^\n"res"/);
+  });
+
+  it("should break lines across leaf sections with punct on both sides", () => {
+    const query = "oscula vesti";
+
+    const results = queryCorpus(query);
+
+    expect(results.totalResults).toBe(1);
+    const resultParts = results.matches[0].text;
+    expect(resultParts).toHaveLength(3);
+    expect(resultParts[0][1]).toBe(false);
+    expect(resultParts[0][0]).toMatch(/dedit $/);
+    expect(resultParts[2][1]).toBe(false);
+    expect(resultParts[2][0]).toMatch(/^,\n"accipe/);
   });
 });

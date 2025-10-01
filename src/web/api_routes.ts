@@ -131,6 +131,7 @@ export interface CorpusQueryRequest {
   commitHash?: string;
   pageStart?: number;
   pageSize?: number;
+  contextLen?: number;
 }
 
 export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
@@ -141,6 +142,21 @@ export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
     commitHash: maybeUndefined(isString),
     pageStart: maybeUndefined(isNumber),
     pageSize: maybeUndefined(isNumber),
+    contextLen: maybeUndefined(isNumber),
   }),
   outputValidator: CorpusQueryResult.isMatch,
 };
+
+export interface GetCorpusAuthorsRequest {
+  commitHash?: string;
+}
+
+export const GetCorpusAuthorsApi: ApiRoute<GetCorpusAuthorsRequest, string[]> =
+  {
+    path: "/api/corpus/authors",
+    method: "GET",
+    inputValidator: matchesObject<GetCorpusAuthorsRequest>({
+      commitHash: maybeUndefined(isString),
+    }),
+    outputValidator: isArray(isString),
+  };

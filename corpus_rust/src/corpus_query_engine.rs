@@ -10,7 +10,7 @@ mod reference_impl;
 use crate::api::{CorpusQueryResult, QueryExecError};
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
-use crate::query_parsing_v2::parse_query;
+use crate::query_parsing_v2::{Query, parse_query};
 
 use super::corpus_index::LatinCorpusIndex;
 use super::profiler::TimeProfiler;
@@ -46,6 +46,45 @@ impl CorpusQueryEngine {
         })
     }
 
+    fn compute_range(&self, query: &Query) -> Result<IndexRange, QueryExecError> {
+        if query.authors.len() > 1 {
+            return Err(QueryExecError::new(
+                "Multiple authors in query not currently supported",
+            ));
+        }
+        if query.authors.is_empty() {
+            let num_words = self.corpus.num_tokens.div_ceil(64);
+            let range = IndexRange {
+                start: 0,
+                end: num_words * 64,
+            };
+            return Ok(range);
+        }
+        let author = &query.authors[0];
+        let (start, end) = match self.corpus.author_lookup.get(author) {
+            Some(v) => *v,
+            None => {
+                return Err(QueryExecError::new(&format!(
+                    "Author '{}' not found in corpus",
+                    author
+                )));
+            }
+        };
+        eprintln!("Author '{}' found: works {} to {}", author, start, end);
+        for work_id in start..end {
+            eprintln!("  - {}", self.corpus.work_lookup[work_id].2.name);
+        }
+        let start = self.corpus.work_lookup[start].1[0].1;
+        let end_work_sections = &self.corpus.work_lookup[end].1;
+        let end = end_work_sections[end_work_sections.len() - 1].2;
+        eprintln!("Token range: {} to {}", start, end);
+        // The range must be aligned to word boundaries.
+        Ok(IndexRange {
+            start: (start / 64) * 64,
+            end: end.div_ceil(64) * 64,
+        })
+    }
+
     /// Queries the corpus with the given parameters.
     /// - `query_str`: The query string to execute.
     /// - `page_start`: The index of the first result to return (0-based).
@@ -72,11 +111,7 @@ impl CorpusQueryEngine {
         profiler.phase("Parse query");
 
         // Find the possible matches, then filter them
-        let num_words = self.corpus.num_tokens.div_ceil(64);
-        let range = IndexRange {
-            start: 0,
-            end: num_words * 64,
-        };
+        let range = self.compute_range(&query)?;
         let candidates = match self.compute_query_candidates(&query_spans, &range, &mut profiler)? {
             Some(res) => res,
             None => return Ok(empty_result()),

@@ -6,14 +6,11 @@ use std::fs;
 use crate::api::CorpusQueryMatchMetadata;
 
 #[derive(Debug, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CorpusStats {
-    #[serde(rename = "totalWords")]
     pub total_words: u32,
-    #[serde(rename = "totalWorks")]
     pub total_works: u32,
-    #[serde(rename = "uniqueWords")]
     pub unique_words: u32,
-    #[serde(rename = "uniqueLemmata")]
     pub unique_lemmata: u32,
 }
 
@@ -43,6 +40,7 @@ pub type WorkLookupEntry = (String, Vec<(String, u32, u32)>, WorkData);
 #[serde(rename_all = "camelCase")]
 pub struct LatinCorpusIndex {
     pub work_lookup: Vec<WorkLookupEntry>,
+    pub author_lookup: HashMap<String, (usize, usize)>,
     pub stats: CorpusStats,
     pub raw_text_path: String,
     pub raw_buffer_path: String,
