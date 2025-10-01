@@ -16,7 +16,24 @@ import type { CorpusQueryRequest } from "@/web/api_routes";
 
 function formatQueryResult(result: CorpusQueryMatch): string {
   const data = result.metadata;
-  return `- ${data.workId} @ ${data.section} (offset: ${data.offset})\n  ${result.text}`;
+  const { author, workName, section } = data;
+
+  // header: author (blue) - workName section (green)
+  const out = `  \x1b[34m${author}\x1b[0m - \x1b[32m${workName} ${section}\x1b[0m\n`;
+
+  // prepare chunks to match Rust output
+  const chunks: string[] = ["    "];
+  const txt: [string, boolean][] = result.text;
+
+  for (const [text, isCore] of txt) {
+    const color = isCore ? "\x1b[31m" : "\x1b[90m";
+    // indent lines after any newline so subsequent lines align correctly
+    const processed = text.replace(/\n/g, "\n    ");
+    chunks.push(`${color}${processed}\x1b[0m`);
+  }
+  chunks.push("\n");
+
+  return out + chunks.join("");
 }
 
 function currentMemoryUsage(): number {
