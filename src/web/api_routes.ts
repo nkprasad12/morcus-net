@@ -146,3 +146,17 @@ export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
   }),
   outputValidator: CorpusQueryResult.isMatch,
 };
+
+export interface GetCorpusAuthorsRequest {
+  commitHash?: string;
+}
+
+export const GetCorpusAuthorsApi: ApiRoute<GetCorpusAuthorsRequest, string[]> =
+  {
+    path: "/api/corpus/authors",
+    method: "GET",
+    inputValidator: matchesObject<GetCorpusAuthorsRequest>({
+      commitHash: maybeUndefined(isString),
+    }),
+    outputValidator: isArray(isString),
+  };

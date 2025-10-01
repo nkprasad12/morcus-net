@@ -5,9 +5,13 @@ import {
   type InProgressLatinCorpus,
   CORPUS_BUFFERS,
   CORPUS_TOKEN_STARTS,
+  CORPUS_AUTHORS_LIST,
 } from "@/common/library/corpus/corpus_common";
+import { encodeMessage } from "@/web/utils/rpc/parsing";
+import { serverMessage } from "@/web/utils/rpc/server_rpc";
 import fs from "fs";
 import path from "path";
+import zlib from "zlib";
 
 interface StoredArray {
   offset: number;
@@ -21,6 +25,17 @@ interface StoredBitmask {
 
 type StoredMapValue = StoredArray | StoredBitmask;
 
+function writeAuthorsFile(corpus: InProgressLatinCorpus, corpusDir: string) {
+  const authorsDest = path.join(corpusDir, CORPUS_AUTHORS_LIST);
+  const encoded = encodeMessage(
+    serverMessage(Object.keys(corpus.authorLookup))
+  );
+  const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
+    level: 9,
+  });
+  fs.writeFileSync(authorsDest, compressed);
+}
+
 export async function writeCorpus(
   corpus: InProgressLatinCorpus,
   corpusDir: string = CORPUS_DIR
@@ -28,6 +43,7 @@ export async function writeCorpus(
   if (!fs.existsSync(corpusDir)) {
     fs.mkdirSync(corpusDir, { recursive: true });
   }
+  writeAuthorsFile(corpus, corpusDir);
   const destFile = path.join(corpusDir, CORPUS_FILE);
   fs.writeFileSync(destFile, await serializeCorpus(corpus, corpusDir));
   console.debug(`Corpus written to ${destFile}`);

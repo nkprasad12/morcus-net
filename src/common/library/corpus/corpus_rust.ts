@@ -1,7 +1,13 @@
-import { CORPUS_DIR } from "@/common/library/corpus/corpus_common";
+import {
+  CORPUS_AUTHORS_LIST,
+  CORPUS_DIR,
+} from "@/common/library/corpus/corpus_common";
 import { singletonOf } from "@/common/misc_utils";
 import { timed } from "@/common/timing/timed_invocation";
 import type { CorpusQueryRequest } from "@/web/api_routes";
+import type { RequestData } from "@/web/utils/rpc/server_rpc";
+import { readFile } from "fs/promises";
+import zlib from "zlib";
 
 /**
  * A query engine that uses Rust for querying the corpus.
@@ -52,4 +58,15 @@ export function rustCorpusApiHandler(): CorpusQueryHandler {
     initialize: () => engine.get(),
     runQuery: (request) => engine.get().queryCorpus(request),
   };
+}
+
+export async function corpusAuthorList(
+  requestData?: RequestData
+): Promise<Buffer> {
+  const listPath = `${CORPUS_DIR}/${CORPUS_AUTHORS_LIST}`;
+  const compressed = await readFile(listPath);
+  if (requestData?.acceptEncoding?.includes("gzip")) {
+    return compressed;
+  }
+  return Promise.resolve(zlib.gunzipSync(compressed));
 }
