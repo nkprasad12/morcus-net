@@ -9,6 +9,7 @@ const SIMPLE_PREFIXES: [&str; 4] = ["@lemma:", "@word:", "@l:", "@w:"];
 #[derive(Debug, Clone)]
 pub struct Query {
     pub terms: Vec<QueryTerm>,
+    pub authors: Vec<String>,
 }
 
 /// An error that occurs while parsing a query.
@@ -454,7 +455,7 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
 ///
 /// ## Query
 ///
-/// A full query is finally a sequence of token constraints,
+/// A full query is a sequence of token constraints,
 /// along with some syntax encoding their relative relationships.
 ///
 /// The following relations are supported:
@@ -469,8 +470,13 @@ fn split_query(raw_input: &str) -> Result<(Vec<String>, Vec<String>), QueryParse
 ///   token that matches B.
 ///
 /// There is no bound in the length of the allowed query.
+///
+/// A query may be preceded by a list of authors in square brackets.
+/// For example, `[Cicero, Caesar] @lemma:amor` will restrict the search to works
+/// by Cicero or Caesar.
 pub fn parse_query(input: &str) -> Result<Query, QueryParseError> {
-    let (constraints, relations) = split_query(input)?;
+    let (query_body, authors) = parse_author_prefix(input)?;
+    let (constraints, relations) = split_query(query_body)?;
     let n = constraints.len();
     check_equal!(n, relations.len() + 1, "Unexpected query split");
     let mut terms: Vec<QueryTerm> = vec![];
@@ -484,7 +490,35 @@ pub fn parse_query(input: &str) -> Result<Query, QueryParseError> {
             relation: parse_relation(&relations[i - 1])?,
         });
     }
-    Ok(Query { terms })
+    Ok(Query { terms, authors })
+}
+
+fn parse_author_prefix(input: &str) -> Result<(&str, Vec<String>), QueryParseError> {
+    let trimmed = input.trim_start();
+    if !trimmed.starts_with('[') {
+        return Ok((trimmed, Vec::new()));
+    }
+
+    let close_idx = trimmed[1..]
+        .find(']')
+        .ok_or_else(|| QueryParseError::new("Missing closing ']' in author list"))?
+        + 1;
+
+    let authors_segment = trimmed[1..close_idx].trim();
+    let authors: Vec<String> = authors_segment
+        .split(',')
+        .map(|author| author.trim())
+        .filter(|author| !author.is_empty())
+        .map(|author| author.to_string())
+        .collect();
+
+    if authors.is_empty() {
+        return Err(QueryParseError::new("Author list cannot be empty"));
+    }
+
+    let remainder = trimmed[close_idx + 1..].trim_start();
+
+    Ok((remainder, authors))
 }
 
 #[cfg(test)]
@@ -964,5 +998,25 @@ mod tests {
             TokenConstraint::Atom(TokenConstraintAtom::Word("est".to_string()))
         );
         assert_eq!(query.terms[1].relation, QueryRelation::After);
+    }
+
+    #[test]
+    fn parse_query_with_authors_prefix() {
+        let query = parse_query("[Cicero, Caesar] @lemma:amor").unwrap();
+        assert_eq!(
+            query.authors,
+            vec!["Cicero".to_string(), "Caesar".to_string()]
+        );
+        assert_eq!(query.terms.len(), 1);
+    }
+
+    #[test]
+    fn parse_query_invalid_author_not_prefix() {
+        assert!(parse_query("@lemma:amor [Cicero]").is_err());
+    }
+
+    #[test]
+    fn parse_query_invalid_author_missing_bracket() {
+        assert!(parse_query("[Cicero @lemma:amor").is_err());
     }
 }
