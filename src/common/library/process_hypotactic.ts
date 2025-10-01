@@ -17,7 +17,10 @@ const CREDIT_KEY = "scansion credit";
 const KNOWN_KEYS = new Set([LICENSE_KEY, CREDIT_KEY]);
 
 // These should map Hypotactic author names to Perseus author names.
-const AUTHOR_REMAPPING = new Map<string, string>([["Ovid", "P. Ovidius Naso"]]);
+const AUTHOR_REMAPPING = new Map<string, string>([
+  ["Ovid", "P. Ovidius Naso"],
+  ["Cicero", "M. Tullius Cicero"],
+]);
 
 const CAN_SKIP_SPEAKERS = new Set(["hypotactic_Eclogues_Calpurnius Siculus"]);
 

@@ -49,7 +49,9 @@ function absorbWork(
   tokens: string[],
   breaks: string[]
 ) {
-  console.debug(`Ingesting into corpus: ${work.id}`);
+  console.debug(
+    `Ingesting into corpus: ${work.workName} (${work.author}) - ${work.id}`
+  );
   const wordIndex = arrayMap(corpus.indices.word);
   const lemmaIndex = arrayMap(corpus.indices.lemma);
   const casesIndex = arrayMap(corpus.indices.case);
@@ -255,8 +257,12 @@ export async function buildCorpus(
   const tokens: string[] = [];
   const breaks: string[] = [];
   const corpus = createEmptyCorpusIndex();
+  const authors: string[] = [];
   for (const work of iterableWorks) {
+    const author = work.author;
+    assert(authors[authors.length - 1] === author || !authors.includes(author));
     absorbWork(work, corpus, getInflections, tokens, breaks);
+    authors.push(work.author);
   }
   corpus.numTokens = tokens.length;
   corpus.stats.uniqueWords = corpus.indices.word.size;

@@ -38,7 +38,17 @@ function readFilesFromLibraryIndex(): string[] {
   const indexPath = `${LIB_DEFAULT_DIR}/${LIBRARY_INDEX}`;
   const rawContent = fs.readFileSync(indexPath, "utf8");
   const libraryIndex: LibraryIndex = JSON.parse(rawContent);
-  return Object.values(libraryIndex).map(([path]) => path);
+  return Object.values(libraryIndex)
+    .filter(
+      ([, metadata]) =>
+        metadata.isTranslation !== true && !SKIPS.has(metadata.id)
+    )
+    .sort(
+      (a, b) =>
+        a[1].author.localeCompare(b[1].author) ||
+        a[1].name.localeCompare(b[1].name)
+    )
+    .map(([path]) => path);
 }
 
 function* latinWorksInFiles(filePaths: string[]): Generator<ProcessedWork2> {
@@ -47,20 +57,13 @@ function* latinWorksInFiles(filePaths: string[]): Generator<ProcessedWork2> {
   for (const workPath of filePaths) {
     const compressed = fs.readFileSync(workPath);
     const raw = gunzipSync(compressed).toString();
-    const work = decodeMessage(raw, validator, registry).data;
-    if (work.info.isTranslation) {
-      continue;
-    }
-    yield work;
+    yield decodeMessage(raw, validator, registry).data;
   }
 }
 
 export function* latinWorksFromLibrary(): Generator<CorpusInputWork> {
   const filePaths = readFilesFromLibraryIndex();
   for (const work of latinWorksInFiles(filePaths)) {
-    if (SKIPS.has(work.info.workId)) {
-      continue;
-    }
     yield convertToCorpusInputWork(work);
     if (process.env.SIMULATE_LARGE_CORPUS === "1") {
       const converted = convertToCorpusInputWork(work);
