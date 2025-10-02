@@ -11,7 +11,7 @@ import "@testing-library/jest-dom/extend-expect";
 
 describe("optionsForInput", () => {
   test("empty input returns word help and special '@' help", () => {
-    const opts = optionsForInput("");
+    const opts = optionsForInput("", null);
     const optStrings = opts.map((o) => o.option);
     const helps = opts.map((o) => o.help);
     expect(optStrings).toContain("");
@@ -22,11 +22,11 @@ describe("optionsForInput", () => {
   });
 
   test("typing a plain word returns no suggestions", () => {
-    expect(optionsForInput("amor")).toEqual([]);
+    expect(optionsForInput("amor", null)).toEqual([]);
   });
 
   test("single @ returns category suggestions including lemma and case", () => {
-    const opts = optionsForInput("@");
+    const opts = optionsForInput("@", null);
     const optStrings = opts.map((o) => o.option);
     expect(optStrings.length).toBeGreaterThan(0);
     expect(optStrings).toContain("lemma:");
@@ -34,42 +34,42 @@ describe("optionsForInput", () => {
   });
 
   test("partial category after @ returns suffix suggestion", () => {
-    const opts = optionsForInput("@l");
+    const opts = optionsForInput("@l", null);
     // For "@l" we expect "emma:" suggestion (completing "lemma:")
     expect(opts.length).toBeGreaterThan(0);
     expect(opts[0].option).toBe("emma:");
   });
 
   test("lemma keyword with colon allows free input (no suggestions)", () => {
-    expect(optionsForInput("@lemma:")).toEqual([]);
+    expect(optionsForInput("@lemma:", null)).toEqual([]);
   });
 
   test("colon without preceding @ returns error informational option", () => {
-    const opts = optionsForInput(":");
+    const opts = optionsForInput(":", null);
     expect(opts.length).toBe(1);
     expect(opts[0].help).toEqual("Error - `:` without @keyword");
   });
 
   test("category @case: returns list of case options (with trailing space)", () => {
-    const opts = optionsForInput("@case:");
+    const opts = optionsForInput("@case:", null);
     const optStrings = opts.map((o) => o.option);
     expect(optStrings).toContain("nominative ");
     expect(optStrings).toContain("genitive ");
   });
 
   test("partial category value suggests suffix for matching option", () => {
-    const opts = optionsForInput("@case:gen");
+    const opts = optionsForInput("@case:gen", null);
     // "genitive" startsWith "gen" so expected suggestion is "itive "
     const optStrings = opts.map((o) => o.option);
     expect(optStrings).toContain("itive ");
   });
 
   test("exact category value yields no suggestions", () => {
-    expect(optionsForInput("@case:genitive")).toEqual([]);
+    expect(optionsForInput("@case:genitive", null)).toEqual([]);
   });
 
   test("unknown @keyword returns informational unknown-keyword help", () => {
-    const opts = optionsForInput("@foobarbaz");
+    const opts = optionsForInput("@foobarbaz", null);
     expect(opts.length).toBe(1);
     expect(opts[0].help).toContain("Unknown keyword @foobarbaz");
   });

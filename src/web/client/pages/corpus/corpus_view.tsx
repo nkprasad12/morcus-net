@@ -18,6 +18,7 @@ import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 import { Fragment, useMemo, useState } from "react";
 import { useCorpusRouter } from "@/web/client/pages/corpus/corpus_router";
+import { GetCorpusAuthorsApi } from "@/web/api_routes";
 import {
   SettingsPreview,
   CorpusSettingsDialog,
@@ -35,6 +36,7 @@ export function CorpusQueryPage() {
   const [requestQuery, setRequestQuery] = useState<string>("");
   const [results, setResults] = useState<Results>("N/A");
   const [showSettings, setShowSettings] = useState(false);
+  const [authors, setAuthors] = useState<string[] | null>(null);
 
   const { nav, route } = useCorpusRouter();
   const { query, startIdx, pageSize, contextLen } = route;
@@ -58,6 +60,17 @@ export function CorpusQueryPage() {
     onError: () => setResults("Error"),
   });
 
+  const getAuthorsRequest = useMemo(
+    () => ({ commitHash: getCommitHash() }),
+    [],
+  );
+
+  useApiCall(GetCorpusAuthorsApi, getAuthorsRequest, {
+    onResult: setAuthors,
+    onLoading: () => {},
+    onError: () => {},
+  });
+
   const showResults = results !== "N/A" && query.length > 0;
 
   return (
@@ -71,7 +84,7 @@ export function CorpusQueryPage() {
         onRawEnter={() => nav.to((c) => ({ ...c, query: requestQuery }))}
         onOptionSelected={(o, current) => `${current}${o.option}`}
         RenderOption={CorpusAutocompleteItem}
-        optionsForInput={optionsForInput}
+        optionsForInput={(q) => optionsForInput(q, authors)}
         toKey={toKey}
         autoFocused
         showOptionsInitially
@@ -272,6 +285,17 @@ function QueryHelpSection() {
           </ul>
         </details>
         <details>
+          <summary>Filtering by author</summary>
+          <ul>
+            <li>
+              <code>[author1, author2]</code> - Restricts the search to works
+              by the specified authors. For example,{" "}
+              <code>[Caesar, Cicero] amoris</code> will find instances of{" "}
+              <code>amoris</code> but only in works by Caesar or Cicero.
+            </li>
+          </ul>
+        </details>
+        <details>
           <summary>Examples</summary>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -315,6 +339,17 @@ function QueryHelpSection() {
                 <td>
                   <code>dedi saepe panem</code> or{" "}
                   <code>habet in manu ensem</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <code>[Caesar] @lemma:bellum</code>
+                </td>
+                <td>
+                  Any inflection of <code>bellum</code> in works by Caesar.
+                </td>
+                <td>
+                  <code>bellum</code>, <code>belli</code>, etc.
                 </td>
               </tr>
             </tbody>

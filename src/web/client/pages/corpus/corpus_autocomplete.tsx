@@ -39,6 +39,11 @@ const SPECIAL_HELP: CorpusAutocompleteOption = {
   help: "filter by lemma or inflection",
 };
 
+const AUTHOR_HELP: CorpusAutocompleteOption = {
+  option: "[",
+  help: "filter by author",
+};
+
 function unknownKeyword(keyword: string): CorpusAutocompleteOption {
   return {
     option: "",
@@ -79,13 +84,46 @@ function findLastMilestone(s: string, startIdx?: number): [Milestone, number] {
   return ["termStart", 0];
 }
 
-export function optionsForInput(inputRaw: string): CorpusAutocompleteOption[] {
+export function optionsForInput(
+  inputRaw: string,
+  authors: string[] | null,
+): CorpusAutocompleteOption[] {
+  // Author autocomplete logic.
+  const authorTyping = inputRaw.startsWith("[") && !inputRaw.includes("]");
+  if (authorTyping) {
+    if (!authors) {
+      return [];
+    }
+    const afterBracket = inputRaw.substring(1);
+    const typedAuthors = afterBracket.split(",").map((s) => s.trim());
+    const currentAuthor = typedAuthors.pop() || "";
+    const selectedAuthors = new Set(
+      typedAuthors.map((s) => s.toLowerCase()),
+    );
+
+    const availableAuthors = authors.filter(
+      (a) => !selectedAuthors.has(a.toLowerCase()),
+    );
+
+    for (const author of availableAuthors) {
+      if (author.toLowerCase() === currentAuthor.toLowerCase()) {
+        return [{ option: "]" }, { option: ", " }];
+      }
+    }
+
+    return availableAuthors
+      .filter((a) => a.toLowerCase().startsWith(currentAuthor.toLowerCase()))
+      .map((author) => ({
+        option: author.substring(currentAuthor.length),
+      }));
+  }
+
   const [milestone, idx] = findLastMilestone(inputRaw);
   const fromMilestone = inputRaw.slice(idx).toLowerCase();
   if (milestone === "termStart") {
     // We are at the start of a term, and they have no non-space characters yet.
     if (fromMilestone.trim() === "") {
-      return [WORD_HELP, SPECIAL_HELP];
+      return [WORD_HELP, SPECIAL_HELP, AUTHOR_HELP];
     }
     // We have some non-space characters, so they've started typing a word.
     return [];
