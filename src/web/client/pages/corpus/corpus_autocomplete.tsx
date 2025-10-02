@@ -86,7 +86,7 @@ function findLastMilestone(s: string, startIdx?: number): [Milestone, number] {
 
 export function optionsForInput(
   inputRaw: string,
-  authors: string[] | null,
+  authors: string[] | null
 ): CorpusAutocompleteOption[] {
   // Author autocomplete logic.
   const authorTyping = inputRaw.startsWith("[") && !inputRaw.includes("]");
@@ -97,17 +97,18 @@ export function optionsForInput(
     const afterBracket = inputRaw.substring(1);
     const typedAuthors = afterBracket.split(",").map((s) => s.trim());
     const currentAuthor = typedAuthors.pop() || "";
-    const selectedAuthors = new Set(
-      typedAuthors.map((s) => s.toLowerCase()),
-    );
+    const selectedAuthors = new Set(typedAuthors.map((s) => s.toLowerCase()));
 
     const availableAuthors = authors.filter(
-      (a) => !selectedAuthors.has(a.toLowerCase()),
+      (a) => !selectedAuthors.has(a.toLowerCase())
     );
 
     for (const author of availableAuthors) {
       if (author.toLowerCase() === currentAuthor.toLowerCase()) {
-        return [{ option: "]" }, { option: ", " }];
+        return [
+          { option: "] ", help: "done filtering authors" },
+          { option: ", ", help: "add another author" },
+        ];
       }
     }
 
@@ -198,11 +199,15 @@ export function CorpusAutocompleteItem(props: {
   option: CorpusAutocompleteOption;
 }) {
   return (
-    <div>
+    <div
+      style={{
+        display: "inline-flex",
+        alignItems: "center",
+      }}>
       {props.option.informationalOnly !== true && (
         <>
-          {props.current}
-          <b>{props.option.option}</b>{" "}
+          <span className="text sm">{props.current}</span>
+          <b>{props.option.option}</b>
         </>
       )}
       {props.option.help && (

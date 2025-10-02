@@ -16,7 +16,7 @@ import {
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
 import { useCorpusRouter } from "@/web/client/pages/corpus/corpus_router";
 import { GetCorpusAuthorsApi } from "@/web/api_routes";
 import {
@@ -62,7 +62,7 @@ export function CorpusQueryPage() {
 
   const getAuthorsRequest = useMemo(
     () => ({ commitHash: getCommitHash() }),
-    [],
+    []
   );
 
   useApiCall(GetCorpusAuthorsApi, getAuthorsRequest, {
@@ -72,6 +72,11 @@ export function CorpusQueryPage() {
   });
 
   const showResults = results !== "N/A" && query.length > 0;
+
+  const optionsForInputMemo = useCallback(
+    (input: string) => optionsForInput(input, authors),
+    [authors]
+  );
 
   return (
     <div style={{ maxWidth: "800px", margin: "auto", marginTop: "16px" }}>
@@ -84,7 +89,7 @@ export function CorpusQueryPage() {
         onRawEnter={() => nav.to((c) => ({ ...c, query: requestQuery }))}
         onOptionSelected={(o, current) => `${current}${o.option}`}
         RenderOption={CorpusAutocompleteItem}
-        optionsForInput={(q) => optionsForInput(q, authors)}
+        optionsForInput={optionsForInputMemo}
         toKey={toKey}
         autoFocused
         showOptionsInitially
@@ -288,8 +293,8 @@ function QueryHelpSection() {
           <summary>Filtering by author</summary>
           <ul>
             <li>
-              <code>[author1, author2]</code> - Restricts the search to works
-              by the specified authors. For example,{" "}
+              <code>[author1, author2]</code> - Restricts the search to the
+              specified authors. For example,{" "}
               <code>[Caesar, Cicero] amoris</code> will find instances of{" "}
               <code>amoris</code> but only in works by Caesar or Cicero.
             </li>
