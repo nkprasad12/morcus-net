@@ -70,14 +70,9 @@ impl CorpusQueryEngine {
                 )));
             }
         };
-        eprintln!("Author '{}' found: works {} to {}", author, start, end);
-        for work_id in start..end {
-            eprintln!("  - {}", self.corpus.work_lookup[work_id].2.name);
-        }
         let start = self.corpus.work_lookup[start].1[0].1;
         let end_work_sections = &self.corpus.work_lookup[end].1;
         let end = end_work_sections[end_work_sections.len() - 1].2;
-        eprintln!("Token range: {} to {}", start, end);
         // The range must be aligned to word boundaries.
         Ok(IndexRange {
             start: (start / 64) * 64,
