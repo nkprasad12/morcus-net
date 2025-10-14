@@ -167,6 +167,14 @@ impl CorpusQueryEngine {
         })
     }
 
+    fn resolve_author_data(&self, name: Option<&String>) -> Option<(u32, u32)> {
+        let name = name?;
+        let (start, end) = self.corpus.author_lookup.get(name)?;
+        let start_work = self.corpus.work_lookup[*start].1[0].1;
+        let end_work = self.corpus.work_lookup[*end - 1].1.last()?.1;
+        Some((start_work, end_work))
+    }
+
     fn query_corpus_ref_impl(
         &self,
         query_str: &str,
@@ -216,16 +224,27 @@ impl CorpusQueryEngine {
         }
 
         let hard_breaks = self.hard_breaks_ref_impl()?;
+        // Just for now.
+        assert!(query.authors.len() <= 1);
+        let author_data = self.resolve_author_data(query.authors.first());
         let match_ids: Vec<SpanCandidate> = candidates
             .iter()
-            .map(|SpanCandidate { ids, span_length }| SpanCandidate {
-                ids: ids
+            .map(|SpanCandidate { ids, span_length }| {
+                let ids = ids
                     .iter()
                     // -2 because we only care about breaks between tokens, not after the last token.
-                    .filter(|x| !arr_has_any_in_range(&hard_breaks, &(**x, **x + span_length - 2)))
-                    .copied()
-                    .collect(),
-                span_length: *span_length,
+                    .filter(|x| !arr_has_any_in_range(&hard_breaks, &(**x, **x + span_length - 2)));
+                let ids: Vec<u32> = if let Some(author_data) = author_data {
+                    ids.filter(|x| **x >= author_data.0 && **x + span_length - 1 <= author_data.1)
+                        .copied()
+                        .collect()
+                } else {
+                    ids.copied().collect()
+                };
+                SpanCandidate {
+                    ids,
+                    span_length: *span_length,
+                }
             })
             .collect();
 

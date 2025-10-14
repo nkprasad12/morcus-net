@@ -153,6 +153,7 @@ mod tests {
         generate!("(@case:dat or @voice:passive)"),
         generate!("(@case:dat or (@voice:passive and @lemma:do))"),
         generate!("@lemma:do oscula @case:dat"),
+        generate!("[Ovid] @lemma:do oscula @case:dat"),
         generate!("@case:dat @case:acc"),
         generate!("@case:dat @case:nom et"),
     ];
