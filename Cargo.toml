@@ -1,5 +1,5 @@
 [workspace]
-members = ["corpus_rust"]
+members = ["corpus_rust", "morceus_rust"]
 
 [package]
 name = "corpus_rust_wrapper"
