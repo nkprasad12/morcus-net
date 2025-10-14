@@ -20,6 +20,9 @@ struct SpanResult<'a> {
     relation: QueryRelation,
 }
 
+/// Splits a query into spans of contiguous terms. A span is a sequence of terms
+/// that need to be directly to the right of the previous term in the sequence (in
+/// particular, proximity relations break spans).
 pub(super) fn split_into_spans<'a>(
     query: &'a [InternalQueryTerm<'a>],
 ) -> Result<Vec<&'a [InternalQueryTerm<'a>]>, QueryExecError> {

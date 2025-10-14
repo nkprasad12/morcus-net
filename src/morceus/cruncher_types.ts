@@ -27,7 +27,11 @@ export interface LatinWordAnalysis {
 }
 
 // [Stem / Form, lemma, isVerb]
-export type StemMapValue = [Stem | IrregularForm, string, boolean];
+export type StemMapValue = [
+  Stem | IrregularForm,
+  lemma: string,
+  isVerb: boolean
+];
 
 export interface CruncherTables {
   endsMap: Map<string, string[]>;
