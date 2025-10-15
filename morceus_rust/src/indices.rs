@@ -46,25 +46,11 @@ pub enum DataField {
     Multiple(Vec<u8>),
 }
 
-// Grammatical inflection data
-#[derive(Debug, Clone, Deserialize)]
-#[serde(rename_all = "camelCase")]
-pub struct WordInflectionData {
-    pub case: Option<DataField>,
-    pub number: Option<u8>,
-    pub gender: Option<DataField>,
-    pub tense: Option<u8>,
-    pub mood: Option<u8>,
-    pub voice: Option<u8>,
-    pub person: Option<u8>,
-    pub degree: Option<u8>,
-}
-
 // Inflection context
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InflectionContext {
-    pub grammatical_data: WordInflectionData,
+    pub grammatical_data: u32,
     pub tags: Option<Vec<String>>,
     pub internal_tags: Option<Vec<String>>,
 }

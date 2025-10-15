@@ -14,6 +14,7 @@ import type { InflectionTable } from "@/morceus/tables/templates";
 import fs from "fs/promises";
 import path from "path";
 import { gzip } from "zlib";
+import { packWordInflectionData } from "@/morceus/inflection_data_utils";
 
 export namespace MorceusTables {
   export const make = makeTables;
@@ -65,8 +66,32 @@ function isNumeral(lemma: Lemma) {
   return false;
 }
 
-async function saveTables(config?: CruncherConfig) {
+async function saveTables(config?: CruncherConfig, compress: boolean = true) {
   const tables = makeTables(config);
+
+  if (!compress) {
+    const dir = path.join("build", "morceus", "processed");
+    await fs.mkdir(dir, { recursive: true });
+    const outPath = path.join(dir, "morceusTables.json");
+    const replacer = (_key: string, value: unknown) => {
+      if (_key === "grammaticalData") {
+        assert(
+          typeof value === "object" && value !== null,
+          "grammaticalData must be an object"
+        );
+        // @ts-expect-error
+        return packWordInflectionData(value);
+      }
+      if (value instanceof Map) {
+        return Object.fromEntries(value);
+      }
+      return value;
+    };
+    const stringified = JSON.stringify(tables, replacer);
+    await fs.writeFile(outPath, stringified);
+    return;
+  }
+
   const replacer = (_: string, value: unknown) =>
     value instanceof Map
       ? {
