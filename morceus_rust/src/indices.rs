@@ -1,16 +1,6 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
-// In the non-compressed format, Maps are serialized as plain objects
-// No custom Map structure is needed for this format
-
-// TrieNode equivalent - Matches TypeScript implementation
-#[derive(Debug, Clone, Deserialize)]
-pub struct TrieNode<T> {
-    pub value: Option<T>,
-    pub children: Option<HashMap<String, TrieNode<T>>>,
-}
-
 // StemMapValue: serialized as a tuple/array [Stem | IrregularForm, lemma: string, isVerb: boolean]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(from = "(StemOrForm, String, bool)")]
@@ -39,13 +29,6 @@ pub enum StemOrForm {
     IrregularForm(IrregularForm),
 }
 
-#[derive(Debug, Clone, Deserialize)]
-#[serde(untagged)]
-pub enum DataField {
-    Single(u8),
-    Multiple(Vec<u8>),
-}
-
 // Inflection context
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -55,11 +38,45 @@ pub struct InflectionContext {
     pub internal_tags: Option<Vec<String>>,
 }
 
+// :wd: 	indeclinable form (preposition, adverb, interjection, etc.) or unanalyzed irregular form
+// :aj: 	adjective; must have an inflectional class
+// :no: 	noun; must have an inflectional class and a gender
+// :vb: 	verb form; for unanalyzed irregular forms
+// :de: 	derivable verb; must have an inflectional class
+// :vs: 	verb stem, one of the principal parts; must have an inflectional class
+#[derive(Debug, Clone, Deserialize)]
+#[serde(from = "Option<String>")]
+pub enum StemCode {
+    None = 0,
+    Wd = 1,
+    Aj = 2,
+    No = 3,
+    Vb = 4,
+    De = 5,
+    Vs = 6,
+}
+
+// Implementation to convert from tuple format to struct
+impl From<Option<String>> for StemCode {
+    fn from(code: Option<String>) -> Self {
+        match code.as_deref() {
+            Some("wd") => StemCode::Wd,
+            Some("aj") => StemCode::Aj,
+            Some("no") => StemCode::No,
+            Some("vb") => StemCode::Vb,
+            Some("de") => StemCode::De,
+            Some("vs") => StemCode::Vs,
+            None => StemCode::None,
+            _ => panic!("Unknown StemCode"),
+        }
+    }
+}
+
 // Updated Stem: matches TS Stem which extends InflectionContext and has code, stem, inflection
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Stem {
-    pub code: Option<String>,
+    pub code: StemCode,
     pub stem: String,
     pub inflection: String,
     #[serde(flatten)]
@@ -70,7 +87,7 @@ pub struct Stem {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IrregularForm {
-    pub code: Option<String>,
+    pub code: StemCode,
     pub form: String,
     #[serde(flatten)]
     pub context: InflectionContext,
