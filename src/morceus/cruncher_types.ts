@@ -1,4 +1,3 @@
-import type { TrieNode } from "@/common/data_structures/trie";
 import type {
   InflectionContext,
   InflectionEnding,
@@ -35,7 +34,7 @@ export type StemMapValue = [
 
 export interface CruncherTables {
   endsMap: Map<string, string[]>;
-  stemTrie: TrieNode<StemMapValue>;
+  stemMap: Map<string, StemMapValue[]>;
   inflectionLookup: InflectionLookup;
   numerals: Lemma[];
   rawTables: Map<string, InflectionTable>;

@@ -128,7 +128,7 @@ pub type InflectionLookupType = HashMap<String, HashMap<String, Vec<InflectionEn
 #[serde(rename_all = "camelCase")]
 pub struct CruncherTables {
     pub ends_map: HashMap<String, Vec<String>>,
-    pub stem_trie: TrieNode<StemMapValue>,
+    pub stem_map: HashMap<String, Vec<StemMapValue>>,
     pub inflection_lookup: InflectionLookupType,
     pub numerals: Vec<Lemma>,
     pub raw_tables: HashMap<String, InflectionTable>,

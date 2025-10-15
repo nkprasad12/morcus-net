@@ -5,7 +5,6 @@ import {
   Vowels,
 } from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import * as Trie from "@/common/data_structures/trie";
 import {
   CruncherTables,
   CrunchResult,
@@ -98,7 +97,7 @@ function crunchExactMatch(
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
   for (let i = 0; i <= word.length; i++) {
-    const candidates = Trie.find(tables.stemTrie!, word, i);
+    const candidates = tables.stemMap.get(word.substring(0, i));
     if (candidates === undefined) {
       continue;
     }

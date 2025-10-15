@@ -1,5 +1,5 @@
 import { assert } from "@/common/assert";
-import { arrayMapBy } from "@/common/data_structures/collect_map";
+import { arrayMap, arrayMapBy } from "@/common/data_structures/collect_map";
 import { envVar } from "@/common/env_vars";
 import { singletonOf } from "@/common/misc_utils";
 import type {
@@ -8,7 +8,6 @@ import type {
   StemMapValue,
 } from "@/morceus/cruncher_types";
 import { allNounStems, allVerbStems, type Lemma } from "@/morceus/stem_parsing";
-import * as Trie from "@/common/data_structures/trie";
 import { makeEndIndex, type EndIndexRow } from "@/morceus/tables/indices";
 import type { InflectionTable } from "@/morceus/tables/templates";
 import fs from "fs/promises";
@@ -35,7 +34,7 @@ function makeTables(config?: CruncherConfig): CruncherTables {
       allVerbStems(config?.generate?.verbStemFiles)
     );
   const endsMap = makeEndsMap(endIndices);
-  const stemTrie = makeStemsTrie(allLemmata);
+  const stemMap = makeStemsMap(allLemmata);
   const rawTablesMap = new Map<string, InflectionTable>();
   for (const table of rawTables) {
     assert(!rawTablesMap.has(table.name), `Duplicate table: ${table.name}`);
@@ -44,7 +43,7 @@ function makeTables(config?: CruncherConfig): CruncherTables {
   const rawLemmataMap = arrayMapBy(allLemmata, (l) => l.lemma);
   return {
     endsMap,
-    stemTrie,
+    stemMap,
     inflectionLookup: endTables,
     numerals: allLemmata.filter(isNumeral),
     rawTables: rawTablesMap,
@@ -121,18 +120,18 @@ function normalizeKey(input: string): string {
     .replaceAll("+", "");
 }
 
-function makeStemsTrie(lemmata: Lemma[]): Trie.TrieNode<StemMapValue> {
-  const root: Trie.TrieNode<StemMapValue> = {};
+function makeStemsMap(lemmata: Lemma[]): Map<string, StemMapValue[]> {
+  const map = arrayMap<string, StemMapValue>();
   for (const lemma of lemmata) {
     const isVerb = lemma.isVerb === true;
     for (const stem of lemma.stems || []) {
-      Trie.add(root, normalizeKey(stem.stem), [stem, lemma.lemma, isVerb]);
+      map.add(normalizeKey(stem.stem), [stem, lemma.lemma, isVerb]);
     }
     for (const form of lemma.irregularForms || []) {
-      Trie.add(root, normalizeKey(form.form), [form, lemma.lemma, isVerb]);
+      map.add(normalizeKey(form.form), [form, lemma.lemma, isVerb]);
     }
   }
-  return root;
+  return map.map;
 }
 
 function makeEndsMap(endings: EndIndexRow[]): Map<string, string[]> {
