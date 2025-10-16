@@ -1,6 +1,4 @@
-mod indices;
-
-use indices::CruncherTables;
+use morceus::indices::CruncherTables;
 use std::env;
 use std::fs;
 use std::process;

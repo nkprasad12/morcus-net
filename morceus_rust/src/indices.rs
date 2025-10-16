@@ -72,6 +72,16 @@ impl From<Option<String>> for StemCode {
     }
 }
 
+impl StemCode {
+    pub fn is_inclinable(&self) -> bool {
+        !matches!(self, StemCode::Wd | StemCode::Vb)
+    }
+
+    pub fn is_none(&self) -> bool {
+        matches!(self, StemCode::None)
+    }
+}
+
 // Updated Stem: matches TS Stem which extends InflectionContext and has code, stem, inflection
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
@@ -133,4 +143,43 @@ pub struct CruncherTables {
     pub numerals: Vec<Lemma>,
     pub raw_tables: HashMap<String, InflectionTable>,
     pub raw_lemmata: HashMap<String, Vec<Lemma>>,
+}
+
+pub struct CrunchResult {
+    pub lemma: String,
+    pub form: String,
+    pub stem: Option<Stem>,
+    pub end: Option<InflectionEnding>,
+    pub relaxed_case: bool,
+    pub relaxed_vowel_lengths: bool,
+    pub enclitic: Option<String>,
+    pub is_verb: bool,
+    pub context: InflectionContext,
+}
+
+pub enum VowelLength {
+    Strict,
+    Relaxed,
+}
+
+pub struct CruncherOptions {
+    pub vowel_length: VowelLength,
+    pub relax_case: bool,
+    pub relax_u_and_v: bool,
+    pub relax_i_and_j: bool,
+    pub handle_enclitics: bool,
+    pub skip_consolidation: bool,
+}
+
+impl CruncherOptions {
+    pub fn standard() -> Self {
+        CruncherOptions {
+            vowel_length: VowelLength::Relaxed,
+            relax_case: true,
+            relax_u_and_v: true,
+            relax_i_and_j: true,
+            handle_enclitics: true,
+            skip_consolidation: true,
+        }
+    }
 }
