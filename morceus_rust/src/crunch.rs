@@ -282,7 +282,7 @@ fn crunch_options_for_end(
     results
 }
 
-pub fn crunch_exact_match(
+fn crunch_exact_match(
     word: &str,
     tables: &CruncherTables,
     options: &CruncherOptions,
@@ -317,6 +317,65 @@ pub fn crunch_exact_match(
             for mut r in partial_results.drain(..) {
                 r.enclitic = Some(enclitic.to_string());
                 results.push(r);
+            }
+        }
+    }
+
+    results
+}
+
+pub fn crunch_and_maybe_relax_case(
+    word: &str,
+    tables: &CruncherTables,
+    options: &CruncherOptions,
+) -> Vec<CrunchResult> {
+    // Split the word into first character and rest
+    let mut chars = word.chars();
+    let first_char = match chars.next() {
+        Some(c) => c,
+        None => return Vec::new(), // Handle empty string case
+    };
+    let body = chars.collect::<String>().to_lowercase();
+
+    // Process with original case (first character + lowercase rest)
+    let mut results = crunch_exact_match(&format!("{}{}", first_char, body), tables, options);
+
+    // Special case for "V" which can be relaxed to "U" in Latin
+    if first_char == 'V' {
+        let relaxed_word = format!("U{}", body);
+        for mut relaxed_result in crunch_exact_match(&relaxed_word, tables, options) {
+            // This is marked for compatibility with the Typescript implementation,
+            // but it doesn't really make sense if you think about it, since we just
+            // mapped an upper case to an upper case.
+            relaxed_result.relaxed_case = true;
+            results.push(relaxed_result);
+        }
+    }
+
+    // Handle general case relaxation if option enabled
+    if options.relax_case {
+        let is_upper = first_char.is_uppercase();
+        let relaxed_first = if is_upper {
+            first_char.to_lowercase().next().unwrap_or(first_char)
+        } else {
+            first_char.to_uppercase().next().unwrap_or(first_char)
+        };
+
+        let relaxed_word = format!("{}{}", relaxed_first, body);
+        for mut relaxed_result in crunch_exact_match(&relaxed_word, tables, options) {
+            relaxed_result.relaxed_case = true;
+            results.push(relaxed_result);
+        }
+
+        if first_char == 'V' {
+            // Handle e.g. Vt -> ut.
+            let relaxed_word = format!("u{}", body);
+            for mut relaxed_result in crunch_exact_match(&relaxed_word, tables, options) {
+                // This is marked for compatibility with the Typescript implementation,
+                // but it doesn't really make sense if you think about it, since we just
+                // mapped an upper case to an upper case.
+                relaxed_result.relaxed_case = true;
+                results.push(relaxed_result);
             }
         }
     }
