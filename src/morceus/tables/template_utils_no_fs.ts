@@ -38,7 +38,7 @@ export function expandSingleEnding(
   }
   const internalTags = mergeLists(ending.internalTags, context.internalTags);
   if (internalTags !== undefined) {
-    result.internalTags = undefined;
+    result.internalTags = internalTags;
   }
   return result;
 }

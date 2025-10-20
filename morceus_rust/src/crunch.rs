@@ -143,8 +143,8 @@ fn merge_if_compatible(
     }
 
     // Check additional compatibility constraints
-    let is_future = end_tense == 2; // Future = 2
-    let is_participle = end_mood == 3; // Participle = 3
+    let is_future = end_tense == 5; // Future = 5
+    let is_participle = end_mood == 4; // Participle = 4
     if no_fut && is_future {
         return None;
     }
