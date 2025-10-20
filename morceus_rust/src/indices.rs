@@ -1,6 +1,8 @@
 use serde::Deserialize;
 use std::collections::HashMap;
 
+use crate::inflection_data::WordInflectionData;
+
 // StemMapValue: serialized as a tuple/array [Stem | IrregularForm, lemma: string, isVerb: boolean]
 #[derive(Debug, Clone, Deserialize)]
 #[serde(from = "(StemOrForm, String, bool)")]
@@ -33,7 +35,7 @@ pub enum StemOrForm {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InflectionContext {
-    pub grammatical_data: u32,
+    pub grammatical_data: WordInflectionData,
     pub tags: Option<Vec<String>>,
     pub internal_tags: Option<Vec<String>>,
 }

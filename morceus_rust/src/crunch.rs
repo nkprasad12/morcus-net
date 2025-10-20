@@ -1,19 +1,56 @@
-use crate::indices::{
-    CrunchResult, CruncherOptions, CruncherTables, InflectionContext, InflectionEnding, Stem,
-    StemCode, StemMapValue, StemOrForm,
+use crate::{
+    indices::{
+        CrunchResult, CruncherOptions, CruncherTables, InflectionContext, InflectionEnding, Stem,
+        StemCode, StemMapValue, StemOrForm,
+    },
+    inflection_data::merge_inflection_data,
 };
 
 const ENCLITICS: [&str; 3] = ["que", "ne", "ve"];
 
+fn merge_tags(
+    template: &Option<Vec<String>>,
+    modifier: &Option<Vec<String>>,
+) -> Option<Vec<String>> {
+    match (template, modifier) {
+        (Some(t), Some(m)) => {
+            let mut merged = t.clone();
+            for tag in m {
+                if !merged.contains(tag) {
+                    merged.push(tag.clone());
+                }
+            }
+            Some(merged)
+        }
+        (Some(t), None) => Some(t.clone()),
+        (None, Some(m)) => Some(m.clone()),
+        (None, None) => None,
+    }
+}
+
 fn expand_single_ending(stem: &Stem, ending: &InflectionEnding) -> Option<InflectionEnding> {
-    unimplemented!()
+    let merged_data = merge_inflection_data(
+        stem.context.grammatical_data,
+        ending.context.grammatical_data,
+    )?;
+    let tags = merge_tags(&stem.context.tags, &ending.context.tags);
+    let internal_tags = merge_tags(&stem.context.internal_tags, &ending.context.internal_tags);
+    let ending = format!("{}{}", stem.stem, ending.ending);
+    Some(InflectionEnding {
+        ending,
+        context: InflectionContext {
+            grammatical_data: merged_data,
+            tags,
+            internal_tags,
+        },
+    })
 }
 
 fn merge_if_compatible(
     stem: &InflectionContext,
     end: &InflectionContext,
 ) -> Option<InflectionContext> {
-    unimplemented!()
+    Some(stem.clone())
 }
 
 /// Returns the substring of `s` from character index `start` (inclusive) to `end` (exclusive).
