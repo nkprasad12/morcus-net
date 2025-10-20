@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::inflection_data::WordInflectionData;
@@ -32,7 +32,7 @@ pub enum StemOrForm {
 }
 
 // Inflection context
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InflectionContext {
     pub grammatical_data: WordInflectionData,
@@ -46,7 +46,7 @@ pub struct InflectionContext {
 // :vb: 	verb form; for unanalyzed irregular forms
 // :de: 	derivable verb; must have an inflectional class
 // :vs: 	verb stem, one of the principal parts; must have an inflectional class
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(from = "Option<String>")]
 pub enum StemCode {
     None = 0,
@@ -85,7 +85,7 @@ impl StemCode {
 }
 
 // Updated Stem: matches TS Stem which extends InflectionContext and has code, stem, inflection
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Stem {
     pub code: StemCode,
@@ -106,7 +106,7 @@ pub struct IrregularForm {
 }
 
 // InflectionEnding matches TypeScript version
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InflectionEnding {
     pub ending: String,
@@ -147,6 +147,8 @@ pub struct CruncherTables {
     pub raw_lemmata: HashMap<String, Vec<Lemma>>,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CrunchResult {
     pub lemma: String,
     pub form: String,
@@ -173,8 +175,8 @@ pub struct CruncherOptions {
     pub skip_consolidation: bool,
 }
 
-impl CruncherOptions {
-    pub fn standard() -> Self {
+impl Default for CruncherOptions {
+    fn default() -> Self {
         CruncherOptions {
             vowel_length: VowelLength::Relaxed,
             relax_case: true,

@@ -11,6 +11,7 @@ serde_json = "1.0"
 
 [dependencies]
 corpus = { path = "corpus_rust" }
+morceus = { path = "morceus_rust" }
 node-bindgen = "6.0"
 serde_json.workspace = true
 

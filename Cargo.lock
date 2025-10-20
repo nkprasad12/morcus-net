@@ -315,6 +315,7 @@ name = "corpus_rust_wrapper"
 version = "0.1.0"
 dependencies = [
  "corpus",
+ "morceus",
  "node-bindgen",
  "serde_json",
 ]
