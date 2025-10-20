@@ -43,6 +43,46 @@ fn extract_field(data: WordInflectionData, shift: u32, mask: u32) -> u32 {
 }
 
 #[inline]
+pub fn extract_number(data: WordInflectionData) -> u32 {
+    extract_field(data, NUMBER_SHIFT, TWO_BITS)
+}
+
+#[inline]
+pub fn extract_person(data: WordInflectionData) -> u32 {
+    extract_field(data, PERSON_SHIFT, TWO_BITS)
+}
+
+#[inline]
+pub fn extract_voice(data: WordInflectionData) -> u32 {
+    extract_field(data, VOICE_SHIFT, TWO_BITS)
+}
+
+#[inline]
+pub fn extract_degree(data: WordInflectionData) -> u32 {
+    extract_field(data, DEGREE_SHIFT, TWO_BITS)
+}
+
+#[inline]
+pub fn extract_tense(data: WordInflectionData) -> u32 {
+    extract_field(data, TENSE_SHIFT, THREE_BITS)
+}
+
+#[inline]
+pub fn extract_mood(data: WordInflectionData) -> u32 {
+    extract_field(data, MOOD_SHIFT, THREE_BITS)
+}
+
+#[inline]
+pub fn extract_case_bits(data: WordInflectionData) -> u32 {
+    extract_field(data, CASE_SHIFT, BYTE_MASK)
+}
+
+#[inline]
+pub fn extract_gender_bits(data: WordInflectionData) -> u32 {
+    extract_field(data, GENDER_SHIFT, BYTE_MASK)
+}
+
+#[inline]
 fn merge_single_field(
     template: WordInflectionData,
     modifier: WordInflectionData,
