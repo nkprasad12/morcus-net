@@ -523,7 +523,8 @@ fn parse_author_prefix(input: &str) -> Result<(&str, Vec<String>), QueryParseErr
 
 #[cfg(test)]
 mod tests {
-    use crate::analyzer_types::{LatinCase, LatinGender, LatinMood};
+
+    use morceus::inflection_data::{LatinCase, LatinGender, LatinMood};
 
     use super::*;
 

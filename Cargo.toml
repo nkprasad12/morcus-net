@@ -8,10 +8,11 @@ edition = "2024"
 
 [workspace.dependencies]
 serde_json = "1.0"
+morceus = { path = "morceus_rust" }
 
 [dependencies]
 corpus = { path = "corpus_rust" }
-morceus = { path = "morceus_rust" }
+morceus.workspace = true
 node-bindgen = "6.0"
 serde_json.workspace = true
 

@@ -1,3 +1,69 @@
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinCase {
+    Nominative = 1,
+    Accusative = 2,
+    Dative = 3,
+    Genitive = 4,
+    Ablative = 5,
+    Vocative = 6,
+    Locative = 7,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinNumber {
+    Singular = 1,
+    Plural = 2,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinGender {
+    Masculine = 1,
+    Feminine = 2,
+    Neuter = 3,
+    Adverbial = 4,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinPerson {
+    First = 1,
+    Second = 2,
+    Third = 3,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinMood {
+    Indicative = 1,
+    Imperative = 2,
+    Subjunctive = 3,
+    Participle = 4,
+    Gerundive = 5,
+    Infinitive = 6,
+    Supine = 7,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinVoice {
+    Active = 1,
+    Passive = 2,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinTense {
+    Present = 1,
+    Imperfect = 2,
+    Perfect = 3,
+    FuturePerfect = 4,
+    Future = 5,
+    Pluperfect = 6,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum LatinDegree {
+    Positive = 1,
+    Comparative = 2,
+    Superlative = 3,
+}
+
 /// The inflection data in a compact 4 bit representation.
 ///
 /// The following assumptions are made:

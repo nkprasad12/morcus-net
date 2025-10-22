@@ -306,6 +306,7 @@ dependencies = [
  "criterion",
  "libc",
  "memmap2",
+ "morceus",
  "serde",
  "serde_json",
 ]
