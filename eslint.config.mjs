@@ -23,6 +23,7 @@ export default [
       "**/jest.config.js",
       "**/genfiles_static/",
       "**/build/",
+      "**/build-tmp/",
       "src/py/",
       "**/venv/",
       "**/android/",
