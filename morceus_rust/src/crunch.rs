@@ -4,8 +4,9 @@ use crate::{
         StemCode, StemMapValue, StemOrForm,
     },
     inflection_data::{
-        extract_case_bits, extract_degree, extract_gender_bits, extract_mood, extract_number,
-        extract_person, extract_tense, extract_voice, merge_inflection_data,
+        LatinMood, LatinTense, extract_case_bits, extract_degree, extract_gender_bits,
+        extract_mood, extract_number, extract_person, extract_tense, extract_voice,
+        merge_inflection_data,
     },
 };
 
@@ -143,8 +144,8 @@ fn merge_if_compatible(
     }
 
     // Check additional compatibility constraints
-    let is_future = end_tense == 5; // Future = 5
-    let is_participle = end_mood == 4; // Participle = 4
+    let is_future = end_tense == LatinTense::Future as u32;
+    let is_participle = end_mood == LatinMood::Participle as u32;
     if no_fut && is_future {
         return None;
     }
@@ -470,9 +471,9 @@ fn alternates_with_i_or_u(word: &str, try_i: bool, try_u: bool) -> Vec<String> {
     // Skip the all false case since that is just the original string.
     for mask in 1..total_alternates {
         let mut modified_chars = word_chars.clone();
-        for i in 0..n {
+        for (i, idx) in ambigs.iter().enumerate() {
             if (mask & (1 << i)) != 0 {
-                let idx = ambigs[i];
+                let idx = *idx;
                 let c = word_chars[idx];
                 let modified_current = match c {
                     'i' => 'j',
