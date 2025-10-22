@@ -218,7 +218,7 @@ fn crunch_options_for_end(
     {
         match stem_or_form {
             StemOrForm::IrregularForm(form) => {
-                assert!(!form.code.is_inclinable() || form.code.is_none());
+                assert!(form.code.is_indeclinable() || form.code.is_none());
                 // If it's indeclinable, then we skip if it the expected ending is not empty
                 // (since there's no inflected ending to bridge the gap). Otherwise, since it
                 // is not inflected, we don't need to do any further compatibility checks
@@ -239,7 +239,7 @@ fn crunch_options_for_end(
                 });
             }
             StemOrForm::Stem(stem) => {
-                assert!(stem.code.is_inclinable() || stem.code.is_none());
+                assert!(!stem.code.is_indeclinable() || stem.code.is_none());
                 // Check to make sure there's a template that could have a match.
                 if !possible_ends.contains(&stem.inflection) {
                     continue;
@@ -324,7 +324,7 @@ fn crunch_exact_match(
     results
 }
 
-pub fn crunch_and_maybe_relax_case(
+fn crunch_and_maybe_relax_case(
     word: &str,
     tables: &CruncherTables,
     options: &CruncherOptions,
@@ -381,4 +381,148 @@ pub fn crunch_and_maybe_relax_case(
     }
 
     results
+}
+
+/// Returns whether the character is a vowel in Latin
+fn is_vowel(c: char) -> bool {
+    matches!(
+        c,
+        'a' | 'e' | 'i' | 'o' | 'u' | 'y' | 'A' | 'E' | 'I' | 'O' | 'U' | 'Y'
+    )
+}
+
+/// Returns the indices of the possible ambiguous `i` and `u` characters.
+///
+/// @param word the input, which must not have any combining characters.
+/// @param try_i whether to check for ambiguous `i`.
+/// @param try_u whether to check for ambiguous 'u'.
+///
+/// @returns the (0 based) indices of the possible ambiguous characters.
+fn find_ambiguous_i_and_u(word: &str, try_i: bool, try_u: bool) -> Vec<usize> {
+    if !try_i && !try_u {
+        return vec![];
+    }
+
+    // We do not remove diacitics here on purpose because and i or u with
+    // a macron definitely is not a consonant.
+    let clean_word = word.to_lowercase();
+    let chars: Vec<char> = clean_word.chars().collect();
+    let orig_chars: Vec<char> = word.chars().collect();
+    let n = chars.len();
+
+    let mut mark_u = try_u;
+    let mut mark_i = try_i;
+    let mut is_vowel_table = vec![false; n];
+
+    for i in 0..n {
+        let c = chars[i];
+        is_vowel_table[i] = is_vowel(c);
+        // If the word has a `j`, we assume `i` is only used as a vowel.
+        if c == 'j' {
+            mark_i = false;
+        }
+        // If the word has a `v`, assume that `v` is only used as a vowel.
+        // Note that some conventions use `V` for capital `u`, so we don't consider
+        // capital `V` here.
+        if orig_chars[i] == 'v' {
+            mark_u = false;
+        }
+    }
+
+    if !mark_i && !mark_u {
+        return vec![];
+    }
+
+    let mut result = Vec::new();
+    for i in 0..n {
+        let after_vowel = i >= 1 && is_vowel_table[i - 1];
+        let before_vowel = i < n - 1 && is_vowel_table[i + 1];
+        if !after_vowel && !before_vowel {
+            continue;
+        }
+
+        let c = chars[i];
+        // Ignore `u` if after `q`, since `qu` is a digraph and `q` is never
+        // used without `u`.
+        let not_after_q = i == 0 || chars[i - 1] != 'q';
+        if (mark_i && c == 'i') || (mark_u && c == 'u' && not_after_q) {
+            result.push(i);
+        }
+    }
+
+    result
+}
+
+/// Generate variants of the word with possible ambiguous `i` and `u` characters.
+///
+/// Returns alternate spellings with consonental i or u as specified.
+fn alternates_with_i_or_u(word: &str, try_i: bool, try_u: bool) -> Vec<String> {
+    let ambigs = find_ambiguous_i_and_u(word, try_i, try_u);
+    if ambigs.is_empty() {
+        return vec![];
+    }
+
+    let mut results = Vec::new();
+    let n = ambigs.len();
+    let total_alternates = 1 << n;
+
+    let word_chars: Vec<char> = word.chars().collect();
+    // Skip the all false case since that is just the original string.
+    for mask in 1..total_alternates {
+        let mut modified_chars = word_chars.clone();
+        for i in 0..n {
+            if (mask & (1 << i)) != 0 {
+                let idx = ambigs[i];
+                let c = word_chars[idx];
+                let modified_current = match c {
+                    'i' => 'j',
+                    'I' => 'J',
+                    'u' => 'v',
+                    'U' => 'V',
+                    _ => c,
+                };
+                modified_chars[idx] = modified_current;
+            }
+        }
+        results.push(modified_chars.iter().collect());
+    }
+
+    results
+}
+
+/// Process a Latin word and return all possible morphological analyses.
+///
+/// @param word The input word to analyze
+/// @param tables Morphological database tables for lookups
+/// @param options Configuration options for the analysis
+pub fn crunch_word(
+    word: &str,
+    tables: &CruncherTables,
+    options: &CruncherOptions,
+) -> Vec<CrunchResult> {
+    // Note: In the full implementation we would need to handle combining characters
+    // (macron/breve markers) here, but for simplicity we'll assume the word is already
+    // normalized and has no combining characters
+    for c in word.chars() {
+        if !c.is_ascii_alphabetic() {
+            return vec![];
+        }
+    }
+
+    // First analyze the word as-is
+    let mut results = vec![crunch_and_maybe_relax_case(word, tables, options)];
+
+    // Then generate and analyze alternates with different i/j or u/v spellings if enabled
+    if options.relax_i_and_j || options.relax_u_and_v {
+        let alternates = alternates_with_i_or_u(word, options.relax_i_and_j, options.relax_u_and_v);
+        for alternate in alternates {
+            results.push(crunch_and_maybe_relax_case(&alternate, tables, options));
+        }
+    }
+    // Flatten all results into a single vector
+    let flattened: Vec<CrunchResult> = results.into_iter().flatten().collect();
+    if options.skip_consolidation {
+        return flattened;
+    }
+    unimplemented!()
 }

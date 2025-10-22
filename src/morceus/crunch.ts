@@ -53,7 +53,14 @@ function crunchOptionsForEnd(
       // is not inflected, we don't need to do any further compatibility checks
       // like we do between stems and endings.
       if (observedEnd === "*") {
-        results.push({ lemma, isVerb, ...candidate });
+        results.push({
+          lemma,
+          isVerb,
+          form: candidate.form,
+          grammaticalData: candidate.grammaticalData,
+          tags: candidate.tags,
+          internalTags: candidate.internalTags,
+        });
       }
       continue;
     }
@@ -82,7 +89,9 @@ function crunchOptionsForEnd(
           stem: candidate,
           end,
           isVerb,
-          ...mergedData,
+          grammaticalData: mergedData.grammaticalData,
+          tags: mergedData.tags,
+          internalTags: mergedData.internalTags,
         });
       }
     }

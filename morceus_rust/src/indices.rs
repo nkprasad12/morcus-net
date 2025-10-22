@@ -36,7 +36,9 @@ pub enum StemOrForm {
 #[serde(rename_all = "camelCase")]
 pub struct InflectionContext {
     pub grammatical_data: WordInflectionData,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub tags: Option<Vec<String>>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub internal_tags: Option<Vec<String>>,
 }
 
@@ -48,6 +50,7 @@ pub struct InflectionContext {
 // :vs: 	verb stem, one of the principal parts; must have an inflectional class
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(from = "Option<String>")]
+#[serde(rename_all = "lowercase")]
 pub enum StemCode {
     None = 0,
     Wd = 1,
@@ -75,8 +78,8 @@ impl From<Option<String>> for StemCode {
 }
 
 impl StemCode {
-    pub fn is_inclinable(&self) -> bool {
-        !matches!(self, StemCode::Wd | StemCode::Vb)
+    pub fn is_indeclinable(&self) -> bool {
+        matches!(self, StemCode::Wd | StemCode::Vb)
     }
 
     pub fn is_none(&self) -> bool {
@@ -88,6 +91,7 @@ impl StemCode {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Stem {
+    #[serde(skip_serializing_if = "StemCode::is_none")]
     pub code: StemCode,
     pub stem: String,
     pub inflection: String,
@@ -99,6 +103,7 @@ pub struct Stem {
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct IrregularForm {
+    #[serde(skip_serializing_if = "StemCode::is_none")]
     pub code: StemCode,
     pub form: String,
     #[serde(flatten)]
@@ -147,17 +152,27 @@ pub struct CruncherTables {
     pub raw_lemmata: HashMap<String, Vec<Lemma>>,
 }
 
+fn is_false(value: &bool) -> bool {
+    !*value
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CrunchResult {
     pub lemma: String,
     pub form: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub stem: Option<Stem>,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub end: Option<InflectionEnding>,
+    #[serde(skip_serializing_if = "is_false")]
     pub relaxed_case: bool,
+    #[serde(skip_serializing_if = "is_false")]
     pub relaxed_vowel_lengths: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub enclitic: Option<String>,
     pub is_verb: bool,
+    #[serde(flatten)]
     pub context: InflectionContext,
 }
 
