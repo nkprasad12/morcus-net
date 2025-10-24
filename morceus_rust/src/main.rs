@@ -1,3 +1,5 @@
+use morceus::crunch::crunch_word;
+use morceus::indices::CruncherOptions;
 use morceus::indices::CruncherTables;
 use std::env;
 use std::fs;
@@ -61,14 +63,22 @@ fn load_tables(filename: &str) -> CruncherTables {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 2 {
-        eprintln!("Usage: {} <cruncher_tables.json>", args[0]);
+    if args.len() < 4 {
+        eprintln!("Usage: {} <cruncher_tables.json> <word>", args[0]);
         process::exit(1);
     }
     let filename = &args[2];
-    print_mem_summary("Before execution".to_string(), 1);
-    let _tables = load_tables(filename);
-    print_mem_summary("After execution".to_string(), 1);
+    let tables = load_tables(filename);
+    let options: CruncherOptions = CruncherOptions::default();
+    let res = crunch_word(&args[3], &tables, &options);
+    if res.is_empty() {
+        println!("No results found for word '{}'", args[3]);
+        return;
+    }
+    for r in res {
+        println!("{:?}", r);
+    }
+    print_mem_summary("After crunching".to_string(), 1);
     println!("Successfully loaded CruncherTables from '{}'", filename);
 }
 
