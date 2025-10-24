@@ -65,31 +65,33 @@ function isNumeral(lemma: Lemma) {
   return false;
 }
 
-async function saveTables(config?: CruncherConfig, compress: boolean = true) {
+async function saveTablesForRust(tables: CruncherTables) {
+  const dir = path.join("build", "morceus", "processed");
+  await fs.mkdir(dir, { recursive: true });
+  const outPath = path.join(dir, "morceusTables.json");
+  const replacer = (_key: string, value: unknown) => {
+    if (_key === "grammaticalData") {
+      assert(
+        typeof value === "object" && value !== null,
+        "grammaticalData must be an object"
+      );
+      // @ts-expect-error
+      return packWordInflectionData(value);
+    }
+    if (value instanceof Map) {
+      return Object.fromEntries(value);
+    }
+    return value;
+  };
+  const stringified = JSON.stringify(tables, replacer);
+  await fs.writeFile(outPath, stringified);
+  return;
+}
+
+async function saveTables(config?: CruncherConfig) {
   const tables = makeTables(config);
 
-  if (!compress) {
-    const dir = path.join("build", "morceus", "processed");
-    await fs.mkdir(dir, { recursive: true });
-    const outPath = path.join(dir, "morceusTables.json");
-    const replacer = (_key: string, value: unknown) => {
-      if (_key === "grammaticalData") {
-        assert(
-          typeof value === "object" && value !== null,
-          "grammaticalData must be an object"
-        );
-        // @ts-expect-error
-        return packWordInflectionData(value);
-      }
-      if (value instanceof Map) {
-        return Object.fromEntries(value);
-      }
-      return value;
-    };
-    const stringified = JSON.stringify(tables, replacer);
-    await fs.writeFile(outPath, stringified);
-    return;
-  }
+  await saveTablesForRust(tables);
 
   const replacer = (_: string, value: unknown) =>
     value instanceof Map
