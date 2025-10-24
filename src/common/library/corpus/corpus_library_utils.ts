@@ -93,11 +93,10 @@ export function* latinWorksFromLibrary(
     const work = JSON.parse(fs.readFileSync(filePath, "utf8"));
     yield work;
     if (process.env.SIMULATE_LARGE_CORPUS === "1") {
-      const converted = convertToCorpusInputWork(work);
       for (let i = 0; i < 10; i++) {
         yield {
-          ...converted,
-          id: `${converted.id}-${i + 1}`,
+          ...work,
+          id: `${work.id}-${i + 1}`,
         };
       }
     }
