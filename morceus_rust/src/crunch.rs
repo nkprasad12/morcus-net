@@ -247,7 +247,7 @@ fn crunch_options_for_end(
                 }
                 let possible_ends = tables
                     .inflection_lookup
-                    .get(stem.inflection.as_str())
+                    .get(stem.inflection as usize)
                     .unwrap()
                     .get(observed_end)
                     .unwrap();

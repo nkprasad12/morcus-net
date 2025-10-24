@@ -94,7 +94,7 @@ pub struct Stem {
     #[serde(skip_serializing_if = "StemCode::is_none")]
     pub code: StemCode,
     pub stem: String,
-    pub inflection: String,
+    pub inflection: InflectionTableKey,
     #[serde(flatten)]
     pub context: InflectionContext,
 }
@@ -126,7 +126,9 @@ pub struct Lemma {
     pub lemma: String,
     pub stems: Option<Vec<Stem>>,
     pub irregular_forms: Option<Vec<IrregularForm>>,
-    pub is_verb: Option<bool>,
+    // The default is false if not present.
+    #[serde(default)]
+    pub is_verb: bool,
 }
 
 // InflectionTable structure
@@ -138,13 +140,17 @@ pub struct InflectionTable {
 }
 
 // Type alias for the complex inflection lookup type
-pub type InflectionLookupType = HashMap<String, HashMap<String, Vec<InflectionEnding>>>;
+pub type InflectionLookupType = Vec<HashMap<String, Vec<InflectionEnding>>>;
+pub type InflectionTableKey = u16;
 
 // Updated CruncherTables structure to match TypeScript serialization with Maps as plain objects
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CruncherTables {
-    pub ends_map: HashMap<String, Vec<String>>,
+    /// Maps endings to the possible inflection paradigms associated with that ending.
+    /// For example, if "a_ae" is the 3rd inflection in the `inflectionLookup` table,
+    /// then "am" -> [2] would be an entry in this map.
+    pub ends_map: HashMap<String, Vec<InflectionTableKey>>,
     pub stem_map: HashMap<String, Vec<StemMapValue>>,
     pub inflection_lookup: InflectionLookupType,
     pub numerals: Vec<Lemma>,

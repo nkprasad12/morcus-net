@@ -1,4 +1,4 @@
-import { assert } from "@/common/assert";
+import { assert, checkPresent } from "@/common/assert";
 import { arrayMap, arrayMapBy } from "@/common/data_structures/collect_map";
 import { envVar } from "@/common/env_vars";
 import { singletonOf } from "@/common/misc_utils";
@@ -13,7 +13,10 @@ import type { InflectionTable } from "@/morceus/tables/templates";
 import fs from "fs/promises";
 import path from "path";
 import { gzip } from "zlib";
-import { packWordInflectionData } from "@/morceus/inflection_data_utils";
+import {
+  packWordInflectionData,
+  type InflectionEnding,
+} from "@/morceus/inflection_data_utils";
 
 export namespace MorceusTables {
   export const make = makeTables;
@@ -66,11 +69,34 @@ function isNumeral(lemma: Lemma) {
 }
 
 async function saveTablesForRust(tables: CruncherTables) {
+  // In the JS table representation, the inflection lookup table goes from
+  // table name -> list of endings. In the Rust representation, it goes from
+  // table index -> list of endings, and the indices are stored in the endsMap
+  // and the stems instead.
+  // This saves ~13 MB memory.
+  const inflectionLookupValues: Map<string, InflectionEnding[]>[] = [];
+  const inflectionLookupIndices: Map<string, number> = new Map();
+  for (const [tableName, map] of tables.inflectionLookup.entries()) {
+    inflectionLookupIndices.set(tableName, inflectionLookupValues.length);
+    inflectionLookupValues.push(map);
+  }
+  const endsMap = new Map<string, number[]>();
+  for (const [ending, tableNames] of tables.endsMap.entries()) {
+    const indices = tableNames
+      .map((name) => checkPresent(inflectionLookupIndices.get(name)))
+      .sort((a, b) => a - b);
+    endsMap.set(ending, indices);
+  }
+  const tablesForRust = {
+    ...tables,
+    inflectionLookup: inflectionLookupValues,
+    endsMap,
+  };
   const dir = path.join("build", "morceus", "processed");
   await fs.mkdir(dir, { recursive: true });
   const outPath = path.join(dir, "morceusTables.json");
-  const replacer = (_key: string, value: unknown) => {
-    if (_key === "grammaticalData") {
+  const replacer = (key: string, value: unknown) => {
+    if (key === "grammaticalData") {
       assert(
         typeof value === "object" && value !== null,
         "grammaticalData must be an object"
@@ -78,12 +104,20 @@ async function saveTablesForRust(tables: CruncherTables) {
       // @ts-expect-error
       return packWordInflectionData(value);
     }
+    if (key === "inflection") {
+      assert(typeof value === "string", "inflection must be a string");
+      return checkPresent(
+        // @ts-expect-error
+        inflectionLookupIndices.get(value),
+        `No index for inflection table ${value}`
+      );
+    }
     if (value instanceof Map) {
       return Object.fromEntries(value);
     }
     return value;
   };
-  const stringified = JSON.stringify(tables, replacer);
+  const stringified = JSON.stringify(tablesForRust, replacer);
   await fs.writeFile(outPath, stringified);
   return;
 }
