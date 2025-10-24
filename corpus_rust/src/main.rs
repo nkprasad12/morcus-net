@@ -3,6 +3,7 @@ use std::time::Instant;
 
 use corpus::{
     api::{CorpusQueryResult, QueryExecError},
+    build_corpus_v2::build_corpus,
     corpus_index,
     corpus_query_engine::{self, CorpusQueryEngine},
 };
@@ -168,7 +169,15 @@ fn print_mem_summary(tag: String, delay_secs: u64) {
     print_top_snapshot_for(std::process::id(), false);
 }
 
+fn build_if_needed() -> Result<(), Box<dyn std::error::Error>> {
+    if !has_arg("--build") {
+        return Ok(());
+    }
+    build_corpus()
+}
+
 fn main() {
+    build_if_needed().expect("Failed to build corpus");
     let corpus = load_corpus_with_timing(CORPUS_ROOT);
     let engine =
         corpus_query_engine::CorpusQueryEngine::new(corpus).expect("Failed to create query engine");
