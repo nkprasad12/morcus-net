@@ -910,7 +910,7 @@ export function isWordInflectionDataNonEmpty(
  *
  * The 3rd byte is for case, and the 4th byte is for gender.
  */
-export function packWordInflectionData(data: WordInflectionData) {
+export function packWordInflectionData(data: WordInflectionData): number {
   // Helpers to ensure single-valued fields are not arrays with multiple entries.
   function singleValue<T>(v?: T | T[] | undefined): T | undefined {
     if (v === undefined) return undefined;
@@ -981,4 +981,73 @@ export function packWordInflectionData(data: WordInflectionData) {
 
   // Ensure unsigned 32-bit
   return packed >>> 0;
+}
+
+/**
+ * Unpacks a 32-bit integer into WordInflectionData.
+ * This function reverses the packing done by packWordInflectionData.
+ */
+export function unpackWordInflectionData(packed: number): WordInflectionData {
+  const result: WordInflectionData = {};
+
+  // Extract the component parts
+  const low = packed & 0xffff;
+  const caseByte = (packed >>> 16) & 0xff;
+  const genderByte = (packed >>> 24) & 0xff;
+
+  // Extract non-repeated fields
+  const numberVal = (low >>> 0) & 0b11;
+  const personVal = (low >>> 2) & 0b11;
+  const voiceVal = (low >>> 4) & 0b11;
+  const degreeVal = (low >>> 6) & 0b11;
+  const tenseVal = (low >>> 8) & 0b111;
+  const moodVal = (low >>> 11) & 0b111;
+
+  // Set non-repeated fields if present (non-zero)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (numberVal > 0) result.number = numberVal as LatinNumber;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (personVal > 0) result.person = personVal as LatinPerson;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (voiceVal > 0) result.voice = voiceVal as LatinVoice;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (degreeVal > 0) result.degree = degreeVal as LatinDegree;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (tenseVal > 0) result.tense = tenseVal as LatinTense;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (moodVal > 0) result.mood = moodVal as LatinMood;
+
+  // Extract the cases from the bitset
+  if (caseByte > 0) {
+    const cases: LatinCase[] = [];
+    for (let i = 0; i < 8; i++) {
+      if (caseByte & (1 << i)) {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        cases.push(i as LatinCase);
+      }
+    }
+    if (cases.length === 1) {
+      result.case = cases[0];
+    } else if (cases.length > 1) {
+      result.case = cases;
+    }
+  }
+
+  // Extract the genders from the bitset
+  if (genderByte > 0) {
+    const genders: LatinGender[] = [];
+    for (let i = 0; i < 8; i++) {
+      if (genderByte & (1 << i)) {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        genders.push(i as LatinGender);
+      }
+    }
+    if (genders.length === 1) {
+      result.gender = genders[0];
+    } else if (genders.length > 1) {
+      result.gender = genders;
+    }
+  }
+
+  return result;
 }

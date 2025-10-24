@@ -1,4 +1,8 @@
-import { convertUpos } from "@/morceus/inflection_data_utils";
+import {
+  convertUpos,
+  packWordInflectionData,
+  unpackWordInflectionData,
+} from "@/morceus/inflection_data_utils";
 import {
   LatinCase,
   LatinDegree,
@@ -152,5 +156,196 @@ describe("convertUpos", () => {
       case: LatinCase.Nominative,
       number: LatinNumber.Singular,
     });
+  });
+});
+
+describe("packWordInflectionData and unpackWordInflectionData", () => {
+  it("should be inverses for empty data", () => {
+    const data = {};
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
+  });
+
+  it("should be inverses for single-valued fields", () => {
+    const data = {
+      number: LatinNumber.Singular,
+      person: LatinPerson.FIRST,
+      voice: LatinVoice.Active,
+      degree: LatinDegree.Positive,
+      tense: LatinTense.Present,
+      mood: LatinMood.Indicative,
+    };
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
+  });
+
+  it("should be inverses for single case", () => {
+    const data = {
+      case: LatinCase.Nominative,
+      number: LatinNumber.Singular,
+    };
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
+  });
+
+  it("should be inverses for multiple cases", () => {
+    const data = {
+      case: [LatinCase.Nominative, LatinCase.Accusative, LatinCase.Vocative],
+      number: LatinNumber.Plural,
+    };
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
+  });
+
+  it("should be inverses for single gender", () => {
+    const data = {
+      gender: LatinGender.Masculine,
+      case: LatinCase.Genitive,
+    };
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
+  });
+
+  it("should be inverses for multiple genders", () => {
+    const data = {
+      gender: [LatinGender.Masculine, LatinGender.Feminine],
+      number: LatinNumber.Singular,
+    };
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
+  });
+
+  it("should be inverses for all fields populated", () => {
+    const data = {
+      case: [LatinCase.Dative, LatinCase.Ablative],
+      gender: [LatinGender.Masculine, LatinGender.Neuter],
+      number: LatinNumber.Plural,
+      person: LatinPerson.THIRD,
+      voice: LatinVoice.Passive,
+      degree: LatinDegree.Comparative,
+      tense: LatinTense.Imperfect,
+      mood: LatinMood.Subjunctive,
+    };
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
+  });
+
+  it("should be inverses for all tense values", () => {
+    const tenses = [
+      LatinTense.Present,
+      LatinTense.Imperfect,
+      LatinTense.Future,
+      LatinTense.Perfect,
+      LatinTense.Pluperfect,
+      LatinTense.FuturePerfect,
+    ];
+    for (const tense of tenses) {
+      const data = { tense };
+      const packed = packWordInflectionData(data);
+      const unpacked = unpackWordInflectionData(packed);
+      expect(unpacked).toEqual(data);
+    }
+  });
+
+  it("should be inverses for all mood values", () => {
+    const moods = [
+      LatinMood.Indicative,
+      LatinMood.Subjunctive,
+      LatinMood.Imperative,
+      LatinMood.Infinitive,
+      LatinMood.Participle,
+      LatinMood.Gerundive,
+      LatinMood.Supine,
+    ];
+    for (const mood of moods) {
+      const data = { mood };
+      const packed = packWordInflectionData(data);
+      const unpacked = unpackWordInflectionData(packed);
+      expect(unpacked).toEqual(data);
+    }
+  });
+
+  it("should be inverses for all case combinations", () => {
+    const cases = [
+      LatinCase.Nominative,
+      LatinCase.Vocative,
+      LatinCase.Accusative,
+      LatinCase.Genitive,
+      LatinCase.Dative,
+      LatinCase.Ablative,
+      LatinCase.Locative,
+    ];
+    for (const c of cases) {
+      const data = { case: c };
+      const packed = packWordInflectionData(data);
+      const unpacked = unpackWordInflectionData(packed);
+      expect(unpacked).toEqual(data);
+    }
+  });
+
+  it("should be inverses for all gender combinations", () => {
+    const genders = [
+      LatinGender.Masculine,
+      LatinGender.Feminine,
+      LatinGender.Neuter,
+      LatinGender.Adverbial,
+    ];
+    for (const g of genders) {
+      const data = { gender: g };
+      const packed = packWordInflectionData(data);
+      const unpacked = unpackWordInflectionData(packed);
+      expect(unpacked).toEqual(data);
+    }
+  });
+
+  it("should produce valid 32-bit unsigned integers", () => {
+    const data = {
+      case: [LatinCase.Nominative, LatinCase.Accusative],
+      gender: [LatinGender.Masculine, LatinGender.Feminine, LatinGender.Neuter],
+      number: LatinNumber.Plural,
+      person: LatinPerson.SECOND,
+      voice: LatinVoice.Active,
+      tense: LatinTense.Perfect,
+      mood: LatinMood.Participle,
+    };
+    const packed = packWordInflectionData(data);
+    expect(Number.isInteger(packed)).toBe(true);
+    expect(packed).toBeGreaterThanOrEqual(0);
+    expect(packed).toBeLessThanOrEqual(0xffffffff);
+  });
+
+  it("should throw error when trying to pack multi-valued non-repeated fields", () => {
+    expect(() => {
+      packWordInflectionData({
+        number: [LatinNumber.Singular, LatinNumber.Plural],
+      });
+    }).toThrow(/Expected single value but got array/);
+
+    expect(() => {
+      packWordInflectionData({
+        person: [LatinPerson.FIRST, LatinPerson.SECOND],
+      });
+    }).toThrow(/Expected single value but got array/);
+  });
+
+  it("should handle participle with all gender/case combinations", () => {
+    const data = {
+      mood: LatinMood.Participle,
+      tense: LatinTense.Present,
+      voice: LatinVoice.Active,
+      case: [LatinCase.Nominative, LatinCase.Vocative],
+      gender: [LatinGender.Masculine, LatinGender.Feminine],
+      number: LatinNumber.Singular,
+    };
+    const packed = packWordInflectionData(data);
+    const unpacked = unpackWordInflectionData(packed);
+    expect(unpacked).toEqual(data);
   });
 });
