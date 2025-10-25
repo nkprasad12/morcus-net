@@ -210,3 +210,50 @@ pub fn merge_inflection_data(
 
     Some(merged)
 }
+
+/// Returns an iterator over the Latin cases that are set in the given bitset.
+pub fn iterate_cases(case_bits: u32) -> impl Iterator<Item = LatinCase> {
+    (1..=7).filter_map(move |i| {
+        if (case_bits & (1 << i)) != 0 {
+            match i {
+                1 => Some(LatinCase::Nominative),
+                2 => Some(LatinCase::Accusative),
+                3 => Some(LatinCase::Dative),
+                4 => Some(LatinCase::Genitive),
+                5 => Some(LatinCase::Ablative),
+                6 => Some(LatinCase::Vocative),
+                7 => Some(LatinCase::Locative),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    })
+}
+
+/// Returns an iterator over the Latin genders that are set in the given bitset.
+pub fn iterate_genders(gender_bits: u32) -> impl Iterator<Item = LatinGender> {
+    (1..=4).filter_map(move |i| {
+        if (gender_bits & (1 << i)) != 0 {
+            match i {
+                1 => Some(LatinGender::Masculine),
+                2 => Some(LatinGender::Feminine),
+                3 => Some(LatinGender::Neuter),
+                4 => Some(LatinGender::Adverbial),
+                _ => None,
+            }
+        } else {
+            None
+        }
+    })
+}
+
+/// Check if a specific case is set in the case bitset
+pub fn has_case(case_bits: u32, case: LatinCase) -> bool {
+    (case_bits & (1 << (case as u32))) != 0
+}
+
+/// Check if a specific gender is set in the gender bitset
+pub fn has_gender(gender_bits: u32, gender: LatinGender) -> bool {
+    (gender_bits & (1 << (gender as u32))) != 0
+}

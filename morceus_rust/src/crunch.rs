@@ -258,7 +258,7 @@ fn crunch_options_for_end(
                 // If there's no StemCode, then this means it comes from the
                 // irregular forms table and we need to expand the endings.
                 StemCode::None => expand_single_ending(stem, end).map(|e| e.context),
-                _ => merge_if_compatible(&stem.context, &end.context, tables),
+                _ => merge_if_compatible(&stem.context, &end.context),
             };
             let merged_data = match merged_data {
                 Some(md) => md,
