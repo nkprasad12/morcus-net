@@ -1,0 +1,96 @@
+use morceus::crunch::crunch_word;
+use morceus::indices::CruncherOptions;
+use morceus::indices::CruncherTables;
+use std::env;
+use std::fs;
+use std::process;
+
+const TABLES_FILE: &str = "build/morceus/processed/morceusTables.json";
+
+fn print_top_snapshot_for(pid: u32, show_header: bool) {
+    let pid_arg = pid.to_string();
+    let output = std::process::Command::new("top")
+        .args(["-e", "m", "-b", "-n", "1", "-p", &pid_arg])
+        .output()
+        .map(|mut o| {
+            let s = String::from_utf8_lossy(&o.stdout);
+            let processed = s
+                .lines()
+                .skip(if show_header { 6 } else { 7 }) // remove first 6 header lines
+                .map(|l| format!("    {}", l)) // indent remaining lines
+                .collect::<Vec<_>>()
+                .join("\n");
+            o.stdout = processed.into_bytes();
+            o
+        });
+    match output {
+        Ok(o) => {
+            if !o.stdout.is_empty() {
+                eprintln!("{}", String::from_utf8_lossy(&o.stdout));
+            }
+            if !o.stderr.is_empty() {
+                eprintln!("top stderr: {}", String::from_utf8_lossy(&o.stderr));
+            }
+        }
+        Err(e) => {
+            eprintln!("Failed to run top: {}", e);
+        }
+    }
+}
+
+fn print_mem_summary(tag: String, delay_secs: Option<u64>) {
+    eprintln!("--- Memory summary ({}) ---", tag);
+    print_top_snapshot_for(std::process::id(), true);
+    let delay_secs = match delay_secs {
+        Some(secs) => secs,
+        None => return,
+    };
+    std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
+    print_top_snapshot_for(std::process::id(), false);
+    std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
+    print_top_snapshot_for(std::process::id(), false);
+}
+
+fn load_tables(filename: &str) -> CruncherTables {
+    // Read the JSON file
+    let json_content = fs::read_to_string(filename).unwrap_or_else(|err| {
+        eprintln!("Error reading file '{}': {}", filename, err);
+        eprintln!(
+            "To generate the tables, run (from the repo root):\n./morcus.sh build --morceus_tables",
+        );
+        process::exit(1);
+    });
+
+    // Parse CruncherTables from JSON
+    let cruncher_tables: CruncherTables =
+        serde_json::from_str(&json_content).unwrap_or_else(|err| {
+            eprintln!("Error parsing JSON from '{}': {}", filename, err);
+            process::exit(1);
+        });
+    cruncher_tables
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 3 {
+        eprintln!("Usage: {} <word>", args[0]);
+        process::exit(1);
+    }
+    let tables = load_tables(TABLES_FILE);
+    let options: CruncherOptions = CruncherOptions::default();
+    let word = &args[2];
+
+    let results = crunch_word(word, &tables, &options);
+    if results.is_empty() {
+        println!("No results found for '{}'", word);
+        return;
+    }
+    for result in results {
+        println!("{:?}", result);
+    }
+    print_mem_summary("After crunching".to_string(), None);
+}
+
+/* Run with:
+cargo run --package morceus --release cli <word>
+*/

@@ -103,8 +103,9 @@ dist
 # TernJS port file
 .tern-port
 
-# Typescript
+# Outputs
 build/
+build-tmp/
 
 .coverage
 libs/

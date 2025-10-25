@@ -883,3 +883,171 @@ export function isWordInflectionDataNonEmpty(
     coerceToArray(data.number).length > 0
   );
 }
+
+/**
+ * Packs the inflection data into a compact 32-bit number.
+ *
+ * The following assumptions are made:
+ * - Case and Gender can be repeated.
+ * - All other fields can only have one value.
+ *
+ * The first two bytes are used to store all non-repeated fields, as follows.
+ * - The 0 value encodes "not present".
+ * - Otherwise, the value is set based on the enum value. For example,
+ *   for LatinTense, Perfect would be encoded as 4 (in binary).
+ *
+ * The layout is as follows:
+ * - Bits 0-1: Number [2 bits] (2 possible values + not present)
+ * - Bits 2-3: Person [2 bits] (3 possible values + not present)
+ * - Bits 4-5: Voice [2 bits] (2 possible values + not present)
+ * - Bits 6-7: Degree [2 bits] (3 possible values + not present)
+ * - Bits 8-10: Tense [3 bits] (7 possible values + not present)
+ * - Bits 11-13: Mood [3 bits] (6 possible values + not present)
+ *
+ * Repeated fields are stored as bitsets within a single byte. For example, if we had
+ * something with both Dative and Genitive case, then (since LatinCase.Dative = 3 and
+ * LatinCase.Genitive = 4), the case byte would be 00011000 (bits 3 and 4 set).
+ *
+ * The 3rd byte is for case, and the 4th byte is for gender.
+ */
+export function packWordInflectionData(data: WordInflectionData): number {
+  // Helpers to ensure single-valued fields are not arrays with multiple entries.
+  function singleValue<T>(v?: T | T[] | undefined): T | undefined {
+    if (v === undefined) return undefined;
+    if (Array.isArray(v)) {
+      if (v.length === 0) return undefined;
+      if (v.length > 1) {
+        throw new Error(
+          `Expected single value but got array: ${JSON.stringify(v)}`
+        );
+      }
+      return v[0];
+    }
+    return v;
+  }
+
+  // Encode non-repeated fields into small integers (0 means not present).
+  const numberVal = singleValue(data.number);
+  const personVal = singleValue(data.person);
+  const voiceVal = singleValue(data.voice);
+  const degreeVal = singleValue(data.degree);
+  const tenseVal = singleValue(data.tense);
+  const moodVal = singleValue(data.mood);
+
+  // Validate enum numeric value is within an expected inclusive range.
+  function validateRange(
+    val: number | undefined,
+    min: number,
+    max: number
+  ): number {
+    if (val === undefined) return 0;
+    if (!Number.isInteger(val) || val < min || val > max) {
+      throw new Error(`Unexpected ${name} enum value: ${val}`);
+    }
+    return val;
+  }
+
+  const encodeNumber = (n?: LatinNumber) => validateRange(n, 1, 2);
+  const encodePerson = (p?: LatinPerson) => validateRange(p, 1, 3);
+  const encodeVoice = (v?: LatinVoice) => validateRange(v, 1, 2);
+  const encodeDegree = (d?: LatinDegree) => validateRange(d, 1, 3);
+  const encodeTense = (t?: LatinTense) => validateRange(t, 1, 6);
+  const encodeMood = (m?: LatinMood) => validateRange(m, 1, 7);
+
+  // Build the low 2 bytes (bits 0..15)
+  let low = 0;
+  low |= (encodeNumber(numberVal) & 0b11) << 0; // bits 0-1
+  low |= (encodePerson(personVal) & 0b11) << 2; // bits 2-3
+  low |= (encodeVoice(voiceVal) & 0b11) << 4; // bits 4-5
+  low |= (encodeDegree(degreeVal) & 0b11) << 6; // bits 6-7
+  low |= (encodeTense(tenseVal) & 0b111) << 8; // bits 8-10
+  low |= (encodeMood(moodVal) & 0b111) << 11; // bits 11-13
+  // bits 14-15 remain unused for now
+
+  // Repeated fields: case and gender as bitsets in bytes 2 and 3.
+  let caseByte = 0;
+  for (const c of coerceToArray(data.case)) {
+    caseByte |= 1 << c;
+  }
+
+  let genderByte = 0;
+  for (const g of coerceToArray(data.gender)) {
+    genderByte |= 1 << g;
+  }
+
+  // Compose final 32-bit number: low (bits 0..15), caseByte -> bits 16..23, genderByte -> bits 24..31
+  const packed =
+    (low & 0xffff) | ((caseByte & 0xff) << 16) | ((genderByte & 0xff) << 24);
+
+  // Ensure unsigned 32-bit
+  return packed >>> 0;
+}
+
+/**
+ * Unpacks a 32-bit integer into WordInflectionData.
+ * This function reverses the packing done by packWordInflectionData.
+ */
+export function unpackWordInflectionData(packed: number): WordInflectionData {
+  const result: WordInflectionData = {};
+
+  // Extract the component parts
+  const low = packed & 0xffff;
+  const caseByte = (packed >>> 16) & 0xff;
+  const genderByte = (packed >>> 24) & 0xff;
+
+  // Extract non-repeated fields
+  const numberVal = (low >>> 0) & 0b11;
+  const personVal = (low >>> 2) & 0b11;
+  const voiceVal = (low >>> 4) & 0b11;
+  const degreeVal = (low >>> 6) & 0b11;
+  const tenseVal = (low >>> 8) & 0b111;
+  const moodVal = (low >>> 11) & 0b111;
+
+  // Set non-repeated fields if present (non-zero)
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (numberVal > 0) result.number = numberVal as LatinNumber;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (personVal > 0) result.person = personVal as LatinPerson;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (voiceVal > 0) result.voice = voiceVal as LatinVoice;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (degreeVal > 0) result.degree = degreeVal as LatinDegree;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (tenseVal > 0) result.tense = tenseVal as LatinTense;
+  // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+  if (moodVal > 0) result.mood = moodVal as LatinMood;
+
+  // Extract the cases from the bitset
+  if (caseByte > 0) {
+    const cases: LatinCase[] = [];
+    for (let i = 0; i < 8; i++) {
+      if (caseByte & (1 << i)) {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        cases.push(i as LatinCase);
+      }
+    }
+    if (cases.length === 1) {
+      result.case = cases[0];
+    } else if (cases.length > 1) {
+      result.case = cases;
+    }
+  }
+
+  // Extract the genders from the bitset
+  if (genderByte > 0) {
+    const genders: LatinGender[] = [];
+    for (let i = 0; i < 8; i++) {
+      if (genderByte & (1 << i)) {
+        // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+        genders.push(i as LatinGender);
+      }
+    }
+    if (genders.length === 1) {
+      result.gender = genders[0];
+    } else if (genders.length > 1) {
+      result.gender = genders;
+    }
+  }
+
+  return result;
+}

@@ -5,7 +5,6 @@ import {
   Vowels,
 } from "@/common/character_utils";
 import { arrayMap } from "@/common/data_structures/collect_map";
-import * as Trie from "@/common/data_structures/trie";
 import {
   CruncherTables,
   CrunchResult,
@@ -54,7 +53,14 @@ function crunchOptionsForEnd(
       // is not inflected, we don't need to do any further compatibility checks
       // like we do between stems and endings.
       if (observedEnd === "*") {
-        results.push({ lemma, isVerb, ...candidate });
+        results.push({
+          lemma,
+          isVerb,
+          form: candidate.form,
+          grammaticalData: candidate.grammaticalData,
+          tags: candidate.tags,
+          internalTags: candidate.internalTags,
+        });
       }
       continue;
     }
@@ -83,7 +89,9 @@ function crunchOptionsForEnd(
           stem: candidate,
           end,
           isVerb,
-          ...mergedData,
+          grammaticalData: mergedData.grammaticalData,
+          tags: mergedData.tags,
+          internalTags: mergedData.internalTags,
         });
       }
     }
@@ -98,7 +106,7 @@ function crunchExactMatch(
 ): CrunchResult[] {
   const results: CrunchResult[] = [];
   for (let i = 0; i <= word.length; i++) {
-    const candidates = Trie.find(tables.stemTrie!, word, i);
+    const candidates = tables.stemMap.get(word.substring(0, i));
     if (candidates === undefined) {
       continue;
     }

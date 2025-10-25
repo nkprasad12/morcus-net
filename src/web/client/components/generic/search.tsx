@@ -103,11 +103,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   );
 
   useEffect(() => {
-    if (props.showOptionsInitially !== true || optionsForInput === undefined) {
+    if (
+      props.showOptionsInitially !== true ||
+      optionsForInput === undefined ||
+      input.trim() !== ""
+    ) {
       return;
     }
     onInputInternal("");
-  }, [props.showOptionsInitially, optionsForInput, onInputInternal]);
+  }, [props.showOptionsInitially, optionsForInput, onInputInternal, input]);
 
   const interactingWithPopup = mouseOnPopup;
   const popperOpen =

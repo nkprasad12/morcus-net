@@ -13,6 +13,7 @@ import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   CompletionsFusedApi,
   DictsFusedApi,
+  GetCorpusAuthorsApi,
   GetWork,
   ListLibraryWorks,
   LogClientEventApi,
@@ -47,7 +48,10 @@ import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
-import { rustCorpusApiHandler } from "@/common/library/corpus/corpus_rust";
+import {
+  corpusAuthorList,
+  rustCorpusApiHandler,
+} from "@/common/library/corpus/corpus_rust";
 
 function randInRange(min: number, max: number): number {
   return Math.random() * (max - min) + min;
@@ -240,6 +244,12 @@ export function startMorcusServer(): Promise<http.Server> {
         QueryCorpusApi,
         async (r) => corpusHandler.runQuery(r),
         "PreStringified",
+        CACHING_SETTER
+      ),
+      RouteDefinition.create(
+        GetCorpusAuthorsApi,
+        (_1, _2, requestData) => corpusAuthorList(requestData),
+        "PreEncoded",
         CACHING_SETTER
       ),
     ],

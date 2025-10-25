@@ -3,7 +3,6 @@ import type {
   CorpusQueryMatch,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
-import { safeParseInt } from "@/common/misc_utils";
 import { QueryCorpusApi, type CorpusQueryRequest } from "@/web/api_routes";
 import { Divider, SpanLink } from "@/web/client/components/generic/basics";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
@@ -17,10 +16,15 @@ import {
 import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
-import { Fragment, useMemo, useState } from "react";
+import { Fragment, useCallback, useMemo, useState } from "react";
+import { useCorpusRouter } from "@/web/client/pages/corpus/corpus_router";
+import { GetCorpusAuthorsApi } from "@/web/api_routes";
+import {
+  SettingsPreview,
+  CorpusSettingsDialog,
+} from "@/web/client/pages/corpus/corpus_settings";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
-const PAGE_SIZE = 50;
 
 type Results = "N/A" | "Error" | "Loading" | CorpusQueryResult;
 
@@ -31,22 +35,24 @@ function toKey(o: CorpusAutocompleteOption) {
 export function CorpusQueryPage() {
   const [requestQuery, setRequestQuery] = useState<string>("");
   const [results, setResults] = useState<Results>("N/A");
+  const [showSettings, setShowSettings] = useState(false);
+  const [authors, setAuthors] = useState<string[] | null>(null);
 
-  const { nav, route } = Router.useRouter();
+  const { nav, route } = useCorpusRouter();
+  const { query, startIdx, pageSize, contextLen } = route;
 
-  const urlQuery = route.params?.q;
-  const urlStartIdx = safeParseInt(route.params?.n) ?? 0;
   const apiRequest: CorpusQueryRequest | null = useMemo(() => {
-    if (!urlQuery) {
+    if (query.length === 0) {
       return null;
     }
     return {
-      query: urlQuery,
-      pageSize: PAGE_SIZE,
-      pageStart: urlStartIdx,
+      query,
+      pageSize,
+      pageStart: startIdx,
       commitHash: getCommitHash(),
+      contextLen,
     };
-  }, [urlQuery, urlStartIdx]);
+  }, [query, startIdx, contextLen, pageSize]);
 
   useApiCall(QueryCorpusApi, apiRequest, {
     onResult: setResults,
@@ -54,7 +60,23 @@ export function CorpusQueryPage() {
     onError: () => setResults("Error"),
   });
 
-  const showResults = results !== "N/A" && urlQuery;
+  const getAuthorsRequest = useMemo(
+    () => ({ commitHash: getCommitHash() }),
+    []
+  );
+
+  useApiCall(GetCorpusAuthorsApi, getAuthorsRequest, {
+    onResult: setAuthors,
+    onLoading: () => {},
+    onError: () => {},
+  });
+
+  const showResults = results !== "N/A" && query.length > 0;
+
+  const optionsForInputMemo = useCallback(
+    (input: string) => optionsForInput(input, authors),
+    [authors]
+  );
 
   return (
     <div style={{ maxWidth: "800px", margin: "auto", marginTop: "16px" }}>
@@ -64,36 +86,34 @@ export function CorpusQueryPage() {
         // Left and right are not equal to account for the border.
         style={{ padding: "8px 12px 4px 8px", margin: "4px 8px" }}
         ariaLabel={SEARCH_PLACEHOLDER}
-        onRawEnter={() => {
-          nav.to({
-            path: ClientPaths.CORPUS_QUERY_PATH.path,
-            params: { q: requestQuery },
-          });
-        }}
+        onRawEnter={() => nav.to((c) => ({ ...c, query: requestQuery }))}
         onOptionSelected={(o, current) => `${current}${o.option}`}
         RenderOption={CorpusAutocompleteItem}
-        optionsForInput={optionsForInput}
+        optionsForInput={optionsForInputMemo}
         toKey={toKey}
         autoFocused
         showOptionsInitially
+        onOpenSettings={() => setShowSettings(true)}
+        settingsPreview={
+          <SettingsPreview pageSize={pageSize} contextLen={contextLen} />
+        }
       />
       <QueryHelpSection />
-      {showResults && <ResultsSection results={results} query={urlQuery} />}
+      <CorpusSettingsDialog open={showSettings} setOpen={setShowSettings} />
+      {showResults && <ResultsSection results={results} />}
     </div>
   );
 }
 
-function ResultsSection(props: {
-  results: Exclude<Results, "N/A">;
-  query: string;
-}) {
-  const { nav } = Router.useRouter();
+function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
+  const { nav, route } = useCorpusRouter();
+  const { query, pageSize } = route;
 
   if (props.results === "Error") {
-    return <div>Error occurred on query: {props.query}</div>;
+    return <div>Error occurred on query: {query}</div>;
   }
   if (props.results === "Loading") {
-    return <div>Loading results for: {props.query}</div>;
+    return <div>Loading results for: {query}</div>;
   }
 
   const firstPage = props.results.pageStart === 0;
@@ -103,13 +123,10 @@ function ResultsSection(props: {
 
   const changePage = (increment: boolean) => {
     nav.to((current) => {
-      const n = safeParseInt(current.params?.n) ?? 0;
-      const newN = increment ? n + PAGE_SIZE : n - PAGE_SIZE;
-      const newParams = {
-        ...current.params,
-        n: newN.toString(),
-      };
-      return { ...current, params: newParams };
+      const newStart = increment
+        ? current.startIdx + pageSize
+        : current.startIdx - pageSize;
+      return { ...current, startIdx: newStart };
     });
   };
 
@@ -117,7 +134,7 @@ function ResultsSection(props: {
     <div style={{ margin: "0px 16px" }}>
       <div className="text md">
         Found {props.results.totalResults} results matching:
-        <div className="corpusResult">{props.query}</div>
+        <div className="corpusResult">{query}</div>
       </div>
       <div className="text sm light">
         Showing results {props.results.pageStart + 1} to{" "}
@@ -166,7 +183,9 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
         }>
         {metadata.workName} {metadata.section} [{metadata.author}]
       </SpanLink>
-      <div className="text sm light" style={{ textAlign: "justify" }}>
+      <div
+        className="text sm light"
+        style={{ textAlign: "justify", whiteSpace: "pre-line" }}>
         {props.result.text.map(([content, isMatch], i) =>
           isMatch ? (
             <b key={i} className="corpusResult">
@@ -271,6 +290,17 @@ function QueryHelpSection() {
           </ul>
         </details>
         <details>
+          <summary>Filtering by author</summary>
+          <ul>
+            <li>
+              <code>[author1, author2]</code> - Restricts the search to the
+              specified authors. For example,{" "}
+              <code>[Caesar, Cicero] amoris</code> will find instances of{" "}
+              <code>amoris</code> but only in works by Caesar or Cicero.
+            </li>
+          </ul>
+        </details>
+        <details>
           <summary>Examples</summary>
           <table style={{ width: "100%", borderCollapse: "collapse" }}>
             <thead>
@@ -314,6 +344,17 @@ function QueryHelpSection() {
                 <td>
                   <code>dedi saepe panem</code> or{" "}
                   <code>habet in manu ensem</code>
+                </td>
+              </tr>
+              <tr>
+                <td>
+                  <code>[Caesar] @lemma:bellum</code>
+                </td>
+                <td>
+                  Any inflection of <code>bellum</code> in works by Caesar.
+                </td>
+                <td>
+                  <code>bellum</code>, <code>belli</code>, etc.
                 </td>
               </tr>
             </tbody>
