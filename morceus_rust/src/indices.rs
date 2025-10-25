@@ -4,17 +4,17 @@ use std::collections::HashMap;
 use crate::inflection_data::WordInflectionData;
 
 #[derive(Debug, Clone, Deserialize)]
-#[serde(from = "(usize, String, bool, bool)")]
+#[serde(from = "(u32, String, bool, bool)")]
 pub struct StemMapValue {
-    pub index: usize,
+    pub index: u32,
     pub lemma: String,
     pub is_verb: bool,
     pub is_stem: bool,
 }
 
 // Implementation to convert from tuple format to struct
-impl From<(usize, String, bool, bool)> for StemMapValue {
-    fn from(tuple: (usize, String, bool, bool)) -> Self {
+impl From<(u32, String, bool, bool)> for StemMapValue {
+    fn from(tuple: (u32, String, bool, bool)) -> Self {
         StemMapValue {
             index: tuple.0,
             lemma: tuple.1,
@@ -125,8 +125,8 @@ pub struct InflectionEnding {
 #[serde(rename_all = "camelCase")]
 pub struct Lemma {
     pub lemma: String,
-    pub stems: Option<Vec<usize>>,
-    pub irregular_forms: Option<Vec<usize>>,
+    pub stems: Option<Vec<u32>>,
+    pub irregular_forms: Option<Vec<u32>>,
     // The default is false if not present.
     #[serde(default)]
     pub is_verb: bool,

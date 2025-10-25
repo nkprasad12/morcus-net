@@ -219,7 +219,7 @@ fn crunch_options_for_end(
     } in candidates
     {
         if !*is_stem {
-            let form = &tables.all_irregs[*index];
+            let form = &tables.all_irregs[*index as usize];
             assert!(form.code.is_indeclinable() || form.code.is_none());
             // If it's indeclinable, then we skip if it the expected ending is not empty
             // (since there's no inflected ending to bridge the gap). Otherwise, since it
@@ -241,7 +241,7 @@ fn crunch_options_for_end(
             });
             continue;
         }
-        let stem = &tables.all_stems[*index];
+        let stem = &tables.all_stems[*index as usize];
         assert!(!stem.code.is_indeclinable() || stem.code.is_none());
         // Check to make sure there's a template that could have a match.
         if !possible_ends.contains(&stem.inflection) {
@@ -258,7 +258,7 @@ fn crunch_options_for_end(
                 // If there's no StemCode, then this means it comes from the
                 // irregular forms table and we need to expand the endings.
                 StemCode::None => expand_single_ending(stem, end).map(|e| e.context),
-                _ => merge_if_compatible(&stem.context, &end.context),
+                _ => merge_if_compatible(&stem.context, &end.context, tables),
             };
             let merged_data = match merged_data {
                 Some(md) => md,

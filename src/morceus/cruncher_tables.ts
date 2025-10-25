@@ -30,6 +30,8 @@ export namespace MorceusTables {
   export const CACHED = singletonOf(make);
 }
 
+const MAX_U32 = 4294967295; // 2^32 - 1
+
 function makeTables(config?: CruncherConfig): CruncherTables {
   // This would ideally be a module constant, but we define it here so that
   // we can dynamically swap it out in unit tests
@@ -94,6 +96,15 @@ async function saveTablesForRust(tables: CruncherTables) {
       }
     }
   }
+
+  assert(
+    allStems.length <= MAX_U32,
+    `The number of stems (${allStems.length}) cannot fit in u32.`
+  );
+  assert(
+    allIrregs.length <= MAX_U32,
+    `The number of irregular forms (${allIrregs.length}) cannot fit in u32.`
+  );
 
   // In the JS table representation, the inflection lookup table goes from
   // table name -> list of endings. In the Rust representation, it goes from
@@ -187,7 +198,6 @@ async function saveTablesForRust(tables: CruncherTables) {
   };
   const stringified = JSON.stringify(tablesForRust, replacer);
   await fs.writeFile(outPath, stringified);
-  return;
 }
 
 async function saveTables(config?: CruncherConfig) {
