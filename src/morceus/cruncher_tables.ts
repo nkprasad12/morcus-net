@@ -7,7 +7,13 @@ import type {
   CruncherTables,
   StemMapValue,
 } from "@/morceus/cruncher_types";
-import { allNounStems, allVerbStems, type Lemma } from "@/morceus/stem_parsing";
+import {
+  allNounStems,
+  allVerbStems,
+  type IrregularForm,
+  type Lemma,
+  type Stem,
+} from "@/morceus/stem_parsing";
 import { makeEndIndex, type EndIndexRow } from "@/morceus/tables/indices";
 import type { InflectionTable } from "@/morceus/tables/templates";
 import fs from "fs/promises";
@@ -69,6 +75,26 @@ function isNumeral(lemma: Lemma) {
 }
 
 async function saveTablesForRust(tables: CruncherTables) {
+  const allStems: Stem[] = [];
+  const stemToIndex = new Map<Stem, number>();
+  const allIrregs: IrregularForm[] = [];
+  const irregToIndex = new Map<IrregularForm, number>();
+
+  for (const lemmata of tables.rawLemmata.values()) {
+    for (const lemma of lemmata) {
+      for (const stem of lemma.stems ?? []) {
+        assert(!stemToIndex.has(stem));
+        stemToIndex.set(stem, allStems.length);
+        allStems.push(stem);
+      }
+      for (const form of lemma.irregularForms ?? []) {
+        assert(!irregToIndex.has(form));
+        irregToIndex.set(form, allIrregs.length);
+        allIrregs.push(form);
+      }
+    }
+  }
+
   // In the JS table representation, the inflection lookup table goes from
   // table name -> list of endings. In the Rust representation, it goes from
   // table index -> list of endings, and the indices are stored in the endsMap
@@ -87,10 +113,52 @@ async function saveTablesForRust(tables: CruncherTables) {
       .sort((a, b) => a - b);
     endsMap.set(ending, indices);
   }
+  const stemMap = new Map();
+  for (const [key, values] of tables.stemMap.entries()) {
+    const newValues = values.map(([stemOrForm, lemma, isVerb]) => {
+      const isStem = "stem" in stemOrForm;
+      const idx = isStem
+        ? stemToIndex.get(stemOrForm)
+        : irregToIndex.get(stemOrForm);
+      return [checkPresent(idx), lemma, isVerb, isStem];
+    });
+    stemMap.set(key, newValues);
+  }
+
+  const mapLemma = (l: Lemma): unknown => {
+    const result = { ...l };
+    if (result.stems !== undefined) {
+      const indices = result.stems.map((s) => checkPresent(stemToIndex.get(s)));
+      // @ts-expect-error
+      result.stems = indices;
+    }
+    if (result.irregularForms !== undefined) {
+      const indices = result.irregularForms.map((s) =>
+        checkPresent(irregToIndex.get(s))
+      );
+      // @ts-expect-error
+      result.irregularForms = indices;
+    }
+    return result;
+  };
+
+  const rawLemmata = new Map();
+  for (const [lemma, lemmata] of tables.rawLemmata.entries()) {
+    const newLemmata = lemmata.map(mapLemma);
+    rawLemmata.set(lemma, newLemmata);
+  }
+
+  const numerals = tables.numerals.map(mapLemma);
+
   const tablesForRust = {
     ...tables,
     inflectionLookup: inflectionLookupValues,
     endsMap,
+    stemMap,
+    allStems,
+    allIrregs,
+    numerals,
+    rawLemmata,
   };
   const dir = path.join("build", "morceus", "processed");
   await fs.mkdir(dir, { recursive: true });

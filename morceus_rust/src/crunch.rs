@@ -1,7 +1,7 @@
 use crate::{
     indices::{
         CrunchResult, CruncherOptions, CruncherTables, InflectionContext, InflectionEnding, Stem,
-        StemCode, StemMapValue, StemOrForm,
+        StemCode, StemMapValue,
     },
     inflection_data::{
         LatinMood, LatinTense, extract_case_bits, extract_degree, extract_gender_bits,
@@ -212,71 +212,71 @@ fn crunch_options_for_end(
     };
 
     for StemMapValue {
-        stem_or_form,
+        index,
         lemma,
+        is_stem,
         is_verb,
     } in candidates
     {
-        match stem_or_form {
-            StemOrForm::IrregularForm(form) => {
-                assert!(form.code.is_indeclinable() || form.code.is_none());
-                // If it's indeclinable, then we skip if it the expected ending is not empty
-                // (since there's no inflected ending to bridge the gap). Otherwise, since it
-                // is not inflected, we don't need to do any further compatibility checks
-                // like we do between stems and endings.
-                if observed_end != "*" {
-                    continue;
-                }
-                results.push(CrunchResult {
-                    lemma: lemma.clone(),
-                    form: form.form.clone(),
-                    stem: None,
-                    end: None,
-                    is_verb: *is_verb,
-                    relaxed_case: false,
-                    relaxed_vowel_lengths: false,
-                    context: form.context.clone(),
-                    enclitic: None,
-                });
+        if !*is_stem {
+            let form = &tables.all_irregs[*index];
+            assert!(form.code.is_indeclinable() || form.code.is_none());
+            // If it's indeclinable, then we skip if it the expected ending is not empty
+            // (since there's no inflected ending to bridge the gap). Otherwise, since it
+            // is not inflected, we don't need to do any further compatibility checks
+            // like we do between stems and endings.
+            if observed_end != "*" {
+                continue;
             }
-            StemOrForm::Stem(stem) => {
-                assert!(!stem.code.is_indeclinable() || stem.code.is_none());
-                // Check to make sure there's a template that could have a match.
-                if !possible_ends.contains(&stem.inflection) {
-                    continue;
-                }
-                let possible_ends = tables
-                    .inflection_lookup
-                    .get(stem.inflection as usize)
-                    .unwrap()
-                    .get(observed_end)
-                    .unwrap();
-                for end in possible_ends {
-                    let merged_data = match stem.code {
-                        // If there's no StemCode, then this means it comes from the
-                        // irregular forms table and we need to expand the endings.
-                        StemCode::None => expand_single_ending(stem, end).map(|e| e.context),
-                        _ => merge_if_compatible(&stem.context, &end.context),
-                    };
-                    let merged_data = match merged_data {
-                        Some(md) => md,
-                        None => continue,
-                    };
-                    // * is the placeholder for an empty ending.
-                    let ending = if end.ending == "*" { "" } else { &end.ending };
-                    results.push(CrunchResult {
-                        lemma: lemma.clone(),
-                        form: format!("{}{}", stem.stem, ending),
-                        stem: Some(stem.clone()),
-                        end: Some(end.clone()),
-                        is_verb: *is_verb,
-                        relaxed_case: false,
-                        relaxed_vowel_lengths: false,
-                        context: merged_data,
-                        enclitic: None,
-                    });
-                }
-            }
+            results.push(CrunchResult {
+                lemma: lemma.clone(),
+                form: form.form.clone(),
+                stem: None,
+                end: None,
+                is_verb: *is_verb,
+                relaxed_case: false,
+                relaxed_vowel_lengths: false,
+                context: form.context.clone(),
+                enclitic: None,
+            });
+            continue;
+        }
+        let stem = &tables.all_stems[*index];
+        assert!(!stem.code.is_indeclinable() || stem.code.is_none());
+        // Check to make sure there's a template that could have a match.
+        if !possible_ends.contains(&stem.inflection) {
+            continue;
+        }
+        let possible_ends = tables
+            .inflection_lookup
+            .get(stem.inflection as usize)
+            .unwrap()
+            .get(observed_end)
+            .unwrap();
+        for end in possible_ends {
+            let merged_data = match stem.code {
+                // If there's no StemCode, then this means it comes from the
+                // irregular forms table and we need to expand the endings.
+                StemCode::None => expand_single_ending(stem, end).map(|e| e.context),
+                _ => merge_if_compatible(&stem.context, &end.context),
+            };
+            let merged_data = match merged_data {
+                Some(md) => md,
+                None => continue,
+            };
+            // * is the placeholder for an empty ending.
+            let ending = if end.ending == "*" { "" } else { &end.ending };
+            results.push(CrunchResult {
+                lemma: lemma.clone(),
+                form: format!("{}{}", stem.stem, ending),
+                stem: Some(stem.clone()),
+                end: Some(end.clone()),
+                is_verb: *is_verb,
+                relaxed_case: false,
+                relaxed_vowel_lengths: false,
+                context: merged_data,
+                enclitic: None,
+            });
         }
     }
 

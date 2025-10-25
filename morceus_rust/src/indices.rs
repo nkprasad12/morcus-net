@@ -3,22 +3,23 @@ use std::collections::HashMap;
 
 use crate::inflection_data::WordInflectionData;
 
-// StemMapValue: serialized as a tuple/array [Stem | IrregularForm, lemma: string, isVerb: boolean]
 #[derive(Debug, Clone, Deserialize)]
-#[serde(from = "(StemOrForm, String, bool)")]
+#[serde(from = "(usize, String, bool, bool)")]
 pub struct StemMapValue {
-    pub stem_or_form: StemOrForm,
+    pub index: usize,
     pub lemma: String,
     pub is_verb: bool,
+    pub is_stem: bool,
 }
 
 // Implementation to convert from tuple format to struct
-impl From<(StemOrForm, String, bool)> for StemMapValue {
-    fn from(tuple: (StemOrForm, String, bool)) -> Self {
+impl From<(usize, String, bool, bool)> for StemMapValue {
+    fn from(tuple: (usize, String, bool, bool)) -> Self {
         StemMapValue {
-            stem_or_form: tuple.0,
+            index: tuple.0,
             lemma: tuple.1,
             is_verb: tuple.2,
+            is_stem: tuple.3,
         }
     }
 }
@@ -124,8 +125,8 @@ pub struct InflectionEnding {
 #[serde(rename_all = "camelCase")]
 pub struct Lemma {
     pub lemma: String,
-    pub stems: Option<Vec<Stem>>,
-    pub irregular_forms: Option<Vec<IrregularForm>>,
+    pub stems: Option<Vec<usize>>,
+    pub irregular_forms: Option<Vec<usize>>,
     // The default is false if not present.
     #[serde(default)]
     pub is_verb: bool,
@@ -156,6 +157,8 @@ pub struct CruncherTables {
     pub numerals: Vec<Lemma>,
     pub raw_tables: HashMap<String, InflectionTable>,
     pub raw_lemmata: HashMap<String, Vec<Lemma>>,
+    pub all_stems: Vec<Stem>,
+    pub all_irregs: Vec<IrregularForm>,
 }
 
 fn is_false(value: &bool) -> bool {
