@@ -5,6 +5,8 @@ use std::env;
 use std::fs;
 use std::process;
 
+const TABLES_FILE: &str = "build/morceus/processed/morceusTables.json";
+
 fn print_top_snapshot_for(pid: u32, show_header: bool) {
     let pid_arg = pid.to_string();
     let output = std::process::Command::new("top")
@@ -36,9 +38,13 @@ fn print_top_snapshot_for(pid: u32, show_header: bool) {
     }
 }
 
-fn print_mem_summary(tag: String, delay_secs: u64) {
+fn print_mem_summary(tag: String, delay_secs: Option<u64>) {
     eprintln!("--- Memory summary ({}) ---", tag);
     print_top_snapshot_for(std::process::id(), true);
+    let delay_secs = match delay_secs {
+        Some(secs) => secs,
+        None => return,
+    };
     std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
     print_top_snapshot_for(std::process::id(), false);
     std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
@@ -49,6 +55,9 @@ fn load_tables(filename: &str) -> CruncherTables {
     // Read the JSON file
     let json_content = fs::read_to_string(filename).unwrap_or_else(|err| {
         eprintln!("Error reading file '{}': {}", filename, err);
+        eprintln!(
+            "To generate the tables, run (from the repo root):\n./morcus.sh build --morceus_tables",
+        );
         process::exit(1);
     });
 
@@ -63,25 +72,25 @@ fn load_tables(filename: &str) -> CruncherTables {
 
 fn main() {
     let args: Vec<String> = env::args().collect();
-    if args.len() < 4 {
-        eprintln!("Usage: {} <cruncher_tables.json> <word>", args[0]);
+    if args.len() < 3 {
+        eprintln!("Usage: {} <word>", args[0]);
         process::exit(1);
     }
-    let filename = &args[2];
-    let tables = load_tables(filename);
+    let tables = load_tables(TABLES_FILE);
     let options: CruncherOptions = CruncherOptions::default();
-    let res = crunch_word(&args[3], &tables, &options);
-    if res.is_empty() {
-        println!("No results found for word '{}'", args[3]);
+    let word = &args[2];
+
+    let results = crunch_word(word, &tables, &options);
+    if results.is_empty() {
+        println!("No results found for '{}'", word);
         return;
     }
-    for r in res {
-        println!("{:?}", r);
+    for result in results {
+        println!("{:?}", result);
     }
-    print_mem_summary("After crunching".to_string(), 1);
-    println!("Successfully loaded CruncherTables from '{}'", filename);
+    print_mem_summary("After crunching".to_string(), None);
 }
 
 /* Run with:
-cargo run --package morceus --release cli -- <path/to/cruncher_tables.json>
+cargo run --package morceus --release cli <word>
 */
