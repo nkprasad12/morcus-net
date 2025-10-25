@@ -1,11 +1,11 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
 use crate::api::CorpusQueryMatchMetadata;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorpusStats {
     pub total_words: u32,
@@ -14,7 +14,7 @@ pub struct CorpusStats {
     pub unique_lemmata: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WorkData {
     pub author: String,
     pub name: String,
