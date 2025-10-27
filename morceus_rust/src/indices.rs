@@ -144,18 +144,23 @@ pub struct InflectionTable {
 pub type InflectionLookupType = Vec<HashMap<String, Vec<InflectionEnding>>>;
 pub type InflectionTableKey = u16;
 
-// Updated CruncherTables structure to match TypeScript serialization with Maps as plain objects
+// Data structures required for computing inflection analyses.
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CruncherTables {
     /// Maps endings to the possible inflection paradigms associated with that ending.
     /// For example, if "a_ae" is the 3rd inflection in the `inflectionLookup` table,
     /// then "am" -> [2] would be an entry in this map.
+    #[cfg(feature = "crunch")]
     pub ends_map: HashMap<String, Vec<InflectionTableKey>>,
+    #[cfg(feature = "crunch")]
     pub stem_map: HashMap<String, Vec<StemMapValue>>,
     pub inflection_lookup: InflectionLookupType,
+    #[cfg(feature = "extra")]
     pub numerals: Vec<Lemma>,
+    #[cfg(feature = "extra")]
     pub raw_tables: HashMap<String, InflectionTable>,
+    #[cfg(feature = "extra")]
     pub raw_lemmata: HashMap<String, Vec<Lemma>>,
     pub all_stems: Vec<Stem>,
     pub all_irregs: Vec<IrregularForm>,

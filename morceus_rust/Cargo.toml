@@ -3,6 +3,13 @@ name = "morceus"
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["crunch", "complete"]
+crunch = []
+complete = []
+extra = []
+full = ["complete", "crunch", "extra"]
+
 [dependencies]
 serde = { version = "1.0", features = ["derive"] }
 serde_json.workspace = true

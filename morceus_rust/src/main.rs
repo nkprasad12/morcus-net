@@ -1,5 +1,3 @@
-use morceus::crunch::crunch_word;
-use morceus::indices::CruncherOptions;
 use morceus::indices::CruncherTables;
 use std::env;
 use std::fs;
@@ -70,17 +68,33 @@ fn load_tables(filename: &str) -> CruncherTables {
     cruncher_tables
 }
 
-fn main() {
-    let args: Vec<String> = env::args().collect();
-    if args.len() < 3 {
-        eprintln!("Usage: {} <word>", args[0]);
-        process::exit(1);
-    }
-    let tables = load_tables(TABLES_FILE);
-    let options: CruncherOptions = CruncherOptions::default();
-    let word = &args[2];
+#[cfg(feature = "complete")]
+fn handle_complete(args: &[String], tables: &CruncherTables) {
+    assert_eq!(&args[2], "complete");
 
-    let results = crunch_word(word, &tables, &options);
+    let prefix: &str = &args[3];
+    let completions = morceus::completions::completions_for(prefix, tables);
+    print_mem_summary("After completions".to_string(), None);
+
+    if completions.is_empty() {
+        println!("No completions found for prefix '{}'", prefix);
+        return;
+    }
+    for completion in completions {
+        println!("{}", completion);
+    }
+}
+
+#[cfg(feature = "crunch")]
+fn handle_crunch(args: &[String], tables: &CruncherTables) {
+    assert_eq!(&args[2], "crunch");
+
+    let options = morceus::indices::CruncherOptions::default();
+    let word = &args[3];
+
+    let results = morceus::crunch::crunch_word(word, tables, &options);
+    print_mem_summary("After crunching".to_string(), None);
+
     if results.is_empty() {
         println!("No results found for '{}'", word);
         return;
@@ -88,9 +102,36 @@ fn main() {
     for result in results {
         println!("{:?}", result);
     }
-    print_mem_summary("After crunching".to_string(), None);
+}
+
+fn print_usage(args: &[String]) {
+    eprintln!("Usage:");
+    eprintln!("  Analyses for a given word:");
+    eprintln!("    {} crunch <word>", args[0]);
+    eprintln!("  Possible completions for a given prefix:");
+    eprintln!("    {} complete <prefix>", args[0]);
+}
+
+fn main() {
+    let args: Vec<String> = env::args().collect();
+    if args.len() < 4 {
+        print_usage(&args);
+        process::exit(1);
+    }
+    let tables = load_tables(TABLES_FILE);
+    let command = &args[2];
+    match command.as_str() {
+        #[cfg(feature = "crunch")]
+        "crunch" => handle_crunch(&args, &tables),
+        #[cfg(feature = "complete")]
+        "complete" => handle_complete(&args, &tables),
+        _ => {
+            eprintln!("Unknown command: {}", command);
+            process::exit(1);
+        }
+    }
 }
 
 /* Run with:
-cargo run --package morceus --release cli <word>
+cargo run --package morceus --release cli crunch <word>
 */
