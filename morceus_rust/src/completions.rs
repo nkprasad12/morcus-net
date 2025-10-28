@@ -6,6 +6,48 @@ fn normalize_key(s: &str) -> String {
     s.to_lowercase().replace(REMOVE_CHARS, "")
 }
 
+struct PrefixRanges {
+    /// The prefix associated with these ranges.
+    prefix: String,
+    /// The range of prefixed stems in the list.
+    ///
+    /// The start is inclusive, the end is exclusive.
+    ///
+    /// For example, if we have stems \["apple", "application", "apps"\],
+    /// and the prefix is `"appl"`, then the range would be (0, 2).
+    prefix_stem_range: Option<(usize, usize)>,
+    /// The range of exact matches for stems in the list.
+    ///
+    /// The start is inclusive, the end is exclusive.
+    ///
+    /// For example, if we have stems \["apple", "application", "apps"\],
+    /// and the prefix is `"apple"`, then the range would be (0, 1).
+    exact_stem_range: Option<(usize, usize)>,
+    /// The range of prefixed irregular forms in the list.
+    ///
+    /// The start is inclusive, the end is exclusive.
+    /// For example, if we have irregular forms \["est", "esse", "estimo"\],
+    /// and the prefix is `"es"`, then the range would be (0, 3).
+    prefix_irregs_range: Option<(usize, usize)>,
+}
+
+impl PrefixRanges {
+    fn make_empty(prefix: String) -> Self {
+        PrefixRanges {
+            prefix,
+            prefix_stem_range: None,
+            exact_stem_range: None,
+            prefix_irregs_range: None,
+        }
+    }
+
+    fn all_empty(&self) -> bool {
+        self.prefix_stem_range.is_none()
+            && self.exact_stem_range.is_none()
+            && self.prefix_irregs_range.is_none()
+    }
+}
+
 #[derive(Default)]
 struct StemRanges {
     /// The ranges `[start, end)` that are prefixes.
@@ -99,6 +141,28 @@ fn find_irreg_ranges(prefix: &str, irregs: &[IrregularForm]) -> Option<(usize, u
     Some((start, start + prefix_end))
 }
 
+fn compute_ranges(prefix: &str, tables: &CruncherTables) -> Vec<PrefixRanges> {
+    let mut ranges = Vec::new();
+    let mut prefix_so_far: String = String::new();
+    for c in prefix.chars() {
+        prefix_so_far.push(c);
+        if ranges.last().is_some_and(|p: &PrefixRanges| p.all_empty()) {
+            // If the last prefix had no matches, all longer prefixes will also have no matches.
+            ranges.push(PrefixRanges::make_empty(prefix_so_far.clone()));
+            continue;
+        }
+
+        let stem_ranges = find_stem_ranges(&prefix_so_far, &tables.all_stems);
+        let irreg_ranges = find_irreg_ranges(&prefix_so_far, &tables.all_irregs);
+        ranges.push(PrefixRanges {
+            prefix: prefix_so_far.clone(),
+            prefix_stem_range: stem_ranges.prefix_range,
+            exact_stem_range: stem_ranges.exact_range,
+            prefix_irregs_range: irreg_ranges,
+        });
+    }
+    ranges
+}
 
 #[cfg(test)]
 mod tests {
