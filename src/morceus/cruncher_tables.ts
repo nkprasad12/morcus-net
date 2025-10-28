@@ -77,25 +77,48 @@ function isNumeral(lemma: Lemma) {
 }
 
 async function saveTablesForRust(tables: CruncherTables) {
-  const allStems: Stem[] = [];
-  const stemToIndex = new Map<Stem, number>();
-  const allIrregs: IrregularForm[] = [];
-  const irregToIndex = new Map<IrregularForm, number>();
+  let allStems: Stem[] = [];
+  const allStemSet = new Set<Stem>();
+  let allIrregs: IrregularForm[] = [];
+  const allIrregSet = new Set<IrregularForm>();
 
   for (const lemmata of tables.rawLemmata.values()) {
     for (const lemma of lemmata) {
       for (const stem of lemma.stems ?? []) {
-        assert(!stemToIndex.has(stem));
-        stemToIndex.set(stem, allStems.length);
+        assert(!allStemSet.has(stem));
         allStems.push(stem);
+        allStemSet.add(stem);
       }
       for (const form of lemma.irregularForms ?? []) {
-        assert(!irregToIndex.has(form));
-        irregToIndex.set(form, allIrregs.length);
+        assert(!allIrregSet.has(form));
         allIrregs.push(form);
+        allIrregSet.add(form);
       }
     }
   }
+
+  const normalizeSortKey = (s: string) =>
+    s
+      .toLowerCase()
+      .replaceAll("+", "")
+      .replaceAll("-", "")
+      .replaceAll("_", "")
+      .replaceAll("^", "");
+
+  allStems = allStems
+    .map((s) => [normalizeSortKey(s.stem), s] as const)
+    .sort((a, b) => a[0].localeCompare(b[0], "en-US"))
+    .map(([, s]) => s);
+
+  allIrregs = allIrregs
+    .map((s) => [normalizeSortKey(s.form), s] as const)
+    .sort((a, b) => a[0].localeCompare(b[0], "en-US"))
+    .map(([, s]) => s);
+
+  const stemToIndex = new Map<Stem, number>();
+  const irregToIndex = new Map<IrregularForm, number>();
+  allStems.forEach((stem, i) => stemToIndex.set(stem, i));
+  allIrregs.forEach((irreg, i) => irregToIndex.set(irreg, i));
 
   assert(
     allStems.length <= MAX_U32,

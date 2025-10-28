@@ -65,7 +65,38 @@ fn load_tables(filename: &str) -> CruncherTables {
             eprintln!("Error parsing JSON from '{}': {}", filename, err);
             process::exit(1);
         });
+
+    if !validate_tables(&cruncher_tables) {
+        process::exit(1);
+    }
+
     cruncher_tables
+}
+
+fn validate_tables(tables: &CruncherTables) -> bool {
+    let removed_chars = ['+', '^', '_', '-'];
+    // Validate that all_stems is sorted
+    let is_stems_sorted = tables.all_stems.windows(2).all(|w| {
+        let key1 = w[0].stem.to_lowercase().replace(removed_chars, "");
+        let key2 = w[1].stem.to_lowercase().replace(removed_chars, "");
+        key1 <= key2
+    });
+    if !is_stems_sorted {
+        eprintln!("all_stems is not sorted");
+        return false;
+    }
+
+    // Validate that all_irregs is sorted
+    let is_irregs_sorted = tables.all_irregs.windows(2).all(|w| {
+        let key1 = w[0].form.to_lowercase().replace(removed_chars, "");
+        let key2 = w[1].form.to_lowercase().replace(removed_chars, "");
+        key1 <= key2
+    });
+    if !is_irregs_sorted {
+        eprintln!("all_irregs is not sorted");
+        return false;
+    }
+    true
 }
 
 #[cfg(feature = "complete")]
@@ -73,15 +104,25 @@ fn handle_complete(args: &[String], tables: &CruncherTables) {
     assert_eq!(&args[2], "complete");
 
     let prefix: &str = &args[3];
-    let completions = morceus::completions::completions_for(prefix, tables);
+    let start = std::time::Instant::now();
+    let completions = morceus::completions::completions_for(prefix, tables, 25);
+    let duration = start.elapsed();
     print_mem_summary("After completions".to_string(), None);
 
-    if completions.is_empty() {
+    println!("Completions for prefix '{}' [{:?}]:", prefix, duration);
+    let results = match completions {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("Error computing completions: {}", e);
+            return;
+        }
+    };
+    if results.is_empty() {
         println!("No completions found for prefix '{}'", prefix);
         return;
     }
-    for completion in completions {
-        println!("{}", completion);
+    for result in results {
+        println!(" - {}", result);
     }
 }
 
