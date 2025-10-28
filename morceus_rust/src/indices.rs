@@ -141,7 +141,8 @@ pub struct InflectionTable {
 }
 
 // Type alias for the complex inflection lookup type
-pub type InflectionLookupType = Vec<HashMap<String, Vec<InflectionEnding>>>;
+pub type InflectionLookupEntry = HashMap<String, Vec<InflectionEnding>>;
+pub type InflectionLookupType = Vec<InflectionLookupEntry>;
 pub type InflectionTableKey = u16;
 
 // Data structures required for computing inflection analyses.
