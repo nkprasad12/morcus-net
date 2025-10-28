@@ -63,6 +63,42 @@ fn find_stem_ranges(prefix: &str, stems: &[Stem]) -> StemRanges {
         prefix_range,
         exact_range,
     }
+}
+
+/// Finds the start and end indices of irregs starting with the given prefix.
+///
+/// TODO: This may be consolidated with `find_stem_ranges`.
+fn find_irreg_ranges(prefix: &str, irregs: &[IrregularForm]) -> Option<(usize, usize)> {
+    if irregs.is_empty() || prefix.is_empty() {
+        return None;
+    }
+
+    // Binary search for the first irregular form that starts with or comes after the prefix
+    let start = irregs.partition_point(|irreg| {
+        let normalized = normalize_key(&irreg.form);
+        normalized.as_str() < prefix
+    });
+
+    if start >= irregs.len() {
+        return None;
+    }
+
+    let normalized_start = normalize_key(&irregs[start].form);
+    if !normalized_start.starts_with(prefix) {
+        // The partition point will tell us either where the prefix actually starts,
+        // or where it would be inserted. In this case, the prefix would be inserted here,
+        // so there are no matching irregular forms.
+        return None;
+    }
+
+    let prefix_end = irregs[start..].partition_point(|irreg| {
+        let normalized = normalize_key(&irreg.form);
+        normalized.starts_with(prefix)
+    });
+
+    Some((start, start + prefix_end))
+}
+
 
 #[cfg(test)]
 mod tests {
@@ -75,6 +111,18 @@ mod tests {
             stem: s.to_string(),
             code: StemCode::None,
             inflection: 0,
+            context: InflectionContext {
+                grammatical_data: 0,
+                tags: None,
+                internal_tags: None,
+            },
+        }
+    }
+
+    fn create_irreg(form: &str) -> IrregularForm {
+        IrregularForm {
+            form: form.to_string(),
+            code: StemCode::None,
             context: InflectionContext {
                 grammatical_data: 0,
                 tags: None,
@@ -223,5 +271,112 @@ mod tests {
 
         assert_eq!(result.prefix_range, Some((0, 3)));
         assert_eq!(result.exact_range, Some((0, 1)));
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_empty_irregs() {
+        let irregs: Vec<IrregularForm> = vec![];
+        let result = find_irreg_ranges("test", &irregs);
+
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_empty_prefix() {
+        let irregs = vec![create_irreg("test")];
+        let result = find_irreg_ranges("", &irregs);
+
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_single_match() {
+        let irregs = vec![
+            create_irreg("est"),
+            create_irreg("sum"),
+            create_irreg("sunt"),
+        ];
+        let result = find_irreg_ranges("sum", &irregs);
+
+        assert_eq!(result, Some((1, 2)));
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_multiple_matches() {
+        let irregs = vec![
+            create_irreg("es"),
+            create_irreg("esse"),
+            create_irreg("est"),
+            create_irreg("esto"),
+            create_irreg("sum"),
+        ];
+        let result = find_irreg_ranges("est", &irregs);
+
+        assert_eq!(result, Some((2, 4)));
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_prefix_before_all() {
+        let irregs = vec![
+            create_irreg("est"),
+            create_irreg("sum"),
+            create_irreg("sunt"),
+        ];
+        let result = find_irreg_ranges("abc", &irregs);
+
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_prefix_after_all() {
+        let irregs = vec![create_irreg("es"), create_irreg("est"), create_irreg("sum")];
+        let result = find_irreg_ranges("xyz", &irregs);
+
+        assert_eq!(result, None);
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_case_insensitive() {
+        let irregs = vec![
+            create_irreg("Est"),
+            create_irreg("SUM"),
+            create_irreg("Sunt"),
+        ];
+        let result = find_irreg_ranges("es", &irregs);
+
+        assert_eq!(result, Some((0, 1)));
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_with_special_chars() {
+        let irregs = vec![
+            create_irreg("e^st"),
+            create_irreg("es-se"),
+            create_irreg("est_o"),
+            create_irreg("sum"),
+        ];
+        let result = find_irreg_ranges("es", &irregs);
+
+        assert_eq!(result, Some((0, 3)));
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_partial_match_at_end() {
+        let irregs = vec![create_irreg("es"), create_irreg("est"), create_irreg("sun")];
+        let result = find_irreg_ranges("su", &irregs);
+
+        assert_eq!(result, Some((2, 3)));
+    }
+
+    #[test]
+    fn test_find_irreg_ranges_no_match_in_middle() {
+        let irregs = vec![
+            create_irreg("abc"),
+            create_irreg("def"),
+            create_irreg("xyz"),
+        ];
+        let result = find_irreg_ranges("ghi", &irregs);
+
+        assert_eq!(result, None);
     }
 }
