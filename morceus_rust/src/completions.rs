@@ -1,4 +1,6 @@
-use crate::indices::{CruncherTables, InflectionLookupEntry, IrregularForm, Stem};
+use crate::indices::{
+    CruncherTables, InflectionEnding, InflectionLookupEntry, IrregularForm, Stem,
+};
 
 const REMOVE_CHARS: [char; 4] = ['^', '-', '_', '+'];
 
@@ -164,6 +166,32 @@ fn compute_ranges(prefix: &str, tables: &CruncherTables) -> Vec<PrefixRanges> {
     ranges
 }
 
+pub enum AutocompleteResult<'a> {
+    Stem((&'a Stem, &'a InflectionEnding)),
+    Irreg(&'a IrregularForm),
+}
+
+pub struct DisplayOptions {
+    /// Whether to show breves in the display.
+    pub show_breves: bool,
+}
+
+impl AutocompleteResult<'_> {
+    pub fn display_form(&self, options: &DisplayOptions) -> String {
+        let raw_form = match self {
+            AutocompleteResult::Stem((stem, ending)) => {
+                format!("{}{}", stem.stem, ending.ending)
+            }
+            AutocompleteResult::Irreg(irreg) => irreg.form.to_string(),
+        };
+        let breve_mark = if options.show_breves { "\u{0306}" } else { "" };
+        raw_form
+            .replace(['-', '+'], "")
+            .replace('^', breve_mark)
+            .replace('_', "\u{0304}")
+    }
+}
+
 struct Autocompleter<'a> {
     ranges: Vec<PrefixRanges>,
     tables: &'a CruncherTables,
@@ -172,7 +200,7 @@ struct Autocompleter<'a> {
 // We can use a more sophisticated error type later if needed.
 pub type AutocompleteError = String;
 
-impl Autocompleter<'_> {
+impl<'t> Autocompleter<'t> {
     fn for_prefix<'a>(
         prefix: &str,
         tables: &'a CruncherTables,
@@ -192,7 +220,10 @@ impl Autocompleter<'_> {
     }
 
     /// Returns the end table for a particular stem.
-    fn end_table_for(&self, stem: &Stem) -> Result<&InflectionLookupEntry, AutocompleteError> {
+    fn end_table_for(
+        &self,
+        stem: &'t Stem,
+    ) -> Result<&'t InflectionLookupEntry, AutocompleteError> {
         self.tables
             .inflection_lookup
             .get(stem.inflection as usize)
@@ -200,7 +231,10 @@ impl Autocompleter<'_> {
     }
 
     /// Returns matches for irregular forms.
-    fn irreg_matches(&self, limit: usize) -> Result<Vec<String>, AutocompleteError> {
+    fn irreg_matches(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
         let (start, end) = match self.last_ranges()?.prefix_irregs_range {
             Some(r) => r,
             None => return Ok(vec![]),
@@ -209,28 +243,31 @@ impl Autocompleter<'_> {
         Ok(self.tables.all_irregs[start..end]
             .iter()
             .take(limit)
-            .map(|irreg| irreg.form.to_string())
+            .map(AutocompleteResult::Irreg)
             .collect())
     }
 
     /// Returns matches where the stem fully contains the prefix.
-    fn full_stem_matches(&self, limit: usize) -> Result<Vec<String>, AutocompleteError> {
-        let mut results = vec![];
+    fn full_stem_matches(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
         let (start, end) = match self.last_ranges()?.prefix_stem_range {
             Some(r) => r,
-            None => return Ok(results),
+            None => return Ok(vec![]),
         };
 
+        let mut results = vec![];
         for stem in &self.tables.all_stems[start..end] {
             let end_table = self.end_table_for(stem)?;
             // Because the whole prefix is contained in the stem, any inflection ending
             // will also be a prefix. For now, we are just taking one ending to show a sample,
             // but in the future we will find a reasonable API to provide the rest.
-            let end = end_table
-                .keys()
+            let end = &end_table
+                .values()
                 .next()
-                .ok_or("Inflection table has no endings")?;
-            results.push(format!("{}{}", stem.stem, end));
+                .ok_or("Inflection table has no endings")?[0];
+            results.push(AutocompleteResult::Stem((stem, end)));
             if results.len() >= limit {
                 break;
             }
@@ -244,7 +281,7 @@ impl Autocompleter<'_> {
         &self,
         ranges: &PrefixRanges,
         limit: usize,
-    ) -> Result<Vec<String>, AutocompleteError> {
+    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
         let mut results = Vec::new();
         let (start, end) = match ranges.exact_stem_range {
             Some(r) => r,
@@ -263,7 +300,7 @@ impl Autocompleter<'_> {
                 // TODO: This is not safe because we haven't yet verified that the prefix
                 // is composed of characters encoded only with one byte.
                 if clean_end[..required_chars.len()] == *required_chars {
-                    results.push(format!("{}{}", stem.stem, matches[0].ending));
+                    results.push(AutocompleteResult::Stem((stem, &matches[0])));
                     if results.len() >= limit {
                         break 'stem_loop;
                     }
@@ -278,7 +315,10 @@ impl Autocompleter<'_> {
     }
 
     /// Returns matches where the stem partially contains the prefix.
-    fn partial_stem_matches(&self, limit: usize) -> Result<Vec<String>, AutocompleteError> {
+    fn partial_stem_matches(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
         let mut results = Vec::new();
         for ranges in self.ranges.iter().take(self.ranges.len() - 1) {
             let mut matches = self.partial_stem_matches_for(ranges, limit - results.len())?;
@@ -290,7 +330,7 @@ impl Autocompleter<'_> {
         Ok(results)
     }
 
-    fn completions(&self, limit: usize) -> Result<Vec<String>, AutocompleteError> {
+    fn completions(&self, limit: usize) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
         let mut results = Vec::new();
         results.append(&mut self.full_stem_matches(limit)?);
         results.append(&mut self.partial_stem_matches(limit - results.len())?);
@@ -299,11 +339,11 @@ impl Autocompleter<'_> {
     }
 }
 
-pub fn completions_for(
+pub fn completions_for<'a>(
     prefix: &str,
-    tables: &CruncherTables,
+    tables: &'a CruncherTables,
     limit: usize,
-) -> Result<Vec<String>, AutocompleteError> {
+) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
     let prefix = normalize_key(prefix);
     let completer = Autocompleter::for_prefix(&prefix, tables)?;
     completer.completions(limit)

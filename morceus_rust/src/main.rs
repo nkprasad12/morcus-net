@@ -121,8 +121,9 @@ fn handle_complete(args: &[String], tables: &CruncherTables) {
         println!("No completions found for prefix '{}'", prefix);
         return;
     }
+    let display_options = morceus::completions::DisplayOptions { show_breves: false };
     for result in results {
-        println!(" - {}", result);
+        println!(" - {}", result.display_form(&display_options));
     }
 }
 
