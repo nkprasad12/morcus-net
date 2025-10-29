@@ -101,11 +101,13 @@ fn validate_tables(tables: &CruncherTables) -> bool {
 
 #[cfg(feature = "complete")]
 fn handle_complete(args: &[String], tables: &CruncherTables) {
+    use morceus::completions::{self, AutocompleteResult, DisplayForm, DisplayOptions};
+
     assert_eq!(&args[2], "complete");
 
     let prefix: &str = &args[3];
     let start = std::time::Instant::now();
-    let completions = morceus::completions::completions_for(prefix, tables, 25);
+    let completions = completions::completions_for(prefix, tables, 25);
     let duration = start.elapsed();
     print_mem_summary("After completions".to_string(), None);
 
@@ -121,9 +123,13 @@ fn handle_complete(args: &[String], tables: &CruncherTables) {
         println!("No completions found for prefix '{}'", prefix);
         return;
     }
-    let display_options = morceus::completions::DisplayOptions { show_breves: false };
+    let display_options = DisplayOptions { show_breves: false };
     for result in results {
-        println!(" - {}", result.display_form(&display_options));
+        let result = match result {
+            AutocompleteResult::Stem(stem_result) => stem_result.display_form(&display_options),
+            AutocompleteResult::Irreg(irreg_result) => irreg_result.display_form(&display_options),
+        };
+        println!(" - {}", result);
     }
 }
 

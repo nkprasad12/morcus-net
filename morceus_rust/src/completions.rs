@@ -2,6 +2,59 @@ use crate::indices::{
     CruncherTables, InflectionEnding, InflectionLookupEntry, IrregularForm, Stem,
 };
 
+// ----------------
+// Public API below
+// ----------------
+
+pub enum AutocompleteResult<'a> {
+    Stem(SingleStemResult<'a>),
+    Irreg(&'a IrregularForm),
+}
+
+pub struct SingleStemResult<'a> {
+    pub stem: &'a Stem,
+    pub ending: &'a InflectionEnding,
+}
+
+// We can use a more sophisticated error type later if needed.
+pub type AutocompleteError = String;
+
+pub fn completions_for<'a>(
+    prefix: &str,
+    tables: &'a CruncherTables,
+    limit: usize,
+) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
+    let prefix = normalize_key(prefix);
+    let completer = Autocompleter::for_prefix(&prefix, tables)?;
+    completer.completions(limit)
+}
+
+pub struct DisplayOptions {
+    /// Whether to show breves in the display. Macra are always shown.
+    pub show_breves: bool,
+}
+
+pub trait DisplayForm {
+    fn display_form(&self, options: &DisplayOptions) -> String;
+}
+
+impl DisplayForm for IrregularForm {
+    fn display_form(&self, options: &DisplayOptions) -> String {
+        display_form(&self.form, options)
+    }
+}
+
+impl DisplayForm for SingleStemResult<'_> {
+    fn display_form(&self, options: &DisplayOptions) -> String {
+        let base = format!("{}{}", &self.stem.stem, &self.ending.ending);
+        display_form(&base, options)
+    }
+}
+
+// ----------------
+// Public API above
+// ----------------
+
 const REMOVE_CHARS: [char; 4] = ['^', '-', '_', '+'];
 
 fn normalize_key(s: &str) -> String {
@@ -166,39 +219,18 @@ fn compute_ranges(prefix: &str, tables: &CruncherTables) -> Vec<PrefixRanges> {
     ranges
 }
 
-pub enum AutocompleteResult<'a> {
-    Stem((&'a Stem, &'a InflectionEnding)),
-    Irreg(&'a IrregularForm),
-}
-
-pub struct DisplayOptions {
-    /// Whether to show breves in the display.
-    pub show_breves: bool,
-}
-
-impl AutocompleteResult<'_> {
-    pub fn display_form(&self, options: &DisplayOptions) -> String {
-        let raw_form = match self {
-            AutocompleteResult::Stem((stem, ending)) => {
-                format!("{}{}", stem.stem, ending.ending)
-            }
-            AutocompleteResult::Irreg(irreg) => irreg.form.to_string(),
-        };
-        let breve_mark = if options.show_breves { "\u{0306}" } else { "" };
-        raw_form
-            .replace(['-', '+'], "")
-            .replace('^', breve_mark)
-            .replace('_', "\u{0304}")
-    }
+fn display_form(input: &str, options: &DisplayOptions) -> String {
+    let breve_mark = if options.show_breves { "\u{0306}" } else { "" };
+    input
+        .replace(['-', '+'], "")
+        .replace('^', breve_mark)
+        .replace('_', "\u{0304}")
 }
 
 struct Autocompleter<'a> {
     ranges: Vec<PrefixRanges>,
     tables: &'a CruncherTables,
 }
-
-// We can use a more sophisticated error type later if needed.
-pub type AutocompleteError = String;
 
 impl<'t> Autocompleter<'t> {
     fn for_prefix<'a>(
@@ -263,11 +295,11 @@ impl<'t> Autocompleter<'t> {
             // Because the whole prefix is contained in the stem, any inflection ending
             // will also be a prefix. For now, we are just taking one ending to show a sample,
             // but in the future we will find a reasonable API to provide the rest.
-            let end = &end_table
+            let ending = &end_table
                 .values()
                 .next()
                 .ok_or("Inflection table has no endings")?[0];
-            results.push(AutocompleteResult::Stem((stem, end)));
+            results.push(AutocompleteResult::Stem(SingleStemResult { stem, ending }));
             if results.len() >= limit {
                 break;
             }
@@ -300,7 +332,11 @@ impl<'t> Autocompleter<'t> {
                 // TODO: This is not safe because we haven't yet verified that the prefix
                 // is composed of characters encoded only with one byte.
                 if clean_end[..required_chars.len()] == *required_chars {
-                    results.push(AutocompleteResult::Stem((stem, &matches[0])));
+                    let result = SingleStemResult {
+                        stem,
+                        ending: &matches[0],
+                    };
+                    results.push(AutocompleteResult::Stem(result));
                     if results.len() >= limit {
                         break 'stem_loop;
                     }
@@ -337,16 +373,6 @@ impl<'t> Autocompleter<'t> {
         results.append(&mut self.irreg_matches(limit - results.len())?);
         Ok(results)
     }
-}
-
-pub fn completions_for<'a>(
-    prefix: &str,
-    tables: &'a CruncherTables,
-    limit: usize,
-) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
-    let prefix = normalize_key(prefix);
-    let completer = Autocompleter::for_prefix(&prefix, tables)?;
-    completer.completions(limit)
 }
 
 #[cfg(test)]
