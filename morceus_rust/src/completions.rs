@@ -233,14 +233,23 @@ struct Autocompleter<'a> {
 }
 
 impl<'t> Autocompleter<'t> {
+    /// Creates an Autocompleter for the given prefix and tables.
+    ///
+    /// # Arguments
+    /// * `prefix` - The normalized prefix to match. Must not be empty and must be
+    ///   only ASCII characters.
+    /// * `tables` - The CruncherTables to use for completions.
     fn for_prefix<'a>(
         prefix: &str,
         tables: &'a CruncherTables,
     ) -> Result<Autocompleter<'a>, AutocompleteError> {
-        let ranges = compute_ranges(prefix, tables);
-        if ranges.is_empty() {
+        if !prefix.is_ascii() {
+            return Err("Only ASCII prefixes are supported.".to_string());
+        }
+        if prefix.is_empty() {
             return Err("Empty prefixes are not allowed.".to_string());
         }
+        let ranges = compute_ranges(prefix, tables);
         Ok(Autocompleter { ranges, tables })
     }
 
@@ -319,8 +328,8 @@ impl<'t> Autocompleter<'t> {
             Some(r) => r,
             None => return Ok(results),
         };
-        // TODO: This is not safe because we haven't yet verified that the prefix
-        // is composed of characters encoded only with one byte.
+        // Note: we use a byte slice here because we verify in the constructor that the prefix is
+        // ASCII only (so 1 byte per character).
         let required_chars = &self.last_ranges()?.prefix[ranges.prefix.len()..];
         'stem_loop: for stem in &self.tables.all_stems[start..end] {
             let end_table = self.end_table_for(stem)?;
@@ -329,8 +338,8 @@ impl<'t> Autocompleter<'t> {
                 if clean_end.len() < required_chars.len() {
                     continue;
                 }
-                // TODO: This is not safe because we haven't yet verified that the prefix
-                // is composed of characters encoded only with one byte.
+                // Note: we use a byte slice here because we verify in the constructor that the prefix is
+                // ASCII only (so 1 byte per character).
                 if clean_end[..required_chars.len()] == *required_chars {
                     let result = SingleStemResult {
                         stem,
