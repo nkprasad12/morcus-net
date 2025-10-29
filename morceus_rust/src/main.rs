@@ -126,10 +126,18 @@ fn handle_complete(args: &[String], tables: &CruncherTables) {
     let display_options = DisplayOptions { show_breves: false };
     for result in results {
         let result = match result {
-            AutocompleteResult::Stem(stem_result) => stem_result.display_form(&display_options),
-            AutocompleteResult::Irreg(irreg_result) => irreg_result.display_form(&display_options),
+            AutocompleteResult::Stem(stem_result) => stem_result,
+            AutocompleteResult::Irreg(irreg_result) => {
+                let display_form = irreg_result.display_form(&display_options);
+                println!(" - {} [Irreg]", display_form);
+                continue;
+            }
         };
-        println!(" - {}", result);
+        let first_match = match result.first_match().unwrap() {
+            Some(fm) => fm,
+            None => continue,
+        };
+        println!(" - {}", first_match.display_form(&display_options));
     }
 }
 

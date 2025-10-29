@@ -7,13 +7,8 @@ use crate::indices::{
 // ----------------
 
 pub enum AutocompleteResult<'a> {
-    Stem(SingleStemResult<'a>),
+    Stem(StemResult<'a>),
     Irreg(&'a IrregularForm),
-}
-
-pub struct SingleStemResult<'a> {
-    pub stem: &'a Stem,
-    pub ending: &'a InflectionEnding,
 }
 
 // We can use a more sophisticated error type later if needed.
@@ -24,9 +19,18 @@ pub fn completions_for<'a>(
     tables: &'a CruncherTables,
     limit: usize,
 ) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
-    let prefix = normalize_key(prefix);
-    let completer = Autocompleter::for_prefix(&prefix, tables)?;
-    completer.completions(limit)
+    Autocompleter::for_prefix(prefix, tables)?.completions(limit)
+}
+
+pub struct StemResult<'a> {
+    stem: &'a Stem,
+    tables: &'a CruncherTables,
+    required_chars: Option<String>,
+}
+
+pub struct SingleStemResult<'a> {
+    pub stem: &'a Stem,
+    pub ending: &'a InflectionEnding,
 }
 
 pub struct DisplayOptions {
@@ -46,8 +50,10 @@ impl DisplayForm for IrregularForm {
 
 impl DisplayForm for SingleStemResult<'_> {
     fn display_form(&self, options: &DisplayOptions) -> String {
-        let base = format!("{}{}", &self.stem.stem, &self.ending.ending);
-        display_form(&base, options)
+        display_form(
+            &format!("{}{}", &self.stem.stem, &self.ending.ending),
+            options,
+        )
     }
 }
 
@@ -243,13 +249,14 @@ impl<'t> Autocompleter<'t> {
         prefix: &str,
         tables: &'a CruncherTables,
     ) -> Result<Autocompleter<'a>, AutocompleteError> {
+        let prefix = normalize_key(prefix);
         if !prefix.is_ascii() {
             return Err("Only ASCII prefixes are supported.".to_string());
         }
         if prefix.is_empty() {
             return Err("Empty prefixes are not allowed.".to_string());
         }
-        let ranges = compute_ranges(prefix, tables);
+        let ranges = compute_ranges(&prefix, tables);
         Ok(Autocompleter { ranges, tables })
     }
 
@@ -258,17 +265,6 @@ impl<'t> Autocompleter<'t> {
         self.ranges
             .last()
             .ok_or("Unexpected empty prefix!".to_string())
-    }
-
-    /// Returns the end table for a particular stem.
-    fn end_table_for(
-        &self,
-        stem: &'t Stem,
-    ) -> Result<&'t InflectionLookupEntry, AutocompleteError> {
-        self.tables
-            .inflection_lookup
-            .get(stem.inflection as usize)
-            .ok_or("Invalid inflection index".to_string())
     }
 
     /// Returns matches for irregular forms.
@@ -298,23 +294,18 @@ impl<'t> Autocompleter<'t> {
             None => return Ok(vec![]),
         };
 
-        let mut results = vec![];
-        for stem in &self.tables.all_stems[start..end] {
-            let end_table = self.end_table_for(stem)?;
-            // Because the whole prefix is contained in the stem, any inflection ending
-            // will also be a prefix. For now, we are just taking one ending to show a sample,
-            // but in the future we will find a reasonable API to provide the rest.
-            let ending = &end_table
-                .values()
-                .next()
-                .ok_or("Inflection table has no endings")?[0];
-            results.push(AutocompleteResult::Stem(SingleStemResult { stem, ending }));
-            if results.len() >= limit {
-                break;
-            }
-        }
-
-        Ok(results)
+        Ok(self.tables.all_stems[start..end]
+            .iter()
+            .take(limit)
+            .map(|stem| {
+                // For full matches, we don't have any required chars.
+                AutocompleteResult::Stem(StemResult {
+                    stem,
+                    tables: self.tables,
+                    required_chars: None,
+                })
+            })
+            .collect())
     }
 
     /// Returns matches where the stem exactly matches the prefix for the particular sub-prefix.
@@ -323,40 +314,24 @@ impl<'t> Autocompleter<'t> {
         ranges: &PrefixRanges,
         limit: usize,
     ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
-        let mut results = Vec::new();
         let (start, end) = match ranges.exact_stem_range {
             Some(r) => r,
-            None => return Ok(results),
+            None => return Ok(vec![]),
         };
         // Note: we use a byte slice here because we verify in the constructor that the prefix is
         // ASCII only (so 1 byte per character).
         let required_chars = &self.last_ranges()?.prefix[ranges.prefix.len()..];
-        'stem_loop: for stem in &self.tables.all_stems[start..end] {
-            let end_table = self.end_table_for(stem)?;
-            for (end, matches) in end_table.iter() {
-                let clean_end = normalize_key(end);
-                if clean_end.len() < required_chars.len() {
-                    continue;
-                }
-                // Note: we use a byte slice here because we verify in the constructor that the prefix is
-                // ASCII only (so 1 byte per character).
-                if clean_end[..required_chars.len()] == *required_chars {
-                    let result = SingleStemResult {
-                        stem,
-                        ending: &matches[0],
-                    };
-                    results.push(AutocompleteResult::Stem(result));
-                    if results.len() >= limit {
-                        break 'stem_loop;
-                    }
-                    // TODO: For now, we are just taking one ending to show a sample per stem,
-                    // but in the future we will find a reasonable API to provide the rest.
-                    continue 'stem_loop;
-                }
-            }
-        }
-
-        Ok(results)
+        Ok(self.tables.all_stems[start..end]
+            .iter()
+            .take(limit)
+            .map(|stem| {
+                AutocompleteResult::Stem(StemResult {
+                    stem,
+                    tables: self.tables,
+                    required_chars: Some(required_chars.to_string()),
+                })
+            })
+            .collect())
     }
 
     /// Returns matches where the stem partially contains the prefix.
@@ -381,6 +356,56 @@ impl<'t> Autocompleter<'t> {
         results.append(&mut self.partial_stem_matches(limit - results.len())?);
         results.append(&mut self.irreg_matches(limit - results.len())?);
         Ok(results)
+    }
+}
+
+impl<'t> StemResult<'t> {
+    /// Returns the end table for a particular stem.
+    fn end_table_for(
+        &self,
+        stem: &'t Stem,
+    ) -> Result<&'t InflectionLookupEntry, AutocompleteError> {
+        self.tables
+            .inflection_lookup
+            .get(stem.inflection as usize)
+            .ok_or("Invalid inflection index".to_string())
+    }
+
+    fn single_stem_result(&self, ending: &'t InflectionEnding) -> Option<SingleStemResult<'t>> {
+        Some(SingleStemResult {
+            stem: self.stem,
+            ending,
+        })
+    }
+
+    pub fn first_match(&self) -> Result<Option<SingleStemResult<'t>>, AutocompleteError> {
+        let end_table = self.end_table_for(self.stem)?;
+        let required_chars = match &self.required_chars {
+            Some(rc) => rc,
+            None => {
+                // Because the whole prefix is contained in the stem, any inflection ending
+                // will also be a prefix. For now, we are just taking one ending to show a sample,
+                // but in the future we will find a reasonable API to provide the rest.
+                let ending = &end_table
+                    .values()
+                    .next()
+                    .ok_or("Inflection table has no endings")?[0];
+                return Ok(self.single_stem_result(ending));
+            }
+        };
+        for (end, matches) in end_table.iter() {
+            let clean_end = normalize_key(end);
+            if clean_end.len() < required_chars.len() {
+                continue;
+            }
+            // Note: we use a byte slice here because we verify in the constructor that the prefix is
+            // ASCII only (so 1 byte per character).
+            if clean_end[..required_chars.len()] == *required_chars {
+                return Ok(self.single_stem_result(&matches[0]));
+            }
+        }
+
+        Ok(None)
     }
 }
 
