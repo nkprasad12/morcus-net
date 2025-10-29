@@ -15,6 +15,7 @@ import { ResizeablePanels } from "@/web/client/components/draggables";
 
 const AMBIG_UNRESOLVED = "macAmbig unresolved";
 const AMBIG_SPAN = <span className={AMBIG_UNRESOLVED}>ambiguous</span>;
+const RESULTS_ID = "macronized-results";
 
 function Unknown(props: { word: string }) {
   return <span className="macUnknown">{props.word}</span>;
@@ -119,6 +120,7 @@ function MacronizedOutput(props: {
 }) {
   return (
     <div
+      id={RESULTS_ID}
       className="text sm"
       style={{ padding: "8px" }}
       contentEditable
@@ -238,6 +240,35 @@ export function Macronizer() {
   );
 }
 
+type CopyTextState = "Copy Text" | "Copied!" | "Error";
+
+function CopyTextButton() {
+  const [copyState, setCopyState] = useState<CopyTextState>("Copy Text");
+
+  return (
+    <button
+      className="button text sm"
+      style={{ marginRight: "24px" }}
+      onClick={async () => {
+        const resultDiv = document.getElementById(RESULTS_ID);
+        if (resultDiv === null) {
+          setCopyState("Error");
+          return;
+        }
+        const text = resultDiv.textContent.normalize("NFC");
+        try {
+          await navigator.clipboard.writeText(text);
+          setCopyState("Copied!");
+          setTimeout(() => setCopyState("Copy Text"), 2000);
+        } catch {
+          setCopyState("Error");
+        }
+      }}>
+      {copyState}
+    </button>
+  );
+}
+
 function ResultSection(props: { processed: JSX.Element }) {
   return (
     <>
@@ -245,9 +276,18 @@ function ResultSection(props: { processed: JSX.Element }) {
       <section
         style={{ whiteSpace: "pre-wrap", margin: "18px 0" }}
         className="text md">
-        <h1 className="text md" style={{ margin: "12px 0" }} id="results">
-          Results
-        </h1>
+        <div
+          style={{
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "space-between",
+            margin: "12px 0",
+          }}>
+          <h1 className="text md" id="results" style={{ margin: 0 }}>
+            Results
+          </h1>
+          <CopyTextButton />
+        </div>
         <details open style={{ margin: "12px 0" }}>
           <summary>
             <span className="text xs light">Instructions ⓘ</span>
