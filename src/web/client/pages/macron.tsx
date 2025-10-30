@@ -250,12 +250,13 @@ function CopyTextButton() {
       className="button text sm"
       style={{ marginRight: "24px" }}
       onClick={async () => {
-        const resultDiv = document.getElementById(RESULTS_ID);
-        if (resultDiv === null) {
+        const text = document
+          .getElementById(RESULTS_ID)
+          ?.textContent?.normalize("NFC");
+        if (text === undefined) {
           setCopyState("Error");
           return;
         }
-        const text = resultDiv.textContent.normalize("NFC");
         try {
           await navigator.clipboard.writeText(text);
           setCopyState("Copied!");
