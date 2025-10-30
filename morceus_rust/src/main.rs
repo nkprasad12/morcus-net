@@ -136,7 +136,7 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
             }
         };
         // 3b. or a stem with multiple possible endings.
-        if let Some(first) = stem_result.results().next() {
+        if let Some(first) = stem_result.expand().next() {
             let display_form = first.display_form(&display_options);
             let lemma = &stem_result.lemma.lemma;
             println!(" - {display_form} [{lemma}, Stem]",);
