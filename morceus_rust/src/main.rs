@@ -108,7 +108,7 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     let prefix: &str = &args[3];
     let start = std::time::Instant::now();
     // 1. Create the autocompleter.
-    let completer = Autocompleter::new(tables);
+    let completer = Autocompleter::new(tables)?;
     let duration = start.elapsed();
     println!("Created completer in {duration:.2?}");
 
@@ -125,21 +125,22 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     }
     let display_options = DisplayOptions { show_breves: false };
     for result in completions {
-        let result = match result {
+        let stem_result = match result {
             AutocompleteResult::Stem(stem_result) => stem_result,
             // 3a. Each result can either be an irregular (which is a single form),
             AutocompleteResult::Irreg(irreg_result) => {
-                let display_form = irreg_result.display_form(&display_options);
-                println!(" - {} [Irreg]", display_form);
+                let display_form = irreg_result.irreg.display_form(&display_options);
+                let lemma = &irreg_result.lemma.lemma;
+                println!(" - {display_form} [{lemma}, Irreg]",);
                 continue;
             }
         };
         // 3b. or a stem with multiple possible endings.
-        let first_match = match result.results().next() {
-            Some(fm) => fm,
-            None => continue,
-        };
-        println!(" - {}", first_match.display_form(&display_options));
+        if let Some(first) = stem_result.results().next() {
+            let display_form = first.display_form(&display_options);
+            let lemma = &stem_result.lemma.lemma;
+            println!(" - {display_form} [{lemma}, Stem]",);
+        }
     }
     Ok(())
 }

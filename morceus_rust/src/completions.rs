@@ -1,4 +1,4 @@
-use crate::indices::{CruncherTables, InflectionEnding, IrregularForm, Stem};
+use crate::indices::{CruncherTables, InflectionEnding, IrregularForm, Lemma, Stem};
 
 // ----------------
 // Public API below
@@ -14,15 +14,21 @@ pub struct Autocompleter<'a> {
 
 pub enum AutocompleteResult<'a> {
     Stem(StemResult<'a>),
-    Irreg(&'a IrregularForm),
+    Irreg(IrregResult<'a>),
 }
 
 // We can use a more sophisticated error type later if needed.
 pub type AutocompleteError = String;
 
+pub struct IrregResult<'a> {
+    pub irreg: &'a IrregularForm,
+    pub lemma: &'a Lemma,
+}
+
 pub struct StemResult<'a> {
     stem: &'a Stem,
     ends: Vec<&'a InflectionEnding>,
+    pub lemma: &'a Lemma,
 }
 
 pub struct SingleStemResult<'a> {
@@ -68,10 +74,31 @@ type SortedEndings<'a> = Vec<(String, &'a InflectionEnding)>;
 
 struct Addenda<'a> {
     end_tables: Vec<SortedEndings<'a>>,
+    stem_to_lemma: Vec<u16>,
+    irreg_to_lemma: Vec<u16>,
 }
 
 impl<'a> Autocompleter<'a> {
-    pub fn new(tables: &'a CruncherTables) -> Autocompleter<'a> {
+    pub fn new(tables: &'a CruncherTables) -> Result<Autocompleter<'a>, AutocompleteError> {
+        // Reserve the max for "no lemma";
+        if tables.raw_lemmata.len() + 1 >= u16::MAX as usize {
+            return Err("Too many lemmata in CruncherTables".to_string());
+        }
+        let mut stem_to_lemma = vec![u16::MAX; tables.all_stems.len()];
+        let mut irreg_to_lemma = vec![u16::MAX; tables.all_irregs.len()];
+        for (i, lemma) in tables.raw_lemmata.iter().enumerate() {
+            if let Some(stems) = &lemma.stems {
+                for stem_idx in stems {
+                    stem_to_lemma[*stem_idx as usize] = i as u16;
+                }
+            }
+            if let Some(irregs) = &lemma.irregular_forms {
+                for irreg_idx in irregs {
+                    irreg_to_lemma[*irreg_idx as usize] = i as u16;
+                }
+            }
+        }
+
         let mut end_tables = vec![];
         for grouped_table in &tables.inflection_lookup {
             let mut ends = grouped_table
@@ -83,8 +110,12 @@ impl<'a> Autocompleter<'a> {
             end_tables.push(ends);
         }
 
-        let addenda = Addenda { end_tables };
-        Autocompleter { tables, addenda }
+        let addenda = Addenda {
+            end_tables,
+            stem_to_lemma,
+            irreg_to_lemma,
+        };
+        Ok(Autocompleter { tables, addenda })
     }
 
     pub fn completions_for(
@@ -100,6 +131,30 @@ impl<'a> Autocompleter<'a> {
             .end_tables
             .get(stem.inflection as usize)
             .ok_or("Invalid inflection index".to_string())
+    }
+
+    fn lemma_for_stem(&self, stem_idx: usize) -> Result<&'a Lemma, AutocompleteError> {
+        let lemma_id = self
+            .addenda
+            .stem_to_lemma
+            .get(stem_idx)
+            .ok_or("Invalid stem index".to_string())?;
+        self.tables
+            .raw_lemmata
+            .get(*lemma_id as usize)
+            .ok_or("Invalid lemma index for stem".to_string())
+    }
+
+    fn lemma_for_irreg(&self, irreg_idx: usize) -> Result<&'a Lemma, AutocompleteError> {
+        let lemma_id = self
+            .addenda
+            .irreg_to_lemma
+            .get(irreg_idx)
+            .ok_or("Invalid irreg index".to_string())?;
+        self.tables
+            .raw_lemmata
+            .get(*lemma_id as usize)
+            .ok_or("Invalid lemma index for irreg".to_string())
     }
 }
 
@@ -313,11 +368,15 @@ impl<'t> MatchFinder<'t> {
             None => return Ok(vec![]),
         };
 
-        Ok(self.completer.tables.all_irregs[start..end]
-            .iter()
-            .take(limit)
-            .map(AutocompleteResult::Irreg)
-            .collect())
+        let mut results = vec![];
+        let end = std::cmp::min(end, start + limit);
+        for i in start..end {
+            let irreg = &self.completer.tables.all_irregs[i];
+            let lemma = self.completer.lemma_for_irreg(i)?;
+            results.push(AutocompleteResult::Irreg(IrregResult { irreg, lemma }));
+        }
+
+        Ok(results)
     }
 
     /// Returns matches where the stem fully contains the prefix.
@@ -331,13 +390,15 @@ impl<'t> MatchFinder<'t> {
         };
 
         let mut results = Vec::new();
-        for stem in &self.completer.tables.all_stems[start..end] {
+        for i in start..end {
+            let stem = &self.completer.tables.all_stems[i];
             let ends = self.completer.ends_for(stem)?;
             if ends.is_empty() {
                 continue;
             }
+            let lemma = self.completer.lemma_for_stem(i)?;
             let ends = ends.iter().map(|e| e.1).collect();
-            let stem_result = StemResult { stem, ends };
+            let stem_result = StemResult { stem, ends, lemma };
             results.push(AutocompleteResult::Stem(stem_result));
             if results.len() >= limit {
                 break;
@@ -397,7 +458,8 @@ impl<'t> MatchFinder<'t> {
         // ASCII only (so 1 byte per character).
         let required_chars = &self.last_ranges()?.prefix[ranges.prefix.len()..];
         let mut results = Vec::new();
-        for stem in &self.completer.tables.all_stems[start..end] {
+        for i in start..end {
+            let stem = &self.completer.tables.all_stems[i];
             let end_prefix = required_chars.to_string();
             let ends = match self.find_ends_for(end_prefix, stem)? {
                 Some(e) => e,
@@ -406,7 +468,8 @@ impl<'t> MatchFinder<'t> {
             if ends.is_empty() {
                 continue;
             }
-            let stem_result = StemResult { stem, ends };
+            let lemma = self.completer.lemma_for_stem(i)?;
+            let stem_result = StemResult { stem, ends, lemma };
             results.push(AutocompleteResult::Stem(stem_result));
             if results.len() >= limit {
                 break;

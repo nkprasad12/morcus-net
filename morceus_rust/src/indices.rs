@@ -163,8 +163,7 @@ pub struct CruncherTables {
     pub numerals: Vec<Lemma>,
     #[cfg(feature = "extra")]
     pub raw_tables: HashMap<String, InflectionTable>,
-    #[cfg(feature = "extra")]
-    pub raw_lemmata: HashMap<String, Vec<Lemma>>,
+    pub raw_lemmata: Vec<Lemma>,
     pub all_stems: Vec<Stem>,
     pub all_irregs: Vec<IrregularForm>,
 }

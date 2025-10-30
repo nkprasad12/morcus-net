@@ -176,10 +176,9 @@ async function saveTablesForRust(tables: CruncherTables) {
     return result;
   };
 
-  const rawLemmata = new Map();
-  for (const [lemma, lemmata] of tables.rawLemmata.entries()) {
-    const newLemmata = lemmata.map(mapLemma);
-    rawLemmata.set(lemma, newLemmata);
+  const rawLemmata: unknown[] = [];
+  for (const [_, lemmata] of tables.rawLemmata.entries()) {
+    rawLemmata.push(...lemmata.map(mapLemma));
   }
 
   const numerals = tables.numerals.map(mapLemma);
