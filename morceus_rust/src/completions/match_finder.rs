@@ -61,34 +61,6 @@ impl<'t> MatchFinder<'t> {
         Ok(results)
     }
 
-    /// Returns matches where the stem fully contains the prefix.
-    fn full_stem_matches(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
-        let (start, end) = match self.last_ranges()?.prefix_stem_range {
-            Some(r) => r,
-            None => return Ok(vec![]),
-        };
-
-        let mut results = Vec::new();
-        for i in start..end {
-            let stem = &self.completer.tables.all_stems[i];
-            let ends = self.completer.ends_for(stem)?;
-            if ends.is_empty() {
-                continue;
-            }
-            let lemma = self.completer.lemma_for_stem(i)?;
-            let ends = ends.iter().map(|e| e.1).collect();
-            let stem_result = StemResult { stem, ends, lemma };
-            results.push(AutocompleteResult::Stem(stem_result));
-            if results.len() >= limit {
-                break;
-            }
-        }
-        Ok(results)
-    }
-
     /// Finds the start and end indices of ends for the given stem that start with the given end prefix.
     fn find_ends_for(
         &self,
@@ -126,26 +98,37 @@ impl<'t> MatchFinder<'t> {
         ))
     }
 
-    /// Returns matches where the stem exactly matches the prefix for the particular sub-prefix.
-    fn partial_stem_matches_for(
+    fn resolve_stem_ranges(
         &self,
-        ranges: &PrefixRanges,
+        range: &Option<(usize, usize)>,
+        sub_prefix_len: Option<usize>,
         limit: usize,
     ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
-        let (start, end) = match ranges.exact_stem_range {
+        let (start, end) = match range {
             Some(r) => r,
             None => return Ok(vec![]),
         };
-        // Note: we use a byte slice here because we verify in the constructor that the prefix is
-        // ASCII only (so 1 byte per character).
-        let required_chars = &self.last_ranges()?.prefix[ranges.prefix.len()..];
+
+        // If the stem is only a partial match for the prefix, we need to
+        // find the required characters that are needed on the endings to
+        // complete the prefix.
+        let required_chars = match sub_prefix_len {
+            // Note: we use a byte slice here because we verify in the constructor that the prefix is
+            // ASCII only (so 1 byte per character).
+            Some(len) => Some(&self.last_ranges()?.prefix[len..]),
+            None => None,
+        };
+
         let mut results = Vec::new();
-        for i in start..end {
+        for i in *start..*end {
             let stem = &self.completer.tables.all_stems[i];
-            let end_prefix = required_chars.to_string();
-            let ends = match self.find_ends_for(end_prefix, stem)? {
-                Some(e) => e,
-                None => continue,
+            let ends = match required_chars {
+                Some(chars) => match self.find_ends_for(chars.to_string(), stem)? {
+                    Some(e) => e,
+                    None => continue,
+                },
+                // If there are no required chars, return all endings for the stem.
+                None => self.completer.ends_for(stem)?.iter().map(|e| e.1).collect(),
             };
             if ends.is_empty() {
                 continue;
@@ -160,6 +143,15 @@ impl<'t> MatchFinder<'t> {
         Ok(results)
     }
 
+    /// Returns matches where the stem fully contains the prefix.
+    fn full_stem_matches(
+        &self,
+        limit: usize,
+    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
+        let range = &self.last_ranges()?.prefix_stem_range;
+        self.resolve_stem_ranges(range, None, limit)
+    }
+
     /// Returns matches where the stem partially contains the prefix.
     fn partial_stem_matches(
         &self,
@@ -167,7 +159,12 @@ impl<'t> MatchFinder<'t> {
     ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
         let mut results = Vec::new();
         for ranges in self.ranges.iter().take(self.ranges.len() - 1) {
-            let mut matches = self.partial_stem_matches_for(ranges, limit - results.len())?;
+            let sub_prefix_len = Some(ranges.prefix.len());
+            let remaining_limit = limit - results.len();
+            // We want the exact matches for the sub-prefix here; the remaining required
+            // characters will be taken from the endings.
+            let range = &ranges.exact_stem_range;
+            let mut matches = self.resolve_stem_ranges(range, sub_prefix_len, remaining_limit)?;
             results.append(&mut matches);
             if results.len() >= limit {
                 break;
