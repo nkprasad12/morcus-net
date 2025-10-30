@@ -1,5 +1,5 @@
 use crate::indices::{
-    CruncherTables, InflectionEnding, InflectionLookupEntry, IrregularForm, Stem,
+    CruncherTables, InflectionEnding, IrregularForm, SortedInflectionTable, Stem,
 };
 
 // ----------------
@@ -364,7 +364,7 @@ impl<'t> StemResult<'t> {
     fn end_table_for(
         &self,
         stem: &'t Stem,
-    ) -> Result<&'t InflectionLookupEntry, AutocompleteError> {
+    ) -> Result<&'t SortedInflectionTable, AutocompleteError> {
         self.tables
             .inflection_lookup
             .get(stem.inflection as usize)

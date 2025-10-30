@@ -12,7 +12,7 @@ pub struct StemMapValue {
     pub is_stem: bool,
 }
 
-// Implementation to convert from tuple format to struct
+// Implementation to convert from tuple format (as in JSON) to a struct.
 impl From<(u32, String, bool, bool)> for StemMapValue {
     fn from(tuple: (u32, String, bool, bool)) -> Self {
         StemMapValue {
@@ -24,7 +24,6 @@ impl From<(u32, String, bool, bool)> for StemMapValue {
     }
 }
 
-// Updated StemOrForm to match TypeScript serialization
 #[derive(Debug, Clone, Deserialize)]
 #[serde(untagged)]
 pub enum StemOrForm {
@@ -32,7 +31,8 @@ pub enum StemOrForm {
     IrregularForm(IrregularForm),
 }
 
-// Inflection context
+/// Context for a single inflection ending, like case, tense, etc...
+/// along with tags to contextualize that ending.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InflectionContext {
@@ -62,7 +62,6 @@ pub enum StemCode {
     Vs = 6,
 }
 
-// Implementation to convert from tuple format to struct
 impl From<Option<String>> for StemCode {
     fn from(code: Option<String>) -> Self {
         match code.as_deref() {
@@ -88,9 +87,10 @@ impl StemCode {
     }
 }
 
-// Updated Stem: matches TS Stem which extends InflectionContext and has code, stem, inflection
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// Represents a stem, the common prefix that can be attached to an ending from an
+/// inflection table to form a word.
 pub struct Stem {
     #[serde(skip_serializing_if = "StemCode::is_none")]
     pub code: StemCode,
@@ -100,9 +100,11 @@ pub struct Stem {
     pub context: InflectionContext,
 }
 
-// Updated IrregularForm: matches TS IrregularForm (extends InflectionContext, has optional code and form)
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
+/// Represents an irregular form that does not follow standard inflection patterns.
+/// Unlike a `Stem`, an `IrregularForm` represents a complete word and doesn't
+/// need to be combined with an ending.
 pub struct IrregularForm {
     #[serde(skip_serializing_if = "StemCode::is_none")]
     pub code: StemCode,
@@ -111,7 +113,6 @@ pub struct IrregularForm {
     pub context: InflectionContext,
 }
 
-// InflectionEnding matches TypeScript version
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InflectionEnding {
@@ -120,7 +121,6 @@ pub struct InflectionEnding {
     pub context: InflectionContext,
 }
 
-// Lemma definition
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct Lemma {
@@ -132,7 +132,6 @@ pub struct Lemma {
     pub is_verb: bool,
 }
 
-// InflectionTable structure
 #[derive(Debug, Clone, Deserialize)]
 #[serde(rename_all = "camelCase")]
 pub struct InflectionTable {
@@ -140,9 +139,10 @@ pub struct InflectionTable {
     pub endings: Vec<InflectionEnding>,
 }
 
-// Type alias for the complex inflection lookup type
-pub type InflectionLookupEntry = HashMap<String, Vec<InflectionEnding>>;
-pub type InflectionLookupType = Vec<InflectionLookupEntry>;
+/// Maps ending strings (with vowel lengths) to the full ending information.
+/// For example, in the table for "a_ae", the key for "ae" would map to the
+/// endings for dative and genitive singular, as well as the accusative singular.
+pub type SortedInflectionTable = HashMap<String, Vec<InflectionEnding>>;
 pub type InflectionTableKey = u16;
 
 // Data structures required for computing inflection analyses.
@@ -156,7 +156,9 @@ pub struct CruncherTables {
     pub ends_map: HashMap<String, Vec<InflectionTableKey>>,
     #[cfg(feature = "crunch")]
     pub stem_map: HashMap<String, Vec<StemMapValue>>,
-    pub inflection_lookup: InflectionLookupType,
+    /// All inflection tables. Other structures reference these by index using
+    /// `InflectionTableKey` (a `u16` to save memory).
+    pub inflection_lookup: Vec<SortedInflectionTable>,
     #[cfg(feature = "extra")]
     pub numerals: Vec<Lemma>,
     #[cfg(feature = "extra")]
