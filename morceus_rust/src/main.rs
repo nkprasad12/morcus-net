@@ -100,45 +100,48 @@ fn validate_tables(tables: &CruncherTables) -> bool {
 }
 
 #[cfg(feature = "complete")]
-fn handle_complete(args: &[String], tables: &CruncherTables) {
-    use morceus::completions::{self, AutocompleteResult, DisplayForm, DisplayOptions};
+fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
+    use morceus::completions::{AutocompleteResult, Autocompleter, DisplayForm, DisplayOptions};
 
     assert_eq!(&args[2], "complete");
 
     let prefix: &str = &args[3];
     let start = std::time::Instant::now();
-    let completions = completions::completions_for(prefix, tables, 25);
+    // 1. Create the autocompleter.
+    let completer = Autocompleter::new(tables);
+    let duration = start.elapsed();
+    println!("Created completer in {duration:.2?}");
+
+    let start = std::time::Instant::now();
+    // 2. Get completions for the prefix.
+    let completions = completer.completions_for(prefix, 50)?;
     let duration = start.elapsed();
     print_mem_summary("After completions".to_string(), None);
 
     println!("Completions for prefix '{}' [{:?}]:", prefix, duration);
-    let results = match completions {
-        Ok(c) => c,
-        Err(e) => {
-            eprintln!("Error computing completions: {}", e);
-            return;
-        }
-    };
-    if results.is_empty() {
+    if completions.is_empty() {
         println!("No completions found for prefix '{}'", prefix);
-        return;
+        return Ok(());
     }
     let display_options = DisplayOptions { show_breves: false };
-    for result in results {
+    for result in completions {
         let result = match result {
             AutocompleteResult::Stem(stem_result) => stem_result,
+            // 3a. Each result can either be an irregular (which is a single form),
             AutocompleteResult::Irreg(irreg_result) => {
                 let display_form = irreg_result.display_form(&display_options);
                 println!(" - {} [Irreg]", display_form);
                 continue;
             }
         };
-        let first_match = match result.first_match().unwrap() {
+        // 3b. or a stem with multiple possible endings.
+        let first_match = match result.results().next() {
             Some(fm) => fm,
             None => continue,
         };
         println!(" - {}", first_match.display_form(&display_options));
     }
+    Ok(())
 }
 
 #[cfg(feature = "crunch")]
@@ -174,13 +177,18 @@ fn main() {
         print_usage(&args);
         process::exit(1);
     }
+
+    let start = std::time::Instant::now();
     let tables = load_tables(TABLES_FILE);
+    let duration = start.elapsed();
+    println!("Parsed tables in {duration:.2?}");
+
     let command = &args[2];
     match command.as_str() {
         #[cfg(feature = "crunch")]
         "crunch" => handle_crunch(&args, &tables),
         #[cfg(feature = "complete")]
-        "complete" => handle_complete(&args, &tables),
+        "complete" => handle_complete(&args, &tables).unwrap(),
         _ => {
             eprintln!("Unknown command: {}", command);
             process::exit(1);

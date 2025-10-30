@@ -1,10 +1,16 @@
-use crate::indices::{
-    CruncherTables, InflectionEnding, IrregularForm, SortedInflectionTable, Stem,
-};
+use crate::indices::{CruncherTables, InflectionEnding, IrregularForm, Stem};
 
 // ----------------
 // Public API below
 // ----------------
+
+/// The main entry point for completions.
+///
+/// See the `impl` below for APIs.
+pub struct Autocompleter<'a> {
+    tables: &'a CruncherTables,
+    addenda: Addenda<'a>,
+}
 
 pub enum AutocompleteResult<'a> {
     Stem(StemResult<'a>),
@@ -14,18 +20,9 @@ pub enum AutocompleteResult<'a> {
 // We can use a more sophisticated error type later if needed.
 pub type AutocompleteError = String;
 
-pub fn completions_for<'a>(
-    prefix: &str,
-    tables: &'a CruncherTables,
-    limit: usize,
-) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
-    Autocompleter::for_prefix(prefix, tables)?.completions(limit)
-}
-
 pub struct StemResult<'a> {
     stem: &'a Stem,
-    tables: &'a CruncherTables,
-    required_chars: Option<String>,
+    ends: Vec<&'a InflectionEnding>,
 }
 
 pub struct SingleStemResult<'a> {
@@ -65,6 +62,45 @@ const REMOVE_CHARS: [char; 4] = ['^', '-', '_', '+'];
 
 fn normalize_key(s: &str) -> String {
     s.to_lowercase().replace(REMOVE_CHARS, "")
+}
+
+type SortedEndings<'a> = Vec<(String, &'a InflectionEnding)>;
+
+struct Addenda<'a> {
+    end_tables: Vec<SortedEndings<'a>>,
+}
+
+impl<'a> Autocompleter<'a> {
+    pub fn new(tables: &'a CruncherTables) -> Autocompleter<'a> {
+        let mut end_tables = vec![];
+        for grouped_table in &tables.inflection_lookup {
+            let mut ends = grouped_table
+                .values()
+                .flatten()
+                .map(|e| (normalize_key(&e.ending), e))
+                .collect::<Vec<_>>();
+            ends.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+            end_tables.push(ends);
+        }
+
+        let addenda = Addenda { end_tables };
+        Autocompleter { tables, addenda }
+    }
+
+    pub fn completions_for(
+        &'a self,
+        prefix: &str,
+        limit: usize,
+    ) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
+        MatchFinder::for_prefix(prefix, self)?.completions(limit)
+    }
+
+    fn ends_for(&self, stem: &Stem) -> Result<&SortedEndings<'a>, AutocompleteError> {
+        self.addenda
+            .end_tables
+            .get(stem.inflection as usize)
+            .ok_or("Invalid inflection index".to_string())
+    }
 }
 
 struct PrefixRanges {
@@ -233,13 +269,13 @@ fn display_form(input: &str, options: &DisplayOptions) -> String {
         .replace('_', "\u{0304}")
 }
 
-struct Autocompleter<'a> {
+struct MatchFinder<'a> {
     ranges: Vec<PrefixRanges>,
-    tables: &'a CruncherTables,
+    completer: &'a Autocompleter<'a>,
 }
 
-impl<'t> Autocompleter<'t> {
-    /// Creates an Autocompleter for the given prefix and tables.
+impl<'t> MatchFinder<'t> {
+    /// Creates a MatchFinder for the given prefix and tables.
     ///
     /// # Arguments
     /// * `prefix` - The normalized prefix to match. Must not be empty and must be
@@ -247,8 +283,8 @@ impl<'t> Autocompleter<'t> {
     /// * `tables` - The CruncherTables to use for completions.
     fn for_prefix<'a>(
         prefix: &str,
-        tables: &'a CruncherTables,
-    ) -> Result<Autocompleter<'a>, AutocompleteError> {
+        completer: &'a Autocompleter<'a>,
+    ) -> Result<MatchFinder<'a>, AutocompleteError> {
         let prefix = normalize_key(prefix);
         if !prefix.is_ascii() {
             return Err("Only ASCII prefixes are supported.".to_string());
@@ -256,8 +292,8 @@ impl<'t> Autocompleter<'t> {
         if prefix.is_empty() {
             return Err("Empty prefixes are not allowed.".to_string());
         }
-        let ranges = compute_ranges(&prefix, tables);
-        Ok(Autocompleter { ranges, tables })
+        let ranges = compute_ranges(&prefix, completer.tables);
+        Ok(MatchFinder { ranges, completer })
     }
 
     /// Returns ranges for the last range set (i.e. for the full prefix).
@@ -277,7 +313,7 @@ impl<'t> Autocompleter<'t> {
             None => return Ok(vec![]),
         };
 
-        Ok(self.tables.all_irregs[start..end]
+        Ok(self.completer.tables.all_irregs[start..end]
             .iter()
             .take(limit)
             .map(AutocompleteResult::Irreg)
@@ -294,18 +330,57 @@ impl<'t> Autocompleter<'t> {
             None => return Ok(vec![]),
         };
 
-        Ok(self.tables.all_stems[start..end]
-            .iter()
-            .map(|stem| StemResult {
-                stem,
-                tables: self.tables,
-                // For full matches, we don't have any required chars.
-                required_chars: None,
-            })
-            .filter(|r| r.has_first_match())
-            .take(limit)
-            .map(AutocompleteResult::Stem)
-            .collect())
+        let mut results = Vec::new();
+        for stem in &self.completer.tables.all_stems[start..end] {
+            let ends = self.completer.ends_for(stem)?;
+            if ends.is_empty() {
+                continue;
+            }
+            let ends = ends.iter().map(|e| e.1).collect();
+            let stem_result = StemResult { stem, ends };
+            results.push(AutocompleteResult::Stem(stem_result));
+            if results.len() >= limit {
+                break;
+            }
+        }
+        Ok(results)
+    }
+
+    /// Finds the start and end indices of ends for the given stem that start with the given end prefix.
+    fn find_ends_for(
+        &self,
+        end_prefix: String,
+        stem: &Stem,
+    ) -> Result<Option<Vec<&'t InflectionEnding>>, AutocompleteError> {
+        let ends = self.completer.ends_for(stem)?;
+        if ends.is_empty() {
+            return Ok(None);
+        }
+        if end_prefix.is_empty() {
+            return Ok(Some(ends.iter().map(|e| e.1).collect()));
+        }
+
+        // Binary search for the first irregular form that starts with or comes after the prefix
+        let start = ends.partition_point(|end| end.0 < end_prefix);
+        if start >= ends.len() {
+            return Ok(None);
+        }
+
+        let first_ending = &ends[start].0;
+        if !first_ending.starts_with(&end_prefix) {
+            // The partition point will tell us either where the prefix actually starts,
+            // or where it would be inserted. In this case, the prefix would be inserted here,
+            // so there are no matching irregular forms.
+            return Ok(None);
+        }
+
+        let prefix_end = ends[start..].partition_point(|end| end.0.starts_with(&end_prefix));
+        Ok(Some(
+            ends[start..start + prefix_end]
+                .iter()
+                .map(|e| e.1)
+                .collect(),
+        ))
     }
 
     /// Returns matches where the stem exactly matches the prefix for the particular sub-prefix.
@@ -321,17 +396,23 @@ impl<'t> Autocompleter<'t> {
         // Note: we use a byte slice here because we verify in the constructor that the prefix is
         // ASCII only (so 1 byte per character).
         let required_chars = &self.last_ranges()?.prefix[ranges.prefix.len()..];
-        Ok(self.tables.all_stems[start..end]
-            .iter()
-            .map(|stem| StemResult {
-                stem,
-                tables: self.tables,
-                required_chars: Some(required_chars.to_string()),
-            })
-            .filter(|r| r.has_first_match())
-            .take(limit)
-            .map(AutocompleteResult::Stem)
-            .collect())
+        let mut results = Vec::new();
+        for stem in &self.completer.tables.all_stems[start..end] {
+            let end_prefix = required_chars.to_string();
+            let ends = match self.find_ends_for(end_prefix, stem)? {
+                Some(e) => e,
+                None => continue,
+            };
+            if ends.is_empty() {
+                continue;
+            }
+            let stem_result = StemResult { stem, ends };
+            results.push(AutocompleteResult::Stem(stem_result));
+            if results.len() >= limit {
+                break;
+            }
+        }
+        Ok(results)
     }
 
     /// Returns matches where the stem partially contains the prefix.
@@ -360,56 +441,11 @@ impl<'t> Autocompleter<'t> {
 }
 
 impl<'t> StemResult<'t> {
-    /// Returns the end table for a particular stem.
-    fn end_table_for(
-        &self,
-        stem: &'t Stem,
-    ) -> Result<&'t SortedInflectionTable, AutocompleteError> {
-        self.tables
-            .inflection_lookup
-            .get(stem.inflection as usize)
-            .ok_or("Invalid inflection index".to_string())
-    }
-
-    fn single_stem_result(&self, ending: &'t InflectionEnding) -> Option<SingleStemResult<'t>> {
-        Some(SingleStemResult {
+    pub fn results(&self) -> impl Iterator<Item = SingleStemResult<'t>> + '_ {
+        self.ends.iter().map(|ending| SingleStemResult {
             stem: self.stem,
             ending,
         })
-    }
-
-    fn has_first_match(&self) -> bool {
-        matches!(self.first_match(), Ok(Some(_)))
-    }
-
-    pub fn first_match(&self) -> Result<Option<SingleStemResult<'t>>, AutocompleteError> {
-        let end_table = self.end_table_for(self.stem)?;
-        let required_chars = match &self.required_chars {
-            Some(rc) => rc,
-            None => {
-                // Because the whole prefix is contained in the stem, any inflection ending
-                // will also be a prefix. For now, we are just taking one ending to show a sample,
-                // but in the future we will find a reasonable API to provide the rest.
-                let ending = &end_table
-                    .values()
-                    .next()
-                    .ok_or("Inflection table has no endings")?[0];
-                return Ok(self.single_stem_result(ending));
-            }
-        };
-        for (end, matches) in end_table.iter() {
-            let clean_end = normalize_key(end);
-            if clean_end.len() < required_chars.len() {
-                continue;
-            }
-            // Note: we use a byte slice here because we verify in the constructor that the prefix is
-            // ASCII only (so 1 byte per character).
-            if clean_end[..required_chars.len()] == *required_chars {
-                return Ok(self.single_stem_result(&matches[0]));
-            }
-        }
-
-        Ok(None)
     }
 }
 

@@ -142,7 +142,7 @@ pub struct InflectionTable {
 /// Maps ending strings (with vowel lengths) to the full ending information.
 /// For example, in the table for "a_ae", the key for "ae" would map to the
 /// endings for dative and genitive singular, as well as the accusative singular.
-pub type SortedInflectionTable = HashMap<String, Vec<InflectionEnding>>;
+pub type GroupedInflectionTable = HashMap<String, Vec<InflectionEnding>>;
 pub type InflectionTableKey = u16;
 
 // Data structures required for computing inflection analyses.
@@ -158,7 +158,7 @@ pub struct CruncherTables {
     pub stem_map: HashMap<String, Vec<StemMapValue>>,
     /// All inflection tables. Other structures reference these by index using
     /// `InflectionTableKey` (a `u16` to save memory).
-    pub inflection_lookup: Vec<SortedInflectionTable>,
+    pub inflection_lookup: Vec<GroupedInflectionTable>,
     #[cfg(feature = "extra")]
     pub numerals: Vec<Lemma>,
     #[cfg(feature = "extra")]
