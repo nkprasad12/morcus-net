@@ -296,15 +296,15 @@ impl<'t> Autocompleter<'t> {
 
         Ok(self.tables.all_stems[start..end]
             .iter()
-            .take(limit)
-            .map(|stem| {
+            .map(|stem| StemResult {
+                stem,
+                tables: self.tables,
                 // For full matches, we don't have any required chars.
-                AutocompleteResult::Stem(StemResult {
-                    stem,
-                    tables: self.tables,
-                    required_chars: None,
-                })
+                required_chars: None,
             })
+            .filter(|r| r.has_first_match())
+            .take(limit)
+            .map(AutocompleteResult::Stem)
             .collect())
     }
 
@@ -323,14 +323,14 @@ impl<'t> Autocompleter<'t> {
         let required_chars = &self.last_ranges()?.prefix[ranges.prefix.len()..];
         Ok(self.tables.all_stems[start..end]
             .iter()
-            .take(limit)
-            .map(|stem| {
-                AutocompleteResult::Stem(StemResult {
-                    stem,
-                    tables: self.tables,
-                    required_chars: Some(required_chars.to_string()),
-                })
+            .map(|stem| StemResult {
+                stem,
+                tables: self.tables,
+                required_chars: Some(required_chars.to_string()),
             })
+            .filter(|r| r.has_first_match())
+            .take(limit)
+            .map(AutocompleteResult::Stem)
             .collect())
     }
 
@@ -376,6 +376,10 @@ impl<'t> StemResult<'t> {
             stem: self.stem,
             ending,
         })
+    }
+
+    fn has_first_match(&self) -> bool {
+        matches!(self.first_match(), Ok(Some(_)))
     }
 
     pub fn first_match(&self) -> Result<Option<SingleStemResult<'t>>, AutocompleteError> {
