@@ -502,7 +502,9 @@ function artifactConfig(args: any): StepConfig[] {
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
       label: "Building Latin library",
-      priority: 2,
+      // This needs to be done after saving the morceus tables,
+      // because the Rust corpus implementation needs them.
+      priority: 3,
     });
   }
   return setupSteps;

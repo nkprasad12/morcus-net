@@ -1,7 +1,11 @@
 import { assertEqual } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
 import { buildCorpus } from "@/common/library/corpus/build_corpus";
-import { latinWorksFromLibrary } from "@/common/library/corpus/corpus_library_utils";
+import {
+  latinWorksFromLibrary,
+  LIB_CORPUS_INPUT_DIR,
+  saveAsCorpusInputWork,
+} from "@/common/library/corpus/corpus_library_utils";
 import {
   EnglishTranslations,
   LOCAL_REPO_WORKS,
@@ -152,7 +156,8 @@ function isTranslationId(workId: string): boolean {
 function writeWorkFile(
   work: ProcessedWork2,
   outputDir: string,
-  workId: string
+  workId: string,
+  corpusInputDir: string
 ): string {
   const encoded = encodeMessage(serverMessage(work), [
     XmlNodeSerialization.DEFAULT,
@@ -163,6 +168,7 @@ function writeWorkFile(
     level: 9,
   });
   fs.writeFileSync(outputPath, compressed);
+  saveAsCorpusInputWork(work, corpusInputDir);
   console.log("Wrote processed file to %s", outputPath);
   return outputPath;
 }
@@ -199,7 +205,14 @@ export async function processLibrary({
   outputDir = LIB_DEFAULT_DIR,
   works = LOCAL_REPO_WORK_PATHS,
   shouldBuildCorpus = false,
-}: { outputDir?: string; works?: string[]; shouldBuildCorpus?: boolean } = {}) {
+  corpusInputDir = LIB_CORPUS_INPUT_DIR,
+}: {
+  outputDir?: string;
+  works?: string[];
+  shouldBuildCorpus?: boolean;
+  corpusInputDir?: string;
+} = {}) {
+  fs.mkdirSync(corpusInputDir, { recursive: true });
   const patches = loadPatches();
   const index: LibraryIndex = {};
   const sortedWorks = works
@@ -211,7 +224,7 @@ export async function processLibrary({
   for (const work of processHypotactic()) {
     const workId = work.info.workId;
     work.info = decorateDocumentInfo(work.info);
-    const outputPath = writeWorkFile(work, outputDir, workId);
+    const outputPath = writeWorkFile(work, outputDir, workId, corpusInputDir);
     const metadata = extractWorkMetadata(workId, work.info);
     index[workId] = [outputPath, metadata];
   }
@@ -249,7 +262,7 @@ export async function processLibrary({
       });
     }
     result.info = decorateDocumentInfo(result.info);
-    const outputPath = writeWorkFile(result, outputDir, workId);
+    const outputPath = writeWorkFile(result, outputDir, workId, corpusInputDir);
     const metadata = extractWorkMetadata(workId, result.info, {
       isTranslation,
       translationId,
@@ -266,6 +279,6 @@ export async function processLibrary({
   );
   fs.writeFileSync(`${outputDir}/${LIBRARY_INDEX}`, JSON.stringify(index));
   if (shouldBuildCorpus) {
-    await buildCorpus(latinWorksFromLibrary());
+    await buildCorpus(latinWorksFromLibrary(corpusInputDir));
   }
 }

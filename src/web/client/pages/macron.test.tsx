@@ -165,4 +165,30 @@ describe("Macronizer View", () => {
       expect.objectContaining({ query: "divido" })
     );
   });
+
+  test("handles copying text", async () => {
+    const writeText = jest.fn((_e) => Promise.resolve());
+    Object.assign(navigator, {
+      clipboard: {
+        writeText,
+      },
+    });
+
+    mockCallApi.mockReturnValue(Promise.resolve(SAMPLE_OUTPUT));
+
+    render(<Macronizer />);
+    const inputBox = screen.getByRole("textbox");
+    const submit = screen.getByRole("button");
+
+    // Input doesn't matter as we are mocking the output.
+    await user.type(inputBox, "whatever");
+    await user.click(submit);
+
+    await waitFor(() => {
+      expect(findOnScreen("dīvīsa in partēs trēs")).not.toBeNull();
+    });
+
+    await user.click(screen.getByText("Copy Text"));
+    expect(writeText).toHaveBeenCalledWith("dīvīsa in partēs trēs");
+  });
 });

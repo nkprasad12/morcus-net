@@ -1,23 +1,20 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 
 use crate::api::CorpusQueryMatchMetadata;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase")]
 pub struct CorpusStats {
-    #[serde(rename = "totalWords")]
     pub total_words: u32,
-    #[serde(rename = "totalWorks")]
     pub total_works: u32,
-    #[serde(rename = "uniqueWords")]
     pub unique_words: u32,
-    #[serde(rename = "uniqueLemmata")]
     pub unique_lemmata: u32,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug, Serialize, Deserialize)]
 pub struct WorkData {
     pub author: String,
     pub name: String,
@@ -43,6 +40,7 @@ pub type WorkLookupEntry = (String, Vec<(String, u32, u32)>, WorkData);
 #[serde(rename_all = "camelCase")]
 pub struct LatinCorpusIndex {
     pub work_lookup: Vec<WorkLookupEntry>,
+    pub author_lookup: HashMap<String, (usize, usize)>,
     pub stats: CorpusStats,
     pub raw_text_path: String,
     pub raw_buffer_path: String,

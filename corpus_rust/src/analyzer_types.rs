@@ -1,70 +1,9 @@
 use std::str::FromStr;
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinCase {
-    Nominative = 1,
-    Accusative = 2,
-    Dative = 3,
-    Genitive = 4,
-    Ablative = 5,
-    Vocative = 6,
-    Locative = 7,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinNumber {
-    Singular = 1,
-    Plural = 2,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinGender {
-    Masculine = 1,
-    Feminine = 2,
-    Neuter = 3,
-    Adverbial = 4,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinPerson {
-    First = 1,
-    Second = 2,
-    Third = 3,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinMood {
-    Indicative = 1,
-    Imperative = 2,
-    Subjunctive = 3,
-    Participle = 4,
-    Gerundive = 5,
-    Infinitive = 6,
-    Supine = 7,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinVoice {
-    Active = 1,
-    Passive = 2,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinTense {
-    Present = 1,
-    Imperfect = 2,
-    Perfect = 3,
-    FuturePerfect = 4,
-    Future = 5,
-    Pluperfect = 6,
-}
-
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum LatinDegree {
-    Positive = 1,
-    Comparative = 2,
-    Superlative = 3,
-}
+use morceus::inflection_data::{
+    LatinCase, LatinDegree, LatinGender, LatinMood, LatinNumber, LatinPerson, LatinTense,
+    LatinVoice,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum LatinInflection {
@@ -107,111 +46,87 @@ impl LatinInflection {
     }
 }
 
-impl FromStr for LatinCase {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "nominative" | "nom" | "n" | "1" => Ok(LatinCase::Nominative),
-            "accusative" | "acc" | "ac" | "2" => Ok(LatinCase::Accusative),
-            "dative" | "dat" | "d" | "3" => Ok(LatinCase::Dative),
-            "genitive" | "gen" | "g" | "4" => Ok(LatinCase::Genitive),
-            "ablative" | "abl" | "ab" | "5" => Ok(LatinCase::Ablative),
-            "vocative" | "voc" | "v" | "6" => Ok(LatinCase::Vocative),
-            "locative" | "loc" | "l" | "7" => Ok(LatinCase::Locative),
-            other => Err(format!("Unknown LatinCase: {other}")),
-        }
+fn case_from_str(s: &str) -> Result<LatinCase, String> {
+    match s.trim().to_lowercase().as_str() {
+        "nominative" | "nom" | "n" | "1" => Ok(LatinCase::Nominative),
+        "accusative" | "acc" | "ac" | "2" => Ok(LatinCase::Accusative),
+        "dative" | "dat" | "d" | "3" => Ok(LatinCase::Dative),
+        "genitive" | "gen" | "g" | "4" => Ok(LatinCase::Genitive),
+        "ablative" | "abl" | "ab" | "5" => Ok(LatinCase::Ablative),
+        "vocative" | "voc" | "v" | "6" => Ok(LatinCase::Vocative),
+        "locative" | "loc" | "l" | "7" => Ok(LatinCase::Locative),
+        other => Err(format!("Unknown LatinCase: {other}")),
     }
 }
 
-impl FromStr for LatinNumber {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "singular" | "sg" | "s" | "1" => Ok(LatinNumber::Singular),
-            "plural" | "pl" | "p" | "2" => Ok(LatinNumber::Plural),
-            other => Err(format!("Unknown LatinNumber: {other}")),
-        }
+fn number_from_str(s: &str) -> Result<LatinNumber, String> {
+    match s.trim().to_lowercase().as_str() {
+        "singular" | "sg" | "s" | "1" => Ok(LatinNumber::Singular),
+        "plural" | "pl" | "p" | "2" => Ok(LatinNumber::Plural),
+        other => Err(format!("Unknown LatinNumber: {other}")),
     }
 }
 
-impl FromStr for LatinGender {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "masculine" | "m" | "mas" | "masc" | "1" => Ok(LatinGender::Masculine),
-            "feminine" | "f" | "fem" | "2" => Ok(LatinGender::Feminine),
-            "neuter" | "n" | "neu" | "neut" | "3" => Ok(LatinGender::Neuter),
-            "adverbial" | "adv" | "a" | "4" => Ok(LatinGender::Adverbial),
-            other => Err(format!("Unknown LatinGender: {other}")),
-        }
+fn gender_from_str(s: &str) -> Result<LatinGender, String> {
+    match s.trim().to_lowercase().as_str() {
+        "masculine" | "m" | "mas" | "masc" | "1" => Ok(LatinGender::Masculine),
+        "feminine" | "f" | "fem" | "2" => Ok(LatinGender::Feminine),
+        "neuter" | "n" | "neu" | "neut" | "3" => Ok(LatinGender::Neuter),
+        "adverbial" | "adv" | "a" | "4" => Ok(LatinGender::Adverbial),
+        other => Err(format!("Unknown LatinGender: {other}")),
     }
 }
 
-impl FromStr for LatinPerson {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "first" | "1st" | "1" | "i" => Ok(LatinPerson::First),
-            "second" | "2nd" | "2" | "ii" => Ok(LatinPerson::Second),
-            "third" | "3rd" | "3" | "iii" => Ok(LatinPerson::Third),
-            other => Err(format!("Unknown LatinPerson: {other}")),
-        }
+fn person_from_str(s: &str) -> Result<LatinPerson, String> {
+    match s.trim().to_lowercase().as_str() {
+        "first" | "1st" | "1" | "i" => Ok(LatinPerson::First),
+        "second" | "2nd" | "2" | "ii" => Ok(LatinPerson::Second),
+        "third" | "3rd" | "3" | "iii" => Ok(LatinPerson::Third),
+        other => Err(format!("Unknown LatinPerson: {other}")),
     }
 }
 
-impl FromStr for LatinMood {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "indicative" | "ind" | "1" => Ok(LatinMood::Indicative),
-            "imperative" | "imp" | "2" => Ok(LatinMood::Imperative),
-            "subjunctive" | "subj" | "sub" | "3" => Ok(LatinMood::Subjunctive),
-            "participle" | "part" | "4" => Ok(LatinMood::Participle),
-            "gerundive" | "ger" | "5" => Ok(LatinMood::Gerundive),
-            "infinitive" | "inf" | "6" => Ok(LatinMood::Infinitive),
-            "supine" | "sup" | "7" => Ok(LatinMood::Supine),
-            other => Err(format!("Unknown LatinMood: {other}")),
-        }
+fn mood_from_str(s: &str) -> Result<LatinMood, String> {
+    match s.trim().to_lowercase().as_str() {
+        "indicative" | "ind" | "1" => Ok(LatinMood::Indicative),
+        "imperative" | "imp" | "2" => Ok(LatinMood::Imperative),
+        "subjunctive" | "subj" | "sub" | "3" => Ok(LatinMood::Subjunctive),
+        "participle" | "part" | "4" => Ok(LatinMood::Participle),
+        "gerundive" | "ger" | "5" => Ok(LatinMood::Gerundive),
+        "infinitive" | "inf" | "6" => Ok(LatinMood::Infinitive),
+        "supine" | "sup" | "7" => Ok(LatinMood::Supine),
+        other => Err(format!("Unknown LatinMood: {other}")),
     }
 }
 
-impl FromStr for LatinVoice {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "active" | "act" | "a" | "1" => Ok(LatinVoice::Active),
-            "passive" | "pass" | "p" | "2" => Ok(LatinVoice::Passive),
-            other => Err(format!("Unknown LatinVoice: {other}")),
-        }
+fn voice_from_str(s: &str) -> Result<LatinVoice, String> {
+    match s.trim().to_lowercase().as_str() {
+        "active" | "act" | "a" | "1" => Ok(LatinVoice::Active),
+        "passive" | "pass" | "p" | "2" => Ok(LatinVoice::Passive),
+        other => Err(format!("Unknown LatinVoice: {other}")),
     }
 }
 
-impl FromStr for LatinTense {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "present" | "pres" | "pr" | "1" => Ok(LatinTense::Present),
-            "imperfect" | "impf" | "i" | "2" => Ok(LatinTense::Imperfect),
-            "perfect" | "perf" | "pf" | "3" => Ok(LatinTense::Perfect),
-            "futureperfect" | "future_perfect" | "future-perfect" | "ftpf" | "fp" | "4" => {
-                Ok(LatinTense::FuturePerfect)
-            }
-            "future" | "fut" | "f" | "5" => Ok(LatinTense::Future),
-            "pluperfect" | "plup" | "pp" | "6" => Ok(LatinTense::Pluperfect),
-            other => Err(format!("Unknown LatinTense: {other}")),
+fn tense_from_str(s: &str) -> Result<LatinTense, String> {
+    match s.trim().to_lowercase().as_str() {
+        "present" | "pres" | "pr" | "1" => Ok(LatinTense::Present),
+        "imperfect" | "impf" | "i" | "2" => Ok(LatinTense::Imperfect),
+        "perfect" | "perf" | "pf" | "3" => Ok(LatinTense::Perfect),
+        "futureperfect" | "future_perfect" | "future-perfect" | "ftpf" | "fp" | "4" => {
+            Ok(LatinTense::FuturePerfect)
         }
+        "future" | "fut" | "f" | "5" => Ok(LatinTense::Future),
+        "pluperfect" | "plup" | "pp" | "6" => Ok(LatinTense::Pluperfect),
+        other => Err(format!("Unknown LatinTense: {other}")),
     }
 }
 
-impl FromStr for LatinDegree {
-    type Err = String;
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s.trim().to_lowercase().as_str() {
-            "positive" | "pos" | "p" | "1" => Ok(LatinDegree::Positive),
-            "comparative" | "com" | "cmp" | "comp" | "c" | "2" => Ok(LatinDegree::Comparative),
-            "superlative" | "sup" | "s" | "3" => Ok(LatinDegree::Superlative),
-            other => Err(format!("Unknown LatinDegree: {other}")),
-        }
+fn degree_from_str(s: &str) -> Result<LatinDegree, String> {
+    match s.trim().to_lowercase().as_str() {
+        "positive" | "pos" | "p" | "1" => Ok(LatinDegree::Positive),
+        "comparative" | "com" | "cmp" | "comp" | "c" | "2" => Ok(LatinDegree::Comparative),
+        "superlative" | "sup" | "s" | "3" => Ok(LatinDegree::Superlative),
+        other => Err(format!("Unknown LatinDegree: {other}")),
     }
 }
 
@@ -224,16 +139,16 @@ impl FromStr for LatinInflection {
             .find([':', '='])
             .ok_or("Unlabeled inflection parsing not supported".to_string())?;
         let (label, val) = s.split_at(label_idx);
-        let value = val[1..].trim();
+        let v = val[1..].trim();
         match label.trim().to_lowercase().as_str() {
-            "c" | "case" => Ok(LatinInflection::Case(value.parse()?)),
-            "d" | "degree" => Ok(LatinInflection::Degree(value.parse()?)),
-            "g" | "gender" => Ok(LatinInflection::Gender(value.parse()?)),
-            "m" | "mood" => Ok(LatinInflection::Mood(value.parse()?)),
-            "n" | "number" => Ok(LatinInflection::Number(value.parse()?)),
-            "p" | "person" => Ok(LatinInflection::Person(value.parse()?)),
-            "t" | "tense" => Ok(LatinInflection::Tense(value.parse()?)),
-            "v" | "voice" => Ok(LatinInflection::Voice(value.parse()?)),
+            "c" | "case" => Ok(LatinInflection::Case(case_from_str(v)?)),
+            "d" | "degree" => Ok(LatinInflection::Degree(degree_from_str(v)?)),
+            "g" | "gender" => Ok(LatinInflection::Gender(gender_from_str(v)?)),
+            "m" | "mood" => Ok(LatinInflection::Mood(mood_from_str(v)?)),
+            "n" | "number" => Ok(LatinInflection::Number(number_from_str(v)?)),
+            "p" | "person" => Ok(LatinInflection::Person(person_from_str(v)?)),
+            "t" | "tense" => Ok(LatinInflection::Tense(tense_from_str(v)?)),
+            "v" | "voice" => Ok(LatinInflection::Voice(voice_from_str(v)?)),
             other => Err(format!("Unknown inflection label: {other}")),
         }
     }
