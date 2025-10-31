@@ -101,7 +101,7 @@ fn validate_tables(tables: &CruncherTables) -> bool {
 
 #[cfg(feature = "complete")]
 fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
-    use morceus::completions::{AutocompleteResult, Autocompleter, DisplayForm, DisplayOptions};
+    use morceus::completions::{Autocompleter, DisplayForm, DisplayOptions};
 
     assert_eq!(&args[2], "complete");
 
@@ -125,21 +125,17 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     }
     let display_options = DisplayOptions { show_breves: false };
     for result in completions {
-        let stem_result = match result {
-            AutocompleteResult::Stem(stem_result) => stem_result,
-            // 3a. Each result can either be an irregular (which is a single form),
-            AutocompleteResult::Irreg(irreg_result) => {
-                let display_form = irreg_result.irreg.display_form(&display_options);
-                let lemma = &irreg_result.lemma.lemma;
-                println!(" - {display_form} [{lemma}, Irreg]",);
-                continue;
+        println!(" - Lemma: {}", result.lemma.lemma);
+        for stem_result in result.stems {
+            let expanded = stem_result.expand().next();
+            if let Some(single_stem) = expanded {
+                let displayed_stem = single_stem.display_form(&display_options);
+                println!("   - Stem: {}", displayed_stem);
             }
-        };
-        // 3b. or a stem with multiple possible endings.
-        if let Some(first) = stem_result.expand().next() {
-            let display_form = first.display_form(&display_options);
-            let lemma = &stem_result.lemma.lemma;
-            println!(" - {display_form} [{lemma}, Stem]",);
+        }
+        for irreg_result in result.irregs {
+            let displayed_irreg = irreg_result.irreg.display_form(&display_options);
+            println!("   - Irreg: {}", displayed_irreg);
         }
     }
     Ok(())

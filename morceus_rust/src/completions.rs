@@ -35,7 +35,7 @@ impl<'a> Autocompleter<'a> {
         &'a self,
         prefix: &str,
         limit: usize,
-    ) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
+    ) -> Result<Vec<LemmaResult<'a>>, AutocompleteError> {
         MatchFinder::for_prefix(prefix, self)?.completions(limit)
     }
 }
@@ -45,15 +45,21 @@ pub enum AutocompleteResult<'a> {
     Irreg(IrregResult<'a>),
 }
 
+pub struct LemmaResult<'a> {
+    pub lemma: &'a Lemma,
+    pub stems: Vec<StemResult<'a>>,
+    pub irregs: Vec<IrregResult<'a>>,
+}
+
 pub struct IrregResult<'a> {
     pub irreg: &'a IrregularForm,
-    pub lemma: &'a Lemma,
+    pub irreg_id: usize,
 }
 
 pub struct StemResult<'a> {
     stem: &'a Stem,
     ends: Vec<&'a InflectionEnding>,
-    pub lemma: &'a Lemma,
+    pub stem_id: usize,
 }
 
 impl<'t> StemResult<'t> {

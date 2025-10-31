@@ -1,7 +1,9 @@
+use std::collections::HashMap;
+
 use crate::{
     completions::{
-        AutocompleteError, AutocompleteResult, Autocompleter, IrregResult, PrefixRanges,
-        StemResult, compute_ranges, normalize_key,
+        AutocompleteError, AutocompleteResult, Autocompleter, IrregResult, LemmaResult,
+        PrefixRanges, StemResult, compute_ranges, normalize_key,
     },
     indices::{InflectionEnding, Stem},
 };
@@ -54,8 +56,10 @@ impl<'t> MatchFinder<'t> {
         let end = std::cmp::min(end, start + limit);
         for i in start..end {
             let irreg = &self.completer.tables.all_irregs[i];
-            let lemma = self.completer.lemma_for_irreg(i)?;
-            results.push(AutocompleteResult::Irreg(IrregResult { irreg, lemma }));
+            results.push(AutocompleteResult::Irreg(IrregResult {
+                irreg,
+                irreg_id: i,
+            }));
         }
 
         Ok(results)
@@ -133,8 +137,11 @@ impl<'t> MatchFinder<'t> {
             if ends.is_empty() {
                 continue;
             }
-            let lemma = self.completer.lemma_for_stem(i)?;
-            let stem_result = StemResult { stem, ends, lemma };
+            let stem_result = StemResult {
+                stem,
+                ends,
+                stem_id: i,
+            };
             results.push(AutocompleteResult::Stem(stem_result));
             if results.len() >= limit {
                 break;
@@ -176,11 +183,64 @@ impl<'t> MatchFinder<'t> {
     pub(super) fn completions(
         &self,
         limit: usize,
-    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
-        let mut results = Vec::new();
-        results.append(&mut self.full_stem_matches(limit)?);
-        results.append(&mut self.partial_stem_matches(limit - results.len())?);
-        results.append(&mut self.irreg_matches(limit - results.len())?);
-        Ok(results)
+    ) -> Result<Vec<LemmaResult<'t>>, AutocompleteError> {
+        let mut lemma_to_results = HashMap::new();
+
+        for stem in self.full_stem_matches(limit)? {
+            let stem_id = match &stem {
+                AutocompleteResult::Stem(stem_result) => stem_result.stem_id,
+                _ => continue,
+            };
+            let lemma_id = self.completer.lemma_id_for_stem(stem_id)?;
+            lemma_to_results
+                .entry(lemma_id)
+                .or_insert_with(Vec::new)
+                .push(stem);
+        }
+
+        let remaining_limit = limit - lemma_to_results.len();
+        for stem in self.partial_stem_matches(remaining_limit)? {
+            let stem_id = match &stem {
+                AutocompleteResult::Stem(stem_result) => stem_result.stem_id,
+                _ => continue,
+            };
+            let lemma_id = self.completer.lemma_id_for_stem(stem_id)?;
+            lemma_to_results
+                .entry(lemma_id)
+                .or_insert_with(Vec::new)
+                .push(stem);
+        }
+
+        let remaining_limit = limit - lemma_to_results.len();
+        for irreg in self.irreg_matches(remaining_limit)? {
+            let irreg_id = match &irreg {
+                AutocompleteResult::Irreg(irreg_result) => irreg_result.irreg_id,
+                _ => continue,
+            };
+            let lemma_id = self.completer.lemma_id_for_irreg(irreg_id)?;
+            lemma_to_results
+                .entry(lemma_id)
+                .or_insert_with(Vec::new)
+                .push(irreg);
+        }
+
+        let mut lemma_results = vec![];
+        for (lemma_id, results) in lemma_to_results {
+            let lemma = self.completer.lemma_from_id(lemma_id)?;
+            let mut stems = Vec::new();
+            let mut irregs = Vec::new();
+            for result in results {
+                match result {
+                    AutocompleteResult::Stem(stem_result) => stems.push(stem_result),
+                    AutocompleteResult::Irreg(irreg_result) => irregs.push(irreg_result),
+                }
+            }
+            lemma_results.push(LemmaResult {
+                lemma,
+                stems,
+                irregs,
+            });
+        }
+        Ok(lemma_results)
     }
 }
