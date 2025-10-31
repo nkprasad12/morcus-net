@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     completions::{
         AutocompleteError, AutocompleteResult, Autocompleter, IrregResult, LemmaResult,
-        PrefixRanges, StemResult, compute_ranges, normalize_key,
+        PrefixRanges, StemResult, compute_ranges,
     },
     indices::{InflectionEnding, Stem},
 };
@@ -28,14 +28,7 @@ impl<'t> MatchFinder<'t> {
         prefix: &str,
         completer: &'a Autocompleter<'a>,
     ) -> Result<MatchFinder<'a>, AutocompleteError> {
-        let prefix = normalize_key(prefix);
-        if !prefix.is_ascii() {
-            return Err("Only ASCII prefixes are supported.".to_string());
-        }
-        if prefix.is_empty() {
-            return Err("Empty prefixes are not allowed.".to_string());
-        }
-        let ranges = compute_ranges(&prefix, completer.tables);
+        let ranges = compute_ranges(prefix, completer.tables)?;
         Ok(MatchFinder { ranges, completer })
     }
 

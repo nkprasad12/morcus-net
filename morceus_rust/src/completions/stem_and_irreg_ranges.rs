@@ -1,5 +1,5 @@
 use crate::{
-    completions::string_utils::normalize_key,
+    completions::{AutocompleteError, string_utils::normalize_key},
     indices::{CruncherTables, IrregularForm, Stem},
 };
 
@@ -138,7 +138,17 @@ fn find_irreg_ranges(prefix: &str, irregs: &[IrregularForm]) -> Option<(usize, u
     Some((start, start + prefix_end))
 }
 
-pub(super) fn compute_ranges(prefix: &str, tables: &CruncherTables) -> Vec<PrefixRanges> {
+pub(super) fn compute_ranges(
+    prefix: &str,
+    tables: &CruncherTables,
+) -> Result<Vec<PrefixRanges>, AutocompleteError> {
+    let prefix = normalize_key(prefix);
+    if !prefix.is_ascii() {
+        return Err("Only ASCII prefixes are supported.".to_string());
+    }
+    if prefix.is_empty() {
+        return Err("Empty prefixes are not allowed.".to_string());
+    }
     let mut ranges = Vec::new();
     let mut prefix_so_far: String = String::new();
     for c in prefix.chars() {
@@ -158,7 +168,7 @@ pub(super) fn compute_ranges(prefix: &str, tables: &CruncherTables) -> Vec<Prefi
             prefix_irregs_range: irreg_ranges,
         });
     }
-    ranges
+    Ok(ranges)
 }
 
 #[cfg(test)]
