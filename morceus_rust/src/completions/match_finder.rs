@@ -13,6 +13,10 @@ pub(super) struct MatchFinder<'a> {
     completer: &'a Autocompleter<'a>,
 }
 
+type StemIterator<'t, 'a> =
+    Box<dyn Iterator<Item = Result<AutocompleteResult<'t>, AutocompleteError>> + 'a>;
+type IrregIterator<'t> = Box<dyn Iterator<Item = AutocompleteResult<'t>> + 't>;
+
 impl<'t> MatchFinder<'t> {
     /// Creates a MatchFinder for the given prefix and tables.
     ///
@@ -43,26 +47,15 @@ impl<'t> MatchFinder<'t> {
     }
 
     /// Returns matches for irregular forms.
-    fn irreg_matches(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
+    fn irreg_matches(&self) -> Result<IrregIterator<'t>, AutocompleteError> {
         let (start, end) = match self.last_ranges()?.prefix_irregs_range {
             Some(r) => r,
-            None => return Ok(vec![]),
+            None => return Ok(Box::new(std::iter::empty())),
         };
-
-        let mut results = vec![];
-        let end = std::cmp::min(end, start + limit);
-        for i in start..end {
+        Ok(Box::new((start..end).map(|i| {
             let irreg = &self.completer.tables.all_irregs[i];
-            results.push(AutocompleteResult::Irreg(IrregResult {
-                irreg,
-                irreg_id: i,
-            }));
-        }
-
-        Ok(results)
+            AutocompleteResult::Irreg(IrregResult { irreg, irreg_id: i })
+        })))
     }
 
     /// Finds the start and end indices of ends for the given stem that start with the given end prefix.
@@ -102,15 +95,14 @@ impl<'t> MatchFinder<'t> {
         ))
     }
 
-    fn resolve_stem_ranges(
-        &self,
+    fn resolve_stem_ranges<'a>(
+        &'a self,
         range: &Option<(usize, usize)>,
         sub_prefix_len: Option<usize>,
-        limit: usize,
-    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
+    ) -> Result<StemIterator<'t, 'a>, AutocompleteError> {
         let (start, end) = match range {
             Some(r) => r,
-            None => return Ok(vec![]),
+            None => return Ok(Box::new(std::iter::empty())),
         };
 
         // If the stem is only a partial match for the prefix, we need to
@@ -123,61 +115,55 @@ impl<'t> MatchFinder<'t> {
             None => None,
         };
 
-        let mut results = Vec::new();
-        for i in *start..*end {
+        Ok(Box::new((*start..*end).filter_map(move |i| {
             let stem = &self.completer.tables.all_stems[i];
-            let ends = match required_chars {
-                Some(chars) => match self.find_ends_for(chars.to_string(), stem)? {
+            let ends = match &required_chars {
+                Some(chars) => match self.find_ends_for(chars.to_string(), stem).ok()? {
                     Some(e) => e,
-                    None => continue,
+                    None => return None,
                 },
                 // If there are no required chars, return all endings for the stem.
-                None => self.completer.ends_for(stem)?.iter().map(|e| e.1).collect(),
+                None => self
+                    .completer
+                    .ends_for(stem)
+                    .ok()?
+                    .iter()
+                    .map(|e| e.1)
+                    .collect(),
             };
             if ends.is_empty() {
-                continue;
+                return None;
             }
             let stem_result = StemResult {
                 stem,
                 ends,
                 stem_id: i,
             };
-            results.push(AutocompleteResult::Stem(stem_result));
-            if results.len() >= limit {
-                break;
-            }
-        }
-        Ok(results)
+            Some(Ok(AutocompleteResult::Stem(stem_result)))
+        })))
     }
 
     /// Returns matches where the stem fully contains the prefix.
-    fn full_stem_matches(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
+    fn full_stem_matches<'a>(&'a self) -> Result<StemIterator<'t, 'a>, AutocompleteError> {
         let range = &self.last_ranges()?.prefix_stem_range;
-        self.resolve_stem_ranges(range, None, limit)
+        self.resolve_stem_ranges(range, None)
     }
 
     /// Returns matches where the stem partially contains the prefix.
-    fn partial_stem_matches(
-        &self,
-        limit: usize,
-    ) -> Result<Vec<AutocompleteResult<'t>>, AutocompleteError> {
-        let mut results = Vec::new();
-        for ranges in self.ranges.iter().take(self.ranges.len() - 1) {
-            let sub_prefix_len = Some(ranges.prefix.len());
-            let remaining_limit = limit - results.len();
-            // We want the exact matches for the sub-prefix here; the remaining required
-            // characters will be taken from the endings.
-            let range = &ranges.exact_stem_range;
-            let mut matches = self.resolve_stem_ranges(range, sub_prefix_len, remaining_limit)?;
-            results.append(&mut matches);
-            if results.len() >= limit {
-                break;
-            }
-        }
-        Ok(results)
+    fn partial_stem_matches<'a>(&'a self) -> Result<StemIterator<'t, 'a>, AutocompleteError> {
+        Ok(Box::new(
+            self.ranges[..self.ranges.len().saturating_sub(1)]
+                .iter()
+                .flat_map(|ranges| {
+                    let sub_prefix_len = Some(ranges.prefix.len());
+                    // We want the exact matches for the sub-prefix here; the remaining required
+                    // characters will be taken from the endings.
+                    let range = &ranges.exact_stem_range;
+                    self.resolve_stem_ranges(range, sub_prefix_len)
+                        .into_iter()
+                        .flatten()
+                }),
+        ))
     }
 
     pub(super) fn completions(
@@ -186,7 +172,28 @@ impl<'t> MatchFinder<'t> {
     ) -> Result<Vec<LemmaResult<'t>>, AutocompleteError> {
         let mut lemma_to_results = HashMap::new();
 
-        for stem in self.full_stem_matches(limit)? {
+        let full_stems = self.full_stem_matches()?;
+        let partial_stems = self.partial_stem_matches()?;
+        let irregs = self.irreg_matches()?;
+
+        for stem in full_stems {
+            let stem = stem?;
+            let stem_id = match &stem {
+                AutocompleteResult::Stem(stem_result) => stem_result.stem_id,
+                _ => continue,
+            };
+            let lemma_id = self.completer.lemma_id_for_stem(stem_id)?;
+            lemma_to_results
+                .entry(lemma_id)
+                .or_insert_with(Vec::new)
+                .push(stem);
+            if lemma_to_results.len() >= limit {
+                break;
+            }
+        }
+
+        for stem in partial_stems {
+            let stem = stem?;
             let stem_id = match &stem {
                 AutocompleteResult::Stem(stem_result) => stem_result.stem_id,
                 _ => continue,
@@ -198,21 +205,7 @@ impl<'t> MatchFinder<'t> {
                 .push(stem);
         }
 
-        let remaining_limit = limit - lemma_to_results.len();
-        for stem in self.partial_stem_matches(remaining_limit)? {
-            let stem_id = match &stem {
-                AutocompleteResult::Stem(stem_result) => stem_result.stem_id,
-                _ => continue,
-            };
-            let lemma_id = self.completer.lemma_id_for_stem(stem_id)?;
-            lemma_to_results
-                .entry(lemma_id)
-                .or_insert_with(Vec::new)
-                .push(stem);
-        }
-
-        let remaining_limit = limit - lemma_to_results.len();
-        for irreg in self.irreg_matches(remaining_limit)? {
+        for irreg in irregs {
             let irreg_id = match &irreg {
                 AutocompleteResult::Irreg(irreg_result) => irreg_result.irreg_id,
                 _ => continue,
@@ -222,6 +215,9 @@ impl<'t> MatchFinder<'t> {
                 .entry(lemma_id)
                 .or_insert_with(Vec::new)
                 .push(irreg);
+            if lemma_to_results.len() >= limit {
+                break;
+            }
         }
 
         let mut lemma_results = vec![];
