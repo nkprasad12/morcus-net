@@ -104,7 +104,6 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     use morceus::completions::{Autocompleter, DisplayForm, DisplayOptions};
 
     assert_eq!(&args[2], "complete");
-    let use_v2 = args.contains(&"--v2".into());
 
     let prefix: &str = &args[3];
     let start = std::time::Instant::now();
@@ -115,7 +114,7 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
 
     let start = std::time::Instant::now();
     // 2. Get completions for the prefix.
-    let completions = completer.completions_for(prefix, !use_v2)?;
+    let completions = completer.completions_for(prefix, 50)?;
     let duration = start.elapsed();
     print_mem_summary("After completions".to_string(), None);
 

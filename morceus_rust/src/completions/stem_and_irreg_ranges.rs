@@ -4,8 +4,6 @@ use crate::{
 };
 
 pub(super) struct PrefixRanges {
-    /// The prefix associated with these ranges.
-    pub(super) prefix: String,
     /// The portion of the original prefix that was not matched.
     pub(super) unmatched: String,
     /// The range of prefixed stems in the list.
@@ -31,9 +29,8 @@ pub(super) struct PrefixRanges {
 }
 
 impl PrefixRanges {
-    fn make_empty(prefix: &str, unmatched: &str) -> Self {
+    fn make_empty(unmatched: &str) -> Self {
         PrefixRanges {
-            prefix: prefix.to_string(),
             unmatched: unmatched.to_string(),
             prefix_stem_range: None,
             exact_stem_range: None,
@@ -161,13 +158,12 @@ pub(super) fn compute_ranges(
         let unmatched = chars[i..].iter().collect::<String>();
         if ranges.last().is_some_and(|p: &PrefixRanges| p.all_empty()) {
             // If the last prefix had no matches, all longer prefixes will also have no matches.
-            ranges.push(PrefixRanges::make_empty(&prefix_so_far, &unmatched));
+            ranges.push(PrefixRanges::make_empty(&unmatched));
             continue;
         }
         let stem_ranges = find_stem_ranges(&prefix_so_far, &tables.all_stems);
         let irreg_ranges = find_irreg_ranges(&prefix_so_far, &tables.all_irregs);
         ranges.push(PrefixRanges {
-            prefix: prefix_so_far,
             unmatched,
             prefix_stem_range: stem_ranges.prefix_range,
             exact_stem_range: stem_ranges.exact_range,

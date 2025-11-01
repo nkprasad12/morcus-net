@@ -60,22 +60,6 @@ impl<'a> Autocompleter<'a> {
             .ok_or("Invalid inflection index".to_string())
     }
 
-    pub(super) fn lemma_id_for_stem(&self, stem_idx: usize) -> Result<u16, AutocompleteError> {
-        self.addenda
-            .stem_to_lemma
-            .get(stem_idx)
-            .copied()
-            .ok_or("Invalid stem index".to_string())
-    }
-
-    pub(super) fn lemma_id_for_irreg(&self, irreg_idx: usize) -> Result<u16, AutocompleteError> {
-        self.addenda
-            .irreg_to_lemma
-            .get(irreg_idx)
-            .copied()
-            .ok_or("Invalid irreg index".to_string())
-    }
-
     pub(super) fn lemma_from_id(&self, lemma_id: u16) -> Result<&'a Lemma, AutocompleteError> {
         self.tables
             .raw_lemmata

@@ -178,6 +178,7 @@ fn stem_id_to_result<'a>(
 pub(super) fn completions_for_prefix<'a>(
     prefix: &str,
     completer: &Autocompleter<'a>,
+    limit: usize,
 ) -> Result<Vec<LemmaResult<'a>>, AutocompleteError> {
     let ranges = compute_ranges(prefix, completer.tables)?;
     let last_range = ranges
@@ -189,6 +190,9 @@ pub(super) fn completions_for_prefix<'a>(
 
     let lemma_ids = lemma_ids_for_ranges(last_range, prior_ranges, completer)?;
     for lemma_id in lemma_ids {
+        if results.len() >= limit {
+            break;
+        }
         if results.contains_key(lemma_id) {
             // Prevent duplicate matches.
             continue;
