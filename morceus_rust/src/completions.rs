@@ -1,4 +1,5 @@
 mod autocompleter;
+mod lemma_stream;
 mod match_finder;
 mod stem_and_irreg_ranges;
 mod string_utils;
@@ -6,6 +7,7 @@ mod string_utils;
 use crate::{
     completions::{
         autocompleter::Addenda,
+        lemma_stream::completions_for_prefix,
         match_finder::MatchFinder,
         stem_and_irreg_ranges::{PrefixRanges, compute_ranges},
         string_utils::{display_form, normalize_key},
@@ -34,9 +36,12 @@ impl<'a> Autocompleter<'a> {
     pub fn completions_for(
         &'a self,
         prefix: &str,
-        limit: usize,
+        v1: bool,
     ) -> Result<Vec<LemmaResult<'a>>, AutocompleteError> {
-        MatchFinder::for_prefix(prefix, self)?.completions(limit)
+        if v1 {
+            return MatchFinder::for_prefix(prefix, self)?.completions(50);
+        }
+        completions_for_prefix(prefix, self)
     }
 }
 
@@ -57,7 +62,7 @@ pub struct IrregResult<'a> {
 }
 
 pub struct StemResult<'a> {
-    stem: &'a Stem,
+    pub stem: &'a Stem,
     ends: Vec<&'a InflectionEnding>,
     pub stem_id: usize,
 }

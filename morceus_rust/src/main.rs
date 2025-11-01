@@ -104,6 +104,7 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     use morceus::completions::{Autocompleter, DisplayForm, DisplayOptions};
 
     assert_eq!(&args[2], "complete");
+    let use_v2 = args.contains(&"--v2".into());
 
     let prefix: &str = &args[3];
     let start = std::time::Instant::now();
@@ -114,7 +115,7 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
 
     let start = std::time::Instant::now();
     // 2. Get completions for the prefix.
-    let completions = completer.completions_for(prefix, 50)?;
+    let completions = completer.completions_for(prefix, !use_v2)?;
     let duration = start.elapsed();
     print_mem_summary("After completions".to_string(), None);
 
@@ -127,10 +128,11 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     for result in completions {
         println!(" - Lemma: {}", result.lemma.lemma);
         for stem_result in result.stems {
+            println!("   - Stem: {}", stem_result.stem.stem);
             let expanded = stem_result.expand().next();
-            if let Some(single_stem) = expanded {
-                let displayed_stem = single_stem.display_form(&display_options);
-                println!("   - Stem: {}", displayed_stem);
+            if let Some(expanded) = expanded {
+                let displayed_stem = expanded.display_form(&display_options);
+                println!("     - Stem Example: {}", displayed_stem);
             }
         }
         for irreg_result in result.irregs {

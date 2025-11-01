@@ -7,8 +7,8 @@ type SortedEndings<'a> = Vec<(String, &'a InflectionEnding)>;
 
 pub(super) struct Addenda<'a> {
     end_tables: Vec<SortedEndings<'a>>,
-    stem_to_lemma: Vec<u16>,
-    irreg_to_lemma: Vec<u16>,
+    pub(super) stem_to_lemma: Vec<u16>,
+    pub(super) irreg_to_lemma: Vec<u16>,
 }
 
 impl<'a> Autocompleter<'a> {

@@ -6,6 +6,8 @@ use crate::{
 pub(super) struct PrefixRanges {
     /// The prefix associated with these ranges.
     pub(super) prefix: String,
+    /// The portion of the original prefix that was not matched.
+    pub(super) unmatched: String,
     /// The range of prefixed stems in the list.
     ///
     /// The start is inclusive, the end is exclusive.
@@ -29,9 +31,10 @@ pub(super) struct PrefixRanges {
 }
 
 impl PrefixRanges {
-    fn make_empty(prefix: String) -> Self {
+    fn make_empty(prefix: &str, unmatched: &str) -> Self {
         PrefixRanges {
-            prefix,
+            prefix: prefix.to_string(),
+            unmatched: unmatched.to_string(),
             prefix_stem_range: None,
             exact_stem_range: None,
             prefix_irregs_range: None,
@@ -150,19 +153,22 @@ pub(super) fn compute_ranges(
         return Err("Empty prefixes are not allowed.".to_string());
     }
     let mut ranges = Vec::new();
-    let mut prefix_so_far: String = String::new();
-    for c in prefix.chars() {
-        prefix_so_far.push(c);
+    // We can just use the byte length because we verified above that it's ASCII.
+    let chars = prefix.chars().collect::<Vec<char>>();
+    let n = chars.len();
+    for i in 1..=n {
+        let prefix_so_far = chars[..i].iter().collect::<String>();
+        let unmatched = chars[i..].iter().collect::<String>();
         if ranges.last().is_some_and(|p: &PrefixRanges| p.all_empty()) {
             // If the last prefix had no matches, all longer prefixes will also have no matches.
-            ranges.push(PrefixRanges::make_empty(prefix_so_far.clone()));
+            ranges.push(PrefixRanges::make_empty(&prefix_so_far, &unmatched));
             continue;
         }
-
         let stem_ranges = find_stem_ranges(&prefix_so_far, &tables.all_stems);
         let irreg_ranges = find_irreg_ranges(&prefix_so_far, &tables.all_irregs);
         ranges.push(PrefixRanges {
-            prefix: prefix_so_far.clone(),
+            prefix: prefix_so_far,
+            unmatched,
             prefix_stem_range: stem_ranges.prefix_range,
             exact_stem_range: stem_ranges.exact_range,
             prefix_irregs_range: irreg_ranges,
