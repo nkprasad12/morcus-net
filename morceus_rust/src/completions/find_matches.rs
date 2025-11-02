@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     completions::{
-        AutocompleteError, Autocompleter, IrregResult, LemmaResult, PrefixRanges, StemResult,
-        compute_ranges,
+        AutocompleteError, AutocompleteResult, Autocompleter, IrregResult, PrefixRanges,
+        StemResult, compute_ranges,
     },
     indices::{InflectionEnding, Lemma, Stem},
     stem_merging::merge_stem_and_ending,
@@ -195,7 +195,7 @@ fn lemma_id_to_result<'a>(
     last_range: &PrefixRanges,
     prior_ranges: &[PrefixRanges],
     completer: &Autocompleter<'a>,
-) -> Result<LemmaResult<'a>, AutocompleteError> {
+) -> Result<AutocompleteResult<'a>, AutocompleteError> {
     let lemma = completer.lemma_from_id(lemma_id)?;
 
     let mut stems = vec![];
@@ -214,7 +214,7 @@ fn lemma_id_to_result<'a>(
         })
         .collect::<Vec<_>>();
 
-    let lemma_result = LemmaResult {
+    let lemma_result = AutocompleteResult {
         lemma,
         stems,
         irregs,
@@ -224,7 +224,9 @@ fn lemma_id_to_result<'a>(
 }
 
 /// Validates the given lemma result, returning None if it has no valid completions.
-fn validated_lemma_result<'a>(mut lemma_result: LemmaResult<'a>) -> Option<LemmaResult<'a>> {
+fn validated_lemma_result<'a>(
+    mut lemma_result: AutocompleteResult<'a>,
+) -> Option<AutocompleteResult<'a>> {
     if !lemma_result.irregs.is_empty() {
         // Irregular forms don't need to be validated further, so we know
         // there's at least one valid completion.
@@ -245,7 +247,7 @@ fn validated_lemma_result<'a>(mut lemma_result: LemmaResult<'a>) -> Option<Lemma
     // unneeded work, because the caller might not even look at the
     // endings for this lemma.
     let i = first_good_stem?;
-    Some(LemmaResult {
+    Some(AutocompleteResult {
         lemma: lemma_result.lemma,
         irregs: lemma_result.irregs,
         stems: lemma_result.stems.split_off(i),
@@ -256,7 +258,7 @@ pub(super) fn completions_for_prefix<'a>(
     prefix: &str,
     completer: &Autocompleter<'a>,
     limit: usize,
-) -> Result<Vec<LemmaResult<'a>>, AutocompleteError> {
+) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
     let ranges = compute_ranges(prefix, completer.tables)?;
     let last_range = ranges
         .last()

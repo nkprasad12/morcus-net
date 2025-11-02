@@ -1,3 +1,4 @@
+mod autocomplete_result;
 mod autocompleter;
 mod find_matches;
 mod stem_and_irreg_ranges;
@@ -5,12 +6,13 @@ mod string_utils;
 
 use crate::{
     completions::{
+        autocomplete_result::{IrregResult, StemResult},
         autocompleter::Addenda,
         find_matches::completions_for_prefix,
         stem_and_irreg_ranges::{PrefixRanges, compute_ranges},
-        string_utils::{display_form, normalize_key},
+        string_utils::normalize_key,
     },
-    indices::{CruncherTables, InflectionEnding, IrregularForm, Lemma, Stem},
+    indices::{CruncherTables, InflectionContext, Lemma},
 };
 
 /// The main entry point for completions.
@@ -41,41 +43,47 @@ impl<'a> Autocompleter<'a> {
         &'a self,
         prefix: &str,
         limit: usize,
-    ) -> Result<Vec<LemmaResult<'a>>, AutocompleteError> {
+    ) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
         completions_for_prefix(prefix, self, limit)
     }
 }
 
-pub struct LemmaResult<'a> {
-    pub lemma: &'a Lemma,
-    pub stems: Vec<StemResult<'a>>,
-    pub irregs: Vec<IrregResult<'a>>,
+/// One completion result that represents all matching forms for a single lemma.
+pub struct AutocompleteResult<'a> {
+    lemma: &'a Lemma,
+    stems: Vec<StemResult<'a>>,
+    irregs: Vec<IrregResult<'a>>,
 }
 
-pub struct IrregResult<'a> {
-    pub irreg: &'a IrregularForm,
-    pub irreg_id: usize,
+/// A single inflected result for a lemma.
+pub struct SingleResult {
+    // The display form of the word.
+    pub form: String,
+    // Data about the inflection of the word.
+    pub context: InflectionContext,
+    // The stem used to generate this form, if applicable.
+    pub stem: Option<String>,
 }
 
-pub struct StemResult<'a> {
-    pub stem: &'a Stem,
-    ends: Vec<&'a InflectionEnding>,
-    pub stem_id: usize,
-}
-
-impl<'t> StemResult<'t> {
-    // Expands the results for a stem into full results with endings.
-    pub fn expand(&self) -> impl Iterator<Item = SingleStemResult<'t>> + '_ {
-        self.ends.iter().map(|ending| SingleStemResult {
-            stem: self.stem,
-            ending,
-        })
+impl AutocompleteResult<'_> {
+    /// The readable name for this lemma.
+    ///
+    /// Note that this is not macronized, and that for lemmata
+    /// where multiple forms have the same ASCII representation,
+    /// this may be appended by a disambiguating number.
+    ///
+    /// For example, `amo` and `occido#2` are possible results.
+    pub fn lemma(&self) -> &str {
+        &self.lemma.lemma
     }
-}
 
-pub struct SingleStemResult<'a> {
-    pub stem: &'a Stem,
-    pub ending: &'a InflectionEnding,
+    /// Returns matches for this lemma.
+    ///
+    /// Currently, it only returns a sampling of the possible matches.
+    /// However, in the future the exact results will be configurable.
+    pub fn matches(&self) -> Vec<SingleResult> {
+        self.sample_matches()
+    }
 }
 
 // We can use a more sophisticated error type later if needed.
@@ -84,23 +92,4 @@ pub type AutocompleteError = String;
 pub struct DisplayOptions {
     /// Whether to show breves in the display. Macra are always shown.
     pub show_breves: bool,
-}
-
-pub trait DisplayForm {
-    fn display_form(&self, options: &DisplayOptions) -> String;
-}
-
-impl DisplayForm for IrregularForm {
-    fn display_form(&self, options: &DisplayOptions) -> String {
-        display_form(&self.form, options)
-    }
-}
-
-impl DisplayForm for SingleStemResult<'_> {
-    fn display_form(&self, options: &DisplayOptions) -> String {
-        display_form(
-            &format!("{}{}", &self.stem.stem, &self.ending.ending),
-            options,
-        )
-    }
 }

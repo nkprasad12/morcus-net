@@ -111,7 +111,7 @@ macro_rules! timed {
 
 #[cfg(feature = "complete")]
 fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
-    use morceus::completions::{Autocompleter, DisplayForm, DisplayOptions};
+    use morceus::completions::{Autocompleter, DisplayOptions};
 
     assert_eq!(&args[2], "complete");
     let prefix: &str = &args[3];
@@ -127,18 +127,17 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     }
     let display_options = DisplayOptions { show_breves: false };
     for result in completions {
-        println!(" - Lemma: {}", result.lemma.lemma);
-        for stem_result in result.stems {
-            println!("   - Stem: {}", stem_result.stem.stem);
-            let expanded = stem_result.expand().next();
-            if let Some(expanded) = expanded {
-                let displayed_stem = expanded.display_form(&display_options);
-                println!("     - Stem Example: {}", displayed_stem);
-            }
-        }
-        for irreg_result in result.irregs {
-            let displayed_irreg = irreg_result.irreg.display_form(&display_options);
-            println!("   - Irreg: {}", displayed_irreg);
+        println!("- Lemma: {}", result.lemma());
+        for word in result.matches() {
+            let stem = match &word.stem {
+                None => {
+                    println!("  - {} [Irreg]", word.form);
+                    continue;
+                }
+                Some(s) => s,
+            };
+            println!("  - Stem: {stem}");
+            println!("    - {} | {:?}", word.form, word.context);
         }
     }
     Ok(())
