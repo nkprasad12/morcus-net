@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     completions::{
-        AutocompleteError, AutocompleteResult, Autocompleter, PrefixRanges, StemResult,
-        compute_ranges,
+        AutocompleteError, AutocompleteResult, Autocompleter, DisplayOptions, PrefixRanges,
+        StemResult, compute_ranges,
     },
     indices::{InflectionEnding, Lemma, Stem},
     stem_merging::merge_stem_and_ending,
@@ -186,12 +186,13 @@ fn stem_id_to_result<'a>(
 
 /// Converts a candidate lemma ID into a candidate result. Note that
 /// the lemma result may not have any valid completions at this stage.
-fn lemma_id_to_result<'a>(
+fn lemma_id_to_result<'a, 'b>(
     lemma_id: LemmaId,
     last_range: &PrefixRanges,
     prior_ranges: &[PrefixRanges],
     completer: &Autocompleter<'a>,
-) -> Result<AutocompleteResult<'a>, AutocompleteError> {
+    display_options: &'b DisplayOptions,
+) -> Result<AutocompleteResult<'a, 'b>, AutocompleteError> {
     let lemma = completer.lemma_from_id(lemma_id)?;
 
     let mut stems = vec![];
@@ -211,15 +212,16 @@ fn lemma_id_to_result<'a>(
         lemma,
         stems,
         irregs,
+        display_options,
     };
 
     Ok(lemma_result)
 }
 
 /// Validates the given lemma result, returning None if it has no valid completions.
-fn validated_lemma_result<'a>(
-    mut lemma_result: AutocompleteResult<'a>,
-) -> Option<AutocompleteResult<'a>> {
+fn validated_lemma_result<'a, 'b>(
+    mut lemma_result: AutocompleteResult<'a, 'b>,
+) -> Option<AutocompleteResult<'a, 'b>> {
     if !lemma_result.irregs.is_empty() {
         // Irregular forms don't need to be validated further, so we know
         // there's at least one valid completion.
@@ -244,14 +246,16 @@ fn validated_lemma_result<'a>(
         lemma: lemma_result.lemma,
         irregs: lemma_result.irregs,
         stems: lemma_result.stems.split_off(i),
+        display_options: lemma_result.display_options,
     })
 }
 
-pub(super) fn completions_for_prefix<'a>(
+pub(super) fn completions_for_prefix<'a, 'b>(
     prefix: &str,
     completer: &Autocompleter<'a>,
     limit: usize,
-) -> Result<Vec<AutocompleteResult<'a>>, AutocompleteError> {
+    options: &'b DisplayOptions,
+) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
     let ranges = compute_ranges(prefix, completer.tables)?;
     let last_range = ranges
         .last()
@@ -269,7 +273,8 @@ pub(super) fn completions_for_prefix<'a>(
             // Prevent duplicate matches.
             continue;
         }
-        let lemma_result = lemma_id_to_result(*lemma_id, last_range, prior_ranges, completer)?;
+        let lemma_result =
+            lemma_id_to_result(*lemma_id, last_range, prior_ranges, completer, options)?;
         let lemma_result = match validated_lemma_result(lemma_result) {
             None => continue,
             Some(r) => r,

@@ -117,14 +117,10 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     let prefix: &str = &args[3];
 
     let completer = timed!("Created completer", Autocompleter::new(tables)?);
-    let completions = timed!("Found completions", completer.completions_for(prefix, 50)?);
+    let completions = timed!("Found completions", completer.completions_for(prefix)?);
     print_mem_summary("After finding completions".to_string(), None);
 
-    println!("Completions for prefix '{}':", prefix);
-    if completions.is_empty() {
-        println!("No completions found for prefix '{}'", prefix);
-        return Ok(());
-    }
+    println!("Completions for '{}' [{}]:", prefix, completions.len());
     for result in completions {
         println!("- Lemma: {}", result.lemma());
         for word in result.matches() {
@@ -136,7 +132,10 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
                 Some(s) => s,
             };
             println!("  - Stem: {stem}");
-            println!("    - {} | {:?}", word.form, word.context);
+            println!(
+                "    - {} | Inflection Code {}",
+                word.form, word.context.grammatical_data
+            );
         }
     }
     Ok(())
