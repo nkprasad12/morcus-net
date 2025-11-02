@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     completions::{
-        AutocompleteError, AutocompleteResult, Autocompleter, DisplayOptions, PrefixRanges,
-        StemResult, compute_ranges,
+        AutocompleteError, AutocompleteResult, Autocompleter, DisplayOptions, StemResult,
+        stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for},
     },
     indices::{InflectionEnding, Lemma, Stem},
     stem_merging::merge_stem_and_ending,
@@ -22,31 +22,27 @@ fn range_pairs_to_iter(pairs: Vec<(usize, usize, &[LemmaId])>) -> impl Iterator<
 /// An iterator over all of the lemmata that contain the stems and irregs that
 /// could match a prefix (as specified by `ranges`).
 fn lemma_ids_for_ranges<'a>(
-    last_range: &PrefixRanges,
-    prior_ranges: &[PrefixRanges],
+    ranges: &PrefixRanges,
     completer: &'a Autocompleter,
 ) -> Result<impl Iterator<Item = &'a LemmaId>, AutocompleteError> {
     let mut range_pairs = vec![];
 
     // Matches where the stem fully contains the prefix.
-    if let Some((start, end)) = last_range.prefix_irregs_range {
+    if let Some((start, end)) = ranges.irregs_range {
         let range_pair = (start, end, completer.addenda.irreg_to_lemma.as_slice());
         range_pairs.push(range_pair);
     }
-    if let Some((start, end)) = last_range.prefix_stem_range {
+    if let Some((start, end)) = ranges.stem_range {
         let range_pair = (start, end, completer.addenda.stem_to_lemma.as_slice());
         range_pairs.push(range_pair);
     }
 
     // Matches where the stem and the prefix both have a common root.
     // These could be matches if the ends of the stems complete the prefix.
-    for ranges in prior_ranges {
+    for range in &ranges.partial_stem_ranges {
         // We want the exact matches for the sub-prefix here; the remaining required
         // characters will be taken from the endings.
-        let (start, end) = match ranges.exact_stem_range {
-            Some(r) => r,
-            None => continue,
-        };
+        let (start, end) = range.0;
         let range_pair = (start, end, completer.addenda.stem_to_lemma.as_slice());
         range_pairs.push(range_pair);
     }
@@ -55,13 +51,13 @@ fn lemma_ids_for_ranges<'a>(
 }
 
 /// Returns the IDs of irregular forms in the lemma that are in the given range.
-fn filter_lemma_irregs(lemma: &Lemma, last_range: &PrefixRanges) -> Vec<usize> {
+fn filter_lemma_irregs(lemma: &Lemma, ranges: &PrefixRanges) -> Vec<usize> {
     let irregs = match &lemma.irregular_forms {
         Some(irregs) => irregs,
         // If there are no candidates, then there cannot be any matches.
         None => return vec![],
     };
-    let (start, end) = match last_range.prefix_irregs_range {
+    let (start, end) = match ranges.irregs_range {
         Some(r) => r,
         // If there's no range, then there cannot be any matches.
         None => return vec![],
@@ -75,11 +71,7 @@ fn filter_lemma_irregs(lemma: &Lemma, last_range: &PrefixRanges) -> Vec<usize> {
 }
 
 /// Returns the IDs of stems in the lemma that are in the given ranges.
-fn filter_lemma_stems<'a>(
-    lemma: &Lemma,
-    last_range: &'a PrefixRanges,
-    prior_ranges: &'a [PrefixRanges],
-) -> Vec<(usize, &'a str)> {
+fn filter_lemma_stems<'a>(lemma: &Lemma, ranges: &'a PrefixRanges) -> Vec<(usize, &'a str)> {
     let mut matched_stems = vec![];
     let stems = match &lemma.stems {
         Some(stems) => stems,
@@ -91,11 +83,13 @@ fn filter_lemma_stems<'a>(
 
     // For the last range (which is for the full prefix), we can accept anything
     // that is prefixed by that full prefix.
-    if let Some((start, end)) = last_range.prefix_stem_range {
+    if let Some((start, end)) = ranges.stem_range {
         let mut new_unmatched_stems = HashSet::new();
         for stem_id in unmatched_stems {
             if start <= stem_id && stem_id < end {
-                matched_stems.push((stem_id, &last_range.unmatched));
+                // The entire prefix is matched by the stem, so there's nothing
+                // left unmatched.
+                matched_stems.push((stem_id, ""));
             } else {
                 new_unmatched_stems.insert(stem_id);
             }
@@ -105,15 +99,12 @@ fn filter_lemma_stems<'a>(
 
     // For all other ranges, we need exact matches (since we can potentially fill in the
     // remaining characters from the endings).
-    for ranges in prior_ranges {
-        let (start, end) = match ranges.exact_stem_range {
-            Some(range) => range,
-            None => continue,
-        };
+    for range in &ranges.partial_stem_ranges {
+        let (start, end) = range.0;
         let mut new_unmatched_stems = HashSet::new();
         for stem_id in unmatched_stems {
             if start <= stem_id && stem_id < end {
-                matched_stems.push((stem_id, &ranges.unmatched));
+                matched_stems.push((stem_id, &range.1));
             } else {
                 new_unmatched_stems.insert(stem_id);
             }
@@ -188,22 +179,21 @@ fn stem_id_to_result<'a>(
 /// the lemma result may not have any valid completions at this stage.
 fn lemma_id_to_result<'a, 'b>(
     lemma_id: LemmaId,
-    last_range: &PrefixRanges,
-    prior_ranges: &[PrefixRanges],
+    ranges: &PrefixRanges,
     completer: &Autocompleter<'a>,
     display_options: &'b DisplayOptions,
 ) -> Result<AutocompleteResult<'a, 'b>, AutocompleteError> {
     let lemma = completer.lemma_from_id(lemma_id)?;
 
     let mut stems = vec![];
-    for (stem_id, unmatched) in filter_lemma_stems(lemma, last_range, prior_ranges) {
+    for (stem_id, unmatched) in filter_lemma_stems(lemma, ranges) {
         match stem_id_to_result(stem_id, unmatched, completer)? {
             None => continue,
             Some(result) => stems.push(result),
         }
     }
 
-    let irregs = filter_lemma_irregs(lemma, last_range)
+    let irregs = filter_lemma_irregs(lemma, ranges)
         .into_iter()
         .map(|i| &completer.tables.all_irregs[i])
         .collect::<Vec<_>>();
@@ -256,15 +246,10 @@ pub(super) fn completions_for_prefix<'a, 'b>(
     limit: usize,
     options: &'b DisplayOptions,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
-    let ranges = compute_ranges(prefix, completer.tables)?;
-    let last_range = ranges
-        .last()
-        .ok_or("Unexpected empty prefix!".to_string())?;
-    let prior_ranges = &ranges[..ranges.len().saturating_sub(1)];
-
+    let ranges = compute_ranges_for(prefix, completer.tables)?;
     let mut results = HashMap::new();
 
-    let lemma_ids = lemma_ids_for_ranges(last_range, prior_ranges, completer)?;
+    let lemma_ids = lemma_ids_for_ranges(&ranges, completer)?;
     for lemma_id in lemma_ids {
         if results.len() >= limit {
             break;
@@ -273,8 +258,7 @@ pub(super) fn completions_for_prefix<'a, 'b>(
             // Prevent duplicate matches.
             continue;
         }
-        let lemma_result =
-            lemma_id_to_result(*lemma_id, last_range, prior_ranges, completer, options)?;
+        let lemma_result = lemma_id_to_result(*lemma_id, &ranges, completer, options)?;
         let lemma_result = match validated_lemma_result(lemma_result) {
             None => continue,
             Some(r) => r,

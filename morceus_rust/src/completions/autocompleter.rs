@@ -1,5 +1,5 @@
 use crate::{
-    completions::{AutocompleteError, Autocompleter, normalize_key},
+    completions::{AutocompleteError, Autocompleter, string_utils::normalize_key},
     indices::{CruncherTables, InflectionEnding, Lemma, Stem},
 };
 

@@ -9,8 +9,6 @@ use crate::{
         autocomplete_result::{IrregResult, StemResult},
         autocompleter::Addenda,
         find_matches::completions_for_prefix,
-        stem_and_irreg_ranges::{PrefixRanges, compute_ranges},
-        string_utils::normalize_key,
     },
     indices::{CruncherTables, InflectionContext, Lemma},
 };

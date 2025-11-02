@@ -4,45 +4,33 @@ use crate::{
 };
 
 pub(super) struct PrefixRanges {
-    /// The portion of the original prefix that was not matched.
-    pub(super) unmatched: String,
-    /// The range of prefixed stems in the list.
+    /// The range of stems for which the prefix is totally contained in the stem.
     ///
     /// The start is inclusive, the end is exclusive.
     ///
     /// For example, if we have stems \["apple", "application", "apps"\],
     /// and the prefix is `"appl"`, then the range would be (0, 2).
-    pub(super) prefix_stem_range: Option<(usize, usize)>,
-    /// The range of exact matches for stems in the list.
-    ///
-    /// The start is inclusive, the end is exclusive.
-    ///
-    /// For example, if we have stems \["apple", "application", "apps"\],
-    /// and the prefix is `"apple"`, then the range would be (0, 1).
-    pub(super) exact_stem_range: Option<(usize, usize)>,
-    /// The range of prefixed irregular forms in the list.
+    pub(super) stem_range: Option<(usize, usize)>,
+    /// The range of irregular forms for which the prefix is totally contained in the form.
     ///
     /// The start is inclusive, the end is exclusive.
     /// For example, if we have irregular forms \["est", "esse", "estimo"\],
     /// and the prefix is `"es"`, then the range would be (0, 3).
-    pub(super) prefix_irregs_range: Option<(usize, usize)>,
-}
-
-impl PrefixRanges {
-    fn make_empty(unmatched: &str) -> Self {
-        PrefixRanges {
-            unmatched: unmatched.to_string(),
-            prefix_stem_range: None,
-            exact_stem_range: None,
-            prefix_irregs_range: None,
-        }
-    }
-
-    fn all_empty(&self) -> bool {
-        self.prefix_stem_range.is_none()
-            && self.exact_stem_range.is_none()
-            && self.prefix_irregs_range.is_none()
-    }
+    pub(super) irregs_range: Option<(usize, usize)>,
+    /// The ranges of stems for which the stem and the prefix share some common
+    /// sub-prefix, but not a full match. These are included because they may still
+    /// yield matches when combined with endings. The result represents the part of
+    /// the prefix that was not matched.
+    ///
+    /// The start is inclusive, the end is exclusive.
+    ///
+    /// For example, if we have stems \["app", "appl", "apple"\],
+    /// and the prefix is `"apple"`, the the result would be:
+    /// \[((0, 1), "le"), ((1, 2), "e")  \]
+    ///
+    /// Note that "apple" is not included because it has a full match for the prefix,
+    /// and would instead be included in `stem_range`.
+    pub(super) partial_stem_ranges: Vec<((usize, usize), String)>,
 }
 
 #[derive(Default)]
@@ -138,10 +126,10 @@ fn find_irreg_ranges(prefix: &str, irregs: &[IrregularForm]) -> Option<(usize, u
     Some((start, start + prefix_end))
 }
 
-pub(super) fn compute_ranges(
+pub(super) fn compute_ranges_for(
     prefix: &str,
     tables: &CruncherTables,
-) -> Result<Vec<PrefixRanges>, AutocompleteError> {
+) -> Result<PrefixRanges, AutocompleteError> {
     let prefix = normalize_key(prefix);
     if !prefix.is_ascii() {
         return Err("Only ASCII prefixes are supported.".to_string());
@@ -149,28 +137,28 @@ pub(super) fn compute_ranges(
     if prefix.is_empty() {
         return Err("Empty prefixes are not allowed.".to_string());
     }
-    let mut ranges = Vec::new();
+
+    let stem_range = find_stem_ranges(&prefix, &tables.all_stems).prefix_range;
+    let irregs_range = find_irreg_ranges(&prefix, &tables.all_irregs);
+    let mut partial_stem_ranges = vec![];
+    // Note that we start at 1 because we don't care about the empty prefix.
     // We can just use the byte length because we verified above that it's ASCII.
-    let chars = prefix.chars().collect::<Vec<char>>();
-    let n = chars.len();
-    for i in 1..=n {
-        let prefix_so_far = chars[..i].iter().collect::<String>();
-        let unmatched = chars[i..].iter().collect::<String>();
-        if ranges.last().is_some_and(|p: &PrefixRanges| p.all_empty()) {
-            // If the last prefix had no matches, all longer prefixes will also have no matches.
-            ranges.push(PrefixRanges::make_empty(&unmatched));
-            continue;
-        }
-        let stem_ranges = find_stem_ranges(&prefix_so_far, &tables.all_stems);
-        let irreg_ranges = find_irreg_ranges(&prefix_so_far, &tables.all_irregs);
-        ranges.push(PrefixRanges {
-            unmatched,
-            prefix_stem_range: stem_ranges.prefix_range,
-            exact_stem_range: stem_ranges.exact_range,
-            prefix_irregs_range: irreg_ranges,
-        });
+    for i in 1..prefix.len() {
+        // Similarly, we can just index on the bytes because we know it's ASCII.
+        let prefix_so_far = &prefix[..i];
+        let stem_range = match find_stem_ranges(prefix_so_far, &tables.all_stems).exact_range {
+            None => continue,
+            Some(range) => range,
+        };
+        let unmatched = &prefix[i..];
+        partial_stem_ranges.push((stem_range, unmatched.to_string()));
     }
-    Ok(ranges)
+
+    Ok(PrefixRanges {
+        stem_range,
+        irregs_range,
+        partial_stem_ranges,
+    })
 }
 
 #[cfg(test)]
