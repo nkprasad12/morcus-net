@@ -4,15 +4,11 @@ use crate::{
     stem_merging::merge_stem_and_ending,
 };
 
-pub(super) struct IrregResult<'a> {
-    pub(super) irreg: &'a IrregularForm,
-    pub(super) irreg_id: usize,
-}
+pub(super) type IrregResult = IrregularForm;
 
 pub(super) struct StemResult<'a> {
     pub(super) stem: &'a Stem,
     pub(super) ends: Vec<&'a InflectionEnding>,
-    pub(super) stem_id: usize,
 }
 
 struct SingleStemResult<'a> {
@@ -66,10 +62,8 @@ impl AutocompleteResult<'_> {
         let mut results = Vec::new();
         for irreg in &self.irregs {
             results.push(SingleResult {
-                form: irreg
-                    .irreg
-                    .display_form(&DisplayOptions { show_breves: false }),
-                context: irreg.irreg.context.clone(),
+                form: irreg.display_form(&DisplayOptions { show_breves: false }),
+                context: irreg.context.clone(),
                 stem: None,
             });
         }

@@ -52,7 +52,7 @@ impl<'a> Autocompleter<'a> {
 pub struct AutocompleteResult<'a> {
     lemma: &'a Lemma,
     stems: Vec<StemResult<'a>>,
-    irregs: Vec<IrregResult<'a>>,
+    irregs: Vec<&'a IrregResult>,
 }
 
 /// A single inflected result for a lemma.

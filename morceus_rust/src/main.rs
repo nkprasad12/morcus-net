@@ -111,7 +111,7 @@ macro_rules! timed {
 
 #[cfg(feature = "complete")]
 fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
-    use morceus::completions::{Autocompleter, DisplayOptions};
+    use morceus::completions::Autocompleter;
 
     assert_eq!(&args[2], "complete");
     let prefix: &str = &args[3];
@@ -125,7 +125,6 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
         println!("No completions found for prefix '{}'", prefix);
         return Ok(());
     }
-    let display_options = DisplayOptions { show_breves: false };
     for result in completions {
         println!("- Lemma: {}", result.lemma());
         for word in result.matches() {

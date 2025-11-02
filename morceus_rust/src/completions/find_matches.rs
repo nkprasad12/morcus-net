@@ -2,8 +2,8 @@ use std::collections::{HashMap, HashSet};
 
 use crate::{
     completions::{
-        AutocompleteError, AutocompleteResult, Autocompleter, IrregResult, PrefixRanges,
-        StemResult, compute_ranges,
+        AutocompleteError, AutocompleteResult, Autocompleter, PrefixRanges, StemResult,
+        compute_ranges,
     },
     indices::{InflectionEnding, Lemma, Stem},
     stem_merging::merge_stem_and_ending,
@@ -180,11 +180,7 @@ fn stem_id_to_result<'a>(
         Some(ends) if ends.is_empty() => return Ok(None),
         Some(ends) => ends,
     };
-    let stem_result = StemResult {
-        stem,
-        ends,
-        stem_id,
-    };
+    let stem_result = StemResult { stem, ends };
     Ok(Some(stem_result))
 }
 
@@ -208,10 +204,7 @@ fn lemma_id_to_result<'a>(
 
     let irregs = filter_lemma_irregs(lemma, last_range)
         .into_iter()
-        .map(|i| {
-            let irreg = &completer.tables.all_irregs[i];
-            IrregResult { irreg, irreg_id: i }
-        })
+        .map(|i| &completer.tables.all_irregs[i])
         .collect::<Vec<_>>();
 
     let lemma_result = AutocompleteResult {
