@@ -11,10 +11,10 @@ pub(super) struct Addenda<'a> {
     pub(super) irreg_to_lemma: Vec<u16>,
 }
 
-impl<'a> Autocompleter<'a> {
-    pub(super) fn make_from(
-        tables: &'a CruncherTables,
-    ) -> Result<Autocompleter<'a>, AutocompleteError> {
+impl<'t, 'o> Autocompleter<'t, 'o> {
+    pub(super) fn make_addenda(
+        tables: &'t CruncherTables,
+    ) -> Result<Addenda<'t>, AutocompleteError> {
         // Reserve the max for "no lemma";
         if tables.raw_lemmata.len() + 1 >= u16::MAX as usize {
             return Err("Too many lemmata in CruncherTables".to_string());
@@ -46,22 +46,21 @@ impl<'a> Autocompleter<'a> {
             end_tables.push(ends);
         }
 
-        let addenda = Addenda {
+        Ok(Addenda {
             end_tables,
             stem_to_lemma,
             irreg_to_lemma,
-        };
-        Ok(Autocompleter { tables, addenda })
+        })
     }
 
-    pub(super) fn ends_for(&self, stem: &Stem) -> Result<&SortedEndings<'a>, AutocompleteError> {
+    pub(super) fn ends_for(&self, stem: &Stem) -> Result<&SortedEndings<'t>, AutocompleteError> {
         self.addenda
             .end_tables
             .get(stem.inflection as usize)
             .ok_or("Invalid inflection index".to_string())
     }
 
-    pub(super) fn lemma_from_id(&self, lemma_id: u16) -> Result<&'a Lemma, AutocompleteError> {
+    pub(super) fn lemma_from_id(&self, lemma_id: u16) -> Result<&'t Lemma, AutocompleteError> {
         self.tables
             .raw_lemmata
             .get(lemma_id as usize)

@@ -13,27 +13,50 @@ use crate::{
     indices::{CruncherTables, InflectionContext, Lemma},
 };
 
-static DEFAULT_COMPLETION_LIMIT: usize = 50;
-static DEFAULT_DISPLAY_OPTIONS: DisplayOptions = DisplayOptions { show_breves: false };
+static DEFAULT_OPTIONS: AutompleterOptions = AutompleterOptions {
+    // All but ~15 3 letter prefixes have less than 250 completions.
+    // If we hit the limit of 250, the result is still fast (< 100 us)
+    // and only takes a few dozen kB of memory, so this is a reasonable
+    // place to put the default.
+    result_limit: 250,
+    display_options: DisplayOptions { show_breves: false },
+};
 
 /// The main entry point for completions.
-pub struct Autocompleter<'a> {
+pub struct Autocompleter<'a, 'b> {
     tables: &'a CruncherTables,
     addenda: Addenda<'a>,
+    options: &'b AutompleterOptions,
 }
 
-impl<'t> Autocompleter<'t> {
-    /// The intended public constructor for the Autocompleter.
-    pub fn new(tables: &'t CruncherTables) -> Result<Autocompleter<'t>, AutocompleteError> {
-        Autocompleter::make_from(tables)
+pub struct AutompleterOptions {
+    pub result_limit: usize,
+    pub display_options: DisplayOptions,
+}
+
+impl<'t, 'o> Autocompleter<'t, 'o> {
+    /// Creates an autocompleter with default options.
+    pub fn new(tables: &'t CruncherTables) -> Result<Autocompleter<'t, 'o>, AutocompleteError> {
+        Autocompleter::new_with_options(tables, &DEFAULT_OPTIONS)
+    }
+
+    pub fn new_with_options(
+        tables: &'t CruncherTables,
+        options: &'o AutompleterOptions,
+    ) -> Result<Autocompleter<'t, 'o>, AutocompleteError> {
+        Ok(Autocompleter {
+            tables,
+            addenda: Autocompleter::make_addenda(tables)?,
+            options,
+        })
     }
 
     /// Convenience method for fetching completions with default options.
     pub fn completions_for(
         &'t self,
         prefix: &str,
-    ) -> Result<Vec<AutocompleteResult<'t, 'static>>, AutocompleteError> {
-        self.completions_with_options(prefix, DEFAULT_COMPLETION_LIMIT, &DEFAULT_DISPLAY_OPTIONS)
+    ) -> Result<Vec<AutocompleteResult<'t, 'o>>, AutocompleteError> {
+        self.completions_with_options(prefix, self.options)
     }
 
     /// The main API for fetching completions.
@@ -51,10 +74,9 @@ impl<'t> Autocompleter<'t> {
     pub fn completions_with_options<'a>(
         &'t self,
         prefix: &str,
-        limit: usize,
-        options: &'a DisplayOptions,
+        options: &'a AutompleterOptions,
     ) -> Result<Vec<AutocompleteResult<'t, 'a>>, AutocompleteError> {
-        completions_for_prefix(prefix, self, limit, options)
+        completions_for_prefix(prefix, self, options.result_limit, &options.display_options)
     }
 }
 
