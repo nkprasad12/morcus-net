@@ -6,6 +6,7 @@ use crate::{
         compute_ranges,
     },
     indices::{InflectionEnding, Lemma, Stem},
+    stem_merging::merge_stem_and_ending,
 };
 
 type LemmaId = u16;
@@ -222,17 +223,33 @@ fn lemma_id_to_result<'a>(
     Ok(lemma_result)
 }
 
-/// Checks whether the given lemma result has any valid completions.
-fn is_lemma_valid(lemma_result: &LemmaResult) -> bool {
-    // The current impl is the barebones check. We need to add:
-    // 2. Then, check if we have any irregs. If so, save the Lemmata and Stems and continue,
-    //    since we know the lemma has at least one matched ending.
-    // 3. Otherwise, iterate through the stems until we find at least one ending that is
-    //    compatible with the stem. Discard any stems that have no compatible endings.
-    // 3a. If we find no such ending, skip the lemma.
-    // 3b. otherwise, return the known good stem and any stems after that (which could)
-    //     also contain valid endings.
-    !lemma_result.stems.is_empty() || !lemma_result.irregs.is_empty()
+/// Validates the given lemma result, returning None if it has no valid completions.
+fn validated_lemma_result<'a>(mut lemma_result: LemmaResult<'a>) -> Option<LemmaResult<'a>> {
+    if !lemma_result.irregs.is_empty() {
+        // Irregular forms don't need to be validated further, so we know
+        // there's at least one valid completion.
+        return Some(lemma_result);
+    }
+    let mut first_good_stem = None;
+    'outer: for (i, stem) in lemma_result.stems.iter().enumerate() {
+        for end in &stem.ends {
+            if merge_stem_and_ending(stem.stem, end).is_some() {
+                // Found at least one valid ending for this stem.
+                first_good_stem = Some(i);
+                break 'outer;
+            }
+        }
+    }
+    // Discard any stems that are known to have no valid endings,
+    // but leave the rest for validation later to avoid doing
+    // unneeded work, because the caller might not even look at the
+    // endings for this lemma.
+    let i = first_good_stem?;
+    Some(LemmaResult {
+        lemma: lemma_result.lemma,
+        irregs: lemma_result.irregs,
+        stems: lemma_result.stems.split_off(i),
+    })
 }
 
 pub(super) fn completions_for_prefix<'a>(
@@ -258,9 +275,10 @@ pub(super) fn completions_for_prefix<'a>(
             continue;
         }
         let lemma_result = lemma_id_to_result(*lemma_id, last_range, prior_ranges, completer)?;
-        if !is_lemma_valid(&lemma_result) {
-            continue;
-        }
+        let lemma_result = match validated_lemma_result(lemma_result) {
+            None => continue,
+            Some(r) => r,
+        };
         results.insert(lemma_id, lemma_result);
     }
     Ok(results.into_values().collect())
