@@ -4,3 +4,4 @@ pub mod completions;
 pub mod crunch;
 pub mod indices;
 pub mod inflection_data;
+mod stem_merging;
