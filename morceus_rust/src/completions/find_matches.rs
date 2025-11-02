@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
 use crate::{
     completions::{
@@ -247,14 +247,15 @@ pub(super) fn completions_for_prefix<'a, 'b>(
     options: &'b DisplayOptions,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
     let ranges = compute_ranges_for(prefix, completer.tables)?;
-    let mut results = HashMap::new();
+    let mut seen_ids = HashSet::new();
+    let mut results = Vec::new();
 
     let lemma_ids = lemma_ids_for_ranges(&ranges, completer)?;
     for lemma_id in lemma_ids {
         if results.len() >= limit {
             break;
         }
-        if results.contains_key(lemma_id) {
+        if seen_ids.contains(lemma_id) {
             // Prevent duplicate matches.
             continue;
         }
@@ -263,9 +264,10 @@ pub(super) fn completions_for_prefix<'a, 'b>(
             None => continue,
             Some(r) => r,
         };
-        results.insert(lemma_id, lemma_result);
+        seen_ids.insert(lemma_id);
+        results.push(lemma_result);
     }
-    Ok(results.into_values().collect())
+    Ok(results)
 }
 
 #[cfg(test)]

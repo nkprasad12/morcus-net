@@ -47,8 +47,7 @@ impl<'t> Autocompleter<'t> {
     /// * `options` - Display options for formatting the output forms.
     ///
     /// # Returns
-    /// A vector of lemmata with matching completion results. The order of completions is not
-    /// guaranteed and should not be relied upon.
+    /// A vector of lemmata with matching completion results.
     pub fn completions_with_options<'a>(
         &'t self,
         prefix: &str,

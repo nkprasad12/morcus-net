@@ -41,7 +41,8 @@ impl<'a> Autocompleter<'a> {
                 .flatten()
                 .map(|e| (normalize_key(&e.ending), e))
                 .collect::<Vec<_>>();
-            ends.sort_unstable_by(|a, b| a.0.cmp(&b.0));
+            // `sort_unstable_by` would be slightly faster, but we want to be deterministic.
+            ends.sort_by(|a, b| a.0.cmp(&b.0));
             end_tables.push(ends);
         }
 
