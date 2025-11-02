@@ -1,12 +1,12 @@
 mod autocompleter;
-mod lemma_stream;
+mod find_matches;
 mod stem_and_irreg_ranges;
 mod string_utils;
 
 use crate::{
     completions::{
         autocompleter::Addenda,
-        lemma_stream::completions_for_prefix,
+        find_matches::completions_for_prefix,
         stem_and_irreg_ranges::{PrefixRanges, compute_ranges},
         string_utils::{display_form, normalize_key},
     },
@@ -30,7 +30,13 @@ impl<'a> Autocompleter<'a> {
     /// # Arguments
     /// * `prefix` - The prefix to complete, case-insensitive. This should
     ///   contain only ascii characters.
-    /// * `limit` - The maximum number of completions to return.
+    /// * `limit` - The maximum number of lemmata to return. A single lemma may have multiple
+    ///   inflected forms that match the prefix, but every lemma returned is guaranteed to have
+    ///   at least one matching form.
+    ///
+    /// # Returns
+    /// A vector of lemmata with matching completion results. The order of completions is not
+    /// guaranteed and should not be relied upon.
     pub fn completions_for(
         &'a self,
         prefix: &str,
@@ -38,11 +44,6 @@ impl<'a> Autocompleter<'a> {
     ) -> Result<Vec<LemmaResult<'a>>, AutocompleteError> {
         completions_for_prefix(prefix, self, limit)
     }
-}
-
-pub enum AutocompleteResult<'a> {
-    Stem(StemResult<'a>),
-    Irreg(IrregResult<'a>),
 }
 
 pub struct LemmaResult<'a> {

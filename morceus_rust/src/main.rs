@@ -99,26 +99,28 @@ fn validate_tables(tables: &CruncherTables) -> bool {
     true
 }
 
+macro_rules! timed {
+    ($label:expr, $expr:expr) => {{
+        let start = std::time::Instant::now();
+        let result = $expr;
+        let duration = start.elapsed();
+        println!("{} in {:.2?}", $label, duration);
+        result
+    }};
+}
+
 #[cfg(feature = "complete")]
 fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
     use morceus::completions::{Autocompleter, DisplayForm, DisplayOptions};
 
     assert_eq!(&args[2], "complete");
-
     let prefix: &str = &args[3];
-    let start = std::time::Instant::now();
-    // 1. Create the autocompleter.
-    let completer = Autocompleter::new(tables)?;
-    let duration = start.elapsed();
-    println!("Created completer in {duration:.2?}");
 
-    let start = std::time::Instant::now();
-    // 2. Get completions for the prefix.
-    let completions = completer.completions_for(prefix, 50)?;
-    let duration = start.elapsed();
-    print_mem_summary("After completions".to_string(), None);
+    let completer = timed!("Created completer", Autocompleter::new(tables)?);
+    let completions = timed!("Found completions", completer.completions_for(prefix, 50)?);
+    print_mem_summary("After finding completions".to_string(), None);
 
-    println!("Completions for prefix '{}' [{:?}]:", prefix, duration);
+    println!("Completions for prefix '{}':", prefix);
     if completions.is_empty() {
         println!("No completions found for prefix '{}'", prefix);
         return Ok(());

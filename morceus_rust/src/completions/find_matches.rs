@@ -53,8 +53,8 @@ fn lemma_ids_for_ranges<'a>(
     Ok(range_pairs_to_iter(range_pairs))
 }
 
+/// Returns the IDs of irregular forms in the lemma that are in the given range.
 fn filter_lemma_irregs(lemma: &Lemma, last_range: &PrefixRanges) -> Vec<usize> {
-    // println!("  Checking irregs lemma: {:?}", lemma.irregular_forms);
     let irregs = match &lemma.irregular_forms {
         Some(irregs) => irregs,
         // If there are no candidates, then there cannot be any matches.
@@ -73,6 +73,7 @@ fn filter_lemma_irregs(lemma: &Lemma, last_range: &PrefixRanges) -> Vec<usize> {
         .collect()
 }
 
+/// Returns the IDs of stems in the lemma that are in the given ranges.
 fn filter_lemma_stems<'a>(
     lemma: &Lemma,
     last_range: &'a PrefixRanges,
@@ -83,8 +84,12 @@ fn filter_lemma_stems<'a>(
         Some(stems) => stems,
         None => return matched_stems,
     };
+    // We start with all stems unmatched, and then filter them down as we
+    // check each range.
     let mut unmatched_stems = stems.iter().map(|x| *x as usize).collect::<HashSet<_>>();
 
+    // For the last range (which is for the full prefix), we can accept anything
+    // that is prefixed by that full prefix.
     if let Some((start, end)) = last_range.prefix_stem_range {
         let mut new_unmatched_stems = HashSet::new();
         for stem_id in unmatched_stems {
@@ -97,6 +102,8 @@ fn filter_lemma_stems<'a>(
         unmatched_stems = new_unmatched_stems;
     }
 
+    // For all other ranges, we need exact matches (since we can potentially fill in the
+    // remaining characters from the endings).
     for ranges in prior_ranges {
         let (start, end) = match ranges.exact_stem_range {
             Some(range) => range,
@@ -154,13 +161,18 @@ fn find_ends_for<'a>(
     ))
 }
 
+/// Converts a candidate stem ID into a result, if it is valid.
+///
+/// # Arguments
+/// * `stem_id` - The ID of the stem to convert.
+/// * `unmatched` - The unmatched portion of the prefix that needs to be completed by endings.
+/// * `completer` - The autocompleter to use for lookups.
 fn stem_id_to_result<'a>(
     stem_id: usize,
     unmatched: &str,
     completer: &Autocompleter<'a>,
 ) -> Result<Option<StemResult<'a>>, AutocompleteError> {
     let stem = &completer.tables.all_stems[stem_id];
-    // println!("  Checking stem: {} | {}", stem.stem, unmatched);
     let ends = match find_ends_for(completer, unmatched, stem)? {
         // None just means there are no ends - it's not an error state.
         None => return Ok(None),
@@ -173,6 +185,54 @@ fn stem_id_to_result<'a>(
         stem_id,
     };
     Ok(Some(stem_result))
+}
+
+/// Converts a candidate lemma ID into a candidate result. Note that
+/// the lemma result may not have any valid completions at this stage.
+fn lemma_id_to_result<'a>(
+    lemma_id: LemmaId,
+    last_range: &PrefixRanges,
+    prior_ranges: &[PrefixRanges],
+    completer: &Autocompleter<'a>,
+) -> Result<LemmaResult<'a>, AutocompleteError> {
+    let lemma = completer.lemma_from_id(lemma_id)?;
+
+    let mut stems = vec![];
+    for (stem_id, unmatched) in filter_lemma_stems(lemma, last_range, prior_ranges) {
+        match stem_id_to_result(stem_id, unmatched, completer)? {
+            None => continue,
+            Some(result) => stems.push(result),
+        }
+    }
+
+    let irregs = filter_lemma_irregs(lemma, last_range)
+        .into_iter()
+        .map(|i| {
+            let irreg = &completer.tables.all_irregs[i];
+            IrregResult { irreg, irreg_id: i }
+        })
+        .collect::<Vec<_>>();
+
+    let lemma_result = LemmaResult {
+        lemma,
+        stems,
+        irregs,
+    };
+
+    Ok(lemma_result)
+}
+
+/// Checks whether the given lemma result has any valid completions.
+fn is_lemma_valid(lemma_result: &LemmaResult) -> bool {
+    // The current impl is the barebones check. We need to add:
+    // 2. Then, check if we have any irregs. If so, save the Lemmata and Stems and continue,
+    //    since we know the lemma has at least one matched ending.
+    // 3. Otherwise, iterate through the stems until we find at least one ending that is
+    //    compatible with the stem. Discard any stems that have no compatible endings.
+    // 3a. If we find no such ending, skip the lemma.
+    // 3b. otherwise, return the known good stem and any stems after that (which could)
+    //     also contain valid endings.
+    !lemma_result.stems.is_empty() || !lemma_result.irregs.is_empty()
 }
 
 pub(super) fn completions_for_prefix<'a>(
@@ -197,42 +257,10 @@ pub(super) fn completions_for_prefix<'a>(
             // Prevent duplicate matches.
             continue;
         }
-
-        let lemma = completer.lemma_from_id(*lemma_id)?;
-        // println!("Checking lemma: {}", lemma.lemma);
-
-        let mut stems = vec![];
-        for (stem_id, unmatched) in filter_lemma_stems(lemma, last_range, prior_ranges) {
-            match stem_id_to_result(stem_id, unmatched, completer)? {
-                None => continue,
-                Some(result) => stems.push(result),
-            }
-        }
-
-        // 2. Then, check if we have any irregs. If so, save the Lemmata and Stems and continue,
-        //    since we know the lemma has at least one matched ending.
-        // 3. Otherwise, iterate through the stems until we find at least one ending that is
-        //    compatible with the stem. Discard any stems that have no compatible endings.
-        // 3a. If we find no such ending, skip the lemma.
-        // 3b. otherwise, return the known good stem and any stems after that (which could)
-        //     also contain valid endings.
-        let irregs = filter_lemma_irregs(lemma, last_range)
-            .into_iter()
-            .map(|i| {
-                let irreg = &completer.tables.all_irregs[i];
-                IrregResult { irreg, irreg_id: i }
-            })
-            .collect::<Vec<_>>();
-
-        if stems.is_empty() && irregs.is_empty() {
+        let lemma_result = lemma_id_to_result(*lemma_id, last_range, prior_ranges, completer)?;
+        if !is_lemma_valid(&lemma_result) {
             continue;
         }
-
-        let lemma_result = LemmaResult {
-            lemma,
-            stems,
-            irregs,
-        };
         results.insert(lemma_id, lemma_result);
     }
     Ok(results.into_values().collect())
