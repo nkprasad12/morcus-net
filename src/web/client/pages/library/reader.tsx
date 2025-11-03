@@ -82,9 +82,14 @@ const HYPOTACTIC_ATTRIBUTION = (
   </span>
 );
 
+const PUBLIC_DOMAIN_ATTRIBUTION = (
+  <span className="text sm light">The raw text is in the public domain.</span>
+);
+
 const ATTRIBUTION_MAP: Record<DocumentInfo["attribution"], JSX.Element> = {
   perseus: PERSEUS_ATTRIBUTION,
   hypotactic: HYPOTACTIC_ATTRIBUTION,
+  publicDomain: PUBLIC_DOMAIN_ATTRIBUTION,
 };
 
 type WorkState = PaginatedWork | "Loading" | "Error";

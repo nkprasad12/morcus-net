@@ -26,6 +26,7 @@ import {
   type TranslationInfo,
 } from "@/common/library/library_types";
 import { processHypotactic } from "@/common/library/process_hypotactic";
+import { processPhiJson } from "@/common/library/process_phi_json";
 import { processTei2 } from "@/common/library/process_work";
 import { XmlNode } from "@/common/xml/xml_node";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
@@ -53,6 +54,7 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["Cornelius Tacitus", "tacitus"],
   ["C. Valerius Catullus", "catullus"],
   ["M. Tullius Cicero", "cicero"],
+  ["C. Suetonius Tranquillus", "suetonius"],
 ]);
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([
@@ -221,13 +223,17 @@ export async function processLibrary({
     .map((a) => a[0]);
   const translationDataById = new Map<string, TranslationInfo>();
 
-  for (const work of processHypotactic()) {
+  function processGenericWork(work: ProcessedWork2) {
     const workId = work.info.workId;
     work.info = decorateDocumentInfo(work.info);
     const outputPath = writeWorkFile(work, outputDir, workId, corpusInputDir);
     const metadata = extractWorkMetadata(workId, work.info);
     index[workId] = [outputPath, metadata];
   }
+
+  processPhiJson().forEach(processGenericWork);
+  processHypotactic().forEach(processGenericWork);
+
   for (const workPath of sortedWorks) {
     // We should use the Perseus URN instead.
     const workId = pathToId(workPath);

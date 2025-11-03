@@ -23,6 +23,8 @@ const isTranslationInfo = matchesObject<TranslationInfo>({
   translator: maybeUndefined(isString),
 });
 
+export type DocumentAttribution = "perseus" | "hypotactic" | "publicDomain";
+
 export interface DocumentInfo {
   title: string;
   shortTitle?: string;
@@ -36,7 +38,7 @@ export interface DocumentInfo {
   isTranslation?: boolean;
   translationInfo?: TranslationInfo;
   sourceRef?: string[];
-  attribution: "perseus" | "hypotactic";
+  attribution: DocumentAttribution;
 }
 
 export namespace DocumentInfo {
@@ -136,7 +138,7 @@ export interface LibraryWorkMetadata {
   /** Whether this is a translation. */
   isTranslation?: boolean;
   /** The source of the raw data. */
-  attribution: "perseus" | "hypotactic";
+  attribution: DocumentAttribution;
 }
 
 export namespace LibraryWorkMetadata {
