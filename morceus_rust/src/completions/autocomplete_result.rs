@@ -54,29 +54,33 @@ fn display_form(input: &str, options: &DisplayOptions) -> String {
 }
 
 impl AutocompleteResult<'_, '_> {
-    /// Returns matches for this lemma.
-    pub(super) fn sample_matches(&self) -> Vec<SingleResult> {
-        let mut results = Vec::new();
-        for irreg in &self.irregs {
-            results.push(SingleResult {
-                form: irreg.display_form(self.display_options),
-                context: irreg.context.clone(),
-                stem: None,
-            });
-        }
-        for stem_result in &self.stems {
-            for single_stem in stem_result.expand() {
-                if let Some(context) = merge_stem_and_ending(single_stem.stem, single_stem.ending) {
-                    results.push(SingleResult {
-                        form: single_stem.display_form(self.display_options),
-                        context,
-                        stem: Some(single_stem.stem.stem.clone()),
-                    });
-                    // Only include one ending per stem for the sample.
-                    break;
-                }
-            }
-        }
-        results
+    /// Returns an iterator over all possible matching forms for this lemma.
+    pub fn iterate_matches(
+        &self,
+        max_per_stem: Option<usize>,
+    ) -> impl Iterator<Item = SingleResult> + '_ {
+        let irreg_results = self.irregs.iter().map(|irreg| SingleResult {
+            form: irreg.display_form(self.display_options),
+            context: irreg.context.clone(),
+            stem: None,
+        });
+
+        let max_per_stem = max_per_stem.unwrap_or(usize::MAX);
+        let stem_results = self.stems.iter().flat_map(move |stem_result| {
+            stem_result
+                .expand()
+                .filter_map(|single_stem| {
+                    merge_stem_and_ending(single_stem.stem, single_stem.ending).map(|context| {
+                        SingleResult {
+                            form: single_stem.display_form(self.display_options),
+                            context,
+                            stem: Some(single_stem.stem.stem.clone()),
+                        }
+                    })
+                })
+                .take(max_per_stem)
+        });
+
+        irreg_results.chain(stem_results)
     }
 }

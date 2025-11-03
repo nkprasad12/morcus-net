@@ -120,10 +120,11 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     let completions = timed!("Found completions", completer.completions_for(prefix)?);
     print_mem_summary("After finding completions".to_string(), None);
 
-    println!("Completions for '{}' [{}]:", prefix, completions.len());
+    let n = completions.len();
+    println!("Samples completions for '{}' [{}]:", prefix, n);
     for result in completions {
         println!("- Lemma: {}", result.lemma());
-        for word in result.matches() {
+        for word in result.sample_matches() {
             let stem = match &word.stem {
                 None => {
                     println!("  - {} [Irreg]", word.form);

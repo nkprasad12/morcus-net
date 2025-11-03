@@ -110,12 +110,15 @@ impl AutocompleteResult<'_, '_> {
         &self.lemma.lemma
     }
 
-    /// Returns matches for this lemma.
-    ///
-    /// Currently, it only returns a sampling of the possible matches.
-    /// However, in the future the exact results will be configurable.
-    pub fn matches(&self) -> Vec<SingleResult> {
-        self.sample_matches()
+    /// Returns a sampling of matches for this lemma. There are no guarantees
+    /// on exactly what will be returned except that at least one match will be produced.
+    pub fn sample_matches(&self) -> impl Iterator<Item = SingleResult> + '_ {
+        self.iterate_matches(Some(1))
+    }
+
+    /// Returns an iterator over all possible matching forms for this lemma.
+    pub fn all_matches(&self) -> impl Iterator<Item = SingleResult> + '_ {
+        self.iterate_matches(None)
     }
 }
 
