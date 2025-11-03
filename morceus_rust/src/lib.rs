@@ -1,3 +1,4 @@
+mod ambiguous_uv_ij;
 #[cfg(feature = "complete")]
 pub mod completions;
 #[cfg(feature = "crunch")]
