@@ -76,6 +76,8 @@ function isNumeral(lemma: Lemma) {
   return false;
 }
 
+// The Rust code isn't used in prod yet.
+/* istanbul ignore next */
 async function saveTablesForRust(tables: CruncherTables) {
   let allStems: Stem[] = [];
   const allStemSet = new Set<Stem>();
