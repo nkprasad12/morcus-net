@@ -1,7 +1,11 @@
 import {
   convertRawPhi,
+  processPhiJson,
   type RawPhiJson,
 } from "@/common/library/process_phi_json";
+import fs from "fs";
+import os from "os";
+import path from "path";
 
 function createRawPhiJson(
   text: [id: [string, string, string, string], text: string][]
@@ -147,5 +151,68 @@ describe("convertRawPhi", () => {
       expect(allText[1]).toContain("secondpassage");
       expect(allText[2]).toContain("third passage");
     });
+  });
+});
+
+describe("processPhiJson", () => {
+  let tempDir: string;
+  let originalEnv: string | undefined;
+
+  beforeEach(() => {
+    // Create a temporary directory for test files
+    tempDir = fs.mkdtempSync(path.join(os.tmpdir(), "phi-json-test-"));
+    originalEnv = process.env.PHI_JSON_ROOT;
+    process.env.PHI_JSON_ROOT = tempDir;
+  });
+
+  afterEach(() => {
+    // Clean up temporary directory
+    if (fs.existsSync(tempDir)) {
+      fs.rmSync(tempDir, { recursive: true, force: true });
+    }
+    // Restore original environment variable
+    if (originalEnv !== undefined) {
+      process.env.PHI_JSON_ROOT = originalEnv;
+    } else {
+      delete process.env.PHI_JSON_ROOT;
+    }
+  });
+
+  it("should process multiple JSON files", () => {
+    const work1 = createRawPhiJson([[["1", "1", "1", "1"], "Prima opera"]]);
+    const work2 = {
+      ...createRawPhiJson([[["1", "1", "1", "1"], "Secunda opera"]]),
+      authorCode: "0691",
+      workCode: "002",
+    };
+
+    fs.writeFileSync(path.join(tempDir, "work1.json"), JSON.stringify(work1));
+    fs.writeFileSync(path.join(tempDir, "work2.json"), JSON.stringify(work2));
+
+    const results = processPhiJson();
+
+    expect(results).toHaveLength(2);
+    expect(results[0].info.workId).toBe("phi-json-lat0690.001");
+    expect(results[1].info.workId).toBe("phi-json-lat0691.002");
+  });
+
+  it("should ignore non-JSON files", () => {
+    const testData = createRawPhiJson([[["1", "1", "1", "1"], "Valid work"]]);
+
+    fs.writeFileSync(
+      path.join(tempDir, "valid.json"),
+      JSON.stringify(testData)
+    );
+    fs.writeFileSync(path.join(tempDir, "readme.txt"), "Not a JSON file");
+    fs.writeFileSync(path.join(tempDir, "data.xml"), "<xml>Not JSON</xml>");
+
+    const results = processPhiJson();
+
+    expect(results).toHaveLength(1);
+    expect(results[0].rows[0][1].toString()).toContain("Valid work");
+  });
+
+  it("should handle empty directory", () => {
+    expect(processPhiJson()).toHaveLength(0);
   });
 });
