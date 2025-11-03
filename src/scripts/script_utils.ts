@@ -25,7 +25,7 @@ export interface DownloadConfig {
 }
 
 export interface RepoConfig {
-  repoUrl: string;
+  repoUrls: string[];
 }
 
 export interface StepConfig {
@@ -122,18 +122,34 @@ function getRepoNameFromUrl(url: string): string {
   return nameWithExt;
 }
 
-async function cloneRepo(config: RepoConfig): Promise<string | undefined> {
-  const cloneDir = getRepoNameFromUrl(config.repoUrl);
+async function cloneRepo(repoUrl: string): Promise<string | undefined> {
+  const cloneDir = getRepoNameFromUrl(repoUrl);
   try {
-    await shellStep(`git clone ${config.repoUrl} ${cloneDir}`);
-    console.log(chalk.blue(`Cloned ${config.repoUrl} into ${cloneDir}`));
+    await shellStep(`git clone ${repoUrl} ${cloneDir}`);
+    console.log(chalk.blue(`Cloned ${repoUrl} into ${cloneDir}`));
     return cloneDir;
   } catch (error) {
-    console.log(chalk.red(`Failed to clone ${config.repoUrl}`));
+    console.log(chalk.red(`Failed to clone ${repoUrl}`));
     console.log(chalk.red(error));
     return undefined;
   }
 }
+
+async function cloneAllRepos(
+  config: RepoConfig
+): Promise<(string | undefined)[]> {
+  const promises = config.repoUrls.map((url) => cloneRepo(url));
+  return Promise.all(promises);
+}
+
+async function cleanupRepoDirs(dirs: (string | undefined)[]): Promise<unknown> {
+  return Promise.all(
+    dirs
+      .filter((d): d is string => d !== undefined)
+      .map((dir) => rm(dir, { recursive: true, force: true }))
+  );
+}
+
 async function runStep(config: StepConfig): Promise<boolean> {
   const label = config.label || "operation";
   const dlInfos = resolveDownloads(config);
@@ -141,10 +157,11 @@ async function runStep(config: StepConfig): Promise<boolean> {
   if (!downloadResult) {
     return false;
   }
-  let repoDir: string | undefined = undefined;
+  let repoDirs: (string | undefined)[] = [];
   if (config.repoInfo !== undefined) {
-    repoDir = await cloneRepo(config.repoInfo);
-    if (repoDir === undefined) {
+    repoDirs = await cloneAllRepos(config.repoInfo);
+    if (repoDirs.every((r) => r === undefined)) {
+      await cleanupRepoDirs(repoDirs);
       return false;
     }
   }
@@ -162,8 +179,8 @@ async function runStep(config: StepConfig): Promise<boolean> {
   runtimeMessage(start, success, label);
 
   await cleanupDownloads(dlInfos);
-  if (repoDir !== undefined) {
-    await rm(repoDir, { recursive: true, force: true });
+  if (repoDirs.length > 0) {
+    await cleanupRepoDirs(repoDirs);
   }
 
   return success;

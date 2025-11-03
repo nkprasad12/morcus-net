@@ -5,6 +5,7 @@ import {
 } from "@/common/library/library_lookup";
 import { ProcessedWork2, WorkId } from "@/common/library/library_types";
 import { processLibrary } from "@/common/library/process_library";
+import { replaceEnvVar } from "@/common/test_helpers";
 import { XmlNodeSerialization } from "@/common/xml/xml_node_serialization";
 import { decodeMessage } from "@/web/utils/rpc/parsing";
 import { ServerMessage } from "@/web/utils/rpc/rpc";
@@ -21,7 +22,21 @@ const DBG_PATH =
 const ORIGINAL_MORCEUS_DATA_ROOT = process.env.MORCEUS_DATA_ROOT;
 const FAKE_MORCEUS_DATA_ROOT = "src/morceus/testdata";
 
+function setupFakePhiDir() {
+  const testDataRoot = fs.mkdtempSync("phi-testdata-");
+  replaceEnvVar("PHI_JSON_ROOT", testDataRoot);
+
+  afterAll(() => {
+    try {
+      fs.rmSync(testDataRoot, { recursive: true, force: true });
+    } catch (error) {
+      console.error("Error cleaning up test data:", error);
+    }
+  });
+}
+
 setupFakeHypotacticData();
+setupFakePhiDir();
 
 beforeAll(() => {
   process.env.MORCEUS_DATA_ROOT = FAKE_MORCEUS_DATA_ROOT;
