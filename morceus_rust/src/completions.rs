@@ -65,7 +65,7 @@ impl<'t, 'o> Autocompleter<'t, 'o> {
         prefix: &str,
         options: &'a AutompleterOptions,
     ) -> Result<Vec<AutocompleteResult<'t, 'a>>, AutocompleteError> {
-        completions_for_prefix(prefix, self, options.result_limit, &options.display_options)
+        completions_for_prefix(prefix, self, options)
     }
 }
 
@@ -134,7 +134,7 @@ static DEFAULT_OPTIONS: AutompleterOptions = AutompleterOptions {
     // place to put the default.
     result_limit: 250,
     display_options: DisplayOptions { show_breves: false },
-    relax_i_j: true,
+    relax_i_j: false,
     relax_u_v: false,
 };
 

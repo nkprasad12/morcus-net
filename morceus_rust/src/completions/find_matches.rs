@@ -1,8 +1,10 @@
 use std::collections::HashSet;
 
 use crate::{
+    ambiguous_uv_ij::alternates_with_i_or_u,
     completions::{
-        AutocompleteError, AutocompleteResult, Autocompleter, DisplayOptions, StemResult,
+        AutocompleteError, AutocompleteResult, Autocompleter, AutompleterOptions, DisplayOptions,
+        StemResult,
         stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for},
     },
     indices::{InflectionEnding, Lemma, Stem},
@@ -240,7 +242,7 @@ fn validated_lemma_result<'a, 'b>(
     })
 }
 
-pub(super) fn completions_for_prefix<'a, 'b>(
+fn completions_for_prefix_base<'a, 'b>(
     prefix: &str,
     completer: &Autocompleter<'a, '_>,
     limit: usize,
@@ -268,6 +270,27 @@ pub(super) fn completions_for_prefix<'a, 'b>(
         results.push(lemma_result);
     }
     Ok(results)
+}
+
+pub(super) fn completions_for_prefix<'a, 'b>(
+    prefix: &str,
+    completer: &Autocompleter<'a, '_>,
+    options: &'b AutompleterOptions,
+) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
+    let variants = alternates_with_i_or_u(prefix, options.relax_i_j, options.relax_u_v);
+    let mut all_results = Vec::new();
+    let mut results_so_far = 0;
+    for variant in variants {
+        let limit = options.result_limit.saturating_sub(results_so_far);
+        if limit == 0 {
+            break;
+        }
+        let results =
+            completions_for_prefix_base(&variant, completer, limit, &options.display_options)?;
+        results_so_far += results.len();
+        all_results.push(results);
+    }
+    Ok(all_results.into_iter().flatten().collect())
 }
 
 #[cfg(test)]

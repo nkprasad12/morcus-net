@@ -116,8 +116,7 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
     assert_eq!(&args[2], "complete");
     let prefix: &str = &args[3];
 
-    // Note that this is the default, but is set here for illustration on how
-    // to create options.
+    // Set here for illustration on how to create options.
     let options = AutompleterOptions::builder().relax_i_j(true).build();
     let completer = timed!("Created completer", Autocompleter::new(tables, &options)?);
     let completions = timed!("Found completions", completer.completions_for(prefix)?);
