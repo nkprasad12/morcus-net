@@ -111,12 +111,15 @@ macro_rules! timed {
 
 #[cfg(feature = "complete")]
 fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
-    use morceus::completions::Autocompleter;
+    use morceus::completions::{Autocompleter, AutompleterOptions};
 
     assert_eq!(&args[2], "complete");
     let prefix: &str = &args[3];
 
-    let completer = timed!("Created completer", Autocompleter::new(tables)?);
+    // Note that this is the default, but is set here for illustration on how
+    // to create options.
+    let options = AutompleterOptions::builder().relax_i_j(true).build();
+    let completer = timed!("Created completer", Autocompleter::new(tables, &options)?);
     let completions = timed!("Found completions", completer.completions_for(prefix)?);
     print_mem_summary("After finding completions".to_string(), None);
 
