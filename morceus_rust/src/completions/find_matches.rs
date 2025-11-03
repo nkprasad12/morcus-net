@@ -277,7 +277,15 @@ pub(super) fn completions_for_prefix<'a, 'b>(
     completer: &Autocompleter<'a, '_>,
     options: &'b AutompleterOptions,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
-    let variants = alternates_with_i_or_u(prefix, options.relax_i_j, options.relax_u_v);
+    let mut variants = vec![prefix.to_string()];
+    if options.relax_i_j || options.relax_u_v {
+        variants.append(&mut alternates_with_i_or_u(
+            prefix,
+            options.relax_i_j,
+            options.relax_u_v,
+        ));
+    }
+
     let mut all_results = Vec::new();
     let mut results_so_far = 0;
     for variant in variants {
