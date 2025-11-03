@@ -9,7 +9,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 import fs from "fs";
 import path from "path";
 
-interface RawPhiJson {
+export interface RawPhiJson {
   author: string;
   title: string;
   authorCode: string;
@@ -116,7 +116,7 @@ function preprocessPhiText(rawText: RawPhiJson["text"]): [string[], string][] {
   const rows: [string[], string][] = [];
   let hasCarryOver = false;
   for (const [joinedId, rawLines] of groupPhiText(rawText)) {
-    const id = joinedId.split(".");
+    const id = joinedId.length === 0 ? [] : joinedId.split(".");
     const lines: string[] = [];
     let mergeWithLast = false;
     for (const rawLine of rawLines) {
@@ -141,17 +141,21 @@ function preprocessPhiText(rawText: RawPhiJson["text"]): [string[], string][] {
         continue;
       }
       const lastChar = line.charAt(line.length - 1);
-      if ("-‐‑".includes(lastChar)) {
+      const endsWithDash = "-‐‑".includes(lastChar);
+      if (mergeWithLast) {
+        const lastIndex = lines.length - 1;
+        const partToMerge = endsWithDash ? line.slice(0, -1) : line;
+        lines[lastIndex] = lines[lastIndex] + partToMerge;
+        // We may need to continue merging if this line also ends with a dash
+        mergeWithLast = endsWithDash;
+        continue;
+      }
+      if (endsWithDash) {
         mergeWithLast = true;
         lines.push(line.slice(0, -1));
         continue;
       }
-      if (mergeWithLast) {
-        const lastIndex = lines.length - 1;
-        lines[lastIndex] = lines[lastIndex] + line;
-        mergeWithLast = false;
-        continue;
-      }
+
       lines.push(line);
     }
     hasCarryOver = mergeWithLast;
@@ -168,7 +172,7 @@ function convertPhiText(raw: RawPhiJson): ProcessedWork2["rows"] {
   ]);
 }
 
-function convertRawPhi(raw: RawPhiJson): ProcessedWork2 {
+export function convertRawPhi(raw: RawPhiJson): ProcessedWork2 {
   const info = getDocumentInfo(raw);
   const rows = convertPhiText(raw);
   const textParts = ["Book", "Chapter", "Section"];
@@ -192,5 +196,3 @@ export function processPhiJson(): ProcessedWork2[] {
   }
   return results;
 }
-
-processPhiJson();
