@@ -25,6 +25,7 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["Calpurnius Siculus", "Calpurnius"],
   ["Cornelius Nepos", "Nepos"],
   ["Minucius Felix", "Minucius"],
+  ["C. Suetonius Tranquillus", "Suetonius"],
 ]);
 
 function toAuthorCode(author: string): string {

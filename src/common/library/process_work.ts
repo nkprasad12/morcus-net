@@ -937,7 +937,7 @@ export function divideWork(
   return pages;
 }
 
-function buildNavTree(pages: WorkPage[]): NavTreeNode {
+export function buildNavTree(pages: WorkPage[]): NavTreeNode {
   const root: NavTreeNode = { id: [], children: [] };
   for (const { id } of pages) {
     let node = root;

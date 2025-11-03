@@ -55,6 +55,9 @@ git clone https://github.com/nkprasad12/canonical-latinlit
 echo "Downloading the Hypotactic library. This may take some time."
 git clone https://github.com/nkprasad12/hypotactic.git
 
+echo "Downloading the PHI JSON files."
+git clone https://github.com/nkprasad12/phi-public-domain-json.git
+
 echo "Downloading Gaffiot dictionary JS file."
 curl -L https://raw.githubusercontent.com/nkprasad12/gaffiot/refs/heads/main/gaffiot.js -o gaffiot.js
 
@@ -71,6 +74,7 @@ echo "GEORGES_RAW_PATH=$PWD/Georges1910/Georges1910-ger-lat.xml" >> $dot_env
 echo "POZO_RAW_PATH=$PWD/latin-dictionary/LopezPozo1997/diccionario.txt" >> $dot_env
 echo "LIB_XML_ROOT=$PWD/canonical-latinlit" >> $dot_env
 echo "HYPOTACTIC_ROOT=$PWD/hypotactic" >> $dot_env
+echo "PHI_JSON_ROOT=$PWD/phi-public-domain-json" >> $dot_env
 echo "GAFFIOT_RAW_PATH=$PWD/gaffiot.js" >> $dot_env
 
 echo "Processing raw dictionary files, building the client, and starting the server."
