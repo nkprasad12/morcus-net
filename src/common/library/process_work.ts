@@ -8,7 +8,7 @@ import {
 } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
-  EnglishTranslations,
+  FORCE_CTS_WORKS,
   LatinWorks,
 } from "@/common/library/library_constants";
 import type { LibraryPatch } from "@/common/library/library_patches";
@@ -27,35 +27,6 @@ import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
 const IGNORE_SUBTYPES = new Map<string, Set<string>>([
   [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies"])],
-]);
-const FORCE_CTS = new Set([
-  LatinWorks.NEPOS_MILTIADES,
-  LatinWorks.NEPOS_THEMISTOCLES,
-  LatinWorks.NEPOS_ARISTIDES,
-  LatinWorks.NEPOS_PAUSANIAS,
-  LatinWorks.NEPOS_CIMON,
-  LatinWorks.NEPOS_LYSANDER,
-  LatinWorks.NEPOS_ALCIBIADES,
-  LatinWorks.NEPOS_THRASYBULUS,
-  LatinWorks.NEPOS_CONON,
-  LatinWorks.NEPOS_DION,
-  LatinWorks.NEPOS_IPHICRATES,
-  LatinWorks.NEPOS_CABRIAS,
-  LatinWorks.NEPOS_TIMOTHEUS,
-  LatinWorks.NEPOS_DATAMES,
-  LatinWorks.NEPOS_EPAMINONDAS,
-  LatinWorks.NEPOS_PELOPIDAS,
-  LatinWorks.NEPOS_AGESILAUS,
-  LatinWorks.NEPOS_EUMENES,
-  LatinWorks.NEPOS_PHOCION,
-  LatinWorks.NEPOS_TIMOLEON,
-  LatinWorks.NEPOS_DE_REGIBUS,
-  LatinWorks.TIBULLUS_ELEGIAE,
-  LatinWorks.SUPLICIA_CARMINA,
-  LatinWorks.PRUDENTIUS_PERISTEPHANON,
-  LatinWorks.MUNICIUS_OCTAVIUS,
-  EnglishTranslations[LatinWorks.OVID_AMORES],
-  EnglishTranslations[LatinWorks.OVID_EPISTULAE],
 ]);
 const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
 
@@ -879,7 +850,7 @@ export function processWorkBody(
 function getTextparts(root: XmlNode, workId: string) {
   const refsDecls = root.findDescendants("refsDecl");
   const nonCts = refsDecls.filter((node) => node.getAttr("n") !== "CTS");
-  if (FORCE_CTS.has(workId) || nonCts.length === 0) {
+  if (FORCE_CTS_WORKS.has(workId) || nonCts.length === 0) {
     return findCtsEncoding(root)
       .sort((a, b) => a.idSize - b.idSize)
       .map((p) => p.name);

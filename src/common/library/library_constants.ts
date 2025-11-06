@@ -1,6 +1,7 @@
 import { assert } from "@/common/assert";
 
 export const LatinWorks = {
+  APULEIUS_METAMORPHOSES: "phi1212.phi002.perseus-lat1",
   // PLAUTUS_AMPHITRYO: "phi0119.phi001.perseus-lat2",
   CAESAR_DBG: "phi0448.phi001.perseus-lat2",
   CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
@@ -73,6 +74,37 @@ function toPerseusPath(workId: string): string {
   assert(parts.length === 3, () => `Invalid work ID: ${workId}`);
   return `data/${parts[0]}/${parts[1]}/${workId}.xml`;
 }
+
+export const FORCE_CTS_WORKS = new Set([
+  LatinWorks.NEPOS_MILTIADES,
+  LatinWorks.NEPOS_THEMISTOCLES,
+  LatinWorks.NEPOS_ARISTIDES,
+  LatinWorks.NEPOS_PAUSANIAS,
+  LatinWorks.NEPOS_CIMON,
+  LatinWorks.NEPOS_LYSANDER,
+  LatinWorks.NEPOS_ALCIBIADES,
+  LatinWorks.NEPOS_THRASYBULUS,
+  LatinWorks.NEPOS_CONON,
+  LatinWorks.NEPOS_DION,
+  LatinWorks.NEPOS_IPHICRATES,
+  LatinWorks.NEPOS_CABRIAS,
+  LatinWorks.NEPOS_TIMOTHEUS,
+  LatinWorks.NEPOS_DATAMES,
+  LatinWorks.NEPOS_EPAMINONDAS,
+  LatinWorks.NEPOS_PELOPIDAS,
+  LatinWorks.NEPOS_AGESILAUS,
+  LatinWorks.NEPOS_EUMENES,
+  LatinWorks.NEPOS_PHOCION,
+  LatinWorks.NEPOS_TIMOLEON,
+  LatinWorks.NEPOS_DE_REGIBUS,
+  LatinWorks.TIBULLUS_ELEGIAE,
+  LatinWorks.SUPLICIA_CARMINA,
+  LatinWorks.PRUDENTIUS_PERISTEPHANON,
+  LatinWorks.MUNICIUS_OCTAVIUS,
+  LatinWorks.APULEIUS_METAMORPHOSES,
+  EnglishTranslations[LatinWorks.OVID_AMORES],
+  EnglishTranslations[LatinWorks.OVID_EPISTULAE],
+]);
 
 // Two supported works are checked in to the repo itself for the sake of unit testing.
 export const LOCAL_REPO_WORKS = [
