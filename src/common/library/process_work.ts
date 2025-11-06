@@ -115,6 +115,7 @@ const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "uid",
   "parent",
   "n", // This is just ignored, for now.
+  "target",
 ]);
 
 type QuoteOpen = "‘" | "“" | "'" | '"';
@@ -367,6 +368,34 @@ interface PreprocessedTree {
   notes: XmlNode[];
 }
 
+interface DeepcopiedAndExtracted {
+  root: XmlNode;
+  notesWithXmlId: XmlNode[];
+}
+
+// Creates a deep copy of the root, while also extracting out nodes for later assembly.
+function deepcopyAndExtract(root: XmlNode): DeepcopiedAndExtracted {
+  const children: XmlChild[] = [];
+  const notesWithXmlId: XmlNode[] = [];
+  for (const child of root.children) {
+    if (typeof child === "string") {
+      children.push(child);
+      continue;
+    }
+    if (child.name === "note" && child.getAttr("xml:id") !== undefined) {
+      notesWithXmlId.push(child.deepcopy());
+      continue;
+    }
+    const childResult = deepcopyAndExtract(child);
+    children.push(childResult.root);
+    notesWithXmlId.push(...childResult.notesWithXmlId);
+  }
+  return {
+    root: new XmlNode(root.name, [...root.attrs], children),
+    notesWithXmlId,
+  };
+}
+
 function preprocessTree(
   originalRoot: XmlNode,
   textParts: string[],
@@ -374,7 +403,10 @@ function preprocessTree(
 ): PreprocessedTree {
   const textPartsLower = textParts.map((part) => part.toLowerCase());
   const notes: XmlNode[] = [];
-  const root = originalRoot.deepcopy();
+  const { root, notesWithXmlId } = deepcopyAndExtract(originalRoot);
+  const notesWithXmlIdMap = new Map(
+    notesWithXmlId.map((n) => [checkPresent(n.getAttr("xml:id")), n])
+  );
   // Initialize all of the patch data structures before, since we might run into sections
   // in a non-continuous fashion. For example, we could have:
   // <div section="3.6">
@@ -425,12 +457,28 @@ function preprocessTree(
         assert(KNOWN_NOTE_ATTRS.has(attr[0]), attr[0])
       );
       const noteId = notes.length.toString();
-      notes.push(top.deepcopy());
-      top.attrs.push(["noteId", noteId]);
-      // This is a way to remove all children from the node.
-      // `note` is included in the tree to mark the position,
-      // but the actual content is stored separately.
-      top.children.length = 0;
+      const target = top.getAttr("target");
+      if (target === undefined) {
+        // If there's no target, treat it as a regular note. This means we expect that it has
+        // content as its children. In this case, we keep the original node to mark the location,
+        // and store the content separately.
+        notes.push(top.deepcopy());
+        top.attrs.push(["noteId", noteId]);
+        // This is a way to remove all children from the node.
+        // `note` is included in the tree to mark the position,
+        // but the actual content is stored separately.
+        top.children.length = 0;
+      } else {
+        // If there is a target, treat it as the alternate formate for notes where we have:
+        // <note target="someId" /> representing the location of a node, and we have (later)
+        // <note xml:id="someId"> ... </note> representing the content.
+        assertEqual(top.children.length, 0);
+        const content = checkPresent(notesWithXmlIdMap.get(target), target);
+        // Note: we explicitly do not delete the note from the map because sometimes the
+        // same content is referenced multiple times.
+        notes.push(content.deepcopy());
+        top.attrs.push(["noteId", noteId]);
+      }
       continue;
     }
 

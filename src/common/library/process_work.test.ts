@@ -105,6 +105,7 @@ const BODY_WITH_BOOK_ONLY = `<div n="1" type="textpart" subtype="book">Gallia es
 const BODY_WITH_CHOICE = `<div n="1" type="textpart" subtype="book"><choice><reg>FooBar</reg><orig>BazBap</orig></choice></div>`;
 const BODY_WITH_CHOICE_AND_CORR = `<div n="1" type="textpart" subtype="book"><choice><corr>FooBar</corr><orig>BazBap</orig></choice></div>`;
 const BODY_WITH_NOTES = `<div n="1" type="textpart" subtype="book">Gallia <note>Gaul</note> est<note>is</note></div>`;
+const BODY_WITH_TARGET_NOTES = `<div n="1" type="textpart" subtype="book">Gallia <note target="n1"/> est<note target="n2"/><note xml:id="n1">Gaul</note><note xml:id="n2">is</note></div>`;
 const WORK_ID = "workId";
 
 describe("processTei2", () => {
@@ -255,6 +256,26 @@ describe("processTei2", () => {
     const work = processTei2(testRoot(BODY_WITH_NOTES), {
       workId: WORK_ID,
     });
+    const root = work.rows[0][1];
+    expect(root.children[0]).toBe("Gallia ");
+    expect(root.children[2]).toBe(" est");
+    const note1 = XmlNode.assertIsNode(root.children[1]);
+    expect(note1.getAttr("noteId")).toBe("0");
+    expect(note1.children).toHaveLength(0);
+    const note2 = XmlNode.assertIsNode(root.children[3]);
+    expect(note2.getAttr("noteId")).toBe("1");
+    expect(note2.children).toHaveLength(0);
+
+    expect(work.notes).toHaveLength(2);
+    expect(work.notes?.[0].toString()).toContain("Gaul");
+    expect(work.notes?.[1].toString()).toContain("is");
+  });
+
+  it("handles elements with target-type notes", () => {
+    const work = processTei2(testRoot(BODY_WITH_TARGET_NOTES), {
+      workId: WORK_ID,
+    });
+
     const root = work.rows[0][1];
     expect(root.children[0]).toBe("Gallia ");
     expect(root.children[2]).toBe(" est");
