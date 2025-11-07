@@ -765,6 +765,8 @@ function transformContentNode(
     case "div":
     case "div2":
     case "div1":
+    case "ab":
+    case "lg":
     case "body":
     case "p":
     // TODO: Eventually we should probably link with these, but for now

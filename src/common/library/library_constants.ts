@@ -2,6 +2,7 @@ import { assert } from "@/common/assert";
 
 export const LatinWorks = {
   APULEIUS_METAMORPHOSES: "phi1212.phi002.perseus-lat1",
+  PETRONIUS_SATYRICON: "phi0972.phi001.perseus-lat2",
   // PLAUTUS_AMPHITRYO: "phi0119.phi001.perseus-lat2",
   CAESAR_DBG: "phi0448.phi001.perseus-lat2",
   CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
