@@ -103,14 +103,21 @@ impl CorpusQueryEngine {
             .map(|term| self.convert_query_term(term))
             .collect::<Result<Vec<_>, _>>()?;
         let query_spans = corpus_index_calculation::split_into_spans(&terms)?;
+        if query_spans.len() > 20 {
+            return Err(QueryExecError::new(
+                "Queries with more than 20 term groups are not supported",
+            ));
+        }
         profiler.phase("Parse query");
 
         // Find the possible matches, then filter them
         let range = self.compute_range(&query)?;
-        let candidates = match self.compute_query_candidates(&query_spans, &range, &mut profiler)? {
-            Some(res) => res,
-            None => return Ok(empty_result()),
-        };
+        let span_candidates =
+            match self.candidates_for_spans(&query_spans, &range, &mut profiler)? {
+                Some(res) => res,
+                None => return Ok(empty_result()),
+            };
+        let candidates = self.compute_query_candidates(&span_candidates)?;
         // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
         // technically giving matching within N tokens but they're not distinct terms. For now,
         // just include these misleading results.

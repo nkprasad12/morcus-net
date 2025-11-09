@@ -23,7 +23,15 @@ pub struct IndexSlice<'a> {
     pub position: u32,
 }
 
-impl IndexSlice<'_> {
+impl<'s> IndexSlice<'s> {
+    pub fn to_ref(&'s self) -> IndexSlice<'s> {
+        IndexSlice {
+            data: IndexDataRoO::Ref(self.data.to_ref()),
+            range: self.range,
+            position: self.position,
+        }
+    }
+
     pub fn from<'a>(
         index: &IndexData<'a>,
         range: &'a IndexRange,

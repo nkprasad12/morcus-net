@@ -14,7 +14,7 @@ use crate::{
     },
 };
 
-struct SpanResult<'a> {
+pub(super) struct SpanResult<'a> {
     candidates: IndexSlice<'a>,
     length: usize,
     relation: QueryRelation,
@@ -40,6 +40,43 @@ pub(super) fn split_into_spans<'a>(
         spans.push(span);
     }
     Ok(spans)
+}
+
+fn combine_span_candidates<'a>(
+    previous: &'a SpanResult<'a>,
+    current: &SpanResult<'a>,
+) -> Result<SpanResult<'a>, QueryExecError> {
+    let (distance, is_directed) = match previous.relation {
+        QueryRelation::Proximity {
+            distance,
+            is_directed,
+        } => (distance, is_directed),
+        _ => {
+            return Err(QueryExecError::new(
+                "Only proximity relations are supported between spans",
+            ));
+        }
+    };
+    if distance == 0 || distance >= 16 {
+        return Err(QueryExecError::new(
+            "Proximity distance must be between 1 and 15",
+        ));
+    }
+    let dir = if is_directed {
+        Direction::Left
+    } else {
+        Direction::Both
+    };
+    let second = IndexSlice {
+        position: previous.candidates.position - previous.length as u32,
+        ..previous.candidates.to_ref()
+    };
+    let combined = find_fuzzy_matches(&current.candidates, &second, distance as usize, dir)?;
+    Ok(SpanResult {
+        candidates: combined,
+        length: previous.length + current.length,
+        relation: current.relation.clone(),
+    })
 }
 
 // Basic methods for calculating indices corresponding to query terms.
@@ -103,57 +140,24 @@ impl CorpusQueryEngine {
 
     pub(super) fn compute_query_candidates<'a>(
         &'a self,
-        query_spans: &'a [&[InternalQueryTerm]],
-        range: &'a IndexRange,
-        profiler: &mut TimeProfiler,
-    ) -> Result<Option<IndexSlice<'a>>, QueryExecError> {
-        let mut spans = match self.candidates_for_spans(query_spans, range, profiler)? {
-            Some(res) => res,
-            None => return Ok(None),
-        };
+        spans: &'a [SpanResult<'a>],
+    ) -> Result<IndexSlice<'a>, QueryExecError> {
         if spans.is_empty() {
             return Err(QueryExecError::new("No spans found in query"));
         }
-        let mut previous = spans.remove(spans.len() - 1);
-        while !spans.is_empty() {
-            let current = spans.remove(spans.len() - 1);
-            let (distance, is_directed) = match previous.relation {
-                QueryRelation::Proximity {
-                    distance,
-                    is_directed,
-                } => (distance, is_directed),
-                _ => {
-                    return Err(QueryExecError::new(
-                        "Only proximity relations are supported between spans",
-                    ));
-                }
-            };
-            if distance == 0 || distance >= 16 {
-                return Err(QueryExecError::new(
-                    "Proximity distance must be between 1 and 15",
-                ));
-            }
-            let dir = if is_directed {
-                Direction::Left
-            } else {
-                Direction::Both
-            };
-            let second = IndexSlice {
-                position: previous.candidates.position - previous.length as u32,
-                ..previous.candidates
-            };
-            let combined =
-                find_fuzzy_matches(&current.candidates, &second, distance as usize, dir)?;
-            previous = SpanResult {
-                candidates: combined,
-                ..current
-            }
+        let n = spans.len();
+        if n == 1 {
+            return Ok(spans[0].candidates.to_ref());
         }
-        Ok(Some(previous.candidates))
+        let mut previous = combine_span_candidates(&spans[n - 1], &spans[n - 2])?;
+        for current in spans.iter().rev().skip(2) {
+            previous = combine_span_candidates(current, &previous)?;
+        }
+        Ok(previous.candidates)
     }
 
     /// Computes candidates for each span.
-    fn candidates_for_spans<'a>(
+    pub(super) fn candidates_for_spans<'a>(
         &'a self,
         spans: &'a [&[InternalQueryTerm]],
         range: &'a IndexRange,

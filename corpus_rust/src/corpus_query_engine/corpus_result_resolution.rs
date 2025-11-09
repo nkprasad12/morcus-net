@@ -28,9 +28,7 @@ fn find_span_leaders(
         let proximity_len = match span[0].relation {
             QueryRelation::Proximity { distance, .. } => *distance as u32,
             _ => {
-                return Err(QueryExecError::new(
-                    "First relation found in non-initial span",
-                ));
+                return Err(QueryExecError::new("`First` found for non-initial span"));
             }
         };
         leaders.push((last.0 + last.1 + proximity_len - 1, span.len() as u32));
