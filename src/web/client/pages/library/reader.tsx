@@ -1163,6 +1163,9 @@ function displayForLibraryChunk(
   if (root.getAttr("l") !== undefined) {
     className = "l";
   }
+  if (root.getAttr("block") !== undefined) {
+    className = "block";
+  }
   if (["b", "ul", "li"].includes(root.name)) {
     return React.createElement(root.name, { key, style }, children);
   }

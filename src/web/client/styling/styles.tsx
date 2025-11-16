@@ -798,6 +798,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".readerMain .blockquote .l": {
       display: "block",
     },
+    ".readerMain .block .l": {
+      display: "block",
+    },
     ".customSearchPopup": {
       color: theme.searchPopupText,
       backgroundColor: theme.searchPopupBg,

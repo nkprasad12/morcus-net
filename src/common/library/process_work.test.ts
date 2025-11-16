@@ -17,21 +17,51 @@ import { instanceOf } from "@/web/utils/rpc/parsing";
 
 console.debug = jest.fn();
 
-const TEI_HEADER = `
-<teiHeader xml:lang="eng">
+const ENCODING_DESC = `
+  <encodingDesc>
+    <refsDecl n="CTS">
+      <cRefPattern n="Chapter"
+        matchPattern="(\\w+).(\\w+)"
+        replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2'])">
+        <p>This pointer pattern extracts Book and Chapter</p>
+      </cRefPattern>
+      <cRefPattern n="Book"
+        matchPattern="(\\w+)"
+        replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])">
+        <p>This pointer pattern extracts Book</p>
+      </cRefPattern>
+    </refsDecl>
+    <refsDecl>
+      <refState unit="book" delim="."/>
+      <refState unit="chapter" delim="."/>
+      <refState unit="section"/>
+    </refsDecl>
+  </encodingDesc>
+`;
+
+const SECTION_ONLY_ENCODING_DESC = `
+  <encodingDesc>
+      <refsDecl n="CTS">
+        <cRefPattern n="section" matchPattern="(\\w+)" replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])"><p>This pointer pattern extracts section</p></cRefPattern>
+      </refsDecl>
+  </encodingDesc>
+`;
+
+function getTeiHeader(encodingDesc: string = ENCODING_DESC) {
+  return `<teiHeader xml:lang="eng">
 <fileDesc>
 <titleStmt>
 <title xml:lang="lat">De bello Gallico</title>
 <author>Julius Caesar</author>
-	<editor>T. Rice Holmes</editor>
+<editor>T. Rice Holmes</editor>
 <sponsor>Perseus Project, Tufts University</sponsor>
-		<principal>Gregory Crane</principal>
-		<respStmt>
-		<resp>Prepared under the supervision of</resp>
-		<name>Lisa Cerrato</name>
-		<name>William Merrill</name>
-		<name>David Smith</name>
-		</respStmt>
+<principal>Gregory Crane</principal>
+  <respStmt>
+  <resp>Prepared under the supervision of</resp>
+  <name>Lisa Cerrato</name>
+  <name>William Merrill</name>
+  <name>David Smith</name>
+  </respStmt>
 <funder n="org:NEH">The National Endowment for the Humanities</funder>
 </titleStmt>
 <sourceDesc>
@@ -49,36 +79,19 @@ const TEI_HEADER = `
 <series>
 <title>Scriptorum Classicorum Bibliotheca Oxoniensis</title>
 </series>
-	<ref target="https://archive.org/details/ciulicaesarisco00caesgoog">Internet Archive</ref>
+<ref target="https://archive.org/details/ciulicaesarisco00caesgoog">Internet Archive</ref>
 </biblStruct>
 </sourceDesc>
 </fileDesc>
 
-	<encodingDesc>
-		<refsDecl n="CTS">
-			<cRefPattern n="Chapter"
-				matchPattern="(\\w+).(\\w+)"
-				replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1']/tei:div[@n='$2'])">
-				<p>This pointer pattern extracts Book and Chapter</p>
-			</cRefPattern>
-			<cRefPattern n="Book"
-				matchPattern="(\\w+)"
-				replacementPattern="#xpath(/tei:TEI/tei:text/tei:body/tei:div/tei:div[@n='$1'])">
-				<p>This pointer pattern extracts Book</p>
-			</cRefPattern>
-		</refsDecl>
-		<refsDecl>
-			<refState unit="book" delim="."/>
-			<refState unit="chapter" delim="."/>
-			<refState unit="section"/>
-		</refsDecl>
-	</encodingDesc>
+${encodingDesc}
 </teiHeader>`;
+}
 
-function testRoot(body: string): XmlNode {
+function testRoot(body: string, encodingDesc: string = ENCODING_DESC): XmlNode {
   return parseRawXml(
     `<TEI xmlns="http://www.tei-c.org/ns/1.0">
-      ${TEI_HEADER}
+      ${getTeiHeader(encodingDesc)}
       <text>
         <body>${body}</body>
       </text>
@@ -227,6 +240,29 @@ describe("processTei2", () => {
 
     expect(work.rows[3][0]).toEqual(["1", "3"]);
     expect(work.rows[3][1].toString()).toContain("Third chapter text");
+  });
+
+  it("processes inner lines correctly", () => {
+    const body = `<div type="textpart" n="5" subtype="section"><ab><lg>
+                    <l>cliensve cenas impotentium captet,</l>
+                    <l>nec perditis addictus obruat vino</l>
+                  </lg></ab></div>`;
+
+    const work = processTei2(testRoot(body, SECTION_ONLY_ENCODING_DESC), {
+      workId: WORK_ID,
+    });
+
+    expect(work.rows).toHaveLength(1);
+    const section = work.rows[0][1];
+    const block = XmlNode.assertIsNode(section.children[0]);
+    expect(block.getAttr("block")).toBe("1");
+    const lineHolder = XmlNode.assertIsNode(block.children[0]);
+    const lines = lineHolder.findChildren("span");
+    expect(lines).toHaveLength(2);
+    expect(lines[0].getAttr("l")).toBe("1");
+    expect(lines[0].toString()).toContain("cliensve cenas impotentium captet,");
+    expect(lines[1].getAttr("l")).toBe("1");
+    expect(lines[1].toString()).toContain("nec perditis addictus obruat vino");
   });
 
   it("parses expected text parts", () => {

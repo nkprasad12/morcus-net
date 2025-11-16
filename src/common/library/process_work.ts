@@ -327,7 +327,7 @@ export function getSectionId(
       }
     }
     // `l` is sometimes used even if the CTS says `line`, and it is often not marked.
-    // However, it is also sometimes used to show poetry in prose when it's not a CTS
+    // It is also sometimes used to show poetry in prose when it's not a CTS
     // section.
     if (
       !noSubtypes &&
@@ -669,6 +669,9 @@ function transformContentNode(
     const finalRend = rend === "ital" || rend === "italics" ? "italic" : rend;
     attrs.push(["rend", finalRend], ["rendParent", node.name]);
   }
+  if (node.name === "ab") {
+    attrs.push(["block", "1"]);
+  }
   if (node.name === "l") {
     attrs.push(["l", "1"]);
   }
@@ -765,6 +768,8 @@ function transformContentNode(
     case "div":
     case "div2":
     case "div1":
+    case "ab":
+    case "lg":
     case "body":
     case "p":
     // TODO: Eventually we should probably link with these, but for now

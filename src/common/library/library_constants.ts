@@ -55,6 +55,7 @@ export const LatinWorks = {
   // Nepos after this has some new tags:
   // <abbr ><expan><ex>Gaio</ex></expan>C.</abbr>
   // that we don't handle yet. But it doesn't look too hard.
+  PETRONIUS_SATYRICON: "phi0972.phi001.perseus-lat2",
   AMMIANUS_MARCELLINUS: "stoa0023.stoa001.perseus-lat2",
   TIBULLUS_ELEGIAE: "phi0660.phi001.perseus-lat2",
   SUPLICIA_CARMINA: "phi0660.phi003.perseus-lat2",
