@@ -125,7 +125,12 @@ impl CorpusQueryEngine {
             self.compute_page_result(&candidates, page_start, page_size, &mut profiler)?;
 
         // Turn the match IDs into actual matches (with the text and locations).
-        let matches = self.resolve_match_tokens(&match_ids, &query_spans, context_len as u32)?;
+        let matches = self.resolve_match_tokens(
+            &match_ids,
+            &span_candidates,
+            &query_spans,
+            context_len as u32,
+        )?;
         profiler.phase("Build Matches");
 
         Ok(CorpusQueryResult {

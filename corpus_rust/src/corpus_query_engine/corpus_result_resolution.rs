@@ -3,35 +3,92 @@ use std::cmp::{max, min};
 use crate::{
     api::{CorpusQueryMatch, CorpusQueryMatchMetadata},
     corpus_query_engine::{
-        CorpusQueryEngine, QueryExecError, corpus_query_conversion::InternalQueryTerm,
+        CorpusQueryEngine, QueryExecError, corpus_index_calculation::SpanResult,
+        corpus_query_conversion::InternalQueryTerm,
     },
     query_parsing_v2::QueryRelation,
 };
 
+/// Finds the leader of the span with the given anchor ID.
+///
+/// # Arguments
+/// * `anchor_id` - The token ID of the anchor. This is position-normalized (i.e., has a position of 0).
+/// * `span` - The span to find the leader for.
+///
+/// Returns the token ID of the span leader, position-normalized.
+fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<u32, QueryExecError> {
+    if span.length == 0 {
+        return Err(QueryExecError::new("Empty query span found"));
+    }
+    let (proximity_len, is_directed) = match span.relation {
+        QueryRelation::Proximity {
+            distance,
+            is_directed,
+        } => (distance as u32, is_directed),
+        _ => {
+            return Err(QueryExecError::new("`First` found for non-initial span"));
+        }
+    };
+    if is_directed {
+        return Err(QueryExecError::new("Directed proximity not yet supported"));
+    }
+
+    let anchor_start = anchor_id.saturating_sub(proximity_len);
+    // +1 because the end is exclusive.
+    let anchor_end = anchor_id + proximity_len + 1;
+    let (span_start, span_end) = span.candidates.normalized_range();
+    if anchor_end <= span_start || span_end <= anchor_start {
+        // There's no overlap in the ranges.
+        return Err(QueryExecError::new("No span leader found within proximity"));
+    }
+    let start = max(anchor_start, span_start) + span.candidates.position;
+    let end = min(anchor_end, span_end) + span.candidates.position;
+
+    match span.candidates.data.to_ref() {
+        super::IndexData::BitMask(mask) => {
+            let start_bit = start - span.candidates.range.start;
+            let end_bit = end - span.candidates.range.start;
+            for bit in start_bit..end_bit {
+                if (mask[(bit / 64) as usize] & (1u64 << (bit % 64))) != 0 {
+                    return Ok(span.candidates.range.start + bit - span.candidates.position);
+                }
+            }
+
+            Err(QueryExecError::new(
+                "No span leader found within proximity [for bitmask].",
+            ))
+        }
+        super::IndexData::List(list) => {
+            let i = list.partition_point(|x| *x < start);
+            let j = list.partition_point(|x| *x < end);
+            if i >= j {
+                return Err(QueryExecError::new(
+                    "No span leader found within proximity [for list].",
+                ));
+            }
+            Ok(list[i].saturating_sub(span.candidates.position))
+        }
+    }
+}
+
 fn find_span_leaders(
     token_id: u32,
     query_spans: &[&[InternalQueryTerm]],
+    all_span_candidates: &[SpanResult],
 ) -> Result<Vec<(u32, u32)>, QueryExecError> {
     if query_spans.is_empty() {
         return Err(QueryExecError::new("No query spans provided"));
     }
-    let mut leaders = Vec::with_capacity(query_spans.len());
-    // If you change this code so that it doesn't always add a leader for the first span,
-    // make sure to update the unwrap below.
-    leaders.push((token_id, query_spans[0].len() as u32));
-    for span in query_spans.iter().skip(1) {
-        if span.is_empty() {
+    if all_span_candidates.len() > 2 {
+        return Err(QueryExecError::new("Only two spans supported currently"));
+    }
+    let mut leaders = Vec::with_capacity(all_span_candidates.len());
+    leaders.push((token_id, all_span_candidates[0].length as u32));
+    for span in all_span_candidates.iter().skip(1) {
+        if span.length == 0 {
             return Err(QueryExecError::new("Empty query span found"));
         }
-        // This is safe since we always add a leader for the first span.
-        let last = leaders[leaders.len() - 1];
-        let proximity_len = match span[0].relation {
-            QueryRelation::Proximity { distance, .. } => *distance as u32,
-            _ => {
-                return Err(QueryExecError::new("`First` found for non-initial span"));
-            }
-        };
-        leaders.push((last.0 + last.1 + proximity_len - 1, span.len() as u32));
+        leaders.push((find_span_leader(token_id, span)?, span.length as u32));
     }
     leaders.sort_by_key(|(start, _)| *start);
     Ok(leaders)
@@ -80,6 +137,7 @@ impl CorpusQueryEngine {
     pub(super) fn resolve_match_tokens(
         &self,
         token_ids: &[u32],
+        all_span_candidates: &[SpanResult],
         query_spans: &[&[InternalQueryTerm]],
         context_len: u32,
     ) -> Result<Vec<CorpusQueryMatch<'_>>, QueryExecError> {
@@ -90,7 +148,7 @@ impl CorpusQueryEngine {
         // Left start byte, Text start byte, Right start byte, Right end byte
         let mut starts: Vec<(Vec<usize>, Vec<bool>)> = Vec::with_capacity(token_ids.len());
         for &token_id in token_ids {
-            let leaders = find_span_leaders(token_id, query_spans)?;
+            let leaders = find_span_leaders(token_id, query_spans, all_span_candidates)?;
             let span_ranges = compute_offsets(&leaders, context_len, self.corpus.num_tokens)?;
             let mut offsets: Vec<usize> = Vec::with_capacity(span_ranges.len());
             let mut is_core_match: Vec<bool> = Vec::with_capacity(span_ranges.len());
@@ -140,5 +198,93 @@ impl CorpusQueryEngine {
             .collect();
 
         Ok(matches)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        bitmask_utils::to_bitmask,
+        corpus_query_engine::{
+            IndexDataRoO,
+            corpus_index_calculation::SpanResult,
+            corpus_result_resolution::find_span_leader,
+            index_data::{IndexDataOwned, IndexRange, IndexSlice},
+        },
+        query_parsing_v2::QueryRelation,
+    };
+
+    #[test]
+    fn test_find_span_leader_list_no_position_offset() {
+        let range = &IndexRange { start: 0, end: 63 };
+        let data = IndexDataRoO::Owned(IndexDataOwned::List(vec![4, 15, 21, 23]));
+        let position = 0;
+        let candidates = IndexSlice {
+            data,
+            range,
+            position,
+        };
+        let span_result = SpanResult {
+            candidates,
+            length: 3,
+            relation: QueryRelation::Proximity {
+                distance: 5,
+                is_directed: false,
+            },
+        };
+
+        let leader = find_span_leader(27, &span_result);
+
+        assert_eq!(leader.unwrap(), 23);
+    }
+
+    #[test]
+    fn test_find_span_leader_bitmask_no_position_offset() {
+        let range = &IndexRange { start: 0, end: 63 };
+        let list = vec![4, 15, 21, 23];
+        let bitmask = to_bitmask(&list, 64);
+        let data = IndexDataRoO::Owned(IndexDataOwned::BitMask(bitmask));
+        let position = 0;
+        let candidates = IndexSlice {
+            data,
+            range,
+            position,
+        };
+        let span_result = SpanResult {
+            candidates,
+            length: 3,
+            relation: QueryRelation::Proximity {
+                distance: 5,
+                is_directed: false,
+            },
+        };
+
+        let leader = find_span_leader(27, &span_result);
+
+        assert_eq!(leader.unwrap(), 23);
+    }
+
+    #[test]
+    fn test_find_span_leader_list_with_position_offset() {
+        let range = &IndexRange { start: 0, end: 63 };
+        let data = IndexDataRoO::Owned(IndexDataOwned::List(vec![4, 15, 20, 23]));
+        let position = 2;
+        let candidates = IndexSlice {
+            data,
+            range,
+            position,
+        };
+        let span_result = SpanResult {
+            candidates,
+            length: 3,
+            relation: QueryRelation::Proximity {
+                distance: 5,
+                is_directed: false,
+            },
+        };
+
+        let leader = find_span_leader(25, &span_result);
+
+        assert_eq!(leader.unwrap(), 21);
     }
 }

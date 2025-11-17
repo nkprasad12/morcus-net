@@ -18,8 +18,12 @@ impl IndexRange {
 
 #[derive(Debug, PartialEq)]
 pub struct IndexSlice<'a> {
+    // Underlying data representing the matches for a particular index.
     pub data: IndexDataRoO<'a>,
+    // The range of token IDs covered by this index. For bitmask indices, the
+    // start of the first word is token ID `range.start`.
     pub range: &'a IndexRange,
+    // The position of the index relative to
     pub position: u32,
 }
 
@@ -30,6 +34,13 @@ impl<'s> IndexSlice<'s> {
             range: self.range,
             position: self.position,
         }
+    }
+
+    pub fn normalized_range(&self) -> (u32, u32) {
+        (
+            self.range.start.saturating_sub(self.position),
+            self.range.end.saturating_sub(self.position),
+        )
     }
 
     pub fn from<'a>(

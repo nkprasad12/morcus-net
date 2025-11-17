@@ -15,9 +15,9 @@ use crate::{
 };
 
 pub(super) struct SpanResult<'a> {
-    candidates: IndexSlice<'a>,
-    length: usize,
-    relation: QueryRelation,
+    pub(super) candidates: IndexSlice<'a>,
+    pub(super) length: usize,
+    pub(super) relation: QueryRelation,
 }
 
 /// Splits a query into spans of contiguous terms. A span is a sequence of terms
@@ -67,11 +67,8 @@ fn combine_span_candidates<'a>(
     } else {
         Direction::Both
     };
-    let second = IndexSlice {
-        position: previous.candidates.position - previous.length as u32,
-        ..previous.candidates.to_ref()
-    };
-    let combined = find_fuzzy_matches(&current.candidates, &second, distance as usize, dir)?;
+    let second = &previous.candidates;
+    let combined = find_fuzzy_matches(&current.candidates, second, distance as usize, dir)?;
     Ok(SpanResult {
         candidates: combined,
         length: previous.length + current.length,

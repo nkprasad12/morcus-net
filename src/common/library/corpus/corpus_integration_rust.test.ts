@@ -313,4 +313,22 @@ describe("Corpus Integration Test", () => {
     expect(resultParts[2][1]).toBe(false);
     expect(resultParts[2][0]).toMatch(/^,\n"accipe/);
   });
+
+  it("should handle low frequency proximity searches", () => {
+    const query = "marmore ~ marmoris";
+
+    const results = queryCorpus(query);
+
+    expect(results.totalResults).toBe(1);
+    expect(getMatchText(results.matches[0])).toEqual(["marmoris", "marmore"]);
+  });
+
+  it("should handle bitmask proximity searches", () => {
+    const query = "@lemma:marmor ~ et";
+
+    const results = queryCorpus(query);
+
+    // Marmorem is not valid because marmor is neuter.
+    expect(results.totalResults).toBe(5);
+  });
 });
