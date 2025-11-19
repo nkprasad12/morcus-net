@@ -14,13 +14,13 @@ use crate::{
 };
 
 /// The main entry point for completions.
-pub struct Autocompleter<'o> {
+pub struct Autocompleter {
     tables: CruncherTables,
     addenda: Addenda,
-    options: &'o AutompleterOptions,
+    default_options: AutompleterOptions,
 }
 
-impl<'o> Autocompleter<'o> {
+impl Autocompleter {
     /// Creates an autocompleter with the given options.
     ///
     /// # Arguments
@@ -28,15 +28,15 @@ impl<'o> Autocompleter<'o> {
     ///   Instead, they are generated in the Javascript code using Node.js (or Bun).
     ///   To create tables, from the `morcus-net` repo root, run:
     ///   `./morcus.sh build --morceus_tables`
-    /// * `options` - Options for the autocompleter.
+    /// * `default_options` - Default options for the autocompleter.
     pub fn new(
         tables: CruncherTables,
-        options: &'o AutompleterOptions,
-    ) -> Result<Autocompleter<'o>, AutocompleteError> {
+        default_options: AutompleterOptions,
+    ) -> Result<Autocompleter, AutocompleteError> {
         Ok(Autocompleter {
             addenda: Autocompleter::make_addenda(&tables)?,
             tables,
-            options,
+            default_options,
         })
     }
 
@@ -44,8 +44,8 @@ impl<'o> Autocompleter<'o> {
     pub fn completions_for<'t>(
         &'t self,
         prefix: &str,
-    ) -> Result<Vec<AutocompleteResult<'t, 'o>>, AutocompleteError> {
-        self.completions_with_options(prefix, self.options)
+    ) -> Result<Vec<AutocompleteResult<'t, 't>>, AutocompleteError> {
+        self.completions_with_options(prefix, &self.default_options)
     }
 
     /// The main API for fetching completions.

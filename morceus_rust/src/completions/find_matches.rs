@@ -119,7 +119,7 @@ fn filter_lemma_stems<'a>(lemma: &Lemma, ranges: &'a PrefixRanges) -> Vec<(usize
 
 /// Finds the start and end indices of ends for the given stem that start with the given end prefix.
 fn find_ends_for<'a>(
-    completer: &'a Autocompleter<'_>,
+    completer: &'a Autocompleter,
     end_prefix: &str,
     stem: &'a Stem,
 ) -> Result<Option<Vec<&'a InflectionEnding>>, AutocompleteError> {
@@ -164,7 +164,7 @@ fn find_ends_for<'a>(
 fn stem_id_to_result<'a>(
     stem_id: usize,
     unmatched: &str,
-    completer: &'a Autocompleter<'_>,
+    completer: &'a Autocompleter,
 ) -> Result<Option<StemResult<'a>>, AutocompleteError> {
     let stem = &completer.tables.all_stems[stem_id];
     let ends = match find_ends_for(completer, unmatched, stem)? {
@@ -182,7 +182,7 @@ fn stem_id_to_result<'a>(
 fn lemma_id_to_result<'a, 'b>(
     lemma_id: LemmaId,
     ranges: &PrefixRanges,
-    completer: &'a Autocompleter<'_>,
+    completer: &'a Autocompleter,
     display_options: &'b DisplayOptions,
 ) -> Result<AutocompleteResult<'a, 'b>, AutocompleteError> {
     let lemma = completer.lemma_from_id(lemma_id)?;
@@ -244,7 +244,7 @@ fn validated_lemma_result<'a, 'b>(
 
 fn completions_for_prefix_base<'a, 'b>(
     prefix: &str,
-    completer: &'a Autocompleter<'_>,
+    completer: &'a Autocompleter,
     limit: usize,
     options: &'b DisplayOptions,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
@@ -274,7 +274,7 @@ fn completions_for_prefix_base<'a, 'b>(
 
 pub(super) fn completions_for_prefix<'a, 'b>(
     prefix: &str,
-    completer: &'a Autocompleter<'_>,
+    completer: &'a Autocompleter,
     options: &'b AutompleterOptions,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
     let mut variants = vec![prefix.to_string()];

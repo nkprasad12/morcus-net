@@ -118,7 +118,7 @@ fn handle_complete(args: &[String], tables: CruncherTables) -> Result<(), String
 
     // Set here for illustration on how to create options.
     let options = AutompleterOptions::builder().relax_i_j(true).build();
-    let completer = timed!("Created completer", Autocompleter::new(tables, &options)?);
+    let completer = timed!("Created completer", Autocompleter::new(tables, options)?);
     let completions = timed!("Found completions", completer.completions_for(prefix)?);
     print_mem_summary("After finding completions".to_string(), None);
 
