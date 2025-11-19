@@ -5,7 +5,7 @@ use crate::{
     completions::{
         AutocompleteError, AutocompleteResult, Autocompleter, AutompleterOptions, DisplayOptions,
         StemResult,
-        stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for},
+        stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for, find_ranges_of},
     },
     indices::{InflectionEnding, Lemma, Stem},
     stem_merging::merge_stem_and_ending,
@@ -29,11 +29,11 @@ fn lemma_ids_for_ranges<'a>(
 ) -> Result<impl Iterator<Item = &'a LemmaId>, AutocompleteError> {
     let mut range_pairs = vec![];
 
-    // Matches where the stem fully contains the prefix.
     if let Some((start, end)) = ranges.irregs_range {
         let range_pair = (start, end, completer.addenda.irreg_to_lemma.as_slice());
         range_pairs.push(range_pair);
     }
+    // Matches where the stem fully contains the prefix.
     if let Some((start, end)) = ranges.stem_range {
         let range_pair = (start, end, completer.addenda.stem_to_lemma.as_slice());
         range_pairs.push(range_pair);
@@ -117,6 +117,13 @@ fn filter_lemma_stems<'a>(lemma: &Lemma, ranges: &'a PrefixRanges) -> Vec<(usize
     matched_stems
 }
 
+#[inline]
+fn key_for_end_entry(entry: &(String, InflectionEnding)) -> String {
+    // TODO: It's unfortunate that we need to clone here, but the range finding
+    // function requires owned strings. We can probably optimize this later.
+    entry.0.to_string()
+}
+
 /// Finds the start and end indices of ends for the given stem that match with the given end prefix.
 ///
 /// Arguments:
@@ -143,44 +150,18 @@ fn find_ends_for<'a>(
         return Ok(Some(ends.iter().map(|e| &e.1).collect()));
     }
 
-    let end_prefix_str = if end_prefix.is_empty() {
+    let end_target = if end_prefix.is_empty() {
         "*".to_string()
     } else {
         end_prefix.to_string()
     };
 
-    // Binary search for the first end form that starts with or comes after the prefix
-    let start = ends.partition_point(|end| end.0 < end_prefix_str);
-    if start >= ends.len() {
-        return Ok(None);
-    }
-
-    let first_ending = &ends[start].0;
-    if (exact_only && (first_ending != &end_prefix_str))
-        || (!exact_only && !first_ending.starts_with(end_prefix))
-    {
-        // The partition point will tell us either where the range of interest actually starts,
-        // or where the point would be if there was an exact match.
-        // In this case, either we:
-        // - Are seeking exact matches only, and there is no exact match.
-        // - Are seeking prefix matches, and there is no prefix match.
-        // so we can return None.
-        return Ok(None);
-    }
-
-    let range_end = match exact_only {
-        // If we only care about exact matches, find the partition point where the exact matches end.
-        true => ends[start..].partition_point(|end| end.0 == end_prefix_str),
-        // If we want any prefix match, find the partition point where the prefix matches end.
-        false => ends[start..].partition_point(|end| end.0.starts_with(&end_prefix_str)),
+    let (start, end) = match find_ranges_of(&end_target, exact_only, ends, key_for_end_entry) {
+        None => return Ok(None),
+        Some(r) => r,
     };
 
-    Ok(Some(
-        ends[start..start + range_end]
-            .iter()
-            .map(|e| &e.1)
-            .collect(),
-    ))
+    Ok(Some(ends[start..end].iter().map(|e| &e.1).collect()))
 }
 
 /// Converts a candidate stem ID into a result, if it is valid.
@@ -280,7 +261,7 @@ fn completions_for_prefix_base<'a, 'b>(
     options: &'b DisplayOptions,
     exact_only: bool,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
-    let ranges = compute_ranges_for(prefix, &completer.tables)?;
+    let ranges = compute_ranges_for(prefix, &completer.tables, exact_only)?;
     let mut seen_ids = HashSet::new();
     let mut results = Vec::new();
 

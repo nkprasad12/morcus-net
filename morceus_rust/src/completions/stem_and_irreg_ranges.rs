@@ -33,102 +33,84 @@ pub(super) struct PrefixRanges {
     pub(super) partial_stem_ranges: Vec<((usize, usize), String)>,
 }
 
-#[derive(Default)]
-struct StemRanges {
-    /// The ranges `[start, end)` that are prefixes.
-    prefix_range: Option<(usize, usize)>,
-    /// The ranges `[start, end)` that are exact matches.
-    exact_range: Option<(usize, usize)>,
-}
-
-/// Finds the start and end indices of stems starting with the given prefix.
+/// Finds the start and end indices of items starting with or matching the given prefix.
 ///
 /// # Arguments
-/// * `prefix` - The normalized prefix to match. Must not be empty.
-/// * `stems` - The list of stems to search. The stems should be in sorted order,
-///   with the stems normalized by `normalize_key`.
+/// * `word_or_prefix` - The normalized prefix (or word) to match. Must not be empty.
+/// * `exact_only` - Whether to look for exact matches (true) or prefix matches (false).
+/// * `items` - The list of items to search. The items should be in sorted order, keyed
+///   by the `key_extractor` function and normalized by `normalize_key`.
+/// * `key_extractor` - A function that extracts the string key from an item.
 ///
 /// # Returns
 /// Ranges of matches for the prefix.
-fn find_stem_ranges(prefix: &str, stems: &[Stem]) -> StemRanges {
-    if stems.is_empty() || prefix.is_empty() {
-        return StemRanges::default();
+pub(super) fn find_ranges_of<T>(
+    word_or_prefix: &str,
+    exact_only: bool,
+    items: &[T],
+    key_extractor: impl Fn(&T) -> String,
+) -> Option<(usize, usize)> {
+    if items.is_empty() || word_or_prefix.is_empty() {
+        return None;
     }
 
-    // Binary search for the first stem that starts with or comes after the prefix
-    let start = stems.partition_point(|stem| {
-        let normalized = normalize_key(&stem.stem);
-        normalized.as_str() < prefix
-    });
+    // Binary search for the first item that starts with or comes after the prefix or word.
+    let start = items.partition_point(|item| key_extractor(item).as_str() < word_or_prefix);
 
-    if start >= stems.len() {
-        return StemRanges::default();
+    if start >= items.len() {
+        return None;
     }
 
-    let normalized_start = normalize_key(&stems[start].stem);
-    if !normalized_start.starts_with(prefix) {
-        // The partition point will tell us either where the prefix actually starts,
-        // or where it would be inserted. In this case, the prefix would be inserted here,
-        // so there are no matching stems.
-        return StemRanges::default();
+    let start_key = key_extractor(&items[start]);
+    if (exact_only && start_key != word_or_prefix)
+        || (!exact_only && !start_key.starts_with(word_or_prefix))
+    {
+        // The partition point will tell us either where the range of interest actually starts,
+        // or where the point would be if there was an exact match.
+        // In this case, either we:
+        // - Are seeking exact matches only, and there is no exact match.
+        // - Are seeking prefix matches, and there is no prefix match.
+        // so we can return None.
+        return None;
     }
 
-    let prefix_end = stems[start..].partition_point(|stem| {
-        let normalized = normalize_key(&stem.stem);
-        normalized.starts_with(prefix)
-    });
-
-    let prefix_range = Some((start, start + prefix_end));
-    let exact_range = if normalized_start == prefix {
-        let exact_end = stems[start..].partition_point(|stem| normalize_key(&stem.stem) == prefix);
-        Some((start, start + exact_end))
-    } else {
-        None
+    let range_end = match exact_only {
+        // If we only care about exact matches, find the partition point where the exact matches end.
+        true => items[start..].partition_point(|item| key_extractor(item) == word_or_prefix),
+        // If we want any prefix match, find the partition point where the prefix matches end.
+        false => {
+            items[start..].partition_point(|item| key_extractor(item).starts_with(word_or_prefix))
+        }
     };
-
-    StemRanges {
-        prefix_range,
-        exact_range,
-    }
+    Some((start, start + range_end))
 }
 
-/// Finds the start and end indices of irregs starting with the given prefix.
-///
-/// TODO: This may be consolidated with `find_stem_ranges`.
-fn find_irreg_ranges(prefix: &str, irregs: &[IrregularForm]) -> Option<(usize, usize)> {
-    if irregs.is_empty() || prefix.is_empty() {
-        return None;
-    }
+#[inline]
+fn extract_stem_key(stem: &Stem) -> String {
+    normalize_key(&stem.stem)
+}
 
-    // Binary search for the first irregular form that starts with or comes after the prefix
-    let start = irregs.partition_point(|irreg| {
-        let normalized = normalize_key(&irreg.form);
-        normalized.as_str() < prefix
-    });
+fn find_stem_ranges(prefix: &str, stems: &[Stem], exact_only: bool) -> Option<(usize, usize)> {
+    find_ranges_of(prefix, exact_only, stems, extract_stem_key)
+}
 
-    if start >= irregs.len() {
-        return None;
-    }
+#[inline]
+fn extract_irreg_key(irreg: &IrregularForm) -> String {
+    normalize_key(&irreg.form)
+}
 
-    let normalized_start = normalize_key(&irregs[start].form);
-    if !normalized_start.starts_with(prefix) {
-        // The partition point will tell us either where the prefix actually starts,
-        // or where it would be inserted. In this case, the prefix would be inserted here,
-        // so there are no matching irregular forms.
-        return None;
-    }
-
-    let prefix_end = irregs[start..].partition_point(|irreg| {
-        let normalized = normalize_key(&irreg.form);
-        normalized.starts_with(prefix)
-    });
-
-    Some((start, start + prefix_end))
+fn find_irreg_ranges(
+    prefix: &str,
+    irregs: &[IrregularForm],
+    exact_only: bool,
+) -> Option<(usize, usize)> {
+    find_ranges_of(prefix, exact_only, irregs, extract_irreg_key)
 }
 
 pub(super) fn compute_ranges_for(
     prefix: &str,
     tables: &CruncherTables,
+    exact_only: bool,
 ) -> Result<PrefixRanges, AutocompleteError> {
     let prefix = normalize_key(prefix);
     if !prefix.is_ascii() {
@@ -138,15 +120,15 @@ pub(super) fn compute_ranges_for(
         return Err("Empty prefixes are not allowed.".to_string());
     }
 
-    let stem_range = find_stem_ranges(&prefix, &tables.all_stems).prefix_range;
-    let irregs_range = find_irreg_ranges(&prefix, &tables.all_irregs);
+    let stem_range = find_stem_ranges(&prefix, &tables.all_stems, exact_only);
+    let irregs_range = find_irreg_ranges(&prefix, &tables.all_irregs, exact_only);
     let mut partial_stem_ranges = vec![];
     // Note that we start at 1 because we don't care about the empty prefix.
     // We can just use the byte length because we verified above that it's ASCII.
     for i in 1..prefix.len() {
         // Similarly, we can just index on the bytes because we know it's ASCII.
         let prefix_so_far = &prefix[..i];
-        let stem_range = match find_stem_ranges(prefix_so_far, &tables.all_stems).exact_range {
+        let stem_range = match find_stem_ranges(prefix_so_far, &tables.all_stems, true) {
             None => continue,
             Some(range) => range,
         };
@@ -195,19 +177,17 @@ mod tests {
     #[test]
     fn test_find_stem_ranges_empty_stems() {
         let stems: Vec<Stem> = vec![];
-        let result = find_stem_ranges("test", &stems);
 
-        assert_eq!(result.prefix_range, None);
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("test", &stems, false), None);
+        assert_eq!(find_stem_ranges("test", &stems, true), None);
     }
 
     #[test]
     fn test_find_stem_ranges_empty_prefix() {
         let stems = vec![create_stem("test")];
-        let result = find_stem_ranges("", &stems);
 
-        assert_eq!(result.prefix_range, None);
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("test", &stems, false), None);
+        assert_eq!(find_stem_ranges("test", &stems, true), None);
     }
 
     #[test]
@@ -217,10 +197,9 @@ mod tests {
             create_stem("banana"),
             create_stem("cherry"),
         ];
-        let result = find_stem_ranges("banana", &stems);
 
-        assert_eq!(result.prefix_range, Some((1, 2)));
-        assert_eq!(result.exact_range, Some((1, 2)));
+        assert_eq!(find_stem_ranges("banana", &stems, false), Some((1, 2)));
+        assert_eq!(find_stem_ranges("banana", &stems, true), Some((1, 2)));
     }
 
     #[test]
@@ -235,10 +214,9 @@ mod tests {
             create_stem("donkey"),
             create_stem("elephant"),
         ];
-        let result = find_stem_ranges("app", &stems);
 
-        assert_eq!(result.prefix_range, Some((1, 4)));
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("app", &stems, false), Some((1, 4)));
+        assert_eq!(find_stem_ranges("app", &stems, true), None);
     }
 
     #[test]
@@ -248,10 +226,9 @@ mod tests {
             create_stem("cherry"),
             create_stem("date"),
         ];
-        let result = find_stem_ranges("apple", &stems);
 
-        assert_eq!(result.prefix_range, None);
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("apple", &stems, false), None);
+        assert_eq!(find_stem_ranges("apple", &stems, true), None);
     }
 
     #[test]
@@ -261,10 +238,9 @@ mod tests {
             create_stem("banana"),
             create_stem("cherry"),
         ];
-        let result = find_stem_ranges("zebra", &stems);
 
-        assert_eq!(result.prefix_range, None);
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("zebra", &stems, false), None);
+        assert_eq!(find_stem_ranges("zebra", &stems, true), None);
     }
 
     #[test]
@@ -274,10 +250,9 @@ mod tests {
             create_stem("BANANA"),
             create_stem("Cherry"),
         ];
-        let result = find_stem_ranges("app", &stems);
 
-        assert_eq!(result.prefix_range, Some((0, 1)));
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("app", &stems, false), Some((0, 1)));
+        assert_eq!(find_stem_ranges("app", &stems, true), None);
     }
 
     #[test]
@@ -288,10 +263,9 @@ mod tests {
             create_stem("app_lication"),
             create_stem("banana"),
         ];
-        let result = find_stem_ranges("appl", &stems);
 
-        assert_eq!(result.prefix_range, Some((0, 3)));
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("appl", &stems, false), Some((0, 3)));
+        assert_eq!(find_stem_ranges("appl", &stems, true), None);
     }
 
     #[test]
@@ -302,10 +276,9 @@ mod tests {
             create_stem("app_lication"),
             create_stem("banana"),
         ];
-        let result = find_stem_ranges("apple", &stems);
 
-        assert_eq!(result.prefix_range, Some((0, 2)));
-        assert_eq!(result.exact_range, Some((0, 2)));
+        assert_eq!(find_stem_ranges("apple", &stems, false), Some((0, 2)));
+        assert_eq!(find_stem_ranges("apple", &stems, true), Some((0, 2)));
     }
 
     #[test]
@@ -315,10 +288,9 @@ mod tests {
             create_stem("banan"),
             create_stem("candy"),
         ];
-        let result = find_stem_ranges("cand", &stems);
 
-        assert_eq!(result.prefix_range, Some((2, 3)));
-        assert_eq!(result.exact_range, None);
+        assert_eq!(find_stem_ranges("cand", &stems, false), Some((2, 3)));
+        assert_eq!(find_stem_ranges("cand", &stems, true), None);
     }
 
     #[test]
@@ -328,16 +300,15 @@ mod tests {
             create_stem("tester"),
             create_stem("testing"),
         ];
-        let result = find_stem_ranges("test", &stems);
 
-        assert_eq!(result.prefix_range, Some((0, 3)));
-        assert_eq!(result.exact_range, Some((0, 1)));
+        assert_eq!(find_stem_ranges("test", &stems, false), Some((0, 3)));
+        assert_eq!(find_stem_ranges("test", &stems, true), Some((0, 1)));
     }
 
     #[test]
     fn test_find_irreg_ranges_empty_irregs() {
         let irregs: Vec<IrregularForm> = vec![];
-        let result = find_irreg_ranges("test", &irregs);
+        let result = find_irreg_ranges("test", &irregs, false);
 
         assert_eq!(result, None);
     }
@@ -345,7 +316,7 @@ mod tests {
     #[test]
     fn test_find_irreg_ranges_empty_prefix() {
         let irregs = vec![create_irreg("test")];
-        let result = find_irreg_ranges("", &irregs);
+        let result = find_irreg_ranges("", &irregs, false);
 
         assert_eq!(result, None);
     }
@@ -357,7 +328,7 @@ mod tests {
             create_irreg("sum"),
             create_irreg("sunt"),
         ];
-        let result = find_irreg_ranges("sum", &irregs);
+        let result = find_irreg_ranges("sum", &irregs, false);
 
         assert_eq!(result, Some((1, 2)));
     }
@@ -371,7 +342,7 @@ mod tests {
             create_irreg("esto"),
             create_irreg("sum"),
         ];
-        let result = find_irreg_ranges("est", &irregs);
+        let result = find_irreg_ranges("est", &irregs, false);
 
         assert_eq!(result, Some((2, 4)));
     }
@@ -383,7 +354,7 @@ mod tests {
             create_irreg("sum"),
             create_irreg("sunt"),
         ];
-        let result = find_irreg_ranges("abc", &irregs);
+        let result = find_irreg_ranges("abc", &irregs, false);
 
         assert_eq!(result, None);
     }
@@ -391,7 +362,7 @@ mod tests {
     #[test]
     fn test_find_irreg_ranges_prefix_after_all() {
         let irregs = vec![create_irreg("es"), create_irreg("est"), create_irreg("sum")];
-        let result = find_irreg_ranges("xyz", &irregs);
+        let result = find_irreg_ranges("xyz", &irregs, false);
 
         assert_eq!(result, None);
     }
@@ -403,7 +374,7 @@ mod tests {
             create_irreg("SUM"),
             create_irreg("Sunt"),
         ];
-        let result = find_irreg_ranges("es", &irregs);
+        let result = find_irreg_ranges("es", &irregs, false);
 
         assert_eq!(result, Some((0, 1)));
     }
@@ -416,7 +387,7 @@ mod tests {
             create_irreg("est_o"),
             create_irreg("sum"),
         ];
-        let result = find_irreg_ranges("es", &irregs);
+        let result = find_irreg_ranges("es", &irregs, false);
 
         assert_eq!(result, Some((0, 3)));
     }
@@ -424,7 +395,7 @@ mod tests {
     #[test]
     fn test_find_irreg_ranges_partial_match_at_end() {
         let irregs = vec![create_irreg("es"), create_irreg("est"), create_irreg("sun")];
-        let result = find_irreg_ranges("su", &irregs);
+        let result = find_irreg_ranges("su", &irregs, false);
 
         assert_eq!(result, Some((2, 3)));
     }
@@ -436,7 +407,7 @@ mod tests {
             create_irreg("def"),
             create_irreg("xyz"),
         ];
-        let result = find_irreg_ranges("ghi", &irregs);
+        let result = find_irreg_ranges("ghi", &irregs, false);
 
         assert_eq!(result, None);
     }
