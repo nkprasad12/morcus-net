@@ -110,20 +110,21 @@ macro_rules! timed {
 }
 
 #[cfg(feature = "complete")]
-fn handle_complete(args: &[String], tables: CruncherTables) -> Result<(), String> {
+fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
     use morceus::completions::{Autocompleter, AutompleterOptions};
 
     assert_eq!(&args[2], "complete");
     let prefix: &str = &args[3];
 
-    // Set here for illustration on how to create options.
+    // Set here for illustration on how to create options. You can also use ::default().
     let options = AutompleterOptions::builder().relax_i_j(true).build();
+    let tables = std::borrow::Cow::Borrowed(tables);
     let completer = timed!("Created completer", Autocompleter::new(tables, options)?);
     let completions = timed!("Found completions", completer.completions_for(prefix)?);
     print_mem_summary("After finding completions".to_string(), None);
 
     let n = completions.len();
-    println!("Samples completions for '{}' [{}]:", prefix, n);
+    println!("Sample completions for '{}' [{}]:", prefix, n);
     for result in completions {
         println!("- Lemma: {}", result.lemma());
         for word in result.sample_matches() {
@@ -188,7 +189,7 @@ fn main() {
         #[cfg(feature = "crunch")]
         "crunch" => handle_crunch(&args, &tables),
         #[cfg(feature = "complete")]
-        "complete" => handle_complete(&args, tables).unwrap(),
+        "complete" => handle_complete(&args, &tables).unwrap(),
         _ => {
             eprintln!("Unknown command: {}", command);
             process::exit(1);

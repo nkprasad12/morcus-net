@@ -4,6 +4,8 @@ mod find_matches;
 mod stem_and_irreg_ranges;
 mod string_utils;
 
+use std::borrow::Cow;
+
 use crate::{
     completions::{
         autocomplete_result::{IrregResult, StemResult},
@@ -14,13 +16,13 @@ use crate::{
 };
 
 /// The main entry point for completions.
-pub struct Autocompleter {
-    tables: CruncherTables,
+pub struct Autocompleter<'t> {
+    tables: Cow<'t, CruncherTables>,
     addenda: Addenda,
     default_options: AutompleterOptions,
 }
 
-impl Autocompleter {
+impl Autocompleter<'_> {
     /// Creates an autocompleter with the given options.
     ///
     /// # Arguments
@@ -29,10 +31,10 @@ impl Autocompleter {
     ///   To create tables, from the `morcus-net` repo root, run:
     ///   `./morcus.sh build --morceus_tables`
     /// * `default_options` - Default options for the autocompleter.
-    pub fn new(
-        tables: CruncherTables,
+    pub fn new<'t>(
+        tables: Cow<'t, CruncherTables>,
         default_options: AutompleterOptions,
-    ) -> Result<Autocompleter, AutocompleteError> {
+    ) -> Result<Autocompleter<'t>, AutocompleteError> {
         Ok(Autocompleter {
             addenda: Autocompleter::make_addenda(&tables)?,
             tables,

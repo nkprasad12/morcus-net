@@ -11,7 +11,7 @@ pub(super) struct Addenda {
     pub(super) irreg_to_lemma: Vec<u16>,
 }
 
-impl Autocompleter {
+impl Autocompleter<'_> {
     pub(super) fn make_addenda(tables: &CruncherTables) -> Result<Addenda, AutocompleteError> {
         // Reserve the max for "no lemma";
         if tables.raw_lemmata.len() + 1 >= u16::MAX as usize {
