@@ -113,18 +113,24 @@ macro_rules! timed {
 fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
     use morceus::completions::{Autocompleter, AutompleterOptions};
 
-    assert_eq!(&args[2], "complete");
+    assert!(&args[2].starts_with("complete"));
+    let exact = &args[2] == "complete-exact";
     let prefix: &str = &args[3];
 
     // Set here for illustration on how to create options. You can also use ::default().
     let options = AutompleterOptions::builder().relax_i_j(true).build();
     let tables = std::borrow::Cow::Borrowed(tables);
     let completer = timed!("Created completer", Autocompleter::new(tables, options)?);
-    let completions = timed!("Found completions", completer.completions_for(prefix)?);
-    print_mem_summary("After finding completions".to_string(), None);
+    let completions = match exact {
+        true => timed!("Found matches", completer.analyses_for(prefix)?),
+        false => timed!("Found completions", completer.completions_for(prefix)?),
+    };
+
+    print_mem_summary("After processing".to_string(), None);
 
     let n = completions.len();
-    println!("Sample completions for '{}' [{}]:", prefix, n);
+    let verb = if exact { "analyses" } else { "completions" };
+    println!("Sample {verb} for '{prefix}' [{n}]:");
     for result in completions {
         println!("- Lemma: {}", result.lemma());
         for word in result.sample_matches() {
@@ -147,12 +153,14 @@ fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), Strin
 
 #[cfg(feature = "crunch")]
 fn handle_crunch(args: &[String], tables: &CruncherTables) {
+    use morceus::crunch::crunch_word;
+
     assert_eq!(&args[2], "crunch");
 
     let options = morceus::indices::CruncherOptions::default();
     let word = &args[3];
 
-    let results = morceus::crunch::crunch_word(word, tables, &options);
+    let results = timed!("Found matches", crunch_word(word, tables, &options));
     print_mem_summary("After crunching".to_string(), None);
 
     if results.is_empty() {
@@ -189,7 +197,7 @@ fn main() {
         #[cfg(feature = "crunch")]
         "crunch" => handle_crunch(&args, &tables),
         #[cfg(feature = "complete")]
-        "complete" => handle_complete(&args, &tables).unwrap(),
+        "complete" | "complete-exact" => handle_complete(&args, &tables).unwrap(),
         _ => {
             eprintln!("Unknown command: {}", command);
             process::exit(1);

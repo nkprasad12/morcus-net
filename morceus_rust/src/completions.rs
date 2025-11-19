@@ -10,7 +10,7 @@ use crate::{
     completions::{
         autocomplete_result::{IrregResult, StemResult},
         autocompleter::Addenda,
-        find_matches::completions_for_prefix,
+        find_matches::{completions_for_prefix, matches_for_word},
     },
     indices::{CruncherTables, InflectionContext, Lemma},
 };
@@ -68,6 +68,34 @@ impl Autocompleter<'_> {
         options: &'a AutompleterOptions,
     ) -> Result<Vec<AutocompleteResult<'t, 'a>>, AutocompleteError> {
         completions_for_prefix(prefix, self, options)
+    }
+
+    /// The main API for fetching analyses for a full word.
+    ///
+    /// # Arguments
+    /// * `word` - The word to analyze, case-insensitive. This should
+    ///   contain only ascii characters.
+    /// * `limit` - The maximum number of lemmata to return. A single lemma may have multiple
+    ///   inflected forms that match the prefix, but every lemma returned is guaranteed to have
+    ///   at least one matching form.
+    /// * `options` - Display options for formatting the output forms.
+    ///
+    /// # Returns
+    /// A vector of lemmata with analysis results for the given word.
+    pub fn analyses_with_options<'t, 'a>(
+        &'t self,
+        word: &str,
+        options: &'a AutompleterOptions,
+    ) -> Result<Vec<AutocompleteResult<'t, 'a>>, AutocompleteError> {
+        matches_for_word(word, self, options)
+    }
+
+    /// Convenience method to get analyses with default options.
+    pub fn analyses_for<'t>(
+        &'t self,
+        word: &str,
+    ) -> Result<Vec<AutocompleteResult<'t, 't>>, AutocompleteError> {
+        self.analyses_with_options(word, &self.default_options)
     }
 }
 
