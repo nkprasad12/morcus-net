@@ -33,57 +33,74 @@ pub(super) struct PrefixRanges {
     pub(super) partial_stem_ranges: Vec<((usize, usize), String)>,
 }
 
-/// Finds the start and end indices of items starting with or matching the given prefix.
-///
-/// # Arguments
-/// * `word_or_prefix` - The normalized prefix (or word) to match. Must not be empty.
-/// * `exact_only` - Whether to look for exact matches (true) or prefix matches (false).
-/// * `items` - The list of items to search. The items should be in sorted order, keyed
-///   by the `key_extractor` function and normalized by `normalize_key`.
-/// * `key_extractor` - A function that extracts the string key from an item.
-///
-/// # Returns
-/// Ranges of matches for the prefix.
-pub(super) fn find_ranges_of<T>(
-    word_or_prefix: &str,
-    exact_only: bool,
-    items: &[T],
-    key_extractor: impl Fn(&T) -> String,
-) -> Option<(usize, usize)> {
-    if items.is_empty() || word_or_prefix.is_empty() {
-        return None;
-    }
+/// Macro to generate both owned and borrowed versions of find_ranges_of
+macro_rules! impl_find_ranges_of {
+    ($fn_name:ident, $key_type:ty, $key_extractor_ret:ty) => {
+        /// Finds the start and end indices of items starting with or matching the given prefix.
+        ///
+        /// # Arguments
+        /// * `word_or_prefix` - The normalized prefix (or word) to match. Must not be empty.
+        /// * `exact_only` - Whether to look for exact matches (true) or prefix matches (false).
+        /// * `items` - The list of items to search. The items should be in sorted order, keyed
+        ///   by the `key_extractor` function and normalized by `normalize_key`.
+        /// * `key_extractor` - A function that extracts the string key from an item.
+        ///
+        /// # Returns
+        /// Ranges of matches for the prefix.
+        pub(super) fn $fn_name<T>(
+            word_or_prefix: &str,
+            exact_only: bool,
+            items: &[T],
+            key_extractor: impl Fn(&T) -> $key_extractor_ret,
+        ) -> Option<(usize, usize)> {
+            if items.is_empty() || word_or_prefix.is_empty() {
+                return None;
+            }
 
-    // Binary search for the first item that starts with or comes after the prefix or word.
-    let start = items.partition_point(|item| key_extractor(item).as_str() < word_or_prefix);
+            // Binary search for the first item that starts with or comes after the prefix or word.
+            let start = items.partition_point(|item| {
+                let key = key_extractor(item);
+                let key_ref: &str = key.as_ref();
+                key_ref < word_or_prefix
+            });
+            if start >= items.len() {
+                return None;
+            }
 
-    if start >= items.len() {
-        return None;
-    }
+            let start_key: $key_type = key_extractor(&items[start]).into();
+            if (exact_only && start_key != word_or_prefix)
+                || (!exact_only && !start_key.starts_with(word_or_prefix))
+            {
+                // The partition point will tell us either where the range of interest actually starts,
+                // or where the point would be if there was an exact match.
+                // In this case, either we:
+                // - Are seeking exact matches only, and there is no exact match.
+                // - Are seeking prefix matches, and there is no prefix match.
+                // so we can return None.
+                return None;
+            }
 
-    let start_key = key_extractor(&items[start]);
-    if (exact_only && start_key != word_or_prefix)
-        || (!exact_only && !start_key.starts_with(word_or_prefix))
-    {
-        // The partition point will tell us either where the range of interest actually starts,
-        // or where the point would be if there was an exact match.
-        // In this case, either we:
-        // - Are seeking exact matches only, and there is no exact match.
-        // - Are seeking prefix matches, and there is no prefix match.
-        // so we can return None.
-        return None;
-    }
-
-    let range_end = match exact_only {
-        // If we only care about exact matches, find the partition point where the exact matches end.
-        true => items[start..].partition_point(|item| key_extractor(item) == word_or_prefix),
-        // If we want any prefix match, find the partition point where the prefix matches end.
-        false => {
-            items[start..].partition_point(|item| key_extractor(item).starts_with(word_or_prefix))
+            let range_end = match exact_only {
+                // If we only care about exact matches, find the partition point where the exact matches end.
+                true => items[start..].partition_point(|item| {
+                    let key = key_extractor(item);
+                    let key_ref: &str = key.as_ref();
+                    key_ref == word_or_prefix
+                }),
+                // If we want any prefix match, find the partition point where the prefix matches end.
+                false => items[start..].partition_point(|item| {
+                    let key = key_extractor(item);
+                    let key_ref: &str = key.as_ref();
+                    key_ref.starts_with(word_or_prefix)
+                }),
+            };
+            Some((start, start + range_end))
         }
     };
-    Some((start, start + range_end))
 }
+
+impl_find_ranges_of!(find_ranges_of, String, String);
+impl_find_ranges_of!(find_ranges_of_borrowed, &str, &str);
 
 #[inline]
 fn extract_stem_key(stem: &Stem) -> String {

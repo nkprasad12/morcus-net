@@ -5,7 +5,7 @@ use crate::{
     completions::{
         AutocompleteError, AutocompleteResult, Autocompleter, AutompleterOptions, DisplayOptions,
         StemResult,
-        stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for, find_ranges_of},
+        stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for, find_ranges_of_borrowed},
     },
     indices::{InflectionEnding, Lemma, Stem},
     stem_merging::merge_stem_and_ending,
@@ -118,10 +118,10 @@ fn filter_lemma_stems<'a>(lemma: &Lemma, ranges: &'a PrefixRanges) -> Vec<(usize
 }
 
 #[inline]
-fn key_for_end_entry(entry: &(String, InflectionEnding)) -> String {
+fn key_for_end_entry(entry: &(String, InflectionEnding)) -> &str {
     // TODO: It's unfortunate that we need to clone here, but the range finding
     // function requires owned strings. We can probably optimize this later.
-    entry.0.to_string()
+    &entry.0
 }
 
 /// Finds the start and end indices of ends for the given stem that match with the given end prefix.
@@ -156,10 +156,11 @@ fn find_ends_for<'a>(
         end_prefix.to_string()
     };
 
-    let (start, end) = match find_ranges_of(&end_target, exact_only, ends, key_for_end_entry) {
-        None => return Ok(None),
-        Some(r) => r,
-    };
+    let (start, end) =
+        match find_ranges_of_borrowed(&end_target, exact_only, ends, key_for_end_entry) {
+            None => return Ok(None),
+            Some(r) => r,
+        };
 
     Ok(Some(ends[start..end].iter().map(|e| &e.1).collect()))
 }
