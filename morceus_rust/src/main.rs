@@ -110,7 +110,7 @@ macro_rules! timed {
 }
 
 #[cfg(feature = "complete")]
-fn handle_complete(args: &[String], tables: &CruncherTables) -> Result<(), String> {
+fn handle_complete(args: &[String], tables: CruncherTables) -> Result<(), String> {
     use morceus::completions::{Autocompleter, AutompleterOptions};
 
     assert_eq!(&args[2], "complete");
@@ -188,7 +188,7 @@ fn main() {
         #[cfg(feature = "crunch")]
         "crunch" => handle_crunch(&args, &tables),
         #[cfg(feature = "complete")]
-        "complete" => handle_complete(&args, &tables).unwrap(),
+        "complete" => handle_complete(&args, tables).unwrap(),
         _ => {
             eprintln!("Unknown command: {}", command);
             process::exit(1);
@@ -198,4 +198,5 @@ fn main() {
 
 /* Run with:
 cargo run --package morceus --release cli crunch <word>
+cargo run --package morceus --release --no-default-features --features complete cli complete <prefix>
 */

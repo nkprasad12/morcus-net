@@ -119,7 +119,7 @@ fn filter_lemma_stems<'a>(lemma: &Lemma, ranges: &'a PrefixRanges) -> Vec<(usize
 
 /// Finds the start and end indices of ends for the given stem that start with the given end prefix.
 fn find_ends_for<'a>(
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter<'_>,
     end_prefix: &str,
     stem: &'a Stem,
 ) -> Result<Option<Vec<&'a InflectionEnding>>, AutocompleteError> {
@@ -128,7 +128,7 @@ fn find_ends_for<'a>(
         return Ok(None);
     }
     if end_prefix.is_empty() {
-        return Ok(Some(ends.iter().map(|e| e.1).collect()));
+        return Ok(Some(ends.iter().map(|e| &e.1).collect()));
     }
 
     let end_prefix_str = end_prefix.to_string();
@@ -150,7 +150,7 @@ fn find_ends_for<'a>(
     Ok(Some(
         ends[start..start + prefix_end]
             .iter()
-            .map(|e| e.1)
+            .map(|e| &e.1)
             .collect(),
     ))
 }
@@ -164,7 +164,7 @@ fn find_ends_for<'a>(
 fn stem_id_to_result<'a>(
     stem_id: usize,
     unmatched: &str,
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter<'_>,
 ) -> Result<Option<StemResult<'a>>, AutocompleteError> {
     let stem = &completer.tables.all_stems[stem_id];
     let ends = match find_ends_for(completer, unmatched, stem)? {
@@ -182,7 +182,7 @@ fn stem_id_to_result<'a>(
 fn lemma_id_to_result<'a, 'b>(
     lemma_id: LemmaId,
     ranges: &PrefixRanges,
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter<'_>,
     display_options: &'b DisplayOptions,
 ) -> Result<AutocompleteResult<'a, 'b>, AutocompleteError> {
     let lemma = completer.lemma_from_id(lemma_id)?;
@@ -244,11 +244,11 @@ fn validated_lemma_result<'a, 'b>(
 
 fn completions_for_prefix_base<'a, 'b>(
     prefix: &str,
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter<'_>,
     limit: usize,
     options: &'b DisplayOptions,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
-    let ranges = compute_ranges_for(prefix, completer.tables)?;
+    let ranges = compute_ranges_for(prefix, &completer.tables)?;
     let mut seen_ids = HashSet::new();
     let mut results = Vec::new();
 
@@ -274,7 +274,7 @@ fn completions_for_prefix_base<'a, 'b>(
 
 pub(super) fn completions_for_prefix<'a, 'b>(
     prefix: &str,
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter<'_>,
     options: &'b AutompleterOptions,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
     let mut variants = vec![prefix.to_string()];

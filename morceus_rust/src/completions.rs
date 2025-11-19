@@ -14,13 +14,13 @@ use crate::{
 };
 
 /// The main entry point for completions.
-pub struct Autocompleter<'a, 'b> {
-    tables: &'a CruncherTables,
-    addenda: Addenda<'a>,
-    options: &'b AutompleterOptions,
+pub struct Autocompleter<'o> {
+    tables: CruncherTables,
+    addenda: Addenda,
+    options: &'o AutompleterOptions,
 }
 
-impl<'t, 'o> Autocompleter<'t, 'o> {
+impl<'o> Autocompleter<'o> {
     /// Creates an autocompleter with the given options.
     ///
     /// # Arguments
@@ -30,18 +30,18 @@ impl<'t, 'o> Autocompleter<'t, 'o> {
     ///   `./morcus.sh build --morceus_tables`
     /// * `options` - Options for the autocompleter.
     pub fn new(
-        tables: &'t CruncherTables,
+        tables: CruncherTables,
         options: &'o AutompleterOptions,
-    ) -> Result<Autocompleter<'t, 'o>, AutocompleteError> {
+    ) -> Result<Autocompleter<'o>, AutocompleteError> {
         Ok(Autocompleter {
+            addenda: Autocompleter::make_addenda(&tables)?,
             tables,
-            addenda: Autocompleter::make_addenda(tables)?,
             options,
         })
     }
 
     /// Convenience method for fetching completions with default options.
-    pub fn completions_for(
+    pub fn completions_for<'t>(
         &'t self,
         prefix: &str,
     ) -> Result<Vec<AutocompleteResult<'t, 'o>>, AutocompleteError> {
@@ -60,7 +60,7 @@ impl<'t, 'o> Autocompleter<'t, 'o> {
     ///
     /// # Returns
     /// A vector of lemmata with matching completion results.
-    pub fn completions_with_options<'a>(
+    pub fn completions_with_options<'t, 'a>(
         &'t self,
         prefix: &str,
         options: &'a AutompleterOptions,
