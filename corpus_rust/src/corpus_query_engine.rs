@@ -7,7 +7,7 @@ mod errors;
 mod index_data;
 mod reference_impl;
 
-use crate::api::{CorpusQueryResult, QueryExecError};
+use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo};
 use crate::corpus_query_engine::corpus_candidate_filtering::compute_page_result;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
@@ -20,9 +20,12 @@ use std::error::Error;
 
 fn empty_result() -> CorpusQueryResult<'static> {
     CorpusQueryResult {
-        total_results: 0,
+        result_stats: QueryGlobalInfo {
+            total_results: 0,
+            exact_count: Some(true),
+        },
         matches: vec![],
-        page_start: 0,
+        next_page: None,
         timing: vec![],
     }
 }
@@ -132,11 +135,20 @@ impl CorpusQueryEngine {
             context_len as u32,
         )?;
         profiler.phase("Build Matches");
-
-        Ok(CorpusQueryResult {
+        let result_stats = QueryGlobalInfo {
             total_results,
+            exact_count: Some(true),
+        };
+        let next_result = page_start + matches.len();
+        let next_page = PageData {
+            result_index: next_result as u32,
+            result_id: 0,
+            candidate_index: 0,
+        };
+        Ok(CorpusQueryResult {
+            result_stats,
             matches,
-            page_start,
+            next_page: Some(next_page),
             timing: profiler.get_stats().to_vec(),
         })
     }

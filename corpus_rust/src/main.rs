@@ -103,9 +103,9 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
     let results = get_results(engine, query_str);
     println!(
         "\n\x1b[4mShowing results {}-{} of {} matches:\x1b[0m",
-        results.page_start + 1,
-        results.page_start + results.matches.len(),
-        results.total_results
+        1,
+        results.matches.len(),
+        results.result_stats.total_results
     );
     if has_arg(ARG_QUIET) {
         println!("- Omitted matches due to --quiet flag.\n");

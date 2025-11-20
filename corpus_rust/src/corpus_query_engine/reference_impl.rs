@@ -3,6 +3,7 @@
 use std::cmp::min;
 use std::env::set_current_dir;
 
+use crate::api::{PageData, QueryGlobalInfo};
 use crate::corpus_index::deserialize_corpus;
 use crate::query_parsing_v2::QueryRelation;
 use crate::{
@@ -262,8 +263,15 @@ impl CorpusQueryEngine {
             .map(|x| self.resolve_match_ref_impl(x, context_len).unwrap())
             .collect();
         let result = CorpusQueryResult {
-            total_results: match_ids.len(),
-            page_start,
+            result_stats: QueryGlobalInfo {
+                total_results: match_ids.len(),
+                exact_count: Some(true),
+            },
+            next_page: Some(PageData {
+                result_index: (page_start + matches.len()) as u32,
+                result_id: 0,
+                candidate_index: 0,
+            }),
             timing: vec![],
             matches,
         };
@@ -296,12 +304,12 @@ impl CorpusQueryEngine {
             "Query: {query}, page_start: {page_start}, page_size: {page_size}, context_len: {context_len}"
         );
         assert_eq!(
-            result_prod.page_start, result_ref.page_start,
-            "Different `page_start`s for query {query_details}"
+            result_prod.next_page, result_ref.next_page,
+            "Different `next_page`s for query {query_details}"
         );
         assert_eq!(
-            result_prod.total_results, result_ref.total_results,
-            "Different `total_result`s for {query_details}"
+            result_prod.result_stats, result_ref.result_stats,
+            "Different `result_stats` for {query_details}"
         );
         let mut prod_iter = result_prod.matches.iter();
         let mut ref_iter = result_ref.matches.iter();
