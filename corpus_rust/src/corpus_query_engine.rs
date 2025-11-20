@@ -8,6 +8,7 @@ mod index_data;
 mod reference_impl;
 
 use crate::api::{CorpusQueryResult, QueryExecError};
+use crate::corpus_query_engine::corpus_candidate_filtering::compute_page_result;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
 use crate::query_parsing_v2::{Query, parse_query};
@@ -121,8 +122,7 @@ impl CorpusQueryEngine {
         // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
         // technically giving matching within N tokens but they're not distinct terms. For now,
         // just include these misleading results.
-        let (match_ids, total_results) =
-            self.compute_page_result(&candidates, page_start, page_size, &mut profiler)?;
+        let (match_ids, total_results) = compute_page_result(&candidates, page_start, page_size)?;
 
         // Turn the match IDs into actual matches (with the text and locations).
         let matches = self.resolve_match_tokens(

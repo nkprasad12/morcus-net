@@ -7,62 +7,59 @@ use crate::{
     profiler::TimeProfiler,
 };
 
-impl CorpusQueryEngine {
-    /// Computes the page of results for the given parameters.
-    pub(super) fn compute_page_result(
-        &self,
-        match_results: &IndexSlice,
-        page_start: usize,
-        page_size: usize,
-        profiler: &mut TimeProfiler,
-    ) -> Result<(Vec<u32>, usize), QueryExecError> {
-        let matches = match_results.data.to_ref();
+/// Computes the page of results for the given parameters.
+pub(super) fn compute_page_result(
+    match_results: &IndexSlice,
+    page_start: usize,
+    page_size: usize,
+) -> Result<(Vec<u32>, usize), QueryExecError> {
+    let matches = match_results.data.to_ref();
 
-        // Get to the start of the page.
-        let mut results: Vec<u32> = vec![];
-        let mut i: usize = match &matches {
-            IndexData::List(_) => page_start,
-            IndexData::BitMask(bitmask) => {
-                let mut start_idx = 0;
-                for _ in 0..page_start {
-                    start_idx = next_one_bit(bitmask, start_idx)
-                        .ok_or(QueryExecError::new("Not enough results for page"))?
-                        + 1;
+    // Get to the start of the page.
+    let mut results: Vec<u32> = vec![];
+    let mut i: usize = match &matches {
+        IndexData::List(_) => page_start,
+        IndexData::BitMask(bitmask) => {
+            let mut start_idx = 0;
+            for _ in 0..page_start {
+                start_idx = next_one_bit(bitmask, start_idx)
+                    .ok_or(QueryExecError::new("Not enough results for page"))?
+                    + 1;
+            }
+            start_idx
+        }
+    };
+
+    let n = matches.num_elements();
+    while results.len() < page_size {
+        let token_id = match matches {
+            IndexData::List(data) => {
+                if i >= n {
+                    break;
                 }
-                start_idx
+                let id = data[i];
+                i += 1;
+                id
+            }
+            IndexData::BitMask(bitmask) => {
+                let id = match next_one_bit(bitmask, i) {
+                    Some(v) => v,
+                    None => break,
+                };
+                i = id + 1;
+                id as u32 + match_results.range.start
             }
         };
 
-        let n = matches.num_elements();
-        while results.len() < page_size {
-            let token_id = match matches {
-                IndexData::List(data) => {
-                    if i >= n {
-                        break;
-                    }
-                    let id = data[i];
-                    i += 1;
-                    id
-                }
-                IndexData::BitMask(bitmask) => {
-                    let id = match next_one_bit(bitmask, i) {
-                        Some(v) => v,
-                        None => break,
-                    };
-                    i = id + 1;
-                    id as u32 + match_results.range.start
-                }
-            };
-
-            if token_id < match_results.position {
-                return Err(QueryExecError::new("Token ID is less than match position"));
-            }
-            results.push(token_id - match_results.position);
+        if token_id < match_results.position {
+            return Err(QueryExecError::new("Token ID is less than match position"));
         }
-        profiler.phase("Compute page token IDs");
-        Ok((results, n))
+        results.push(token_id - match_results.position);
     }
+    Ok((results, n))
+}
 
+impl CorpusQueryEngine {
     /// Filters a list of candidates into just the actual matches.
     pub(super) fn filter_breaks<'a>(
         &'a self,
