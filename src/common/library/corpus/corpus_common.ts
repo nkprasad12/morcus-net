@@ -14,6 +14,7 @@ import {
   isPair,
   isString,
   matchesObject,
+  maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
 export const CORPUS_DIR = "build/corpus";
@@ -56,17 +57,41 @@ export namespace CorpusQueryMatch {
   });
 }
 
-export interface CorpusQueryResult {
+export interface PageData {
+  resultIndex: number;
+  resultId: number;
+  candidateIndex: number;
+}
+
+const isPageData = matchesObject<PageData>({
+  resultIndex: isNumber,
+  resultId: isNumber,
+  candidateIndex: isNumber,
+});
+
+export interface QueryGlobalInfo {
   totalResults: number;
+  exactCount?: boolean;
+}
+
+const isQueryGlobalInfo = matchesObject<QueryGlobalInfo>({
+  totalResults: isNumber,
+  exactCount: maybeUndefined(isBoolean),
+});
+
+// Replaced: CorpusQueryResult now matches Rust shape (omitting timing)
+export interface CorpusQueryResult {
   matches: CorpusQueryMatch[];
-  pageStart: number;
+  resultStats: QueryGlobalInfo;
+  nextPage?: PageData;
 }
 
 export namespace CorpusQueryResult {
   export const isMatch = matchesObject<CorpusQueryResult>({
-    totalResults: isNumber,
     matches: isArray(CorpusQueryMatch.isMatch),
-    pageStart: isNumber,
+    resultStats: isQueryGlobalInfo,
+    // nextPage is optional: allow undefined or a valid PageData
+    nextPage: (v: unknown) => v === undefined || isPageData(v),
   });
 }
 

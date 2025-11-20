@@ -116,10 +116,11 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
     return <div>Loading results for: {query}</div>;
   }
 
-  const firstPage = props.results.pageStart === 0;
-  const lastPage =
-    props.results.pageStart + props.results.matches.length >=
-    props.results.totalResults;
+  const pageStart = route.startIdx;
+  const totalResults = props.results.resultStats.totalResults;
+
+  const firstPage = pageStart === 0;
+  const lastPage = pageStart + props.results.matches.length >= totalResults;
 
   const changePage = (increment: boolean) => {
     nav.to((current) => {
@@ -133,12 +134,12 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   return (
     <div style={{ margin: "0px 16px" }}>
       <div className="text md">
-        Found {props.results.totalResults} results matching:
+        Found {props.results.resultStats.totalResults} results matching:
         <div className="corpusResult">{query}</div>
       </div>
       <div className="text sm light">
-        Showing results {props.results.pageStart + 1} to{" "}
-        {props.results.pageStart + props.results.matches.length}.
+        Showing results {pageStart + 1} to{" "}
+        {pageStart + props.results.matches.length}.
       </div>
       {props.results.matches.length > 0 && (
         <Divider style={{ margin: "12px 0" }} />

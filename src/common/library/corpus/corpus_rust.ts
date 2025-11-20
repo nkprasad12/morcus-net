@@ -35,6 +35,7 @@ export class RustCorpusQueryEngine {
     if (request.query.length > 100) {
       throw new Error("Query is too long");
     }
+    console.log(request);
     const contextLen = Math.max(1, Math.min(100, request.contextLen ?? 25));
     return this.engine.query(
       request.query,

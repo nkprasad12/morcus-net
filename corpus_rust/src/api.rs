@@ -58,6 +58,7 @@ pub struct QueryGlobalInfo {
 pub struct CorpusQueryResult<'a> {
     pub matches: Vec<CorpusQueryMatch<'a>>,
     pub result_stats: QueryGlobalInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub next_page: Option<PageData>,
     pub timing: Vec<(String, f64)>,
 }

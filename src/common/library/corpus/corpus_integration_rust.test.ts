@@ -62,6 +62,7 @@ describe("Corpus Integration Test", () => {
   function queryCorpus(query: string, pageStart?: number, pageSize?: number) {
     const raw = queryEngine.queryCorpus({ query, pageStart, pageSize });
     const parsed = JSON.parse(raw);
+    console.log(parsed);
     return assertType(parsed, CorpusQueryResult.isMatch);
   }
 
@@ -128,7 +129,7 @@ describe("Corpus Integration Test", () => {
   it("should find all instances of a lemma", () => {
     const query = "@lemma:servus";
     const results = queryCorpus(query);
-    expect(results.totalResults).toBe(2);
+    expect(results.resultStats.totalResults).toBe(2);
     expect(results.matches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -155,7 +156,7 @@ describe("Corpus Integration Test", () => {
     const query = "@case:acc";
     const results = queryCorpus(query, undefined, 2);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
-    expect(results.totalResults).toBe(4);
+    expect(results.resultStats.totalResults).toBe(4);
     expect(results.matches).toHaveLength(2);
     expect(getMatchText(results.matches[0])).toEqual(["servum"]);
     expect(getMatchText(results.matches[1])).toEqual(["Gallum"]);
@@ -217,7 +218,7 @@ describe("Corpus Integration Test", () => {
     const query = "acclamat servus";
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(0);
+    expect(results.resultStats.totalResults).toBe(0);
     expect(results.matches).toHaveLength(0);
   });
 
@@ -231,20 +232,20 @@ describe("Corpus Integration Test", () => {
       "marmore et marmoribus",
     ].map((text) => queryCorpus(text));
 
-    expect(results[0].totalResults).toBe(1);
-    expect(results[1].totalResults).toBe(1);
+    expect(results[0].resultStats.totalResults).toBe(1);
+    expect(results[1].resultStats.totalResults).toBe(1);
     // There's a period between the words now.
-    expect(results[2].totalResults).toBe(0);
-    expect(results[3].totalResults).toBe(0);
-    expect(results[4].totalResults).toBe(1);
-    expect(results[5].totalResults).toBe(1);
+    expect(results[2].resultStats.totalResults).toBe(0);
+    expect(results[3].resultStats.totalResults).toBe(0);
+    expect(results[4].resultStats.totalResults).toBe(1);
+    expect(results[5].resultStats.totalResults).toBe(1);
   });
 
   it("should return no results for a query with no matches", () => {
     const query = "imperator";
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(0);
+    expect(results.resultStats.totalResults).toBe(0);
     expect(results.matches).toHaveLength(0);
   });
 
@@ -253,17 +254,17 @@ describe("Corpus Integration Test", () => {
     const startIds = new Set<number>();
 
     let results = queryCorpus(query, 0, 2);
-    expect(results.totalResults).toBe(5);
+    expect(results.resultStats.totalResults).toBe(5);
     expect(results.matches).toHaveLength(2);
     results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
     results = queryCorpus(query, 2, 2);
-    expect(results.totalResults).toBe(5);
+    expect(results.resultStats.totalResults).toBe(5);
     expect(results.matches).toHaveLength(2);
     results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
     results = queryCorpus(query, 4, 2);
-    expect(results.totalResults).toBe(5);
+    expect(results.resultStats.totalResults).toBe(5);
     expect(results.matches).toHaveLength(1);
     results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
@@ -277,7 +278,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.totalResults).toBe(1);
     const resultParts = results.matches[0].text;
     expect(resultParts).toHaveLength(3);
     expect(resultParts[0][1]).toBe(false);
@@ -291,7 +292,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.totalResults).toBe(1);
     const resultParts = results.matches[0].text;
     expect(resultParts).toHaveLength(3);
     expect(resultParts[0][1]).toBe(false);
@@ -305,7 +306,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.totalResults).toBe(1);
     const resultParts = results.matches[0].text;
     expect(resultParts).toHaveLength(3);
     expect(resultParts[0][1]).toBe(false);
@@ -319,7 +320,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.totalResults).toBe(1);
     expect(getMatchText(results.matches[0])).toEqual(["marmoris", "marmore"]);
   });
 
@@ -329,6 +330,6 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
 
     // Marmorem is not valid because marmor is neuter.
-    expect(results.totalResults).toBe(5);
+    expect(results.resultStats.totalResults).toBe(5);
   });
 });
