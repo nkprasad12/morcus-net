@@ -38,6 +38,13 @@ declare -A RESOURCES=(
   ["GAFFIOT_RAW_PATH"]="gaffiot.js https://raw.githubusercontent.com/nkprasad12/gaffiot/refs/heads/main/gaffiot.js"
 )
 
+# Color codes
+COLOR_INFO="\033[1;34m"
+COLOR_WARN="\033[1;33m"
+COLOR_ERR="\033[1;31m"
+COLOR_RESET="\033[0m"
+INDENT="  "
+
 function ensure_env {
   if [ ! -f "$ENV_PATH" ]; then
     mkdir -p "$(dirname "$ENV_PATH")"
@@ -59,12 +66,15 @@ function clone_repo {
   local url=$2
   local branch=$3
   if [ ! -d "$dir" ]; then
+    echo -e "${COLOR_INFO}Cloning repo '$dir' from $url...${COLOR_RESET}"
     git clone "$url" "$dir"
     if [ -n "$branch" ]; then
       cd "$dir"
+      echo -e "${INDENT}${COLOR_INFO}Checking out branch '$branch' in '$dir'...${COLOR_RESET}"
       git checkout "$branch"
       cd ..
     fi
+    echo -e "${COLOR_INFO}Repo '$dir' cloned.${COLOR_RESET}"
   fi
 }
 
@@ -72,7 +82,48 @@ function download_file {
   local url=$1
   local out=$2
   if [ ! -f "$out" ]; then
+    echo -e "${COLOR_INFO}Downloading file '$out' from $url...${COLOR_RESET}"
     curl -L "$url" -o "$out"
+    echo -e "${COLOR_INFO}File '$out' downloaded.${COLOR_RESET}"
+  fi
+}
+
+function get_env_var {
+  grep "^$1=" "$ENV_PATH" | cut -d'=' -f2-
+}
+
+function check_and_pull_repo {
+  local dir=$1
+  local expected_branch=$2
+  if [ -d "$dir" ]; then
+    echo -e "${COLOR_INFO}Found existing repo '$dir', checking if it is up to date...${COLOR_RESET}"
+    cd "$dir"
+    if [ -n "$expected_branch" ]; then
+      current_branch=$(git rev-parse --abbrev-ref HEAD)
+      if [ "$current_branch" != "$expected_branch" ]; then
+        # Check for pending changes
+        if [ -z "$(git status --porcelain)" ]; then
+          echo -e "${COLOR_WARN}Repo '$dir' is on branch '$current_branch', expected '$expected_branch'.${COLOR_RESET}"
+          read -p "${INDENT}No pending changes detected. Switch to branch '$expected_branch'? [y/N]: " yn
+          if [[ "$yn" =~ ^[Yy]$ ]]; then
+            echo -e "${INDENT}${COLOR_INFO}Switching '$dir' to branch '$expected_branch'...${COLOR_RESET}"
+            git checkout "$expected_branch"
+            echo -e "${INDENT}${COLOR_INFO}Switched '$dir' to branch '$expected_branch'.${COLOR_RESET}"
+          else
+            echo -e "${COLOR_ERR}Aborting setup. Please switch branch manually.${COLOR_RESET}"
+            exit 1
+          fi
+        else
+          echo -e "${COLOR_ERR}ERROR: '$dir' is on branch '$current_branch', expected '$expected_branch', and has pending changes.${COLOR_RESET}"
+          echo -e "${INDENT}${COLOR_ERR}Please commit or stash your changes and switch branch manually.${COLOR_RESET}"
+          exit 1
+        fi
+      fi
+    fi
+    echo -e "${INDENT}${COLOR_INFO}Pulling changes from repo '$dir'...${COLOR_RESET}"
+    git pull
+    echo -e "${INDENT}${COLOR_INFO}Repo '$dir' is up to date.${COLOR_RESET}"
+    cd "$MORCUS_DIR"
   fi
 }
 
@@ -98,34 +149,38 @@ cd "$MORCUS_DIR"
 ensure_env
 
 for VAR in "${!RESOURCES[@]}"; do
-  if ! env_has_var "$VAR"; then
-    IFS=' ' read -r DIR URL FILE BRANCH <<< "${RESOURCES[$VAR]}"
+  IFS=' ' read -r DIR URL FILE BRANCH <<< "${RESOURCES[$VAR]}"
+  if env_has_var "$VAR"; then
     if [[ "$URL" == *.git ]]; then
-      clone_repo "$DIR" "$URL" "$BRANCH"
-      # Compose path for env variable
-      if [ "$VAR" == "LS_PATH" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-      elif [ "$VAR" == "RA_PATH" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-      elif [ "$VAR" == "GESNER_RAW_PATH" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-      elif [ "$VAR" == "SH_RAW_PATH" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-      elif [ "$VAR" == "GEORGES_RAW_PATH" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-      elif [ "$VAR" == "POZO_RAW_PATH" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
-      elif [ "$VAR" == "LIB_XML_ROOT" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR"
-      elif [ "$VAR" == "HYPOTACTIC_ROOT" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR"
-      elif [ "$VAR" == "PHI_JSON_ROOT" ]; then
-        set_env_var "$VAR" "$MORCUS_DIR/$DIR"
-      fi
-    else
-      download_file "$URL" "$DIR"
+      check_and_pull_repo "$DIR" "$BRANCH"
+    fi
+    continue
+  fi
+  if [[ "$URL" == *.git ]]; then
+    clone_repo "$DIR" "$URL" "$BRANCH"
+    # Compose path for env variable
+    if [ "$VAR" == "LS_PATH" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
+    elif [ "$VAR" == "RA_PATH" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
+    elif [ "$VAR" == "GESNER_RAW_PATH" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
+    elif [ "$VAR" == "SH_RAW_PATH" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
+    elif [ "$VAR" == "GEORGES_RAW_PATH" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
+    elif [ "$VAR" == "POZO_RAW_PATH" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
+    elif [ "$VAR" == "LIB_XML_ROOT" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR"
+    elif [ "$VAR" == "HYPOTACTIC_ROOT" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR"
+    elif [ "$VAR" == "PHI_JSON_ROOT" ]; then
       set_env_var "$VAR" "$MORCUS_DIR/$DIR"
     fi
+  else
+    download_file "$URL" "$DIR"
+    set_env_var "$VAR" "$MORCUS_DIR/$DIR"
   fi
 done
 
