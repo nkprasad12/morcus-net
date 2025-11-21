@@ -33,10 +33,15 @@ fn query_with_timing<'a>(
     query: &str,
 ) -> Result<CorpusQueryResult<'a>, QueryExecError> {
     let page_start = 0;
+    let page_data = corpus::api::PageData {
+        result_index: page_start,
+        result_id: 0,
+        candidate_index: 0,
+    };
     let page_size = get_limit_arg_or_default();
     let context_len = get_context_arg_or_default();
     let start = Instant::now();
-    let results = engine.query_corpus(query, page_start, page_size, context_len)?;
+    let results = engine.query_corpus(query, &page_data, page_size, context_len)?;
     let duration = start.elapsed();
     println!("Query executed in {duration:.2?}");
     if !results.timing.is_empty() {

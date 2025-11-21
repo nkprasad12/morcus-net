@@ -44,11 +44,16 @@ impl QueryEngineWrapper {
         page_size: u32,
         context_len: u32,
     ) -> Result<String, String> {
+        let page_data = corpus::api::PageData {
+            result_index: page_start,
+            result_id: 0,
+            candidate_index: 0,
+        };
         let result = self
             .engine
             .query_corpus(
                 &query_str,
-                page_start as usize,
+                &page_data,
                 page_size as usize,
                 context_len as usize,
             )

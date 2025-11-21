@@ -179,7 +179,7 @@ impl CorpusQueryEngine {
     fn query_corpus_ref_impl(
         &self,
         query_str: &str,
-        page_start: usize,
+        page_data: &PageData,
         page_size: usize,
         context_len: usize,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
@@ -258,7 +258,7 @@ impl CorpusQueryEngine {
 
         let matches: Vec<CorpusQueryMatch<'_>> = match_ids
             .iter()
-            .skip(page_start)
+            .skip(page_data.result_index as usize)
             .take(page_size)
             .map(|x| self.resolve_match_ref_impl(x, context_len).unwrap())
             .collect();
@@ -268,7 +268,7 @@ impl CorpusQueryEngine {
                 exact_count: Some(true),
             },
             next_page: Some(PageData {
-                result_index: (page_start + matches.len()) as u32,
+                result_index: (page_data.result_index as usize + matches.len()) as u32,
                 result_id: 0,
                 candidate_index: 0,
             }),
@@ -282,26 +282,26 @@ impl CorpusQueryEngine {
     pub(super) fn compare_ref_impl_results(
         &self,
         query: &str,
-        page_start: usize,
+        page_data: &PageData,
         page_size: usize,
         context_len: usize,
     ) {
         let start = std::time::Instant::now();
         let result_prod = self
-            .query_corpus(query, page_start, page_size, context_len)
+            .query_corpus(query, page_data, page_size, context_len)
             .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
         let prod_time = start.elapsed().as_secs_f64();
         let start = std::time::Instant::now();
         let result_ref = self
-            .query_corpus_ref_impl(query, page_start, page_size, context_len)
+            .query_corpus_ref_impl(query, page_data, page_size, context_len)
             .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
         let fraction_time = start.elapsed().as_secs_f64() / prod_time;
         println!(
-            "Ref impl is {fraction_time:.2}x\n - [{} {} {} {}]",
-            query, page_start, page_size, context_len
+            "Ref impl is {fraction_time:.2}x\n - [{} {:?} {} {}]",
+            query, page_data, page_size, context_len
         );
         let query_details = format!(
-            "Query: {query}, page_start: {page_start}, page_size: {page_size}, context_len: {context_len}"
+            "Query: {query}, page_start: {page_data:?}, page_size: {page_size}, context_len: {context_len}"
         );
         assert_eq!(
             result_prod.next_page, result_ref.next_page,

@@ -86,7 +86,7 @@ impl CorpusQueryEngine {
 
     /// Queries the corpus with the given parameters.
     /// - `query_str`: The query string to execute.
-    /// - `page_start`: The index of the first result to return (0-based).
+    /// - `page_data`: Metadata required to find the correct page of results.
     /// - `page_size`: The maximum number of results to return. If `None`, a large default is used.
     /// - `context_len`: The number of tokens of context to include around each match. If `None`, defaults to 25.
     ///
@@ -94,7 +94,7 @@ impl CorpusQueryEngine {
     pub fn query_corpus(
         &self,
         query_str: &str,
-        page_start: usize,
+        page_data: &PageData,
         page_size: usize,
         context_len: usize,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
@@ -125,6 +125,7 @@ impl CorpusQueryEngine {
         // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
         // technically giving matching within N tokens but they're not distinct terms. For now,
         // just include these misleading results.
+        let page_start = page_data.result_index as usize;
         let (match_ids, total_results) = compute_page_result(&candidates, page_start, page_size)?;
 
         // Turn the match IDs into actual matches (with the text and locations).
@@ -161,16 +162,52 @@ mod tests {
     macro_rules! generate {
         ($query:expr) => {
             &[
-                ($query, 0, 5, 15),
-                ($query, 0, 25, 10),
-                ($query, 5, 5, 10),
-                ($query, 50, 5, 10),
+                (
+                    $query,
+                    PageData {
+                        result_index: 0,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    5,
+                    15,
+                ),
+                (
+                    $query,
+                    PageData {
+                        result_index: 0,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    25,
+                    10,
+                ),
+                (
+                    $query,
+                    PageData {
+                        result_index: 5,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    5,
+                    10,
+                ),
+                (
+                    $query,
+                    PageData {
+                        result_index: 50,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    5,
+                    10,
+                ),
             ]
         };
     }
 
     // (query, page_start, page_size, context_len)
-    const TEST_QUERIES: &[&[(&str, usize, usize, usize)]] = &[
+    const TEST_QUERIES: &[&[(&str, PageData, usize, usize)]] = &[
         generate!("@lemma:do"),
         generate!("@case:dat"),
         generate!("(@lemma:habeo and @voice:passive)"),
@@ -191,8 +228,8 @@ mod tests {
             None => return,
         };
         let test_queries = TEST_QUERIES.iter().flat_map(|s| s.iter());
-        for (query, page_start, page_size, context_len) in test_queries {
-            engine.compare_ref_impl_results(query, *page_start, *page_size, *context_len);
+        for (query, page_data, page_size, context_len) in test_queries {
+            engine.compare_ref_impl_results(query, page_data, *page_size, *context_len);
         }
     }
 }
