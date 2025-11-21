@@ -139,8 +139,34 @@ if [ ! -d "morcus-net" ]; then
 fi
 
 cd "$MORCUS_NET_DIR"
-git checkout dev
-npm ci
+
+# Prompt before switching to dev branch if not already on dev
+current_branch=$(git rev-parse --abbrev-ref HEAD)
+if [ "$current_branch" != "dev" ]; then
+  echo -e "${COLOR_WARN}You are currently on branch '$current_branch' in morcus-net.${COLOR_RESET}"
+  read -p "${INDENT}Switch to branch 'dev'? [y/N]: " yn
+  if [[ "$yn" =~ ^[Yy]$ ]]; then
+    echo -e "${INDENT}${COLOR_INFO}Switching to branch 'dev'...${COLOR_RESET}"
+    git checkout dev
+  else
+    echo -e "${COLOR_WARN}Continuing setup on branch '$current_branch' (not 'dev').${COLOR_RESET}"
+  fi
+fi
+
+# Prompt before running npm ci if node_modules exists
+if [ -d "node_modules" ]; then
+  echo -e "${COLOR_WARN}Directory 'node_modules' already exists in morcus-net.${COLOR_RESET}"
+  read -p "${INDENT}Run 'npm ci' anyway? This will remove and reinstall all modules. [y/N]: " yn
+  if [[ "$yn" =~ ^[Yy]$ ]]; then
+    echo -e "${INDENT}${COLOR_INFO}Running 'npm ci'...${COLOR_RESET}"
+    npm ci
+  else
+    echo -e "${COLOR_INFO}Skipping 'npm ci'.${COLOR_RESET}"
+  fi
+else
+  echo -e "${COLOR_INFO}Running 'npm ci'...${COLOR_RESET}"
+  npm ci
+fi
 
 echo "Setting up git hooks"
 git config --local core.hooksPath .githooks/
