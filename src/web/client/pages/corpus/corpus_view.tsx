@@ -17,12 +17,16 @@ import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 import { Fragment, useCallback, useMemo, useState } from "react";
-import { useCorpusRouter } from "@/web/client/pages/corpus/corpus_router";
+import {
+  parsePageData,
+  useCorpusRouter,
+} from "@/web/client/pages/corpus/corpus_router";
 import { GetCorpusAuthorsApi } from "@/web/api_routes";
 import {
   SettingsPreview,
   CorpusSettingsDialog,
 } from "@/web/client/pages/corpus/corpus_settings";
+import { parse } from "node:path";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
 
@@ -39,20 +43,21 @@ export function CorpusQueryPage() {
   const [authors, setAuthors] = useState<string[] | null>(null);
 
   const { nav, route } = useCorpusRouter();
-  const { query, startIdx, pageSize, contextLen } = route;
+  const { query, currentPage, pageSize, contextLen } = route;
 
   const apiRequest: CorpusQueryRequest | null = useMemo(() => {
     if (query.length === 0) {
       return null;
     }
+    const pageData = parsePageData(currentPage) ?? undefined;
     return {
       query,
       pageSize,
-      pageStart: startIdx,
+      pageData,
       commitHash: getCommitHash(),
       contextLen,
     };
-  }, [query, startIdx, contextLen, pageSize]);
+  }, [query, currentPage, contextLen, pageSize]);
 
   useApiCall(QueryCorpusApi, apiRequest, {
     onResult: setResults,
@@ -107,7 +112,7 @@ export function CorpusQueryPage() {
 
 function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   const { nav, route } = useCorpusRouter();
-  const { query, pageSize } = route;
+  const { query, pageSize, currentPage } = route;
 
   if (props.results === "Error") {
     return <div>Error occurred on query: {query}</div>;
@@ -116,20 +121,20 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
     return <div>Loading results for: {query}</div>;
   }
 
-  const pageStart = route.startIdx;
+  // const pageStart = route.startIdx;
   const totalResults = props.results.resultStats.totalResults;
 
-  const firstPage = pageStart === 0;
-  const lastPage = pageStart + props.results.matches.length >= totalResults;
+  // const firstPage = pageStart === 0;
+  // const lastPage = pageStart + props.results.matches.length >= totalResults;
 
-  const changePage = (increment: boolean) => {
-    nav.to((current) => {
-      const newStart = increment
-        ? current.startIdx + pageSize
-        : current.startIdx - pageSize;
-      return { ...current, startIdx: newStart };
-    });
-  };
+  // const changePage = (increment: boolean) => {
+  //   nav.to((current) => {
+  //     const newStart = increment
+  //       ? current.startIdx + pageSize
+  //       : current.startIdx - pageSize;
+  //     return { ...current, startIdx: newStart };
+  //   });
+  // };
 
   return (
     <div style={{ margin: "0px 16px" }}>
