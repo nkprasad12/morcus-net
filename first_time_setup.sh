@@ -8,18 +8,6 @@ COLOR_ERR="\033[1;31m"
 COLOR_RESET="\033[0m"
 INDENT="  "
 
-# Check for node and npm
-if ! command -v node >/dev/null 2>&1; then
-  echo -e "${COLOR_ERR}Error: Node.js is not installed. Please install Node.js before running this script.${COLOR_RESET}"
-  echo -e "${INDENT}See: https://github.com/nvm-sh/nvm for an easy way to install Node.js"
-  exit 1
-fi
-if ! command -v npm >/dev/null 2>&1; then
-  echo -e "${COLOR_ERR}Error: npm is not installed. Please install npm before running this script.${COLOR_RESET}"
-  echo -e "${INDENT}See: https://github.com/nvm-sh/nvm for an easy way to install Node.js and npm"
-  exit 1
-fi
-
 # Determine working directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CUR_DIR="$(basename "$PWD")"
@@ -169,6 +157,81 @@ function ensure_rust_and_cargo {
     fi
   else
     echo -e "${COLOR_INFO}Please restart your shell or run 'source \$HOME/.cargo/env' before rerunning this script.${COLOR_RESET}"
+    exit 0
+  fi
+}
+
+function source_nvm {
+  # shellcheck source=/dev/null
+  source "$HOME/.nvm/nvm.sh"
+}
+
+function install_and_use_lts_node {
+  echo -e "${INDENT}${COLOR_INFO}Installing and using latest LTS version of Node.js with nvm...${COLOR_RESET}"
+  nvm install --lts
+  nvm use --lts
+}
+
+function ensure_node_and_npm {
+  local missing_node=0
+  local missing_npm=0
+
+  if ! command -v node >/dev/null 2>&1; then
+    missing_node=1
+  fi
+  if ! command -v npm >/dev/null 2>&1; then
+    missing_npm=1
+  fi
+
+  if (( !missing_node && !missing_npm )); then
+    return 0
+  fi
+
+  # If nvm is already installed, use it to install node
+  if command -v nvm >/dev/null 2>&1 || [ -f "$HOME/.nvm/nvm.sh" ]; then
+    if ! command -v nvm >/dev/null 2>&1; then
+      source_nvm
+    fi
+    install_and_use_lts_node
+    if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+      return 0
+    else
+      echo -e "${COLOR_ERR}Node.js/npm still not detected after nvm install. Please check your installation.${COLOR_RESET}"
+      echo -e "${INDENT}See: https://github.com/nvm-sh/nvm for nvm instructions."
+      echo -e "${INDENT}Or visit https://nodejs.org for direct Node.js installers."
+      exit 1
+    fi
+  fi
+
+  echo -e "${COLOR_ERR}Error: Node.js and/or npm is not installed.${COLOR_RESET}"
+  echo -e "${INDENT}This script can install Node.js for you using nvm (Node Version Manager)."
+  echo -e "${INDENT}The following command will be run to install nvm:"
+  echo -e "${INDENT}${COLOR_INFO}curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash${COLOR_RESET}"
+  read -p "${INDENT}Would you like to install nvm and use it to install Node.js? [y/N]: " yn
+  if [[ ! "$yn" =~ ^[Yy]$ ]]; then
+    echo -e "${COLOR_ERR}Node.js and npm are required to run Morcus.net.${COLOR_RESET}"
+    echo -e "${INDENT}See: https://github.com/nvm-sh/nvm for nvm instructions."
+    echo -e "${INDENT}Or visit https://nodejs.org for direct Node.js installers."
+    exit 1
+  fi
+
+  echo -e "${INDENT}${COLOR_INFO}Installing nvm...${COLOR_RESET}"
+  curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.3/install.sh | bash
+
+  read -p "${INDENT}Can this script source \$HOME/.nvm/nvm.sh and continue? [y/N]: " srcyn
+  if [[ "$srcyn" =~ ^[Yy]$ ]]; then
+    source_nvm
+    install_and_use_lts_node
+    if command -v node >/dev/null 2>&1 && command -v npm >/dev/null 2>&1; then
+      return 0
+    else
+      echo -e "${COLOR_ERR}Node.js/npm still not detected after sourcing and installing. Please check your installation.${COLOR_RESET}"
+      echo -e "${INDENT}See: https://github.com/nvm-sh/nvm for nvm instructions."
+      echo -e "${INDENT}Or visit https://nodejs.org for direct Node.js installers."
+      exit 1
+    fi
+  else
+    echo -e "${COLOR_INFO}Please restart your shell or run 'source \$HOME/.nvm/nvm.sh' before rerunning this script.${COLOR_RESET}"
     exit 0
   fi
 }
