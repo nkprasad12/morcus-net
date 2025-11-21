@@ -1,6 +1,25 @@
 #!/bin/bash
 set -e
 
+# Color codes
+COLOR_INFO="\033[1;34m"
+COLOR_WARN="\033[1;33m"
+COLOR_ERR="\033[1;31m"
+COLOR_RESET="\033[0m"
+INDENT="  "
+
+# Check for node and npm
+if ! command -v node >/dev/null 2>&1; then
+  echo -e "${COLOR_ERR}Error: Node.js is not installed. Please install Node.js before running this script.${COLOR_RESET}"
+  echo -e "${INDENT}See: https://github.com/nvm-sh/nvm for an easy way to install Node.js"
+  exit 1
+fi
+if ! command -v npm >/dev/null 2>&1; then
+  echo -e "${COLOR_ERR}Error: npm is not installed. Please install npm before running this script.${COLOR_RESET}"
+  echo -e "${INDENT}See: https://github.com/nvm-sh/nvm for an easy way to install Node.js and npm"
+  exit 1
+fi
+
 # Determine working directory and project root
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 CUR_DIR="$(basename "$PWD")"
@@ -37,13 +56,6 @@ declare -A RESOURCES=(
   ["PHI_JSON_ROOT"]="phi-public-domain-json https://github.com/nkprasad12/phi-public-domain-json.git"
   ["GAFFIOT_RAW_PATH"]="gaffiot.js https://raw.githubusercontent.com/nkprasad12/gaffiot/refs/heads/main/gaffiot.js"
 )
-
-# Color codes
-COLOR_INFO="\033[1;34m"
-COLOR_WARN="\033[1;33m"
-COLOR_ERR="\033[1;31m"
-COLOR_RESET="\033[0m"
-INDENT="  "
 
 function ensure_env {
   if [ ! -f "$ENV_PATH" ]; then
