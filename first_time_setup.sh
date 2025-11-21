@@ -139,6 +139,40 @@ function check_and_pull_repo {
   fi
 }
 
+function ensure_rust_and_cargo {
+  if command -v rustc >/dev/null 2>&1 && command -v cargo >/dev/null 2>&1; then
+    return 0
+  fi
+
+  echo -e "${COLOR_WARN}Rust and/or Cargo not detected.${COLOR_RESET}"
+  echo -e "${INDENT}To install Rust and Cargo, the following command will be run:"
+  echo -e "${INDENT}${COLOR_INFO}curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh${COLOR_RESET}"
+  read -p "${INDENT}Would you like to install Rust and Cargo now? [y/N]: " yn
+  if [[ ! "$yn" =~ ^[Yy]$ ]]; then
+    echo -e "${COLOR_WARN}Some features will not work without Rust and Cargo.${COLOR_RESET}"
+    echo -e "${INDENT}See: https://rust-lang.org/ for install instructions."
+    return 1
+  fi
+
+  echo -e "${INDENT}${COLOR_INFO}Installing Rust and Cargo using rustup...${COLOR_RESET}"
+  curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
+  read -p "${INDENT}Can this script source \$HOME/.cargo/env and continue? [y/N]: " srcyn
+  if [[ "$srcyn" =~ ^[Yy]$ ]]; then
+    # shellcheck source=/dev/null
+    source "$HOME/.cargo/env"
+    if command -v rustc >/dev/null 2>&1 && command -v cargo >/dev/null 2>&1; then
+      return 0
+    else
+      echo -e "${COLOR_ERR}Rust/Cargo still not detected after sourcing. Please check your installation.${COLOR_RESET}"
+      echo -e "${INDENT}See: https://rust-lang.org/ for install instructions."
+      return 1
+    fi
+  else
+    echo -e "${COLOR_INFO}Please restart your shell or run 'source \$HOME/.cargo/env' before rerunning this script.${COLOR_RESET}"
+    exit 0
+  fi
+}
+
 echo "This script will set up $APP_NAME in a '$MORCUS_DIR' subdirectory of current directory."
 if [ ! -d "$MORCUS_DIR" ]; then
   mkdir -p "$MORCUS_DIR"
@@ -222,6 +256,12 @@ for VAR in "${!RESOURCES[@]}"; do
   fi
 done
 
-echo "Processing raw dictionary files, building the client, and starting the server."
 cd "$MORCUS_NET_DIR"
+
+if ensure_rust_and_cargo; then
+  echo -e "${COLOR_INFO}Rust and Cargo detected. Building Rust bindings...${COLOR_RESET}"
+  npm run setup-node-bindgen
+fi
+
+echo "Processing raw dictionary files, building the client, and starting the server."
 ./morcus.sh web --build_all --minify
