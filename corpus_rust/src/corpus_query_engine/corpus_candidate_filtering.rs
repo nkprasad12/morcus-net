@@ -1,4 +1,5 @@
 use crate::{
+    api::PageData,
     bitmask_utils::{Direction, next_one_bit, smear_bitmask},
     corpus_query_engine::{
         CorpusQueryEngine, IndexData, IndexDataRoO, QueryExecError,
@@ -10,24 +11,16 @@ use crate::{
 /// Computes the page of results for the given parameters.
 pub(super) fn compute_page_result(
     match_results: &IndexSlice,
-    page_start: usize,
+    page_data: &PageData,
     page_size: usize,
-) -> Result<(Vec<u32>, usize, Option<usize>), QueryExecError> {
+) -> Result<(Vec<u32>, usize, Option<PageData>), QueryExecError> {
     let matches = match_results.data.to_ref();
 
     // Get to the start of the page.
     let mut results: Vec<u32> = vec![];
     let mut i: usize = match &matches {
-        IndexData::List(_) => page_start,
-        IndexData::BitMask(bitmask) => {
-            let mut start_idx = 0;
-            for _ in 0..page_start {
-                start_idx = next_one_bit(bitmask, start_idx)
-                    .ok_or(QueryExecError::new("Not enough results for page"))?
-                    + 1;
-            }
-            start_idx
-        }
+        IndexData::List(_) => page_data.candidate_index as usize,
+        IndexData::BitMask(_) => page_data.result_id as usize,
     };
 
     let n = matches.num_elements();
@@ -56,7 +49,14 @@ pub(super) fn compute_page_result(
             return Err(QueryExecError::new("Token ID is less than match position"));
         }
         if results.len() == page_size {
-            next_start = Some(token_id as usize);
+            next_start = Some(PageData {
+                result_index: page_data.result_index + results.len() as u32,
+                // TODO: This is the same as the `result_index` for now because we never
+                // skip candidates, but when we implement fuzzy matches and do need to
+                // discard candidates, this will need to be updated.
+                candidate_index: page_data.result_index + results.len() as u32,
+                result_id: token_id - match_results.position,
+            });
             break;
         }
         results.push(token_id - match_results.position);

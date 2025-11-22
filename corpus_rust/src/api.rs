@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// An error that occurs while executing a query.
 #[derive(Debug, Clone)]
@@ -29,7 +29,7 @@ pub struct CorpusQueryMatch<'a> {
 }
 
 /// Data to resolve a page of results.
-#[derive(Debug, Serialize, PartialEq)]
+#[derive(Debug, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PageData {
     /// The index of the next result in the full list of actual results.

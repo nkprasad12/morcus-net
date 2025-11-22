@@ -125,9 +125,8 @@ impl CorpusQueryEngine {
         // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
         // technically giving matching within N tokens but they're not distinct terms. For now,
         // just include these misleading results.
-        let page_start = page_data.result_index as usize;
-        let (match_ids, total_results, next_start) =
-            compute_page_result(&candidates, page_start, page_size)?;
+        let (match_ids, total_results, next_page) =
+            compute_page_result(&candidates, page_data, page_size)?;
 
         // Turn the match IDs into actual matches (with the text and locations).
         let matches = self.resolve_match_tokens(
@@ -141,11 +140,6 @@ impl CorpusQueryEngine {
             total_results,
             exact_count: Some(true),
         };
-        let next_page = next_start.map(|_next_page_start| PageData {
-            result_index: page_start as u32 + match_ids.len() as u32,
-            result_id: 0,
-            candidate_index: 0,
-        });
         Ok(CorpusQueryResult {
             result_stats,
             matches,

@@ -144,7 +144,7 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   const pageStart = currentPage?.resultIndex ?? 0;
   const totalResults = props.results.resultStats.totalResults;
   const aboutText =
-    props.results.resultStats.exactCount === true ? "approximately " : "";
+    props.results.resultStats.exactCount === true ? "" : "approximately ";
 
   const toNextPage = () =>
     nav.to((c) => ({
