@@ -1,26 +1,84 @@
+import type { PageData } from "@/common/library/corpus/corpus_common";
 import { safeParseInt } from "@/common/misc_utils";
 import { Router, type RouteInfo } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 
 interface CorpusUrlData {
   query: string;
-  startIdx: number;
+  currentPage?: string;
+  lastPage?: string;
+  nextPage?: string;
   pageSize: number;
   contextLen: number;
 }
 
+const UNDEF_PAGE = "";
+const NULL_PAGE = "null";
+const PAGE_JOINER = "-";
+
 const fromRoute = (route: RouteInfo): CorpusUrlData => ({
   query: route.params?.q?.trim() ?? "",
-  startIdx: safeParseInt(route.params?.n) ?? 0,
+  currentPage: route.params?.cp,
+  lastPage: route.params?.lp,
+  nextPage: route.params?.np,
   pageSize: safeParseInt(route.params?.ps) ?? 25,
   contextLen: safeParseInt(route.params?.cl) ?? 20,
 });
+
+export const parsePageData = (
+  pageDataStr?: string
+): PageData | null | undefined => {
+  if (pageDataStr === undefined || pageDataStr === UNDEF_PAGE) {
+    return undefined;
+  }
+  if (pageDataStr === NULL_PAGE) {
+    return null;
+  }
+  const parts = pageDataStr.split(PAGE_JOINER);
+  if (parts.length !== 3) {
+    return undefined;
+  }
+  const resultId = safeParseInt(parts[0]);
+  const resultIndex = safeParseInt(parts[1]);
+  const candidateIndex = safeParseInt(parts[2]);
+  if (
+    resultId === undefined ||
+    resultIndex === undefined ||
+    candidateIndex === undefined
+  ) {
+    return undefined;
+  }
+  return {
+    resultId,
+    resultIndex,
+    candidateIndex,
+  };
+};
+
+export const serializePageData = (
+  pageData: PageData | null | undefined
+): string => {
+  if (pageData === undefined) {
+    return UNDEF_PAGE;
+  }
+  if (pageData === null) {
+    return NULL_PAGE;
+  }
+  const parts = [
+    pageData.resultId,
+    pageData.resultIndex,
+    pageData.candidateIndex,
+  ];
+  return parts.join(PAGE_JOINER);
+};
 
 const toRoute = (info: CorpusUrlData): RouteInfo => ({
   path: ClientPaths.CORPUS_QUERY_PATH.path,
   params: {
     q: info.query,
-    n: info.startIdx.toString(),
+    cp: info.currentPage,
+    lp: info.lastPage,
+    np: info.nextPage,
     ps: info.pageSize.toString(),
     cl: info.contextLen.toString(),
   },

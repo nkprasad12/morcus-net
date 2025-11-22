@@ -126,7 +126,8 @@ impl CorpusQueryEngine {
         // technically giving matching within N tokens but they're not distinct terms. For now,
         // just include these misleading results.
         let page_start = page_data.result_index as usize;
-        let (match_ids, total_results) = compute_page_result(&candidates, page_start, page_size)?;
+        let (match_ids, total_results, next_start) =
+            compute_page_result(&candidates, page_start, page_size)?;
 
         // Turn the match IDs into actual matches (with the text and locations).
         let matches = self.resolve_match_tokens(
@@ -140,16 +141,15 @@ impl CorpusQueryEngine {
             total_results,
             exact_count: Some(true),
         };
-        let next_result = page_start + matches.len();
-        let next_page = PageData {
-            result_index: next_result as u32,
+        let next_page = next_start.map(|_next_page_start| PageData {
+            result_index: page_start as u32 + match_ids.len() as u32,
             result_id: 0,
             candidate_index: 0,
-        };
+        });
         Ok(CorpusQueryResult {
             result_stats,
             matches,
-            next_page: Some(next_page),
+            next_page,
             timing: profiler.get_stats().to_vec(),
         })
     }

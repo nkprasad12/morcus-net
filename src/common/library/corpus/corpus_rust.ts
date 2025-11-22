@@ -39,7 +39,7 @@ export class RustCorpusQueryEngine {
     const contextLen = Math.max(1, Math.min(100, request.contextLen ?? 25));
     return this.engine.query(
       request.query,
-      request.pageStart ?? 0,
+      request.pageData?.resultIndex ?? 0,
       request.pageSize ?? 50,
       contextLen
     );

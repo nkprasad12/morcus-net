@@ -12,7 +12,7 @@ pub(super) fn compute_page_result(
     match_results: &IndexSlice,
     page_start: usize,
     page_size: usize,
-) -> Result<(Vec<u32>, usize), QueryExecError> {
+) -> Result<(Vec<u32>, usize, Option<usize>), QueryExecError> {
     let matches = match_results.data.to_ref();
 
     // Get to the start of the page.
@@ -31,7 +31,8 @@ pub(super) fn compute_page_result(
     };
 
     let n = matches.num_elements();
-    while results.len() < page_size {
+    let mut next_start = None;
+    while results.len() < page_size + 1 {
         let token_id = match matches {
             IndexData::List(data) => {
                 if i >= n {
@@ -54,9 +55,13 @@ pub(super) fn compute_page_result(
         if token_id < match_results.position {
             return Err(QueryExecError::new("Token ID is less than match position"));
         }
+        if results.len() == page_size {
+            next_start = Some(token_id as usize);
+            break;
+        }
         results.push(token_id - match_results.position);
     }
-    Ok((results, n))
+    Ok((results, n, next_start))
 }
 
 impl CorpusQueryEngine {

@@ -63,7 +63,7 @@ export interface PageData {
   candidateIndex: number;
 }
 
-const isPageData = matchesObject<PageData>({
+export const isPageData = matchesObject<PageData>({
   resultIndex: isNumber,
   resultId: isNumber,
   candidateIndex: isNumber,

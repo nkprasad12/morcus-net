@@ -17,7 +17,11 @@ import { Router } from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 import { useApiCall } from "@/web/client/utils/hooks/use_api_call";
 import { Fragment, useCallback, useMemo, useState } from "react";
-import { useCorpusRouter } from "@/web/client/pages/corpus/corpus_router";
+import {
+  parsePageData,
+  serializePageData,
+  useCorpusRouter,
+} from "@/web/client/pages/corpus/corpus_router";
 import { GetCorpusAuthorsApi } from "@/web/api_routes";
 import {
   SettingsPreview,
@@ -39,23 +43,34 @@ export function CorpusQueryPage() {
   const [authors, setAuthors] = useState<string[] | null>(null);
 
   const { nav, route } = useCorpusRouter();
-  const { query, startIdx, pageSize, contextLen } = route;
+  const { query, currentPage, pageSize, contextLen } = route;
+
+  const currentPageParsed = useMemo(
+    () => parsePageData(currentPage),
+    [currentPage]
+  );
 
   const apiRequest: CorpusQueryRequest | null = useMemo(() => {
-    if (query.length === 0) {
+    if (query.length === 0 || currentPageParsed === null) {
       return null;
     }
     return {
       query,
       pageSize,
-      pageStart: startIdx,
+      pageData: currentPageParsed,
       commitHash: getCommitHash(),
       contextLen,
     };
-  }, [query, startIdx, contextLen, pageSize]);
+  }, [query, currentPageParsed, contextLen, pageSize]);
 
   useApiCall(QueryCorpusApi, apiRequest, {
-    onResult: setResults,
+    onResult: (result) => {
+      setResults(result);
+      nav.to((c) => ({
+        ...c,
+        nextPage: serializePageData(result.nextPage),
+      }));
+    },
     onLoading: () => setResults("Loading"),
     onError: () => setResults("Error"),
   });
@@ -107,34 +122,43 @@ export function CorpusQueryPage() {
 
 function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   const { nav, route } = useCorpusRouter();
-  const { query, pageSize } = route;
+  const { query } = route;
 
-  if (props.results === "Error") {
+  const currentPage = useMemo(
+    () => parsePageData(route.currentPage),
+    [route.currentPage]
+  );
+
+  const nextPage = useMemo(
+    () => parsePageData(route.nextPage),
+    [route.nextPage]
+  );
+
+  if (props.results === "Error" || currentPage === null) {
     return <div>Error occurred on query: {query}</div>;
   }
   if (props.results === "Loading") {
     return <div>Loading results for: {query}</div>;
   }
 
-  const pageStart = route.startIdx;
+  const pageStart = currentPage?.resultIndex ?? 0;
   const totalResults = props.results.resultStats.totalResults;
+  const aboutText =
+    props.results.resultStats.exactCount === true ? "approximately " : "";
 
-  const firstPage = pageStart === 0;
-  const lastPage = pageStart + props.results.matches.length >= totalResults;
-
-  const changePage = (increment: boolean) => {
-    nav.to((current) => {
-      const newStart = increment
-        ? current.startIdx + pageSize
-        : current.startIdx - pageSize;
-      return { ...current, startIdx: newStart };
-    });
-  };
+  const toNextPage = () =>
+    nav.to((c) => ({
+      ...c,
+      lastPage: c.currentPage,
+      currentPage: c.nextPage,
+      nextPage: undefined,
+    }));
 
   return (
     <div style={{ margin: "0px 16px" }}>
       <div className="text md">
-        Found {props.results.resultStats.totalResults} results matching:
+        Found {aboutText}
+        {totalResults} results matching:
         <div className="corpusResult">{query}</div>
       </div>
       <div className="text sm light">
@@ -151,10 +175,14 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
         </Fragment>
       ))}
       <div style={{ paddingBottom: "16px", textAlign: "center" }}>
-        <IconButton disabled={firstPage} onClick={() => changePage(false)}>
+        <IconButton
+          // Back doesn't work yet.
+          disabled>
           <SvgIcon pathD={SvgIcon.ArrowBack} />
         </IconButton>
-        <IconButton disabled={lastPage} onClick={() => changePage(true)}>
+        <IconButton
+          disabled={nextPage === null || nextPage === undefined}
+          onClick={toNextPage}>
           <SvgIcon pathD={SvgIcon.ArrowForward} />
         </IconButton>
       </div>
