@@ -3,7 +3,7 @@ use std::cmp::{max, min};
 use crate::{
     api::{CorpusQueryMatch, CorpusQueryMatchMetadata},
     corpus_query_engine::{
-        CorpusQueryEngine, QueryExecError, corpus_index_calculation::SpanResult,
+        CorpusQueryEngine, MatchIterator, QueryExecError, corpus_index_calculation::SpanResult,
         corpus_query_conversion::InternalQueryTerm,
     },
     query_parsing_v2::QueryRelation,
@@ -136,18 +136,21 @@ fn compute_offsets(
 impl CorpusQueryEngine {
     pub(super) fn resolve_match_tokens(
         &self,
-        token_ids: &[u32],
+        candidates: &mut MatchIterator<'_>,
+        page_size: usize,
         all_span_candidates: &[SpanResult],
         query_spans: &[&[InternalQueryTerm]],
         context_len: u32,
     ) -> Result<Vec<CorpusQueryMatch<'_>>, QueryExecError> {
-        if token_ids.is_empty() {
-            return Ok(vec![]);
-        }
-
+        let mut token_ids = vec![];
         // Left start byte, Text start byte, Right start byte, Right end byte
         let mut starts: Vec<(Vec<usize>, Vec<bool>)> = Vec::with_capacity(token_ids.len());
-        for &token_id in token_ids {
+        while token_ids.len() < page_size {
+            let token_id = match candidates.next() {
+                Some(token_id) => token_id?,
+                None => break,
+            };
+            token_ids.push(token_id);
             let leaders = find_span_leaders(token_id, query_spans, all_span_candidates)?;
             let span_ranges = compute_offsets(&leaders, context_len, self.corpus.num_tokens)?;
             let mut offsets: Vec<usize> = Vec::with_capacity(span_ranges.len());
@@ -164,6 +167,10 @@ impl CorpusQueryEngine {
             starts.push((offsets, is_core_match));
         }
 
+        if token_ids.is_empty() {
+            return Ok(vec![]);
+        }
+
         // Warm up the ranges that we're about to access.
         let start = starts[0].0[0];
         let end = match starts[starts.len() - 1].0.last() {
@@ -174,7 +181,7 @@ impl CorpusQueryEngine {
 
         // Compute the metadata while the OS is (hopefully) loading the pages into memory.
         let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(token_ids.len());
-        for &id in token_ids {
+        for &id in &token_ids {
             metadata.push(self.corpus.resolve_match_token(id)?);
         }
 

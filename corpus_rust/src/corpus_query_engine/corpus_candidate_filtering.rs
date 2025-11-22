@@ -82,25 +82,6 @@ pub(super) fn next_page_data(
     }))
 }
 
-/// Computes the page of results for the given parameters.
-pub(super) fn compute_page_result(
-    match_results: &IndexSlice,
-    page_data: &PageData,
-    page_size: usize,
-) -> Result<(Vec<u32>, Option<PageData>), QueryExecError> {
-    let mut matches = MatchIterator::new(match_results, page_data);
-    let mut results = vec![];
-    while results.len() < page_size {
-        let token_id = match matches.next() {
-            Some(token_id) => token_id?,
-            None => break,
-        };
-        results.push(token_id);
-    }
-
-    Ok((results, next_page_data(&mut matches, page_data, page_size)?))
-}
-
 impl CorpusQueryEngine {
     /// Filters a list of candidates into just the actual matches.
     pub(super) fn filter_breaks<'a>(

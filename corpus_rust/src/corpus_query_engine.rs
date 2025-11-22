@@ -8,7 +8,7 @@ mod index_data;
 mod reference_impl;
 
 use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo};
-use crate::corpus_query_engine::corpus_candidate_filtering::compute_page_result;
+use crate::corpus_query_engine::corpus_candidate_filtering::{MatchIterator, next_page_data};
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
 use crate::query_parsing_v2::{Query, parse_query};
@@ -123,23 +123,25 @@ impl CorpusQueryEngine {
             };
         let candidates = self.compute_query_candidates(&span_candidates)?;
         let total_candidates = candidates.data.to_ref().num_elements();
-        // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
-        // technically giving matching within N tokens but they're not distinct terms. For now,
-        // just include these misleading results.
-        let (match_ids, next_page) = compute_page_result(&candidates, page_data, page_size)?;
+        let mut candidate_iter = MatchIterator::new(&candidates, page_data);
 
         // Turn the match IDs into actual matches (with the text and locations).
         let matches = self.resolve_match_tokens(
-            &match_ids,
+            &mut candidate_iter,
+            page_size,
             &span_candidates,
             &query_spans,
             context_len as u32,
         )?;
+        // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
+        // technically giving matching within N tokens but they're not distinct terms. For now,
+        // just include these misleading results.
         profiler.phase("Build Matches");
         let result_stats = QueryGlobalInfo {
             total_results: total_candidates,
             exact_count: Some(true),
         };
+        let next_page = next_page_data(&mut candidate_iter, page_data, page_size)?;
         Ok(CorpusQueryResult {
             result_stats,
             matches,
