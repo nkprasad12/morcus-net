@@ -262,16 +262,19 @@ impl CorpusQueryEngine {
             .take(page_size)
             .map(|x| self.resolve_match_ref_impl(x, context_len).unwrap())
             .collect();
+        let next_page = match_ids
+            .get(page_data.result_index as usize + page_size)
+            .map(|ranges| PageData {
+                result_index: (page_data.result_index as usize + matches.len()) as u32,
+                result_id: ranges.iter().map(|(start, _)| *start).min().unwrap(),
+                candidate_index: (page_data.result_index as usize + matches.len()) as u32,
+            });
         let result = CorpusQueryResult {
             result_stats: QueryGlobalInfo {
                 total_results: match_ids.len(),
                 exact_count: Some(true),
             },
-            next_page: Some(PageData {
-                result_index: (page_data.result_index as usize + matches.len()) as u32,
-                result_id: 0,
-                candidate_index: 0,
-            }),
+            next_page,
             timing: vec![],
             matches,
         };
