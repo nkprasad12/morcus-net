@@ -8,60 +8,97 @@ use crate::{
     profiler::TimeProfiler,
 };
 
+pub(super) struct MatchIterator<'a> {
+    /// The candidate to iterate over.
+    candidates: IndexData<'a>,
+    /// The current index within the candidate data.
+    i: usize,
+    /// The start token ID for the candidates. For bitmasks, all
+    /// IDs are relative to this.
+    candidate_start: u32,
+    /// The relative offset of the candidate indices.
+    candidate_position: u32,
+}
+
+impl<'a> MatchIterator<'a> {
+    pub(super) fn new(all_candidates: &'a IndexSlice<'a>, page_data: &PageData) -> Self {
+        let candidates = all_candidates.data.to_ref();
+        // Get to the start of the page.
+        let i: usize = match &candidates {
+            IndexData::List(_) => page_data.candidate_index as usize,
+            IndexData::BitMask(_) => page_data.result_id as usize,
+        };
+        Self {
+            candidate_start: all_candidates.range.start,
+            candidates,
+            i,
+            candidate_position: all_candidates.position,
+        }
+    }
+}
+
+impl<'a> Iterator for MatchIterator<'a> {
+    type Item = Result<u32, QueryExecError>;
+
+    fn next(&mut self) -> Option<Self::Item> {
+        let token_id = match self.candidates {
+            IndexData::List(vec) => {
+                if self.i >= vec.len() {
+                    return None;
+                }
+                let id = vec[self.i];
+                self.i += 1;
+                id
+            }
+            IndexData::BitMask(bitmask) => match next_one_bit(bitmask, self.i) {
+                Some(v) => {
+                    self.i = v + 1;
+                    v as u32 + self.candidate_start
+                }
+                None => return None,
+            },
+        };
+        if token_id < self.candidate_position {
+            return Some(Err(QueryExecError::new(
+                "Token ID is less than candidate position",
+            )));
+        }
+        Some(Ok(token_id - self.candidate_position))
+    }
+}
+
+pub(super) fn next_page_data(
+    matches: &mut MatchIterator<'_>,
+    page_data: &PageData,
+    page_size: usize,
+) -> Result<Option<PageData>, QueryExecError> {
+    Ok(matches.next().transpose()?.map(|token_id| PageData {
+        result_index: page_data.result_index + page_size as u32,
+        // TODO: This is the same as the `result_index` for now because we never
+        // skip candidates, but when we implement fuzzy matches and do need to
+        // discard candidates, this will need to be updated.
+        candidate_index: page_data.result_index + page_size as u32,
+        result_id: token_id,
+    }))
+}
+
 /// Computes the page of results for the given parameters.
 pub(super) fn compute_page_result(
     match_results: &IndexSlice,
     page_data: &PageData,
     page_size: usize,
-) -> Result<(Vec<u32>, usize, Option<PageData>), QueryExecError> {
-    let matches = match_results.data.to_ref();
-
-    // Get to the start of the page.
-    let mut results: Vec<u32> = vec![];
-    let mut i: usize = match &matches {
-        IndexData::List(_) => page_data.candidate_index as usize,
-        IndexData::BitMask(_) => page_data.result_id as usize,
-    };
-
-    let n = matches.num_elements();
-    let mut next_start = None;
-    while results.len() < page_size + 1 {
-        let token_id = match matches {
-            IndexData::List(data) => {
-                if i >= n {
-                    break;
-                }
-                let id = data[i];
-                i += 1;
-                id
-            }
-            IndexData::BitMask(bitmask) => {
-                let id = match next_one_bit(bitmask, i) {
-                    Some(v) => v,
-                    None => break,
-                };
-                i = id + 1;
-                id as u32 + match_results.range.start
-            }
+) -> Result<(Vec<u32>, Option<PageData>), QueryExecError> {
+    let mut matches = MatchIterator::new(match_results, page_data);
+    let mut results = vec![];
+    while results.len() < page_size {
+        let token_id = match matches.next() {
+            Some(token_id) => token_id?,
+            None => break,
         };
-
-        if token_id < match_results.position {
-            return Err(QueryExecError::new("Token ID is less than match position"));
-        }
-        if results.len() == page_size {
-            next_start = Some(PageData {
-                result_index: page_data.result_index + results.len() as u32,
-                // TODO: This is the same as the `result_index` for now because we never
-                // skip candidates, but when we implement fuzzy matches and do need to
-                // discard candidates, this will need to be updated.
-                candidate_index: page_data.result_index + results.len() as u32,
-                result_id: token_id - match_results.position,
-            });
-            break;
-        }
-        results.push(token_id - match_results.position);
+        results.push(token_id);
     }
-    Ok((results, n, next_start))
+
+    Ok((results, next_page_data(&mut matches, page_data, page_size)?))
 }
 
 impl CorpusQueryEngine {
