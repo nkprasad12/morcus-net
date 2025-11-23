@@ -71,13 +71,11 @@ pub(super) fn next_page_data(
     matches: &mut MatchIterator<'_>,
     page_data: &PageData,
     page_size: usize,
+    skipped_candidates: usize,
 ) -> Result<Option<PageData>, QueryExecError> {
     Ok(matches.next().transpose()?.map(|token_id| PageData {
         result_index: page_data.result_index + page_size as u32,
-        // TODO: This is the same as the `result_index` for now because we never
-        // skip candidates, but when we implement fuzzy matches and do need to
-        // discard candidates, this will need to be updated.
-        candidate_index: page_data.result_index + page_size as u32,
+        candidate_index: page_data.candidate_index + page_size as u32 + skipped_candidates as u32,
         result_id: token_id,
     }))
 }

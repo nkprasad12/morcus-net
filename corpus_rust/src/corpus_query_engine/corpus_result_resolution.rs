@@ -133,26 +133,79 @@ fn compute_offsets(
     Ok(offsets)
 }
 
+/// Checks whether any of the given spans overlap.
+///
+/// # Arguments:
+/// * `spans` - A list of (start, length) token ID pairs representing the spans.
+///
+/// Returns true if any spans overlap, false otherwise.
+fn do_spans_overlap(spans: &[(u32, u32)]) -> bool {
+    if spans.len() < 2 {
+        return false;
+    }
+    let mut spans = spans.to_vec();
+    spans.sort_by(|a, b| a.0.cmp(&b.0));
+    for i in 0..spans.len() - 1 {
+        let (start_i, len_i) = spans[i];
+        let end_i = start_i + len_i;
+        let (start_j, _) = spans[i + 1];
+
+        // Since spans are sorted, we only need to check if the current span
+        // extends into the next span's start
+        if start_j < end_i {
+            return true;
+        }
+    }
+
+    false
+}
+
+type StartAndLength = (u32, u32);
+type SpanLeaders = Vec<StartAndLength>;
+pub(super) struct MatchPageResult {
+    pub matches: Vec<SpanLeaders>,
+    pub skipped_candidates: usize,
+}
+
+pub(super) fn get_match_page(
+    candidates: &mut MatchIterator<'_>,
+    all_span_candidates: &[SpanResult],
+    query_spans: &[&[InternalQueryTerm]],
+    page_size: usize,
+) -> Result<MatchPageResult, QueryExecError> {
+    let mut skipped_candidates = 0;
+    let mut matches = vec![];
+    while matches.len() < page_size {
+        let token_id = match candidates.next() {
+            Some(token_id) => token_id?,
+            None => break,
+        };
+        let leaders = find_span_leaders(token_id, query_spans, all_span_candidates)?;
+        if do_spans_overlap(&leaders) {
+            skipped_candidates += 1;
+            continue;
+        }
+        matches.push(leaders);
+    }
+    Ok(MatchPageResult {
+        matches,
+        skipped_candidates,
+    })
+}
+
 impl CorpusQueryEngine {
     pub(super) fn resolve_match_tokens(
         &self,
-        candidates: &mut MatchIterator<'_>,
-        page_size: usize,
-        all_span_candidates: &[SpanResult],
-        query_spans: &[&[InternalQueryTerm]],
+        matches: Vec<SpanLeaders>,
         context_len: u32,
     ) -> Result<Vec<CorpusQueryMatch<'_>>, QueryExecError> {
-        let mut token_ids = vec![];
-        // Left start byte, Text start byte, Right start byte, Right end byte
-        let mut starts: Vec<(Vec<usize>, Vec<bool>)> = Vec::with_capacity(token_ids.len());
-        while token_ids.len() < page_size {
-            let token_id = match candidates.next() {
-                Some(token_id) => token_id?,
-                None => break,
-            };
-            token_ids.push(token_id);
-            let leaders = find_span_leaders(token_id, query_spans, all_span_candidates)?;
-            let span_ranges = compute_offsets(&leaders, context_len, self.corpus.num_tokens)?;
+        if matches.is_empty() {
+            return Ok(vec![]);
+        }
+
+        let mut starts: Vec<(Vec<usize>, Vec<bool>)> = Vec::with_capacity(matches.len());
+        for match_leaders in &matches {
+            let span_ranges = compute_offsets(match_leaders, context_len, self.corpus.num_tokens)?;
             let mut offsets: Vec<usize> = Vec::with_capacity(span_ranges.len());
             let mut is_core_match: Vec<bool> = Vec::with_capacity(span_ranges.len());
             for (i, (token_offset, is_core)) in span_ranges.iter().enumerate() {
@@ -167,10 +220,6 @@ impl CorpusQueryEngine {
             starts.push((offsets, is_core_match));
         }
 
-        if token_ids.is_empty() {
-            return Ok(vec![]);
-        }
-
         // Warm up the ranges that we're about to access.
         let start = starts[0].0[0];
         let end = match starts[starts.len() - 1].0.last() {
@@ -180,8 +229,14 @@ impl CorpusQueryEngine {
         self.text.advise_range(start, end);
 
         // Compute the metadata while the OS is (hopefully) loading the pages into memory.
-        let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(token_ids.len());
-        for &id in &token_ids {
+        let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(matches.len());
+        for match_leaders in &matches {
+            let id = match_leaders
+                .first()
+                .ok_or_else(|| {
+                    QueryExecError::new("No span leaders found when building match metadata")
+                })?
+                .0;
             metadata.push(self.corpus.resolve_match_token(id)?);
         }
 
