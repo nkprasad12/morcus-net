@@ -119,8 +119,6 @@ fn filter_lemma_stems<'a>(lemma: &Lemma, ranges: &'a PrefixRanges) -> Vec<(usize
 
 #[inline]
 fn key_for_end_entry(entry: &(String, InflectionEnding)) -> &str {
-    // TODO: It's unfortunate that we need to clone here, but the range finding
-    // function requires owned strings. We can probably optimize this later.
     &entry.0
 }
 

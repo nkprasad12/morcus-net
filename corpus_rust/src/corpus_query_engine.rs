@@ -130,12 +130,7 @@ impl CorpusQueryEngine {
         profiler.phase("Combined candidates found");
 
         // Finds a page of actual matches from the candidates.
-        let match_leaders = get_match_page(
-            &mut candidate_iter,
-            &span_candidates,
-            &query_spans,
-            page_size,
-        )?;
+        let match_leaders = get_match_page(&mut candidate_iter, &span_candidates, page_size)?;
         let next_page = next_page_data(
             &mut candidate_iter,
             page_data,

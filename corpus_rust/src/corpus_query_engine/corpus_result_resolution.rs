@@ -4,7 +4,6 @@ use crate::{
     api::{CorpusQueryMatch, CorpusQueryMatchMetadata},
     corpus_query_engine::{
         CorpusQueryEngine, MatchIterator, QueryExecError, corpus_index_calculation::SpanResult,
-        corpus_query_conversion::InternalQueryTerm,
     },
     query_parsing_v2::QueryRelation,
 };
@@ -73,10 +72,9 @@ fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<u32, QueryExecE
 
 fn find_span_leaders(
     token_id: u32,
-    query_spans: &[&[InternalQueryTerm]],
     all_span_candidates: &[SpanResult],
 ) -> Result<Vec<(u32, u32)>, QueryExecError> {
-    if query_spans.is_empty() {
+    if all_span_candidates.is_empty() {
         return Err(QueryExecError::new("No query spans provided"));
     }
     if all_span_candidates.len() > 2 {
@@ -170,7 +168,6 @@ pub(super) struct MatchPageResult {
 pub(super) fn get_match_page(
     candidates: &mut MatchIterator<'_>,
     all_span_candidates: &[SpanResult],
-    query_spans: &[&[InternalQueryTerm]],
     page_size: usize,
 ) -> Result<MatchPageResult, QueryExecError> {
     let mut skipped_candidates = 0;
@@ -180,7 +177,7 @@ pub(super) fn get_match_page(
             Some(token_id) => token_id?,
             None => break,
         };
-        let leaders = find_span_leaders(token_id, query_spans, all_span_candidates)?;
+        let leaders = find_span_leaders(token_id, all_span_candidates)?;
         if do_spans_overlap(&leaders) {
             skipped_candidates += 1;
             continue;
