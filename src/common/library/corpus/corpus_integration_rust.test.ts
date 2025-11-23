@@ -4,6 +4,7 @@ import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import {
   CorpusQueryResult,
   type CorpusInputWork,
+  type PageData,
 } from "@/common/library/corpus/corpus_common";
 import { RustCorpusQueryEngine } from "@/common/library/corpus/corpus_rust";
 import fs from "fs";
@@ -59,10 +60,9 @@ function getMatchText(match: CorpusQueryResult["matches"][number]) {
 describe("Corpus Integration Test", () => {
   let queryEngine: RustCorpusQueryEngine;
 
-  function queryCorpus(query: string, pageStart?: number, pageSize?: number) {
-    const raw = queryEngine.queryCorpus({ query, pageStart, pageSize });
+  function queryCorpus(query: string, pageData?: PageData, pageSize?: number) {
+    const raw = queryEngine.queryCorpus({ query, pageData, pageSize });
     const parsed = JSON.parse(raw);
-    console.log(parsed);
     return assertType(parsed, CorpusQueryResult.isMatch);
   }
 
@@ -253,19 +253,20 @@ describe("Corpus Integration Test", () => {
     const query = "@lemma:marmor et";
     const startIds = new Set<number>();
 
-    let results = queryCorpus(query, 0, 2);
+    let results = queryCorpus(query, undefined, 2);
     expect(results.resultStats.totalResults).toBe(5);
     expect(results.matches).toHaveLength(2);
     results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
-    results = queryCorpus(query, 2, 2);
+    results = queryCorpus(query, results.nextPage, 2);
     expect(results.resultStats.totalResults).toBe(5);
     expect(results.matches).toHaveLength(2);
     results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
-    results = queryCorpus(query, 4, 2);
+    results = queryCorpus(query, results.nextPage, 2);
     expect(results.resultStats.totalResults).toBe(5);
     expect(results.matches).toHaveLength(1);
+    expect(results.nextPage).toBeUndefined();
     results.matches.forEach((match) => startIds.add(match.metadata.offset));
 
     const sortedIds = Array.from(startIds).sort((a, b) => a - b);

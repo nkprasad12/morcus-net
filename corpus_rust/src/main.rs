@@ -9,6 +9,7 @@ use corpus::{
 };
 
 const ARG_QUIET: &str = "--quiet";
+const ARG_NO_STATS: &str = "--no-stats";
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
 fn load_corpus_with_timing(path: &str) -> corpus_index::LatinCorpusIndex {
@@ -33,16 +34,18 @@ fn query_with_timing<'a>(
     query: &str,
     page_data: &PageData,
 ) -> Result<CorpusQueryResult<'a>, QueryExecError> {
-    let page_size = get_limit_arg_or_default();
-    let context_len = get_context_arg_or_default();
+    let page_size = get_limit_arg();
+    let context_len = get_context_arg();
     let start = Instant::now();
     let results = engine.query_corpus(query, page_data, page_size, context_len)?;
     let duration = start.elapsed();
-    println!("Query executed in {duration:.2?}");
-    if !results.timing.is_empty() {
-        println!("Query timing breakdown:");
-        for (k, v) in &results.timing {
-            println!("  {}: {:.3} ms", k, *v);
+    if !has_arg(ARG_NO_STATS) {
+        println!("Query executed in {duration:.2?}");
+        if !results.timing.is_empty() {
+            println!("Query timing breakdown:");
+            for (k, v) in &results.timing {
+                println!("  {}: {:.3} ms", k, *v);
+            }
         }
     }
     Ok(results)
@@ -67,24 +70,26 @@ fn get_query_arg_or_exit() -> String {
     std::process::exit(1);
 }
 
-fn get_context_arg_or_default() -> usize {
+fn get_arg_or_default<T: std::str::FromStr>(name: &str, fallback: T) -> T {
     let args: Vec<String> = env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--context")
+    if let Some(pos) = args.iter().position(|a| *a == format!("--{name}"))
         && let Some(ctx) = args.get(pos + 1)
     {
-        return ctx.parse::<usize>().ok().unwrap_or(15);
+        return ctx.parse::<T>().ok().unwrap_or(fallback);
     }
-    15
+    fallback
 }
 
-fn get_limit_arg_or_default() -> usize {
-    let args: Vec<String> = env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--limit")
-        && let Some(lim) = args.get(pos + 1)
-    {
-        return lim.parse::<usize>().unwrap_or(25);
-    }
-    25
+fn get_context_arg() -> usize {
+    get_arg_or_default("context", 15)
+}
+
+fn get_limit_arg() -> usize {
+    get_arg_or_default("limit", 25)
+}
+
+fn get_pages_arg() -> usize {
+    get_arg_or_default("pages", 1)
 }
 
 fn get_results<'a>(
@@ -111,8 +116,8 @@ fn print_query_results(
     let results = get_results(engine, query_str, page_data);
     println!(
         "\n\x1b[4mShowing results {}-{} of {} matches:\x1b[0m",
-        1,
-        results.matches.len(),
+        page_data.result_index + 1,
+        page_data.result_index as usize + results.matches.len(),
         results.result_stats.total_results
     );
     if has_arg(ARG_QUIET) {
@@ -194,8 +199,10 @@ fn main() {
         print_mem_summary("Before query execution".to_string(), 1);
     }
     let query_str = get_query_arg_or_exit();
-    let first_page = PageData::default();
-    print_query_results(&engine, &query_str, &first_page);
+    let mut page_data = PageData::default();
+    for _ in 0..get_pages_arg() {
+        page_data = print_query_results(&engine, &query_str, &page_data).unwrap_or_default();
+    }
     if has_arg("--mem") {
         print_mem_summary("After query execution".to_string(), 1);
     }

@@ -62,7 +62,6 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   const pageSize = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
   const request: CorpusQueryRequest = {
     query: checkPresent(process.argv[2]),
-    pageStart: 0,
     pageSize,
   };
   const startTime = performance.now();
