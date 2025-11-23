@@ -2,7 +2,7 @@ use std::env;
 use std::time::Instant;
 
 use corpus::{
-    api::{CorpusQueryResult, QueryExecError},
+    api::{CorpusQueryResult, PageData, QueryExecError},
     build_corpus_v2::build_corpus,
     corpus_index,
     corpus_query_engine::{self, CorpusQueryEngine},
@@ -31,17 +31,12 @@ fn load_corpus_with_timing(path: &str) -> corpus_index::LatinCorpusIndex {
 fn query_with_timing<'a>(
     engine: &'a CorpusQueryEngine,
     query: &str,
+    page_data: &PageData,
 ) -> Result<CorpusQueryResult<'a>, QueryExecError> {
-    let page_start = 0;
-    let page_data = corpus::api::PageData {
-        result_index: page_start,
-        result_id: 0,
-        candidate_index: 0,
-    };
     let page_size = get_limit_arg_or_default();
     let context_len = get_context_arg_or_default();
     let start = Instant::now();
-    let results = engine.query_corpus(query, &page_data, page_size, context_len)?;
+    let results = engine.query_corpus(query, page_data, page_size, context_len)?;
     let duration = start.elapsed();
     println!("Query executed in {duration:.2?}");
     if !results.timing.is_empty() {
@@ -92,8 +87,12 @@ fn get_limit_arg_or_default() -> usize {
     25
 }
 
-fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQueryResult<'a> {
-    let result = query_with_timing(engine, query_str);
+fn get_results<'a>(
+    engine: &'a CorpusQueryEngine,
+    query_str: &str,
+    page_data: &PageData,
+) -> CorpusQueryResult<'a> {
+    let result = query_with_timing(engine, query_str, page_data);
     if result.is_err() {
         eprintln!(
             "Error executing query: {}",
@@ -104,8 +103,12 @@ fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQuer
     result.unwrap()
 }
 
-fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
-    let results = get_results(engine, query_str);
+fn print_query_results(
+    engine: &CorpusQueryEngine,
+    query_str: &str,
+    page_data: &PageData,
+) -> Option<PageData> {
+    let results = get_results(engine, query_str, page_data);
     println!(
         "\n\x1b[4mShowing results {}-{} of {} matches:\x1b[0m",
         1,
@@ -114,7 +117,7 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
     );
     if has_arg(ARG_QUIET) {
         println!("- Omitted matches due to --quiet flag.\n");
-        return;
+        return results.next_page;
     }
     for match_data in results.matches {
         let m = &match_data.metadata;
@@ -132,6 +135,7 @@ fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
         chunks.push("\n".to_string());
         print!("{}", chunks.join(""));
     }
+    results.next_page
 }
 
 fn print_top_snapshot_for(pid: u32, show_header: bool) {
@@ -190,7 +194,8 @@ fn main() {
         print_mem_summary("Before query execution".to_string(), 1);
     }
     let query_str = get_query_arg_or_exit();
-    print_query_results(&engine, &query_str);
+    let first_page = PageData::default();
+    print_query_results(&engine, &query_str, &first_page);
     if has_arg("--mem") {
         print_mem_summary("After query execution".to_string(), 1);
     }

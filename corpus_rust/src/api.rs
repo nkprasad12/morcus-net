@@ -29,7 +29,7 @@ pub struct CorpusQueryMatch<'a> {
 }
 
 /// Data to resolve a page of results.
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct PageData {
     /// The index of the next result in the full list of actual results.

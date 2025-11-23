@@ -100,8 +100,9 @@ impl CorpusQueryEngine {
         context_len: usize,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let mut profiler = TimeProfiler::new();
-        // Assemble the query
+        // Parse the query
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
+        // Convert to internal representation
         let terms = query
             .terms
             .iter()
@@ -115,37 +116,43 @@ impl CorpusQueryEngine {
         }
         profiler.phase("Parse query");
 
-        // Find the possible matches, then filter them
+        // Find the candidates for each span individually.
         let range = self.compute_range(&query)?;
         let span_candidates =
             match self.candidates_for_spans(&query_spans, &range, &mut profiler)? {
                 Some(res) => res,
                 None => return Ok(empty_result()),
             };
+
+        // Find the candidates that could match all spans.
         let candidates = self.compute_query_candidates(&span_candidates)?;
         let total_candidates = candidates.data.to_ref().num_elements();
         let mut candidate_iter = MatchIterator::new(&candidates, page_data);
+        profiler.phase("Combined candidates found");
+
+        // Finds a page of actual matches from the candidates.
         let match_leaders = get_match_page(
             &mut candidate_iter,
             &span_candidates,
             &query_spans,
             page_size,
         )?;
-        let skipped_candidates = match_leaders.skipped_candidates;
-
-        // Turn the match IDs into actual matches (with the text and locations).
-        let matches = self.resolve_match_tokens(match_leaders.matches, context_len as u32)?;
-        profiler.phase("Build Matches");
-        let result_stats = QueryGlobalInfo {
-            total_results: total_candidates,
-            exact_count: Some(true),
-        };
         let next_page = next_page_data(
             &mut candidate_iter,
             page_data,
             page_size,
-            skipped_candidates,
+            match_leaders.skipped_candidates,
         )?;
+        let result_stats = QueryGlobalInfo {
+            total_results: total_candidates,
+            exact_count: Some(true),
+        };
+        profiler.phase("Match page computed");
+
+        // Turn the match IDs into actual matches (with the text and locations).
+        let matches = self.resolve_match_tokens(match_leaders.matches, context_len as u32)?;
+        profiler.phase("Matches resolved");
+
         Ok(CorpusQueryResult {
             result_stats,
             matches,
