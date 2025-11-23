@@ -23,14 +23,14 @@ pub(super) fn get_engine_unsafe() -> Option<CorpusQueryEngine> {
     let index = match deserialize_corpus(CORPUS_ROOT) {
         Ok(index) => index,
         Err(e) => {
-            eprintln!("Failed to load corpus: {}", e);
+            eprintln!("Failed to load corpus: {e}");
             return None;
         }
     };
     match CorpusQueryEngine::new(index) {
         Ok(e) => Some(e),
         Err(e) => {
-            eprintln!("Failed to create query engine: {}", e);
+            eprintln!("Failed to create query engine: {e}");
             None
         }
     }
@@ -73,8 +73,7 @@ fn check_results_equal(
         let ref_next = ref_iter.next();
         if prod_next != ref_next {
             return Err(format!(
-                "Mismatch at result {i}\n  Prod: {:?}\n  Ref: {:?}",
-                prod_next, ref_next
+                "Mismatch at result {i}\n  Prod: {prod_next:?}\n  Ref: {ref_next:?}"
             ));
         }
         if prod_next.is_none() || ref_next.is_none() {
@@ -344,7 +343,7 @@ impl CorpusQueryEngine {
         let start = std::time::Instant::now();
         let result_prod = self
             .query_corpus(query, page_data, page_size, context_len)
-            .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
+            .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {e:?}"));
         let prod_time = start.elapsed().as_secs_f64();
 
         let mut errors = vec![];

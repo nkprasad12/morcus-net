@@ -70,8 +70,7 @@ impl CorpusQueryEngine {
             Some(v) => *v,
             None => {
                 return Err(QueryExecError::new(&format!(
-                    "Author '{}' not found in corpus",
-                    author
+                    "Author '{author}' not found in corpus"
                 )));
             }
         };

@@ -49,7 +49,7 @@ impl QueryEngineWrapper {
         let page_data = page_data
             .map(|pd_str| {
                 serde_json::from_str::<corpus::api::PageData>(&pd_str)
-                    .map_err(|e| format!("Failed to parse page data: {}", e))
+                    .map_err(|e| format!("Failed to parse page data: {e}"))
             })
             .transpose()?
             .unwrap_or(PageData {
@@ -73,14 +73,14 @@ impl QueryEngineWrapper {
 fn load_tables(filename: &str) -> CruncherTables {
     // Read the JSON file
     let json_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-        eprintln!("Error reading file '{}': {}", filename, err);
+        eprintln!("Error reading file '{filename}': {err}");
         process::exit(1);
     });
 
     // Parse CruncherTables from JSON
     let cruncher_tables: CruncherTables =
         serde_json::from_str(&json_content).unwrap_or_else(|err| {
-            eprintln!("Error parsing JSON from '{}': {}", filename, err);
+            eprintln!("Error parsing JSON from '{filename}': {err}");
             process::exit(1);
         });
     cruncher_tables

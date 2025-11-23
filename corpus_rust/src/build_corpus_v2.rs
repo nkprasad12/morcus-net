@@ -20,13 +20,13 @@ const TABLES_FILE: &str = "build/morceus/processed/morceusTables.json";
 fn load_tables(filename: &str) -> Result<CruncherTables, Box<dyn std::error::Error>> {
     // Read the JSON file
     let json_content = fs::read_to_string(filename).map_err(|err| {
-        eprintln!("Error reading file '{}': {}", filename, err);
+        eprintln!("Error reading file '{filename}': {err}");
         Box::new(err)
     })?;
 
     // Parse CruncherTables from JSON
     let cruncher_tables: CruncherTables = serde_json::from_str(&json_content).map_err(|err| {
-        eprintln!("Error parsing JSON from '{}': {}", filename, err);
+        eprintln!("Error parsing JSON from '{filename}': {err}");
         Box::new(err)
     })?;
     Ok(cruncher_tables)

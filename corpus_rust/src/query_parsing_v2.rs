@@ -88,8 +88,8 @@ impl std::fmt::Display for TokenConstraint {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             TokenConstraint::Atom(atom) => match atom {
-                TokenConstraintAtom::Word(w) => write!(f, "{}", w),
-                TokenConstraintAtom::Lemma(l) => write!(f, "@lemma:{}", l),
+                TokenConstraintAtom::Word(w) => write!(f, "{w}"),
+                TokenConstraintAtom::Lemma(l) => write!(f, "@lemma:{l}"),
                 TokenConstraintAtom::Inflection(inf) => {
                     write!(f, "@{}:{}", inf.get_label(), inf.get_code())
                 }
@@ -102,7 +102,7 @@ impl std::fmt::Display for TokenConstraint {
                 let child_strs: Vec<String> = children.iter().map(|c| c.to_string()).collect();
                 write!(f, "({})", child_strs.join(op_str))
             }
-            TokenConstraint::Negated(inner) => write!(f, "!({})", inner),
+            TokenConstraint::Negated(inner) => write!(f, "!({inner})"),
         }
     }
 }

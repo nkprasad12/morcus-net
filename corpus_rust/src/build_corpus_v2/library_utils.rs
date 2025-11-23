@@ -53,7 +53,7 @@ pub fn find_files_from_library_index(
 
     Ok(works
         .into_iter()
-        .map(|(_, _, id)| format!("{}/{}.json", input_dir, id))
+        .map(|(_, _, id)| format!("{input_dir}/{id}.json"))
         .collect())
 }
 
@@ -107,6 +107,6 @@ impl HardCoded {
         self.author_code_map
             .get(author)
             .map(|s| s.to_string())
-            .ok_or_else(|| format!("No code for author {}", author))
+            .ok_or_else(|| format!("No code for author {author}"))
     }
 }

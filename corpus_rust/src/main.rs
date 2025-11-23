@@ -135,7 +135,7 @@ fn print_query_results(
             let color = if *is_core { "[31m" } else { "[90m" };
             // indent lines after any newline so subsequent lines align correctly
             let text = text.replace("\n", "\n    ");
-            chunks.push(format!("\x1b{}{}\x1b[0m", color, text));
+            chunks.push(format!("\x1b{color}{text}\x1b[0m"));
         }
         chunks.push("\n".to_string());
         print!("{}", chunks.join(""));
@@ -153,7 +153,7 @@ fn print_top_snapshot_for(pid: u32, show_header: bool) {
             let processed = s
                 .lines()
                 .skip(if show_header { 6 } else { 7 }) // remove first 6 header lines
-                .map(|l| format!("    {}", l)) // indent remaining lines
+                .map(|l| format!("    {l}")) // indent remaining lines
                 .collect::<Vec<_>>()
                 .join("\n");
             o.stdout = processed.into_bytes();
@@ -169,13 +169,13 @@ fn print_top_snapshot_for(pid: u32, show_header: bool) {
             }
         }
         Err(e) => {
-            eprintln!("Failed to run top: {}", e);
+            eprintln!("Failed to run top: {e}");
         }
     }
 }
 
 fn print_mem_summary(tag: String, delay_secs: u64) {
-    eprintln!("--- Memory summary ({}) ---", tag);
+    eprintln!("--- Memory summary ({tag}) ---");
     print_top_snapshot_for(std::process::id(), true);
     std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
     print_top_snapshot_for(std::process::id(), false);

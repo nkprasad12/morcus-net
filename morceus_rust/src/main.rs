@@ -15,7 +15,7 @@ fn print_top_snapshot_for(pid: u32, show_header: bool) {
             let processed = s
                 .lines()
                 .skip(if show_header { 6 } else { 7 }) // remove first 6 header lines
-                .map(|l| format!("    {}", l)) // indent remaining lines
+                .map(|l| format!("    {l}")) // indent remaining lines
                 .collect::<Vec<_>>()
                 .join("\n");
             o.stdout = processed.into_bytes();
@@ -31,13 +31,13 @@ fn print_top_snapshot_for(pid: u32, show_header: bool) {
             }
         }
         Err(e) => {
-            eprintln!("Failed to run top: {}", e);
+            eprintln!("Failed to run top: {e}");
         }
     }
 }
 
 fn print_mem_summary(tag: String, delay_secs: Option<u64>) {
-    eprintln!("--- Memory summary ({}) ---", tag);
+    eprintln!("--- Memory summary ({tag}) ---");
     print_top_snapshot_for(std::process::id(), true);
     let delay_secs = match delay_secs {
         Some(secs) => secs,
@@ -52,7 +52,7 @@ fn print_mem_summary(tag: String, delay_secs: Option<u64>) {
 fn load_tables(filename: &str) -> CruncherTables {
     // Read the JSON file
     let json_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-        eprintln!("Error reading file '{}': {}", filename, err);
+        eprintln!("Error reading file '{filename}': {err}");
         eprintln!(
             "To generate the tables, run (from the repo root):\n./morcus.sh build --morceus_tables",
         );
@@ -62,7 +62,7 @@ fn load_tables(filename: &str) -> CruncherTables {
     // Parse CruncherTables from JSON
     let cruncher_tables: CruncherTables =
         serde_json::from_str(&json_content).unwrap_or_else(|err| {
-            eprintln!("Error parsing JSON from '{}': {}", filename, err);
+            eprintln!("Error parsing JSON from '{filename}': {err}");
             process::exit(1);
         });
 
@@ -164,11 +164,11 @@ fn handle_crunch(args: &[String], tables: &CruncherTables) {
     print_mem_summary("After crunching".to_string(), None);
 
     if results.is_empty() {
-        println!("No results found for '{}'", word);
+        println!("No results found for '{word}'");
         return;
     }
     for result in results {
-        println!("{:?}", result);
+        println!("{result:?}");
     }
 }
 
@@ -199,7 +199,7 @@ fn main() {
         #[cfg(feature = "complete")]
         "complete" | "complete-exact" => handle_complete(&args, &tables).unwrap(),
         _ => {
-            eprintln!("Unknown command: {}", command);
+            eprintln!("Unknown command: {command}");
             process::exit(1);
         }
     }
