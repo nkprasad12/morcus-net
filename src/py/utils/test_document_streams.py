@@ -114,25 +114,6 @@ class TestStreamFromDirectory(unittest.TestCase):
         )
         self.assertEqual(len(documents), 2)
 
-    @mock.patch("src.py.utils.perseus_parser.parse_perseus_xml")
-    def test_handles_xml_files(self, mock_parser):
-        next(document_streams.from_directory(self._root.name, filter="d.xml$"))
-        self.assertEqual(mock_parser.call_count, 1)
-
-    @mock.patch("src.py.utils.perseus_parser.parse_perseus_xml")
-    def test_obeys_part_limit(self, mock_parser):
-        mock_parser.return_value = [
-            data.TextPart(0, 0, 0, "0"),
-            data.TextPart(0, 0, 0, "0"),
-            data.TextPart(0, 0, 0, "0"),
-        ]
-        document = next(
-            document_streams.from_directory(
-                self._root.name, filter="d.xml$", part_limit=2
-            )
-        )
-        self.assertEqual(len(document.document), 2)
-
 
 if __name__ == "__main__":
     unittest.main()

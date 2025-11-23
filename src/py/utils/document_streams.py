@@ -4,7 +4,6 @@ import re
 from typing import Iterator, Union
 
 from src.py.utils import data
-from src.py.utils import perseus_parser
 from src.py.utils import results
 
 _OUTPUT_ROOT = "processed_texts"
@@ -37,15 +36,11 @@ def _search_root(
             yield os.path.join(root, file)
 
 
-def _parse_file(file_path: str, part_limit: Number = float("inf")) -> results.Document:
+def _parse_file(file_path: str) -> results.Document:
     """Parses the given input file based on extension."""
     if file_path.endswith(".txt"):
         with open(file_path, "r") as f:
             return [data.TextPart(0, 0, 0, f.read())]
-    elif file_path.endswith(".xml"):
-        # Assume it's in Perseus' document format.
-        parts = perseus_parser.parse_perseus_xml(file_path)
-        return parts if len(parts) <= part_limit else parts[: math.floor(part_limit)]
     raise RuntimeError("Unknown file type: %s", file_path)
 
 
@@ -53,7 +48,6 @@ def from_directory(
     root: str,
     filter: str = ".*",
     doc_limit: Number = float("inf"),
-    part_limit: Number = float("inf"),
     tag: str = "debug",
 ) -> results.DocumentStream:
     """A stream of documents from a directory.
@@ -62,7 +56,6 @@ def from_directory(
       root: The root directory to search (recursively).
       filter: A regex pattern to match candidate files.
       doc_limit: The maximum number of documents that will be produced.
-      part_limit: The maximum parts per document produced.
       tag: A tag used in the output files to disambiguate between runs.
     """
     for file_path in _search_root(root, filter, doc_limit):
@@ -74,7 +67,7 @@ def from_directory(
             dir_for_file = dir_for_file[1:]
         out_dir = os.path.join(_OUTPUT_ROOT, tag, dir_for_file)
         yield results.StorableDocument(
-            document=_parse_file(file_path, part_limit),
+            document=_parse_file(file_path),
             name=file_path.split(os.path.sep)[-1],
             outputs_dir=out_dir,
         )
