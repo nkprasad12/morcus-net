@@ -9,11 +9,11 @@ _DBG_FILE = "phi0448.phi001.perseus-lat2.xml"
 
 def batch_document(part_limit: int, batch_size: int) -> "list[str]":
     documents = document_streams.from_directory(
-        _PERSEUS_ROOT, _DBG_FILE, part_limit=part_limit
+        _PERSEUS_ROOT, _DBG_FILE
     )
-    all_sections = []
+    all_sections: list[str] = []
     for document in documents:
-        so_far = []
+        so_far: list[str] = []
         for section in document.document:
             so_far.append(section.text)
             if len(so_far) == batch_size:
