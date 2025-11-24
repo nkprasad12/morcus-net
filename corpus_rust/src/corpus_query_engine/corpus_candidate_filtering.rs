@@ -67,19 +67,6 @@ impl<'a> Iterator for MatchIterator<'a> {
     }
 }
 
-pub(super) fn next_page_data(
-    matches: &mut MatchIterator<'_>,
-    page_data: &PageData,
-    page_size: usize,
-    skipped_candidates: usize,
-) -> Result<Option<PageData>, QueryExecError> {
-    Ok(matches.next().transpose()?.map(|token_id| PageData {
-        result_index: page_data.result_index + page_size as u32,
-        candidate_index: page_data.candidate_index + page_size as u32 + skipped_candidates as u32,
-        result_id: token_id,
-    }))
-}
-
 impl CorpusQueryEngine {
     /// Filters a list of candidates into just the actual matches.
     pub(super) fn filter_breaks<'a>(

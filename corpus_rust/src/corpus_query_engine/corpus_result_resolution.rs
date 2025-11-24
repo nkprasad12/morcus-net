@@ -1,7 +1,7 @@
 use std::cmp::{max, min};
 
 use crate::{
-    api::{CorpusQueryMatch, CorpusQueryMatchMetadata},
+    api::{CorpusQueryMatch, CorpusQueryMatchMetadata, PageData, QueryGlobalInfo},
     corpus_query_engine::{
         CorpusQueryEngine, MatchIterator, QueryExecError, corpus_index_calculation::SpanResult,
     },
@@ -100,15 +100,15 @@ impl<'a> SpanLeaderTree<'a> {
         })
     }
 
-    fn all_combos(&self) -> Vec<Vec<StartAndSpan<'a>>> {
+    fn find_leaders(&self) -> Option<Vec<StartAndSpan<'a>>> {
         if self.span_candidates.is_empty() {
-            return vec![];
+            return None;
         }
 
         let mut result = Vec::new();
         let mut current_path = Vec::with_capacity(self.span_candidates.len());
         self.collect_paths(&self.root, &mut current_path, &mut result);
-        result
+        result.into_iter().next()
     }
 
     fn collect_paths(
@@ -126,7 +126,11 @@ impl<'a> SpanLeaderTree<'a> {
         if current_path.len() == self.span_candidates.len() {
             let mut sorted_path = current_path.clone();
             sorted_path.sort_by_key(|(start, _)| *start);
-            result.push(sorted_path);
+            // TODO: We should move overlap checks when we're constructing the tree.
+            // This way, we can prune entire branches if the first few spans overlap.
+            if !do_spans_overlap(&sorted_path) {
+                result.push(sorted_path);
+            }
         } else {
             // Otherwise, recurse on children
             for child in &node.children {
@@ -264,41 +268,91 @@ fn do_spans_overlap(spans: &[StartAndSpan]) -> bool {
     false
 }
 
+fn find_leaders_for<'a>(
+    token_id: u32,
+    all_span_candidates: &'a [SpanResult],
+) -> Result<Option<Vec<StartAndSpan<'a>>>, QueryExecError> {
+    let tree = SpanLeaderTree::new(token_id, all_span_candidates)?;
+    Ok(tree.find_leaders())
+}
+
+fn get_result_stats(
+    total_candidates: usize,
+    results_in_page: usize,
+    current_page: &PageData,
+    next_page: &Option<PageData>,
+) -> QueryGlobalInfo {
+    let next_page = match next_page {
+        None => {
+            return QueryGlobalInfo {
+                // Since there's no next page, this is exact.
+                estimated_results: current_page.result_index as usize + results_in_page,
+            };
+        }
+        Some(v) => v,
+    };
+    let hit_rate = next_page.result_index as f64 / next_page.candidate_index as f64;
+    let remaining_candidates = total_candidates.saturating_sub(next_page.candidate_index as usize);
+    let estimated_remaining_results =
+        (remaining_candidates as f64 * hit_rate + 0.99).floor() as usize;
+    QueryGlobalInfo {
+        estimated_results: next_page.result_index as usize + estimated_remaining_results,
+    }
+}
+
 type StartAndSpan<'a> = (u32, &'a SpanResult<'a>);
 type SpanLeaders<'a> = Vec<StartAndSpan<'a>>;
 pub(super) struct MatchPageResult<'a> {
     pub matches: Vec<SpanLeaders<'a>>,
-    pub skipped_candidates: usize,
+    pub next_page: Option<PageData>,
+    pub summary_info: QueryGlobalInfo,
 }
 
 pub(super) fn get_match_page<'a>(
     candidates: &mut MatchIterator<'_>,
     all_span_candidates: &'a [SpanResult],
     page_size: usize,
+    current_page: &PageData,
+    total_candidates: usize,
 ) -> Result<MatchPageResult<'a>, QueryExecError> {
     let mut skipped_candidates = 0;
+    // Find the actual matches
     let mut matches = vec![];
-    'outer: while matches.len() < page_size {
+    while matches.len() < page_size {
         let token_id = match candidates.next() {
             Some(token_id) => token_id?,
             None => break,
         };
-        let leader_tree = SpanLeaderTree::new(token_id, all_span_candidates)?;
-        for possible_leaders in leader_tree.all_combos() {
-            // TODO: We should move overlap checks when we're constructing the tree.
-            // This way, we can prune entire branches if the first few spans overlap.
-            if do_spans_overlap(&possible_leaders) {
-                continue;
-            }
-            matches.push(possible_leaders);
-            continue 'outer;
+        match find_leaders_for(token_id, all_span_candidates)? {
+            None => skipped_candidates += 1,
+            Some(l) => matches.push(l),
         }
-        // None of the leaders matched without overlap.
+    }
+    // Figure out if there's a next page
+    let mut next_page = None;
+    loop {
+        let result_id = match candidates.next().transpose()? {
+            None => break,
+            Some(v) => v,
+        };
+        if find_leaders_for(result_id, all_span_candidates)?.is_some() {
+            next_page = Some(PageData {
+                result_index: current_page.result_index + page_size as u32,
+                candidate_index: current_page.candidate_index
+                    + page_size as u32
+                    + skipped_candidates as u32,
+                result_id,
+            });
+            break;
+        }
         skipped_candidates += 1;
     }
+
+    let summary_info = get_result_stats(total_candidates, matches.len(), current_page, &next_page);
     Ok(MatchPageResult {
         matches,
-        skipped_candidates,
+        next_page,
+        summary_info,
     })
 }
 

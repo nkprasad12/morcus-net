@@ -8,7 +8,7 @@ mod index_data;
 mod reference_impl;
 
 use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo};
-use crate::corpus_query_engine::corpus_candidate_filtering::{MatchIterator, next_page_data};
+use crate::corpus_query_engine::corpus_candidate_filtering::MatchIterator;
 use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
 use crate::corpus_query_engine::corpus_result_resolution::get_match_page;
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
@@ -98,9 +98,9 @@ impl CorpusQueryEngine {
         context_len: usize,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let mut profiler = TimeProfiler::new();
+
         // Parse the query
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
-        // Convert to internal representation
         let terms = query
             .terms
             .iter()
@@ -125,20 +125,17 @@ impl CorpusQueryEngine {
         // Find the candidates that could match all spans.
         let candidates = self.compute_query_candidates(&span_candidates)?;
         let total_candidates = candidates.data.to_ref().num_elements();
-        let mut candidate_iter = MatchIterator::new(&candidates, page_data);
+        let mut candidates = MatchIterator::new(&candidates, page_data);
         profiler.phase("Combined candidates found");
 
         // Finds a page of actual matches from the candidates.
-        let match_leaders = get_match_page(&mut candidate_iter, &span_candidates, page_size)?;
-        let next_page = next_page_data(
-            &mut candidate_iter,
-            page_data,
+        let match_leaders = get_match_page(
+            &mut candidates,
+            &span_candidates,
             page_size,
-            match_leaders.skipped_candidates,
+            page_data,
+            total_candidates,
         )?;
-        let result_stats = QueryGlobalInfo {
-            estimated_results: total_candidates,
-        };
         profiler.phase("Match page computed");
 
         // Turn the match IDs into actual matches (with the text and locations).
@@ -146,9 +143,9 @@ impl CorpusQueryEngine {
         profiler.phase("Matches resolved");
 
         Ok(CorpusQueryResult {
-            result_stats,
+            result_stats: match_leaders.summary_info,
             matches,
-            next_page,
+            next_page: match_leaders.next_page,
             timing: profiler.get_stats().to_vec(),
         })
     }
