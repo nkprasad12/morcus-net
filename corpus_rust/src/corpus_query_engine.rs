@@ -22,8 +22,7 @@ use std::error::Error;
 fn empty_result() -> CorpusQueryResult<'static> {
     CorpusQueryResult {
         result_stats: QueryGlobalInfo {
-            total_results: 0,
-            exact_count: Some(true),
+            estimated_results: 0,
         },
         matches: vec![],
         next_page: None,
@@ -108,9 +107,9 @@ impl CorpusQueryEngine {
             .map(|term| self.convert_query_term(term))
             .collect::<Result<Vec<_>, _>>()?;
         let query_spans = corpus_index_calculation::split_into_spans(&terms)?;
-        if query_spans.len() > 20 {
+        if query_spans.len() > 10 {
             return Err(QueryExecError::new(
-                "Queries with more than 20 term groups are not supported",
+                "Queries with more than 10 term groups are not supported",
             ));
         }
         profiler.phase("Parse query");
@@ -138,8 +137,7 @@ impl CorpusQueryEngine {
             match_leaders.skipped_candidates,
         )?;
         let result_stats = QueryGlobalInfo {
-            total_results: total_candidates,
-            exact_count: Some(true),
+            estimated_results: total_candidates,
         };
         profiler.phase("Match page computed");
 

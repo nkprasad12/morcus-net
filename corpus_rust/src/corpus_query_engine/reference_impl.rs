@@ -319,8 +319,7 @@ impl CorpusQueryEngine {
         });
         let result = CorpusQueryResult {
             result_stats: QueryGlobalInfo {
-                total_results: match_ids.len(),
-                exact_count: Some(true),
+                estimated_results: match_ids.len(),
             },
             next_page,
             timing: vec![],

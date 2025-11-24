@@ -142,9 +142,7 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   }
 
   const pageStart = currentPage?.resultIndex ?? 0;
-  const totalResults = props.results.resultStats.totalResults;
-  const aboutText =
-    props.results.resultStats.exactCount === true ? "" : "approximately ";
+  const totalResults = props.results.resultStats.estimatedResults;
 
   const toNextPage = () =>
     nav.to((c) => ({
@@ -157,7 +155,7 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   return (
     <div style={{ margin: "0px 16px" }}>
       <div className="text md">
-        Found {aboutText}
+        Found about
         {totalResults} results matching:
         <div className="corpusResult">{query}</div>
       </div>

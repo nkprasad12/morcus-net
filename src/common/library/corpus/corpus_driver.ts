@@ -75,7 +75,7 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   });
   const elapsedMs = elapsedTime.toFixed(3);
   console.log(
-    `Found ${results.resultStats.totalResults} results in ${elapsedMs} ms`
+    `Found about ${results.resultStats.estimatedResults} results in ${elapsedMs} ms`
   );
   if ("timing" in results) {
     // @ts-expect-error

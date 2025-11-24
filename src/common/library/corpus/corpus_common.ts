@@ -14,7 +14,6 @@ import {
   isPair,
   isString,
   matchesObject,
-  maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
 export const CORPUS_DIR = "build/corpus";
@@ -70,13 +69,11 @@ export const isPageData = matchesObject<PageData>({
 });
 
 export interface QueryGlobalInfo {
-  totalResults: number;
-  exactCount?: boolean;
+  estimatedResults: number;
 }
 
 const isQueryGlobalInfo = matchesObject<QueryGlobalInfo>({
-  totalResults: isNumber,
-  exactCount: maybeUndefined(isBoolean),
+  estimatedResults: isNumber,
 });
 
 // Replaced: CorpusQueryResult now matches Rust shape (omitting timing)

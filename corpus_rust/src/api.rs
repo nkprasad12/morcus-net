@@ -46,10 +46,7 @@ pub struct PageData {
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]
 pub struct QueryGlobalInfo {
-    /// The total number of results for this query.
-    pub total_results: usize,
-    /// Whether the total result count is exact.
-    pub exact_count: Option<bool>,
+    pub estimated_results: usize,
 }
 
 /// A single page of matches for a query, along with metadata.

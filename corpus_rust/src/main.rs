@@ -115,10 +115,10 @@ fn print_query_results(
 ) -> Option<PageData> {
     let results = get_results(engine, query_str, page_data);
     println!(
-        "\n\x1b[4mShowing results {}-{} of {} matches:\x1b[0m",
+        "\n\x1b[4mShowing results {}-{} of about {} matches:\x1b[0m",
         page_data.result_index + 1,
         page_data.result_index as usize + results.matches.len(),
-        results.result_stats.total_results
+        results.result_stats.estimated_results
     );
     if has_arg(ARG_QUIET) {
         println!("- Omitted matches due to --quiet flag.\n");
