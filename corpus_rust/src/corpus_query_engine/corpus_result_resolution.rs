@@ -81,32 +81,120 @@ fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<Vec<u32>, Query
     }
 }
 
-fn find_span_leaders(
+/// A tree of possible span leaders. Each span can have multiple
+/// possible valid token IDs for its leader relative to the last anchor.
+struct SpanLeaderTree<'a> {
+    span_candidates: &'a [SpanResult<'a>],
+    root: SpanLeaderNode,
+}
+
+impl<'a> SpanLeaderTree<'a> {
+    fn new(
+        anchor_id: u32,
+        all_span_candidates: &'a [SpanResult<'a>],
+    ) -> Result<Self, QueryExecError> {
+        let root = span_tree_rooted_at(anchor_id, all_span_candidates)?;
+        Ok(SpanLeaderTree {
+            span_candidates: all_span_candidates,
+            root,
+        })
+    }
+
+    fn all_combos(&self) -> Vec<Vec<StartAndLength>> {
+        if self.span_candidates.is_empty() {
+            return vec![];
+        }
+
+        let mut result = Vec::new();
+        let mut current_path = Vec::with_capacity(self.span_candidates.len());
+        self.collect_paths(&self.root, &mut current_path, &mut result);
+        result
+    }
+
+    fn collect_paths(
+        &self,
+        node: &SpanLeaderNode,
+        current_path: &mut Vec<StartAndLength>,
+        result: &mut Vec<Vec<StartAndLength>>,
+    ) {
+        let depth = current_path.len();
+
+        // Add current node to path
+        let span_length = self.span_candidates[depth].length as u32;
+        current_path.push((node.leader_id, span_length));
+
+        // If we've reached the target depth, save the path
+        if current_path.len() == self.span_candidates.len() {
+            let mut sorted_path = current_path.clone();
+            sorted_path.sort_by_key(|(start, _)| *start);
+            result.push(sorted_path);
+        } else {
+            // Otherwise, recurse on children
+            for child in &node.children {
+                self.collect_paths(child, current_path, result);
+            }
+        }
+
+        // Backtrack
+        current_path.pop();
+    }
+}
+
+#[derive(Default)]
+struct SpanLeaderNode {
+    leader_id: u32,
+    children: Vec<SpanLeaderNode>,
+}
+
+fn span_tree_rooted_at(
     token_id: u32,
     all_span_candidates: &[SpanResult],
-) -> Result<Vec<(u32, u32)>, QueryExecError> {
+) -> Result<SpanLeaderNode, QueryExecError> {
     if all_span_candidates.is_empty() {
         return Err(QueryExecError::new("No query spans provided"));
     }
-    if all_span_candidates.len() > 2 {
-        return Err(QueryExecError::new("Only two spans supported currently"));
-    }
-    let mut leaders = Vec::with_capacity(all_span_candidates.len());
-    leaders.push((token_id, all_span_candidates[0].length as u32));
+    // A list of (leader ID, index of child nodes in `all_nodes`)
+    let mut raw_nodes: Vec<(u32, Vec<usize>)> = vec![(token_id, vec![])];
+    let mut queue = vec![0];
+
     for span in all_span_candidates.iter().skip(1) {
-        if span.length == 0 {
-            return Err(QueryExecError::new("Empty query span found"));
+        let mut new_queue = vec![];
+        for i in queue.drain(..) {
+            let leader_id = raw_nodes[i].0;
+            // Find the possible leaders for this span that are close
+            // to the last span's leader.
+            for span_leader in find_span_leader(leader_id, span)? {
+                let id = raw_nodes.len();
+                raw_nodes.push((span_leader, vec![]));
+                raw_nodes[i].1.push(id);
+                new_queue.push(id);
+            }
         }
-        let span_leaders = find_span_leader(token_id, span)?;
-        if span_leaders.is_empty() {
-            return Err(QueryExecError::new("No span leader found"));
-        }
-        // TODO: We're currently only considering the first one, but
-        // eventually we need to construct a tree of the possible combinations.
-        leaders.push((span_leaders[0], span.length as u32));
+        queue = new_queue;
     }
-    leaders.sort_by_key(|(start, _)| *start);
-    Ok(leaders)
+
+    // Now, reconstruct the tree from the raw nodes.
+    let mut nodes = Vec::<SpanLeaderNode>::with_capacity(raw_nodes.len());
+    for (leader_id, children_indices) in raw_nodes.iter().rev() {
+        let mut node = SpanLeaderNode {
+            leader_id: *leader_id,
+            children: Vec::with_capacity(children_indices.len()),
+        };
+        for &child_idx in children_indices {
+            // Since we're iterating backwards, the `i`th raw node is mapped to the
+            // `(len - 1 - i)`th constructed node.
+            // Because we do a BFS above, we know the nodes at the end of the tree are the leaves,
+            // the nodes before that are parents of leaves, and so on.
+            let i = raw_nodes.len() - 1 - child_idx;
+            node.children.push(std::mem::take(&mut nodes[i]));
+        }
+        nodes.push(node);
+    }
+
+    let root = nodes
+        .pop()
+        .ok_or(QueryExecError::new("Invalid number of nodes."))?;
+    Ok(root)
 }
 
 fn compute_offsets(
@@ -154,7 +242,7 @@ fn compute_offsets(
 /// * `spans` - A list of (start, length) token ID pairs representing the spans.
 ///
 /// Returns true if any spans overlap, false otherwise.
-fn do_spans_overlap(spans: &[(u32, u32)]) -> bool {
+fn do_spans_overlap(spans: &[StartAndLength]) -> bool {
     if spans.len() < 2 {
         return false;
     }
@@ -189,17 +277,23 @@ pub(super) fn get_match_page(
 ) -> Result<MatchPageResult, QueryExecError> {
     let mut skipped_candidates = 0;
     let mut matches = vec![];
-    while matches.len() < page_size {
+    'outer: while matches.len() < page_size {
         let token_id = match candidates.next() {
             Some(token_id) => token_id?,
             None => break,
         };
-        let leaders = find_span_leaders(token_id, all_span_candidates)?;
-        if do_spans_overlap(&leaders) {
-            skipped_candidates += 1;
-            continue;
+        let leader_tree = SpanLeaderTree::new(token_id, all_span_candidates)?;
+        for possible_leaders in leader_tree.all_combos() {
+            // TODO: We should move overlap checks when we're constructing the tree.
+            // This way, we can prune entire branches if the first few spans overlap.
+            if do_spans_overlap(&possible_leaders) {
+                continue;
+            }
+            matches.push(possible_leaders);
+            continue 'outer;
         }
-        matches.push(leaders);
+        // None of the leaders matched without overlap.
+        skipped_candidates += 1;
     }
     Ok(MatchPageResult {
         matches,
