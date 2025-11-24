@@ -100,7 +100,7 @@ impl<'a> SpanLeaderTree<'a> {
         })
     }
 
-    fn all_combos(&self) -> Vec<Vec<StartAndLength>> {
+    fn all_combos(&self) -> Vec<Vec<StartAndSpan<'a>>> {
         if self.span_candidates.is_empty() {
             return vec![];
         }
@@ -114,14 +114,13 @@ impl<'a> SpanLeaderTree<'a> {
     fn collect_paths(
         &self,
         node: &SpanLeaderNode,
-        current_path: &mut Vec<StartAndLength>,
-        result: &mut Vec<Vec<StartAndLength>>,
+        current_path: &mut Vec<StartAndSpan<'a>>,
+        result: &mut Vec<Vec<StartAndSpan<'a>>>,
     ) {
         let depth = current_path.len();
 
         // Add current node to path
-        let span_length = self.span_candidates[depth].length as u32;
-        current_path.push((node.leader_id, span_length));
+        current_path.push((node.leader_id, &self.span_candidates[depth]));
 
         // If we've reached the target depth, save the path
         if current_path.len() == self.span_candidates.len() {
@@ -197,8 +196,8 @@ fn span_tree_rooted_at(
     Ok(root)
 }
 
-fn compute_offsets(
-    leaders: &[(u32, u32)],
+fn compute_offsets<'a>(
+    leaders: &[StartAndSpan<'a>],
     context_len: u32,
     num_tokens: u32,
 ) -> Result<Vec<(u32, bool)>, QueryExecError> {
@@ -208,7 +207,8 @@ fn compute_offsets(
     let mut offsets = Vec::with_capacity(leaders.len() + 2);
     // The left context start token. Make sure it doesn't go below 0.
     offsets.push((max(0, leaders[0].0.saturating_sub(context_len)), false));
-    for &(start, len) in leaders.iter() {
+    for &(start, span) in leaders.iter() {
+        let len = span.length as u32;
         // Make sure this is updated if we don't add an offset for the left context above;
         // otherwise, this would panic.
         if start != 0 && start <= offsets[offsets.len() - 1].0 {
@@ -229,7 +229,8 @@ fn compute_offsets(
     offsets.push((
         min(
             num_tokens - 1,
-            leaders[leaders.len() - 1].0 + leaders[leaders.len() - 1].1 + context_len - 1,
+            leaders[leaders.len() - 1].0 + leaders[leaders.len() - 1].1.length as u32 + context_len
+                - 1,
         ),
         false,
     ));
@@ -239,18 +240,18 @@ fn compute_offsets(
 /// Checks whether any of the given spans overlap.
 ///
 /// # Arguments:
-/// * `spans` - A list of (start, length) token ID pairs representing the spans.
+/// * `spans` - A list of (start, span) token ID pairs representing the spans.
 ///
 /// Returns true if any spans overlap, false otherwise.
-fn do_spans_overlap(spans: &[StartAndLength]) -> bool {
+fn do_spans_overlap(spans: &[StartAndSpan]) -> bool {
     if spans.len() < 2 {
         return false;
     }
     let mut spans = spans.to_vec();
     spans.sort_by(|a, b| a.0.cmp(&b.0));
     for i in 0..spans.len() - 1 {
-        let (start_i, len_i) = spans[i];
-        let end_i = start_i + len_i;
+        let (start_i, span) = spans[i];
+        let end_i = start_i + span.length as u32;
         let (start_j, _) = spans[i + 1];
 
         // Since spans are sorted, we only need to check if the current span
@@ -263,18 +264,18 @@ fn do_spans_overlap(spans: &[StartAndLength]) -> bool {
     false
 }
 
-type StartAndLength = (u32, u32);
-type SpanLeaders = Vec<StartAndLength>;
-pub(super) struct MatchPageResult {
-    pub matches: Vec<SpanLeaders>,
+type StartAndSpan<'a> = (u32, &'a SpanResult<'a>);
+type SpanLeaders<'a> = Vec<StartAndSpan<'a>>;
+pub(super) struct MatchPageResult<'a> {
+    pub matches: Vec<SpanLeaders<'a>>,
     pub skipped_candidates: usize,
 }
 
-pub(super) fn get_match_page(
+pub(super) fn get_match_page<'a>(
     candidates: &mut MatchIterator<'_>,
-    all_span_candidates: &[SpanResult],
+    all_span_candidates: &'a [SpanResult],
     page_size: usize,
-) -> Result<MatchPageResult, QueryExecError> {
+) -> Result<MatchPageResult<'a>, QueryExecError> {
     let mut skipped_candidates = 0;
     let mut matches = vec![];
     'outer: while matches.len() < page_size {
