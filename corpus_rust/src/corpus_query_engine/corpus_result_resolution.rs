@@ -28,11 +28,9 @@ fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<u32, QueryExecE
             return Err(QueryExecError::new("`First` found for non-initial span"));
         }
     };
-    if is_directed {
-        return Err(QueryExecError::new("Directed proximity not yet supported"));
-    }
 
-    let anchor_start = anchor_id.saturating_sub(proximity_len);
+    let subtractand = if is_directed { 0 } else { proximity_len };
+    let anchor_start = anchor_id.saturating_sub(subtractand);
     // +1 because the end is exclusive.
     let anchor_end = anchor_id + proximity_len + 1;
     let (span_start, span_end) = span.candidates.normalized_range();
