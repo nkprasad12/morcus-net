@@ -43,8 +43,8 @@ pub(super) fn split_into_spans<'a>(
 }
 
 fn combine_span_candidates<'a>(
-    previous: &'a SpanResult<'a>,
-    current: &SpanResult<'a>,
+    previous: &SpanResult<'a>,
+    current: &'a SpanResult<'a>,
 ) -> Result<SpanResult<'a>, QueryExecError> {
     let (distance, is_directed) = match previous.relation {
         QueryRelation::Proximity {
@@ -148,7 +148,7 @@ impl CorpusQueryEngine {
         }
         let mut previous = combine_span_candidates(&spans[n - 1], &spans[n - 2])?;
         for current in spans.iter().rev().skip(2) {
-            previous = combine_span_candidates(current, &previous)?;
+            previous = combine_span_candidates(&previous, current)?;
         }
         Ok(previous.candidates)
     }
