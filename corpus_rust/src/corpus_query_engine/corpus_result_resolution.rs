@@ -14,8 +14,8 @@ use crate::{
 /// * `anchor_id` - The token ID of the anchor. This is position-normalized (i.e., has a position of 0).
 /// * `span` - The span to find the leader for.
 ///
-/// Returns the token ID of the span leader, position-normalized.
-fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<u32, QueryExecError> {
+/// Returns the possible token IDs of the span leader, position-normalized.
+fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<Vec<u32>, QueryExecError> {
     if span.length == 0 {
         return Err(QueryExecError::new("Empty query span found"));
     }
@@ -43,17 +43,25 @@ fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<u32, QueryExecE
 
     match span.candidates.data.to_ref() {
         super::IndexData::BitMask(mask) => {
-            let start_bit = start - span.candidates.range.start;
-            let end_bit = end - span.candidates.range.start;
+            let start_bit = start.saturating_sub(span.candidates.range.start);
+            let end_bit = end.saturating_sub(span.candidates.range.start);
+            if end_bit <= span.candidates.position {
+                // We won't have any candidates possible, because any candidate bit would
+                // be negative after applying the position offset.
+                return Err(QueryExecError::new(
+                    "No span leader found within proximity [for bitmask].",
+                ));
+            }
+            // Skip bits before the position offset.
+            let start_bit = max(start_bit, span.candidates.position);
+
+            let mut matches = Vec::new();
             for bit in start_bit..end_bit {
                 if (mask[(bit / 64) as usize] & (1u64 << (bit % 64))) != 0 {
-                    return Ok(span.candidates.range.start + bit - span.candidates.position);
+                    matches.push(span.candidates.range.start + bit - span.candidates.position);
                 }
             }
-
-            Err(QueryExecError::new(
-                "No span leader found within proximity [for bitmask].",
-            ))
+            Ok(matches)
         }
         super::IndexData::List(list) => {
             let i = list.partition_point(|x| *x < start);
@@ -63,7 +71,12 @@ fn find_span_leader(anchor_id: u32, span: &SpanResult) -> Result<u32, QueryExecE
                     "No span leader found within proximity [for list].",
                 ));
             }
-            Ok(list[i].saturating_sub(span.candidates.position))
+
+            Ok(list[i..j]
+                .iter()
+                .filter(|&&x| x >= span.candidates.position)
+                .map(|&x| x - span.candidates.position)
+                .collect())
         }
     }
 }
@@ -84,7 +97,13 @@ fn find_span_leaders(
         if span.length == 0 {
             return Err(QueryExecError::new("Empty query span found"));
         }
-        leaders.push((find_span_leader(token_id, span)?, span.length as u32));
+        let span_leaders = find_span_leader(token_id, span)?;
+        if span_leaders.is_empty() {
+            return Err(QueryExecError::new("No span leader found"));
+        }
+        // TODO: We're currently only considering the first one, but
+        // eventually we need to construct a tree of the possible combinations.
+        leaders.push((span_leaders[0], span.length as u32));
     }
     leaders.sort_by_key(|(start, _)| *start);
     Ok(leaders)
@@ -292,7 +311,7 @@ mod tests {
 
         let leader = find_span_leader(27, &span_result);
 
-        assert_eq!(leader.unwrap(), 23);
+        assert_eq!(leader.unwrap(), vec![23]);
     }
 
     #[test]
@@ -318,7 +337,33 @@ mod tests {
 
         let leader = find_span_leader(27, &span_result);
 
-        assert_eq!(leader.unwrap(), 23);
+        assert_eq!(leader.unwrap(), vec![23]);
+    }
+
+    #[test]
+    fn test_find_span_leader_bitmask_multiple_options() {
+        let range = &IndexRange { start: 0, end: 63 };
+        let list = vec![4, 15, 21, 23, 31];
+        let bitmask = to_bitmask(&list, 64);
+        let data = IndexDataRoO::Owned(IndexDataOwned::BitMask(bitmask));
+        let position = 0;
+        let candidates = IndexSlice {
+            data,
+            range,
+            position,
+        };
+        let span_result = SpanResult {
+            candidates,
+            length: 3,
+            relation: QueryRelation::Proximity {
+                distance: 5,
+                is_directed: false,
+            },
+        };
+
+        let leader = find_span_leader(27, &span_result);
+
+        assert_eq!(leader.unwrap(), vec![23, 31]);
     }
 
     #[test]
@@ -342,6 +387,30 @@ mod tests {
 
         let leader = find_span_leader(25, &span_result);
 
-        assert_eq!(leader.unwrap(), 21);
+        assert_eq!(leader.unwrap(), vec![21]);
+    }
+
+    #[test]
+    fn test_find_span_leader_list_multiple_options() {
+        let range = &IndexRange { start: 0, end: 63 };
+        let data = IndexDataRoO::Owned(IndexDataOwned::List(vec![4, 15, 20, 23, 31]));
+        let position = 2;
+        let candidates = IndexSlice {
+            data,
+            range,
+            position,
+        };
+        let span_result = SpanResult {
+            candidates,
+            length: 3,
+            relation: QueryRelation::Proximity {
+                distance: 5,
+                is_directed: false,
+            },
+        };
+
+        let leader = find_span_leader(25, &span_result);
+
+        assert_eq!(leader.unwrap(), vec![21, 29]);
     }
 }
