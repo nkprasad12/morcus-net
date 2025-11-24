@@ -95,7 +95,7 @@ export function CorpusQueryPage() {
   );
 
   return (
-    <div style={{ maxWidth: "800px", margin: "auto", marginTop: "16px" }}>
+    <div style={{ maxWidth: "800px", margin: "auto", marginTop: "24px" }}>
       <SearchBox
         onInput={setRequestQuery}
         placeholderText={SEARCH_PLACEHOLDER}
@@ -108,7 +108,6 @@ export function CorpusQueryPage() {
         RenderOption={CorpusAutocompleteItem}
         optionsForInput={optionsForInputMemo}
         toKey={toKey}
-        autoFocused
         showOptionsInitially
         onOpenSettings={() => setShowSettings(true)}
         settingsPreview={
@@ -119,6 +118,16 @@ export function CorpusQueryPage() {
           />
         }
       />
+      {!showResults && (
+        <div style={{ margin: "12px 16px" }}>
+          <div className="text sm">Welcome to the corpus query tool!</div>
+          <div className="text xs light" style={{ marginTop: "4px" }}>
+            This tool allows you to search any text currently available in the
+            library. Tap below to see some examples of the query syntax, or
+            starting typing in the search bar.
+          </div>
+        </div>
+      )}
       <QueryHelpSection />
       <CorpusSettingsDialog open={showSettings} setOpen={setShowSettings} />
       {showResults && <ResultsSection results={results} />}

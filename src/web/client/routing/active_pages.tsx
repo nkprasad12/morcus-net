@@ -76,17 +76,21 @@ const MACRONIZE_PAGE: SinglePageApp.Page = {
 const CORPUS_QUERY_PAGE: SinglePageApp.Page = {
   Content: CorpusQueryPage,
   paths: [ClientPaths.CORPUS_QUERY_PATH],
+  appBarConfig: {
+    name: "Corpus",
+    targetPath: ClientPaths.CORPUS_QUERY_PATH.path,
+  },
 };
 
 export const ACTIVE_PAGES = [
   // Visible in top navigation
   DICT_PAGE,
   LIBRARY_PAGE,
+  CORPUS_QUERY_PAGE,
   ABOUT_PAGE,
   // Other pages
   SETTINGS_PAGE,
   READING_PAGE,
   EXTERNAL_CONTENT_READER_PAGE,
   MACRONIZE_PAGE,
-  CORPUS_QUERY_PAGE,
 ];
