@@ -31,7 +31,9 @@ export function CorpusSettingsDialog(props: {
         <b>Corpus Query Settings</b>
       </div>
       <div style={{ padding: "0px 24px 20px" }}>
-        <label htmlFor="contextLen">Context length (1-100): </label>
+        <label htmlFor="contextLen" className="text sm light">
+          Context words (1-100):{" "}
+        </label>
         <input
           id="contextLen"
           type="number"
@@ -48,7 +50,9 @@ export function CorpusSettingsDialog(props: {
           style={{ width: "60px", marginLeft: "8px" }}
         />
         <br />
-        <label htmlFor="pageSize">Page size (10-100): </label>
+        <label htmlFor="pageSize" className="text sm light">
+          Page size (10-100):{" "}
+        </label>
         <input
           id="pageSize"
           type="number"
@@ -79,6 +83,7 @@ export function CorpusSettingsDialog(props: {
 export function SettingsPreview(props: {
   contextLen: number;
   pageSize: number;
+  openSettings: () => void;
 }) {
   return (
     <span
@@ -92,24 +97,19 @@ export function SettingsPreview(props: {
         alignItems: "center",
         gap: "8px",
       }}>
+      Context words:{" "}
       <span
-        className="text xs smallChip"
-        style={{
-          backgroundColor: "#eee",
-          padding: "2px 8px",
-          borderRadius: "8px",
-          marginRight: "4px",
-        }}>
-        Context Size: {props.contextLen} words
+        className="text xs smallChip lsChip"
+        style={{ cursor: "pointer" }}
+        onClick={props.openSettings}>
+        {props.contextLen}
       </span>
+      Page size:{" "}
       <span
-        className="text xs smallChip"
-        style={{
-          backgroundColor: "#eee",
-          padding: "2px 8px",
-          borderRadius: "8px",
-        }}>
-        Page size: {props.pageSize} results
+        className="text xs smallChip lsChip"
+        style={{ cursor: "pointer" }}
+        onClick={props.openSettings}>
+        {props.pageSize}
       </span>
     </span>
   );

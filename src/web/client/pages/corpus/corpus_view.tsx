@@ -20,6 +20,7 @@ import { Fragment, useCallback, useMemo, useState } from "react";
 import {
   parsePageData,
   serializePageData,
+  setNewQuery,
   useCorpusRouter,
 } from "@/web/client/pages/corpus/corpus_router";
 import { GetCorpusAuthorsApi } from "@/web/api_routes";
@@ -101,7 +102,8 @@ export function CorpusQueryPage() {
         // Left and right are not equal to account for the border.
         style={{ padding: "8px 12px 4px 8px", margin: "4px 8px" }}
         ariaLabel={SEARCH_PLACEHOLDER}
-        onRawEnter={() => nav.to((c) => ({ ...c, query: requestQuery }))}
+        // Make sure we don't copy over the page tokens for the old query.
+        onRawEnter={() => setNewQuery(nav, requestQuery)}
         onOptionSelected={(o, current) => `${current}${o.option}`}
         RenderOption={CorpusAutocompleteItem}
         optionsForInput={optionsForInputMemo}
@@ -110,7 +112,11 @@ export function CorpusQueryPage() {
         showOptionsInitially
         onOpenSettings={() => setShowSettings(true)}
         settingsPreview={
-          <SettingsPreview pageSize={pageSize} contextLen={contextLen} />
+          <SettingsPreview
+            pageSize={pageSize}
+            contextLen={contextLen}
+            openSettings={() => setShowSettings(true)}
+          />
         }
       />
       <QueryHelpSection />
@@ -135,10 +141,18 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   );
 
   if (props.results === "Error" || currentPage === null) {
-    return <div>Error occurred on query: {query}</div>;
+    return (
+      <div style={{ margin: "0px 16px" }}>
+        <div className="text md">Error occurred on query: {query}</div>
+      </div>
+    );
   }
   if (props.results === "Loading") {
-    return <div>Loading results for: {query}</div>;
+    return (
+      <div style={{ margin: "0px 16px" }}>
+        <div className="text md">Loading results for: {query}</div>
+      </div>
+    );
   }
 
   const pageStart = currentPage?.resultIndex ?? 0;
@@ -155,8 +169,7 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   return (
     <div style={{ margin: "0px 16px" }}>
       <div className="text md">
-        Found about
-        {totalResults} results matching:
+        Found about {totalResults} results matching:
         <div className="corpusResult">{query}</div>
       </div>
       <div className="text sm light">

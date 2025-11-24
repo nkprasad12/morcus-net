@@ -379,7 +379,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
 
     /** Corpus specific */
     ".corpusResult": {
-      color: Solarized.red + "A0",
+      color: Solarized.orange + "B0",
     },
     ".queryHelp": {
       margin: "12px 16px",

@@ -1,6 +1,10 @@
 import type { PageData } from "@/common/library/corpus/corpus_common";
 import { safeParseInt } from "@/common/misc_utils";
-import { Router, type RouteInfo } from "@/web/client/router/router_v2";
+import {
+  Router,
+  type NavHelper,
+  type RouteInfo,
+} from "@/web/client/router/router_v2";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 
 interface CorpusUrlData {
@@ -21,7 +25,7 @@ const fromRoute = (route: RouteInfo): CorpusUrlData => ({
   currentPage: route.params?.cp,
   lastPage: route.params?.lp,
   nextPage: route.params?.np,
-  pageSize: safeParseInt(route.params?.ps) ?? 25,
+  pageSize: safeParseInt(route.params?.ps) ?? 50,
   contextLen: safeParseInt(route.params?.cl) ?? 20,
 });
 
@@ -86,3 +90,11 @@ const toRoute = (info: CorpusUrlData): RouteInfo => ({
 
 export const useCorpusRouter = () =>
   Router.useConvertedRouter(fromRoute, toRoute);
+
+export function setNewQuery(nav: NavHelper<CorpusUrlData>, query: string) {
+  nav.to((old) => ({
+    pageSize: old.pageSize,
+    contextLen: old.contextLen,
+    query,
+  }));
+}
