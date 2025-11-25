@@ -114,6 +114,12 @@ function errorsForToken(
   return [];
 }
 
+function errorsForQuery(query: string[], authors: string[] | null) {
+  // TODO: Also verify that if we have any #author tokens, they are at the start,
+  // and that (for now) we only have one.
+  return query.flatMap((t) => errorsForToken(t, authors));
+}
+
 export function optionsForInput(
   inputRaw: string,
   authors: string[] | null
@@ -128,7 +134,7 @@ export function optionsForInput(
       return [WORD_HELP, SPECIAL_HELP, AUTHOR_HELP];
     }
     // Otherwise, if we have a new token, check all the previous tokens for errors.
-    const errors = tokens.flatMap((t) => errorsForToken(t, authors));
+    const errors = errorsForQuery(tokens, authors);
     if (errors.length > 0) {
       return errors;
     }
@@ -137,6 +143,15 @@ export function optionsForInput(
 
   const lastToken = tokens[tokens.length - 1];
   if (lastToken.startsWith("#")) {
+    for (const token of tokens) {
+      if (!token.startsWith("#")) {
+        return [informational("❌ #author filters must be at start")];
+      }
+    }
+    if (tokens.length > 1) {
+      // TODO: Support multiple authors in the backend.
+      return [informational("❌ only one #author filter allowed")];
+    }
     if (!authors) {
       // If we have no authors, we won't automatically re-render until the user types something else.
       // So there's no point returning "loading" as that could prompt the user to just wait.
