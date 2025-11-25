@@ -2,6 +2,7 @@ import { useState } from "react";
 
 import { useCorpusRouter } from "@/web/client/pages/corpus/corpus_router";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
+import { useMediaQuery } from "@/web/client/utils/media_query";
 
 export function CorpusSettingsDialog(props: {
   open: boolean;
@@ -80,11 +81,31 @@ export function CorpusSettingsDialog(props: {
   );
 }
 
+function PreviewChip(props: {
+  value: number;
+  label: string;
+  onClick: () => void;
+}) {
+  return (
+    <>
+      {props.label}{" "}
+      <span
+        className="text xs smallChip lsChip"
+        style={{ cursor: "pointer" }}
+        onClick={props.onClick}>
+        {props.value}
+      </span>
+    </>
+  );
+}
+
 export function SettingsPreview(props: {
   contextLen: number;
   pageSize: number;
   openSettings: () => void;
 }) {
+  const isScreenTiny = useMediaQuery("(max-width: 400px)");
+
   return (
     <span
       className="text light xxs compact"
@@ -97,20 +118,16 @@ export function SettingsPreview(props: {
         alignItems: "center",
         gap: "8px",
       }}>
-      Context words:{" "}
-      <span
-        className="text xs smallChip lsChip"
-        style={{ cursor: "pointer" }}
-        onClick={props.openSettings}>
-        {props.contextLen}
-      </span>
-      Page size:{" "}
-      <span
-        className="text xs smallChip lsChip"
-        style={{ cursor: "pointer" }}
-        onClick={props.openSettings}>
-        {props.pageSize}
-      </span>
+      <PreviewChip
+        value={props.contextLen}
+        label={isScreenTiny ? "Context" : "Context words"}
+        onClick={props.openSettings}
+      />
+      <PreviewChip
+        value={props.pageSize}
+        label="Page size"
+        onClick={props.openSettings}
+      />
     </span>
   );
 }
