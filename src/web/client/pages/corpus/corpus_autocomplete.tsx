@@ -76,6 +76,25 @@ function missingValue(token: string): CorpusAutocompleteOption {
   return informational(`❌ ${token} - @keyword without \`:value\``);
 }
 
+function logicOpCompletions(
+  previousToken: string | undefined
+): CorpusAutocompleteOption[] {
+  const last = previousToken;
+  if (
+    last === undefined ||
+    last === "and" ||
+    last === "or" ||
+    last.startsWith("#") ||
+    last.startsWith("~")
+  ) {
+    return [];
+  }
+  return [
+    { option: " and", prefix: last, help: "(restrict further)" },
+    { option: " or", prefix: last, help: "(relax restriction)" },
+  ];
+}
+
 function errorsForToken(
   token: string,
   authors: string[] | null
@@ -189,7 +208,11 @@ export function optionsForInput(
     if (errors.length > 0) {
       return errors;
     }
-    return [WORD_HELP, SPECIAL_HELP];
+    return [
+      WORD_HELP,
+      SPECIAL_HELP,
+      ...logicOpCompletions(tokens[tokens.length - 1]),
+    ];
   }
 
   const lastToken = tokens[tokens.length - 1];
@@ -262,7 +285,10 @@ export function optionsForInput(
         ? "an exact lemma"
         : `the lemma \`${valueSoFar}\``;
       // They can type any word here, so we don't need to check anything.
-      return [informational(lemmaHelp)];
+      return [
+        informational(lemmaHelp),
+        ...logicOpCompletions(tokens[tokens.length - 2]),
+      ];
     }
     if (valueEmpty) {
       // Return all the options. We add a space so the token completes.
@@ -291,7 +317,10 @@ export function optionsForInput(
     if (hasExactMatch) {
       // If there's a exact match, don't report an error.
       // TODO: We should return the options for a completed token.
-      return [];
+      return [
+        informational(`a word with ${valueSoFar} ${keyword}`),
+        ...logicOpCompletions(tokens[tokens.length - 2]),
+      ];
     }
     return [unknownKeywordOption(keyword, valueSoFar)];
   }
@@ -301,13 +330,16 @@ export function optionsForInput(
   }
 
   // TODO: We should return the options for a completed token.
-  return [];
+  return [
+    informational(`the word \`${lastToken}\``),
+    ...logicOpCompletions(tokens[tokens.length - 2]),
+  ];
 }
 
 export function CorpusAutocompleteItem(props: {
   option: CorpusAutocompleteOption;
 }) {
-  const option = props.option.option;
+  const option = props.option.option.replaceAll(" ", " ");
   return (
     <div
       style={{
@@ -317,7 +349,7 @@ export function CorpusAutocompleteItem(props: {
       {props.option.prefix !== undefined && (
         <span className="text sm">{props.option.prefix}</span>
       )}
-      <b>{option}</b>
+      <i style={{ whiteSpace: "pre" }}>{option}</i>
       {props.option.help && (
         <span className="text xs smallChip"> {props.option.help}</span>
       )}
