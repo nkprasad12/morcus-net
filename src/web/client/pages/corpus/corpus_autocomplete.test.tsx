@@ -76,6 +76,60 @@ describe("optionsForInput", () => {
     expect(opts.length).toBe(1);
     expect(opts[0].help).toContain("invalid keyword @foobarbaz");
   });
+
+  test("tilde without number returns help options", () => {
+    const opts = optionsForInput("~", null);
+    expect(opts.length).toBeGreaterThan(0);
+    expect(opts.some((o) => o.help?.includes("within 5 words"))).toBe(true);
+    expect(opts.some((o) => o.option === ">" && o.prefix === "~")).toBe(true);
+  });
+
+  test("tilde with valid number returns directional option", () => {
+    const opts = optionsForInput("~3", null);
+    expect(opts.length).toBeGreaterThan(0);
+    expect(opts.some((o) => o.help?.includes("within 3 words"))).toBe(true);
+    expect(opts.some((o) => o.option === ">" && o.prefix === "~3")).toBe(true);
+  });
+
+  test("tilde with number and > returns informational completion", () => {
+    const opts = optionsForInput("~10>", null);
+    expect(opts.length).toBe(1);
+    expect(opts[0].help).toContain("within 10 words before");
+  });
+
+  test("tilde with default distance (5) and > returns completion", () => {
+    const opts = optionsForInput("~>", null);
+    expect(opts.length).toBeGreaterThan(0);
+    expect(opts.some((o) => o.help?.includes("within 5 words before"))).toBe(
+      true
+    );
+  });
+
+  test("tilde with out-of-range number returns error", () => {
+    const opts = optionsForInput("~20", null);
+    expect(opts.length).toBe(1);
+    expect(opts[0].help).toContain("range after ~ must be 1-15");
+  });
+
+  test("tilde with zero returns error", () => {
+    const opts = optionsForInput("~0", null);
+    expect(opts.length).toBe(1);
+    expect(opts[0].help).toContain("range after ~ must be 1-15");
+  });
+
+  test("tilde with invalid characters after number returns error", () => {
+    const opts = optionsForInput("~5x", null);
+    expect(opts.length).toBe(1);
+    expect(opts[0].help).toContain("invalid");
+    expect(opts[0].help).toContain("expected ~, ~N, or ~N>");
+  });
+
+  test("completed proximity token allows new token suggestions", () => {
+    const opts = optionsForInput("~5> ", null);
+    const optStrings = opts.map((o) => o.option);
+    expect(optStrings).toContain("");
+    expect(optStrings).toContain("@");
+  });
 });
 
 describe("CorpusAutocompleteItem", () => {

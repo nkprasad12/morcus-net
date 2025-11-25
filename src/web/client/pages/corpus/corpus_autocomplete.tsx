@@ -1,3 +1,5 @@
+import { safeParseInt } from "@/common/misc_utils";
+
 export interface CorpusAutocompleteOption {
   option: string;
   help?: string;
@@ -34,6 +36,14 @@ function informational(help: string): CorpusAutocompleteOption {
     help,
   };
 }
+
+const TILDE_HELP: CorpusAutocompleteOption[] = [
+  informational("within 5 words of"),
+  { option: ">", prefix: "~", help: "within 5 words before" },
+  { option: "3", prefix: "~", help: "within 3 words of" },
+  { option: "10", prefix: "~", help: "within 10 words of" },
+  { option: "15", prefix: "~", help: "within 15 words of" },
+];
 
 const WORD_HELP = informational("<word> match exact word");
 const SPECIAL_HELP: CorpusAutocompleteOption = {
@@ -104,6 +114,11 @@ function errorsForToken(
     }
   }
 
+  if (token.startsWith("~")) {
+    const [messages, isError] = parseProximityToken(token);
+    return isError ? messages : [];
+  }
+
   return [];
 }
 
@@ -111,6 +126,49 @@ function errorsForQuery(query: string[], authors: string[] | null) {
   // TODO: Also verify that if we have any #author tokens, they are at the start,
   // and that (for now) we only have one.
   return query.flatMap((t) => errorsForToken(t, authors));
+}
+
+function parseProximityToken(
+  token: string
+): [options: CorpusAutocompleteOption[], isError: boolean] {
+  const afterTilde = token.slice(1);
+  if (afterTilde.length === 0) {
+    return [TILDE_HELP, false];
+  }
+  let numbers = "";
+  for (const char of afterTilde) {
+    if (char >= "0" && char <= "9") {
+      numbers += char;
+    } else {
+      break;
+    }
+  }
+  const distance = numbers.length === 0 ? 5 : safeParseInt(numbers);
+  if (distance === undefined || distance < 1 || distance > 15) {
+    return [[informational("❌ range after ~ must be 1-15")], true];
+  }
+  const afterNumber = afterTilde.slice(numbers.length);
+  if (afterNumber.length === 0) {
+    // Exact match.
+    return [
+      [
+        informational(`within ${distance} words of`),
+        {
+          option: ">",
+          prefix: token,
+          help: `within ${distance} words before`,
+        },
+      ],
+      false,
+    ];
+  }
+  if (afterNumber === ">") {
+    return [[informational(`within ${distance} words before`)], false];
+  }
+  return [
+    [informational(`❌ invalid \`${token}\`: expected ~, ~N, or ~N>`)],
+    true,
+  ];
 }
 
 export function optionsForInput(
@@ -238,6 +296,11 @@ export function optionsForInput(
     return [unknownKeywordOption(keyword, valueSoFar)];
   }
 
+  if (lastToken.startsWith("~")) {
+    return parseProximityToken(lastToken)[0];
+  }
+
+  // TODO: We should return the options for a completed token.
   return [];
 }
 
@@ -256,7 +319,7 @@ export function CorpusAutocompleteItem(props: {
       )}
       <b>{option}</b>
       {props.option.help && (
-        <span className="text xs smallChip">{props.option.help}</span>
+        <span className="text xs smallChip"> {props.option.help}</span>
       )}
     </div>
   );
