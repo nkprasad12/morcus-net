@@ -28,110 +28,134 @@ const SPECIAL_CATEGORIES = new Map<string, string[]>([
   ["mood", ["indicative", "subjunctive", "imperative"]],
 ]);
 
-const WORD_HELP: CorpusAutocompleteOption = {
-  option: "",
-  help: "type an exact word to match",
-  informationalOnly: true,
-};
+function informational(help: string): CorpusAutocompleteOption {
+  return {
+    option: "",
+    help,
+    informationalOnly: true,
+  };
+}
 
+const WORD_HELP = informational("type an exact word to match");
 const SPECIAL_HELP: CorpusAutocompleteOption = {
   option: "@",
-  help: "filter by lemma or inflection",
+  help: "filter word by lemma or inflection",
 };
-
 const AUTHOR_HELP: CorpusAutocompleteOption = {
-  option: "[",
-  help: "filter by author",
+  option: "#",
+  help: "search in author",
 };
 
 function unknownKeyword(keyword: string): CorpusAutocompleteOption {
-  return {
-    option: "",
-    help: `Unknown keyword @${keyword}`,
-    informationalOnly: true,
-  };
+  return informational(`❌ invalid keyword @${keyword}`);
 }
 
 function unknownKeywordOption(
   keyword: string,
   option: string
 ): CorpusAutocompleteOption {
-  return {
-    option: "",
-    help: `Unknown option @${keyword}:${option}`,
-    informationalOnly: true,
-  };
+  return informational(
+    `❌ @${keyword}:${option} - invalid option \`${option}\``
+  );
 }
 
-const MISSING_AT: CorpusAutocompleteOption = {
-  option: "",
-  help: "Error - `:` without @keyword",
-  informationalOnly: true,
-};
+function missingAt(token: string): CorpusAutocompleteOption {
+  return informational(`❌ ${token} - \`:value\` without @keyword`);
+}
 
-type Milestone = "termStart" | "@" | ":";
-function findLastMilestone(s: string, startIdx?: number): [Milestone, number] {
-  const start = startIdx ?? s.length;
-  for (let i = start - 1; i >= 0; i--) {
-    const c = s[i];
-    if (c === "@") {
-      return ["@", i];
-    }
-    if (c === ":") {
-      return [":", i];
+function missingValue(token: string): CorpusAutocompleteOption {
+  return informational(`❌ ${token} - @keyword without \`:value\``);
+}
+
+function errorsForToken(
+  token: string,
+  authors: string[] | null
+): CorpusAutocompleteOption[] {
+  if (token.startsWith("#") && authors !== null) {
+    const maybeAuthor = token.slice(1);
+    const maybeAuthorLower = maybeAuthor.toLowerCase();
+    if (!authors.some((author) => author.toLowerCase() === maybeAuthorLower)) {
+      return [
+        {
+          option: "",
+          help: `❌ invalid author #${maybeAuthor}`,
+          informationalOnly: true,
+        },
+      ];
     }
   }
-  return ["termStart", 0];
+
+  const startsWithAt = token.startsWith("@");
+  const hasColon = token.includes(":");
+
+  if (startsWithAt && !hasColon) {
+    return [missingValue(token)];
+  }
+
+  if (!startsWithAt && hasColon) {
+    return [missingAt(token)];
+  }
+
+  if (startsWithAt && hasColon) {
+    const [keyword, value] = token.slice(1).split(":", 2);
+    if (keyword === "lemma") {
+      // Anything can be the value for a lemma.
+      return [];
+    }
+    const possibleValues = SPECIAL_CATEGORIES.get(keyword);
+    if (possibleValues === undefined) {
+      return [unknownKeyword(keyword)];
+    }
+    if (!possibleValues.includes(value)) {
+      return [unknownKeywordOption(keyword, value)];
+    }
+  }
+
+  return [];
 }
 
 export function optionsForInput(
   inputRaw: string,
   authors: string[] | null
 ): CorpusAutocompleteOption[] {
-  // Author autocomplete logic.
-  const authorTyping = inputRaw.startsWith("[") && !inputRaw.includes("]");
-  if (authorTyping) {
+  const isNewToken = inputRaw.endsWith(" ") || inputRaw.length === 0;
+  const tokens = inputRaw.split(" ").filter((t) => t.length > 0);
+
+  if (isNewToken) {
+    if (tokens.length === 0) {
+      // The backend only handles one author right now, so
+      // `AUTHOR_HELP` is only included when we have no tokens.
+      return [WORD_HELP, SPECIAL_HELP, AUTHOR_HELP];
+    }
+    // Otherwise, if we have a new token, check all the previous tokens for errors.
+    const errors = tokens.flatMap((t) => errorsForToken(t, authors));
+    if (errors.length > 0) {
+      return errors;
+    }
+    return [WORD_HELP, SPECIAL_HELP];
+  }
+
+  const lastToken = tokens[tokens.length - 1];
+  if (lastToken.startsWith("#")) {
     if (!authors) {
+      // If we have no authors, we won't automatically re-render until the user types something else.
+      // So there's no point returning "loading" as that could prompt the user to just wait.
       return [];
     }
-    const afterBracket = inputRaw.substring(1);
-    const typedAuthors = afterBracket.split(",").map((s) => s.trim());
-    const currentAuthor = typedAuthors.pop() || "";
-    const selectedAuthors = new Set(typedAuthors.map((s) => s.toLowerCase()));
-
-    const availableAuthors = authors.filter(
-      (a) => !selectedAuthors.has(a.toLowerCase())
-    );
-
-    for (const author of availableAuthors) {
-      if (author.toLowerCase() === currentAuthor.toLowerCase()) {
-        return [
-          { option: "] ", help: "done filtering authors" },
-          { option: ", ", help: "add another author" },
-        ];
-      }
-    }
-
-    return availableAuthors
-      .filter((a) => a.toLowerCase().startsWith(currentAuthor.toLowerCase()))
+    const afterHash = lastToken.substring(1);
+    return authors
+      .filter((a) => a.toLowerCase().startsWith(afterHash.toLowerCase()))
       .map((author) => ({
-        option: author.substring(currentAuthor.length),
+        option: author.substring(afterHash.length),
       }));
   }
 
-  const [milestone, idx] = findLastMilestone(inputRaw);
-  const fromMilestone = inputRaw.slice(idx).toLowerCase();
-  if (milestone === "termStart") {
-    // We are at the start of a term, and they have no non-space characters yet.
-    if (fromMilestone.trim() === "") {
-      return [WORD_HELP, SPECIAL_HELP, AUTHOR_HELP];
-    }
-    // We have some non-space characters, so they've started typing a word.
-    return [];
-  }
-  if (milestone === "@") {
+  const isKeyword = lastToken.startsWith("@");
+  const colonIdx = lastToken.indexOf(":");
+
+  if (isKeyword && colonIdx === -1) {
     // We are after an @, so they are typing a special category.
-    const afterAt = fromMilestone.slice(1);
+    const afterAt = lastToken.slice(1);
     if (afterAt === "") {
       // Return all the options.
       return Array.from(SPECIAL_CATEGORIES.keys()).map((category) => ({
@@ -150,35 +174,37 @@ export function optionsForInput(
     }
     return [unknownKeyword(afterAt)];
   }
-  if (milestone === ":") {
-    const [lastMilestone, lastIdx] = findLastMilestone(inputRaw, idx);
-    if (lastMilestone !== "@") {
-      return [MISSING_AT];
-    }
-    const category = inputRaw.slice(lastIdx + 1, idx).toLowerCase();
-    const categoryOptions = SPECIAL_CATEGORIES.get(category);
+
+  if (isKeyword && colonIdx !== -1) {
+    // We have a keyword that has been completed.
+    const keyword = lastToken.slice(1, colonIdx);
+    const categoryOptions = SPECIAL_CATEGORIES.get(keyword);
     if (categoryOptions === undefined) {
-      return [unknownKeyword(category)];
+      return [unknownKeyword(keyword)];
     }
-    if (category === "lemma") {
-      // They can type any word here.
-      return [];
+    const valueSoFar = lastToken.slice(colonIdx + 1);
+    const valueEmpty = valueSoFar.length === 0;
+    if (keyword === "lemma") {
+      const lemmaHelp = valueEmpty
+        ? "an exact lemma"
+        : `the lemma \`${valueSoFar}\``;
+      // They can type any word here, so we don't need to check anything.
+      return [informational(lemmaHelp)];
     }
-    const afterColon = fromMilestone.slice(1);
-    if (afterColon === "") {
-      // Return all the options.
+    if (valueEmpty) {
+      // Return all the options. We add a space so the token completes.
       return categoryOptions.map((option) => ({ option: option + " " }));
     }
     let hasExactMatch = false;
     const autocompleteOptions: CorpusAutocompleteOption[] = [];
     for (const option of categoryOptions) {
-      if (option === afterColon.trimEnd()) {
+      if (option === valueSoFar) {
         hasExactMatch = true;
         continue;
       }
-      if (option.startsWith(afterColon)) {
+      if (option.startsWith(valueSoFar)) {
         autocompleteOptions.push({
-          option: option.slice(afterColon.length) + " ",
+          option: option.slice(valueSoFar.length) + " ",
         });
       }
     }
@@ -187,10 +213,12 @@ export function optionsForInput(
     }
     if (hasExactMatch) {
       // If there's a exact match, don't report an error.
+      // TODO: We should return the options for a completed token.
       return [];
     }
-    return [unknownKeywordOption(category, afterColon)];
+    return [unknownKeywordOption(keyword, valueSoFar)];
   }
+
   return [];
 }
 
@@ -198,6 +226,7 @@ export function CorpusAutocompleteItem(props: {
   current: string;
   option: CorpusAutocompleteOption;
 }) {
+  const option = props.option.option;
   return (
     <div
       style={{
@@ -207,7 +236,7 @@ export function CorpusAutocompleteItem(props: {
       {props.option.informationalOnly !== true && (
         <>
           <span className="text sm">{props.current}</span>
-          <b>{props.option.option}</b>
+          <b>{option}</b>
         </>
       )}
       {props.option.help && (

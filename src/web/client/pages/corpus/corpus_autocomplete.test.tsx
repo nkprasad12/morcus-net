@@ -41,13 +41,16 @@ describe("optionsForInput", () => {
   });
 
   test("lemma keyword with colon allows free input (no suggestions)", () => {
-    expect(optionsForInput("@lemma:", null)).toEqual([]);
+    const options = optionsForInput("@lemma:amor", null);
+
+    expect(options).toHaveLength(1);
+    expect(options[0].help).toContain("amor");
   });
 
   test("colon without preceding @ returns error informational option", () => {
-    const opts = optionsForInput(":", null);
+    const opts = optionsForInput(": ", null);
     expect(opts.length).toBe(1);
-    expect(opts[0].help).toEqual("Error - `:` without @keyword");
+    expect(opts[0].help).toContain("without @keyword");
   });
 
   test("category @case: returns list of case options (with trailing space)", () => {
@@ -71,7 +74,7 @@ describe("optionsForInput", () => {
   test("unknown @keyword returns informational unknown-keyword help", () => {
     const opts = optionsForInput("@foobarbaz", null);
     expect(opts.length).toBe(1);
-    expect(opts[0].help).toContain("Unknown keyword @foobarbaz");
+    expect(opts[0].help).toContain("invalid keyword @foobarbaz");
   });
 });
 
