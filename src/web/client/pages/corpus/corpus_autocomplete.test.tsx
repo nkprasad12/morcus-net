@@ -22,7 +22,10 @@ describe("optionsForInput", () => {
   });
 
   test("typing a plain word returns no suggestions", () => {
-    expect(optionsForInput("amor", null)).toEqual([]);
+    const options = optionsForInput("amor", null);
+
+    expect(options).toHaveLength(1);
+    expect(options[0].help).toContain("amor");
   });
 
   test("single @ returns category suggestions including lemma and case", () => {
@@ -68,7 +71,10 @@ describe("optionsForInput", () => {
   });
 
   test("exact category value yields no suggestions", () => {
-    expect(optionsForInput("@case:genitive", null)).toEqual([]);
+    const options = optionsForInput("@case:genitive", null);
+
+    expect(options).toHaveLength(1);
+    expect(options[0].help).toContain("with genitive case");
   });
 
   test("unknown @keyword returns informational unknown-keyword help", () => {

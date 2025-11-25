@@ -391,9 +391,15 @@ function QueryHelpSection() {
               <ul>
                 <li>
                   You can specify the exact proximity by adding a number; for
-                  example, <code>@lemma:amo 3~ @case:genitive</code> would match{" "}
+                  example, <code>@lemma:amo ~3 @case:genitive</code> would match{" "}
                   <code>amo</code> within 3 words of any genitive word. The
                   number must be 15 or lower.
+                </li>
+                <li>
+                  You can specify a direction by adding <code>{">"}</code>; for
+                  example, <code>@lemma:amo ~3{">"} @case:genitive</code> would
+                  match <code>amo</code> 3 or fewer words before any genitive
+                  word. The number must be 15 or lower.
                 </li>
               </ul>
             </li>
@@ -403,10 +409,9 @@ function QueryHelpSection() {
           <summary>Filtering by author</summary>
           <ul>
             <li>
-              <code>[author1, author2]</code> - Restricts the search to the
-              specified authors. For example,{" "}
-              <code>[Caesar, Cicero] amoris</code> will find instances of{" "}
-              <code>amoris</code> but only in works by Caesar or Cicero.
+              <code>#author</code> - Restricts the search to the specified
+              author. For example, <code>#Caesar amoris</code> will find
+              instances of <code>amoris</code> but only in works by Caesar.
             </li>
           </ul>
         </details>
