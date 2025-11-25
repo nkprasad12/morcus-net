@@ -108,7 +108,7 @@ export function CorpusQueryPage() {
         RenderOption={CorpusAutocompleteItem}
         optionsForInput={optionsForInputMemo}
         toKey={toKey}
-        showOptionsInitially
+        hasOptionsForEmptyInput
         onOpenSettings={() => setShowSettings(true)}
         settingsPreview={
           <SettingsPreview

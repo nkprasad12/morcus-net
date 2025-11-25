@@ -22,8 +22,8 @@ interface AutoCompleteSearchProps<T> {
   RenderOption: (props: { option: T; current: string }) => JSX.Element;
   /** A converter function to a key. It must be unique for each option. */
   toKey: (t: T) => string;
-  /** Whether to check for autocomplete options on the initial view. */
-  showOptionsInitially?: true;
+  /** Whether to check for autocomplete options on empty input. */
+  hasOptionsForEmptyInput?: true;
 }
 
 interface BaseSearchBoxProps {
@@ -60,7 +60,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [focused, setFocused] = useState(props.autoFocused === true);
-  const [mouseOnPopup, setMouseOnPopup] = useState(false);
+  const [interactingWithPopup, setInteractingWithPopup] = useState(false);
   const [cursor, setCursor] = useState(-1);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
@@ -104,16 +104,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
 
   useEffect(() => {
     if (
-      props.showOptionsInitially !== true ||
+      props.hasOptionsForEmptyInput !== true ||
       optionsForInput === undefined ||
       input.trim() !== ""
     ) {
       return;
     }
     onInputInternal("");
-  }, [props.showOptionsInitially, optionsForInput, onInputInternal, input]);
+  }, [props.hasOptionsForEmptyInput, optionsForInput, onInputInternal, input]);
 
-  const interactingWithPopup = mouseOnPopup;
   const popperOpen =
     containerRef.current !== null &&
     (focused || interactingWithPopup) &&
@@ -138,7 +137,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   }
 
   async function onOptionChosen(t: T) {
-    setMouseOnPopup(false);
+    setInteractingWithPopup(false);
     setCursor(-1);
     setFocused(false);
     const result = props.onOptionSelected(t, input);
@@ -172,8 +171,8 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 width: containerRef.current?.offsetWidth,
                 maxHeight: window.innerHeight * 0.4,
               }}
-              onMouseOver={() => setMouseOnPopup(true)}
-              onMouseOut={() => setMouseOnPopup(false)}>
+              onMouseOver={() => setInteractingWithPopup(true)}
+              onMouseOut={() => setInteractingWithPopup(false)}>
               {loading && options.length === 0 && (
                 <div className="customSearchPopupOption">Loading options</div>
               )}
@@ -219,7 +218,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 props.onRawEnter?.(input);
                 setFocused(false);
                 setCursor(-1);
-                setMouseOnPopup(false);
+                setInteractingWithPopup(false);
                 inputRef.current?.blur();
                 return;
               }
