@@ -95,7 +95,7 @@ export function CorpusQueryPage() {
   );
 
   return (
-    <div style={{ maxWidth: "800px", margin: "auto", marginTop: "24px" }}>
+    <div style={{ maxWidth: "800px", margin: "auto", marginTop: "12px" }}>
       <SearchBox
         onInput={setRequestQuery}
         placeholderText={SEARCH_PLACEHOLDER}
@@ -119,7 +119,7 @@ export function CorpusQueryPage() {
         }
       />
       {!showResults && (
-        <div style={{ margin: "12px 16px" }}>
+        <div style={{ margin: "8px 20px" }}>
           <div className="text sm">Welcome to the corpus query tool!</div>
           <div className="text xs light" style={{ marginTop: "4px" }}>
             This tool allows you to search any text currently available in the
