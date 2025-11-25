@@ -1,7 +1,7 @@
 export interface CorpusAutocompleteOption {
   option: string;
   help?: string;
-  informationalOnly?: true;
+  prefix?: string;
 }
 
 const SPECIAL_CATEGORIES = new Map<string, string[]>([
@@ -32,14 +32,13 @@ function informational(help: string): CorpusAutocompleteOption {
   return {
     option: "",
     help,
-    informationalOnly: true,
   };
 }
 
-const WORD_HELP = informational("type an exact word to match");
+const WORD_HELP = informational("<word> match exact word");
 const SPECIAL_HELP: CorpusAutocompleteOption = {
   option: "@",
-  help: "filter word by lemma or inflection",
+  help: "match lemma or inflection",
 };
 const AUTHOR_HELP: CorpusAutocompleteOption = {
   option: "#",
@@ -75,13 +74,7 @@ function errorsForToken(
     const maybeAuthor = token.slice(1);
     const maybeAuthorLower = maybeAuthor.toLowerCase();
     if (!authors.some((author) => author.toLowerCase() === maybeAuthorLower)) {
-      return [
-        {
-          option: "",
-          help: `❌ invalid author #${maybeAuthor}`,
-          informationalOnly: true,
-        },
-      ];
+      return [informational(`❌ invalid author #${maybeAuthor}`)];
     }
   }
 
@@ -162,6 +155,7 @@ export function optionsForInput(
       .filter((a) => a.toLowerCase().startsWith(afterHash.toLowerCase()))
       .map((author) => ({
         option: author.substring(afterHash.length),
+        prefix: `#${afterHash.substring(0, afterHash.length)}`,
       }));
   }
 
@@ -175,16 +169,22 @@ export function optionsForInput(
       // Return all the options.
       return Array.from(SPECIAL_CATEGORIES.keys()).map((category) => ({
         option: category + ":",
+        prefix: "@",
       }));
     }
     for (const category of SPECIAL_CATEGORIES.keys()) {
       // Just suggest that they close they keyword.
       if (category === afterAt) {
-        return [{ option: ":" }];
+        return [{ option: ":", prefix: lastToken }];
       }
       // Return any substrings.
       if (category.startsWith(afterAt)) {
-        return [{ option: category.substring(afterAt.length) + ":" }];
+        return [
+          {
+            option: category.substring(afterAt.length) + ":",
+            prefix: lastToken,
+          },
+        ];
       }
     }
     return [unknownKeyword(afterAt)];
@@ -208,7 +208,10 @@ export function optionsForInput(
     }
     if (valueEmpty) {
       // Return all the options. We add a space so the token completes.
-      return categoryOptions.map((option) => ({ option: option + " " }));
+      return categoryOptions.map((option) => ({
+        option: option + " ",
+        prefix: lastToken,
+      }));
     }
     let hasExactMatch = false;
     const autocompleteOptions: CorpusAutocompleteOption[] = [];
@@ -220,6 +223,7 @@ export function optionsForInput(
       if (option.startsWith(valueSoFar)) {
         autocompleteOptions.push({
           option: option.slice(valueSoFar.length) + " ",
+          prefix: lastToken,
         });
       }
     }
@@ -238,7 +242,6 @@ export function optionsForInput(
 }
 
 export function CorpusAutocompleteItem(props: {
-  current: string;
   option: CorpusAutocompleteOption;
 }) {
   const option = props.option.option;
@@ -248,12 +251,10 @@ export function CorpusAutocompleteItem(props: {
         display: "inline-flex",
         alignItems: "center",
       }}>
-      {props.option.informationalOnly !== true && (
-        <>
-          <span className="text sm">{props.current}</span>
-          <b>{option}</b>
-        </>
+      {props.option.prefix !== undefined && (
+        <span className="text sm">{props.option.prefix}</span>
       )}
+      <b>{option}</b>
       {props.option.help && (
         <span className="text xs smallChip">{props.option.help}</span>
       )}

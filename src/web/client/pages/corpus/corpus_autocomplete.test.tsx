@@ -80,10 +80,10 @@ describe("optionsForInput", () => {
 
 describe("CorpusAutocompleteItem", () => {
   test("renders current text, bolded option and help for actionable option", () => {
-    const option = { option: "lemma:", help: "filter by lemma" };
-    render(<CorpusAutocompleteItem current="@" option={option} />);
+    const option = { option: "lemma:", help: "filter by lemma", prefix: "@" };
+    render(<CorpusAutocompleteItem option={option} />);
 
-    // current text is rendered
+    // prefix text is rendered
     expect(screen.getByText("@")).toBeInTheDocument();
     // option is rendered in bold
     expect(screen.getByText("lemma:")).toBeInTheDocument();
@@ -92,16 +92,9 @@ describe("CorpusAutocompleteItem", () => {
   });
 
   test("renders only help for informationalOnly option (no current/option)", () => {
-    const option = {
-      option: "",
-      help: "type an exact word to match",
-      informationalOnly: true,
-    } as const;
-    render(<CorpusAutocompleteItem current="amor" option={option} />);
+    const option = { option: "", help: "type an exact word to match" };
+    render(<CorpusAutocompleteItem option={option} />);
 
-    // help is shown
     expect(screen.getByText("type an exact word to match")).toBeInTheDocument();
-    // current text should not be shown because informationalOnly hides the current+option render
-    expect(screen.queryByText("amor")).toBeNull();
   });
 });
