@@ -186,7 +186,13 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                     key={props.toKey(t)}
                     id={props.toKey(t)}
                     onClick={() => onOptionChosen(t)}
-                    onTouchStart={() => setCursor(i)}
+                    onTouchStart={(e) => {
+                      try {
+                        // @ts-expect-error
+                        e.passive = true;
+                      } catch {}
+                      setCursor(i);
+                    }}
                     onMouseOver={() => setCursor(i)}>
                     <props.RenderOption option={t} current={input} />
                   </div>
