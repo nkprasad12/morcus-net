@@ -37,6 +37,67 @@ function toKey(o: CorpusAutocompleteOption) {
   return o.option;
 }
 
+function transformQuery(query: string): string {
+  const tokens = query
+    .trim()
+    .split(/\s+/)
+    // We use a different syntax for proximity operators for a more
+    // fluent autocomplete experience.
+    .map((t) =>
+      t.replace(/^~(\d+)(.*)$/, (_match, num, rest) => `${num}~${rest}`)
+    );
+
+  // Wrap consecutive operator-connected spans (e.g. "a and b or c") in parentheses.
+  const ops = new Set(["and", "or"]);
+  // Build ranges [left, right] for every operator (covers its surrounding operands).
+  const ranges: Array<[number, number]> = [];
+  for (let i = 0; i < tokens.length; i++) {
+    if (ops.has(tokens[i].toLowerCase())) {
+      const left = i - 1;
+      const right = i + 1;
+      if (left >= 0 && right < tokens.length) {
+        ranges.push([left, right]);
+      }
+    }
+  }
+
+  if (ranges.length === 0) {
+    return tokens.join(" ");
+  }
+
+  // Merge overlapping/adjacent ranges into maximal groups.
+  ranges.sort((a, b) => a[0] - b[0]);
+  const merged: Array<[number, number]> = [];
+  for (const r of ranges) {
+    if (merged.length === 0) {
+      merged.push([r[0], r[1]]);
+    } else {
+      const last = merged[merged.length - 1];
+      if (r[0] <= last[1] + 1) {
+        last[1] = Math.max(last[1], r[1]);
+      } else {
+        merged.push([r[0], r[1]]);
+      }
+    }
+  }
+
+  // Insert parentheses around each merged range.
+  const out: string[] = [];
+  let mi = 0;
+  for (let i = 0; i < tokens.length; i++) {
+    if (mi < merged.length && i === merged[mi][0]) {
+      out.push("(");
+    }
+    out.push(tokens[i]);
+    if (mi < merged.length && i === merged[mi][1]) {
+      out.push(")");
+      mi++;
+    }
+  }
+
+  return out.join(" ");
+}
+
 export function CorpusQueryPage() {
   const [requestQuery, setRequestQuery] = useState<string>("");
   const [results, setResults] = useState<Results>("N/A");
@@ -56,7 +117,7 @@ export function CorpusQueryPage() {
       return null;
     }
     return {
-      query,
+      query: transformQuery(query),
       pageSize,
       pageData: currentPageParsed,
       commitHash: getCommitHash(),

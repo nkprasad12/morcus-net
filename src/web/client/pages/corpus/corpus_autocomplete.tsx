@@ -90,8 +90,8 @@ function logicOpCompletions(
     return [];
   }
   return [
-    { option: " and", prefix: last, help: "(restrict further)" },
-    { option: " or", prefix: last, help: "(relax restriction)" },
+    { option: " and ", prefix: last, help: "(restrict further)" },
+    { option: " or ", prefix: last, help: "(relax restriction)" },
   ];
 }
 
@@ -339,7 +339,7 @@ export function optionsForInput(
 export function CorpusAutocompleteItem(props: {
   option: CorpusAutocompleteOption;
 }) {
-  const option = props.option.option.replaceAll(" ", " ");
+  const option = props.option.option;
   return (
     <div
       style={{
