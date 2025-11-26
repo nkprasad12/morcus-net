@@ -23,6 +23,7 @@ export const CORPUS_BUFFERS = `latin_corpus_buffers.bin`;
 export const CORPUS_TOKEN_STARTS = `latin_corpus_token_starts.bin`;
 
 export const CORPUS_AUTHORS_LIST = "latin_corpus_authors.json";
+export const CORPUS_LEMMATA_LIST = "latin_corpus_lemmata.json";
 
 // // // // // // // // // //
 // Corpus Result Types   //

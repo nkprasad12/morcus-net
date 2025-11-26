@@ -6,6 +6,7 @@ import {
   CORPUS_BUFFERS,
   CORPUS_TOKEN_STARTS,
   CORPUS_AUTHORS_LIST,
+  CORPUS_LEMMATA_LIST,
 } from "@/common/library/corpus/corpus_common";
 import { encodeMessage } from "@/web/utils/rpc/parsing";
 import { serverMessage } from "@/web/utils/rpc/server_rpc";
@@ -36,6 +37,16 @@ function writeAuthorsFile(corpus: InProgressLatinCorpus, corpusDir: string) {
   fs.writeFileSync(authorsDest, compressed);
 }
 
+function writeLemmataFile(corpus: InProgressLatinCorpus, corpusDir: string) {
+  const lemmataDest = path.join(corpusDir, CORPUS_LEMMATA_LIST);
+  const lemmata = Array.from(new Set(corpus.indices.lemma.keys())).sort();
+  const encoded = encodeMessage(serverMessage(lemmata));
+  const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
+    level: 9,
+  });
+  fs.writeFileSync(lemmataDest, compressed);
+}
+
 export async function writeCorpus(
   corpus: InProgressLatinCorpus,
   corpusDir: string = CORPUS_DIR
@@ -44,6 +55,7 @@ export async function writeCorpus(
     fs.mkdirSync(corpusDir, { recursive: true });
   }
   writeAuthorsFile(corpus, corpusDir);
+  writeLemmataFile(corpus, corpusDir);
   const destFile = path.join(corpusDir, CORPUS_FILE);
   fs.writeFileSync(destFile, await serializeCorpus(corpus, corpusDir));
   console.debug(`Corpus written to ${destFile}`);
