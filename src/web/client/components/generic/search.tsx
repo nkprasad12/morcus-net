@@ -59,10 +59,6 @@ export function SearchBoxNoAutocomplete(props: BaseSearchBoxProps) {
 export function SearchBox<T>(props: SearchBoxProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
-  // Chaining mode is when an option extends of modifies the current input.
-  // We keep track of the last time someone performed a chaining action, and we
-  // use that to avoid closing the popup until some window has passed.
-  const lastChainEvent = useRef(0);
 
   const [focused, setFocused] = useState(props.autoFocused === true);
   const [interactingWithPopup, setInteractingWithPopup] = useState(false);
@@ -146,7 +142,6 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   async function onOptionChosen(t: T) {
     setInteractingWithPopup(false);
     setCursor(-1);
-    setFocused(false);
     const result = props.onOptionSelected(t, input);
     if (typeof result === "string") {
       // If the result is a string, we interpret this as a request for the result to be able
@@ -157,11 +152,16 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
       if (currentRef !== null) {
         currentRef.focus();
         setTimeout(() => {
+          // This sets the scroll position in the input box all
+          // the way to the left, so that the user can actually see
+          // what they are typing.
+          // We wait just a moment so that the browser can apply rendering
+          // for the focus first.
           currentRef.scrollLeft = currentRef.scrollWidth;
-        }, 4);
+        }, 6);
       }
-      lastChainEvent.current = performance.now();
     } else {
+      setFocused(false);
       inputRef.current?.blur();
     }
   }
@@ -262,16 +262,8 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 setCursor(-1);
                 return;
               }
-              setTimeout(() => {
-                if (performance.now() - lastChainEvent.current < 32) {
-                  // We ignore any blur events that happened close to
-                  // a chaining event, to ensure the user can keep building the
-                  // input.
-                  return;
-                }
-                setFocused(false);
-                setCursor(-1);
-              }, 16);
+              setFocused(false);
+              setCursor(-1);
             }}
             placeholder={props.placeholderText}
             role="combobox"
