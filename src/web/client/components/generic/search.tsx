@@ -59,6 +59,10 @@ export function SearchBoxNoAutocomplete(props: BaseSearchBoxProps) {
 export function SearchBox<T>(props: SearchBoxProps<T>) {
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  // Chaining mode is when an option extends of modifies the current input.
+  // We keep track of the last time someone performed a chaining action, and we
+  // use that to avoid closing the popup until some window has passed.
+  const lastChainEvent = useRef(0);
 
   const [focused, setFocused] = useState(props.autoFocused === true);
   const [interactingWithPopup, setInteractingWithPopup] = useState(false);
@@ -149,6 +153,14 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
       // to chain, and return focus to the input.
       onInputInternal(result);
       setFocused(true);
+      const currentRef = inputRef.current;
+      if (currentRef !== null) {
+        currentRef.focus();
+        setTimeout(() => {
+          currentRef.scrollLeft = currentRef.scrollWidth;
+        }, 4);
+      }
+      lastChainEvent.current = performance.now();
     } else {
       inputRef.current?.blur();
     }
@@ -251,6 +263,12 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 return;
               }
               setTimeout(() => {
+                if (performance.now() - lastChainEvent.current < 32) {
+                  // We ignore any blur events that happened close to
+                  // a chaining event, to ensure the user can keep building the
+                  // input.
+                  return;
+                }
                 setFocused(false);
                 setCursor(-1);
               }, 16);

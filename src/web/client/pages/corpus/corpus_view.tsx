@@ -158,7 +158,7 @@ export function CorpusQueryPage() {
   );
 
   return (
-    <div style={{ maxWidth: "800px", margin: "auto", marginTop: "12px" }}>
+    <div style={{ maxWidth: "900px", margin: "auto", marginTop: "12px" }}>
       <SearchBox
         onInput={setRequestQuery}
         placeholderText={SEARCH_PLACEHOLDER}

@@ -30,6 +30,12 @@ jest.mock(
   }),
   { virtual: true }
 );
+jest.mock("@/web/client/utils/media_query", () => {
+  return {
+    ...jest.requireActual("@/web/client/utils/media_query"),
+    useMediaQuery: jest.fn(),
+  };
+});
 
 // @ts-ignore
 const mockCallApi: jest.Mock<any, any, any> = callApiFull;
