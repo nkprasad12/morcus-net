@@ -121,6 +121,9 @@ function errorsForToken(
   if (startsWithAt && hasColon) {
     const [keyword, value] = token.slice(1).split(":", 2);
     if (keyword === "lemma") {
+      if (value.length === 0) {
+        return [missingValue(token)];
+      }
       // Anything can be the value for a lemma.
       return [];
     }

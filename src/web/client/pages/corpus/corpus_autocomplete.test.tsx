@@ -50,6 +50,13 @@ describe("optionsForInput", () => {
     expect(options[0].help).toContain("amor");
   });
 
+  test("lemma with no value returns help text", () => {
+    const options = optionsForInput("@lemma: ", null);
+
+    expect(options).toHaveLength(1);
+    expect(options[0].help).toContain("@keyword without `:value`");
+  });
+
   test("colon without preceding @ returns error informational option", () => {
     const opts = optionsForInput(": ", null);
     expect(opts.length).toBe(1);
