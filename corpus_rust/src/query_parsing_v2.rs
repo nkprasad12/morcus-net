@@ -119,6 +119,30 @@ macro_rules! check_equal {
     };
 }
 
+fn is_valid_lemma(s: &str) -> bool {
+    let mut chars = s.chars().rev();
+    let has_number = match chars.next() {
+        // Empty string is not valid
+        None => return false,
+        Some(c) => c.is_ascii_digit(),
+    };
+    if has_number {
+        loop {
+            match chars.next() {
+                // This means we ended with just numbers.
+                None => return false,
+                // This ends the number suffix.
+                Some('#') => break,
+                Some(c) if c.is_ascii_digit() => continue,
+                // We got some unexpected character here.
+                _ => return false,
+            }
+        }
+    }
+    // Everything else should be alphabetic.
+    chars.all(|c| c.is_ascii_alphabetic())
+}
+
 /// Helper to parse a token atom from a string
 fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError> {
     for simple_prefix in SIMPLE_PREFIXES.iter() {
@@ -132,7 +156,7 @@ fn parse_token_atom(input: &str) -> Result<TokenConstraintAtom, QueryParseError>
         if content.is_empty() {
             return Err(QueryParseError::new("Empty token atom not allowed"));
         }
-        if !content.chars().all(|c| c.is_ascii_alphabetic()) {
+        if !is_valid_lemma(&content) {
             return Err(QueryParseError::new("Token atom must be alphabetic"));
         }
         match *simple_prefix {
