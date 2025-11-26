@@ -23,7 +23,7 @@ import {
   setNewQuery,
   useCorpusRouter,
 } from "@/web/client/pages/corpus/corpus_router";
-import { GetCorpusAuthorsApi } from "@/web/api_routes";
+import { GetCorpusSuggestionsApi } from "@/web/api_routes";
 import {
   SettingsPreview,
   CorpusSettingsDialog,
@@ -140,11 +140,11 @@ export function CorpusQueryPage() {
   });
 
   const getAuthorsRequest = useMemo(
-    () => ({ commitHash: getCommitHash() }),
+    () => ({ resource: "authors" as const, commitHash: getCommitHash() }),
     []
   );
 
-  useApiCall(GetCorpusAuthorsApi, getAuthorsRequest, {
+  useApiCall(GetCorpusSuggestionsApi, getAuthorsRequest, {
     onResult: setAuthors,
     onLoading: () => {},
     onError: () => {},

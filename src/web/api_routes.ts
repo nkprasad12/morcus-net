@@ -151,16 +151,20 @@ export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
   outputValidator: CorpusQueryResult.isMatch,
 };
 
-export interface GetCorpusAuthorsRequest {
+export interface GetCorpusSuggestionsRequest {
+  resource: "authors" | "lemmata";
   commitHash?: string;
 }
 
-export const GetCorpusAuthorsApi: ApiRoute<GetCorpusAuthorsRequest, string[]> =
-  {
-    path: "/api/corpus/authors",
-    method: "GET",
-    inputValidator: matchesObject<GetCorpusAuthorsRequest>({
-      commitHash: maybeUndefined(isString),
-    }),
-    outputValidator: isArray(isString),
-  };
+export const GetCorpusSuggestionsApi: ApiRoute<
+  GetCorpusSuggestionsRequest,
+  string[]
+> = {
+  path: "/api/corpus/suggestions",
+  method: "GET",
+  inputValidator: matchesObject<GetCorpusSuggestionsRequest>({
+    resource: isString,
+    commitHash: maybeUndefined(isString),
+  }),
+  outputValidator: isArray(isString),
+};

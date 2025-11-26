@@ -22,8 +22,9 @@ export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;
 export const CORPUS_BUFFERS = `latin_corpus_buffers.bin`;
 export const CORPUS_TOKEN_STARTS = `latin_corpus_token_starts.bin`;
 
-export const CORPUS_AUTHORS_LIST = "latin_corpus_authors.json";
-export const CORPUS_LEMMATA_LIST = "latin_corpus_lemmata.json";
+export const CORPUS_SUGGESTION_PREFIX = "latin_corpus_suggestions";
+export const CORPUS_AUTHORS_LIST = `${CORPUS_SUGGESTION_PREFIX}_authors.json`;
+export const CORPUS_LEMMATA_LIST = `${CORPUS_SUGGESTION_PREFIX}_lemmata.json`;
 
 // // // // // // // // // //
 // Corpus Result Types   //

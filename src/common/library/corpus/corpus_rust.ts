@@ -1,10 +1,13 @@
 import {
-  CORPUS_AUTHORS_LIST,
   CORPUS_DIR,
+  CORPUS_SUGGESTION_PREFIX,
 } from "@/common/library/corpus/corpus_common";
 import { singletonOf } from "@/common/misc_utils";
 import { timed } from "@/common/timing/timed_invocation";
-import type { CorpusQueryRequest } from "@/web/api_routes";
+import type {
+  CorpusQueryRequest,
+  GetCorpusSuggestionsRequest,
+} from "@/web/api_routes";
 import type { RequestData } from "@/web/utils/rpc/server_rpc";
 import { readFile } from "fs/promises";
 import zlib from "zlib";
@@ -61,10 +64,11 @@ export function rustCorpusApiHandler(): CorpusQueryHandler {
   };
 }
 
-export async function corpusAuthorList(
+export async function corpusSuggestions(
+  request: GetCorpusSuggestionsRequest,
   requestData?: RequestData
 ): Promise<Buffer> {
-  const listPath = `${CORPUS_DIR}/${CORPUS_AUTHORS_LIST}`;
+  const listPath = `${CORPUS_DIR}/${CORPUS_SUGGESTION_PREFIX}_${request.resource}.json`;
   const compressed = await readFile(listPath);
   if (requestData?.acceptEncoding?.includes("gzip")) {
     return compressed;
