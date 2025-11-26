@@ -393,8 +393,8 @@ function QueryHelpSection() {
                   {" "}
                   The available categories are: <code>@case</code>,{" "}
                   <code>@tense</code>, <code>@voice</code>, <code>@person</code>
-                  , <code>@number</code>, <code>@gender</code>,{" "}
-                  <code>@degree</code>, and <code>@mood</code>.
+                  , <code>@number</code>, <code>@gender</code>, and{" "}
+                  <code>@mood</code>.
                 </li>
                 <li>
                   You can use the first letter of a category as a shorthand; for
