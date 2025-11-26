@@ -1,3 +1,4 @@
+import { assert } from "@/common/assert";
 import { safeParseInt } from "@/common/misc_utils";
 import type { SuggestionsList } from "@/web/client/pages/corpus/corpus_view";
 
@@ -194,9 +195,39 @@ function parseProximityToken(
   ];
 }
 
+function findLemmaCompletions(value: string, lemmata: string[]): string[] {
+  assert(value.length > 0);
+  const prefix = value[0] + value.slice(1).toLowerCase();
+
+  // Binary search to find the first lemma that could match the prefix
+  let left = 0;
+  let right = lemmata.length;
+
+  while (left < right) {
+    const mid = Math.floor((left + right) / 2);
+    if (lemmata[mid] < prefix) {
+      left = mid + 1;
+    } else {
+      right = mid;
+    }
+  }
+
+  // Collect up to 50 matching lemmata starting from the found position
+  const results: string[] = [];
+  for (let i = left; i < lemmata.length && results.length < 50; i++) {
+    if (!lemmata[i].startsWith(prefix)) {
+      break;
+    }
+    results.push(lemmata[i]);
+  }
+
+  return results;
+}
+
 export function optionsForInput(
   inputRaw: string,
-  authors?: SuggestionsList
+  authors?: SuggestionsList,
+  lemmata?: SuggestionsList
 ): CorpusAutocompleteOption[] {
   const isNewToken = inputRaw.endsWith(" ") || inputRaw.length === 0;
   const tokens = inputRaw.split(" ").filter((t) => t.length > 0);
@@ -286,14 +317,22 @@ export function optionsForInput(
     const valueSoFar = lastToken.slice(colonIdx + 1);
     const valueEmpty = valueSoFar.length === 0;
     if (keyword === "lemma") {
-      const lemmaHelp = valueEmpty
-        ? "an exact lemma"
-        : `the lemma \`${valueSoFar}\``;
-      // They can type any word here, so we don't need to check anything.
-      return [
-        informational(lemmaHelp),
-        ...logicOpCompletions(tokens[tokens.length - 2]),
-      ];
+      if (valueEmpty) {
+        return Array.isArray(lemmata)
+          ? [informational("start typing for completions")]
+          : [informational("an exact lemma")];
+      }
+      if (lemmata === undefined || lemmata === "error") {
+        return [informational(`the lemma \`${valueSoFar}\``)];
+      }
+      const matches = findLemmaCompletions(valueSoFar, lemmata);
+      if (matches.length === 0) {
+        return [informational(`❌ no lemma matches \`${valueSoFar}\``)];
+      }
+      return matches.map((m) => ({
+        option: m.slice(valueSoFar.length),
+        prefix: lastToken,
+      }));
     }
     if (valueEmpty) {
       // Return all the options. We add a space so the token completes.
@@ -354,7 +393,9 @@ export function CorpusAutocompleteItem(props: {
       {props.option.prefix !== undefined && (
         <span className="text sm">{props.option.prefix}</span>
       )}
-      <i style={{ whiteSpace: "pre" }}>{option}</i>
+      <i className="text sm" style={{ whiteSpace: "pre" }}>
+        {option}
+      </i>
       {props.option.help && (
         <span className="text xs smallChip"> {props.option.help}</span>
       )}

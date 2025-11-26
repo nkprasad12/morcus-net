@@ -143,6 +143,66 @@ describe("optionsForInput", () => {
     expect(optStrings).toContain("");
     expect(optStrings).toContain("@");
   });
+
+  test("lemma completion with empty value and no lemmata list shows help text", () => {
+    const opts = optionsForInput("@lemma:", undefined, undefined);
+    expect(opts).toHaveLength(1);
+    expect(opts[0].help).toContain("an exact lemma");
+  });
+
+  test("lemma completion with empty value and loaded lemmata list shows help text", () => {
+    const lemmata = ["amor", "amo", "amica"];
+    const opts = optionsForInput("@lemma:", undefined, lemmata);
+    expect(opts).toHaveLength(1);
+    expect(opts[0].help).toContain("start typing for completions");
+  });
+
+  test("lemma completion with value and no lemmata list shows informational", () => {
+    const opts = optionsForInput("@lemma:am", undefined, undefined);
+    expect(opts).toHaveLength(1);
+    expect(opts[0].help).toContain("the lemma `am`");
+  });
+
+  test("lemma completion with value and error loading lemmata shows informational", () => {
+    const opts = optionsForInput("@lemma:am", undefined, "error");
+    expect(opts).toHaveLength(1);
+    expect(opts[0].help).toContain("the lemma `am`");
+  });
+
+  test("lemma completion suggests matching lemmata", () => {
+    const lemmata = ["aaron", "amor", "amo", "amica", "amicus", "bellum"];
+    const opts = optionsForInput("@lemma:am", undefined, lemmata);
+    const optStrings = opts.map((o) => o.option);
+    expect(optStrings).toContain("or");
+    expect(optStrings).toContain("o");
+    expect(optStrings).toContain("ica");
+    expect(optStrings).toContain("icus");
+    expect(optStrings).not.toContain("bellum");
+  });
+
+  test("lemma completion with uppercase prefix matches case-insensitively", () => {
+    const lemmata = ["Amor", "Amo", "Amica"];
+    const opts = optionsForInput("@lemma:Am", undefined, lemmata);
+    expect(opts.length).toBeGreaterThan(0);
+    const optStrings = opts.map((o) => o.option);
+    expect(optStrings).toContain("or");
+    expect(optStrings).toContain("o");
+    expect(optStrings).toContain("ica");
+  });
+
+  test("lemma completion with no matches shows informational", () => {
+    const lemmata = ["amor", "amo", "amica"];
+    const opts = optionsForInput("@lemma:xyz", undefined, lemmata);
+    expect(opts).toHaveLength(1);
+    expect(opts[0].help).toContain("❌ no lemma matches `xyz`");
+  });
+
+  test("lemma completion limits to 50 results", () => {
+    // Create a list with more than 50 matching lemmata
+    const lemmata = Array.from({ length: 100 }, (_, i) => `amor${i}`);
+    const opts = optionsForInput("@lemma:amor", undefined, lemmata);
+    expect(opts.length).toBeLessThanOrEqual(50);
+  });
 });
 
 describe("CorpusAutocompleteItem", () => {

@@ -142,6 +142,7 @@ export function CorpusQueryPage() {
 
   const isScreenTiny = useMediaQuery("(max-width: 600px)");
   const authors = useCorpusSuggestions("authors");
+  const lemmata = useCorpusSuggestions("lemmata");
 
   const { nav, route } = useCorpusRouter();
   const { query, currentPage, pageSize, contextLen } = route;
@@ -179,8 +180,8 @@ export function CorpusQueryPage() {
   const showResults = results !== "N/A" && query.length > 0;
 
   const optionsForInputMemo = useCallback(
-    (input: string) => optionsForInput(input, authors),
-    [authors]
+    (input: string) => optionsForInput(input, authors, lemmata),
+    [authors, lemmata]
   );
 
   return (
