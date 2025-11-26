@@ -86,4 +86,30 @@ describe("CorpusQueryPage", () => {
     // The mocked useApiCall calls onLoading, so the results section should show "Loading results for: amo"
     expect(screen.getByText(/Loading results for: amo/)).toBeInTheDocument();
   });
+
+  test("shows 'No results found' when query returns zero results", async () => {
+    const mockResult = {
+      nextPage: undefined,
+      matches: [],
+      resultStats: { estimatedResults: 0 },
+    };
+
+    mockCallApi.mockResolvedValue({ data: mockResult });
+
+    render(
+      <RouteContext.Provider
+        value={{
+          // use the same shape as other tests — the component reads the query from the route
+          route: { path: "/corpus", params: { q: "noresults" } },
+          navigateTo: jest.fn(),
+        }}>
+        <CorpusQueryPage />
+      </RouteContext.Provider>
+    );
+
+    // Wait for the onResult to resolve and the UI to update.
+    expect(await screen.findByText(/No results found for/)).toBeInTheDocument();
+    // The query text should be present as well.
+    expect(screen.getByText("noresults")).toBeInTheDocument();
+  });
 });

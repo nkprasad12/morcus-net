@@ -255,9 +255,6 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
     );
   }
 
-  const pageStart = currentPage?.resultIndex ?? 0;
-  const totalResults = props.results.resultStats.estimatedResults;
-
   const toNextPage = () =>
     nav.to((c) => ({
       ...c,
@@ -266,16 +263,27 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
       nextPage: undefined,
     }));
 
+  const pageStart = currentPage?.resultIndex ?? 0;
+  const totalResults = props.results.resultStats.estimatedResults;
+  const hasAllResults = totalResults === props.results.matches.length;
+
+  const qualifier = hasAllResults ? "" : "about ";
+  const headline =
+    totalResults === 0
+      ? "No results found for"
+      : `Found ${qualifier}${totalResults} results matching`;
+
   return (
     <div style={{ margin: "0px 16px" }}>
       <div className="text md">
-        Found about {totalResults} results matching:
-        <div className="corpusResult">{query}</div>
+        {headline} <span className="corpusResult">{query}</span>
       </div>
-      <div className="text sm light">
-        Showing results {pageStart + 1} to{" "}
-        {pageStart + props.results.matches.length}.
-      </div>
+      {totalResults > 0 && !hasAllResults && (
+        <div className="text sm light">
+          Showing results {pageStart + 1} to{" "}
+          {pageStart + props.results.matches.length}.
+        </div>
+      )}
       {props.results.matches.length > 0 && (
         <Divider style={{ margin: "12px 0" }} />
       )}
