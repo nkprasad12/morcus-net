@@ -35,6 +35,7 @@ interface BaseSearchBoxProps {
   ariaLabel?: string;
   onInput?: (input: string) => unknown;
   style?: React.CSSProperties;
+  saveSpace?: boolean;
 }
 
 type SearchBoxProps<T> = BaseSearchBoxProps & AutoCompleteSearchProps<T>;
@@ -67,6 +68,8 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   const [options, setOptions] = useState<T[]>([]);
 
   const { toKey, optionsForInput, onInput } = props;
+
+  const textSize = props.saveSpace ? "sm" : "md";
 
   useEffect(() => {
     if (cursor < 0 || options.length === 0) {
@@ -199,15 +202,17 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 ))}
             </div>
           </Popper>
-          <SvgIcon
-            pathD={SvgIcon.Search}
-            className="menuIconFaded"
-            style={{ marginLeft: "11.2px" }}
-          />
+          {!props.saveSpace && (
+            <SvgIcon
+              pathD={SvgIcon.Search}
+              className="menuIconFaded"
+              style={{ marginLeft: "11.2px" }}
+            />
+          )}
           <input
             ref={inputRef}
             type="text"
-            className="customSearchBox text md"
+            className={`customSearchBox text ${textSize}`}
             spellcheck={false}
             autoCapitalize="none"
             autoComplete="off"
@@ -255,7 +260,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
           />
           <IconButton
             aria-label={CLEAR_QUERY}
-            style={{ marginRight: "4px" }}
+            style={{ marginRight: props.saveSpace ? "0px" : "4px" }}
             onClick={() => {
               inputRef.current?.focus();
               onInputInternal("");
@@ -271,7 +276,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             <IconButton
               aria-label="search settings"
               aria-haspopup="true"
-              style={{ marginRight: "5.2px" }}
+              style={{ marginRight: props.saveSpace ? "1px" : "5.2px" }}
               onClick={props.onOpenSettings}>
               <SvgIcon
                 pathD={SvgIcon.Settings}

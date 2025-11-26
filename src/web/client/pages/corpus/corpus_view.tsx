@@ -28,6 +28,7 @@ import {
   SettingsPreview,
   CorpusSettingsDialog,
 } from "@/web/client/pages/corpus/corpus_settings";
+import { useMediaQuery } from "@/web/client/utils/media_query";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
 
@@ -103,6 +104,7 @@ export function CorpusQueryPage() {
   const [results, setResults] = useState<Results>("N/A");
   const [showSettings, setShowSettings] = useState(false);
   const [authors, setAuthors] = useState<string[] | null>(null);
+  const isScreenTiny = useMediaQuery("(max-width: 600px)");
 
   const { nav, route } = useCorpusRouter();
   const { query, currentPage, pageSize, contextLen } = route;
@@ -170,6 +172,7 @@ export function CorpusQueryPage() {
         optionsForInput={optionsForInputMemo}
         toKey={toKey}
         hasOptionsForEmptyInput
+        saveSpace={isScreenTiny}
         onOpenSettings={() => setShowSettings(true)}
         settingsPreview={
           <SettingsPreview
