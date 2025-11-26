@@ -3,7 +3,11 @@ import type {
   CorpusQueryMatch,
   CorpusQueryResult,
 } from "@/common/library/corpus/corpus_common";
-import { QueryCorpusApi, type CorpusQueryRequest } from "@/web/api_routes";
+import {
+  QueryCorpusApi,
+  type CorpusQueryRequest,
+  type GetCorpusSuggestionsRequest,
+} from "@/web/api_routes";
 import { Divider, SpanLink } from "@/web/client/components/generic/basics";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import { SearchBox } from "@/web/client/components/generic/search";
@@ -99,12 +103,45 @@ function transformQuery(query: string): string {
   return out.join(" ");
 }
 
+export type SuggestionsList = string[] | undefined | "error";
+
+function useCorpusSuggestions(
+  resource: GetCorpusSuggestionsRequest["resource"]
+) {
+  const [suggestions, setSuggestions] = useState<SuggestionsList>();
+
+  const getResourceRequest = useMemo(
+    () => ({ resource, commitHash: getCommitHash() }),
+    [resource]
+  );
+
+  const onLoading = useCallback(
+    // Keep old suggestions if they exist.
+    () => setSuggestions((old) => (Array.isArray(old) ? old : undefined)),
+    []
+  );
+  const onError = useCallback(
+    // Keep old suggestions if they exist.
+    () => setSuggestions((old) => (Array.isArray(old) ? old : "error")),
+    []
+  );
+
+  useApiCall(GetCorpusSuggestionsApi, getResourceRequest, {
+    onResult: setSuggestions,
+    onLoading,
+    onError,
+  });
+
+  return suggestions;
+}
+
 export function CorpusQueryPage() {
   const [requestQuery, setRequestQuery] = useState<string>("");
   const [results, setResults] = useState<Results>("N/A");
   const [showSettings, setShowSettings] = useState(false);
-  const [authors, setAuthors] = useState<string[] | null>(null);
+
   const isScreenTiny = useMediaQuery("(max-width: 600px)");
+  const authors = useCorpusSuggestions("authors");
 
   const { nav, route } = useCorpusRouter();
   const { query, currentPage, pageSize, contextLen } = route;
@@ -137,17 +174,6 @@ export function CorpusQueryPage() {
     },
     onLoading: () => setResults("Loading"),
     onError: () => setResults("Error"),
-  });
-
-  const getAuthorsRequest = useMemo(
-    () => ({ resource: "authors" as const, commitHash: getCommitHash() }),
-    []
-  );
-
-  useApiCall(GetCorpusSuggestionsApi, getAuthorsRequest, {
-    onResult: setAuthors,
-    onLoading: () => {},
-    onError: () => {},
   });
 
   const showResults = results !== "N/A" && query.length > 0;

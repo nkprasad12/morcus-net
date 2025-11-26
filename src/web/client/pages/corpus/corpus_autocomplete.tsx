@@ -1,4 +1,5 @@
 import { safeParseInt } from "@/common/misc_utils";
+import type { SuggestionsList } from "@/web/client/pages/corpus/corpus_view";
 
 export interface CorpusAutocompleteOption {
   option: string;
@@ -97,9 +98,9 @@ function logicOpCompletions(
 
 function errorsForToken(
   token: string,
-  authors: string[] | null
+  authors: SuggestionsList
 ): CorpusAutocompleteOption[] {
-  if (token.startsWith("#") && authors !== null) {
+  if (token.startsWith("#") && Array.isArray(authors)) {
     const maybeAuthor = token.slice(1);
     const maybeAuthorLower = maybeAuthor.toLowerCase();
     if (!authors.some((author) => author.toLowerCase() === maybeAuthorLower)) {
@@ -144,7 +145,7 @@ function errorsForToken(
   return [];
 }
 
-function errorsForQuery(query: string[], authors: string[] | null) {
+function errorsForQuery(query: string[], authors: SuggestionsList) {
   // TODO: Also verify that if we have any #author tokens, they are at the start,
   // and that (for now) we only have one.
   return query.flatMap((t) => errorsForToken(t, authors));
@@ -195,7 +196,7 @@ function parseProximityToken(
 
 export function optionsForInput(
   inputRaw: string,
-  authors: string[] | null
+  authors?: SuggestionsList
 ): CorpusAutocompleteOption[] {
   const isNewToken = inputRaw.endsWith(" ") || inputRaw.length === 0;
   const tokens = inputRaw.split(" ").filter((t) => t.length > 0);
@@ -229,10 +230,11 @@ export function optionsForInput(
       // TODO: Support multiple authors in the backend.
       return [informational("❌ only one #author filter allowed")];
     }
-    if (!authors) {
-      // If we have no authors, we won't automatically re-render until the user types something else.
-      // So there's no point returning "loading" as that could prompt the user to just wait.
-      return [];
+    if (authors === undefined) {
+      return [informational("loading list of authors...")];
+    }
+    if (authors === "error") {
+      return [informational("error loading list of authors")];
     }
     const afterHash = lastToken.substring(1);
     return authors
