@@ -14,7 +14,9 @@ use crate::corpus_query_engine::corpus_data_readers::{
 };
 use crate::corpus_query_engine::corpus_result_resolution::get_match_page;
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
-use crate::query_parsing_v2::{Query, parse_query};
+use crate::query_parsing_v2::{
+    Query, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation, parse_query,
+};
 
 use super::corpus_index::LatinCorpusIndex;
 use super::profiler::TimeProfiler;
@@ -39,6 +41,69 @@ pub struct CorpusQueryEngine {
     raw_buffers: IndexBuffers,
     starts: TokenStarts,
     inflections: InflectionLookup,
+}
+
+fn has_negations(term: &TokenConstraint) -> bool {
+    match term {
+        TokenConstraint::Negated(_) => true,
+        TokenConstraint::Atom(_) => false,
+        TokenConstraint::Composed { children, .. } => children.iter().any(has_negations),
+    }
+}
+
+fn operators_in(term: &TokenConstraint) -> Vec<TokenConstraintOperation> {
+    match term {
+        TokenConstraint::Composed { op, children } => {
+            let mut ops = vec![*op];
+            for child in children {
+                ops.extend(operators_in(child));
+            }
+            ops
+        }
+        _ => vec![],
+    }
+}
+
+fn atoms_in(term: &TokenConstraint) -> Vec<&TokenConstraintAtom> {
+    match term {
+        TokenConstraint::Atom(s) => vec![s],
+        TokenConstraint::Negated(child) => atoms_in(child),
+        TokenConstraint::Composed { children, .. } => {
+            let mut atoms = vec![];
+            for child in children {
+                atoms.extend(atoms_in(child));
+            }
+            atoms
+        }
+    }
+}
+
+fn is_term_currently_supported(term: &TokenConstraint) -> bool {
+    if has_negations(term) {
+        return false;
+    }
+    let ops = operators_in(term);
+    let has_or = ops.contains(&TokenConstraintOperation::Or);
+    let has_and = ops.contains(&TokenConstraintOperation::And);
+    if has_or && has_and {
+        // Currently we can't support both because it complicates the compatibility checking.
+        return false;
+    }
+    if !has_and {
+        // We don't handle and constraints with lemmata yet.
+        return true;
+    }
+    let has_lemma = atoms_in(term)
+        .iter()
+        .any(|a| matches!(a, TokenConstraintAtom::Lemma(_)));
+    !has_lemma
+}
+
+fn is_query_currently_supported(query: &Query) -> bool {
+    query
+        .terms
+        .iter()
+        .all(|term| is_term_currently_supported(&term.constraint))
 }
 
 impl CorpusQueryEngine {
@@ -105,6 +170,11 @@ impl CorpusQueryEngine {
 
         // Parse the query
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
+        if !is_query_currently_supported(&query) {
+            return Err(QueryExecError::new(
+                "The given query contains constructs that are not yet supported",
+            ));
+        }
         let terms = query
             .terms
             .iter()
