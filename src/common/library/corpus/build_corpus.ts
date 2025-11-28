@@ -2,6 +2,8 @@ import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   CORPUS_DIR,
+  CORPUS_INFLECTIONS_OFFSETS,
+  CORPUS_INFLECTIONS_RAW_DATA,
   CORPUS_RAW_TEXT,
   createEmptyCorpusIndex,
   type CorpusInputWork,
@@ -28,11 +30,12 @@ import {
 import fs from "fs";
 import path from "path";
 
+type LengthAndOffset = [offset: number, length: number];
 interface StoredInflections {
   // The `i`th element is the offset in `rawData` for the `i`th token.
-  tokenToRawDataOffset: number[];
+  tokenToRawDataOffset: LengthAndOffset[];
   // Map from word to (offset, len) in rawData.
-  wordToRawDataOffset: Map<string, [offset: number, length: number]>;
+  wordToRawDataOffset: Map<string, LengthAndOffset>;
   // Sequence of 32 bit integers; each represents one possible inflection
   // of a token.
   rawData: number[];
@@ -59,14 +62,26 @@ namespace StoredInflections {
     for (let i = 0; i < storage.rawData.length; i++) {
       rawDataBuffer.writeUInt32LE(storage.rawData[i], i * 4);
     }
-    const rawDataPath = path.join(dir, "corpus_inflections_raw_data.bin");
+    const rawDataPath = path.join(dir, CORPUS_INFLECTIONS_RAW_DATA);
     fs.writeFileSync(rawDataPath, rawDataBuffer);
 
     const offsetsBuffer = Buffer.alloc(storage.tokenToRawDataOffset.length * 4);
     for (let i = 0; i < storage.tokenToRawDataOffset.length; i++) {
-      offsetsBuffer.writeUInt32LE(storage.tokenToRawDataOffset[i], i * 4);
+      const [offset, length] = storage.tokenToRawDataOffset[i];
+      assert(
+        Number.isInteger(offset) && offset >= 0 && offset < 1 << 24,
+        `Offset must be an integer in [0, 2^24) for token ${i}: ${offset}`
+      );
+      assert(
+        Number.isInteger(length) && length >= 0 && length < 1 << 8,
+        `Length must be an integer in [0, 2^8) for token ${i}: ${length}`
+      );
+      // Pack: first 3 bytes = offset, last byte = length.
+      // Use >>> 0 to ensure an unsigned 32-bit value when writing.
+      const packed = ((offset << 8) | (length & 0xff)) >>> 0;
+      offsetsBuffer.writeUInt32LE(packed, i * 4);
     }
-    const offsetsPath = path.join(dir, "corpus_inflections_offsets.bin");
+    const offsetsPath = path.join(dir, CORPUS_INFLECTIONS_OFFSETS);
     fs.writeFileSync(offsetsPath, offsetsBuffer);
     return [rawDataPath, offsetsPath];
   }
@@ -79,7 +94,7 @@ namespace StoredInflections {
     const cachedOffset = storage.wordToRawDataOffset.get(word);
     if (cachedOffset !== undefined) {
       // If the word has been seen before, just point to the existing data.
-      storage.tokenToRawDataOffset.push(cachedOffset[0]);
+      storage.tokenToRawDataOffset.push(cachedOffset);
       return;
     }
     const inflections = getInflections(word);
@@ -94,11 +109,11 @@ namespace StoredInflections {
     if (encoded.length === 0 || (encoded.length === 1 && encoded[0] === 0)) {
       // No inflections or only uninflected results.
       // Point to the zero entry at the start of rawData.
-      storage.tokenToRawDataOffset.push(0);
+      storage.tokenToRawDataOffset.push([0, 1]);
       return;
     }
     // Point to the start of the raw buffer, and write the data there.
-    storage.tokenToRawDataOffset.push(storage.rawData.length);
+    storage.tokenToRawDataOffset.push([storage.rawData.length, encoded.length]);
     storage.rawData.push(...encoded);
     storage.wordToRawDataOffset.set(word, [
       storage.rawData.length,
@@ -391,15 +406,21 @@ export async function buildCorpus(
     }
     i += 1;
   }
+  console.debug(`Corpus processing runtime: ${Date.now() - startTime}ms`);
+
   corpus.numTokens = tokens.length;
   corpus.stats.uniqueWords = corpus.indices.word.size;
   corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
 
   const tokenDb = saveTokenDb(tokens, breaks, corpusDir);
-  StoredInflections.save(corpusDir, storedInflections);
-  corpus.rawTextPath = tokenDb[2];
   corpus.tokenStarts = tokenDb[0];
   corpus.breakStarts = tokenDb[1];
+  corpus.rawTextPath = tokenDb[2];
+
+  const inflectionData = StoredInflections.save(corpusDir, storedInflections);
+  corpus.inflectionsRawBufferPath = inflectionData[0];
+  corpus.inflectionsOffsetsPath = inflectionData[1];
+
   await writeCorpus(corpus, corpusDir);
   printArtifactSummary(corpusDir);
   console.debug(`Corpus stats:`, corpus.stats);
