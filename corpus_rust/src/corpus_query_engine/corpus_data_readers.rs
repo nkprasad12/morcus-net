@@ -1,5 +1,7 @@
 use std::error::Error;
 
+use morceus::inflection_data::WordInflectionData;
+
 use crate::byte_readers::{RawByteReader, ReaderKind, byte_reader};
 use crate::corpus_index::{LatinCorpusIndex, StoredMapValue};
 use crate::corpus_query_engine::IndexData;
@@ -105,6 +107,38 @@ impl IndexBuffers {
     }
 }
 
+pub struct InflectionLookup {
+    offsets: Box<dyn RawByteReader>,
+    data: Box<dyn RawByteReader>,
+}
+
+impl InflectionLookup {
+    pub fn new(
+        offsets_path: &str,
+        data_path: &str,
+        kind: ReaderKind,
+    ) -> Result<Self, Box<dyn Error>> {
+        let offsets = byte_reader(kind, offsets_path)?;
+        let data = byte_reader(kind, data_path)?;
+        Ok(InflectionLookup { offsets, data })
+    }
+
+    pub fn get_inflection_data(&self, token_id: u32) -> Result<&[WordInflectionData], String> {
+        // The position of each token is stored in the offset table as a u32, so each entry is 4 bytes.
+        let offset_index = (token_id as usize) * 4;
+        let packed = u32_from_bytes(self.offsets.bytes(offset_index, offset_index + 4))?[0];
+        // The high 24 bits are the offset, the low 8 bits are the length. We guarantee at corpus build time
+        // that the values fit in these ranges.
+        let offset = (packed >> 8) as usize;
+        let length = (packed & 0xff) as usize;
+        // The offset stores the number of u32s, not the number of bytes.
+        let start = offset * 4;
+        let end = (offset + length) * 4;
+        let data_byte_range = self.data.bytes(start, end);
+        u32_from_bytes(data_byte_range)
+    }
+}
+
 fn choose_reader_kind() -> ReaderKind {
     if std::env::var(IN_MEMORY_BUFFERS).is_ok() {
         ReaderKind::InMemory
@@ -119,10 +153,15 @@ fn choose_reader_kind() -> ReaderKind {
 
 pub fn data_readers(
     corpus: &LatinCorpusIndex,
-) -> Result<(TokenStarts, CorpusText, IndexBuffers), Box<dyn Error>> {
+) -> Result<(TokenStarts, CorpusText, IndexBuffers, InflectionLookup), Box<dyn Error>> {
     let kind = choose_reader_kind();
     let text = CorpusText::new(&corpus.raw_text_path, kind)?;
     let raw_buffers = IndexBuffers::new(&corpus.raw_buffer_path, kind)?;
     let starts = TokenStarts::new(&corpus.token_starts_path, kind)?;
-    Ok((starts, text, raw_buffers))
+    let inflections: InflectionLookup = InflectionLookup::new(
+        &corpus.inflections_offsets_path,
+        &corpus.inflections_raw_buffer_path,
+        kind,
+    )?;
+    Ok((starts, text, raw_buffers, inflections))
 }

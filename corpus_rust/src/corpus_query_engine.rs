@@ -9,7 +9,9 @@ mod reference_impl;
 
 use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo};
 use crate::corpus_query_engine::corpus_candidate_filtering::MatchIterator;
-use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
+use crate::corpus_query_engine::corpus_data_readers::{
+    CorpusText, IndexBuffers, InflectionLookup, TokenStarts,
+};
 use crate::corpus_query_engine::corpus_result_resolution::get_match_page;
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
 use crate::query_parsing_v2::{Query, parse_query};
@@ -36,17 +38,19 @@ pub struct CorpusQueryEngine {
     text: CorpusText,
     raw_buffers: IndexBuffers,
     starts: TokenStarts,
+    inflections: InflectionLookup,
 }
 
 impl CorpusQueryEngine {
     /// Creates a new query engine from the given corpus index.
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
-        let (starts, text, raw_buffers) = corpus_data_readers::data_readers(&corpus)?;
+        let readers = corpus_data_readers::data_readers(&corpus)?;
         Ok(CorpusQueryEngine {
             corpus,
-            text,
-            raw_buffers,
-            starts,
+            starts: readers.0,
+            text: readers.1,
+            raw_buffers: readers.2,
+            inflections: readers.3,
         })
     }
 
