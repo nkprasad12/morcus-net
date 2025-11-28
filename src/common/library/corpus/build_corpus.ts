@@ -1,4 +1,4 @@
-import { assert, assertEqual } from "@/common/assert";
+import { assert, assertEqual, checkPresent } from "@/common/assert";
 import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   CORPUS_DIR,
@@ -36,6 +36,8 @@ interface StoredInflections {
   // Sequence of 32 bit integers; each represents one possible inflection
   // of a token.
   rawData: number[];
+  // Dimensions to add to indices.
+  dimensions: Map<string, WordIndexDimensions>;
 }
 
 namespace StoredInflections {
@@ -45,6 +47,7 @@ namespace StoredInflections {
       rawData: [0],
       tokenToRawDataOffset: [],
       wordToRawDataOffset: new Map(),
+      dimensions: new Map(),
     };
   }
 
@@ -70,7 +73,7 @@ namespace StoredInflections {
 
   export function ingest(
     word: string,
-    inflections: CrunchResult[],
+    getInflections: (word: string) => CrunchResult[],
     storage: StoredInflections
   ) {
     const cachedOffset = storage.wordToRawDataOffset.get(word);
@@ -79,6 +82,8 @@ namespace StoredInflections {
       storage.tokenToRawDataOffset.push(cachedOffset[0]);
       return;
     }
+    const inflections = getInflections(word);
+    storage.dimensions.set(word, getWordIndexDimensions(inflections));
     const encoded = Array.from(
       new Set(
         inflections.map((inflection) =>
@@ -246,14 +251,15 @@ function absorbWork(
       const normalizedWord = stripped.toLowerCase();
       wordIndex.add(normalizedWord, tokens.length);
 
-      const inflectionsForWord = getInflections(normalizedWord);
       StoredInflections.ingest(
         normalizedWord,
-        inflectionsForWord,
+        getInflections,
         storedInflections
       );
 
-      const dimensions = getWordIndexDimensions(inflectionsForWord);
+      const dimensions = checkPresent(
+        storedInflections.dimensions.get(normalizedWord)
+      );
       for (const lemma of dimensions.lemmata) {
         lemmaIndex.add(lemma, tokens.length);
       }
