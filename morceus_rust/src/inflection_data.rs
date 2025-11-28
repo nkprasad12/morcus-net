@@ -148,6 +148,75 @@ pub fn extract_gender_bits(data: WordInflectionData) -> u32 {
     extract_field(data, GENDER_SHIFT, BYTE_MASK)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+pub struct ExpandedInflectionData {
+    pub number: Option<LatinNumber>,
+    pub person: Option<LatinPerson>,
+    pub voice: Option<LatinVoice>,
+    pub degree: Option<LatinDegree>,
+    pub tense: Option<LatinTense>,
+    pub mood: Option<LatinMood>,
+    pub cases: Vec<LatinCase>,
+    pub genders: Vec<LatinGender>,
+}
+
+pub fn expand_inflection_data(data: WordInflectionData) -> ExpandedInflectionData {
+    let number = match extract_number(data) {
+        1 => Some(LatinNumber::Singular),
+        2 => Some(LatinNumber::Plural),
+        _ => None,
+    };
+    let person = match extract_person(data) {
+        1 => Some(LatinPerson::First),
+        2 => Some(LatinPerson::Second),
+        3 => Some(LatinPerson::Third),
+        _ => None,
+    };
+    let voice = match extract_voice(data) {
+        1 => Some(LatinVoice::Active),
+        2 => Some(LatinVoice::Passive),
+        _ => None,
+    };
+    let degree = match extract_degree(data) {
+        1 => Some(LatinDegree::Positive),
+        2 => Some(LatinDegree::Comparative),
+        3 => Some(LatinDegree::Superlative),
+        _ => None,
+    };
+    let tense = match extract_tense(data) {
+        1 => Some(LatinTense::Present),
+        2 => Some(LatinTense::Imperfect),
+        3 => Some(LatinTense::Perfect),
+        4 => Some(LatinTense::FuturePerfect),
+        5 => Some(LatinTense::Future),
+        6 => Some(LatinTense::Pluperfect),
+        _ => None,
+    };
+    let mood = match extract_mood(data) {
+        1 => Some(LatinMood::Indicative),
+        2 => Some(LatinMood::Imperative),
+        3 => Some(LatinMood::Subjunctive),
+        4 => Some(LatinMood::Participle),
+        5 => Some(LatinMood::Gerundive),
+        6 => Some(LatinMood::Infinitive),
+        7 => Some(LatinMood::Supine),
+        _ => None,
+    };
+    let cases = iterate_cases(extract_case_bits(data)).collect();
+    let genders = iterate_genders(extract_gender_bits(data)).collect();
+
+    ExpandedInflectionData {
+        number,
+        person,
+        voice,
+        degree,
+        tense,
+        mood,
+        cases,
+        genders,
+    }
+}
+
 #[inline]
 fn merge_single_field(
     template: WordInflectionData,
