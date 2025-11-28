@@ -1,11 +1,19 @@
 use std::cmp::{max, min};
 
+use morceus::inflection_data::{
+    WordInflectionData, extract_case_bits, extract_degree, extract_gender_bits, extract_mood,
+    extract_number, extract_person, extract_tense, extract_voice, iterate_cases, iterate_genders,
+};
+
 use crate::{
+    analyzer_types::LatinInflection,
     api::{CorpusQueryMatch, CorpusQueryMatchMetadata, PageData, QueryGlobalInfo},
     corpus_query_engine::{
-        CorpusQueryEngine, MatchIterator, QueryExecError, corpus_index_calculation::SpanResult,
+        CorpusQueryEngine, MatchIterator, QueryExecError, atoms_in,
+        corpus_index_calculation::SpanResult, corpus_query_conversion::InternalQueryTerm,
+        operators_in,
     },
-    query_parsing_v2::QueryRelation,
+    query_parsing_v2::{QueryRelation, TokenConstraintAtom, TokenConstraintOperation},
 };
 
 /// Finds the leader of the span with the given anchor ID.
@@ -88,6 +96,9 @@ struct SpanLeaderTree<'a> {
     root: SpanLeaderNode,
 }
 
+/// The sorted, and the original order of the spans.
+type SortedStartsAndSpans<'a> = (Vec<StartAndSpan<'a>>, Vec<StartAndSpan<'a>>);
+
 impl<'a> SpanLeaderTree<'a> {
     fn new(
         anchor_id: u32,
@@ -100,7 +111,7 @@ impl<'a> SpanLeaderTree<'a> {
         })
     }
 
-    fn find_leaders(&self) -> Option<Vec<StartAndSpan<'a>>> {
+    fn find_leaders(&self) -> Option<SortedStartsAndSpans<'a>> {
         if self.span_candidates.is_empty() {
             return None;
         }
@@ -115,7 +126,7 @@ impl<'a> SpanLeaderTree<'a> {
         &self,
         node: &SpanLeaderNode,
         current_path: &mut Vec<StartAndSpan<'a>>,
-        result: &mut Vec<Vec<StartAndSpan<'a>>>,
+        result: &mut Vec<SortedStartsAndSpans<'a>>,
     ) {
         let depth = current_path.len();
 
@@ -129,7 +140,7 @@ impl<'a> SpanLeaderTree<'a> {
             // TODO: We should move overlap checks when we're constructing the tree.
             // This way, we can prune entire branches if the first few spans overlap.
             if !do_spans_overlap(&sorted_path) {
-                result.push(sorted_path);
+                result.push((sorted_path.clone(), current_path.clone()));
             }
         } else {
             // Otherwise, recurse on children
@@ -271,7 +282,7 @@ fn do_spans_overlap(spans: &[StartAndSpan]) -> bool {
 fn find_leaders_for<'a>(
     token_id: u32,
     all_span_candidates: &'a [SpanResult],
-) -> Result<Option<Vec<StartAndSpan<'a>>>, QueryExecError> {
+) -> Result<Option<SortedStartsAndSpans<'a>>, QueryExecError> {
     let tree = SpanLeaderTree::new(token_id, all_span_candidates)?;
     Ok(tree.find_leaders())
 }
@@ -300,6 +311,88 @@ fn get_result_stats(
     }
 }
 
+/// Within tthe spans, find the positions that need inflection validation.
+fn positions_needing_validation<'a>(
+    spans: &'a [&[InternalQueryTerm]],
+) -> Vec<(usize, usize, Vec<&'a LatinInflection>)> {
+    let mut positions = vec![];
+    for (span_idx, span) in spans.iter().enumerate() {
+        for (term_idx, term) in span.iter().enumerate() {
+            let ops = operators_in(term.constraint.inner);
+            if !ops.contains(&TokenConstraintOperation::And) {
+                continue;
+            }
+            let atoms = atoms_in(term.constraint.inner);
+            let mut inflections = vec![];
+            for atom in atoms {
+                if let TokenConstraintAtom::Inflection(inflection) = atom {
+                    inflections.push(inflection);
+                }
+            }
+            if inflections.len() > 1 {
+                positions.push((span_idx, term_idx, inflections));
+            }
+        }
+    }
+    positions
+}
+
+/// Checks whether the given inflection restrictions all match the given inflection data.
+fn does_inflection_match_all(data: WordInflectionData, inflections: &[&LatinInflection]) -> bool {
+    // We can probably optimize this further by pre-computing the bit representations required by `inflections`,
+    // and comparing masked versions of `data` against them.
+    // For example, if we had "voice:active" and "tense:present", we could compute the word inflection data
+    // that has those fields set, and pre-compute a mask on for `data` that zeros all other fields.
+    // Then we'd only need to find `data & mask == required_data`.
+    for &inflection in inflections {
+        match inflection {
+            LatinInflection::Voice(voice) => {
+                if extract_voice(data) != *voice as u32 {
+                    return false;
+                }
+            }
+            LatinInflection::Tense(tense) => {
+                if extract_tense(data) != *tense as u32 {
+                    return false;
+                }
+            }
+            LatinInflection::Person(person) => {
+                if extract_person(data) != *person as u32 {
+                    return false;
+                }
+            }
+            LatinInflection::Number(number) => {
+                if extract_number(data) != *number as u32 {
+                    return false;
+                }
+            }
+            LatinInflection::Mood(mood) => {
+                if extract_mood(data) != *mood as u32 {
+                    return false;
+                }
+            }
+            LatinInflection::Gender(gender) => {
+                let mut genders = iterate_genders(extract_gender_bits(data));
+                if !genders.any(|g| g == *gender) {
+                    return false;
+                }
+            }
+            LatinInflection::Degree(degree) => {
+                if extract_degree(data) != *degree as u32 {
+                    return false;
+                }
+            }
+            LatinInflection::Case(case) => {
+                let mut cases = iterate_cases(extract_case_bits(data));
+                if !cases.any(|c| c == *case) {
+                    return false;
+                }
+            }
+        }
+    }
+    true
+}
+
 type StartAndSpan<'a> = (u32, &'a SpanResult<'a>);
 type SpanLeaders<'a> = Vec<StartAndSpan<'a>>;
 pub(super) struct MatchPageResult<'a> {
@@ -311,22 +404,45 @@ pub(super) struct MatchPageResult<'a> {
 pub(super) fn get_match_page<'a>(
     candidates: &mut MatchIterator<'_>,
     all_span_candidates: &'a [SpanResult],
+    query_spans: &[&[InternalQueryTerm]],
+    corpus: &CorpusQueryEngine,
     page_size: usize,
     current_page: &PageData,
     total_candidates: usize,
 ) -> Result<MatchPageResult<'a>, QueryExecError> {
     let mut skipped_candidates = 0;
+    let needs_validation = positions_needing_validation(query_spans);
     // Find the actual matches
     let mut matches = vec![];
-    while matches.len() < page_size {
+    'outer: while matches.len() < page_size {
         let token_id = match candidates.next() {
             Some(token_id) => token_id?,
             None => break,
         };
-        match find_leaders_for(token_id, all_span_candidates)? {
-            None => skipped_candidates += 1,
-            Some(l) => matches.push(l),
+        let (leaders, unsorted_leaders) = match find_leaders_for(token_id, all_span_candidates)? {
+            None => {
+                skipped_candidates += 1;
+                continue;
+            }
+            Some(l) => l,
+        };
+        // For any words that need inflection validation, check that at least one possible inflection analysis
+        // matches the required restrictions.
+        for (span_idx, term_idx, inflections) in &needs_validation {
+            // For now, for simplicity, just assume it's an AND for everything.
+            let token_to_check = unsorted_leaders[*span_idx].0 + (*term_idx as u32);
+            let inflection_options = corpus.inflections.get_inflection_data(token_to_check)?;
+            if !inflection_options
+                .iter()
+                .any(|data| does_inflection_match_all(*data, inflections))
+            {
+                skipped_candidates += 1;
+                // ALL of the tokens that need validation need to validate, otherwise it's not
+                // a match.
+                continue 'outer;
+            }
         }
+        matches.push(leaders);
     }
     // Figure out if there's a next page
     let mut next_page = None;

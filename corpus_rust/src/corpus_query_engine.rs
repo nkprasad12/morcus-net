@@ -206,6 +206,8 @@ impl CorpusQueryEngine {
         let match_leaders = get_match_page(
             &mut candidates,
             &span_candidates,
+            &query_spans,
+            self,
             page_size,
             page_data,
             total_candidates,

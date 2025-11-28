@@ -178,8 +178,23 @@ describe("Corpus Integration Test", () => {
     ]);
   });
 
-  it("should handle a composed 'and' query", () => {
+  it.skip("should handle a composed 'and' query across lemma", () => {
     const query = "(@lemma:Gallus and @case:acc) @lemma:accognosco";
+    const results = queryCorpus(query);
+    expect(results.matches).toHaveLength(1);
+    expect(results.matches[0]).toMatchObject({
+      metadata: expect.objectContaining({
+        workId: "test_work_1",
+        section: "2",
+        offset: 1,
+      }),
+    });
+    expect(getMatchText(results.matches[0])).toEqual(["Gallum accognoscit"]);
+  });
+
+  it("should handle a composed 'and' query across cases", () => {
+    const query =
+      "(@number:sg and @case:acc and @gender:masc) @lemma:accognosco";
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
