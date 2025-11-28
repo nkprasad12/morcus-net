@@ -4,23 +4,25 @@ mod find_matches;
 mod stem_and_irreg_ranges;
 mod string_utils;
 
+use std::borrow::Cow;
+
 use crate::{
     completions::{
         autocomplete_result::{IrregResult, StemResult},
         autocompleter::Addenda,
-        find_matches::completions_for_prefix,
+        find_matches::{completions_for_prefix, matches_for_word},
     },
     indices::{CruncherTables, InflectionContext, Lemma},
 };
 
 /// The main entry point for completions.
-pub struct Autocompleter<'a, 'b> {
-    tables: &'a CruncherTables,
-    addenda: Addenda<'a>,
-    options: &'b AutompleterOptions,
+pub struct Autocompleter<'t> {
+    tables: Cow<'t, CruncherTables>,
+    addenda: Addenda,
+    default_options: AutompleterOptions,
 }
 
-impl<'t, 'o> Autocompleter<'t, 'o> {
+impl Autocompleter<'_> {
     /// Creates an autocompleter with the given options.
     ///
     /// # Arguments
@@ -28,24 +30,24 @@ impl<'t, 'o> Autocompleter<'t, 'o> {
     ///   Instead, they are generated in the Javascript code using Node.js (or Bun).
     ///   To create tables, from the `morcus-net` repo root, run:
     ///   `./morcus.sh build --morceus_tables`
-    /// * `options` - Options for the autocompleter.
-    pub fn new(
-        tables: &'t CruncherTables,
-        options: &'o AutompleterOptions,
-    ) -> Result<Autocompleter<'t, 'o>, AutocompleteError> {
+    /// * `default_options` - Default options for the autocompleter.
+    pub fn new<'t>(
+        tables: Cow<'t, CruncherTables>,
+        default_options: AutompleterOptions,
+    ) -> Result<Autocompleter<'t>, AutocompleteError> {
         Ok(Autocompleter {
+            addenda: Autocompleter::make_addenda(&tables)?,
             tables,
-            addenda: Autocompleter::make_addenda(tables)?,
-            options,
+            default_options,
         })
     }
 
     /// Convenience method for fetching completions with default options.
-    pub fn completions_for(
+    pub fn completions_for<'t>(
         &'t self,
         prefix: &str,
-    ) -> Result<Vec<AutocompleteResult<'t, 'o>>, AutocompleteError> {
-        self.completions_with_options(prefix, self.options)
+    ) -> Result<Vec<AutocompleteResult<'t, 't>>, AutocompleteError> {
+        self.completions_with_options(prefix, &self.default_options)
     }
 
     /// The main API for fetching completions.
@@ -60,12 +62,40 @@ impl<'t, 'o> Autocompleter<'t, 'o> {
     ///
     /// # Returns
     /// A vector of lemmata with matching completion results.
-    pub fn completions_with_options<'a>(
+    pub fn completions_with_options<'t, 'a>(
         &'t self,
         prefix: &str,
         options: &'a AutompleterOptions,
     ) -> Result<Vec<AutocompleteResult<'t, 'a>>, AutocompleteError> {
         completions_for_prefix(prefix, self, options)
+    }
+
+    /// The main API for fetching analyses for a full word.
+    ///
+    /// # Arguments
+    /// * `word` - The word to analyze, case-insensitive. This should
+    ///   contain only ascii characters.
+    /// * `limit` - The maximum number of lemmata to return. A single lemma may have multiple
+    ///   inflected forms that match the prefix, but every lemma returned is guaranteed to have
+    ///   at least one matching form.
+    /// * `options` - Display options for formatting the output forms.
+    ///
+    /// # Returns
+    /// A vector of lemmata with analysis results for the given word.
+    pub fn analyses_with_options<'t, 'a>(
+        &'t self,
+        word: &str,
+        options: &'a AutompleterOptions,
+    ) -> Result<Vec<AutocompleteResult<'t, 'a>>, AutocompleteError> {
+        matches_for_word(word, self, options)
+    }
+
+    /// Convenience method to get analyses with default options.
+    pub fn analyses_for<'t>(
+        &'t self,
+        word: &str,
+    ) -> Result<Vec<AutocompleteResult<'t, 't>>, AutocompleteError> {
+        self.analyses_with_options(word, &self.default_options)
     }
 }
 

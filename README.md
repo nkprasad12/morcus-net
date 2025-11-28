@@ -20,7 +20,7 @@ Before you get started, install `git` and:
 To start, download and run the setup script. This will clone all required repositories, perform all required setup, build the client, and start the server locally.
 
 ```
-curl https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/first_time_setup.sh | bash
+curl https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/set_up_or_update.sh | bash
 ```
 
 In the future, you can run `./morcus.sh web` from `morcus-net` to build the client and start the server.

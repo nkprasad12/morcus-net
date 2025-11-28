@@ -22,8 +22,8 @@ interface AutoCompleteSearchProps<T> {
   RenderOption: (props: { option: T; current: string }) => JSX.Element;
   /** A converter function to a key. It must be unique for each option. */
   toKey: (t: T) => string;
-  /** Whether to check for autocomplete options on the initial view. */
-  showOptionsInitially?: true;
+  /** Whether to check for autocomplete options on empty input. */
+  hasOptionsForEmptyInput?: true;
 }
 
 interface BaseSearchBoxProps {
@@ -35,6 +35,7 @@ interface BaseSearchBoxProps {
   ariaLabel?: string;
   onInput?: (input: string) => unknown;
   style?: React.CSSProperties;
+  saveSpace?: boolean;
 }
 
 type SearchBoxProps<T> = BaseSearchBoxProps & AutoCompleteSearchProps<T>;
@@ -60,13 +61,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [focused, setFocused] = useState(props.autoFocused === true);
-  const [mouseOnPopup, setMouseOnPopup] = useState(false);
+  const [interactingWithPopup, setInteractingWithPopup] = useState(false);
   const [cursor, setCursor] = useState(-1);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [options, setOptions] = useState<T[]>([]);
 
   const { toKey, optionsForInput, onInput } = props;
+
+  const textSize = props.saveSpace ? "sm" : "md";
 
   useEffect(() => {
     if (cursor < 0 || options.length === 0) {
@@ -104,16 +107,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
 
   useEffect(() => {
     if (
-      props.showOptionsInitially !== true ||
+      props.hasOptionsForEmptyInput !== true ||
       optionsForInput === undefined ||
       input.trim() !== ""
     ) {
       return;
     }
     onInputInternal("");
-  }, [props.showOptionsInitially, optionsForInput, onInputInternal, input]);
+  }, [props.hasOptionsForEmptyInput, optionsForInput, onInputInternal, input]);
 
-  const interactingWithPopup = mouseOnPopup;
   const popperOpen =
     containerRef.current !== null &&
     (focused || interactingWithPopup) &&
@@ -138,16 +140,28 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   }
 
   async function onOptionChosen(t: T) {
-    setMouseOnPopup(false);
+    setInteractingWithPopup(false);
     setCursor(-1);
-    setFocused(false);
     const result = props.onOptionSelected(t, input);
     if (typeof result === "string") {
       // If the result is a string, we interpret this as a request for the result to be able
       // to chain, and return focus to the input.
       onInputInternal(result);
       setFocused(true);
+      const currentRef = inputRef.current;
+      if (currentRef !== null) {
+        currentRef.focus();
+        setTimeout(() => {
+          // This sets the scroll position in the input box all
+          // the way to the left, so that the user can actually see
+          // what they are typing.
+          // We wait just a moment so that the browser can apply rendering
+          // for the focus first.
+          currentRef.scrollLeft = currentRef.scrollWidth;
+        }, 6);
+      }
     } else {
+      setFocused(false);
       inputRef.current?.blur();
     }
   }
@@ -172,8 +186,8 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 width: containerRef.current?.offsetWidth,
                 maxHeight: window.innerHeight * 0.4,
               }}
-              onMouseOver={() => setMouseOnPopup(true)}
-              onMouseOut={() => setMouseOnPopup(false)}>
+              onMouseOver={() => setInteractingWithPopup(true)}
+              onMouseOut={() => setInteractingWithPopup(false)}>
               {loading && options.length === 0 && (
                 <div className="customSearchPopupOption">Loading options</div>
               )}
@@ -187,22 +201,30 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                     key={props.toKey(t)}
                     id={props.toKey(t)}
                     onClick={() => onOptionChosen(t)}
-                    onTouchStart={() => setCursor(i)}
+                    onTouchStart={(e) => {
+                      try {
+                        // @ts-expect-error
+                        e.passive = true;
+                      } catch {}
+                      setCursor(i);
+                    }}
                     onMouseOver={() => setCursor(i)}>
                     <props.RenderOption option={t} current={input} />
                   </div>
                 ))}
             </div>
           </Popper>
-          <SvgIcon
-            pathD={SvgIcon.Search}
-            className="menuIconFaded"
-            style={{ marginLeft: "11.2px" }}
-          />
+          {!props.saveSpace && (
+            <SvgIcon
+              pathD={SvgIcon.Search}
+              className="menuIconFaded"
+              style={{ marginLeft: "11.2px" }}
+            />
+          )}
           <input
             ref={inputRef}
             type="text"
-            className="customSearchBox text md"
+            className={`customSearchBox text ${textSize}`}
             spellcheck={false}
             autoCapitalize="none"
             autoComplete="off"
@@ -219,7 +241,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 props.onRawEnter?.(input);
                 setFocused(false);
                 setCursor(-1);
-                setMouseOnPopup(false);
+                setInteractingWithPopup(false);
                 inputRef.current?.blur();
                 return;
               }
@@ -240,17 +262,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 setCursor(-1);
                 return;
               }
-              setTimeout(() => {
-                setFocused(false);
-                setCursor(-1);
-              }, 16);
+              setFocused(false);
+              setCursor(-1);
             }}
             placeholder={props.placeholderText}
             role="combobox"
           />
           <IconButton
             aria-label={CLEAR_QUERY}
-            style={{ marginRight: "4px" }}
+            style={{ marginRight: props.saveSpace ? "0px" : "4px" }}
             onClick={() => {
               inputRef.current?.focus();
               onInputInternal("");
@@ -266,7 +286,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             <IconButton
               aria-label="search settings"
               aria-haspopup="true"
-              style={{ marginRight: "5.2px" }}
+              style={{ marginRight: props.saveSpace ? "1px" : "5.2px" }}
               onClick={props.onOpenSettings}>
               <SvgIcon
                 pathD={SvgIcon.Settings}

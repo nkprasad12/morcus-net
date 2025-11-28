@@ -3,7 +3,9 @@
     deny(clippy::unwrap_used, clippy::expect_used, clippy::panic)
 )]
 
-use corpus::{corpus_index::deserialize_corpus, corpus_query_engine::CorpusQueryEngine};
+use corpus::{
+    api::PageData, corpus_index::deserialize_corpus, corpus_query_engine::CorpusQueryEngine,
+};
 use morceus::{
     crunch::crunch_word,
     indices::{CruncherOptions, CruncherTables},
@@ -40,15 +42,26 @@ impl QueryEngineWrapper {
     fn query(
         &self,
         query_str: String,
-        page_start: u32,
+        page_data: Option<String>,
         page_size: u32,
         context_len: u32,
     ) -> Result<String, String> {
+        let page_data = page_data
+            .map(|pd_str| {
+                serde_json::from_str::<corpus::api::PageData>(&pd_str)
+                    .map_err(|e| format!("Failed to parse page data: {e}"))
+            })
+            .transpose()?
+            .unwrap_or(PageData {
+                result_index: 0,
+                result_id: 0,
+                candidate_index: 0,
+            });
         let result = self
             .engine
             .query_corpus(
                 &query_str,
-                page_start as usize,
+                &page_data,
                 page_size as usize,
                 context_len as usize,
             )
@@ -60,14 +73,14 @@ impl QueryEngineWrapper {
 fn load_tables(filename: &str) -> CruncherTables {
     // Read the JSON file
     let json_content = fs::read_to_string(filename).unwrap_or_else(|err| {
-        eprintln!("Error reading file '{}': {}", filename, err);
+        eprintln!("Error reading file '{filename}': {err}");
         process::exit(1);
     });
 
     // Parse CruncherTables from JSON
     let cruncher_tables: CruncherTables =
         serde_json::from_str(&json_content).unwrap_or_else(|err| {
-            eprintln!("Error parsing JSON from '{}': {}", filename, err);
+            eprintln!("Error parsing JSON from '{filename}': {err}");
             process::exit(1);
         });
     cruncher_tables

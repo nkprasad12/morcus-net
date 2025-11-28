@@ -5,7 +5,7 @@ use crate::{
     completions::{
         AutocompleteError, AutocompleteResult, Autocompleter, AutompleterOptions, DisplayOptions,
         StemResult,
-        stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for},
+        stem_and_irreg_ranges::{PrefixRanges, compute_ranges_for, find_ranges_of_borrowed},
     },
     indices::{InflectionEnding, Lemma, Stem},
     stem_merging::merge_stem_and_ending,
@@ -29,11 +29,11 @@ fn lemma_ids_for_ranges<'a>(
 ) -> Result<impl Iterator<Item = &'a LemmaId>, AutocompleteError> {
     let mut range_pairs = vec![];
 
-    // Matches where the stem fully contains the prefix.
     if let Some((start, end)) = ranges.irregs_range {
         let range_pair = (start, end, completer.addenda.irreg_to_lemma.as_slice());
         range_pairs.push(range_pair);
     }
+    // Matches where the stem fully contains the prefix.
     if let Some((start, end)) = ranges.stem_range {
         let range_pair = (start, end, completer.addenda.stem_to_lemma.as_slice());
         range_pairs.push(range_pair);
@@ -117,42 +117,50 @@ fn filter_lemma_stems<'a>(lemma: &Lemma, ranges: &'a PrefixRanges) -> Vec<(usize
     matched_stems
 }
 
-/// Finds the start and end indices of ends for the given stem that start with the given end prefix.
+#[inline]
+fn key_for_end_entry(entry: &(String, InflectionEnding)) -> &str {
+    &entry.0
+}
+
+/// Finds the start and end indices of ends for the given stem that match with the given end prefix.
+///
+/// Arguments:
+/// * `completer` - The autocompleter to use for lookups.
+/// * `end_prefix` - The unmatched portion of the prefix that needs to be completed by endings.
+/// * `stem` - The stem to find endings for.
+/// * `exact_only` - Whether to only return exact matches (true) or also prefix matches (false).
+///
+/// Returns:
+/// A vector of matching endings, if any were found.
 fn find_ends_for<'a>(
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter,
     end_prefix: &str,
     stem: &'a Stem,
+    exact_only: bool,
 ) -> Result<Option<Vec<&'a InflectionEnding>>, AutocompleteError> {
     let ends = completer.ends_for(stem)?;
     if ends.is_empty() {
         return Ok(None);
     }
-    if end_prefix.is_empty() {
-        return Ok(Some(ends.iter().map(|e| e.1).collect()));
+    if !exact_only && end_prefix.is_empty() {
+        // If we are allowing prefix matches and the end prefix is empty, then
+        // all endings are valid.
+        return Ok(Some(ends.iter().map(|e| &e.1).collect()));
     }
 
-    let end_prefix_str = end_prefix.to_string();
-    // Binary search for the first irregular form that starts with or comes after the prefix
-    let start = ends.partition_point(|end| end.0 < end_prefix_str);
-    if start >= ends.len() {
-        return Ok(None);
-    }
+    let end_target = if end_prefix.is_empty() {
+        "*".to_string()
+    } else {
+        end_prefix.to_string()
+    };
 
-    let first_ending = &ends[start].0;
-    if !first_ending.starts_with(end_prefix) {
-        // The partition point will tell us either where the prefix actually starts,
-        // or where it would be inserted. In this case, the prefix would be inserted here,
-        // so there are no matching irregular forms.
-        return Ok(None);
-    }
+    let (start, end) =
+        match find_ranges_of_borrowed(&end_target, exact_only, ends, key_for_end_entry) {
+            None => return Ok(None),
+            Some(r) => r,
+        };
 
-    let prefix_end = ends[start..].partition_point(|end| end.0.starts_with(end_prefix));
-    Ok(Some(
-        ends[start..start + prefix_end]
-            .iter()
-            .map(|e| e.1)
-            .collect(),
-    ))
+    Ok(Some(ends[start..end].iter().map(|e| &e.1).collect()))
 }
 
 /// Converts a candidate stem ID into a result, if it is valid.
@@ -161,13 +169,15 @@ fn find_ends_for<'a>(
 /// * `stem_id` - The ID of the stem to convert.
 /// * `unmatched` - The unmatched portion of the prefix that needs to be completed by endings.
 /// * `completer` - The autocompleter to use for lookups.
+/// * `exact_only` - Whether to only return exact matches (true) or also prefix matches (false).
 fn stem_id_to_result<'a>(
     stem_id: usize,
     unmatched: &str,
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter,
+    exact_only: bool,
 ) -> Result<Option<StemResult<'a>>, AutocompleteError> {
     let stem = &completer.tables.all_stems[stem_id];
-    let ends = match find_ends_for(completer, unmatched, stem)? {
+    let ends = match find_ends_for(completer, unmatched, stem, exact_only)? {
         // None just means there are no ends - it's not an error state.
         None => return Ok(None),
         Some(ends) if ends.is_empty() => return Ok(None),
@@ -182,14 +192,15 @@ fn stem_id_to_result<'a>(
 fn lemma_id_to_result<'a, 'b>(
     lemma_id: LemmaId,
     ranges: &PrefixRanges,
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter,
     display_options: &'b DisplayOptions,
+    exact_only: bool,
 ) -> Result<AutocompleteResult<'a, 'b>, AutocompleteError> {
     let lemma = completer.lemma_from_id(lemma_id)?;
 
     let mut stems = vec![];
     for (stem_id, unmatched) in filter_lemma_stems(lemma, ranges) {
-        match stem_id_to_result(stem_id, unmatched, completer)? {
+        match stem_id_to_result(stem_id, unmatched, completer, exact_only)? {
             None => continue,
             Some(result) => stems.push(result),
         }
@@ -244,11 +255,12 @@ fn validated_lemma_result<'a, 'b>(
 
 fn completions_for_prefix_base<'a, 'b>(
     prefix: &str,
-    completer: &Autocompleter<'a, '_>,
+    completer: &'a Autocompleter,
     limit: usize,
     options: &'b DisplayOptions,
+    exact_only: bool,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
-    let ranges = compute_ranges_for(prefix, completer.tables)?;
+    let ranges = compute_ranges_for(prefix, &completer.tables, exact_only)?;
     let mut seen_ids = HashSet::new();
     let mut results = Vec::new();
 
@@ -261,7 +273,7 @@ fn completions_for_prefix_base<'a, 'b>(
             // Prevent duplicate matches.
             continue;
         }
-        let lemma_result = lemma_id_to_result(*lemma_id, &ranges, completer, options)?;
+        let lemma_result = lemma_id_to_result(*lemma_id, &ranges, completer, options, exact_only)?;
         let lemma_result = match validated_lemma_result(lemma_result) {
             None => continue,
             Some(r) => r,
@@ -272,15 +284,16 @@ fn completions_for_prefix_base<'a, 'b>(
     Ok(results)
 }
 
-pub(super) fn completions_for_prefix<'a, 'b>(
-    prefix: &str,
-    completer: &Autocompleter<'a, '_>,
+fn completions_or_matches_for<'a, 'b>(
+    word_or_prefix: &str,
+    completer: &'a Autocompleter,
     options: &'b AutompleterOptions,
+    exact_only: bool,
 ) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
-    let mut variants = vec![prefix.to_string()];
+    let mut variants = vec![word_or_prefix.to_string()];
     if options.relax_i_j || options.relax_u_v {
         variants.append(&mut alternates_with_i_or_u(
-            prefix,
+            word_or_prefix,
             options.relax_i_j,
             options.relax_u_v,
         ));
@@ -293,12 +306,33 @@ pub(super) fn completions_for_prefix<'a, 'b>(
         if limit == 0 {
             break;
         }
-        let results =
-            completions_for_prefix_base(&variant, completer, limit, &options.display_options)?;
+        let results = completions_for_prefix_base(
+            &variant,
+            completer,
+            limit,
+            &options.display_options,
+            exact_only,
+        )?;
         results_so_far += results.len();
         all_results.push(results);
     }
     Ok(all_results.into_iter().flatten().collect())
+}
+
+pub(super) fn completions_for_prefix<'a, 'b>(
+    prefix: &str,
+    completer: &'a Autocompleter,
+    options: &'b AutompleterOptions,
+) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
+    completions_or_matches_for(prefix, completer, options, false)
+}
+
+pub(super) fn matches_for_word<'a, 'b>(
+    word: &str,
+    completer: &'a Autocompleter,
+    options: &'b AutompleterOptions,
+) -> Result<Vec<AutocompleteResult<'a, 'b>>, AutocompleteError> {
+    completions_or_matches_for(word, completer, options, true)
 }
 
 #[cfg(test)]

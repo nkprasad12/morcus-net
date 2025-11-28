@@ -21,8 +21,13 @@ export const CORPUS_FILE = `latin_corpus.json`;
 export const CORPUS_RAW_TEXT = `latin_corpus_raw.txt`;
 export const CORPUS_BUFFERS = `latin_corpus_buffers.bin`;
 export const CORPUS_TOKEN_STARTS = `latin_corpus_token_starts.bin`;
-
-export const CORPUS_AUTHORS_LIST = "latin_corpus_authors.json";
+export const CORPUS_INFLECTIONS_RAW_DATA =
+  "latin_corpus_inflections_raw_data.bin";
+export const CORPUS_INFLECTIONS_OFFSETS =
+  "latin_corpus_inflections_offsets.bin";
+export const CORPUS_SUGGESTION_PREFIX = "latin_corpus_suggestions";
+export const CORPUS_AUTHORS_LIST = `${CORPUS_SUGGESTION_PREFIX}_authors.json`;
+export const CORPUS_LEMMATA_LIST = `${CORPUS_SUGGESTION_PREFIX}_lemmata.json`;
 
 // // // // // // // // // //
 // Corpus Result Types   //
@@ -56,17 +61,39 @@ export namespace CorpusQueryMatch {
   });
 }
 
+export interface PageData {
+  resultIndex: number;
+  resultId: number;
+  candidateIndex: number;
+}
+
+export const isPageData = matchesObject<PageData>({
+  resultIndex: isNumber,
+  resultId: isNumber,
+  candidateIndex: isNumber,
+});
+
+export interface QueryGlobalInfo {
+  estimatedResults: number;
+}
+
+const isQueryGlobalInfo = matchesObject<QueryGlobalInfo>({
+  estimatedResults: isNumber,
+});
+
+// Replaced: CorpusQueryResult now matches Rust shape (omitting timing)
 export interface CorpusQueryResult {
-  totalResults: number;
   matches: CorpusQueryMatch[];
-  pageStart: number;
+  resultStats: QueryGlobalInfo;
+  nextPage?: PageData;
 }
 
 export namespace CorpusQueryResult {
   export const isMatch = matchesObject<CorpusQueryResult>({
-    totalResults: isNumber,
     matches: isArray(CorpusQueryMatch.isMatch),
-    pageStart: isNumber,
+    resultStats: isQueryGlobalInfo,
+    // nextPage is optional: allow undefined or a valid PageData
+    nextPage: (v: unknown) => v === undefined || isPageData(v),
   });
 }
 
@@ -138,6 +165,10 @@ interface CoreCorpusIndex {
   tokenStarts: number[];
   /** The start indices of each break in the raw text. */
   breakStarts: number[];
+  /** The encoded inflection options for each word in the corpus. */
+  inflectionsRawBufferPath: string;
+  /** The offsets for the encoded inflection options for each word in the corpus. */
+  inflectionsOffsetsPath: string;
 }
 
 export interface LatinCorpusIndex extends CoreCorpusIndex {
@@ -162,6 +193,8 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
     authorLookup: {},
     rawBufferPath: CORPUS_BUFFERS,
     rawTextPath: CORPUS_RAW_TEXT,
+    inflectionsRawBufferPath: CORPUS_INFLECTIONS_RAW_DATA,
+    inflectionsOffsetsPath: CORPUS_INFLECTIONS_OFFSETS,
     tokenStarts: [],
     breakStarts: [],
     indices: {
