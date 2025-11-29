@@ -7,6 +7,7 @@ import {
   CORPUS_TOKEN_STARTS,
   CORPUS_AUTHORS_LIST,
   CORPUS_LEMMATA_LIST,
+  type CorpusIndexKeyTypes,
 } from "@/common/library/corpus/corpus_common";
 import { encodeMessage } from "@/web/utils/rpc/parsing";
 import { serverMessage } from "@/web/utils/rpc/server_rpc";
@@ -98,6 +99,9 @@ async function serializeCorpus(
     fs.unlinkSync(rawDestFile);
   }
   fs.closeSync(fs.openSync(rawDestFile, "w"));
+
+  // Prepare the write stream for the raw binary data. Offset
+  // is the current position in the raw data.
   const rawWriteStream = fs.createWriteStream(rawDestFile, { flags: "w+" });
   const numTokens = obj.numTokens;
   if (!Number.isInteger(numTokens) || numTokens < 0 || numTokens > 0xffffffff) {
@@ -106,18 +110,17 @@ async function serializeCorpus(
     );
   }
   rawWriteStream.write(new Uint32Array([numTokens]));
-  let offset = 4;
-  const replacer = (key: string, value: any) => {
+  // @ts-expect-error
+  obj.indices = prepareAllIndices(
+    obj.indices,
+    obj.idTable,
+    numTokens,
+    rawWriteStream,
+    4 // 4 bytes because we wrote a u32 for `numTokens` above
+  );
+  const replacer = (_key: string, value: any) => {
     if (value instanceof Map) {
-      const [mapData, newOffset] = prepareIndexMap(
-        value,
-        obj.numTokens,
-        key,
-        rawWriteStream,
-        offset
-      );
-      offset = newOffset;
-      return mapData;
+      return Object.fromEntries(value);
     }
     return value;
   };
@@ -129,40 +132,102 @@ async function serializeCorpus(
   });
 }
 
-function prepareIndexMap(
-  indexMap: Map<unknown, number[]>,
+function prepareAllIndices(
+  indices: InProgressLatinCorpus["indices"],
+  idTable: InProgressLatinCorpus["idTable"],
   numTokens: number,
-  outerKey: string,
   writer: fs.WriteStream,
-  offset: number
-): [Record<string, StoredMapValue>, number] {
-  let newOffset = offset;
-  const entries: Record<string, StoredMapValue> = {};
-  for (const [key, value] of indexMap.entries()) {
-    const useBitMask =
-      value.length * 32 > numTokens ||
-      (outerKey === "breaks" && key === "hard");
-    // Bitmasks are interpreted on the Rust side as a vector of 64 bit integers.
-    // To avoid having to handle misaligned data, make sure it's 64-bit aligned.
-    if (useBitMask) {
-      const alignment = 8;
-      const padding = (alignment - (newOffset % alignment)) % alignment;
-      if (padding > 0) {
-        writer.write(Buffer.alloc(padding));
-        newOffset += padding;
-      }
-    }
-
-    const indexBytes = useBitMask
-      ? Buffer.from(toBitMask(value, numTokens).buffer)
-      : Buffer.from(new Uint32Array(value).buffer);
-    const indexLen = indexBytes.byteLength;
-    const storedValue: StoredMapValue = useBitMask
-      ? { offset: newOffset, numSet: value.length }
-      : { offset: newOffset, len: value.length };
-    writer.write(indexBytes);
-    newOffset += indexLen;
-    entries[String(key)] = storedValue;
+  startOffset: number
+) {
+  const converted: Record<string, StoredMapValue[]> = {};
+  let offset = startOffset;
+  for (const [key, indexData] of Object.entries(indices)) {
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const indexType = key as keyof CorpusIndexKeyTypes;
+    const [convertedEntries, newOffset] = prepareIndices(
+      indexType,
+      indexData,
+      numTokens,
+      idTable,
+      writer,
+      offset
+    );
+    offset = newOffset;
+    converted[indexType] = convertedEntries;
   }
-  return [entries, newOffset];
+  return converted;
+}
+
+function shouldForceBitmask(
+  indexType: keyof CorpusIndexKeyTypes,
+  i: number,
+  idTable: InProgressLatinCorpus["idTable"]
+): boolean {
+  if (indexType !== "breaks") {
+    return false;
+  }
+  // Just iterate over all the breaks, since there are only a few.
+  for (const [breakType, id] of idTable.breaks.entries()) {
+    if (id === i && breakType === "hard") {
+      return true;
+    }
+  }
+  return false;
+}
+
+function prepareIndices(
+  indexType: keyof CorpusIndexKeyTypes,
+  indices: number[][],
+  numTokens: number,
+  idTable: InProgressLatinCorpus["idTable"],
+  writer: fs.WriteStream,
+  startOffset: number
+): [StoredMapValue[], number] {
+  const convertedEntries: StoredMapValue[] = [];
+  let offset = startOffset;
+  indices.forEach((index, i) => {
+    const forceBitmask = shouldForceBitmask(indexType, i, idTable);
+    const useBitMask = forceBitmask || index.length * 32 > numTokens;
+    const [storedValue, newOffset] = prepareSingleIndex(
+      useBitMask,
+      numTokens,
+      index,
+      writer,
+      offset
+    );
+    offset = newOffset;
+    convertedEntries.push(storedValue);
+  });
+  return [convertedEntries, offset];
+}
+
+function prepareSingleIndex(
+  useBitMask: boolean,
+  numTokens: number,
+  index: number[],
+  writer: fs.WriteStream,
+  startOffset: number
+): [StoredMapValue, number] {
+  let offset = startOffset;
+  // Bitmasks are interpreted on the Rust side as a vector of 64 bit integers.
+  // To avoid having to handle misaligned data, make sure it's 64-bit aligned.
+  if (useBitMask) {
+    const alignment = 8;
+    const padding = (alignment - (offset % alignment)) % alignment;
+    if (padding > 0) {
+      writer.write(Buffer.alloc(padding));
+      offset += padding;
+    }
+  }
+
+  const indexBytes = useBitMask
+    ? Buffer.from(toBitMask(index, numTokens).buffer)
+    : Buffer.from(new Uint32Array(index).buffer);
+  const indexLen = indexBytes.byteLength;
+  const storedValue: StoredMapValue = useBitMask
+    ? { offset, numSet: index.length }
+    : { offset, len: index.length };
+  writer.write(indexBytes);
+  offset += indexLen;
+  return [storedValue, offset];
 }

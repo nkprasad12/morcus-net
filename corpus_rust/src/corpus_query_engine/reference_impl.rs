@@ -90,7 +90,7 @@ impl CorpusQueryEngine {
             .indices
             .get("breaks")
             .unwrap()
-            .get("hard")
+            .get(*self.corpus.id_table["breaks"].get("hard").unwrap() as usize)
             .unwrap();
         let hard_breaks = self
             .raw_buffers

@@ -135,11 +135,14 @@ export interface LatinInflectionTypes {
   mood: LatinMood;
   voice: LatinVoice;
 }
-export interface CorpusIndexKeyTypes extends LatinInflectionTypes {
+export interface CorpusStringKeyIndexTypes {
   word: string;
   lemma: string;
   breaks: "hard";
 }
+export interface CorpusIndexKeyTypes
+  extends LatinInflectionTypes,
+    CorpusStringKeyIndexTypes {}
 
 interface WorkData {
   author: string;
@@ -182,7 +185,10 @@ export interface LatinCorpusIndex extends CoreCorpusIndex {
 
 export type InProgressLatinCorpus = CoreCorpusIndex & {
   indices: {
-    [K in keyof CorpusIndexKeyTypes]: Map<CorpusIndexKeyTypes[K], number[]>;
+    [K in keyof CorpusIndexKeyTypes]: number[][];
+  };
+  idTable: {
+    [K in keyof CorpusStringKeyIndexTypes]: Map<string, number>;
   };
   numTokens: number;
 };
@@ -198,16 +204,21 @@ export function createEmptyCorpusIndex(): InProgressLatinCorpus {
     tokenStarts: [],
     breakStarts: [],
     indices: {
+      word: [],
+      breaks: [],
+      lemma: [],
+      case: [],
+      number: [],
+      gender: [],
+      tense: [],
+      person: [],
+      mood: [],
+      voice: [],
+    },
+    idTable: {
       word: new Map(),
       breaks: new Map(),
       lemma: new Map(),
-      case: new Map(),
-      number: new Map(),
-      gender: new Map(),
-      tense: new Map(),
-      person: new Map(),
-      mood: new Map(),
-      voice: new Map(),
     },
     numTokens: 0,
     stats: {

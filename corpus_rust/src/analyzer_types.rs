@@ -31,18 +31,17 @@ impl LatinInflection {
         }
     }
 
-    pub fn get_code(&self) -> String {
-        let num = match self {
-            LatinInflection::Case(c) => *c as u8,
-            LatinInflection::Number(n) => *n as u8,
-            LatinInflection::Gender(g) => *g as u8,
-            LatinInflection::Person(p) => *p as u8,
-            LatinInflection::Mood(m) => *m as u8,
-            LatinInflection::Voice(v) => *v as u8,
-            LatinInflection::Tense(t) => *t as u8,
-            LatinInflection::Degree(d) => *d as u8,
-        };
-        num.to_string()
+    pub fn get_code(&self) -> usize {
+        match self {
+            LatinInflection::Case(c) => *c as usize,
+            LatinInflection::Number(n) => *n as usize,
+            LatinInflection::Gender(g) => *g as usize,
+            LatinInflection::Person(p) => *p as usize,
+            LatinInflection::Mood(m) => *m as usize,
+            LatinInflection::Voice(v) => *v as usize,
+            LatinInflection::Tense(t) => *t as usize,
+            LatinInflection::Degree(d) => *d as usize,
+        }
     }
 }
 

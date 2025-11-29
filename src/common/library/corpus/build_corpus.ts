@@ -1,5 +1,4 @@
 import { assert, assertEqual, checkPresent } from "@/common/assert";
-import { arrayMap } from "@/common/data_structures/collect_map";
 import {
   CORPUS_DIR,
   CORPUS_INFLECTIONS_OFFSETS,
@@ -7,6 +6,7 @@ import {
   CORPUS_RAW_TEXT,
   createEmptyCorpusIndex,
   type CorpusInputWork,
+  type CorpusStringKeyIndexTypes,
   type InProgressLatinCorpus,
 } from "@/common/library/corpus/corpus_common";
 import { writeCorpus } from "@/common/library/corpus/corpus_serialization";
@@ -181,6 +181,30 @@ function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
   return;
 }
 
+function makeLookup<T>(array: number[][], mapper: (item: T) => number) {
+  return {
+    add: (key: T, tokenIndex: number) => {
+      const i = mapper(key);
+      while (array.length <= i) {
+        array.push([]);
+      }
+      array[i].push(tokenIndex);
+    },
+  };
+}
+
+function stringIndexMapper(
+  key: keyof CorpusStringKeyIndexTypes,
+  corpus: InProgressLatinCorpus
+) {
+  return (item: string) => {
+    if (!corpus.idTable[key].has(item)) {
+      corpus.idTable[key].set(item, corpus.idTable[key].size);
+    }
+    return checkPresent(corpus.idTable[key].get(item));
+  };
+}
+
 /** Absorbs the given work in the corpus. */
 function absorbWork(
   work: CorpusInputWork,
@@ -193,17 +217,26 @@ function absorbWork(
   console.debug(
     `Ingesting into corpus: ${work.workName} (${work.author}) - ${work.id}`
   );
-  const wordIndex = arrayMap(corpus.indices.word);
-  const lemmaIndex = arrayMap(corpus.indices.lemma);
-  const casesIndex = arrayMap(corpus.indices.case);
-  const numberIndex = arrayMap(corpus.indices.number);
-  const genderIndex = arrayMap(corpus.indices.gender);
-  const tenseIndex = arrayMap(corpus.indices.tense);
-  const personIndex = arrayMap(corpus.indices.person);
-  const moodIndex = arrayMap(corpus.indices.mood);
-  const voiceIndex = arrayMap(corpus.indices.voice);
-  const breaksIndex = arrayMap(corpus.indices.breaks);
+  const wordIndex = makeLookup(
+    corpus.indices.word,
+    stringIndexMapper("word", corpus)
+  );
+  const lemmaIndex = makeLookup(
+    corpus.indices.lemma,
+    stringIndexMapper("lemma", corpus)
+  );
+  const breaksIndex = makeLookup(
+    corpus.indices.breaks,
+    stringIndexMapper("breaks", corpus)
+  );
 
+  const casesIndex = makeLookup<LatinCase>(corpus.indices.case, (x) => x);
+  const numberIndex = makeLookup<LatinNumber>(corpus.indices.number, (x) => x);
+  const genderIndex = makeLookup<LatinGender>(corpus.indices.gender, (x) => x);
+  const tenseIndex = makeLookup<LatinTense>(corpus.indices.tense, (x) => x);
+  const personIndex = makeLookup<LatinPerson>(corpus.indices.person, (x) => x);
+  const moodIndex = makeLookup<LatinMood>(corpus.indices.mood, (x) => x);
+  const voiceIndex = makeLookup<LatinVoice>(corpus.indices.voice, (x) => x);
   corpus.workLookup.push([
     work.id,
     work.rowIds.map((id) => [id.join("."), 0, 0] as const),
@@ -409,8 +442,8 @@ export async function buildCorpus(
   console.debug(`Corpus processing runtime: ${Date.now() - startTime}ms`);
 
   corpus.numTokens = tokens.length;
-  corpus.stats.uniqueWords = corpus.indices.word.size;
-  corpus.stats.uniqueLemmata = corpus.indices.lemma.size;
+  corpus.stats.uniqueWords = corpus.indices.word.length;
+  corpus.stats.uniqueLemmata = corpus.indices.lemma.length;
 
   const tokenDb = saveTokenDb(tokens, breaks, corpusDir);
   corpus.tokenStarts = tokenDb[0];

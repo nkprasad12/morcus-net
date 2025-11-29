@@ -49,7 +49,8 @@ pub struct LatinCorpusIndex {
     pub inflections_raw_buffer_path: String,
     /// The offsets for the encoded inflection options for each word in the corpus.
     pub inflections_offsets_path: String,
-    pub indices: HashMap<String, HashMap<String, StoredMapValue>>,
+    pub indices: HashMap<String, Vec<StoredMapValue>>,
+    pub id_table: HashMap<String, HashMap<String, u32>>,
     pub num_tokens: u32,
 }
 
