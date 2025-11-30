@@ -434,7 +434,8 @@ pub(super) fn get_match_page<'a>(
             let inflection_options = corpus.inflections.get_inflection_data(token_to_check)?;
             if !inflection_options
                 .iter()
-                .any(|data| does_inflection_match_all(*data, inflections))
+                // The lower 32 bits are the inflection data.
+                .any(|data| does_inflection_match_all(*data as u32, inflections))
             {
                 skipped_candidates += 1;
                 // ALL of the tokens that need validation need to validate, otherwise it's not

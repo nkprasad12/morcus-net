@@ -5,6 +5,7 @@ import {
   CORPUS_INFLECTIONS_RAW_DATA,
   CORPUS_RAW_TEXT,
   createEmptyCorpusIndex,
+  type CorpusIndexKeyTypes,
   type CorpusInputWork,
   type CorpusStringKeyIndexTypes,
   type InProgressLatinCorpus,
@@ -32,14 +33,16 @@ import path from "path";
 
 type LengthAndOffset = [offset: number, length: number];
 interface StoredInflections {
-  // The `i`th element is the offset in `rawData` for the `i`th token.
+  /** The `i`th element is the offset in `rawData` for the `i`th token. */
   tokenToRawDataOffset: LengthAndOffset[];
-  // Map from word to (offset, len) in rawData.
+  /** Map from word to (offset, len) in rawData. */
   wordToRawDataOffset: Map<string, LengthAndOffset>;
-  // Sequence of 32 bit integers; each represents one possible inflection
-  // of a token.
+  /**
+   * Sequence of 64 bit integers; each represents one possible inflection
+   * of a token.
+   */
   rawData: number[];
-  // Dimensions to add to indices.
+  /** Dimensions to add to indices. */
   dimensions: Map<string, WordIndexDimensions>;
 }
 
@@ -47,7 +50,7 @@ namespace StoredInflections {
   export function makeNew(): StoredInflections {
     return {
       // This will represent word with no results.
-      rawData: [0],
+      rawData: [0, 0],
       tokenToRawDataOffset: [],
       wordToRawDataOffset: new Map(),
       dimensions: new Map(),
@@ -86,30 +89,68 @@ namespace StoredInflections {
     return [rawDataPath, offsetsPath];
   }
 
+  function addToLookups(
+    word: string,
+    id: number,
+    lookup: AllLookups,
+    storage: StoredInflections
+  ) {
+    const dimensions = checkPresent(storage.dimensions.get(word));
+    for (const lemma of dimensions.lemmata) {
+      lookup.lemma.add(lemma, id);
+    }
+    for (const c of dimensions.cases) {
+      lookup.case.add(c, id);
+    }
+    for (const n of dimensions.number) {
+      lookup.number.add(n, id);
+    }
+    for (const g of dimensions.gender) {
+      lookup.gender.add(g, id);
+    }
+    for (const t of dimensions.tense) {
+      lookup.tense.add(t, id);
+    }
+    for (const p of dimensions.person) {
+      lookup.person.add(p, id);
+    }
+    for (const m of dimensions.mood) {
+      lookup.mood.add(m, id);
+    }
+    for (const v of dimensions.voice) {
+      lookup.voice.add(v, id);
+    }
+  }
+
   export function ingest(
     word: string,
+    id: number,
     getInflections: (word: string) => CrunchResult[],
-    storage: StoredInflections
+    storage: StoredInflections,
+    lookups: AllLookups,
+    idTable: InProgressLatinCorpus["idTable"]
   ) {
     const cachedOffset = storage.wordToRawDataOffset.get(word);
     if (cachedOffset !== undefined) {
       // If the word has been seen before, just point to the existing data.
       storage.tokenToRawDataOffset.push(cachedOffset);
+      // This MUST be called before we return to make sure this ID is properly recording
+      // in reverse indices.
+      addToLookups(word, id, lookups, storage);
       return;
     }
     const inflections = getInflections(word);
     storage.dimensions.set(word, getWordIndexDimensions(inflections));
-    const encoded = Array.from(
-      new Set(
-        inflections.map((inflection) =>
-          packWordInflectionData(inflection.grammaticalData)
-        )
-      )
+    // This MUST be called before we return to make sure this ID is properly recording
+    // in reverse indices.
+    addToLookups(word, id, lookups, storage);
+
+    const encoded = inflections.flatMap((i) =>
+      packInflectionAndLemma(i, idTable)
     );
-    if (encoded.length === 0 || (encoded.length === 1 && encoded[0] === 0)) {
-      // No inflections or only uninflected results.
-      // Point to the zero entry at the start of rawData.
-      storage.tokenToRawDataOffset.push([0, 1]);
+    if (encoded.length === 0) {
+      // If there are no inflections, just point to the zero entry at the start of rawData.
+      storage.tokenToRawDataOffset.push([0, 2]);
       return;
     }
     // Point to the start of the raw buffer, and write the data there.
@@ -120,6 +161,16 @@ namespace StoredInflections {
       encoded.length,
     ]);
   }
+}
+
+function packInflectionAndLemma(
+  data: CrunchResult,
+  idTable: InProgressLatinCorpus["idTable"]
+): [number, number] {
+  return [
+    packWordInflectionData(data.grammaticalData),
+    checkPresent(idTable.lemma.get(cleanLemma(data.lemma))),
+  ];
 }
 
 interface WordIndexDimensions {
@@ -181,7 +232,14 @@ function absorbDataField<T>(set: Set<T>, value: DataField<T>) {
   return;
 }
 
-function makeLookup<T>(array: number[][], mapper: (item: T) => number) {
+type Adder<T> = {
+  add: (key: T, tokenIndex: number) => void;
+};
+
+function makeLookup<T>(
+  array: number[][],
+  mapper: (item: T) => number
+): Adder<T> {
   return {
     add: (key: T, tokenIndex: number) => {
       const i = mapper(key);
@@ -193,7 +251,7 @@ function makeLookup<T>(array: number[][], mapper: (item: T) => number) {
   };
 }
 
-function stringIndexMapper(
+function stringMapper(
   key: keyof CorpusStringKeyIndexTypes,
   corpus: InProgressLatinCorpus
 ) {
@@ -202,6 +260,38 @@ function stringIndexMapper(
       corpus.idTable[key].set(item, corpus.idTable[key].size);
     }
     return checkPresent(corpus.idTable[key].get(item));
+  };
+}
+
+type AllLookups = {
+  [key in keyof CorpusIndexKeyTypes]: Adder<CorpusIndexKeyTypes[key]>;
+};
+
+function makeAllLookups(corpus: InProgressLatinCorpus): AllLookups {
+  const word = makeLookup(corpus.indices.word, stringMapper("word", corpus));
+  const lemma = makeLookup(corpus.indices.lemma, stringMapper("lemma", corpus));
+  const breaks = makeLookup(
+    corpus.indices.breaks,
+    stringMapper("breaks", corpus)
+  );
+  const cases = makeLookup<LatinCase>(corpus.indices.case, (x) => x);
+  const number = makeLookup<LatinNumber>(corpus.indices.number, (x) => x);
+  const gender = makeLookup<LatinGender>(corpus.indices.gender, (x) => x);
+  const tense = makeLookup<LatinTense>(corpus.indices.tense, (x) => x);
+  const person = makeLookup<LatinPerson>(corpus.indices.person, (x) => x);
+  const mood = makeLookup<LatinMood>(corpus.indices.mood, (x) => x);
+  const voice = makeLookup<LatinVoice>(corpus.indices.voice, (x) => x);
+  return {
+    word,
+    lemma,
+    breaks,
+    case: cases,
+    number,
+    gender,
+    tense,
+    person,
+    mood,
+    voice,
   };
 }
 
@@ -217,26 +307,10 @@ function absorbWork(
   console.debug(
     `Ingesting into corpus: ${work.workName} (${work.author}) - ${work.id}`
   );
-  const wordIndex = makeLookup(
-    corpus.indices.word,
-    stringIndexMapper("word", corpus)
-  );
-  const lemmaIndex = makeLookup(
-    corpus.indices.lemma,
-    stringIndexMapper("lemma", corpus)
-  );
-  const breaksIndex = makeLookup(
-    corpus.indices.breaks,
-    stringIndexMapper("breaks", corpus)
-  );
+  const lookups = makeAllLookups(corpus);
+  const breaksIndex = lookups.breaks;
+  const wordIndex = lookups.word;
 
-  const casesIndex = makeLookup<LatinCase>(corpus.indices.case, (x) => x);
-  const numberIndex = makeLookup<LatinNumber>(corpus.indices.number, (x) => x);
-  const genderIndex = makeLookup<LatinGender>(corpus.indices.gender, (x) => x);
-  const tenseIndex = makeLookup<LatinTense>(corpus.indices.tense, (x) => x);
-  const personIndex = makeLookup<LatinPerson>(corpus.indices.person, (x) => x);
-  const moodIndex = makeLookup<LatinMood>(corpus.indices.mood, (x) => x);
-  const voiceIndex = makeLookup<LatinVoice>(corpus.indices.voice, (x) => x);
   corpus.workLookup.push([
     work.id,
     work.rowIds.map((id) => [id.join("."), 0, 0] as const),
@@ -301,37 +375,12 @@ function absorbWork(
 
       StoredInflections.ingest(
         normalizedWord,
+        tokens.length,
         getInflections,
-        storedInflections
+        storedInflections,
+        lookups,
+        corpus.idTable
       );
-
-      const dimensions = checkPresent(
-        storedInflections.dimensions.get(normalizedWord)
-      );
-      for (const lemma of dimensions.lemmata) {
-        lemmaIndex.add(lemma, tokens.length);
-      }
-      for (const c of dimensions.cases) {
-        casesIndex.add(c, tokens.length);
-      }
-      for (const n of dimensions.number) {
-        numberIndex.add(n, tokens.length);
-      }
-      for (const g of dimensions.gender) {
-        genderIndex.add(g, tokens.length);
-      }
-      for (const t of dimensions.tense) {
-        tenseIndex.add(t, tokens.length);
-      }
-      for (const p of dimensions.person) {
-        personIndex.add(p, tokens.length);
-      }
-      for (const m of dimensions.mood) {
-        moodIndex.add(m, tokens.length);
-      }
-      for (const v of dimensions.voice) {
-        voiceIndex.add(v, tokens.length);
-      }
 
       wordsInWork += 1;
       tokens.push(stripped);

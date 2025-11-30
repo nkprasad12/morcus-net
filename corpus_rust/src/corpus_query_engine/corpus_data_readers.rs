@@ -1,7 +1,5 @@
 use std::error::Error;
 
-use morceus::inflection_data::WordInflectionData;
-
 use crate::byte_readers::{RawByteReader, ReaderKind, byte_reader};
 use crate::corpus_index::{LatinCorpusIndex, StoredMapValue};
 use crate::corpus_query_engine::IndexData;
@@ -112,6 +110,9 @@ pub struct InflectionLookup {
     data: Box<dyn RawByteReader>,
 }
 
+// Each entry is a packed u64 containing both the lemma ID and the inflection data.
+pub type LemmaAndInflection = u64;
+
 impl InflectionLookup {
     pub fn new(
         offsets_path: &str,
@@ -123,7 +124,7 @@ impl InflectionLookup {
         Ok(InflectionLookup { offsets, data })
     }
 
-    pub fn get_inflection_data(&self, token_id: u32) -> Result<&[WordInflectionData], String> {
+    pub fn get_inflection_data(&self, token_id: u32) -> Result<&[LemmaAndInflection], String> {
         // The position of each token is stored in the offset table as a u32, so each entry is 4 bytes.
         let offset_index = (token_id as usize) * 4;
         let packed = u32_from_bytes(self.offsets.bytes(offset_index, offset_index + 4))?[0];
@@ -135,7 +136,7 @@ impl InflectionLookup {
         let start = offset * 4;
         let end = (offset + length) * 4;
         let data_byte_range = self.data.bytes(start, end);
-        u32_from_bytes(data_byte_range)
+        u64_from_bytes(data_byte_range)
     }
 }
 
