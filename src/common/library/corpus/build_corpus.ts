@@ -16,7 +16,6 @@ import { processTokens } from "@/common/text_cleaning";
 import { cleanLemma, crunchWord } from "@/morceus/crunch";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { CruncherOptions, type CrunchResult } from "@/morceus/cruncher_types";
-import { packWordInflectionData } from "@/morceus/inflection_data_utils";
 import {
   LatinCase,
   LatinNumber,
@@ -26,6 +25,7 @@ import {
   type LatinPerson,
   type LatinTense,
   type LatinVoice,
+  type WordInflectionData,
 } from "@/morceus/types";
 
 import fs from "fs";
@@ -163,12 +163,54 @@ namespace StoredInflections {
   }
 }
 
+function coerceToArray<T>(data?: T | T[]): T[] {
+  if (data === undefined) {
+    return [];
+  }
+  if (Array.isArray(data)) {
+    return data;
+  }
+  return [data];
+}
+
+function setBitIn(num: number, position: number): number {
+  assert(position >= 0 && position < 32, "Position must be in [0, 32)");
+  return num | (1 << position);
+}
+
+function setInflectionField(
+  num: number,
+  startBit: number,
+  values: DataField<number>
+): number {
+  let output = num;
+  for (const value of coerceToArray(values)) {
+    // -1 because values are 1-indexed.
+    output = setBitIn(output, startBit + value - 1);
+  }
+  return output;
+}
+
+// This currently skips degree because the corpus indices
+// also don't track degree.
+function packWordInflectionDataForCorpus(data: WordInflectionData): number {
+  let mask = 0;
+  mask = setInflectionField(mask, 0, data.case);
+  mask = setInflectionField(mask, 7, data.number); // 0 + 7 cases
+  mask = setInflectionField(mask, 9, data.gender); // 7 + 2 numbers
+  mask = setInflectionField(mask, 13, data.person); // 9 + 4 genders
+  mask = setInflectionField(mask, 16, data.mood); // 13 + 3 persons
+  mask = setInflectionField(mask, 23, data.voice); // 16 + 7 moods
+  mask = setInflectionField(mask, 25, data.tense); // 23 + 2 voices
+  return mask;
+}
+
 function packInflectionAndLemma(
   data: CrunchResult,
   idTable: InProgressLatinCorpus["idTable"]
 ): [number, number] {
   return [
-    packWordInflectionData(data.grammaticalData),
+    packWordInflectionDataForCorpus(data.grammaticalData),
     checkPresent(idTable.lemma.get(cleanLemma(data.lemma))),
   ];
 }
