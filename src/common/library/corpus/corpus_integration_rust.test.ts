@@ -178,7 +178,7 @@ describe("Corpus Integration Test", () => {
     ]);
   });
 
-  it.skip("should handle a composed 'and' query across lemma", () => {
+  it("should handle a composed 'and' query across lemma", () => {
     const query = "(@lemma:Gallus and @case:acc) @lemma:accognosco";
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(1);

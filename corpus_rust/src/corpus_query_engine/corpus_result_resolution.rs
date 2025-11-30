@@ -1,8 +1,11 @@
-use std::cmp::{max, min};
+use std::{
+    cmp::{max, min},
+    collections::HashMap,
+};
 
 use morceus::inflection_data::{
-    WordInflectionData, extract_case_bits, extract_degree, extract_gender_bits, extract_mood,
-    extract_number, extract_person, extract_tense, extract_voice, iterate_cases, iterate_genders,
+    extract_case_bits, extract_degree, extract_gender_bits, extract_mood, extract_number,
+    extract_person, extract_tense, extract_voice, iterate_cases, iterate_genders,
 };
 
 use crate::{
@@ -10,8 +13,8 @@ use crate::{
     api::{CorpusQueryMatch, CorpusQueryMatchMetadata, PageData, QueryGlobalInfo},
     corpus_query_engine::{
         CorpusQueryEngine, MatchIterator, QueryExecError, atoms_in,
-        corpus_index_calculation::SpanResult, corpus_query_conversion::InternalQueryTerm,
-        operators_in,
+        corpus_data_readers::LemmaAndInflection, corpus_index_calculation::SpanResult,
+        corpus_query_conversion::InternalQueryTerm, operators_in,
     },
     query_parsing_v2::{QueryRelation, TokenConstraintAtom, TokenConstraintOperation},
 };
@@ -311,10 +314,18 @@ fn get_result_stats(
     }
 }
 
+enum NeedsValidation<'a> {
+    Inflection(&'a LatinInflection),
+    Lemma(u32),
+}
+
+type TokenValidationInfo<'a> = (usize, usize, Vec<NeedsValidation<'a>>);
+
 /// Within tthe spans, find the positions that need inflection validation.
 fn positions_needing_validation<'a>(
     spans: &'a [&[InternalQueryTerm]],
-) -> Vec<(usize, usize, Vec<&'a LatinInflection>)> {
+    id_table: &'a HashMap<String, HashMap<String, u32>>,
+) -> Result<Vec<TokenValidationInfo<'a>>, String> {
     let mut positions = vec![];
     for (span_idx, span) in spans.iter().enumerate() {
         for (term_idx, term) in span.iter().enumerate() {
@@ -325,8 +336,18 @@ fn positions_needing_validation<'a>(
             let atoms = atoms_in(term.constraint.inner);
             let mut inflections = vec![];
             for atom in atoms {
-                if let TokenConstraintAtom::Inflection(inflection) = atom {
-                    inflections.push(inflection);
+                match atom {
+                    TokenConstraintAtom::Lemma(lemma) => {
+                        let id = id_table
+                            .get("lemma")
+                            .and_then(|m| m.get(lemma))
+                            .ok_or("Could not find lemma")?;
+                        inflections.push(NeedsValidation::Lemma(*id));
+                    }
+                    TokenConstraintAtom::Inflection(inflection) => {
+                        inflections.push(NeedsValidation::Inflection(inflection));
+                    }
+                    _ => {}
                 }
             }
             if inflections.len() > 1 {
@@ -334,17 +355,31 @@ fn positions_needing_validation<'a>(
             }
         }
     }
-    positions
+    Ok(positions)
 }
 
 /// Checks whether the given inflection restrictions all match the given inflection data.
-fn does_inflection_match_all(data: WordInflectionData, inflections: &[&LatinInflection]) -> bool {
+fn does_inflection_match_all(
+    lemma_and_inflection: LemmaAndInflection,
+    constraints: &[NeedsValidation],
+) -> bool {
     // We can probably optimize this further by pre-computing the bit representations required by `inflections`,
     // and comparing masked versions of `data` against them.
     // For example, if we had "voice:active" and "tense:present", we could compute the word inflection data
     // that has those fields set, and pre-compute a mask on for `data` that zeros all other fields.
     // Then we'd only need to find `data & mask == required_data`.
-    for &inflection in inflections {
+    for constraint in constraints {
+        let inflection = match constraint {
+            NeedsValidation::Lemma(id) => {
+                if *id != (lemma_and_inflection >> 32) as u32 {
+                    return false;
+                }
+                continue;
+            }
+            NeedsValidation::Inflection(inflection) => inflection,
+        };
+        // Take the lower 32 bits, which are the inflection data.
+        let data = lemma_and_inflection as u32;
         match inflection {
             LatinInflection::Voice(voice) => {
                 if extract_voice(data) != *voice as u32 {
@@ -411,7 +446,7 @@ pub(super) fn get_match_page<'a>(
     total_candidates: usize,
 ) -> Result<MatchPageResult<'a>, QueryExecError> {
     let mut skipped_candidates = 0;
-    let needs_validation = positions_needing_validation(query_spans);
+    let needs_validation = positions_needing_validation(query_spans, &corpus.corpus.id_table)?;
     // Find the actual matches
     let mut matches = vec![];
     'outer: while matches.len() < page_size {
@@ -435,7 +470,7 @@ pub(super) fn get_match_page<'a>(
             if !inflection_options
                 .iter()
                 // The lower 32 bits are the inflection data.
-                .any(|data| does_inflection_match_all(*data as u32, inflections))
+                .any(|data| does_inflection_match_all(*data, inflections))
             {
                 skipped_candidates += 1;
                 // ALL of the tokens that need validation need to validate, otherwise it's not

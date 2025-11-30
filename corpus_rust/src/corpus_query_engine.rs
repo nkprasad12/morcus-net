@@ -89,14 +89,7 @@ fn is_term_currently_supported(term: &TokenConstraint) -> bool {
         // Currently we can't support both because it complicates the compatibility checking.
         return false;
     }
-    if !has_and {
-        // We don't handle and constraints with lemmata yet.
-        return true;
-    }
-    let has_lemma = atoms_in(term)
-        .iter()
-        .any(|a| matches!(a, TokenConstraintAtom::Lemma(_)));
-    !has_lemma
+    true
 }
 
 fn is_query_currently_supported(query: &Query) -> bool {
