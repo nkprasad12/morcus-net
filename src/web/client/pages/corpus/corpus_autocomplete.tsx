@@ -9,39 +9,71 @@ export interface CorpusAutocompleteOption {
   replacement?: string;
 }
 
+const CASES = new Map([
+  ["nominative", "nom"],
+  ["genitive", "gen"],
+  ["dative", "dat"],
+  ["accusative", "acc"],
+  ["ablative", "abl"],
+  ["vocative", "voc"],
+]);
+
+const TENSES = new Map([
+  ["present", "pres"],
+  ["imperfect", "impf"],
+  ["future", "fut"],
+  ["perfect", "perf"],
+  ["pluperfect", "plup"],
+  ["future-perfect", "futp"],
+]);
+
+const VOICES = new Map([
+  ["active", "act"],
+  ["passive", "pass"],
+]);
+
+const PERSONS = new Map([
+  ["1st", "1st"],
+  ["2nd", "2nd"],
+  ["3rd", "3rd"],
+]);
+
+const NUMBER = new Map([
+  ["singular", "sing"],
+  ["plural", "plur"],
+]);
+
+const GENDER = new Map([
+  ["masculine", "masc"],
+  ["feminine", "fem"],
+  ["neuter", "neut"],
+]);
+
+const MOODS = new Map([
+  ["indicative", "ind"],
+  ["subjunctive", "subj"],
+  ["imperative", "imper"],
+  ["infinitive", "inf"],
+  ["participle", "part"],
+  ["gerundive", "ger"],
+  ["supine", "supine"],
+]);
+
+const ALL_CATEGORIES = new Map<string, Map<string, string>>([
+  ["case", CASES],
+  ["tense", TENSES],
+  ["voice", VOICES],
+  ["person", PERSONS],
+  ["number", NUMBER],
+  ["gender", GENDER],
+  ["mood", MOODS],
+]);
+
 const SPECIAL_CATEGORIES = new Map<string, string[]>([
   ["lemma", []],
-  [
-    "case",
-    ["nominative", "genitive", "dative", "accusative", "ablative", "vocative"],
-  ],
-  [
-    "tense",
-    [
-      "present",
-      "imperfect",
-      "future",
-      "perfect",
-      "pluperfect",
-      "future-perfect",
-    ],
-  ],
-  ["voice", ["active", "passive"]],
-  ["person", ["1st", "2nd", "3rd"]],
-  ["number", ["singular", "plural"]],
-  ["gender", ["masculine", "feminine", "neuter"]],
-  [
-    "mood",
-    [
-      "indicative",
-      "subjunctive",
-      "imperative",
-      "infinitive",
-      "participle",
-      "gerundive",
-      "supine",
-    ],
-  ],
+  ...Array.from(ALL_CATEGORIES.entries()).map(
+    ([k, v]) => [k, Array.from(v.keys())] as const
+  ),
 ]);
 
 function informational(help: string): CorpusAutocompleteOption {
@@ -299,6 +331,7 @@ export function optionsForInput(
       return Array.from(SPECIAL_CATEGORIES.keys()).map((category) => ({
         option: category + ":",
         prefix: "@",
+        help: `filter by ${category}`,
       }));
     }
     for (const category of SPECIAL_CATEGORIES.keys()) {
@@ -312,6 +345,7 @@ export function optionsForInput(
           {
             option: category.substring(afterAt.length) + ":",
             prefix: lastToken,
+            help: `filter by ${category}`,
           },
         ];
       }
