@@ -90,6 +90,21 @@ describe("optionsForInput", () => {
     expect(opts[0].help).toContain("invalid keyword @foobarbaz");
   });
 
+  test("keyword unknown form has validation error", () => {
+    const opts = optionsForInput("@case:adc ", undefined);
+
+    expect(opts.length).toBe(1);
+    expect(opts[0].help).toContain("invalid option `adc`");
+  });
+
+  test("keyword short form doesn't return error", () => {
+    const opts = optionsForInput("@case:acc ", undefined);
+
+    for (const opt of opts) {
+      expect(opt.help).not.toContain("invalid option");
+    }
+  });
+
   test("tilde without number returns help options", () => {
     const opts = optionsForInput("~", undefined);
     expect(opts.length).toBeGreaterThan(0);

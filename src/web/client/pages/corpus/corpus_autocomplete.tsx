@@ -173,8 +173,10 @@ function errorsForToken(
       // Anything can be the value for a lemma.
       return [];
     }
-    const possibleValues = SPECIAL_CATEGORIES.get(keyword);
-    if (possibleValues === undefined) {
+    const longForms = SPECIAL_CATEGORIES.get(keyword) ?? [];
+    const shortForms = ALL_CATEGORIES.get(keyword)?.values() ?? [];
+    const possibleValues = longForms.concat(Array.from(shortForms));
+    if (possibleValues.length === 0) {
       return [unknownKeyword(keyword)];
     }
     if (!possibleValues.includes(value)) {
