@@ -6,6 +6,7 @@ export interface CorpusAutocompleteOption {
   option: string;
   help?: string;
   prefix?: string;
+  replacement?: string;
 }
 
 const SPECIAL_CATEGORIES = new Map<string, string[]>([
@@ -29,7 +30,18 @@ const SPECIAL_CATEGORIES = new Map<string, string[]>([
   ["person", ["1st", "2nd", "3rd"]],
   ["number", ["singular", "plural"]],
   ["gender", ["masculine", "feminine", "neuter"]],
-  ["mood", ["indicative", "subjunctive", "imperative"]],
+  [
+    "mood",
+    [
+      "indicative",
+      "subjunctive",
+      "imperative",
+      "infinitive",
+      "participle",
+      "gerundive",
+      "supine",
+    ],
+  ],
 ]);
 
 function informational(help: string): CorpusAutocompleteOption {

@@ -194,7 +194,9 @@ export function CorpusQueryPage() {
         ariaLabel={SEARCH_PLACEHOLDER}
         // Make sure we don't copy over the page tokens for the old query.
         onRawEnter={() => setNewQuery(nav, requestQuery)}
-        onOptionSelected={(o, current) => `${current}${o.option}`}
+        onOptionSelected={(o, current) =>
+          o.replacement ?? `${current}${o.option}`
+        }
         RenderOption={CorpusAutocompleteItem}
         optionsForInput={optionsForInputMemo}
         toKey={toKey}
