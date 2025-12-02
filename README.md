@@ -10,14 +10,12 @@ Source code for [morcus.net](https://www.morcus.net), a collection of digital to
 ## First Time Setup
 
 morcus.net development is currently done only on Linux machines.
-Before you get started, install `git` and:
+Before you get started, install `git`.
 
-- If you want to work on the Typescript code: `npm`, `node` (other Node versions will likely work, but only version `22` is run in CI and guaranteed to work)
-- If you want to work on the Python code: `python3.12` (other Python versions may work, but only `3.12` is run in CI and guaranteed to work.)
+### Typescript and Rust Code (Client, Server, Workers)
 
-### Typescript Code (Client, Server, Workers)
-
-To start, download and run the setup script. This will clone all required repositories, perform all required setup, build the client, and start the server locally.
+To start, download and run the setup script. This will clone this (the `morcus-net`) repository, and several
+repositories with raw data that is processed and served by the web server. It will also prompt you to install Rust and Node, if you do not already have these on your machine.
 
 ```
 curl https://raw.githubusercontent.com/nkprasad12/morcus-net/dev/set_up_or_update.sh | bash
@@ -41,24 +39,6 @@ From the `morcus-net` root directory, set up a `Python` virtual environment and 
 2. `source venv/bin/activate && python3.12 -m pip install -r requirements.txt`
 3. Run `npm run setup-alatius` to set up the macronizer for local use.
 4. To run NLP models, you may also need to install `stanza` and `cltk` from `pip`.
-
----
-
-### Environment Variables
-
-| Name                      | Content                                                                                                                             |
-| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| `PORT`                    | The port number on which the server will listen. Example: `5757`.                                                                   |
-| `LS_PATH`                 | The path to the raw Lewis and Short XML file. Example: `[Path to lexica]/CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml` |
-| `LS_PROCESSED_PATH`       | An optional file name of the processed database of Lewis and Short entries.                                                         |
-| `RA_PATH`                 | The path to the Riddle-Arnold raw TSV file.                                                                                         |
-| `RA_PROCESSED_PATH`       | An optional file name of the processed database of Riddle-Arnold entries.                                                           |
-| `SH_RAW_PATH`             | A raw path to the Smith and Hall text file.                                                                                         |
-| `SH_PROCESSED_PATH`       | An optional file name of the processed database of Smith and Hall entries.                                                          |
-| `MONGODB_URI`             | MongoDB database URI for metrics.                                                                                                   |
-| `DB_SOURCE`               | Tag used for metrics written to MongoDB. Example: `local`.                                                                          |
-| `PROCESSING_SERVER_TOKEN` | A token used to authenticate workers with the server. Should be long and random.                                                    |
-| `RAW_ENGLISH_WORDS`       | Path to a raw list of English words. Used for some processing.                                                                      |
 
 ---
 
@@ -262,18 +242,22 @@ This may be required when updating Python versions.
 
 The following should be done at regular intervals:
 
-- Update the `fast-forward` token on `GitHub`: required for pushing to `main`. Due _before_ `2026/01/19`.
+- Update the `fast-forward` token on `GitHub`: required for pushing to `main`. Due _before_ `2026/12/01`.
   - Go to account settings, and rotate the token.
   - Copy the rotated value into `morcus-net` settings (under `Secrets` currently).
-- Update the token used on the server for writing to `GitHub` issues. Due _before_ `2026/01/19`.
+- Update the token used on the server for writing to `GitHub` issues. Due _before_ `2026/12/01`.
   - Go to account settings, and rotate the token.
   - Update the value of `GITHUB_TOKEN` in the `.env` file on the VM.
   - Restart the server (`docker compose down ; docker compose up -d`).
-- Update the VM OS (currently: `Ubuntu 22.04`). Due _before_ it goes EOL in 2027/04.
-  - Standard instructions. Unclear how best to avoid downtime.
+- Update the VM OS (currently: `Debian 12`). Due _before_ it goes EOL in 2028/06.
+  - Standard instructions. Since we have a backup machine now, we can route traffic to the backup
+    machine while this is in progress.
 - Update the `Python` version (currently: `3.12`). Due _before_ it goes EOL in 2028/10.
   - Search for `3.12` and replace with the latest version everywhere. Currently this just means in the CI workflow, documentations, and in one script.
   - Update the `requirements.txt` (see [above](#updating-packages)).
+- Update the Docker image OS version (current: `debian-trixie`). Due _before_ it goes EOL in `2030/06`
+  - Check the `Dockerfile`
+  - Update the version.
 - Update the `node` version, (currently: `22`). Due _before_ it goes EOL in `2027/04`.
   - Check the `package.json`
   - Update the version used in the CI workflows
