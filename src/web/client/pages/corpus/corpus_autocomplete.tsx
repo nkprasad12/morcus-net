@@ -75,6 +75,9 @@ const SPECIAL_CATEGORIES = new Map<string, string[]>([
     ([k, v]) => [k, Array.from(v.keys())] as const
   ),
 ]);
+const SPECIAL_SHORT_FORMS = new Set(
+  Array.from(SPECIAL_CATEGORIES.keys()).map((k) => k[0])
+);
 
 function informational(help: string): CorpusAutocompleteOption {
   return {
@@ -151,6 +154,20 @@ function logicOpCompletions(
   ];
 }
 
+function resolveKeyword(keyword: string): string | undefined {
+  if (SPECIAL_CATEGORIES.has(keyword)) {
+    return keyword;
+  }
+  if (SPECIAL_SHORT_FORMS.has(keyword)) {
+    for (const longForm of SPECIAL_CATEGORIES.keys()) {
+      if (longForm.startsWith(keyword)) {
+        return longForm;
+      }
+    }
+  }
+  return undefined;
+}
+
 function errorsForToken(
   token: string,
   authors: SuggestionsList
@@ -175,13 +192,18 @@ function errorsForToken(
   }
 
   if (startsWithAt && hasColon) {
-    const [keyword, value] = token.slice(1).split(":", 2);
-    if (keyword === "lemma") {
+    const [rawKey, value] = token.slice(1).split(":", 2);
+    if (rawKey === "lemma" || rawKey === "l") {
       if (value.length === 0) {
         return [missingValue(token)];
       }
       // Anything can be the value for a lemma.
       return [];
+    }
+
+    const keyword = resolveKeyword(rawKey);
+    if (keyword === undefined) {
+      return [unknownKeyword(rawKey)];
     }
     const longForms = SPECIAL_CATEGORIES.get(keyword) ?? [];
     const shortForms = ALL_CATEGORIES.get(keyword)?.values() ?? [];
