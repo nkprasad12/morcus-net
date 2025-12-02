@@ -387,6 +387,14 @@ test.describe("corpus search", () => {
 
     await expect(page.getByText("dedit oscula nato")).toHaveCount(2);
   });
+
+  test("loads lemma options", async ({ page }) => {
+    await page.goto("/corpus");
+    await page.locator(`[aria-label="Enter corpus query"]`).click();
+    await page.keyboard.insertText("@lemma:habe");
+
+    await expect(page.getByText("@lemma:habena")).toBeVisible();
+  });
 });
 
 test.describe("offline mode", () => {

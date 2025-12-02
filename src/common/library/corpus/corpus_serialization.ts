@@ -40,7 +40,7 @@ function writeAuthorsFile(corpus: InProgressLatinCorpus, corpusDir: string) {
 
 function writeLemmataFile(corpus: InProgressLatinCorpus, corpusDir: string) {
   const lemmataDest = path.join(corpusDir, CORPUS_LEMMATA_LIST);
-  const lemmata = Array.from(new Set(corpus.indices.lemma.keys())).sort();
+  const lemmata = Array.from(new Set(corpus.idTable.lemma.keys())).sort();
   const encoded = encodeMessage(serverMessage(lemmata));
   const compressed = zlib.gzipSync(Buffer.from(encoded, "utf8"), {
     level: 9,
