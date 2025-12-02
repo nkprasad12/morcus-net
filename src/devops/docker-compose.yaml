@@ -82,6 +82,17 @@ services:
       WATCHTOWER_POLL_INTERVAL: 75
       WATCHTOWER_LABEL_ENABLE: true
       WATCHTOWER_CLEANUP: true
+      # This is a complete hack!!!
+      # On more recent versions of Docker, support for clients below 1.49 was dropped.
+      # The latest official watchtower image has not been updated for 2 years, so it
+      # fails. Setting this environment variable will (as far as I understand) pretend
+      # to be a more recent Docker version because nothing is technically broken yet.
+      # See https://github.com/containrrr/watchtower/issues/2126 for more details.
+      #
+      # In the longer term, we should probably update to use images from one of the forks.
+      # One community fork is https://github.com/nicholas-fedor/watchtower but I haen't yet
+      # validated it.
+      DOCKER_API_VERSION: 1.49
     logging:
       driver: "json-file"
       options:
