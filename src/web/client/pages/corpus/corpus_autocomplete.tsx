@@ -85,10 +85,10 @@ function informational(help: string): CorpusAutocompleteOption {
 
 const TILDE_HELP: CorpusAutocompleteOption[] = [
   informational("within 5 words of"),
-  { option: ">", prefix: "~", help: "within 5 words before" },
-  { option: "3", prefix: "~", help: "within 3 words of" },
-  { option: "10", prefix: "~", help: "within 10 words of" },
-  { option: "15", prefix: "~", help: "within 15 words of" },
+  { option: "> ", prefix: "~", help: "within 5 words before" },
+  { option: "3 ", prefix: "~", help: "within 3 words of" },
+  { option: "10 ", prefix: "~", help: "within 10 words of" },
+  { option: "15 ", prefix: "~", help: "within 15 words of" },
 ];
 
 const WORD_HELP = informational("<word> match exact word");
@@ -96,6 +96,16 @@ const SPECIAL_HELP: CorpusAutocompleteOption = {
   option: "@",
   help: "match lemma or inflection",
 };
+const NEXT_WORD_HELP = informational("<word> followed by exact word");
+const NEXT_SPECIAL_HELP: CorpusAutocompleteOption = {
+  option: "@",
+  help: "followed by lemma or inflection",
+};
+const NEXT_PROXIMITY_HELP: CorpusAutocompleteOption = {
+  option: "~",
+  help: "around",
+};
+
 const AUTHOR_HELP: CorpusAutocompleteOption = {
   option: "#",
   help: "search in author",
@@ -289,9 +299,13 @@ export function optionsForInput(
     if (errors.length > 0) {
       return errors;
     }
+    if (tokens.map((t) => t.startsWith("#")).every((v) => v)) {
+      return [WORD_HELP, SPECIAL_HELP];
+    }
     return [
-      WORD_HELP,
-      SPECIAL_HELP,
+      NEXT_WORD_HELP,
+      NEXT_SPECIAL_HELP,
+      NEXT_PROXIMITY_HELP,
       ...logicOpCompletions(tokens[tokens.length - 1]),
     ];
   }
@@ -317,7 +331,7 @@ export function optionsForInput(
     return authors
       .filter((a) => a.toLowerCase().startsWith(afterHash.toLowerCase()))
       .map((author) => ({
-        option: author.substring(afterHash.length),
+        option: `${author.substring(afterHash.length)} `,
         prefix: `#${afterHash.substring(0, afterHash.length)}`,
       }));
   }
