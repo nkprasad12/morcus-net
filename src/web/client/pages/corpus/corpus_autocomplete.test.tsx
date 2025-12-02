@@ -70,11 +70,25 @@ describe("optionsForInput", () => {
     expect(optStrings).toContain("genitive ");
   });
 
+  test("short keyword @c: returns list of case options (with trailing space)", () => {
+    const opts = optionsForInput("@c:", undefined);
+    const optStrings = opts.map((o) => o.option);
+    expect(optStrings).toContain("nominative ");
+    expect(optStrings).toContain("genitive ");
+  });
+
   test("partial category value suggests suffix for matching option", () => {
     const opts = optionsForInput("@case:gen", undefined);
     // "genitive" startsWith "gen" so expected suggestion is "itive "
     const optStrings = opts.map((o) => o.option);
     expect(optStrings).toContain("itive ");
+  });
+
+  test("short keyword with partial category value suggests suffix for matching option", () => {
+    const opts = optionsForInput("@c:ge", undefined);
+    // "genitive" startsWith "gen" so expected suggestion is "itive "
+    const optStrings = opts.map((o) => o.option);
+    expect(optStrings).toContain("nitive ");
   });
 
   test("exact category value yields no suggestions", () => {
@@ -109,7 +123,7 @@ describe("optionsForInput", () => {
     const opts = optionsForInput("~", undefined);
     expect(opts.length).toBeGreaterThan(0);
     expect(opts.some((o) => o.help?.includes("within 5 words"))).toBe(true);
-    expect(opts.some((o) => o.option === ">" && o.prefix === "~")).toBe(true);
+    expect(opts.some((o) => o.option === "> " && o.prefix === "~")).toBe(true);
   });
 
   test("tilde with valid number returns directional option", () => {

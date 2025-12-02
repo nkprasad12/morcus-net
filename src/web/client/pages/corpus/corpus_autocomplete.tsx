@@ -393,7 +393,8 @@ export function optionsForInput(
 
   if (isKeyword && colonIdx !== -1) {
     // We have a keyword that has been completed.
-    const keyword = lastToken.slice(1, colonIdx);
+    const rawKeyword = lastToken.slice(1, colonIdx);
+    const keyword = resolveKeyword(rawKeyword) ?? rawKeyword;
     const categoryOptions = SPECIAL_CATEGORIES.get(keyword);
     if (categoryOptions === undefined) {
       return [unknownKeyword(keyword)];
