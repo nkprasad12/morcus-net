@@ -229,6 +229,31 @@ export function CorpusQueryPage() {
   );
 }
 
+function Disclaimer(props: { query: string }) {
+  const hasInflectionFilters = /@\w+:/.test(props.query);
+
+  return (
+    <details className="corpusDisclaimer text sm">
+      <summary>Please note when reviewing results</summary>
+      <li>This search tool is still in beta and may have errors.</li>
+      <li>
+        The database currently contains about 1.2 million words (about 20% of
+        the classical corpus).
+      </li>
+      {hasInflectionFilters && (
+        <li>
+          <i>
+            Your query includes lemma or inflection filters; these operates at
+            the word level and may include false positives.
+          </i>{" "}
+          For example, <code>corpus</code> would always match both the
+          nominative and accusative filters, regardless of context.
+        </li>
+      )}
+    </details>
+  );
+}
+
 function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
   const { nav, route } = useCorpusRouter();
   const { query } = route;
@@ -287,6 +312,7 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
           {pageStart + props.results.matches.length}.
         </div>
       )}
+      <Disclaimer query={query} />
       {props.results.matches.length > 0 && (
         <Divider style={{ margin: "12px 0" }} />
       )}

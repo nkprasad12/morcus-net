@@ -381,6 +381,16 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".corpusResult": {
       color: Solarized.orange + "B0",
     },
+    ".corpusDisclaimer": {
+      marginTop: "8px",
+      backgroundColor: Solarized.red + "0A",
+      borderRadius: "4px",
+      padding: "8px",
+      border: `1px solid ${Solarized.red + "20"}`,
+    },
+    ".corpusDisclaimer li": {
+      marginLeft: "16px",
+    },
     ".queryHelp": {
       margin: "8px 16px",
       borderRadius: "4px",

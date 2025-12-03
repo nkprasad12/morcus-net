@@ -112,4 +112,58 @@ describe("CorpusQueryPage", () => {
     // The query text should be present as well.
     expect(screen.getByText("noresults")).toBeInTheDocument();
   });
+
+  test("disclaimer shows standard warning for simple queries", async () => {
+    const mockResult = {
+      nextPage: undefined,
+      matches: [],
+      resultStats: { estimatedResults: 0 },
+    };
+    mockCallApi.mockResolvedValue({ data: mockResult });
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: "/corpus", params: { q: "simple" } },
+          navigateTo: jest.fn(),
+        }}>
+        <CorpusQueryPage />
+      </RouteContext.Provider>
+    );
+
+    expect(await screen.findByText(/No results found for/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/This search tool is still in beta/)
+    ).toBeInTheDocument();
+    expect(
+      screen.queryByText(/Your query includes lemma or inflection filters/)
+    ).not.toBeInTheDocument();
+  });
+
+  test("disclaimer shows inflection warning for complex queries", async () => {
+    const mockResult = {
+      nextPage: undefined,
+      matches: [],
+      resultStats: { estimatedResults: 0 },
+    };
+    mockCallApi.mockResolvedValue({ data: mockResult });
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: "/corpus", params: { q: "@lemma:amo" } },
+          navigateTo: jest.fn(),
+        }}>
+        <CorpusQueryPage />
+      </RouteContext.Provider>
+    );
+
+    expect(await screen.findByText(/No results found for/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/This search tool is still in beta/)
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/Your query includes lemma or inflection filters/)
+    ).toBeInTheDocument();
+  });
 });
