@@ -50,7 +50,8 @@ function transformQuery(query: string): string {
     // fluent autocomplete experience.
     .map((t) =>
       t.replace(/^~(\d+)(.*)$/, (_match, num, rest) => `${num}~${rest}`)
-    );
+    )
+    .map((t) => t.replace(/^#(.+)$/, (_m, name) => `[${name}]`));
 
   // Wrap consecutive operator-connected spans (e.g. "a and b or c") in parentheses.
   const ops = new Set(["and", "or"]);

@@ -251,6 +251,14 @@ function parseArguments() {
     help: "The tag to use if using a docker image.",
     default: "itests",
   });
+  e2e.add_argument("-p", "--project", {
+    help: "The project (device) to use when limiting to only one device type.",
+    default: "itests",
+  });
+  e2e.add_argument("-g", "--grep", {
+    help: "The grep pattern to use to limit tests by name.",
+    default: "itests",
+  });
 
   const corpus = subparsers.add_parser(CORPUS, {
     help: "Convenience commands for the corpus.",
@@ -589,8 +597,15 @@ async function runE2eTests(args: any) {
   } else {
     childEnv.IMAGE_TAG = tag;
   }
+  const command = ["npm run integration-tests", "--"];
+  if (args.project) {
+    command.push(`--project ${args.project}`);
+  }
+  if (args.grep) {
+    command.push(`--grep "${args.grep}"`);
+  }
   steps.push({
-    operation: () => shellStep("npm run integration-tests", childEnv),
+    operation: () => shellStep(command.join(" "), childEnv),
     label: "Running E2E tests",
   });
   return runPipeline(steps);

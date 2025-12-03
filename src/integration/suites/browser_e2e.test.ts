@@ -395,6 +395,15 @@ test.describe("corpus search", () => {
 
     await expect(page.getByText("@lemma:habena")).toBeVisible();
   });
+
+  test("Handles author searches", async ({ page }) => {
+    await page.goto("/corpus");
+    await page.locator(`[aria-label="Enter corpus query"]`).click();
+    await page.keyboard.insertText("#Caesar Gallia est omnis");
+    await page.keyboard.press("Enter");
+
+    await expect(page.getByText("divisa in partes tres")).toBeVisible();
+  });
 });
 
 test.describe("offline mode", () => {
