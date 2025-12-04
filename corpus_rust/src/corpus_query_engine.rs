@@ -5,6 +5,7 @@ mod corpus_query_conversion;
 mod corpus_result_resolution;
 mod errors;
 mod index_data;
+mod query_pruning;
 mod reference_impl;
 
 use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo};
