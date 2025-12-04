@@ -7,9 +7,11 @@ use crate::{
     analyzer_types::LatinInflection,
     api::{CorpusQueryMatch, CorpusQueryMatchMetadata, PageData, QueryGlobalInfo},
     corpus_query_engine::{
-        CorpusQueryEngine, MatchIterator, QueryExecError, atoms_in,
-        corpus_data_readers::LemmaAndInflection, corpus_index_calculation::SpanResult,
-        corpus_query_conversion::InternalQueryTerm, operators_in,
+        CorpusQueryEngine, MatchIterator, QueryExecError,
+        corpus_data_readers::LemmaAndInflection,
+        corpus_index_calculation::SpanResult,
+        corpus_query_conversion::InternalQueryTerm,
+        query_validation::{atoms_in, operators_in},
     },
     query_parsing_v2::{QueryRelation, TokenConstraintAtom, TokenConstraintOperation},
 };
