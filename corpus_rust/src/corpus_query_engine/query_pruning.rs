@@ -2,8 +2,10 @@ use morceus::inflection_data::{
     LatinCase, LatinGender, LatinMood, LatinNumber, LatinPerson, LatinTense,
 };
 
-use crate::analyzer_types::LatinInflection::{
-    self, {Case, Gender, Mood, Number, Person, Tense, Voice},
+use crate::{
+    analyzer_types::LatinInflection::{self, Case, Gender, Mood, Number, Person, Tense, Voice},
+    corpus_query_engine::query_validation::atoms_in,
+    query_parsing_v2::{Query, TokenConstraint, TokenConstraintAtom},
 };
 
 /// Whether the inflection only applies to nominal forms.
@@ -97,7 +99,7 @@ fn is_mood_incompatible_with(
     false // No incompatibility found
 }
 
-pub(super) fn is_conjunction_impossible(terms: &[LatinInflection]) -> bool {
+fn is_conjunction_impossible(terms: &[LatinInflection]) -> bool {
     if terms.iter().any(is_nominal_only) && terms.iter().any(is_verbal_only) {
         // Some condition applies only to nominals, and some other one applies only to verbals.
         // No one token can be both.
@@ -147,6 +149,41 @@ pub(super) fn is_conjunction_impossible(terms: &[LatinInflection]) -> bool {
     };
 
     is_mood_incompatible_with(mood, tense, case, gender, person, number)
+}
+
+fn is_constraint_impossible(term: &TokenConstraint) -> bool {
+    // In the validation step, we check that every term is either an
+    // atom or an AND/OR of atoms, so we can just extract the atoms here.
+    let atoms = atoms_in(term);
+    let lemmata = atoms
+        .iter()
+        .filter_map(|atom| match &atom {
+            TokenConstraintAtom::Lemma(_) => Some(()),
+            _ => None,
+        })
+        .count();
+    if lemmata > 1 {
+        // More than one lemma in conjunction is impossible.
+        return true;
+    }
+
+    let inflections = atoms
+        .into_iter()
+        .filter_map(|atom| match atom {
+            TokenConstraintAtom::Inflection(infl) => Some(*infl),
+            _ => None,
+        })
+        .collect::<Vec<_>>();
+    is_conjunction_impossible(&inflections)
+}
+
+pub(super) fn prune_query(query: Query) -> Result<Query, String> {
+    for term in &query.terms {
+        if is_constraint_impossible(&term.constraint) {
+            return Err("Query contains impossible constraints".to_string());
+        }
+    }
+    Ok(query)
 }
 
 #[cfg(test)]

@@ -16,6 +16,7 @@ use crate::corpus_query_engine::corpus_data_readers::{
 };
 use crate::corpus_query_engine::corpus_result_resolution::get_match_page;
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
+use crate::corpus_query_engine::query_pruning::prune_query;
 use crate::corpus_query_engine::query_validation::is_query_currently_supported;
 use crate::query_parsing_v2::{Query, parse_query};
 
@@ -113,6 +114,11 @@ impl CorpusQueryEngine {
                 "The given query contains constructs that are not yet supported",
             ));
         }
+        let query = match prune_query(query) {
+            Ok(q) => q,
+            // TODO: Pipe the error to the user.
+            Err(_) => return Ok(empty_result()),
+        };
         let terms = query
             .terms
             .iter()

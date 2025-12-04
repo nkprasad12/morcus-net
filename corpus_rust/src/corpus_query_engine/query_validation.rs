@@ -37,8 +37,27 @@ pub(super) fn atoms_in(term: &TokenConstraint) -> Vec<&TokenConstraintAtom> {
     }
 }
 
+fn max_level_of_contstraint(term: &TokenConstraint) -> usize {
+    match term {
+        TokenConstraint::Atom(_) => 1,
+        TokenConstraint::Negated(child) => max_level_of_contstraint(child),
+        TokenConstraint::Composed { children, .. } => {
+            children
+                .iter()
+                .map(max_level_of_contstraint)
+                .max()
+                .unwrap_or(1)
+                + 1
+        }
+    }
+}
+
 fn is_term_currently_supported(term: &TokenConstraint) -> bool {
     if has_negations(term) {
+        return false;
+    }
+    // Currently, we only support atoms or an AND or OR of atoms.
+    if max_level_of_contstraint(term) > 2 {
         return false;
     }
     let ops = operators_in(term);
