@@ -2,12 +2,25 @@ import { useRef, useState, useEffect, JSX, useCallback } from "react";
 
 import Popper from "@mui/base/PopperUnstyled";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
+import {
+  isNumber,
+  isPair,
+  isString,
+  maybeUndefined,
+  type Validator,
+} from "@/web/utils/rpc/parsing";
 
 const CLEAR_QUERY = "Clear query";
 
 function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
+
+type ChainedPair = [newInput: string, cursorPosition?: number];
+const isChainedPair: Validator<ChainedPair> = isPair(
+  isString,
+  maybeUndefined(isNumber)
+);
 
 interface AutoCompleteSearchProps<T> {
   /** A provider for the autocomplete options for a particular input state. */
@@ -151,26 +164,26 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
     setInteractingWithPopup(false);
     setCursor(-1);
     const result = props.onOptionSelected(t, input);
-    if (typeof result === "string") {
-      // If the result is a string, we interpret this as a request for the result to be able
-      // to chain, and return focus to the input.
-      onInputInternal(result);
-      setFocused(true);
-      const currentRef = inputRef.current;
-      if (currentRef !== null) {
-        currentRef.focus();
-        setTimeout(() => {
-          // This sets the scroll position in the input box all
-          // the way to the left, so that the user can actually see
-          // what they are typing.
-          // We wait just a moment so that the browser can apply rendering
-          // for the focus first.
-          currentRef.scrollLeft = currentRef.scrollWidth;
-        }, 6);
-      }
-    } else {
+    if (!isChainedPair(result)) {
       setFocused(false);
       inputRef.current?.blur();
+      return;
+    }
+    // If the result is a chainedPair, we interpret this as a request for the result to be able
+    // to chain, and return focus to the input.
+    onInputInternal(result[0]);
+    setFocused(true);
+    const currentRef = inputRef.current;
+    if (currentRef !== null) {
+      currentRef.focus();
+      setTimeout(() => {
+        // This sets the cursor position in the input box all
+        // the way to the end.
+        // We wait just a moment so that the browser can apply rendering
+        // for the focus first.
+        const i = result[1] ?? currentRef.value.length;
+        currentRef.setSelectionRange(i, i);
+      }, 6);
     }
   }
 

@@ -181,7 +181,8 @@ export function CorpusQueryPage() {
   const showResults = results !== "N/A" && query.length > 0;
 
   const optionsForInputMemo = useCallback(
-    (input: string) => optionsForInput(input, authors, lemmata),
+    (input: string, position?: number) =>
+      optionsForInput(input, authors, lemmata, position),
     [authors, lemmata]
   );
 
@@ -195,9 +196,10 @@ export function CorpusQueryPage() {
         ariaLabel={SEARCH_PLACEHOLDER}
         // Make sure we don't copy over the page tokens for the old query.
         onRawEnter={() => setNewQuery(nav, requestQuery)}
-        onOptionSelected={(o, current) =>
-          o.replacement ?? `${current}${o.option}`
-        }
+        onOptionSelected={(o, current) => {
+          const newInput = o.replacement ?? `${current}${o.option}`;
+          return [newInput, o.cursor ?? newInput.length];
+        }}
         RenderOption={CorpusAutocompleteItem}
         optionsForInput={optionsForInputMemo}
         toKey={toKey}

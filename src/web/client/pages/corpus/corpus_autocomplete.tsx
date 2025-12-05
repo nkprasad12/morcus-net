@@ -7,6 +7,7 @@ export interface CorpusAutocompleteOption {
   help?: string;
   prefix?: string;
   replacement?: string;
+  cursor?: number;
 }
 
 const CASES = new Map([
@@ -305,7 +306,8 @@ function findLemmaCompletions(value: string, lemmata: string[]): string[] {
 export function optionsForInput(
   inputRaw: string,
   authors?: SuggestionsList,
-  lemmata?: SuggestionsList
+  lemmata?: SuggestionsList,
+  position?: number
 ): CorpusAutocompleteOption[] {
   const isNewToken = inputRaw.endsWith(" ") || inputRaw.length === 0;
   const tokens = inputRaw.split(" ").filter((t) => t.length > 0);
