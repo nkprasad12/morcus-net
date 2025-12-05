@@ -149,7 +149,9 @@ describe("DictionarySearch", () => {
     expect(mockCallback).not.toHaveBeenCalled();
 
     await user.hover(screen.getByText("ack"));
-    await user.type(search, "{enter}");
+    // The search box can refresh options on click depending on position,
+    // so we skip the click event here.
+    await user.type(search, "{enter}", { skipClick: true });
 
     expect(mockCallback).toHaveBeenCalledWith("ack", {
       lang: LatinDict.SmithAndHall.languages.from,
