@@ -11,7 +11,7 @@ import { SiteSettings } from "@/web/client/pages/site_settings";
 import { Macronizer } from "@/web/client/pages/macron";
 import { CorpusQueryPage } from "@/web/client/pages/corpus/corpus_view";
 
-// To use lazy loading, you can use the following code:
+// // To use lazy loading, you can use the following code:
 // import { Suspense, lazy } from "react";
 // const LazyLoadedMacronizer = lazy(() =>
 //   import("@/web/client/pages/macron").then((module) => ({
@@ -22,6 +22,18 @@ import { CorpusQueryPage } from "@/web/client/pages/corpus/corpus_view";
 //   return (
 //     <Suspense fallback={<div>loading...</div>}>
 //       <LazyLoadedMacronizer />
+//     </Suspense>
+//   );
+// }
+// const LazyLoadedCorpus = lazy(() =>
+//   import("@/web/client/pages/corpus/corpus_view").then((module) => ({
+//     default: module.CorpusQueryPage,
+//   }))
+// );
+// function CorpusQueryPage() {
+//   return (
+//     <Suspense fallback={<div>loading...</div>}>
+//       <LazyLoadedCorpus />
 //     </Suspense>
 //   );
 // }
