@@ -11,7 +11,7 @@ function mod(n: number, m: number): number {
 
 interface AutoCompleteSearchProps<T> {
   /** A provider for the autocomplete options for a particular input state. */
-  optionsForInput: (input: string) => T[] | Promise<T[]>;
+  optionsForInput: (input: string, position?: number) => T[] | Promise<T[]>;
   /**
    * Called when an option is selected.
    *
@@ -84,15 +84,14 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
     element.scrollIntoView({ behavior: "instant", block: "nearest" });
   }, [cursor, toKey, options]);
 
-  const onInputInternal = useCallback(
-    async (value: string) => {
-      onInput?.(value);
-      setInput(value);
-      if (optionsForInput === undefined) {
+  const refreshOptions = useCallback(
+    async (value: string | undefined) => {
+      if (optionsForInput === undefined || value === undefined) {
         return;
       }
       setLoading(true);
-      const fetchedOptions = await optionsForInput(value);
+      const position = inputRef.current?.selectionStart ?? undefined;
+      const fetchedOptions = await optionsForInput(value, position);
       if (inputRef.current?.value !== value) {
         // We don't want to set the options if the input has changed
         // since we started fetching.
@@ -102,7 +101,16 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
       setCursor(-1);
       setLoading(false);
     },
-    [onInput, optionsForInput]
+    [optionsForInput]
+  );
+
+  const onInputInternal = useCallback(
+    async (value: string) => {
+      onInput?.(value);
+      setInput(value);
+      await refreshOptions(value);
+    },
+    [onInput, refreshOptions]
   );
 
   useEffect(() => {
@@ -231,7 +239,12 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             aria-label={props.ariaLabel}
             value={input}
             onChange={async (e) => onInputInternal(e.currentTarget.value)}
+            onClick={() => refreshOptions(inputRef.current?.value)}
             onKeyUp={(event) => {
+              if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                refreshOptions(inputRef.current?.value);
+                return;
+              }
               if (event.key !== "Enter") {
                 return;
               }
