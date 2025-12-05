@@ -62,7 +62,6 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   const pageSize = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
   const request: CorpusQueryRequest = {
     query: checkPresent(process.argv[2]),
-    pageStart: 0,
     pageSize,
   };
   const startTime = performance.now();
@@ -74,8 +73,9 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   results.matches.forEach((result) => {
     console.log(formatQueryResult(result));
   });
+  const elapsedMs = elapsedTime.toFixed(3);
   console.log(
-    `Found ${results.totalResults} results in ${elapsedTime.toFixed(3)} ms`
+    `Found about ${results.resultStats.estimatedResults} results in ${elapsedMs} ms`
   );
   if ("timing" in results) {
     // @ts-expect-error

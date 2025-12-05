@@ -43,8 +43,8 @@ pub(super) fn split_into_spans<'a>(
 }
 
 fn combine_span_candidates<'a>(
-    previous: &'a SpanResult<'a>,
-    current: &SpanResult<'a>,
+    previous: &SpanResult<'a>,
+    current: &'a SpanResult<'a>,
 ) -> Result<SpanResult<'a>, QueryExecError> {
     let (distance, is_directed) = match previous.relation {
         QueryRelation::Proximity {
@@ -148,7 +148,7 @@ impl CorpusQueryEngine {
         }
         let mut previous = combine_span_candidates(&spans[n - 1], &spans[n - 2])?;
         for current in spans.iter().rev().skip(2) {
-            previous = combine_span_candidates(current, &previous)?;
+            previous = combine_span_candidates(&previous, current)?;
         }
         Ok(previous.candidates)
     }
@@ -225,7 +225,7 @@ impl CorpusQueryEngine {
         range: &'a IndexRange,
     ) -> Result<&'a [u64], QueryExecError> {
         let index = self
-            .get_index("breaks", "hard", range)
+            .get_str_keyed_index("breaks", "hard", range)
             .ok_or(QueryExecError::new("No hard breaks index found"))?;
         let bitmask = match index.data {
             IndexDataRoO::Ref(IndexData::BitMask(bm)) => Ok(bm),
@@ -236,10 +236,12 @@ impl CorpusQueryEngine {
 
     pub(super) fn get_metadata_for(&self, part: &TokenConstraintAtom) -> Option<&StoredMapValue> {
         match part {
-            TokenConstraintAtom::Word(word) => self.get_metadata("word", &word.to_lowercase()),
-            TokenConstraintAtom::Lemma(lemma) => self.get_metadata("lemma", lemma),
+            TokenConstraintAtom::Word(word) => {
+                self.get_str_keyed_metadata("word", &word.to_lowercase())
+            }
+            TokenConstraintAtom::Lemma(lemma) => self.get_str_keyed_metadata("lemma", lemma),
             &TokenConstraintAtom::Inflection(inflection) => {
-                self.get_metadata(inflection.get_label(), &inflection.get_code())
+                self.get_metadata(inflection.get_label(), inflection.get_code())
             }
         }
     }
@@ -264,17 +266,22 @@ impl CorpusQueryEngine {
         IndexSlice::from(&full, range, 0).ok()
     }
 
-    fn get_metadata(&self, key: &str, value: &str) -> Option<&StoredMapValue> {
+    fn get_str_keyed_metadata(&self, key: &str, value: &str) -> Option<&StoredMapValue> {
+        let id = self.corpus.id_table.get(key)?.get(value)?;
+        self.get_metadata(key, *id as usize)
+    }
+
+    fn get_metadata(&self, key: &str, value: usize) -> Option<&StoredMapValue> {
         self.corpus.indices.get(key)?.get(value)
     }
 
-    fn get_index<'a>(
+    fn get_str_keyed_index<'a>(
         &'a self,
         key: &'a str,
         value: &'a str,
         range: &'a IndexRange,
     ) -> Option<IndexSlice<'a>> {
-        self.index_for_metadata(self.get_metadata(key, value)?, range)
+        self.index_for_metadata(self.get_str_keyed_metadata(key, value)?, range)
     }
 }
 

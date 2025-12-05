@@ -2,6 +2,13 @@ import { useRef, useState, useEffect, JSX, useCallback } from "react";
 
 import Popper from "@mui/base/PopperUnstyled";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
+import {
+  isNumber,
+  isPair,
+  isString,
+  maybeUndefined,
+  type Validator,
+} from "@/web/utils/rpc/parsing";
 
 const CLEAR_QUERY = "Clear query";
 
@@ -9,9 +16,15 @@ function mod(n: number, m: number): number {
   return ((n % m) + m) % m;
 }
 
+type ChainedPair = [newInput: string, cursorPosition?: number];
+const isChainedPair: Validator<ChainedPair> = isPair(
+  isString,
+  maybeUndefined(isNumber)
+);
+
 interface AutoCompleteSearchProps<T> {
   /** A provider for the autocomplete options for a particular input state. */
-  optionsForInput: (input: string) => T[] | Promise<T[]>;
+  optionsForInput: (input: string, position?: number) => T[] | Promise<T[]>;
   /**
    * Called when an option is selected.
    *
@@ -22,8 +35,8 @@ interface AutoCompleteSearchProps<T> {
   RenderOption: (props: { option: T; current: string }) => JSX.Element;
   /** A converter function to a key. It must be unique for each option. */
   toKey: (t: T) => string;
-  /** Whether to check for autocomplete options on the initial view. */
-  showOptionsInitially?: true;
+  /** Whether to check for autocomplete options on empty input. */
+  hasOptionsForEmptyInput?: true;
 }
 
 interface BaseSearchBoxProps {
@@ -35,6 +48,7 @@ interface BaseSearchBoxProps {
   ariaLabel?: string;
   onInput?: (input: string) => unknown;
   style?: React.CSSProperties;
+  saveSpace?: boolean;
 }
 
 type SearchBoxProps<T> = BaseSearchBoxProps & AutoCompleteSearchProps<T>;
@@ -60,13 +74,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   const inputRef = useRef<HTMLInputElement>(null);
 
   const [focused, setFocused] = useState(props.autoFocused === true);
-  const [mouseOnPopup, setMouseOnPopup] = useState(false);
+  const [interactingWithPopup, setInteractingWithPopup] = useState(false);
   const [cursor, setCursor] = useState(-1);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
   const [options, setOptions] = useState<T[]>([]);
 
   const { toKey, optionsForInput, onInput } = props;
+
+  const textSize = props.saveSpace ? "sm" : "md";
 
   useEffect(() => {
     if (cursor < 0 || options.length === 0) {
@@ -81,15 +97,14 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
     element.scrollIntoView({ behavior: "instant", block: "nearest" });
   }, [cursor, toKey, options]);
 
-  const onInputInternal = useCallback(
-    async (value: string) => {
-      onInput?.(value);
-      setInput(value);
-      if (optionsForInput === undefined) {
+  const refreshOptions = useCallback(
+    async (value: string | undefined) => {
+      if (optionsForInput === undefined || value === undefined) {
         return;
       }
       setLoading(true);
-      const fetchedOptions = await optionsForInput(value);
+      const position = inputRef.current?.selectionStart ?? undefined;
+      const fetchedOptions = await optionsForInput(value, position);
       if (inputRef.current?.value !== value) {
         // We don't want to set the options if the input has changed
         // since we started fetching.
@@ -99,21 +114,29 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
       setCursor(-1);
       setLoading(false);
     },
-    [onInput, optionsForInput]
+    [optionsForInput]
+  );
+
+  const onInputInternal = useCallback(
+    async (value: string) => {
+      onInput?.(value);
+      setInput(value);
+      await refreshOptions(value);
+    },
+    [onInput, refreshOptions]
   );
 
   useEffect(() => {
     if (
-      props.showOptionsInitially !== true ||
+      props.hasOptionsForEmptyInput !== true ||
       optionsForInput === undefined ||
       input.trim() !== ""
     ) {
       return;
     }
     onInputInternal("");
-  }, [props.showOptionsInitially, optionsForInput, onInputInternal, input]);
+  }, [props.hasOptionsForEmptyInput, optionsForInput, onInputInternal, input]);
 
-  const interactingWithPopup = mouseOnPopup;
   const popperOpen =
     containerRef.current !== null &&
     (focused || interactingWithPopup) &&
@@ -138,17 +161,29 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   }
 
   async function onOptionChosen(t: T) {
-    setMouseOnPopup(false);
+    setInteractingWithPopup(false);
     setCursor(-1);
-    setFocused(false);
     const result = props.onOptionSelected(t, input);
-    if (typeof result === "string") {
-      // If the result is a string, we interpret this as a request for the result to be able
-      // to chain, and return focus to the input.
-      onInputInternal(result);
-      setFocused(true);
-    } else {
+    if (!isChainedPair(result)) {
+      setFocused(false);
       inputRef.current?.blur();
+      return;
+    }
+    // If the result is a chainedPair, we interpret this as a request for the result to be able
+    // to chain, and return focus to the input.
+    onInputInternal(result[0]);
+    setFocused(true);
+    const currentRef = inputRef.current;
+    if (currentRef !== null) {
+      currentRef.focus();
+      setTimeout(() => {
+        // This sets the cursor position in the input box all
+        // the way to the end.
+        // We wait just a moment so that the browser can apply rendering
+        // for the focus first.
+        const i = result[1] ?? currentRef.value.length;
+        currentRef.setSelectionRange(i, i);
+      }, 6);
     }
   }
 
@@ -172,8 +207,8 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 width: containerRef.current?.offsetWidth,
                 maxHeight: window.innerHeight * 0.4,
               }}
-              onMouseOver={() => setMouseOnPopup(true)}
-              onMouseOut={() => setMouseOnPopup(false)}>
+              onMouseOver={() => setInteractingWithPopup(true)}
+              onMouseOut={() => setInteractingWithPopup(false)}>
               {loading && options.length === 0 && (
                 <div className="customSearchPopupOption">Loading options</div>
               )}
@@ -187,29 +222,42 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                     key={props.toKey(t)}
                     id={props.toKey(t)}
                     onClick={() => onOptionChosen(t)}
-                    onTouchStart={() => setCursor(i)}
+                    onTouchStart={(e) => {
+                      try {
+                        // @ts-expect-error
+                        e.passive = true;
+                      } catch {}
+                      setCursor(i);
+                    }}
                     onMouseOver={() => setCursor(i)}>
                     <props.RenderOption option={t} current={input} />
                   </div>
                 ))}
             </div>
           </Popper>
-          <SvgIcon
-            pathD={SvgIcon.Search}
-            className="menuIconFaded"
-            style={{ marginLeft: "11.2px" }}
-          />
+          {!props.saveSpace && (
+            <SvgIcon
+              pathD={SvgIcon.Search}
+              className="menuIconFaded"
+              style={{ marginLeft: "11.2px" }}
+            />
+          )}
           <input
             ref={inputRef}
             type="text"
-            className="customSearchBox text md"
+            className={`customSearchBox text ${textSize}`}
             spellcheck={false}
             autoCapitalize="none"
             autoComplete="off"
             aria-label={props.ariaLabel}
             value={input}
             onChange={async (e) => onInputInternal(e.currentTarget.value)}
+            onClick={() => refreshOptions(inputRef.current?.value)}
             onKeyUp={(event) => {
+              if (event.key === "ArrowLeft" || event.key === "ArrowRight") {
+                refreshOptions(inputRef.current?.value);
+                return;
+              }
               if (event.key !== "Enter") {
                 return;
               }
@@ -219,7 +267,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 props.onRawEnter?.(input);
                 setFocused(false);
                 setCursor(-1);
-                setMouseOnPopup(false);
+                setInteractingWithPopup(false);
                 inputRef.current?.blur();
                 return;
               }
@@ -240,17 +288,15 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
                 setCursor(-1);
                 return;
               }
-              setTimeout(() => {
-                setFocused(false);
-                setCursor(-1);
-              }, 16);
+              setFocused(false);
+              setCursor(-1);
             }}
             placeholder={props.placeholderText}
             role="combobox"
           />
           <IconButton
             aria-label={CLEAR_QUERY}
-            style={{ marginRight: "4px" }}
+            style={{ marginRight: props.saveSpace ? "0px" : "4px" }}
             onClick={() => {
               inputRef.current?.focus();
               onInputInternal("");
@@ -266,7 +312,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             <IconButton
               aria-label="search settings"
               aria-haspopup="true"
-              style={{ marginRight: "5.2px" }}
+              style={{ marginRight: props.saveSpace ? "1px" : "5.2px" }}
               onClick={props.onOpenSettings}>
               <SvgIcon
                 pathD={SvgIcon.Settings}

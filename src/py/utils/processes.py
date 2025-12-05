@@ -140,7 +140,7 @@ def find_starts(tokens: "list[str]", text: str) -> "list[int]":
 
 def cltk_pos_to_alatius(
     cltk_pos_bundle: "dict[str, list[str]]", cltk_pos_type: str
-) -> str:
+) -> str:  # pragma: no cover
     cltk_pos = {}
     for category, values in cltk_pos_bundle.items():
         cltk_pos[str(category)] = [str(value) for value in values]

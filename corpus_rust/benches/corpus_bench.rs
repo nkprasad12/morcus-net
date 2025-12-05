@@ -99,18 +99,23 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         std::env::set_current_dir("..").unwrap();
         let mut query_benches = c.benchmark_group("Query Execution");
         let corpus = create_query_engine();
+        let page_data = corpus::api::PageData {
+            result_index: 0,
+            result_id: 0,
+            candidate_index: 0,
+        };
         let dedit_oscula_nato = "@lemma:do oscula @case:dat";
         let bitmask_query = "@case:nom @case:dat @case:acc";
         let page_size = 100;
         query_benches.bench_function("dedit oscula nato", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(dedit_oscula_nato, 0, page_size, 25);
+                let _ = corpus.query_corpus(dedit_oscula_nato, &page_data, page_size, 25);
             })
         });
 
         query_benches.bench_function("bitmask query", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(bitmask_query, 0, page_size, 25);
+                let _ = corpus.query_corpus(bitmask_query, &page_data, page_size, 25);
             })
         });
     }
