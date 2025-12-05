@@ -387,7 +387,7 @@ function QueryHelpSection() {
           <ul>
             <li>
               <code>{`<word>`}</code> - A specific word to match; for example,{" "}
-              <code>amoris</code>.
+              <code>amoris</code>. This is not case sensitive.
             </li>
             <li>
               <code>@lemma:{`<lemma>`}</code> - The lemma form of a word, which
@@ -419,11 +419,46 @@ function QueryHelpSection() {
                   <code>@case:genitive</code>.
                 </li>
                 <li>
-                  {" "}
-                  The available categories are: <code>@case</code>,{" "}
-                  <code>@tense</code>, <code>@voice</code>, <code>@person</code>
-                  , <code>@number</code>, <code>@gender</code>, and{" "}
-                  <code>@mood</code>.
+                  All of the usual morphological categories are supported, with
+                  the exception of <code>@degree</code>. Please note that
+                  special verbal forms are grouped into <code>@mood</code>. The
+                  options for each category are:
+                  <ul>
+                    <li>
+                      <code>@mood</code> - <code>indicative</code>,{" "}
+                      <code>subjunctive</code>, <code>imperative</code>,{" "}
+                      <code>infinitive</code>, <code>participle</code>,{" "}
+                      <code>gerundive</code>, <code>supine</code>.
+                    </li>
+                    <li>
+                      <code>@tense</code> - <code>present</code>,{" "}
+                      <code>imperfect</code>, <code>future</code>,{" "}
+                      <code>perfect</code>, <code>pluperfect</code>,{" "}
+                      <code>future-perfect</code>.
+                    </li>
+                    <li>
+                      <code>@voice</code> - <code>active</code>,{" "}
+                      <code>passive</code>.
+                    </li>
+                    <li>
+                      <code>@person</code> - <code>1st</code>, <code>2nd</code>,{" "}
+                      <code>3rd</code>.
+                    </li>
+                    <li>
+                      <code>@number</code> - <code>singular</code>,{" "}
+                      <code>plural</code>.
+                    </li>
+                    <li>
+                      <code>@gender</code> - <code>masculine</code>,{" "}
+                      <code>feminine</code>, <code>neuter</code>.
+                    </li>
+                    <li>
+                      <code>@case</code> - <code>nominative</code>,{" "}
+                      <code>genitive</code>, <code>dative</code>,{" "}
+                      <code>accusative</code>, <code>ablative</code>,{" "}
+                      <code>vocative</code> (all usual cases except locative).
+                    </li>
+                  </ul>
                 </li>
                 <li>
                   You can use the first letter of a category as a shorthand; for
@@ -479,6 +514,7 @@ function QueryHelpSection() {
               <code>#author</code> - Restricts the search to the specified
               author. For example, <code>#Caesar amoris</code> will find
               instances of <code>amoris</code> but only in works by Caesar.
+              Currently you may only specify one author.
             </li>
           </ul>
         </details>
@@ -530,7 +566,7 @@ function QueryHelpSection() {
               </tr>
               <tr>
                 <td>
-                  <code>[Caesar] @lemma:bellum</code>
+                  <code>#Caesar @lemma:bellum</code>
                 </td>
                 <td>
                   Any inflection of <code>bellum</code> in works by Caesar.
