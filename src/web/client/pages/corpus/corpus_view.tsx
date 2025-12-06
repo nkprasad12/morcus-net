@@ -245,11 +245,12 @@ function Disclaimer(props: { query: string }) {
       {hasInflectionFilters && (
         <li>
           <i>
-            Your query includes lemma or inflection filters; these operates at
+            Your query includes lemma or inflection filters; these operate at
             the word level and may include false positives.
           </i>{" "}
           For example, <code>corpus</code> would always match both the
-          nominative and accusative filters, regardless of context.
+          nominative and accusative filters, regardless of what it was in that
+          particular sentence.
         </li>
       )}
     </details>
