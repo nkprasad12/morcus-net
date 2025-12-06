@@ -1,4 +1,4 @@
-import { tokenizeInput } from "@/web/client/pages/corpus/input_tokenizer";
+import { tokenizeInput } from "@/web/client/pages/corpus/autocomplete/input_tokenizer";
 
 describe("tokenizeInput", () => {
   it("tokenizes the example from the docstring", () => {
