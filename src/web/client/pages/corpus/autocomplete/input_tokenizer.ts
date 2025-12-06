@@ -1,8 +1,9 @@
-export type QueryToken = [
-  tokenOrSpace: string,
-  start: number,
-  isSpace: boolean
-];
+import {
+  categorizeToken,
+  type CorpusTokenType,
+} from "@/web/client/pages/corpus/autocomplete/token_types";
+
+export type QueryToken = [tokenOrSpace: string, start: number, CorpusTokenType];
 
 /**
  * Tokenizes the input string into query tokens along with their start positions and statuses.
@@ -37,7 +38,7 @@ export function tokenizeInput(input: string): QueryToken[] {
 
   const flushCurrentToken = () => {
     if (currentToken.length > 0) {
-      tokens.push([currentToken, tokenStart, isCurrentTokenSpace]);
+      tokens.push([currentToken, tokenStart, categorizeToken(currentToken)]);
       currentToken = "";
     }
   };
@@ -51,7 +52,7 @@ export function tokenizeInput(input: string): QueryToken[] {
       // Flush any accumulated token
       flushCurrentToken();
       // Add parenthesis as its own token (not a space)
-      tokens.push([c, i, false]);
+      tokens.push([c, i, c]);
       tokenStart = i + 1;
       continue;
     }
