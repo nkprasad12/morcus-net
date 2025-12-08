@@ -3,7 +3,8 @@ export type CorpusTokenType =
   | "("
   | ")"
   | "wordFilter"
-  | "logicalOperator"
+  | "logic:and"
+  | "logic:or"
   | "workFilter"
   | "proximity";
 
@@ -13,7 +14,7 @@ export function categorizeToken(token: string): CorpusTokenType {
   } else if (token === ")") {
     return ")";
   } else if (token === "and" || token === "or") {
-    return "logicalOperator";
+    return `logic:${token}`;
   } else if (token.trim() === "") {
     return "space";
   } else if (token.startsWith("@")) {
