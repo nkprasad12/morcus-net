@@ -10,11 +10,11 @@ describe("categorizeToken", () => {
   });
 
   it("categorizes 'and' as logical operator", () => {
-    expect(categorizeToken("and")).toBe("logicalOperator");
+    expect(categorizeToken("and")).toBe("logic:and");
   });
 
   it("categorizes 'or' as logical operator", () => {
-    expect(categorizeToken("or")).toBe("logicalOperator");
+    expect(categorizeToken("or")).toBe("logic:or");
   });
 
   it("categorizes empty string as space", () => {

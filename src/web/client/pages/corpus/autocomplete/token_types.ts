@@ -8,6 +8,8 @@ export type CorpusTokenType =
   | "workFilter"
   | "proximity";
 
+export type NonSpaceToken = Exclude<CorpusTokenType, "space">;
+
 export function categorizeToken(token: string): CorpusTokenType {
   if (token === "(") {
     return "(";

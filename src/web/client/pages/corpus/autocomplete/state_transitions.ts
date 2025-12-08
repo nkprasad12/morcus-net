@@ -1,6 +1,6 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
 import type { QueryToken } from "@/web/client/pages/corpus/autocomplete/input_tokenizer";
-import type { CorpusTokenType } from "@/web/client/pages/corpus/autocomplete/token_types";
+import type { NonSpaceToken } from "@/web/client/pages/corpus/autocomplete/token_types";
 
 type QueryProcessState =
   | "ComplexTerm"
@@ -17,7 +17,7 @@ function isLogicalOp(input: string): input is "and" | "or" {
 
 export function findNextOptions(
   sequence: QueryToken[]
-): CorpusTokenType[] | string {
+): NonSpaceToken[] | string {
   let state: State = ["SpanStartOrWorkFilter", 0];
   let logicalOp: "and" | "or" | null = null;
   for (let i = 0; i < sequence.length; i++) {
@@ -61,10 +61,10 @@ export function findNextOptions(
 function optionsForState(
   state: State,
   logicalOp: "and" | "or" | null
-): [CorpusTokenType, QueryProcessState][] {
+): [NonSpaceToken, QueryProcessState][] {
   const [processState, parenDepth] = state;
   // A list of [nextToken, nextState (if that token is chosen)]
-  const options: [CorpusTokenType, QueryProcessState][] = [];
+  const options: [NonSpaceToken, QueryProcessState][] = [];
   switch (processState) {
     case "InSpan": {
       // We are in a span, but we have a single-part last term.

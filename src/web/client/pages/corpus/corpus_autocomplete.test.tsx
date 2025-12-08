@@ -14,7 +14,7 @@ describe("optionsForInput", () => {
     const opts = optionsForInput("", undefined);
     const optStrings = opts.map((o) => o.option);
     const helps = opts.map((o) => o.help);
-    expect(optStrings).toContain("");
+    expect(optStrings).toContain("<word>");
     expect(optStrings).toContain("@");
     expect(helps.some((h) => typeof h === "string" && h.includes("word"))).toBe(
       true
@@ -167,9 +167,9 @@ describe("optionsForInput", () => {
   });
 
   test("completed proximity token allows new token suggestions", () => {
-    const opts = optionsForInput("~5> ", undefined);
+    const opts = optionsForInput("habeo ~5> ", undefined);
     const optStrings = opts.map((o) => o.option);
-    expect(optStrings).toContain("");
+    expect(optStrings).toContain("<word>");
     expect(optStrings).toContain("@");
   });
 

@@ -1,5 +1,11 @@
 import { assert } from "@/common/assert";
-import { safeParseInt } from "@/common/misc_utils";
+import { exhaustiveGuard, safeParseInt } from "@/common/misc_utils";
+import {
+  tokenizeInput,
+  type QueryToken,
+} from "@/web/client/pages/corpus/autocomplete/input_tokenizer";
+import { findNextOptions } from "@/web/client/pages/corpus/autocomplete/state_transitions";
+import type { NonSpaceToken } from "@/web/client/pages/corpus/autocomplete/token_types";
 import type { SuggestionsList } from "@/web/client/pages/corpus/corpus_view";
 
 export interface CorpusAutocompleteOption {
@@ -8,6 +14,7 @@ export interface CorpusAutocompleteOption {
   prefix?: string;
   replacement?: string;
   cursor?: number;
+  optionIsPlaceholder?: boolean;
 }
 
 const CASES = new Map([
@@ -87,6 +94,17 @@ function informational(help: string): CorpusAutocompleteOption {
   };
 }
 
+function informationalWithPlaceholder(
+  help: string,
+  placeholder: string
+): CorpusAutocompleteOption {
+  return {
+    option: `<${placeholder}>`,
+    help,
+    optionIsPlaceholder: true,
+  };
+}
+
 const TILDE_HELP: CorpusAutocompleteOption[] = [
   informational("within 5 words of"),
   { option: "> ", prefix: "~", help: "within 5 words before" },
@@ -95,17 +113,20 @@ const TILDE_HELP: CorpusAutocompleteOption[] = [
   { option: "15 ", prefix: "~", help: "within 15 words of" },
 ];
 
-const WORD_HELP = informational("<word> match exact word");
+const WORD_HELP = informationalWithPlaceholder("match exact word", "word");
 const SPECIAL_HELP: CorpusAutocompleteOption = {
   option: "@",
   help: "match lemma or inflection",
 };
-const NEXT_WORD_HELP = informational("<word> followed by exact word");
+const NEXT_WORD_HELP = informationalWithPlaceholder(
+  "followed by exact word",
+  "word"
+);
 const NEXT_SPECIAL_HELP: CorpusAutocompleteOption = {
   option: "@",
   help: "followed by lemma or inflection",
 };
-const NEXT_PROXIMITY_HELP: CorpusAutocompleteOption = {
+const PROXIMITY_HELP: CorpusAutocompleteOption = {
   option: "~",
   help: "around",
 };
@@ -136,6 +157,14 @@ function missingValue(token: string): CorpusAutocompleteOption {
   return informational(`❌ ${token} - @keyword without \`:value\``);
 }
 
+function conjunctionHelp(last?: string): CorpusAutocompleteOption {
+  return { option: " and ", prefix: last, help: "(restrict further)" };
+}
+
+function disjunctionHelp(last?: string): CorpusAutocompleteOption {
+  return { option: " or ", prefix: last, help: "(relax restriction)" };
+}
+
 function logicOpCompletions(
   previousToken: string | undefined
 ): CorpusAutocompleteOption[] {
@@ -149,10 +178,7 @@ function logicOpCompletions(
   ) {
     return [];
   }
-  return [
-    { option: " and ", prefix: last, help: "(restrict further)" },
-    { option: " or ", prefix: last, help: "(relax restriction)" },
-  ];
+  return [conjunctionHelp(last), disjunctionHelp(last)];
 }
 
 function resolveKeyword(keyword: string): string | undefined {
@@ -217,7 +243,7 @@ function errorsForToken(
     }
   }
 
-  if (token.startsWith("~")) {
+  if (token.includes("~")) {
     const [messages, isError] = parseProximityToken(token);
     return isError ? messages : [];
   }
@@ -225,15 +251,13 @@ function errorsForToken(
   return [];
 }
 
-function errorsForQuery(query: string[], authors: SuggestionsList) {
-  // TODO: Also verify that if we have any #author tokens, they are at the start,
-  // and that (for now) we only have one.
-  return query.flatMap((t) => errorsForToken(t, authors));
-}
-
 function parseProximityToken(
   token: string
 ): [options: CorpusAutocompleteOption[], isError: boolean] {
+  const tildeIndex = token.indexOf("~");
+  if (tildeIndex !== 0) {
+    return [[informational("❌ proximity must start with `~`")], true];
+  }
   const afterTilde = token.slice(1);
   if (afterTilde.length === 0) {
     return [TILDE_HELP, false];
@@ -303,35 +327,88 @@ function findLemmaCompletions(value: string, lemmata: string[]): string[] {
   return results;
 }
 
+function wouldStartNewToken(tokens: QueryToken[]): boolean {
+  if (tokens.length === 0) {
+    return true;
+  }
+  const lastType = tokens[tokens.length - 1][2];
+  return lastType === "space" || lastType === ")" || lastType === "(";
+}
+
+function lastNonSpaceToken(query: QueryToken[]): QueryToken | null {
+  for (let i = query.length - 1; i >= 0; i--) {
+    if (query[i][2] !== "space") {
+      return query[i];
+    }
+  }
+  return null;
+}
+
+function newTokenHelp(
+  options: NonSpaceToken[],
+  query: QueryToken[]
+): CorpusAutocompleteOption[] {
+  const lastNonSpaceType = lastNonSpaceToken(query)?.[2];
+  const inMiddleOfSpan =
+    lastNonSpaceType === ")" || lastNonSpaceType === "wordFilter";
+  const results: CorpusAutocompleteOption[] = [];
+  for (const option of options) {
+    switch (option) {
+      case "wordFilter":
+        results.push(
+          inMiddleOfSpan ? NEXT_WORD_HELP : WORD_HELP,
+          inMiddleOfSpan ? NEXT_SPECIAL_HELP : SPECIAL_HELP
+        );
+        break;
+      case "proximity":
+        results.push(PROXIMITY_HELP);
+        break;
+      case "logic:or":
+        results.push(disjunctionHelp());
+        break;
+      case "logic:and":
+        results.push(conjunctionHelp());
+        break;
+      case "workFilter":
+        results.push(AUTHOR_HELP);
+        break;
+      case "(":
+        // We'll automatically insert parentheses, so don't suggest anything for this
+        // option.
+        break;
+      case ")":
+        results.push(informational("close this filter"));
+        break;
+      default:
+        exhaustiveGuard(option);
+    }
+  }
+  return results;
+}
+
 export function optionsForInput(
   inputRaw: string,
   authors?: SuggestionsList,
   lemmata?: SuggestionsList,
   position?: number
 ): CorpusAutocompleteOption[] {
-  const isNewToken = inputRaw.endsWith(" ") || inputRaw.length === 0;
-  const tokens = inputRaw.split(" ").filter((t) => t.length > 0);
+  const allTokens = tokenizeInput(inputRaw);
+  const tokens = allTokens.map((t) => t[0]).filter((t) => t.trim() !== "");
 
-  if (isNewToken) {
-    if (tokens.length === 0) {
-      // The backend only handles one author right now, so
-      // `AUTHOR_HELP` is only included when we have no tokens.
-      return [WORD_HELP, SPECIAL_HELP, AUTHOR_HELP];
+  if (wouldStartNewToken(allTokens)) {
+    // If we're starting a new token, perform validation on the query so far, and if
+    // there are no errors, suggest continuation options.
+    const options = findNextOptions(allTokens);
+    if (typeof options === "string") {
+      // This indicates some error in the structure of the query.
+      return [informational(options)];
     }
-    // Otherwise, if we have a new token, check all the previous tokens for errors.
-    const errors = errorsForQuery(tokens, authors);
-    if (errors.length > 0) {
-      return errors;
+    // Otherwise, check all the previous tokens for errors.
+    const tokenErrors = tokens.flatMap((t) => errorsForToken(t, authors));
+    if (tokenErrors.length > 0) {
+      return tokenErrors;
     }
-    if (tokens.map((t) => t.startsWith("#")).every((v) => v)) {
-      return [WORD_HELP, SPECIAL_HELP];
-    }
-    return [
-      NEXT_WORD_HELP,
-      NEXT_SPECIAL_HELP,
-      NEXT_PROXIMITY_HELP,
-      ...logicOpCompletions(tokens[tokens.length - 1]),
-    ];
+    return newTokenHelp(options, allTokens);
   }
 
   const lastToken = tokens[tokens.length - 1];
@@ -480,11 +557,21 @@ export function CorpusAutocompleteItem(props: {
       {props.option.prefix !== undefined && (
         <span className="text sm">{props.option.prefix}</span>
       )}
-      <i className="text sm" style={{ whiteSpace: "pre" }}>
-        {option}
-      </i>
+      {props.option.optionIsPlaceholder ? (
+        <span className="text xs smallChip">{option}</span>
+      ) : (
+        <span
+          className="text sm"
+          style={{ whiteSpace: "pre", fontWeight: 700 }}>
+          {option}
+        </span>
+      )}
+
       {props.option.help && (
-        <span className="text xs smallChip"> {props.option.help}</span>
+        <>
+          <span style={{ whiteSpace: "pre" }}> </span>
+          <span className="text xs smallChip">{props.option.help}</span>
+        </>
       )}
     </div>
   );
