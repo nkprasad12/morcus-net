@@ -390,6 +390,7 @@ function absorbWork(
     const breakType = isBreak(rowIdx);
     if (breakType === 2) {
       breaksIndex.add("hard", tokens.length - 1);
+      breaks[tokens.length - 1] += "\n";
     }
     if (breakType === 1) {
       breaks[tokens.length - 1] += "\n";
