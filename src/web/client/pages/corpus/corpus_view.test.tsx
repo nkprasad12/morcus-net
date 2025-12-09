@@ -133,10 +133,10 @@ describe("CorpusQueryPage", () => {
 
     expect(await screen.findByText(/No results found for/)).toBeInTheDocument();
     expect(
-      screen.getByText(/This search tool is still in beta/)
+      screen.getByText(/This tool is a work in progress/)
     ).toBeInTheDocument();
     expect(
-      screen.queryByText(/Your query includes lemma or inflection filters/)
+      screen.queryByText(/Your query includes inflection filters/)
     ).not.toBeInTheDocument();
   });
 
@@ -160,10 +160,10 @@ describe("CorpusQueryPage", () => {
 
     expect(await screen.findByText(/No results found for/)).toBeInTheDocument();
     expect(
-      screen.getByText(/This search tool is still in beta/)
+      screen.getByText(/This tool is a work in progress/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Your query includes lemma or inflection filters/)
+      screen.getByText(/Your query includes inflection filters/)
     ).toBeInTheDocument();
   });
 });

@@ -235,25 +235,33 @@ function Disclaimer(props: { query: string }) {
   const hasInflectionFilters = /@\w+:/.test(props.query);
 
   return (
-    <details className="corpusDisclaimer text sm">
-      <summary>Please note when reviewing results</summary>
-      <li>This search tool is still in beta and may have errors.</li>
-      <li>
-        The database currently contains about 1.2 million words (about 20% of
-        the classical corpus).
-      </li>
+    <>
       {hasInflectionFilters && (
-        <li>
-          <i>
-            Your query includes lemma or inflection filters; these operate at
-            the word level and may include false positives.
-          </i>{" "}
-          For example, <code>corpus</code> would always match both the
-          nominative and accusative filters, regardless of what it was in that
-          particular sentence.
-        </li>
+        <details className="corpusDisclaimer text sm">
+          <summary>Your query includes inflection filters</summary>
+          <div>
+            <i>
+              Please note: these operate only at the word level and may include
+              false positives.
+            </i>
+          </div>
+          <div>
+            For example, <code>corpus</code> would always match both the{" "}
+            <code>nominative</code> and <code>accusative</code> filters,
+            regardless of which case it actually was in any particular sentence.
+          </div>
+        </details>
       )}
-    </details>
+      <details className="corpusDisclaimer text sm">
+        <summary>This tool is a work in progress</summary>
+        <li>The query engine is still in beta and may have errors.</li>
+        <li>
+          The database currently only contains about 1.2 million words (roughly
+          20% of the classical corpus). See the library for a full list of
+          indexed works.
+        </li>
+      </details>
+    </>
   );
 }
 
