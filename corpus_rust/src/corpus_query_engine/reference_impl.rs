@@ -206,8 +206,8 @@ impl CorpusQueryEngine {
     fn resolve_author_data(&self, name: Option<&String>) -> Option<(u32, u32)> {
         let name = name?;
         let (start, end) = self.corpus.author_lookup.get(name)?;
-        let start_work = self.corpus.work_lookup[*start].1[0].1;
-        let end_work = self.corpus.work_lookup[*end - 1].1.last()?.1;
+        let start_work = self.corpus.work_lookup[*start].rows.first()?.1;
+        let end_work = self.corpus.work_lookup[*end - 1].rows.last()?.1;
         Some((start_work, end_work))
     }
 

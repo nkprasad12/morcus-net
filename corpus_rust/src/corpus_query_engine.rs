@@ -81,8 +81,8 @@ impl CorpusQueryEngine {
                 )));
             }
         };
-        let start = self.corpus.work_lookup[start].1[0].1;
-        let end_work_sections = &self.corpus.work_lookup[end].1;
+        let start = self.corpus.work_lookup[start].rows[0].1;
+        let end_work_sections = &self.corpus.work_lookup[end].rows;
         let end = end_work_sections[end_work_sections.len() - 1].2;
         // The range must be aligned to word boundaries.
         Ok(IndexRange {
