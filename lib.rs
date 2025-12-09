@@ -57,15 +57,26 @@ impl QueryEngineWrapper {
                 result_id: 0,
                 candidate_index: 0,
             });
-        let result = self
-            .engine
-            .query_corpus(
+        // We use `AssertUnwindSafe` because the `engine` struct itself is read only. The
+        // only mutable data is returned as outputs, which we lose in the panic anyways.
+        let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+            self.engine.query_corpus(
                 &query_str,
                 &page_data,
                 page_size as usize,
                 context_len as usize,
             )
-            .map_err(|e| e.message)?;
+        }))
+        .map_err(|panic_payload| {
+            if let Some(s) = panic_payload.downcast_ref::<&str>() {
+                format!("Query panicked: {}", s)
+            } else if let Some(s) = panic_payload.downcast_ref::<String>() {
+                format!("Query panicked: {}", s)
+            } else {
+                "Query panicked with non-string payload".to_string()
+            }
+        })?
+        .map_err(|e| e.message)?;
         serde_json::to_string(&result).map_err(|_| "Failed to serialize result".to_string())
     }
 }
