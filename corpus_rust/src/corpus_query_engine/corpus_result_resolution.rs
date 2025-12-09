@@ -111,15 +111,15 @@ impl<'a> SpanLeaderTree<'a> {
         })
     }
 
-    fn find_leaders(&self) -> Option<SortedStartsAndSpans<'a>> {
+    fn find_leaders(&self) -> Vec<SortedStartsAndSpans<'a>> {
         if self.span_candidates.is_empty() {
-            return None;
+            return vec![];
         }
 
         let mut result = Vec::new();
         let mut current_path = Vec::with_capacity(self.span_candidates.len());
         self.collect_paths(&self.root, &mut current_path, &mut result);
-        result.into_iter().next()
+        result
     }
 
     fn collect_paths(
@@ -282,7 +282,7 @@ fn do_spans_overlap(spans: &[StartAndSpan]) -> bool {
 fn find_leaders_for<'a>(
     token_id: u32,
     all_span_candidates: &'a [SpanResult],
-) -> Result<Option<SortedStartsAndSpans<'a>>, QueryExecError> {
+) -> Result<Vec<SortedStartsAndSpans<'a>>, QueryExecError> {
     let tree = SpanLeaderTree::new(token_id, all_span_candidates)?;
     Ok(tree.find_leaders())
 }
@@ -418,6 +418,71 @@ pub(super) struct MatchPageResult<'a> {
     pub summary_info: QueryGlobalInfo,
 }
 
+#[inline]
+fn within_work_bounds(sorted_span_leaders: &[(u32, &SpanResult<'_>)], work_bounds: &[u32]) -> bool {
+    if sorted_span_leaders.len() < 2 {
+        return true;
+    }
+
+    let start = sorted_span_leaders[0].0;
+    let start_work = work_bounds
+        .binary_search(&start)
+        .unwrap_or_else(|i| i.saturating_sub(1));
+
+    let last_span = sorted_span_leaders[sorted_span_leaders.len() - 1];
+    let end = last_span.0 + last_span.1.length as u32 - 1;
+
+    // Make sure that the end is within the same work as the start.
+    work_bounds[start_work] < end && end < *work_bounds.get(start_work + 1).unwrap_or(&u32::MAX)
+}
+
+#[inline]
+fn has_matching_inflections(
+    unsorted_leaders: &[(u32, &SpanResult)],
+    needs_validation: &[TokenValidationInfo2],
+    corpus: &CorpusQueryEngine,
+) -> Result<bool, String> {
+    // For any words that need inflection validation, check that at least one possible inflection analysis
+    // matches the required restrictions.
+    for token_data in needs_validation {
+        // For now, for simplicity, just assume it's an AND for everything.
+        let token_to_check = unsorted_leaders[token_data.span_idx].0 + (token_data.term_idx as u32);
+        let inflection_options = corpus.inflections.get_inflection_data(token_to_check)?;
+        if !inflection_options
+            .iter()
+            // The lower 32 bits are the inflection data.
+            .any(|data| does_inflection_match_all(*data, token_data))
+        {
+            // ALL of the tokens that need validation need to validate, otherwise it's not
+            // a match.
+            return Ok(false);
+        }
+    }
+    Ok(true)
+}
+
+#[inline]
+fn leaders_for_candidate<'a>(
+    token_id: u32,
+    all_span_candidates: &'a [SpanResult],
+    work_bounds: &[u32],
+    needs_validation: &[TokenValidationInfo2],
+    corpus: &CorpusQueryEngine,
+) -> Result<Option<Vec<StartAndSpan<'a>>>, QueryExecError> {
+    for (sorted, unsorted) in find_leaders_for(token_id, all_span_candidates)? {
+        if !within_work_bounds(&sorted, work_bounds) {
+            // We have spans that cross work boundaries.
+            continue;
+        }
+        if !has_matching_inflections(&unsorted, needs_validation, corpus)? {
+            // We have inflections constraints that don't match one singular analysis.
+            continue;
+        }
+        return Ok(Some(sorted));
+    }
+    Ok(None)
+}
+
 pub(super) fn get_match_page<'a>(
     candidates: &mut MatchIterator<'_>,
     all_span_candidates: &'a [SpanResult],
@@ -427,60 +492,60 @@ pub(super) fn get_match_page<'a>(
     current_page: &PageData,
     total_candidates: usize,
 ) -> Result<MatchPageResult<'a>, QueryExecError> {
-    let mut skipped_candidates = 0;
+    let work_bounds = corpus
+        .corpus
+        .work_lookup
+        .iter()
+        .map(|w| w.rows[0].1)
+        .collect::<Vec<u32>>();
     let needs_validation = positions_needing_validation(query_spans, &corpus.corpus.id_table)?;
-    // Find the actual matches
+
     let mut matches = vec![];
-    'outer: while matches.len() < page_size {
+    let mut skipped_candidates = 0;
+
+    while matches.len() < page_size {
         let token_id = match candidates.next() {
-            Some(token_id) => token_id?,
             None => break,
+            Some(t) => t?,
         };
-        let (leaders, unsorted_leaders) = match find_leaders_for(token_id, all_span_candidates)? {
-            None => {
-                skipped_candidates += 1;
-                continue;
-            }
-            Some(l) => l,
-        };
-        // For any words that need inflection validation, check that at least one possible inflection analysis
-        // matches the required restrictions.
-        for token_data in &needs_validation {
-            // For now, for simplicity, just assume it's an AND for everything.
-            let token_to_check =
-                unsorted_leaders[token_data.span_idx].0 + (token_data.term_idx as u32);
-            let inflection_options = corpus.inflections.get_inflection_data(token_to_check)?;
-            if !inflection_options
-                .iter()
-                // The lower 32 bits are the inflection data.
-                .any(|data| does_inflection_match_all(*data, token_data))
-            {
-                skipped_candidates += 1;
-                // ALL of the tokens that need validation need to validate, otherwise it's not
-                // a match.
-                continue 'outer;
-            }
+        let leaders = leaders_for_candidate(
+            token_id,
+            all_span_candidates,
+            &work_bounds,
+            &needs_validation,
+            corpus,
+        )?;
+        match leaders {
+            None => skipped_candidates += 1,
+            Some(v) => matches.push(v),
         }
-        matches.push(leaders);
     }
     // Figure out if there's a next page
     let mut next_page = None;
     loop {
-        let result_id = match candidates.next().transpose()? {
+        let token_id = match candidates.next() {
             None => break,
-            Some(v) => v,
+            Some(t) => t?,
         };
-        if find_leaders_for(result_id, all_span_candidates)?.is_some() {
-            next_page = Some(PageData {
-                result_index: current_page.result_index + page_size as u32,
-                candidate_index: current_page.candidate_index
-                    + page_size as u32
-                    + skipped_candidates as u32,
-                result_id,
-            });
-            break;
+        let leaders = leaders_for_candidate(
+            token_id,
+            all_span_candidates,
+            &work_bounds,
+            &needs_validation,
+            corpus,
+        )?;
+        if leaders.is_none() {
+            skipped_candidates += 1;
+            continue;
         }
-        skipped_candidates += 1;
+        next_page = Some(PageData {
+            result_index: current_page.result_index + page_size as u32,
+            candidate_index: current_page.candidate_index
+                + page_size as u32
+                + skipped_candidates as u32,
+            result_id: token_id,
+        });
+        break;
     }
 
     let summary_info = get_result_stats(total_candidates, matches.len(), current_page, &next_page);

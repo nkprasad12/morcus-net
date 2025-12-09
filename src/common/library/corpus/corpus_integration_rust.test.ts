@@ -346,7 +346,7 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
 
     // Marmorem is not valid because marmor is neuter.
-    expect(results.resultStats.estimatedResults).toBe(5);
+    expect(results.matches).toHaveLength(5);
   });
 
   it("should trim context at work boundaries", () => {
@@ -395,5 +395,33 @@ describe("Corpus Integration Test", () => {
     // Should not include text from next work. Note that we accidentally remove the
     // final punctuation after `videt` but this is OK for now.
     expect(resultText).toBe("rex et regina.\nGallus regem videt");
+  });
+
+  it("should not allow proximity query passing work boundary", () => {
+    const query = "Gallum accognoscit ~ rex et";
+    const results = queryCorpus(query);
+    expect(results.matches).toHaveLength(0);
+  });
+
+  it("should allow proximity query at work end", () => {
+    const query = "servus ~ Gallum accognoscit";
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["servus", "Gallum accognoscit"]);
+  });
+
+  it("should allow proximity query at work start", () => {
+    const query = "rex et ~ regina";
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["rex et", "regina"]);
   });
 });
