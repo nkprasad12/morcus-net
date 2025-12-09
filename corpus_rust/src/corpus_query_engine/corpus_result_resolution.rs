@@ -492,6 +492,52 @@ pub(super) fn get_match_page<'a>(
 }
 
 impl CorpusQueryEngine {
+    #[inline]
+    fn resolve_text_ranges(
+        &self,
+        mut byte_offsets: Vec<usize>,
+        is_core: Vec<bool>,
+        metadata: &CorpusQueryMatchMetadata,
+    ) -> Result<Vec<(String, bool)>, QueryExecError> {
+        let work_start_byte = self.starts.token_start(metadata.work_start_token)?;
+        let mut i = 0;
+        while byte_offsets[i] < work_start_byte && i < byte_offsets.len() {
+            if i + 1 < byte_offsets.len() && byte_offsets[i + 1] > work_start_byte {
+                // Truncate this chunk to the work start if the next chunk starts after it.
+                byte_offsets[i] = work_start_byte;
+                break;
+            }
+            i += 1;
+        }
+
+        // The end is exclusive, which could cause a problem if we have the end of the very last work.
+        // So instead of byte position of the `work_end_token`th token, we use the byte position of the
+        // `(work_end_token - 1)`th break (which occurrs after the token).
+        // Note that this would trim the final punctuation after the last token, but that's acceptable for now.
+        let work_end_byte = self.starts.break_start(metadata.work_end_token - 1)?;
+        let mut j = byte_offsets.len() - 1;
+        while byte_offsets[j] > work_end_byte {
+            if j > 0 && byte_offsets[j - 1] < work_end_byte {
+                // Truncate this chunk to the work end if the previous chunk ends before it.
+                byte_offsets[j] = work_end_byte;
+                break;
+            }
+            j -= 1;
+        }
+
+        if i >= j {
+            return Err("No text chunks found!".to_string().into());
+        }
+
+        // Read the text chunks.
+        let mut text_chunks = Vec::with_capacity(j - i);
+        for k in i..j {
+            let chunk = self.text.slice(byte_offsets[k], byte_offsets[k + 1]);
+            text_chunks.push((chunk, is_core[k]));
+        }
+        Ok(text_chunks)
+    }
+
     pub(super) fn resolve_match_tokens(
         &self,
         matches: Vec<SpanLeaders>,
@@ -527,7 +573,7 @@ impl CorpusQueryEngine {
         self.text.advise_range(start, end);
 
         // Compute the metadata while the OS is (hopefully) loading the pages into memory.
-        let mut metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(matches.len());
+        let mut all_metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(matches.len());
         for match_leaders in &matches {
             let id = match_leaders
                 .first()
@@ -535,27 +581,17 @@ impl CorpusQueryEngine {
                     QueryExecError::new("No span leaders found when building match metadata")
                 })?
                 .0;
-            metadata.push(self.corpus.resolve_match_token(id)?);
+            all_metadata.push(self.corpus.resolve_match_token(id)?);
         }
 
-        // Read the text chunks.
-        let text_parts = starts
-            .iter()
-            .map(|(byte_offsets, is_core)| {
-                let mut chunks = Vec::with_capacity(is_core.len());
-                for i in 0..(byte_offsets.len() - 1) {
-                    let chunk = self.text.slice(byte_offsets[i], byte_offsets[i + 1]);
-                    chunks.push((chunk, is_core[i]));
-                }
-                chunks
-            })
-            .collect::<Vec<_>>();
-
-        let matches = metadata
+        let matches = starts
             .into_iter()
-            .zip(text_parts)
-            .map(|(metadata, text)| CorpusQueryMatch { metadata, text })
-            .collect();
+            .zip(all_metadata)
+            .map(|((byte_offsets, is_core), metadata)| {
+                let text = self.resolve_text_ranges(byte_offsets, is_core, &metadata)?;
+                Ok(CorpusQueryMatch { metadata, text })
+            })
+            .collect::<Result<Vec<_>, QueryExecError>>()?;
 
         Ok(matches)
     }

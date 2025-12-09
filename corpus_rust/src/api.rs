@@ -15,6 +15,10 @@ pub struct CorpusQueryMatchMetadata<'a> {
     pub author: &'a String,
     pub section: &'a String,
     pub offset: u32,
+    #[serde(skip_serializing)]
+    pub(crate) work_start_token: u32,
+    #[serde(skip_serializing)]
+    pub(crate) work_end_token: u32,
 }
 
 /// A single match from a corpus query.

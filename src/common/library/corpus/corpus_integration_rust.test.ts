@@ -348,4 +348,52 @@ describe("Corpus Integration Test", () => {
     // Marmorem is not valid because marmor is neuter.
     expect(results.resultStats.estimatedResults).toBe(5);
   });
+
+  it("should trim context at work boundaries", () => {
+    const query = "Gallus regem";
+
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["Gallus regem"]);
+    const resultText = results.matches[0].text.map(([text]) => text).join("");
+    // Should not include text from next work. Note that we accidentally remove the
+    // final punctuation after `videt` but this is OK for now.
+    expect(resultText).toBe("rex et regina.\nGallus regem videt");
+  });
+
+  it("should trim context at work end", () => {
+    const query = "regem videt";
+
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["regem videt"]);
+    const resultText = results.matches[0].text.map(([text]) => text).join("");
+    // Should not include text from next work. Note that we accidentally remove the
+    // final punctuation after `videt` but this is OK for now.
+    expect(resultText).toBe("rex et regina.\nGallus regem videt");
+  });
+
+  it("should trim context at work start", () => {
+    const query = "rex et";
+
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["rex et"]);
+    const resultText = results.matches[0].text.map(([text]) => text).join("");
+    // Should not include text from next work. Note that we accidentally remove the
+    // final punctuation after `videt` but this is OK for now.
+    expect(resultText).toBe("rex et regina.\nGallus regem videt");
+  });
 });

@@ -92,7 +92,9 @@ impl LatinCorpusIndex {
                 format!("TokenId {token_id} not found in any row for work index {work_idx}.")
             })?;
 
-        let (work_id, _, work_data) = &self.work_lookup[work_idx];
+        let (work_id, sections, work_data) = &self.work_lookup[work_idx];
+        let work_start_token = sections.first().ok_or("Missing first section!")?.1;
+        let work_end_token = sections.last().ok_or("Missing last section!")?.2;
 
         Ok(CorpusQueryMatchMetadata {
             work_id,
@@ -100,6 +102,8 @@ impl LatinCorpusIndex {
             author: &work_data.author,
             section: &row_info.0,
             offset: token_id - row_info.1,
+            work_start_token,
+            work_end_token,
         })
     }
 }
