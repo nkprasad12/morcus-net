@@ -869,11 +869,13 @@ function WorkTextColumn(props: {
       id={props.id}
       className={props.className}>
       <span style={{ whiteSpace: "normal" }}>
-        {displayForLibraryChunk(
-          props.content,
-          props.stripMacra,
-          props.textHighlights
-        )}
+        {
+          displayForLibraryChunk(
+            props.content,
+            props.stripMacra,
+            props.textHighlights
+          )[0]
+        }
       </span>
       {
         "\n" /* Add a newline out of the `whiteSpace: normal` so copy / paste works correctly on Firefox. */
@@ -1144,12 +1146,12 @@ function displayForLibraryChunk(
   highlights?: TextHighlightRange[],
   key?: number,
   initialWordId: number = 0
-): JSX.Element {
+): [JSX.Element, number] {
   if (root.name === "note") {
-    return <TextNote key={key} node={root} />;
+    return [<TextNote key={key} node={root} />, initialWordId];
   }
   if (root.name === "space") {
-    return <React.Fragment key={key}></React.Fragment>;
+    return [<React.Fragment key={key}></React.Fragment>, initialWordId];
   }
 
   let wordId = initialWordId;
@@ -1167,7 +1169,15 @@ function displayForLibraryChunk(
       wordId = nextWordId;
       return content;
     }
-    return displayForLibraryChunk(child, stripMacra, highlights, i, wordId);
+    const [content, nextWordId] = displayForLibraryChunk(
+      child,
+      stripMacra,
+      highlights,
+      i,
+      wordId
+    );
+    wordId = nextWordId;
+    return content;
   });
 
   const style: React.CSSProperties = {};
@@ -1176,7 +1186,7 @@ function displayForLibraryChunk(
   const rend = root.getAttr("rend");
   if (rend === "blockquote") {
     className = rend;
-    return React.createElement("span", { key, className }, children);
+    return [React.createElement("span", { key, className }, children), wordId];
   }
   if (rend === "indent") {
     style.display = "inline-block";
@@ -1201,20 +1211,22 @@ function displayForLibraryChunk(
     className = "block";
   }
   if (["b", "ul", "li"].includes(root.name)) {
-    return React.createElement(root.name, { key, style }, children);
+    return [React.createElement(root.name, { key, style }, children), wordId];
   }
   switch (root.name) {
     case "gap":
-      return (
+      return [
         <span key={key} className="text light">
           {" "}
           [gap]{" "}
-        </span>
-      );
+        </span>,
+        wordId,
+      ];
   }
-  return (
+  return [
     <span key={key} style={style} className={className}>
       {children}
-    </span>
-  );
+    </span>,
+    wordId,
+  ];
 }
