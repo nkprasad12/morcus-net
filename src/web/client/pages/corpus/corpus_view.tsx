@@ -302,6 +302,9 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
       nextPage: undefined,
     }));
 
+  const execTime = props.results.timing
+    ?.map(([, time]) => time)
+    .reduce((a, b) => a + b, 0);
   const pageStart = currentPage?.resultIndex ?? 0;
   const totalResults = props.results.resultStats.estimatedResults;
   const hasAllResults = totalResults === props.results.matches.length;
@@ -317,12 +320,16 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
       <div className="text md">
         {headline} <span className="corpusResult">{query}</span>
       </div>
-      {totalResults > 0 && !hasAllResults && (
-        <div className="text sm light">
-          Showing results {pageStart + 1} to{" "}
-          {pageStart + props.results.matches.length}.
-        </div>
-      )}
+      <div className="text sm light">
+        {totalResults > 0 && !hasAllResults && (
+          <span>
+            Showing results {pageStart + 1} to{" "}
+            {pageStart + props.results.matches.length}
+          </span>
+        )}
+        {execTime !== undefined && <span> [{execTime.toFixed(3)} ms]</span>}
+      </div>
+
       <Disclaimer query={query} />
       {props.results.matches.length > 0 && (
         <Divider style={{ margin: "12px 0" }} />

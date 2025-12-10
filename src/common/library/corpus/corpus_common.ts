@@ -14,6 +14,7 @@ import {
   isPair,
   isString,
   matchesObject,
+  maybeUndefined,
 } from "@/web/utils/rpc/parsing";
 
 export const CORPUS_DIR = "build/corpus";
@@ -86,14 +87,15 @@ export interface CorpusQueryResult {
   matches: CorpusQueryMatch[];
   resultStats: QueryGlobalInfo;
   nextPage?: PageData;
+  timing?: [string, number][];
 }
 
 export namespace CorpusQueryResult {
   export const isMatch = matchesObject<CorpusQueryResult>({
     matches: isArray(CorpusQueryMatch.isMatch),
     resultStats: isQueryGlobalInfo,
-    // nextPage is optional: allow undefined or a valid PageData
-    nextPage: (v: unknown) => v === undefined || isPageData(v),
+    nextPage: maybeUndefined(isPageData),
+    timing: maybeUndefined(isArray(isPair(isString, isNumber))),
   });
 }
 
