@@ -12,7 +12,11 @@ import {
 } from "@/web/utils/rpc/server_rpc";
 import { PWA_WEBMANIFEST } from "@/web/server/pwa_utils";
 
-const MAX_AGE = 100 * 365 * 24 * 3600 * 100;
+const DAYS_IN_YEAR = 365;
+const HOURS_IN_DAY = 24;
+const SECONDS_IN_HOUR = 3600;
+
+const MAX_AGE = 10 * DAYS_IN_YEAR * HOURS_IN_DAY * SECONDS_IN_HOUR;
 const CLIENT_BUNDLE_SUFFIX = ".client-bundle.js";
 const CLIENT_BUNDLE_CACHE_CONTROL = `public, max-age=${MAX_AGE}, immutable`;
 // Add no-transform to prevent proxies from uncompressing and then recompressing
