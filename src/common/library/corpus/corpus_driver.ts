@@ -60,9 +60,13 @@ function measureMemoryUsage<T>(runnable: () => T): T {
 
 function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   const pageSize = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
+  const contextLen = process.argv[4]
+    ? parseInt(process.argv[4], 10)
+    : undefined;
   const request: CorpusQueryRequest = {
     query: checkPresent(process.argv[2]),
     pageSize,
+    contextLen,
   };
   const startTime = performance.now();
   const resultsRaw = handler.runQuery(request);

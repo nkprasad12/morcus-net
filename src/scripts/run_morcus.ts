@@ -631,6 +631,9 @@ async function runCorpusCommand(args: any) {
     if (args.context) {
       command.push(`--context ${args.context}`);
     }
+  } else {
+    command.push(args.limit ? args.limit : "50");
+    command.push(args.context ? args.context : "20");
   }
 
   const childEnv = { ...process.env };
