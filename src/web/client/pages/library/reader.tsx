@@ -56,6 +56,10 @@ import { callApi } from "@/web/utils/rpc/client_rpc";
 import { GetWork } from "@/web/api_routes";
 import { getCommitHash } from "@/web/client/define_vars";
 import { textCallback } from "@/web/client/utils/callback_utils";
+import {
+  useTextHighlights,
+  type TextHighlightRange,
+} from "@/web/client/pages/library/reader_url";
 
 const SPECIAL_ID_PARTS = new Set(["appendix", "prologus", "epilogus"]);
 const TRANSLATION_ID = "translationTab";
@@ -761,6 +765,7 @@ export function WorkTextPage(props: {
     true,
     macronStorageKey(work.info.workId)
   );
+  const textHighlightMap = useTextHighlights();
   const stripMacra = !macronsOn && work.info.attribution === "hypotactic";
 
   const gapSize = (readerMainScale / 100) * 0.65;
@@ -785,6 +790,7 @@ export function WorkTextPage(props: {
       );
       continue;
     }
+    const textHighlights = textHighlightMap?.get(id.join("."));
     const idLabelParts = id
       .filter((part, i) => !(part === "_" && i === 0))
       .map((idPart) =>
@@ -820,6 +826,7 @@ export function WorkTextPage(props: {
           id={idLabel}
           content={content}
           stripMacra={stripMacra}
+          textHighlights={textHighlights}
         />
       </React.Fragment>
     );
@@ -854,6 +861,7 @@ function WorkTextColumn(props: {
   className?: string;
   stripMacra: boolean;
   content: XmlNode<ProcessedWorkContentNodeType>;
+  textHighlights?: TextHighlightRange[];
 }) {
   return (
     <span
@@ -861,7 +869,11 @@ function WorkTextColumn(props: {
       id={props.id}
       className={props.className}>
       <span style={{ whiteSpace: "normal" }}>
-        {displayForLibraryChunk(props.content, props.stripMacra)}
+        {displayForLibraryChunk(
+          props.content,
+          props.stripMacra,
+          props.textHighlights
+        )}
       </span>
       {
         "\n" /* Add a newline out of the `whiteSpace: normal` so copy / paste works correctly on Firefox. */
@@ -1041,16 +1053,27 @@ function WorkChunkHeader(props: {
   );
 }
 
-function LatLinkify(props: { input: string }) {
-  return (
-    <>
-      {processWords(props.input, (word, i) => (
-        <span key={i} className="workLatWord">
-          {word}
-        </span>
-      ))}
-    </>
-  );
+function displayText(
+  input: string,
+  initialWordId: number,
+  key: number,
+  highlights?: TextHighlightRange[]
+): [JSX.Element, number] {
+  let wordId = initialWordId;
+  const allWords = processWords(input, (word) => {
+    const classes = ["workLatWord"];
+    if (highlights?.some((hl) => hl.start <= wordId && wordId < hl.end)) {
+      classes.push("corpusResult");
+    }
+    const markup = (
+      <span key={wordId} className={classes.join(" ")}>
+        {word}
+      </span>
+    );
+    wordId++;
+    return markup;
+  });
+  return [<React.Fragment key={key}>{allWords}</React.Fragment>, wordId];
 }
 
 function renderTooltip(root: XmlNode): JSX.Element {
@@ -1118,23 +1141,34 @@ function TextNote(props: { node: XmlNode }) {
 function displayForLibraryChunk(
   root: XmlNode<ProcessedWorkContentNodeType>,
   stripMacra: boolean,
-  key?: number
+  highlights?: TextHighlightRange[],
+  key?: number,
+  initialWordId: number = 0
 ): JSX.Element {
+  if (root.name === "note") {
+    return <TextNote key={key} node={root} />;
+  }
+  if (root.name === "space") {
+    return <React.Fragment key={key}></React.Fragment>;
+  }
+
+  let wordId = initialWordId;
   const children = root.children.map((child, i) => {
     if (typeof child === "string") {
       const stripped = stripMacra
         ? child.replace(/[\u0304\u0305]/g, "")
         : child;
-      return <LatLinkify input={stripped} key={i} />;
+      const [content, nextWordId] = displayText(
+        stripped,
+        wordId,
+        i,
+        highlights
+      );
+      wordId = nextWordId;
+      return content;
     }
-    return displayForLibraryChunk(child, stripMacra, i);
+    return displayForLibraryChunk(child, stripMacra, highlights, i, wordId);
   });
-  if (root.name === "note") {
-    return <TextNote key={key} node={root} />;
-  }
-  if (root.name === "space") {
-    return <></>;
-  }
 
   const style: React.CSSProperties = {};
   let className: string | undefined = undefined;

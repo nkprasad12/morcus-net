@@ -377,7 +377,8 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       color: theme.menuItemBase + theme.menuItemActiveAlpha,
     },
 
-    /** Corpus specific */
+    /** Corpus related */
+    // This is used in the corpus and in the reader when we link out from the corpus.
     ".corpusResult": {
       color: Solarized.orange + "B0",
     },
