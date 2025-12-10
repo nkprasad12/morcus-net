@@ -257,7 +257,7 @@ function parseArguments() {
   });
   e2e.add_argument("-g", "--grep", {
     help: "The grep pattern to use to limit tests by name.",
-    default: "itests",
+    default: "",
   });
 
   const corpus = subparsers.add_parser(CORPUS, {
