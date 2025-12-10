@@ -424,4 +424,10 @@ describe("Corpus Integration Test", () => {
       .map(([text]) => text);
     expect(matchText).toEqual(["rex et", "regina"]);
   });
+
+  it("should not duplicate proximity results", () => {
+    const query = "dedit ~ dedit";
+    const results = queryCorpus(query);
+    expect(results.matches).toHaveLength(1);
+  });
 });

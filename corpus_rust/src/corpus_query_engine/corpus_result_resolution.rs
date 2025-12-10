@@ -468,8 +468,23 @@ fn leaders_for_candidate<'a>(
     work_bounds: &[u32],
     needs_validation: &[TokenValidationInfo2],
     corpus: &CorpusQueryEngine,
+    last_match: Option<&Vec<StartAndSpan<'a>>>,
 ) -> Result<Option<Vec<StartAndSpan<'a>>>, QueryExecError> {
     for (sorted, unsorted) in find_leaders_for(token_id, all_span_candidates)? {
+        if let Some(last_match) = last_match {
+            if sorted.len() != last_match.len() {
+                return Err(QueryExecError::new(
+                    "Inconsistent number of spans in match results.",
+                ));
+            }
+            let is_duplicate = last_match
+                .iter()
+                .zip(sorted.iter())
+                .all(|(a, b)| a.0 == b.0);
+            if is_duplicate {
+                continue;
+            }
+        }
         if !within_work_bounds(&sorted, work_bounds) {
             // We have spans that cross work boundaries.
             continue;
@@ -514,6 +529,7 @@ pub(super) fn get_match_page<'a>(
             &work_bounds,
             &needs_validation,
             corpus,
+            matches.last(),
         )?;
         match leaders {
             None => skipped_candidates += 1,
@@ -533,6 +549,7 @@ pub(super) fn get_match_page<'a>(
             &work_bounds,
             &needs_validation,
             corpus,
+            matches.last(),
         )?;
         if leaders.is_none() {
             skipped_candidates += 1;
