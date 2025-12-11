@@ -91,6 +91,7 @@ function informational(help: string): CorpusAutocompleteOption {
   return {
     option: "",
     help,
+    optionIsPlaceholder: true,
   };
 }
 
@@ -106,7 +107,7 @@ function informationalWithPlaceholder(
 }
 
 const TILDE_HELP: CorpusAutocompleteOption[] = [
-  informational("within 5 words of"),
+  { option: " ", help: "within 5 words of" },
   { option: "> ", prefix: "~", help: "within 5 words before" },
   { option: "3 ", prefix: "~", help: "within 3 words of" },
   { option: "10 ", prefix: "~", help: "within 10 words of" },
@@ -377,7 +378,7 @@ function newTokenHelp(
         // option.
         break;
       case ")":
-        results.push(informational("close this filter"));
+        results.push({ option: ") ", help: "done filtering word" });
         break;
       default:
         exhaustiveGuard(option);
