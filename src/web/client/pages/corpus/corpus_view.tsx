@@ -198,6 +198,9 @@ export function CorpusQueryPage() {
         // Make sure we don't copy over the page tokens for the old query.
         onRawEnter={() => setNewQuery(nav, requestQuery)}
         onOptionSelected={(o, current) => {
+          if (o.optionIsPlaceholder) {
+            return [current, current.length];
+          }
           const newInput = o.replacement ?? `${current}${o.option}`;
           return [newInput, o.cursor ?? newInput.length];
         }}
