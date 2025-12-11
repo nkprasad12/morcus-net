@@ -4,6 +4,9 @@ import { arrayMapBy } from "@/common/data_structures/collect_map";
 import { safeParseInt } from "@/common/misc_utils";
 import { Router } from "@/web/client/router/router_v2";
 
+const LIST_SEPARATOR = "__";
+const TUPLE_SEPARATOR = "~";
+
 export interface TextHighlightRange {
   start: number;
   end: number;
@@ -18,13 +21,15 @@ export function textHighlightParams(
 ): Record<string, string> {
   const chunks: string[] = [];
   for (const hl of highlights) {
-    chunks.push(`${hl.id},${hl.start},${hl.end}`);
+    chunks.push(
+      `${hl.id}${TUPLE_SEPARATOR}${hl.start}${TUPLE_SEPARATOR}${hl.end}`
+    );
   }
-  return { matchText: chunks.join("~") };
+  return { matchText: chunks.join(LIST_SEPARATOR) };
 }
 
 function parseTextHighlight(input: string): TextHighlight | undefined {
-  const parts = input.split(",");
+  const parts = input.split(TUPLE_SEPARATOR);
   if (parts.length !== 3) {
     return undefined;
   }
@@ -45,7 +50,7 @@ function parseTextHighlights(raw?: string): TextHighlight[] | undefined {
     return [];
   }
   const results: TextHighlight[] = [];
-  for (const chunk of input.split("~")) {
+  for (const chunk of input.split(LIST_SEPARATOR)) {
     const highlight = parseTextHighlight(chunk);
     if (highlight === undefined) {
       // If one of them is invalid, there is probably some broader issue.

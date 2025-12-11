@@ -62,7 +62,7 @@ describe("useTextHighlights", () => {
   });
 
   it("parses single highlight correctly", () => {
-    setUrlParams({ matchText: "section1,10,15" });
+    setUrlParams({ matchText: "section1~10~15" });
     render(<TestComponent highlightsRef={highlightsRef} />);
     expect(highlightsRef.current).toEqual(
       new Map([["section1", [expect.objectContaining({ start: 10, end: 15 })]]])
@@ -70,7 +70,7 @@ describe("useTextHighlights", () => {
   });
 
   it("parses multiple highlights with same ID", () => {
-    setUrlParams({ matchText: "section1,10,15~section1,20,23" });
+    setUrlParams({ matchText: "section1~10~15__section1~20~23" });
     render(<TestComponent highlightsRef={highlightsRef} />);
     expect(highlightsRef.current).toEqual(
       new Map([
@@ -86,7 +86,7 @@ describe("useTextHighlights", () => {
   });
 
   it("parses multiple highlights with different IDs", () => {
-    setUrlParams({ matchText: "section1,10,15~section2,20,23" });
+    setUrlParams({ matchText: "section1~10~15__section2~20~23" });
     render(<TestComponent highlightsRef={highlightsRef} />);
     expect(highlightsRef.current).toEqual(
       new Map([
@@ -97,31 +97,31 @@ describe("useTextHighlights", () => {
   });
 
   it("returns undefined for invalid format with wrong number of parts", () => {
-    setUrlParams({ matchText: "section1,10" });
+    setUrlParams({ matchText: "section1~10" });
     render(<TestComponent highlightsRef={highlightsRef} />);
     expect(highlightsRef.current).toBeUndefined();
   });
 
   it("returns undefined for invalid start position", () => {
-    setUrlParams({ matchText: "section1,abc,5" });
+    setUrlParams({ matchText: "section1~abc~5" });
     render(<TestComponent highlightsRef={highlightsRef} />);
     expect(highlightsRef.current).toBeUndefined();
   });
 
   it("returns undefined for invalid length", () => {
-    setUrlParams({ matchText: "section1,10,xyz" });
+    setUrlParams({ matchText: "section1~10~xyz" });
     render(<TestComponent highlightsRef={highlightsRef} />);
     expect(highlightsRef.current).toBeUndefined();
   });
 
   it("returns undefined when one of multiple highlights is invalid", () => {
-    setUrlParams({ matchText: "section1,10,5~section2,invalid,3" });
+    setUrlParams({ matchText: "section1~10~5__section2~invalid~3" });
     render(<TestComponent highlightsRef={highlightsRef} />);
     expect(highlightsRef.current).toBeUndefined();
   });
 
   it("maintains same map reference when re-rendering with unchanged URL params", () => {
-    setUrlParams({ matchText: "section1,10,15" });
+    setUrlParams({ matchText: "section1~10~15" });
     render(<TestComponent highlightsRef={highlightsRef} />);
 
     const firstMapReference = highlightsRef.current;
