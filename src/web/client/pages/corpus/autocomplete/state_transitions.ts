@@ -41,9 +41,7 @@ export function findNextOptions(
     if (tokenType === "space") {
       continue;
     }
-    if (tokenType === ")") {
-      lastWasCloseParen = true;
-    }
+    lastWasCloseParen = tokenType === ")";
     if (tokenType === "workFilter") {
       workFilters++;
     }

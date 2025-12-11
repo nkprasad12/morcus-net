@@ -271,6 +271,12 @@ describe("optionsForInput", () => {
     expect(optStrings).toContain("@");
     expect(optStrings).toContain("~");
   });
+
+  test("allows new complex term after close paren", () => {
+    const opts = optionsForInput("(nato and suo) (");
+    const optStrings = opts.map((o) => o.option).sort();
+    expect(optStrings).toStrictEqual(["<word>", "@"]);
+  });
 });
 
 describe("CorpusAutocompleteItem", () => {
