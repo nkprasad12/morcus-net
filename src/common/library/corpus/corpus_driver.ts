@@ -16,8 +16,8 @@ import type { CorpusQueryRequest } from "@/web/api_routes";
 
 function formatQueryResult(result: CorpusQueryMatch): string {
   const data = result.metadata;
-  const { author, workName, section } = data;
-
+  const { author, workName, leaders } = data;
+  const section = leaders[0][0];
   // header: author (blue) - workName section (green)
   const out = `  \x1b[34m${author}\x1b[0m - \x1b[32m${workName} ${section}\x1b[0m\n`;
 

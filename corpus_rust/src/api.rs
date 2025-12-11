@@ -13,8 +13,8 @@ pub struct CorpusQueryMatchMetadata<'a> {
     pub work_id: &'a String,
     pub work_name: &'a String,
     pub author: &'a String,
-    pub section: &'a String,
-    pub offset: u32,
+    // (Section ID, offset in section, length)
+    pub leaders: Vec<(&'a String, u32, u32)>,
     #[serde(skip_serializing)]
     pub(crate) work_start_token: u32,
     #[serde(skip_serializing)]

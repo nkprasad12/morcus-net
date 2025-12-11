@@ -13,6 +13,7 @@ import {
   isNumber,
   isPair,
   isString,
+  isTriplet,
   matchesObject,
   maybeUndefined,
 } from "@/web/utils/rpc/parsing";
@@ -38,16 +39,14 @@ export interface CorpusQueryMatchMetadata {
   workId: string;
   workName: string;
   author: string;
-  section: string;
-  offset: number;
+  leaders: [string, number, number][];
 }
 
 const isCorpusQueryMatchMetadata = matchesObject<CorpusQueryMatchMetadata>({
   workId: isString,
   workName: isString,
   author: isString,
-  section: isString,
-  offset: isNumber,
+  leaders: isArray(isTriplet(isString, isNumber, isNumber)),
 });
 
 export interface CorpusQueryMatch {

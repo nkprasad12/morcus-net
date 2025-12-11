@@ -1,4 +1,5 @@
 use serde::{Deserialize, Serialize};
+use std::cmp::Ordering::{Equal, Greater, Less};
 use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
@@ -79,50 +80,73 @@ impl LatinCorpusIndex {
     /// Resolves a match token into its metadata.
     pub fn resolve_match_token(
         &self,
-        token_id: u32,
+        leaders: Vec<(u32, usize)>,
     ) -> Result<CorpusQueryMatchMetadata<'_>, String> {
+        let first_id = leaders.first().ok_or("No leaders provided")?;
         let work_idx = self
             .work_lookup
             .binary_search_by(|work_data| {
                 let range = &work_data.rows;
                 let work_start_token_id = range[0].1;
                 let work_end_token_id = range[range.len() - 1].2;
-                if token_id < work_start_token_id {
-                    std::cmp::Ordering::Greater
-                } else if token_id >= work_end_token_id {
-                    std::cmp::Ordering::Less
+                if first_id.0 < work_start_token_id {
+                    Greater
+                } else if first_id.0 >= work_end_token_id {
+                    Less
                 } else {
-                    std::cmp::Ordering::Equal
+                    Equal
                 }
             })
-            .map_err(|_| format!("TokenId {token_id} not found in any work."))?;
+            .map_err(|_| format!("TokenId {} not found in any work.", first_id.0))?;
 
         let work_data = &self.work_lookup[work_idx];
         let row_data = &work_data.rows;
-        let row_info = row_data
-            .binary_search_by(|WorkRowInfo(_, start, end)| {
-                if token_id < *start {
-                    std::cmp::Ordering::Greater
-                } else if token_id >= *end {
-                    std::cmp::Ordering::Less
-                } else {
-                    std::cmp::Ordering::Equal
-                }
-            })
-            .map(|i| &row_data[i])
-            .map_err(|_| {
-                format!("TokenId {token_id} not found in any row for work index {work_idx}.")
-            })?;
-
         let work_start_token = row_data.first().ok_or("Missing first section!")?.1;
         let work_end_token = row_data.last().ok_or("Missing last section!")?.2;
+
+        let leader_info = leaders
+            .iter()
+            .map(|(token_id, length)| {
+                // Find out which row the start token is in.
+                let row_idx = row_data
+                    .binary_search_by(|WorkRowInfo(_, start, end)| {
+                        if token_id < start {
+                            Greater
+                        } else if token_id >= end {
+                            Less
+                        } else {
+                            Equal
+                        }
+                    })
+                    .map_err(|_| format!("TokenId {token_id} not found in {work_idx}."))?;
+
+                let mut i = row_idx;
+                let mut start = *token_id;
+                let mut remaining = *length as u32;
+
+                let mut chunks = vec![];
+                // The leader of a single span can cover multiple rows, e.g.
+                // the last word in one line of a poem and the first word
+                // in the next line.
+                while remaining > 0 && i < row_data.len() {
+                    let WorkRowInfo(row_id, row_start, row_end) = &row_data[i];
+                    let take_end = std::cmp::min(*row_end, start + remaining);
+                    let take_len = take_end - start;
+                    chunks.push((row_id, start - row_start, take_len));
+
+                    remaining -= take_len;
+                    start = *row_end;
+                    i += 1;
+                }
+                Ok(chunks)
+            })
+            .collect::<Result<Vec<_>, String>>()?;
 
         Ok(CorpusQueryMatchMetadata {
             work_id: &work_data.work_id,
             work_name: &work_data.info.name,
             author: &work_data.info.author,
-            section: &row_info.0,
-            offset: token_id - row_info.1,
+            leaders: leader_info.into_iter().flatten().collect(),
             work_start_token,
             work_end_token,
         })

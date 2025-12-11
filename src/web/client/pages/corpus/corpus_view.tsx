@@ -33,6 +33,7 @@ import {
   CorpusSettingsDialog,
 } from "@/web/client/pages/corpus/corpus_settings";
 import { useMediaQuery } from "@/web/client/utils/media_query";
+import { textHighlightParams } from "@/web/client/pages/library/reader_url";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
 
@@ -359,7 +360,10 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
 function SingleResult(props: { result: CorpusQueryMatch }) {
   const { nav } = Router.useRouter();
   const metadata = props.result.metadata;
-  const id = `${metadata.workId}-${metadata.section}-${metadata.offset}`;
+  const idEnd = metadata.leaders.map((l) => `${l[1]}-${l[2]}`).join(";");
+  const id = `${metadata.workId}${idEnd}`;
+
+  const section = metadata.leaders[0][0] ?? "";
 
   return (
     <div>
@@ -373,10 +377,20 @@ function SingleResult(props: { result: CorpusQueryMatch }) {
                 workId: metadata.workId,
               })
             ),
-            params: { id: metadata.section, ref: "corpus" },
+            params: {
+              id: section,
+              ref: "corpus",
+              ...textHighlightParams(
+                metadata.leaders.map((l) => ({
+                  id: l[0],
+                  start: l[1],
+                  end: l[1] + l[2],
+                }))
+              ),
+            },
           })
         }>
-        {metadata.workName} {metadata.section} [{metadata.author}]
+        {metadata.workName} {section} [{metadata.author}]
       </SpanLink>
       <div
         className="text sm light"

@@ -198,7 +198,12 @@ impl CorpusQueryEngine {
         }
 
         Ok(CorpusQueryMatch {
-            metadata: self.corpus.resolve_match_token(sorted_ranges[0].0)?,
+            metadata: self.corpus.resolve_match_token(
+                sorted_ranges
+                    .iter()
+                    .map(|&(id, end)| (id, (end - id) as usize))
+                    .collect(),
+            )?,
             text,
         })
     }

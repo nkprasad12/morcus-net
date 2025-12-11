@@ -169,6 +169,25 @@ export function isPair<T, U>(
   };
 }
 
+export function isTriplet<T, U, V>(
+  tVal: (t: unknown) => t is T,
+  uVal: (t: unknown) => t is U,
+  vVal: (t: unknown) => t is V
+): (x: unknown) => x is [T, U, V] {
+  return (x): x is [T, U, V] => {
+    if (
+      !Array.isArray(x) ||
+      x.length !== 3 ||
+      !tVal(x[0]) ||
+      !uVal(x[1]) ||
+      !vVal(x[2])
+    ) {
+      return false;
+    }
+    return true;
+  };
+}
+
 export function isOneOf<T, U>(
   tVal: (t: unknown) => t is T,
   uVal: (t: unknown) => t is U

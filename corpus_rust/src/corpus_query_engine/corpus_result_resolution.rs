@@ -657,13 +657,14 @@ impl CorpusQueryEngine {
         // Compute the metadata while the OS is (hopefully) loading the pages into memory.
         let mut all_metadata: Vec<CorpusQueryMatchMetadata> = Vec::with_capacity(matches.len());
         for match_leaders in &matches {
-            let id = match_leaders
-                .first()
-                .ok_or_else(|| {
-                    QueryExecError::new("No span leaders found when building match metadata")
-                })?
-                .0;
-            all_metadata.push(self.corpus.resolve_match_token(id)?);
+            all_metadata.push(
+                self.corpus.resolve_match_token(
+                    match_leaders
+                        .iter()
+                        .map(|(id, span)| (*id, span.length))
+                        .collect(),
+                )?,
+            );
         }
 
         let matches = starts

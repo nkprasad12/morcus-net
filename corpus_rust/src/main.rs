@@ -128,7 +128,7 @@ fn print_query_results(
         let m = &match_data.metadata;
         println!(
             "  \x1b[34m{}\x1b[0m - \x1b[32m{} {}\x1b[0m",
-            m.author, m.work_name, m.section
+            m.author, m.work_name, m.leaders[0].0
         );
         let mut chunks = vec!["    ".to_string()];
         for (text, is_core) in &match_data.text {
