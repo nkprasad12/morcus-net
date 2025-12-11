@@ -5,7 +5,7 @@ use morceus::inflection_data::{
 use crate::{
     analyzer_types::LatinInflection::{self, Case, Gender, Mood, Number, Person, Tense, Voice},
     corpus_query_engine::query_validation::atoms_in,
-    query_parsing_v2::{Query, TokenConstraint, TokenConstraintAtom},
+    query_parsing_v2::{Query, TokenConstraint, TokenConstraintAtom, TokenConstraintOperation},
 };
 
 /// Whether the inflection only applies to nominal forms.
@@ -152,6 +152,14 @@ fn is_conjunction_impossible(terms: &[LatinInflection]) -> bool {
 }
 
 fn is_constraint_impossible(term: &TokenConstraint) -> bool {
+    let is_and = match term {
+        TokenConstraint::Composed { op, .. } => *op == TokenConstraintOperation::And,
+        _ => false,
+    };
+    if !is_and {
+        // Only conjunctions can be impossible.
+        return false;
+    }
     // In the validation step, we check that every term is either an
     // atom or an AND/OR of atoms, so we can just extract the atoms here.
     let atoms = atoms_in(term);
