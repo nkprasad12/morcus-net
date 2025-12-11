@@ -26,9 +26,10 @@ describe("findNextOptions", () => {
           "logic:and",
           "logic:or",
           "proximity",
+          "(",
         ])
       );
-      expect(result).toHaveLength(4);
+      expect(result).toHaveLength(5);
     });
 
     it("should handle spaces correctly", () => {
@@ -43,9 +44,10 @@ describe("findNextOptions", () => {
           "logic:and",
           "logic:or",
           "proximity",
+          "(",
         ])
       );
-      expect(result).toHaveLength(4);
+      expect(result).toHaveLength(5);
     });
   });
 
@@ -53,10 +55,8 @@ describe("findNextOptions", () => {
     it("should allow another workFilter or start a span", () => {
       const tokens: QueryToken[] = [["#caesar", 0, "workFilter"]];
       const result = findNextOptions(tokens);
-      expect(result).toEqual(
-        expect.arrayContaining(["workFilter", "wordFilter", "("])
-      );
-      expect(result).toHaveLength(3);
+      expect(result).toEqual(expect.arrayContaining(["wordFilter", "("]));
+      expect(result).toHaveLength(2);
     });
   });
 
@@ -188,15 +188,6 @@ describe("findNextOptions", () => {
       const tokens: QueryToken[] = [["and", 0, "logic:and"]];
       const result = findNextOptions(tokens);
       expect(result).toContain("not allowed at start");
-    });
-
-    it("should reject invalid token after wordFilter", () => {
-      const tokens: QueryToken[] = [
-        ["puella", 0, "wordFilter"],
-        ["(", 12, "("],
-      ];
-      const result = findNextOptions(tokens);
-      expect(result).toContain("not allowed after");
     });
 
     it("should reject proximity in complex term", () => {

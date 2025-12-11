@@ -20,10 +20,32 @@ export function findNextOptions(
 ): NonSpaceToken[] | string {
   let state: State = ["SpanStartOrWorkFilter", 0];
   let logicalOp: "and" | "or" | null = null;
+  let workFilters = 0;
+  let lastWasCloseParen = false;
+
+  function getOptions() {
+    return (
+      optionsForState(state, logicalOp)
+        // This is kind of a hack. Currently, we only support one level of parentheses, so
+        // if we see a close paren we know we can't have more logical operators. Eventually we
+        // will support at least 2 levels, so this will need to be more sophisticated.
+        .filter(
+          (o) =>
+            !lastWasCloseParen || (o[0] !== "logic:and" && o[0] !== "logic:or")
+        )
+    );
+  }
+
   for (let i = 0; i < sequence.length; i++) {
     const [token, , tokenType] = sequence[i];
     if (tokenType === "space") {
       continue;
+    }
+    if (tokenType === ")") {
+      lastWasCloseParen = true;
+    }
+    if (tokenType === "workFilter") {
+      workFilters++;
     }
     if (tokenType.startsWith("logic:")) {
       const unexpectedOr = logicalOp === "and" && token === "or";
@@ -36,9 +58,13 @@ export function findNextOptions(
       }
       logicalOp = token;
     }
-    const options = optionsForState(state, logicalOp);
+
+    const options = getOptions();
     const matchingOption = options.find((o) => o[0] === tokenType);
     if (!matchingOption) {
+      if (sequence[i][2] === "workFilter") {
+        return "❌ #author filters must be at start";
+      }
       let j = i - 1;
       while (j >= 0 && sequence[j][2] === "space") {
         j--;
@@ -46,6 +72,9 @@ export function findNextOptions(
       const messageContext =
         i === 0 ? "at start" : `after \`${sequence[j][0]}\``;
       return `❌ \`${sequence[i][0]}\` not allowed ${messageContext}`;
+    }
+    if (matchingOption[0] === "workFilter" && workFilters > 1) {
+      return "❌ only one #author filter allowed";
     }
     if (matchingOption[1] === "InSpan") {
       // Reset logical operator after completing a term in a span
@@ -55,7 +84,9 @@ export function findNextOptions(
       matchingOption[0] === "(" ? 1 : matchingOption[0] === ")" ? -1 : 0;
     state = [matchingOption[1], state[1] + parenIncrement];
   }
-  return optionsForState(state, logicalOp).map((o) => o[0]);
+  return getOptions()
+    .filter((o) => workFilters === 0 || o[0] !== "workFilter") // We currently only allow one work filter per query.
+    .map((o) => o[0]);
 }
 
 function optionsForState(
@@ -76,6 +107,7 @@ function optionsForState(
         ["logic:and", "ComplexTerm"],
         ["logic:or", "ComplexTerm"],
         ["proximity", "SpanStart"],
+        ["(", "ComplexTerm"],
       ];
     }
     case "ComplexTerm;LastWasTerm": {
