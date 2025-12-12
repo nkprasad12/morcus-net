@@ -34,6 +34,8 @@ import {
 } from "@/web/client/pages/corpus/corpus_settings";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { textHighlightParams } from "@/web/client/pages/library/reader_url";
+import { tokenizeInput } from "@/web/client/pages/corpus/autocomplete/input_tokenizer";
+import { termGroups } from "@/web/client/pages/corpus/autocomplete/state_transitions";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
 
@@ -43,66 +45,36 @@ function toKey(o: CorpusAutocompleteOption) {
   return o.option;
 }
 
-function transformQuery(query: string): string {
-  const tokens = query
-    .trim()
-    .split(/\s+/)
-    // We use a different syntax for proximity operators for a more
-    // fluent autocomplete experience.
+export function transformQuery(query: string): string {
+  const grouped = termGroups(tokenizeInput(query));
+  if (typeof grouped === "string") {
+    // There was an error parsing the query; just return it as-is.
+    // Ideally we would show an error to the user.
+    return query;
+  }
+  return grouped
+    .map((group) => {
+      const hasLogicalOp =
+        group.length > 0 && group.some((t) => t[2].startsWith("logic:"));
+      if (!hasLogicalOp) {
+        return group;
+      }
+      let transformed = group;
+      if (group[0][2] !== "(") {
+        transformed = [["(", group[0][1], "("], ...group];
+      }
+      if (group[group.length - 1][2] !== ")") {
+        transformed = [...transformed, [")", group[group.length - 1][1], ")"]];
+      }
+      return transformed;
+    })
+    .flat()
+    .map(([token, ,]) => token) // We use a different syntax for proximity operators
     .map((t) =>
       t.replace(/^~(\d+)(.*)$/, (_match, num, rest) => `${num}~${rest}`)
     )
-    .map((t) => t.replace(/^#(.+)$/, (_m, name) => `[${name}]`));
-
-  // Wrap consecutive operator-connected spans (e.g. "a and b or c") in parentheses.
-  const ops = new Set(["and", "or"]);
-  // Build ranges [left, right] for every operator (covers its surrounding operands).
-  const ranges: Array<[number, number]> = [];
-  for (let i = 0; i < tokens.length; i++) {
-    if (ops.has(tokens[i].toLowerCase())) {
-      const left = i - 1;
-      const right = i + 1;
-      if (left >= 0 && right < tokens.length) {
-        ranges.push([left, right]);
-      }
-    }
-  }
-
-  if (ranges.length === 0) {
-    return tokens.join(" ");
-  }
-
-  // Merge overlapping/adjacent ranges into maximal groups.
-  ranges.sort((a, b) => a[0] - b[0]);
-  const merged: Array<[number, number]> = [];
-  for (const r of ranges) {
-    if (merged.length === 0) {
-      merged.push([r[0], r[1]]);
-    } else {
-      const last = merged[merged.length - 1];
-      if (r[0] <= last[1] + 1) {
-        last[1] = Math.max(last[1], r[1]);
-      } else {
-        merged.push([r[0], r[1]]);
-      }
-    }
-  }
-
-  // Insert parentheses around each merged range.
-  const out: string[] = [];
-  let mi = 0;
-  for (let i = 0; i < tokens.length; i++) {
-    if (mi < merged.length && i === merged[mi][0]) {
-      out.push("(");
-    }
-    out.push(tokens[i]);
-    if (mi < merged.length && i === merged[mi][1]) {
-      out.push(")");
-      mi++;
-    }
-  }
-
-  return out.join(" ");
+    .map((t) => t.replace(/^#(.+)$/, (_m, name) => `[${name}]`))
+    .join(" ");
 }
 
 export type SuggestionsList = string[] | undefined | "error";
