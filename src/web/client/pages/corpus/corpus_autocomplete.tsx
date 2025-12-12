@@ -336,10 +336,14 @@ function wouldStartNewToken(tokens: QueryToken[]): boolean {
   return lastType === "space" || lastType === ")" || lastType === "(";
 }
 
-function lastNonSpaceToken(query: QueryToken[]): QueryToken | null {
-  for (let i = query.length - 1; i >= 0; i--) {
+function lastNonSpaceToken(
+  query: QueryToken[],
+  before?: number
+): [QueryToken, number] | null {
+  const start = before ?? query.length - 1;
+  for (let i = start; i >= 0; i--) {
     if (query[i][2] !== "space") {
-      return query[i];
+      return [query[i], i];
     }
   }
   return null;
@@ -349,9 +353,24 @@ function newTokenHelp(
   options: NonSpaceToken[],
   query: QueryToken[]
 ): CorpusAutocompleteOption[] {
-  const lastNonSpaceType = lastNonSpaceToken(query)?.[2];
+  const lastNotSpace = lastNonSpaceToken(query);
+  const lastNonSpaceType = lastNotSpace?.[0][2];
   const inMiddleOfSpan =
     lastNonSpaceType === ")" || lastNonSpaceType === "wordFilter";
+  // A subsequent logical operator would only allow one of these,
+  // because e.g. a and b or c is not allowed.
+  const isFirstLogicOp =
+    options.includes("logic:and") && options.includes("logic:or");
+  const penultNotSpace =
+    lastNotSpace === null
+      ? null
+      : lastNonSpaceToken(query, lastNotSpace[1] - 1);
+  const isPenultOpenParen = penultNotSpace?.[0][2] === "(";
+  // `isPenultOpenParen !== true` because we want to cover the case where
+  // there is no penult token (`null`) or the case where the penult token
+  // is not an open paren (`false`).
+  const shouldAddOpenParen = isFirstLogicOp && isPenultOpenParen !== true;
+
   const results: CorpusAutocompleteOption[] = [];
   for (const option of options) {
     switch (option) {
@@ -365,11 +384,34 @@ function newTokenHelp(
         results.push(PROXIMITY_HELP);
         break;
       case "logic:or":
-        results.push(disjunctionHelp());
+      case "logic:and": {
+        const lastIsSpace = query[query.length - 1]?.[2] === "space";
+        const baseResult =
+          option === "logic:and" ? conjunctionHelp() : disjunctionHelp();
+        if (lastIsSpace) {
+          baseResult.option = baseResult.option.trimStart();
+        }
+        if (shouldAddOpenParen && lastNotSpace !== null) {
+          const i = lastNotSpace[1];
+          baseResult.replacement =
+            // The part before the last token.
+            query
+              .slice(0, i)
+              .map((t) => t[0])
+              .join("") +
+            // The added open paren.
+            "(" +
+            // The part after the last token.
+            query
+              .slice(i)
+              .map((t) => t[0])
+              .join("") +
+            // The suggestion
+            baseResult.option;
+        }
+        results.push(baseResult);
         break;
-      case "logic:and":
-        results.push(conjunctionHelp());
-        break;
+      }
       case "workFilter":
         results.push(AUTHOR_HELP);
         break;

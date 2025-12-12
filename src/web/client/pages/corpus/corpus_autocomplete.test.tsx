@@ -298,4 +298,33 @@ describe("CorpusAutocompleteItem", () => {
 
     expect(screen.getByText("type an exact word to match")).toBeInTheDocument();
   });
+
+  test("automatically adds open paren in middle on logical ops when needed", () => {
+    const opts = optionsForInput("dedit oscula ");
+
+    const andOption = opts.find((o) => o.option === "and ");
+    expect(andOption?.replacement).toBe("dedit (oscula and ");
+    const orOption = opts.find((o) => o.option === "or ");
+    expect(orOption?.replacement).toBe("dedit (oscula or ");
+  });
+
+  test("doesn't add open paren on logical ops when needed", () => {
+    const opts = optionsForInput("dedit (oscula ");
+
+    const andOption = opts.find((o) => o.option === "and ");
+    expect(andOption?.replacement).toBeUndefined();
+    expect(andOption?.option).toBe("and ");
+    const orOption = opts.find((o) => o.option === "or ");
+    expect(orOption?.replacement).toBeUndefined();
+    expect(orOption?.option).toBe("or ");
+  });
+
+  test("automatically adds open paren at start", () => {
+    const opts = optionsForInput("oscula ");
+
+    const andOption = opts.find((o) => o.option === "and ");
+    expect(andOption?.replacement).toBe("(oscula and ");
+    const orOption = opts.find((o) => o.option === "or ");
+    expect(orOption?.replacement).toBe("(oscula or ");
+  });
 });
