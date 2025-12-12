@@ -537,7 +537,8 @@ export function optionsForInput(
         return [informational(`❌ no lemma matches \`${valueSoFar}\``)];
       }
       return matches.map((m) => ({
-        option: m.slice(valueSoFar.length),
+        // Add a space so the token completes.
+        option: m.slice(valueSoFar.length) + " ",
         prefix: lastToken,
       }));
     }

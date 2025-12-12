@@ -198,11 +198,11 @@ describe("optionsForInput", () => {
     const lemmata = ["aaron", "amor", "amo", "amica", "amicus", "bellum"];
     const opts = optionsForInput("@lemma:am", undefined, lemmata);
     const optStrings = opts.map((o) => o.option);
-    expect(optStrings).toContain("or");
-    expect(optStrings).toContain("o");
-    expect(optStrings).toContain("ica");
-    expect(optStrings).toContain("icus");
-    expect(optStrings).not.toContain("bellum");
+    expect(optStrings).toContain("or ");
+    expect(optStrings).toContain("o ");
+    expect(optStrings).toContain("ica ");
+    expect(optStrings).toContain("icus ");
+    expect(optStrings).not.toContain("bellum ");
   });
 
   test("lemma completion with uppercase prefix matches case-insensitively", () => {
@@ -210,9 +210,9 @@ describe("optionsForInput", () => {
     const opts = optionsForInput("@lemma:Am", undefined, lemmata);
     expect(opts.length).toBeGreaterThan(0);
     const optStrings = opts.map((o) => o.option);
-    expect(optStrings).toContain("or");
-    expect(optStrings).toContain("o");
-    expect(optStrings).toContain("ica");
+    expect(optStrings).toContain("or ");
+    expect(optStrings).toContain("o ");
+    expect(optStrings).toContain("ica ");
   });
 
   test("lemma completion with no matches shows informational", () => {
