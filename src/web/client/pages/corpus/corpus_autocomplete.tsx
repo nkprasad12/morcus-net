@@ -100,7 +100,7 @@ function informationalWithPlaceholder(
   placeholder: string
 ): CorpusAutocompleteOption {
   return {
-    option: `<${placeholder}>`,
+    option: placeholder,
     help,
     optionIsPlaceholder: true,
   };
@@ -602,7 +602,9 @@ export function CorpusAutocompleteItem(props: {
         <span className="text sm">{props.option.prefix}</span>
       )}
       {props.option.optionIsPlaceholder ? (
-        <span className="text xs smallChip">{option}</span>
+        <span className="text xs smallChip">
+          <i>{option}</i>
+        </span>
       ) : (
         <span
           className="text sm"

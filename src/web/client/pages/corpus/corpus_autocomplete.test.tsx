@@ -13,7 +13,7 @@ describe("optionsForInput", () => {
   test("empty input returns word help and special '@' help", () => {
     const opts = optionsForInput("");
     const optStrings = opts.map((o) => o.option);
-    expect(optStrings).toContain("<word>");
+    expect(optStrings).toContain("word");
     expect(optStrings).toContain("@");
   });
 
@@ -165,7 +165,7 @@ describe("optionsForInput", () => {
   test("completed proximity token allows new token suggestions", () => {
     const opts = optionsForInput("habeo ~5> ");
     const optStrings = opts.map((o) => o.option);
-    expect(optStrings).toContain("<word>");
+    expect(optStrings).toContain("word");
     expect(optStrings).toContain("@");
   });
 
@@ -258,7 +258,7 @@ describe("optionsForInput", () => {
 
     expect(opts).toHaveLength(2);
     const optStrings = opts.map((o) => o.option);
-    expect(optStrings).toContain("<word>");
+    expect(optStrings).toContain("word");
     expect(optStrings).toContain("@");
   });
 
@@ -267,7 +267,7 @@ describe("optionsForInput", () => {
 
     expect(opts).toHaveLength(3);
     const optStrings = opts.map((o) => o.option);
-    expect(optStrings).toContain("<word>");
+    expect(optStrings).toContain("word");
     expect(optStrings).toContain("@");
     expect(optStrings).toContain("~");
   });
@@ -275,7 +275,7 @@ describe("optionsForInput", () => {
   test("allows new complex term after close paren", () => {
     const opts = optionsForInput("(nato and suo) (");
     const optStrings = opts.map((o) => o.option).sort();
-    expect(optStrings).toStrictEqual(["<word>", "@"]);
+    expect(optStrings).toStrictEqual(["@", "word"]);
   });
 });
 
