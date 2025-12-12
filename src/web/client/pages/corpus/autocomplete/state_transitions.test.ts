@@ -78,9 +78,9 @@ describe("findNextOptions", () => {
       ];
       const result = findNextOptions(tokens);
       expect(result).toEqual(
-        expect.arrayContaining(["logic:and", "proximity", "wordFilter"])
+        expect.arrayContaining(["logic:and", "proximity", "wordFilter", "("])
       );
-      expect(result).toHaveLength(3);
+      expect(result).toHaveLength(4);
     });
 
     it("should reject mixing 'and' with 'or'", () => {

@@ -123,7 +123,11 @@ function optionsForState(
       } else {
         // Or we can add a proximity operator to finish the span, or
         // start a new term.
-        options.push(["proximity", "SpanStart"], ["wordFilter", "InSpan"]);
+        options.push(
+          ["proximity", "SpanStart", true],
+          ["wordFilter", "InSpan", true],
+          ["(", "ComplexTerm", true]
+        );
       }
       return options;
     }
