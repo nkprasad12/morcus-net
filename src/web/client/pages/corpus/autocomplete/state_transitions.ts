@@ -18,10 +18,38 @@ function isLogicalOp(input: string): input is "and" | "or" {
 export function findNextOptions(
   sequence: QueryToken[]
 ): NonSpaceToken[] | string {
+  return errorOr(feedStateMachine(sequence), "nextOptions");
+}
+
+export function termGroups(sequence: QueryToken[]): QueryToken[][] | string {
+  return errorOr(feedStateMachine(sequence), "termGroups");
+}
+
+interface FedStateMachineOutput {
+  nextOptions: NonSpaceToken[];
+  termGroups: QueryToken[][];
+}
+
+type FedStateMachineError = string;
+
+function errorOr<K extends keyof FedStateMachineOutput>(
+  output: FedStateMachineOutput | FedStateMachineError,
+  key: K
+): FedStateMachineOutput[K] | FedStateMachineError {
+  if (typeof output === "string") {
+    return output;
+  }
+  return output[key];
+}
+
+function feedStateMachine(
+  sequence: QueryToken[]
+): FedStateMachineOutput | FedStateMachineError {
   let state: State = ["SpanStartOrWorkFilter", 0];
   let logicalOp: "and" | "or" | null = null;
   let workFilters = 0;
   let lastWasCloseParen = false;
+  const termGroups: QueryToken<NonSpaceToken>[][] = [];
 
   function getOptions() {
     return (
@@ -37,7 +65,7 @@ export function findNextOptions(
   }
 
   for (let i = 0; i < sequence.length; i++) {
-    const [token, , tokenType] = sequence[i];
+    const [token, startIdx, tokenType] = sequence[i];
     if (tokenType === "space") {
       continue;
     }
@@ -81,19 +109,27 @@ export function findNextOptions(
     const parenIncrement =
       matchingOption[0] === "(" ? 1 : matchingOption[0] === ")" ? -1 : 0;
     state = [matchingOption[1], state[1] + parenIncrement];
+
+    // If the selected option has `isNewTerm` set (or there are no existing
+    // term groups), start a new term group.
+    if (matchingOption[2] || termGroups.length === 0) {
+      termGroups.push([]);
+    }
+    termGroups[termGroups.length - 1].push([token, startIdx, tokenType]);
   }
-  return getOptions()
+  const nextOptions = getOptions()
     .filter((o) => workFilters === 0 || o[0] !== "workFilter") // We currently only allow one work filter per query.
     .map((o) => o[0]);
+  return { nextOptions, termGroups };
 }
 
 function optionsForState(
   state: State,
   logicalOp: "and" | "or" | null
-): [NonSpaceToken, QueryProcessState][] {
+): [NonSpaceToken, QueryProcessState, isNewTerm: boolean][] {
   const [processState, parenDepth] = state;
   // A list of [nextToken, nextState (if that token is chosen)]
-  const options: [NonSpaceToken, QueryProcessState][] = [];
+  const options: [NonSpaceToken, QueryProcessState, isNewTerm: boolean][] = [];
   switch (processState) {
     case "InSpan": {
       // We are in a span, but we have a single-part last term.
@@ -101,25 +137,25 @@ function optionsForState(
       // operator to refine current term, or end the span by adding
       // a proximity relation to a next span.
       return [
-        ["wordFilter", "InSpan"],
-        ["logic:and", "ComplexTerm"],
-        ["logic:or", "ComplexTerm"],
-        ["proximity", "SpanStart"],
-        ["(", "ComplexTerm"],
+        ["wordFilter", "InSpan", true],
+        ["logic:and", "ComplexTerm", false],
+        ["logic:or", "ComplexTerm", false],
+        ["proximity", "SpanStart", true],
+        ["(", "ComplexTerm", true],
       ];
     }
     case "ComplexTerm;LastWasTerm": {
       // We have just added a term to a complex term.
       // We can add another logical operator to add another term,
       if (logicalOp !== "and") {
-        options.push(["logic:or", "ComplexTerm"]);
+        options.push(["logic:or", "ComplexTerm", false]);
       }
       if (logicalOp !== "or") {
-        options.push(["logic:and", "ComplexTerm"]);
+        options.push(["logic:and", "ComplexTerm", false]);
       }
       if (parenDepth > 0) {
         // Or we can close a parenthesis, if there's an open one.
-        options.push([")", "InSpan"]);
+        options.push([")", "InSpan", false]);
       } else {
         // Or we can add a proximity operator to finish the span, or
         // start a new term.
@@ -133,15 +169,15 @@ function optionsForState(
     }
     case "ComplexTerm": {
       // We are building a complex term, and the last token was not a term, so we need a term.
-      return [["wordFilter", "ComplexTerm;LastWasTerm"]];
+      return [["wordFilter", "ComplexTerm;LastWasTerm", false]];
     }
     case "SpanStartOrWorkFilter": {
-      options.push(["workFilter", "SpanStartOrWorkFilter"]);
+      options.push(["workFilter", "SpanStartOrWorkFilter", true]);
     }
     // Intentionally fall through
     // eslint-disable-next-line no-fallthrough
     case "SpanStart": {
-      options.push(["(", "ComplexTerm"], ["wordFilter", "InSpan"]);
+      options.push(["(", "ComplexTerm", true], ["wordFilter", "InSpan", true]);
       return options;
     }
   }

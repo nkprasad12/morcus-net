@@ -3,7 +3,11 @@ import {
   type CorpusTokenType,
 } from "@/web/client/pages/corpus/autocomplete/token_types";
 
-export type QueryToken = [tokenOrSpace: string, start: number, CorpusTokenType];
+export type QueryToken<T = CorpusTokenType> = [
+  tokenOrSpace: string,
+  start: number,
+  T
+];
 
 /**
  * Tokenizes the input string into query tokens along with their start positions and statuses.
