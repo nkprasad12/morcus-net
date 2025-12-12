@@ -183,6 +183,12 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
         // for the focus first.
         const i = result[1] ?? currentRef.value.length;
         currentRef.setSelectionRange(i, i);
+        if (i === currentRef.value.length) {
+          // If we're at the end, also scroll to the end.
+          // TODO: We should see if we can also figure out the correct place to
+          // scroll to when we're not at the end.
+          currentRef.scrollLeft = currentRef.scrollWidth;
+        }
       }, 6);
     }
   }
