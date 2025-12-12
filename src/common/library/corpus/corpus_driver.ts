@@ -16,8 +16,8 @@ import type { CorpusQueryRequest } from "@/web/api_routes";
 
 function formatQueryResult(result: CorpusQueryMatch): string {
   const data = result.metadata;
-  const { author, workName, section } = data;
-
+  const { author, workName, leaders } = data;
+  const section = leaders[0][0];
   // header: author (blue) - workName section (green)
   const out = `  \x1b[34m${author}\x1b[0m - \x1b[32m${workName} ${section}\x1b[0m\n`;
 
@@ -60,10 +60,13 @@ function measureMemoryUsage<T>(runnable: () => T): T {
 
 function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   const pageSize = process.argv[3] ? parseInt(process.argv[3], 10) : undefined;
+  const contextLen = process.argv[4]
+    ? parseInt(process.argv[4], 10)
+    : undefined;
   const request: CorpusQueryRequest = {
     query: checkPresent(process.argv[2]),
-    pageStart: 0,
     pageSize,
+    contextLen,
   };
   const startTime = performance.now();
   const resultsRaw = handler.runQuery(request);
@@ -74,8 +77,9 @@ function runQuery(handler: CorpusQueryHandler): CorpusQueryResult {
   results.matches.forEach((result) => {
     console.log(formatQueryResult(result));
   });
+  const elapsedMs = elapsedTime.toFixed(3);
   console.log(
-    `Found ${results.totalResults} results in ${elapsedTime.toFixed(3)} ms`
+    `Found about ${results.resultStats.estimatedResults} results in ${elapsedMs} ms`
   );
   if ("timing" in results) {
     // @ts-expect-error

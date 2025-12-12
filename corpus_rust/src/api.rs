@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 
 /// An error that occurs while executing a query.
 #[derive(Debug, Clone)]
@@ -13,8 +13,12 @@ pub struct CorpusQueryMatchMetadata<'a> {
     pub work_id: &'a String,
     pub work_name: &'a String,
     pub author: &'a String,
-    pub section: &'a String,
-    pub offset: u32,
+    // (Section ID, offset in section, length)
+    pub leaders: Vec<(&'a String, u32, u32)>,
+    #[serde(skip_serializing)]
+    pub(crate) work_start_token: u32,
+    #[serde(skip_serializing)]
+    pub(crate) work_end_token: u32,
 }
 
 /// A single match from a corpus query.
@@ -22,15 +26,40 @@ pub struct CorpusQueryMatchMetadata<'a> {
 #[serde(rename_all = "camelCase")]
 pub struct CorpusQueryMatch<'a> {
     pub metadata: CorpusQueryMatchMetadata<'a>,
+    /// The text of the match and surrounding context.
+    /// The boolean indicates whether the given string is part of the match
+    /// (if true) or context (if false).
     pub text: Vec<(String, bool)>,
+}
+
+/// Data to resolve a page of results.
+#[derive(Debug, Default, Deserialize, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct PageData {
+    /// The index of the next result in the full list of actual results.
+    /// For example, with if we had 60 results so far, and returned 10
+    /// on this page, the `result_index` would be 70 (because it's 0-based).
+    pub result_index: u32,
+    /// The token ID of the next candidate match.
+    pub result_id: u32,
+    /// The index of the next candidate match within the candidate set.
+    pub candidate_index: u32,
+}
+
+/// Global information about all results of a query.
+#[derive(Debug, Serialize, PartialEq)]
+#[serde(rename_all = "camelCase")]
+pub struct QueryGlobalInfo {
+    pub estimated_results: usize,
 }
 
 /// A single page of matches for a query, along with metadata.
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct CorpusQueryResult<'a> {
-    pub total_results: usize,
     pub matches: Vec<CorpusQueryMatch<'a>>,
-    pub page_start: usize,
+    pub result_stats: QueryGlobalInfo,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub next_page: Option<PageData>,
     pub timing: Vec<(String, f64)>,
 }

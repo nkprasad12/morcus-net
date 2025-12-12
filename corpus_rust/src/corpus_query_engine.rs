@@ -5,11 +5,19 @@ mod corpus_query_conversion;
 mod corpus_result_resolution;
 mod errors;
 mod index_data;
+mod query_pruning;
+mod query_validation;
 mod reference_impl;
 
-use crate::api::{CorpusQueryResult, QueryExecError};
-use crate::corpus_query_engine::corpus_data_readers::{CorpusText, IndexBuffers, TokenStarts};
+use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo};
+use crate::corpus_query_engine::corpus_candidate_filtering::MatchIterator;
+use crate::corpus_query_engine::corpus_data_readers::{
+    CorpusText, IndexBuffers, InflectionLookup, TokenStarts,
+};
+use crate::corpus_query_engine::corpus_result_resolution::get_match_page;
 use crate::corpus_query_engine::index_data::{IndexData, IndexDataRoO, IndexRange};
+use crate::corpus_query_engine::query_pruning::prune_query;
+use crate::corpus_query_engine::query_validation::is_query_currently_supported;
 use crate::query_parsing_v2::{Query, parse_query};
 
 use super::corpus_index::LatinCorpusIndex;
@@ -19,9 +27,11 @@ use std::error::Error;
 
 fn empty_result() -> CorpusQueryResult<'static> {
     CorpusQueryResult {
-        total_results: 0,
+        result_stats: QueryGlobalInfo {
+            estimated_results: 0,
+        },
         matches: vec![],
-        page_start: 0,
+        next_page: None,
         timing: vec![],
     }
 }
@@ -32,17 +42,19 @@ pub struct CorpusQueryEngine {
     text: CorpusText,
     raw_buffers: IndexBuffers,
     starts: TokenStarts,
+    inflections: InflectionLookup,
 }
 
 impl CorpusQueryEngine {
     /// Creates a new query engine from the given corpus index.
     pub fn new(corpus: LatinCorpusIndex) -> Result<Self, Box<dyn Error>> {
-        let (starts, text, raw_buffers) = corpus_data_readers::data_readers(&corpus)?;
+        let readers = corpus_data_readers::data_readers(&corpus)?;
         Ok(CorpusQueryEngine {
             corpus,
-            text,
-            raw_buffers,
-            starts,
+            starts: readers.0,
+            text: readers.1,
+            raw_buffers: readers.2,
+            inflections: readers.3,
         })
     }
 
@@ -65,13 +77,12 @@ impl CorpusQueryEngine {
             Some(v) => *v,
             None => {
                 return Err(QueryExecError::new(&format!(
-                    "Author '{}' not found in corpus",
-                    author
+                    "Author '{author}' not found in corpus"
                 )));
             }
         };
-        let start = self.corpus.work_lookup[start].1[0].1;
-        let end_work_sections = &self.corpus.work_lookup[end].1;
+        let start = self.corpus.work_lookup[start].rows[0].1;
+        let end_work_sections = &self.corpus.work_lookup[end].rows;
         let end = end_work_sections[end_work_sections.len() - 1].2;
         // The range must be aligned to word boundaries.
         Ok(IndexRange {
@@ -82,7 +93,7 @@ impl CorpusQueryEngine {
 
     /// Queries the corpus with the given parameters.
     /// - `query_str`: The query string to execute.
-    /// - `page_start`: The index of the first result to return (0-based).
+    /// - `page_data`: Metadata required to find the correct page of results.
     /// - `page_size`: The maximum number of results to return. If `None`, a large default is used.
     /// - `context_len`: The number of tokens of context to include around each match. If `None`, defaults to 25.
     ///
@@ -90,53 +101,71 @@ impl CorpusQueryEngine {
     pub fn query_corpus(
         &self,
         query_str: &str,
-        page_start: usize,
+        page_data: &PageData,
         page_size: usize,
         context_len: usize,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let mut profiler = TimeProfiler::new();
-        // Assemble the query
+
+        // Parse the query
         let query = parse_query(query_str).map_err(|e| QueryExecError::new(&e.message))?;
+        if !is_query_currently_supported(&query) {
+            return Err(QueryExecError::new(
+                "The given query contains constructs that are not yet supported",
+            ));
+        }
+        let query = match prune_query(query) {
+            Ok(q) => q,
+            // TODO: Pipe the error to the user.
+            Err(_) => return Ok(empty_result()),
+        };
         let terms = query
             .terms
             .iter()
             .map(|term| self.convert_query_term(term))
             .collect::<Result<Vec<_>, _>>()?;
         let query_spans = corpus_index_calculation::split_into_spans(&terms)?;
-        if query_spans.len() > 20 {
+        if query_spans.len() > 10 {
             return Err(QueryExecError::new(
-                "Queries with more than 20 term groups are not supported",
+                "Queries with more than 10 term groups are not supported",
             ));
         }
         profiler.phase("Parse query");
 
-        // Find the possible matches, then filter them
+        // Find the candidates for each span individually.
         let range = self.compute_range(&query)?;
         let span_candidates =
             match self.candidates_for_spans(&query_spans, &range, &mut profiler)? {
                 Some(res) => res,
                 None => return Ok(empty_result()),
             };
-        let candidates = self.compute_query_candidates(&span_candidates)?;
-        // TODO: When we have proximity searches, we could potentially have spans that match with themselves,
-        // technically giving matching within N tokens but they're not distinct terms. For now,
-        // just include these misleading results.
-        let (match_ids, total_results) =
-            self.compute_page_result(&candidates, page_start, page_size, &mut profiler)?;
 
-        // Turn the match IDs into actual matches (with the text and locations).
-        let matches = self.resolve_match_tokens(
-            &match_ids,
+        // Find the candidates that could match all spans.
+        let candidates = self.compute_query_candidates(&span_candidates)?;
+        let total_candidates = candidates.data.to_ref().num_elements();
+        let mut candidates = MatchIterator::new(&candidates, page_data);
+        profiler.phase("Combined candidates found");
+
+        // Finds a page of actual matches from the candidates.
+        let match_leaders = get_match_page(
+            &mut candidates,
             &span_candidates,
             &query_spans,
-            context_len as u32,
+            self,
+            page_size,
+            page_data,
+            total_candidates,
         )?;
-        profiler.phase("Build Matches");
+        profiler.phase("Match page computed");
+
+        // Turn the match IDs into actual matches (with the text and locations).
+        let matches = self.resolve_match_tokens(match_leaders.matches, context_len as u32)?;
+        profiler.phase("Matches resolved");
 
         Ok(CorpusQueryResult {
-            total_results,
+            result_stats: match_leaders.summary_info,
             matches,
-            page_start,
+            next_page: match_leaders.next_page,
             timing: profiler.get_stats().to_vec(),
         })
     }
@@ -149,16 +178,52 @@ mod tests {
     macro_rules! generate {
         ($query:expr) => {
             &[
-                ($query, 0, 5, 15),
-                ($query, 0, 25, 10),
-                ($query, 5, 5, 10),
-                ($query, 50, 5, 10),
+                (
+                    $query,
+                    PageData {
+                        result_index: 0,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    5,
+                    15,
+                ),
+                (
+                    $query,
+                    PageData {
+                        result_index: 0,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    25,
+                    10,
+                ),
+                (
+                    $query,
+                    PageData {
+                        result_index: 5,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    5,
+                    10,
+                ),
+                (
+                    $query,
+                    PageData {
+                        result_index: 50,
+                        result_id: 0,
+                        candidate_index: 0,
+                    },
+                    5,
+                    10,
+                ),
             ]
         };
     }
 
     // (query, page_start, page_size, context_len)
-    const TEST_QUERIES: &[&[(&str, usize, usize, usize)]] = &[
+    const TEST_QUERIES: &[&[(&str, PageData, usize, usize)]] = &[
         generate!("@lemma:do"),
         generate!("@case:dat"),
         generate!("(@lemma:habeo and @voice:passive)"),
@@ -179,8 +244,8 @@ mod tests {
             None => return,
         };
         let test_queries = TEST_QUERIES.iter().flat_map(|s| s.iter());
-        for (query, page_start, page_size, context_len) in test_queries {
-            engine.compare_ref_impl_results(query, *page_start, *page_size, *context_len);
+        for (query, page_data, page_size, context_len) in test_queries {
+            engine.compare_ref_impl_results(query, page_data, *page_size, *context_len);
         }
     }
 }

@@ -13,7 +13,7 @@ import { TelemetryLogger } from "@/web/telemetry/telemetry";
 import {
   CompletionsFusedApi,
   DictsFusedApi,
-  GetCorpusAuthorsApi,
+  GetCorpusSuggestionsApi,
   GetWork,
   ListLibraryWorks,
   LogClientEventApi,
@@ -49,7 +49,7 @@ import { assertEqual } from "@/common/assert";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
 import {
-  corpusAuthorList,
+  corpusSuggestions,
   rustCorpusApiHandler,
 } from "@/common/library/corpus/corpus_rust";
 
@@ -247,8 +247,8 @@ export function startMorcusServer(): Promise<http.Server> {
         CACHING_SETTER
       ),
       RouteDefinition.create(
-        GetCorpusAuthorsApi,
-        (_1, _2, requestData) => corpusAuthorList(requestData),
+        GetCorpusSuggestionsApi,
+        (request, _2, requestData) => corpusSuggestions(request, requestData),
         "PreEncoded",
         CACHING_SETTER
       ),

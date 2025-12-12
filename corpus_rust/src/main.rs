@@ -2,13 +2,14 @@ use std::env;
 use std::time::Instant;
 
 use corpus::{
-    api::{CorpusQueryResult, QueryExecError},
+    api::{CorpusQueryResult, PageData, QueryExecError},
     build_corpus_v2::build_corpus,
     corpus_index,
     corpus_query_engine::{self, CorpusQueryEngine},
 };
 
 const ARG_QUIET: &str = "--quiet";
+const ARG_NO_STATS: &str = "--no-stats";
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
 fn load_corpus_with_timing(path: &str) -> corpus_index::LatinCorpusIndex {
@@ -31,18 +32,20 @@ fn load_corpus_with_timing(path: &str) -> corpus_index::LatinCorpusIndex {
 fn query_with_timing<'a>(
     engine: &'a CorpusQueryEngine,
     query: &str,
+    page_data: &PageData,
 ) -> Result<CorpusQueryResult<'a>, QueryExecError> {
-    let page_start = 0;
-    let page_size = get_limit_arg_or_default();
-    let context_len = get_context_arg_or_default();
+    let page_size = get_limit_arg();
+    let context_len = get_context_arg();
     let start = Instant::now();
-    let results = engine.query_corpus(query, page_start, page_size, context_len)?;
+    let results = engine.query_corpus(query, page_data, page_size, context_len)?;
     let duration = start.elapsed();
-    println!("Query executed in {duration:.2?}");
-    if !results.timing.is_empty() {
-        println!("Query timing breakdown:");
-        for (k, v) in &results.timing {
-            println!("  {}: {:.3} ms", k, *v);
+    if !has_arg(ARG_NO_STATS) {
+        println!("Query executed in {duration:.2?}");
+        if !results.timing.is_empty() {
+            println!("Query timing breakdown:");
+            for (k, v) in &results.timing {
+                println!("  {}: {:.3} ms", k, *v);
+            }
         }
     }
     Ok(results)
@@ -67,28 +70,34 @@ fn get_query_arg_or_exit() -> String {
     std::process::exit(1);
 }
 
-fn get_context_arg_or_default() -> usize {
+fn get_arg_or_default<T: std::str::FromStr>(name: &str, fallback: T) -> T {
     let args: Vec<String> = env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--context")
+    if let Some(pos) = args.iter().position(|a| *a == format!("--{name}"))
         && let Some(ctx) = args.get(pos + 1)
     {
-        return ctx.parse::<usize>().ok().unwrap_or(15);
+        return ctx.parse::<T>().ok().unwrap_or(fallback);
     }
-    15
+    fallback
 }
 
-fn get_limit_arg_or_default() -> usize {
-    let args: Vec<String> = env::args().collect();
-    if let Some(pos) = args.iter().position(|a| a == "--limit")
-        && let Some(lim) = args.get(pos + 1)
-    {
-        return lim.parse::<usize>().unwrap_or(25);
-    }
-    25
+fn get_context_arg() -> usize {
+    get_arg_or_default("context", 15)
 }
 
-fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQueryResult<'a> {
-    let result = query_with_timing(engine, query_str);
+fn get_limit_arg() -> usize {
+    get_arg_or_default("limit", 25)
+}
+
+fn get_pages_arg() -> usize {
+    get_arg_or_default("pages", 1)
+}
+
+fn get_results<'a>(
+    engine: &'a CorpusQueryEngine,
+    query_str: &str,
+    page_data: &PageData,
+) -> CorpusQueryResult<'a> {
+    let result = query_with_timing(engine, query_str, page_data);
     if result.is_err() {
         eprintln!(
             "Error executing query: {}",
@@ -99,34 +108,39 @@ fn get_results<'a>(engine: &'a CorpusQueryEngine, query_str: &str) -> CorpusQuer
     result.unwrap()
 }
 
-fn print_query_results(engine: &CorpusQueryEngine, query_str: &str) {
-    let results = get_results(engine, query_str);
+fn print_query_results(
+    engine: &CorpusQueryEngine,
+    query_str: &str,
+    page_data: &PageData,
+) -> Option<PageData> {
+    let results = get_results(engine, query_str, page_data);
     println!(
-        "\n\x1b[4mShowing results {}-{} of {} matches:\x1b[0m",
-        results.page_start + 1,
-        results.page_start + results.matches.len(),
-        results.total_results
+        "\n\x1b[4mShowing results {}-{} of about {} matches:\x1b[0m",
+        page_data.result_index + 1,
+        page_data.result_index as usize + results.matches.len(),
+        results.result_stats.estimated_results
     );
     if has_arg(ARG_QUIET) {
         println!("- Omitted matches due to --quiet flag.\n");
-        return;
+        return results.next_page;
     }
     for match_data in results.matches {
         let m = &match_data.metadata;
         println!(
             "  \x1b[34m{}\x1b[0m - \x1b[32m{} {}\x1b[0m",
-            m.author, m.work_name, m.section
+            m.author, m.work_name, m.leaders[0].0
         );
         let mut chunks = vec!["    ".to_string()];
         for (text, is_core) in &match_data.text {
             let color = if *is_core { "[31m" } else { "[90m" };
             // indent lines after any newline so subsequent lines align correctly
             let text = text.replace("\n", "\n    ");
-            chunks.push(format!("\x1b{}{}\x1b[0m", color, text));
+            chunks.push(format!("\x1b{color}{text}\x1b[0m"));
         }
         chunks.push("\n".to_string());
         print!("{}", chunks.join(""));
     }
+    results.next_page
 }
 
 fn print_top_snapshot_for(pid: u32, show_header: bool) {
@@ -139,7 +153,7 @@ fn print_top_snapshot_for(pid: u32, show_header: bool) {
             let processed = s
                 .lines()
                 .skip(if show_header { 6 } else { 7 }) // remove first 6 header lines
-                .map(|l| format!("    {}", l)) // indent remaining lines
+                .map(|l| format!("    {l}")) // indent remaining lines
                 .collect::<Vec<_>>()
                 .join("\n");
             o.stdout = processed.into_bytes();
@@ -155,13 +169,13 @@ fn print_top_snapshot_for(pid: u32, show_header: bool) {
             }
         }
         Err(e) => {
-            eprintln!("Failed to run top: {}", e);
+            eprintln!("Failed to run top: {e}");
         }
     }
 }
 
 fn print_mem_summary(tag: String, delay_secs: u64) {
-    eprintln!("--- Memory summary ({}) ---", tag);
+    eprintln!("--- Memory summary ({tag}) ---");
     print_top_snapshot_for(std::process::id(), true);
     std::thread::sleep(std::time::Duration::from_secs(delay_secs / 2));
     print_top_snapshot_for(std::process::id(), false);
@@ -185,7 +199,10 @@ fn main() {
         print_mem_summary("Before query execution".to_string(), 1);
     }
     let query_str = get_query_arg_or_exit();
-    print_query_results(&engine, &query_str);
+    let mut page_data = PageData::default();
+    for _ in 0..get_pages_arg() {
+        page_data = print_query_results(&engine, &query_str, &page_data).unwrap_or_default();
+    }
     if has_arg("--mem") {
         print_mem_summary("After query execution".to_string(), 1);
     }

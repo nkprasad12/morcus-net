@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 const TABLES_FILE = "build/morceus/processed/morceusTables.json";
 
 /**

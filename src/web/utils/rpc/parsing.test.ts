@@ -5,12 +5,14 @@ import {
   instanceOf,
   isAny,
   isArray,
+  isBoolean,
   isBoth,
   isNumber,
   isOneOf,
   isPair,
   isRecord,
   isString,
+  isTriplet,
   matchesObject,
   maybeUndefined,
   parseMessage,
@@ -146,6 +148,29 @@ describe("isPair", () => {
 
   it("validates valid arrays", () => {
     expect(isPair(isString, isNumber)(["foo", 4])).toBe(true);
+  });
+});
+
+describe("isTriplet", () => {
+  const tripletValidator = isTriplet(isString, isNumber, isBoolean);
+
+  it("rejects non arrays", () => {
+    expect(tripletValidator("canaba")).toBe(false);
+  });
+
+  it("rejects arrays with incorrect length", () => {
+    expect(tripletValidator(["foo", 4])).toBe(false);
+    expect(tripletValidator(["foo", 4, false, "extra"])).toBe(false);
+  });
+
+  it("rejects arrays with invalid positions", () => {
+    expect(tripletValidator([4, false, "bar"])).toBe(false);
+    expect(tripletValidator(["foo", "not-number", "bar"])).toBe(false);
+    expect(tripletValidator(["foo", false, 5])).toBe(false);
+  });
+
+  it("validates arrays that match all validators", () => {
+    expect(tripletValidator(["foo", 4, false])).toBe(true);
   });
 });
 

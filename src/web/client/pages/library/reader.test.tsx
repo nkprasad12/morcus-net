@@ -31,6 +31,7 @@ jest.mock("@/web/client/utils/media_query", () => {
 });
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { silenceErroneousWarnings } from "@/web/client/test_utils";
+import { textHighlightParams } from "@/web/client/pages/library/reader_url";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 
@@ -382,6 +383,33 @@ describe("Reading UI", () => {
       <RouteContext.Provider
         value={{
           route: { path: urlByIdFor("dbg"), params: { id: "2" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findByText(/\[gap\]/);
+    await user.click(await screen.findByText(/divisa/));
+    expect(mockCallApiFull).toHaveBeenLastCalledWith(
+      expect.objectContaining({ path: "/api/dicts/fused" }),
+      expect.objectContaining({ query: "divisa" })
+    );
+  });
+
+  it("shows marked up contents with highlight text", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_VARIANTS);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: {
+            path: urlByIdFor("dbg"),
+            params: {
+              id: "2",
+              ...textHighlightParams([{ id: "2.1", start: 0, end: 10 }]),
+            },
+          },
           navigateTo: () => {},
         }}>
         <ReadingPage />

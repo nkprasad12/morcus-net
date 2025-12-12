@@ -51,18 +51,24 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
   );
 
   test("bundle size is within limit", async () => {
+    let vendorSize = 0;
     let totalSize = 0;
     for await (const [jsFile, jsRes] of getBundleFiles()) {
-      console.log(jsFile);
       const contents = await jsRes.arrayBuffer();
       const gzipped = gzipSync(contents).byteLength;
       console.debug(`${jsFile}: ${gzipped / 1000} KB`);
       totalSize += gzipped;
+      if (jsFile.startsWith("vendor.")) {
+        vendorSize += gzipped;
+      }
     }
 
     expect(totalSize).toBeGreaterThan(0);
     console.log(`::notice title=Bundle Size::${totalSize / 1000} kB`);
-    expect(totalSize / 1000).toBeLessThan(100);
+    expect(totalSize / 1000).toBeLessThan(85);
+
+    expect(vendorSize).toBeGreaterThan(0);
+    expect(vendorSize / 1000).toBeLessThan(20);
   });
 
   test("bundle is sent with an immutable header", async () => {

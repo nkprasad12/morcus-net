@@ -154,11 +154,11 @@ fn crunch_and_maybe_relax_case(
     let body = chars.collect::<String>().to_lowercase();
 
     // Process with original case (first character + lowercase rest)
-    let mut results = crunch_exact_match(&format!("{}{}", first_char, body), tables, options);
+    let mut results = crunch_exact_match(&format!("{first_char}{body}"), tables, options);
 
     // Special case for "V" which can be relaxed to "U" in Latin
     if first_char == 'V' {
-        let relaxed_word = format!("U{}", body);
+        let relaxed_word = format!("U{body}");
         for mut relaxed_result in crunch_exact_match(&relaxed_word, tables, options) {
             // This is marked for compatibility with the Typescript implementation,
             // but it doesn't really make sense if you think about it, since we just
@@ -177,7 +177,7 @@ fn crunch_and_maybe_relax_case(
             first_char.to_uppercase().next().unwrap_or(first_char)
         };
 
-        let relaxed_word = format!("{}{}", relaxed_first, body);
+        let relaxed_word = format!("{relaxed_first}{body}");
         for mut relaxed_result in crunch_exact_match(&relaxed_word, tables, options) {
             relaxed_result.relaxed_case = true;
             results.push(relaxed_result);
@@ -185,7 +185,7 @@ fn crunch_and_maybe_relax_case(
 
         if first_char == 'V' {
             // Handle e.g. Vt -> ut.
-            let relaxed_word = format!("u{}", body);
+            let relaxed_word = format!("u{body}");
             for mut relaxed_result in crunch_exact_match(&relaxed_word, tables, options) {
                 // This is marked for compatibility with the Typescript implementation,
                 // but it doesn't really make sense if you think about it, since we just

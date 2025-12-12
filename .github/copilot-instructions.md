@@ -32,7 +32,7 @@ Morcus.net is a collection of digital tools for Latin language, including:
 
 ```bash
 # First-time setup
-./first_time_setup.sh
+./set_up_or_update.sh.sh
 
 # Start server with dev build
 ./morcus.sh web

@@ -4,6 +4,7 @@ import { buildCorpus } from "@/common/library/corpus/build_corpus";
 import {
   CorpusQueryResult,
   type CorpusInputWork,
+  type PageData,
 } from "@/common/library/corpus/corpus_common";
 import { RustCorpusQueryEngine } from "@/common/library/corpus/corpus_rust";
 import fs from "fs";
@@ -59,8 +60,8 @@ function getMatchText(match: CorpusQueryResult["matches"][number]) {
 describe("Corpus Integration Test", () => {
   let queryEngine: RustCorpusQueryEngine;
 
-  function queryCorpus(query: string, pageStart?: number, pageSize?: number) {
-    const raw = queryEngine.queryCorpus({ query, pageStart, pageSize });
+  function queryCorpus(query: string, pageData?: PageData, pageSize?: number) {
+    const raw = queryEngine.queryCorpus({ query, pageData, pageSize });
     const parsed = JSON.parse(raw);
     return assertType(parsed, CorpusQueryResult.isMatch);
   }
@@ -97,8 +98,7 @@ describe("Corpus Integration Test", () => {
     expect(results.matches[0]).toMatchObject({
       metadata: expect.objectContaining({
         workId: "test_work_1",
-        section: "1",
-        offset: 1,
+        leaders: [["1", 1, 1]],
       }),
     });
     const matchText = getMatchText(results.matches[0]);
@@ -128,21 +128,19 @@ describe("Corpus Integration Test", () => {
   it("should find all instances of a lemma", () => {
     const query = "@lemma:servus";
     const results = queryCorpus(query);
-    expect(results.totalResults).toBe(2);
+    expect(results.resultStats.estimatedResults).toBe(2);
     expect(results.matches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
           metadata: expect.objectContaining({
             workId: "test_work_1",
-            section: "1",
-            offset: 1,
+            leaders: [["1", 1, 1]],
           }),
         }),
         expect.objectContaining({
           metadata: expect.objectContaining({
             workId: "test_work_1",
-            section: "2",
-            offset: 0,
+            leaders: [["2", 0, 1]],
           }),
         }),
       ])
@@ -155,7 +153,7 @@ describe("Corpus Integration Test", () => {
     const query = "@case:acc";
     const results = queryCorpus(query, undefined, 2);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
-    expect(results.totalResults).toBe(4);
+    expect(results.resultStats.estimatedResults).toBe(4);
     expect(results.matches).toHaveLength(2);
     expect(getMatchText(results.matches[0])).toEqual(["servum"]);
     expect(getMatchText(results.matches[1])).toEqual(["Gallum"]);
@@ -168,8 +166,7 @@ describe("Corpus Integration Test", () => {
     expect(results.matches[0]).toMatchObject({
       metadata: expect.objectContaining({
         workId: "test_work_1",
-        section: "1",
-        offset: 0,
+        leaders: [["1", 0, 3]],
       }),
     });
     expect(getMatchText(results.matches[0])).toEqual([
@@ -177,15 +174,28 @@ describe("Corpus Integration Test", () => {
     ]);
   });
 
-  it("should handle a composed 'and' query", () => {
+  it("should handle a composed 'and' query across lemma", () => {
     const query = "(@lemma:Gallus and @case:acc) @lemma:accognosco";
     const results = queryCorpus(query);
     expect(results.matches).toHaveLength(1);
     expect(results.matches[0]).toMatchObject({
       metadata: expect.objectContaining({
         workId: "test_work_1",
-        section: "2",
-        offset: 1,
+        leaders: [["2", 1, 2]],
+      }),
+    });
+    expect(getMatchText(results.matches[0])).toEqual(["Gallum accognoscit"]);
+  });
+
+  it("should handle a composed 'and' query across cases", () => {
+    const query =
+      "(@number:sg and @case:acc and @gender:masc) @lemma:accognosco";
+    const results = queryCorpus(query);
+    expect(results.matches).toHaveLength(1);
+    expect(results.matches[0]).toMatchObject({
+      metadata: expect.objectContaining({
+        workId: "test_work_1",
+        leaders: [["2", 1, 2]],
       }),
     });
     expect(getMatchText(results.matches[0])).toEqual(["Gallum accognoscit"]);
@@ -198,15 +208,13 @@ describe("Corpus Integration Test", () => {
     expect(results.matches[0]).toMatchObject({
       metadata: expect.objectContaining({
         workId: "test_work_1",
-        section: "1",
-        offset: 0,
+        leaders: [["1", 0, 2]],
       }),
     });
     expect(results.matches[1]).toMatchObject({
       metadata: expect.objectContaining({
         workId: "test_work_2",
-        section: "2",
-        offset: 0,
+        leaders: [["2", 0, 2]],
       }),
     });
     expect(getMatchText(results.matches[0])).toEqual(["Gallus servum"]);
@@ -217,7 +225,7 @@ describe("Corpus Integration Test", () => {
     const query = "acclamat servus";
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(0);
+    expect(results.resultStats.estimatedResults).toBe(0);
     expect(results.matches).toHaveLength(0);
   });
 
@@ -231,20 +239,20 @@ describe("Corpus Integration Test", () => {
       "marmore et marmoribus",
     ].map((text) => queryCorpus(text));
 
-    expect(results[0].totalResults).toBe(1);
-    expect(results[1].totalResults).toBe(1);
+    expect(results[0].resultStats.estimatedResults).toBe(1);
+    expect(results[1].resultStats.estimatedResults).toBe(1);
     // There's a period between the words now.
-    expect(results[2].totalResults).toBe(0);
-    expect(results[3].totalResults).toBe(0);
-    expect(results[4].totalResults).toBe(1);
-    expect(results[5].totalResults).toBe(1);
+    expect(results[2].resultStats.estimatedResults).toBe(0);
+    expect(results[3].resultStats.estimatedResults).toBe(0);
+    expect(results[4].resultStats.estimatedResults).toBe(1);
+    expect(results[5].resultStats.estimatedResults).toBe(1);
   });
 
   it("should return no results for a query with no matches", () => {
     const query = "imperator";
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(0);
+    expect(results.resultStats.estimatedResults).toBe(0);
     expect(results.matches).toHaveLength(0);
   });
 
@@ -252,20 +260,27 @@ describe("Corpus Integration Test", () => {
     const query = "@lemma:marmor et";
     const startIds = new Set<number>();
 
-    let results = queryCorpus(query, 0, 2);
-    expect(results.totalResults).toBe(5);
+    let results = queryCorpus(query, undefined, 2);
+    expect(results.resultStats.estimatedResults).toBe(5);
     expect(results.matches).toHaveLength(2);
-    results.matches.forEach((match) => startIds.add(match.metadata.offset));
+    results.matches.forEach((match) =>
+      startIds.add(match.metadata.leaders[0][1])
+    );
 
-    results = queryCorpus(query, 2, 2);
-    expect(results.totalResults).toBe(5);
+    results = queryCorpus(query, results.nextPage, 2);
+    expect(results.resultStats.estimatedResults).toBe(5);
     expect(results.matches).toHaveLength(2);
-    results.matches.forEach((match) => startIds.add(match.metadata.offset));
+    results.matches.forEach((match) =>
+      startIds.add(match.metadata.leaders[0][1])
+    );
 
-    results = queryCorpus(query, 4, 2);
-    expect(results.totalResults).toBe(5);
+    results = queryCorpus(query, results.nextPage, 2);
+    expect(results.resultStats.estimatedResults).toBe(5);
     expect(results.matches).toHaveLength(1);
-    results.matches.forEach((match) => startIds.add(match.metadata.offset));
+    expect(results.nextPage).toBeUndefined();
+    results.matches.forEach((match) =>
+      startIds.add(match.metadata.leaders[0][1])
+    );
 
     const sortedIds = Array.from(startIds).sort((a, b) => a - b);
     // Marmorem is not valid because marmor is neuter.
@@ -277,7 +292,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.estimatedResults).toBe(1);
     const resultParts = results.matches[0].text;
     expect(resultParts).toHaveLength(3);
     expect(resultParts[0][1]).toBe(false);
@@ -291,7 +306,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.estimatedResults).toBe(1);
     const resultParts = results.matches[0].text;
     expect(resultParts).toHaveLength(3);
     expect(resultParts[0][1]).toBe(false);
@@ -305,7 +320,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.estimatedResults).toBe(1);
     const resultParts = results.matches[0].text;
     expect(resultParts).toHaveLength(3);
     expect(resultParts[0][1]).toBe(false);
@@ -319,7 +334,7 @@ describe("Corpus Integration Test", () => {
 
     const results = queryCorpus(query);
 
-    expect(results.totalResults).toBe(1);
+    expect(results.resultStats.estimatedResults).toBe(1);
     expect(getMatchText(results.matches[0])).toEqual(["marmoris", "marmore"]);
   });
 
@@ -329,6 +344,121 @@ describe("Corpus Integration Test", () => {
     const results = queryCorpus(query);
 
     // Marmorem is not valid because marmor is neuter.
-    expect(results.totalResults).toBe(5);
+    expect(results.matches).toHaveLength(5);
+  });
+
+  it("should trim context at work boundaries", () => {
+    const query = "Gallus regem";
+
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["Gallus regem"]);
+    const resultText = results.matches[0].text.map(([text]) => text).join("");
+    // Should not include text from next work. Note that we accidentally remove the
+    // final punctuation after `videt` but this is OK for now.
+    expect(resultText).toBe("rex et regina.\nGallus regem videt");
+  });
+
+  it("should trim context at work end", () => {
+    const query = "regem videt";
+
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["regem videt"]);
+    const resultText = results.matches[0].text.map(([text]) => text).join("");
+    // Should not include text from next work. Note that we accidentally remove the
+    // final punctuation after `videt` but this is OK for now.
+    expect(resultText).toBe("rex et regina.\nGallus regem videt");
+  });
+
+  it("should trim context at work start", () => {
+    const query = "rex et";
+
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["rex et"]);
+    const resultText = results.matches[0].text.map(([text]) => text).join("");
+    // Should not include text from next work. Note that we accidentally remove the
+    // final punctuation after `videt` but this is OK for now.
+    expect(resultText).toBe("rex et regina.\nGallus regem videt");
+  });
+
+  it("should not allow proximity query passing work boundary", () => {
+    const query = "Gallum accognoscit ~ rex et";
+    const results = queryCorpus(query);
+    expect(results.matches).toHaveLength(0);
+  });
+
+  it("should allow proximity query at work end", () => {
+    const query = "servus ~ Gallum accognoscit";
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["servus", "Gallum accognoscit"]);
+  });
+
+  it("should allow proximity query at work start", () => {
+    const query = "rex et ~ regina";
+    const results = queryCorpus(query);
+
+    expect(results.matches).toHaveLength(1);
+    const matchText = results.matches[0].text
+      .filter(([_, isMatchtext]) => isMatchtext)
+      .map(([text]) => text);
+    expect(matchText).toEqual(["rex et", "regina"]);
+  });
+
+  it("should not duplicate proximity results", () => {
+    const query = "dedit ~ dedit";
+    const results = queryCorpus(query);
+    expect(results.matches).toHaveLength(1);
+  });
+
+  it("returns correct leader info for a single span split across lines", () => {
+    const query = "suo dedit";
+    const results = queryCorpus(query);
+    const leaders = results.matches[0].metadata.leaders;
+
+    expect(leaders).toHaveLength(2);
+    expect(leaders[0]).toEqual(["3", 3, 1]);
+    expect(leaders[1]).toEqual(["4", 0, 1]);
+  });
+
+  it("returns correct leader info for a multiple spans split across lines", () => {
+    const query = "suo dedit ~ saxo";
+    const results = queryCorpus(query);
+    const leaders = results.matches[0].metadata.leaders;
+
+    expect(leaders).toHaveLength(3);
+    expect(leaders[0]).toEqual(["3", 3, 1]);
+    expect(leaders[1]).toEqual(["4", 0, 1]);
+    expect(leaders[2]).toEqual(["4", 2, 1]);
+  });
+
+  it("returns correct leader info for multiple overlows and multiple spans", () => {
+    const query = "nato non iterum repetenda suo dedit 15~ accipe nunc";
+    const results = queryCorpus(query);
+    const leaders = results.matches[0].metadata.leaders;
+
+    expect(leaders).toHaveLength(4);
+    expect(leaders[0]).toEqual(["2", 2, 1]); // 'nato'
+    expect(leaders[1]).toEqual(["3", 0, 4]); // 'non iterum repetenda suo'
+    expect(leaders[2]).toEqual(["4", 0, 1]); // 'dedit'
+    expect(leaders[3]).toEqual(["7", 0, 2]); // 'accipe nunc'
   });
 });

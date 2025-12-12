@@ -56,8 +56,15 @@ const rsbuildConfig: RsbuildConfig = {
       ? { analyzerMode: "server", openAnalyzer: true }
       : undefined,
     chunkSplit: {
-      // For now, prevent splitting.
-      strategy: "all-in-one",
+      // Split off vendor code into its own chunk. At the time of writing, the last
+      // update to vendor code was 9 months ago but there were several updates within
+      // our codebase in that span.
+      //
+      // Note that this is not a pure win - on a cold load (with nothing cached), this
+      // increases the data transferred by ~2.5 kB (+3.x%).
+      // However, when we update the app but not our dependencies, this saves users from
+      // having to redownload the vendor code (~20 kB, or about 25% of the total bundle size).
+      strategy: "single-vendor",
     },
   },
 };

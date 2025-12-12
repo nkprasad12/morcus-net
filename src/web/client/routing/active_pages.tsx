@@ -11,7 +11,7 @@ import { SiteSettings } from "@/web/client/pages/site_settings";
 import { Macronizer } from "@/web/client/pages/macron";
 import { CorpusQueryPage } from "@/web/client/pages/corpus/corpus_view";
 
-// To use lazy loading, you can use the following code:
+// // To use lazy loading, you can use the following code:
 // import { Suspense, lazy } from "react";
 // const LazyLoadedMacronizer = lazy(() =>
 //   import("@/web/client/pages/macron").then((module) => ({
@@ -22,6 +22,18 @@ import { CorpusQueryPage } from "@/web/client/pages/corpus/corpus_view";
 //   return (
 //     <Suspense fallback={<div>loading...</div>}>
 //       <LazyLoadedMacronizer />
+//     </Suspense>
+//   );
+// }
+// const LazyLoadedCorpus = lazy(() =>
+//   import("@/web/client/pages/corpus/corpus_view").then((module) => ({
+//     default: module.CorpusQueryPage,
+//   }))
+// );
+// function CorpusQueryPage() {
+//   return (
+//     <Suspense fallback={<div>loading...</div>}>
+//       <LazyLoadedCorpus />
 //     </Suspense>
 //   );
 // }
@@ -76,17 +88,21 @@ const MACRONIZE_PAGE: SinglePageApp.Page = {
 const CORPUS_QUERY_PAGE: SinglePageApp.Page = {
   Content: CorpusQueryPage,
   paths: [ClientPaths.CORPUS_QUERY_PATH],
+  appBarConfig: {
+    name: "Corpus",
+    targetPath: ClientPaths.CORPUS_QUERY_PATH.path,
+  },
 };
 
 export const ACTIVE_PAGES = [
   // Visible in top navigation
   DICT_PAGE,
   LIBRARY_PAGE,
+  CORPUS_QUERY_PAGE,
   ABOUT_PAGE,
   // Other pages
   SETTINGS_PAGE,
   READING_PAGE,
   EXTERNAL_CONTENT_READER_PAGE,
   MACRONIZE_PAGE,
-  CORPUS_QUERY_PAGE,
 ];

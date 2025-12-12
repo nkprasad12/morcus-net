@@ -40,9 +40,31 @@ function toAuthorCode(author: string): string {
 
 function extractRowText(node: XmlNode | string): string {
   if (typeof node === "string") {
-    return node;
+    // Within a single string, space clusters are collapsed. We
+    // only consider structural spaces from the markup.
+    // Note that we can safely trim here because we join all
+    // strings with a space in between below.
+    return node.replaceAll(/\s+/g, " ").trim();
   }
-  return node.children.map(extractRowText).join("");
+  const rend = node.getAttr("rend");
+  const l = node.getAttr("l");
+  const block = node.getAttr("block");
+
+  let childContent = node.children
+    .map(extractRowText)
+    .join(" ")
+    // Collapse adjacent newlines.
+    .replaceAll(/\n[ ]*\n/g, "\n");
+  if (rend === "uppercase" || rend === "smallcaps") {
+    childContent = childContent.toUpperCase();
+  }
+  if (rend === "indent") {
+    return `\n    ${childContent}\n`;
+  }
+  if (rend === "blockquote" || block !== undefined || l !== undefined) {
+    return `\n${childContent}\n`;
+  }
+  return childContent;
 }
 
 function convertToCorpusInputWork(work: ProcessedWork2): CorpusInputWork {
@@ -51,7 +73,7 @@ function convertToCorpusInputWork(work: ProcessedWork2): CorpusInputWork {
     workName: work.info.title,
     author: work.info.author,
     authorCode: toAuthorCode(work.info.author),
-    rows: work.rows.map(([_, root]) => extractRowText(root)),
+    rows: work.rows.map(([_, root]) => extractRowText(root).trim()),
     rowIds: work.rows.map(([id]) => id),
     sectionDepth: work.textParts.length,
   };

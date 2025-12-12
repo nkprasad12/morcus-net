@@ -189,7 +189,7 @@ describe("WebServer", () => {
     expect(response.status).toBe(200);
     expect(response.type).toBe("application/javascript");
     expect(response.headers["cache-control"]).toBe(
-      "public, max-age=315360000000, immutable"
+      "public, max-age=315360000, immutable"
     );
   });
 
@@ -203,7 +203,7 @@ describe("WebServer", () => {
     expect(response.status).toBe(200);
     expect(response.type).toBe("application/javascript");
     expect(response.headers["cache-control"]).toBe(
-      "public, max-age=315360000000, immutable, no-transform"
+      "public, max-age=315360000, immutable, no-transform"
     );
     expect(response.headers["content-encoding"]).toBe("br");
     expect(response.headers["x-morcusnet-precompressed"]).toBe("1");
@@ -217,7 +217,7 @@ describe("WebServer", () => {
     expect(response.status).toBe(200);
     expect(response.type).toBe("application/javascript");
     expect(response.headers["cache-control"]).toBe(
-      "public, max-age=315360000000, immutable"
+      "public, max-age=315360000, immutable"
     );
     expect(response.headers["content-encoding"]).toBe(undefined);
     expect(response.headers["x-morcusnet-precompressed"]).toBe(undefined);

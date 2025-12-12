@@ -3,6 +3,7 @@
 use std::cmp::min;
 use std::env::set_current_dir;
 
+use crate::api::{PageData, QueryGlobalInfo};
 use crate::corpus_index::deserialize_corpus;
 use crate::query_parsing_v2::QueryRelation;
 use crate::{
@@ -22,14 +23,14 @@ pub(super) fn get_engine_unsafe() -> Option<CorpusQueryEngine> {
     let index = match deserialize_corpus(CORPUS_ROOT) {
         Ok(index) => index,
         Err(e) => {
-            eprintln!("Failed to load corpus: {}", e);
+            eprintln!("Failed to load corpus: {e}");
             return None;
         }
     };
     match CorpusQueryEngine::new(index) {
         Ok(e) => Some(e),
         Err(e) => {
-            eprintln!("Failed to create query engine: {}", e);
+            eprintln!("Failed to create query engine: {e}");
             None
         }
     }
@@ -47,6 +48,41 @@ fn arr_has_any_in_range(arr: &[u32], range: &(u32, u32)) -> bool {
     idx < arr.len() && arr[idx] <= *end
 }
 
+fn check_results_equal(
+    prod: &CorpusQueryResult<'_>,
+    reference: &CorpusQueryResult<'_>,
+) -> Result<(), String> {
+    if prod.next_page != reference.next_page {
+        return Err(format!(
+            "Different `next_page`s\n  Prod: {:?}\n  Ref: {:?}",
+            prod.next_page, reference.next_page
+        ));
+    }
+    if prod.result_stats != reference.result_stats {
+        return Err(format!(
+            "Different `result_stats`\n  Prod: {:?}\n  Ref: {:?}",
+            prod.result_stats, reference.result_stats
+        ));
+    }
+    let mut prod_iter = prod.matches.iter();
+    let mut ref_iter = reference.matches.iter();
+    let mut i = 0;
+    loop {
+        i += 1;
+        let prod_next = prod_iter.next();
+        let ref_next = ref_iter.next();
+        if prod_next != ref_next {
+            return Err(format!(
+                "Mismatch at result {i}\n  Prod: {prod_next:?}\n  Ref: {ref_next:?}"
+            ));
+        }
+        if prod_next.is_none() || ref_next.is_none() {
+            break;
+        }
+    }
+    Ok(())
+}
+
 impl CorpusQueryEngine {
     fn hard_breaks_ref_impl(&self) -> Result<Vec<u32>, QueryExecError> {
         let breaks_metadata = self
@@ -54,7 +90,7 @@ impl CorpusQueryEngine {
             .indices
             .get("breaks")
             .unwrap()
-            .get("hard")
+            .get(*self.corpus.id_table["breaks"].get("hard").unwrap() as usize)
             .unwrap();
         let hard_breaks = self
             .raw_buffers
@@ -162,7 +198,12 @@ impl CorpusQueryEngine {
         }
 
         Ok(CorpusQueryMatch {
-            metadata: self.corpus.resolve_match_token(sorted_ranges[0].0)?,
+            metadata: self.corpus.resolve_match_token(
+                sorted_ranges
+                    .iter()
+                    .map(|&(id, end)| (id, (end - id) as usize))
+                    .collect(),
+            )?,
             text,
         })
     }
@@ -170,17 +211,18 @@ impl CorpusQueryEngine {
     fn resolve_author_data(&self, name: Option<&String>) -> Option<(u32, u32)> {
         let name = name?;
         let (start, end) = self.corpus.author_lookup.get(name)?;
-        let start_work = self.corpus.work_lookup[*start].1[0].1;
-        let end_work = self.corpus.work_lookup[*end - 1].1.last()?.1;
+        let start_work = self.corpus.work_lookup[*start].rows.first()?.1;
+        let end_work = self.corpus.work_lookup[*end - 1].rows.last()?.1;
         Some((start_work, end_work))
     }
 
     fn query_corpus_ref_impl(
         &self,
         query_str: &str,
-        page_start: usize,
+        page_data: &PageData,
         page_size: usize,
         context_len: usize,
+        use_index_for_page: bool,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
         let query =
             parse_query(query_str).map_err(|_| QueryExecError::new("Failed to parse query"))?;
@@ -255,15 +297,36 @@ impl CorpusQueryEngine {
             .map(|&x| vec![(x, x + match_ids[0].span_length - 1)])
             .collect::<Vec<_>>();
 
-        let matches: Vec<CorpusQueryMatch<'_>> = match_ids
+        let page_match_ids = if use_index_for_page {
+            match_ids
+                .iter()
+                .enumerate()
+                .skip(page_data.result_index as usize)
+                .take(page_size + 1)
+                .collect::<Vec<_>>()
+        } else {
+            match_ids
+                .iter()
+                .enumerate()
+                .filter(|(_i, x)| x[0].0 >= page_data.result_id)
+                .take(page_size + 1)
+                .collect::<Vec<_>>()
+        };
+        let matches = page_match_ids
             .iter()
-            .skip(page_start)
             .take(page_size)
-            .map(|x| self.resolve_match_ref_impl(x, context_len).unwrap())
-            .collect();
+            .map(|(_i, x)| self.resolve_match_ref_impl(x, context_len).unwrap())
+            .collect::<Vec<_>>();
+        let next_page = page_match_ids.get(page_size).map(|(i, ranges)| PageData {
+            result_index: *i as u32 + page_data.result_index,
+            result_id: ranges[0].0,
+            candidate_index: *i as u32 + page_data.result_index,
+        });
         let result = CorpusQueryResult {
-            total_results: match_ids.len(),
-            page_start,
+            result_stats: QueryGlobalInfo {
+                estimated_results: match_ids.len(),
+            },
+            next_page,
             timing: vec![],
             matches,
         };
@@ -274,49 +337,44 @@ impl CorpusQueryEngine {
     pub(super) fn compare_ref_impl_results(
         &self,
         query: &str,
-        page_start: usize,
+        page_data: &PageData,
         page_size: usize,
         context_len: usize,
     ) {
+        println!(
+            "query={query} | page_data={page_data:?} | page_size={page_size} | context_len={context_len}"
+        );
         let start = std::time::Instant::now();
         let result_prod = self
-            .query_corpus(query, page_start, page_size, context_len)
-            .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {:?}", e));
+            .query_corpus(query, page_data, page_size, context_len)
+            .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {e:?}"));
         let prod_time = start.elapsed().as_secs_f64();
-        let start = std::time::Instant::now();
-        let result_ref = self
-            .query_corpus_ref_impl(query, page_start, page_size, context_len)
-            .unwrap_or_else(|e| panic!("Query failed on reference engine: {query}\n  {:?}", e));
-        let fraction_time = start.elapsed().as_secs_f64() / prod_time;
-        println!(
-            "Ref impl is {fraction_time:.2}x\n - [{} {} {} {}]",
-            query, page_start, page_size, context_len
-        );
-        let query_details = format!(
-            "Query: {query}, page_start: {page_start}, page_size: {page_size}, context_len: {context_len}"
-        );
-        assert_eq!(
-            result_prod.page_start, result_ref.page_start,
-            "Different `page_start`s for query {query_details}"
-        );
-        assert_eq!(
-            result_prod.total_results, result_ref.total_results,
-            "Different `total_result`s for {query_details}"
-        );
-        let mut prod_iter = result_prod.matches.iter();
-        let mut ref_iter = result_ref.matches.iter();
-        let mut i = 0;
-        loop {
-            i += 1;
-            let prod_next = prod_iter.next();
-            let ref_next = ref_iter.next();
-            assert_eq!(
-                prod_next, ref_next,
-                "Mismatch at result {i} [{query_details}]"
+
+        let mut errors = vec![];
+        for use_index_for_page in [true, false] {
+            let start = std::time::Instant::now();
+            let result_ref = self.query_corpus_ref_impl(
+                query,
+                page_data,
+                page_size,
+                context_len,
+                use_index_for_page,
             );
-            if prod_next.is_none() || ref_next.is_none() {
-                break;
+            let fraction_time = start.elapsed().as_secs_f64() / prod_time;
+            let result_ref = result_ref.unwrap();
+            let do_results_match = check_results_equal(&result_prod, &result_ref);
+            match do_results_match {
+                Ok(_) => {
+                    println!("- Ref impl is {fraction_time:.2}x");
+                    break;
+                }
+                Err(e) => errors.push(e),
             }
+        }
+        if errors.len() == 2 {
+            println!("First error | use_index_for_page=true: {}", errors[0]);
+            println!("Second error | use_index_for_page=false: {}", errors[1]);
+            panic!("Reference implementation failed for both methods");
         }
     }
 }
