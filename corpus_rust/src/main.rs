@@ -2,7 +2,7 @@ use std::env;
 use std::time::Instant;
 
 use corpus::{
-    api::{CorpusQueryResult, PageData, QueryExecError},
+    api::{CorpusQueryResult, PageData, QueryExecError, QueryOptions},
     build_corpus_v2::build_corpus,
     corpus_index,
     corpus_query_engine::{self, CorpusQueryEngine},
@@ -34,10 +34,13 @@ fn query_with_timing<'a>(
     query: &str,
     page_data: &PageData,
 ) -> Result<CorpusQueryResult<'a>, QueryExecError> {
-    let page_size = get_limit_arg();
-    let context_len = get_context_arg();
+    let options = QueryOptions {
+        page_size: get_limit_arg(),
+        context_len: get_context_arg(),
+        strict_mode: false,
+    };
     let start = Instant::now();
-    let results = engine.query_corpus(query, page_data, page_size, context_len)?;
+    let results = engine.query_corpus(query, page_data, &options)?;
     let duration = start.elapsed();
     if !has_arg(ARG_NO_STATS) {
         println!("Query executed in {duration:.2?}");

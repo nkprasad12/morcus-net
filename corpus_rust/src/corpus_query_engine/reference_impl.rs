@@ -3,7 +3,7 @@
 use std::cmp::min;
 use std::env::set_current_dir;
 
-use crate::api::{PageData, QueryGlobalInfo};
+use crate::api::{PageData, QueryGlobalInfo, QueryOptions};
 use crate::corpus_index::deserialize_corpus;
 use crate::query_parsing_v2::QueryRelation;
 use crate::{
@@ -338,15 +338,16 @@ impl CorpusQueryEngine {
         &self,
         query: &str,
         page_data: &PageData,
-        page_size: usize,
-        context_len: usize,
+        options: &QueryOptions,
     ) {
+        let page_size = options.page_size;
+        let context_len = options.context_len;
         println!(
             "query={query} | page_data={page_data:?} | page_size={page_size} | context_len={context_len}"
         );
         let start = std::time::Instant::now();
         let result_prod = self
-            .query_corpus(query, page_data, page_size, context_len)
+            .query_corpus(query, page_data, options)
             .unwrap_or_else(|e| panic!("Query failed on real engine: {query}\n  {e:?}"));
         let prod_time = start.elapsed().as_secs_f64();
 

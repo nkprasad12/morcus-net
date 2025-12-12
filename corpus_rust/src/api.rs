@@ -46,6 +46,12 @@ pub struct PageData {
     pub candidate_index: u32,
 }
 
+pub struct QueryOptions {
+    pub page_size: usize,
+    pub context_len: usize,
+    pub strict_mode: bool,
+}
+
 /// Global information about all results of a query.
 #[derive(Debug, Serialize, PartialEq)]
 #[serde(rename_all = "camelCase")]

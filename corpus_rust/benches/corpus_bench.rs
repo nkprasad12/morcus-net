@@ -107,15 +107,20 @@ pub fn criterion_benchmark(c: &mut Criterion) {
         let dedit_oscula_nato = "@lemma:do oscula @case:dat";
         let bitmask_query = "@case:nom @case:dat @case:acc";
         let page_size = 100;
+        let options = corpus::api::QueryOptions {
+            page_size,
+            context_len: 25,
+            strict_mode: false,
+        };
         query_benches.bench_function("dedit oscula nato", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(dedit_oscula_nato, &page_data, page_size, 25);
+                let _ = corpus.query_corpus(dedit_oscula_nato, &page_data, &options);
             })
         });
 
         query_benches.bench_function("bitmask query", |b| {
             b.iter(|| {
-                let _ = corpus.query_corpus(bitmask_query, &page_data, page_size, 25);
+                let _ = corpus.query_corpus(bitmask_query, &page_data, &options);
             })
         });
     }

@@ -9,7 +9,7 @@ mod query_pruning;
 mod query_validation;
 mod reference_impl;
 
-use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo};
+use crate::api::{CorpusQueryResult, PageData, QueryExecError, QueryGlobalInfo, QueryOptions};
 use crate::corpus_query_engine::corpus_candidate_filtering::MatchIterator;
 use crate::corpus_query_engine::corpus_data_readers::{
     CorpusText, IndexBuffers, InflectionLookup, TokenStarts,
@@ -102,9 +102,10 @@ impl CorpusQueryEngine {
         &self,
         query_str: &str,
         page_data: &PageData,
-        page_size: usize,
-        context_len: usize,
+        options: &QueryOptions,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
+        let page_size = options.page_size;
+        let context_len = options.context_len;
         let mut profiler = TimeProfiler::new();
 
         // Parse the query
@@ -185,8 +186,11 @@ mod tests {
                         result_id: 0,
                         candidate_index: 0,
                     },
-                    5,
-                    15,
+                    QueryOptions {
+                        page_size: 5,
+                        context_len: 15,
+                        strict_mode: false,
+                    },
                 ),
                 (
                     $query,
@@ -195,8 +199,11 @@ mod tests {
                         result_id: 0,
                         candidate_index: 0,
                     },
-                    25,
-                    10,
+                    QueryOptions {
+                        page_size: 25,
+                        context_len: 10,
+                        strict_mode: false,
+                    },
                 ),
                 (
                     $query,
@@ -205,8 +212,11 @@ mod tests {
                         result_id: 0,
                         candidate_index: 0,
                     },
-                    5,
-                    10,
+                    QueryOptions {
+                        page_size: 5,
+                        context_len: 10,
+                        strict_mode: false,
+                    },
                 ),
                 (
                     $query,
@@ -215,15 +225,18 @@ mod tests {
                         result_id: 0,
                         candidate_index: 0,
                     },
-                    5,
-                    10,
+                    QueryOptions {
+                        page_size: 5,
+                        context_len: 10,
+                        strict_mode: false,
+                    },
                 ),
             ]
         };
     }
 
     // (query, page_start, page_size, context_len)
-    const TEST_QUERIES: &[&[(&str, PageData, usize, usize)]] = &[
+    const TEST_QUERIES: &[&[(&str, PageData, QueryOptions)]] = &[
         generate!("@lemma:do"),
         generate!("@case:dat"),
         generate!("(@lemma:habeo and @voice:passive)"),
@@ -244,8 +257,8 @@ mod tests {
             None => return,
         };
         let test_queries = TEST_QUERIES.iter().flat_map(|s| s.iter());
-        for (query, page_data, page_size, context_len) in test_queries {
-            engine.compare_ref_impl_results(query, page_data, *page_size, *context_len);
+        for (query, page_data, options) in test_queries {
+            engine.compare_ref_impl_results(query, page_data, options);
         }
     }
 }

@@ -4,7 +4,9 @@
 )]
 
 use corpus::{
-    api::PageData, corpus_index::deserialize_corpus, corpus_query_engine::CorpusQueryEngine,
+    api::{PageData, QueryOptions},
+    corpus_index::deserialize_corpus,
+    corpus_query_engine::CorpusQueryEngine,
 };
 use morceus::{
     crunch::crunch_word,
@@ -57,15 +59,15 @@ impl QueryEngineWrapper {
                 result_id: 0,
                 candidate_index: 0,
             });
+        let options = QueryOptions {
+            page_size: page_size as usize,
+            context_len: context_len as usize,
+            strict_mode: false,
+        };
         // We use `AssertUnwindSafe` because the `engine` struct itself is read only. The
         // only mutable data is returned as outputs, which we lose in the panic anyways.
         let result = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-            self.engine.query_corpus(
-                &query_str,
-                &page_data,
-                page_size as usize,
-                context_len as usize,
-            )
+            self.engine.query_corpus(&query_str, &page_data, &options)
         }))
         .map_err(|panic_payload| {
             if let Some(s) = panic_payload.downcast_ref::<&str>() {
