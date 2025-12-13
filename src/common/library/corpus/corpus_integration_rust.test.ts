@@ -486,4 +486,17 @@ describe("Corpus Integration Test", () => {
     expect(leaders[2]).toEqual(["4", 0, 1]); // 'dedit'
     expect(leaders[3]).toEqual(["7", 0, 2]); // 'accipe nunc'
   });
+
+  it("match a subsequent instance of an inflected word", () => {
+    const query = "canis (@lemma:servus and @case:acc)";
+
+    const results = queryCorpus(query);
+    const matches = results.matches;
+    expect(matches).toHaveLength(1);
+    const match = matches[0];
+
+    expect(match.metadata.workId).toBe("test_work_4");
+    expect(match.metadata.leaders).toEqual([["1.1", 0, 2]]);
+    expect(getMatchText(match)).toEqual(["Canis servum"]);
+  });
 });

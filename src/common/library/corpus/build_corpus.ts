@@ -134,14 +134,14 @@ namespace StoredInflections {
     if (cachedOffset !== undefined) {
       // If the word has been seen before, just point to the existing data.
       storage.tokenToRawDataOffset.push(cachedOffset);
-      // This MUST be called before we return to make sure this ID is properly recording
+      // This MUST be called before we return to make sure this ID is properly recorded
       // in reverse indices.
       addToLookups(word, id, lookups, storage);
       return;
     }
     const inflections = getInflections(word);
     storage.dimensions.set(word, getWordIndexDimensions(inflections));
-    // This MUST be called before we return to make sure this ID is properly recording
+    // This MUST be called before we return to make sure this ID is properly recorded
     // in reverse indices.
     addToLookups(word, id, lookups, storage);
 
@@ -154,12 +154,10 @@ namespace StoredInflections {
       return;
     }
     // Point to the start of the raw buffer, and write the data there.
-    storage.tokenToRawDataOffset.push([storage.rawData.length, encoded.length]);
+    const offset: LengthAndOffset = [storage.rawData.length, encoded.length];
+    storage.tokenToRawDataOffset.push(offset);
+    storage.wordToRawDataOffset.set(word, offset);
     storage.rawData.push(...encoded);
-    storage.wordToRawDataOffset.set(word, [
-      storage.rawData.length,
-      encoded.length,
-    ]);
   }
 }
 
