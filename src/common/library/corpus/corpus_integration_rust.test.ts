@@ -51,6 +51,15 @@ const TEST_WORKS: CorpusInputWork[] = [
     authorCode: "Author2",
     workName: "Work 3",
   },
+  {
+    id: "test_work_4",
+    rows: ["Canis servum videt."],
+    rowIds: [["1", "1"]],
+    sectionDepth: 2,
+    author: "Author 4",
+    authorCode: "Author4",
+    workName: "Work 4",
+  },
 ];
 
 function getMatchText(match: CorpusQueryResult["matches"][number]) {
@@ -94,15 +103,24 @@ describe("Corpus Integration Test", () => {
   it("should find a single word", () => {
     const query = "@word:servum";
     const results = queryCorpus(query);
-    expect(results.matches).toHaveLength(1);
+
+    expect(results.matches).toHaveLength(2);
+
     expect(results.matches[0]).toMatchObject({
       metadata: expect.objectContaining({
         workId: "test_work_1",
         leaders: [["1", 1, 1]],
       }),
     });
-    const matchText = getMatchText(results.matches[0]);
-    expect(matchText).toEqual(["servum"]);
+    expect(getMatchText(results.matches[0])).toEqual(["servum"]);
+
+    expect(results.matches[1]).toMatchObject({
+      metadata: expect.objectContaining({
+        workId: "test_work_4",
+        leaders: [["1.1", 1, 1]],
+      }),
+    });
+    expect(getMatchText(results.matches[1])).toEqual(["servum"]);
   });
 
   it("should return correct work data", () => {
@@ -128,7 +146,7 @@ describe("Corpus Integration Test", () => {
   it("should find all instances of a lemma", () => {
     const query = "@lemma:servus";
     const results = queryCorpus(query);
-    expect(results.resultStats.estimatedResults).toBe(2);
+    expect(results.resultStats.estimatedResults).toBe(3);
     expect(results.matches).toEqual(
       expect.arrayContaining([
         expect.objectContaining({
@@ -143,17 +161,24 @@ describe("Corpus Integration Test", () => {
             leaders: [["2", 0, 1]],
           }),
         }),
+        expect.objectContaining({
+          metadata: expect.objectContaining({
+            workId: "test_work_4",
+            leaders: [["1.1", 1, 1]],
+          }),
+        }),
       ])
     );
     expect(getMatchText(results.matches[0])).toEqual(["servum"]);
     expect(getMatchText(results.matches[1])).toEqual(["servus"]);
+    expect(getMatchText(results.matches[2])).toEqual(["servum"]);
   });
 
   it("should find instances of a grammatical case", () => {
     const query = "@case:acc";
     const results = queryCorpus(query, undefined, 2);
     // Note that `regem` is not in the fake data, so we expect only `servum` and `Gallum`.
-    expect(results.resultStats.estimatedResults).toBe(4);
+    expect(results.resultStats.estimatedResults).toBe(5);
     expect(results.matches).toHaveLength(2);
     expect(getMatchText(results.matches[0])).toEqual(["servum"]);
     expect(getMatchText(results.matches[1])).toEqual(["Gallum"]);
