@@ -14,6 +14,7 @@ interface CorpusUrlData {
   nextPage?: string;
   pageSize: number;
   contextLen: number;
+  strictMode?: boolean;
 }
 
 const UNDEF_PAGE = "";
@@ -27,6 +28,7 @@ const fromRoute = (route: RouteInfo): CorpusUrlData => ({
   nextPage: route.params?.np,
   pageSize: safeParseInt(route.params?.ps) ?? 50,
   contextLen: safeParseInt(route.params?.cl) ?? 20,
+  strictMode: route.params?.sm === "1",
 });
 
 export const parsePageData = (
@@ -85,6 +87,7 @@ const toRoute = (info: CorpusUrlData): RouteInfo => ({
     np: info.nextPage,
     ps: info.pageSize.toString(),
     cl: info.contextLen.toString(),
+    sm: info.strictMode ? "1" : "0",
   },
 });
 

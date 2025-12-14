@@ -13,6 +13,7 @@ export function CorpusSettingsDialog(props: {
 
   const [tempContextLen, setTempContextLen] = useState<number>(contextLen);
   const [tempPageSize, setTempPageSize] = useState<number>(pageSize);
+  const [tempStrictMode, setTempStrictMode] = useState<boolean>(false);
 
   function onCloseDialog() {
     props.setOpen(false);
@@ -20,6 +21,7 @@ export function CorpusSettingsDialog(props: {
       ...current,
       contextLen: tempContextLen,
       pageSize: tempPageSize,
+      strictMode: tempStrictMode,
     }));
   }
 
@@ -69,6 +71,24 @@ export function CorpusSettingsDialog(props: {
           }}
           style={{ width: "60px", marginLeft: "8px" }}
         />
+        <br />
+        <label
+          htmlFor="strictMode"
+          className="text sm light"
+          style={{ marginRight: "8px" }}>
+          Strict mode:
+        </label>
+        <input
+          id="strictMode"
+          type="checkbox"
+          checked={tempStrictMode}
+          onChange={(e) => setTempStrictMode(e.currentTarget.checked)}
+          style={{ marginLeft: "8px" }}
+        />
+        <span className="text xs light" style={{ marginLeft: "8px" }}>
+          For queries filtering lemmata or inflection categories, return only
+          results that unambiguously match the query.
+        </span>
       </div>
       <div
         className="dialogActions text md light"

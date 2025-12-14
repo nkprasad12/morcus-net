@@ -2,6 +2,7 @@ import { ApiRoute } from "@/web/utils/rpc/rpc";
 import {
   isAny,
   isArray,
+  isBoolean,
   isNumber,
   isOneOf,
   isString,
@@ -136,6 +137,7 @@ export interface CorpusQueryRequest {
   pageData?: PageData;
   pageSize?: number;
   contextLen?: number;
+  strictMode?: boolean;
 }
 
 export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
@@ -147,6 +149,7 @@ export const QueryCorpusApi: ApiRoute<CorpusQueryRequest, CorpusQueryResult> = {
     pageData: maybeUndefined(isPageData),
     pageSize: maybeUndefined(isNumber),
     contextLen: maybeUndefined(isNumber),
+    strictMode: maybeUndefined(isBoolean),
   }),
   outputValidator: CorpusQueryResult.isMatch,
 };

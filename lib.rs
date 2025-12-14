@@ -47,6 +47,7 @@ impl QueryEngineWrapper {
         page_data: Option<String>,
         page_size: u32,
         context_len: u32,
+        strict_mode: bool,
     ) -> Result<String, String> {
         let page_data = page_data
             .map(|pd_str| {
@@ -62,7 +63,7 @@ impl QueryEngineWrapper {
         let options = QueryOptions {
             page_size: page_size as usize,
             context_len: context_len as usize,
-            strict_mode: false,
+            strict_mode,
         };
         // We use `AssertUnwindSafe` because the `engine` struct itself is read only. The
         // only mutable data is returned as outputs, which we lose in the panic anyways.

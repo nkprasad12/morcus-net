@@ -104,7 +104,6 @@ impl CorpusQueryEngine {
         page_data: &PageData,
         options: &QueryOptions,
     ) -> Result<CorpusQueryResult<'_>, QueryExecError> {
-        let page_size = options.page_size;
         let context_len = options.context_len;
         let mut profiler = TimeProfiler::new();
 
@@ -153,9 +152,9 @@ impl CorpusQueryEngine {
             &span_candidates,
             &query_spans,
             self,
-            page_size,
             page_data,
             total_candidates,
+            options,
         )?;
         profiler.phase("Match page computed");
 

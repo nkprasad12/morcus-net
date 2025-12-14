@@ -119,7 +119,7 @@ export function CorpusQueryPage() {
   const lemmata = useCorpusSuggestions("lemmata");
 
   const { nav, route } = useCorpusRouter();
-  const { query, currentPage, pageSize, contextLen } = route;
+  const { query, currentPage, pageSize, contextLen, strictMode } = route;
 
   const currentPageParsed = useMemo(
     () => parsePageData(currentPage),
@@ -136,8 +136,9 @@ export function CorpusQueryPage() {
       pageData: currentPageParsed,
       commitHash: getCommitHash(),
       contextLen,
+      strictMode,
     };
-  }, [query, currentPageParsed, contextLen, pageSize]);
+  }, [query, currentPageParsed, contextLen, pageSize, strictMode]);
 
   useApiCall(QueryCorpusApi, apiRequest, {
     onResult: (result) => {

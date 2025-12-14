@@ -44,7 +44,8 @@ export class RustCorpusQueryEngine {
       request.query,
       pageData === undefined ? undefined : JSON.stringify(pageData),
       request.pageSize ?? 50,
-      contextLen
+      contextLen,
+      request.strictMode ?? false
     );
   }
 }

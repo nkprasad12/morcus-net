@@ -5,7 +5,7 @@ use std::{
 
 use crate::{
     analyzer_types::LatinInflection,
-    api::{CorpusQueryMatch, CorpusQueryMatchMetadata, PageData, QueryGlobalInfo},
+    api::{CorpusQueryMatch, CorpusQueryMatchMetadata, PageData, QueryGlobalInfo, QueryOptions},
     corpus_query_engine::{
         CorpusQueryEngine, MatchIterator, QueryExecError,
         corpus_data_readers::LemmaAndInflection,
@@ -15,6 +15,22 @@ use crate::{
     },
     query_parsing_v2::{QueryRelation, TokenConstraintAtom, TokenConstraintOperation},
 };
+
+const CASE_START: u32 = 0;
+const NUMBER_START: u32 = 7;
+const GENDER_START: u32 = 9;
+const PERSON_START: u32 = 13;
+const MOOD_START: u32 = 16;
+const VOICE_START: u32 = 23;
+const TENSE_START: u32 = 25;
+
+const CASE_MASK: u32 = 0b1111111; // << CASE_START: 7 bits starting at 0
+const NUMBER_MASK: u32 = 0b11 << NUMBER_START; // 2 bits starting at 7
+const GENDER_MASK: u32 = 0b1111 << GENDER_START; // 4 bits starting at 9
+const PERSON_MASK: u32 = 0b111 << PERSON_START; // 3 bits starting at 13
+const MOOD_MASK: u32 = 0b1111111 << MOOD_START; // 7 bits starting at 16
+const VOICE_MASK: u32 = 0b11 << VOICE_START; // 2 bits starting at 23
+const TENSE_MASK: u32 = 0b111111 << TENSE_START; // 6 bits starting at 25
 
 /// Finds the leader of the span with the given anchor ID.
 ///
@@ -312,39 +328,36 @@ fn get_result_stats(
 }
 
 type InflectionMask = u32;
-struct TokenValidationInfo2 {
+type StrictModeMask = u32;
+struct TokenValidationInfo {
     span_idx: usize,
     term_idx: usize,
     inflection: InflectionMask,
+    strict_mask: Option<StrictModeMask>,
     lemmata: Vec<u32>,
+    is_conjunction: bool,
 }
-
-// function packWordInflectionDataForCorpus(data: WordInflectionData): number {
-//   let mask = 0;
-//   mask = setInflectionField(mask, 0, data.case);
-//   mask = setInflectionField(mask, 7, data.number); // 7 cases
-//   mask = setInflectionField(mask, 9, data.gender); // 2 numbers
-//   mask = setInflectionField(mask, 13, data.person); // 4 genders
-//   mask = setInflectionField(mask, 16, data.mood); // 3 persons
-//   mask = setInflectionField(mask, 23, data.voice); // 7 moods
-//   mask = setInflectionField(mask, 25, data.tense); // 2 voices
-//   return mask;
-// }
 
 /// Within the spans, find the positions that need inflection validation.
 fn positions_needing_validation<'a>(
     spans: &'a [&[InternalQueryTerm]],
     id_table: &'a HashMap<String, HashMap<String, u32>>,
-) -> Result<Vec<TokenValidationInfo2>, String> {
+    strict: bool,
+) -> Result<Vec<TokenValidationInfo>, String> {
     let mut positions = vec![];
     for (span_idx, span) in spans.iter().enumerate() {
         for (term_idx, term) in span.iter().enumerate() {
             let ops = operators_in(term.constraint.inner);
-            if !ops.contains(&TokenConstraintOperation::And) {
+            let has_and = ops.contains(&TokenConstraintOperation::And);
+            if !strict && !has_and {
+                // if we're not in strict mode, `or` doesn't need validation because the
+                // indices encode whether any of the possible options meets the given inflection
+                // category.
                 continue;
             }
             let atoms = atoms_in(term.constraint.inner);
             let mut inflection_mask = 0;
+            let mut strict_mask = if strict { Some(0) } else { None };
             let mut inflection_constraints = 0;
             let mut lemmata = vec![];
             for atom in atoms {
@@ -358,14 +371,14 @@ fn positions_needing_validation<'a>(
                     }
                     TokenConstraintAtom::Inflection(inflection) => {
                         inflection_constraints += 1;
-                        let start = match inflection {
-                            LatinInflection::Case(_) => 0,
-                            LatinInflection::Number(_) => 7,
-                            LatinInflection::Gender(_) => 9,
-                            LatinInflection::Person(_) => 13,
-                            LatinInflection::Mood(_) => 16,
-                            LatinInflection::Voice(_) => 23,
-                            LatinInflection::Tense(_) => 25,
+                        let (start, category_mask) = match inflection {
+                            LatinInflection::Case(_) => (CASE_START, CASE_MASK),
+                            LatinInflection::Number(_) => (NUMBER_START, NUMBER_MASK),
+                            LatinInflection::Gender(_) => (GENDER_START, GENDER_MASK),
+                            LatinInflection::Person(_) => (PERSON_START, PERSON_MASK),
+                            LatinInflection::Mood(_) => (MOOD_START, MOOD_MASK),
+                            LatinInflection::Voice(_) => (VOICE_START, VOICE_MASK),
+                            LatinInflection::Tense(_) => (TENSE_START, TENSE_MASK),
                             LatinInflection::Degree(_) => {
                                 return Err(
                                     "Degree inflection not supported for validation".to_string()
@@ -373,18 +386,27 @@ fn positions_needing_validation<'a>(
                             }
                         };
                         // -1 because it is 1-based in the LatinInflection enum.
-                        let bit = start + inflection.get_code() - 1;
+                        let bit = start + inflection.get_code() as u32 - 1;
                         inflection_mask |= 1 << bit;
+                        // Set the appropriate category mask in strict_mask
+                        if let Some(ref mut mask) = strict_mask {
+                            *mask |= category_mask;
+                        }
                     }
                     _ => {}
                 }
             }
-            if (lemmata.len() + inflection_constraints) > 1 {
-                positions.push(TokenValidationInfo2 {
+            let threshold = if strict { 0 } else { 1 };
+            if (lemmata.len() + inflection_constraints) > threshold {
+                positions.push(TokenValidationInfo {
                     span_idx,
                     term_idx,
                     inflection: inflection_mask,
                     lemmata,
+                    // If there's no operator, then we only have one term and it wouldn't
+                    // matter if we treat it as an `and` or an `or`.
+                    is_conjunction: has_and,
+                    strict_mask,
                 });
             }
         }
@@ -392,22 +414,67 @@ fn positions_needing_validation<'a>(
     Ok(positions)
 }
 
+/// Checks if bitset A is a subset of bitset B (i.e., all bits set in A are also set in B).
+///
+/// # Arguments
+/// * `maybe_subset` - The potential subset
+/// * `maybe_superset` - The potential superset
+///
+/// Returns true if A is a subset of B, false otherwise.
+#[inline]
+fn is_bitset_subset(maybe_subset: u32, maybe_superset: u32) -> bool {
+    (maybe_subset & maybe_superset) == maybe_subset
+}
+
 /// Checks whether the given inflection restrictions all match the given inflection data.
-fn does_inflection_match_all(
+fn does_inflection_match(
     lemma_and_inflection: LemmaAndInflection,
-    constraints: &TokenValidationInfo2,
+    constraints: &TokenValidationInfo,
 ) -> bool {
     let observed_bits = lemma_and_inflection as u32;
-    if observed_bits & constraints.inflection != constraints.inflection {
-        return false;
-    }
-    let observed_lemma = (lemma_and_inflection >> 32) as u32;
-    for expected_lemma in &constraints.lemmata {
-        if observed_lemma != *expected_lemma {
+    if constraints.is_conjunction {
+        if !is_bitset_subset(constraints.inflection, observed_bits) {
+            // This checks that `constraints.inflection` is a subset of `observed_bits`.
+            // If the constraint is an `and`, we expect the observed bits to have all of the
+            // constraint bits set.
             return false;
         }
+        if let Some(strict_mask) = constraints.strict_mask
+            && (observed_bits & strict_mask) != constraints.inflection
+        {
+            // This checks that, for the categories that are constrained, that the `observed_bits`
+            // exactly match the constraint bits.
+            return false;
+        }
+        let observed_lemma = (lemma_and_inflection >> 32) as u32;
+        // Less than one because it's not possible for one analysis to have
+        // multiple associated lemmata.
+        constraints.lemmata.len() <= 1
+            && constraints
+                .lemmata
+                .iter()
+                // An empty iterator returns true
+                .all(|&expected_lemma| observed_lemma == expected_lemma)
+    } else {
+        let something_matches = observed_bits & constraints.inflection != 0;
+        let strict_mask = constraints.strict_mask;
+        if something_matches && strict_mask.is_none() {
+            // If we're not in strict mode and something matches, then we're done.
+            return true;
+        }
+        if something_matches && let Some(mask) = strict_mask {
+            // The parts of the observed bits that are relevant to the constraints.
+            let observed_subset = observed_bits & mask;
+            if is_bitset_subset(observed_subset, constraints.inflection) {
+                // In strict mode, we need to know that the observed subset couldn't have some
+                // other possible interpretation. For example, if something observed could be either
+                // nominative or accusative, but we only want accusative, then we can't accept it.
+                return true;
+            }
+        }
+        let observed_lemma = (lemma_and_inflection >> 32) as u32;
+        constraints.lemmata.is_empty() || constraints.lemmata.contains(&observed_lemma)
     }
-    true
 }
 
 type StartAndSpan<'a> = (u32, &'a SpanResult<'a>);
@@ -439,22 +506,31 @@ fn within_work_bounds(sorted_span_leaders: &[(u32, &SpanResult<'_>)], work_bound
 #[inline]
 fn has_matching_inflections(
     unsorted_leaders: &[(u32, &SpanResult)],
-    needs_validation: &[TokenValidationInfo2],
+    needs_validation: &[TokenValidationInfo],
     corpus: &CorpusQueryEngine,
 ) -> Result<bool, String> {
-    // For any words that need inflection validation, check that at least one possible inflection analysis
-    // matches the required restrictions.
+    // For any words that need inflection validation, check that the inflection analysis matches
+    // the expected constraints.
+    // - For `and` constraints, all of the constraints need to be met
+    // - For `or` constraints, at least one of the constraints needs to be met
     for token_data in needs_validation {
-        // For now, for simplicity, just assume it's an AND for everything.
         let token_to_check = unsorted_leaders[token_data.span_idx].0 + (token_data.term_idx as u32);
         let inflection_options = corpus.inflections.get_inflection_data(token_to_check)?;
-        if !inflection_options
-            .iter()
-            // The lower 32 bits are the inflection data.
-            .any(|data| does_inflection_match_all(*data, token_data))
+        let is_strict = token_data.strict_mask.is_some();
+        if is_strict
+            && !inflection_options
+                .iter()
+                .all(|data| does_inflection_match(*data, token_data))
         {
-            // ALL of the tokens that need validation need to validate, otherwise it's not
-            // a match.
+            // In strict mode, all of the options need to match the constraints.
+            return Ok(false);
+        }
+        if !is_strict
+            && !inflection_options
+                .iter()
+                .any(|data| does_inflection_match(*data, token_data))
+        {
+            // In non-strict mode, one of the options needs to match the constraints.
             return Ok(false);
         }
     }
@@ -466,7 +542,7 @@ fn leaders_for_candidate<'a>(
     token_id: u32,
     all_span_candidates: &'a [SpanResult],
     work_bounds: &[u32],
-    needs_validation: &[TokenValidationInfo2],
+    needs_validation: &[TokenValidationInfo],
     corpus: &CorpusQueryEngine,
     last_match: Option<&Vec<StartAndSpan<'a>>>,
 ) -> Result<Option<Vec<StartAndSpan<'a>>>, QueryExecError> {
@@ -503,18 +579,19 @@ pub(super) fn get_match_page<'a>(
     all_span_candidates: &'a [SpanResult],
     query_spans: &[&[InternalQueryTerm]],
     corpus: &CorpusQueryEngine,
-    page_size: usize,
     current_page: &PageData,
     total_candidates: usize,
+    options: &QueryOptions,
 ) -> Result<MatchPageResult<'a>, QueryExecError> {
+    let page_size = options.page_size;
     let work_bounds = corpus
         .corpus
         .work_lookup
         .iter()
         .map(|w| w.rows[0].1)
         .collect::<Vec<u32>>();
-    let needs_validation = positions_needing_validation(query_spans, &corpus.corpus.id_table)?;
-
+    let needs_validation =
+        positions_needing_validation(query_spans, &corpus.corpus.id_table, options.strict_mode)?;
     let mut matches = vec![];
     let mut skipped_candidates = 0;
 
