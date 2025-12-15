@@ -10,6 +10,7 @@ use corpus::{
 
 const ARG_QUIET: &str = "--quiet";
 const ARG_NO_STATS: &str = "--no-stats";
+const ARG_STRICT: &str = "--strict";
 const CORPUS_ROOT: &str = "build/corpus/latin_corpus.json";
 
 fn load_corpus_with_timing(path: &str) -> corpus_index::LatinCorpusIndex {
@@ -37,7 +38,7 @@ fn query_with_timing<'a>(
     let options = QueryOptions {
         page_size: get_limit_arg(),
         context_len: get_context_arg(),
-        strict_mode: false,
+        strict_mode: has_arg(ARG_STRICT),
     };
     let start = Instant::now();
     let results = engine.query_corpus(query, page_data, &options)?;
