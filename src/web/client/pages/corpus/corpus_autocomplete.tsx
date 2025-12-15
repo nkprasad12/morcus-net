@@ -77,6 +77,14 @@ const ALL_CATEGORIES = new Map<string, Map<string, string>>([
   ["mood", MOODS],
 ]);
 
+const ALL_INFLECTION_VALUES = Array.from(ALL_CATEGORIES.entries())
+  .flatMap(([key, valuesMap]) =>
+    Array.from(valuesMap.entries()).map(
+      ([long, short]) => [long, short, key] as const
+    )
+  )
+  .sort((a, b) => a[0].localeCompare(b[0]));
+
 const SPECIAL_CATEGORIES = new Map<string, string[]>([
   ["lemma", []],
   ...Array.from(ALL_CATEGORIES.entries()).map(
@@ -299,33 +307,42 @@ function parseProximityToken(
   ];
 }
 
-function findLemmaCompletions(value: string, lemmata: string[]): string[] {
-  assert(value.length > 0);
-  const prefix = value[0] + value.slice(1).toLowerCase();
-
-  // Binary search to find the first lemma that could match the prefix
+function findCompletionsInList<T>(
+  prefix: string,
+  options: T[],
+  max: number,
+  extractor: (option: T) => string
+): T[] {
+  console.log("Finding completions for prefix:", prefix);
+  // Binary search to find the first option that could match the prefix
   let left = 0;
-  let right = lemmata.length;
+  let right = options.length;
 
   while (left < right) {
     const mid = Math.floor((left + right) / 2);
-    if (lemmata[mid] < prefix) {
+    if (extractor(options[mid]) < prefix) {
       left = mid + 1;
     } else {
       right = mid;
     }
   }
 
-  // Collect up to 50 matching lemmata starting from the found position
-  const results: string[] = [];
-  for (let i = left; i < lemmata.length && results.length < 50; i++) {
-    if (!lemmata[i].startsWith(prefix)) {
+  // Collect up to 50 matching options starting from the found position
+  const results: T[] = [];
+  for (let i = left; i < options.length && results.length < max; i++) {
+    if (!extractor(options[i]).startsWith(prefix)) {
       break;
     }
-    results.push(lemmata[i]);
+    results.push(options[i]);
   }
 
   return results;
+}
+
+function findLemmaCompletions(value: string, lemmata: string[]): string[] {
+  assert(value.length > 0);
+  const prefix = value[0] + value.slice(1).toLowerCase();
+  return findCompletionsInList(prefix, lemmata, 50, (x) => x);
 }
 
 function wouldStartNewToken(tokens: QueryToken[]): boolean {
@@ -494,22 +511,43 @@ export function optionsForInput(
         help: `filter by ${category}`,
       }));
     }
+    const suggestions: CorpusAutocompleteOption[] = [];
     for (const category of SPECIAL_CATEGORIES.keys()) {
-      // Just suggest that they close they keyword.
+      // Just suggest that they close they keyword. These should be first.
       if (category === afterAt) {
-        return [{ option: ":", prefix: lastToken }];
-      }
-      // Return any substrings.
-      if (category.startsWith(afterAt)) {
-        return [
-          {
-            option: category.substring(afterAt.length) + ":",
-            prefix: lastToken,
-            help: `filter by ${category}`,
-          },
-        ];
+        suggestions.push({ option: ":", prefix: lastToken });
       }
     }
+    for (const category of SPECIAL_CATEGORIES.keys()) {
+      // Return any substrings of category names. These should be second.
+      if (category.startsWith(afterAt)) {
+        suggestions.push({
+          option: category.substring(afterAt.length) + ":",
+          prefix: lastToken,
+          help: `filter by ${category}`,
+        });
+      }
+    }
+    const valueCompletions = findCompletionsInList(
+      afterAt,
+      ALL_INFLECTION_VALUES,
+      20 - suggestions.length,
+      (x) => x[0]
+    ).map(([long, short, key]) => ({
+      prefix: "@",
+      option: `${key[0]}:${long} `,
+      help: `${key}`,
+      replacement:
+        allTokens
+          .slice(0, -1)
+          .map((t) => t[0])
+          .join("") + `@${key[0]}:${short} `,
+    }));
+    suggestions.push(...valueCompletions);
+    if (suggestions.length > 0) {
+      return suggestions;
+    }
+
     return [unknownKeyword(afterAt)];
   }
 
