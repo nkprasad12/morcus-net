@@ -36,10 +36,30 @@ import { useMediaQuery } from "@/web/client/utils/media_query";
 import { textHighlightParams } from "@/web/client/pages/library/reader_url";
 import { tokenizeInput } from "@/web/client/pages/corpus/autocomplete/input_tokenizer";
 import { termGroups } from "@/web/client/pages/corpus/autocomplete/state_transitions";
+import { ModalDialog } from "@/web/client/components/generic/overlays";
+import { usePersistedState } from "@/web/client/utils/hooks/persisted_state";
 
 const SEARCH_PLACEHOLDER = "Enter corpus query";
 
 type Results = "N/A" | "Error" | "Loading" | CorpusQueryResult;
+
+const DISCLAIMER_HEADER = "Your query includes inflection filters";
+const DISCLAIMER_CONTENT = (
+  <>
+    <div>
+      <i>
+        Inflections and lemmas are not hand-tagged and may frequently include
+        false positives.
+      </i>
+    </div>
+    <div style={{ marginTop: "8px" }}>
+      For example, <code>puellae</code> would always match the{" "}
+      <code>dative</code>, <code>genitive</code>, and <code>plural</code>{" "}
+      filters, regardless of whether it was dative singular, genitive singular,
+      or nominative plural in a given instance.
+    </div>
+  </>
+);
 
 function toKey(o: CorpusAutocompleteOption) {
   return o.option;
@@ -215,18 +235,8 @@ function Disclaimer(props: { query: string }) {
     <>
       {hasInflectionFilters && (
         <details className="corpusDisclaimer text sm">
-          <summary>Your query includes inflection filters</summary>
-          <div>
-            <i>
-              Please note: these operate only at the word level and may include
-              false positives.
-            </i>
-          </div>
-          <div>
-            For example, <code>corpus</code> would always match both the{" "}
-            <code>nominative</code> and <code>accusative</code> filters,
-            regardless of which case it actually was in any particular sentence.
-          </div>
+          <summary>{DISCLAIMER_HEADER}</summary>
+          {DISCLAIMER_CONTENT}
         </details>
       )}
       <details className="corpusDisclaimer text sm">
@@ -239,6 +249,53 @@ function Disclaimer(props: { query: string }) {
         </li>
       </details>
     </>
+  );
+}
+
+function DisclaimerDialog(props: { query: string }) {
+  const [showDialog, setShowDialog] = useState(true);
+  const [neverShowChecked, setNeverShowChecked] = useState(false);
+  const [neverShowAgain, setNeverShowAgain] = usePersistedState<boolean>(
+    false,
+    "corpus_disclaimer"
+  );
+
+  const hasInflectionFilters = /@\w+:/.test(props.query);
+  const open = !neverShowAgain && showDialog && hasInflectionFilters;
+
+  const onClose = () => {
+    setShowDialog(false);
+    setNeverShowAgain(neverShowChecked);
+  };
+
+  return (
+    <ModalDialog
+      open={open}
+      onClose={onClose}
+      contentProps={{ className: "bgColor text sm" }}>
+      <div style={{ margin: 0, padding: "16px 24px" }}>
+        <b>{DISCLAIMER_HEADER}</b>
+      </div>
+      <div style={{ padding: "0px 24px 20px" }}>
+        {DISCLAIMER_CONTENT}
+        <label style={{ display: "flex", alignItems: "center", marginTop: 12 }}>
+          <input
+            type="checkbox"
+            checked={neverShowChecked}
+            onChange={(e) => setNeverShowChecked(e.currentTarget.checked)}
+            style={{ marginRight: 8 }}
+          />
+          Don{"'"}t show this dialog again
+        </label>
+        <div
+          className="dialogActions text md light"
+          style={{ padding: "0px 16px 8px" }}>
+          <button type="button" className="button simple" onClick={onClose}>
+            Close
+          </button>
+        </div>
+      </div>
+    </ModalDialog>
   );
 }
 
@@ -308,6 +365,7 @@ function ResultsSection(props: { results: Exclude<Results, "N/A"> }) {
       </div>
 
       <Disclaimer query={query} />
+      <DisclaimerDialog query={query} />
       {props.results.matches.length > 0 && (
         <Divider style={{ margin: "12px 0" }} />
       )}
