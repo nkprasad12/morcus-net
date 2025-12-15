@@ -207,6 +207,7 @@ export function CorpusQueryPage() {
           <SettingsPreview
             pageSize={pageSize}
             contextLen={contextLen}
+            strictMode={strictMode ? "Strict" : "Relaxed"}
             openSettings={() => setShowSettings(true)}
           />
         }

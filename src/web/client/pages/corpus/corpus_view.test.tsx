@@ -14,6 +14,13 @@ import { callApiFull } from "@/web/utils/rpc/client_rpc";
 
 jest.mock("@/web/utils/rpc/client_rpc");
 
+beforeAll(() => {
+  // js-dom doesn't yet support `dialog`.
+  HTMLDialogElement.prototype.show = jest.fn();
+  HTMLDialogElement.prototype.showModal = jest.fn();
+  HTMLDialogElement.prototype.close = jest.fn();
+});
+
 // Replace the real SearchBox with a simple input so tests can assert placeholder.
 // The SearchBox in the real app wires many props; here we only expose placeholderText and ariaLabel.
 jest.mock(
@@ -279,7 +286,9 @@ describe("CorpusQueryPage", () => {
       screen.getByText(/This tool is a work in progress/)
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/Your query includes inflection filters/)
+      screen
+        .getAllByText(/Your query includes inflection filters/)
+        .find((el) => el.nodeName === "SUMMARY")
     ).toBeInTheDocument();
   });
 });

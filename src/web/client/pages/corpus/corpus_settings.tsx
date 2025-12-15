@@ -102,7 +102,7 @@ export function CorpusSettingsDialog(props: {
 }
 
 function PreviewChip(props: {
-  value: number;
+  value: number | string;
   label: string;
   onClick: () => void;
 }) {
@@ -122,12 +122,13 @@ function PreviewChip(props: {
 export function SettingsPreview(props: {
   contextLen: number;
   pageSize: number;
+  strictMode: string;
   openSettings: () => void;
 }) {
   const isScreenTiny = useMediaQuery("(max-width: 400px)");
 
   return (
-    <span
+    <div
       className="text light xxs compact"
       style={{
         marginLeft: "6px",
@@ -135,19 +136,40 @@ export function SettingsPreview(props: {
         letterSpacing: "0",
         marginRight: "12px",
         display: "inline-flex",
-        alignItems: "center",
-        gap: "8px",
+        alignItems: "start",
+        flexDirection: "column",
       }}>
-      <PreviewChip
-        value={props.contextLen}
-        label={isScreenTiny ? "Context" : "Context words"}
-        onClick={props.openSettings}
-      />
-      <PreviewChip
-        value={props.pageSize}
-        label="Page size"
-        onClick={props.openSettings}
-      />
-    </span>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "8px",
+          margin: "0.4em 0 0.2em 0",
+        }}>
+        <PreviewChip
+          value={props.contextLen}
+          label={isScreenTiny ? "Context" : "Context words"}
+          onClick={props.openSettings}
+        />
+        <PreviewChip
+          value={props.pageSize}
+          label="Page size"
+          onClick={props.openSettings}
+        />
+      </div>
+      <div
+        style={{
+          display: "inline-flex",
+          alignItems: "center",
+          gap: "8px",
+          margin: "0.2em 0 0.4em 0",
+        }}>
+        <PreviewChip
+          label="Inflection mode"
+          value={props.strictMode}
+          onClick={props.openSettings}
+        />
+      </div>
+    </div>
   );
 }
