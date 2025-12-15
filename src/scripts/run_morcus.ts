@@ -253,7 +253,7 @@ function parseArguments() {
   });
   e2e.add_argument("-p", "--project", {
     help: "The project (device) to use when limiting to only one device type.",
-    default: "itests",
+    default: "",
   });
   e2e.add_argument("-g", "--grep", {
     help: "The grep pattern to use to limit tests by name.",
