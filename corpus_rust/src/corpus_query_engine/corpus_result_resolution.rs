@@ -473,7 +473,7 @@ fn does_inflection_match(
             }
         }
         let observed_lemma = (lemma_and_inflection >> 32) as u32;
-        constraints.lemmata.is_empty() || constraints.lemmata.contains(&observed_lemma)
+        constraints.lemmata.contains(&observed_lemma)
     }
 }
 
