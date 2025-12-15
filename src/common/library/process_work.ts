@@ -46,6 +46,7 @@ const HANDLED_REND = new Set<string>([
   // These are used in gaps. We can just ignore them.
   "* * * *",
   "...",
+  ". . .",
 ]);
 // `merge` occurs infrequently, when we have a continued quote:
 // <l>blah blah <q>blah </q></l>
@@ -342,10 +343,10 @@ export function getSectionId(
       continue;
     }
     assertEqual(
-      textParts[i].toLowerCase(),
       ancestor.name === "l"
         ? "line"
-        : (noSubtypes ? typeAttr : subtype)?.toLowerCase()
+        : (noSubtypes ? typeAttr : subtype)?.toLowerCase(),
+      textParts[i].toLowerCase()
     );
     if (n === undefined && ancestor.name === "l") {
       assertEqual(workId, "phi0550.phi001.perseus-lat1");
