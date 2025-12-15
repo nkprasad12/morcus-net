@@ -17,6 +17,7 @@ export const LatinWorks = {
   CICERO_CUM_SENATUI_GRATIAS_EGIT: "phi0474.phi019.perseus-lat2",
   CICERO_DE_DOMO_SUA: "phi0474.phi020.perseus-lat2",
   CICERO_DE_HARUSPICUM_RESP: "phi0474.phi021.perseus-lat2",
+  CICERO_PRO_P_SESTIO: "phi0474.phi022.perseus-lat2",
   CICERO_DE_OFFICIIS: "phi0474.phi055.perseus-lat1",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",

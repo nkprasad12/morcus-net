@@ -669,6 +669,9 @@ function transformContentNode(
     const finalRend = rend === "ital" || rend === "italics" ? "italic" : rend;
     attrs.push(["rend", finalRend], ["rendParent", node.name]);
   }
+  if (node.name === "title") {
+    attrs.push(["sectionHead", "1"]);
+  }
   if (node.name === "ab") {
     attrs.push(["block", "1"]);
   }
@@ -718,7 +721,7 @@ function transformContentNode(
       attrs.push(["origName", node.name]);
       return new XmlNode("span", attrs, children);
     }
-    assert(/^[a-zA-Z]/.test(child));
+    assert(/^[a-zA-Zé]/.test(child), child);
     const capitalized = child[0].toUpperCase() + child.slice(1);
     return new XmlNode("span", attrs, [capitalized]);
   }
@@ -772,6 +775,7 @@ function transformContentNode(
     case "lg":
     case "body":
     case "p":
+    case "title":
     // TODO: Eventually we should probably link with these, but for now
     // we don't really need to do anything.
     // eslint-disable-next-line no-fallthrough
