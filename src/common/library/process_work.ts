@@ -42,11 +42,14 @@ const HANDLED_REND = new Set<string>([
   "blockquote",
   "uppercase",
   "smallcaps",
+  "7",
   "overline",
   // These are used in gaps. We can just ignore them.
   "* * * *",
   "...",
   ". . .",
+  ". . . .",
+  "***",
 ]);
 // `merge` occurs infrequently, when we have a continued quote:
 // <l>blah blah <q>blah </q></l>
@@ -95,6 +98,7 @@ const NOTE_NODES = new Set([
   "rdg",
   "del",
   "w",
+  "num",
 ]);
 const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
@@ -102,6 +106,8 @@ const HANDLED_NOTE_REND = new Set<string | undefined>([
   "sup",
   "superscript",
   "overline",
+  "uppercase",
+  "smallcaps",
 ]);
 const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,
@@ -623,6 +629,9 @@ function transformNoteNode(node: XmlNode): XmlNode {
   if (["l"].includes(node.name)) {
     attrs.push(["block", "1"]);
   }
+  if (node.name === "num") {
+    attrs.push(["rend", "smallcaps"]);
+  }
   const rend = node.getAttr("rend");
   assert(KNOWN_NOTE_REND.has(rend), rend);
   if (HANDLED_NOTE_REND.has(rend)) {
@@ -640,8 +649,14 @@ function transformNoteNode(node: XmlNode): XmlNode {
     isAppCritLem = true;
   }
   if (node.name === "w") {
-    assertEqual(node.getAttr("type"), "lemma");
-    isAppCritLem = true;
+    if (node.getAttr("type") === "lemma") {
+      assertEqual(node.getAttr("type"), "lemma");
+      isAppCritLem = true;
+    } else {
+      // Otherwise, check that it's just a word with no special attributes.
+      // Sometimes `w` is used with `lem`, and sometimes it stands alone.
+      assertEqual(node.attrs.length, 0);
+    }
   }
 
   const children =
@@ -705,6 +720,21 @@ function transformContentNode(
     attrs.push(["origName", node.name]);
   }
   if (node.name === "abbr") {
+    // There are two ways to have `abbr`. The first is within a `choice`, in which it shows
+    // one an abbreviated form and one expanded form. The second is an `abbr` with an `expan`
+    // inside. In the latter case, we just want to show the abbreviated form.
+    const childContent = node.children.filter(
+      (c) => typeof c !== "string" || c.trim().length > 0
+    );
+    if (
+      childContent.length === 2 &&
+      typeof childContent[0] === "string" &&
+      typeof childContent[1] !== "string" &&
+      childContent[1].name === "expan"
+    ) {
+      return new XmlNode("span", attrs, [childContent[0]]);
+    }
+
     assertEqual(parent?.name, "choice");
     attrs.push(["origName", node.name]);
   }

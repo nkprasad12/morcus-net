@@ -1090,6 +1090,9 @@ function renderTooltip(root: XmlNode): JSX.Element {
   if (rend === "overline") {
     style.textDecoration = "overline";
   }
+  if (rend === "uppercase" || rend === "smallcaps") {
+    style.textTransform = "uppercase";
+  }
   if (rend === "sup" || rend === "superscript") {
     style.verticalAlign = "super";
   }
@@ -1198,7 +1201,7 @@ function displayForLibraryChunk(
   if (rend === "italic") {
     style.fontStyle = "italic";
   }
-  if (rend === "uppercase" || rend === "smallcaps") {
+  if (rend === "uppercase" || rend === "smallcaps" || rend === "7") {
     style.textTransform = "uppercase";
   }
   if (rend === "overline") {

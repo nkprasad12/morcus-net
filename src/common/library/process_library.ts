@@ -74,6 +74,7 @@ const NAME_TO_DISPLAY_NAME = new Map<string, string>([
   ["In P. Vatinium testem interrogatio", "In P. Vatinium"],
   ["Pro L. Cornelio Balbo", "Pro Balbo"],
   ["In L. Calpurnium Pisonem", "In Pisonem"],
+  ["Pro C. Rabirio Postumo", "Pro Rabirio Postumo"],
 ]);
 
 const NAME_TO_URL_LOOKUP = new Map<string, string>([
@@ -92,6 +93,7 @@ const NAME_TO_URL_LOOKUP = new Map<string, string>([
   ["In P. Vatinium testem interrogatio", "in_p_vatinium"],
   ["Pro L. Cornelio Balbo", "pro_balbo"],
   ["In L. Calpurnium Pisonem", "in_pisonem"],
+  ["Pro C. Rabirio Postumo", "pro_rabirio_postumo"],
 ]);
 
 const PERSEUS_LAT_LIT_DECLARATION = `<!DOCTYPE TEI.2 PUBLIC "-//TEI P4//DTD Main DTD Driver File//EN" "http://www.tei-c.org/Guidelines/DTD/tei2.dtd" [

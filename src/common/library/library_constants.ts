@@ -22,6 +22,26 @@ export const LatinWorks = {
   CICERO_PRO_M_CAELIO: "phi0474.phi024.perseus-lat2",
   CICERO_DE_PROVINCIIS_CONSULARIBUS: "phi0474.phi025.perseus-lat2",
   CICERO_PRO_BALBO: "phi0474.phi026.perseus-lat2",
+  // CICERO_IN_PISONEM: "phi0474.phi027.perseus-lat2",
+  CICERO_PRO_PLANCIO: "phi0474.phi028.perseus-lat2",
+  CICERO_PRO_SCAURO: "phi0474.phi029.perseus-lat2",
+  CICERO_PRO_RABIRIO_POSTUMO: "phi0474.phi030.perseus-lat2",
+  CICERO_PRO_ANNIO_MILONE: "phi0474.phi031.perseus-lat2",
+  CICERO_PRO_M_MARCELLO: "phi0474.phi032.perseus-lat2",
+  CICERO_PRO_Q_LIGARIO: "phi0474.phi033.perseus-lat2",
+  CICERO_PRO_REGE_DEIOTARO: "phi0474.phi034.perseus-lat2",
+  CICERO_PHILLIPPICAE: "phi0474.phi035.perseus-lat2",
+  CICERO_DE_INVENTIONE: "phi0474.phi036.perseus-lat1",
+  CICERO_DE_ORATORE: "phi0474.phi037.perseus-lat1",
+  CICERO_DE_PARTITIONE_ORATORIA: "phi0474.phi038.perseus-lat1",
+  CICERO_BRUTUS: "phi0474.phi039.perseus-lat1",
+  CICERO_ORATOR: "phi0474.phi040.perseus-lat1",
+  CICERO_DE_OPTIMO_GENERE_ORATORUM: "phi0474.phi041.perseus-lat1",
+  // Skipped 42 b/c it had a textpart without an n
+  // CICERO_DE_RE_PUBLICA: "phi0474.phi043.perseus-lat1", // Has <note> that is meant to be inline
+  // 44 is missing?
+  // CICERO_ACADEMICA: "phi0474.phi045.perseus-lat1", // Has <note> that is meant to be inline
+  CICERO_LUCULLUS: "phi0474.phi046.perseus-lat1",
   CICERO_DE_OFFICIIS: "phi0474.phi055.perseus-lat1",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
@@ -108,6 +128,10 @@ export const FORCE_CTS_WORKS = new Set([
   LatinWorks.PRUDENTIUS_PERISTEPHANON,
   LatinWorks.MUNICIUS_OCTAVIUS,
   LatinWorks.APULEIUS_METAMORPHOSES,
+  LatinWorks.CICERO_DE_PARTITIONE_ORATORIA,
+  LatinWorks.CICERO_BRUTUS,
+  LatinWorks.CICERO_ORATOR,
+  LatinWorks.CICERO_DE_OPTIMO_GENERE_ORATORUM,
   EnglishTranslations[LatinWorks.OVID_AMORES],
   EnglishTranslations[LatinWorks.OVID_EPISTULAE],
 ]);
