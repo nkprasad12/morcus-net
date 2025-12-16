@@ -117,6 +117,7 @@ function testRootWithBookAndChapter(content: string): XmlNode {
 const BODY_WITH_BOOK_ONLY = `<div n="1" type="textpart" subtype="book">Gallia est</div>`;
 const BODY_WITH_CHOICE = `<div n="1" type="textpart" subtype="book"><choice><reg>FooBar</reg><orig>BazBap</orig></choice></div>`;
 const BODY_WITH_CHOICE_AND_CORR = `<div n="1" type="textpart" subtype="book"><choice><corr>FooBar</corr><orig>BazBap</orig></choice></div>`;
+const BODY_WITH_ABBR_AND_EXPAN = `<div n="1" type="textpart" subtype="book"><abbr>orig.<expan>original</expan> </div>`;
 const BODY_WITH_NOTES = `<div n="1" type="textpart" subtype="book">Gallia <note>Gaul</note> est<note>is</note></div>`;
 const BODY_WITH_TARGET_NOTES = `<div n="1" type="textpart" subtype="book">Gallia <note target="n1"/> est<note target="n2"/><note xml:id="n1">Gaul</note><note xml:id="n2">is</note></div>`;
 const WORK_ID = "workId";
@@ -286,6 +287,14 @@ describe("processTei2", () => {
     });
     expect(work.rows[0][1].toString()).toContain("FooBar");
     expect(work.rows[0][1].toString()).not.toContain("BazBap");
+  });
+
+  it("handles elements with expan inside abbr", () => {
+    const work = processTei2(testRoot(BODY_WITH_ABBR_AND_EXPAN), {
+      workId: WORK_ID,
+    });
+    expect(work.rows[0][1].toString()).toContain("orig.");
+    expect(work.rows[0][1].toString()).not.toContain("original");
   });
 
   it("handles elements with notes", () => {
