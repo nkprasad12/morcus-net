@@ -1,4 +1,4 @@
-import { assertEqual, checkPresent } from "@/common/assert";
+import { assertEqual } from "@/common/assert";
 
 // The last two are tilde characters. This look the same in VS code.
 export const MACRONS = "āēīōūȳĀĒĪŌŪȲÃÕ";
@@ -6,33 +6,6 @@ export const BREVES = "ăĕĭŏŭўĂĬĔŎŬY̆";
 export const MACRON_COMBINER = "\u0304";
 export const BREVE_COMBINER = "\u0306";
 const UNMARKED_VOWELS = "aeiouyAEIOUY";
-
-export const LENGTH_MARK_EQUIVALENTS = new Map<string, string>([
-  [`a${MACRON_COMBINER}`, "ā"],
-  [`e${MACRON_COMBINER}`, "ē"],
-  [`i${MACRON_COMBINER}`, "ī"],
-  [`o${MACRON_COMBINER}`, "ō"],
-  [`u${MACRON_COMBINER}`, "ū"],
-  [`y${MACRON_COMBINER}`, "ȳ"],
-  [`A${MACRON_COMBINER}`, "Ā"],
-  [`E${MACRON_COMBINER}`, "Ē"],
-  [`I${MACRON_COMBINER}`, "Ī"],
-  [`O${MACRON_COMBINER}`, "Ō"],
-  [`U${MACRON_COMBINER}`, "Ū"],
-  [`Y${MACRON_COMBINER}`, "Ȳ"],
-  [`a${BREVE_COMBINER}`, "ă"],
-  [`e${BREVE_COMBINER}`, "ĕ"],
-  [`i${BREVE_COMBINER}`, "ĭ"],
-  [`o${BREVE_COMBINER}`, "ŏ"],
-  [`u${BREVE_COMBINER}`, "ŭ"],
-  [`y${BREVE_COMBINER}`, "ў"],
-  [`A${BREVE_COMBINER}`, "Ă"],
-  [`E${BREVE_COMBINER}`, "Ĕ"],
-  [`I${BREVE_COMBINER}`, "Ĭ"],
-  [`O${BREVE_COMBINER}`, "Ŏ"],
-  [`U${BREVE_COMBINER}`, "Ŭ"],
-  [`Y${BREVE_COMBINER}`, "Y̆"],
-]);
 
 export namespace Vowels {
   export type Length = "Long" | "Short" | "Ambiguous";
@@ -125,7 +98,7 @@ export function combineLengthCombiners(input: string): string {
     const isCombiner = c === MACRON_COMBINER || c === BREVE_COMBINER;
     if (isCombiner) {
       if (pendingVowel !== undefined) {
-        result += checkPresent(LENGTH_MARK_EQUIVALENTS.get(pendingVowel + c));
+        result += (pendingVowel + c).normalize("NFC");
         pendingVowel = undefined;
       }
       // If there's no pending vowel, then just skip the combiner.
