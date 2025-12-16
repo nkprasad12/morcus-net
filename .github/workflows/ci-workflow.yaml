@@ -69,7 +69,7 @@ jobs:
           #   os: ubuntu-24.04-arm
           #   tag_suffix: -arm
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 9
+    timeout-minutes: 10
     env:
       CANDIDATE: ghcr.io/nkprasad12/morcus:${{ github.sha }}${{ matrix.tag_suffix }}
       LATEST: ghcr.io/nkprasad12/morcus:dev-latest${{ matrix.tag_suffix }}
