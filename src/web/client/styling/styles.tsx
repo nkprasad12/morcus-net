@@ -695,7 +695,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderRadius: "4px",
       margin: "8px",
       padding: "8px",
-      backgroundColor: Solarized.base1 + "32",
+      backgroundColor: Solarized.base1 + "15",
       border: "2px solid",
       borderColor: Solarized.base1 + "48",
       display: "block",

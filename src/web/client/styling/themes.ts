@@ -3,7 +3,7 @@ import { Solarized } from "@/web/client/styling/colors";
 // TODO: Type this better later if possible.
 type ColorString = string;
 
-const BG_DARK: ColorString = "#212022";
+const BG_DARK: ColorString = "#141414ff";
 const DIVIDER_LIGHT: ColorString = "#839191";
 const EMPH_DARK: ColorString = "#9fa29f";
 
@@ -46,11 +46,11 @@ export const DEFAULT_DARK: SiteColors = {
   bgAlt: Solarized.base015,
   appBar: Solarized.darkarkModeMint,
   bullet: Solarized.base2,
-  dictChip: Solarized.base1,
+  dictChip: Solarized.base125,
   menuItemBase: Solarized.base02,
-  contentTextLight: Solarized.base00,
+  contentTextLight: Solarized.base0,
   contentText: Solarized.base1,
-  link: Solarized.blue,
+  link: Solarized.blue2,
   linkVisited: Solarized.violet,
   buttonText: Solarized.base01,
   tooltipBg: BG_DARK,
@@ -80,7 +80,7 @@ export const DEFAULT_LIGHT: SiteColors = {
   bgAlt: Solarized.base15,
   appBar: Solarized.base2,
   bullet: Solarized.base01,
-  dictChip: Solarized.base03 + "A1",
+  dictChip: Solarized.base03 + "B8",
   menuItemBase: Solarized.base01,
   contentTextLight: Solarized.base01,
   contentText: Solarized.base015,

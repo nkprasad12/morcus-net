@@ -256,6 +256,10 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
             autoCapitalize="none"
             autoComplete="off"
             aria-label={props.ariaLabel}
+            aria-expanded={popperOpen}
+            aria-autocomplete={
+              props.onOptionSelected === unimplemented ? "none" : "list"
+            }
             value={input}
             onChange={async (e) => onInputInternal(e.currentTarget.value)}
             onClick={() => refreshOptions(inputRef.current?.value)}
