@@ -13,7 +13,7 @@ import {
 } from "@/web/client/components/global_flags";
 import { SearchBox } from "@/web/client/components/generic/search";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
-import { Solarized } from "@/web/client/styling/colors";
+import { Colors } from "@/web/client/styling/colors";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import type { OnSearchQuery } from "@/web/client/pages/dictionary/dict_context";
@@ -399,8 +399,7 @@ function SettingsPreview(props: {
           className="text xs smallChip"
           onClick={props.openDialog}
           style={{
-            backgroundColor:
-              (inflectionMode ? Solarized.cyan : Solarized.red) + 40,
+            backgroundColor: (inflectionMode ? Colors.cyan : Colors.red) + 40,
             cursor: "pointer",
           }}>
           {inflectionMode ? "On" : "Off"}

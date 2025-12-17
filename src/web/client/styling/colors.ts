@@ -1,4 +1,4 @@
-export namespace Solarized {
+export namespace Colors {
   export const base03 = "#002b36"; // gray (darkest)
   export const base02 = "#073642"; // gray (darker)
   export const base015 = "#203a40"; // gray (dark)

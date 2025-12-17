@@ -1,5 +1,5 @@
 import { exhaustiveGuard } from "@/common/misc_utils";
-import { Solarized } from "@/web/client/styling/colors";
+import { Colors } from "@/web/client/styling/colors";
 import { StyleConfig } from "@/web/client/styling/style_context";
 import {
   DEFAULT_DARK,
@@ -147,7 +147,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".text.xs": { fontSize: FontSizes.TERTIARY },
     ".text.xxs": { fontSize: "12" },
     ".text.red": {
-      color: Solarized.red + "A0",
+      color: Colors.red + "A0",
     },
 
     // Buttons
@@ -195,18 +195,18 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundColor: theme.appBar + "A0",
     },
     ".button.warn": {
-      backgroundColor: Solarized.red + "40",
+      backgroundColor: Colors.red + "40",
     },
     ".button.warn:hover": {
-      backgroundColor: Solarized.red + "20",
+      backgroundColor: Colors.red + "20",
     },
     ".button.warn:focus": {
-      backgroundColor: Solarized.red + "20",
+      backgroundColor: Colors.red + "20",
     },
     ".button:disabled": {
       cursor: "not-allowed",
-      backgroundColor: Solarized.base1 + "48",
-      color: Solarized.base1 + "96",
+      backgroundColor: Colors.base1 + "48",
+      color: Colors.base1 + "96",
     },
     ".iconButton": {
       display: "inline-flex",
@@ -380,14 +380,14 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     /** Corpus related */
     // This is used in the corpus and in the reader when we link out from the corpus.
     ".corpusResult": {
-      color: Solarized.orange + "B0",
+      color: Colors.orange + "B0",
     },
     ".corpusDisclaimer": {
       marginTop: "8px",
-      backgroundColor: Solarized.red + "0A",
+      backgroundColor: Colors.red + "0A",
       borderRadius: "4px",
       padding: "8px",
-      border: `1px solid ${Solarized.red + "20"}`,
+      border: `1px solid ${Colors.red + "20"}`,
     },
     ".corpusDisclaimer li": {
       marginLeft: "16px",
@@ -399,7 +399,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     ".queryHelp code": {
       color: theme.contentTextLight,
-      backgroundColor: Solarized.blue + "20",
+      backgroundColor: Colors.blue + "20",
       borderRadius: "4px",
       // Allow code examples to wrap on small screens so tables don't force page width.
       whiteSpace: "pre-wrap",
@@ -515,7 +515,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     },
     ".dictHighlighted": {
       borderLeft: "3px solid",
-      borderColor: Solarized.red,
+      borderColor: Colors.red,
       paddingLeft: "4px",
       marginLeft: "-7px",
     },
@@ -525,10 +525,10 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderColor: theme.bg,
     },
     ".readerHl": {
-      borderColor: Solarized.cyan + "08",
+      borderColor: Colors.cyan + "08",
       borderTopRightRadius: "4px",
       borderBottomRightRadius: "4px",
-      backgroundColor: Solarized.cyan + "30",
+      backgroundColor: Colors.cyan + "30",
     },
     ".dictPlaceholder": {
       color: backgroundColor,
@@ -540,33 +540,31 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       cursor: "help",
     },
     ".lsHover:hover": {
-      backgroundColor: Solarized.base1 + "20",
+      backgroundColor: Colors.base1 + "20",
       borderRadius: 4,
     },
     ".lsAuthor": {
-      backgroundColor: Solarized.violet + modifiedStrength(25),
+      backgroundColor: Colors.violet + modifiedStrength(25),
       borderRadius: 4,
     },
     ".lsBibl": {
-      backgroundColor: Solarized.violet + modifiedStrength(theme.lsBiblAlpha),
+      backgroundColor: Colors.violet + modifiedStrength(theme.lsBiblAlpha),
       borderRadius: 4,
     },
     ".gafAuth": {
-      backgroundColor:
-        Solarized.violet + modifiedStrength(25 + theme.lsBiblAlpha),
+      backgroundColor: Colors.violet + modifiedStrength(25 + theme.lsBiblAlpha),
       borderRadius: 4,
     },
     ".lsQuote": {
-      backgroundColor: Solarized.blue + modifiedStrength(theme.lsQuoteAlpha),
+      backgroundColor: Colors.blue + modifiedStrength(theme.lsQuoteAlpha),
       borderRadius: 4,
     },
     ".lsGrammar": {
-      backgroundColor:
-        Solarized.orange + modifiedStrength(theme.lsGrammarAlpha),
+      backgroundColor: Colors.orange + modifiedStrength(theme.lsGrammarAlpha),
       borderRadius: 4,
     },
     ".lsOrth": {
-      backgroundColor: Solarized.red + modifiedStrength(theme.lsOrthAlpha),
+      backgroundColor: Colors.red + modifiedStrength(theme.lsOrthAlpha),
       borderRadius: 4,
       padding: 2,
     },
@@ -597,20 +595,20 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderRadius: 4,
     },
     ".clickableOutlineSection:hover": {
-      backgroundColor: Solarized.base1 + "20",
+      backgroundColor: Colors.base1 + "20",
     },
     ".dLink": {
-      color: Solarized.navy,
-      borderBottom: `1px solid ${Solarized.navy}`,
+      color: Colors.navy,
+      borderBottom: `1px solid ${Colors.navy}`,
     },
     ".dLink:hover": {
-      color: Solarized.blue,
-      borderBottom: `1px solid ${Solarized.blue}`,
+      color: Colors.blue,
+      borderBottom: `1px solid ${Colors.blue}`,
       cursor: "pointer",
     },
     ".latWord:hover": {
-      color: Solarized.blue,
-      borderBottom: `1px solid ${Solarized.blue}`,
+      color: Colors.blue,
+      borderBottom: `1px solid ${Colors.blue}`,
       cursor: "pointer",
     },
     ".raRoot ul": {
@@ -626,7 +624,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderRadius: 4,
     },
     ".mobileNavOpen": {
-      backgroundColor: Solarized.base1 + "40",
+      backgroundColor: Colors.base1 + "40",
     },
     ".mobileNavButton": {
       ...MOBILE_NAV_BUTTON_BASE_STYLE,
@@ -695,9 +693,9 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       borderRadius: "4px",
       margin: "8px",
       padding: "8px",
-      backgroundColor: Solarized.base1 + "15",
+      backgroundColor: Colors.base1 + "15",
       border: "2px solid",
-      borderColor: Solarized.base1 + "48",
+      borderColor: Colors.base1 + "48",
       display: "block",
       textTransform: "capitalize",
       overflowWrap: "break-word",
@@ -708,21 +706,21 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       textTransform: "none",
     },
     ".latWork:hover": {
-      color: Solarized.blue,
-      backgroundColor: Solarized.base1 + "48",
+      color: Colors.blue,
+      backgroundColor: Colors.base1 + "48",
       cursor: "pointer",
     },
     ".terminalNavItem": {
       color: contentTextLightColor,
       textTransform: "capitalize",
-      backgroundColor: Solarized.base1 + "20",
-      border: `1px solid ${Solarized.base1}80`,
+      backgroundColor: Colors.base1 + "20",
+      border: `1px solid ${Colors.base1}80`,
       borderRadius: "4px",
       padding: "2px",
     },
     ".terminalNavItem:hover": {
-      color: Solarized.blue,
-      backgroundColor: Solarized.base1 + "40",
+      color: Colors.blue,
+      backgroundColor: Colors.base1 + "40",
       cursor: "pointer",
     },
     ".extReaderMobile .readerNavIconContainer": {
@@ -834,7 +832,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       userSelect: "none",
     },
     ".customSearchPopupOptionSelected": {
-      backgroundColor: Solarized.base1 + "20",
+      backgroundColor: Colors.base1 + "20",
     },
 
     /** Custom scrollbar styles */
@@ -868,7 +866,7 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
       backgroundColor: "#0022AA18",
     },
     ".macronLabel": {
-      color: Solarized.base1,
+      color: Colors.base1,
     },
     ".macronSide .dictRoot .text.md": {
       fontSize: FontSizes.SMALL_SCREEN * 0.8,
