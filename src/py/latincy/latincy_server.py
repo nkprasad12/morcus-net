@@ -44,9 +44,7 @@ class _LemmaHandler(BaseHTTPRequestHandler):
 
         result = []
         for token in doc:
-            result.append(
-                {"text": token.text, "lemma": token.lemma_, "morph": str(token.morph)}
-            )
+            result.append((token.text, token.lemma_, str(token.morph)))
 
         self.send_response(200)
         self.send_header("Content-Type", "application/json")

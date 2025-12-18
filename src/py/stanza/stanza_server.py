@@ -8,7 +8,7 @@ from http.server import HTTPServer, BaseHTTPRequestHandler
 class _StanzaServer(HTTPServer):
     def __init__(self, address, handler, nlp):
         """
-        Initialize the LatinCy server.
+        Initialize the Stanza server.
 
         Args:
             address: Address tuple (host, port)
@@ -36,13 +36,7 @@ class _LemmaHandler(BaseHTTPRequestHandler):
         result = []
         for sentence in doc.sentences:
             for token in sentence.words:
-                result.append(
-                    {
-                        "text": token.text,
-                        "lemma": token.lemma,
-                        "morph": str(token.feats),
-                    }
-                )
+                result.append((token.text, token.lemma, str(token.feats)))
 
         self.send_response(200)
         self.send_header("Content-Type", "application/json")

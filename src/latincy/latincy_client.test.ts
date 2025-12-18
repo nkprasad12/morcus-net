@@ -3,21 +3,9 @@ import { AddressInfo } from "net";
 import { LatinToken, latincyAnalysis } from "@/latincy/latincy_client";
 
 const FAKE_RESPONSE: LatinToken[] = [
-  {
-    text: "Deditque",
-    lemma: "do",
-    morph: "V:PFA:3:S",
-  },
-  {
-    text: "oscula",
-    lemma: "osculum",
-    morph: "N:ACC:P:N",
-  },
-  {
-    text: "nato",
-    lemma: "natus",
-    morph: "N:DAT:S:M",
-  },
+  ["Deditque", "do", "V:PFA:3:S"],
+  ["oscula", "osculum", "N:ACC:P:N"],
+  ["nato", "natus", "N:DAT:S:M"],
 ];
 
 describe("latincyAnalysis", () => {

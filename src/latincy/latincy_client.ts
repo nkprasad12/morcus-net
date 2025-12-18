@@ -1,24 +1,22 @@
 import { assertType } from "@/common/assert";
 import { envVar } from "@/common/env_vars";
-import { isArray, isString, matchesObject } from "@/web/utils/rpc/parsing";
+import { isArray, isString, isTriplet } from "@/web/utils/rpc/parsing";
 
-/**
- * Interface representing a parsed token from the LatinCy server
- */
-export interface LatinToken {
+/** A parsed token from the LatinCy server. */
+export type LatinToken = [
   /** The original text of the token. */
-  text: string;
+  text: string,
   /** The lemma form of the token. */
-  lemma: string;
+  lemma: string,
   /** Morphological information about the token. */
-  morph: string;
-}
+  morph: string
+];
 
-const isLatinToken = matchesObject<LatinToken>({
-  text: isString,
-  lemma: isString,
-  morph: isString,
-});
+const isLatinToken = isTriplet<string, string, string>(
+  isString,
+  isString,
+  isString
+);
 
 const isLatincyResponse = isArray(isLatinToken);
 

@@ -107,9 +107,9 @@ function safeConvertUpos(morph: string): WordInflectionData | undefined {
 
 function findBestMatch(
   crunched: OptionsForForm[],
-  nlp: Omit<LatinToken, "text">
+  nlp: LatinToken
 ): number | undefined {
-  const nlpInflection = safeConvertUpos(nlp.morph);
+  const nlpInflection = safeConvertUpos(nlp[2]);
   if (nlpInflection === undefined) {
     return undefined;
   }
@@ -117,7 +117,7 @@ function findBestMatch(
     const options = crunched[i].options;
     for (const option of options) {
       const lemma = option.lemma.split("#")[0];
-      if (lemma !== nlp.lemma) {
+      if (lemma !== nlp[1]) {
         continue;
       }
       for (const morph of option.morph) {
@@ -183,9 +183,9 @@ function attachGuesses(
     }
     const nlpToken = nlpResult[j];
     j++;
-    assert(raw.word.startsWith(nlpToken.text));
+    assert(raw.word.startsWith(nlpToken[0]));
     if (raw.nlpEnclitic !== undefined) {
-      assertEqual(raw.nlpEnclitic, nlpResult[j].text);
+      assertEqual(raw.nlpEnclitic, nlpResult[j][0]);
       j++;
     }
 

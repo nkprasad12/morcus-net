@@ -36,9 +36,9 @@ describe("macronizeInput", () => {
   it("should process simple text correctly", async () => {
     const input = "Panthia acclinat";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
-      { text: " " },
-      { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
+      ["Panthia", "Panthia", "Gender=Fem|Case=Abl"],
+      [" ", "", ""],
+      ["acclinat", "acclino", "Tense=Pres"],
     ]);
 
     const result = await macronizeInput(input);
@@ -61,9 +61,9 @@ describe("macronizeInput", () => {
   it("should group different case with same vowels", async () => {
     const input = "Gallus acclinat";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "Gallus", lemma: "Gallus", morph: "Gender=Masc" },
-      { text: " " },
-      { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
+      ["Gallus", "Gallus", "Gender=Masc"],
+      [" ", "", ""],
+      ["acclinat", "acclino", "Tense=Pres"],
     ]);
 
     const result = await macronizeInput(input);
@@ -84,9 +84,7 @@ describe("macronizeInput", () => {
 
   it("should preserve case of all-caps word", async () => {
     const input = "EOS";
-    mockLatincyAnalysis.mockResolvedValue([
-      { text: "EOS", lemma: "Eos", morph: "Gender=Fem" },
-    ]);
+    mockLatincyAnalysis.mockResolvedValue([["EOS", "Eos", "Gender=Fem"]]);
 
     const result = await macronizeInput(input);
     expect(result).toHaveLength(1);
@@ -105,9 +103,9 @@ describe("macronizeInput", () => {
   it("should separate different case with different vowels", async () => {
     const input = "Eos acclinat";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "Eos", lemma: "Eos", morph: "Gender=Fem" },
-      { text: " " },
-      { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
+      ["Eos", "Eos", "Gender=Fem"],
+      [" ", "", ""],
+      ["acclinat", "acclino", "Tense=Pres"],
     ]);
 
     const result = await macronizeInput(input);
@@ -126,9 +124,7 @@ describe("macronizeInput", () => {
 
   it("should respect NLP result if matches", async () => {
     const input = "Eos";
-    mockLatincyAnalysis.mockResolvedValue([
-      { text: "Eos", lemma: "Eos", morph: "Gender=Fem" },
-    ]);
+    mockLatincyAnalysis.mockResolvedValue([["Eos", "Eos", "Gender=Fem"]]);
 
     const result = await macronizeInput(input);
 
@@ -140,9 +136,7 @@ describe("macronizeInput", () => {
 
   it("should ignore NLP result if morphology doesn't match", async () => {
     const input = "Eos";
-    mockLatincyAnalysis.mockResolvedValue([
-      { text: "Eos", lemma: "Eos", morph: "Gender=Masc" },
-    ]);
+    mockLatincyAnalysis.mockResolvedValue([["Eos", "Eos", "Gender=Masc"]]);
 
     const result = await macronizeInput(input);
 
@@ -154,9 +148,7 @@ describe("macronizeInput", () => {
 
   it("should ignore NLP result if lemma doesn't match", async () => {
     const input = "Eos";
-    mockLatincyAnalysis.mockResolvedValue([
-      { text: "Eos", lemma: "Error", morph: "Gender=Fem" },
-    ]);
+    mockLatincyAnalysis.mockResolvedValue([["Eos", "Error", "Gender=Fem"]]);
 
     const result = await macronizeInput(input);
 
@@ -168,9 +160,7 @@ describe("macronizeInput", () => {
 
   it("should respect initial macronization over NLP result if available", async () => {
     const input = "Eōs";
-    mockLatincyAnalysis.mockResolvedValue([
-      { text: "Eos", lemma: "Eos", morph: "Gender=Fem" },
-    ]);
+    mockLatincyAnalysis.mockResolvedValue([["Eos", "Eos", "Gender=Fem"]]);
 
     const result = await macronizeInput(input);
 
@@ -183,9 +173,9 @@ describe("macronizeInput", () => {
   it("should preserve spacing and ignored characters.", async () => {
     const input = "Panthia].\nAcclinat";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
-      { text: "].\n" },
-      { text: "Acclinat", lemma: "acclino", morph: "Tense=Pres" },
+      ["Panthia", "Panthia", "Gender=Fem|Case=Abl"],
+      ["].\n", "", ""],
+      ["Acclinat", "acclino", "Tense=Pres"],
     ]);
 
     const result = await macronizeInput(input);
@@ -208,9 +198,9 @@ describe("macronizeInput", () => {
   it("should preserve case of original text.", async () => {
     const input = "Acclinat Panthia";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "Acclinat", lemma: "acclino", morph: "Tense=Pres" },
-      { text: " " },
-      { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
+      ["Acclinat", "acclino", "Tense=Pres"],
+      [" ", "", ""],
+      ["Panthia", "Panthia", "Gender=Fem|Case=Abl"],
     ]);
 
     const result = await macronizeInput(input);
@@ -240,7 +230,7 @@ describe("macronizeInput", () => {
   it("should raise on missing nlp tokens", async () => {
     const input = "Panthia acclinat";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
+      ["Panthia", "Panthia", "Gender=Fem|Case=Abl"],
     ]);
     await expect(() => macronizeInput(input)).rejects.toThrow();
   });
@@ -248,10 +238,10 @@ describe("macronizeInput", () => {
   it("should handle words with enclitics", async () => {
     const input = "acclinatque Panthia";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
-      { text: "que", lemma: "que" },
-      { text: " " },
-      { text: "Panthia", lemma: "Panthia", morph: "Gender=Fem|Case=Abl" },
+      ["acclinat", "acclino", "Tense=Pres"],
+      ["que", "que", ""],
+      [" ", "", ""],
+      ["Panthia", "Panthia", "Gender=Fem|Case=Abl"],
     ]);
 
     const result = await macronizeInput(input);
@@ -271,9 +261,9 @@ describe("macronizeInput", () => {
   it("should handle text with words that are not known to either", async () => {
     const input = "Blah acclinat";
     mockLatincyAnalysis.mockResolvedValue([
-      { text: "Blah" },
-      { text: " " },
-      { text: "acclinat", lemma: "acclino", morph: "Tense=Pres" },
+      ["Blah", "", ""],
+      [" ", "", ""],
+      ["acclinat", "acclino", "Tense=Pres"],
     ]);
 
     const result = await macronizeInput(input);

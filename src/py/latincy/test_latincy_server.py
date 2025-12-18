@@ -66,10 +66,10 @@ class TestLatincyServer(unittest.TestCase):
         result = json.loads(response_data)
 
         self.assertEqual(len(result), 2)
-        self.assertEqual(result[0]["text"], "Gallia")
-        self.assertEqual(result[0]["lemma"], "Gallia")
-        self.assertEqual(result[1]["text"], "est")
-        self.assertEqual(result[1]["lemma"], "sum")
+        self.assertEqual(result[0][0], "Gallia")
+        self.assertEqual(result[0][1], "Gallia")
+        self.assertEqual(result[1][0], "est")
+        self.assertEqual(result[1][1], "sum")
 
     def test_handles_json(self):
         """Test the server created by create_server can process text."""
