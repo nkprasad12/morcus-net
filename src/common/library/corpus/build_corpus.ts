@@ -92,7 +92,7 @@ namespace StoredInflections {
   function addToLookups(
     word: string,
     id: number,
-    lookup: AllLookups,
+    lookup: InflectionLookups,
     storage: StoredInflections
   ) {
     const dimensions = checkPresent(storage.dimensions.get(word));
@@ -127,7 +127,7 @@ namespace StoredInflections {
     id: number,
     getInflections: (word: string) => CrunchResult[],
     storage: StoredInflections,
-    lookups: AllLookups,
+    lookups: InflectionLookups,
     idTable: InProgressLatinCorpus["idTable"]
   ) {
     const cachedOffset = storage.wordToRawDataOffset.get(word);
@@ -303,24 +303,24 @@ function stringMapper(
   };
 }
 
-type AllLookups = {
+type InflectionLookups = {
   [key in keyof CorpusIndexKeyTypes]: Adder<CorpusIndexKeyTypes[key]>;
 };
 
-function makeAllLookups(corpus: InProgressLatinCorpus): AllLookups {
-  const word = makeLookup(corpus.indices.word, stringMapper("word", corpus));
-  const lemma = makeLookup(corpus.indices.lemma, stringMapper("lemma", corpus));
-  const breaks = makeLookup(
-    corpus.indices.breaks,
-    stringMapper("breaks", corpus)
-  );
-  const cases = makeLookup<LatinCase>(corpus.indices.case, (x) => x);
-  const number = makeLookup<LatinNumber>(corpus.indices.number, (x) => x);
-  const gender = makeLookup<LatinGender>(corpus.indices.gender, (x) => x);
-  const tense = makeLookup<LatinTense>(corpus.indices.tense, (x) => x);
-  const person = makeLookup<LatinPerson>(corpus.indices.person, (x) => x);
-  const mood = makeLookup<LatinMood>(corpus.indices.mood, (x) => x);
-  const voice = makeLookup<LatinVoice>(corpus.indices.voice, (x) => x);
+function makeInflectionLookups(
+  corpus: InProgressLatinCorpus,
+  key: "indices"
+): InflectionLookups {
+  const word = makeLookup(corpus[key].word, stringMapper("word", corpus));
+  const lemma = makeLookup(corpus[key].lemma, stringMapper("lemma", corpus));
+  const breaks = makeLookup(corpus[key].breaks, stringMapper("breaks", corpus));
+  const cases = makeLookup<LatinCase>(corpus[key].case, (x) => x);
+  const number = makeLookup<LatinNumber>(corpus[key].number, (x) => x);
+  const gender = makeLookup<LatinGender>(corpus[key].gender, (x) => x);
+  const tense = makeLookup<LatinTense>(corpus[key].tense, (x) => x);
+  const person = makeLookup<LatinPerson>(corpus[key].person, (x) => x);
+  const mood = makeLookup<LatinMood>(corpus[key].mood, (x) => x);
+  const voice = makeLookup<LatinVoice>(corpus[key].voice, (x) => x);
   return {
     word,
     lemma,
@@ -347,7 +347,7 @@ function absorbWork(
   console.debug(
     `Ingesting into corpus: ${work.workName} (${work.author}) - ${work.id}`
   );
-  const lookups = makeAllLookups(corpus);
+  const lookups = makeInflectionLookups(corpus, "indices");
   const breaksIndex = lookups.breaks;
   const wordIndex = lookups.word;
 
