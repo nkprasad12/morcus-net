@@ -606,11 +606,6 @@ function JumpToSection() {
         value={value}
         onChange={(e) => setValue(e.currentTarget.value ?? "")}
         onKeyUp={(e) => {
-          // Make sure the Arrow keys don't trigger navigation.
-          if (e.key.includes("Arrow")) {
-            e.stopPropagation();
-            return;
-          }
           if (e.key === "Enter" && value.length > 0) {
             nav.to((old) => ({
               ...old,
@@ -686,6 +681,19 @@ function WorkNavigationBar(props: {
 
   React.useEffect(() => {
     const keyListener = (e: KeyboardEvent) => {
+      const target = e.target;
+      if (target !== null) {
+        if ("isContentEditable" in target && target.isContentEditable) {
+          return;
+        }
+        if (
+          "tagName" in target &&
+          (target.tagName === "INPUT" || target.tagName === "TEXTAREA")
+        ) {
+          return;
+        }
+      }
+
       if (e.key === "ArrowLeft") {
         changePage(-1);
       } else if (e.key === "ArrowRight") {
