@@ -99,8 +99,6 @@ function validateXml(input: any): void {
  * @param rawXml A raw buffer or string containing the XML contents.
  * @param options Parsing options.
  * - `keepWhitespace`: ensures that whitespace around tags will be ignored.
- * - `rootName`: is the content root name to search for, if the root contains
- *    multiple elements.
  * - `validate`: Whether to validate the XML before returning.
  * - `unpairedTags`: Tags to accept as unpaired.
  *
