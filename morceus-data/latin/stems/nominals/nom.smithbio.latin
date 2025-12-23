@@ -2882,7 +2882,7 @@
 #
 ##noanalysis:Callo
 #
-#:le:Calo-joannes
+#:le:Calojoannes
 #:no:Calo-joann es_is fem pers_name
 #
 #:le:Calocyrus
@@ -9710,9 +9710,9 @@
 #:le:Pappus
 #:no:Papp us_i masc pers_name
 #
-#:le:Papus
-#:no:Pap us_i masc pers_name
-#
+:le:Papus
+:no:Pap us_i masc pers_name
+
 #:le:Papylus
 #:no:Papyl us_i masc pers_name
 #

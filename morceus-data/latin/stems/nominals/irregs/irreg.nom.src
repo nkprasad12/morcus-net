@@ -575,6 +575,7 @@ ec@quis rel_pron
 :wd:quem interrog masc acc sg
 :wd:quam interrog fem acc sg
 :wd:qua_ interrog fem abl sg
+:wd:quo_ interrog masc neut abl sg
 :wd:qui_cum interrog masc abl sg
 :wd:quibuscum interrog masc fem neut abl dat pl
 :wd:quoi interrog masc fem neut dat sg

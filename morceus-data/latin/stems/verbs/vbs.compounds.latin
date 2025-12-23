@@ -32,7 +32,7 @@
 :vs:pe^ra_re_sc conj3 act
 :vs:pe^ra_ru^ perfstem act
 
-:le:consaepi^o
+:le:consaepio
 :vs:co_nsaep conj4
 :vs:co_nse_p conj4 orth
 :vs:co_nsaept pp4
@@ -133,7 +133,7 @@
 :vs:i_nfli_x perfstem
 :vs:i_nfli_ct pp4
 
-:le:ingre^di^or
+:le:ingredior
 :vs:ingre^d	conj3_io dep
 :vs:ingress	pp4 dep 
 

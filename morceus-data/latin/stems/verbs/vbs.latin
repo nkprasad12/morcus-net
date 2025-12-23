@@ -802,6 +802,9 @@
 :vs:al-le^g	conj3
 :vs:al-le_g perfstem
 :vs:al-le_ct pp4
+:vs:ad-le^g	conj3 orth 
+:vs:ad-le_g perfstem orth 
+:vs:ad-le_ct pp4 orth
 :le:allegorizo
 :de:alle_go^ri_z	are_vb
 :le:allevio
@@ -13298,7 +13301,7 @@
 :le:procrastino
 :de:pro_cra_sti^n	are_vb
 :le:procreo
-:de:pro_-cr	are_vb
+:de:pro_-cre	are_vb
 :le:procresco
 :vs:pro_-cre_sc	conj3
 :le:procubo
@@ -13367,7 +13370,7 @@
 :vs:pro^fect pp4
 :le:proficisco
 :vs:pro^fi^ci_sc	conj3
-:le:pro^fiteor
+:le:profiteor
 :vs:pro^fi^t	conj2
 :vs:pro^fess pp4
 :le:profligo#1

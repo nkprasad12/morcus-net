@@ -189,7 +189,7 @@
 :le:compes1
 :no:compe s_dis fem
 
-:le:conge^ri^es
+:le:congeries
 :no:conge^ri^ es_eLi fem
 :no:conge^ri^ a_ae fem
 

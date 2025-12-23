@@ -228,7 +228,7 @@ A^bella
 :le:Abella
 :no:A^bell	a_ae fem
 
-:le:Abella_na
+:le:Abellana
 :no:A^bella_n a_ae fem
 :no:A^vella_n a_ae fem
 :no:A^belli_n a_ae fem
@@ -1530,7 +1530,7 @@ a^ce_ta_ri^a
 :le:acetaria
 :no:a^ce_ta_ri^	us_i neut pl
 
-:le:a^ce_tum
+:le:acetum
 :no:a^ce_t	us_i neut
 
 A^chaeme^ne_s		
@@ -12555,7 +12555,7 @@ A^o_us
 :no:A^o_	us_i masc
 
 
-:le:apage^
+:le:apage
 :wd:a^pa^ge^	exclam
 a^pa^la^		<orth type=alt>ha^p-</orth>
 A^pa^me_a		<orth>-i_a</orth>	
@@ -19009,7 +19009,7 @@ Atre^ba^tes
 :le:Atrebates
 :no:Atre^ba^t	0_is masc pl
 
-:le:Atre^bas
+:le:Atrebas
 :no:Atre^ba s_tis masc sg
 
 Atre^-bas		<itype>a^tis</itype>	<gen>m.</gen>
@@ -48960,10 +48960,10 @@ corne^us#2
 
 
 corni^cen#1		<itype>ci^nis</itype>	<gen>m.</gen>
-:le:corni^cen#1
+:le:cornicen#1
 :no:corni^c	en_inis masc
 
-:le:Corni^cen
+:le:Cornicen
 :no:Corni^c	en_inis masc
 
 Corni^cen#2		<itype>i^nis</itype>	<gen>m.</gen>
@@ -60903,10 +60903,10 @@ disco^ri^a_ti^o
 
 
 dis-cors		<itype>cordis</itype>	<pos>adj.</pos>	
-:le:dis-cors
+:le:discors
 :aj:dis-cor	s_dis_adj
 
-:le:con-cors
+:le:concors
 :aj:con-cor	s_dis_adj
 
 
@@ -98329,7 +98329,7 @@ i^n-e_la^bo_ra_tus
 
 
 i^n-e_le^gans		<itype>antis</itype>	<pos>adj.</pos>
-:le:i^n-elegans
+:le:inelegans
 :aj:i^n-e_le^gan	s_tis_adj
 
 i^ne_le^ganter	
