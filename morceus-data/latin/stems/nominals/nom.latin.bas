@@ -819,6 +819,9 @@
 :aj:Ju_l	ius_ia_ium
 :aj:I^u_l	ius_ia_ium
 
+:le:Julia
+:no:Ju_li   a_ae fem
+
 :le:juvenis
 :aj:juven 	is_e 
 :no:juven 	is_is_C masc
