@@ -810,6 +810,18 @@ export function getGlobalStyles(settings: StyleConfig): Interpolation<object> {
     ".readerMain .block .l": {
       display: "block",
     },
+    ".readerSide .blockquote": {
+      display: "block",
+      margin: "0.25em 0",
+      fontStyle: "italic",
+      marginLeft: "1em",
+    },
+    ".readerSide .blockquote .l": {
+      display: "block",
+    },
+    ".readerSide .block .l": {
+      display: "block",
+    },
     ".customSearchPopup": {
       color: theme.searchPopupText,
       backgroundColor: theme.searchPopupBg,

@@ -93,6 +93,7 @@ export const EnglishTranslations: Record<string, string> = {
   [LatinWorks.OVID_AMORES]: "phi0959.phi001.perseus-eng2",
   [LatinWorks.CICERO_DE_LEGE_AGRARIA]: "phi0474.phi011.perseus-eng2",
   [LatinWorks.CICERO_PRO_RABIRIO]: "phi0474.phi012.perseus-eng3",
+  [LatinWorks.DE_AMICITIA]: "phi0474.phi052.perseus-eng2",
 } satisfies { [K in keyof typeof LatinWorks]?: string };
 
 function toPerseusPath(workId: string): string {

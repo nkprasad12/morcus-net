@@ -99,6 +99,7 @@ const NOTE_NODES = new Set([
   "del",
   "w",
   "num",
+  "gloss",
 ]);
 const HANDLED_NOTE_REND = new Set<string | undefined>([
   "italic",
@@ -108,6 +109,7 @@ const HANDLED_NOTE_REND = new Set<string | undefined>([
   "overline",
   "uppercase",
   "smallcaps",
+  "blockquote",
 ]);
 const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,
