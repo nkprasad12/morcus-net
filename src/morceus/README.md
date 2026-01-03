@@ -165,3 +165,154 @@ Other nice to haves:
   - For this, we can likely save some metadata about the entry, e.g. whether
     it's a stub and if so where it points to. Then we can make the decision at
     query time about whether to return that result or not.
+
+# Motivation for the V2
+
+Things we want to fix:
+
+## Deponents and friends
+
+Currently, the tables are set up such that e.g. `loquor` will be claimed
+to be `pres ind pass 1st sg dep` even though it's active.
+
+We should probably check in on semi-deponents as well.
+
+### Ideas
+
+Deponents are usually marked already; we should make special tables
+for these. We could also maybe run a corpus search to see if a word only ever shows up in "passive" forms to catch others that should be deponent, but also otherwise
+if the lemma ends in "r" (and is a verb) that may be good enough?
+
+## Locative
+
+Morpheus tables never mark locative.
+
+### Ideas
+
+We need to go in and mark it where it can occur.
+
+## Ambiguous Lemmata
+
+It is hard to tell apart e.g. occido#1 from occido#2. Which is which?
+It's non-trivial to tell because this is linked to the ordering within
+L&S XML (not in the data file itself) so you actually need to consult to
+repo to determine for sure.
+
+### Ideas
+
+We could add an optional `hint` field. For example,
+`occido#1` could have `:hint:kill`. We could also display the principal parts,
+for those where this is enough to distinguish.
+
+## Dictionary codes
+
+A common use case is that we will want to match up a lemma with its entry in
+the dictionary (e.g. in Gaffiot or in Lewis and Short). This can have two
+problems:
+
+1. We may make a different decision on which variant is the core lemma form
+   from a particular dictionary
+2. For the `occido#1` vs `occido#2` example above, different dictionaries
+   may mark those in different orders.
+
+### Ideas
+
+Include explicit dictionary codes for the ambiguous cases.
+For we might have:
+
+```
+:le:occido#1
+:dic:GAF occido2
+```
+
+## Principal parts
+
+Getting the principal parts can be a bit annoying
+First off, we never mark whether a lemma is a noun, adjective, or verb.
+Even when this can be determined (with annoyance), we have things like deponents
+or impersonals that can complicate this.
+
+### Ideas
+
+Have some metadata where we explicitly mark Noun / Adj / Verb and Dep / Semi / Imp
+etc...
+
+## Variants
+
+On words where we can multiple orthograpical variants, we don't have a clean way to add different stems. For example:
+
+```
+:le:alluo
+:vs:al-lu^	conj3
+:vs:al-lu^ perfstem
+:vs:ad-lu^  conj3 orth
+:vs:ad-lu^  perfstem orth
+```
+
+This is bad because:
+
+- We need to repeat everything where only prefix needs to change
+- When generating tables, it is annoying to find which ones are "Primary"
+- For words with multiple variants, it starts to get very messy very quickly.
+
+## Derived terms
+
+Examples: Adjectives can have neuter substantives that can be considered
+lemmata in their own right, and same with verbs and their PPPs.
+
+This causes problems where (a) the results get muddied with multiple
+lemmata that are kind of the same thing and (b) when running statistical
+analyses, sometimes we might want to match up e.g. a result that
+returns a lemma `nascor` in PPP with `natus`. This also applies to corpus
+strict mode.
+
+### Ideas
+
+Mark these relationships explicitly.
+
+## Partial negated templates
+
+Consider the lemma `ruo`
+
+```
+:le:ruo
+:vs:ru^	conj3
+:vs:ru^	perfstem
+:vs:ru^t	pp4 no_fut_part
+:vs:ru^i^t	pp4 fut part
+```
+
+The line `:vs:ru^i^t	pp4 fut part` gives us an easy way to say:
+"include only the ends where the result has these tags" but we had
+to invent a tag `no_fut_part` to specify the negation of that (e.g.
+exclude only ...) which is annoying (we also have `no_fut`).
+
+This also bites us when considering irregs (note that irregs have different logic
+for lemma constructions, which is annoying)
+
+```
+:le:sal
+:wd:sa_l	irreg_nom3 masc nom voc sg
+sa^l@decl3	irreg_nom3 masc
+```
+
+## Periphrastics
+
+Morpheus has been designed to go in one direction: it will take
+in a single word, and give you the analyses for that word. This means
+that periphrastics cannot be encoded in the tables.
+
+### Ideas
+
+Figure out a syntax for this, or whether we even need it. Can this be
+encoded at table generation time instead?
+
+# Design for V2
+
+The encoding scheme would as follows:
+
+:lemm: `str` matching /[A-Z]?[a-z]\*(?:[#]\d)?/ REQUIRED
+:hint: `str` OPTIONAL
+:type: `str` (must be valid `type_code`: noun, deponent, etc...) REQUIRED
+:from: `str` (must be another lemma; where this is derived from) OPTIONAL
+:dict: `str` (must be a valid `dict_code`) `str` OPTIONAL
