@@ -42,6 +42,8 @@ export const LatinWorks = {
   // 44 is missing?
   // CICERO_ACADEMICA: "phi0474.phi045.perseus-lat1", // Has <note> that is meant to be inline
   CICERO_LUCULLUS: "phi0474.phi046.perseus-lat1",
+  CICERO_DE_AMICITIA: "phi0474.phi052.perseus-lat2",
+  CICERO_DE_FATO: "phi0474.phi054.perseus-lat1",
   CICERO_DE_OFFICIIS: "phi0474.phi055.perseus-lat1",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
@@ -54,7 +56,6 @@ export const LatinWorks = {
   TACITUS_DIALOGUS: "phi1351.phi003.perseus-lat1",
   JUVENAL_SATURAE: "phi1276.phi001.perseus-lat2",
   SALLUST_CATALINA1: "phi0631.phi001.perseus-lat4",
-  DE_AMICITIA: "phi0474.phi052.perseus-lat2",
   DE_RERUM_NATURA: "phi0550.phi001.perseus-lat1",
   NEPOS_MILTIADES: "phi0588.abo001.perseus-lat2",
   NEPOS_THEMISTOCLES: "phi0588.abo002.perseus-lat2",
@@ -93,7 +94,7 @@ export const EnglishTranslations: Record<string, string> = {
   [LatinWorks.OVID_AMORES]: "phi0959.phi001.perseus-eng2",
   [LatinWorks.CICERO_DE_LEGE_AGRARIA]: "phi0474.phi011.perseus-eng2",
   [LatinWorks.CICERO_PRO_RABIRIO]: "phi0474.phi012.perseus-eng3",
-  [LatinWorks.DE_AMICITIA]: "phi0474.phi052.perseus-eng2",
+  [LatinWorks.CICERO_DE_AMICITIA]: "phi0474.phi052.perseus-eng2",
 } satisfies { [K in keyof typeof LatinWorks]?: string };
 
 function toPerseusPath(workId: string): string {

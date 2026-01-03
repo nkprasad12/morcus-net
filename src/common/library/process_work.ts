@@ -1,3 +1,5 @@
+import { betaCodeToGreek } from "beta-code-js";
+
 import {
   assert,
   assertArraysEqual,
@@ -767,6 +769,14 @@ function transformContentNode(
       rend === "blockquote" ? children : ["“", ...children, "”"]
     );
   }
+  if (node.name === "foreign") {
+    const lang = node.getAttr("xml:lang");
+    if (lang === "greek") {
+      assertEqual(node.children.length, 1);
+      const child = assertType(node.children[0], isString);
+      return new XmlNode("span", [], [betaCodeToGreek(child)]);
+    }
+  }
   switch (node.name) {
     case "lb":
       return new XmlNode("br", [], []);
@@ -778,6 +788,7 @@ function transformContentNode(
     case "label":
       assert(children.length === 1);
       return new XmlNode("b", attrs, children);
+    case "w":
     case "l":
     case "hi":
     case "add":
