@@ -31,18 +31,29 @@ export function compress(): RsbuildPlugin {
     name: "compressJs",
     setup: (api) => {
       api.onAfterBuild(async (a) => {
-        const entrypoints: Map<string, Record<string, any>> =
-          // @ts-expect-error
-          a.stats?.compilation.entrypoints;
-        const outputs: string[] = [];
-        for (const [_, entrypoint] of entrypoints) {
+        if (a.stats === undefined) {
+          throw new Error("No stats available.");
+        }
+        if (!("compilation" in a.stats)) {
+          throw new Error("No compilation available in stats.");
+        }
+        const compilation = a.stats.compilation;
+
+        const outputs = new Set<string>();
+        for (const [_, entrypoint] of compilation.entrypoints) {
           for (const chunk of entrypoint.chunks) {
-            for (const file of chunk.files) {
-              outputs.push(`${api.context.distPath}/${file}`);
-            }
+            // The main chunks.
+            chunk.files.forEach((f) => outputs.add(f));
+          }
+          for (const child of entrypoint.childrenIterable) {
+            // The child chunks. Rsbuild seems to use this for chunks that are
+            // fetched after the initial load.
+            child.getFiles().forEach((f) => outputs.add(f));
           }
         }
-        await compressJsOutputs(outputs);
+        await compressJsOutputs(
+          Array.from(outputs).map((f) => `${api.context.distPath}/${f}`)
+        );
       });
     },
   };
