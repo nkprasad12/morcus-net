@@ -53,7 +53,10 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
   test("bundle size is within limit", async () => {
     let vendorSize = 0;
     let totalSize = 0;
+    let bundleFiles = 0;
+
     for await (const [jsFile, jsRes] of getBundleFiles()) {
+      bundleFiles += 1;
       const contents = await jsRes.arrayBuffer();
       const gzipped = gzipSync(contents).byteLength;
       console.debug(`${jsFile}: ${gzipped / 1000} KB`);
@@ -63,6 +66,8 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
       }
     }
 
+    // All other files should be loaded as needed, not as part of the initial load.
+    expect(bundleFiles).toBe(2);
     expect(totalSize).toBeGreaterThan(0);
     console.log(`::notice title=Bundle Size::${totalSize / 1000} kB`);
     expect(totalSize / 1000).toBeLessThan(85);
@@ -71,10 +76,12 @@ test.describe("bundle validation", { tag: "@bundle" }, () => {
     expect(vendorSize / 1000).toBeLessThan(20);
   });
 
-  test("bundle is sent with an immutable header", async () => {
+  test("bundle is sent with expected cache headers", async () => {
     for await (const [_, jsRes] of getBundleFiles()) {
-      expect(jsRes.headers.get("cache-control")).toBeDefined();
-      expect(jsRes.headers.get("cache-control")).toContain("immutable");
+      const cacheControl = jsRes.headers.get("cache-control");
+      expect(cacheControl).toBeDefined();
+      expect(cacheControl).toContain("immutable");
+      expect(cacheControl).toContain("max-age=31536000");
     }
   });
 
