@@ -12,4 +12,5 @@ export const ClientPaths = {
   LIBRARY_PATH: checkPresent(PagePath.of("/library")),
   SETTINGS_PATH: checkPresent(PagePath.of("/settings")),
   CORPUS_QUERY_PATH: checkPresent(PagePath.of("/corpus")),
+  EDITOR_PATH: checkPresent(PagePath.of("/editor")),
 } satisfies Record<string, PagePath>;

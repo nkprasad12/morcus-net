@@ -66,6 +66,11 @@ const CORPUS_QUERY_PAGE: SinglePageApp.Page = {
   },
 };
 
+const EDITOR_PAGE: SinglePageApp.Page = {
+  Content: lazyLoaded("Editor"),
+  paths: [ClientPaths.EDITOR_PATH],
+};
+
 export const ACTIVE_PAGES = [
   // Visible in top navigation
   DICT_PAGE,
@@ -77,4 +82,5 @@ export const ACTIVE_PAGES = [
   READING_PAGE,
   EXTERNAL_CONTENT_READER_PAGE,
   MACRONIZE_PAGE,
+  EDITOR_PAGE,
 ];
