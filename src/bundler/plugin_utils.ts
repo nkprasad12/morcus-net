@@ -105,37 +105,46 @@ function formatCompressionResults(results: CompressedFileInfo[]) {
     console.log(`- ${chalk.gray(outputDir)}${chalk.cyan(outputName)}`);
   }
 
-  console.log(`\n${chalk.yellow("Compression summary")}`);
   const byOriginal = arrayMapBy(results, (r) => r.inputFile);
   const rows: string[][] = [];
   for (const [inputFile, results] of byOriginal.map) {
     assert(inputFile.startsWith(outputDir));
     const inputName = inputFile.slice(outputDir.length);
     const inputSize = results[0].originalKb.toFixed(1);
-    const parts = [`${chalk.cyan(inputName)}`, `${inputSize} kB raw`];
+    const parts = [`${chalk.cyan(inputName)}`, `${inputSize} kB`];
     for (const result of results) {
       const ratio = (result.compressedKb / result.originalKb) * 100;
       const ratioStr = ratio.toFixed(1) + "%";
       const compressedSize = result.compressedKb.toFixed(1);
-      const coreStr = `${compressedSize} kB ${result.algorithm}`;
+      const coreStr = `${compressedSize} kB`;
       const timing = `in ${result.compressionMs.toFixed(1)} ms`;
       const metadata = chalk.gray(`(${ratioStr}) ${timing}`);
       parts.push(`${chalk.green(coreStr)} ${metadata}`);
     }
     rows.push(parts);
   }
-  const colWidths: number[] = [];
+
+  const visibleLength = (s: string) =>
+    // eslint-disable-next-line no-control-regex
+    s.replace(/\x1b\[[0-9;]*m/g, "").length;
+  const header = ["File", "raw", "gzip", "brotli"];
+  const colWidths: number[] = header.map((h) => h.length);
   for (const row of rows) {
     row.forEach((col, idx) => {
-      colWidths[idx] = Math.max(colWidths[idx] ?? 0, col.length);
+      colWidths[idx] = Math.max(colWidths[idx] ?? 0, visibleLength(col));
     });
   }
+  const headerStr = header
+    .map((h, idx) => h + " ".repeat(colWidths[idx] - h.length))
+    .join("   ");
+  console.log(`\n${chalk.yellow(headerStr)}`);
   for (const row of rows) {
     const padded = row.map(
-      (col, idx) => col + " ".repeat(colWidths[idx] - col.length)
+      (col, idx) => col + " ".repeat(colWidths[idx] - visibleLength(col))
     );
     console.log(padded.join("   "));
   }
+  console.log("");
 }
 
 export async function compressJsOutputs(outputs: string[]) {
