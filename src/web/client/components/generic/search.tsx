@@ -24,7 +24,10 @@ const isChainedPair: Validator<ChainedPair> = isPair(
 
 interface AutoCompleteSearchProps<T> {
   /** A provider for the autocomplete options for a particular input state. */
-  optionsForInput: (input: string, position?: number) => T[] | Promise<T[]>;
+  optionsForInput: (
+    input: string,
+    position?: number
+  ) => ReadonlyArray<T> | Promise<ReadonlyArray<T>>;
   /**
    * Called when an option is selected.
    *
@@ -40,6 +43,7 @@ interface AutoCompleteSearchProps<T> {
 }
 
 interface BaseSearchBoxProps {
+  id?: string;
   autoFocused?: boolean;
   placeholderText?: string;
   onOpenSettings?: () => unknown;
@@ -78,7 +82,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
   const [cursor, setCursor] = useState(-1);
   const [input, setInput] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
-  const [options, setOptions] = useState<T[]>([]);
+  const [options, setOptions] = useState<ReadonlyArray<T>>([]);
 
   const { toKey, optionsForInput, onInput } = props;
 
@@ -250,6 +254,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
           )}
           <input
             ref={inputRef}
+            id={props.id}
             type="text"
             className={`customSearchBox text ${textSize}`}
             spellcheck={false}
