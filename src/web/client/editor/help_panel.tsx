@@ -56,7 +56,23 @@ function LandingView(props: HelpContentProps) {
   );
 
   return (
-    <Omnibar onHelpRequested={requestHelp} helpOptions={ALL_HELP_TYPE_INFOS} />
+    <>
+      <Omnibar
+        onHelpRequested={requestHelp}
+        helpOptions={ALL_HELP_TYPE_INFOS}
+      />
+      <div className="text sm light" style={{ margin: "8px 4px 0px" }}>
+        Welcome to the editor! Type Latin in the text area. While editing, you
+        can use the special key <code>/</code> (backslash) to trigger dictionary
+        lookups, tables, corpus queries, and more.
+      </div>
+      <div className="text sm light" style={{ margin: "8px 4px 0px" }}>
+        Any text you write will be automatically saved, but please note that{" "}
+        <b>saved text will be removed if you clear your browser data</b>. It is
+        recommended to periodically copy your text elsewhere to avoid accidental
+        loss of data.
+      </div>
+    </>
   );
 }
 
