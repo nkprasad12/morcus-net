@@ -2,8 +2,8 @@ import { useState, KeyboardEvent, flushSync } from "react";
 
 import { ResizeablePanels } from "@/web/client/components/draggables";
 import { OMNIBAR_ID } from "@/web/client/editor/omnibar";
-import { HelpContent } from "@/web/client/editor/edit_help";
-import type { HelpView } from "@/web/client/editor/edit_help_types";
+import { HelpContent } from "@/web/client/editor/help_panel";
+import type { HelpView } from "@/web/client/editor/help_types";
 
 interface MainContentProps {
   onSearchTrigger: () => void;

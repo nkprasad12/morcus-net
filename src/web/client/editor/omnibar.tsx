@@ -1,7 +1,7 @@
 import { useCallback } from "react";
 
 import { SearchBox } from "@/web/client/components/generic/search";
-import type { HelpViewInformation } from "@/web/client/editor/edit_help_types";
+import type { HelpViewInformation } from "@/web/client/editor/help_types";
 
 export const OMNIBAR_ID = "editor-omnibar";
 

@@ -7,8 +7,10 @@ import {
   ALL_HELP_TYPE_INFOS,
   type HelpView,
   type HelpViewInformation,
-} from "@/web/client/editor/edit_help_types";
+} from "@/web/client/editor/help_types";
 import { exhaustiveGuard } from "@/common/misc_utils";
+import { CorpusQueryPage } from "@/web/client/pages/corpus/corpus_view";
+import { RouteContext, RouteInfo } from "@/web/client/router/router_v2";
 
 const BOX_STYLE: React.CSSProperties = {
   height: "100%",
@@ -35,6 +37,16 @@ function EmbeddedDictView() {
   );
 }
 
+function EmbeddedCorpusView() {
+  const [route, setRoute] = useState<RouteInfo>({ path: "corpus" });
+
+  return (
+    <RouteContext.Provider value={{ route, navigateTo: setRoute }}>
+      <CorpusQueryPage />
+    </RouteContext.Provider>
+  );
+}
+
 function LandingView(props: HelpContentProps) {
   const { setHelpState } = props;
 
@@ -55,6 +67,8 @@ function chooseView(props: HelpContentProps): JSX.Element {
       return <LandingView {...props} />;
     case "dict":
       return <EmbeddedDictView />;
+    case "corpus":
+      return <EmbeddedCorpusView />;
   }
   exhaustiveGuard(helpState);
 }
