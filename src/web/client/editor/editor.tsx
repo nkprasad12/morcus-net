@@ -36,17 +36,34 @@ function MainContent({ onSearchTrigger }: MainContentProps) {
   );
 }
 
+// This hook is a hack to get around the fact that Preact doesn't
+// have an implementation for `flushSync`. The alternative to this
+// would be to have a small delay after setting the help state.
+function useOmnibarFocus() {
+  const [focusTrigger, setFocusTrigger] = useState(0);
+
+  // Use layout effect to ensure that focus happens before the browser paints.
+  // This prevents a visual flicker where the omnibar appears, and then gains focus
+  // which opens a menu.
+  useLayoutEffect(() => {
+    if (focusTrigger > 0) {
+      document.getElementById(OMNIBAR_ID)?.focus();
+    }
+  }, [focusTrigger]);
+
+  return useCallback(() => setFocusTrigger((prev) => prev + 1), []);
+}
+
 export function Editor() {
   const [helpState, setHelpState] = useState<HelpView | null>(null);
+
+  const focusOmnibar = useOmnibarFocus();
 
   return (
     <ResizeablePanels sideClass="editorSide">
       <MainContent
-        onSearchTrigger={() => {
-          flushSync(() => {
-            setHelpState(null);
-          });
-          document.getElementById(OMNIBAR_ID)?.focus();
+          setHelpState(null);
+          focusOmnibar();
         }}
       />
       <HelpContent helpState={helpState} setHelpState={setHelpState} />
