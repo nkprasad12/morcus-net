@@ -313,7 +313,6 @@ function findCompletionsInList<T>(
   max: number,
   extractor: (option: T) => string
 ): T[] {
-  console.log("Finding completions for prefix:", prefix);
   // Binary search to find the first option that could match the prefix
   let left = 0;
   let right = options.length;
