@@ -164,11 +164,15 @@ function ShLink(props: { text: string; query: string }) {
 export function LatLinkify(props: { input: string }) {
   return (
     <>
-      {processWords(props.input, (word, i) => (
-        <span key={i} className="latWord">
-          {word}
-        </span>
-      ))}
+      {processWords(props.input, (word, i) =>
+        /\d/.test(word) ? (
+          word
+        ) : (
+          <span key={i} className="latWord">
+            {word}
+          </span>
+        )
+      )}
     </>
   );
 }
