@@ -323,7 +323,7 @@ describe("New Dictionary View", () => {
       expect.objectContaining({
         path: "/dicts",
         params: expect.objectContaining({
-          lang: "La",
+          lang: "La-En",
           in: undefined,
           q: "France",
         }),
@@ -371,7 +371,11 @@ describe("New Dictionary View", () => {
     expect(navigateTo).toHaveBeenCalledWith(
       expect.objectContaining({
         path: "/dicts",
-        params: expect.objectContaining({ lang: "La", in: "LnS", q: "France" }),
+        params: expect.objectContaining({
+          lang: "La-En",
+          in: "LnS",
+          q: "France",
+        }),
       })
     );
   });

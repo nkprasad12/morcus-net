@@ -84,6 +84,16 @@ function chooseDicts(dicts: undefined | DictInfo | DictInfo[]): DictInfo[] {
 type EdgeCaseState = "Landing" | "Error" | "No Results";
 type DictState = EdgeCaseState | "Loading" | "Results";
 
+function maybeArrHas<T>(arr: T[] | T | undefined, target: T): boolean {
+  if (arr === undefined) {
+    return false;
+  }
+  if (Array.isArray(arr)) {
+    return arr.some((a) => a === target);
+  }
+  return arr === target;
+}
+
 function hasGreek(input: string): boolean {
   return /[\u0370-\u03ff\u1f00-\u1fff]/.test(input);
 }
@@ -543,14 +553,14 @@ function DictionaryEntries(props: { entries: EntriesByDict[] }) {
     if (fromInternalLink) {
       fromInternalLink.current = true;
     }
-    onSearchQuery(query, { lang: "La", inflectedSearch: true });
+    onSearchQuery(query, { lang: ["La", "En"], inflectedSearch: true });
     return true;
   }, "latWord");
   const auxClickHandler = textCallback((query) => {
     nav.inNewTab({
       path: ClientPaths.DICT_PAGE.path,
       query,
-      lang: "La",
+      lang: ["La", "En"],
       inflectedSearch: true,
     });
     return true;
@@ -777,7 +787,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
   const queryDicts = React.useMemo(
     () =>
       chooseDicts(allowedDicts).filter(
-        (d) => queryLang === undefined || d.languages.from === queryLang
+        (d) =>
+          queryLang === undefined || maybeArrHas(queryLang, d.languages.from)
       ),
     [allowedDicts, queryLang]
   );
@@ -843,7 +854,8 @@ export function DictionaryViewV2(props: DictionaryV2Props) {
         return;
       }
       const filterDicts = (d: LatinDictInfo) =>
-        options?.lang === undefined || d.languages.from === options?.lang;
+        options?.lang === undefined ||
+        maybeArrHas(options?.lang, d.languages.from);
       const available = LatinDict.AVAILABLE.filter(filterDicts);
       const canUse = dictsToUse.filter(filterDicts);
       nav.to({

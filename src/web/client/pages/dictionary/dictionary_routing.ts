@@ -32,18 +32,24 @@ export interface DictRoute {
    */
   dicts?: DictInfo[] | DictInfo;
   /** Which source languages to filter on. */
-  lang?: DictLang;
+  lang?: DictLang[] | DictLang;
 }
 
-function dictsToParam(rawDicts?: DictInfo[] | DictInfo): string | undefined {
-  if (rawDicts === undefined) {
+function maybeArrayToParam<T>(
+  maybeArray: T[] | T | undefined,
+  getKey: (t: T) => string
+): string | undefined {
+  if (maybeArray === undefined) {
     return undefined;
   }
-  const dicts = Array.isArray(rawDicts) ? rawDicts : [rawDicts];
-  return dicts.map((d) => d.key.replace("&", "n")).join("-");
+  const arr = Array.isArray(maybeArray) ? maybeArray : [maybeArray];
+  return arr.map(getKey).join("-");
 }
 
-function dictsFromParam(param?: string): DictInfo[] | DictInfo | undefined {
+function paramToMaybeArray<T>(
+  param: string | undefined,
+  convert: (s: string[]) => T[]
+): T[] | T | undefined {
   if (param === undefined) {
     return undefined;
   }
@@ -51,9 +57,20 @@ function dictsFromParam(param?: string): DictInfo[] | DictInfo | undefined {
   // We use "-" as the separator to avoid ugly URLs,
   // but we need to support "," for backwards compatibility of old links.
   const splitter = param.includes(",") ? "," : "-";
-  const keys = param.split(splitter).map((part) => part.replace("n", "&"));
-  const dicts = LatinDict.AVAILABLE.filter((dict) => keys.includes(dict.key));
-  return dicts.length === 1 ? dicts[0] : dicts;
+  const keys = param.split(splitter);
+  const items = convert(keys);
+  return items.length === 1 ? items[0] : items;
+}
+
+function dictsToParam(rawDicts?: DictInfo[] | DictInfo): string | undefined {
+  return maybeArrayToParam(rawDicts, (d) => d.key.replace("&", "n"));
+}
+
+function dictsFromParam(param?: string): DictInfo[] | DictInfo | undefined {
+  return paramToMaybeArray(param, (keys) => {
+    const fixed = keys.map((part) => part.replace("n", "&"));
+    return LatinDict.AVAILABLE.filter((dict) => fixed.includes(dict.key));
+  });
 }
 
 function toRoute(info: DictRoute): RouteInfo {
@@ -67,7 +84,7 @@ function toRoute(info: DictRoute): RouteInfo {
       : undefined;
   params[QUERY_KEY] = info.query;
   params[DICTS_KEY] = dictsToParam(info.dicts);
-  params[LANG_KEY] = info.lang;
+  params[LANG_KEY] = maybeArrayToParam(info.lang, (l) => l);
   params[OPTIONS_KEY] = optionMode;
   return { path: info.path, params, hash: info.hash };
 }
@@ -91,7 +108,7 @@ function fromRoute(info: RouteInfo): DictRoute {
     inflectedSearch: option === INFLECTED_SEARCH_COMPATIBILITY_ENABLED,
     idSearch: option === ID_SEARCH_ENABLED,
     dicts: dictsFromParam(params[DICTS_KEY]),
-    lang: rawLang !== undefined && isDictLang(rawLang) ? rawLang : undefined,
+    lang: paramToMaybeArray(rawLang, (keys) => keys.filter(isDictLang)),
     hash: info.hash,
   };
 }
