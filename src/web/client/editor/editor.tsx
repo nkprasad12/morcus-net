@@ -1,4 +1,10 @@
-import { useState, KeyboardEvent, flushSync, useRef } from "react";
+import {
+  useState,
+  KeyboardEvent,
+  useRef,
+  useCallback,
+  useLayoutEffect,
+} from "react";
 
 import { ResizeablePanels } from "@/web/client/components/draggables";
 import { OMNIBAR_ID } from "@/web/client/editor/omnibar";
@@ -7,10 +13,10 @@ import type { HelpView } from "@/web/client/editor/help_types";
 import { useAutosave } from "@/web/client/editor/autosave";
 
 interface MainContentProps {
-  onSearchTrigger: () => void;
+  onHelpTrigger: (text: string, cursor: number) => void;
 }
 
-function MainContent({ onSearchTrigger }: MainContentProps) {
+function MainContent({ onHelpTrigger }: MainContentProps) {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useAutosave(textareaRef);
@@ -20,7 +26,12 @@ function MainContent({ onSearchTrigger }: MainContentProps) {
       return;
     }
     e.preventDefault();
-    onSearchTrigger();
+    if (textareaRef.current === null) {
+      return;
+    }
+    const text = textareaRef.current.value;
+    const cursor = textareaRef.current.selectionStart;
+    onHelpTrigger(text, cursor);
   };
 
   return (
@@ -62,6 +73,7 @@ export function Editor() {
   return (
     <ResizeablePanels sideClass="editorSide">
       <MainContent
+        onHelpTrigger={() => {
           setHelpState(null);
           focusOmnibar();
         }}
