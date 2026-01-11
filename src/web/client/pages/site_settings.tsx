@@ -4,6 +4,9 @@ import {
   GlobalSettingsContext,
 } from "@/web/client/components/global_flags";
 import { CheckBox, Container } from "@/web/client/components/generic/basics";
+import { lazyLoaded } from "@/web/client/routing/lazy_loading";
+
+const OfflineSettingsSection = lazyLoaded("OfflineSettingsSection");
 
 function GlobalSettingsCheckbox(props: {
   label: string;
@@ -86,7 +89,7 @@ export function SiteSettings() {
             settingKey="experimentalMode"
           />
         </SettingsSection>
-        {/* <OfflineSettingsSection /> */}
+        <OfflineSettingsSection />
       </div>
     </Container>
   );
