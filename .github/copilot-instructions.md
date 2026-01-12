@@ -106,6 +106,7 @@ const isApiResponse = matchesObject<ApiResponse>({
 - Tests should be named `*.test.ts` or `*.test.tsx`
   - Tests that require DOM should include `@jest-environment jsdom` at the top
   - Client side unit tests that need to mock backend server APIs should use `jest.mock("@/web/utils/rpc/client_rpc");`
+  - Matches like `toBeInTheDocument()` are not available; find alternatives.
 - Follow ESLint/Prettier formatting (run `npm run format` before committing)
 - Python code should use black formatting
 - Use strict validation for API request/response data

@@ -7,7 +7,6 @@ import { OfflineSettingsSection } from "@/web/client/offline/offline_settings_ui
 import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import { sendToSw } from "@/web/client/offline/communication/app_comms";
 import { registerServiceWorker } from "@/web/client/offline/sw_helpers";
-import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 
 jest.mock("@/web/client/offline/use_offline_settings");
 jest.mock("@/web/client/offline/communication/app_comms");
@@ -22,44 +21,16 @@ describe("OfflineSettingsSection", () => {
     jest.clearAllMocks();
   });
 
-  it("does not render when experimentalMode is disabled", () => {
-    const { queryByText } = render(
-      <GlobalSettingsContext.Provider
-        value={{
-          data: {
-            experimentalMode: false,
-          },
-          setData: jest.fn(),
-          mergeData: jest.fn(),
-        }}>
-        <OfflineSettingsSection />
-      </GlobalSettingsContext.Provider>
-    );
-
-    expect(queryByText("Offline Mode [Very Experimental]")).toBeNull();
-  });
-
   it("renders initial checkbox", () => {
     mockUseOfflineSettings.mockReturnValue({});
-    const { getByLabelText } = render(
-      <GlobalSettingsContext.Provider
-        value={{
-          data: {
-            experimentalMode: true,
-          },
-          setData: jest.fn(),
-          mergeData: jest.fn(),
-        }}>
-        <OfflineSettingsSection />
-      </GlobalSettingsContext.Provider>
-    );
+    const { getByLabelText } = render(<OfflineSettingsSection />);
 
     expect(
       (getByLabelText("Offline Mode Enabled") as HTMLInputElement).checked
     ).toBe(false);
   });
 
-  it("renders correctly when experimentalMode is enabled", () => {
+  it("renders correct options when enabled", () => {
     mockUseOfflineSettings.mockReturnValue({
       offlineModeEnabled: true,
       shDownloaded: true,
@@ -67,18 +38,7 @@ describe("OfflineSettingsSection", () => {
       morceusDownloaded: false,
     });
 
-    const { getByLabelText } = render(
-      <GlobalSettingsContext.Provider
-        value={{
-          data: {
-            experimentalMode: true,
-          },
-          setData: jest.fn(),
-          mergeData: jest.fn(),
-        }}>
-        <OfflineSettingsSection />
-      </GlobalSettingsContext.Provider>
-    );
+    const { getByLabelText } = render(<OfflineSettingsSection />);
 
     expect(
       (getByLabelText("Offline Mode Enabled") as HTMLInputElement).checked
@@ -101,18 +61,7 @@ describe("OfflineSettingsSection", () => {
     });
     mockRegisterServiceWorker.mockResolvedValue(0);
 
-    const { getByLabelText, getByText } = render(
-      <GlobalSettingsContext.Provider
-        value={{
-          data: {
-            experimentalMode: true,
-          },
-          setData: jest.fn(),
-          mergeData: jest.fn(),
-        }}>
-        <OfflineSettingsSection />
-      </GlobalSettingsContext.Provider>
-    );
+    const { getByLabelText, getByText } = render(<OfflineSettingsSection />);
 
     const checkbox = getByLabelText("Smith and Hall") as HTMLInputElement;
     fireEvent.click(checkbox);
@@ -139,18 +88,7 @@ describe("OfflineSettingsSection", () => {
       callback({ data: { complete: true, success: true } });
     });
 
-    const { getByLabelText, getByText } = render(
-      <GlobalSettingsContext.Provider
-        value={{
-          data: {
-            experimentalMode: true,
-          },
-          setData: jest.fn(),
-          mergeData: jest.fn(),
-        }}>
-        <OfflineSettingsSection />
-      </GlobalSettingsContext.Provider>
-    );
+    const { getByLabelText, getByText } = render(<OfflineSettingsSection />);
 
     const checkbox = getByLabelText("Smith and Hall") as HTMLInputElement;
     fireEvent.click(checkbox);

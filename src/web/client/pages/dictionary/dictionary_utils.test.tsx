@@ -232,16 +232,8 @@ describe("SearchSettings", () => {
     window.sessionStorage.clear();
   });
 
-  it("returns full list on retrieve without store and experimental on", () => {
-    const defaultValue = { experimentalMode: true };
-    localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
-    expect(SearchSettings.retrieve()).toStrictEqual(
-      LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo)
-    );
-  });
-
-  it("returns full list with experimental off", () => {
-    const defaultValue = { experimentalMode: false };
+  it("returns full list on retrieve with experimental on", () => {
+    const defaultValue = { darkMode: true };
     localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
     expect(SearchSettings.retrieve()).toStrictEqual(
       LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo)

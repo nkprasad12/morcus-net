@@ -40,6 +40,11 @@ const OMNIS_PAGE: SinglePageApp.Page = {
   paths: [PagePath.of("/omnis")!],
   Content: () => <div>OmnisPage</div>,
 };
+const DIVISA_PAGE: SinglePageApp.Page = {
+  paths: [PagePath.of("/divisa")!],
+  Content: () => <div>DivisaPage</div>,
+};
+const ALL_PAGES = [GALLIA_PAGE, OMNIS_PAGE, DIVISA_PAGE];
 
 beforeAll(() => {
   // js-dom doesn't yet support `dialog`.
@@ -49,11 +54,6 @@ beforeAll(() => {
 });
 
 describe("Single Page App View", () => {
-  const pages: SinglePageApp.Page[] = [GALLIA_PAGE, OMNIS_PAGE];
-  const experimentPages: SinglePageApp.Page[] = [
-    { ...GALLIA_PAGE, experimental: true },
-    OMNIS_PAGE,
-  ];
   const pagesWithSubpages: SinglePageApp.Page[] = [
     { ...GALLIA_PAGE, paths: [PagePath.of("/gallia/:est")!] },
   ];
@@ -63,7 +63,7 @@ describe("Single Page App View", () => {
     render(
       <RouteContext.Provider
         value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
-        <SinglePageApp pages={pages} />
+        <SinglePageApp pages={ALL_PAGES} />
       </RouteContext.Provider>
     );
 
@@ -71,25 +71,20 @@ describe("Single Page App View", () => {
     expect(screen.queryByText("OmnisPage")).toBeNull();
   });
 
-  it("shows all pages in experiment mode", () => {
-    localStorage.setItem(
-      "GlobalSettings",
-      JSON.stringify({
-        experimentalMode: true,
-      })
-    );
+  it("shows only some pages in the app bar", () => {
     const mockNav = jest.fn(() => {});
     render(
       <SettingsHandler>
         <RouteContext.Provider
           value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
-          <SinglePageApp pages={experimentPages} />
+          <SinglePageApp pages={ALL_PAGES} />
         </RouteContext.Provider>
       </SettingsHandler>
     );
 
     expect(screen.queryAllByText("Gallia")).not.toHaveLength(0);
     expect(screen.queryAllByText("Omnis")).not.toHaveLength(0);
+    expect(screen.queryAllByText("Divisa")).toHaveLength(0);
   });
 
   it("show page on subpage, if required", () => {
@@ -106,33 +101,12 @@ describe("Single Page App View", () => {
     expect(screen.queryByText("GalliaPage")).not.toBeNull();
   });
 
-  it("hides pages in experiment mode", () => {
-    localStorage.setItem(
-      "GlobalSettings",
-      JSON.stringify({
-        experimentalMode: false,
-      })
-    );
-    const mockNav = jest.fn(() => {});
-    render(
-      <SettingsHandler>
-        <RouteContext.Provider
-          value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
-          <SinglePageApp pages={experimentPages} />
-        </RouteContext.Provider>
-      </SettingsHandler>
-    );
-
-    expect(screen.queryAllByText("Gallia")).toHaveLength(0);
-    expect(screen.queryAllByText("Omnis")).not.toHaveLength(0);
-  });
-
   it("shows navigation on bad path", () => {
     const mockNav = jest.fn(() => {});
     render(
       <RouteContext.Provider
         value={{ route: { path: "/g" }, navigateTo: mockNav }}>
-        <SinglePageApp pages={pages} />
+        <SinglePageApp pages={ALL_PAGES} />
       </RouteContext.Provider>
     );
 
@@ -145,7 +119,7 @@ describe("Single Page App View", () => {
     render(
       <RouteContext.Provider
         value={{ route: { path: "/gallia" }, navigateTo: mockNav }}>
-        <SinglePageApp pages={pages} />
+        <SinglePageApp pages={ALL_PAGES} />
       </RouteContext.Provider>
     );
 

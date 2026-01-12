@@ -40,7 +40,7 @@ describe("GlobalSettingsContext", () => {
     const settings = setupHandler();
 
     expect(settings.get).toBeDefined();
-    expect(settings.get?.data.experimentalMode).toBe(false);
+    expect(settings.get?.data.darkMode).toBe(false);
   });
 
   it("handles case with malformed storage", () => {
@@ -49,56 +49,56 @@ describe("GlobalSettingsContext", () => {
     const settings = setupHandler();
 
     expect(settings.get).toBeDefined();
-    expect(settings.get?.data.experimentalMode).toBe(undefined);
+    expect(settings.get?.data.darkMode).toBe(undefined);
   });
 
   it("handles case with valid storage", () => {
     const defaultValue: GlobalSettings = {
-      experimentalMode: true,
+      darkMode: true,
     };
     localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
 
     const settings = setupHandler();
 
     expect(settings.get).toBeDefined();
-    expect(settings.get?.data.experimentalMode).toBe(true);
+    expect(settings.get?.data.darkMode).toBe(true);
   });
 
   it("updates on settings modification", () => {
     const defaultValue: GlobalSettings = {
-      experimentalMode: true,
+      darkMode: true,
     };
     localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
 
     const settings = setupHandler();
     act(() => {
-      settings.get?.setData({ experimentalMode: false });
+      settings.get?.setData({ darkMode: false });
     });
 
     expect(settings.get).toBeDefined();
-    expect(settings.get?.data.experimentalMode).toBe(false);
+    expect(settings.get?.data.darkMode).toBe(false);
     expect(localStorage.getItem("GlobalSettings")).toBe(
-      JSON.stringify({ experimentalMode: false })
+      JSON.stringify({ darkMode: false })
     );
   });
 
   it("updates keys on merged settings modification with overlapping keys", () => {
     const defaultValue: GlobalSettings = {
-      experimentalMode: true,
+      darkMode: true,
       embeddedInflectedSearch: true,
     };
     localStorage.setItem("GlobalSettings", JSON.stringify(defaultValue));
 
     const settings = setupHandler();
     act(() => {
-      settings.get?.mergeData({ experimentalMode: false });
+      settings.get?.mergeData({ darkMode: false });
     });
 
     expect(settings.get).toBeDefined();
-    expect(settings.get?.data.experimentalMode).toBe(false);
+    expect(settings.get?.data.darkMode).toBe(false);
     expect(settings.get?.data.embeddedInflectedSearch).toBe(true);
     expect(localStorage.getItem("GlobalSettings")).toBe(
-      JSON.stringify({ experimentalMode: false, embeddedInflectedSearch: true })
+      JSON.stringify({ darkMode: false, embeddedInflectedSearch: true })
     );
   });
 
@@ -111,18 +111,18 @@ describe("GlobalSettingsContext", () => {
 
     const settings = setupHandler();
     act(() => {
-      settings.get?.mergeData({ experimentalMode: false });
+      settings.get?.mergeData({ darkMode: false });
     });
 
     expect(settings.get).toBeDefined();
-    expect(settings.get?.data.experimentalMode).toBe(false);
+    expect(settings.get?.data.darkMode).toBe(false);
     expect(settings.get?.data.highlightStrength).toBe(50);
     expect(settings.get?.data.embeddedInflectedSearch).toBe(true);
     expect(localStorage.getItem("GlobalSettings")).toBe(
       JSON.stringify({
         highlightStrength: 50,
         embeddedInflectedSearch: true,
-        experimentalMode: false,
+        darkMode: false,
       })
     );
   });

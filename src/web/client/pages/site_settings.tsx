@@ -1,32 +1,9 @@
 import { useContext } from "react";
-import {
-  GlobalBooleans,
-  GlobalSettingsContext,
-} from "@/web/client/components/global_flags";
-import { CheckBox, Container } from "@/web/client/components/generic/basics";
+import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { Container } from "@/web/client/components/generic/basics";
 import { lazyLoaded } from "@/web/client/routing/lazy_loading";
 
 const OfflineSettingsSection = lazyLoaded("OfflineSettingsSection");
-
-function GlobalSettingsCheckbox(props: {
-  label: string;
-  settingKey: keyof GlobalBooleans;
-}) {
-  const globalSettings = useContext(GlobalSettingsContext);
-  const enabled = globalSettings.data[props.settingKey] === true;
-
-  return (
-    <CheckBox
-      label={props.label}
-      enabled={enabled}
-      onNewValue={(newValue) => {
-        const newSettings = { ...globalSettings.data };
-        newSettings[props.settingKey] = newValue;
-        globalSettings.setData(newSettings);
-      }}
-    />
-  );
-}
 
 function DropDown(props: {
   label: string;
@@ -82,12 +59,6 @@ export function SiteSettings() {
       <div style={{ padding: "24px" }}>
         <SettingsSection name="Appearance">
           <FontPicker />
-        </SettingsSection>
-        <SettingsSection name="Experiments">
-          <GlobalSettingsCheckbox
-            label="Enable Experimental Features"
-            settingKey="experimentalMode"
-          />
         </SettingsSection>
         <OfflineSettingsSection />
       </div>

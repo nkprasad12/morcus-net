@@ -1,8 +1,7 @@
-import { useState, useContext, useEffect, JSX } from "react";
+import { useState, useEffect, JSX } from "react";
 
 import { ResponsiveAppBar } from "@/web/client/components/app_bar";
 import { ReportIssueDialog } from "@/web/client/components/report_issue_dialog";
-import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Router } from "@/web/client/router/router_v2";
 import { ContentPage, matchesPage } from "@/web/client/router/paths";
 import { checkPresent } from "@/common/assert";
@@ -14,7 +13,6 @@ import { SwipeGestureListener } from "@/web/client/mobile/gestures";
 
 export namespace SinglePageApp {
   export interface Page extends ContentPage {
-    experimental?: true;
     appBarConfig?: ResponsiveAppBar.Page;
   }
 
@@ -67,12 +65,7 @@ function NotificationModal() {
 export function SinglePageApp(props: SinglePageApp.Props) {
   const [showIssueDialog, setShowIssueDialog] = useState<boolean>(false);
 
-  const globalSettings = useContext(GlobalSettingsContext);
-  const showExperimental = globalSettings.data.experimentalMode === true;
-  const usedPages = props.pages.filter(
-    (page) => showExperimental || page.experimental !== true
-  );
-  const appBarPages = usedPages
+  const appBarPages = props.pages
     .filter((page) => page.appBarConfig !== undefined)
     .map((page) => checkPresent(page.appBarConfig));
 
@@ -88,7 +81,7 @@ export function SinglePageApp(props: SinglePageApp.Props) {
         openIssueDialog={() => setShowIssueDialog(true)}
       />
       <SwipeGestureListener>
-        <Content usedPages={usedPages} />
+        <Content usedPages={props.pages} />
       </SwipeGestureListener>
     </>
   );

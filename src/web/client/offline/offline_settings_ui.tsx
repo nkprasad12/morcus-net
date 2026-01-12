@@ -8,8 +8,7 @@ import {
   requestNotificationPermissions,
   requestPersistedStorage,
 } from "@/web/client/offline/sw_helpers";
-import { useContext, useState } from "react";
-import { GlobalSettingsContext } from "@/web/client/components/global_flags";
+import { useState } from "react";
 
 const OFFLINE_STORAGE_MESSAGE =
   "You may see up to two permission requests." +
@@ -18,12 +17,6 @@ const OFFLINE_STORAGE_MESSAGE =
   " Morcus Latin Tools and its data to be unimportant and clear the data).";
 
 export function OfflineSettingsSection() {
-  const globalSettings = useContext(GlobalSettingsContext);
-
-  if (globalSettings.data.experimentalMode !== true) {
-    return null;
-  }
-
   return (
     <details open>
       <summary className="nonDictText text sm" style={{ paddingTop: "8px" }}>

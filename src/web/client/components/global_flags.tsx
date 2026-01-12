@@ -8,7 +8,6 @@ export const DEFAULT_HIGHLIGHT_STRENGTH = 40;
 export type DictionaryMobileLayoutType = "Drawer" | "Classic";
 
 export interface GlobalBooleans {
-  experimentalMode?: boolean;
   darkMode?: boolean;
 }
 
@@ -52,7 +51,6 @@ export function getGlobalSettings(): GlobalSettings {
   return storageSetting !== null
     ? toGlobalSettings(JSON.parse(storageSetting))
     : {
-        experimentalMode: false,
         highlightStrength: DEFAULT_HIGHLIGHT_STRENGTH,
         darkMode: false,
         embeddedInflectedSearch: true,
