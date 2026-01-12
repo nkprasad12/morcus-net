@@ -80,6 +80,22 @@ function DrawerMenu(props: {
   );
 }
 
+function PwaNavigation() {
+  const isPwa = useMediaQuery("(display-mode: standalone)");
+  if (!isPwa) {
+    return null;
+  }
+  return (
+    <IconButton
+      size="small"
+      aria-label="back button"
+      onClick={() => window.history.back()}
+      className="menuIcon">
+      <SvgIcon pathD={SvgIcon.ArrowBack} />
+    </IconButton>
+  );
+}
+
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const isSmall = useMediaQuery("(max-width: 900px)");
   const offlineSettings = useOfflineSettings();
@@ -152,6 +168,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             ))}
           </div>
           <div style={{ flexGrow: isSmall ? 1 : undefined }}>
+            <PwaNavigation />
             {offlineSettings?.offlineModeEnabled && (
               <IconButton
                 size={iconSize}
