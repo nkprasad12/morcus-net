@@ -57,6 +57,28 @@ export function makeOnDrag(
 
 type SetCurrentLenType = (callback: (old: number) => number) => unknown;
 
+function DragOverlay(props: { horizontal?: true; isDragging: boolean }) {
+  if (!props.isDragging) {
+    return null;
+  }
+  return (
+    <div
+      style={{
+        position: "fixed",
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        // This prevents poiner events from reacting the underlying content, which could
+        // be heavy.
+        zIndex: 9999,
+        // Even if the mouse leaves the dragger, we'll still show the right cursor.
+        cursor: props.horizontal ? "col-resize" : "row-resize",
+      }}
+    />
+  );
+}
+
 export function DragHelper(
   props: PropsWithChildren<{
     currentLen: number;
@@ -70,6 +92,7 @@ export function DragHelper(
     getMax?: () => number;
   }>
 ) {
+  const [isDragging, setIsDragging] = useState(false);
   const {
     currentLen,
     setCurrentLen,
@@ -98,6 +121,7 @@ export function DragHelper(
   );
 
   const onDragEnd = useCallback(() => {
+    setIsDragging(false);
     const result =
       dragStartLen.current !== undefined || dragStartPos.current !== undefined;
     dragStartPos.current = undefined;
@@ -117,22 +141,30 @@ export function DragHelper(
   }, [onDrag, onDragEnd, posKey]);
 
   const onDragStart = () => {
+    setIsDragging(true);
     dragStartLen.current = currentLen;
   };
 
   return (
-    <div
-      style={{ ...props.style, touchAction: "none" }}
-      className={props.className}
-      onMouseDown={onDragStart}
-      onTouchStart={onDragStart}
-      onTouchEnd={onDragEnd}
-      onTouchMove={(e) => {
-        e.preventDefault();
-        onDrag(e.targetTouches[0][posKey]);
-      }}>
-      {props.children}
-    </div>
+    <>
+      <DragOverlay horizontal={horizontal} isDragging={isDragging} />
+      <div
+        style={{
+          ...props.style,
+          touchAction: "none",
+          pointerEvents: isDragging ? "none" : "auto",
+        }}
+        className={props.className}
+        onMouseDown={onDragStart}
+        onTouchStart={onDragStart}
+        onTouchEnd={onDragEnd}
+        onTouchMove={(e) => {
+          e.preventDefault();
+          onDrag(e.targetTouches[0][posKey]);
+        }}>
+        {props.children}
+      </div>
+    </>
   );
 }
 
