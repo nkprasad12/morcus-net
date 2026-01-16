@@ -21,8 +21,15 @@ export const PWA_WEBMANIFEST = {
       sizes: "512x512",
     },
   ],
+  id: "/",
   start_url: "/",
   background_color: "#f2f3f2",
   theme_color: "#bfdecf",
   display: "standalone",
+  related_applications: [
+    {
+      platform: "webapp",
+      url: "/public/pwa.webmanifest",
+    },
+  ],
 };

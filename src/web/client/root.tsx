@@ -19,6 +19,7 @@ import {
   StyleContextProvider,
 } from "@/web/client/styling/style_context";
 import { checkPresent } from "@/common/assert";
+import { PwaManagerProvider } from "@/web/client/pwa/pwa_manager";
 
 document.querySelector("#initial")?.remove();
 if (window.location.pathname === "/") {
@@ -67,14 +68,16 @@ function ConfigurableStyles() {
 root.render(
   <StrictMode>
     <SettingsHandler>
-      <StyleContextProvider>
-        <ConfigurableStyles />
-        <Router.Root>
-          <TitleHandler>
-            <SinglePageApp {...props} />
-          </TitleHandler>
-        </Router.Root>
-      </StyleContextProvider>
+      <PwaManagerProvider>
+        <StyleContextProvider>
+          <ConfigurableStyles />
+          <Router.Root>
+            <TitleHandler>
+              <SinglePageApp {...props} />
+            </TitleHandler>
+          </Router.Root>
+        </StyleContextProvider>
+      </PwaManagerProvider>
     </SettingsHandler>
   </StrictMode>
 );
