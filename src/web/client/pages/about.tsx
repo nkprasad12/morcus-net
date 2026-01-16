@@ -2,8 +2,6 @@ import * as React from "react";
 import { getCommitHash } from "@/web/client/define_vars";
 import { Container } from "@/web/client/components/generic/basics";
 
-const INSTALL_GUIDE = "https://www.cdc.gov/niosh/mining/tools/installpwa.html";
-
 type SectionProps = React.PropsWithChildren<{ name: string }>;
 
 function Section(props: SectionProps) {
@@ -100,12 +98,6 @@ export function About() {
                 </li>
               </ul>
             </div>
-          </Section>
-          <Section name="Installation">
-            <p>
-              Morcus Latin Tools is also installable as an app. See instructions
-              for <a href={INSTALL_GUIDE}>Android, iOS, and desktop</a>.
-            </p>
           </Section>
           <Section name="Debugging">
             <p>

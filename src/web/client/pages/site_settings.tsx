@@ -2,8 +2,12 @@ import { useContext } from "react";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Container } from "@/web/client/components/generic/basics";
 import { lazyLoaded } from "@/web/client/routing/lazy_loading";
+import { usePwaManager } from "@/web/client/pwa/pwa_manager";
 
 const OfflineSettingsSection = lazyLoaded("OfflineSettingsSection");
+
+const CDC_GUIDE = "https://www.cdc.gov/niosh/mining/tools/installpwa.html";
+const WEB_DEV_GUIDE = "https://web.dev/learn/pwa/installation";
 
 function DropDown(props: {
   label: string;
@@ -53,6 +57,46 @@ function SettingsSection(props: React.PropsWithChildren<{ name: string }>) {
   );
 }
 
+function PwaSection() {
+  const pwaManager = usePwaManager();
+
+  if (pwaManager.isPwa) {
+    return <div>You are running the installed app ✓</div>;
+  }
+  if (pwaManager.alreadyInstalled) {
+    return (
+      <div>
+        The app is installed (but you are currently using the web version).
+      </div>
+    );
+  }
+  const notInstalled = pwaManager.alreadyInstalled === false;
+  if (!pwaManager.canShowPrompt) {
+    return (
+      <div>
+        {!notInstalled && <span>The app may not be installed. </span>}
+        <span>
+          Please follow the{" "}
+          <a href={WEB_DEV_GUIDE} target="_blank" rel="noopener noreferrer">
+            instructions
+          </a>{" "}
+          (alternate{" "}
+          <a href={CDC_GUIDE} target="_blank" rel="noopener noreferrer">
+            guide
+          </a>
+          ) to install Morcus as an app on your device .
+        </span>
+      </div>
+    );
+  }
+
+  return (
+    <button className="button" onClick={pwaManager.tryToShowPrompt}>
+      Install Morcus
+    </button>
+  );
+}
+
 export function SiteSettings() {
   return (
     <Container maxWidth="lg">
@@ -61,6 +105,9 @@ export function SiteSettings() {
           <FontPicker />
         </SettingsSection>
         <OfflineSettingsSection />
+        <SettingsSection name="Install App">
+          <PwaSection />
+        </SettingsSection>
       </div>
     </Container>
   );
