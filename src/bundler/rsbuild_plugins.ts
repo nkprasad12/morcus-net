@@ -30,8 +30,17 @@ export function typeCheck(options?: BundleOptions): RsbuildPlugin {
 }
 
 export interface InjectBuildInfoOptions {
+  /** The output file to inject build info into. */
   target: string;
+  /** The placeholder string to be replaced with build info. */
   placeholder: string;
+  /**
+   * The output file to write the modified contents to.
+   * Note that for watch mode to work correctly, this must be different from `target`; otherwise,
+   * if the build info changes but the target file does not, the placeholder will have been injected in
+   * the last build, and the file will not be rebuilt, so the previous build info will remain.
+   */
+  output: string;
 }
 
 export function injectBuildInfo(
@@ -58,7 +67,10 @@ export function injectBuildInfo(
           stringifiedOutputs
         );
         assert(originalContents !== newContents, "No replacements made");
-        fs.writeFileSync(targetFile, newContents);
+        fs.writeFileSync(
+          `${api.context.distPath}/${options.output}`,
+          newContents
+        );
       });
     },
   };

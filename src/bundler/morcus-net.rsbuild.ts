@@ -14,10 +14,11 @@ import {
 const OUT_DIR = "build/client";
 const SPA_ROOT = "./src/web/client/root.tsx";
 const SERVICE_WORKER_ROOT = "./src/web/client/offline/serviceworker.ts";
-const SERVICE_WORKER_OUTPUT = "serviceworker.js";
+const SERVICE_WORKER_OUTPUT = "serviceworker-template.js";
 const INJECT_BUILD_INFO_OPTIONS: InjectBuildInfoOptions = {
   target: SERVICE_WORKER_OUTPUT,
   placeholder: '"@output-client-bundle-js-files@"',
+  output: "serviceworker.js",
 };
 
 const envOptions = BundleOptions.get();
