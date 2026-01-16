@@ -330,7 +330,7 @@ export function SearchBox<T>(props: SearchBoxProps<T>) {
               style={{ marginRight: props.saveSpace ? "1px" : "5.2px" }}
               onClick={props.onOpenSettings}>
               <SvgIcon
-                pathD={SvgIcon.Settings}
+                pathD={SvgIcon.Build}
                 fontSize="small"
                 className="menuIcon"
               />

@@ -233,8 +233,8 @@ function LandingContent(props: {
         {"."}
       </div>
       <div className="text xs" style={{ marginTop: "8px", fontWeight: "bold" }}>
-        Click the {<SvgIcon className="menuIcon" pathD={SvgIcon.Settings} />}{" "}
-        icon in the search bar to
+        Click the {<SvgIcon className="menuIcon" pathD={SvgIcon.Build} />} icon
+        in the search bar to
         {fromLangs.includes("La") && !props.inflectedSearch
           ? " enable searching inflected (i.e. conjugated or declined) forms of Latin words, and to "
           : ""}

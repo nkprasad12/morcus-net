@@ -204,7 +204,7 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
                 // TODO: Find a better way to configure this.
                 onClick={handlePageClick("/settings")}
                 className="menuIcon">
-                <SvgIcon pathD={SvgIcon.Build} />
+                <SvgIcon pathD={SvgIcon.Settings} />
               </IconButton>
             )}
           </div>

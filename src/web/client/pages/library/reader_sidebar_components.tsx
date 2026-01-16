@@ -180,7 +180,7 @@ const TAB_SETTINGS = "Reader settings";
 export const DEFAULT_SIDEBAR_TAB_CONFIGS: ReaderInternalTabConfig<DefaultSidebarTab>[] =
   [
     { tab: TAB_DICT, Icon: <SvgIcon pathD={SvgIcon.MenuBook} /> },
-    { tab: TAB_SETTINGS, Icon: <SvgIcon pathD={SvgIcon.Settings} /> },
+    { tab: TAB_SETTINGS, Icon: <SvgIcon pathD={SvgIcon.Build} /> },
   ];
 export type DefaultSidebarTab = typeof TAB_DICT | typeof TAB_SETTINGS;
 export function isDefaultSidebarTab(x: unknown): x is DefaultSidebarTab {
