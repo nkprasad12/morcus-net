@@ -15,7 +15,6 @@ import { SearchBox } from "@/web/client/components/generic/search";
 import { NumberSelector } from "@/web/client/components/generic/selectors";
 import { Colors } from "@/web/client/styling/colors";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
-import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import type { OnSearchQuery } from "@/web/client/pages/dictionary/dict_context";
 
 const MOBILE_LAYOUT_TYPES: DictionaryMobileLayoutType[] = ["Classic", "Drawer"];
@@ -41,26 +40,6 @@ function HighlightStrengthSelector(props: {
   );
 }
 
-function useOfflineDictData() {
-  const settings = useOfflineSettings();
-  const enabled = settings?.offlineModeEnabled === true;
-
-  return {
-    offlineModeOn: enabled,
-    shouldDisable: {
-      inflections: enabled && settings?.morceusDownloaded !== true,
-      "S&H": enabled && settings?.shDownloaded !== true,
-      "L&S": enabled && settings?.lsDownloaded !== true,
-      "R&A": enabled && settings?.raDownloaded !== true,
-      GES: enabled && settings?.gesDownloaded !== true,
-      GAF: enabled && settings?.gafDownloaded !== true,
-      GRG: enabled && settings?.georgesDownloaded !== true,
-      EGL: enabled && settings?.eglDownloaded !== true,
-      NUM: enabled,
-    },
-  };
-}
-
 function OptionSubsection(props: { children: React.ReactNode }) {
   return (
     <div className="text sm light" style={{ marginTop: "8px" }}>
@@ -79,17 +58,10 @@ function SearchSettings(props: {
     ? globalSettings.data.embeddedInflectedSearch
     : globalSettings.data.inflectedSearch;
   const inflectedSearch = inflectedSetting === true;
-  const { shouldDisable, offlineModeOn } = useOfflineDictData();
 
   return (
     <details open className="optionSection">
       <summary className="text sm light">Search Settings</summary>
-      {offlineModeOn && (
-        <div className="text xs">
-          Note: Offline Mode is enabled, so features that are not downloaded
-          will be disabled.
-        </div>
-      )}
       <OptionSubsection>Dictionaries</OptionSubsection>
       <div>
         {LatinDict.AVAILABLE.map((dict) => (
@@ -97,8 +69,7 @@ function SearchSettings(props: {
             <input
               id={dict.key + "option"}
               type="checkbox"
-              checked={!shouldDisable[dict.key] && props.dicts.includes(dict)}
-              disabled={shouldDisable[dict.key]}
+              checked={props.dicts.includes(dict)}
               onChange={(e) => {
                 const dicts = new Set(props.dicts);
                 if (e.currentTarget.checked) {
@@ -112,12 +83,7 @@ function SearchSettings(props: {
             <label htmlFor={dict.key + "option"}>
               <span>
                 <DictChip label={dict.key} />{" "}
-                <span
-                  className={
-                    "text sm" + (shouldDisable[dict.key] ? " light" : "")
-                  }>
-                  {dict.displayName}
-                </span>
+                <span className={"text sm"}>{dict.displayName}</span>
               </span>
             </label>
           </div>
@@ -129,8 +95,7 @@ function SearchSettings(props: {
           <input
             id="inflectionOption"
             type="checkbox"
-            checked={!shouldDisable.inflections && inflectedSearch}
-            disabled={shouldDisable.inflections}
+            checked={inflectedSearch}
             onChange={() =>
               globalSettings.mergeData({
                 ...(props.isEmbedded
@@ -355,17 +320,12 @@ function SettingsPreview(props: {
   embedded?: boolean;
 }) {
   const globalSettings = useContext(GlobalSettingsContext);
-  const { shouldDisable } = useOfflineDictData();
   const rawInflectionSetting = props.embedded
     ? globalSettings.data.embeddedInflectedSearch
     : globalSettings.data.inflectedSearch;
-  const inflectionMode =
-    !shouldDisable.inflections && rawInflectionSetting === true;
+  const inflectionMode = rawInflectionSetting === true;
   const langs = new Set(
-    props.dicts
-      .filter((dict) => !shouldDisable[dict.key])
-      .map((d) => d.languages.from)
-      .filter((lang) => lang !== "*")
+    props.dicts.map((d) => d.languages.from).filter((lang) => lang !== "*")
   );
 
   return (

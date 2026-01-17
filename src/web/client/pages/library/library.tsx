@@ -2,7 +2,6 @@ import { LibraryWorkMetadata } from "@/common/library/library_types";
 import { ListLibraryWorks } from "@/web/api_routes";
 import { Container, SpanLink } from "@/web/client/components/generic/basics";
 import { SearchBoxNoAutocomplete } from "@/web/client/components/generic/search";
-import { SingleItemStore } from "@/web/client/offline/single_item_store";
 import { LibrarySavedSpot } from "@/web/client/pages/library/saved_spots";
 import {
   Router,
@@ -127,9 +126,6 @@ export function Library() {
 
   const onResult = useCallback((results: LibraryWorkMetadata[]) => {
     setWorks(results);
-    // This is used for offline mode on a best-effort basis. We don't
-    // mind doing it every time since the data is only a
-    SingleItemStore.forKey(ListLibraryWorks.path).set(results);
   }, []);
 
   useApiCall(ListLibraryWorks, true, {

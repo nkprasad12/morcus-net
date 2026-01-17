@@ -98,7 +98,7 @@ function formatCompressionResults(results: CompressedFileInfo[]) {
   }
   const outputDir =
     results[0].outputFile.split("/").slice(0, -1).join("/") + "/";
-  console.log(`Wrote compressed files:`);
+  console.log(chalk.blue("Wrote compressed files:"));
   for (const result of results) {
     assert(result.outputFile.startsWith(outputDir));
     const outputName = result.outputFile.slice(outputDir.length);

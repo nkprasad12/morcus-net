@@ -6,7 +6,6 @@ import { Container, Divider } from "@/web/client/components/generic/basics";
 import { IconButton, SvgIcon } from "@/web/client/components/generic/icons";
 import { useMediaQuery } from "@/web/client/utils/media_query";
 import { Drawer } from "@/web/client/components/generic/overlays";
-import { useOfflineSettings } from "@/web/client/offline/use_offline_settings";
 import {
   GESTURE_CONSTANTS,
   useSwipeListener,
@@ -80,25 +79,8 @@ function DrawerMenu(props: {
   );
 }
 
-function PwaNavigation() {
-  const isPwa = useMediaQuery("(display-mode: standalone)");
-  if (!isPwa) {
-    return null;
-  }
-  return (
-    <IconButton
-      size="small"
-      aria-label="back button"
-      onClick={() => window.history.back()}
-      className="menuIcon">
-      <SvgIcon pathD={SvgIcon.ArrowBack} />
-    </IconButton>
-  );
-}
-
 export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
   const isSmall = useMediaQuery("(max-width: 900px)");
-  const offlineSettings = useOfflineSettings();
   const globalSettings = React.useContext(GlobalSettingsContext);
   const darkModeOn = globalSettings.data.darkMode === true;
   const iconSize = isSmall ? "small" : "medium";
@@ -168,16 +150,6 @@ export function ResponsiveAppBar(props: ResponsiveAppBar.Props) {
             ))}
           </div>
           <div style={{ flexGrow: isSmall ? 1 : undefined }}>
-            <PwaNavigation />
-            {offlineSettings?.offlineModeEnabled && (
-              <IconButton
-                size={iconSize}
-                aria-label={"offline mode enabled"}
-                onClick={handlePageClick("/settings")}
-                className="menuIcon">
-                <SvgIcon pathD={SvgIcon.OfflineEnabled} />
-              </IconButton>
-            )}
             <IconButton
               size={iconSize}
               aria-label={darkModeOn ? "light mode" : "dark mode"}

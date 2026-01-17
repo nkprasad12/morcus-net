@@ -1,9 +1,8 @@
 import {
   AriaProps,
-  SpanButton,
   type ClickableCoreProps,
 } from "@/web/client/components/generic/basics";
-import { PropsWithChildren, useEffect, useRef, JSX } from "react";
+import { PropsWithChildren, useEffect, useRef } from "react";
 
 export type OverlayProps = ClickableCoreProps;
 
@@ -66,34 +65,4 @@ export function Drawer(props: PropsWithChildren<DrawerProps>) {
 export type DialogProps = ModalProps;
 export function ModalDialog(props: PropsWithChildren<DialogProps>) {
   return <BaseDialog {...props} className="dialogModal" />;
-}
-
-export interface SimpleModalProps {
-  onClose: () => unknown;
-  message?: JSX.Element;
-}
-export function SimpleModal(props: SimpleModalProps) {
-  return (
-    <ModalDialog
-      contentProps={{ className: "bgColor" }}
-      open={props.message !== undefined}
-      onClose={props.onClose}>
-      <div
-        id="notificationModalTitle"
-        className="text sm"
-        style={{ fontWeight: "bold", margin: 0, padding: "12px 12px" }}>
-        Offline Mode Enabled
-      </div>
-      <div style={{ padding: "0px 12px 12px" }} className="text sm">
-        {props.message}
-      </div>
-      <div className="dialogActions">
-        <SpanButton
-          onClick={props.onClose}
-          className="text sm light button simple">
-          Close
-        </SpanButton>
-      </div>
-    </ModalDialog>
-  );
 }

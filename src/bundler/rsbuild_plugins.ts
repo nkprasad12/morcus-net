@@ -10,6 +10,7 @@ import {
 import type { BundleOptions } from "@/bundler/utils";
 import { assert } from "@/common/assert";
 import type { OnAfterBuildFn, RsbuildPlugin } from "@rsbuild/core";
+import chalk from "chalk";
 
 function convertPlugin(plugin: CommonPlugin): RsbuildPlugin {
   return {
@@ -58,18 +59,26 @@ export function injectBuildInfo(
         assert(outputFiles.length > 0, "No output files found");
         const stringifiedOutputs = JSON.stringify(outputFiles);
 
-        console.log(
-          `Injecting ${stringifiedOutputs} (from ${options.placeholder}) into ${options.target}`
-        );
+        const header = `Injecting build info into ${chalk.underline(
+          options.target
+        )}`;
+        console.log(`${chalk.blue(header)}`);
+        const replaceMessage = `Replacing ${chalk.yellow(
+          options.placeholder
+        )} with ${chalk.green(stringifiedOutputs)}`;
+        console.log(replaceMessage);
         const originalContents = fs.readFileSync(targetFile).toString();
         const newContents = originalContents.replaceAll(
           options.placeholder,
           stringifiedOutputs
         );
         assert(originalContents !== newContents, "No replacements made");
-        fs.writeFileSync(
-          `${api.context.distPath}/${options.output}`,
-          newContents
+        const outputFile = `${api.context.distPath}/${options.output}`;
+        fs.writeFileSync(outputFile, newContents);
+        console.log(
+          `Wrote modified file to ${chalk.gray(
+            api.context.distPath + "/"
+          )}${chalk.cyan(options.output)}\n`
         );
       });
     },
@@ -98,7 +107,9 @@ function outputJsFiles(a: Parameters<OnAfterBuildFn>[0]): string[] {
       }
     }
   }
-  return Array.from(outputs);
+  return Array.from(outputs).filter(
+    (f) => f.endsWith(".js") && !f.endsWith("template.js")
+  );
 }
 
 export function compress(): RsbuildPlugin {

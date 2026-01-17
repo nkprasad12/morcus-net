@@ -13,8 +13,8 @@ import {
 
 const OUT_DIR = "build/client";
 const SPA_ROOT = "./src/web/client/root.tsx";
-const SERVICE_WORKER_ROOT = "./src/web/client/offline/serviceworker.ts";
-const SERVICE_WORKER_OUTPUT = "serviceworker-template.js";
+const SERVICE_WORKER_ROOT = "./src/web/client/offline_v2/serviceworker.ts";
+const SERVICE_WORKER_OUTPUT = "serviceworker.template.js";
 const INJECT_BUILD_INFO_OPTIONS: InjectBuildInfoOptions = {
   target: SERVICE_WORKER_OUTPUT,
   placeholder: '"@output-client-bundle-js-files@"',
@@ -133,8 +133,8 @@ const rsbuildConfig: RsbuildConfig = {
   },
   plugins: [
     // These happen after the full build, so we don't want to register them on each environment.
-    injectBuildInfo(INJECT_BUILD_INFO_OPTIONS),
     ...(envOptions.compress ? [compress()] : []),
+    injectBuildInfo(INJECT_BUILD_INFO_OPTIONS),
     ...(envOptions.typeCheck ? [typeCheck(envOptions)] : []),
   ],
 };
