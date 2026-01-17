@@ -42,6 +42,10 @@ async function isPwaInstalled(): Promise<boolean | undefined> {
   }
 }
 
+export function isPwa(): boolean {
+  return window.matchMedia("(display-mode: standalone)").matches;
+}
+
 export function PwaManagerProvider(props: React.PropsWithChildren) {
   const isPwa = useMediaQuery("(display-mode: standalone)");
   const [event, setEvent] = useState<DeferredPromptEvent | undefined>(
