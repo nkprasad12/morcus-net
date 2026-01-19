@@ -2,6 +2,7 @@ import { useContext } from "react";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Container } from "@/web/client/components/generic/basics";
 import { usePwaManager } from "@/web/client/pwa/pwa_manager";
+import { OfflineControlUI } from "@/web/client/offline_v2/app/offline_control_ui";
 
 const CDC_GUIDE = "https://www.cdc.gov/niosh/mining/tools/installpwa.html";
 const WEB_DEV_GUIDE = "https://web.dev/learn/pwa/installation";
@@ -100,6 +101,9 @@ export function SiteSettings() {
       <div style={{ padding: "24px" }}>
         <SettingsSection name="Appearance">
           <FontPicker />
+        </SettingsSection>
+        <SettingsSection name="Offline Mode [Very Experimental]">
+          <OfflineControlUI />
         </SettingsSection>
         <SettingsSection name="Install App">
           <PwaSection />

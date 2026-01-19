@@ -1,12 +1,36 @@
-/** Requests for notification permissions if needed.  */
-export async function requestNotificationPermissions(): Promise<-1 | 0 | 1> {
-  if (!("Notification" in window)) {
-    return -1;
+import { useCallback, useState } from "react";
+
+export type NotificationStatus = "Unsupported" | "Denied" | "Granted";
+
+function notificationSupported(): boolean {
+  return "Notification" in window;
+}
+
+function currentStatus(): NotificationStatus {
+  if (!notificationSupported()) {
+    return "Unsupported";
   }
   if (Notification.permission === "granted") {
-    return 1;
+    return "Granted";
   }
-  // We need to ask the user for permission
-  const permission = await Notification.requestPermission();
-  return permission === "granted" ? 1 : 0;
+  return "Denied";
+}
+
+export function useNotificationPermission(): [
+  NotificationStatus,
+  () => Promise<NotificationStatus>
+] {
+  const [status, setStatus] = useState<NotificationStatus>(currentStatus());
+
+  const requestPermission = useCallback(async () => {
+    if (!notificationSupported()) {
+      return "Unsupported";
+    }
+    const result = await Notification.requestPermission();
+    const status = result === "granted" ? "Granted" : "Denied";
+    setStatus(status);
+    return status;
+  }, []);
+
+  return [status, requestPermission];
 }

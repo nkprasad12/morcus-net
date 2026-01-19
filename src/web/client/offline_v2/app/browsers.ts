@@ -1,3 +1,12 @@
+export const SUPPORTED_BROWSERS: ReadonlyArray<string> = [
+  "Firefox",
+  "Safari",
+  "Chrome",
+  "Edge",
+  "Opera",
+  "Samsung Internet",
+];
+
 export type BrowserType =
   | "Chrome"
   | "Firefox"
