@@ -13,6 +13,17 @@ import {
 
 export const NO_MATCH_FOR_GET = "No match";
 
+export function deleteDb(config: DbConfig): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const deleteRequest = indexedDB.deleteDatabase(config.dbName);
+    deleteRequest.onsuccess = () => resolve();
+    deleteRequest.onerror = () =>
+      reject(`Error deleting database ${config.dbName}`);
+    deleteRequest.onblocked = () =>
+      reject(`Delete blocked for database ${config.dbName}`);
+  });
+}
+
 function openDb(config: DbConfig): Promise<IDBDatabase> {
   return new Promise((resolve, reject) => {
     const openRequest = indexedDB.open(config.dbName, config.version);

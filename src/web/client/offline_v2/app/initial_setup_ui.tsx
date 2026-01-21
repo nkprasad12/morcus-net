@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback } from "react";
 import { usePwaManager } from "@/web/client/pwa/pwa_manager";
 import {
   requestPersistedStorage,
@@ -123,36 +123,14 @@ function ShowInfoText(props: {
   exhaustiveGuard(props.helpText);
 }
 
-export function InitialSetupUi() {
-  const [isEnabled, setIsEnabled] = useState(false);
+export function InitialSetupUi(props: {
+  isEnabled: boolean;
+  setIsEnabled: (enabled: boolean) => void;
+}) {
+  const { isEnabled, setIsEnabled } = props;
   const [helpText, setHelpText] = useState<HelpTextType | null>(null);
 
-  useEffect(() => {
-    navigator.serviceWorker
-      ?.getRegistration()
-      .then((reg) => setIsEnabled(reg !== undefined && reg.active !== null));
-  }, []);
-
-  const tryToEnable = useCallback(async () => {
-    const status = await requestPersistedStorage();
-    if (status === "Granted") {
-      await register();
-    } else {
-      setHelpText(status);
-    }
-  }, []);
-
-  const handleToggle = async () => {
-    if (isEnabled) {
-      const regs = await navigator.serviceWorker.getRegistrations();
-      await Promise.all(regs.map((r) => r.unregister()));
-      setIsEnabled(false);
-      return;
-    }
-    await tryToEnable();
-  };
-
-  const register = async () => {
+  const register = useCallback(async () => {
     try {
       const status = await registerServiceWorker();
       if (status === -1) {
@@ -169,6 +147,25 @@ export function InitialSetupUi() {
       setHelpText("Registration Failed");
       setIsEnabled(false);
     }
+  }, [setIsEnabled]);
+
+  const tryToEnable = useCallback(async () => {
+    const status = await requestPersistedStorage();
+    if (status === "Granted") {
+      await register();
+    } else {
+      setHelpText(status);
+    }
+  }, [register]);
+
+  const handleToggle = async () => {
+    if (isEnabled) {
+      const regs = await navigator.serviceWorker.getRegistrations();
+      await Promise.all(regs.map((r) => r.unregister()));
+      setIsEnabled(false);
+      return;
+    }
+    await tryToEnable();
   };
 
   if (!("serviceWorker" in navigator)) {

@@ -6,7 +6,7 @@ import type {
 } from "@/common/dictionaries/stored_dict_interface";
 import { removeDiacritics } from "@/common/text_cleaning";
 import type { DbConfig, Store } from "@/web/client/utils/indexdb/types";
-import { wrappedIndexDb } from "@/web/client/utils/indexdb/wrappers";
+import { deleteDb, wrappedIndexDb } from "@/web/client/utils/indexdb/wrappers";
 import {
   isString,
   matchesObject,
@@ -163,4 +163,5 @@ function indexDbBacking(input: IndexDbDictConfig): StoredDictBacking<"Async"> {
 export namespace IndexedDbDict {
   export const save = saveToIndexedDb;
   export const backing = indexDbBacking;
+  export const deleteDict = deleteDb;
 }
