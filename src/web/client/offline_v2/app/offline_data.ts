@@ -7,7 +7,7 @@ import {
 } from "@/common/dictionaries/indexdb_backing";
 import type { RawDictEntry } from "@/common/dictionaries/stored_dict_interface";
 import type { CruncherTables } from "@/morceus/cruncher_types";
-import { SingleItemStore } from "@/web/client/offline/single_item_store";
+import { SingleItemStore } from "@/web/client/offline_v2/app/single_item_store";
 
 async function fetchOfflineData(name: string): Promise<Response> {
   const url = `${location.origin}/offlineData/${name}`;

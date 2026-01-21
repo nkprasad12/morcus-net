@@ -28,7 +28,7 @@ import {
   fetchMorceusTables,
   reviveTables,
   saveOfflineDict,
-} from "@/web/client/offline/offline_data";
+} from "@/web/client/offline_v2/app/offline_data";
 import {
   cacheKeyForPath,
   INDEX_CACHE_KEY,
@@ -38,7 +38,7 @@ import {
 import { LewisAndShort } from "@/common/lewis_and_short/ls_dict";
 import { CruncherOptions, type CruncherTables } from "@/morceus/cruncher_types";
 import { MorceusCruncher } from "@/morceus/crunch";
-import { SingleItemStore } from "@/web/client/offline/single_item_store";
+import { SingleItemStore } from "@/web/client/offline_v2/app/single_item_store";
 import { ListLibraryWorksResponse } from "@/common/library/library_types";
 import { callApi } from "@/web/utils/rpc/client_rpc";
 

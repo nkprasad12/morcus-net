@@ -7,7 +7,7 @@ import "fake-indexeddb/auto";
 import { IDBFactory } from "fake-indexeddb";
 
 import { packCompressedChunks } from "@/web/server/chunking";
-import { saveOfflineDict } from "@/web/client/offline/offline_data";
+import { saveOfflineDict } from "@/web/client/offline_v2/app/offline_data";
 import { TextDecoder } from "node:util";
 import {
   ENTRIES_STORE,

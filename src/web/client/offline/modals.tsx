@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 
 import { SpanButton } from "@/web/client/components/generic/basics";
 import { ModalDialog } from "@/web/client/components/generic/overlays";
-import { SingleItemStore } from "@/web/client/offline/single_item_store";
+import { SingleItemStore } from "@/web/client/offline_v2/app/single_item_store";
 import { isBoolean } from "@/web/utils/rpc/parsing";
 import { SvgIcon } from "@/web/client/components/generic/icons";
 
