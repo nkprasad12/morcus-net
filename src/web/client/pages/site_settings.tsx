@@ -2,10 +2,12 @@ import { useContext } from "react";
 import { GlobalSettingsContext } from "@/web/client/components/global_flags";
 import { Container } from "@/web/client/components/generic/basics";
 import { usePwaManager } from "@/web/client/pwa/pwa_manager";
-import { OfflineControlUi } from "@/web/client/offline_v2/app/offline_control_ui";
+import { lazyLoaded } from "@/web/client/routing/lazy_loading";
 
 const CDC_GUIDE = "https://www.cdc.gov/niosh/mining/tools/installpwa.html";
 const WEB_DEV_GUIDE = "https://web.dev/learn/pwa/installation";
+
+const OfflineControlUi = lazyLoaded("OfflineControlUi");
 
 function DropDown(props: {
   label: string;
