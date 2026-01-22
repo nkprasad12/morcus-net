@@ -2,6 +2,7 @@ import { assert } from "@/common/assert";
 
 export const LatinWorks = {
   APULEIUS_METAMORPHOSES: "phi1212.phi002.perseus-lat1",
+  LIVY_AUC: "phi0914.phi001.perseus-lat2",
   // PLAUTUS_AMPHITRYO: "phi0119.phi001.perseus-lat2",
   CAESAR_DBG: "phi0448.phi001.perseus-lat2",
   CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
@@ -91,6 +92,7 @@ export const LatinWorks = {
 
 export const EnglishTranslations: Record<string, string> = {
   [LatinWorks.SALLUST_CATALINA1]: "phi0631.phi001.perseus-eng2",
+  [LatinWorks.LIVY_AUC]: "phi0914.phi001.perseus-eng3",
   [LatinWorks.OVID_AMORES]: "phi0959.phi001.perseus-eng2",
   [LatinWorks.CICERO_DE_LEGE_AGRARIA]: "phi0474.phi011.perseus-eng2",
   [LatinWorks.CICERO_PRO_RABIRIO]: "phi0474.phi012.perseus-eng3",
@@ -136,6 +138,7 @@ export const FORCE_CTS_WORKS = new Set([
   LatinWorks.CICERO_DE_OPTIMO_GENERE_ORATORUM,
   EnglishTranslations[LatinWorks.OVID_AMORES],
   EnglishTranslations[LatinWorks.OVID_EPISTULAE],
+  EnglishTranslations[LatinWorks.LIVY_AUC],
 ]);
 
 // Two supported works are checked in to the repo itself for the sake of unit testing.

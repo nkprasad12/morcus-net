@@ -56,6 +56,7 @@ const AUTHOR_TO_URL_LOOKUP = new Map<string, string>([
   ["M. Tullius Cicero", "cicero"],
   ["C. Suetonius Tranquillus", "suetonius"],
   ["L. Annaeus Seneca iunior", "seneca_minor"],
+  ["Titus Livius (Livy)", "livy"],
 ]);
 
 const NAME_TO_DISPLAY_NAME = new Map<string, string>([

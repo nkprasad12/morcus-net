@@ -29,6 +29,7 @@ import { instanceOf, isString } from "@/web/utils/rpc/parsing";
 
 const IGNORE_SUBTYPES = new Map<string, Set<string>>([
   [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies"])],
+  [LatinWorks.LIVY_AUC, new Set(["index"])],
 ]);
 const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
 
@@ -120,6 +121,7 @@ const KNOWN_NOTE_REND = new Set<string | undefined>([
 const KNOWN_NOTE_ATTRS = new Set<string | undefined>([
   "xml:lang",
   "anchored",
+  "type",
   "place",
   "resp",
   "sid",
@@ -719,7 +721,6 @@ function transformContentNode(
     return corrected;
   }
   if (node.name === "corr") {
-    assertType(children[0], isString);
     assertEqual(parent?.name, "choice");
     attrs.push(["origName", node.name]);
   }
@@ -802,6 +803,7 @@ function transformContentNode(
     case "date":
     case "surname":
     case "persName":
+    case "name":
     case "num":
     case "orig":
     case "seg":
@@ -918,6 +920,23 @@ function processRowContent(
   );
 }
 
+function pruneSectionNumbering(
+  workId: string,
+  textParts: string[],
+  workBody: ReturnType<typeof processWorkBody>
+): [string[], ReturnType<typeof processWorkBody>] {
+  if (workId !== LatinWorks.LIVY_AUC) {
+    return [textParts, workBody];
+  }
+  return [
+    textParts.slice(1),
+    {
+      rows: workBody.rows.map(([id, content]) => [id.slice(1), content]),
+      notes: workBody.notes,
+    },
+  ];
+}
+
 /** Exported for unit testing. */
 export function processWorkBody(
   originalRoot: XmlNode,
@@ -1032,7 +1051,7 @@ export function processTei2(
   metadata: { workId: string; translationId?: string },
   options?: ProcessTeiOptions
 ): ProcessedWork2 {
-  const textParts = getTextparts(xmlRoot, metadata.workId);
+  let textParts = getTextparts(xmlRoot, metadata.workId);
   const processOptions: ProcessForDisplayOptions = {
     debug: options?.sideChannel,
     patchTree: createPatchTree(options?.patches ?? [], textParts),
@@ -1042,7 +1061,13 @@ export function processTei2(
     xmlRoot.findDescendants("body"),
     (arr) => arr.length === 1
   );
-  const { rows, notes } = processWorkBody(body[0], textParts, processOptions);
+  let workBody = processWorkBody(body[0], textParts, processOptions);
+  [textParts, workBody] = pruneSectionNumbering(
+    metadata.workId,
+    textParts,
+    workBody
+  );
+  const { rows, notes } = workBody;
   const pages = divideWork(rows, textParts);
   const navTree = buildNavTree(pages);
   const info: DocumentInfo = {
