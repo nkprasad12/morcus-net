@@ -831,7 +831,9 @@ function displayGen(
   _parent?: XmlNode
 ): XmlNode {
   assert(root.name === "gen");
-  return hoverForAbbreviation(XmlNode.getSoleText(root), GEN_ABBREVIATIONS);
+  return hoverForAbbreviation(XmlNode.getSoleText(root), GEN_ABBREVIATIONS, [
+    "lsGrammar",
+  ]);
 }
 
 /**
