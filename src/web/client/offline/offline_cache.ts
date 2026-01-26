@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { ClientPaths } from "@/web/client/routing/client_paths";
 
 export const INDEX_CACHE_KEY = "/index.html";

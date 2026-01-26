@@ -379,6 +379,20 @@ describe("processTei2", () => {
     expect(listChildren[2].toString()).toContain("Item 2");
   });
 
+  it("converts beta-code in foreign xml:lang=greek to unicode", () => {
+    const betacode = "mh=nin";
+    const body = `<div n="1" type="textpart" subtype="book"><foreign xml:lang="greek">${betacode}</foreign></div>`;
+
+    const work = processTei2(testRoot(body), { workId: WORK_ID });
+
+    expect(work.rows).toHaveLength(1);
+    const out = work.rows[0][1].toString();
+    // Expect at least one Greek character in the output (Unicode Greek block).
+    expect(out).toMatch(/[\u0370-\u03FF]/);
+    // Ensure original beta-code is not left in the output.
+    expect(out).not.toContain(betacode);
+  });
+
   it("processes list nodes with label", () => {
     const xml = `<div n="1" type="textpart" subtype="book">
                    <list type="simple">
