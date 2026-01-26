@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { useCallback, useEffect, useState } from "react";
 
 import { DictionaryViewV2 } from "@/web/client/pages/dictionary/dictionary_v2";

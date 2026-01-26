@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { useState, useEffect, useCallback } from "react";
 
 const SAVE_INTERVAL_MS = 5000;

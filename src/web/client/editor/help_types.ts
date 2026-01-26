@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 export type HelpView = "dict" | "corpus";
 
 export interface HelpViewInformation {

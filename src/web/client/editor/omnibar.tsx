@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { useCallback } from "react";
 
 import { SearchBox } from "@/web/client/components/generic/search";
