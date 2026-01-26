@@ -25,6 +25,7 @@ export function makeOnDrag(
   dragStartPos: React.MutableRefObject<number | undefined>,
   setCurrentLen: SetCurrentLenType,
   getMax: () => number,
+  setIsDragging: (dragging: boolean) => void,
   minRatio?: number,
   maxRatio?: number,
   reverse?: boolean
@@ -33,6 +34,12 @@ export function makeOnDrag(
     if (dragStartLen.current === undefined) {
       // We didn't get the start callback yet, so wait for it.
       return false;
+    }
+    if (dragStartPos.current !== undefined) {
+      const offset = (dragStartPos.current - currentPos) * (reverse ? -1 : 1);
+      if (Math.abs(offset) > 6) {
+        setIsDragging(true);
+      }
     }
     setCurrentLen((oldLen) => {
       if (dragStartPos.current === undefined) {
@@ -113,11 +120,20 @@ export function DragHelper(
         dragStartPos,
         setCurrentLen,
         getMax ?? (() => (horizontal ? window.innerWidth : window.innerHeight)),
+        setIsDragging,
         minRatio,
         maxRatio,
         reverse
       ),
-    [setCurrentLen, horizontal, maxRatio, minRatio, reverse, getMax]
+    [
+      setCurrentLen,
+      horizontal,
+      maxRatio,
+      minRatio,
+      reverse,
+      getMax,
+      setIsDragging,
+    ]
   );
 
   const onDragEnd = useCallback(() => {
@@ -141,7 +157,12 @@ export function DragHelper(
   }, [onDrag, onDragEnd, posKey]);
 
   const onDragStart = () => {
-    setIsDragging(true);
+    // We don't set `setIsDragging` here because we disable pointer events
+    // once that is `true`; however, this means that we don't get `onClick` etc...
+    // for any of the `children`.
+    //
+    // As a workaround, we only set `isDragging` once the drag has moved past some
+    // minimal threshold (onside `onDrag`).
     dragStartLen.current = currentLen;
   };
 
