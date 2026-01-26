@@ -7,11 +7,11 @@
 import { Macronizer } from "@/web/client/pages/macron";
 import { CorpusQueryPage } from "@/web/client/pages/corpus/corpus_view";
 import { Editor } from "@/web/client/editor/editor";
-import { OfflineControlUi } from "@/web/client/offline_v2/app/offline_control_ui";
+// import { OfflineControlUi } from "@/web/client/offline_v2/app/offline_control_ui";
 
 export const HEAVY_PAGES = {
   Macronizer,
   CorpusQueryPage,
   Editor,
-  OfflineControlUi,
+  // OfflineControlUi,
 } as const;

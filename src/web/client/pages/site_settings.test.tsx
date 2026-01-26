@@ -25,11 +25,11 @@ describe("Site Settings Page", () => {
     const appearanceSection = screen.getByText("Appearance").closest("details");
     expect(appearanceSection).not.toBeNull();
 
-    // offline mode is lazy-loaded, wait for it to appear
-    const offlineModeEl = await screen.findByText(
-      "Offline Mode [Very Experimental]"
-    );
-    const offlineModeSection = offlineModeEl.closest("details");
-    expect(offlineModeSection).not.toBeNull();
+    // // offline mode is lazy-loaded, wait for it to appear
+    // const offlineModeEl = await screen.findByText(
+    //   "Offline Mode [Very Experimental]"
+    // );
+    // const offlineModeSection = offlineModeEl.closest("details");
+    // expect(offlineModeSection).not.toBeNull();
   });
 });
