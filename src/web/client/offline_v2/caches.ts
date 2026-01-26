@@ -7,7 +7,7 @@ export const INDEX_CACHE_KEY = "/index.html";
 const APP_BUNDLES: string[] = "@output-client-bundle-js-files@";
 const APP_BUNDLE_FILES = APP_BUNDLES.map((file) => `/${file}`);
 const FAVICON = "/public/favicon.ico";
-const ALL_CACHED = [APP_BUNDLE_FILES, INDEX_CACHE_KEY, FAVICON];
+const ALL_CACHED = [...APP_BUNDLE_FILES, INDEX_CACHE_KEY, FAVICON];
 
 const CACHE_NAME = "offlineData/v1/static";
 
@@ -52,5 +52,5 @@ export async function clearOldCaches(): Promise<unknown> {
 
 export async function populateCache(): Promise<unknown> {
   const cache = await caches.open(cacheName());
-  return cache.addAll(APP_BUNDLE_FILES);
+  return cache.addAll(ALL_CACHED);
 }
