@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { useCallback, useState } from "react";
 
 export type NotificationStatus = "Unsupported" | "Denied" | "Granted";

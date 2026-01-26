@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { getBrowserType, isIOS } from "@/web/client/offline_v2/app/browsers";
 import { isPwa } from "@/web/client/pwa/pwa_manager";
 

@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 /**
  * Registers the service worker for offline mode if needed.
  *

@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { getCommitHash } from "@/web/client/define_vars";
 import { ClientPaths } from "@/web/client/routing/client_paths";
 

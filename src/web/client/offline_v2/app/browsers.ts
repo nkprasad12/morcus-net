@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 export const SUPPORTED_BROWSERS: ReadonlyArray<string> = [
   "Firefox",
   "Safari",

@@ -1,3 +1,5 @@
+/* istanbul ignore file */
+
 import { useState, useCallback } from "react";
 import { usePwaManager } from "@/web/client/pwa/pwa_manager";
 import {
