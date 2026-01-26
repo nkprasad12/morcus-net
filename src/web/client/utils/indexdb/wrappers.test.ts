@@ -10,6 +10,7 @@ import {
 import {
   wrappedIndexDb,
   simpleIndexDbStore,
+  deleteDb,
 } from "@/web/client/utils/indexdb/wrappers";
 import {
   Validator,
@@ -210,5 +211,30 @@ describe("wrappedIndexDb with multiple stores", () => {
     // @ts-expect-error
     const illegalAdd = db.singleStore(FooStoreConfig, "readonly").add({ y: 5 });
     await expect(illegalAdd).rejects.toContain("Invalid object");
+  });
+});
+
+describe("database deletion", () => {
+  const config: DbConfig = {
+    dbName: "test-db-delete",
+    version: 1,
+    stores: [{ name: "store1", keyPath: "id" }],
+  };
+
+  test("deleteDb should successfully delete an existing database", async () => {
+    const db = await wrappedIndexDb(config);
+    const store = db.singleStore(config.stores[0], "readwrite");
+    await store.add({ id: "1" });
+    db.close();
+
+    await expect(deleteDb(config)).resolves.toBeUndefined();
+
+    // Reopen and verify data is gone
+    const db2 = await wrappedIndexDb(config);
+    const results = await db2
+      .singleStore(config.stores[0], "readonly")
+      .getAll();
+    expect(results).toHaveLength(0);
+    db2.close();
   });
 });
