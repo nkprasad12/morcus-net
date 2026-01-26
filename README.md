@@ -249,10 +249,10 @@ The following should be done at regular intervals:
   - Go to account settings, and rotate the token.
   - Update the value of `GITHUB_TOKEN` in the `.env` file on the VM.
   - Restart the server (`docker compose down ; docker compose up -d`).
-- Update the VM OS (currently: `Debian 12`). Due _before_ it goes EOL in 2028/06.
+- Update the VM OS (currently: `Debian 12`). Due _before_ it goes EOL in `2028/06`.
   - Standard instructions. Since we have a backup machine now, we can route traffic to the backup
     machine while this is in progress.
-- Update the `Python` version (currently: `3.12`). Due _before_ it goes EOL in 2028/10.
+- Update the `Python` version (currently: `3.12`). Due _before_ it goes EOL in `2028/10`.
   - Search for `3.12` and replace with the latest version everywhere. Currently this just means in the CI workflow, documentations, and in one script.
   - Update the `requirements.txt` (see [above](#updating-packages)).
 - Update the Docker image OS version (current: `debian-trixie`). Due _before_ it goes EOL in `2030/06`
