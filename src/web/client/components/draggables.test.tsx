@@ -13,6 +13,8 @@ describe("makeOnDrag", () => {
   let dragStartPos: React.MutableRefObject<number | undefined>;
   let currentLen: number = 5;
   let setCurrentLen: jest.Mock;
+  let isDragging = false;
+  let setIsDragging: jest.Mock;
   let onDrag: (currentPos: number) => boolean;
 
   function setupCallback(options?: {
@@ -25,11 +27,15 @@ describe("makeOnDrag", () => {
     setCurrentLen = jest.fn((cb) => {
       currentLen = cb(currentLen);
     });
+    setIsDragging = jest.fn((val) => {
+      isDragging = val;
+    });
     onDrag = makeOnDrag(
       dragStartLen,
       dragStartPos,
       setCurrentLen,
       () => MAX_SIZE,
+      setIsDragging,
       options?.minRatio,
       options?.maxRatio,
       options?.reverse
@@ -38,6 +44,10 @@ describe("makeOnDrag", () => {
 
   beforeEach(() => {
     setupCallback();
+  });
+
+  afterEach(() => {
+    isDragging = false;
   });
 
   it("returns false if dragStartLen is undefined", () => {
@@ -88,6 +98,20 @@ describe("makeOnDrag", () => {
 
     onDrag(80);
     expect(currentLen).toBe(30); // 50 - (100 - 80)
+  });
+
+  it("sets isDragging when movement exceeds threshold", () => {
+    dragStartPos.current = 100;
+    onDrag(93); // movement of 7 > 6
+    expect(setIsDragging).toHaveBeenCalledWith(true);
+    expect(isDragging).toBe(true);
+  });
+
+  it("does not set isDragging when movement is below threshold", () => {
+    dragStartPos.current = 100;
+    onDrag(105); // movement of 5 <= 6
+    expect(setIsDragging).not.toHaveBeenCalled();
+    expect(isDragging).toBe(false);
   });
 });
 
