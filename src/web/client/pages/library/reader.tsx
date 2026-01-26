@@ -396,6 +396,9 @@ function TranslationTab(props: {
   if (translation === "Error" || props.translationPage === undefined) {
     return <span>Error loading translation.</span>;
   }
+  if (props.translationPage < 0) {
+    return <span>No translation available for this page.</span>;
+  }
   if (translation === "Loading") {
     return <span>Loading translation...</span>;
   }
