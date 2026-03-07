@@ -1107,6 +1107,9 @@ function renderTooltip(root: XmlNode): JSX.Element {
   if (rend === "sup" || rend === "superscript") {
     style.verticalAlign = "super";
   }
+  if (rend === "bold") {
+    style.fontWeight = "bold";
+  }
   if (root.getAttr("block") === "1") {
     style.display = "block";
   }
@@ -1211,6 +1214,13 @@ function displayForLibraryChunk(
   }
   if (rend === "italic") {
     style.fontStyle = "italic";
+  }
+  if (rend === "bold") {
+    style.fontWeight = "bold";
+  }
+  if (rend === "sup" || rend === "superscript") {
+    style.verticalAlign = "super";
+    style.fontSize = "smaller";
   }
   if (rend === "uppercase" || rend === "smallcaps" || rend === "7") {
     style.textTransform = "uppercase";

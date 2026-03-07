@@ -28,6 +28,7 @@ const AUTHOR_CODE_MAP = new Map<string, string>([
   ["C. Suetonius Tranquillus", "Suetonius"],
   ["L. Annaeus Seneca iunior", "Seneca Minor"],
   ["Titus Livius (Livy)", "Livy"],
+  ["Pliny the Elder", "PlinyElder"],
 ]);
 
 function toAuthorCode(author: string): string {

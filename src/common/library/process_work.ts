@@ -63,6 +63,8 @@ const HANDLED_REND = new Set<string>([
 const KNOWN_REND = new Set(
   [
     undefined,
+    "bold",
+    "sup",
     "merge",
     "align(indent)",
     "merge;double",
@@ -113,6 +115,7 @@ const HANDLED_NOTE_REND = new Set<string | undefined>([
   "uppercase",
   "smallcaps",
   "blockquote",
+  "bold",
 ]);
 const KNOWN_NOTE_REND = new Set<string | undefined>([
   undefined,

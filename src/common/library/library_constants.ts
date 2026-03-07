@@ -1,6 +1,7 @@
 import { assert } from "@/common/assert";
 
 export const LatinWorks = {
+  PLINY_NATURAL_HISTORY: "phi0978.phi001.perseus-lat2",
   APULEIUS_METAMORPHOSES: "phi1212.phi002.perseus-lat1",
   LIVY_AUC: "phi0914.phi001.perseus-lat2",
   // PLAUTUS_AMPHITRYO: "phi0119.phi001.perseus-lat2",
