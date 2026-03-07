@@ -79,7 +79,12 @@ export const CompletionsFusedApi: ApiRoute<
 };
 
 export interface ReportApiRequest {
-  reportText: string;
+  reportText?: string;
+  editedText?: {
+    original: string;
+    edited: string;
+    sectionId: string;
+  };
   commit: string;
   url?: string;
   userAgent?: string;
@@ -90,7 +95,14 @@ export const ReportApi: ApiRoute<ReportApiRequest, any> = {
   path: "/api/report",
   method: "POST",
   inputValidator: matchesObject<ReportApiRequest>({
-    reportText: isString,
+    reportText: maybeUndefined(isString),
+    editedText: maybeUndefined(
+      matchesObject<Exclude<ReportApiRequest["editedText"], undefined>>({
+        original: isString,
+        edited: isString,
+        sectionId: isString,
+      })
+    ),
     commit: isString,
     url: maybeUndefined(isString),
     userAgent: maybeUndefined(isString),

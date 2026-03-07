@@ -241,15 +241,15 @@ function onEditRequest(idToEdit: string | undefined) {
     const updated = target?.innerText;
     target?.removeAttribute("contenteditable");
     target?.removeEventListener("blur", listener);
-    if (updated !== original) {
-      const content = [
-        `id: ${idToEdit}`,
-        "Original:",
-        original,
-        "Edited:",
-        updated,
-      ];
-      reportIssue(content.join("\n"), ["userEdit"]);
+    if (
+      updated !== original &&
+      updated !== undefined &&
+      original !== undefined
+    ) {
+      reportIssue(
+        { original: original, edited: updated, sectionId: idToEdit },
+        ["userEdit"]
+      );
     }
   };
   target?.addEventListener("blur", listener);

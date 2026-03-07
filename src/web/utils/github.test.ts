@@ -45,4 +45,26 @@ describe("reportIssue", () => {
     );
     expect(calls[0][1].method).toBe("post");
   });
+
+  it("handles editedText reports", async () => {
+    const editRequest: ReportApiRequest = {
+      editedText: {
+        original: "original text",
+        edited: "edited text",
+        sectionId: "section.1",
+      },
+      commit: "abc",
+    };
+    fetch.mockImplementation(() => Promise.resolve({ ok: true }));
+    await GitHub.reportIssue(editRequest, "token");
+
+    const [_url, { body }] = fetch.mock.calls[0];
+    const parsed = JSON.parse(body);
+    expect(parsed.title).toContain("User Edit");
+    expect(parsed.title).toContain("section.1");
+    expect(parsed.body).toContain("Original Text");
+    expect(parsed.body).toContain("original text");
+    expect(parsed.body).toContain("Edited Text");
+    expect(parsed.body).toContain("edited text");
+  });
 });

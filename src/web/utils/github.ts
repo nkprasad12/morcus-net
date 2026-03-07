@@ -5,10 +5,21 @@ const GITHUB_ISSUES_API =
 
 export namespace GitHub {
   export function createIssueBody(request: ReportApiRequest): string {
-    const { commit, reportText, url } = request;
+    const { commit, reportText, url, editedText } = request;
     const commitLink = `https://github.com/nkprasad12/morcus-net/commit/${commit}`;
+
+    const sections = [];
+    if (reportText) {
+      sections.push(reportText);
+    }
+    if (editedText) {
+      sections.push(`**Original Text**: ${editedText.original}`);
+      sections.push(`**Edited Text**: ${editedText.edited}`);
+      sections.push(`**Section ID**: ${editedText.sectionId}`);
+    }
+
     return [
-      reportText,
+      ...sections,
       `Built at: ${commitLink}`,
       url ?? "URL Missing",
       request.userAgent ?? "UserAgent Missing",
@@ -19,9 +30,20 @@ export namespace GitHub {
     request: ReportApiRequest,
     token: string
   ): Promise<void> {
-    const firstLine = request.reportText.split("\n")[0].slice(0, 50);
+    let titlePrefix = "User Report";
+    let firstLine = "";
+
+    if (request.reportText) {
+      firstLine = request.reportText.split("\n")[0].slice(0, 50);
+    } else if (request.editedText) {
+      titlePrefix = "User Edit";
+      firstLine = `${
+        request.editedText.sectionId
+      }: ${request.editedText.edited.slice(0, 40)}`;
+    }
+
     const body = {
-      title: `User Report: ${firstLine}`,
+      title: `${titlePrefix}: ${firstLine}`,
       body: createIssueBody(request),
       labels: ["userReport", ...(request.tags ?? [])],
     };

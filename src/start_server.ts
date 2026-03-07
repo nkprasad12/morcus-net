@@ -213,6 +213,9 @@ export function startMorcusServer(): Promise<http.Server> {
     webApp: app,
     routes: [
       RouteDefinition.create(ReportApi, async (request) => {
+        if (!request.reportText && !request.editedText) {
+          return;
+        }
         if (githubTokenEmpty) log(GitHub.createIssueBody(request));
         else GitHub.reportIssue(request, githubToken);
       }),
