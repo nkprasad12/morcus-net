@@ -1,3 +1,4 @@
+import { diffWordsWithSpace } from "diff";
 import type { ReportApiRequest } from "@/web/api_routes";
 
 const GITHUB_ISSUES_API =
@@ -13,8 +14,22 @@ export namespace GitHub {
       sections.push(reportText);
     }
     if (editedText) {
+      const diff = diffWordsWithSpace(editedText.original, editedText.edited);
+      const diffText = diff
+        .map((part) => {
+          if (part.added) {
+            return `**${part.value}**`;
+          }
+          if (part.removed) {
+            return `~~${part.value}~~`;
+          }
+          return part.value;
+        })
+        .join("");
+
       sections.push(`**Original Text**: ${editedText.original}`);
       sections.push(`**Edited Text**: ${editedText.edited}`);
+      sections.push(`**Diff**: ${diffText}`);
       sections.push(`**Section ID**: ${editedText.sectionId}`);
     }
 

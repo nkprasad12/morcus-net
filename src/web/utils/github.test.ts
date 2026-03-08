@@ -66,5 +66,10 @@ describe("reportIssue", () => {
     expect(parsed.body).toContain("original text");
     expect(parsed.body).toContain("Edited Text");
     expect(parsed.body).toContain("edited text");
+    expect(parsed.body).toContain("**Diff**");
+    // "original text" -> "edited text"
+    // "original" is removed, "edited" is added, " text" is common
+    expect(parsed.body).toContain("~~original~~");
+    expect(parsed.body).toContain("**edited**");
   });
 });
