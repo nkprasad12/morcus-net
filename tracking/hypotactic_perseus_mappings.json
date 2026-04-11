@@ -1,0 +1,576 @@
+[
+  {
+    "hypotacticAuthor": "Calpurnius_Siculus",
+    "hypotacticTitle": "Eclogues",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Germanicus",
+    "hypotacticTitle": "Aratea",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Grattius",
+    "hypotacticTitle": "Cynegetica",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Cicero",
+    "hypotacticTitle": "Aratea",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": null,
+    "notes": "Pseudo-Ciceronian poem; not found as a discrete work in Perseus canonical-latinLit"
+  },
+  {
+    "hypotacticAuthor": "Petronius",
+    "hypotacticTitle": "Bellum_Civile",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0972.phi001",
+    "notes": "The Bellum Civile poem is embedded within the Satyricon (phi0972.phi001), already in LatinWorks"
+  },
+  {
+    "hypotacticAuthor": "Persius",
+    "hypotacticTitle": "Satires",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0969.phi001"
+  },
+  {
+    "hypotacticAuthor": "Lucan",
+    "hypotacticTitle": "Bellum_Civile",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0917.phi001"
+  },
+  {
+    "hypotacticAuthor": "Horace",
+    "hypotacticTitle": "Ars_Poetica",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0893.phi006"
+  },
+  {
+    "hypotacticAuthor": "Horace",
+    "hypotacticTitle": "Epistulae",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0893.phi005"
+  },
+  {
+    "hypotacticAuthor": "Horace",
+    "hypotacticTitle": "Epodes",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0893.phi003"
+  },
+  {
+    "hypotacticAuthor": "Horace",
+    "hypotacticTitle": "Odes",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0893.phi001"
+  },
+  {
+    "hypotacticAuthor": "Horace",
+    "hypotacticTitle": "Sermones",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0893.phi004"
+  },
+  {
+    "hypotacticAuthor": "Martial",
+    "hypotacticTitle": "De_Spectaculis",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi1294.phi002",
+    "notes": "Liber de Spectaculis forms the first book of Martial's Epigrammata (phi1294.phi002)"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Metamorphoses",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0959.phi006"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Remedia_Amoris",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0959.phi005"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Tristia",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0959.phi008"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Fasti",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0959.phi007"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Ibis",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0959.phi010"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Heroides",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0959.phi002",
+    "notes": "Already in LatinWorks as OVID_EPISTULAE"
+  },
+  {
+    "hypotacticAuthor": "Statius",
+    "hypotacticTitle": "Achilleid",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi1020.phi003"
+  },
+  {
+    "hypotacticAuthor": "Statius",
+    "hypotacticTitle": "Silvae",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi1020.phi002"
+  },
+  {
+    "hypotacticAuthor": "Statius",
+    "hypotacticTitle": "Thebaid",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi1020.phi001"
+  },
+  {
+    "hypotacticAuthor": "Vergil",
+    "hypotacticTitle": "Aeneid",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0690.phi003"
+  },
+  {
+    "hypotacticAuthor": "Vergil",
+    "hypotacticTitle": "Eclogues",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0690.phi001"
+  },
+  {
+    "hypotacticAuthor": "Vergil",
+    "hypotacticTitle": "Georgics",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0690.phi002"
+  },
+  {
+    "hypotacticAuthor": "Tibullus",
+    "hypotacticTitle": "Elegies_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0660.phi001",
+    "notes": "Already in LatinWorks as TIBULLUS_ELEGIAE"
+  },
+  {
+    "hypotacticAuthor": "Tibullus",
+    "hypotacticTitle": "Messala_Encomium__pseudo_Tibullus_",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0660.phi003",
+    "notes": "Already in LatinWorks as SUPLICIA_CARMINA"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Amphitruo",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi001"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Asinaria",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi002"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Aulularia",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi003"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Bacchides",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi004"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Captivi",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi005"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Casina",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi006"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Cistellaria",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi007"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Curculio",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi008"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Epidicus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi009"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Menaechmi",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi010"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Mercator",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi011"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Miles_Gloriosus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi012"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Mostellaria",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi013"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Persa",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi014"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Poenulus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi015"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Pseudolus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi016"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Rudens",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0119.phi017"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Stichus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in checked Perseus directories (phi0119 only confirmed up to phi017)"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Trinummus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in checked Perseus directories (phi0119 only confirmed up to phi017)"
+  },
+  {
+    "hypotacticAuthor": "Plautus",
+    "hypotacticTitle": "Truculentus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in checked Perseus directories (phi0119 only confirmed up to phi017)"
+  },
+  {
+    "hypotacticAuthor": "Manilius",
+    "hypotacticTitle": "Astronomica_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Catullus",
+    "hypotacticTitle": "Poems",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0472.phi001",
+    "notes": "Already in LatinWorks as CATULLUS"
+  },
+  {
+    "hypotacticAuthor": "Columella",
+    "hypotacticTitle": "De_Re_Rustica_10",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0845.phi002",
+    "notes": "Book 10 of De Re Rustica is in verse; phi0845.phi002 covers the full work"
+  },
+  {
+    "hypotacticAuthor": "Phaedrus",
+    "hypotacticTitle": "Fabulae_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0975.phi001",
+    "notes": "Already in LatinWorks as PHAEDRUS_FABULAE"
+  },
+  {
+    "hypotacticAuthor": "Phaedrus",
+    "hypotacticTitle": "Fabulae_Appendix",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Appendix Perottina; not found as a discrete work in Perseus canonical-latinLit"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Agamemnon",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi007"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Hercules_Furens",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi001"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Hercules_Oetaeus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi009"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Medea",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi004"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Octavia",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi010"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Oedipus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi006"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Phaedra",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi005"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Phoenissae",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi003"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Thyestes",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi008"
+  },
+  {
+    "hypotacticAuthor": "Seneca",
+    "hypotacticTitle": "Troades",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1017.phi002"
+  },
+  {
+    "hypotacticAuthor": "Lucretius",
+    "hypotacticTitle": "De_Rerum_Natura_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0550.phi001",
+    "notes": "Already in LatinWorks as DE_RERUM_NATURA"
+  },
+  {
+    "hypotacticAuthor": "Juvenal",
+    "hypotacticTitle": "Satires_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1276.phi001",
+    "notes": "Already in LatinWorks as JUVENAL_SATURAE"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Amores",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0959.phi001",
+    "notes": "Already in LatinWorks as OVID_AMORES"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Ars_Amatoria",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0959.phi004",
+    "notes": "Already in LatinWorks as OVID_ARS_AMATORIA"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Epistulae_ex_Ponto",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0959.phi009"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Medicamina_Faciei_Feminae",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0959.phi003",
+    "notes": "Already in LatinWorks as OVID_MEDICAMINA"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Consolatio_Liviae_and_Nux__pseudo_Ovid_",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Pseudo-Ovidian works; not found as a discrete work in Perseus canonical-latinLit"
+  },
+  {
+    "hypotacticAuthor": "Ovid",
+    "hypotacticTitle": "Halieutica__pseudo_Ovid_",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Pseudo-Ovidian; not found in Perseus canonical-latinLit"
+  },
+  {
+    "hypotacticAuthor": "Valerius_Flaccus",
+    "hypotacticTitle": "Argonautica_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1035.phi001"
+  },
+  {
+    "hypotacticAuthor": "Petronius",
+    "hypotacticTitle": "Other_Poems",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0972.phi001",
+    "notes": "Minor poems are embedded in the Satyricon (phi0972.phi001), already in LatinWorks"
+  },
+  {
+    "hypotacticAuthor": "Propertius",
+    "hypotacticTitle": "Elegies_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0620.phi001"
+  },
+  {
+    "hypotacticAuthor": "Silius_Italicus",
+    "hypotacticTitle": "Punica_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1345.phi001"
+  },
+  {
+    "hypotacticAuthor": "Martial",
+    "hypotacticTitle": "Epigrams_1",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi1294.phi002"
+  },
+  {
+    "hypotacticAuthor": "Ennius",
+    "hypotacticTitle": "Annales_Fragments",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Laus_Pisonis",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Appendix_Vergiliana",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0692",
+    "notes": "phi0692 contains multiple Appendix Vergiliana works (phi001-phi013); no single sub-work maps cleanly"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Priapea",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Catonis_Disticha",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Ilias_Latina",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Not found in Perseus canonical-latinLit corpus"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Messala_Encomium__ps__Tibullus_",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0660.phi003",
+    "notes": "Already in LatinWorks as SUPLICIA_CARMINA; duplicate entry from Tibullus/Messala_Encomium"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Halieutica__ps__Ovid_",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Pseudo-Ovidian; not found in Perseus canonical-latinLit"
+  },
+  {
+    "hypotacticAuthor": "Unknown",
+    "hypotacticTitle": "Consolatio_Liviae_and_Nux__ps__Ovid_",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": null,
+    "notes": "Pseudo-Ovidian; not found in Perseus canonical-latinLit"
+  },
+  {
+    "hypotacticAuthor": "Terence",
+    "hypotacticTitle": "Adelphoe",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0134.phi006"
+  },
+  {
+    "hypotacticAuthor": "Terence",
+    "hypotacticTitle": "Andria",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0134.phi001"
+  },
+  {
+    "hypotacticAuthor": "Terence",
+    "hypotacticTitle": "Eunuchus",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0134.phi003"
+  },
+  {
+    "hypotacticAuthor": "Terence",
+    "hypotacticTitle": "Heauton_Timoroumenos",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0134.phi002"
+  },
+  {
+    "hypotacticAuthor": "Terence",
+    "hypotacticTitle": "Hecyra",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0134.phi005"
+  },
+  {
+    "hypotacticAuthor": "Terence",
+    "hypotacticTitle": "Phormio",
+    "hypotacticStatus": "unsupported",
+    "perseusBaseId": "phi0134.phi004"
+  }
+]

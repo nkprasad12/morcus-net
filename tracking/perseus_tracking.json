@@ -1,0 +1,1722 @@
+[
+  {
+    "baseId": "phi0119.phi018",
+    "acceptedVersion": "N/A",
+    "author": "T. Maccius Plautus",
+    "title": "Stichus",
+    "wordCount": 6665,
+    "blocker": "Expected 1, but got 2. <refsDecl n=\"TEI.2\"><refState unit=\"act\"></refState><refState n=\"chunk\" unit=\"scene\"></refState></refsDecl> <refsDecl n=\"TEI.2\"><refState unit=\"line\"></refState></refsDecl>"
+  },
+  {
+    "baseId": "phi0119.phi019",
+    "acceptedVersion": "N/A",
+    "author": "T. Maccius Plautus",
+    "title": "Trinummus",
+    "wordCount": 10257,
+    "blocker": "Expected 1, but got 2. <refsDecl n=\"TEI.2\"><refState unit=\"act\"></refState><refState n=\"chunk\" unit=\"scene\"></refState></refsDecl> <refsDecl n=\"TEI.2\"><refState unit=\"line\"></refState></refsDecl>"
+  },
+  {
+    "baseId": "phi0119.phi020",
+    "acceptedVersion": "N/A",
+    "author": "T. Maccius Plautus",
+    "title": "Truculentus",
+    "wordCount": 8664,
+    "blocker": "Expected 1, but got 2. <refsDecl n=\"TEI.2\"><refState unit=\"act\"></refState><refState n=\"chunk\" unit=\"scene\"></refState></refsDecl> <refsDecl n=\"TEI.2\"><refState unit=\"line\"></refState></refsDecl>"
+  },
+  {
+    "baseId": "phi0426.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Anonymous",
+    "title": "Bellum Africum",
+    "wordCount": 13130,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0428.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Anonymous",
+    "title": "Bellum Alexandrinum",
+    "wordCount": 10703,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0430.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Anonymous",
+    "title": "Bellum Hispaniense",
+    "wordCount": 6238,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0474.phi002",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Pro S. Roscio Amerino",
+    "wordCount": 17406,
+    "blocker": "Unknown node: desc"
+  },
+  {
+    "baseId": "phi0474.phi004",
+    "acceptedVersion": "perseus-lat2",
+    "author": "M. Tullius Cicero",
+    "title": "Divinatio in Q. Caecilium",
+    "wordCount": 7569,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0474.phi005",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "In C. Verrem",
+    "wordCount": 132760,
+    "blocker": "Unknown node: ref"
+  },
+  {
+    "baseId": "phi0474.phi006",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Pro M. Tullio",
+    "wordCount": 4567,
+    "blocker": "#comment"
+  },
+  {
+    "baseId": "phi0474.phi007",
+    "acceptedVersion": "perseus-lat2",
+    "author": "M. Tullius Cicero",
+    "title": "Pro Fonteio",
+    "wordCount": 6325,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0474.phi008",
+    "acceptedVersion": "perseus-lat2",
+    "author": "M. Tullius Cicero",
+    "title": "Pro A. Caecina",
+    "wordCount": 10731,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0474.phi009",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "De Imperio Cn. Pompei Ad Quirites",
+    "wordCount": 9580,
+    "blocker": "Expected \"choice\", but got \"expan\"."
+  },
+  {
+    "baseId": "phi0474.phi010",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Pro A. Cluentio",
+    "wordCount": 29797,
+    "blocker": "Expected \"choice\", but got \"expan\"."
+  },
+  {
+    "baseId": "phi0474.phi014",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Pro L. Murena",
+    "wordCount": 14582,
+    "blocker": "Expected \"choice\", but got \"expan\"."
+  },
+  {
+    "baseId": "phi0474.phi027",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "In L. Calpurnium Pisonem",
+    "wordCount": 11155,
+    "blocker": "Expected \"section\", but got \"fragments\"."
+  },
+  {
+    "baseId": "phi0474.phi042",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Topica",
+    "wordCount": 7763,
+    "blocker": "Expected \"chapter\", but got \"section\"."
+  },
+  {
+    "baseId": "phi0474.phi043",
+    "acceptedVersion": "perseus-lat1",
+    "author": "M. Tullius Cicero",
+    "title": "Librorum de Re Publica Sex",
+    "wordCount": 22437,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0474.phi045",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Academica",
+    "wordCount": 30287,
+    "blocker": "sub"
+  },
+  {
+    "baseId": "phi0474.phi047",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Paradoxa stoicorum ad M. Brutum",
+    "wordCount": 4948,
+    "blocker": "Expected \"section\", but got \"book\"."
+  },
+  {
+    "baseId": "phi0474.phi048",
+    "acceptedVersion": "perseus-lat1",
+    "author": "M. Tullius Cicero",
+    "title": "de Finibus Bonorum et Malorum",
+    "wordCount": 68725,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0474.phi049",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "Tusculanae Disputationes",
+    "wordCount": 94666,
+    "blocker": "Unknown node: figure"
+  },
+  {
+    "baseId": "phi0474.phi050",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "de Natura Deorum",
+    "wordCount": 36293,
+    "blocker": "p"
+  },
+  {
+    "baseId": "phi0474.phi051",
+    "acceptedVersion": "perseus-lat1",
+    "author": "Cicero: De Senectute De Amicitia De Divinatione",
+    "title": "De Senectute",
+    "wordCount": 8580,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0474.phi053",
+    "acceptedVersion": "N/A",
+    "author": "M. Tullius Cicero",
+    "title": "De Divinatione",
+    "wordCount": 28517,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0474.phi056",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Epistulae ad Familiares",
+    "wordCount": 124421,
+    "blocker": "Expected undefined, but got \"section\"."
+  },
+  {
+    "baseId": "phi0474.phi057",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Letters to Atticus",
+    "wordCount": 130992,
+    "blocker": "Expected undefined, but got \"section\"."
+  },
+  {
+    "baseId": "phi0474.phi058",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Letters to and from Quintus",
+    "wordCount": 19367,
+    "blocker": "Expected undefined, but got \"section\"."
+  },
+  {
+    "baseId": "phi0474.phi059",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Letters to and from Brutus",
+    "wordCount": 10046,
+    "blocker": "Expected undefined, but got \"section\"."
+  },
+  {
+    "baseId": "phi0474.phi072",
+    "acceptedVersion": "perseus-lat1",
+    "author": "Unknown",
+    "title": "Timaeus",
+    "wordCount": 4299,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0478.phi003",
+    "acceptedVersion": "N/A",
+    "author": "Q. Tullius Cicero",
+    "title": "Commentariolum Petitionis",
+    "wordCount": 4528,
+    "blocker": "Expected \"chapter\", but got \"opener\"."
+  },
+  {
+    "baseId": "phi0588.abo022",
+    "acceptedVersion": "N/A",
+    "author": "Cornelius Nepos",
+    "title": "Vitae",
+    "wordCount": 590,
+    "blocker": "Expected \"life\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi0588.abo023",
+    "acceptedVersion": "N/A",
+    "author": "Cornelius Nepos",
+    "title": "Vitae",
+    "wordCount": 2176,
+    "blocker": "Expected \"life\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi0588.abo024",
+    "acceptedVersion": "N/A",
+    "author": "Cornelius Nepos",
+    "title": "Vitae",
+    "wordCount": 528,
+    "blocker": "Expected \"life\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi0588.abo025",
+    "acceptedVersion": "N/A",
+    "author": "Cornelius Nepos",
+    "title": "Vitae",
+    "wordCount": 3702,
+    "blocker": "Expected \"life\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi0631.phi002",
+    "acceptedVersion": "perseus-lat4",
+    "author": "Sallust",
+    "title": "The Jugurthine War",
+    "wordCount": 21340,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0631.phi003",
+    "acceptedVersion": "N/A",
+    "author": "C. Sallusti Crispi",
+    "title": "Historiae",
+    "wordCount": 4197,
+    "blocker": "Expected 1, but got 2. <refsDecl><refState unit=\"text\"></refState><refState unit=\"chapter\"></refState></refsDecl> <refsDecl><refState unit=\"text\"></refState><refState unit=\"book\"></refState><refState unit=\"section\"></refState></refsDecl>"
+  },
+  {
+    "baseId": "phi0692.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Dirae, Appendix Vergiliana",
+    "wordCount": 710,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi002",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Lydia, Appendix Vergiliana",
+    "wordCount": 595,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi003",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Culex, Appendix Vergiliana",
+    "wordCount": 2671,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi005",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Copa, Appendix Vergiliana",
+    "wordCount": 296,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi006",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Appendix Vergiliana",
+    "wordCount": 1164,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi007",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Appendix Vergiliana",
+    "wordCount": 3530,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi008",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Appendix Vergiliana",
+    "wordCount": 327,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi009",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Catalepton, Appendix Vergiliana",
+    "wordCount": 1378,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi011",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Moretum, Appendix Vergiliana",
+    "wordCount": 833,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi012",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "De Institutione Viri Boni, Appendix Vergiliana",
+    "wordCount": 250,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0692.phi013",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "De Est et Non, Appendix Vergiliana",
+    "wordCount": 235,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi0836.phi002",
+    "acceptedVersion": "N/A",
+    "author": "Celsus",
+    "title": "De Medicina",
+    "wordCount": 108348,
+    "blocker": "Expected 1, but got 2. <refsDecl><refState unit=\"book\"></refState><refState unit=\"chapter\" n=\"chunk\"></refState></refsDecl> <refsDecl><refState unit=\"page\"></refState></refsDecl>"
+  },
+  {
+    "baseId": "phi0860.phi001",
+    "acceptedVersion": "perseus-lat2",
+    "author": "Curtius Rufus, Quintus",
+    "title": "Historiae Alexandri Magni",
+    "wordCount": 74633,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0893.phi002",
+    "acceptedVersion": "perseus-lat2",
+    "author": "Q. Horatius Flaccus",
+    "title": "Carmen Saeculare",
+    "wordCount": 379,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi0972.phi001f",
+    "acceptedVersion": "N/A",
+    "author": "Petronius Arbiter",
+    "title": "FRAGMENTA",
+    "wordCount": 994,
+    "blocker": "Expected \"text\", but got \"line\"."
+  },
+  {
+    "baseId": "phi0972.phi001p",
+    "acceptedVersion": "N/A",
+    "author": "Petronius",
+    "title": "Poems",
+    "wordCount": 1802,
+    "blocker": "Expected \"text\", but got \"line\"."
+  },
+  {
+    "baseId": "phi1002.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Quintilian",
+    "title": "Institutio Oratoria",
+    "wordCount": 178379,
+    "blocker": "Expected 1, but got 2. <refsDecl><refState unit=\"book\"></refState><refState unit=\"chapter\"></refState><refState unit=\"section\"></refState></refsDecl> <refsDecl><refState unit=\"page\"></refState></refsDecl>"
+  },
+  {
+    "baseId": "phi1014.phi001",
+    "acceptedVersion": "perseus-lat1",
+    "author": "Seneca the Elder",
+    "title": "Controversiae",
+    "wordCount": 67144,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1014.phi002",
+    "acceptedVersion": "N/A",
+    "author": "Seneca the Elder",
+    "title": "Excerpta Controversiae",
+    "wordCount": 21873,
+    "blocker": "Expected \"chapter\", but got \"chaper\"."
+  },
+  {
+    "baseId": "phi1014.phi003",
+    "acceptedVersion": "N/A",
+    "author": "Seneca the Elder",
+    "title": "Suasoriae",
+    "wordCount": 10428,
+    "blocker": "displayNum"
+  },
+  {
+    "baseId": "phi1014.phi004",
+    "acceptedVersion": "perseus-lat1",
+    "author": "Seneca the Elder",
+    "title": "Fragmenta",
+    "wordCount": 234,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1017.phi011",
+    "acceptedVersion": "perseus-lat2",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "Petronius. Seneca Apocolocyntosis.",
+    "wordCount": 3149,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1017.phi013",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Beneficiis",
+    "wordCount": 48359,
+    "blocker": "F"
+  },
+  {
+    "baseId": "phi1017.phi014",
+    "acceptedVersion": "perseus-lat2",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Clementia",
+    "wordCount": 8864,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1017.phi015",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "Ad Lucilium Epistulae Morales",
+    "wordCount": 128224,
+    "blocker": "Expected \"letter\", but got \"book\"."
+  },
+  {
+    "baseId": "phi1038.phi001",
+    "acceptedVersion": "perseus-lat1",
+    "author": "Valerius Maximus",
+    "title": "Facta et Dicta Memorabilia",
+    "wordCount": 80394,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1056.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Vitruvius Pollio",
+    "title": "On Architecture",
+    "wordCount": 58921,
+    "blocker": "scp"
+  },
+  {
+    "baseId": "phi1212.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Apuleius",
+    "title": "Apologia",
+    "wordCount": 22227,
+    "blocker": "Expected undefined, but got {\"name\":\"#comment\",\"attrs\":[],\"children\":[\" https://epidoc.stoa.org/schema/latest/tei-epidoc.rng \"]}."
+  },
+  {
+    "baseId": "phi1212.phi003",
+    "acceptedVersion": "N/A",
+    "author": "Apuleius",
+    "title": "Florida",
+    "wordCount": 8124,
+    "blocker": "* * *"
+  },
+  {
+    "baseId": "phi1242.phi001",
+    "acceptedVersion": "perseus-lat1",
+    "author": "Florus, Lucius Annaeus",
+    "title": "Epitome Rerum Romanorum",
+    "wordCount": 30302,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1254.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Aulus Gellius",
+    "title": "Noctes Atticae",
+    "wordCount": 132514,
+    "blocker": "* * *"
+  },
+  {
+    "baseId": "phi1318.phi001",
+    "acceptedVersion": "perseus-lat1",
+    "author": "Pliny the Younger",
+    "title": "Letters",
+    "wordCount": 67662,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1348.abo011",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Divus Julius",
+    "wordCount": 10027,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo012",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Divus Augustus",
+    "wordCount": 14143,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo013",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Tiberius",
+    "wordCount": 9564,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo014",
+    "acceptedVersion": "N/A",
+    "author": "Suetonius",
+    "title": "De Vita Caesarum Libri VIII",
+    "wordCount": 8007,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo015",
+    "acceptedVersion": "N/A",
+    "author": "Suetonius",
+    "title": "Divus Claudius",
+    "wordCount": 6821,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo016",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Nero",
+    "wordCount": 8208,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo017",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Galba",
+    "wordCount": 3100,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo018",
+    "acceptedVersion": "N/A",
+    "author": "Suetonius",
+    "title": "De Vita Caesarum Libri VIII",
+    "wordCount": 1898,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo019",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Vitellius",
+    "wordCount": 2631,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo020",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Divus Vespasianus",
+    "wordCount": 3461,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo021",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Divus Titus",
+    "wordCount": 1721,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1348.abo022",
+    "acceptedVersion": "N/A",
+    "author": "C. Suetonius Tranquillus",
+    "title": "Domitianus",
+    "wordCount": 3827,
+    "blocker": "Error"
+  },
+  {
+    "baseId": "phi1351.phi004",
+    "acceptedVersion": "perseus-lat2",
+    "author": "Cornelius Tacitus",
+    "title": "Historiae",
+    "wordCount": 51562,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "phi1351.phi005",
+    "acceptedVersion": "N/A",
+    "author": "Cornelius Tacitus",
+    "title": "Annales",
+    "wordCount": 88990,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi2003.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Apicius",
+    "title": "De Re Coquinaria",
+    "wordCount": 16030,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "phi2331.phi001",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "De vita Hadriani",
+    "wordCount": 6348,
+    "blocker": "undefined is not an object (evaluating 'node.children')"
+  },
+  {
+    "baseId": "phi2331.phi002",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 1748,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi003",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 2814,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi004",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 6532,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi005",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 2386,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi006",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 3042,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi007",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 4106,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi008",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 3006,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi009",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 1777,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi010",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 4770,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi011",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 2582,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi012",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 3111,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi013",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 2430,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi014",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 1382,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi015",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 2915,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi016",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 1897,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi017",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 6403,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi018",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 12022,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi019",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 6071,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi020",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Gordiani Tres",
+    "wordCount": 6135,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi021",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Maximus et Balbinus",
+    "wordCount": 3676,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi022",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Valeriani Duo",
+    "wordCount": 1172,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi023",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Gallieni Duo",
+    "wordCount": 4592,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi024",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Tyranni Triginta",
+    "wordCount": 7677,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi025",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 3482,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi026",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 9053,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi027",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 3448,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi028",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 4881,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi029",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Scriptores Historiae Augustae",
+    "wordCount": 2794,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "phi2331.phi030",
+    "acceptedVersion": "N/A",
+    "author": "Unknown",
+    "title": "Carus et Carinus et Numerianus",
+    "wordCount": 3135,
+    "blocker": "Expected \"work\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0040.stoa011",
+    "acceptedVersion": "N/A",
+    "author": "Augustine, Saint",
+    "title": "Epistulae. Selections.",
+    "wordCount": 47530,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "stoa0045.stoa001",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "De Bissula",
+    "wordCount": 481,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa002",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Ausonii de XII Caesaribus per Suetonium Tranquillum scriptis",
+    "wordCount": 1000,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0045.stoa003",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Cento Nuptialis",
+    "wordCount": 1652,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa004",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Commemoratio professorum Burdigalensium",
+    "wordCount": 2841,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa005",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Cupido cruciatur",
+    "wordCount": 822,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa006",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "De Herediolo",
+    "wordCount": 323,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa007",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Eclogarum Liber",
+    "wordCount": 2990,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0045.stoa008",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Ephemeris id est totius diei negotium",
+    "wordCount": 1395,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0045.stoa009",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Epicedion in Patrem",
+    "wordCount": 567,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0045.stoa010",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Epigrammata Ausonii de diversis rebus",
+    "wordCount": 4345,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0045.stoa011",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Epistularum",
+    "wordCount": 10807,
+    "blocker": "Expected \"card\", but got \"letter\"."
+  },
+  {
+    "baseId": "stoa0045.stoa012",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Epitaphia heroum qui bello Troico interfuerunt",
+    "wordCount": 1384,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0045.stoa013",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Genethliacon ad Ausonium Nepotem",
+    "wordCount": 237,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa014",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Ausonii Burdigalensis Vasatis Gratiarum Actio Ad Grati Angratianum\n                    Imperatorem Pro Consulatu",
+    "wordCount": 4225,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa015",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Griphus Ternarii numeri",
+    "wordCount": 1158,
+    "blocker": "Expected \"card\", but got \"secton\"."
+  },
+  {
+    "baseId": "stoa0045.stoa016",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Epistularum",
+    "wordCount": 900,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa017",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Ausonius",
+    "wordCount": 259,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa018",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Ludus Septem Sapientum",
+    "wordCount": 1482,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa019",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Mosella",
+    "wordCount": 3354,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa020",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Oratio Consulis Ausonii Versibus Rhopalicis",
+    "wordCount": 292,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa021",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Ordo Urbium Nobilium",
+    "wordCount": 1155,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0045.stoa022",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Parentalia",
+    "wordCount": 2819,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa025",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Praefatiunculae",
+    "wordCount": 644,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa026",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Precationes",
+    "wordCount": 552,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0045.stoa027",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Versus Paschales Pro Augusto Dicti",
+    "wordCount": 274,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0045.stoa028",
+    "acceptedVersion": "N/A",
+    "author": "Ausonius, Decimus Magnus",
+    "title": "Technopaegnion",
+    "wordCount": 1642,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0054.stoa006",
+    "acceptedVersion": "N/A",
+    "author": "Bede the Venerable",
+    "title": "Historiam ecclesiasticam gentis Anglorum",
+    "wordCount": 84403,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "stoa0058.stoa001",
+    "acceptedVersion": "N/A",
+    "author": "Boethius",
+    "title": "De consolatione philosophiae",
+    "wordCount": 24749,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0058.stoa003",
+    "acceptedVersion": "N/A",
+    "author": "Boethius",
+    "title": "Quomodo Substantiae in Eo Quod Sint Bonae Sint Cum Non Sint Substantialia\n               Bona",
+    "wordCount": 1473,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0058.stoa006",
+    "acceptedVersion": "N/A",
+    "author": "Boethius",
+    "title": "De Fide Catholica",
+    "wordCount": 2002,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0058.stoa023",
+    "acceptedVersion": "N/A",
+    "author": "Boethius",
+    "title": "Liber De Persona et Duabus Naturis Contra Eutychen Et Nestorium",
+    "wordCount": 6017,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0058.stoa025",
+    "acceptedVersion": "N/A",
+    "author": "Boethius",
+    "title": "Quomodo Trinitas Unus Deus Ac Non Tres Dii (De Trinitate)",
+    "wordCount": 3020,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0058.stoa028",
+    "acceptedVersion": "N/A",
+    "author": "Boethius",
+    "title": "Utrum Pater Et Filius Ac Spiritus Sanctus De Divinitate Substantialiter Praedicentur Liber",
+    "wordCount": 641,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0079.stoa001",
+    "acceptedVersion": "N/A",
+    "author": "Cato, Marcus Porcius",
+    "title": "De agri cultura",
+    "wordCount": 16168,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "stoa0089.stoa001",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Carminum minorum corpusculum",
+    "wordCount": 9026,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa002",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "de bello Gildonico",
+    "wordCount": 3232,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0089.stoa003",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "de Bello Gothico",
+    "wordCount": 4224,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa004",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "de consulatu Stilichonis",
+    "wordCount": 7888,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0089.stoa005",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "de raptu Proserpinae",
+    "wordCount": 7485,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0089.stoa006",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Epithalamium de nuptiis Honorii Augusti",
+    "wordCount": 2267,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa007",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Fescinnina de nuptiis Honorii Augusti",
+    "wordCount": 622,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa008",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "In Eutropium",
+    "wordCount": 7274,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0089.stoa009",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "In Rufinum",
+    "wordCount": 5819,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0089.stoa010",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Panegyricus de tertio consulatu Honorii Augusti",
+    "wordCount": 1459,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa011",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Panegyricus de quarto consulatu Honorii Augusti",
+    "wordCount": 4035,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa012",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Panegyricus de sexto consulatu Honorii Augusti",
+    "wordCount": 4253,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa013",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Panegyricus dictus Manlio Theodoro consuli",
+    "wordCount": 2228,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0089.stoa014",
+    "acceptedVersion": "N/A",
+    "author": "Claudian",
+    "title": "Panegyricus dictus Probino et Olybrio consulibus",
+    "wordCount": 1773,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0162.stoa004",
+    "acceptedVersion": "N/A",
+    "author": "Jerome, Saint",
+    "title": "Select Letters of St. Jerome",
+    "wordCount": 43790,
+    "blocker": "Expected \"card\", but got \"letter\"."
+  },
+  {
+    "baseId": "stoa0238.stoa002",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Psychomachia",
+    "wordCount": 6088,
+    "blocker": "Expected \"card\", but got \"preface\"."
+  },
+  {
+    "baseId": "stoa0238.stoa003",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Praefatio",
+    "wordCount": 302,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0238.stoa004",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Cathemerina",
+    "wordCount": 7491,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0238.stoa005",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Apotheosis",
+    "wordCount": 7507,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0238.stoa006",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Hamartigenia",
+    "wordCount": 6479,
+    "blocker": "Expected \"card\", but got \"preface\"."
+  },
+  {
+    "baseId": "stoa0238.stoa007",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Contra Symmachum",
+    "wordCount": 12126,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0238.stoa008",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Dittochaeon",
+    "wordCount": 1465,
+    "blocker": "Expected \"card\", but got \"poem\"."
+  },
+  {
+    "baseId": "stoa0238.stoa009",
+    "acceptedVersion": "N/A",
+    "author": "Prudentius",
+    "title": "Epilogus",
+    "wordCount": 204,
+    "blocker": "Expected \"card\", but got \"section\"."
+  },
+  {
+    "baseId": "stoa0255.stoa004",
+    "acceptedVersion": "perseus-lat2",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Brevitate Vitae",
+    "wordCount": 6746,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "stoa0255.stoa006",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Consolatione ad Helviam",
+    "wordCount": 7163,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa007",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Consolatione ad Marciam",
+    "wordCount": 9385,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa008",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Consolatione ad Polybium",
+    "wordCount": 6059,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa009",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Constantia",
+    "wordCount": 5591,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa010",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Ira",
+    "wordCount": 23665,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa011",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Otio",
+    "wordCount": 2143,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa012",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Providentia",
+    "wordCount": 4439,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa013",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Tranquillitate Animi",
+    "wordCount": 8232,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0255.stoa014",
+    "acceptedVersion": "N/A",
+    "author": "Seneca, Lucius Annaeus",
+    "title": "De Vita Beata",
+    "wordCount": 7868,
+    "blocker": "Expected \"card\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0261.stoa0001",
+    "acceptedVersion": "N/A",
+    "author": "Sidonius Apollinaris",
+    "title": "Carmina",
+    "wordCount": 22615,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "stoa0261.stoa0002",
+    "acceptedVersion": "N/A",
+    "author": "Sidonius Apollinaris",
+    "title": "Epistulae, Books I-IX",
+    "wordCount": 49274,
+    "blocker": "External entites are not supported"
+  },
+  {
+    "baseId": "stoa0275.stoa001",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Ad Martyras",
+    "wordCount": 1535,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa002",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Ad Nationes",
+    "wordCount": 15029,
+    "blocker": "Expected \"text\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0275.stoa003",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Ad Scapulam",
+    "wordCount": 1550,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa004",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Adversus Hermogenem",
+    "wordCount": 11153,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa005",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Adversus Judaeos Liber",
+    "wordCount": 11235,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa006",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Adversus Marcionem",
+    "wordCount": 82786,
+    "blocker": "Expected \"text\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0275.stoa007",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Adversus Praxean",
+    "wordCount": 14686,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa008",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Adversus Valentinianos",
+    "wordCount": 6374,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa009",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "Apologeticum",
+    "wordCount": 20046,
+    "blocker": "align(right)"
+  },
+  {
+    "baseId": "stoa0275.stoa010",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Anima",
+    "wordCount": 23665,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa011",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Baptismo",
+    "wordCount": 4326,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa012",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Carne Christi",
+    "wordCount": 9553,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa013",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Corona",
+    "wordCount": 4915,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa014",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Cultu Feminarum",
+    "wordCount": 5176,
+    "blocker": "Expected \"text\", but got \"book\"."
+  },
+  {
+    "baseId": "stoa0275.stoa015",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Exhortatione Castitatis Liber",
+    "wordCount": 3956,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa016",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Fuga in Persecutione",
+    "wordCount": 5366,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa017",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De idolatria",
+    "wordCount": 6955,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa018",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De ieiunio adversus psychicos",
+    "wordCount": 5962,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa019",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Monogamia",
+    "wordCount": 7040,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa020",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Oratione",
+    "wordCount": 4525,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa021",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Paenitentia",
+    "wordCount": 4122,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa022",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Pallio",
+    "wordCount": 3474,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa023",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Patientia",
+    "wordCount": 4572,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa024",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Praescriptionibus Hereticorum",
+    "wordCount": 8354,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa025",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Pudicitia",
+    "wordCount": 13500,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa026",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Carnis Resurrectione",
+    "wordCount": 22695,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa027",
+    "acceptedVersion": "perseus-lat2",
+    "author": "Tertullian",
+    "title": "De Spectaculis",
+    "wordCount": 6434,
+    "blocker": "None (Ready)"
+  },
+  {
+    "baseId": "stoa0275.stoa028",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Testimionio Animae",
+    "wordCount": 2287,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa029",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Virginibus Velandis",
+    "wordCount": 5619,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0275.stoa030",
+    "acceptedVersion": "N/A",
+    "author": "Tertullian",
+    "title": "De Scorpiace",
+    "wordCount": 8015,
+    "blocker": "Expected \"text\", but got \"chapter\"."
+  },
+  {
+    "baseId": "stoa0276.stoa002",
+    "acceptedVersion": "opp-lat1",
+    "author": "Tertullian",
+    "title": "Ad Uxorem",
+    "wordCount": 4214,
+    "blocker": "None (Ready)"
+  }
+]
