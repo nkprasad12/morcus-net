@@ -116,6 +116,10 @@ const MAKE_GESNER: StepConfig = {
 const MAKE_FORCELLINI: StepConfig = {
   operation: processForcellini,
   label: "Forcellini DB creation",
+  dlInfo: {
+    url: "https://raw.githubusercontent.com/nkprasad12/forcellini-words/refs/heads/master/forcellini.txt",
+    path: envVar("FORC_RAW_PATH"),
+  },
 };
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>

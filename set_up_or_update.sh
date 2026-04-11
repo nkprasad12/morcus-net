@@ -36,6 +36,7 @@ declare -A RESOURCES=(
   ["LS_PATH"]="lexica https://github.com/nkprasad12/lexica.git CTS_XML_TEI/perseus/pdllex/lat/ls/lat.ls.perseus-eng2.xml"
   ["RA_PATH"]="riddle-arnold https://github.com/nkprasad12/riddle-arnold.git riddle-arnold.tsv"
   ["GESNER_RAW_PATH"]="gesner https://github.com/nkprasad12/gesner.git gesner.json"
+  ["FORC_RAW_PATH"]="forcellini-words https://github.com/nkprasad12/forcellini-words.git forcellini.txt"
   ["SH_RAW_PATH"]="smithandhall https://github.com/nkprasad12/smithandhall.git sh_F2_latest.txt v1edits"
   ["GEORGES_RAW_PATH"]="Georges1910 https://github.com/nkprasad12/Georges1910.git Georges1910-ger-lat.xml morcus-net-branch"
   ["POZO_RAW_PATH"]="latin-dictionary https://github.com/nkprasad12/latin-dictionary.git LopezPozo1997/diccionario.txt morcus"
@@ -299,6 +300,8 @@ for VAR in "${!RESOURCES[@]}"; do
     elif [ "$VAR" == "RA_PATH" ]; then
       set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
     elif [ "$VAR" == "GESNER_RAW_PATH" ]; then
+      set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
+    elif [ "$VAR" == "FORC_RAW_PATH" ]; then
       set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
     elif [ "$VAR" == "SH_RAW_PATH" ]; then
       set_env_var "$VAR" "$MORCUS_DIR/$DIR/$FILE"
