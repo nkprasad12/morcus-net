@@ -22,6 +22,7 @@ import { useDictRouter } from "@/web/client/pages/dictionary/dictionary_routing"
 import { arrayMap } from "@/common/data_structures/collect_map";
 import { processWords } from "@/common/text_cleaning";
 import { safeParseInt } from "@/common/misc_utils";
+import { SvgIcon } from "@/web/client/components/generic/icons";
 
 export const SCROLL_JUMP: ScrollIntoViewOptions = {
   behavior: "auto",
@@ -189,7 +190,15 @@ function EmbeddableLink(props: { target: string }) {
       {embedOpen && (
         <iframe
           src={props.target}
-          style={{ width: "100%", height: "500px", border: "none" }}
+          style={{
+            width: "100%",
+            height: "500px",
+            border: "1px solid #ccc",
+            borderRadius: "4px",
+            marginTop: "8px",
+            backgroundColor: "white",
+            colorScheme: "light",
+          }}
           title="Embedded Content"
         />
       )}
@@ -200,6 +209,7 @@ function EmbeddableLink(props: { target: string }) {
 export interface XmlNodeToJsxArgs {
   highlightId?: string;
   isEmbedded?: boolean;
+  noLinkify?: boolean;
 }
 
 export function xmlNodeToJsx(
@@ -227,7 +237,9 @@ export function xmlNodeToJsx(
   }
 
   const shouldLinkifyWords =
-    !className?.includes("lsHover") && !className?.includes("lsSenseBullet");
+    !args.noLinkify &&
+    !className?.includes("lsHover") &&
+    !className?.includes("lsSenseBullet");
   const children = root.children.flatMap((child, idx) => {
     if (typeof child !== "string") {
       return xmlNodeToJsx(child, args, child.getAttr("id") ?? `${idx}`);
@@ -289,6 +301,23 @@ export function xmlNodeToJsx(
     return (
       <span>
         {original} <EmbeddableLink target={root.getAttr("href")!} />
+      </span>
+    );
+  }
+  if (className === "forcNewTab") {
+    const href = root.getAttr("href")!;
+    return (
+      <span key={key}>
+        <button
+          className="button compact"
+          onClick={() => window.open(href, "_blank", "noreferrer")}>
+          <SvgIcon
+            pathD={SvgIcon.OpenInNew}
+            style={{ fontSize: "0.9em", verticalAlign: "middle" }}
+          />
+          {" Open in new tab"}
+        </button>{" "}
+        <EmbeddableLink target={href} />
       </span>
     );
   }

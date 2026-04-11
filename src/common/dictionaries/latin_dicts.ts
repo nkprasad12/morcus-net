@@ -8,7 +8,9 @@ export type LatinDictKey =
   | "GAF"
   | "GRG"
   | "EGL"
-  | "GES";
+  | "GES"
+  | "FOR";
+
 export interface LatinDictInfo extends DictInfo {
   key: LatinDictKey;
 }
@@ -31,6 +33,13 @@ export namespace LatinDict {
   export const Gesner: LatinDictInfo = {
     key: "GES",
     displayName: "Gesner",
+    languages: { from: "La", to: "La" },
+    tags: ["Classical"],
+  };
+
+  export const Forcellini: LatinDictInfo = {
+    key: "FOR",
+    displayName: "Forcellini",
     languages: { from: "La", to: "La" },
     tags: ["Classical"],
   };
@@ -74,6 +83,7 @@ export namespace LatinDict {
     LewisAndShort,
     Gaffiot,
     Gesner,
+    Forcellini,
     SmithAndHall,
     RiddleArnold,
     Georges,

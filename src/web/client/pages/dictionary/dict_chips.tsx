@@ -20,6 +20,7 @@ function classForDictChip(input: string, property: keyof LatinDictInfo) {
     case LatinDict.LewisAndShort[property]:
     case LatinDict.Gaffiot[property]:
     case LatinDict.Gesner[property]:
+    case LatinDict.Forcellini[property]:
       return "lsChip";
     case LatinDict.Georges[property]:
       return "deChip";

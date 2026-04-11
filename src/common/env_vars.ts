@@ -15,6 +15,8 @@ const DEFAULT_ENV_VARS = new Map<string, string>([
   ["POZO_PROCESSED_PATH", "build/dbs/pozo.db"],
   ["GESNER_RAW_PATH", "gesner.json"],
   ["GESNER_PROCESSED_PATH", "build/dbs/gesner.db"],
+  ["FORC_RAW_PATH", "forc_raw.txt"],
+  ["FORC_PROCESSED_PATH", "build/dbs/forc.db"],
   ["DB_SOURCE", "unspecified"],
   ["OFFLINE_DATA_DIR", "build/offlineData"],
   ["PWA_SHORT_NAME_SUFFIX", ""],

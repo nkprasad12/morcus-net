@@ -48,6 +48,7 @@ import { GeorgesDict } from "@/common/dictionaries/georges/georges_dict";
 import { assertEqual } from "@/common/assert";
 import { PozoDict } from "@/common/dictionaries/pozo/pozo_dict";
 import { GesnerDict } from "@/common/dictionaries/gesner/gesner_dict";
+import { ForcelliniDict } from "@/common/dictionaries/forcellini/forcellini_dict";
 import {
   corpusSuggestions,
   rustCorpusApiHandler,
@@ -162,6 +163,16 @@ export function startMorcusServer(): Promise<http.Server> {
     console.debug(`Gesner init: ${elapsed} ms`);
     return result;
   }, LatinDict.Gesner);
+  const forcellini = delayedInit(() => {
+    const start = performance.now();
+    const result = new ForcelliniDict(
+      sqliteBacking(envVar("FORC_PROCESSED_PATH")),
+      INFLECTION_PROVIDER.get()
+    );
+    const elapsed = (performance.now() - start).toFixed(3);
+    console.debug(`Forcellini init: ${elapsed} ms`);
+    return result;
+  }, LatinDict.Forcellini);
   const numeralDict = new NumeralDict();
   const riddleArnold = delayedInit(() => {
     const start = performance.now();
@@ -179,6 +190,7 @@ export function startMorcusServer(): Promise<http.Server> {
     gaffiot,
     georges,
     gesner,
+    forcellini,
     pozo,
     numeralDict,
   ]);

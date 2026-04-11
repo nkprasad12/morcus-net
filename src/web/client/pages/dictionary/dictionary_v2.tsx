@@ -191,6 +191,8 @@ function fullLangName(lang: DictLang): string {
       return "French";
     case "De":
       return "German";
+    case "Es":
+      return "Spanish";
     default:
       return lang;
   }
@@ -253,8 +255,12 @@ function getEntriesByDict(
   const result: EntriesByDict[] = [];
   for (const dictKey in response) {
     const rawEntries = response[dictKey];
+    const entryArgs: XmlNodeToJsxArgs = {
+      ...args,
+      noLinkify: dictKey === LatinDict.Forcellini.key,
+    };
     const entries = rawEntries.map((e, i) => ({
-      element: xmlNodeToJsx(e.entry, args),
+      element: xmlNodeToJsx(e.entry, entryArgs),
       key: e.entry.getAttr("id") ?? `${dictKey}${i}`,
       inflections: e.inflections,
       subsections: e.subsections,

@@ -25,4 +25,12 @@ describe("DictAttributions", () => {
     render(<DictAttribution isSmall={false} dictKey={"Other"} />);
     expect(screen.getByText("TODO", { exact: false })).toBeDefined();
   });
+
+  it("shows correct Forcellini attribution", () => {
+    render(<DictAttribution isSmall dictKey={LatinDict.Forcellini.key} />);
+    expect(
+      screen.getByText("lexica.linguax.com", { exact: false })
+    ).toBeDefined();
+    expect(screen.getByText("Godmy", { exact: false })).toBeDefined();
+  });
 });

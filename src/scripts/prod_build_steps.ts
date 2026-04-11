@@ -23,6 +23,7 @@ import { generateGaffiotArtifacts } from "@/common/gaffiot/gaf_generate";
 import { processGeorges } from "@/common/dictionaries/georges/process_georges";
 import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
 import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
+import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
@@ -112,6 +113,10 @@ const MAKE_GESNER: StepConfig = {
     path: envVar("GESNER_RAW_PATH"),
   },
 };
+const MAKE_FORCELLINI: StepConfig = {
+  operation: processForcellini,
+  label: "Forcellini DB creation",
+};
 const PROCESS_LAT_LIB: StepConfig = {
   operation: () =>
     processLibrary({
@@ -159,6 +164,7 @@ const ALL_STEPS = [
   MAKE_GEORGES,
   MAKE_POZO,
   MAKE_GESNER,
+  MAKE_FORCELLINI,
   PROCESS_LAT_LIB,
 ];
 

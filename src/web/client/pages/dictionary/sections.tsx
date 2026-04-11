@@ -138,6 +138,18 @@ function AttributionContent(props: { dictKey: string }) {
       </div>
     );
   }
+  if (props.dictKey === LatinDict.Forcellini.key) {
+    return (
+      <div>
+        Forcellini entries are displayed from{" "}
+        <a href="https://lexica.linguax.com" target="_blank" rel="noreferrer">
+          lexica.linguax.com
+        </a>
+        , maintained by Godmy, embedded here. All credit belongs to the
+        respective authors.
+      </div>
+    );
+  }
   return <>TODO: Write attribution for {props.dictKey}</>;
 }
 

@@ -104,6 +104,14 @@ function parseArguments() {
       },
     },
     {
+      short: "-b_forc",
+      long: "--build_forcellini",
+      options: {
+        help: "Processes Forcellini and saves to DB.",
+        action: "store_true",
+      },
+    },
+    {
       short: "-b_sh",
       long: "--build_sh",
       options: { help: "Processes SH and saves to DB.", action: "store_true" },
@@ -422,6 +430,7 @@ function artifactConfig(args: any): StepConfig[] {
     args.build_georges = true;
     args.build_pozo = true;
     args.build_gesner = true;
+    args.build_forcellini = true;
     args.build_sh = true;
     args.build_corpus = true;
     args.build_gaffiot = true;
@@ -483,6 +492,16 @@ function artifactConfig(args: any): StepConfig[] {
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
       label: "Processing Gesner",
+      priority: 2,
+    });
+  }
+  if (args.build_forcellini === true) {
+    const command = baseCommand.concat([
+      "src/scripts/process_forcellini_script.ts",
+    ]);
+    setupSteps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: "Processing Forcellini",
       priority: 2,
     });
   }
