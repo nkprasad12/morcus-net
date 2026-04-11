@@ -4,7 +4,7 @@ import { parseRawXml } from "@/common/xml/xml_utils";
 import { processTei2 } from "@/common/library/process_work";
 import { LatinWorks } from "@/common/library/library_constants";
 
-const TRACKING_DIR = path.join(__dirname, "..", "tracking");
+const TRACKING_DIR = path.join(__dirname, "../..", "tracking");
 const PERSEUS_DIR =
   "/home/nitin/Documents/morcus_data/corpus/perseus/canonical-latinLit/data";
 const OUTPUT_FILE = path.join(TRACKING_DIR, "perseus_tracking.json");

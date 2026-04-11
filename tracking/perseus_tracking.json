@@ -56,14 +56,6 @@
     "blocker": "Unknown node: desc"
   },
   {
-    "baseId": "phi0474.phi004",
-    "acceptedVersion": "perseus-lat2",
-    "author": "M. Tullius Cicero",
-    "title": "Divinatio in Q. Caecilium",
-    "wordCount": 7569,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi0474.phi005",
     "acceptedVersion": "N/A",
     "author": "M. Tullius Cicero",
@@ -78,22 +70,6 @@
     "title": "Pro M. Tullio",
     "wordCount": 4567,
     "blocker": "#comment"
-  },
-  {
-    "baseId": "phi0474.phi007",
-    "acceptedVersion": "perseus-lat2",
-    "author": "M. Tullius Cicero",
-    "title": "Pro Fonteio",
-    "wordCount": 6325,
-    "blocker": "None (Ready)"
-  },
-  {
-    "baseId": "phi0474.phi008",
-    "acceptedVersion": "perseus-lat2",
-    "author": "M. Tullius Cicero",
-    "title": "Pro A. Caecina",
-    "wordCount": 10731,
-    "blocker": "None (Ready)"
   },
   {
     "baseId": "phi0474.phi009",
@@ -136,14 +112,6 @@
     "blocker": "Expected \"chapter\", but got \"section\"."
   },
   {
-    "baseId": "phi0474.phi043",
-    "acceptedVersion": "perseus-lat1",
-    "author": "M. Tullius Cicero",
-    "title": "Librorum de Re Publica Sex",
-    "wordCount": 22437,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi0474.phi045",
     "acceptedVersion": "N/A",
     "author": "M. Tullius Cicero",
@@ -160,14 +128,6 @@
     "blocker": "Expected \"section\", but got \"book\"."
   },
   {
-    "baseId": "phi0474.phi048",
-    "acceptedVersion": "perseus-lat1",
-    "author": "M. Tullius Cicero",
-    "title": "de Finibus Bonorum et Malorum",
-    "wordCount": 68725,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi0474.phi049",
     "acceptedVersion": "N/A",
     "author": "M. Tullius Cicero",
@@ -182,14 +142,6 @@
     "title": "de Natura Deorum",
     "wordCount": 36293,
     "blocker": "p"
-  },
-  {
-    "baseId": "phi0474.phi051",
-    "acceptedVersion": "perseus-lat1",
-    "author": "Cicero: De Senectute De Amicitia De Divinatione",
-    "title": "De Senectute",
-    "wordCount": 8580,
-    "blocker": "None (Ready)"
   },
   {
     "baseId": "phi0474.phi053",
@@ -232,14 +184,6 @@
     "blocker": "Expected undefined, but got \"section\"."
   },
   {
-    "baseId": "phi0474.phi072",
-    "acceptedVersion": "perseus-lat1",
-    "author": "Unknown",
-    "title": "Timaeus",
-    "wordCount": 4299,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi0478.phi003",
     "acceptedVersion": "N/A",
     "author": "Q. Tullius Cicero",
@@ -278,14 +222,6 @@
     "title": "Vitae",
     "wordCount": 3702,
     "blocker": "Expected \"life\", but got \"chapter\"."
-  },
-  {
-    "baseId": "phi0631.phi002",
-    "acceptedVersion": "perseus-lat4",
-    "author": "Sallust",
-    "title": "The Jugurthine War",
-    "wordCount": 21340,
-    "blocker": "None (Ready)"
   },
   {
     "baseId": "phi0631.phi003",
@@ -392,22 +328,6 @@
     "blocker": "Expected 1, but got 2. <refsDecl><refState unit=\"book\"></refState><refState unit=\"chapter\" n=\"chunk\"></refState></refsDecl> <refsDecl><refState unit=\"page\"></refState></refsDecl>"
   },
   {
-    "baseId": "phi0860.phi001",
-    "acceptedVersion": "perseus-lat2",
-    "author": "Curtius Rufus, Quintus",
-    "title": "Historiae Alexandri Magni",
-    "wordCount": 74633,
-    "blocker": "None (Ready)"
-  },
-  {
-    "baseId": "phi0893.phi002",
-    "acceptedVersion": "perseus-lat2",
-    "author": "Q. Horatius Flaccus",
-    "title": "Carmen Saeculare",
-    "wordCount": 379,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi0972.phi001f",
     "acceptedVersion": "N/A",
     "author": "Petronius Arbiter",
@@ -432,14 +352,6 @@
     "blocker": "Expected 1, but got 2. <refsDecl><refState unit=\"book\"></refState><refState unit=\"chapter\"></refState><refState unit=\"section\"></refState></refsDecl> <refsDecl><refState unit=\"page\"></refState></refsDecl>"
   },
   {
-    "baseId": "phi1014.phi001",
-    "acceptedVersion": "perseus-lat1",
-    "author": "Seneca the Elder",
-    "title": "Controversiae",
-    "wordCount": 67144,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi1014.phi002",
     "acceptedVersion": "N/A",
     "author": "Seneca the Elder",
@@ -456,22 +368,6 @@
     "blocker": "displayNum"
   },
   {
-    "baseId": "phi1014.phi004",
-    "acceptedVersion": "perseus-lat1",
-    "author": "Seneca the Elder",
-    "title": "Fragmenta",
-    "wordCount": 234,
-    "blocker": "None (Ready)"
-  },
-  {
-    "baseId": "phi1017.phi011",
-    "acceptedVersion": "perseus-lat2",
-    "author": "Seneca, Lucius Annaeus",
-    "title": "Petronius. Seneca Apocolocyntosis.",
-    "wordCount": 3149,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi1017.phi013",
     "acceptedVersion": "N/A",
     "author": "Seneca, Lucius Annaeus",
@@ -480,28 +376,12 @@
     "blocker": "F"
   },
   {
-    "baseId": "phi1017.phi014",
-    "acceptedVersion": "perseus-lat2",
-    "author": "Seneca, Lucius Annaeus",
-    "title": "De Clementia",
-    "wordCount": 8864,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi1017.phi015",
     "acceptedVersion": "N/A",
     "author": "Seneca, Lucius Annaeus",
     "title": "Ad Lucilium Epistulae Morales",
     "wordCount": 128224,
     "blocker": "Expected \"letter\", but got \"book\"."
-  },
-  {
-    "baseId": "phi1038.phi001",
-    "acceptedVersion": "perseus-lat1",
-    "author": "Valerius Maximus",
-    "title": "Facta et Dicta Memorabilia",
-    "wordCount": 80394,
-    "blocker": "None (Ready)"
   },
   {
     "baseId": "phi1056.phi001",
@@ -528,28 +408,12 @@
     "blocker": "* * *"
   },
   {
-    "baseId": "phi1242.phi001",
-    "acceptedVersion": "perseus-lat1",
-    "author": "Florus, Lucius Annaeus",
-    "title": "Epitome Rerum Romanorum",
-    "wordCount": 30302,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "phi1254.phi001",
     "acceptedVersion": "N/A",
     "author": "Aulus Gellius",
     "title": "Noctes Atticae",
     "wordCount": 132514,
     "blocker": "* * *"
-  },
-  {
-    "baseId": "phi1318.phi001",
-    "acceptedVersion": "perseus-lat1",
-    "author": "Pliny the Younger",
-    "title": "Letters",
-    "wordCount": 67662,
-    "blocker": "None (Ready)"
   },
   {
     "baseId": "phi1348.abo011",
@@ -646,14 +510,6 @@
     "title": "Domitianus",
     "wordCount": 3827,
     "blocker": "Error"
-  },
-  {
-    "baseId": "phi1351.phi004",
-    "acceptedVersion": "perseus-lat2",
-    "author": "Cornelius Tacitus",
-    "title": "Historiae",
-    "wordCount": 51562,
-    "blocker": "None (Ready)"
   },
   {
     "baseId": "phi1351.phi005",
@@ -1376,14 +1232,6 @@
     "blocker": "Expected \"card\", but got \"section\"."
   },
   {
-    "baseId": "stoa0255.stoa004",
-    "acceptedVersion": "perseus-lat2",
-    "author": "Seneca, Lucius Annaeus",
-    "title": "De Brevitate Vitae",
-    "wordCount": 6746,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "stoa0255.stoa006",
     "acceptedVersion": "N/A",
     "author": "Seneca, Lucius Annaeus",
@@ -1680,14 +1528,6 @@
     "blocker": "Expected \"text\", but got \"chapter\"."
   },
   {
-    "baseId": "stoa0275.stoa027",
-    "acceptedVersion": "perseus-lat2",
-    "author": "Tertullian",
-    "title": "De Spectaculis",
-    "wordCount": 6434,
-    "blocker": "None (Ready)"
-  },
-  {
     "baseId": "stoa0275.stoa028",
     "acceptedVersion": "N/A",
     "author": "Tertullian",
@@ -1710,13 +1550,5 @@
     "title": "De Scorpiace",
     "wordCount": 8015,
     "blocker": "Expected \"text\", but got \"chapter\"."
-  },
-  {
-    "baseId": "stoa0276.stoa002",
-    "acceptedVersion": "opp-lat1",
-    "author": "Tertullian",
-    "title": "Ad Uxorem",
-    "wordCount": 4214,
-    "blocker": "None (Ready)"
   }
 ]

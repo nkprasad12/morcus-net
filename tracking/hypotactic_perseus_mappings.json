@@ -72,6 +72,13 @@
   },
   {
     "hypotacticAuthor": "Horace",
+    "hypotacticTitle": "Carmen Saeculare",
+    "hypotacticStatus": "supported",
+    "perseusBaseId": "phi0893.phi002",
+    "notes": "Covered within Horace Odes in Hypotactic; separate Perseus work"
+  },
+  {
+    "hypotacticAuthor": "Horace",
     "hypotacticTitle": "Sermones",
     "hypotacticStatus": "supported",
     "perseusBaseId": "phi0893.phi004"

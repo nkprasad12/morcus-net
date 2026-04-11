@@ -9,6 +9,9 @@ export const LatinWorks = {
   CAESAR_BELLUM_CIVILIS: "phi0448.phi002.perseus-lat2",
   CICERO_PRO_QUINCTIO: "phi0474.phi001.perseus-lat2",
   CICERO_PRO_QUINTO_ROSCIO: "phi0474.phi003.perseus-lat2",
+  CICERO_DIVINATIO_IN_Q_CAECILIUM: "phi0474.phi004.perseus-lat2",
+  CICERO_PRO_FONTEIO: "phi0474.phi007.perseus-lat2",
+  CICERO_PRO_A_CAECINA: "phi0474.phi008.perseus-lat2",
   CICERO_DE_LEGE_AGRARIA: "phi0474.phi011.perseus-lat2",
   CICERO_PRO_RABIRIO: "phi0474.phi012.perseus-lat2",
   CICERO_IN_CATILINAM: "phi0474.phi013.perseus-lat2",
@@ -40,13 +43,16 @@ export const LatinWorks = {
   CICERO_ORATOR: "phi0474.phi040.perseus-lat1",
   CICERO_DE_OPTIMO_GENERE_ORATORUM: "phi0474.phi041.perseus-lat1",
   // Skipped 42 b/c it had a textpart without an n
-  // CICERO_DE_RE_PUBLICA: "phi0474.phi043.perseus-lat1", // Has <note> that is meant to be inline
+  CICERO_DE_RE_PUBLICA: "phi0474.phi043.perseus-lat1",
   // 44 is missing?
   // CICERO_ACADEMICA: "phi0474.phi045.perseus-lat1", // Has <note> that is meant to be inline
   CICERO_LUCULLUS: "phi0474.phi046.perseus-lat1",
+  CICERO_DE_FINIBUS: "phi0474.phi048.perseus-lat1",
+  CICERO_DE_SENECTUTE: "phi0474.phi051.perseus-lat1",
   CICERO_DE_AMICITIA: "phi0474.phi052.perseus-lat2",
   CICERO_DE_FATO: "phi0474.phi054.perseus-lat1",
   CICERO_DE_OFFICIIS: "phi0474.phi055.perseus-lat1",
+  CICERO_TIMAEUS: "phi0474.phi072.perseus-lat1",
   PHAEDRUS_FABULAE: "phi0975.phi001.perseus-lat2",
   CATULLUS: "phi0472.phi001.perseus-lat2",
   OVID_AMORES: "phi0959.phi001.perseus-lat2",
@@ -58,6 +64,7 @@ export const LatinWorks = {
   TACITUS_DIALOGUS: "phi1351.phi003.perseus-lat1",
   JUVENAL_SATURAE: "phi1276.phi001.perseus-lat2",
   SALLUST_CATALINA1: "phi0631.phi001.perseus-lat4",
+  SALLUST_JUGURTHA: "phi0631.phi002.perseus-lat4",
   DE_RERUM_NATURA: "phi0550.phi001.perseus-lat1",
   NEPOS_MILTIADES: "phi0588.abo001.perseus-lat2",
   NEPOS_THEMISTOCLES: "phi0588.abo002.perseus-lat2",
@@ -89,6 +96,18 @@ export const LatinWorks = {
   SUPLICIA_CARMINA: "phi0660.phi003.perseus-lat2",
   PRUDENTIUS_PERISTEPHANON: "stoa0238.stoa001.perseus-lat2",
   MUNICIUS_OCTAVIUS: "stoa0203.stoa001.perseus-lat2",
+  CURTIUS_RUFUS: "phi0860.phi001.perseus-lat2",
+  SENECA_ELDER_CONTROVERSIAE: "phi1014.phi001.perseus-lat1",
+  SENECA_ELDER_FRAGMENTA: "phi1014.phi004.perseus-lat1",
+  SENECA_APOCOLOCYNTOSIS: "phi1017.phi011.perseus-lat2",
+  SENECA_DE_CLEMENTIA: "phi1017.phi014.perseus-lat2",
+  VALERIUS_MAXIMUS: "phi1038.phi001.perseus-lat1",
+  FLORUS_EPITOME: "phi1242.phi001.perseus-lat1",
+  PLINY_LETTERS: "phi1318.phi001.perseus-lat1",
+  TACITUS_HISTORIAE: "phi1351.phi004.perseus-lat2",
+  SENECA_DE_BREVITATE_VITAE: "stoa0255.stoa004.perseus-lat2",
+  TERTULLIAN_DE_SPECTACULIS: "stoa0275.stoa027.perseus-lat2",
+  TERTULLIAN_AD_UXOREM: "stoa0276.stoa002.opp-lat1",
 };
 
 export const EnglishTranslations: Record<string, string> = {

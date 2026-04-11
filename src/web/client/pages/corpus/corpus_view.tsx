@@ -244,7 +244,7 @@ function Disclaimer(props: { query: string }) {
         <summary>This tool is a work in progress</summary>
         <li>The query engine is still in beta and may have errors.</li>
         <li>
-          The database currently contains about 2 million words (roughly ⅓ of
+          The database currently contains about 3 million words (roughly ½ of
           the classical corpus). See the library for a full list of indexed
           works.
         </li>
