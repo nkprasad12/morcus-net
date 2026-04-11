@@ -316,8 +316,7 @@ export function xmlNodeToJsx(
             style={{ fontSize: "0.9em", verticalAlign: "middle" }}
           />
           {" Open in new tab"}
-        </button>{" "}
-        <EmbeddableLink target={href} />
+        </button>
       </span>
     );
   }

@@ -280,7 +280,7 @@ describe("InflectionDataSection", () => {
 });
 
 describe("xmlNodeToJsx forcNewTab", () => {
-  it("renders Open in new tab and Open Embed buttons", () => {
+  it("renders Open in new tab button", () => {
     const root = new XmlNode(
       "a",
       [
@@ -292,42 +292,7 @@ describe("xmlNodeToJsx forcNewTab", () => {
     );
     render(<div>{xmlNodeToJsx(root, {})}</div>);
     expect(screen.getByText(/open in new tab/i)).toBeDefined();
-    expect(screen.getByText(/open embed/i)).toBeDefined();
-  });
-
-  it("Open in new tab button appears before Open Embed button", () => {
-    const root = new XmlNode(
-      "a",
-      [
-        ["class", "forcNewTab"],
-        ["href", "http://lexica.linguax.com/forc2.php?searchedLG=habeo"],
-        ["target", "_blank"],
-      ],
-      ["habeo"]
-    );
-    const { container } = render(<div>{xmlNodeToJsx(root, {})}</div>);
-    const buttons = container.querySelectorAll("button");
-    expect(buttons[0].textContent).toMatch(/open in new tab/i);
-    expect(buttons[1].textContent).toMatch(/open embed/i);
-  });
-
-  it("shows iframe with light colorScheme after clicking Open Embed", async () => {
-    const root = new XmlNode(
-      "a",
-      [
-        ["class", "forcNewTab"],
-        ["href", "http://lexica.linguax.com/forc2.php?searchedLG=habeo"],
-        ["target", "_blank"],
-      ],
-      ["habeo"]
-    );
-    render(<div>{xmlNodeToJsx(root, {})}</div>);
-    expect(document.querySelector("iframe")).toBeNull();
-    await user.click(screen.getByText(/open embed/i));
-    const iframe = document.querySelector("iframe");
-    expect(iframe).toBeDefined();
-    expect(iframe!.style.colorScheme).toBe("light");
-    expect(iframe!.style.backgroundColor).toBe("white");
+    expect(screen.queryByText(/open embed/i)).toBeNull();
   });
 });
 
