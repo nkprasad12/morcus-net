@@ -53,6 +53,16 @@ function resolveKey(rawKey: string): string {
     .replaceAll(/[^a-z]/g, "");
 }
 
+function urlKey(rawKey: string): string {
+  // Strip trailing parentheticals like " (a ab abs)" or unclosed ones like " (sepia, sepicula"
+  // and homograph markers like " [2]"
+  return rawKey
+    .trim()
+    .replace(/\s*\([^)]*\)?\s*$/, "")
+    .replace(/\s*\[\d+\]\s*$/, "")
+    .trim();
+}
+
 function processRawEntry(
   raw: RawForcelliniEntry,
   dupeCounts: Map<string, number>
@@ -62,6 +72,7 @@ function processRawEntry(
 
   const outline: EntryOutline = {
     mainKey: keys[0],
+    mainLabel: raw.displayName,
     mainSection: {
       text: raw.displayName,
       level: 0,
@@ -71,7 +82,7 @@ function processRawEntry(
   };
 
   const url = `http://lexica.linguax.com/forc2.php?searchedLG=${encodeURIComponent(
-    raw.key
+    urlKey(raw.key)
   )}`;
   const root = new XmlNode(
     "div",
@@ -111,8 +122,7 @@ export function processForcellini() {
       console.debug(`[Forcellini] Processed ${i} of ${rawEntries.length}`);
     }
     const raw = rawEntries[i];
-    const normalizedKey = raw.key.replace(/\s*\[\d+\]$/g, "");
-    const dedupeKey = `${normalizedKey}|${raw.displayName}`;
+    const dedupeKey = `${urlKey(raw.key)}|${raw.displayName}`;
     if (seen.has(dedupeKey)) {
       continue;
     }

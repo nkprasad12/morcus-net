@@ -16,6 +16,8 @@ const FAKE_RAW_CONTENT = [
   "ab (a ab abs) => AB",
   "abactor => ĂBACTOR",
   "abactus [2] => ĂBACTUS",
+  "sepes (sepia, sepicula => SĒPES",
+  "sepes [2] => SĒPES",
 ].join("\n");
 
 replaceEnvVar("FORC_RAW_PATH", FAKE_RAW_FILE);
@@ -35,6 +37,12 @@ describe("processForcellini", () => {
     try {
       fs.unlinkSync(FAKE_RAW_FILE);
     } catch (e) {}
+  });
+
+  test("deduplicates entries with parenthetical variant and same display name", async () => {
+    // "sepes (sepia, sepicula" and "sepes [2]" both display "SĒPES" -> deduped to 1
+    const results = await dict.getEntry("sepes");
+    expect(results).toHaveLength(1);
   });
 
   test("deduplicates entries with same normalized key and display name", async () => {
@@ -76,6 +84,22 @@ describe("processForcellini", () => {
   test("entry contains link to lexica.linguax.com", async () => {
     const results = await dict.getEntry("abactor");
     expect(results[0].entry.toString()).toContain("lexica.linguax.com");
+  });
+
+  test("URL for entry with parenthetical key uses only base word", async () => {
+    // "ab (a ab abs)" should link to ?searchedLG=ab, not the full parenthetical string
+    const results = await dict.getEntry("ab");
+    expect(results[0].entry.toString()).toContain("searchedLG=ab");
+    expect(results[0].entry.toString()).not.toContain("searchedLG=ab%20");
+  });
+
+  test("URL for entry with [N] suffix uses only base word", async () => {
+    // "habeo [3]" should link to ?searchedLG=habeo, not habeo%20%5B3%5D
+    const results = await dict.getEntry("habeo");
+    for (const r of results) {
+      expect(r.entry.toString()).toContain("searchedLG=habeo");
+      expect(r.entry.toString()).not.toContain("searchedLG=habeo%20");
+    }
   });
 
   test("getCompletions returns expected completions", async () => {
