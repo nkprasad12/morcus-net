@@ -525,6 +525,29 @@ describe("Reading UI", () => {
     );
   });
 
+  it("does not navigate with arrow keys when a dialog is open", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = urlByIdFor("dbg");
+    render(
+      <Router.TestRoot
+        initial={{ path, params: { id: "1" } }}
+        updateListener={mockNav}>
+        <ReadingPage />
+      </Router.TestRoot>
+    );
+    await screen.findAllByText(/^DBG$/);
+
+    const dialog = document.createElement("dialog");
+    dialog.setAttribute("open", "");
+    document.body.appendChild(dialog);
+
+    await user.keyboard("[ArrowRight]");
+
+    expect(mockNav).not.toHaveBeenCalled();
+    document.body.removeChild(dialog);
+  });
+
   it("shows settings page", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
     const mockNav = jest.fn();

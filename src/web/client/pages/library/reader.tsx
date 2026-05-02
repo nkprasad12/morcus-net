@@ -696,6 +696,9 @@ function WorkNavigationBar(props: {
           return;
         }
       }
+      if (document.querySelector("dialog[open]") !== null) {
+        return;
+      }
 
       if (e.key === "ArrowLeft") {
         changePage(-1);
