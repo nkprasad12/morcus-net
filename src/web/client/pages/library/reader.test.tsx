@@ -819,6 +819,91 @@ describe("Reading UI", () => {
   });
 });
 
+describe("NFC normalization for hypotactic works", () => {
+  // "o" + U+0304 (combining macron) is the NFD encoding of "ō"
+  const NFD_TEXT = "o\u0304mnis";
+  // U+014D is the NFC precomposed form of "ō"
+  const NFC_TEXT = "\u014Dmnis";
+
+  const HYPOTACTIC_WORK: ProcessedWork2 = {
+    info: {
+      title: "Aeneid",
+      author: "Vergil",
+      workId: "aen",
+      attribution: "hypotactic",
+    },
+    textParts: ["book", "line"],
+    rows: [[["1", "1"], new XmlNode("span", [], [NFD_TEXT])]],
+    pages: [{ id: ["1"], rows: [0, 1] }],
+    navTree: { id: [], children: [{ id: ["1"], children: [] }] },
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    mockCallApiFull.mockResolvedValue({ data: { LS: [] } });
+  });
+  afterEach(() => {
+    mockCallApi.mockClear();
+    mockCallApiFull.mockClear();
+  });
+
+  it("applies NFC normalization for hypotactic work with macrons on", async () => {
+    mockCallApi.mockResolvedValue(HYPOTACTIC_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("aen"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findAllByText(/Aeneid/);
+    expect(findOnScreen(NFC_TEXT)).not.toBeNull();
+  });
+
+  it("strips macra for hypotactic work with macrons off", async () => {
+    mockCallApi.mockResolvedValue(HYPOTACTIC_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("aen"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findAllByText(/Aeneid/);
+    await user.click(screen.getByLabelText("toggle macra in text"));
+    expect(findOnScreen("omnis")).not.toBeNull();
+  });
+
+  it("does not NFC-normalize text for non-hypotactic work", async () => {
+    const NON_HYPOTACTIC_WORK: ProcessedWork2 = {
+      ...HYPOTACTIC_WORK,
+      info: { ...HYPOTACTIC_WORK.info, attribution: "perseus" },
+    };
+    mockCallApi.mockResolvedValue(NON_HYPOTACTIC_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("aen"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findAllByText(/Aeneid/);
+    expect(findOnScreen(NFD_TEXT)).not.toBeNull();
+  });
+});
+
 describe("SwipeFeedback", () => {
   it("Shows expected on full swipe", async () => {
     render(<SwipeFeedback overlayOpacity={1} swipeDir="Left" />);
