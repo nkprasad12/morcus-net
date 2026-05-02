@@ -1,6 +1,92 @@
 import { getBullet } from "@/common/lewis_and_short/ls_client_utils";
-import { extractOutline } from "@/common/lewis_and_short/ls_outline";
-import { XmlNode } from "@/common/xml/xml_node";
+import {
+  extractOutline,
+  sanitizeTree,
+} from "@/common/lewis_and_short/ls_outline";
+import { COMMENT_NODE, XmlNode } from "@/common/xml/xml_node";
+
+console.debug = jest.fn();
+
+describe("sanitizeTree", () => {
+  it("passes through plain string children", () => {
+    const root = new XmlNode("entryFree", [], ["hello", " world"]);
+    const result = sanitizeTree(root);
+    expect(result).toStrictEqual(
+      new XmlNode("entryFree", [], ["hello", " world"])
+    );
+  });
+
+  it("preserves node name and attrs", () => {
+    const root = new XmlNode("entryFree", [["id", "n1"]], ["text"]);
+    const result = sanitizeTree(root);
+    expect(result.name).toBe("entryFree");
+    expect(result.attrs).toStrictEqual([["id", "n1"]]);
+  });
+
+  it("recursively sanitizes child nodes", () => {
+    const inner = new XmlNode("orth", [], ["word"]);
+    const root = new XmlNode("entryFree", [], [inner]);
+    const result = sanitizeTree(root);
+    expect(result.children).toStrictEqual([new XmlNode("orth", [], ["word"])]);
+  });
+
+  it("replaces reg node with corr text", () => {
+    const reg = new XmlNode(
+      "reg",
+      [],
+      [new XmlNode("sic", [], ["est"]), new XmlNode("corr", [], ["omnis"])]
+    );
+    const root = new XmlNode("entryFree", [], [reg]);
+    const result = sanitizeTree(root);
+    expect(result.children).toStrictEqual(["omnis"]);
+  });
+
+  it("replaces reg node with corr text when surrounded by whitespace children", () => {
+    const reg = new XmlNode(
+      "reg",
+      [],
+      [
+        "  ",
+        new XmlNode("sic", [], ["sic"]),
+        new XmlNode("corr", [], ["corr"]),
+        "  ",
+      ]
+    );
+    const root = new XmlNode("entryFree", [], [reg]);
+    const result = sanitizeTree(root);
+    expect(result.children).toStrictEqual(["corr"]);
+  });
+
+  it("strips comment nodes", () => {
+    const comment = new XmlNode(COMMENT_NODE, [], ["a comment"]);
+    const root = new XmlNode("entryFree", [], ["before", comment, "after"]);
+    const result = sanitizeTree(root);
+    expect(result.children).toStrictEqual(["before", "after"]);
+  });
+
+  it("handles mix of strings, comments, reg, and regular nodes", () => {
+    const reg = new XmlNode(
+      "reg",
+      [],
+      [new XmlNode("sic", [], ["bad"]), new XmlNode("corr", [], ["good"])]
+    );
+    const comment = new XmlNode(COMMENT_NODE, [], []);
+    const orth = new XmlNode("orth", [], ["word"]);
+    const root = new XmlNode("entryFree", [], ["text ", reg, comment, orth]);
+    const result = sanitizeTree(root);
+    expect(result.children).toStrictEqual([
+      "text ",
+      "good",
+      new XmlNode("orth", [], ["word"]),
+    ]);
+  });
+
+  it("throws when reg does not have exactly two non-whitespace children", () => {
+    const reg = new XmlNode("reg", [], [new XmlNode("corr", [], ["x"])]);
+    const root = new XmlNode("entryFree", [], [reg]);
+    expect(() => sanitizeTree(root)).toThrow();
+  });
+});
 
 describe("getBullet", () => {
   it("returns original on unparenthesized", () => {

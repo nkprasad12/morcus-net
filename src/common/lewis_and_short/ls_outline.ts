@@ -70,15 +70,27 @@ export function extractOutline(
   };
 }
 
+function findChild(children: XmlChild[], name: string): XmlNode {
+  for (const child of children) {
+    if (typeof child !== "string" && child.name === name) {
+      return child;
+    }
+  }
+  throw new Error(`Expected to find child with name ${name}`);
+}
+
 export function sanitizeTree(root: XmlNode): XmlNode {
   const children: (XmlNode | string)[] = [];
   for (const child of root.children) {
     if (typeof child === "string") {
       children.push(child);
     } else if (child.name === "reg") {
-      assert(child.children.length === 2);
-      XmlNode.assertIsNode(child.children[0], "sic");
-      const corr = XmlNode.assertIsNode(child.children[1], "corr");
+      const regChildren = child.children.filter(
+        (c) => typeof c !== "string" || c.trim() !== ""
+      );
+      assert(regChildren.length === 2, () => root.toString());
+      findChild(regChildren, "sic");
+      const corr = findChild(regChildren, "corr");
       children.push(XmlNode.getSoleText(corr));
       console.debug(`Corrected ${child} -> ${XmlNode.getSoleText(corr)}`);
     } else if (child.name === COMMENT_NODE) {
