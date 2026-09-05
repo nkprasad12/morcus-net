@@ -11,20 +11,23 @@ Morcus.net is a collection of digital tools for Latin language, including:
 
 ## Architecture
 
+> For comprehensive subsystem breakdowns, data flow diagrams, and deep dives across TypeScript, Rust, and Python components, see [ARCHITECTURE.md](ARCHITECTURE.md).
+
 ### Components
 
-- **Web Client**: React/Preact-based SPA in TypeScript (`src/web/client/`)
-- **Web Server**: Express.js server (`src/web/server/`, `src/web/web_server.ts`)
-- **Morceus**: Latin morphological analyzer (`src/morceus/`)
-- **Dictionary**: Lewis & Short, Smith & Hall dictionary handling (`src/web/storage/`)
-- **Python NLP**: Latin processing tools (`src/py/latincy/`, `src/macronizer/`)
+- **Web Client**: React/Preact-based SPA in TypeScript (`src/web/client/`) built with Rsbuild.
+- **Web Server**: Express.js server (`src/start_server.ts`, `src/web/server/`, `src/web/web_server.ts`) built with esbuild.
+- **Morceus**: Latin morphological analyzer (`src/morceus/` in TS and `morceus_rust/` in Rust).
+- **Dictionary**: Fused multi-dictionary engine (`src/common/dictionaries/`) supporting Lewis & Short, Smith & Hall, Gaffiot, Georges, Pozo, Gesner, Forcellini, Riddle & Arnold, and Numerals backed by SQLite.
+- **Corpus Query Engine**: High-performance Rust query engine (`corpus_rust/`) exposed via native Node bindings (`lib.rs`).
+- **Python NLP**: Latin processing tools (`src/py/latincy/`, `src/py/stanza/`, `src/macronizer/`).
 
 ### Data Flow
 
-1. Client requests Latin texts and lookups via APIs
-2. Server processes requests using the dictionary/morphological databases
-3. Preprocessing creates optimized databases from raw Latin texts
-4. Client displays content with features like pagination and word lookups
+1. Client requests Latin texts, dictionary lookups, or corpus searches via typed RPC APIs (`src/web/api_routes.ts`).
+2. Server processes requests using fused dictionary engines, Morceus cruncher, or the Rust corpus query engine.
+3. Preprocessing pipelines normalize raw texts (Perseus, Hypotactic, PHI) and lexica into optimized SQLite and JSON databases.
+4. Client displays interactive reader, dictionary definitions, macronized variants, and concordance results with offline/PWA capabilities.
 
 ## Development Workflow
 
@@ -32,7 +35,7 @@ Morcus.net is a collection of digital tools for Latin language, including:
 
 ```bash
 # First-time setup
-./set_up_or_update.sh.sh
+./set_up_or_update.sh
 
 # Start server with dev build
 ./morcus.sh web
