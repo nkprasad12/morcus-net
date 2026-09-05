@@ -467,7 +467,10 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     await expect(page.locator(".pe-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
-      page.getByText("to have").or(page.getByText("hold")).first()
+      page
+        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .getByText("hold")
+        .first()
     ).toBeVisible();
 
     await context.close();
@@ -485,7 +488,10 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     await expect(page.locator(".pe-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
-      page.getByText("to have").or(page.getByText("hold")).first()
+      page
+        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .getByText("hold")
+        .first()
     ).toBeVisible();
   });
 
@@ -499,7 +505,10 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     await expect(page.locator(".pe-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
-      page.getByText("to have").or(page.getByText("hold")).first()
+      page
+        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .getByText("hold")
+        .first()
     ).toBeVisible();
 
     await context.close();
@@ -613,5 +622,69 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     );
     expect(stored).toBeTruthy();
     expect(stored).toContain("darkMode");
+  });
+
+  test("loads entries by ID directly via /pe/dicts/id/:id", async ({
+    page,
+  }) => {
+    await page.goto("/pe/dicts/id/n20077");
+    await expect(page).toHaveTitle(/ID n20077/);
+    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(
+      page
+        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .getByText("hold")
+        .first()
+    ).toBeVisible();
+  });
+
+  test("renders collapsible outline and section anchor permalinks", async ({
+    page,
+  }) => {
+    await page.goto("/pe/dicts?q=habeo");
+    const toc = page.locator(".pe-toc");
+    await expect(toc.first()).toBeVisible();
+
+    // Verify section anchor bullet has #hash href
+    const anchor = page.locator(".pe-section-anchor").first();
+    await expect(anchor).toBeVisible();
+    const href = await anchor.getAttribute("href");
+    expect(href).toMatch(/^#n20077/);
+
+    // Clicking anchor sets window location hash
+    await anchor.click();
+    expect(page.url()).toContain("#");
+  });
+
+  test("click-to-lookup linkifies Latin words and navigates on click (No-JS)", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/pe/dicts?q=habeo");
+    const wordLink = page.locator('.pe-lat-word:has-text("habere")').first();
+    await expect(wordLink).toBeVisible();
+
+    // Clicking the word navigates natively to /pe/dicts?q=habere
+    await wordLink.click();
+    await expect(page).toHaveURL(/\/pe\/dicts\?q=habere/);
+    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+
+    await context.close();
+  });
+
+  test("click-to-lookup linkifies Latin words and navigates on click (JS enabled)", async ({
+    page,
+  }) => {
+    await page.goto("/pe/dicts?q=habeo");
+    const wordLink = page.locator('.pe-lat-word:has-text("habere")').first();
+    await expect(wordLink).toBeVisible();
+
+    // Clicking the word follows standard browser navigation
+    await wordLink.click();
+    await expect(page).toHaveURL(/\/pe\/dicts\?q=habere/);
+    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
   });
 });

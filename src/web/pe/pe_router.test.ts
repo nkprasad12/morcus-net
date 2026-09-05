@@ -55,6 +55,21 @@ describe("pe_router integration", () => {
     expect(res.text).toContain("amo");
   });
 
+  test("GET /pe/dicts/id/:id returns entry looked up by ID", async () => {
+    const res = await request(app).get("/pe/dicts/id/n20077");
+    expect(res.status).toBe(200);
+    expect(res.header["content-type"]).toContain("text/html");
+    expect(res.text).toContain("<!DOCTYPE html>");
+    expect(res.text).toContain("ID n20077 - Morcus Dictionary");
+    expect(res.text).toContain("amo");
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "n20077",
+        mode: 2,
+      })
+    );
+  });
+
   test("GET /pe/api/completions returns JSON suggestions", async () => {
     const res = await request(app).get("/pe/api/completions?q=am");
     expect(res.status).toBe(200);

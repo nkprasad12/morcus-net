@@ -109,6 +109,47 @@ export function createPeRouter(fusedDict: FusedDictionary): Router {
     }
   });
 
+  // ID-based dictionary lookup route
+  router.get("/dicts/id/:id", async (req: Request, res: Response) => {
+    const id = typeof req.params.id === "string" ? req.params.id.trim() : "";
+    const isPartial =
+      req.query.format === "partial" ||
+      req.headers["x-requested-with"] === "fetch";
+
+    if (!id) {
+      res.redirect("/pe/dicts");
+      return;
+    }
+
+    try {
+      const results = await fusedDict.getEntry({
+        query: id,
+        dicts: ALL_LATIN_DICTS,
+        mode: 2, // Search by ID
+      });
+
+      if (isPartial) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.send(renderDictResultsHtml(id, results));
+        return;
+      }
+
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(renderDictPageHtml({ query: id, results, isIdSearch: true }));
+    } catch (err) {
+      console.error("Error retrieving dictionary entry by ID:", err);
+      if (isPartial) {
+        res
+          .status(500)
+          .send(
+            `<div class="pe-no-results"><p>An error occurred retrieving ID "${id}".</p></div>`
+          );
+        return;
+      }
+      res.status(500).send(renderDictPageHtml({ query: id, isIdSearch: true }));
+    }
+  });
+
   // About page route
   router.get("/about", (_req: Request, res: Response) => {
     res.setHeader("Content-Type", "text/html; charset=utf-8");

@@ -20,6 +20,45 @@ describe("dict_ssr", () => {
     expect(html).not.toContain("<script>");
   });
 
+  test("xmlNodeToHtml indents senses according to indentLevel", () => {
+    const indentedNode = new XmlNode(
+      "div",
+      [["indentLevel", "2"]],
+      ["Of personal subjects"]
+    );
+    const unindentedNode = new XmlNode(
+      "div",
+      [["indentLevel", "0"]],
+      ["In general"]
+    );
+
+    expect(xmlNodeToHtml(indentedNode)).toContain('style="margin-left: 1em;"');
+    expect(xmlNodeToHtml(unindentedNode)).not.toContain("style=");
+  });
+
+  test("xmlNodeToHtml preserves nested sense lists", () => {
+    const node = new XmlNode(
+      "ol",
+      [],
+      [
+        new XmlNode(
+          "li",
+          [],
+          [
+            "Top-level sense",
+            new XmlNode("ol", [], [new XmlNode("li", [], ["Nested sense"])]),
+          ]
+        ),
+      ]
+    );
+
+    const html = xmlNodeToHtml(node);
+    expect(html.match(/<ol>/g)).toHaveLength(2);
+    expect(html.match(/<li>/g)).toHaveLength(2);
+    expect(html).toContain("Nested");
+    expect(html).toContain("</li></ol></li></ol>");
+  });
+
   test("renderEntryResult formats entry and inflections", () => {
     const entryResult: EntryResult = {
       entry: new XmlNode("span", [["class", "lsOrth"]], ["amo"]),
@@ -93,5 +132,83 @@ describe("dict_ssr", () => {
       '<form class="pe-search-form" action="/pe/dicts" method="GET">'
     );
     expect(pageHtml).toContain("<morcus-dict-search>");
+  });
+
+  test("xmlNodeToHtml linkifies Latin words in regular content", () => {
+    const node = new XmlNode(
+      "span",
+      [["class", "lsQuote"]],
+      ["Gallia est omnis"]
+    );
+    const html = xmlNodeToHtml(node);
+    expect(html).toContain('href="/pe/dicts?q=Gallia"');
+    expect(html).toContain('href="/pe/dicts?q=est"');
+    expect(html).toContain('href="/pe/dicts?q=omnis"');
+    expect(html).toContain('class="pe-lat-word"');
+  });
+
+  test("xmlNodeToHtml transforms sense bullet with senseid into an anchor link", () => {
+    const node = new XmlNode(
+      "span",
+      [
+        ["class", "lsSenseBullet"],
+        ["senseid", "n20077.1"],
+      ],
+      [" • "]
+    );
+    const html = xmlNodeToHtml(node);
+    expect(html).toContain("<a");
+    expect(html).toContain('href="#n20077.1"');
+    expect(html).toContain('class="lsSenseBullet pe-section-anchor"');
+    expect(html).toContain('title="Direct link to this section"');
+    expect(html).toContain("&#x2022;");
+    expect(html).toContain("</a>");
+  });
+
+  test("renderEntryResult includes entry outline when senses exist", () => {
+    const entryResult: EntryResult = {
+      entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+      outline: {
+        mainKey: "habeo",
+        mainSection: {
+          text: "habeo",
+          level: 0,
+          ordinal: "",
+          sectionId: "n20077",
+        },
+        senses: [
+          {
+            text: "In general",
+            level: 1,
+            ordinal: "I.",
+            sectionId: "n20077.1",
+          },
+          {
+            text: "Of personal subjects",
+            level: 2,
+            ordinal: "A.",
+            sectionId: "n20077.2",
+          },
+        ],
+      },
+    };
+
+    const rendered = renderEntryResult(entryResult);
+    expect(rendered).toContain('class="pe-toc"');
+    expect(rendered).toContain("Outline (2 sections)");
+    expect(rendered).toContain('href="#n20077.1"');
+    expect(rendered).toContain("I.");
+    expect(rendered).toContain("In general");
+    expect(rendered).toContain('href="#n20077.2"');
+  });
+
+  test("renderDictPageHtml handles isIdSearch", () => {
+    const pageHtml = renderDictPageHtml({
+      query: "n20077",
+      isIdSearch: true,
+    });
+    expect(pageHtml).toContain("<title>ID n20077 - Morcus Dictionary</title>");
+    // Search input should have empty value for ID search so user can type a fresh search
+    expect(pageHtml).toContain('value=""');
   });
 });

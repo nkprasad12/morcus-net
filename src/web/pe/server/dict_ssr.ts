@@ -1,6 +1,7 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
-import { EntryResult } from "@/common/dictionaries/dict_result";
+import { EntryResult, EntryOutline } from "@/common/dictionaries/dict_result";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { processWords, removeDiacritics } from "@/common/text_cleaning";
 import { XmlChild } from "@/common/xml/xml_node";
 import { renderPageShell } from "@/web/pe/server/page_shell";
 import * as he from "he";
@@ -30,36 +31,131 @@ const DICT_NAMES: Record<string, string> = {
 /**
  * Recursively converts an XmlNode tree into a clean semantic HTML string.
  */
-export function xmlNodeToHtml(node: XmlChild): string {
+export interface XmlNodeToHtmlOptions {
+  allowLinkify?: boolean;
+}
+
+export function linkifyText(text: string): string {
+  const parts = processWords(text, (word) => {
+    const cleanWord = removeDiacritics(word).replaceAll("-", "").trim();
+    const isLatinWord = !/\d/.test(word) && /[a-zA-Z]/.test(cleanWord);
+    if (isLatinWord) {
+      const href = `/pe/dicts?q=${encodeURIComponent(cleanWord)}`;
+      return `<a href="${he.encode(href)}" class="pe-lat-word">${he.encode(
+        word
+      )}</a>`;
+    }
+    return he.encode(word);
+  });
+  return parts.join("");
+}
+
+export function xmlNodeToHtml(
+  node: XmlChild,
+  options?: XmlNodeToHtmlOptions
+): string {
   if (typeof node === "string") {
+    if (options?.allowLinkify !== false) {
+      return linkifyText(node);
+    }
     return he.encode(node);
   }
 
-  const tagName = node.name.toLowerCase() === "span" ? "span" : "div";
+  const sourceTagName = node.name.toLowerCase();
+  let tagName = ["ol", "li", "span"].includes(sourceTagName)
+    ? sourceTagName
+    : "div";
   const attrsMap = new Map<string, string>();
   for (const [k, v] of node.attrs) {
     attrsMap.set(k.toLowerCase(), v);
   }
 
-  const classNames = attrsMap.get("class")
-    ? ` class="${he.encode(attrsMap.get("class")!)}"`
-    : "";
+  const rawClass = attrsMap.get("class") ?? "";
+  const isSenseBullet = rawClass.includes("lsSenseBullet");
+  const senseId = attrsMap.get("senseid");
+
+  // Transform sense bullets with a senseid into anchor permalinks
+  if (isSenseBullet && senseId) {
+    tagName = "a";
+    attrsMap.set("href", `#${senseId}`);
+    attrsMap.set("class", `${rawClass} pe-section-anchor`.trim());
+    attrsMap.set("title", "Direct link to this section");
+  }
+
+  const isAlreadyLink = tagName === "a";
+  const isDisallowedClass =
+    rawClass.includes("lsOrth") ||
+    rawClass.includes("lsHover") ||
+    rawClass.includes("lsSenseBullet") ||
+    rawClass.includes("pe-section-anchor") ||
+    rawClass.includes("pe-toc");
+  const nextAllowLinkify =
+    (options?.allowLinkify ?? true) && !isAlreadyLink && !isDisallowedClass;
+
+  const childrenHtml = node.children
+    .map((c) => xmlNodeToHtml(c, { allowLinkify: nextAllowLinkify }))
+    .join("");
+
+  const finalClass = attrsMap.get("class");
+  const classNames = finalClass ? ` class="${he.encode(finalClass)}"` : "";
   const idAttr = attrsMap.get("id")
     ? ` id="${he.encode(attrsMap.get("id")!)}"`
     : "";
   const titleAttr = attrsMap.get("title")
     ? ` title="${he.encode(attrsMap.get("title")!)}"`
     : "";
+  const hrefAttr = attrsMap.get("href")
+    ? ` href="${he.encode(attrsMap.get("href")!)}"`
+    : "";
+  const indentLevel = Number.parseInt(attrsMap.get("indentlevel") ?? "", 10);
+  const styleAttr =
+    Number.isFinite(indentLevel) && indentLevel > 0
+      ? ` style="margin-left: ${indentLevel * 0.5}em;"`
+      : "";
 
-  const childrenHtml = node.children.map((c) => xmlNodeToHtml(c)).join("");
-  return `<${tagName}${idAttr}${classNames}${titleAttr}>${childrenHtml}</${tagName}>`;
+  return `<${tagName}${idAttr}${classNames}${titleAttr}${hrefAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+}
+
+/**
+ * Renders the table of contents / outline for a dictionary entry.
+ */
+export function renderEntryOutline(outline?: EntryOutline): string {
+  if (!outline?.senses || outline.senses.length === 0) {
+    return "";
+  }
+
+  const items = outline.senses
+    .map((sense) => {
+      const indentStyle =
+        sense.level > 0
+          ? ` style="margin-left: ${sense.level * 0.75}rem;"`
+          : "";
+      const ordinalHtml = sense.ordinal
+        ? `<strong class="pe-toc-ordinal">${he.encode(sense.ordinal)}</strong> `
+        : "";
+      const textHtml = he.encode(sense.text.trim());
+      return `<li${indentStyle}><a href="#${he.encode(
+        sense.sectionId
+      )}" class="pe-toc-link">${ordinalHtml}${textHtml}</a></li>`;
+    })
+    .join("");
+
+  return `
+    <details class="pe-toc">
+      <summary class="pe-toc-summary">Outline (${outline.senses.length} sections)</summary>
+      <ul class="pe-toc-list">
+        ${items}
+      </ul>
+    </details>
+  `;
 }
 
 /**
  * Formats an EntryResult into semantic HTML.
  */
 export function renderEntryResult(result: EntryResult): string {
-  const entryHtml = xmlNodeToHtml(result.entry);
+  const outlineHtml = renderEntryOutline(result.outline);
+  const entryHtml = xmlNodeToHtml(result.entry, { allowLinkify: true });
 
   let inflectionsHtml = "";
   if (result.inflections && result.inflections.length > 0) {
@@ -90,6 +186,7 @@ export function renderEntryResult(result: EntryResult): string {
 
   return `
     <article class="pe-entry">
+      ${outlineHtml}
       ${entryHtml}
       ${inflectionsHtml}
     </article>
@@ -162,6 +259,7 @@ export function renderDictResultsHtml(
 export interface DictPageOptions {
   query: string;
   results?: DictsFusedResponse;
+  isIdSearch?: boolean;
 }
 
 /**
@@ -170,6 +268,8 @@ export interface DictPageOptions {
 export function renderDictPageHtml(options: DictPageOptions): string {
   const queryEncoded = he.encode(options.query || "");
   const resultsHtml = renderDictResultsHtml(options.query, options.results);
+
+  const titlePrefix = options.isIdSearch ? `ID ${queryEncoded}` : queryEncoded;
 
   const contentHtml = `
     <header class="pe-header">
@@ -184,7 +284,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
             type="text"
             name="q"
             class="pe-input"
-            value="${queryEncoded}"
+            value="${options.isIdSearch ? "" : queryEncoded}"
             placeholder="Search Latin word (e.g. caesar, virtus)..."
             autocomplete="off"
             autofocus
@@ -201,7 +301,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
 
   return renderPageShell({
     title: options.query
-      ? `${queryEncoded} - Morcus Dictionary`
+      ? `${titlePrefix} - Morcus Dictionary`
       : "Morcus Dictionary (Progressive Enhancement)",
     activePage: "dicts",
     contentHtml,

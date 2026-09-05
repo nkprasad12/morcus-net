@@ -1,7 +1,8 @@
 /* Standalone CSS for Progressive Enhancement Dictionary Views */
 
 :root {
-  --pe-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --pe-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
   --pe-font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
   --pe-bg: #fcfbf9;
   --pe-card-bg: #ffffff;
@@ -368,6 +369,12 @@ body {
   margin-bottom: 0;
 }
 
+.pe-entry ol {
+  margin: 0;
+  padding-left: 1.5em;
+  list-style: none;
+}
+
 /* Inflections section */
 .pe-inflections {
   margin-top: 12px;
@@ -417,7 +424,8 @@ body {
   padding: 1px 4px;
 }
 
-.lsBibl, .gafAuth {
+.lsBibl,
+.gafAuth {
   background-color: var(--pe-accent-bibl);
   border-radius: 3px;
   padding: 1px 3px;
@@ -460,4 +468,89 @@ body {
   border-radius: 12px;
   background: var(--pe-border);
   color: var(--pe-text-muted);
+}
+
+/* Latin word click-to-lookup link */
+.pe-lat-word {
+  color: inherit;
+  text-decoration: none;
+  border-radius: 2px;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.pe-lat-word:hover {
+  color: var(--pe-primary);
+  text-decoration: underline;
+  text-decoration-style: dotted;
+  text-underline-offset: 3px;
+  background-color: var(--pe-tag-bg);
+}
+
+/* Section anchor bullets */
+.pe-section-anchor {
+  text-decoration: none;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
+}
+
+.pe-section-anchor:hover {
+  background-color: var(--pe-primary);
+  color: #ffffff;
+}
+
+/* Native :target highlight for jumped sections */
+:target {
+  scroll-margin-top: 70px;
+  background-color: rgba(255, 230, 100, 0.25);
+  border-radius: 4px;
+  outline: 2px dashed var(--pe-primary);
+  outline-offset: 2px;
+  transition: background-color 0.3s ease-in-out;
+}
+
+/* Table of Contents / Outline */
+.pe-toc {
+  margin-bottom: 16px;
+  padding: 8px 12px;
+  background-color: var(--pe-tag-bg);
+  border: 1px solid var(--pe-border);
+  border-radius: 6px;
+  font-family: var(--pe-font-sans);
+  font-size: 0.95rem;
+}
+
+.pe-toc-summary {
+  font-weight: 600;
+  cursor: pointer;
+  user-select: none;
+}
+
+.pe-toc-list {
+  margin: 8px 0 4px 0;
+  padding-left: 14px;
+  list-style: none;
+  max-height: 280px;
+  overflow-y: auto;
+}
+
+.pe-toc-list li {
+  margin-bottom: 4px;
+  line-height: 1.4;
+}
+
+.pe-toc-link {
+  color: var(--pe-text);
+  text-decoration: none;
+}
+
+.pe-toc-link:hover {
+  color: var(--pe-primary);
+  text-decoration: underline;
+}
+
+.pe-toc-ordinal {
+  font-weight: 700;
+  color: var(--pe-primary);
+  margin-right: 4px;
 }
