@@ -262,8 +262,8 @@ The following should be done at regular intervals:
   - Check the `package.json`
   - Update the version used in the CI workflows
   - Update the version used in the `Dockerfile`
-- Update the `nginx` version, (currently `1.28.0`). Due _before_ it goes EOL in `2026/03`ish.
-  - Update the `nginx` version in `src/devops/reverse-proxy/Dockerfile`
+- Update the `nginx` version, (currently `1.30.4-alpine-slim`). Due _before_ it goes EOL in `2027/04`ish.
+  - Update the `nginx` version in `src/devops/reverse_proxy/Dockerfile`
   - Follow the build and push instructions [above](#updating-the-reverse-proxy-image)
 
 ### Following a reboot

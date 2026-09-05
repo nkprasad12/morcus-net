@@ -696,6 +696,9 @@ function WorkNavigationBar(props: {
           return;
         }
       }
+      if (document.querySelector("dialog[open]") !== null) {
+        return;
+      }
 
       if (e.key === "ArrowLeft") {
         changePage(-1);
@@ -778,6 +781,7 @@ export function WorkTextPage(props: {
   );
   const textHighlightMap = useTextHighlights();
   const stripMacra = !macronsOn && work.info.attribution === "hypotactic";
+  const normalizeNfc = macronsOn && work.info.attribution === "hypotactic";
 
   const gapSize = (readerMainScale / 100) * 0.65;
   const gap = `${gapSize}em`;
@@ -797,6 +801,7 @@ export function WorkTextPage(props: {
           gridRow={gridRow}
           content={content}
           stripMacra={stripMacra}
+          normalizeNfc={normalizeNfc}
         />
       );
       continue;
@@ -837,6 +842,7 @@ export function WorkTextPage(props: {
           id={idLabel}
           content={content}
           stripMacra={stripMacra}
+          normalizeNfc={normalizeNfc}
           textHighlights={textHighlights}
         />
       </React.Fragment>
@@ -871,6 +877,7 @@ function WorkTextColumn(props: {
   id?: string;
   className?: string;
   stripMacra: boolean;
+  normalizeNfc?: boolean;
   content: XmlNode<ProcessedWorkContentNodeType>;
   textHighlights?: TextHighlightRange[];
 }) {
@@ -884,6 +891,7 @@ function WorkTextColumn(props: {
           displayForLibraryChunk(
             props.content,
             props.stripMacra,
+            props.normalizeNfc ?? false,
             props.textHighlights
           )[0]
         }
@@ -1160,6 +1168,7 @@ function TextNote(props: { node: XmlNode }) {
 function displayForLibraryChunk(
   root: XmlNode<ProcessedWorkContentNodeType>,
   stripMacra: boolean,
+  normalizeNfc: boolean,
   highlights?: TextHighlightRange[],
   key?: number,
   initialWordId: number = 0
@@ -1174,11 +1183,13 @@ function displayForLibraryChunk(
   let wordId = initialWordId;
   const children = root.children.map((child, i) => {
     if (typeof child === "string") {
-      const stripped = stripMacra
+      const processed = stripMacra
         ? child.replace(/[\u0304\u0305]/g, "")
+        : normalizeNfc
+        ? child.normalize("NFC")
         : child;
       const [content, nextWordId] = displayText(
-        stripped,
+        processed,
         wordId,
         i,
         highlights
@@ -1189,6 +1200,7 @@ function displayForLibraryChunk(
     const [content, nextWordId] = displayForLibraryChunk(
       child,
       stripMacra,
+      normalizeNfc,
       highlights,
       i,
       wordId

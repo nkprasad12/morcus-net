@@ -26,9 +26,10 @@ import { processWords } from "@/common/text_cleaning";
 import { extractInfo, findCtsEncoding } from "@/common/xml/tei_utils";
 import { XmlNode, type XmlChild } from "@/common/xml/xml_node";
 import { instanceOf, isString } from "@/web/utils/rpc/parsing";
+import { isHandledRend, isKnownRend } from "@/common/library/perseus_rends";
 
 const IGNORE_SUBTYPES = new Map<string, Set<string>>([
-  [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies"])],
+  [LatinWorks.CATULLUS, new Set(["Lyrics", "longpoems", "Elegies", "book"])],
   [LatinWorks.LIVY_AUC, new Set(["index"])],
 ]);
 const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
@@ -37,43 +38,6 @@ const NO_SUBTYPES = new Set([LatinWorks.TACITUS_DIALOGUS]);
 const CHOICE_GOOD_CHILD = new Set<string | undefined>(["reg", "corr", "abbr"]);
 const SKIP_NODES = new Set(["#comment", "pb"]);
 const QUOTE_NODES = new Set(["q", "quote"]);
-const HANDLED_REND = new Set<string>([
-  "indent",
-  "ital",
-  "italic",
-  "italics",
-  "blockquote",
-  "uppercase",
-  "smallcaps",
-  "7",
-  "overline",
-  // These are used in gaps. We can just ignore them.
-  "* * * *",
-  "...",
-  ". . .",
-  ". . . .",
-  "***",
-]);
-// `merge` occurs infrequently, when we have a continued quote:
-// <l>blah blah <q>blah </q></l>
-// <l><q rend="merge">blah</q> blah</l>
-// so the `merge` is supposed to indicate that the quote is merged with the
-// previous quote.
-// This is very hard to handle, so we just ignore it.
-const KNOWN_REND = new Set(
-  [
-    undefined,
-    "bold",
-    "sup",
-    "merge",
-    "align(indent)",
-    "merge;double",
-    "double",
-    "double; merge",
-    "single",
-    "align(blockquote)",
-  ].concat(...HANDLED_REND)
-);
 
 const TABLE_ITEM_CHILDREN = new Set<string>(["date"]);
 // For `note` nodes. These should be separate since they're
@@ -686,8 +650,8 @@ function transformContentNode(
 ): XmlNode<ProcessedWorkContentNodeType> {
   const attrs: XmlNode["attrs"] = [];
   const rend = node.getAttr("rend");
-  assert(KNOWN_REND.has(rend), rend);
-  if (rend !== undefined && HANDLED_REND.has(rend)) {
+  assert(isKnownRend(rend), rend);
+  if (rend !== undefined && isHandledRend(rend)) {
     if (node.name === "emph") {
       assertEqual(rend, "italic");
     }

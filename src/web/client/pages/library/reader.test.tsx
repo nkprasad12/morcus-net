@@ -525,6 +525,29 @@ describe("Reading UI", () => {
     );
   });
 
+  it("does not navigate with arrow keys when a dialog is open", async () => {
+    mockCallApi.mockResolvedValue(PROCESSED_WORK_MULTI_CHAPTER);
+    const mockNav = jest.fn();
+    const path = urlByIdFor("dbg");
+    render(
+      <Router.TestRoot
+        initial={{ path, params: { id: "1" } }}
+        updateListener={mockNav}>
+        <ReadingPage />
+      </Router.TestRoot>
+    );
+    await screen.findAllByText(/^DBG$/);
+
+    const dialog = document.createElement("dialog");
+    dialog.setAttribute("open", "");
+    document.body.appendChild(dialog);
+
+    await user.keyboard("[ArrowRight]");
+
+    expect(mockNav).not.toHaveBeenCalled();
+    document.body.removeChild(dialog);
+  });
+
   it("shows settings page", async () => {
     mockCallApi.mockResolvedValue(PROCESSED_WORK);
     const mockNav = jest.fn();
@@ -793,6 +816,91 @@ describe("Reading UI", () => {
       </RouteContext.Provider>
     );
     await screen.findByText(/Invalid section/);
+  });
+});
+
+describe("NFC normalization for hypotactic works", () => {
+  // "o" + U+0304 (combining macron) is the NFD encoding of "ō"
+  const NFD_TEXT = "o\u0304mnis";
+  // U+014D is the NFC precomposed form of "ō"
+  const NFC_TEXT = "\u014Dmnis";
+
+  const HYPOTACTIC_WORK: ProcessedWork2 = {
+    info: {
+      title: "Aeneid",
+      author: "Vergil",
+      workId: "aen",
+      attribution: "hypotactic",
+    },
+    textParts: ["book", "line"],
+    rows: [[["1", "1"], new XmlNode("span", [], [NFD_TEXT])]],
+    pages: [{ id: ["1"], rows: [0, 1] }],
+    navTree: { id: [], children: [{ id: ["1"], children: [] }] },
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    mockCallApiFull.mockResolvedValue({ data: { LS: [] } });
+  });
+  afterEach(() => {
+    mockCallApi.mockClear();
+    mockCallApiFull.mockClear();
+  });
+
+  it("applies NFC normalization for hypotactic work with macrons on", async () => {
+    mockCallApi.mockResolvedValue(HYPOTACTIC_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("aen"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findAllByText(/Aeneid/);
+    expect(findOnScreen(NFC_TEXT)).not.toBeNull();
+  });
+
+  it("strips macra for hypotactic work with macrons off", async () => {
+    mockCallApi.mockResolvedValue(HYPOTACTIC_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("aen"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findAllByText(/Aeneid/);
+    await user.click(screen.getByLabelText("toggle macra in text"));
+    expect(findOnScreen("omnis")).not.toBeNull();
+  });
+
+  it("does not NFC-normalize text for non-hypotactic work", async () => {
+    const NON_HYPOTACTIC_WORK: ProcessedWork2 = {
+      ...HYPOTACTIC_WORK,
+      info: { ...HYPOTACTIC_WORK.info, attribution: "perseus" },
+    };
+    mockCallApi.mockResolvedValue(NON_HYPOTACTIC_WORK);
+
+    render(
+      <RouteContext.Provider
+        value={{
+          route: { path: urlByIdFor("aen"), params: { id: "1" } },
+          navigateTo: () => {},
+        }}>
+        <ReadingPage />
+      </RouteContext.Provider>
+    );
+
+    await screen.findAllByText(/Aeneid/);
+    expect(findOnScreen(NFD_TEXT)).not.toBeNull();
   });
 });
 
