@@ -153,6 +153,10 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
+  build.add_argument("-pe", "--build_pe", {
+    help: "Builds the experimental Progressive Enhancement (v2) assets.",
+    action: "store_true",
+  });
   addArguments(build, COMMON_BUILD_ARGS);
 
   const bundle = subparsers.add_parser(BUNDLE, {
@@ -188,6 +192,10 @@ function parseArguments() {
   });
   web.add_argument("-mot", "--morceus_tables", {
     help: "Builds Morceus tables and saves to disk.",
+    action: "store_true",
+  });
+  web.add_argument("-pe", "--build_pe", {
+    help: "Builds the experimental Progressive Enhancement (v2) assets.",
     action: "store_true",
   });
   addArguments(web, COMMON_BUILD_ARGS);
@@ -414,6 +422,19 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   };
 }
 
+function peBundleConfig(args: any, priority?: number): StepConfig {
+  const executor = args.bun ? ["bun"] : TS_NODE;
+  const buildCommand = executor.concat(["src/bundler/pe.esbuild.ts"]);
+  if (args.minify) {
+    buildCommand.push("--minify");
+  }
+  return {
+    operation: () => shellStep(buildCommand.join(" ")),
+    label: "Building PE (v2) assets",
+    priority,
+  };
+}
+
 function artifactConfig(args: any): StepConfig[] {
   const setupSteps: StepConfig[] = [];
   const childEnv = { ...process.env };
@@ -521,6 +542,9 @@ function artifactConfig(args: any): StepConfig[] {
       priority: 2,
     });
   }
+  if (args.build_pe === true) {
+    setupSteps.push(peBundleConfig(args, 2));
+  }
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {
       childEnv.BUILD_CORPUS = "1";
@@ -548,6 +572,9 @@ async function setupAndStartWebServer(args: any) {
     if (args.watch !== true) {
       setupSteps.push(bundleConfig(args, 1));
     }
+  }
+  if (args.build_pe === true) {
+    setupSteps.push(peBundleConfig(args, 1));
   }
   setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });

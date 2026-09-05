@@ -3,6 +3,10 @@ import {
   renderAboutPageHtml,
 } from "@/web/pe/server/about_ssr";
 
+jest.mock("@/web/pe/server/asset_manifest", () => ({
+  getPeAssetHref: (name: string) => `/pe/assets/${name}`,
+}));
+
 describe("about_ssr", () => {
   test("renderAboutContentHtml includes essential legal and attribution sections", () => {
     const html = renderAboutContentHtml({ commitId: "abcdef123456" });

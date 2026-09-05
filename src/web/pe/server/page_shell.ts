@@ -1,4 +1,5 @@
 import * as he from "he";
+import { getPeAssetHref } from "@/web/pe/server/asset_manifest";
 
 export type PeActivePage = "dicts" | "about";
 
@@ -71,7 +72,7 @@ export function renderPageShell(options: PageShellOptions): string {
       } catch (e) {}
     })();
   </script>
-  <link rel="stylesheet" href="/pe/assets/pe.css">
+  <link rel="stylesheet" href="${getPeAssetHref("pe.css")}">
 </head>
 <body>
   ${appBarHtml}
@@ -82,7 +83,7 @@ export function renderPageShell(options: PageShellOptions): string {
   </div>
 
   <!-- Progressively enhanced with Lit Web Components -->
-  <script type="module" src="/pe/assets/pe.js"></script>
+  <script type="module" src="${getPeAssetHref("pe.js")}"></script>
 </body>
 </html>`;
 }

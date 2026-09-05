@@ -7,6 +7,10 @@ import {
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 
+jest.mock("@/web/pe/server/asset_manifest", () => ({
+  getPeAssetHref: (name: string) => `/pe/assets/${name}`,
+}));
+
 describe("dict_ssr", () => {
   test("xmlNodeToHtml formats simple nodes with classes", () => {
     const node = new XmlNode("span", [["class", "lsOrth"]], ["Caesar"]);

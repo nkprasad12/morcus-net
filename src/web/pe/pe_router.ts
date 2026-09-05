@@ -1,4 +1,4 @@
-import { Router, Request, Response } from "express";
+import express, { Router, Request, Response } from "express";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
@@ -7,9 +7,12 @@ import {
 } from "@/web/pe/server/dict_ssr";
 import { renderAboutPageHtml } from "@/web/pe/server/about_ssr";
 import * as path from "path";
-import * as fs from "fs";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
+
+const PE_ASSETS_DIR = path.resolve(process.cwd(), "build/pe");
+// Filenames are content-hashed by esbuild, so they're safe to cache forever.
+const PE_ASSETS_CACHE_CONTROL = "public, max-age=311040000, immutable";
 
 export function createPeRouter(fusedDict: FusedDictionary): Router {
   const router = Router();
@@ -19,21 +22,20 @@ export function createPeRouter(fusedDict: FusedDictionary): Router {
     res.redirect("/pe/dicts");
   });
 
-  // Serve static assets for PE prototype (pe.css and pe.js)
-  router.get("/assets/pe.css", (_req: Request, res: Response) => {
-    res.setHeader("Content-Type", "text/css; charset=utf-8");
-    res.sendFile(path.resolve(process.cwd(), "src/web/pe/pe.css"));
+  // The manifest is a build artifact for the server, not a client asset.
+  router.get("/assets/manifest.json", (_req: Request, res: Response) => {
+    res.status(404).end();
   });
 
-  router.get("/assets/pe.js", (_req: Request, res: Response) => {
-    const buildJsPath = path.resolve(process.cwd(), "build/pe/pe.js");
-    if (fs.existsSync(buildJsPath)) {
-      res.setHeader("Content-Type", "application/javascript; charset=utf-8");
-      res.sendFile(buildJsPath);
-    } else {
-      res.status(404).send("// pe.js not built yet. Run bundler.");
-    }
-  });
+  // Serve the hashed, minified pe.css / pe.js built by `src/bundler/pe.esbuild.ts`
+  router.use(
+    "/assets",
+    express.static(PE_ASSETS_DIR, {
+      setHeaders: (res) => {
+        res.setHeader("Cache-Control", PE_ASSETS_CACHE_CONTROL);
+      },
+    })
+  );
 
   // Autocomplete endpoint for live search suggestions
   router.get("/api/completions", async (req: Request, res: Response) => {

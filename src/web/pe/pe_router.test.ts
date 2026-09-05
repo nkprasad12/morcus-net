@@ -3,10 +3,16 @@ import request from "supertest";
 import { createPeRouter } from "@/web/pe/pe_router";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
+import { buildPeBundle } from "@/bundler/pe.esbuild";
+import { getPeAssetHref } from "@/web/pe/server/asset_manifest";
 
 describe("pe_router integration", () => {
   let app: express.Express;
   let mockFusedDict: Partial<FusedDictionary>;
+
+  beforeAll(async () => {
+    await buildPeBundle(false);
+  }, 30000);
 
   beforeEach(() => {
     mockFusedDict = {
@@ -77,11 +83,17 @@ describe("pe_router integration", () => {
     expect(res.body).toEqual(["amo", "amor", "amicitia"]);
   });
 
-  test("GET /pe/assets/pe.css serves the stylesheet", async () => {
-    const res = await request(app).get("/pe/assets/pe.css");
+  test("GET /pe/assets/pe.css serves the built, hashed stylesheet", async () => {
+    const res = await request(app).get(getPeAssetHref("pe.css"));
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/css");
+    expect(res.header["cache-control"]).toContain("immutable");
     expect(res.text).toContain(".lsOrth");
+  });
+
+  test("GET /pe/assets/manifest.json is not exposed", async () => {
+    const res = await request(app).get("/pe/assets/manifest.json");
+    expect(res.status).toBe(404);
   });
 
   test("GET /pe/about returns full About page with 200", async () => {
@@ -103,9 +115,10 @@ describe("pe_router integration", () => {
   });
 
   test("GET /pe/assets/pe.js serves the built client bundle", async () => {
-    const res = await request(app).get("/pe/assets/pe.js");
+    const res = await request(app).get(getPeAssetHref("pe.js"));
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("javascript");
+    expect(res.header["cache-control"]).toContain("immutable");
     expect(res.text).toContain("morcus-dict-search");
   });
 });
