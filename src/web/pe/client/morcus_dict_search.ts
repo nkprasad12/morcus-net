@@ -1,5 +1,6 @@
 import { LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
+import type { MorcusDictSuggestions } from "@/web/pe/client/morcus_dict_suggestions";
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -31,7 +32,7 @@ export class MorcusDictSearch extends LitElement {
   private formElement: HTMLFormElement | null = null;
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
-  private suggestionsContainer: HTMLElement | null = null;
+  private suggestionsEl: MorcusDictSuggestions | null = null;
 
   override connectedCallback() {
     super.connectedCallback();
@@ -63,12 +64,21 @@ export class MorcusDictSearch extends LitElement {
     // Handle browser back/forward buttons to restore results without page reload
     window.addEventListener("popstate", this.handlePopState);
 
-    // Create container for reactive suggestions dropdown inside the input wrapper
+    // Create and attach child Lit component for suggestions
     const inputWrapper = this.querySelector<HTMLElement>(".pe-input-wrapper");
-    if (inputWrapper && !this.suggestionsContainer) {
-      this.suggestionsContainer = document.createElement("div");
-      this.suggestionsContainer.className = "pe-suggestions-host";
-      inputWrapper.appendChild(this.suggestionsContainer);
+    if (inputWrapper && !this.suggestionsEl) {
+      const suggestionsTag = document.createElement("morcus-dict-suggestions");
+      this.suggestionsEl = suggestionsTag;
+      this.suggestionsEl.addEventListener("suggestion-select", (e: Event) => {
+        if (
+          e instanceof CustomEvent &&
+          e.detail &&
+          typeof e.detail.word === "string"
+        ) {
+          this.chooseSuggestion(e.detail.word);
+        }
+      });
+      inputWrapper.appendChild(this.suggestionsEl);
     }
   }
 
@@ -201,55 +211,37 @@ export class MorcusDictSearch extends LitElement {
 
       if (res.ok) {
         const partialHtml = await res.text();
-        this.resultsElement.innerHTML = partialHtml;
+        const range = document.createRange();
+        range.selectNodeContents(this.resultsElement);
+        const fragment = range.createContextualFragment(partialHtml);
+        this.resultsElement.replaceChildren(fragment);
       } else {
-        this.resultsElement.innerHTML = `<div class="pe-no-results"><p>Error loading results.</p></div>`;
+        const p = document.createElement("p");
+        p.textContent = "Error loading results.";
+        const div = document.createElement("div");
+        div.className = "pe-no-results";
+        div.appendChild(p);
+        this.resultsElement.replaceChildren(div);
       }
     } catch (e) {
       console.error("AJAX search failed", e);
-      this.resultsElement.innerHTML = `<div class="pe-no-results"><p>Network error loading results.</p></div>`;
+      const p = document.createElement("p");
+      p.textContent = "Network error loading results.";
+      const div = document.createElement("div");
+      div.className = "pe-no-results";
+      div.appendChild(p);
+      this.resultsElement.replaceChildren(div);
     } finally {
       this.resultsElement.style.opacity = "1";
     }
   }
 
-  // Render reactive suggestions overlay into Light DOM
+  // Update suggestions child component state declaratively
   override render() {
-    if (!this.suggestionsContainer) return null;
-
-    if (this.suggestions.length === 0) {
-      this.suggestionsContainer.innerHTML = "";
-      return null;
+    if (this.suggestionsEl) {
+      this.suggestionsEl.items = this.suggestions;
+      this.suggestionsEl.activeIndex = this.selectedSuggestionIndex;
     }
-
-    const items = this.suggestions.map((item, idx) => {
-      const isActive = idx === this.selectedSuggestionIndex;
-      return `<li class="pe-suggestion-item ${
-        isActive ? "active" : ""
-      }" data-word="${item}">${item}</li>`;
-    });
-
-    this.suggestionsContainer.innerHTML = `<ul class="pe-suggestions">${items.join(
-      ""
-    )}</ul>`;
-
-    // Attach click listener for suggestion items
-    const ul = this.suggestionsContainer.querySelector(".pe-suggestions");
-    if (ul) {
-      ul.addEventListener("mousedown", (e) => {
-        if (!(e.target instanceof Element)) {
-          return;
-        }
-        const target = e.target.closest(".pe-suggestion-item");
-        if (target) {
-          const word = target.getAttribute("data-word");
-          if (word) {
-            this.chooseSuggestion(word);
-          }
-        }
-      });
-    }
-
     return null;
   }
 }

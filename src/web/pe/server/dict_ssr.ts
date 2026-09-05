@@ -2,6 +2,7 @@ import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { XmlChild } from "@/common/xml/xml_node";
+import { renderPageShell } from "@/web/pe/server/page_shell";
 import * as he from "he";
 
 const DICT_NAMES: Record<string, string> = {
@@ -170,51 +171,39 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const queryEncoded = he.encode(options.query || "");
   const resultsHtml = renderDictResultsHtml(options.query, options.results);
 
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>${
-    options.query
-      ? `${queryEncoded} - Morcus Dictionary`
-      : "Morcus Dictionary (Progressive Enhancement)"
-  }</title>
-  <link rel="stylesheet" href="/pe/assets/pe.css">
-</head>
-<body>
-  <div class="pe-container">
+  const contentHtml = `
     <header class="pe-header">
       <h1>Morcus Latin Dictionary</h1>
       <p>Progressive enhancement prototype with zero-JS support and Lit custom elements.</p>
     </header>
 
-    <main>
-      <morcus-dict-search>
-        <form class="pe-search-form" action="/pe/dicts" method="GET">
-          <div class="pe-input-wrapper">
-            <input
-              type="text"
-              name="q"
-              class="pe-input"
-              value="${queryEncoded}"
-              placeholder="Search Latin word (e.g. caesar, virtus)..."
-              autocomplete="off"
-              autofocus
-            />
-          </div>
-          <button type="submit" class="pe-button">Search</button>
-        </form>
+    <morcus-dict-search>
+      <form class="pe-search-form" action="/pe/dicts" method="GET">
+        <div class="pe-input-wrapper">
+          <input
+            type="text"
+            name="q"
+            class="pe-input"
+            value="${queryEncoded}"
+            placeholder="Search Latin word (e.g. caesar, virtus)..."
+            autocomplete="off"
+            autofocus
+          />
+        </div>
+        <button type="submit" class="pe-button">Search</button>
+      </form>
 
-        <output id="dict-results" class="pe-results">
-          ${resultsHtml}
-        </output>
-      </morcus-dict-search>
-    </main>
-  </div>
+      <output id="dict-results" class="pe-results">
+        ${resultsHtml}
+      </output>
+    </morcus-dict-search>
+  `;
 
-  <!-- Progressively enhanced with Lit Web Components -->
-  <script type="module" src="/pe/assets/pe.js"></script>
-</body>
-</html>`;
+  return renderPageShell({
+    title: options.query
+      ? `${queryEncoded} - Morcus Dictionary`
+      : "Morcus Dictionary (Progressive Enhancement)",
+    activePage: "dicts",
+    contentHtml,
+  });
 }

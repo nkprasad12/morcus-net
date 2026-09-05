@@ -5,6 +5,7 @@ import {
   renderDictPageHtml,
   renderDictResultsHtml,
 } from "@/web/pe/server/dict_ssr";
+import { renderAboutPageHtml } from "@/web/pe/server/about_ssr";
 import * as path from "path";
 import * as fs from "fs";
 
@@ -12,6 +13,11 @@ const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
 export function createPeRouter(fusedDict: FusedDictionary): Router {
   const router = Router();
+
+  // Root redirect to dictionary
+  router.get("/", (_req: Request, res: Response) => {
+    res.redirect("/pe/dicts");
+  });
 
   // Serve static assets for PE prototype (pe.css and pe.js)
   router.get("/assets/pe.css", (_req: Request, res: Response) => {
@@ -101,6 +107,12 @@ export function createPeRouter(fusedDict: FusedDictionary): Router {
       }
       res.status(500).send(renderDictPageHtml({ query }));
     }
+  });
+
+  // About page route
+  router.get("/about", (_req: Request, res: Response) => {
+    res.setHeader("Content-Type", "text/html; charset=utf-8");
+    res.send(renderAboutPageHtml());
   });
 
   return router;

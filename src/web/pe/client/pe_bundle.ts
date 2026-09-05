@@ -1,4 +1,5 @@
 // Register Lit-based custom elements for the Progressive Enhancement prototype
+import "@/web/pe/client/morcus_dict_suggestions";
 import "@/web/pe/client/morcus_dict_search";
 import "@/web/pe/client/morcus_dict_entry";
 

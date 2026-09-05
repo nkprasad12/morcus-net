@@ -527,4 +527,46 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     await expect(page.locator(".pe-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
   });
+
+  test("allows navigating between Dictionary and About via app bar without JavaScript", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/pe/dicts");
+    await expect(page.locator("header.pe-app-bar")).toBeVisible();
+
+    // Click About link in the app bar
+    await page.locator('.pe-nav a:has-text("About")').click();
+    await expect(page).toHaveURL(/\/pe\/about$/);
+    await expect(page.locator("h1")).toContainText("About");
+    await expect(page.getByText("GPL-3.0")).toBeVisible();
+    await expect(page.getByText("CC BY-SA 4.0")).toBeVisible();
+
+    // Navigate back to Dictionary via app bar
+    await page.locator('.pe-nav a:has-text("Dictionary")').click();
+    await expect(page).toHaveURL(/\/pe\/dicts$/);
+    await expect(page.locator('input[name="q"]')).toBeVisible();
+
+    await context.close();
+  });
+
+  test("allows navigating between Dictionary and About via app bar (JS enabled)", async ({
+    page,
+  }) => {
+    await page.goto("/pe/dicts");
+    await expect(page.locator("header.pe-app-bar")).toBeVisible();
+
+    // Click About link in the app bar
+    await page.locator('.pe-nav a:has-text("About")').click();
+    await expect(page).toHaveURL(/\/pe\/about$/);
+    await expect(page.locator("h1")).toContainText("About");
+    await expect(page.getByText("Perseus project")).toBeVisible();
+
+    // Navigate back to Dictionary via app bar
+    await page.locator('.pe-nav a:has-text("Dictionary")').click();
+    await expect(page).toHaveURL(/\/pe\/dicts$/);
+    await expect(page.locator('input[name="q"]')).toBeVisible();
+  });
 });

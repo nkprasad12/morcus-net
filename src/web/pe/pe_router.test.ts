@@ -69,6 +69,24 @@ describe("pe_router integration", () => {
     expect(res.text).toContain(".lsOrth");
   });
 
+  test("GET /pe/about returns full About page with 200", async () => {
+    const res = await request(app).get("/pe/about");
+    expect(res.status).toBe(200);
+    expect(res.header["content-type"]).toContain("text/html");
+    expect(res.text).toContain("<!DOCTYPE html>");
+    expect(res.text).toContain("About M&oacute;rcus");
+    expect(res.text).toContain("GPL-3.0");
+    expect(res.text).toContain("CC BY-SA 4.0");
+    expect(res.text).toContain('href="/pe/about"');
+    expect(res.text).toContain('class="pe-nav-link active"');
+  });
+
+  test("GET /pe redirects to /pe/dicts", async () => {
+    const res = await request(app).get("/pe");
+    expect(res.status).toBe(302);
+    expect(res.header.location).toBe("/pe/dicts");
+  });
+
   test("GET /pe/assets/pe.js serves the built client bundle", async () => {
     const res = await request(app).get("/pe/assets/pe.js");
     expect(res.status).toBe(200);
