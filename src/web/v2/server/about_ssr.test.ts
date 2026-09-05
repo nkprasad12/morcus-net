@@ -1,11 +1,11 @@
 import {
   renderAboutContentHtml,
   renderAboutPageHtml,
-} from "@/web/pe/server/about_ssr";
+} from "@/web/v2/server/about_ssr";
 
-jest.mock("@/web/pe/server/asset_manifest", () => ({
-  getPeAssetHref: (name: string) => `/pe/assets/${name}`,
-  getPeCriticalCss: () => "body{background-color:var(--pe-bg)}",
+jest.mock("@/web/v2/server/asset_manifest", () => ({
+  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
 }));
 
 describe("about_ssr", () => {
@@ -41,13 +41,13 @@ describe("about_ssr", () => {
     const pageHtml = renderAboutPageHtml();
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain("<title>About - Morcus Latin Tools</title>");
-    expect(pageHtml).toContain('<header class="pe-app-bar">');
-    expect(pageHtml).toContain('href="/pe/about"');
-    expect(pageHtml).toContain('class="pe-nav-link active"');
+    expect(pageHtml).toContain('<header class="v2-app-bar">');
+    expect(pageHtml).toContain('href="/v2/about"');
+    expect(pageHtml).toContain('class="v2-nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
-    expect(pageHtml).toContain('href="/pe/dicts"');
+    expect(pageHtml).toContain('href="/v2/dicts"');
     expect(pageHtml.indexOf("morcus-theme-toggle")).toBeLessThan(
-      pageHtml.indexOf('<nav class="pe-nav"')
+      pageHtml.indexOf('<nav class="v2-nav"')
     );
   });
 });

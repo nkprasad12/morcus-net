@@ -3,7 +3,7 @@ import { EntryResult, EntryOutline } from "@/common/dictionaries/dict_result";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { processWords, removeDiacritics } from "@/common/text_cleaning";
 import { XmlChild } from "@/common/xml/xml_node";
-import { renderPageShell } from "@/web/pe/server/page_shell";
+import { renderPageShell } from "@/web/v2/server/page_shell";
 import * as he from "he";
 
 const DICT_NAMES: Record<string, string> = {
@@ -40,8 +40,8 @@ export function linkifyText(text: string): string {
     const cleanWord = removeDiacritics(word).replaceAll("-", "").trim();
     const isLatinWord = !/\d/.test(word) && /[a-zA-Z]/.test(cleanWord);
     if (isLatinWord) {
-      const href = `/pe/dicts?q=${encodeURIComponent(cleanWord)}`;
-      return `<a href="${he.encode(href)}" class="pe-lat-word">${he.encode(
+      const href = `/v2/dicts?q=${encodeURIComponent(cleanWord)}`;
+      return `<a href="${he.encode(href)}" class="v2-lat-word">${he.encode(
         word
       )}</a>`;
     }
@@ -113,7 +113,7 @@ export function xmlNodeToHtml(
   if (isSenseBullet && senseId) {
     tagName = "a";
     attrsMap.set("href", `#${senseId}`);
-    attrsMap.set("class", `${rawClass} pe-section-anchor`.trim());
+    attrsMap.set("class", `${rawClass} v2-section-anchor`.trim());
     attrsMap.set("title", "Direct link to this section");
   }
 
@@ -122,7 +122,7 @@ export function xmlNodeToHtml(
     const toQuery = attrsMap.get("to");
     if (toQuery) {
       tagName = "a";
-      attrsMap.set("href", `/pe/dicts?q=${encodeURIComponent(toQuery)}`);
+      attrsMap.set("href", `/v2/dicts?q=${encodeURIComponent(toQuery)}`);
     }
   }
 
@@ -136,8 +136,8 @@ export function xmlNodeToHtml(
     rawClass.includes("lsHover") ||
     rawClass.includes("lsSenseBullet") ||
     rawClass.includes("dLink") ||
-    rawClass.includes("pe-section-anchor") ||
-    rawClass.includes("pe-toc");
+    rawClass.includes("v2-section-anchor") ||
+    rawClass.includes("v2-toc");
   const nextAllowLinkify =
     (options?.allowLinkify ?? true) && !isAlreadyLink && !isDisallowedClass;
 
@@ -195,19 +195,19 @@ export function renderEntryOutline(outline?: EntryOutline): string {
           ? ` style="margin-left: ${sense.level * 0.75}rem;"`
           : "";
       const ordinalHtml = sense.ordinal
-        ? `<strong class="pe-toc-ordinal">${he.encode(sense.ordinal)}</strong> `
+        ? `<strong class="v2-toc-ordinal">${he.encode(sense.ordinal)}</strong> `
         : "";
       const textHtml = he.encode(sense.text.trim());
       return `<li${indentStyle}><a href="#${he.encode(
         sense.sectionId
-      )}" class="pe-toc-link">${ordinalHtml}${textHtml}</a></li>`;
+      )}" class="v2-toc-link">${ordinalHtml}${textHtml}</a></li>`;
     })
     .join("");
 
   return `
-    <details class="pe-toc">
-      <summary class="pe-toc-summary">Outline (${outline.senses.length} sections)</summary>
-      <ul class="pe-toc-list">
+    <details class="v2-toc">
+      <summary class="v2-toc-summary">Outline (${outline.senses.length} sections)</summary>
+      <ul class="v2-toc-list">
         ${items}
       </ul>
     </details>
@@ -236,9 +236,9 @@ export function renderEntryResult(result: EntryResult): string {
       .join("");
 
     inflectionsHtml = `
-      <details class="pe-inflections">
+      <details class="v2-inflections">
         <summary>Morphological Inflections (${result.inflections.length})</summary>
-        <table class="pe-inflection-table">
+        <table class="v2-inflection-table">
           <thead>
             <tr><th>Form</th><th>Lemma</th><th>Analysis</th><th>Notes</th></tr>
           </thead>
@@ -249,7 +249,7 @@ export function renderEntryResult(result: EntryResult): string {
   }
 
   return `
-    <article class="pe-entry">
+    <article class="v2-entry">
       ${outlineHtml}
       ${entryHtml}
       ${inflectionsHtml}
@@ -266,7 +266,7 @@ export function renderDictResultsHtml(
 ): string {
   if (!query.trim()) {
     return `
-      <div class="pe-no-results">
+      <div class="v2-no-results">
         <p>Type a Latin word (e.g. <em>caesar</em>, <em>amo</em>, <em>bellum</em>) to search all Latin lexica.</p>
       </div>
     `;
@@ -274,7 +274,7 @@ export function renderDictResultsHtml(
 
   if (!results) {
     return `
-      <div class="pe-no-results">
+      <div class="v2-no-results">
         <p>No results found for "<strong>${he.encode(query)}</strong>".</p>
       </div>
     `;
@@ -286,7 +286,7 @@ export function renderDictResultsHtml(
 
   if (dictKeys.length === 0) {
     return `
-      <div class="pe-no-results">
+      <div class="v2-no-results">
         <p>No dictionary entries found for "<strong>${he.encode(
           query
         )}</strong>".</p>
@@ -304,14 +304,14 @@ export function renderDictResultsHtml(
       const entriesHtml = entries.map(renderEntryResult).join("");
 
       return `
-        <details class="pe-dict-card" open>
-          <summary class="pe-dict-summary">
+        <details class="v2-dict-card" open>
+          <summary class="v2-dict-summary">
             <span>${he.encode(dictName)}</span>
-            <span class="pe-badge">${entries.length} ${
+            <span class="v2-badge">${entries.length} ${
         entries.length === 1 ? "entry" : "entries"
       }</span>
           </summary>
-          <div class="pe-dict-body">
+          <div class="v2-dict-body">
             ${entriesHtml}
           </div>
         </details>
@@ -327,7 +327,7 @@ export interface DictPageOptions {
 }
 
 /**
- * Renders the full standalone HTML page for progressive enhancement.
+ * Renders the full standalone HTML page for UI V2.
  */
 export function renderDictPageHtml(options: DictPageOptions): string {
   const queryEncoded = he.encode(options.query || "");
@@ -336,27 +336,27 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const titlePrefix = options.isIdSearch ? `ID ${queryEncoded}` : queryEncoded;
 
   const contentHtml = `
-    <header class="pe-header">
+    <header class="v2-header">
       <h1>Morcus Latin Dictionary</h1>
-      <p>Progressive enhancement prototype with zero-JS support and Lit custom elements.</p>
+      <p>UI V2 prototype with zero-JS support and Lit custom elements.</p>
     </header>
 
     <morcus-dict-search>
-      <form class="pe-search-form" action="/pe/dicts" method="GET">
-        <div class="pe-input-wrapper">
+      <form class="v2-search-form" action="/v2/dicts" method="GET">
+        <div class="v2-input-wrapper">
           <input
             type="text"
             name="q"
-            class="pe-input"
+            class="v2-input"
             value="${options.isIdSearch ? "" : queryEncoded}"
             placeholder="Search Latin word (e.g. caesar, virtus)..."
             autocomplete="off"
           />
         </div>
-        <button type="submit" class="pe-button">Search</button>
+        <button type="submit" class="v2-button">Search</button>
       </form>
 
-      <output id="dict-results" class="pe-results">
+      <output id="dict-results" class="v2-results">
         ${resultsHtml}
       </output>
     </morcus-dict-search>
@@ -365,7 +365,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   return renderPageShell({
     title: options.query
       ? `${titlePrefix} - Morcus Dictionary`
-      : "Morcus Dictionary (Progressive Enhancement)",
+      : "Morcus Dictionary (UI V2)",
     activePage: "dicts",
     contentHtml,
   });

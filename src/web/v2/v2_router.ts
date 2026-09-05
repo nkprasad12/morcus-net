@@ -4,22 +4,22 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   renderDictPageHtml,
   renderDictResultsHtml,
-} from "@/web/pe/server/dict_ssr";
-import { renderAboutPageHtml } from "@/web/pe/server/about_ssr";
+} from "@/web/v2/server/dict_ssr";
+import { renderAboutPageHtml } from "@/web/v2/server/about_ssr";
 import * as path from "path";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
-const PE_ASSETS_DIR = path.resolve(process.cwd(), "build/pe");
+const V2_ASSETS_DIR = path.resolve(process.cwd(), "build/v2");
 // Filenames are content-hashed by esbuild, so they're safe to cache forever.
-const PE_ASSETS_CACHE_CONTROL = "public, max-age=311040000, immutable";
+const V2_ASSETS_CACHE_CONTROL = "public, max-age=311040000, immutable";
 
-export function createPeRouter(fusedDict: FusedDictionary): Router {
+export function createV2Router(fusedDict: FusedDictionary): Router {
   const router = Router();
 
   // Root redirect to dictionary
   router.get("/", (_req: Request, res: Response) => {
-    res.redirect("/pe/dicts");
+    res.redirect("/v2/dicts");
   });
 
   // The manifest is a build artifact for the server, not a client asset.
@@ -27,12 +27,12 @@ export function createPeRouter(fusedDict: FusedDictionary): Router {
     res.status(404).end();
   });
 
-  // Serve the hashed, minified pe.css / pe.js built by `src/bundler/pe.esbuild.ts`
+  // Serve the hashed, minified v2.css / v2.js built by `src/bundler/v2.esbuild.ts`
   router.use(
     "/assets",
-    express.static(PE_ASSETS_DIR, {
+    express.static(V2_ASSETS_DIR, {
       setHeaders: (res) => {
-        res.setHeader("Cache-Control", PE_ASSETS_CACHE_CONTROL);
+        res.setHeader("Cache-Control", V2_ASSETS_CACHE_CONTROL);
       },
     })
   );
@@ -103,7 +103,7 @@ export function createPeRouter(fusedDict: FusedDictionary): Router {
         res
           .status(500)
           .send(
-            `<div class="pe-no-results"><p>An error occurred searching for "${query}".</p></div>`
+            `<div class="v2-no-results"><p>An error occurred searching for "${query}".</p></div>`
           );
         return;
       }
@@ -119,7 +119,7 @@ export function createPeRouter(fusedDict: FusedDictionary): Router {
       req.headers["x-requested-with"] === "fetch";
 
     if (!id) {
-      res.redirect("/pe/dicts");
+      res.redirect("/v2/dicts");
       return;
     }
 
@@ -144,7 +144,7 @@ export function createPeRouter(fusedDict: FusedDictionary): Router {
         res
           .status(500)
           .send(
-            `<div class="pe-no-results"><p>An error occurred retrieving ID "${id}".</p></div>`
+            `<div class="v2-no-results"><p>An error occurred retrieving ID "${id}".</p></div>`
           );
         return;
       }

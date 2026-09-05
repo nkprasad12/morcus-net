@@ -153,8 +153,8 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
-  build.add_argument("-b_pe", "--build_pe", {
-    help: "Builds the experimental Progressive Enhancement (v2) assets.",
+  build.add_argument("-b_v2", "--build_v2", {
+    help: "Builds the experimental UI V2 assets.",
     action: "store_true",
   });
   addArguments(build, COMMON_BUILD_ARGS);
@@ -194,8 +194,8 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
-  web.add_argument("-b_pe", "--build_pe", {
-    help: "Builds the experimental Progressive Enhancement (v2) assets.",
+  web.add_argument("-b_v2", "--build_v2", {
+    help: "Builds the experimental UI V2 assets.",
     action: "store_true",
   });
   addArguments(web, COMMON_BUILD_ARGS);
@@ -422,15 +422,15 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   };
 }
 
-function peBundleConfig(args: any, priority?: number): StepConfig {
+function v2BundleConfig(args: any, priority?: number): StepConfig {
   const executor = args.bun ? ["bun"] : TS_NODE;
-  const buildCommand = executor.concat(["src/bundler/pe.esbuild.ts"]);
+  const buildCommand = executor.concat(["src/bundler/v2.esbuild.ts"]);
   if (args.minify) {
     buildCommand.push("--minify");
   }
   return {
     operation: () => shellStep(buildCommand.join(" ")),
-    label: "Building PE (v2) assets",
+    label: "Building UI V2 assets",
     priority,
   };
 }
@@ -542,8 +542,8 @@ function artifactConfig(args: any): StepConfig[] {
       priority: 2,
     });
   }
-  if (args.build_pe === true) {
-    setupSteps.push(peBundleConfig(args, 2));
+  if (args.build_v2 === true) {
+    setupSteps.push(v2BundleConfig(args, 2));
   }
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {
@@ -573,8 +573,8 @@ async function setupAndStartWebServer(args: any) {
       setupSteps.push(bundleConfig(args, 1));
     }
   }
-  if (args.build_pe === true) {
-    setupSteps.push(peBundleConfig(args, 1));
+  if (args.build_v2 === true) {
+    setupSteps.push(v2BundleConfig(args, 1));
   }
   setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });

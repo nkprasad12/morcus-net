@@ -1,44 +1,44 @@
-/* Standalone CSS for Progressive Enhancement Dictionary Views */
+/* Standalone CSS for UI V2 Dictionary Views */
 
 :root {
-  --pe-font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
-  --pe-primary-hover: #0052a3;
-  --pe-border-focus: #80bdff;
-  --pe-accent-orth: rgba(220, 53, 69, 0.15);
-  --pe-accent-grammar: rgba(253, 126, 20, 0.15);
-  --pe-accent-quote: rgba(13, 110, 253, 0.12);
-  --pe-accent-bibl: rgba(111, 66, 193, 0.15);
+  --v2-font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
+  --v2-primary-hover: #0052a3;
+  --v2-border-focus: #80bdff;
+  --v2-accent-orth: rgba(220, 53, 69, 0.15);
+  --v2-accent-grammar: rgba(253, 126, 20, 0.15);
+  --v2-accent-quote: rgba(13, 110, 253, 0.12);
+  --v2-accent-bibl: rgba(111, 66, 193, 0.15);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pe-primary-hover: #70b4ff;
-    --pe-border-focus: #4da3ff;
-    --pe-accent-orth: rgba(240, 90, 100, 0.25);
-    --pe-accent-grammar: rgba(255, 145, 50, 0.25);
-    --pe-accent-quote: rgba(70, 140, 255, 0.22);
-    --pe-accent-bibl: rgba(160, 110, 240, 0.25);
+    --v2-primary-hover: #70b4ff;
+    --v2-border-focus: #4da3ff;
+    --v2-accent-orth: rgba(240, 90, 100, 0.25);
+    --v2-accent-grammar: rgba(255, 145, 50, 0.25);
+    --v2-accent-quote: rgba(70, 140, 255, 0.22);
+    --v2-accent-bibl: rgba(160, 110, 240, 0.25);
   }
 }
 
 :root[data-theme="dark"],
 [data-theme="dark"] {
-  --pe-primary-hover: #70b4ff;
-  --pe-border-focus: #4da3ff;
-  --pe-accent-orth: rgba(240, 90, 100, 0.25);
-  --pe-accent-grammar: rgba(255, 145, 50, 0.25);
-  --pe-accent-quote: rgba(70, 140, 255, 0.22);
-  --pe-accent-bibl: rgba(160, 110, 240, 0.25);
+  --v2-primary-hover: #70b4ff;
+  --v2-border-focus: #4da3ff;
+  --v2-accent-orth: rgba(240, 90, 100, 0.25);
+  --v2-accent-grammar: rgba(255, 145, 50, 0.25);
+  --v2-accent-quote: rgba(70, 140, 255, 0.22);
+  --v2-accent-bibl: rgba(160, 110, 240, 0.25);
 }
 
 :root[data-theme="light"],
 [data-theme="light"] {
-  --pe-primary-hover: #0052a3;
-  --pe-border-focus: #80bdff;
-  --pe-accent-orth: rgba(220, 53, 69, 0.15);
-  --pe-accent-grammar: rgba(253, 126, 20, 0.15);
-  --pe-accent-quote: rgba(13, 110, 253, 0.12);
-  --pe-accent-bibl: rgba(111, 66, 193, 0.15);
+  --v2-primary-hover: #0052a3;
+  --v2-border-focus: #80bdff;
+  --v2-accent-orth: rgba(220, 53, 69, 0.15);
+  --v2-accent-grammar: rgba(253, 126, 20, 0.15);
+  --v2-accent-quote: rgba(13, 110, 253, 0.12);
+  --v2-accent-bibl: rgba(111, 66, 193, 0.15);
 }
 
 /* Progressive enhancement: hide until the custom element is defined by JS */
@@ -47,40 +47,40 @@ morcus-theme-toggle:not(:defined) {
 }
 
 /* App Bar Navigation */
-.pe-app-bar {
+.v2-app-bar {
   position: sticky;
   top: 0;
   z-index: 200;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.pe-brand {
+.v2-brand {
   display: flex;
   align-items: center;
   gap: 8px;
   text-decoration: none;
-  color: var(--pe-text);
+  color: var(--v2-text);
 }
 
-.pe-brand-title {
+.v2-brand-title {
   font-size: 1.25rem;
   font-weight: 700;
   letter-spacing: -0.02em;
 }
 
-.pe-brand-badge {
+.v2-brand-badge {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  background: var(--pe-primary);
+  background: var(--v2-primary);
   color: #ffffff;
   padding: 2px 6px;
   border-radius: 4px;
 }
 
-.pe-nav-link {
+.v2-nav-link {
   text-decoration: none;
-  color: var(--pe-text-muted);
+  color: var(--v2-text-muted);
   font-weight: 500;
   font-size: 0.95rem;
   padding: 6px 14px;
@@ -88,157 +88,157 @@ morcus-theme-toggle:not(:defined) {
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
-.pe-nav-link:hover {
-  color: var(--pe-text);
-  background-color: var(--pe-tag-bg);
+.v2-nav-link:hover {
+  color: var(--v2-text);
+  background-color: var(--v2-tag-bg);
 }
 
-.pe-nav-link.active {
-  color: var(--pe-primary);
-  background-color: var(--pe-tag-bg);
+.v2-nav-link.active {
+  color: var(--v2-primary);
+  background-color: var(--v2-tag-bg);
   font-weight: 600;
 }
 
 /* Theme toggle icon button */
-.pe-theme-toggle-btn {
+.v2-theme-toggle-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid var(--pe-border);
-  color: var(--pe-text);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text);
   border-radius: 6px;
   padding: 6px;
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 }
 
-.pe-theme-toggle-btn:hover {
-  background-color: var(--pe-tag-bg);
+.v2-theme-toggle-btn:hover {
+  background-color: var(--v2-tag-bg);
 }
 
-.pe-theme-toggle-btn:focus-visible {
-  outline: 2px solid var(--pe-primary);
+.v2-theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
   outline-offset: 2px;
 }
 
-.pe-theme-toggle-btn svg {
+.v2-theme-toggle-btn svg {
   width: 20px;
   height: 20px;
   fill: currentColor;
   display: block;
 }
 
-.pe-header {
+.v2-header {
   margin-bottom: 24px;
 }
 
-.pe-header h1 {
+.v2-header h1 {
   margin: 0 0 8px 0;
   font-size: 1.8rem;
 }
 
-.pe-header p {
+.v2-header p {
   margin: 0;
-  color: var(--pe-text-muted);
+  color: var(--v2-text-muted);
   font-size: 0.95rem;
 }
 
 /* About Page Sections */
-.pe-about-article {
+.v2-about-article {
   max-width: 760px;
 }
 
-.pe-about-section {
+.v2-about-section {
   margin-bottom: 32px;
 }
 
-.pe-about-section h2 {
+.v2-about-section h2 {
   font-size: 1.35rem;
   margin: 0 0 12px 0;
   padding-bottom: 6px;
-  border-bottom: 1px solid var(--pe-border);
+  border-bottom: 1px solid var(--v2-border);
 }
 
-.pe-about-section p {
+.v2-about-section p {
   margin: 0 0 12px 0;
   line-height: 1.6;
 }
 
-.pe-about-section ul {
+.v2-about-section ul {
   margin: 0 0 16px 0;
   padding-left: 24px;
 }
 
-.pe-about-section li {
+.v2-about-section li {
   margin-bottom: 8px;
   line-height: 1.5;
 }
 
-.pe-about-section a {
-  color: var(--pe-primary);
+.v2-about-section a {
+  color: var(--v2-primary);
   text-decoration: underline;
 }
 
-.pe-about-section a:hover {
-  color: var(--pe-primary-hover);
+.v2-about-section a:hover {
+  color: var(--v2-primary-hover);
 }
 
 /* Search Form */
-.pe-search-form {
+.v2-search-form {
   position: relative;
   display: flex;
   gap: 8px;
   margin-bottom: 24px;
 }
 
-.pe-input-wrapper {
+.v2-input-wrapper {
   position: relative;
   flex: 1;
 }
 
-.pe-input {
+.v2-input {
   width: 100%;
   padding: 10px 14px;
   font-size: 1.1rem;
-  border: 1px solid var(--pe-border);
+  border: 1px solid var(--v2-border);
   border-radius: 6px;
-  background-color: var(--pe-card-bg);
-  color: var(--pe-text);
+  background-color: var(--v2-card-bg);
+  color: var(--v2-text);
   outline: none;
   transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
 }
 
-.pe-input:focus {
-  border-color: var(--pe-border-focus);
+.v2-input:focus {
+  border-color: var(--v2-border-focus);
   box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.25);
 }
 
-.pe-button {
+.v2-button {
   padding: 10px 20px;
   font-size: 1rem;
   font-weight: 600;
   color: #ffffff;
-  background-color: var(--pe-primary);
+  background-color: var(--v2-primary);
   border: none;
   border-radius: 6px;
   cursor: pointer;
   transition: background-color 0.15s ease-in-out;
 }
 
-.pe-button:hover {
-  background-color: var(--pe-primary-hover);
+.v2-button:hover {
+  background-color: var(--v2-primary-hover);
 }
 
 /* Autocomplete suggestion container (populated by Lit component) */
-.pe-suggestions {
+.v2-suggestions {
   position: absolute;
   top: 100%;
   left: 0;
   right: 0;
   margin-top: 4px;
-  background: var(--pe-card-bg);
-  border: 1px solid var(--pe-border);
+  background: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   z-index: 100;
@@ -248,113 +248,113 @@ morcus-theme-toggle:not(:defined) {
   overflow-y: auto;
 }
 
-.pe-suggestion-item {
+.v2-suggestion-item {
   padding: 8px 16px;
   cursor: pointer;
   font-size: 1rem;
 }
 
-.pe-suggestion-item:hover,
-.pe-suggestion-item.active {
-  background-color: var(--pe-tag-bg);
-  color: var(--pe-primary);
+.v2-suggestion-item:hover,
+.v2-suggestion-item.active {
+  background-color: var(--v2-tag-bg);
+  color: var(--v2-primary);
 }
 
 /* Dictionary Results */
-.pe-results {
+.v2-results {
   display: flex;
   flex-direction: column;
   gap: 20px;
 }
 
-.pe-dict-card {
-  background: var(--pe-card-bg);
-  border: 1px solid var(--pe-border);
+.v2-dict-card {
+  background: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
   border-radius: 8px;
   overflow: hidden;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.pe-dict-summary {
+.v2-dict-summary {
   padding: 12px 18px;
   font-weight: bold;
   font-size: 1.1rem;
   cursor: pointer;
   user-select: none;
-  background-color: var(--pe-tag-bg);
-  border-bottom: 1px solid var(--pe-border);
+  background-color: var(--v2-tag-bg);
+  border-bottom: 1px solid var(--v2-border);
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
-.pe-dict-body {
+.v2-dict-body {
   padding: 18px;
 }
 
-.pe-entry {
+.v2-entry {
   margin-bottom: 20px;
-  font-family: var(--pe-font-serif);
+  font-family: var(--v2-font-serif);
   font-size: 1.15rem;
   line-height: 1.6;
 }
 
-.pe-entry:last-child {
+.v2-entry:last-child {
   margin-bottom: 0;
 }
 
-.pe-entry ol,
-.pe-entry ul {
+.v2-entry ol,
+.v2-entry ul {
   margin: 0;
   padding-left: 1.5em;
   list-style: none;
 }
 
 /* Inflections section */
-.pe-inflections {
+.v2-inflections {
   margin-top: 12px;
   padding: 10px 14px;
-  background: var(--pe-tag-bg);
+  background: var(--v2-tag-bg);
   border-radius: 6px;
   font-size: 0.95rem;
-  font-family: var(--pe-font-sans);
+  font-family: var(--v2-font-sans);
 }
 
-.pe-inflections summary {
+.v2-inflections summary {
   font-weight: 600;
   cursor: pointer;
 }
 
-.pe-inflection-table {
+.v2-inflection-table {
   width: 100%;
   border-collapse: collapse;
   margin-top: 8px;
 }
 
-.pe-inflection-table th,
-.pe-inflection-table td {
+.v2-inflection-table th,
+.v2-inflection-table td {
   padding: 6px 10px;
-  border-bottom: 1px solid var(--pe-border);
+  border-bottom: 1px solid var(--v2-border);
   text-align: left;
 }
 
 /* Formatting classes for Morcus dictionary content */
 .lsOrth {
   font-weight: bold;
-  background-color: var(--pe-accent-orth);
+  background-color: var(--v2-accent-orth);
   border-radius: 3px;
   padding: 1px 4px;
 }
 
 .lsGrammar {
   font-style: italic;
-  background-color: var(--pe-accent-grammar);
+  background-color: var(--v2-accent-grammar);
   border-radius: 3px;
   padding: 1px 3px;
 }
 
 .lsQuote {
-  background-color: var(--pe-accent-quote);
+  background-color: var(--v2-accent-quote);
   border-radius: 3px;
   padding: 1px 4px;
 }
@@ -362,7 +362,7 @@ morcus-theme-toggle:not(:defined) {
 .lsBibl,
 .lsAuthor,
 .gafAuth {
-  background-color: var(--pe-accent-bibl);
+  background-color: var(--v2-accent-bibl);
   border-radius: 3px;
   padding: 1px 3px;
 }
@@ -391,79 +391,79 @@ morcus-theme-toggle:not(:defined) {
 }
 
 .lsHover {
-  border-bottom: 1px dashed var(--pe-border-strong);
+  border-bottom: 1px dashed var(--v2-border-strong);
   cursor: help;
 }
 
 .lsHover:hover {
-  background-color: var(--pe-accent-quote);
+  background-color: var(--v2-accent-quote);
   border-radius: 3px;
 }
 
 .dLink {
-  color: var(--pe-primary);
+  color: var(--v2-primary);
   text-decoration: underline;
   text-underline-offset: 2px;
   cursor: pointer;
 }
 
 .dLink:hover {
-  color: var(--pe-primary-hover);
+  color: var(--v2-primary-hover);
 }
 
 .numeralTable {
   margin-top: 4px;
   border-collapse: collapse;
-  border: 1px solid var(--pe-border);
+  border: 1px solid var(--v2-border);
 }
 
 .numeralTable td {
   padding: 3px 8px;
-  border: 1px solid var(--pe-border);
+  border: 1px solid var(--v2-border);
 }
 
-.pe-no-results {
+.v2-no-results {
   padding: 32px 16px;
   text-align: center;
-  color: var(--pe-text-muted);
+  color: var(--v2-text-muted);
   font-size: 1.1rem;
 }
 
-.pe-badge {
+.v2-badge {
   font-size: 0.8rem;
   font-weight: normal;
   padding: 2px 8px;
   border-radius: 12px;
-  background: var(--pe-border);
-  color: var(--pe-text-muted);
+  background: var(--v2-border);
+  color: var(--v2-text-muted);
 }
 
 /* Latin word click-to-lookup link */
-.pe-lat-word {
+.v2-lat-word {
   color: inherit;
   text-decoration: none;
   border-radius: 2px;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
-.pe-lat-word:hover {
-  color: var(--pe-primary);
+.v2-lat-word:hover {
+  color: var(--v2-primary);
   text-decoration: underline;
   text-decoration-style: dotted;
   text-underline-offset: 3px;
-  background-color: var(--pe-tag-bg);
+  background-color: var(--v2-tag-bg);
 }
 
 /* Section anchor bullets */
-.pe-section-anchor {
+.v2-section-anchor {
   text-decoration: none;
   color: inherit;
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
 }
 
-.pe-section-anchor:hover {
-  background-color: var(--pe-primary);
+.v2-section-anchor:hover {
+  background-color: var(--v2-primary);
   color: #ffffff;
 }
 
@@ -472,29 +472,29 @@ morcus-theme-toggle:not(:defined) {
   scroll-margin-top: 70px;
   background-color: rgba(255, 230, 100, 0.25);
   border-radius: 4px;
-  outline: 2px dashed var(--pe-primary);
+  outline: 2px dashed var(--v2-primary);
   outline-offset: 2px;
   transition: background-color 0.3s ease-in-out;
 }
 
 /* Table of Contents / Outline */
-.pe-toc {
+.v2-toc {
   margin-bottom: 16px;
   padding: 8px 12px;
-  background-color: var(--pe-tag-bg);
-  border: 1px solid var(--pe-border);
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
   border-radius: 6px;
-  font-family: var(--pe-font-sans);
+  font-family: var(--v2-font-sans);
   font-size: 0.95rem;
 }
 
-.pe-toc-summary {
+.v2-toc-summary {
   font-weight: 600;
   cursor: pointer;
   user-select: none;
 }
 
-.pe-toc-list {
+.v2-toc-list {
   margin: 8px 0 4px 0;
   padding-left: 14px;
   list-style: none;
@@ -502,23 +502,23 @@ morcus-theme-toggle:not(:defined) {
   overflow-y: auto;
 }
 
-.pe-toc-list li {
+.v2-toc-list li {
   margin-bottom: 4px;
   line-height: 1.4;
 }
 
-.pe-toc-link {
-  color: var(--pe-text);
+.v2-toc-link {
+  color: var(--v2-text);
   text-decoration: none;
 }
 
-.pe-toc-link:hover {
-  color: var(--pe-primary);
+.v2-toc-link:hover {
+  color: var(--v2-primary);
   text-decoration: underline;
 }
 
-.pe-toc-ordinal {
+.v2-toc-ordinal {
   font-weight: 700;
-  color: var(--pe-primary);
+  color: var(--v2-primary);
   margin-right: 4px;
 }

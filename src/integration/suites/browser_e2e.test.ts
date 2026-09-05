@@ -446,7 +446,7 @@ test.describe("offline mode", () => {
   });
 });
 
-test.describe("progressive enhancement dictionary (PE)", () => {
+test.describe("UI V2 dictionary", () => {
   test("loads results without JavaScript (No-JS fallback)", async ({
     browser,
   }) => {
@@ -454,21 +454,21 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/pe/dicts");
+    await page.goto("/v2/dicts");
     await expect(page.locator("h1")).toHaveText("Morcus Latin Dictionary");
-    await expect(page.locator("form.pe-search-form")).toBeVisible();
+    await expect(page.locator("form.v2-search-form")).toBeVisible();
 
     // Type query and submit native HTML form
     await page.locator('input[name="q"]').fill("habeo");
     await page.locator('button[type="submit"]').click();
 
     // Verify native HTTP GET navigation and SSR response
-    await expect(page).toHaveURL(/\/pe\/dicts\?q=habeo/);
-    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
       page
-        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
         .getByText("hold")
         .first()
     ).toBeVisible();
@@ -477,19 +477,19 @@ test.describe("progressive enhancement dictionary (PE)", () => {
   });
 
   test("loads results by typing and enter (JS enhanced)", async ({ page }) => {
-    await page.goto("/pe/dicts");
+    await page.goto("/v2/dicts");
 
     const input = page.locator('input[name="q"]');
     await input.click();
     await input.fill("habeo");
     await page.keyboard.press("Enter");
 
-    await expect(page).toHaveURL(/\/pe\/dicts\?q=habeo/);
-    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
       page
-        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
         .getByText("hold")
         .first()
     ).toBeVisible();
@@ -501,12 +501,12 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/pe/dicts?q=habuit");
-    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await page.goto("/v2/dicts?q=habuit");
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
       page
-        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
         .getByText("hold")
         .first()
     ).toBeVisible();
@@ -517,14 +517,14 @@ test.describe("progressive enhancement dictionary (PE)", () => {
   test("loads autocomplete suggestions and searches on suggestion click", async ({
     page,
   }) => {
-    await page.goto("/pe/dicts");
+    await page.goto("/v2/dicts");
 
     const input = page.locator('input[name="q"]');
     await input.click();
     await page.keyboard.type("hab", { delay: 30 });
 
     // Wait for the reactive suggestions overlay created by Lit component
-    const suggestionItem = page.locator(".pe-suggestion-item").first();
+    const suggestionItem = page.locator(".v2-suggestion-item").first();
     await expect(suggestionItem).toBeVisible({ timeout: 5000 });
 
     // Click the first suggestion
@@ -533,7 +533,7 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     await suggestionItem.click();
 
     // Verify results updated for the clicked word
-    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
   });
 
@@ -543,19 +543,19 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/pe/dicts");
-    await expect(page.locator("header.pe-app-bar")).toBeVisible();
+    await page.goto("/v2/dicts");
+    await expect(page.locator("header.v2-app-bar")).toBeVisible();
 
     // Click About link in the app bar
-    await page.locator('.pe-nav a:has-text("About")').click();
-    await expect(page).toHaveURL(/\/pe\/about$/);
+    await page.locator('.v2-nav a:has-text("About")').click();
+    await expect(page).toHaveURL(/\/v2\/about$/);
     await expect(page.locator("h1")).toContainText("About");
     await expect(page.getByText("GPL-3.0")).toBeVisible();
     await expect(page.getByText("CC BY-SA 4.0")).toBeVisible();
 
     // Navigate back to Dictionary via app bar
-    await page.locator('.pe-nav a:has-text("Dictionary")').click();
-    await expect(page).toHaveURL(/\/pe\/dicts$/);
+    await page.locator('.v2-nav a:has-text("Dictionary")').click();
+    await expect(page).toHaveURL(/\/v2\/dicts$/);
     await expect(page.locator('input[name="q"]')).toBeVisible();
 
     await context.close();
@@ -564,18 +564,18 @@ test.describe("progressive enhancement dictionary (PE)", () => {
   test("allows navigating between Dictionary and About via app bar (JS enabled)", async ({
     page,
   }) => {
-    await page.goto("/pe/dicts");
-    await expect(page.locator("header.pe-app-bar")).toBeVisible();
+    await page.goto("/v2/dicts");
+    await expect(page.locator("header.v2-app-bar")).toBeVisible();
 
     // Click About link in the app bar
-    await page.locator('.pe-nav a:has-text("About")').click();
-    await expect(page).toHaveURL(/\/pe\/about$/);
+    await page.locator('.v2-nav a:has-text("About")').click();
+    await expect(page).toHaveURL(/\/v2\/about$/);
     await expect(page.locator("h1")).toContainText("About");
     await expect(page.getByText("Perseus project")).toBeVisible();
 
     // Navigate back to Dictionary via app bar
-    await page.locator('.pe-nav a:has-text("Dictionary")').click();
-    await expect(page).toHaveURL(/\/pe\/dicts$/);
+    await page.locator('.v2-nav a:has-text("Dictionary")').click();
+    await expect(page).toHaveURL(/\/v2\/dicts$/);
     await expect(page.locator('input[name="q"]')).toBeVisible();
   });
 
@@ -585,9 +585,9 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/pe/dicts");
-    await expect(page.locator("header.pe-app-bar")).toBeVisible();
-    await expect(page.locator(".pe-theme-toggle-btn")).not.toBeVisible();
+    await page.goto("/v2/dicts");
+    await expect(page.locator("header.v2-app-bar")).toBeVisible();
+    await expect(page.locator(".v2-theme-toggle-btn")).not.toBeVisible();
 
     await context.close();
   });
@@ -595,8 +595,8 @@ test.describe("progressive enhancement dictionary (PE)", () => {
   test("toggles theme and persists preference with JavaScript enabled", async ({
     page,
   }) => {
-    await page.goto("/pe/dicts");
-    const toggleBtn = page.locator(".pe-theme-toggle-btn");
+    await page.goto("/v2/dicts");
+    const toggleBtn = page.locator(".v2-theme-toggle-btn");
     await expect(toggleBtn).toBeVisible();
 
     // Click theme toggle button
@@ -624,16 +624,16 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     expect(stored).toContain("darkMode");
   });
 
-  test("loads entries by ID directly via /pe/dicts/id/:id", async ({
+  test("loads entries by ID directly via /v2/dicts/id/:id", async ({
     page,
   }) => {
-    await page.goto("/pe/dicts/id/n20077");
+    await page.goto("/v2/dicts/id/n20077");
     await expect(page).toHaveTitle(/ID n20077/);
-    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
       page
-        .locator(".pe-dict-card .pe-entry > *:not(.pe-toc)")
+        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
         .getByText("hold")
         .first()
     ).toBeVisible();
@@ -642,12 +642,12 @@ test.describe("progressive enhancement dictionary (PE)", () => {
   test("renders collapsible outline and section anchor permalinks", async ({
     page,
   }) => {
-    await page.goto("/pe/dicts?q=habeo");
-    const toc = page.locator(".pe-toc");
+    await page.goto("/v2/dicts?q=habeo");
+    const toc = page.locator(".v2-toc");
     await expect(toc.first()).toBeVisible();
 
     // Verify section anchor bullet has #hash href
-    const anchor = page.locator(".pe-section-anchor").first();
+    const anchor = page.locator(".v2-section-anchor").first();
     await expect(anchor).toBeVisible();
     const href = await anchor.getAttribute("href");
     expect(href).toMatch(/^#n20077/);
@@ -663,14 +663,14 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/pe/dicts?q=habeo");
-    const wordLink = page.locator('.pe-lat-word:has-text("habere")').first();
+    await page.goto("/v2/dicts?q=habeo");
+    const wordLink = page.locator('.v2-lat-word:has-text("habere")').first();
     await expect(wordLink).toBeVisible();
 
-    // Clicking the word navigates natively to /pe/dicts?q=habere
+    // Clicking the word navigates natively to /v2/dicts?q=habere
     await wordLink.click();
-    await expect(page).toHaveURL(/\/pe\/dicts\?q=habere/);
-    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page).toHaveURL(/\/v2\/dicts\?q=habere/);
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
 
     await context.close();
   });
@@ -678,13 +678,13 @@ test.describe("progressive enhancement dictionary (PE)", () => {
   test("click-to-lookup linkifies Latin words and navigates on click (JS enabled)", async ({
     page,
   }) => {
-    await page.goto("/pe/dicts?q=habeo");
-    const wordLink = page.locator('.pe-lat-word:has-text("habere")').first();
+    await page.goto("/v2/dicts?q=habeo");
+    const wordLink = page.locator('.v2-lat-word:has-text("habere")').first();
     await expect(wordLink).toBeVisible();
 
     // Clicking the word follows standard browser navigation
     await wordLink.click();
-    await expect(page).toHaveURL(/\/pe\/dicts\?q=habere/);
-    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page).toHaveURL(/\/v2\/dicts\?q=habere/);
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
   });
 });

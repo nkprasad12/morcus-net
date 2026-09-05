@@ -1,5 +1,5 @@
 import * as he from "he";
-import { renderPageShell } from "@/web/pe/server/page_shell";
+import { renderPageShell } from "@/web/v2/server/page_shell";
 
 export interface AboutPageOptions {
   commitId?: string;
@@ -15,13 +15,13 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
       : "<span>(dev build)</span>";
 
   return `
-    <article class="pe-about-article">
-      <header class="pe-header">
+    <article class="v2-about-article">
+      <header class="v2-header">
         <h1>About M&oacute;rcus</h1>
         <p>A free digital toolkit for Latin learners and scholars.</p>
       </header>
 
-      <section id="site" class="pe-about-section">
+      <section id="site" class="v2-about-section">
         <h2>Site</h2>
         <p>
           This website is a free collection of resources for Latin learners. It is provided under the
@@ -36,7 +36,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         </ul>
       </section>
 
-      <section id="dictionary" class="pe-about-section">
+      <section id="dictionary" class="v2-about-section">
         <h2>Dictionary</h2>
         <p>
           Dictionary data is derived from Perseus' digitization of Lewis &amp; Short, which is available
@@ -49,7 +49,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         </p>
       </section>
 
-      <section id="acknowledgements" class="pe-about-section">
+      <section id="acknowledgements" class="v2-about-section">
         <h2>Acknowledgements</h2>
         <p>
           This site is indebted to the
@@ -68,7 +68,7 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
         </div>
       </section>
 
-      <section id="debugging" class="pe-about-section">
+      <section id="debugging" class="v2-about-section">
         <h2>Debugging</h2>
         <p>Commit: ${commitLinkHtml}</p>
       </section>

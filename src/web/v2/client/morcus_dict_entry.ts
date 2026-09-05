@@ -2,7 +2,7 @@ import { LitElement, html } from "lit";
 import { customElement } from "lit/decorators.js";
 
 /**
- * Progressively enhanced dictionary card wrapper.
+ * UI V2 dictionary card wrapper.
  * Provides client-side helpers like Expand All / Collapse All and remembering states.
  */
 @customElement("morcus-dict-entry")

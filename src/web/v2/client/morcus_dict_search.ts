@@ -1,17 +1,17 @@
 import { LitElement } from "lit";
 import { customElement, state } from "lit/decorators.js";
-import type { MorcusDictSuggestions } from "@/web/pe/client/morcus_dict_suggestions";
+import type { MorcusDictSuggestions } from "@/web/v2/client/morcus_dict_suggestions";
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
  *
  * Without JS:
  * - The browser natively renders the inner server-rendered <form> and <output id="dict-results">.
- * - Submitting the form issues a standard HTTP GET /pe/dicts?q=... request.
+ * - Submitting the form issues a standard HTTP GET /v2/dicts?q=... request.
  *
  * With JS:
  * - Enhances the existing DOM in place (Light DOM mode: createRenderRoot returns this).
- * - Debounces input typing to fetch autocomplete suggestions from /pe/api/completions.
+ * - Debounces input typing to fetch autocomplete suggestions from /v2/api/completions.
  * - Intercepts form submissions to perform smooth AJAX partial updates without full page reloads.
  * - Updates the browser URL bar via history.pushState.
  */
@@ -46,9 +46,9 @@ export class MorcusDictSearch extends LitElement {
 
   private enhanceExistingMarkup() {
     this.formElement = this.querySelector<HTMLFormElement>(
-      "form.pe-search-form"
+      "form.v2-search-form"
     );
-    this.inputElement = this.querySelector<HTMLInputElement>("input.pe-input");
+    this.inputElement = this.querySelector<HTMLInputElement>("input.v2-input");
     this.resultsElement = this.querySelector<HTMLElement>("#dict-results");
 
     if (this.formElement) {
@@ -65,7 +65,7 @@ export class MorcusDictSearch extends LitElement {
     window.addEventListener("popstate", this.handlePopState);
 
     // Create and attach child Lit component for suggestions
-    const inputWrapper = this.querySelector<HTMLElement>(".pe-input-wrapper");
+    const inputWrapper = this.querySelector<HTMLElement>(".v2-input-wrapper");
     if (inputWrapper && !this.suggestionsEl) {
       const suggestionsTag = document.createElement("morcus-dict-suggestions");
       this.suggestionsEl = suggestionsTag;
@@ -114,7 +114,7 @@ export class MorcusDictSearch extends LitElement {
     this.debounceTimer = window.setTimeout(async () => {
       try {
         const res = await fetch(
-          `/pe/api/completions?q=${encodeURIComponent(query)}`
+          `/v2/api/completions?q=${encodeURIComponent(query)}`
         );
         if (res.ok) {
           this.suggestions = await res.json();
@@ -193,8 +193,8 @@ export class MorcusDictSearch extends LitElement {
     }
     // Update browser URL bar
     const newUrl = query
-      ? `/pe/dicts?q=${encodeURIComponent(query)}`
-      : "/pe/dicts";
+      ? `/v2/dicts?q=${encodeURIComponent(query)}`
+      : "/v2/dicts";
     window.history.pushState({ q: query }, "", newUrl);
     document.title = query
       ? `${query} - Morcus Dictionary`
@@ -208,7 +208,7 @@ export class MorcusDictSearch extends LitElement {
     this.resultsElement.style.opacity = "0.5";
 
     try {
-      const url = `/pe/dicts?q=${encodeURIComponent(query)}&format=partial`;
+      const url = `/v2/dicts?q=${encodeURIComponent(query)}&format=partial`;
       const res = await fetch(url, {
         headers: { "X-Requested-With": "fetch" },
       });
@@ -223,7 +223,7 @@ export class MorcusDictSearch extends LitElement {
         const p = document.createElement("p");
         p.textContent = "Error loading results.";
         const div = document.createElement("div");
-        div.className = "pe-no-results";
+        div.className = "v2-no-results";
         div.appendChild(p);
         this.resultsElement.replaceChildren(div);
       }
@@ -232,7 +232,7 @@ export class MorcusDictSearch extends LitElement {
       const p = document.createElement("p");
       p.textContent = "Network error loading results.";
       const div = document.createElement("div");
-      div.className = "pe-no-results";
+      div.className = "v2-no-results";
       div.appendChild(p);
       this.resultsElement.replaceChildren(div);
     } finally {

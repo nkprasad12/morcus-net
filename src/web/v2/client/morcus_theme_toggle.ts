@@ -79,7 +79,7 @@ export class MorcusThemeToggle extends LitElement {
     return html`
       <button
         type="button"
-        class="pe-theme-toggle-btn"
+        class="v2-theme-toggle-btn"
         aria-label="${label}"
         title="${label}"
         @click=${this.toggleTheme}>

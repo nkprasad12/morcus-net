@@ -33,12 +33,12 @@ export class MorcusDictSuggestions extends LitElement {
     }
 
     return html`
-      <ul class="pe-suggestions">
+      <ul class="v2-suggestions">
         ${this.items.map((item, idx) => {
           const isActive = idx === this.activeIndex;
           return html`
             <li
-              class="pe-suggestion-item ${isActive ? "active" : ""}"
+              class="v2-suggestion-item ${isActive ? "active" : ""}"
               data-word="${item}"
               @mousedown=${(e: MouseEvent) => {
                 e.preventDefault();

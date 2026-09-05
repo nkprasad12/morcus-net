@@ -3,13 +3,13 @@ import {
   renderEntryResult,
   renderDictResultsHtml,
   renderDictPageHtml,
-} from "@/web/pe/server/dict_ssr";
+} from "@/web/v2/server/dict_ssr";
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 
-jest.mock("@/web/pe/server/asset_manifest", () => ({
-  getPeAssetHref: (name: string) => `/pe/assets/${name}`,
-  getPeCriticalCss: () => "body{background-color:var(--pe-bg)}",
+jest.mock("@/web/v2/server/asset_manifest", () => ({
+  getV2AssetHref: (name: string) => `/v2/assets/${name}`,
+  getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
 }));
 
 describe("dict_ssr", () => {
@@ -104,7 +104,7 @@ describe("dict_ssr", () => {
     );
 
     const html = xmlNodeToHtml(node);
-    expect(html).toBe('<a class="dLink" href="/pe/dicts?q=regia">regia</a>');
+    expect(html).toBe('<a class="dLink" href="/v2/dicts?q=regia">regia</a>');
   });
 
   test("xmlNodeToHtml handles void tags like br", () => {
@@ -216,16 +216,16 @@ describe("dict_ssr", () => {
     const pageHtml = renderDictPageHtml({ query: "caesar" });
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain(
-      "<style>body{background-color:var(--pe-bg)}</style>"
+      "<style>body{background-color:var(--v2-bg)}</style>"
     );
     expect(pageHtml).toContain(
-      '<link rel="stylesheet" href="/pe/assets/pe.css">'
+      '<link rel="stylesheet" href="/v2/assets/v2.css">'
     );
     expect(pageHtml).toContain(
-      '<script type="module" src="/pe/assets/pe.js"></script>'
+      '<script type="module" src="/v2/assets/v2.js"></script>'
     );
     expect(pageHtml).toContain(
-      '<form class="pe-search-form" action="/pe/dicts" method="GET">'
+      '<form class="v2-search-form" action="/v2/dicts" method="GET">'
     );
     expect(pageHtml).toContain("<morcus-dict-search>");
   });
@@ -237,10 +237,10 @@ describe("dict_ssr", () => {
       ["Gallia est omnis"]
     );
     const html = xmlNodeToHtml(node);
-    expect(html).toContain('href="/pe/dicts?q=Gallia"');
-    expect(html).toContain('href="/pe/dicts?q=est"');
-    expect(html).toContain('href="/pe/dicts?q=omnis"');
-    expect(html).toContain('class="pe-lat-word"');
+    expect(html).toContain('href="/v2/dicts?q=Gallia"');
+    expect(html).toContain('href="/v2/dicts?q=est"');
+    expect(html).toContain('href="/v2/dicts?q=omnis"');
+    expect(html).toContain('class="v2-lat-word"');
   });
 
   test("xmlNodeToHtml transforms sense bullet with senseid into an anchor link", () => {
@@ -255,7 +255,7 @@ describe("dict_ssr", () => {
     const html = xmlNodeToHtml(node);
     expect(html).toContain("<a");
     expect(html).toContain('href="#n20077.1"');
-    expect(html).toContain('class="lsSenseBullet pe-section-anchor"');
+    expect(html).toContain('class="lsSenseBullet v2-section-anchor"');
     expect(html).toContain('title="Direct link to this section"');
     expect(html).toContain("&#x2022;");
     expect(html).toContain("</a>");
@@ -290,7 +290,7 @@ describe("dict_ssr", () => {
     };
 
     const rendered = renderEntryResult(entryResult);
-    expect(rendered).toContain('class="pe-toc"');
+    expect(rendered).toContain('class="v2-toc"');
     expect(rendered).toContain("Outline (2 sections)");
     expect(rendered).toContain('href="#n20077.1"');
     expect(rendered).toContain("I.");

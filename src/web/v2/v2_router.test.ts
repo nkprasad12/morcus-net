@@ -1,17 +1,17 @@
 import express from "express";
 import request from "supertest";
-import { createPeRouter } from "@/web/pe/pe_router";
+import { createV2Router } from "@/web/v2/v2_router";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
-import { buildPeBundle } from "@/bundler/pe.esbuild";
-import { getPeAssetHref } from "@/web/pe/server/asset_manifest";
+import { buildV2Bundle } from "@/bundler/v2.esbuild";
+import { getV2AssetHref } from "@/web/v2/server/asset_manifest";
 
-describe("pe_router integration", () => {
+describe("v2_router integration", () => {
   let app: express.Express;
   let mockFusedDict: Partial<FusedDictionary>;
 
   beforeAll(async () => {
-    await buildPeBundle(false);
+    await buildV2Bundle(false);
   }, 30000);
 
   beforeEach(() => {
@@ -39,11 +39,11 @@ describe("pe_router integration", () => {
     };
 
     app = express();
-    app.use("/pe", createPeRouter(mockFusedDict as FusedDictionary));
+    app.use("/v2", createV2Router(mockFusedDict as FusedDictionary));
   });
 
-  test("GET /pe/dicts returns full SSR HTML page with 200", async () => {
-    const res = await request(app).get("/pe/dicts?q=amo");
+  test("GET /v2/dicts returns full SSR HTML page with 200", async () => {
+    const res = await request(app).get("/v2/dicts?q=amo");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.text).toContain("<!DOCTYPE html>");
@@ -52,17 +52,17 @@ describe("pe_router integration", () => {
     expect(res.text).toContain("Lewis");
   });
 
-  test("GET /pe/dicts with format=partial returns only the results snippet", async () => {
-    const res = await request(app).get("/pe/dicts?q=amo&format=partial");
+  test("GET /v2/dicts with format=partial returns only the results snippet", async () => {
+    const res = await request(app).get("/v2/dicts?q=amo&format=partial");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.text).not.toContain("<!DOCTYPE html>");
-    expect(res.text).toContain("pe-dict-card");
+    expect(res.text).toContain("v2-dict-card");
     expect(res.text).toContain("amo");
   });
 
-  test("GET /pe/dicts/id/:id returns entry looked up by ID", async () => {
-    const res = await request(app).get("/pe/dicts/id/n20077");
+  test("GET /v2/dicts/id/:id returns entry looked up by ID", async () => {
+    const res = await request(app).get("/v2/dicts/id/n20077");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.text).toContain("<!DOCTYPE html>");
@@ -76,46 +76,46 @@ describe("pe_router integration", () => {
     );
   });
 
-  test("GET /pe/api/completions returns JSON suggestions", async () => {
-    const res = await request(app).get("/pe/api/completions?q=am");
+  test("GET /v2/api/completions returns JSON suggestions", async () => {
+    const res = await request(app).get("/v2/api/completions?q=am");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("application/json");
     expect(res.body).toEqual(["amo", "amor", "amicitia"]);
   });
 
-  test("GET /pe/assets/pe.css serves the built, hashed stylesheet", async () => {
-    const res = await request(app).get(getPeAssetHref("pe.css"));
+  test("GET /v2/assets/v2.css serves the built, hashed stylesheet", async () => {
+    const res = await request(app).get(getV2AssetHref("v2.css"));
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/css");
     expect(res.header["cache-control"]).toContain("immutable");
     expect(res.text).toContain(".lsOrth");
   });
 
-  test("GET /pe/assets/manifest.json is not exposed", async () => {
-    const res = await request(app).get("/pe/assets/manifest.json");
+  test("GET /v2/assets/manifest.json is not exposed", async () => {
+    const res = await request(app).get("/v2/assets/manifest.json");
     expect(res.status).toBe(404);
   });
 
-  test("GET /pe/about returns full About page with 200", async () => {
-    const res = await request(app).get("/pe/about");
+  test("GET /v2/about returns full About page with 200", async () => {
+    const res = await request(app).get("/v2/about");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("text/html");
     expect(res.text).toContain("<!DOCTYPE html>");
     expect(res.text).toContain("About M&oacute;rcus");
     expect(res.text).toContain("GPL-3.0");
     expect(res.text).toContain("CC BY-SA 4.0");
-    expect(res.text).toContain('href="/pe/about"');
-    expect(res.text).toContain('class="pe-nav-link active"');
+    expect(res.text).toContain('href="/v2/about"');
+    expect(res.text).toContain('class="v2-nav-link active"');
   });
 
-  test("GET /pe redirects to /pe/dicts", async () => {
-    const res = await request(app).get("/pe");
+  test("GET /v2 redirects to /v2/dicts", async () => {
+    const res = await request(app).get("/v2");
     expect(res.status).toBe(302);
-    expect(res.header.location).toBe("/pe/dicts");
+    expect(res.header.location).toBe("/v2/dicts");
   });
 
-  test("GET /pe/assets/pe.js serves the built client bundle", async () => {
-    const res = await request(app).get(getPeAssetHref("pe.js"));
+  test("GET /v2/assets/v2.js serves the built client bundle", async () => {
+    const res = await request(app).get(getV2AssetHref("v2.js"));
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("javascript");
     expect(res.header["cache-control"]).toContain("immutable");
