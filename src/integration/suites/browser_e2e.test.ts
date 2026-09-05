@@ -445,3 +445,86 @@ test.describe("offline mode", () => {
     await expect(page.getByText("garment").nth(0)).toBeVisible();
   });
 });
+
+test.describe("progressive enhancement dictionary (PE)", () => {
+  test("loads results without JavaScript (No-JS fallback)", async ({
+    browser,
+  }) => {
+    // Disable JavaScript to test pure HTML/SSR baseline
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/pe/dicts");
+    await expect(page.locator("h1")).toHaveText("Morcus Latin Dictionary");
+    await expect(page.locator("form.pe-search-form")).toBeVisible();
+
+    // Type query and submit native HTML form
+    await page.locator('input[name="q"]').fill("habeo");
+    await page.locator('button[type="submit"]').click();
+
+    // Verify native HTTP GET navigation and SSR response
+    await expect(page).toHaveURL(/\/pe\/dicts\?q=habeo/);
+    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(
+      page.getByText("to have").or(page.getByText("hold")).first()
+    ).toBeVisible();
+
+    await context.close();
+  });
+
+  test("loads results by typing and enter (JS enhanced)", async ({ page }) => {
+    await page.goto("/pe/dicts");
+
+    const input = page.locator('input[name="q"]');
+    await input.click();
+    await input.fill("habeo");
+    await page.keyboard.press("Enter");
+
+    await expect(page).toHaveURL(/\/pe\/dicts\?q=habeo/);
+    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(
+      page.getByText("to have").or(page.getByText("hold")).first()
+    ).toBeVisible();
+  });
+
+  test("supports inflected form searches without JavaScript", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/pe/dicts?q=habuit");
+    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(
+      page.getByText("to have").or(page.getByText("hold")).first()
+    ).toBeVisible();
+
+    await context.close();
+  });
+
+  test("loads autocomplete suggestions and searches on suggestion click", async ({
+    page,
+  }) => {
+    await page.goto("/pe/dicts");
+
+    const input = page.locator('input[name="q"]');
+    await input.click();
+    await page.keyboard.type("hab", { delay: 30 });
+
+    // Wait for the reactive suggestions overlay created by Lit component
+    const suggestionItem = page.locator(".pe-suggestion-item").first();
+    await expect(suggestionItem).toBeVisible({ timeout: 5000 });
+
+    // Click the first suggestion
+    const suggestedWord = (await suggestionItem.textContent())?.trim();
+    expect(suggestedWord).toBeTruthy();
+    await suggestionItem.click();
+
+    // Verify results updated for the clicked word
+    await expect(page.locator(".pe-dict-card").first()).toBeVisible();
+    await expect(page.getByText("Lewis").first()).toBeVisible();
+  });
+});

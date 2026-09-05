@@ -84,6 +84,7 @@ export interface WebServerParams {
   routes: RouteDefinition<any, Data, RouteDefinitionType>[];
   telemetry: Promise<TelemetryLogger>;
   buildDir: string;
+  peRouter?: express.Router;
 }
 
 export function setupServer(params: WebServerParams): void {
@@ -95,6 +96,9 @@ export function setupServer(params: WebServerParams): void {
   //   res.sendFile(path.join(params.buildDir, "serviceworker.js"));
   //   return;
   // });
+  if (params.peRouter) {
+    app.use("/pe", params.peRouter);
+  }
   app.use("/offlineData/:resourceName", (req, res) => {
     res.header("Content-Type", "application/octet-stream");
     const resourceName: string = req.params["resourceName"];

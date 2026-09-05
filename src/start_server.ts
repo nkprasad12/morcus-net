@@ -33,6 +33,7 @@ import {
 } from "@/common/library/library_lookup";
 import { readFileSync } from "fs";
 import { scrapeUrlText } from "@/web/scraping/scraper";
+import { createPeRouter } from "@/web/pe/pe_router";
 import { sqliteBacking } from "@/common/dictionaries/sqlite_backing";
 import { MorceusTables } from "@/morceus/cruncher_tables";
 import { timed } from "@/common/timing/timed_invocation";
@@ -270,6 +271,7 @@ export function startMorcusServer(): Promise<http.Server> {
     ],
     telemetry: telemetry,
     buildDir,
+    peRouter: createPeRouter(fusedDict),
   };
 
   setupServer(params);
