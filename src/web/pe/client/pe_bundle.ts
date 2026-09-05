@@ -2,6 +2,7 @@
 import "@/web/pe/client/morcus_dict_suggestions";
 import "@/web/pe/client/morcus_dict_search";
 import "@/web/pe/client/morcus_dict_entry";
+import "@/web/pe/client/morcus_theme_toggle";
 
 console.log(
   "Morcus Progressive Enhancement Web Components initialized with Lit (Light DOM mode)."

@@ -38,6 +38,7 @@ export function renderAppBar(activePage: PeActivePage): string {
           >
             About
           </a>
+          <morcus-theme-toggle></morcus-theme-toggle>
         </nav>
       </div>
     </header>
@@ -57,6 +58,19 @@ export function renderPageShell(options: PageShellOptions): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${titleEncoded}</title>
+  <script>
+    (function() {
+      try {
+        var s = localStorage.getItem('GlobalSettings');
+        if (s) {
+          var p = JSON.parse(s);
+          if (typeof p.darkMode === 'boolean') {
+            document.documentElement.setAttribute('data-theme', p.darkMode ? 'dark' : 'light');
+          }
+        }
+      } catch (e) {}
+    })();
+  </script>
   <link rel="stylesheet" href="/pe/assets/pe.css">
 </head>
 <body>

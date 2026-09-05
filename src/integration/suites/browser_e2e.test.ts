@@ -569,4 +569,49 @@ test.describe("progressive enhancement dictionary (PE)", () => {
     await expect(page).toHaveURL(/\/pe\/dicts$/);
     await expect(page.locator('input[name="q"]')).toBeVisible();
   });
+
+  test("hides theme toggle button when JavaScript is disabled", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/pe/dicts");
+    await expect(page.locator("header.pe-app-bar")).toBeVisible();
+    await expect(page.locator(".pe-theme-toggle-btn")).not.toBeVisible();
+
+    await context.close();
+  });
+
+  test("toggles theme and persists preference with JavaScript enabled", async ({
+    page,
+  }) => {
+    await page.goto("/pe/dicts");
+    const toggleBtn = page.locator(".pe-theme-toggle-btn");
+    await expect(toggleBtn).toBeVisible();
+
+    // Click theme toggle button
+    await toggleBtn.click();
+
+    // Verify data-theme is set on html element
+    const theme1 = await page.evaluate(() =>
+      document.documentElement.getAttribute("data-theme")
+    );
+    expect(theme1).toMatch(/^(dark|light)$/);
+
+    // Click again to toggle to opposite theme
+    await toggleBtn.click();
+    const theme2 = await page.evaluate(() =>
+      document.documentElement.getAttribute("data-theme")
+    );
+    expect(theme2).toMatch(/^(dark|light)$/);
+    expect(theme2).not.toEqual(theme1);
+
+    // Verify localStorage has persisted darkMode setting
+    const stored = await page.evaluate(() =>
+      localStorage.getItem("GlobalSettings")
+    );
+    expect(stored).toBeTruthy();
+    expect(stored).toContain("darkMode");
+  });
 });

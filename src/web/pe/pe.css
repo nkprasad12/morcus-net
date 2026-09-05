@@ -36,6 +36,45 @@
   }
 }
 
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --pe-bg: #1a1a1c;
+  --pe-card-bg: #242426;
+  --pe-text: #e1e3e6;
+  --pe-text-muted: #9a9ea4;
+  --pe-primary: #4da3ff;
+  --pe-primary-hover: #70b4ff;
+  --pe-border: #383a40;
+  --pe-border-focus: #4da3ff;
+  --pe-tag-bg: #2d3036;
+  --pe-accent-orth: rgba(240, 90, 100, 0.25);
+  --pe-accent-grammar: rgba(255, 145, 50, 0.25);
+  --pe-accent-quote: rgba(70, 140, 255, 0.22);
+  --pe-accent-bibl: rgba(160, 110, 240, 0.25);
+}
+
+:root[data-theme="light"],
+[data-theme="light"] {
+  --pe-bg: #fcfbf9;
+  --pe-card-bg: #ffffff;
+  --pe-text: #212529;
+  --pe-text-muted: #6c757d;
+  --pe-primary: #0066cc;
+  --pe-primary-hover: #0052a3;
+  --pe-border: #e2e4e8;
+  --pe-border-focus: #80bdff;
+  --pe-tag-bg: #f1f3f5;
+  --pe-accent-orth: rgba(220, 53, 69, 0.15);
+  --pe-accent-grammar: rgba(253, 126, 20, 0.15);
+  --pe-accent-quote: rgba(13, 110, 253, 0.12);
+  --pe-accent-bibl: rgba(111, 66, 193, 0.15);
+}
+
+/* Progressive enhancement: hide until the custom element is defined by JS */
+morcus-theme-toggle:not(:defined) {
+  display: none;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -117,6 +156,36 @@ body {
   color: var(--pe-primary);
   background-color: var(--pe-tag-bg);
   font-weight: 600;
+}
+
+/* Theme toggle icon button */
+.pe-theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--pe-border);
+  color: var(--pe-text);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.pe-theme-toggle-btn:hover {
+  background-color: var(--pe-tag-bg);
+}
+
+.pe-theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--pe-primary);
+  outline-offset: 2px;
+}
+
+.pe-theme-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
 }
 
 .pe-container {
