@@ -46,5 +46,8 @@ describe("about_ssr", () => {
     expect(pageHtml).toContain('class="pe-nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
     expect(pageHtml).toContain('href="/pe/dicts"');
+    expect(pageHtml.indexOf("morcus-theme-toggle")).toBeLessThan(
+      pageHtml.indexOf('<nav class="pe-nav"')
+    );
   });
 });

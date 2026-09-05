@@ -26,6 +26,7 @@ export function renderAppBar(activePage: PeActivePage): string {
         <a href="/pe/dicts" class="pe-brand">
           <span class="pe-brand-title">M&oacute;rcus</span>
           <span class="pe-brand-badge">Lite</span>
+          <morcus-theme-toggle></morcus-theme-toggle>
         </a>
         <nav class="pe-nav" aria-label="Main Navigation">
           <a
@@ -42,7 +43,6 @@ export function renderAppBar(activePage: PeActivePage): string {
           >
             About
           </a>
-          <morcus-theme-toggle></morcus-theme-toggle>
         </nav>
       </div>
     </header>
