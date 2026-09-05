@@ -153,7 +153,7 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
-  build.add_argument("-pe", "--build_pe", {
+  build.add_argument("-b_pe", "--build_pe", {
     help: "Builds the experimental Progressive Enhancement (v2) assets.",
     action: "store_true",
   });
@@ -194,7 +194,7 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
-  web.add_argument("-pe", "--build_pe", {
+  web.add_argument("-b_pe", "--build_pe", {
     help: "Builds the experimental Progressive Enhancement (v2) assets.",
     action: "store_true",
   });

@@ -1,18 +1,9 @@
 /* Standalone CSS for Progressive Enhancement Dictionary Views */
 
 :root {
-  --pe-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
   --pe-font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
-  --pe-bg: #fcfbf9;
-  --pe-card-bg: #ffffff;
-  --pe-text: #212529;
-  --pe-text-muted: #6c757d;
-  --pe-primary: #0066cc;
   --pe-primary-hover: #0052a3;
-  --pe-border: #e2e4e8;
   --pe-border-focus: #80bdff;
-  --pe-tag-bg: #f1f3f5;
   --pe-accent-orth: rgba(220, 53, 69, 0.15);
   --pe-accent-grammar: rgba(253, 126, 20, 0.15);
   --pe-accent-quote: rgba(13, 110, 253, 0.12);
@@ -21,15 +12,8 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --pe-bg: #1a1a1c;
-    --pe-card-bg: #242426;
-    --pe-text: #e1e3e6;
-    --pe-text-muted: #9a9ea4;
-    --pe-primary: #4da3ff;
     --pe-primary-hover: #70b4ff;
-    --pe-border: #383a40;
     --pe-border-focus: #4da3ff;
-    --pe-tag-bg: #2d3036;
     --pe-accent-orth: rgba(240, 90, 100, 0.25);
     --pe-accent-grammar: rgba(255, 145, 50, 0.25);
     --pe-accent-quote: rgba(70, 140, 255, 0.22);
@@ -39,15 +23,8 @@
 
 :root[data-theme="dark"],
 [data-theme="dark"] {
-  --pe-bg: #1a1a1c;
-  --pe-card-bg: #242426;
-  --pe-text: #e1e3e6;
-  --pe-text-muted: #9a9ea4;
-  --pe-primary: #4da3ff;
   --pe-primary-hover: #70b4ff;
-  --pe-border: #383a40;
   --pe-border-focus: #4da3ff;
-  --pe-tag-bg: #2d3036;
   --pe-accent-orth: rgba(240, 90, 100, 0.25);
   --pe-accent-grammar: rgba(255, 145, 50, 0.25);
   --pe-accent-quote: rgba(70, 140, 255, 0.22);
@@ -56,15 +33,8 @@
 
 :root[data-theme="light"],
 [data-theme="light"] {
-  --pe-bg: #fcfbf9;
-  --pe-card-bg: #ffffff;
-  --pe-text: #212529;
-  --pe-text-muted: #6c757d;
-  --pe-primary: #0066cc;
   --pe-primary-hover: #0052a3;
-  --pe-border: #e2e4e8;
   --pe-border-focus: #80bdff;
-  --pe-tag-bg: #f1f3f5;
   --pe-accent-orth: rgba(220, 53, 69, 0.15);
   --pe-accent-grammar: rgba(253, 126, 20, 0.15);
   --pe-accent-quote: rgba(13, 110, 253, 0.12);
@@ -76,36 +46,12 @@ morcus-theme-toggle:not(:defined) {
   display: none;
 }
 
-* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  padding: 0;
-  background-color: var(--pe-bg);
-  color: var(--pe-text);
-  font-family: var(--pe-font-sans);
-  line-height: 1.5;
-}
-
 /* App Bar Navigation */
 .pe-app-bar {
-  background-color: var(--pe-card-bg);
-  border-bottom: 1px solid var(--pe-border);
   position: sticky;
   top: 0;
   z-index: 200;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
-}
-
-.pe-app-bar-inner {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 10px 16px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
 }
 
 .pe-brand {
@@ -130,12 +76,6 @@ body {
   color: #ffffff;
   padding: 2px 6px;
   border-radius: 4px;
-}
-
-.pe-nav {
-  display: flex;
-  align-items: center;
-  gap: 8px;
 }
 
 .pe-nav-link {
@@ -187,12 +127,6 @@ body {
   height: 20px;
   fill: currentColor;
   display: block;
-}
-
-.pe-container {
-  max-width: 900px;
-  margin: 0 auto;
-  padding: 24px 16px;
 }
 
 .pe-header {

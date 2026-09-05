@@ -80,6 +80,10 @@ export class MorcusDictSearch extends LitElement {
       });
       inputWrapper.appendChild(this.suggestionsEl);
     }
+
+    if (this.inputElement && document.activeElement === document.body) {
+      this.inputElement.focus();
+    }
   }
 
   private removeEventListeners() {

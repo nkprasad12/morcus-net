@@ -287,7 +287,6 @@ export function renderDictPageHtml(options: DictPageOptions): string {
             value="${options.isIdSearch ? "" : queryEncoded}"
             placeholder="Search Latin word (e.g. caesar, virtus)..."
             autocomplete="off"
-            autofocus
           />
         </div>
         <button type="submit" class="pe-button">Search</button>

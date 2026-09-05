@@ -1,5 +1,8 @@
 import * as he from "he";
-import { getPeAssetHref } from "@/web/pe/server/asset_manifest";
+import {
+  getPeAssetHref,
+  getPeCriticalCss,
+} from "@/web/pe/server/asset_manifest";
 
 export type PeActivePage = "dicts" | "about";
 
@@ -59,6 +62,7 @@ export function renderPageShell(options: PageShellOptions): string {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${titleEncoded}</title>
+  <style>${getPeCriticalCss()}</style>
   <script>
     (function() {
       try {

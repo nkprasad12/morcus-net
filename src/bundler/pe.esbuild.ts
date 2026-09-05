@@ -10,9 +10,19 @@ export async function buildPeBundle(minify: boolean = false): Promise<void> {
   const outDir = path.resolve(process.cwd(), "build/pe");
   const jsEntry = path.resolve(process.cwd(), "src/web/pe/client/pe_bundle.ts");
   const cssEntry = path.resolve(process.cwd(), "src/web/pe/pe.css");
+  const criticalCssEntry = path.resolve(
+    process.cwd(),
+    "src/web/pe/pe-critical.css"
+  );
 
   // Avoid accumulating stale hashed assets from previous builds.
   await createCleanDir(outDir);
+
+  const criticalCss = await esbuild.transform(
+    fs.readFileSync(criticalCssEntry, "utf8"),
+    { loader: "css", minify }
+  );
+  fs.writeFileSync(path.join(outDir, "critical.css"), criticalCss.code);
 
   const result = await esbuild.build({
     entryPoints: [jsEntry, cssEntry],

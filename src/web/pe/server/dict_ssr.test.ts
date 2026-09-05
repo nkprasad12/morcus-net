@@ -9,6 +9,7 @@ import { EntryResult } from "@/common/dictionaries/dict_result";
 
 jest.mock("@/web/pe/server/asset_manifest", () => ({
   getPeAssetHref: (name: string) => `/pe/assets/${name}`,
+  getPeCriticalCss: () => "body{background-color:var(--pe-bg)}",
 }));
 
 describe("dict_ssr", () => {
@@ -126,6 +127,9 @@ describe("dict_ssr", () => {
   test("renderDictPageHtml outputs complete HTML document", () => {
     const pageHtml = renderDictPageHtml({ query: "caesar" });
     expect(pageHtml).toContain("<!DOCTYPE html>");
+    expect(pageHtml).toContain(
+      "<style>body{background-color:var(--pe-bg)}</style>"
+    );
     expect(pageHtml).toContain(
       '<link rel="stylesheet" href="/pe/assets/pe.css">'
     );

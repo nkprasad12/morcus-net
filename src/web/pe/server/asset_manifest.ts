@@ -5,6 +5,7 @@ type PeAssetName = "pe.js" | "pe.css";
 type PeAssetManifest = Partial<Record<PeAssetName, string>>;
 
 let cachedManifest: PeAssetManifest | undefined;
+let cachedCriticalCss: string | undefined;
 
 function loadManifest(): PeAssetManifest {
   if (cachedManifest === undefined) {
@@ -25,4 +26,15 @@ export function getPeAssetHref(name: PeAssetName): string {
     throw new Error(`No entry for "${name}" in build/pe/manifest.json`);
   }
   return `/pe/assets/${filename}`;
+}
+
+export function getPeCriticalCss(): string {
+  if (cachedCriticalCss === undefined) {
+    const criticalCssPath = path.resolve(
+      process.cwd(),
+      "build/pe/critical.css"
+    );
+    cachedCriticalCss = fs.readFileSync(criticalCssPath, "utf8");
+  }
+  return cachedCriticalCss;
 }

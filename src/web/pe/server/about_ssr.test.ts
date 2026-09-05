@@ -5,6 +5,7 @@ import {
 
 jest.mock("@/web/pe/server/asset_manifest", () => ({
   getPeAssetHref: (name: string) => `/pe/assets/${name}`,
+  getPeCriticalCss: () => "body{background-color:var(--pe-bg)}",
 }));
 
 describe("about_ssr", () => {
