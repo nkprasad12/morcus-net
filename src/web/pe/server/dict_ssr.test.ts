@@ -64,6 +64,94 @@ describe("dict_ssr", () => {
     expect(html).toContain("</li></ol></li></ol>");
   });
 
+  test("xmlNodeToHtml preserves inline formatting tags without wrapping in div", () => {
+    const node = new XmlNode(
+      "li",
+      [["id", "sh1.0"]],
+      [
+        new XmlNode(
+          "span",
+          [
+            ["class", "lsSenseBullet"],
+            ["senseid", "sh1.0"],
+          ],
+          [" 1. "]
+        ),
+        "rēgia (",
+        new XmlNode("i", [], ["sc."]),
+        " domus): ",
+        new XmlNode("i", [], ["the palace of the sun"]),
+        ", r. solis, Ov. M. 2, 1: Cic.",
+      ]
+    );
+
+    const html = xmlNodeToHtml(node, { allowLinkify: false });
+    expect(html).not.toContain("<div>");
+    expect(html).toContain("<i>sc.</i>");
+    expect(html).toContain("<i>the palace of the sun</i>");
+    expect(html).toContain("1. ");
+  });
+
+  test("xmlNodeToHtml transforms dLink cross references into links with text", () => {
+    const node = new XmlNode(
+      "span",
+      [
+        ["class", "dLink"],
+        ["to", "regia"],
+        ["text", "regia"],
+      ],
+      []
+    );
+
+    const html = xmlNodeToHtml(node);
+    expect(html).toBe('<a class="dLink" href="/pe/dicts?q=regia">regia</a>');
+  });
+
+  test("xmlNodeToHtml handles void tags like br", () => {
+    const node = new XmlNode(
+      "div",
+      [],
+      ["first line", new XmlNode("br"), "second line"]
+    );
+    const html = xmlNodeToHtml(node, { allowLinkify: false });
+    expect(html).toBe("<div>first line<br>second line</div>");
+  });
+
+  test("xmlNodeToHtml preserves table elements for numerals", () => {
+    const node = new XmlNode(
+      "table",
+      [["class", "numeralTable"]],
+      [
+        new XmlNode(
+          "tr",
+          [],
+          [new XmlNode("td", [], ["Arabic"]), new XmlNode("td", [], ["57"])]
+        ),
+      ]
+    );
+
+    const html = xmlNodeToHtml(node, { allowLinkify: false });
+    expect(html).toContain('<table class="numeralTable">');
+    expect(html).toContain("<tr><td>Arabic</td><td>57</td></tr>");
+  });
+
+  test("xmlNodeToHtml preserves target, rel, and dir attributes", () => {
+    const node = new XmlNode(
+      "a",
+      [
+        ["href", "https://example.com"],
+        ["target", "_blank"],
+      ],
+      ["External"]
+    );
+    const html = xmlNodeToHtml(node);
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+
+    const rtlNode = new XmlNode("span", [["dir", "rtl"]], ["עברית"]);
+    expect(xmlNodeToHtml(rtlNode)).toContain('dir="rtl"');
+  });
+
   test("renderEntryResult formats entry and inflections", () => {
     const entryResult: EntryResult = {
       entry: new XmlNode("span", [["class", "lsOrth"]], ["amo"]),

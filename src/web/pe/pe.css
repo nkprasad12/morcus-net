@@ -303,7 +303,8 @@ morcus-theme-toggle:not(:defined) {
   margin-bottom: 0;
 }
 
-.pe-entry ol {
+.pe-entry ol,
+.pe-entry ul {
   margin: 0;
   padding-left: 1.5em;
   list-style: none;
@@ -359,6 +360,7 @@ morcus-theme-toggle:not(:defined) {
 }
 
 .lsBibl,
+.lsAuthor,
 .gafAuth {
   background-color: var(--pe-accent-bibl);
   border-radius: 3px;
@@ -386,6 +388,38 @@ morcus-theme-toggle:not(:defined) {
   background-color: rgba(0, 0, 0, 0.08);
   border-radius: 3px;
   font-weight: 600;
+}
+
+.lsHover {
+  border-bottom: 1px dashed var(--pe-border-strong);
+  cursor: help;
+}
+
+.lsHover:hover {
+  background-color: var(--pe-accent-quote);
+  border-radius: 3px;
+}
+
+.dLink {
+  color: var(--pe-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.dLink:hover {
+  color: var(--pe-primary-hover);
+}
+
+.numeralTable {
+  margin-top: 4px;
+  border-collapse: collapse;
+  border: 1px solid var(--pe-border);
+}
+
+.numeralTable td {
+  padding: 3px 8px;
+  border: 1px solid var(--pe-border);
 }
 
 .pe-no-results {

@@ -50,6 +50,38 @@ export function linkifyText(text: string): string {
   return parts.join("");
 }
 
+const ALLOWED_TAGS = new Set([
+  // Inline phrasing
+  "span",
+  "i",
+  "b",
+  "em",
+  "strong",
+  "u",
+  "s",
+  "sup",
+  "sub",
+  "small",
+  "code",
+  "a",
+  // Lists
+  "ol",
+  "ul",
+  "li",
+  // Blocks
+  "div",
+  "p",
+  // Tables (e.g. Numeral dictionary)
+  "table",
+  "thead",
+  "tbody",
+  "tr",
+  "th",
+  "td",
+]);
+
+const VOID_TAGS = new Set(["br", "hr"]);
+
 export function xmlNodeToHtml(
   node: XmlChild,
   options?: XmlNodeToHtmlOptions
@@ -62,9 +94,12 @@ export function xmlNodeToHtml(
   }
 
   const sourceTagName = node.name.toLowerCase();
-  let tagName = ["ol", "li", "span"].includes(sourceTagName)
+  let tagName = ALLOWED_TAGS.has(sourceTagName)
+    ? sourceTagName
+    : VOID_TAGS.has(sourceTagName)
     ? sourceTagName
     : "div";
+
   const attrsMap = new Map<string, string>();
   for (const [k, v] of node.attrs) {
     attrsMap.set(k.toLowerCase(), v);
@@ -82,19 +117,42 @@ export function xmlNodeToHtml(
     attrsMap.set("title", "Direct link to this section");
   }
 
+  // Transform Smith & Hall cross-reference links (<span class="dLink" to="..." text="...">)
+  if (rawClass.includes("dLink")) {
+    const toQuery = attrsMap.get("to");
+    if (toQuery) {
+      tagName = "a";
+      attrsMap.set("href", `/pe/dicts?q=${encodeURIComponent(toQuery)}`);
+    }
+  }
+
+  if (VOID_TAGS.has(tagName)) {
+    return `<${tagName}>`;
+  }
+
   const isAlreadyLink = tagName === "a";
   const isDisallowedClass =
     rawClass.includes("lsOrth") ||
     rawClass.includes("lsHover") ||
     rawClass.includes("lsSenseBullet") ||
+    rawClass.includes("dLink") ||
     rawClass.includes("pe-section-anchor") ||
     rawClass.includes("pe-toc");
   const nextAllowLinkify =
     (options?.allowLinkify ?? true) && !isAlreadyLink && !isDisallowedClass;
 
-  const childrenHtml = node.children
+  let childrenHtml = node.children
     .map((c) => xmlNodeToHtml(c, { allowLinkify: nextAllowLinkify }))
     .join("");
+
+  // In Smith & Hall, dLink nodes may have empty children and store the display text in attrs.text
+  if (
+    childrenHtml === "" &&
+    attrsMap.has("text") &&
+    rawClass.includes("dLink")
+  ) {
+    childrenHtml = he.encode(attrsMap.get("text")!);
+  }
 
   const finalClass = attrsMap.get("class");
   const classNames = finalClass ? ` class="${he.encode(finalClass)}"` : "";
@@ -107,13 +165,19 @@ export function xmlNodeToHtml(
   const hrefAttr = attrsMap.get("href")
     ? ` href="${he.encode(attrsMap.get("href")!)}"`
     : "";
+  const targetVal = attrsMap.get("target");
+  const targetAttr = targetVal ? ` target="${he.encode(targetVal)}"` : "";
+  const relAttr = targetVal === "_blank" ? ' rel="noopener noreferrer"' : "";
+  const dirVal = attrsMap.get("dir");
+  const dirAttr = dirVal ? ` dir="${he.encode(dirVal)}"` : "";
+
   const indentLevel = Number.parseInt(attrsMap.get("indentlevel") ?? "", 10);
   const styleAttr =
     Number.isFinite(indentLevel) && indentLevel > 0
       ? ` style="margin-left: ${indentLevel * 0.5}em;"`
       : "";
 
-  return `<${tagName}${idAttr}${classNames}${titleAttr}${hrefAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+  return `<${tagName}${idAttr}${classNames}${titleAttr}${hrefAttr}${targetAttr}${relAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
 }
 
 /**
