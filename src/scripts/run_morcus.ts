@@ -154,7 +154,7 @@ function parseArguments() {
     action: "store_true",
   });
   build.add_argument("-b_v2", "--build_v2", {
-    help: "Builds the experimental UI V2 assets.",
+    help: "Builds the UI V2 assets (now enabled by default).",
     action: "store_true",
   });
   addArguments(build, COMMON_BUILD_ARGS);
@@ -542,9 +542,7 @@ function artifactConfig(args: any): StepConfig[] {
       priority: 2,
     });
   }
-  if (args.build_v2 === true) {
-    setupSteps.push(v2BundleConfig(args, 2));
-  }
+  setupSteps.push(v2BundleConfig(args, 2));
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {
       childEnv.BUILD_CORPUS = "1";
@@ -573,9 +571,7 @@ async function setupAndStartWebServer(args: any) {
       setupSteps.push(bundleConfig(args, 1));
     }
   }
-  if (args.build_v2 === true) {
-    setupSteps.push(v2BundleConfig(args, 1));
-  }
+  setupSteps.push(v2BundleConfig(args, 1));
   setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });
   if (!setupSuccess) {
