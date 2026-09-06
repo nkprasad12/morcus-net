@@ -28,6 +28,7 @@ export class MorcusDictSearch extends LitElement {
   @state()
   private selectedSuggestionIndex: number = -1;
 
+  private currentSearchPath: string = "";
   private debounceTimer: number | null = null;
   private formElement: HTMLFormElement | null = null;
   private inputElement: HTMLInputElement | null = null;
@@ -36,6 +37,7 @@ export class MorcusDictSearch extends LitElement {
 
   override connectedCallback() {
     super.connectedCallback();
+    this.currentSearchPath = window.location.pathname + window.location.search;
     this.enhanceExistingMarkup();
   }
 
@@ -179,6 +181,13 @@ export class MorcusDictSearch extends LitElement {
   };
 
   private readonly handlePopState = () => {
+    const newSearchPath = window.location.pathname + window.location.search;
+    if (newSearchPath === this.currentSearchPath) {
+      // The path and query params have not changed (e.g. in-page anchor/hash navigation).
+      // Do not re-fetch results, avoiding destruction of the DOM and preserving open details.
+      return;
+    }
+    this.currentSearchPath = newSearchPath;
     const urlParams = new URLSearchParams(window.location.search);
     const q = urlParams.get("q") ?? "";
     if (this.inputElement) {
@@ -195,6 +204,7 @@ export class MorcusDictSearch extends LitElement {
     const newUrl = query
       ? `/v2/dicts?q=${encodeURIComponent(query)}`
       : "/v2/dicts";
+    this.currentSearchPath = newUrl;
     window.history.pushState({ q: query }, "", newUrl);
     document.title = query
       ? `${query} - Morcus Dictionary`

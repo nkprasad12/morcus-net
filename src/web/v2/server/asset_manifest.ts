@@ -8,6 +8,15 @@ let cachedManifest: V2AssetManifest | undefined;
 let cachedCriticalCss: string | undefined;
 
 function loadManifest(): V2AssetManifest {
+  if (cachedManifest !== undefined) {
+    const jsFilename = cachedManifest["v2.js"];
+    if (
+      jsFilename &&
+      !fs.existsSync(path.resolve(process.cwd(), "build/v2", jsFilename))
+    ) {
+      cachedManifest = undefined;
+    }
+  }
   if (cachedManifest === undefined) {
     const manifestPath = path.resolve(process.cwd(), "build/v2/manifest.json");
     const parsed: V2AssetManifest = JSON.parse(
