@@ -23,11 +23,13 @@ export function renderAppBar(activePage: V2ActivePage): string {
   return `
     <header class="v2-app-bar">
       <div class="v2-app-bar-inner">
-        <a href="/v2/dicts" class="v2-brand">
-          <span class="v2-brand-title">M&oacute;rcus</span>
-          <span class="v2-brand-badge">UI V2</span>
+        <div class="v2-brand-area">
+          <a href="/v2/dicts" class="v2-brand">
+            <span class="v2-brand-title">M&oacute;rcus</span>
+            <span class="v2-brand-badge">UI V2</span>
+          </a>
           <morcus-theme-toggle></morcus-theme-toggle>
-        </a>
+        </div>
         <nav class="v2-nav" aria-label="Main Navigation">
           <a
             href="/v2/dicts"

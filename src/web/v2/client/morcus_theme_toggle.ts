@@ -55,7 +55,11 @@ export class MorcusThemeToggle extends LitElement {
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
   }
 
-  private readonly toggleTheme = () => {
+  private readonly toggleTheme = (e?: Event) => {
+    if (e) {
+      e.preventDefault();
+      e.stopPropagation();
+    }
     const nextDark = !this.isDark;
     this.isDark = nextDark;
     const themeName = nextDark ? "dark" : "light";

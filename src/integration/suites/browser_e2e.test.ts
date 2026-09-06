@@ -467,10 +467,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
-      page
-        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
-        .getByText("hold")
-        .first()
+      page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
 
     await context.close();
@@ -488,10 +485,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
-      page
-        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
-        .getByText("hold")
-        .first()
+      page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
   });
 
@@ -505,10 +499,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
-      page
-        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
-        .getByText("hold")
-        .first()
+      page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
 
     await context.close();
@@ -624,6 +615,25 @@ test.describe("UI V2 dictionary", () => {
     expect(stored).toContain("darkMode");
   });
 
+  test("toggles theme without clearing active dictionary entry", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=habeo");
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
+
+    const toggleBtn = page.locator(".v2-theme-toggle-btn");
+    await expect(toggleBtn).toBeVisible();
+
+    // Click theme toggle button
+    await toggleBtn.click();
+
+    // Verify URL, search input, and dictionary entry remain active and are not cleared
+    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+    await expect(page.locator('input[name="q"]')).toHaveValue("habeo");
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
+    await expect(page.getByText("Lewis").first()).toBeVisible();
+  });
+
   test("loads entries by ID directly via /v2/dicts/id/:id", async ({
     page,
   }) => {
@@ -632,10 +642,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
     await expect(page.getByText("Lewis").first()).toBeVisible();
     await expect(
-      page
-        .locator(".v2-dict-card .v2-entry > *:not(.v2-toc)")
-        .getByText("hold")
-        .first()
+      page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
   });
 
@@ -643,8 +650,14 @@ test.describe("UI V2 dictionary", () => {
     page,
   }) => {
     await page.goto("/v2/dicts?q=habeo");
-    const toc = page.locator(".v2-toc");
-    await expect(toc.first()).toBeVisible();
+    const outlineSummary = page
+      .locator('.v2-tool-pane summary:has-text("Outline")')
+      .first();
+    await expect(outlineSummary).toBeVisible();
+
+    // Click to open outline drawer
+    await outlineSummary.click();
+    await expect(page.locator(".v2-toc-list").first()).toBeVisible();
 
     // Verify section anchor bullet has #hash href
     const anchor = page.locator(".v2-section-anchor").first();
