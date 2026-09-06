@@ -41,8 +41,9 @@
   --v2-accent-bibl: rgba(111, 66, 193, 0.15);
 }
 
-/* Progressive enhancement: hide until the custom element is defined by JS */
-morcus-theme-toggle:not(:defined) {
+/* Progressive enhancement: hide until custom elements are defined by JS */
+morcus-theme-toggle:not(:defined),
+morcus-report-dialog:not(:defined) {
   display: none;
 }
 
@@ -640,4 +641,173 @@ morcus-theme-toggle:not(:defined) {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+}
+
+/* Modal Dialog Base */
+.v2-dialog {
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  background: var(--v2-card-bg);
+  color: var(--v2-text);
+  padding: 0;
+  max-width: 560px;
+  width: calc(100vw - 32px);
+  max-height: 85dvh;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+  overscroll-behavior: contain;
+}
+
+.v2-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
+}
+
+.v2-dialog-card {
+  display: flex;
+  flex-direction: column;
+  padding: 20px 24px;
+}
+
+.v2-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+}
+
+.v2-dialog-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+.v2-dialog-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 1.5rem;
+  line-height: 1;
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.v2-dialog-close-btn:hover {
+  color: var(--v2-text);
+  background: var(--v2-pill-bg);
+}
+
+.v2-dialog-close-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-dialog-body {
+  margin-bottom: 8px;
+}
+
+.v2-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+/* Button utility classes */
+.v2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+    color 0.15s ease-in-out;
+}
+
+.v2-btn-primary {
+  background-color: var(--v2-primary);
+  color: #ffffff;
+  border-color: var(--v2-primary);
+}
+
+.v2-btn-primary:hover:not(:disabled) {
+  background-color: var(--v2-primary-hover);
+}
+
+.v2-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.v2-btn-secondary {
+  background-color: transparent;
+  color: var(--v2-text);
+  border-color: var(--v2-border);
+}
+
+.v2-btn-secondary:hover {
+  background-color: var(--v2-pill-bg);
+}
+
+.v2-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+/* Report Issue Dialog Specifics */
+.v2-report-desc {
+  font-size: 0.9rem;
+  line-height: 1.45;
+  color: var(--v2-text-muted);
+  margin-top: 0;
+  margin-bottom: 16px;
+}
+
+.v2-report-desc strong {
+  color: var(--v2-text);
+}
+
+.v2-report-desc code {
+  background: var(--v2-pill-bg);
+  padding: 2px 4px;
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.v2-report-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.4;
+  padding: 10px 12px;
+  border: 1px solid var(--v2-border);
+  border-radius: 6px;
+  background: var(--v2-bg);
+  color: var(--v2-text);
+  resize: vertical;
+}
+
+.v2-report-textarea:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 1px;
+}
+
+.v2-report-status {
+  min-height: 1.25rem;
+  margin-top: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--v2-primary);
+}
+
+.v2-report-status.error {
+  color: var(--v2-accent-orth, #dc3545);
 }

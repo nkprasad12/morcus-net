@@ -253,4 +253,88 @@ test.describe("UI V2 dictionary", () => {
     await expect(page).toHaveURL(/\/v2\/dicts\?q=habere/);
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
   });
+
+  test("report issue button is hidden without JavaScript (No-JS baseline)", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/v2/dicts");
+    const reportDialogEl = page.locator("morcus-report-dialog");
+    await expect(reportDialogEl).toBeHidden();
+
+    await context.close();
+  });
+
+  test("report issue button is displayed and interactive when JS is enabled", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts");
+    const reportBtn = page.locator(".v2-report-btn");
+    await expect(reportBtn).toBeVisible();
+  });
+
+  test("opens report dialog on click and closes via Cancel button", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts");
+    const reportBtn = page.locator(".v2-report-btn");
+    const dialog = page.locator("dialog.v2-report-dialog");
+
+    await expect(dialog).not.toBeVisible();
+    await reportBtn.click();
+    await expect(dialog).toBeVisible();
+    await expect(dialog.getByText("Issues / Feedback")).toBeVisible();
+    await expect(
+      dialog.getByText("This report will be visible to the general public")
+    ).toBeVisible();
+
+    const textarea = dialog.locator("textarea.v2-report-textarea");
+    await expect(textarea).toBeVisible();
+    await expect(textarea).toHaveValue(/Reporter: Anonymous/);
+
+    const cancelBtn = dialog.locator(
+      'button[data-dialog-close]:has-text("Cancel")'
+    );
+    await cancelBtn.click();
+    await expect(dialog).not.toBeVisible();
+  });
+
+  test("closes report dialog via Escape key", async ({ page }) => {
+    await page.goto("/v2/dicts");
+    const reportBtn = page.locator(".v2-report-btn");
+    const dialog = page.locator("dialog.v2-report-dialog");
+
+    await reportBtn.click();
+    await expect(dialog).toBeVisible();
+
+    await page.keyboard.press("Escape");
+    await expect(dialog).not.toBeVisible();
+  });
+
+  test("submits issue report via AJAX and shows confirmation", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts");
+    const reportBtn = page.locator(".v2-report-btn");
+    const dialog = page.locator("dialog.v2-report-dialog");
+
+    await reportBtn.click();
+    await expect(dialog).toBeVisible();
+
+    const textarea = dialog.locator("textarea.v2-report-textarea");
+    await textarea.fill("Typo report in amicus\nReporter: E2E Tester");
+
+    const submitBtn = dialog.locator(".v2-report-submit-btn");
+    await submitBtn.click();
+
+    const status = dialog.locator(".v2-report-status");
+    await expect(status).toHaveText(
+      /✓ Thank you! Your report has been submitted./
+    );
+
+    // Dialog closes automatically after confirmation timeout
+    await expect(dialog).not.toBeVisible({ timeout: 5000 });
+  });
 });

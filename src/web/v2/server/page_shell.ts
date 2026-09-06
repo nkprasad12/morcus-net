@@ -3,6 +3,7 @@ import {
   getV2AssetHref,
   getV2CriticalCss,
 } from "@/web/v2/server/asset_manifest";
+import { renderReportIssueDialog } from "@/web/v2/server/dialog";
 
 export type V2ActivePage = "dicts" | "about";
 
@@ -47,6 +48,19 @@ export function renderAppBar(activePage: V2ActivePage): string {
         <div class="v2-app-bar-right">
           <span class="v2-brand-badge">UI V2</span>
           <morcus-theme-toggle></morcus-theme-toggle>
+          <morcus-report-dialog>
+            <button
+              type="button"
+              class="v2-theme-toggle-btn v2-report-btn"
+              aria-label="Report an issue"
+              title="Report an issue"
+            >
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"></path>
+              </svg>
+            </button>
+            ${renderReportIssueDialog()}
+          </morcus-report-dialog>
         </div>
       </div>
     </header>

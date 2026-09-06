@@ -22,16 +22,19 @@ src/web/v2/
 │   ├── morcus_dict_suggestions.ts       # Declarative autocomplete dropdown component
 │   ├── morcus_dict_entry.ts             # Dictionary card enhancement wrapper
 │   ├── morcus_theme_toggle.ts           # Light/dark mode toggle button (hidden when JS disabled)
+│   ├── morcus_report_dialog.ts          # "Report an Issue" modal dialog (progressive enhancement)
 │   └── v2_bundle.ts                     # Client entry point bundling all custom elements
 ├── server/                               # Server-side rendering (SSR) templates
 │   ├── page_shell.ts                    # Shared document skeleton, app bar, & anti-flash theme script
+│   ├── dialog.ts                        # Shared accessible dialog & report issue dialog generators
+│   ├── dialog.test.ts                   # Unit tests for dialog generators
 │   ├── dict_ssr.ts                      # Dictionary page & partial HTML fragment renderer
 │   ├── about_ssr.ts                     # About page content & metadata renderer
 │   ├── dict_ssr.test.ts                 # Unit tests for dictionary SSR
 │   └── about_ssr.test.ts                # Unit tests for About page SSR
 ├── v2.css                               # Standalone CSS supporting light, dark, and system themes
 ├── v2-critical.css                      # Critical inlined CSS
-├── v2_router.ts                         # Express router mounted at /v2
+├── v2_router.ts                         # Express router mounted at /v2 (search, autocomplete, reporting)
 ├── v2_router.test.ts                    # Router integration tests
 └── TESTING.md                           # Guide for running unit and E2E Playwright tests
 ```
@@ -79,8 +82,8 @@ sequenceDiagram
 
 ## Theme Switching Model
 
-- **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. The toggle button is hidden using `morcus-theme-toggle:not(:defined) { display: none; }` so no dead controls are shown.
-- **With JS**: `<morcus-theme-toggle>` initializes, displays the sun/moon button in the app bar, and toggles `[data-theme="dark"]` / `[data-theme="light"]` on `document.documentElement`. The choice is saved to `localStorage.getItem("GlobalSettings")` (shared with the existing SPA).
+- **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. Interactive custom elements (`morcus-theme-toggle` and `morcus-report-dialog`) are hidden using `:not(:defined) { display: none; }` so no dead controls are shown to users without JavaScript.
+- **With JS**: `<morcus-theme-toggle>` and `<morcus-report-dialog>` initialize and display buttons in the app bar. Theme selection toggles `[data-theme="dark"]` / `[data-theme="light"]` on `document.documentElement` and persists to `localStorage.getItem("GlobalSettings")`. Feedback reporting opens via native `<dialog>` modal and submits via AJAX.
 - **Zero Flicker**: An inline script in `<head>` executes before the first paint to apply the saved theme attribute immediately.
 
 ---
