@@ -106,6 +106,35 @@ export function xmlNodeToHtml(
   }
 
   const rawClass = attrsMap.get("class") ?? "";
+
+  // Map TEI XML tags (common in Gesner) to standard HTML elements
+  if (sourceTagName === "emph") {
+    tagName = "b";
+    attrsMap.set("class", `${rawClass} lsEmph`.trim());
+  } else if (sourceTagName === "hi") {
+    const rend = attrsMap.get("rend");
+    tagName = rend === "italic" ? "i" : rend === "bold" ? "b" : "span";
+  } else if (sourceTagName === "foreign") {
+    tagName = "span";
+    if (attrsMap.get("lang") === "GR") {
+      attrsMap.set("lang", "el");
+    }
+  } else if (sourceTagName === "orth") {
+    tagName = "b";
+    attrsMap.set("class", `${rawClass} lsOrth`.trim());
+  } else if (
+    sourceTagName === "ref" ||
+    sourceTagName === "corr" ||
+    sourceTagName === "unclear" ||
+    sourceTagName === "gap" ||
+    sourceTagName === "note" ||
+    sourceTagName === "pb"
+  ) {
+    tagName = "span";
+  } else if (sourceTagName === "def") {
+    tagName = "div";
+  }
+
   const isSenseBullet = rawClass.includes("lsSenseBullet");
   const senseId = attrsMap.get("senseid");
 
@@ -113,7 +142,10 @@ export function xmlNodeToHtml(
   if (isSenseBullet && senseId) {
     tagName = "a";
     attrsMap.set("href", `#${senseId}`);
-    attrsMap.set("class", `${rawClass} v2-section-anchor`.trim());
+    attrsMap.set(
+      "class",
+      `${attrsMap.get("class") ?? rawClass} v2-section-anchor`.trim()
+    );
     attrsMap.set("title", "Direct link to this section");
   }
 
@@ -126,20 +158,37 @@ export function xmlNodeToHtml(
     }
   }
 
+  // Rewrite relative internal links to dictionary searches
+  const currentHref = attrsMap.get("href");
+  if (
+    currentHref &&
+    !currentHref.includes("://") &&
+    !currentHref.startsWith("/") &&
+    !currentHref.startsWith("#")
+  ) {
+    attrsMap.set("href", `/v2/dicts?q=${encodeURIComponent(currentHref)}`);
+  }
+
   if (VOID_TAGS.has(tagName)) {
     return `<${tagName}>`;
   }
 
   const isAlreadyLink = tagName === "a";
+  const currentClass = attrsMap.get("class") ?? "";
   const isDisallowedClass =
-    rawClass.includes("lsOrth") ||
-    rawClass.includes("lsHover") ||
-    rawClass.includes("lsSenseBullet") ||
-    rawClass.includes("dLink") ||
-    rawClass.includes("v2-section-anchor") ||
-    rawClass.includes("v2-toc");
+    currentClass.includes("lsOrth") ||
+    currentClass.includes("lsEmph") ||
+    currentClass.includes("lsHover") ||
+    currentClass.includes("lsSenseBullet") ||
+    currentClass.includes("dLink") ||
+    currentClass.includes("v2-section-anchor") ||
+    currentClass.includes("v2-toc");
+  const isForeign = sourceTagName === "foreign";
   const nextAllowLinkify =
-    (options?.allowLinkify ?? true) && !isAlreadyLink && !isDisallowedClass;
+    (options?.allowLinkify ?? true) &&
+    !isAlreadyLink &&
+    !isDisallowedClass &&
+    !isForeign;
 
   let childrenHtml = node.children
     .map((c) => xmlNodeToHtml(c, { allowLinkify: nextAllowLinkify }))
@@ -168,6 +217,8 @@ export function xmlNodeToHtml(
   const targetVal = attrsMap.get("target");
   const targetAttr = targetVal ? ` target="${he.encode(targetVal)}"` : "";
   const relAttr = targetVal === "_blank" ? ' rel="noopener noreferrer"' : "";
+  const langVal = attrsMap.get("lang");
+  const langAttr = langVal ? ` lang="${he.encode(langVal)}"` : "";
   const dirVal = attrsMap.get("dir");
   const dirAttr = dirVal ? ` dir="${he.encode(dirVal)}"` : "";
 
@@ -177,7 +228,7 @@ export function xmlNodeToHtml(
       ? ` style="margin-left: ${indentLevel * 0.5}em;"`
       : "";
 
-  return `<${tagName}${idAttr}${classNames}${titleAttr}${hrefAttr}${targetAttr}${relAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+  return `<${tagName}${idAttr}${classNames}${titleAttr}${hrefAttr}${targetAttr}${relAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
 }
 
 /**
