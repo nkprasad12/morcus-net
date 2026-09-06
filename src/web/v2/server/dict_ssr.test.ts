@@ -307,4 +307,14 @@ describe("dict_ssr", () => {
     // Search input should have empty value for ID search so user can type a fresh search
     expect(pageHtml).toContain('value=""');
   });
+
+  test("renderDictPageHtml preserves macra and breves in title and search input", () => {
+    const pageHtml = renderDictPageHtml({
+      query: "hăbēna",
+    });
+    expect(pageHtml).toContain("<title>hăbēna - Morcus Dictionary</title>");
+    expect(pageHtml).not.toContain("&#x103;");
+    expect(pageHtml).not.toContain("&#x113;");
+    expect(pageHtml).toContain('value="hăbēna"');
+  });
 });

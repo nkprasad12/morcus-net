@@ -53,7 +53,7 @@ export function renderAppBar(activePage: V2ActivePage): string {
  * Wraps content in the full document skeleton with App Bar, container, and script tags.
  */
 export function renderPageShell(options: PageShellOptions): string {
-  const titleEncoded = he.encode(options.title);
+  const titleEncoded = he.escape(options.title);
   const appBarHtml = renderAppBar(options.activePage);
 
   return `<!DOCTYPE html>
