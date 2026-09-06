@@ -679,26 +679,12 @@ morcus-report-dialog:not(:defined) {
   margin-top: 0;
 }
 
-@media (max-width: 600px) {
-  .v2-segmented-bar {
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-  }
-  .v2-entry-headword {
-    grid-column: 1 / -1;
-    margin-bottom: 4px;
-  }
-  .v2-tab-pill {
-    grid-row: 2;
-  }
-  .v2-tool-body {
-    grid-row: 3;
-    grid-column: 1 / -1;
-  }
-}
-
 .v2-tool-pane {
   display: contents;
+}
+
+.v2-tool-pane:not([open]) > :not(summary) {
+  display: none !important;
 }
 
 .v2-tool-pane:not([open])::details-content {
@@ -818,6 +804,27 @@ morcus-report-dialog:not(:defined) {
   width: 100%;
   border-collapse: collapse;
   font-size: 0.95rem;
+}
+
+@media (max-width: 600px) {
+  .v2-segmented-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 10px 8px;
+  }
+  .v2-entry-headword {
+    width: 100%;
+    margin-bottom: 2px;
+  }
+  .v2-tab-pill {
+    flex: 0 0 auto;
+  }
+  .v2-tool-body {
+    width: 100%;
+    order: 10;
+    margin-top: 6px;
+  }
 }
 
 /* Modal Dialog Base */
