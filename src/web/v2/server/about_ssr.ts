@@ -16,9 +16,12 @@ export function renderAboutContentHtml(options: AboutPageOptions = {}): string {
 
   return `
     <article class="v2-about-article">
-      <header class="v2-header">
-        <h1>About M&oacute;rcus</h1>
-        <p>A free digital toolkit for Latin learners and scholars.</p>
+      <header class="v2-header v2-about-header">
+        <img src="/public/logo192.png" alt="M&oacute;rcus Logo" class="v2-about-logo" width="48" height="48">
+        <div>
+          <h1>About M&oacute;rcus</h1>
+          <p>A free digital toolkit for Latin learners and scholars.</p>
+        </div>
       </header>
 
       <section id="site" class="v2-about-section">

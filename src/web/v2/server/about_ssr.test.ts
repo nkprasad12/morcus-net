@@ -46,8 +46,8 @@ describe("about_ssr", () => {
     expect(pageHtml).toContain('class="v2-nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
     expect(pageHtml).toContain('href="/v2/dicts"');
-    expect(pageHtml.indexOf("morcus-theme-toggle")).toBeLessThan(
-      pageHtml.indexOf('<nav class="v2-nav"')
+    expect(pageHtml.indexOf('<nav class="v2-nav"')).toBeLessThan(
+      pageHtml.indexOf("morcus-theme-toggle")
     );
   });
 });

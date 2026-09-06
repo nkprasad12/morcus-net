@@ -51,42 +51,55 @@ morcus-theme-toggle:not(:defined) {
   position: sticky;
   top: 0;
   z-index: 200;
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
-.v2-brand-area {
+.v2-app-bar-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.v2-brand-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  border-radius: 2px;
+}
+
+.v2-brand-logo-link:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-brand-logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.v2-app-bar-right {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.v2-brand {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  text-decoration: none;
-  color: var(--v2-text);
-}
-
-.v2-brand-title {
-  font-size: 1.25rem;
-  font-weight: 700;
-  letter-spacing: -0.02em;
 }
 
 .v2-brand-badge {
   font-size: 0.7rem;
   font-weight: 600;
   text-transform: uppercase;
-  background: var(--v2-primary);
-  color: #ffffff;
+  background: var(--v2-app-bar-badge-bg);
+  color: var(--v2-app-bar-badge-text);
   padding: 2px 6px;
   border-radius: 4px;
 }
 
 .v2-nav-link {
   text-decoration: none;
-  color: var(--v2-text-muted);
+  color: var(--v2-app-bar-nav-text);
   font-weight: 500;
   font-size: 0.95rem;
   padding: 6px 14px;
@@ -95,13 +108,13 @@ morcus-theme-toggle:not(:defined) {
 }
 
 .v2-nav-link:hover {
-  color: var(--v2-text);
-  background-color: var(--v2-tag-bg);
+  color: var(--v2-app-bar-text);
+  background-color: var(--v2-app-bar-nav-hover-bg);
 }
 
 .v2-nav-link.active {
-  color: var(--v2-primary);
-  background-color: var(--v2-tag-bg);
+  color: var(--v2-app-bar-nav-active-text);
+  background-color: var(--v2-app-bar-nav-active-bg);
   font-weight: 600;
 }
 
@@ -111,8 +124,8 @@ morcus-theme-toggle:not(:defined) {
   align-items: center;
   justify-content: center;
   background: transparent;
-  border: 1px solid var(--v2-border);
-  color: var(--v2-text);
+  border: 1px solid var(--v2-app-bar-toggle-border);
+  color: var(--v2-app-bar-text);
   border-radius: 6px;
   padding: 6px;
   cursor: pointer;
@@ -120,7 +133,7 @@ morcus-theme-toggle:not(:defined) {
 }
 
 .v2-theme-toggle-btn:hover {
-  background-color: var(--v2-tag-bg);
+  background-color: var(--v2-app-bar-nav-hover-bg);
 }
 
 .v2-theme-toggle-btn:focus-visible {
@@ -137,6 +150,21 @@ morcus-theme-toggle:not(:defined) {
 
 .v2-header {
   margin-bottom: 24px;
+}
+
+.v2-about-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.v2-about-logo {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
 }
 
 .v2-header h1 {
