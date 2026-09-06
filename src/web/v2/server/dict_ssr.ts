@@ -329,7 +329,7 @@ export function renderDictResultsHtml(
   if (!query.trim()) {
     return `
       <div class="v2-no-results">
-        <p>Type a Latin word (e.g. <em>caesar</em>, <em>amo</em>, <em>bellum</em>) to search all Latin lexica.</p>
+        <p>Type a word (e.g. <em>equus</em>, <em>horse</em>, <em>cheval</em>, <em>Pferd</em>) to search all lexica.</p>
       </div>
     `;
   }
@@ -401,11 +401,6 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
 
   const contentHtml = `
-    <header class="v2-header">
-      <h1>Morcus Latin Dictionary</h1>
-      <p>UI V2 prototype with zero-JS support and Lit custom elements.</p>
-    </header>
-
     <morcus-dict-search>
       <form class="v2-search-form" action="/v2/dicts" method="GET">
         <div class="v2-input-wrapper">
@@ -414,7 +409,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
             name="q"
             class="v2-input"
             value="${options.isIdSearch ? "" : queryEscaped}"
-            placeholder="Search Latin word (e.g. caesar, virtus)..."
+            placeholder="Search for a word (e.g. equus, horse, cheval, Pferd)..."
             autocomplete="off"
           />
         </div>

@@ -9,7 +9,6 @@ test.describe("UI V2 dictionary", () => {
     const page = await context.newPage();
 
     await page.goto("/v2/dicts");
-    await expect(page.locator("h1")).toHaveText("Morcus Latin Dictionary");
     await expect(page.locator("form.v2-search-form")).toBeVisible();
 
     // Type query and submit native HTML form
