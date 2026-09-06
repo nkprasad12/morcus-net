@@ -1,0 +1,285 @@
+/* Modal Dialog Base & Reporting Form */
+
+.v2-dialog {
+  border: 1px solid var(--v2-border);
+  border-radius: 12px;
+  background: var(--v2-card-bg);
+  color: var(--v2-text);
+  padding: 0;
+  max-width: 540px;
+  width: calc(100vw - 32px);
+  max-height: 85dvh;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.22), 0 2px 8px rgba(0, 0, 0, 0.08);
+  overscroll-behavior: contain;
+}
+
+.v2-dialog[open] {
+  animation: v2-dialog-fade-in 0.18s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes v2-dialog-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-6px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-dialog[open] {
+    animation: none;
+  }
+}
+
+.v2-dialog::backdrop {
+  background: rgba(0, 0, 0, 0.55);
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+}
+
+.v2-dialog-card {
+  display: flex;
+  flex-direction: column;
+  padding: 22px 24px;
+}
+
+.v2-dialog-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 14px;
+}
+
+.v2-dialog-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+.v2-dialog-close-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: none;
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  padding: 6px;
+  border-radius: 6px;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.v2-dialog-close-btn:hover {
+  color: var(--v2-text);
+  background: var(--v2-pill-bg);
+}
+
+.v2-dialog-close-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-dialog-close-icon {
+  display: block;
+  width: 18px;
+  height: 18px;
+  stroke: currentColor;
+}
+
+.v2-dialog-body {
+  margin-bottom: 4px;
+}
+
+.v2-dialog-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 18px;
+}
+
+/* Button utility classes */
+.v2-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 8px 18px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out,
+    color 0.15s ease-in-out, opacity 0.15s ease-in-out;
+}
+
+.v2-btn-primary {
+  background-color: var(--v2-primary);
+  color: #ffffff;
+  border-color: var(--v2-primary);
+}
+
+.v2-btn-primary:hover:not(:disabled) {
+  background-color: var(--v2-primary-hover);
+}
+
+.v2-btn-primary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.v2-btn-secondary {
+  background-color: transparent;
+  color: var(--v2-text);
+  border-color: var(--v2-border);
+}
+
+.v2-btn-secondary:hover {
+  background-color: var(--v2-pill-bg);
+}
+
+.v2-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+/* Report Issue Dialog Specifics */
+.v2-report-notice {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 10px 14px;
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  margin-bottom: 16px;
+  font-size: 0.85rem;
+  line-height: 1.45;
+  color: var(--v2-text-muted);
+}
+
+.v2-report-notice-icon {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--v2-primary);
+}
+
+.v2-report-notice-text strong {
+  color: var(--v2-text);
+  font-weight: 600;
+}
+
+.v2-form-group {
+  margin-bottom: 14px;
+}
+
+.v2-form-label {
+  display: block;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  margin-bottom: 6px;
+}
+
+.v2-form-label .v2-required {
+  color: var(--v2-primary);
+  font-weight: 700;
+}
+
+.v2-form-label .v2-form-optional {
+  font-weight: 400;
+  color: var(--v2-text-muted);
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+
+.v2-report-reporter,
+.v2-report-textarea {
+  width: 100%;
+  box-sizing: border-box;
+  font-family: inherit;
+  font-size: 0.95rem;
+  line-height: 1.45;
+  padding: 9px 12px;
+  border: 1px solid var(--v2-border);
+  border-radius: 6px;
+  background: var(--v2-bg);
+  color: var(--v2-text);
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.v2-report-reporter:focus-visible,
+.v2-report-textarea:focus-visible {
+  outline: none;
+  border-color: var(--v2-primary);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.2);
+}
+
+:root[data-theme="dark"] .v2-report-reporter:focus-visible,
+:root[data-theme="dark"] .v2-report-textarea:focus-visible {
+  box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.25);
+}
+
+.v2-report-textarea {
+  resize: vertical;
+  min-height: 100px;
+}
+
+.v2-form-hint {
+  display: block;
+  font-size: 0.775rem;
+  color: var(--v2-text-muted);
+  margin-top: 4px;
+}
+
+.v2-report-status {
+  min-height: 1.25rem;
+  margin-top: 8px;
+  font-size: 0.875rem;
+  font-weight: 500;
+  color: var(--v2-primary);
+}
+
+.v2-report-status.success {
+  color: #198754;
+}
+
+:root[data-theme="dark"] .v2-report-status.success {
+  color: #5cdb95;
+}
+
+.v2-report-status.error {
+  color: #dc3545;
+}
+
+:root[data-theme="dark"] .v2-report-status.error {
+  color: #ff6b6b;
+}
+
+.v2-report-submit-btn {
+  position: relative;
+}
+
+.v2-report-submit-spinner {
+  display: none;
+  width: 14px;
+  height: 14px;
+  margin-right: 6px;
+  border: 2px solid rgba(255, 255, 255, 0.35);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: v2-spin 0.6s linear infinite;
+}
+
+.v2-report-submit-btn.loading .v2-report-submit-spinner {
+  display: inline-block;
+}
+
+@keyframes v2-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}

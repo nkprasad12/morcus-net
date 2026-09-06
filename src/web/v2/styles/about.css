@@ -1,0 +1,70 @@
+/* About Page Layout & Sections */
+
+.v2-header {
+  margin-bottom: 24px;
+}
+
+.v2-about-header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.v2-about-logo {
+  width: 72px;
+  height: 72px;
+  flex-shrink: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.v2-header h1 {
+  margin: 0 0 8px 0;
+  font-size: 1.8rem;
+}
+
+.v2-header p {
+  margin: 0;
+  color: var(--v2-text-muted);
+  font-size: 0.95rem;
+}
+
+.v2-about-article {
+  max-width: 760px;
+}
+
+.v2-about-section {
+  margin-bottom: 32px;
+}
+
+.v2-about-section h2 {
+  font-size: 1.35rem;
+  margin: 0 0 12px 0;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-about-section p {
+  margin: 0 0 12px 0;
+  line-height: 1.6;
+}
+
+.v2-about-section ul {
+  margin: 0 0 16px 0;
+  padding-left: 24px;
+}
+
+.v2-about-section li {
+  margin-bottom: 8px;
+  line-height: 1.5;
+}
+
+.v2-about-section a {
+  color: var(--v2-primary);
+  text-decoration: underline;
+}
+
+.v2-about-section a:hover {
+  color: var(--v2-primary-hover);
+}

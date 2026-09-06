@@ -20,20 +20,31 @@ src/web/v2/
 ├── client/                               # Client-side Lit Web Components (Light DOM)
 │   ├── morcus_dict_search.ts            # Form hijacking, keyboard navigation & history syncing
 │   ├── morcus_dict_suggestions.ts       # Declarative autocomplete dropdown component
-│   ├── morcus_dict_entry.ts             # Dictionary card enhancement wrapper
 │   ├── morcus_theme_toggle.ts           # Light/dark mode toggle button (hidden when JS disabled)
 │   ├── morcus_report_dialog.ts          # "Report an Issue" modal dialog (progressive enhancement)
 │   └── v2_bundle.ts                     # Client entry point bundling all custom elements
 ├── server/                               # Server-side rendering (SSR) templates
+│   ├── dict/                            # Modular dictionary SSR renderers
+│   │   ├── xml_to_html.ts               # TEI XML AST to clean semantic HTML
+│   │   ├── linkify.ts                   # Click-to-lookup Latin word linkification
+│   │   ├── entry_view.ts                # Entry result card, outline, & inflection tables
+│   │   └── dict_page.ts                 # Full page shell & multi-lexicon container
+│   ├── dict_ssr.ts                      # Clean re-exporting facade for dictionary SSR
 │   ├── page_shell.ts                    # Shared document skeleton, app bar, & anti-flash theme script
 │   ├── dialog.ts                        # Shared accessible dialog & report issue dialog generators
 │   ├── dialog.test.ts                   # Unit tests for dialog generators
-│   ├── dict_ssr.ts                      # Dictionary page & partial HTML fragment renderer
 │   ├── about_ssr.ts                     # About page content & metadata renderer
 │   ├── dict_ssr.test.ts                 # Unit tests for dictionary SSR
 │   └── about_ssr.test.ts                # Unit tests for About page SSR
-├── v2.css                               # Standalone CSS supporting light, dark, and system themes
-├── v2-critical.css                      # Critical inlined CSS
+├── styles/                              # Modular CSS stylesheets (bundled via @import)
+│   ├── variables.css                    # Design tokens & light/dark/system theme variables
+│   ├── app_bar.css                      # App bar, brand logo, & navigation links
+│   ├── search.css                       # Search form, input, button, & suggestions dropdown
+│   ├── dictionary.css                   # Dict cards, entry headers, segmented bar, & lexical styles
+│   ├── dialog.css                       # Modal dialog, buttons, & report issue form
+│   └── about.css                        # About page typography & section layout
+├── v2.css                               # Standalone CSS entry point importing styles/*
+├── v2-critical.css                      # Critical inlined CSS (imports variables.css)
 ├── v2_router.ts                         # Express router mounted at /v2 (search, autocomplete, reporting)
 ├── v2_router.test.ts                    # Router integration tests
 └── TESTING.md                           # Guide for running unit and E2E Playwright tests

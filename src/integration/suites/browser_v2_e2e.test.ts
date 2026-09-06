@@ -13,7 +13,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Type query and submit native HTML form
     await page.locator('input[name="q"]').fill("habeo");
-    await page.locator('button[type="submit"]').click();
+    await page.locator('form.v2-search-form button[type="submit"]').click();
 
     // Verify native HTTP GET navigation and SSR response
     await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
@@ -131,7 +131,9 @@ test.describe("UI V2 dictionary", () => {
 
     await page.goto("/v2/dicts");
     await expect(page.locator("header.v2-app-bar")).toBeVisible();
-    await expect(page.locator(".v2-theme-toggle-btn")).not.toBeVisible();
+    await expect(
+      page.locator("morcus-theme-toggle .v2-theme-toggle-btn")
+    ).not.toBeVisible();
 
     await context.close();
   });
@@ -140,7 +142,7 @@ test.describe("UI V2 dictionary", () => {
     page,
   }) => {
     await page.goto("/v2/dicts");
-    const toggleBtn = page.locator(".v2-theme-toggle-btn");
+    const toggleBtn = page.locator("morcus-theme-toggle .v2-theme-toggle-btn");
     await expect(toggleBtn).toBeVisible();
 
     // Click theme toggle button
@@ -174,7 +176,7 @@ test.describe("UI V2 dictionary", () => {
     await page.goto("/v2/dicts?q=habeo");
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
 
-    const toggleBtn = page.locator(".v2-theme-toggle-btn");
+    const toggleBtn = page.locator("morcus-theme-toggle .v2-theme-toggle-btn");
     await expect(toggleBtn).toBeVisible();
 
     // Click theme toggle button
@@ -351,10 +353,10 @@ test.describe("UI V2 dictionary", () => {
     // Verify multi-entry dictionary has quick-jump bar
     const nav = page.locator(".v2-entry-nav").first();
     await expect(nav).toBeVisible();
-    await expect(nav.getByText("Jump to entry:")).toBeVisible();
+    await expect(nav.getByText("Jump:")).toBeVisible();
 
     // Verify individual entry headword button exists and links to anchor
-    const headwordBtn = page.locator(".v2-entry-headword-btn").first();
+    const headwordBtn = page.locator(".v2-entry-headword").first();
     await expect(headwordBtn).toBeVisible();
     await expect(headwordBtn).toHaveAttribute("href", /^#[a-zA-Z0-9_-]+/);
 

@@ -1,8 +1,6 @@
 import { LitElement } from "lit";
 import { customElement } from "lit/decorators.js";
 
-const DEFAULT_REPORT_TEXT = "\n\nReporter: Anonymous";
-
 /**
  * Progressively enhanced issue and feedback report dialog component (Light DOM mode).
  *

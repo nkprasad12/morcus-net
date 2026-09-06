@@ -1,7 +1,6 @@
 // Register Lit-based custom elements for the UI V2 prototype
 import "@/web/v2/client/morcus_dict_suggestions";
 import "@/web/v2/client/morcus_dict_search";
-import "@/web/v2/client/morcus_dict_entry";
 import "@/web/v2/client/morcus_theme_toggle";
 import "@/web/v2/client/morcus_report_dialog";
 
