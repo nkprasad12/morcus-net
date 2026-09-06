@@ -292,7 +292,10 @@ test.describe("UI V2 dictionary", () => {
 
     const textarea = dialog.locator("textarea.v2-report-textarea");
     await expect(textarea).toBeVisible();
-    await expect(textarea).toHaveValue(/Reporter: Anonymous/);
+    await expect(textarea).toHaveValue("");
+
+    const reporterInput = dialog.locator("input.v2-report-reporter");
+    await expect(reporterInput).toBeVisible();
 
     const cancelBtn = dialog.locator(
       'button[data-dialog-close]:has-text("Cancel")'
@@ -324,7 +327,10 @@ test.describe("UI V2 dictionary", () => {
     await expect(dialog).toBeVisible();
 
     const textarea = dialog.locator("textarea.v2-report-textarea");
-    await textarea.fill("Typo report in amicus\nReporter: E2E Tester");
+    await textarea.fill("Typo report in amicus");
+
+    const reporterInput = dialog.locator("input.v2-report-reporter");
+    await reporterInput.fill("E2E Tester");
 
     const submitBtn = dialog.locator(".v2-report-submit-btn");
     await submitBtn.click();

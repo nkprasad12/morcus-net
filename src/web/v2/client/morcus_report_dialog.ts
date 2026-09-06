@@ -21,6 +21,7 @@ export class MorcusReportDialog extends LitElement {
   private dialogEl: HTMLDialogElement | null = null;
   private formEl: HTMLFormElement | null = null;
   private textareaEl: HTMLTextAreaElement | null = null;
+  private reporterInputEl: HTMLInputElement | null = null;
   private statusEl: HTMLElement | null = null;
   private submitBtn: HTMLButtonElement | null = null;
   private closeButtons: NodeListOf<HTMLElement> | null = null;
@@ -43,6 +44,9 @@ export class MorcusReportDialog extends LitElement {
     this.formEl = this.querySelector<HTMLFormElement>("form.v2-report-form");
     this.textareaEl = this.querySelector<HTMLTextAreaElement>(
       "textarea.v2-report-textarea"
+    );
+    this.reporterInputEl = this.querySelector<HTMLInputElement>(
+      "input.v2-report-reporter"
     );
     this.statusEl = this.querySelector<HTMLElement>(".v2-report-status");
     this.submitBtn = this.querySelector<HTMLButtonElement>(
@@ -69,6 +73,7 @@ export class MorcusReportDialog extends LitElement {
 
     if (this.formEl) {
       this.formEl.addEventListener("submit", this.handleSubmit);
+      this.formEl.addEventListener("keydown", this.handleFormKeyDown);
     }
   }
 
@@ -85,6 +90,7 @@ export class MorcusReportDialog extends LitElement {
     });
     if (this.formEl) {
       this.formEl.removeEventListener("submit", this.handleSubmit);
+      this.formEl.removeEventListener("keydown", this.handleFormKeyDown);
     }
   }
 
@@ -109,12 +115,32 @@ export class MorcusReportDialog extends LitElement {
     this.clearStatus();
   };
 
+  private readonly handleFormKeyDown = (e: KeyboardEvent) => {
+    if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
+      e.preventDefault();
+      this.formEl?.requestSubmit();
+    }
+  };
+
   private readonly clearStatus = () => {
     if (this.statusEl) {
       this.statusEl.className = "v2-report-status";
       this.statusEl.textContent = "";
     }
   };
+
+  private resetForm() {
+    if (this.textareaEl) {
+      this.textareaEl.value = "";
+    }
+    if (this.reporterInputEl) {
+      this.reporterInputEl.value = "";
+    }
+    if (this.submitBtn) {
+      this.submitBtn.disabled = false;
+      this.submitBtn.classList.remove("loading");
+    }
+  }
 
   public openDialog() {
     if (typeof this.dialogEl?.showModal === "function") {
@@ -123,7 +149,10 @@ export class MorcusReportDialog extends LitElement {
       this.dialogEl.setAttribute("open", "");
     }
     this.clearStatus();
-    this.textareaEl?.focus();
+    // Auto-focus feedback textarea on open
+    setTimeout(() => {
+      this.textareaEl?.focus();
+    }, 50);
   }
 
   public closeDialog() {
@@ -138,10 +167,21 @@ export class MorcusReportDialog extends LitElement {
 
   private readonly handleSubmit = async (e: Event) => {
     e.preventDefault();
-    const reportText = this.textareaEl?.value.trim();
-    if (!reportText) return;
+    const text = this.textareaEl?.value.trim() ?? "";
+    if (!text) return;
 
-    if (this.submitBtn) this.submitBtn.disabled = true;
+    const reporter = this.reporterInputEl?.value.trim();
+    let reportText = text;
+    if (reporter) {
+      reportText = `${text}\n\nReporter: ${reporter}`;
+    } else if (!/Reporter:\s*.+/i.test(text)) {
+      reportText = `${text}\n\nReporter: Anonymous`;
+    }
+
+    if (this.submitBtn) {
+      this.submitBtn.disabled = true;
+      this.submitBtn.classList.add("loading");
+    }
     if (this.statusEl) {
       this.statusEl.className = "v2-report-status";
       this.statusEl.textContent = "Submitting report...";
@@ -154,7 +194,7 @@ export class MorcusReportDialog extends LitElement {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          reportText: this.textareaEl?.value,
+          reportText,
           url: window.location.href,
         }),
       });
@@ -164,17 +204,14 @@ export class MorcusReportDialog extends LitElement {
       }
 
       if (this.statusEl) {
-        this.statusEl.className = "v2-report-status";
+        this.statusEl.className = "v2-report-status success";
         this.statusEl.textContent =
           "✓ Thank you! Your report has been submitted.";
       }
 
       setTimeout(() => {
         this.closeDialog();
-        if (this.textareaEl) {
-          this.textareaEl.value = DEFAULT_REPORT_TEXT;
-        }
-        if (this.submitBtn) this.submitBtn.disabled = false;
+        this.resetForm();
       }, 1200);
     } catch (err) {
       console.error("Failed to submit issue report:", err);
@@ -183,7 +220,10 @@ export class MorcusReportDialog extends LitElement {
         this.statusEl.textContent =
           "Error submitting report. Please check your connection and try again.";
       }
-      if (this.submitBtn) this.submitBtn.disabled = false;
+      if (this.submitBtn) {
+        this.submitBtn.disabled = false;
+        this.submitBtn.classList.remove("loading");
+      }
     }
   };
 }

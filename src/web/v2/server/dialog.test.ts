@@ -15,8 +15,9 @@ describe("dialog server utilities", () => {
         '<h2 id="test-dialog-title" class="v2-dialog-title">Test Title</h2>'
       );
       expect(html).toContain(
-        '<button type="button" class="v2-dialog-close-btn" aria-label="Close dialog" data-dialog-close>&times;</button>'
+        '<button type="button" class="v2-dialog-close-btn" aria-label="Close dialog" data-dialog-close>'
       );
+      expect(html).toContain('class="v2-dialog-close-icon"');
       expect(html).toContain("<p>Dialog body content</p>");
     });
 
@@ -74,17 +75,19 @@ describe("dialog server utilities", () => {
       );
       expect(html).toContain('form class="v2-report-form"');
       expect(html).toContain('name="reportText"');
+      expect(html).toContain('name="reporter"');
+      expect(html).toContain('class="v2-input v2-report-reporter"');
       expect(html).toContain("data-dialog-close");
       expect(html).toContain(
         'class="v2-btn v2-btn-primary v2-report-submit-btn"'
       );
-      expect(html).toContain("Reporter: Anonymous");
     });
 
     it("supports custom dialog ID and custom default text", () => {
       const html = renderReportIssueDialog({
         id: "custom-report",
         defaultText: "Custom Reporter Note",
+        defaultReporter: "Custom User",
       });
 
       expect(html).toContain('id="custom-report"');
@@ -92,6 +95,8 @@ describe("dialog server utilities", () => {
       expect(html).toContain('aria-describedby="custom-report-desc"');
       expect(html).toContain('id="custom-report-textarea"');
       expect(html).toContain("Custom Reporter Note");
+      expect(html).toContain('id="custom-report-reporter"');
+      expect(html).toContain("Custom User");
     });
   });
 });
