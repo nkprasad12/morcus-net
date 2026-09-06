@@ -178,7 +178,7 @@ describe("dict_ssr", () => {
 
   test("renderDictResultsHtml handles empty query", () => {
     const html = renderDictResultsHtml("");
-    expect(html).toContain("Type a Latin word");
+    expect(html).toContain("Type a word");
   });
 
   test("renderDictResultsHtml handles no results", () => {
