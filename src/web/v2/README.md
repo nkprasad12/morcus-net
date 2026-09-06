@@ -32,7 +32,8 @@ src/web/v2/
 ├── v2.css                               # Standalone CSS supporting light, dark, and system themes
 ├── v2-critical.css                      # Critical inlined CSS
 ├── v2_router.ts                         # Express router mounted at /v2
-└── v2_router.test.ts                    # Router integration tests
+├── v2_router.test.ts                    # Router integration tests
+└── TESTING.md                           # Guide for running unit and E2E Playwright tests
 ```
 
 ### Build Pipeline
@@ -81,3 +82,13 @@ sequenceDiagram
 - **No-JS**: Media query `@media (prefers-color-scheme: dark)` adapts colors automatically based on the user's OS preference. The toggle button is hidden using `morcus-theme-toggle:not(:defined) { display: none; }` so no dead controls are shown.
 - **With JS**: `<morcus-theme-toggle>` initializes, displays the sun/moon button in the app bar, and toggles `[data-theme="dark"]` / `[data-theme="light"]` on `document.documentElement`. The choice is saved to `localStorage.getItem("GlobalSettings")` (shared with the existing SPA).
 - **Zero Flicker**: An inline script in `<head>` executes before the first paint to apply the saved theme attribute immediately.
+
+---
+
+## Testing & Verification
+
+Comprehensive instructions for running unit tests and Playwright E2E tests are detailed in [TESTING.md](TESTING.md).
+
+- **E2E Tests**: `REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e`
+- **Unit Tests**: `npx jest src/web/v2`
+- **Type Checking**: `npx tsc --noEmit`

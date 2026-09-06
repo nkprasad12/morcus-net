@@ -234,7 +234,7 @@ export function renderEntryResult(
     const groupName = `entry-tools-${entryIndex}`;
     const outlineItems = hasOutline
       ? result
-          .outline!.senses.map((sense) => {
+          .outline!.senses!.map((sense) => {
             const indentStyle =
               sense.level > 0
                 ? ` style="margin-left: ${sense.level * 0.75}rem;"`
