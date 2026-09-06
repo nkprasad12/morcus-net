@@ -234,6 +234,18 @@ export function xmlNodeToHtml(
 }
 
 /**
+ * Decodes Morpheus diacritic markings (^ for breve, _ for macron, + for diaeresis)
+ * into standard Unicode characters with canonical NFC normalization.
+ */
+export function formatInflectionForm(rawForm: string): string {
+  return rawForm
+    .replaceAll("^", "\u0306")
+    .replaceAll("_", "\u0304")
+    .replaceAll("+", "\u0308")
+    .normalize("NFC");
+}
+
+/**
  * Renders the table of contents / outline for a dictionary entry.
  */
 export function renderEntryOutline(outline?: EntryOutline): string {
@@ -243,9 +255,10 @@ export function renderEntryOutline(outline?: EntryOutline): string {
 
   const items = outline.senses
     .map((sense) => {
+      const indentLevel = Math.max(0, sense.level - 1);
       const indentStyle =
-        sense.level > 0
-          ? ` style="margin-left: ${sense.level * 0.75}rem;"`
+        indentLevel > 0
+          ? ` style="margin-left: ${indentLevel * 0.75}rem;"`
           : "";
       const ordinalHtml = sense.ordinal
         ? `<strong class="v2-toc-ordinal">${he.encode(sense.ordinal)}</strong> `
@@ -312,9 +325,10 @@ export function renderEntryResult(
     const outlineItems = hasOutline
       ? result
           .outline!.senses!.map((sense) => {
+            const indentLevel = Math.max(0, sense.level - 1);
             const indentStyle =
-              sense.level > 0
-                ? ` style="margin-left: ${sense.level * 0.75}rem;"`
+              indentLevel > 0
+                ? ` style="margin-left: ${indentLevel * 0.75}rem;"`
                 : "";
             const ordinalHtml = sense.ordinal
               ? `<strong class="v2-toc-ordinal">${he.encode(
@@ -344,15 +358,19 @@ export function renderEntryResult(
 
     const inflectionsRows = hasInflections
       ? result
-          .inflections!.map(
-            (inf) => `
+          .inflections!.map((inf) => {
+            const formFormatted = formatInflectionForm(inf.form);
+            const noteHtml = inf.usageNote
+              ? ` <span class="v2-usage-note">(${he.encode(
+                  inf.usageNote
+                )})</span>`
+              : "";
+            return `
             <tr>
-              <td><strong>${he.encode(inf.form)}</strong></td>
-              <td>${he.encode(inf.lemma)}</td>
-              <td>${he.encode(inf.data)}</td>
-              <td>${he.encode(inf.usageNote ?? "")}</td>
-            </tr>`
-          )
+              <td>${he.escape(formFormatted)}</td>
+              <td>${he.encode(inf.data)}${noteHtml}</td>
+            </tr>`;
+          })
           .join("")
       : "";
 
@@ -360,11 +378,11 @@ export function renderEntryResult(
       ? `
         <details class="v2-tool-pane" name="${groupName}">
           <summary class="v2-tab-pill">Inflections</summary>
-          <div class="v2-tool-body">
+          <div class="v2-tool-body v2-inflections-body">
             <div class="v2-table-scroller">
               <table class="v2-inflection-table">
                 <thead>
-                  <tr><th>Form</th><th>Lemma</th><th>Analysis</th><th>Notes</th></tr>
+                  <tr><th>Form</th><th>Analysis</th></tr>
                 </thead>
                 <tbody>${inflectionsRows}</tbody>
               </table>
