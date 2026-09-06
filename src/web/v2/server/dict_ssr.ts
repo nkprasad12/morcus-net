@@ -215,44 +215,106 @@ export function renderEntryOutline(outline?: EntryOutline): string {
 }
 
 /**
- * Formats an EntryResult into semantic HTML.
+ * Formats an EntryResult into semantic HTML with top tools bar / desktop side-rail.
  */
-export function renderEntryResult(result: EntryResult): string {
-  const outlineHtml = renderEntryOutline(result.outline);
-  const entryHtml = xmlNodeToHtml(result.entry, { allowLinkify: true });
+export function renderEntryResult(
+  result: EntryResult,
+  entryIndex: string | number = 0
+): string {
+  const hasOutline = Boolean(
+    result.outline?.senses && result.outline.senses.length > 0
+  );
+  const hasInflections = Boolean(
+    result.inflections && result.inflections.length > 0
+  );
+  const hasTools = hasOutline || hasInflections;
 
-  let inflectionsHtml = "";
-  if (result.inflections && result.inflections.length > 0) {
-    const rows = result.inflections
-      .map(
-        (inf) => `
-        <tr>
-          <td><strong>${he.encode(inf.form)}</strong></td>
-          <td>${he.encode(inf.lemma)}</td>
-          <td>${he.encode(inf.data)}</td>
-          <td>${he.encode(inf.usageNote ?? "")}</td>
-        </tr>`
-      )
-      .join("");
+  let toolsHtml = "";
+  if (hasTools) {
+    const groupName = `entry-tools-${entryIndex}`;
+    const outlineItems = hasOutline
+      ? result
+          .outline!.senses.map((sense) => {
+            const indentStyle =
+              sense.level > 0
+                ? ` style="margin-left: ${sense.level * 0.75}rem;"`
+                : "";
+            const ordinalHtml = sense.ordinal
+              ? `<strong class="v2-toc-ordinal">${he.encode(
+                  sense.ordinal
+                )}</strong> `
+              : "";
+            const textHtml = he.encode(sense.text.trim());
+            return `<li${indentStyle}><a href="#${he.encode(
+              sense.sectionId
+            )}" class="v2-toc-link">${ordinalHtml}${textHtml}</a></li>`;
+          })
+          .join("")
+      : "";
 
-    inflectionsHtml = `
-      <details class="v2-inflections">
-        <summary>Morphological Inflections (${result.inflections.length})</summary>
-        <table class="v2-inflection-table">
-          <thead>
-            <tr><th>Form</th><th>Lemma</th><th>Analysis</th><th>Notes</th></tr>
-          </thead>
-          <tbody>${rows}</tbody>
-        </table>
-      </details>
+    const outlinePanelHtml = hasOutline
+      ? `
+        <details class="v2-tool-pane" name="${groupName}">
+          <summary class="v2-tab-pill">Outline</summary>
+          <div class="v2-tool-body">
+            <ul class="v2-toc-list">
+              ${outlineItems}
+            </ul>
+          </div>
+        </details>
+      `
+      : "";
+
+    const inflectionsRows = hasInflections
+      ? result
+          .inflections!.map(
+            (inf) => `
+            <tr>
+              <td><strong>${he.encode(inf.form)}</strong></td>
+              <td>${he.encode(inf.lemma)}</td>
+              <td>${he.encode(inf.data)}</td>
+              <td>${he.encode(inf.usageNote ?? "")}</td>
+            </tr>`
+          )
+          .join("")
+      : "";
+
+    const inflectionsPanelHtml = hasInflections
+      ? `
+        <details class="v2-tool-pane" name="${groupName}">
+          <summary class="v2-tab-pill">Inflections</summary>
+          <div class="v2-tool-body">
+            <div class="v2-table-scroller">
+              <table class="v2-inflection-table">
+                <thead>
+                  <tr><th>Form</th><th>Lemma</th><th>Analysis</th><th>Notes</th></tr>
+                </thead>
+                <tbody>${inflectionsRows}</tbody>
+              </table>
+            </div>
+          </div>
+        </details>
+      `
+      : "";
+
+    toolsHtml = `
+      <div class="v2-entry-tools">
+        <div class="v2-segmented-bar">
+          ${outlinePanelHtml}
+          ${inflectionsPanelHtml}
+        </div>
+      </div>
     `;
   }
 
+  const entryHtml = xmlNodeToHtml(result.entry, { allowLinkify: true });
+
   return `
-    <article class="v2-entry">
-      ${outlineHtml}
-      ${entryHtml}
-      ${inflectionsHtml}
+    <article class="v2-entry ${hasTools ? "has-tools" : ""}">
+      ${toolsHtml}
+      <div class="v2-entry-content">
+        ${entryHtml}
+      </div>
     </article>
   `;
 }
@@ -301,7 +363,9 @@ export function renderDictResultsHtml(
         DICT_NAMES[dictKey] ??
         LatinDict.BY_KEY.get(dictKey)?.displayName ??
         dictKey.toUpperCase();
-      const entriesHtml = entries.map(renderEntryResult).join("");
+      const entriesHtml = entries
+        .map((entry, idx) => renderEntryResult(entry, `${dictKey}-${idx}`))
+        .join("");
 
       return `
         <details class="v2-dict-card" open>

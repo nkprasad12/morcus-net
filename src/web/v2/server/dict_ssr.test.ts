@@ -171,7 +171,7 @@ describe("dict_ssr", () => {
 
     const rendered = renderEntryResult(entryResult);
     expect(rendered).toContain('<span class="lsOrth">amo</span>');
-    expect(rendered).toContain("Morphological Inflections (1)");
+    expect(rendered).toContain("Inflections");
     expect(rendered).toContain("<td>amo</td>");
     expect(rendered).toContain("<td>1st sg pres act ind</td>");
   });
@@ -290,8 +290,8 @@ describe("dict_ssr", () => {
     };
 
     const rendered = renderEntryResult(entryResult);
-    expect(rendered).toContain('class="v2-toc"');
-    expect(rendered).toContain("Outline (2 sections)");
+    expect(rendered).toContain('class="v2-entry-tools"');
+    expect(rendered).toContain("Outline");
     expect(rendered).toContain('href="#n20077.1"');
     expect(rendered).toContain("I.");
     expect(rendered).toContain("In general");
