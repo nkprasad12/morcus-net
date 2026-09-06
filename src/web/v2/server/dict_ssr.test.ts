@@ -208,7 +208,6 @@ describe("dict_ssr", () => {
     const html = renderDictResultsHtml("caesar", results);
     expect(html).toContain("Lewis");
     expect(html).toContain("Short");
-    expect(html).toContain("1 entry");
     expect(html).toContain('<span class="lsOrth">Caesar</span>');
     expect(html).toContain("<details");
   });
@@ -410,5 +409,118 @@ describe("dict_ssr", () => {
     // No inner divs inside root
     const divCount = (html.match(/<div\b/g) || []).length;
     expect(divCount).toBe(1);
+  });
+
+  test("renderDictResultsHtml renders quick-jump nav and entry headers for multiple entries", () => {
+    const results = {
+      "L&S": [
+        {
+          entry: new XmlNode("span", [["class", "lsOrth"]], ["cum"]),
+          outline: {
+            mainKey: "cum1",
+            mainLabel: "1. cum",
+            mainSection: {
+              text: "cum",
+              level: 0,
+              ordinal: "",
+              sectionId: "n1",
+            },
+            senses: [],
+          },
+        },
+        {
+          entry: new XmlNode("span", [["class", "lsOrth"]], ["cum"]),
+          outline: {
+            mainKey: "cum2",
+            mainLabel: "2. cum",
+            mainSection: {
+              text: "cum",
+              level: 0,
+              ordinal: "",
+              sectionId: "n2",
+            },
+            senses: [],
+          },
+        },
+      ],
+    };
+
+    const html = renderDictResultsHtml("cum", results);
+
+    // Quick jump bar integrated in header
+    expect(html).toContain('class="v2-entry-nav"');
+    expect(html).toContain("Jump:");
+    expect(html).toContain('href="#n1"');
+    expect(html).toContain('href="#n2"');
+    expect(html).toContain("cum");
+
+    // Entry headers and anchors
+    expect(html).toContain('id="n1"');
+    expect(html).toContain('id="n2"');
+    expect(html).toContain('class="v2-entry-header"');
+    expect(html).toContain('class="v2-entry-headword"');
+    expect(html).toContain('href="#n1"');
+    expect(html).toContain('href="#n2"');
+    expect(html).not.toContain("Entry 1 of 2");
+  });
+
+  test("renderDictResultsHtml omits quick-jump nav and entry headers when only 1 entry exists without tools", () => {
+    const results = {
+      "L&S": [
+        {
+          entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+          outline: {
+            mainKey: "habeo",
+            mainSection: {
+              text: "habeo",
+              level: 0,
+              ordinal: "",
+              sectionId: "n0",
+            },
+            senses: [],
+          },
+        },
+      ],
+    };
+
+    const html = renderDictResultsHtml("habeo", results);
+
+    expect(html).not.toContain('class="v2-entry-nav"');
+    expect(html).not.toContain('class="v2-entry-header"');
+    expect(html).not.toContain("Entry 1 of 1");
+    // Article still has anchor id from sectionId
+    expect(html).toContain('id="n0"');
+  });
+
+  test("renderEntryResult renders prominent headword heading and avoids duplicate root id", () => {
+    const entryResult: EntryResult = {
+      entry: new XmlNode(
+        "div",
+        [["id", "n20077"]],
+        [new XmlNode("span", [["class", "lsOrth"]], ["habeo"])]
+      ),
+      outline: {
+        mainKey: "habeo",
+        mainSection: {
+          text: "habeo",
+          level: 0,
+          ordinal: "",
+          sectionId: "n20077",
+        },
+        senses: [
+          { text: "Hold", level: 1, ordinal: "I.", sectionId: "n20077.1" },
+        ],
+      },
+    };
+    const rendered = renderEntryResult(entryResult);
+    expect(rendered).toContain('class="v2-entry-headword"');
+    expect(rendered).toContain('href="#n20077"');
+    expect(rendered).toContain(
+      '<article class="v2-entry has-tools" id="n20077">'
+    );
+    // Root id="n20077" is omitted from inner div to prevent duplicate IDs in DOM
+    const idCount = (rendered.match(/id="n20077"/g) || []).length;
+    expect(idCount).toBe(1);
+    expect(rendered).toContain("habeo");
   });
 });
