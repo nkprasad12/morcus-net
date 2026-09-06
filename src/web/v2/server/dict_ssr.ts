@@ -275,7 +275,7 @@ export function renderDictResultsHtml(
   if (!results) {
     return `
       <div class="v2-no-results">
-        <p>No results found for "<strong>${he.encode(query)}</strong>".</p>
+        <p>No results found for "<strong>${he.escape(query)}</strong>".</p>
       </div>
     `;
   }
@@ -287,7 +287,7 @@ export function renderDictResultsHtml(
   if (dictKeys.length === 0) {
     return `
       <div class="v2-no-results">
-        <p>No dictionary entries found for "<strong>${he.encode(
+        <p>No dictionary entries found for "<strong>${he.escape(
           query
         )}</strong>".</p>
       </div>
@@ -330,10 +330,11 @@ export interface DictPageOptions {
  * Renders the full standalone HTML page for UI V2.
  */
 export function renderDictPageHtml(options: DictPageOptions): string {
-  const queryEncoded = he.encode(options.query || "");
+  const query = options.query || "";
+  const queryEscaped = he.escape(query);
   const resultsHtml = renderDictResultsHtml(options.query, options.results);
 
-  const titlePrefix = options.isIdSearch ? `ID ${queryEncoded}` : queryEncoded;
+  const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
 
   const contentHtml = `
     <header class="v2-header">
@@ -348,7 +349,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
             type="text"
             name="q"
             class="v2-input"
-            value="${options.isIdSearch ? "" : queryEncoded}"
+            value="${options.isIdSearch ? "" : queryEscaped}"
             placeholder="Search Latin word (e.g. caesar, virtus)..."
             autocomplete="off"
           />
