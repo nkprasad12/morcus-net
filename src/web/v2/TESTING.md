@@ -76,29 +76,7 @@ REUSE_DEV_SERVER=true PORT=1337 npm run integration-tests
 
 ---
 
-## 3. What the V2 E2E Tests Cover
-
-The suite in `src/integration/suites/browser_v2_e2e.test.ts` validates 13 critical functional paths:
-
-| Test Name                                                                       | Mode     | What It Verifies                                                                                                                                   |
-| ------------------------------------------------------------------------------- | -------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `loads results without JavaScript (No-JS fallback)`                             | No-JS    | `context({ javaScriptEnabled: false })`, native `<form method="GET">` submission to `/v2/dicts?q=...`, and server-rendered dictionary card output. |
-| `loads results by typing and enter (JS enhanced)`                               | JS       | Typing query into `input[name="q"]` and submitting via keyboard Enter.                                                                             |
-| `supports inflected form searches without JavaScript`                           | No-JS    | Inflected search (e.g. `habuit` $\to$ `habeo`) with JS disabled.                                                                                   |
-| `loads autocomplete suggestions and searches on suggestion click`               | JS       | Lit component `<morcus-dict-suggestions>` mounts, queries `/v2/api/completions`, renders `.v2-suggestion-item`, and triggers lookup on click.      |
-| `allows navigating between Dictionary and About via app bar without JavaScript` | No-JS    | Standard browser navigation between `/v2/dicts` and `/v2/about` using semantic links in `.v2-nav`.                                                 |
-| `allows navigating between Dictionary and About via app bar (JS enabled)`       | JS       | Client-side app bar navigation with JS enabled.                                                                                                    |
-| `hides theme toggle button when JavaScript is disabled`                         | No-JS    | Verifies `<morcus-theme-toggle>` does not render dead buttons when JS is unavailable.                                                              |
-| `toggles theme and persists preference with JavaScript enabled`                 | JS       | Clicking `.v2-theme-toggle-btn` toggles `data-theme` (`light`/`dark`) on `<html>` and writes to `localStorage.GlobalSettings`.                     |
-| `toggles theme without clearing active dictionary entry`                        | JS       | Verifies that toggling the theme preserves active search results and input value.                                                                  |
-| `loads entries by ID directly via /v2/dicts/id/:id`                             | JS / SSR | Direct URL access to specific dictionary entries (e.g., `/v2/dicts/id/n20077`).                                                                    |
-| `renders collapsible outline and section anchor permalinks`                     | JS / SSR | Outline drawer in `.v2-tool-pane` expands, displays section entries with `#hash` anchors, and updates URL hash on click.                           |
-| `click-to-lookup linkifies Latin words and navigates on click (No-JS)`          | No-JS    | `.v2-lat-word` anchor tags navigate natively to `/v2/dicts?q=...` when JS is disabled.                                                             |
-| `click-to-lookup linkifies Latin words and navigates on click (JS enabled)`     | JS       | Word links trigger lookup smoothly with JS enabled.                                                                                                |
-
----
-
-## 4. Running Unit Tests
+## 3. Running Unit Tests
 
 For fast unit test verification of router and SSR rendering logic:
 
@@ -114,7 +92,7 @@ npx jest src/web/v2/server/about_ssr.test.ts
 
 ---
 
-## 5. Verification Checklist for Agents
+## 4. Verification Checklist for Agents
 
 Before submitting changes affecting `src/web/v2/`:
 
