@@ -3,6 +3,7 @@ import {
   renderEntryResult,
   renderDictResultsHtml,
   renderDictPageHtml,
+  formatInflectionForm,
 } from "@/web/v2/server/dict_ssr";
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
@@ -153,7 +154,13 @@ describe("dict_ssr", () => {
     expect(xmlNodeToHtml(rtlNode)).toContain('dir="rtl"');
   });
 
-  test("renderEntryResult formats entry and inflections", () => {
+  test("formatInflectionForm decodes Morpheus diacritics into breves and macra", () => {
+    expect(formatInflectionForm("i^ne_lucta_bi^libus")).toBe("ĭnēluctābĭlibus");
+    expect(formatInflectionForm("a^ma_ve_re")).toBe("ămāvēre");
+    expect(formatInflectionForm("poe+ta")).toBe("poëta");
+  });
+
+  test("renderEntryResult formats entry and inflections without Lemma/Notes columns and without bold Form", () => {
     const entryResult: EntryResult = {
       entry: new XmlNode("span", [["class", "lsOrth"]], ["amo"]),
       outline: {
@@ -163,9 +170,10 @@ describe("dict_ssr", () => {
       },
       inflections: [
         {
-          form: "amo",
+          form: "a^ma_ve_re",
           lemma: "amo",
-          data: "1st sg pres act ind",
+          data: "3rd pl perf act ind",
+          usageNote: "poetic",
         },
       ],
     };
@@ -173,8 +181,16 @@ describe("dict_ssr", () => {
     const rendered = renderEntryResult(entryResult);
     expect(rendered).toContain('<span class="lsOrth">amo</span>');
     expect(rendered).toContain("Inflections");
-    expect(rendered).toContain("<td>amo</td>");
-    expect(rendered).toContain("<td>1st sg pres act ind</td>");
+    expect(rendered).toContain("<th>Form</th><th>Analysis</th>");
+    expect(rendered).not.toContain("<th>Lemma</th>");
+    expect(rendered).not.toContain("<th>Notes</th>");
+    // Form is not wrapped in <strong>
+    expect(rendered).toContain("<td>ămāvēre</td>");
+    expect(rendered).not.toContain("<strong>ămāvēre</strong>");
+    // Usage note is displayed inline in analysis
+    expect(rendered).toContain(
+      '<td>3rd pl perf act ind <span class="v2-usage-note">(poetic)</span></td>'
+    );
   });
 
   test("renderDictResultsHtml handles empty query", () => {
@@ -295,7 +311,13 @@ describe("dict_ssr", () => {
     expect(rendered).toContain('href="#n20077.1"');
     expect(rendered).toContain("I.");
     expect(rendered).toContain("In general");
+    // Level 1 sense has no extra margin-left indent
+    expect(rendered).toContain(
+      '<li><a href="#n20077.1" class="v2-toc-link"><strong class="v2-toc-ordinal">I.</strong> In general</a></li>'
+    );
+    // Level 2 sense has margin-left: 0.75rem
     expect(rendered).toContain('href="#n20077.2"');
+    expect(rendered).toContain('style="margin-left: 0.75rem;"');
   });
 
   test("renderDictPageHtml handles isIdSearch", () => {
