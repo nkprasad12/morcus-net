@@ -6,6 +6,7 @@ import {
 } from "@/web/v2/server/dict_ssr";
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
+import he from "he";
 
 jest.mock("@/web/v2/server/asset_manifest", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
@@ -316,5 +317,98 @@ describe("dict_ssr", () => {
     expect(pageHtml).not.toContain("&#x103;");
     expect(pageHtml).not.toContain("&#x113;");
     expect(pageHtml).toContain('value="hăbēna"');
+  });
+
+  test("xmlNodeToHtml formats Gesner entries inline without unintended divs", () => {
+    const gesnerEntry = new XmlNode(
+      "div",
+      [["id", "gesner_caballvs_0"]],
+      [
+        new XmlNode(
+          "def",
+          [],
+          [
+            new XmlNode("emph", [], ["CABALLVS"]),
+            ", i. m. [",
+            new XmlNode("foreign", [["lang", "GR"]], ["ἵππος ἐργάτης"]),
+            "] ",
+            new XmlNode("hi", [["rend", "italic"]], ["Equus,"]),
+            " a cauando dictus, ",
+            new XmlNode("hi", [["rend", "italic"]], ["si credimus"]),
+            " Isidoro 12, 1 ",
+            new XmlNode(
+              "a",
+              [
+                [
+                  "href",
+                  "https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html",
+                ],
+              ],
+              ["[…]"]
+            ),
+          ]
+        ),
+      ]
+    );
+
+    const html = xmlNodeToHtml(gesnerEntry);
+
+    // Emph becomes <b class="lsEmph"> and is not self-linkified
+    expect(html).toContain('<b class="lsEmph">CABALLVS</b>');
+    expect(html).not.toContain('href="/v2/dicts?q=CABALLVS"');
+
+    // Foreign with lang="GR" becomes <span lang="el"> and Greek text is preserved (decoded)
+    expect(html).toContain('<span lang="el">');
+    expect(he.decode(html)).toContain('<span lang="el">ἵππος ἐργάτης</span>');
+
+    // Hi with rend="italic" becomes <i> with linkified Latin words
+    expect(html).toContain(
+      '<i><a href="/v2/dicts?q=Equus" class="v2-lat-word">Equus</a>,</i>'
+    );
+    expect(html).toContain(
+      '<i><a href="/v2/dicts?q=si" class="v2-lat-word">si</a> <a href="/v2/dicts?q=credimus" class="v2-lat-word">credimus</a></i>'
+    );
+
+    // Latin words in regular text flow are linkified
+    expect(html).toContain('href="/v2/dicts?q=cauando"');
+    expect(html).toContain('href="/v2/dicts?q=dictus"');
+    expect(html).toContain('href="/v2/dicts?q=Isidoro"');
+
+    // Verify no inner divs inside the <def> element (only the root div and def div exist)
+    const divCount = (html.match(/<div\b/g) || []).length;
+    expect(divCount).toBe(2);
+  });
+
+  test("xmlNodeToHtml handles TEI tags corr, unclear, gap, note, pb and cross-reference links", () => {
+    const node = new XmlNode(
+      "div",
+      [],
+      [
+        new XmlNode("corr", [["sic", "sollennibuus"]], ["sollemnibus"]),
+        " ",
+        new XmlNode("unclear", [], ["ac...les"]),
+        " ",
+        new XmlNode("pb", [["n", "19"]], []),
+        " ",
+        new XmlNode(
+          "ref",
+          [],
+          [new XmlNode("a", [["href", "baetylus"]], ["BAETYLVS"])]
+        ),
+      ]
+    );
+
+    const html = xmlNodeToHtml(node, { allowLinkify: false });
+
+    // corr, unclear, pb, ref become <span> inline elements
+    expect(html).toContain("<span>sollemnibus</span>");
+    expect(html).toContain("<span>ac...les</span>");
+    expect(html).toContain("<span></span>");
+    expect(html).toContain('href="/v2/dicts?q=baetylus"');
+    expect(html).toContain("BAETYLVS</a>");
+
+    // No inner divs inside root
+    const divCount = (html.match(/<div\b/g) || []).length;
+    expect(divCount).toBe(1);
   });
 });
