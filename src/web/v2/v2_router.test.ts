@@ -121,4 +121,60 @@ describe("v2_router integration", () => {
     expect(res.header["cache-control"]).toContain("immutable");
     expect(res.text).toContain("morcus-dict-search");
   });
+
+  describe("POST /v2/api/report", () => {
+    test("submits issue report successfully and returns 200 with JSON", async () => {
+      const mockReportHandler = jest.fn().mockResolvedValue(undefined);
+      const testApp = express();
+      testApp.use(
+        "/v2",
+        createV2Router(mockFusedDict as FusedDictionary, {
+          reportHandler: mockReportHandler,
+        })
+      );
+
+      const res = await request(testApp).post("/v2/api/report").send({
+        reportText: "Found a typo in entry",
+        url: "http://localhost:1337/v2/dicts?q=amo",
+      });
+
+      expect(res.status).toBe(200);
+      expect(res.body).toEqual({ success: true });
+      expect(mockReportHandler).toHaveBeenCalledWith(
+        expect.objectContaining({
+          reportText: "Found a typo in entry",
+          url: "http://localhost:1337/v2/dicts?q=amo",
+        })
+      );
+    });
+
+    test("returns 400 when reportText is missing or empty", async () => {
+      const res = await request(app)
+        .post("/v2/api/report")
+        .send({ reportText: "   " });
+
+      expect(res.status).toBe(400);
+      expect(res.body).toEqual({ error: "reportText is required" });
+    });
+
+    test("returns 500 when issue reporting handler throws an error", async () => {
+      const mockReportHandler = jest
+        .fn()
+        .mockRejectedValue(new Error("GitHub API Error"));
+      const testApp = express();
+      testApp.use(
+        "/v2",
+        createV2Router(mockFusedDict as FusedDictionary, {
+          reportHandler: mockReportHandler,
+        })
+      );
+
+      const res = await request(testApp)
+        .post("/v2/api/report")
+        .send({ reportText: "Broken page" });
+
+      expect(res.status).toBe(500);
+      expect(res.body).toEqual({ error: "Failed to submit report" });
+    });
+  });
 });

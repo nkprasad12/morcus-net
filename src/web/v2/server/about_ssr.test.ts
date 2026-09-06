@@ -49,5 +49,8 @@ describe("about_ssr", () => {
     expect(pageHtml.indexOf('<nav class="v2-nav"')).toBeLessThan(
       pageHtml.indexOf("morcus-theme-toggle")
     );
+    expect(pageHtml).toContain("morcus-report-dialog");
+    expect(pageHtml).toContain('class="v2-theme-toggle-btn v2-report-btn"');
+    expect(pageHtml).toContain('id="report-issue-dialog"');
   });
 });
