@@ -1,6 +1,3 @@
-import { LitElement, html } from "lit";
-import { customElement, state } from "lit/decorators.js";
-
 const GLOBAL_SETTINGS_KEY = "GlobalSettings";
 
 // Material Design SVG icon paths matching existing SPA
@@ -24,18 +21,20 @@ function parseSettings(raw: string | null): SettingsPayload | null {
   return null;
 }
 
-@customElement("morcus-theme-toggle")
-export class MorcusThemeToggle extends LitElement {
-  override createRenderRoot() {
-    return this;
+export class MorcusThemeToggle extends HTMLElement {
+  private isDark: boolean = false;
+  private buttonEl: HTMLButtonElement | null = null;
+  private pathEl: SVGPathElement | null = null;
+
+  connectedCallback() {
+    this.isDark = this.computeIsDark();
+    this.render();
   }
 
-  @state()
-  private isDark: boolean = false;
-
-  override connectedCallback() {
-    super.connectedCallback();
-    this.isDark = this.computeIsDark();
+  disconnectedCallback() {
+    if (this.buttonEl) {
+      this.buttonEl.removeEventListener("click", this.toggleTheme);
+    }
   }
 
   private computeIsDark(): boolean {
@@ -74,25 +73,49 @@ export class MorcusThemeToggle extends LitElement {
     } catch (e) {
       console.warn("Could not persist theme to localStorage", e);
     }
+
+    this.updateView();
   };
 
-  override render() {
+  private updateView() {
     const label = this.isDark ? "Switch to light mode" : "Switch to dark mode";
     const pathD = this.isDark ? SUN_PATH : MOON_PATH;
 
-    return html`
+    if (this.buttonEl) {
+      this.buttonEl.setAttribute("aria-label", label);
+      this.buttonEl.setAttribute("title", label);
+    }
+    if (this.pathEl) {
+      this.pathEl.setAttribute("d", pathD);
+    }
+  }
+
+  private render() {
+    const label = this.isDark ? "Switch to light mode" : "Switch to dark mode";
+    const pathD = this.isDark ? SUN_PATH : MOON_PATH;
+
+    this.innerHTML = `
       <button
         type="button"
         class="v2-theme-toggle-btn"
         aria-label="${label}"
-        title="${label}"
-        @click=${this.toggleTheme}>
+        title="${label}">
         <svg viewBox="0 0 24 24" aria-hidden="true">
           <path d="${pathD}"></path>
         </svg>
       </button>
     `;
+
+    this.buttonEl = this.querySelector<HTMLButtonElement>("button");
+    this.pathEl = this.querySelector<SVGPathElement>("path");
+    if (this.buttonEl) {
+      this.buttonEl.addEventListener("click", this.toggleTheme);
+    }
   }
+}
+
+if (!customElements.get("morcus-theme-toggle")) {
+  customElements.define("morcus-theme-toggle", MorcusThemeToggle);
 }
 
 declare global {

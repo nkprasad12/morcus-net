@@ -7,8 +7,8 @@ The UI V2 prototype explores a server-rendered Multi-Page Application (MPA) mode
 ### Core Principles
 
 1. **Zero-JS Baseline**: All primary user flows (dictionary lookup, inflected search, site navigation, and readability) function 100% without client-side JavaScript using standard HTML semantics (`<form method="GET">`, native `<details>`/`<summary>`, and semantic `<a>` links).
-2. **Light DOM Custom Elements with Lit**: Web Components inherit global styles seamlessly and wrap server-rendered markup without shadow root barriers or form association issues (`createRenderRoot() { return this; }`).
-3. **No `innerHTML` Manipulation**: Components use Lit's declarative `html` tagged templates, reactive properties, and DOM fragment parsing (`createContextualFragment` / `replaceChildren`) for safe, fine-grained updates and automated XSS protection.
+2. **Light DOM Custom Elements (Zero Framework Overhead)**: Web Components extend native `HTMLElement` to wrap server-rendered markup without shadow root barriers or form association issues, keeping client bundle size minimal (<15 KB).
+3. **Safe DOM Manipulation**: Components use safe DOM APIs (`textContent`, `replaceChildren`, and `createContextualFragment`) with event delegation for performant, robust updates and automated XSS protection.
 4. **Coexistence**: Mounted under `/v2/*`, leaving the existing React/Preact SPA, RPC endpoints, and build pipelines completely unaffected.
 
 ---
@@ -17,9 +17,9 @@ The UI V2 prototype explores a server-rendered Multi-Page Application (MPA) mode
 
 ```
 src/web/v2/
-├── client/                               # Client-side Lit Web Components (Light DOM)
-│   ├── morcus_dict_search.ts            # Form hijacking, keyboard navigation & history syncing
-│   ├── morcus_dict_suggestions.ts       # Declarative autocomplete dropdown component
+├── client/                               # Client-side Native Web Components (Light DOM)
+│   ├── morcus_dict_search.ts            # Form hijacking, keyboard navigation, AbortController & history syncing
+│   ├── morcus_dict_suggestions.ts       # Native autocomplete dropdown component with event delegation
 │   ├── morcus_theme_toggle.ts           # Light/dark mode toggle button (hidden when JS disabled)
 │   ├── morcus_report_dialog.ts          # "Report an Issue" modal dialog (progressive enhancement)
 │   └── v2_bundle.ts                     # Client entry point bundling all custom elements
