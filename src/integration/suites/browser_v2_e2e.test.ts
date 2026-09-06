@@ -337,4 +337,24 @@ test.describe("UI V2 dictionary", () => {
     // Dialog closes automatically after confirmation timeout
     await expect(dialog).not.toBeVisible({ timeout: 5000 });
   });
+
+  test("renders entry headers, dividers, and jump links for multi-entry dictionaries", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=cum");
+    // Verify multi-entry dictionary has quick-jump bar
+    const nav = page.locator(".v2-entry-nav").first();
+    await expect(nav).toBeVisible();
+    await expect(nav.getByText("Jump to entry:")).toBeVisible();
+
+    // Verify individual entry headword button exists and links to anchor
+    const headwordBtn = page.locator(".v2-entry-headword-btn").first();
+    await expect(headwordBtn).toBeVisible();
+    await expect(headwordBtn).toHaveAttribute("href", /^#[a-zA-Z0-9_-]+/);
+
+    // Verify jump link navigates to anchor
+    const jumpLink = nav.locator(".v2-entry-nav-link").nth(1);
+    await jumpLink.click();
+    expect(page.url()).toMatch(/#[a-zA-Z0-9_-]+/);
+  });
 });

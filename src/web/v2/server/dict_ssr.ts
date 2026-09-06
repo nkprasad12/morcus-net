@@ -33,6 +33,7 @@ const DICT_NAMES: Record<string, string> = {
  */
 export interface XmlNodeToHtmlOptions {
   allowLinkify?: boolean;
+  omitRootId?: boolean;
 }
 
 export function linkifyText(text: string): string {
@@ -205,9 +206,10 @@ export function xmlNodeToHtml(
 
   const finalClass = attrsMap.get("class");
   const classNames = finalClass ? ` class="${he.encode(finalClass)}"` : "";
-  const idAttr = attrsMap.get("id")
-    ? ` id="${he.encode(attrsMap.get("id")!)}"`
-    : "";
+  const idAttr =
+    attrsMap.get("id") && !options?.omitRootId
+      ? ` id="${he.encode(attrsMap.get("id")!)}"`
+      : "";
   const titleAttr = attrsMap.get("title")
     ? ` title="${he.encode(attrsMap.get("title")!)}"`
     : "";
@@ -270,8 +272,15 @@ export function renderEntryOutline(outline?: EntryOutline): string {
  */
 export function renderEntryResult(
   result: EntryResult,
-  entryIndex: string | number = 0
+  entryIndex: string | number = 0,
+  entryNumber?: number,
+  totalEntries?: number
 ): string {
+  const safeId = String(entryIndex)
+    .toLowerCase()
+    .replace(/[^a-z0-9_-]/g, "_");
+  const entryAnchorId = result.outline.mainSection.sectionId;
+
   const hasOutline = Boolean(
     result.outline?.senses && result.outline.senses.length > 0
   );
@@ -279,10 +288,27 @@ export function renderEntryResult(
     result.inflections && result.inflections.length > 0
   );
   const hasTools = hasOutline || hasInflections;
+  const isMultiEntry = Boolean(totalEntries && totalEntries > 1);
+
+  const headword =
+    result.outline?.mainLabel?.trim() ||
+    result.outline?.mainKey?.trim() ||
+    result.outline?.mainSection?.text?.trim() ||
+    (isMultiEntry ? `Entry ${entryNumber ?? 1}` : "");
+
+  let headwordBtnHtml = "";
+  if (isMultiEntry || (hasTools && headword)) {
+    headwordBtnHtml = `
+      <a href="#${entryAnchorId}" class="v2-entry-headword" title="Permanent link to this entry">
+        <span class="v2-entry-headword-text">${he.encode(headword)}</span>
+        <span class="v2-entry-headword-anchor" aria-hidden="true">#</span>
+      </a>
+    `;
+  }
 
   let toolsHtml = "";
   if (hasTools) {
-    const groupName = `entry-tools-${entryIndex}`;
+    const groupName = `entry-tools-${safeId}`;
     const outlineItems = hasOutline
       ? result
           .outline!.senses!.map((sense) => {
@@ -349,20 +375,37 @@ export function renderEntryResult(
       : "";
 
     toolsHtml = `
-      <div class="v2-entry-tools">
-        <div class="v2-segmented-bar">
-          ${outlinePanelHtml}
-          ${inflectionsPanelHtml}
+      <header class="v2-entry-header has-tools">
+        <div class="v2-entry-tools">
+          <div class="v2-segmented-bar">
+            ${headwordBtnHtml}
+            ${outlinePanelHtml}
+            ${inflectionsPanelHtml}
+          </div>
         </div>
-      </div>
+      </header>
     `;
   }
 
-  const entryHtml = xmlNodeToHtml(result.entry, { allowLinkify: true });
+  const headerHtml = isMultiEntry
+    ? `
+      <header class="v2-entry-header">
+        ${headwordBtnHtml}
+      </header>
+    `
+    : "";
+
+  const topBarHtml = hasTools ? toolsHtml : headerHtml;
+  const entryHtml = xmlNodeToHtml(result.entry, {
+    allowLinkify: true,
+    omitRootId: true,
+  });
 
   return `
-    <article class="v2-entry ${hasTools ? "has-tools" : ""}">
-      ${toolsHtml}
+    <article class="v2-entry ${
+      hasTools ? "has-tools" : ""
+    }" id="${entryAnchorId}">
+      ${topBarHtml}
       <div class="v2-entry-content">
         ${entryHtml}
       </div>
@@ -414,17 +457,45 @@ export function renderDictResultsHtml(
         DICT_NAMES[dictKey] ??
         LatinDict.BY_KEY.get(dictKey)?.displayName ??
         dictKey.toUpperCase();
+      const totalEntries = entries.length;
+
+      let quickJumpHtml = "";
+      if (totalEntries > 1) {
+        const jumpLinks = entries
+          .map((entry, idx) => {
+            const headword =
+              entry.outline?.mainLabel?.trim() ||
+              entry.outline?.mainKey?.trim() ||
+              entry.outline?.mainSection?.text?.trim() ||
+              `Entry ${idx + 1}`;
+            const entryAnchor = entry.outline.mainSection.sectionId;
+            return `<li><a href="#${entryAnchor}" class="v2-entry-nav-link"><span class="v2-entry-nav-word">${he.encode(
+              headword
+            )}</span></a></li>`;
+          })
+          .join("");
+
+        quickJumpHtml = `
+          <div class="v2-entry-nav" aria-label="Jump to entry">
+            <span class="v2-entry-nav-label">Jump:</span>
+            <ul class="v2-entry-nav-list">
+              ${jumpLinks}
+            </ul>
+          </div>
+        `;
+      }
+
       const entriesHtml = entries
-        .map((entry, idx) => renderEntryResult(entry, `${dictKey}-${idx}`))
+        .map((entry, idx) =>
+          renderEntryResult(entry, `${dictKey}-${idx}`, idx + 1, totalEntries)
+        )
         .join("");
 
       return `
         <details class="v2-dict-card" open>
           <summary class="v2-dict-summary">
-            <span>${he.encode(dictName)}</span>
-            <span class="v2-badge">${entries.length} ${
-        entries.length === 1 ? "entry" : "entries"
-      }</span>
+            <span class="v2-dict-title">${he.encode(dictName)}</span>
+            ${quickJumpHtml}
           </summary>
           <div class="v2-dict-body">
             ${entriesHtml}
