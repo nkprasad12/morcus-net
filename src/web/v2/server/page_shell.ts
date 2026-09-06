@@ -46,7 +46,7 @@ export function renderAppBar(activePage: V2ActivePage): string {
           </nav>
         </div>
         <div class="v2-app-bar-right">
-          <span class="v2-brand-badge">UI V2</span>
+          <span class="v2-brand-badge">V2</span>
           <morcus-theme-toggle></morcus-theme-toggle>
           <morcus-report-dialog>
             <button

@@ -24,7 +24,7 @@ import { processGeorges } from "@/common/dictionaries/georges/process_georges";
 import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
 import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
-import { buildV2Bundle } from "@/bundler/v2.esbuild";
+import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
