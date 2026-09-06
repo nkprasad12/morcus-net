@@ -23,29 +23,31 @@ export function renderAppBar(activePage: V2ActivePage): string {
   return `
     <header class="v2-app-bar">
       <div class="v2-app-bar-inner">
-        <div class="v2-brand-area">
-          <a href="/v2/dicts" class="v2-brand">
-            <span class="v2-brand-title">M&oacute;rcus</span>
-            <span class="v2-brand-badge">UI V2</span>
+        <div class="v2-app-bar-left">
+          <a href="/v2/dicts" class="v2-brand-logo-link" aria-label="M&oacute;rcus Home">
+            <img src="/public/favicon.ico" alt="M&oacute;rcus Logo" class="v2-brand-logo" width="48" height="48">
           </a>
+          <nav class="v2-nav" aria-label="Main Navigation">
+            <a
+              href="/v2/dicts"
+              class="v2-nav-link ${isDictsActive ? "active" : ""}"
+              ${isDictsActive ? 'aria-current="page"' : ""}
+            >
+              Dictionary
+            </a>
+            <a
+              href="/v2/about"
+              class="v2-nav-link ${isAboutActive ? "active" : ""}"
+              ${isAboutActive ? 'aria-current="page"' : ""}
+            >
+              About
+            </a>
+          </nav>
+        </div>
+        <div class="v2-app-bar-right">
+          <span class="v2-brand-badge">UI V2</span>
           <morcus-theme-toggle></morcus-theme-toggle>
         </div>
-        <nav class="v2-nav" aria-label="Main Navigation">
-          <a
-            href="/v2/dicts"
-            class="v2-nav-link ${isDictsActive ? "active" : ""}"
-            ${isDictsActive ? 'aria-current="page"' : ""}
-          >
-            Dictionary
-          </a>
-          <a
-            href="/v2/about"
-            class="v2-nav-link ${isAboutActive ? "active" : ""}"
-            ${isAboutActive ? 'aria-current="page"' : ""}
-          >
-            About
-          </a>
-        </nav>
       </div>
     </header>
   `;
