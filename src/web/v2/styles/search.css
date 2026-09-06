@@ -1,0 +1,76 @@
+/* Search Form & Input Styles */
+
+.v2-search-form {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 24px;
+}
+
+.v2-input-wrapper {
+  position: relative;
+  flex: 1;
+}
+
+.v2-input {
+  width: 100%;
+  padding: 10px 14px;
+  font-size: 1.1rem;
+  border: 1px solid var(--v2-border);
+  border-radius: 6px;
+  background-color: var(--v2-card-bg);
+  color: var(--v2-text);
+  outline: none;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.v2-input:focus {
+  border-color: var(--v2-border-focus);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.25);
+}
+
+.v2-button {
+  padding: 10px 20px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: #ffffff;
+  background-color: var(--v2-primary);
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out;
+}
+
+.v2-button:hover {
+  background-color: var(--v2-primary-hover);
+}
+
+/* Autocomplete suggestion container (populated by Lit component) */
+.v2-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  list-style: none;
+  padding: 4px 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.v2-suggestion-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.v2-suggestion-item:hover,
+.v2-suggestion-item.active {
+  background-color: var(--v2-tag-bg);
+  color: var(--v2-primary);
+}

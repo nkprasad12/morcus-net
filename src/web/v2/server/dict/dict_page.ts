@@ -1,0 +1,167 @@
+import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { renderPageShell } from "@/web/v2/server/page_shell";
+import { renderEntryResult } from "@/web/v2/server/dict/entry_view";
+import * as he from "he";
+
+export const DICT_NAMES: Record<string, string> = {
+  "L&S": "Lewis & Short (Latin-English)",
+  "S&H": "Smith & Hall (English-Latin)",
+  GAF: "Gaffiot (Latin-French)",
+  GRG: "Georges (Latin-German)",
+  EGL: "Pozo (Latin-Spanish)",
+  GES: "Gesner (Latin-Latin)",
+  FOR: "Forcellini (Latin-Latin)",
+  "R&A": "Riddle & Arnold (English-Latin)",
+  NUM: "Latin Numerals",
+  // Legacy or lowercase keys fallback
+  ls: "Lewis & Short (Latin-English)",
+  sh: "Smith & Hall (English-Latin)",
+  gaffiot: "Gaffiot (Latin-French)",
+  georges: "Georges (Latin-German)",
+  pozo: "Pozo (Latin-Spanish)",
+  gesner: "Gesner (Latin-Latin)",
+  forcellini: "Forcellini (Latin-Latin)",
+  riddle_arnold: "Riddle & Arnold (English-Latin)",
+  numeral: "Latin Numerals",
+};
+
+/**
+ * Renders only the results container inner HTML (used for partial AJAX swaps and full SSR).
+ */
+export function renderDictResultsHtml(
+  query: string,
+  results?: DictsFusedResponse
+): string {
+  if (!query.trim()) {
+    return `
+      <div class="v2-no-results">
+        <p>Type a word (e.g. <em>equus</em>, <em>horse</em>, <em>cheval</em>, <em>Pferd</em>) to search all lexica.</p>
+      </div>
+    `;
+  }
+
+  if (!results) {
+    return `
+      <div class="v2-no-results">
+        <p>No results found for "<strong>${he.escape(query)}</strong>".</p>
+      </div>
+    `;
+  }
+
+  const dictKeys = Object.keys(results).filter(
+    (key) => results[key] && results[key].length > 0
+  );
+
+  if (dictKeys.length === 0) {
+    return `
+      <div class="v2-no-results">
+        <p>No dictionary entries found for "<strong>${he.escape(
+          query
+        )}</strong>".</p>
+      </div>
+    `;
+  }
+
+  return dictKeys
+    .map((dictKey) => {
+      const entries = results[dictKey];
+      const dictName =
+        DICT_NAMES[dictKey] ??
+        LatinDict.BY_KEY.get(dictKey)?.displayName ??
+        dictKey.toUpperCase();
+      const totalEntries = entries.length;
+
+      let quickJumpHtml = "";
+      if (totalEntries > 1) {
+        const jumpLinks = entries
+          .map((entry, idx) => {
+            const headword =
+              entry.outline?.mainLabel?.trim() ||
+              entry.outline?.mainKey?.trim() ||
+              entry.outline?.mainSection?.text?.trim() ||
+              `Entry ${idx + 1}`;
+            const entryAnchor = entry.outline.mainSection.sectionId;
+            return `<li><a href="#${entryAnchor}" class="v2-entry-nav-link"><span class="v2-entry-nav-word">${he.encode(
+              headword
+            )}</span></a></li>`;
+          })
+          .join("");
+
+        quickJumpHtml = `
+          <div class="v2-entry-nav" aria-label="Jump to entry">
+            <span class="v2-entry-nav-label">Jump:</span>
+            <ul class="v2-entry-nav-list">
+              ${jumpLinks}
+            </ul>
+          </div>
+        `;
+      }
+
+      const entriesHtml = entries
+        .map((entry, idx) =>
+          renderEntryResult(entry, `${dictKey}-${idx}`, idx + 1, totalEntries)
+        )
+        .join("");
+
+      return `
+        <details class="v2-dict-card" open>
+          <summary class="v2-dict-summary">
+            <span class="v2-dict-title">${he.encode(dictName)}</span>
+            ${quickJumpHtml}
+          </summary>
+          <div class="v2-dict-body">
+            ${entriesHtml}
+          </div>
+        </details>
+      `;
+    })
+    .join("\n");
+}
+
+export interface DictPageOptions {
+  query: string;
+  results?: DictsFusedResponse;
+  isIdSearch?: boolean;
+}
+
+/**
+ * Renders the full standalone HTML page for UI V2.
+ */
+export function renderDictPageHtml(options: DictPageOptions): string {
+  const query = options.query || "";
+  const queryEscaped = he.escape(query);
+  const resultsHtml = renderDictResultsHtml(options.query, options.results);
+
+  const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
+
+  const contentHtml = `
+    <morcus-dict-search>
+      <form class="v2-search-form" action="/v2/dicts" method="GET">
+        <div class="v2-input-wrapper">
+          <input
+            type="text"
+            name="q"
+            class="v2-input"
+            value="${options.isIdSearch ? "" : queryEscaped}"
+            placeholder="Search for a word (e.g. equus, horse, cheval, Pferd)..."
+            autocomplete="off"
+          />
+        </div>
+        <button type="submit" class="v2-button">Search</button>
+      </form>
+
+      <output id="dict-results" class="v2-results">
+        ${resultsHtml}
+      </output>
+    </morcus-dict-search>
+  `;
+
+  return renderPageShell({
+    title: options.query
+      ? `${titlePrefix} - Morcus Dictionary`
+      : "Morcus Dictionary (UI V2)",
+    activePage: "dicts",
+    contentHtml,
+  });
+}

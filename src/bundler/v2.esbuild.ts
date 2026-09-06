@@ -18,11 +18,16 @@ export async function buildV2Bundle(minify: boolean = false): Promise<void> {
   // Avoid accumulating stale hashed assets from previous builds.
   await createCleanDir(outDir);
 
-  const criticalCss = await esbuild.transform(
-    fs.readFileSync(criticalCssEntry, "utf8"),
-    { loader: "css", minify }
+  const criticalResult = await esbuild.build({
+    entryPoints: [criticalCssEntry],
+    bundle: true,
+    write: false,
+    minify,
+  });
+  fs.writeFileSync(
+    path.join(outDir, "critical.css"),
+    criticalResult.outputFiles[0].text
   );
-  fs.writeFileSync(path.join(outDir, "critical.css"), criticalCss.code);
 
   const result = await esbuild.build({
     entryPoints: [jsEntry, cssEntry],
