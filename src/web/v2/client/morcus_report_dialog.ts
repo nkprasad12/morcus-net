@@ -1,20 +1,12 @@
-import { LitElement } from "lit";
-import { customElement } from "lit/decorators.js";
-
 /**
  * Progressively enhanced issue and feedback report dialog component (Light DOM mode).
  *
  * - In SSR / No-JS: The entire element is hidden using `morcus-report-dialog:not(:defined) { display: none; }`,
  *   mirroring `morcus-theme-toggle` so no non-functional controls are presented to users without JS.
- * - When hydrated by Lit: Coordinates the native <dialog> via `showModal()`, focus management,
+ * - When defined: Coordinates the native <dialog> via `showModal()`, focus management,
  *   backdrop clicking, and AJAX form submission.
  */
-@customElement("morcus-report-dialog")
-export class MorcusReportDialog extends LitElement {
-  override createRenderRoot() {
-    return this;
-  }
-
+export class MorcusReportDialog extends HTMLElement {
   private triggerBtn: HTMLButtonElement | null = null;
   private dialogEl: HTMLDialogElement | null = null;
   private formEl: HTMLFormElement | null = null;
@@ -24,13 +16,11 @@ export class MorcusReportDialog extends LitElement {
   private submitBtn: HTMLButtonElement | null = null;
   private closeButtons: NodeListOf<HTMLElement> | null = null;
 
-  override connectedCallback() {
-    super.connectedCallback();
+  connectedCallback() {
     this.enhanceMarkup();
   }
 
-  override disconnectedCallback() {
-    super.disconnectedCallback();
+  disconnectedCallback() {
     this.removeEventListeners();
   }
 
@@ -224,6 +214,10 @@ export class MorcusReportDialog extends LitElement {
       }
     }
   };
+}
+
+if (!customElements.get("morcus-report-dialog")) {
+  customElements.define("morcus-report-dialog", MorcusReportDialog);
 }
 
 declare global {

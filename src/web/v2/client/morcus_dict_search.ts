@@ -1,5 +1,3 @@
-import { LitElement } from "lit";
-import { customElement, state } from "lit/decorators.js";
 import type { MorcusDictSuggestions } from "@/web/v2/client/morcus_dict_suggestions";
 
 /**
@@ -10,39 +8,30 @@ import type { MorcusDictSuggestions } from "@/web/v2/client/morcus_dict_suggesti
  * - Submitting the form issues a standard HTTP GET /v2/dicts?q=... request.
  *
  * With JS:
- * - Enhances the existing DOM in place (Light DOM mode: createRenderRoot returns this).
+ * - Enhances the existing DOM in place.
  * - Debounces input typing to fetch autocomplete suggestions from /v2/api/completions.
+ * - Uses AbortController to cleanly cancel stale completion requests.
  * - Intercepts form submissions to perform smooth AJAX partial updates without full page reloads.
- * - Updates the browser URL bar via history.pushState.
+ * - Updates the browser URL bar and document title via history.pushState / popstate.
  */
-@customElement("morcus-dict-search")
-export class MorcusDictSearch extends LitElement {
-  // CRITICAL: Force Light DOM so all global CSS applies and native form submission works without JS
-  override createRenderRoot() {
-    return this;
-  }
-
-  @state()
+export class MorcusDictSearch extends HTMLElement {
   private suggestions: string[] = [];
-
-  @state()
   private selectedSuggestionIndex: number = -1;
-
   private currentSearchPath: string = "";
   private debounceTimer: number | null = null;
+  private completionAbortController: AbortController | null = null;
+
   private formElement: HTMLFormElement | null = null;
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
   private suggestionsEl: MorcusDictSuggestions | null = null;
 
-  override connectedCallback() {
-    super.connectedCallback();
+  connectedCallback() {
     this.currentSearchPath = window.location.pathname + window.location.search;
     this.enhanceExistingMarkup();
   }
 
-  override disconnectedCallback() {
-    super.disconnectedCallback();
+  disconnectedCallback() {
     this.removeEventListeners();
   }
 
@@ -65,8 +54,9 @@ export class MorcusDictSearch extends LitElement {
 
     // Handle browser back/forward buttons to restore results without page reload
     window.addEventListener("popstate", this.handlePopState);
+    document.addEventListener("pointerdown", this.handleDocumentPointerDown);
 
-    // Create and attach child Lit component for suggestions
+    // Create and attach child component for suggestions
     const inputWrapper = this.querySelector<HTMLElement>(".v2-input-wrapper");
     if (inputWrapper && !this.suggestionsEl) {
       const suggestionsTag = document.createElement("morcus-dict-suggestions");
@@ -98,33 +88,78 @@ export class MorcusDictSearch extends LitElement {
       this.inputElement.removeEventListener("blur", this.handleBlur);
     }
     window.removeEventListener("popstate", this.handlePopState);
+    document.removeEventListener("pointerdown", this.handleDocumentPointerDown);
   }
+
+  private clearSuggestions() {
+    if (this.debounceTimer !== null) {
+      window.clearTimeout(this.debounceTimer);
+      this.debounceTimer = null;
+    }
+    if (this.completionAbortController) {
+      this.completionAbortController.abort();
+      this.completionAbortController = null;
+    }
+    this.suggestions = [];
+    this.selectedSuggestionIndex = -1;
+    this.updateSuggestionsView();
+  }
+
+  private updateSuggestionsView() {
+    if (this.suggestionsEl) {
+      this.suggestionsEl.items = this.suggestions;
+      this.suggestionsEl.activeIndex = this.selectedSuggestionIndex;
+    }
+  }
+
+  private readonly handleDocumentPointerDown = (e: PointerEvent) => {
+    if (this.suggestions.length === 0) return;
+    if (e.target instanceof Node && !this.contains(e.target)) {
+      this.clearSuggestions();
+    }
+  };
 
   private readonly handleInput = () => {
     if (this.debounceTimer !== null) {
       window.clearTimeout(this.debounceTimer);
     }
+    if (this.completionAbortController) {
+      this.completionAbortController.abort();
+      this.completionAbortController = null;
+    }
 
     const query = this.inputElement?.value.trim() ?? "";
     if (query.length < 2) {
-      this.suggestions = [];
-      this.selectedSuggestionIndex = -1;
-      this.requestUpdate();
+      this.clearSuggestions();
       return;
     }
 
     this.debounceTimer = window.setTimeout(async () => {
+      const controller = new AbortController();
+      this.completionAbortController = controller;
+
       try {
         const res = await fetch(
-          `/v2/api/completions?q=${encodeURIComponent(query)}`
+          `/v2/api/completions?q=${encodeURIComponent(query)}`,
+          { signal: controller.signal }
         );
         if (res.ok) {
+          // If input has been blurred or changed in the meantime, ignore
+          if (document.activeElement !== this.inputElement) {
+            return;
+          }
           this.suggestions = await res.json();
           this.selectedSuggestionIndex = -1;
-          this.requestUpdate();
+          this.updateSuggestionsView();
         }
-      } catch (e) {
-        console.error("Failed to fetch suggestions", e);
+      } catch (e: unknown) {
+        if (e instanceof Error && e.name !== "AbortError") {
+          console.error("Failed to fetch suggestions", e);
+        }
+      } finally {
+        if (this.completionAbortController === controller) {
+          this.completionAbortController = null;
+        }
       }
     }, 180);
   };
@@ -136,29 +171,25 @@ export class MorcusDictSearch extends LitElement {
       e.preventDefault();
       this.selectedSuggestionIndex =
         (this.selectedSuggestionIndex + 1) % this.suggestions.length;
-      this.requestUpdate();
+      this.updateSuggestionsView();
     } else if (e.key === "ArrowUp") {
       e.preventDefault();
       this.selectedSuggestionIndex =
         (this.selectedSuggestionIndex - 1 + this.suggestions.length) %
         this.suggestions.length;
-      this.requestUpdate();
+      this.updateSuggestionsView();
     } else if (e.key === "Enter" && this.selectedSuggestionIndex >= 0) {
       e.preventDefault();
       this.chooseSuggestion(this.suggestions[this.selectedSuggestionIndex]);
     } else if (e.key === "Escape") {
-      this.suggestions = [];
-      this.selectedSuggestionIndex = -1;
-      this.requestUpdate();
+      this.clearSuggestions();
     }
   };
 
   private readonly handleBlur = () => {
     // Delay closing suggestions so click events on suggestions can register
     window.setTimeout(() => {
-      this.suggestions = [];
-      this.selectedSuggestionIndex = -1;
-      this.requestUpdate();
+      this.clearSuggestions();
     }, 200);
   };
 
@@ -166,17 +197,14 @@ export class MorcusDictSearch extends LitElement {
     if (this.inputElement) {
       this.inputElement.value = suggestion;
     }
-    this.suggestions = [];
-    this.selectedSuggestionIndex = -1;
-    this.requestUpdate();
+    this.clearSuggestions();
     this.searchQuery(suggestion);
   }
 
   private readonly handleFormSubmit = (e: Event) => {
     e.preventDefault(); // Hijack standard submit when JS is enabled
     const query = this.inputElement?.value.trim() ?? "";
-    this.suggestions = [];
-    this.requestUpdate();
+    this.clearSuggestions();
     this.searchQuery(query);
   };
 
@@ -193,6 +221,9 @@ export class MorcusDictSearch extends LitElement {
     if (this.inputElement) {
       this.inputElement.value = q;
     }
+    document.title = q
+      ? `${q} - Morcus Dictionary`
+      : "Morcus Dictionary (UI V2)";
     this.fetchResults(q, false);
   };
 
@@ -208,7 +239,7 @@ export class MorcusDictSearch extends LitElement {
     window.history.pushState({ q: query }, "", newUrl);
     document.title = query
       ? `${query} - Morcus Dictionary`
-      : "Morcus Dictionary";
+      : "Morcus Dictionary (UI V2)";
     await this.fetchResults(query, true);
   }
 
@@ -249,13 +280,14 @@ export class MorcusDictSearch extends LitElement {
       this.resultsElement.style.opacity = "1";
     }
   }
+}
 
-  // Update suggestions child component state declaratively
-  override render() {
-    if (this.suggestionsEl) {
-      this.suggestionsEl.items = this.suggestions;
-      this.suggestionsEl.activeIndex = this.selectedSuggestionIndex;
-    }
-    return null;
+if (!customElements.get("morcus-dict-search")) {
+  customElements.define("morcus-dict-search", MorcusDictSearch);
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    "morcus-dict-search": MorcusDictSearch;
   }
 }

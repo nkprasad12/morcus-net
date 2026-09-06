@@ -1,21 +1,53 @@
-import { LitElement, html } from "lit";
-import { customElement, property } from "lit/decorators.js";
-
 /**
- * Idiomatic Lit component for rendering dictionary autocomplete suggestions.
- * Uses Lit's fine-grained template diffing and declarative event binding.
+ * Lightweight native Web Component for rendering dictionary autocomplete suggestions.
  */
-@customElement("morcus-dict-suggestions")
-export class MorcusDictSuggestions extends LitElement {
-  override createRenderRoot() {
-    return this;
+export class MorcusDictSuggestions extends HTMLElement {
+  private _items: string[] = [];
+  private _activeIndex: number = -1;
+  private readonly listEl: HTMLUListElement;
+
+  constructor() {
+    super();
+    this.listEl = document.createElement("ul");
+    this.listEl.className = "v2-suggestions";
+
+    // Event delegation on the container: avoids creating closure listeners for each item
+    this.listEl.addEventListener("mousedown", (e: MouseEvent) => {
+      const target =
+        e.target instanceof Element
+          ? e.target.closest(".v2-suggestion-item")
+          : null;
+      if (target instanceof HTMLElement && target.dataset.word) {
+        e.preventDefault();
+        this.dispatchSelect(target.dataset.word);
+      }
+    });
   }
 
-  @property({ type: Array })
-  items: string[] = [];
+  connectedCallback() {
+    if (!this.contains(this.listEl)) {
+      this.appendChild(this.listEl);
+    }
+    this.render();
+  }
 
-  @property({ type: Number })
-  activeIndex: number = -1;
+  get items(): string[] {
+    return this._items;
+  }
+
+  set items(val: string[]) {
+    this._items = Array.isArray(val) ? val : [];
+    this.render();
+  }
+
+  get activeIndex(): number {
+    return this._activeIndex;
+  }
+
+  set activeIndex(val: number) {
+    this._activeIndex = val;
+    this.updateActiveItem();
+  }
 
   private dispatchSelect(word: string) {
     this.dispatchEvent(
@@ -27,30 +59,41 @@ export class MorcusDictSuggestions extends LitElement {
     );
   }
 
-  override render() {
-    if (this.items.length === 0) {
-      return null;
+  private updateActiveItem() {
+    const children = this.listEl.children;
+    for (let i = 0; i < children.length; i++) {
+      const item = children[i];
+      if (item instanceof HTMLElement) {
+        item.classList.toggle("active", i === this._activeIndex);
+      }
+    }
+  }
+
+  private render() {
+    if (this._items.length === 0) {
+      this.style.display = "none";
+      this.listEl.replaceChildren();
+      return;
     }
 
-    return html`
-      <ul class="v2-suggestions">
-        ${this.items.map((item, idx) => {
-          const isActive = idx === this.activeIndex;
-          return html`
-            <li
-              class="v2-suggestion-item ${isActive ? "active" : ""}"
-              data-word="${item}"
-              @mousedown=${(e: MouseEvent) => {
-                e.preventDefault();
-                this.dispatchSelect(item);
-              }}>
-              ${item}
-            </li>
-          `;
-        })}
-      </ul>
-    `;
+    this.style.display = "";
+    const fragment = document.createDocumentFragment();
+    this._items.forEach((item, idx) => {
+      const li = document.createElement("li");
+      li.className = `v2-suggestion-item${
+        idx === this._activeIndex ? " active" : ""
+      }`;
+      li.dataset.word = item;
+      li.textContent = item;
+      fragment.appendChild(li);
+    });
+
+    this.listEl.replaceChildren(fragment);
   }
+}
+
+if (!customElements.get("morcus-dict-suggestions")) {
+  customElements.define("morcus-dict-suggestions", MorcusDictSuggestions);
 }
 
 declare global {
