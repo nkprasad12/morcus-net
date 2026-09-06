@@ -3,7 +3,7 @@ import request from "supertest";
 import { createV2Router } from "@/web/v2/v2_router";
 import { FusedDictionary } from "@/common/dictionaries/fused_dictionary";
 import { XmlNode } from "@/common/xml/xml_node";
-import { buildV2Bundle } from "@/bundler/v2.esbuild";
+import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 import { getV2AssetHref } from "@/web/v2/server/asset_manifest";
 
 describe("v2_router integration", () => {

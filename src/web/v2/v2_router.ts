@@ -38,7 +38,7 @@ export function createV2Router(
     res.status(404).end();
   });
 
-  // Serve the hashed, minified v2.css / v2.js built by `src/bundler/v2.esbuild.ts`
+  // Serve the hashed, minified v2.css / v2.js built by `src/bundler/v2.rsbuild.ts`
   router.use(
     "/assets",
     express.static(V2_ASSETS_DIR, {

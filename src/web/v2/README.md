@@ -52,7 +52,7 @@ src/web/v2/
 
 ### Build Pipeline
 
-- **Bundler script**: [src/bundler/v2.esbuild.ts](src/bundler/v2.esbuild.ts)
+- **Bundler script**: [src/bundler/v2.rsbuild.ts](src/bundler/v2.rsbuild.ts)
 - **Output bundle**: `build/v2/v2.js` (ESM module loaded via `<script type="module" src="/v2/assets/v2.js">`)
 - **Stylesheet**: `src/web/v2/v2.css` served statically at `/v2/assets/v2.css`
 

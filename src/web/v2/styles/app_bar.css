@@ -46,12 +46,14 @@ morcus-report-dialog:not(:defined) {
 }
 
 .v2-brand-badge {
-  font-size: 0.7rem;
-  font-weight: 600;
+  font-size: 0.68rem;
+  font-weight: 500;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
   background: var(--v2-app-bar-badge-bg);
   color: var(--v2-app-bar-badge-text);
-  padding: 2px 6px;
+  border: 1px solid var(--v2-app-bar-badge-border);
+  padding: 1px 5px;
   border-radius: 4px;
 }
 

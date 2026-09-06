@@ -424,7 +424,7 @@ function bundleConfig(args: any, priority?: number): StepConfig {
 
 function v2BundleConfig(args: any, priority?: number): StepConfig {
   const executor = args.bun ? ["bun"] : TS_NODE;
-  const buildCommand = executor.concat(["src/bundler/v2.esbuild.ts"]);
+  const buildCommand = executor.concat(["src/bundler/v2.rsbuild.ts"]);
   if (args.minify) {
     buildCommand.push("--minify");
   }
