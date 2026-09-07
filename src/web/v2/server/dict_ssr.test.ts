@@ -471,7 +471,7 @@ describe("dict_ssr", () => {
 
     // Quick jump bar integrated in header
     expect(html).toContain('class="v2-entry-nav"');
-    expect(html).toContain("Jump:");
+    expect(html).toContain("Jump to");
     expect(html).toContain('href="#n1"');
     expect(html).toContain('href="#n2"');
     expect(html).toContain("cum");

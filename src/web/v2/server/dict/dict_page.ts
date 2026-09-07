@@ -144,7 +144,7 @@ export function renderDictResultsHtml(
 
         quickJumpHtml = `
           <div class="v2-entry-nav" aria-label="Jump to entry">
-            <span class="v2-entry-nav-label">Jump:</span>
+            <span class="v2-entry-nav-label">Jump to</span>
             <ul class="v2-entry-nav-list">
               ${jumpLinks}
             </ul>
