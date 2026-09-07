@@ -17,7 +17,9 @@ document.addEventListener("pointerdown", (e: PointerEvent) => {
 
 // Smooth scroll and auto-expand target <details> card when clicking a jump pill
 document.addEventListener("click", (e: MouseEvent) => {
-  const pill = (e.target as Element)?.closest?.<HTMLAnchorElement>(".v2-jump-pill");
+  const pill = (e.target as Element)?.closest?.<HTMLAnchorElement>(
+    ".v2-jump-pill"
+  );
   if (!pill) return;
   const href = pill.getAttribute("href");
   if (!href || !href.startsWith("#")) return;
@@ -32,6 +34,43 @@ document.addEventListener("click", (e: MouseEvent) => {
     history.replaceState(null, "", href);
   }
 });
+
+// Floating "Jump to top" button visibility & smooth scroll
+const backToTopBtn =
+  document.querySelector<HTMLAnchorElement>(".v2-back-to-top");
+if (backToTopBtn) {
+  let ticking = false;
+  const updateBackToTop = () => {
+    const shouldShow = window.scrollY > 300;
+    backToTopBtn.classList.toggle("v2-visible", shouldShow);
+    ticking = false;
+  };
+
+  window.addEventListener(
+    "scroll",
+    () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateBackToTop);
+        ticking = true;
+      }
+    },
+    { passive: true }
+  );
+
+  updateBackToTop();
+
+  backToTopBtn.addEventListener("click", (e: MouseEvent) => {
+    e.preventDefault();
+    window.scrollTo({ top: 0, behavior: "smooth" });
+    if (window.location.hash) {
+      history.replaceState(
+        null,
+        "",
+        window.location.pathname + window.location.search
+      );
+    }
+  });
+}
 
 console.log(
   "Morcus UI V2 Web Components initialized (Native Custom Elements)."

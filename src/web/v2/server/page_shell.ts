@@ -128,12 +128,24 @@ export function renderPageShell(options: PageShellOptions): string {
   <link rel="stylesheet" href="${getV2AssetHref("v2.css")}">
 </head>
 <body>
+  <div id="top"></div>
   ${appBarHtml}
   <div class="v2-container">
     <main>
       ${options.contentHtml}
     </main>
   </div>
+
+  <a
+    href="#top"
+    class="v2-back-to-top"
+    aria-label="Jump to top"
+    title="Jump to top"
+  >
+    <svg viewBox="0 0 24 24" aria-hidden="true">
+      <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path>
+    </svg>
+  </a>
 
   <!-- UI V2 enhanced with Lit Web Components -->
   <script type="module" src="${getV2AssetHref("v2.js")}"></script>
