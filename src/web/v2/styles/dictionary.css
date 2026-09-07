@@ -410,13 +410,90 @@
 }
 
 .lsHover {
-  border-bottom: 1px dashed var(--v2-border-strong);
-  cursor: help;
+  text-decoration: underline dotted var(--v2-border-strong);
+  text-underline-offset: 3px;
+  cursor: pointer;
+  touch-action: manipulation;
+  padding: 0 1px;
+  border-radius: 3px;
+  transition: background-color 0.15s ease-in-out;
 }
 
-.lsHover:hover {
+.lsHover:hover,
+.lsHover:focus-visible {
   background-color: var(--v2-accent-quote);
-  border-radius: 3px;
+  outline: none;
+}
+
+/* Universal No-JS Fallback: prominent centered bottom snackbar across mobile and desktop */
+.lsHover:focus::after {
+  content: attr(title);
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: max-content;
+  min-width: min(calc(100vw - 32px), 200px);
+  max-width: min(calc(100vw - 32px), 32rem);
+  box-sizing: border-box;
+  background-color: var(--v2-toast-bg);
+  color: var(--v2-toast-text);
+  border: 1px solid var(--v2-toast-border);
+  padding: 10px 18px;
+  border-radius: 10px;
+  font-family: var(--v2-font-sans);
+  font-size: 0.98rem;
+  font-weight: 600;
+  font-style: normal;
+  line-height: 1.4;
+  letter-spacing: 0.01em;
+  text-align: center;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35), 0 2px 6px rgba(0, 0, 0, 0.15);
+  z-index: 1000;
+  pointer-events: none;
+}
+
+/* Once JS is active, disable static CSS fallback so anchored popover takes over */
+html.v2-has-js .lsHover:focus::after {
+  display: none !important;
+}
+
+/* Single global popover container for progressive JS enhancement */
+.v2-abbr-popover {
+  margin: 0;
+  padding: 8px 14px;
+  font-family: var(--v2-font-sans);
+  font-size: 0.9rem;
+  font-weight: 500;
+  font-style: normal;
+  line-height: 1.4;
+  color: var(--v2-text);
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border-focus);
+  border-radius: 8px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.18);
+  width: max-content;
+  max-width: min(calc(100vw - 32px), 32rem);
+  box-sizing: border-box;
+  position: absolute;
+  inset: unset;
+  overflow: visible;
+  animation: v2-popover-fade-in 0.12s ease-out;
+}
+
+.v2-abbr-popover::backdrop {
+  background: transparent;
+}
+
+@keyframes v2-popover-fade-in {
+  from {
+    opacity: 0;
+    transform: scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .dLink {

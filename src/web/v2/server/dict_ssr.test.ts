@@ -548,4 +548,29 @@ describe("dict_ssr", () => {
     expect(idCount).toBe(1);
     expect(rendered).toContain("habeo");
   });
+
+  test("xmlNodeToHtml adds tabindex=0 and preserves title on expandable abbreviations", () => {
+    const abbrNode = new XmlNode(
+      "span",
+      [
+        ["class", "lsHover lsAuthor"],
+        ["title", "M. Tullius Cicero, orator and philosopher, obiit B.C. 43"],
+      ],
+      ["Cic."]
+    );
+    const html = xmlNodeToHtml(abbrNode);
+    expect(html).toContain('class="lsHover lsAuthor"');
+    expect(html).toContain('tabindex="0"');
+    expect(html).toContain(
+      'title="M. Tullius Cicero, orator and philosopher, obiit B.C. 43"'
+    );
+    expect(html).toContain("Cic.");
+  });
+
+  test("renderDictPageHtml includes the single global #v2-abbr-popover element", () => {
+    const pageHtml = renderDictPageHtml({ query: "habeo" });
+    expect(pageHtml).toContain(
+      '<div id="v2-abbr-popover" popover="auto" class="v2-abbr-popover"></div>'
+    );
+  });
 });
