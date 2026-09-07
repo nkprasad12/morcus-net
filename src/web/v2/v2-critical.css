@@ -31,22 +31,56 @@ body {
   justify-content: space-between;
 }
 
-.v2-app-bar-left {
+.v2-brand-group {
   display: flex;
   align-items: center;
   gap: 16px;
 }
 
-.v2-app-bar-right {
+.v2-actions-group {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 8px;
+}
+
+.v2-mobile-menu {
+  position: relative;
+  display: none;
 }
 
 .v2-nav {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .v2-app-bar-inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+
+  .v2-actions-group {
+    order: 1;
+    justify-self: start;
+  }
+
+  .v2-brand-group {
+    order: 2;
+    justify-self: center;
+    gap: 0;
+  }
+
+  .v2-nav-desktop {
+    display: none;
+  }
+
+  .v2-mobile-menu {
+    order: 3;
+    justify-self: end;
+    display: block;
+  }
 }
 
 .v2-container {
