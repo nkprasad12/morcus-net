@@ -17,9 +17,8 @@ document.addEventListener("pointerdown", (e: PointerEvent) => {
 
 // Smooth scroll and auto-expand target <details> card when clicking a jump pill
 document.addEventListener("click", (e: MouseEvent) => {
-  const pill = (e.target as Element)?.closest?.<HTMLAnchorElement>(
-    ".v2-jump-pill"
-  );
+  if (!(e.target instanceof Element)) return;
+  const pill = e.target.closest<HTMLAnchorElement>(".v2-jump-pill");
   if (!pill) return;
   const href = pill.getAttribute("href");
   if (!href || !href.startsWith("#")) return;
