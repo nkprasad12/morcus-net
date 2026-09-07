@@ -89,6 +89,8 @@ describe("v2_router integration", () => {
     expect(res.header["content-type"]).toContain("text/css");
     expect(res.header["cache-control"]).toContain("immutable");
     expect(res.text).toContain(".lsOrth");
+    expect(res.text).toContain("v2-target-highlight");
+    expect(res.text).not.toContain("2px dashed");
   });
 
   test("GET /v2/assets/manifest.json is not exposed", async () => {

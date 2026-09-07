@@ -15,26 +15,75 @@ document.addEventListener("pointerdown", (e: PointerEvent) => {
   }
 });
 
-// Smooth scroll and auto-expand target <details> card when clicking a jump pill
+function triggerAnchorHighlight(targetEl: HTMLElement) {
+  if (targetEl.id === "top" || targetEl.classList.contains("v2-dict-card")) {
+    return;
+  }
+  targetEl.classList.remove("v2-target-active");
+  // Force a reflow so browser restarts keyframe animation cleanly
+  void targetEl.offsetWidth;
+  targetEl.classList.add("v2-target-active");
+  targetEl.addEventListener(
+    "animationend",
+    () => {
+      targetEl.classList.remove("v2-target-active");
+    },
+    { once: true }
+  );
+}
+
+// Expand any ancestor <details> if initial page load has a hash
+if (window.location.hash) {
+  const initialTarget = document.getElementById(window.location.hash.slice(1));
+  if (initialTarget) {
+    let parent: HTMLElement | null = initialTarget;
+    while (parent) {
+      if (parent instanceof HTMLDetailsElement && !parent.open) {
+        parent.open = true;
+      }
+      parent = parent.parentElement;
+    }
+  }
+}
+
+// Smooth scroll, auto-expand parent cards, and animate highlight on in-page anchor links
 document.addEventListener("click", (e: MouseEvent) => {
   if (!(e.target instanceof Element)) return;
-  const pill = e.target.closest<HTMLAnchorElement>(".v2-jump-pill");
-  if (!pill) return;
-  const href = pill.getAttribute("href");
-  if (!href || !href.startsWith("#")) return;
+  const anchor = e.target.closest<HTMLAnchorElement>("a[href^='#']");
+  if (!anchor) return;
+  const href = anchor.getAttribute("href");
+  if (
+    !href ||
+    href === "#" ||
+    href === "#top" ||
+    anchor.classList.contains("v2-back-to-top")
+  ) {
+    return;
+  }
+
   const targetId = href.slice(1);
   const targetEl = document.getElementById(targetId);
   if (targetEl) {
     e.preventDefault();
-    if (targetEl instanceof HTMLDetailsElement && !targetEl.open) {
-      targetEl.open = true;
+    // Auto-expand any ancestor <details> cards (and target itself if a card)
+    let parent: HTMLElement | null = targetEl;
+    while (parent) {
+      if (parent instanceof HTMLDetailsElement && !parent.open) {
+        parent.open = true;
+      }
+      parent = parent.parentElement;
     }
-    targetEl.scrollIntoView({ behavior: "smooth" });
+
+    const isJumpPill =
+      anchor.classList.contains("v2-jump-pill") ||
+      targetEl.classList.contains("v2-dict-card");
+    targetEl.scrollIntoView({ behavior: isJumpPill ? "instant" : "smooth" });
     history.replaceState(null, "", href);
+    triggerAnchorHighlight(targetEl);
   }
 });
 
-// Floating "Jump to top" button visibility & smooth scroll
+// Floating "Jump to top" button visibility & instant scroll
 const backToTopBtn =
   document.querySelector<HTMLAnchorElement>(".v2-back-to-top");
 if (backToTopBtn) {
@@ -60,7 +109,7 @@ if (backToTopBtn) {
 
   backToTopBtn.addEventListener("click", (e: MouseEvent) => {
     e.preventDefault();
-    window.scrollTo({ top: 0, behavior: "smooth" });
+    window.scrollTo({ top: 0, behavior: "instant" });
     if (window.location.hash) {
       history.replaceState(
         null,

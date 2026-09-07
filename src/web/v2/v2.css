@@ -6,3 +6,18 @@
 @import "./styles/search.css";
 @import "./styles/dictionary.css";
 @import "./styles/dialog.css";
+
+/* Base link styling */
+a {
+  color: var(--v2-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+a:visited {
+  color: var(--v2-primary);
+}
+
+a:hover {
+  color: var(--v2-primary-hover);
+}

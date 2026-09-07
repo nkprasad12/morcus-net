@@ -113,7 +113,7 @@
 }
 
 .v2-dict-card {
-  scroll-margin-top: 80px;
+  scroll-margin-top: 20px;
   background: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   border-radius: 8px;
@@ -210,11 +210,15 @@
 }
 
 .v2-entry {
-  scroll-margin-top: 80px;
+  scroll-margin-top: 20px;
   margin-bottom: 20px;
   font-family: var(--v2-font-serif);
   font-size: 1.15rem;
   line-height: 1.6;
+}
+
+.v2-entry [id] {
+  scroll-margin-top: 20px;
 }
 
 .v2-entry:last-child {
@@ -375,7 +379,8 @@
   display: inline-block;
   padding: 0 4px;
   margin: 0 2px;
-  background-color: rgba(0, 0, 0, 0.08);
+  background-color: var(--v2-bullet-bg);
+  color: var(--v2-text);
   border-radius: 3px;
   font-weight: 600;
 }
@@ -457,16 +462,46 @@
   color: #ffffff;
 }
 
-/* Native :target highlight for jumped sections */
-:target {
-  scroll-margin-top: 70px;
-  border-radius: 4px;
-  outline: 2px dashed var(--v2-primary);
-  outline-offset: 2px;
+/* Anchored target animation effect (one-shot subtle flash & fade) */
+@keyframes v2-target-highlight {
+  0% {
+    background-color: var(--v2-target-highlight);
+    box-shadow: 0 0 0 3px var(--v2-target-highlight);
+  }
+  35% {
+    background-color: var(--v2-target-highlight);
+    box-shadow: 0 0 0 3px var(--v2-target-highlight);
+  }
+  100% {
+    background-color: transparent;
+    box-shadow: 0 0 0 0 transparent;
+  }
 }
 
-.v2-dict-card:target {
-  outline: none;
+:target,
+.v2-target-active {
+  scroll-margin-top: 20px;
+  border-radius: 4px;
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  animation: v2-target-highlight 1.8s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.v2-dict-card:target,
+.v2-dict-card.v2-target-active {
+  animation: none !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :target,
+  .v2-target-active {
+    animation: none !important;
+    background-color: var(--v2-target-highlight);
+  }
+  .v2-dict-card:target,
+  .v2-dict-card.v2-target-active {
+    background-color: transparent !important;
+  }
 }
 
 /* Top Unified Segmented Tab Bar */
@@ -647,7 +682,7 @@
     gap: 10px 8px;
   }
   .v2-entry-headword {
-    width: 100%;
+    max-width: 100%;
     margin-bottom: 2px;
   }
   .v2-tab-pill {
