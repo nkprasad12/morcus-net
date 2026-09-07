@@ -12,7 +12,8 @@
   --v2-primary-hover: #0052a3;
   --v2-border: #e2e4e8;
   --v2-border-focus: #80bdff;
-  --v2-tag-bg: #f1f3f5;
+  --v2-tag-bg: #e9ecef;
+  --v2-card-header-bg: #dee2e6;
   --v2-pill-height: 2.125rem;
   --v2-accent-orth: rgba(220, 53, 69, 0.15);
   --v2-accent-grammar: rgba(253, 126, 20, 0.15);
@@ -40,6 +41,7 @@
     --v2-border: #33363d;
     --v2-border-focus: #8ab4f8;
     --v2-tag-bg: #282a30;
+    --v2-card-header-bg: #282a30;
     --v2-accent-orth: rgba(240, 90, 100, 0.25);
     --v2-accent-grammar: rgba(255, 145, 50, 0.25);
     --v2-accent-quote: rgba(70, 140, 255, 0.22);
@@ -68,6 +70,7 @@
   --v2-border: #33363d;
   --v2-border-focus: #8ab4f8;
   --v2-tag-bg: #282a30;
+  --v2-card-header-bg: #282a30;
   --v2-accent-orth: rgba(240, 90, 100, 0.25);
   --v2-accent-grammar: rgba(255, 145, 50, 0.25);
   --v2-accent-quote: rgba(70, 140, 255, 0.22);
@@ -94,7 +97,8 @@
   --v2-primary-hover: #0052a3;
   --v2-border: #e2e4e8;
   --v2-border-focus: #80bdff;
-  --v2-tag-bg: #f1f3f5;
+  --v2-tag-bg: #e9ecef;
+  --v2-card-header-bg: #dee2e6;
   --v2-accent-orth: rgba(220, 53, 69, 0.15);
   --v2-accent-grammar: rgba(253, 126, 20, 0.15);
   --v2-accent-quote: rgba(13, 110, 253, 0.12);
