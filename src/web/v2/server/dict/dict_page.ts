@@ -26,6 +26,27 @@ export const DICT_NAMES: Record<string, string> = {
   numeral: "Latin Numerals",
 };
 
+export const DICT_SHORT_NAMES: Record<string, string> = {
+  "L&S": "Lewis & Short",
+  "S&H": "Smith & Hall",
+  GAF: "Gaffiot",
+  GRG: "Georges",
+  EGL: "Pozo",
+  GES: "Gesner",
+  FOR: "Forcellini",
+  "R&A": "Riddle & Arnold",
+  NUM: "Numerals",
+  ls: "Lewis & Short",
+  sh: "Smith & Hall",
+  gaffiot: "Gaffiot",
+  georges: "Georges",
+  pozo: "Pozo",
+  gesner: "Gesner",
+  forcellini: "Forcellini",
+  riddle_arnold: "Riddle & Arnold",
+  numeral: "Numerals",
+};
+
 /**
  * Renders only the results container inner HTML (used for partial AJAX swaps and full SSR).
  */
@@ -63,7 +84,39 @@ export function renderDictResultsHtml(
     `;
   }
 
-  return dictKeys
+  const totalCount = dictKeys.reduce(
+    (acc, key) => acc + (results[key]?.length || 0),
+    0
+  );
+
+  const pillsHtml = dictKeys
+    .map((dictKey) => {
+      const entries = results[dictKey];
+      const shortName =
+        DICT_SHORT_NAMES[dictKey] ??
+        DICT_NAMES[dictKey] ??
+        LatinDict.BY_KEY.get(dictKey)?.displayName ??
+        dictKey.toUpperCase();
+      const count = entries.length;
+      const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+      return `<a href="#${cardId}" class="v2-jump-pill"><span class="v2-jump-pill-name">${he.encode(
+        shortName
+      )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
+    })
+    .join("");
+
+  const jumpBarHtml = `
+    <nav class="v2-results-nav" aria-label="Jump to dictionary">
+      <div class="v2-results-pills">
+        ${pillsHtml}
+      </div>
+      <div class="v2-results-total">
+        ${totalCount} ${totalCount === 1 ? "result" : "results"}
+      </div>
+    </nav>
+  `;
+
+  const cardsHtml = dictKeys
     .map((dictKey) => {
       const entries = results[dictKey];
       const dictName =
@@ -71,6 +124,7 @@ export function renderDictResultsHtml(
         LatinDict.BY_KEY.get(dictKey)?.displayName ??
         dictKey.toUpperCase();
       const totalEntries = entries.length;
+      const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
 
       let quickJumpHtml = "";
       if (totalEntries > 1) {
@@ -105,7 +159,7 @@ export function renderDictResultsHtml(
         .join("");
 
       return `
-        <details class="v2-dict-card" open>
+        <details class="v2-dict-card" id="${cardId}" open>
           <summary class="v2-dict-summary">
             <span class="v2-dict-title">${he.encode(dictName)}</span>
             ${quickJumpHtml}
@@ -117,6 +171,8 @@ export function renderDictResultsHtml(
       `;
     })
     .join("\n");
+
+  return `${jumpBarHtml}\n${cardsHtml}`;
 }
 
 export interface DictPageOptions {

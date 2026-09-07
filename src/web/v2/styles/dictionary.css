@@ -6,7 +6,114 @@
   gap: 20px;
 }
 
+/* Results Navigation & Quick-Jump Pills (Option 1) */
+.v2-results-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 2px;
+}
+
+.v2-results-pills {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding: 4px 2px;
+  scrollbar-width: thin;
+}
+
+.v2-results-pills::-webkit-scrollbar {
+  height: 4px;
+}
+
+.v2-results-pills::-webkit-scrollbar-thumb {
+  background: var(--v2-border);
+  border-radius: 4px;
+}
+
+.v2-jump-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 9999px;
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text);
+  text-decoration: none;
+  font-size: 0.82rem;
+  font-weight: 500;
+  white-space: nowrap;
+  user-select: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.v2-jump-pill:hover {
+  background-color: var(--v2-accent-quote);
+  border-color: var(--v2-primary);
+  color: var(--v2-primary);
+  transform: translateY(-1px);
+}
+
+.v2-jump-pill:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-jump-pill-name {
+  font-weight: 500;
+}
+
+.v2-jump-pill-count {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 5px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  border-radius: 9999px;
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text-muted);
+  transition: color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.v2-jump-pill:hover .v2-jump-pill-count {
+  border-color: var(--v2-primary);
+  color: var(--v2-primary);
+}
+
+.v2-results-total {
+  font-size: 0.82rem;
+  font-weight: 500;
+  color: var(--v2-text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+@media (max-width: 640px) {
+  .v2-results-nav {
+    display: block;
+    padding-bottom: 0;
+  }
+
+  .v2-results-pills {
+    width: 100%;
+    padding: 2px 0;
+  }
+
+  .v2-results-total {
+    display: none;
+  }
+}
+
 .v2-dict-card {
+  scroll-margin-top: 80px;
   background: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   border-radius: 8px;
