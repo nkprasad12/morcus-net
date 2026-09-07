@@ -110,6 +110,30 @@
   .v2-results-total {
     display: none;
   }
+
+  /* Full-bleed edge-to-edge cards on mobile to eliminate double padding */
+  .v2-dict-card {
+    margin-left: -16px;
+    margin-right: -16px;
+    border-left: none;
+    border-right: none;
+    border-radius: 0;
+    box-shadow: none;
+  }
+
+  .v2-dict-summary {
+    padding: 10px 14px;
+  }
+
+  .v2-dict-body {
+    padding: 14px 14px;
+  }
+
+  /* Reduced sense indentation on mobile to maximize horizontal reading space */
+  .v2-entry-content ol,
+  .v2-entry-content ul {
+    padding-left: 0.85em;
+  }
 }
 
 .v2-dict-card {
@@ -127,7 +151,7 @@
   font-size: 1.05rem;
   cursor: pointer;
   user-select: none;
-  background-color: var(--v2-tag-bg);
+  background-color: var(--v2-card-header-bg);
   border-bottom: 1px solid var(--v2-border);
   display: flex;
   justify-content: space-between;
