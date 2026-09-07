@@ -90,15 +90,29 @@ test.describe("UI V2 dictionary", () => {
     await page.goto("/v2/dicts");
     await expect(page.locator("header.v2-app-bar")).toBeVisible();
 
-    // Click About link in the app bar
-    await page.locator('.v2-nav a:has-text("About")').click();
+    // Click About link in the app bar (handles desktop bar or mobile dropdown menu)
+    if (await page.locator(".v2-mobile-menu-btn").isVisible()) {
+      await page.locator(".v2-mobile-menu-btn").click();
+      await page
+        .locator('.v2-mobile-menu-dropdown a:has-text("About")')
+        .click();
+    } else {
+      await page.locator('.v2-nav-desktop a:has-text("About")').click();
+    }
     await expect(page).toHaveURL(/\/v2\/about$/);
     await expect(page.locator("h1")).toContainText("About");
     await expect(page.getByText("GPL-3.0")).toBeVisible();
     await expect(page.getByText("CC BY-SA 4.0")).toBeVisible();
 
     // Navigate back to Dictionary via app bar
-    await page.locator('.v2-nav a:has-text("Dictionary")').click();
+    if (await page.locator(".v2-mobile-menu-btn").isVisible()) {
+      await page.locator(".v2-mobile-menu-btn").click();
+      await page
+        .locator('.v2-mobile-menu-dropdown a:has-text("Dictionary")')
+        .click();
+    } else {
+      await page.locator('.v2-nav-desktop a:has-text("Dictionary")').click();
+    }
     await expect(page).toHaveURL(/\/v2\/dicts$/);
     await expect(page.locator('input[name="q"]')).toBeVisible();
 
@@ -112,13 +126,27 @@ test.describe("UI V2 dictionary", () => {
     await expect(page.locator("header.v2-app-bar")).toBeVisible();
 
     // Click About link in the app bar
-    await page.locator('.v2-nav a:has-text("About")').click();
+    if (await page.locator(".v2-mobile-menu-btn").isVisible()) {
+      await page.locator(".v2-mobile-menu-btn").click();
+      await page
+        .locator('.v2-mobile-menu-dropdown a:has-text("About")')
+        .click();
+    } else {
+      await page.locator('.v2-nav-desktop a:has-text("About")').click();
+    }
     await expect(page).toHaveURL(/\/v2\/about$/);
     await expect(page.locator("h1")).toContainText("About");
     await expect(page.getByText("Perseus project")).toBeVisible();
 
     // Navigate back to Dictionary via app bar
-    await page.locator('.v2-nav a:has-text("Dictionary")').click();
+    if (await page.locator(".v2-mobile-menu-btn").isVisible()) {
+      await page.locator(".v2-mobile-menu-btn").click();
+      await page
+        .locator('.v2-mobile-menu-dropdown a:has-text("Dictionary")')
+        .click();
+    } else {
+      await page.locator('.v2-nav-desktop a:has-text("Dictionary")').click();
+    }
     await expect(page).toHaveURL(/\/v2\/dicts$/);
     await expect(page.locator('input[name="q"]')).toBeVisible();
   });

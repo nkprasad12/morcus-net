@@ -24,11 +24,13 @@ export function renderAppBar(activePage: V2ActivePage): string {
   return `
     <header class="v2-app-bar">
       <div class="v2-app-bar-inner">
-        <div class="v2-app-bar-left">
+        <!-- Left on desktop / Center on mobile: Brand Logo & Desktop Nav -->
+        <div class="v2-brand-group">
           <a href="/v2/dicts" class="v2-brand-logo-link" aria-label="M&oacute;rcus Home">
             <img src="/public/favicon.ico" alt="M&oacute;rcus Logo" class="v2-brand-logo" width="48" height="48">
           </a>
-          <nav class="v2-nav" aria-label="Main Navigation">
+          <!-- Desktop Navigation Links -->
+          <nav class="v2-nav v2-nav-desktop" aria-label="Main Navigation">
             <a
               href="/v2/dicts"
               class="v2-nav-link ${isDictsActive ? "active" : ""}"
@@ -45,8 +47,9 @@ export function renderAppBar(activePage: V2ActivePage): string {
             </a>
           </nav>
         </div>
-        <div class="v2-app-bar-right">
-          <span class="v2-brand-badge">V2</span>
+
+        <!-- Right on desktop / Left on mobile: Dark/Light Mode & Report Dialog -->
+        <div class="v2-actions-group">
           <morcus-theme-toggle></morcus-theme-toggle>
           <morcus-report-dialog>
             <button
@@ -62,6 +65,34 @@ export function renderAppBar(activePage: V2ActivePage): string {
             ${renderReportIssueDialog()}
           </morcus-report-dialog>
         </div>
+
+        <!-- Mobile Hamburger Dropdown Menu (<details> native Zero-JS) -->
+        <details class="v2-mobile-menu">
+            <summary class="v2-mobile-menu-btn" aria-label="Open navigation menu">
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="v2-icon-menu">
+                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+              </svg>
+              <svg viewBox="0 0 24 24" aria-hidden="true" class="v2-icon-close">
+                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+              </svg>
+            </summary>
+            <nav class="v2-nav v2-mobile-menu-dropdown" aria-label="Mobile Navigation">
+              <a
+                href="/v2/dicts"
+                class="v2-nav-link ${isDictsActive ? "active" : ""}"
+                ${isDictsActive ? 'aria-current="page"' : ""}
+              >
+                Dictionary
+              </a>
+              <a
+                href="/v2/about"
+                class="v2-nav-link ${isAboutActive ? "active" : ""}"
+                ${isAboutActive ? 'aria-current="page"' : ""}
+              >
+                About
+              </a>
+            </nav>
+          </details>
       </div>
     </header>
   `;
