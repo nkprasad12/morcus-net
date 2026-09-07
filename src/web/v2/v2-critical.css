@@ -86,7 +86,7 @@ body {
 .v2-container {
   max-width: 900px;
   margin: 0 auto;
-  padding: 24px 16px;
+  padding: 14px 16px 24px;
 }
 
 morcus-theme-toggle:not(:defined),
