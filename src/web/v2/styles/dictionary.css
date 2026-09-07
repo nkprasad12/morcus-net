@@ -182,16 +182,16 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 10px;
-  min-height: 24px;
+  padding: 3px 11px;
+  min-height: 26px;
   box-sizing: border-box;
-  border-radius: 12px;
+  border-radius: 13px;
   background: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   text-decoration: none;
   color: var(--v2-primary);
-  font-size: 0.82rem;
-  font-weight: 600;
+  font-size: 0.88rem;
+  font-weight: 400;
   box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
   transition: all 0.15s ease-in-out;
 }
@@ -205,8 +205,8 @@
 
 .v2-entry-nav-word {
   font-family: var(--v2-font-serif);
-  font-size: 0.88rem;
-  font-weight: 600;
+  font-size: 0.94rem;
+  font-weight: 400;
 }
 
 .v2-entry {
@@ -460,11 +460,13 @@
 /* Native :target highlight for jumped sections */
 :target {
   scroll-margin-top: 70px;
-  background-color: rgba(255, 230, 100, 0.25);
   border-radius: 4px;
   outline: 2px dashed var(--v2-primary);
   outline-offset: 2px;
-  transition: background-color 0.3s ease-in-out;
+}
+
+.v2-dict-card:target {
+  outline: none;
 }
 
 /* Top Unified Segmented Tab Bar */
