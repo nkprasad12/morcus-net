@@ -139,10 +139,10 @@
 .v2-dict-card {
   scroll-margin-top: 20px;
   background: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
+  border: 2px solid var(--v2-border-strong);
   border-radius: 8px;
   overflow: hidden;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  box-shadow: none !important;
 }
 
 .v2-dict-summary {
@@ -152,12 +152,16 @@
   cursor: pointer;
   user-select: none;
   background-color: var(--v2-card-header-bg);
-  border-bottom: 1px solid var(--v2-border);
+  border-bottom: none;
   display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px 16px;
+}
+
+.v2-dict-card[open] > .v2-dict-summary {
+  border-bottom: 2px solid var(--v2-border-strong);
 }
 
 .v2-dict-title {
@@ -545,8 +549,8 @@ html.v2-has-js .lsHover:focus::after {
 .v2-lat-word:hover {
   color: var(--v2-primary);
   text-decoration: underline;
-  text-decoration-style: dotted;
-  text-underline-offset: 3px;
+  text-decoration-style: solid;
+  text-underline-offset: 2px;
   background-color: var(--v2-tag-bg);
 }
 
