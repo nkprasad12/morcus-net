@@ -381,7 +381,7 @@ test.describe("UI V2 dictionary", () => {
     // Verify multi-entry dictionary has quick-jump bar
     const nav = page.locator(".v2-entry-nav").first();
     await expect(nav).toBeVisible();
-    await expect(nav.getByText("Jump:")).toBeVisible();
+    await expect(nav.getByText("Jump to")).toBeVisible();
 
     // Verify individual entry headword button exists and links to anchor
     const headwordBtn = page.locator(".v2-entry-headword").first();
@@ -392,5 +392,72 @@ test.describe("UI V2 dictionary", () => {
     const jumpLink = nav.locator(".v2-entry-nav-link").nth(1);
     await jumpLink.click();
     expect(page.url()).toMatch(/#[a-zA-Z0-9_-]+/);
+  });
+
+  test("renders abbreviation with tabindex and title in No-JS baseline", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/v2/dicts?q=habeo");
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
+
+    const abbr = page.locator(".lsHover").first();
+    await expect(abbr).toBeVisible();
+    await expect(abbr).toHaveAttribute("tabindex", "0");
+    const title = await abbr.getAttribute("title");
+    expect(title).toBeTruthy();
+
+    // Verify element can receive focus
+    await abbr.focus();
+    await expect(abbr).toBeFocused();
+
+    await context.close();
+  });
+
+  test("opens floating popover on clicking expandable abbreviation (JS enabled)", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=habeo");
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
+
+    const abbr = page.locator(".lsHover").first();
+    await expect(abbr).toBeVisible();
+    const originalTitle =
+      (await abbr.getAttribute("title")) ||
+      (await abbr.getAttribute("data-abbr-expansion"));
+    expect(originalTitle).toBeTruthy();
+
+    const popover = page.locator("#v2-abbr-popover");
+    await expect(popover).not.toBeVisible();
+
+    // Click abbreviation to open popover
+    await abbr.click();
+    await expect(popover).toBeVisible();
+    await expect(popover).toHaveText(originalTitle!);
+
+    // Verify popover stays within viewport boundaries (no clipping)
+    const popBox = await popover.boundingBox();
+    expect(popBox).not.toBeNull();
+    if (popBox) {
+      expect(popBox.x).toBeGreaterThanOrEqual(0);
+      const viewport = page.viewportSize();
+      if (viewport) {
+        expect(popBox.x + popBox.width).toBeLessThanOrEqual(
+          viewport.width + 10
+        );
+      }
+    }
+
+    // Dismiss popover via Escape key
+    await page.keyboard.press("Escape");
+    await expect(popover).not.toBeVisible();
+
+    // Reopen by clicking and dismiss by clicking away
+    await abbr.click();
+    await expect(popover).toBeVisible();
+    await page.locator(".v2-container").click({ position: { x: 5, y: 5 } });
+    await expect(popover).not.toBeVisible();
   });
 });

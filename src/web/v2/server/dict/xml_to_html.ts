@@ -129,6 +129,14 @@ export function xmlNodeToHtml(
     attrsMap.set("href", `/v2/dicts?q=${encodeURIComponent(currentHref)}`);
   }
 
+  // Mark expandable abbreviations and hover elements focusable for keyboard navigation and No-JS mobile focus
+  const isAbbr =
+    rawClass.includes("lsHover") ||
+    (attrsMap.has("title") && tagName !== "a" && !isSenseBullet);
+  if (isAbbr) {
+    attrsMap.set("tabindex", "0");
+  }
+
   if (VOID_TAGS.has(tagName)) {
     return `<${tagName}>`;
   }
@@ -172,6 +180,9 @@ export function xmlNodeToHtml(
   const titleAttr = attrsMap.get("title")
     ? ` title="${he.encode(attrsMap.get("title")!)}"`
     : "";
+  const tabindexVal = attrsMap.get("tabindex");
+  const tabindexAttr =
+    tabindexVal !== undefined ? ` tabindex="${he.encode(tabindexVal)}"` : "";
   const hrefAttr = attrsMap.get("href")
     ? ` href="${he.encode(attrsMap.get("href")!)}"`
     : "";
@@ -189,5 +200,5 @@ export function xmlNodeToHtml(
       ? ` style="margin-left: ${indentLevel * 0.5}em;"`
       : "";
 
-  return `<${tagName}${idAttr}${classNames}${titleAttr}${hrefAttr}${targetAttr}${relAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+  return `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
 }

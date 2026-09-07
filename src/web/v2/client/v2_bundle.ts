@@ -4,6 +4,9 @@ import "@/web/v2/client/morcus_dict_search";
 import "@/web/v2/client/morcus_theme_toggle";
 import "@/web/v2/client/morcus_report_dialog";
 
+// Mark document as JS-enhanced to disable static No-JS CSS fallbacks
+document.documentElement.classList.add("v2-has-js");
+
 // Close mobile <details> navigation menu when clicking outside or following a link
 document.addEventListener("pointerdown", (e: PointerEvent) => {
   const mobileMenu =
@@ -118,6 +121,139 @@ if (backToTopBtn) {
       );
     }
   });
+}
+
+declare global {
+  interface HTMLElement {
+    showPopover(): void;
+    hidePopover(): void;
+  }
+}
+
+// Interactive abbreviation popover for expandable dictionary words
+const abbrPopover = document.getElementById("v2-abbr-popover");
+if (abbrPopover) {
+  let activeTarget: HTMLElement | null = null;
+  const supportsNativePopover = typeof abbrPopover.showPopover === "function";
+
+  const closeAbbrPopover = () => {
+    if (supportsNativePopover) {
+      if (abbrPopover.matches(":popover-open")) {
+        abbrPopover.hidePopover();
+      }
+    } else {
+      abbrPopover.style.display = "none";
+    }
+    activeTarget = null;
+  };
+
+  const positionAbbrPopover = (target: HTMLElement) => {
+    const rect = target.getBoundingClientRect();
+    const popWidth = abbrPopover.offsetWidth || 200;
+    const popHeight = abbrPopover.offsetHeight || 38;
+
+    // Horizontally center over target word, strictly clamped to viewport padding
+    const idealLeft = rect.left + rect.width / 2 - popWidth / 2;
+    const clampedLeft = Math.max(
+      8,
+      Math.min(window.innerWidth - popWidth - 8, idealLeft)
+    );
+
+    // Place above if room, else place below
+    const spaceAbove = rect.top;
+    const spaceBelow = window.innerHeight - rect.bottom;
+    let top = 0;
+    if (spaceAbove >= popHeight + 8 || spaceAbove > spaceBelow) {
+      top = rect.top + window.scrollY - popHeight - 6;
+    } else {
+      top = rect.bottom + window.scrollY + 6;
+    }
+
+    abbrPopover.style.position = "absolute";
+    abbrPopover.style.left = `${Math.round(clampedLeft)}px`;
+    abbrPopover.style.top = `${Math.round(top)}px`;
+  };
+
+  const openAbbrPopover = (target: HTMLElement) => {
+    const titleText =
+      target.getAttribute("title") || target.dataset.abbrExpansion;
+    if (!titleText) return;
+
+    // Cache expansion in dataset to suppress native delayed OS tooltip on hover
+    if (!target.dataset.abbrExpansion) {
+      target.dataset.abbrExpansion = titleText;
+      target.removeAttribute("title");
+    }
+
+    // Toggle off if tapping the same active element
+    const isOpen = supportsNativePopover
+      ? abbrPopover.matches(":popover-open")
+      : abbrPopover.style.display === "block";
+    if (activeTarget === target && isOpen) {
+      closeAbbrPopover();
+      return;
+    }
+
+    activeTarget = target;
+    abbrPopover.textContent = titleText;
+
+    if (supportsNativePopover) {
+      abbrPopover.showPopover();
+    } else {
+      abbrPopover.style.display = "block";
+    }
+    positionAbbrPopover(target);
+  };
+
+  document.addEventListener("click", (e: MouseEvent) => {
+    if (!(e.target instanceof Element)) return;
+    const abbr = e.target.closest<HTMLElement>(".lsHover");
+    if (abbr) {
+      e.preventDefault();
+      openAbbrPopover(abbr);
+    } else if (!abbrPopover.contains(e.target)) {
+      closeAbbrPopover();
+    }
+  });
+
+  // Ensure touch dismisses immediately on tap outside
+  document.addEventListener("pointerdown", (e: PointerEvent) => {
+    if (!(e.target instanceof Node)) return;
+    if (
+      activeTarget &&
+      !activeTarget.contains(e.target) &&
+      !abbrPopover.contains(e.target)
+    ) {
+      closeAbbrPopover();
+    }
+  });
+
+  // Keyboard accessibility: Enter or Space on focused .lsHover opens popover
+  document.addEventListener("keydown", (e: KeyboardEvent) => {
+    if (e.key === "Enter" || e.key === " ") {
+      const activeEl = document.activeElement;
+      if (
+        activeEl instanceof HTMLElement &&
+        activeEl.classList.contains("lsHover")
+      ) {
+        e.preventDefault();
+        openAbbrPopover(activeEl);
+      }
+    } else if (e.key === "Escape") {
+      closeAbbrPopover();
+    }
+  });
+
+  // Reposition on viewport resize if active
+  window.addEventListener(
+    "resize",
+    () => {
+      if (activeTarget) {
+        positionAbbrPopover(activeTarget);
+      }
+    },
+    { passive: true }
+  );
 }
 
 console.log(
