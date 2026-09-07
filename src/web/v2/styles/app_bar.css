@@ -45,7 +45,6 @@ morcus-report-dialog:not(:defined) {
   gap: 8px;
 }
 
-
 .v2-nav-link {
   text-decoration: none;
   color: var(--v2-app-bar-nav-text);
@@ -214,5 +213,87 @@ morcus-report-dialog:not(:defined) {
     order: 3;
     justify-self: end;
     display: block;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Floating "Jump to top" button (Progressive Enhancement) */
+.v2-back-to-top {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text-muted);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.2s ease, transform 0.2s ease,
+    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.v2-back-to-top svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  transition: transform 0.15s ease;
+}
+
+.v2-back-to-top:hover {
+  color: var(--v2-primary);
+  border-color: var(--v2-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.v2-back-to-top:hover svg {
+  transform: translateY(-1px);
+}
+
+.v2-back-to-top:active {
+  transform: translateY(0);
+}
+
+.v2-back-to-top:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-back-to-top.v2-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .v2-back-to-top {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+  }
+}
+
+/* No-JS fallback: keep button visible if scripting is disabled */
+@media (scripting: none) {
+  .v2-back-to-top {
+    opacity: 0.9;
+    pointer-events: auto;
+    transform: translateY(0);
   }
 }
