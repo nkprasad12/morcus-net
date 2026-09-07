@@ -42,7 +42,8 @@ morcus-report-dialog:not(:defined) {
   gap: 8px;
 }
 
-.v2-nav-link {
+.v2-nav-link,
+.v2-nav-link:visited {
   text-decoration: none;
   color: var(--v2-app-bar-nav-text);
   font-weight: 500;
@@ -52,12 +53,14 @@ morcus-report-dialog:not(:defined) {
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
-.v2-nav-link:hover {
+.v2-nav-link:hover,
+.v2-nav-link:visited:hover {
   color: var(--v2-app-bar-text);
   background-color: var(--v2-app-bar-nav-hover-bg);
 }
 
-.v2-nav-link.active {
+.v2-nav-link.active,
+.v2-nav-link.active:visited {
   color: var(--v2-app-bar-nav-active-text);
   background-color: var(--v2-app-bar-nav-active-bg);
   font-weight: 600;
