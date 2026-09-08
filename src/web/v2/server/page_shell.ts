@@ -5,7 +5,7 @@ import {
 } from "@/web/v2/server/asset_manifest";
 import { renderReportIssueDialog } from "@/web/v2/server/dialog";
 
-export type V2ActivePage = "dicts" | "about";
+export type V2ActivePage = "dicts" | "about" | "reader";
 
 export interface PageShellOptions {
   title: string;
@@ -19,6 +19,7 @@ export interface PageShellOptions {
  */
 export function renderAppBar(activePage: V2ActivePage): string {
   const isDictsActive = activePage === "dicts";
+  const isReaderActive = activePage === "reader";
   const isAboutActive = activePage === "about";
 
   return `
@@ -37,6 +38,13 @@ export function renderAppBar(activePage: V2ActivePage): string {
               ${isDictsActive ? 'aria-current="page"' : ""}
             >
               Dictionary
+            </a>
+            <a
+              href="/v2/reader"
+              class="v2-nav-link ${isReaderActive ? "active" : ""}"
+              ${isReaderActive ? 'aria-current="page"' : ""}
+            >
+              Reader
             </a>
             <a
               href="/v2/about"
@@ -85,6 +93,13 @@ export function renderAppBar(activePage: V2ActivePage): string {
                 Dictionary
               </a>
               <a
+                href="/v2/reader"
+                class="v2-nav-link ${isReaderActive ? "active" : ""}"
+                ${isReaderActive ? 'aria-current="page"' : ""}
+              >
+                Reader
+              </a>
+              <a
                 href="/v2/about"
                 class="v2-nav-link ${isAboutActive ? "active" : ""}"
                 ${isAboutActive ? 'aria-current="page"' : ""}
@@ -104,6 +119,12 @@ export function renderAppBar(activePage: V2ActivePage): string {
 export function renderPageShell(options: PageShellOptions): string {
   const titleEncoded = he.escape(options.title);
   const appBarHtml = renderAppBar(options.activePage);
+  const isReader = options.activePage === "reader";
+  const bodyClass = isReader ? ' class="v2-body-reader"' : "";
+  const containerClass = isReader
+    ? "v2-container v2-container-reader"
+    : "v2-container";
+  const mainClass = isReader ? ' class="v2-main-reader"' : "";
 
   return `<!DOCTYPE html>
 <html lang="en">
@@ -130,11 +151,11 @@ export function renderPageShell(options: PageShellOptions): string {
   </script>
   <link rel="stylesheet" href="${getV2AssetHref("v2.css")}">
 </head>
-<body>
+<body${bodyClass}>
   <div id="top"></div>
   ${appBarHtml}
-  <div class="v2-container">
-    <main>
+  <div class="${containerClass}">
+    <main${mainClass}>
       ${options.contentHtml}
     </main>
   </div>

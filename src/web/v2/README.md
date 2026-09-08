@@ -21,6 +21,7 @@ src/web/v2/
 │   ├── morcus_dict_search.ts            # Form hijacking, keyboard navigation, AbortController & history syncing
 │   ├── morcus_dict_suggestions.ts       # Native autocomplete dropdown component with event delegation
 │   ├── morcus_dict_settings.ts          # Highlight strength quick menu with live slider & presets
+│   ├── morcus_reader_view.ts            # Dual-mode reader view with event delegation & AJAX fragment swapping
 │   ├── morcus_theme_toggle.ts           # Light/dark mode toggle button (hidden when JS disabled)
 │   ├── morcus_report_dialog.ts          # "Report an Issue" modal dialog (progressive enhancement)
 │   └── v2_bundle.ts                     # Client entry point bundling all custom elements
@@ -32,6 +33,8 @@ src/web/v2/
 │   │   ├── search_bar.ts                # Reusable search bar & settings button form generator
 │   │   └── dict_page.ts                 # Full page shell & multi-lexicon container
 │   ├── dict_ssr.ts                      # Clean re-exporting facade for dictionary SSR
+│   ├── reader_ssr.ts                    # Two-column reader prototype SSR renderer
+│   ├── reader_ssr.test.ts               # Unit tests for reader SSR
 │   ├── page_shell.ts                    # Shared document skeleton, app bar, & anti-flash theme script
 │   ├── dialog.ts                        # Shared accessible dialog & report issue dialog generators
 │   ├── dialog.test.ts                   # Unit tests for dialog generators
@@ -44,11 +47,12 @@ src/web/v2/
 │   ├── search.css                       # Search form, input, button, & suggestions dropdown
 │   ├── dict_settings.css                # Highlight settings button, slider, presets, & popover
 │   ├── dictionary.css                   # Dict cards, entry headers, segmented bar, & lexical styles
+│   ├── reader.css                       # Two-column reader layout, serif typography & word highlights
 │   ├── dialog.css                       # Modal dialog, buttons, & report issue form
 │   └── about.css                        # About page typography & section layout
 ├── v2.css                               # Standalone CSS entry point importing styles/*
 ├── v2-critical.css                      # Critical inlined CSS (imports variables.css)
-├── v2_router.ts                         # Express router mounted at /v2 (search, autocomplete, reporting)
+├── v2_router.ts                         # Express router mounted at /v2 (search, autocomplete, reader, reporting)
 ├── v2_router.test.ts                    # Router integration tests
 └── TESTING.md                           # Guide for running unit and E2E Playwright tests
 ```

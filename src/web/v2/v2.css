@@ -7,6 +7,7 @@
 @import "./styles/dict_settings.css";
 @import "./styles/dictionary.css";
 @import "./styles/dialog.css";
+@import "./styles/reader.css";
 
 /* Base link styling */
 a {
