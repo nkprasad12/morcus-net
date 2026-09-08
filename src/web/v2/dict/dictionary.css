@@ -157,23 +157,131 @@
   background-color: transparent;
   border-bottom: 1px solid var(--v2-border);
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.v2-dict-header-row {
+  display: flex;
   justify-content: space-between;
   align-items: center;
   flex-wrap: wrap;
   gap: 10px 16px;
+  width: 100%;
 }
 
-/* Hide card body and entry quick-jump when collapsed */
+/* Hide card body, entry quick-jump, and source button when collapsed */
 .v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-dict-body,
-.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-entry-nav {
-  display: none;
+.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-entry-nav,
+.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-dict-source-pane {
+  display: none !important;
 }
 
 .v2-dict-toggle {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+/* Source Pill and Anchored Popover in Dictionary Header */
+.v2-dict-source-pane {
+  position: relative;
   display: inline-flex;
   align-items: center;
-  flex: 1;
-  min-width: fit-content;
+  flex: 0 0 auto;
+  z-index: 2;
+}
+
+.v2-dict-source-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  border-radius: 9999px;
+  font-family: var(--v2-font-sans);
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--v2-text-muted);
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  transition: all 0.15s ease-in-out;
+}
+
+.v2-dict-source-btn::-webkit-details-marker {
+  display: none;
+}
+
+.v2-dict-source-btn:hover {
+  color: var(--v2-text);
+  border-color: var(--v2-border-strong);
+}
+
+.v2-dict-source-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.v2-dict-source-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 1px;
+}
+
+.v2-dict-source-pane[open] > .v2-dict-source-btn {
+  color: var(--v2-primary);
+  background-color: var(--v2-tag-bg);
+  border-color: var(--v2-primary);
+  font-weight: 600;
+}
+
+.v2-dict-source-btn-icon {
+  font-size: 0.8rem;
+  line-height: 1;
+}
+
+.v2-dict-source-popover {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  width: min(420px, calc(100vw - 32px));
+  box-sizing: border-box;
+  padding: 12px 16px;
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12), 0 1px 4px rgba(0, 0, 0, 0.06);
+  z-index: 50;
+  font-family: var(--v2-font-sans);
+  font-size: 0.8rem;
+  line-height: 1.55;
+  color: var(--v2-text);
+}
+
+.v2-dict-source-popover-title {
+  font-weight: 700;
+  font-size: 0.74rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: var(--v2-text-muted);
+  margin-bottom: 6px;
+  padding-bottom: 4px;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-dict-source-popover-body {
+  margin: 0;
+}
+
+.v2-dict-source-popover-body a {
+  color: var(--v2-primary);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.v2-dict-source-popover-body a:hover {
+  color: var(--v2-primary-hover);
 }
 
 .v2-dict-summary {
@@ -185,7 +293,7 @@
   background-color: transparent;
   border: none;
   border-radius: 6px;
-  display: inline-flex;
+  display: flex;
   align-items: center;
   gap: 10px;
   width: 100%;
@@ -284,11 +392,12 @@
 
 /* Entry Quick-Jump Bar (integrated directly inside dictionary header) */
 .v2-entry-nav {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   flex-wrap: wrap;
-  gap: 6px;
-  margin: 0;
+  gap: 8px;
+  width: 100%;
+  margin: 2px 0 0;
   padding: 0;
   background: transparent;
   border: none;
