@@ -23,6 +23,11 @@ export {
 } from "@/web/v2/dict/dict_page.server";
 
 export {
+  DICT_ATTRIBUTIONS,
+  DictAttributionInfo,
+} from "@/web/v2/dict/dict_attribution";
+
+export {
   SearchBarOptions,
   renderDictSearchBar,
 } from "@/web/v2/dict/search_bar.server";

@@ -3,6 +3,7 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { renderEntryResult } from "@/web/v2/dict/entry_view.server";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
+import { DICT_ATTRIBUTIONS } from "@/web/v2/dict/dict_attribution";
 import * as he from "he";
 
 export const DICT_NAMES: Record<string, string> = {
@@ -159,16 +160,36 @@ export function renderDictResultsHtml(
         )
         .join("");
 
+      let attrHtml = "";
+      const attrInfo = DICT_ATTRIBUTIONS[dictKey];
+      if (attrInfo) {
+        attrHtml = `
+          <details class="v2-dict-source-pane" name="v2-dict-source">
+            <summary class="v2-dict-source-btn" title="View dictionary source information">
+              <span class="v2-dict-source-btn-icon" aria-hidden="true">&#x24D8;</span>
+              <span class="v2-dict-source-btn-text">Source</span>
+            </summary>
+            <div class="v2-dict-source-popover">
+              <div class="v2-dict-source-popover-title">Source &amp; Attribution</div>
+              <div class="v2-dict-source-popover-body">${attrInfo.detailsHtml}</div>
+            </div>
+          </details>
+        `;
+      }
+
       return `
         <section class="v2-dict-card" id="${cardId}">
           <header class="v2-dict-header">
-            <details class="v2-dict-toggle" open>
-              <summary class="v2-dict-summary">
-                <span class="v2-dict-toggle-icon" aria-hidden="true"></span>
-                <span class="v2-dict-title">${he.encode(dictName)}</span>
-                <span class="v2-dict-collapsed-badge">${totalEntries} ${totalEntries === 1 ? "entry" : "entries"}</span>
-              </summary>
-            </details>
+            <div class="v2-dict-header-row">
+              <details class="v2-dict-toggle" open>
+                <summary class="v2-dict-summary">
+                  <span class="v2-dict-toggle-icon" aria-hidden="true"></span>
+                  <span class="v2-dict-title">${he.encode(dictName)}</span>
+                  <span class="v2-dict-collapsed-badge">${totalEntries} ${totalEntries === 1 ? "entry" : "entries"}</span>
+                </summary>
+              </details>
+              ${attrHtml}
+            </div>
             ${quickJumpHtml}
           </header>
           <div class="v2-dict-body">
