@@ -130,11 +130,15 @@ export class MorcusReaderView extends HTMLElement {
   private minimizeDrawer() {
     const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
     const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
+    const splitLayout = this.querySelector<HTMLElement>(
+      ".v2-reader-split-layout"
+    );
     if (dictPanel) {
       dictPanel.classList.add("v2-drawer-minimized");
       dictPanel.style.setProperty("--v2-drawer-height", "54px");
       sheetBar?.setAttribute("aria-valuenow", "0");
     }
+    splitLayout?.style.setProperty("--v2-drawer-height", "54px");
     const sheetLabel = this.querySelector<HTMLElement>(
       ".v2-reader-sheet-label"
     );
@@ -146,6 +150,9 @@ export class MorcusReaderView extends HTMLElement {
   private restoreDrawer(targetDvh?: number) {
     const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
     const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
+    const splitLayout = this.querySelector<HTMLElement>(
+      ".v2-reader-split-layout"
+    );
     const dvh = Math.min(
       88,
       Math.max(18, targetDvh ?? this.preferredDrawerDvh ?? 48)
@@ -157,12 +164,14 @@ export class MorcusReaderView extends HTMLElement {
       dictPanel.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
       sheetBar?.setAttribute("aria-valuenow", String(dvh));
     }
+    splitLayout?.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
     const sheetLabel = this.querySelector<HTMLElement>(
       ".v2-reader-sheet-label"
     );
     if (sheetLabel && this.currentQuery) {
       sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong>`;
     }
+    this.resetDictScroll();
   }
 
   private dismissDictionary(updateHistory: boolean = true) {
@@ -202,6 +211,7 @@ export class MorcusReaderView extends HTMLElement {
       dictPanel.style.removeProperty("--v2-drawer-height");
       sheetBar?.setAttribute("aria-valuenow", "54");
     }
+    splitLayout?.style.removeProperty("--v2-drawer-height");
 
     // Update mobile teaser label
     const sheetLabel = this.querySelector<HTMLElement>(
@@ -252,6 +262,7 @@ export class MorcusReaderView extends HTMLElement {
       dictPanel?.classList.contains("v2-drawer-minimized")
     ) {
       this.restoreDrawer();
+      this.resetDictScroll();
       return;
     }
 
@@ -292,6 +303,30 @@ export class MorcusReaderView extends HTMLElement {
 
     // Ensure drawer is open and restored to preferred dvh
     this.restoreDrawer();
+
+    // Mobile scroll guard: Ensure tapped word is not occluded by the newly opened/restored drawer
+    if (window.innerWidth <= 960) {
+      const targetEl =
+        activeAnchor ||
+        this.querySelector<HTMLElement>(
+          ".v2-reader-text-panel a.v2-word-active"
+        );
+      if (targetEl) {
+        requestAnimationFrame(() => {
+          const rect = targetEl.getBoundingClientRect();
+          const drawerTop =
+            dictPanel?.getBoundingClientRect().top ??
+            window.innerHeight * (1 - (this.preferredDrawerDvh ?? 48) / 100);
+          // If word is occluded or within 24px of drawer header
+          if (rect.bottom > drawerTop - 24) {
+            targetEl.scrollIntoView({
+              behavior: "smooth",
+              block: "center",
+            });
+          }
+        });
+      }
+    }
 
     // Update mobile teaser bar label and ensure close button is present
     const sheetLabel = this.querySelector<HTMLElement>(
@@ -345,15 +380,7 @@ export class MorcusReaderView extends HTMLElement {
         const fragment = range.createContextualFragment(partialHtml);
         this.resultsElement.replaceChildren(fragment);
 
-        // Reset dictionary scroll to top on desktop, or scroll into view on mobile
-        const dictPanel = this.querySelector<HTMLElement>(
-          ".v2-reader-dict-panel"
-        );
-        if (dictPanel && window.innerWidth > 960) {
-          dictPanel.scrollTo({ top: 0, behavior: "instant" });
-        } else if (window.innerWidth <= 960) {
-          dictPanel?.scrollIntoView({ behavior: "smooth", block: "start" });
-        }
+        this.resetDictScroll();
       } else {
         const errorDiv = document.createElement("div");
         errorDiv.className = "v2-no-results";
@@ -378,6 +405,28 @@ export class MorcusReaderView extends HTMLElement {
       }
       if (this.abortController === controller) {
         this.abortController = null;
+      }
+    }
+  }
+
+  private resetDictScroll() {
+    if (window.innerWidth > 960) {
+      // Desktop: Reset outer dict panel to top
+      const dictPanel = this.querySelector<HTMLElement>(
+        ".v2-reader-dict-panel"
+      );
+      dictPanel?.scrollTo({ top: 0, behavior: "instant" });
+    } else {
+      // Mobile: Reset inner scroll container to right past the search bar
+      const scrollContainer = this.querySelector<HTMLElement>(
+        ".v2-reader-dict-sticky"
+      );
+      const searchHeader = this.querySelector<HTMLElement>(
+        ".v2-reader-dict-header"
+      );
+      if (scrollContainer) {
+        const offset = searchHeader ? searchHeader.offsetHeight + 10 : 0;
+        scrollContainer.scrollTo({ top: offset, behavior: "instant" });
       }
     }
   }
@@ -553,6 +602,10 @@ export class MorcusReaderView extends HTMLElement {
       }
     };
 
+    const splitLayout = this.querySelector<HTMLElement>(
+      ".v2-reader-split-layout"
+    );
+
     const onPointerMove = (e: PointerEvent) => {
       if (!isDragging) return;
       const dy = startY - e.clientY; // Upward drag increases drawer height
@@ -564,6 +617,7 @@ export class MorcusReaderView extends HTMLElement {
       );
 
       dictPanel.style.setProperty("--v2-drawer-height", `${newHeight}px`);
+      splitLayout?.style.setProperty("--v2-drawer-height", `${newHeight}px`);
       const percent = Math.round((newHeight / window.innerHeight) * 100);
       sheetBar.setAttribute("aria-valuenow", String(percent));
     };
