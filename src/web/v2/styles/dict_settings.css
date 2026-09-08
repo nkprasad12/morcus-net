@@ -97,37 +97,6 @@ morcus-dict-settings {
   margin: 0;
 }
 
-.v2-settings-presets {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 6px;
-  margin-bottom: 12px;
-}
-
-.v2-preset-btn {
-  padding: 4px 6px;
-  font-size: 0.75rem;
-  font-weight: 500;
-  background-color: var(--v2-tag-bg);
-  color: var(--v2-text);
-  border: 1px solid var(--v2-border);
-  border-radius: 4px;
-  cursor: pointer;
-  text-align: center;
-  transition: all 0.12s ease;
-}
-
-.v2-preset-btn:hover {
-  background-color: var(--v2-border);
-  color: var(--v2-text);
-}
-
-.v2-preset-btn.active {
-  background-color: var(--v2-primary);
-  color: #fff;
-  border-color: var(--v2-primary);
-}
-
 .v2-settings-preview {
   display: flex;
   align-items: center;

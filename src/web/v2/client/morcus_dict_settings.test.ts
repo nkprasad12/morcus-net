@@ -22,15 +22,11 @@ describe("MorcusDictSettings", () => {
     const popover = el.querySelector<HTMLElement>(".v2-settings-popover");
     const slider = el.querySelector<HTMLInputElement>(".v2-settings-slider");
     const valueDisplay = el.querySelector<HTMLElement>(".v2-settings-value");
-    const activePreset = el.querySelector<HTMLButtonElement>(
-      ".v2-preset-btn.active"
-    );
 
     expect(btn).not.toBeNull();
     expect(popover?.hidden).toBe(true);
     expect(slider?.value).toBe("50");
     expect(valueDisplay?.textContent).toBe("50%");
-    expect(activePreset?.getAttribute("data-val")).toBe("50");
     expect(
       document.documentElement.style.getPropertyValue("--v2-highlight-scale")
     ).toBe("1");
@@ -47,13 +43,9 @@ describe("MorcusDictSettings", () => {
 
     const slider = el.querySelector<HTMLInputElement>(".v2-settings-slider");
     const valueDisplay = el.querySelector<HTMLElement>(".v2-settings-value");
-    const activePreset = el.querySelector<HTMLButtonElement>(
-      ".v2-preset-btn.active"
-    );
 
     expect(slider?.value).toBe("20");
     expect(valueDisplay?.textContent).toBe("20%");
-    expect(activePreset?.getAttribute("data-val")).toBe("20");
     expect(
       document.documentElement.style.getPropertyValue("--v2-highlight-scale")
     ).toBe("0.4");
@@ -101,30 +93,6 @@ describe("MorcusDictSettings", () => {
 
     const stored = JSON.parse(localStorage.getItem("GlobalSettings")!);
     expect(stored.highlightStrength).toBe(80);
-  });
-
-  test("preset buttons update slider, scale, and localStorage immediately", () => {
-    const el = document.createElement("morcus-dict-settings");
-    document.body.appendChild(el);
-
-    const offPreset = el.querySelector<HTMLButtonElement>(
-      '.v2-preset-btn[data-val="0"]'
-    )!;
-    offPreset.click();
-
-    expect(
-      document.documentElement.style.getPropertyValue("--v2-highlight-scale")
-    ).toBe("0");
-    expect(
-      el.querySelector<HTMLInputElement>(".v2-settings-slider")?.value
-    ).toBe("0");
-    expect(
-      el.querySelector<HTMLElement>(".v2-settings-value")?.textContent
-    ).toBe("0%");
-    expect(offPreset.classList.contains("active")).toBe(true);
-
-    const stored = JSON.parse(localStorage.getItem("GlobalSettings")!);
-    expect(stored.highlightStrength).toBe(0);
   });
 
   test("closes popover on Escape key", () => {
