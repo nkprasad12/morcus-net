@@ -6,24 +6,24 @@ import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 import * as he from "he";
 
 export const DICT_NAMES: Record<string, string> = {
-  "L&S": "Lewis & Short (Latin-English)",
-  "S&H": "Smith & Hall (English-Latin)",
-  GAF: "Gaffiot (Latin-French)",
-  GRG: "Georges (Latin-German)",
-  EGL: "Pozo (Latin-Spanish)",
-  GES: "Gesner (Latin-Latin)",
-  FOR: "Forcellini (Latin-Latin)",
-  "R&A": "Riddle & Arnold (English-Latin)",
+  "L&S": "Lewis & Short",
+  "S&H": "Smith & Hall",
+  GAF: "Gaffiot",
+  GRG: "Georges",
+  EGL: "Pozo",
+  GES: "Gesner",
+  FOR: "Forcellini",
+  "R&A": "Riddle & Arnold",
   NUM: "Latin Numerals",
   // Legacy or lowercase keys fallback
-  ls: "Lewis & Short (Latin-English)",
-  sh: "Smith & Hall (English-Latin)",
-  gaffiot: "Gaffiot (Latin-French)",
-  georges: "Georges (Latin-German)",
-  pozo: "Pozo (Latin-Spanish)",
-  gesner: "Gesner (Latin-Latin)",
-  forcellini: "Forcellini (Latin-Latin)",
-  riddle_arnold: "Riddle & Arnold (English-Latin)",
+  ls: "Lewis & Short",
+  sh: "Smith & Hall",
+  gaffiot: "Gaffiot",
+  georges: "Georges",
+  pozo: "Pozo",
+  gesner: "Gesner",
+  forcellini: "Forcellini",
+  riddle_arnold: "Riddle & Arnold",
   numeral: "Latin Numerals",
 };
 
@@ -164,7 +164,9 @@ export function renderDictResultsHtml(
           <header class="v2-dict-header">
             <details class="v2-dict-toggle" open>
               <summary class="v2-dict-summary">
+                <span class="v2-dict-toggle-icon" aria-hidden="true"></span>
                 <span class="v2-dict-title">${he.encode(dictName)}</span>
+                <span class="v2-dict-collapsed-badge">${totalEntries} ${totalEntries === 1 ? "entry" : "entries"}</span>
               </summary>
             </details>
             ${quickJumpHtml}
