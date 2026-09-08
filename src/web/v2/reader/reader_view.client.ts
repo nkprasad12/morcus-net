@@ -18,6 +18,7 @@ export class MorcusReaderView extends HTMLElement {
   private abortController: AbortController | null = null;
   private desktopCleanups: (() => void)[] = [];
   private mobileCleanups: (() => void)[] = [];
+  private generalCleanups: (() => void)[] = [];
   private preferredDrawerDvh: number = 48;
 
   connectedCallback() {
@@ -36,6 +37,7 @@ export class MorcusReaderView extends HTMLElement {
 
     this.initDesktopSplitter();
     this.initMobileDrawer();
+    this.initBackToTop();
   }
 
   disconnectedCallback() {
@@ -44,6 +46,9 @@ export class MorcusReaderView extends HTMLElement {
 
     const form = this.querySelector<HTMLFormElement>(".v2-reader-search-form");
     form?.removeEventListener("submit", this.handleSearchSubmit);
+
+    this.generalCleanups.forEach((fn) => fn());
+    this.generalCleanups = [];
 
     this.desktopCleanups.forEach((fn) => fn());
     this.desktopCleanups = [];
@@ -699,6 +704,82 @@ export class MorcusReaderView extends HTMLElement {
       sheetBar.removeEventListener("pointerup", onPointerUp);
       sheetBar.removeEventListener("pointercancel", onPointerUp);
       sheetBar.removeEventListener("keydown", onKeyDown);
+    });
+  }
+
+  // --- Embedded Dictionary "Jump to top" Button ---
+  private initBackToTop() {
+    // 1. Guard against duplicate elements
+    if (this.querySelector(".v2-reader-dict-back-to-top")) return;
+
+    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
+    if (!dictPanel) return;
+
+    // 2. Create button dynamically (ensures 0 elements in No-JS)
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "v2-reader-dict-back-to-top";
+    btn.setAttribute("aria-label", "Scroll dictionary to top");
+    btn.title = "Jump to top";
+    btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg>`;
+
+    dictPanel.appendChild(btn);
+
+    const getScroller = () => {
+      if (window.innerWidth > 960) {
+        return dictPanel;
+      }
+      return this.querySelector<HTMLElement>(".v2-reader-dict-sticky");
+    };
+
+    let ticking = false;
+    const updateVisibility = () => {
+      const scroller = getScroller();
+      const shouldShow = (scroller?.scrollTop ?? 0) > 300;
+      btn.classList.toggle("v2-visible", shouldShow);
+      ticking = false;
+    };
+
+    const onScroll = () => {
+      if (!ticking) {
+        window.requestAnimationFrame(updateVisibility);
+        ticking = true;
+      }
+    };
+
+    // Listen on both possible scroll containers
+    const mobileSticky = this.querySelector<HTMLElement>(
+      ".v2-reader-dict-sticky"
+    );
+    dictPanel.addEventListener("scroll", onScroll, { passive: true });
+    mobileSticky?.addEventListener("scroll", onScroll, { passive: true });
+
+    // Click handler: Instant scroll straight to top (no smooth animation)
+    const onClick = (e: MouseEvent) => {
+      e.preventDefault();
+      const scroller = getScroller();
+      if (!scroller) return;
+
+      if (window.innerWidth > 960) {
+        scroller.scrollTo({ top: 0, behavior: "instant" });
+      } else {
+        // On mobile, scroll past the search header instantly
+        const searchHeader = this.querySelector<HTMLElement>(
+          ".v2-reader-dict-header"
+        );
+        const offset = searchHeader ? searchHeader.offsetHeight + 10 : 0;
+        scroller.scrollTo({ top: offset, behavior: "instant" });
+      }
+      btn.classList.remove("v2-visible");
+    };
+
+    btn.addEventListener("click", onClick);
+
+    this.generalCleanups.push(() => {
+      dictPanel.removeEventListener("scroll", onScroll);
+      mobileSticky?.removeEventListener("scroll", onScroll);
+      btn.removeEventListener("click", onClick);
+      btn.remove();
     });
   }
 }
