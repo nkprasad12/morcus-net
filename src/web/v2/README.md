@@ -17,44 +17,52 @@ The UI V2 prototype explores a server-rendered Multi-Page Application (MPA) mode
 
 ```
 src/web/v2/
-├── client/                               # Client-side Native Web Components (Light DOM)
-│   ├── morcus_dict_search.ts            # Form hijacking, keyboard navigation, AbortController & history syncing
-│   ├── morcus_dict_suggestions.ts       # Native autocomplete dropdown component with event delegation
-│   ├── morcus_dict_settings.ts          # Highlight strength quick menu with live slider & presets
-│   ├── morcus_reader_view.ts            # Dual-mode reader view with event delegation & AJAX fragment swapping
-│   ├── morcus_theme_toggle.ts           # Light/dark mode toggle button (hidden when JS disabled)
-│   ├── morcus_report_dialog.ts          # "Report an Issue" modal dialog (progressive enhancement)
-│   └── v2_bundle.ts                     # Client entry point bundling all custom elements
-├── server/                               # Server-side rendering (SSR) templates
-│   ├── dict/                            # Modular dictionary SSR renderers
-│   │   ├── xml_to_html.ts               # TEI XML AST to clean semantic HTML
-│   │   ├── linkify.ts                   # Click-to-lookup Latin word linkification
-│   │   ├── entry_view.ts                # Entry result card, outline, & inflection tables
-│   │   ├── search_bar.ts                # Reusable search bar & settings button form generator
-│   │   └── dict_page.ts                 # Full page shell & multi-lexicon container
-│   ├── dict_ssr.ts                      # Clean re-exporting facade for dictionary SSR
-│   ├── reader_ssr.ts                    # Two-column reader prototype SSR renderer
-│   ├── reader_ssr.test.ts               # Unit tests for reader SSR
-│   ├── page_shell.ts                    # Shared document skeleton, app bar, & anti-flash theme script
-│   ├── dialog.ts                        # Shared accessible dialog & report issue dialog generators
-│   ├── dialog.test.ts                   # Unit tests for dialog generators
-│   ├── about_ssr.ts                     # About page content & metadata renderer
-│   ├── dict_ssr.test.ts                 # Unit tests for dictionary SSR
-│   └── about_ssr.test.ts                # Unit tests for About page SSR
-├── styles/                              # Modular CSS stylesheets (bundled via @import)
-│   ├── variables.css                    # Design tokens & light/dark/system theme variables
-│   ├── app_bar.css                      # App bar, brand logo, & navigation links
-│   ├── search.css                       # Search form, input, button, & suggestions dropdown
-│   ├── dict_settings.css                # Highlight settings button, slider, presets, & popover
-│   ├── dictionary.css                   # Dict cards, entry headers, segmented bar, & lexical styles
-│   ├── reader.css                       # Two-column reader layout, serif typography & word highlights
-│   ├── dialog.css                       # Modal dialog, buttons, & report issue form
-│   └── about.css                        # About page typography & section layout
-├── v2.css                               # Standalone CSS entry point importing styles/*
-├── v2-critical.css                      # Critical inlined CSS (imports variables.css)
-├── v2_router.ts                         # Express router mounted at /v2 (search, autocomplete, reader, reporting)
-├── v2_router.test.ts                    # Router integration tests
-└── TESTING.md                           # Guide for running unit and E2E Playwright tests
+├── shell/                                # Document skeleton, app bar, theme & design tokens
+│   ├── page_shell.server.ts              # Document skeleton (<head>, <body>, inline scripts/styles)
+│   ├── app_bar.server.ts                 # Persistent accessible navigation bar markup
+│   ├── asset_manifest.server.ts          # Content-hashed asset mapping for SSR
+│   ├── theme_toggle.client.ts            # Light/dark mode Web Component (<morcus-theme-toggle>)
+│   ├── critical_theme.client.ts          # Inlined anti-flash theme script (runs in <head>)
+│   ├── app_bar.css                       # Header & navigation bar layout
+│   ├── variables.css                     # Theme design tokens & CSS custom properties
+│   └── critical_variables.css            # Above-the-fold critical variables
+├── dict/                                 # Dictionary lookup, search, inflections & settings
+│   ├── dict_page.server.ts               # Full dictionary SSR page generator
+│   ├── dict.server.ts                    # Clean facade re-exporting dict SSR functions
+│   ├── entry_view.server.ts              # Lexicon cards, entry headers & inflections SSR
+│   ├── search_bar.server.ts              # Search form & settings button HTML generator
+│   ├── xml_to_html.server.ts             # TEI XML AST to HTML string transformer
+│   ├── linkify.server.ts                 # Latin word tokenization & linkification utility
+│   ├── dict_search.client.ts             # Form hijack, keyboard nav & history sync (<form is="morcus-dict-search">)
+│   ├── dict_settings.client.ts           # Highlight settings popover & slider (<morcus-dict-settings>)
+│   ├── dict_suggestions.client.ts        # Autocomplete dropdown component (<morcus-dict-suggestions>)
+│   ├── dictionary.css                    # Lexicon entries, citations & word definitions styling
+│   ├── search.css                        # Search bar, input, and suggestions dropdown styling
+│   ├── dict_settings.css                 # Settings button, slider, and popover styling
+│   ├── dict.test.ts                      # SSR & entry rendering unit tests
+│   ├── search_bar.test.ts                # Search bar form generation unit tests
+│   └── dict_settings.test.ts             # Client settings component unit tests
+├── reader/                               # Parallel two-column reader
+│   ├── reader.server.ts                  # Reader page SSR template
+│   ├── reader_view.client.ts             # Fragment swapping & scroll sync Web Component (<morcus-reader-view>)
+│   ├── reader.css                        # Two-column layout, line numbers & typography
+│   └── reader.test.ts                    # Reader SSR unit tests
+├── dialog/                               # Accessible modal dialogs & feedback reporting
+│   ├── dialog.server.ts                  # Native <dialog> HTML markup generator
+│   ├── report_dialog.client.ts           # Client AJAX feedback modal Web Component (<morcus-report-dialog>)
+│   ├── dialog.css                        # Native <dialog> backdrop & modal styling
+│   └── dialog.test.ts                    # Dialog markup unit tests
+├── about/                                # Static documentation & project info
+│   ├── about.server.ts                   # About page SSR template
+│   ├── about.css                         # About page typography & section styles
+│   └── about.test.ts                     # About page unit tests
+├── v2_router.ts                          # Express router orchestrator mounted at /v2 (public API)
+├── v2_router.test.ts                     # Router endpoint integration tests
+├── v2_bundle.ts                          # Rsbuild client entry point (aggregates all *.client.ts)
+├── v2.css                                # Global CSS entry point (aggregates topic stylesheets)
+├── v2-critical.css                       # Above-the-fold critical CSS (inlined in <head>)
+├── README.md                             # Architectural overview & design rules
+└── TESTING.md                            # Testing guide (Jest & Playwright E2E)
 ```
 
 ### Build Pipeline

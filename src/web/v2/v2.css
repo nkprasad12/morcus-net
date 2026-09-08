@@ -1,13 +1,13 @@
 /* Standalone CSS for UI V2 Dictionary Views */
 
-@import "./styles/variables.css";
-@import "./styles/app_bar.css";
-@import "./styles/about.css";
-@import "./styles/search.css";
-@import "./styles/dict_settings.css";
-@import "./styles/dictionary.css";
-@import "./styles/dialog.css";
-@import "./styles/reader.css";
+@import "./shell/variables.css";
+@import "./shell/app_bar.css";
+@import "./dict/search.css";
+@import "./dict/dict_settings.css";
+@import "./dict/dictionary.css";
+@import "./reader/reader.css";
+@import "./dialog/dialog.css";
+@import "./about/about.css";
 
 /* Base link styling */
 a {

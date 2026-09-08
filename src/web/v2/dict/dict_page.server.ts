@@ -1,8 +1,8 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
-import { renderPageShell } from "@/web/v2/server/page_shell";
-import { renderEntryResult } from "@/web/v2/server/dict/entry_view";
-import { renderDictSearchBar } from "@/web/v2/server/dict/search_bar";
+import { renderPageShell } from "@/web/v2/shell/page_shell.server";
+import { renderEntryResult } from "@/web/v2/dict/entry_view.server";
+import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 import * as he from "he";
 
 export const DICT_NAMES: Record<string, string> = {

@@ -1,4 +1,4 @@
-import { renderDictSearchBar } from "@/web/v2/server/dict/search_bar";
+import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 
 describe("renderDictSearchBar", () => {
   test("renders default dictionary search bar", () => {

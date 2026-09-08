@@ -1,5 +1,5 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
-import { xmlNodeToHtml } from "@/web/v2/server/dict/xml_to_html";
+import { xmlNodeToHtml } from "@/web/v2/dict/xml_to_html.server";
 import * as he from "he";
 
 /**

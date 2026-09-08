@@ -49,9 +49,9 @@ export function getV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
   return {
     source: {
       entry: {
-        v2_bundle: "./src/web/v2/client/v2_bundle.ts",
+        v2_bundle: "./src/web/v2/v2_bundle.ts",
         v2: "./src/web/v2/v2.css",
-        critical: "./src/web/v2/client/critical.ts",
+        critical: "./src/web/v2/shell/critical_theme.client.ts",
       },
     },
     output: {

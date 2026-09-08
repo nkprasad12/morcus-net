@@ -4,9 +4,9 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   renderDictPageHtml,
   renderDictResultsHtml,
-} from "@/web/v2/server/dict_ssr";
-import { renderAboutPageHtml } from "@/web/v2/server/about_ssr";
-import { renderReaderPageHtml } from "@/web/v2/server/reader_ssr";
+} from "@/web/v2/dict/dict.server";
+import { renderAboutPageHtml } from "@/web/v2/about/about.server";
+import { renderReaderPageHtml } from "@/web/v2/reader/reader.server";
 import { GitHub } from "@/web/utils/github";
 import type { ReportApiRequest } from "@/web/api_routes";
 import * as path from "path";

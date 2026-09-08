@@ -3,26 +3,26 @@
  * Re-exports modularized components for backwards compatibility and clean public API.
  */
 
-export { linkifyText } from "@/web/v2/server/dict/linkify";
+export { linkifyText } from "@/web/v2/dict/linkify.server";
 
 export {
   XmlNodeToHtmlOptions,
   xmlNodeToHtml,
-} from "@/web/v2/server/dict/xml_to_html";
+} from "@/web/v2/dict/xml_to_html.server";
 
 export {
   formatInflectionForm,
   renderEntryResult,
-} from "@/web/v2/server/dict/entry_view";
+} from "@/web/v2/dict/entry_view.server";
 
 export {
   DICT_NAMES,
   DictPageOptions,
   renderDictResultsHtml,
   renderDictPageHtml,
-} from "@/web/v2/server/dict/dict_page";
+} from "@/web/v2/dict/dict_page.server";
 
 export {
   SearchBarOptions,
   renderDictSearchBar,
-} from "@/web/v2/server/dict/search_bar";
+} from "@/web/v2/dict/search_bar.server";
