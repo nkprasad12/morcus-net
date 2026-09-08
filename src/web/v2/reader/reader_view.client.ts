@@ -86,12 +86,6 @@ export class MorcusReaderView extends HTMLElement {
     const wordAnchor = e.target.closest<HTMLAnchorElement>("a.v2-lat-word");
     if (!wordAnchor) return;
 
-    // Check if the click is inside the reader text panel (not inside dictionary entries themselves)
-    const textPanel = this.querySelector(".v2-reader-text-panel");
-    if (!textPanel || !textPanel.contains(wordAnchor)) {
-      return;
-    }
-
     e.preventDefault();
     const href = wordAnchor.getAttribute("href") || "";
     const urlMatch = href.match(/[?&]q=([^&#]+)/);
@@ -100,7 +94,11 @@ export class MorcusReaderView extends HTMLElement {
       : wordAnchor.textContent?.trim() || "";
     if (!word) return;
 
-    this.lookupWord(word, wordAnchor, true);
+    // Distinguish clicks in the reading passage from clicks within dictionary entries
+    const textPanel = this.querySelector(".v2-reader-text-panel");
+    const isTextPanel = Boolean(textPanel && textPanel.contains(wordAnchor));
+
+    this.lookupWord(word, isTextPanel ? wordAnchor : undefined, true);
   };
 
   private readonly handlePopState = () => {
