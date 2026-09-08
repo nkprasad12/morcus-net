@@ -59,7 +59,7 @@ export function renderDictResultsHtml(
   if (!query.trim()) {
     return `
       <div class="v2-no-results">
-        <p>Type a word (e.g. <em>equus</em>, <em>horse</em>, <em>cheval</em>, <em>Pferd</em>) to search all lexica.</p>
+        <p>Type a word (e.g. <em>equōrum</em>, <em>equus</em>, <em>horse</em>, <em>cheval</em>, <em>Pferd</em>) to search all lexica.</p>
       </div>
     `;
   }

@@ -18,7 +18,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const queryEscaped = query ? he.escape(query) : "";
   const placeholder =
     options.placeholder ??
-    "Search for a word (e.g. equus, horse, cheval, Pferd)...";
+    "Search for a word (e.g. equōrum, equus, horse, cheval, Pferd)...";
   const formClasses = ["v2-search-form", options.formClass]
     .filter(Boolean)
     .join(" ");
