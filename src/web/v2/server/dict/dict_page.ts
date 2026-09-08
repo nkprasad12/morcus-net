@@ -2,6 +2,7 @@ import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { renderPageShell } from "@/web/v2/server/page_shell";
 import { renderEntryResult } from "@/web/v2/server/dict/entry_view";
+import { renderDictSearchBar } from "@/web/v2/server/dict/search_bar";
 import * as he from "he";
 
 export const DICT_NAMES: Record<string, string> = {
@@ -186,36 +187,16 @@ export interface DictPageOptions {
  */
 export function renderDictPageHtml(options: DictPageOptions): string {
   const query = options.query || "";
-  const queryEscaped = he.escape(query);
   const resultsHtml = renderDictResultsHtml(options.query, options.results);
 
   const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
 
   const contentHtml = `
     <morcus-dict-search>
-      <form class="v2-search-form" action="/v2/dicts" method="GET">
-        <div class="v2-input-wrapper">
-          <input
-            type="text"
-            name="q"
-            class="v2-input"
-            value="${options.isIdSearch ? "" : queryEscaped}"
-            placeholder="Search for a word (e.g. equus, horse, cheval, Pferd)..."
-            autocomplete="off"
-            enterkeyhint="search"
-          />
-          <button
-            type="submit"
-            class="v2-search-btn"
-            aria-label="Search"
-            title="Search"
-          >
-            <svg viewBox="0 0 24 24" aria-hidden="true">
-              <path d="M15.5 14h-.79l-.28-.27A6.471 6.471 0 0 0 16 9.5 6.5 6.5 0 1 0 9.5 16c1.61 0 3.09-.59 4.23-1.57l.27.28v.79l5 4.99L20.49 19l-4.99-5zm-6 0C7.01 14 5 11.99 5 9.5S7.01 5 9.5 5 14 7.01 14 9.5 11.99 14 9.5 14z"></path>
-            </svg>
-          </button>
-        </div>
-      </form>
+      ${renderDictSearchBar({
+        query: options.isIdSearch ? "" : options.query,
+        action: "/v2/dicts",
+      })}
 
       <output id="dict-results" class="v2-results">
         ${resultsHtml}

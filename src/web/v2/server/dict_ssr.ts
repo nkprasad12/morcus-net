@@ -21,3 +21,8 @@ export {
   renderDictResultsHtml,
   renderDictPageHtml,
 } from "@/web/v2/server/dict/dict_page";
+
+export {
+  SearchBarOptions,
+  renderDictSearchBar,
+} from "@/web/v2/server/dict/search_bar";

@@ -460,4 +460,52 @@ test.describe("UI V2 dictionary", () => {
     await page.locator(".v2-container").click({ position: { x: 5, y: 5 } });
     await expect(popover).not.toBeVisible();
   });
+
+  test("hides highlight settings without JavaScript", async ({ browser }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/v2/dicts");
+    await expect(page.locator("morcus-dict-settings")).not.toBeVisible();
+
+    await context.close();
+  });
+
+  test("adjusts highlight strength via quick menu and persists to localStorage", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=habeo");
+    await expect(page.locator(".v2-settings-btn").first()).toBeVisible();
+
+    // Verify initial scale is 1
+    const initialScale = await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue("--v2-highlight-scale")
+    );
+    expect(initialScale === "1" || initialScale === "").toBe(true);
+
+    // Open settings popover
+    await page.locator(".v2-settings-btn").first().click();
+    const popover = page.locator(".v2-settings-popover").first();
+    await expect(popover).toBeVisible();
+
+    // Click "Vivid" preset (80%)
+    await popover.locator('.v2-preset-btn[data-val="80"]').click();
+
+    // Verify CSS scale updated on documentElement
+    const vividScale = await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue("--v2-highlight-scale")
+    );
+    expect(vividScale).toBe("1.6");
+
+    // Verify persistence in localStorage
+    const stored = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem("GlobalSettings") || "{}")
+    );
+    expect(stored.highlightStrength).toBe(80);
+
+    // Close on Escape
+    await page.keyboard.press("Escape");
+    await expect(popover).not.toBeVisible();
+  });
+
 });

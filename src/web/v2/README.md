@@ -20,6 +20,7 @@ src/web/v2/
 ├── client/                               # Client-side Native Web Components (Light DOM)
 │   ├── morcus_dict_search.ts            # Form hijacking, keyboard navigation, AbortController & history syncing
 │   ├── morcus_dict_suggestions.ts       # Native autocomplete dropdown component with event delegation
+│   ├── morcus_dict_settings.ts          # Highlight strength quick menu with live slider & presets
 │   ├── morcus_theme_toggle.ts           # Light/dark mode toggle button (hidden when JS disabled)
 │   ├── morcus_report_dialog.ts          # "Report an Issue" modal dialog (progressive enhancement)
 │   └── v2_bundle.ts                     # Client entry point bundling all custom elements
@@ -28,6 +29,7 @@ src/web/v2/
 │   │   ├── xml_to_html.ts               # TEI XML AST to clean semantic HTML
 │   │   ├── linkify.ts                   # Click-to-lookup Latin word linkification
 │   │   ├── entry_view.ts                # Entry result card, outline, & inflection tables
+│   │   ├── search_bar.ts                # Reusable search bar & settings button form generator
 │   │   └── dict_page.ts                 # Full page shell & multi-lexicon container
 │   ├── dict_ssr.ts                      # Clean re-exporting facade for dictionary SSR
 │   ├── page_shell.ts                    # Shared document skeleton, app bar, & anti-flash theme script
@@ -40,6 +42,7 @@ src/web/v2/
 │   ├── variables.css                    # Design tokens & light/dark/system theme variables
 │   ├── app_bar.css                      # App bar, brand logo, & navigation links
 │   ├── search.css                       # Search form, input, button, & suggestions dropdown
+│   ├── dict_settings.css                # Highlight settings button, slider, presets, & popover
 │   ├── dictionary.css                   # Dict cards, entry headers, segmented bar, & lexical styles
 │   ├── dialog.css                       # Modal dialog, buttons, & report issue form
 │   └── about.css                        # About page typography & section layout
