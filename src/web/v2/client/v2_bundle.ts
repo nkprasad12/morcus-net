@@ -37,17 +37,27 @@ function triggerAnchorHighlight(targetEl: HTMLElement) {
   );
 }
 
+function expandAncestorDisclosures(targetEl: HTMLElement) {
+  let parent: HTMLElement | null = targetEl;
+  while (parent) {
+    if (parent instanceof HTMLDetailsElement && !parent.open) {
+      parent.open = true;
+    }
+    if (parent.classList?.contains("v2-dict-card")) {
+      const toggle = parent.querySelector<HTMLDetailsElement>(".v2-dict-toggle");
+      if (toggle && !toggle.open) {
+        toggle.open = true;
+      }
+    }
+    parent = parent.parentElement;
+  }
+}
+
 // Expand any ancestor <details> if initial page load has a hash
 if (window.location.hash) {
   const initialTarget = document.getElementById(window.location.hash.slice(1));
   if (initialTarget) {
-    let parent: HTMLElement | null = initialTarget;
-    while (parent) {
-      if (parent instanceof HTMLDetailsElement && !parent.open) {
-        parent.open = true;
-      }
-      parent = parent.parentElement;
-    }
+    expandAncestorDisclosures(initialTarget);
   }
 }
 
@@ -70,14 +80,7 @@ document.addEventListener("click", (e: MouseEvent) => {
   const targetEl = document.getElementById(targetId);
   if (targetEl) {
     e.preventDefault();
-    // Auto-expand any ancestor <details> cards (and target itself if a card)
-    let parent: HTMLElement | null = targetEl;
-    while (parent) {
-      if (parent instanceof HTMLDetailsElement && !parent.open) {
-        parent.open = true;
-      }
-      parent = parent.parentElement;
-    }
+    expandAncestorDisclosures(targetEl);
 
     const isJumpPill =
       anchor.classList.contains("v2-jump-pill") ||
