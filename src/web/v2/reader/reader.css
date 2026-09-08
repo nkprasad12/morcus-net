@@ -20,11 +20,11 @@
 }
 
 .v2-reader-text-card {
-  background-color: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: 8px;
-  padding: 2rem;
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 0;
+  box-shadow: none;
 }
 
 .v2-reader-text-card-header {
@@ -252,6 +252,28 @@ a.v2-lat-word.v2-word-active {
   margin: 0;
 }
 
+/* Splitter Bar: hidden on mobile, interactive gutter on desktop */
+.v2-reader-splitter {
+  display: none;
+}
+
+/* Resizing drag states */
+body.v2-resizing-panels {
+  user-select: none !important;
+  cursor: col-resize !important;
+}
+body.v2-resizing-panels * {
+  user-select: none !important;
+}
+
+body.v2-resizing-drawer {
+  user-select: none !important;
+  cursor: grabbing !important;
+}
+body.v2-resizing-drawer * {
+  user-select: none !important;
+}
+
 /* Mobile & Responsive Breakpoint */
 /* Mobile Sheet Bar & Teaser (Visible on Mobile, Hidden on Desktop) */
 .v2-reader-sheet-bar {
@@ -324,13 +346,14 @@ a.v2-reader-sheet-close:active {
   .v2-reader-text-panel {
     width: 100%;
     overflow: visible;
-    padding: 10px 14px 20px;
+    padding: 8px 16px 20px;
   }
 
   .v2-reader-text-card {
-    padding: 1.25rem 1.15rem;
+    padding: 0.25rem 0 1rem;
     box-shadow: none;
-    border: 1px solid var(--v2-border);
+    border: none;
+    background: transparent;
   }
 
   .v2-reader-passage {
@@ -361,6 +384,10 @@ a.v2-reader-sheet-close:active {
     z-index: 100;
   }
 
+  .v2-reader-dict-panel.v2-is-dragging {
+    transition: none !important;
+  }
+
   .v2-reader-dict-sticky {
     position: static;
     flex: 1 1 auto;
@@ -388,7 +415,17 @@ a.v2-reader-sheet-close:active {
     border-top-left-radius: inherit;
     border-top-right-radius: inherit;
     user-select: none;
-    cursor: pointer;
+    cursor: grab;
+    touch-action: none;
+  }
+
+  .v2-reader-sheet-bar:focus-visible {
+    outline: 2px solid var(--v2-primary);
+    outline-offset: -2px;
+  }
+
+  .v2-reader-sheet-bar.v2-is-dragging {
+    cursor: grabbing;
   }
 
   .v2-reader-sheet-handle {
@@ -398,11 +435,14 @@ a.v2-reader-sheet-close:active {
     background-color: var(--v2-border-strong);
     opacity: 0.75;
     margin-bottom: 6px;
-    transition: opacity 0.15s ease;
+    transition: opacity 0.15s ease, background-color 0.15s ease;
   }
 
-  .v2-reader-sheet-bar:hover .v2-reader-sheet-handle {
+  .v2-reader-sheet-bar:hover .v2-reader-sheet-handle,
+  .v2-reader-sheet-bar:focus-visible .v2-reader-sheet-handle,
+  .v2-reader-sheet-bar.v2-is-dragging .v2-reader-sheet-handle {
     opacity: 1;
+    background-color: var(--v2-primary);
   }
 
   .v2-reader-sheet-teaser {
@@ -456,14 +496,26 @@ a.v2-reader-sheet-close:active {
     display: none;
   }
 
-  /* Active state: 52% Text (Top) / 48% Dictionary (Bottom Drawer) with Independent Scrolling */
+  /* Minimized active drawer: retains content in DOM but collapses to 54px teaser */
+  .v2-reader-layout-active .v2-reader-dict-panel.v2-drawer-minimized {
+    height: 54px !important;
+    overflow: hidden;
+  }
+
+  .v2-reader-layout-active .v2-reader-dict-panel.v2-drawer-minimized .v2-reader-dict-sticky {
+    display: none;
+  }
+
+  /* Active state: Dynamic height drawer with arbitrary % dvh */
   .v2-reader-layout-active .v2-reader-text-panel {
-    flex: 1 1 52%;
+    flex: 1 1 auto;
   }
 
   .v2-reader-layout-active .v2-reader-dict-panel {
-    flex: 1 1 48%;
-    max-height: 48dvh;
+    flex: none;
+    height: var(--v2-drawer-height, 48dvh);
+    min-height: 54px;
+    max-height: 88dvh;
   }
 
   .v2-reader-layout-active .v2-reader-dict-sticky {
@@ -471,7 +523,7 @@ a.v2-reader-sheet-close:active {
   }
 }
 
-/* Desktop: Independent Column Scrolling (Clean 60/40 Split without Clumsy Native Resize) */
+/* Desktop: Independent Column Scrolling with Resizable Divider */
 @media (min-width: 961px) {
   body.v2-body-reader {
     height: 100vh;
@@ -505,42 +557,151 @@ a.v2-reader-sheet-close:active {
   }
 
   .v2-reader-split-layout {
+    --v2-dict-width: 420px;
     flex: 1;
     min-height: 0;
     height: 100%;
     display: flex;
     flex-direction: row;
     align-items: stretch;
-    gap: 1.5rem;
+    gap: 0;
     overflow: hidden;
   }
 
   .v2-reader-text-panel {
     height: 100%;
     min-height: 0;
-    flex: 1 1 60%;
+    flex: 1 1 0%;
     min-width: 320px;
     overflow-y: auto;
     overflow-x: hidden;
-    padding-right: 12px;
+    padding-right: 16px;
+    padding-left: 4px;
     scrollbar-width: thin;
+  }
+
+  /* Unboxed flat canvas for reading passage on desktop */
+  .v2-reader-text-card {
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0.25rem 0.5rem 2rem 0;
+    box-shadow: none;
+  }
+
+  /* Desktop Resizable Splitter Gutter */
+  .v2-reader-splitter {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 16px;
+    flex: 0 0 16px;
+    margin: 0;
+    cursor: col-resize;
+    user-select: none;
+    touch-action: none;
+    z-index: 10;
+    position: relative;
+  }
+
+  .v2-reader-splitter::before {
+    content: "";
+    width: 2px;
+    height: 100%;
+    background-color: var(--v2-border);
+    transition: background-color 0.15s ease;
+  }
+
+  .v2-reader-splitter-handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 8px;
+    height: 40px;
+    border-radius: 4px;
+    background-color: var(--v2-card-bg);
+    border: 1px solid var(--v2-border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0.65;
+    transition: opacity 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+  }
+
+  .v2-reader-splitter-handle::after {
+    content: "";
+    width: 2px;
+    height: 16px;
+    background-color: var(--v2-border-strong);
+    border-radius: 1px;
+  }
+
+  .v2-reader-splitter:hover::before,
+  .v2-reader-splitter:focus-visible::before,
+  .v2-reader-splitter.v2-is-resizing::before {
+    background-color: var(--v2-primary);
+    width: 2px;
+  }
+
+  .v2-reader-splitter:hover .v2-reader-splitter-handle,
+  .v2-reader-splitter:focus-visible .v2-reader-splitter-handle,
+  .v2-reader-splitter.v2-is-resizing .v2-reader-splitter-handle {
+    opacity: 1;
+    border-color: var(--v2-primary);
+  }
+
+  .v2-reader-splitter:focus-visible {
+    outline: 2px solid var(--v2-primary);
+    outline-offset: 1px;
+  }
+
+  /* No-JS Mode: Splitter is an inert 1px dividing seam without drag handle */
+  :root:not(.v2-has-js) .v2-reader-splitter {
+    cursor: default;
+  }
+
+  :root:not(.v2-has-js) .v2-reader-splitter-handle {
+    display: none;
+  }
+
+  :root:not(.v2-has-js) .v2-reader-splitter:hover::before {
+    background-color: var(--v2-border);
+    width: 2px;
   }
 
   .v2-reader-dict-panel {
     height: 100%;
     min-height: 0;
-    flex: 0 0 420px;
-    max-width: 480px;
-    min-width: 320px;
+    flex: 0 0 var(--v2-dict-width, 420px);
+    width: var(--v2-dict-width, 420px);
+    max-width: min(800px, 60vw);
+    min-width: 300px;
     overflow-y: auto;
+    padding-left: 16px;
     padding-right: 6px;
     scrollbar-width: thin;
   }
 
+  /* Unboxed flat canvas for dictionary pane on desktop */
   .v2-reader-dict-sticky {
     position: static;
+    background: transparent;
+    border: none;
+    border-radius: 0;
+    padding: 0.25rem 0 1.5rem;
+    box-shadow: none;
     max-height: none;
     overflow-y: visible;
-    box-shadow: none;
+  }
+
+  .v2-reader-dict-header {
+    position: sticky;
+    top: 0;
+    background-color: var(--v2-bg);
+    z-index: 5;
+    padding-top: 0.25rem;
+    margin-bottom: 1.25rem;
   }
 }

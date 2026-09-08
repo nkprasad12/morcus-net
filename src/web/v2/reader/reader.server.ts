@@ -71,10 +71,29 @@ export function renderReaderContentHtml(
           </div>
         </section>
 
+        <!-- Desktop Resizable Splitter Bar -->
+        <div class="v2-reader-splitter"
+             role="separator"
+             tabindex="0"
+             aria-orientation="vertical"
+             aria-label="Resize dictionary sidebar"
+             aria-valuemin="300"
+             aria-valuemax="750"
+             aria-valuenow="420">
+          <div class="v2-reader-splitter-handle" aria-hidden="true"></div>
+        </div>
+
         <!-- Right / Bottom Column: Dictionary Panel (Adaptive Sheet on Mobile) -->
         <aside class="v2-reader-dict-panel" id="v2-reader-dict" aria-label="Dictionary">
           <!-- Mobile sheet handle & teaser bar (visible on mobile) -->
-          <div class="v2-reader-sheet-bar">
+          <div class="v2-reader-sheet-bar"
+               role="separator"
+               tabindex="0"
+               aria-orientation="horizontal"
+               aria-label="Resize dictionary drawer"
+               aria-valuemin="54"
+               aria-valuemax="90"
+               aria-valuenow="48">
             <div class="v2-reader-sheet-handle" aria-hidden="true"></div>
             <div class="v2-reader-sheet-teaser">
               <span class="v2-reader-sheet-label">

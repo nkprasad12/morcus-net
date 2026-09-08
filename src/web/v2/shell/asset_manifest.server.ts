@@ -11,9 +11,12 @@ let cachedCriticalJs: string | undefined;
 function loadManifest(): V2AssetManifest {
   if (cachedManifest !== undefined) {
     const jsFilename = cachedManifest["v2.js"];
+    const cssFilename = cachedManifest["v2.css"];
     if (
-      jsFilename &&
-      !fs.existsSync(path.resolve(process.cwd(), "build/v2", jsFilename))
+      (jsFilename &&
+        !fs.existsSync(path.resolve(process.cwd(), "build/v2", jsFilename))) ||
+      (cssFilename &&
+        !fs.existsSync(path.resolve(process.cwd(), "build/v2", cssFilename)))
     ) {
       cachedManifest = undefined;
     }

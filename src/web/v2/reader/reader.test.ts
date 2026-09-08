@@ -86,4 +86,17 @@ describe("reader_ssr", () => {
     expect(pageHtml).toContain('aria-current="page"');
     expect(pageHtml).toContain("morcus-reader-view");
   });
+
+  test("renderReaderContentHtml includes accessible resizable desktop splitter and mobile drawer handle", () => {
+    const html = renderReaderContentHtml();
+
+    expect(html).toContain('class="v2-reader-splitter"');
+    expect(html).toContain('role="separator"');
+    expect(html).toContain('aria-orientation="vertical"');
+    expect(html).toContain('aria-label="Resize dictionary sidebar"');
+
+    expect(html).toContain('class="v2-reader-sheet-bar"');
+    expect(html).toContain('aria-orientation="horizontal"');
+    expect(html).toContain('aria-label="Resize dictionary drawer"');
+  });
 });
