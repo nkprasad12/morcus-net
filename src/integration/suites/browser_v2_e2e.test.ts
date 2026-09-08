@@ -488,8 +488,11 @@ test.describe("UI V2 dictionary", () => {
     const popover = page.locator(".v2-settings-popover").first();
     await expect(popover).toBeVisible();
 
-    // Click "Vivid" preset (80%)
-    await popover.locator('.v2-preset-btn[data-val="80"]').click();
+    // Adjust slider to 80%
+    const slider = popover.locator(".v2-settings-slider");
+    await slider.fill("80");
+    await slider.dispatchEvent("input");
+    await slider.dispatchEvent("change");
 
     // Verify CSS scale updated on documentElement
     const vividScale = await page.evaluate(() =>

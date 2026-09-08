@@ -29,7 +29,6 @@ export class MorcusDictSettings extends HTMLElement {
   private popoverEl: HTMLElement | null = null;
   private sliderEl: HTMLInputElement | null = null;
   private valueDisplayEl: HTMLElement | null = null;
-  private presetButtons: HTMLButtonElement[] = [];
 
   connectedCallback() {
     this.strength = this.computeInitialStrength();
@@ -90,21 +89,6 @@ export class MorcusDictSettings extends HTMLElement {
           />
         </div>
 
-        <div class="v2-settings-presets" role="group" aria-label="Preset strengths">
-          <button type="button" class="v2-preset-btn ${
-            this.strength === 0 ? "active" : ""
-          }" data-val="0">Off</button>
-          <button type="button" class="v2-preset-btn ${
-            this.strength === 20 ? "active" : ""
-          }" data-val="20">Subtle</button>
-          <button type="button" class="v2-preset-btn ${
-            this.strength === 50 ? "active" : ""
-          }" data-val="50">Default</button>
-          <button type="button" class="v2-preset-btn ${
-            this.strength === 80 ? "active" : ""
-          }" data-val="80">Vivid</button>
-        </div>
-
         <div class="v2-settings-preview" aria-hidden="true">
           <span class="lsOrth">Caesar</span>
           <span class="lsGrammar">noun</span>
@@ -118,7 +102,6 @@ export class MorcusDictSettings extends HTMLElement {
     this.popoverEl = this.querySelector(".v2-settings-popover");
     this.sliderEl = this.querySelector(".v2-settings-slider");
     this.valueDisplayEl = this.querySelector(".v2-settings-value");
-    this.presetButtons = Array.from(this.querySelectorAll(".v2-preset-btn"));
 
     this.buttonEl?.addEventListener("click", this.toggleSettingsPopover);
 
@@ -130,15 +113,6 @@ export class MorcusDictSettings extends HTMLElement {
     this.sliderEl?.addEventListener("change", (e: Event) => {
       const val = Number((e.target as HTMLInputElement).value);
       this.updateStrength(val, true);
-    });
-
-    this.presetButtons.forEach((btn) => {
-      btn.addEventListener("click", () => {
-        const val = Number(btn.getAttribute("data-val"));
-        if (!isNaN(val)) {
-          this.updateStrength(val, true);
-        }
-      });
     });
   }
 
@@ -191,15 +165,6 @@ export class MorcusDictSettings extends HTMLElement {
     if (this.valueDisplayEl) {
       this.valueDisplayEl.textContent = `${newStrength}%`;
     }
-
-    this.presetButtons.forEach((btn) => {
-      const btnVal = Number(btn.getAttribute("data-val"));
-      if (btnVal === newStrength) {
-        btn.classList.add("active");
-      } else {
-        btn.classList.remove("active");
-      }
-    });
 
     if (persist) {
       this.persistStrength(newStrength);
