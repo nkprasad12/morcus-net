@@ -475,11 +475,19 @@ describe("dict_ssr", () => {
     const html = renderDictResultsHtml("cum", results);
 
     // Quick jump bar integrated in header
+    expect(html).toContain('class="v2-dict-header"');
+    expect(html).toContain('class="v2-dict-toggle" open');
     expect(html).toContain('class="v2-entry-nav"');
     expect(html).toContain("Jump to");
     expect(html).toContain('href="#n1"');
     expect(html).toContain('href="#n2"');
     expect(html).toContain("cum");
+
+    // Ensure <summary> does not contain nested interactive elements (links or buttons)
+    const summaryMatch = html.match(/<summary[^>]*>([\s\S]*?)<\/summary>/);
+    expect(summaryMatch).toBeTruthy();
+    expect(summaryMatch![1]).not.toContain("<a");
+    expect(summaryMatch![1]).not.toContain("<button");
 
     // Entry headers and anchors
     expect(html).toContain('id="n1"');

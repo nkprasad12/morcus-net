@@ -160,15 +160,19 @@ export function renderDictResultsHtml(
         .join("");
 
       return `
-        <details class="v2-dict-card" id="${cardId}" open>
-          <summary class="v2-dict-summary">
-            <span class="v2-dict-title">${he.encode(dictName)}</span>
+        <section class="v2-dict-card" id="${cardId}">
+          <header class="v2-dict-header">
+            <details class="v2-dict-toggle" open>
+              <summary class="v2-dict-summary">
+                <span class="v2-dict-title">${he.encode(dictName)}</span>
+              </summary>
+            </details>
             ${quickJumpHtml}
-          </summary>
+          </header>
           <div class="v2-dict-body">
             ${entriesHtml}
           </div>
-        </details>
+        </section>
       `;
     })
     .join("\n");

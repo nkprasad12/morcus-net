@@ -121,6 +121,7 @@
     box-shadow: none;
   }
 
+  .v2-dict-header,
   .v2-dict-summary {
     padding: 10px 14px;
   }
@@ -145,12 +146,8 @@
   box-shadow: none !important;
 }
 
-.v2-dict-summary {
+.v2-dict-header {
   padding: 10px 18px;
-  font-weight: bold;
-  font-size: 1.05rem;
-  cursor: pointer;
-  user-select: none;
   background-color: var(--v2-card-header-bg);
   border-bottom: none;
   display: flex;
@@ -160,8 +157,37 @@
   gap: 10px 16px;
 }
 
+/* Card header bottom border when open */
+.v2-dict-card:has(.v2-dict-toggle[open]) .v2-dict-header,
 .v2-dict-card[open] > .v2-dict-summary {
   border-bottom: 2px solid var(--v2-border-strong);
+}
+
+/* Hide card body and entry quick-jump when collapsed */
+.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-dict-body,
+.v2-dict-card:not(:has(.v2-dict-toggle[open])) .v2-entry-nav {
+  display: none;
+}
+
+.v2-dict-toggle {
+  display: inline-flex;
+  align-items: center;
+  flex: 1;
+  min-width: fit-content;
+}
+
+.v2-dict-summary {
+  padding: 0;
+  font-weight: bold;
+  font-size: 1.05rem;
+  cursor: pointer;
+  user-select: none;
+  background-color: transparent;
+  border: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
 }
 
 .v2-dict-title {
