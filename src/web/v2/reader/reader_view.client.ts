@@ -420,16 +420,18 @@ export class MorcusReaderView extends HTMLElement {
       );
       dictPanel?.scrollTo({ top: 0, behavior: "instant" });
     } else {
-      // Mobile: Reset inner scroll container to right past the search bar
+      // Mobile: Instant scroll to the semantic content wrapper
       const scrollContainer = this.querySelector<HTMLElement>(
         ".v2-reader-dict-sticky"
       );
-      const searchHeader = this.querySelector<HTMLElement>(
-        ".v2-reader-dict-header"
+      const contentEl = this.querySelector<HTMLElement>(
+        ".v2-reader-dict-content"
       );
-      if (scrollContainer) {
-        const offset = searchHeader ? searchHeader.offsetHeight + 10 : 0;
-        scrollContainer.scrollTo({ top: offset, behavior: "instant" });
+      if (scrollContainer && contentEl) {
+        scrollContainer.scrollTo({
+          top: contentEl.offsetTop,
+          behavior: "instant",
+        });
       }
     }
   }
@@ -761,12 +763,11 @@ export class MorcusReaderView extends HTMLElement {
       if (window.innerWidth > 960) {
         scroller.scrollTo({ top: 0, behavior: "instant" });
       } else {
-        // On mobile, scroll past the search header instantly
-        const searchHeader = this.querySelector<HTMLElement>(
-          ".v2-reader-dict-header"
+        const contentEl = this.querySelector<HTMLElement>(
+          ".v2-reader-dict-content"
         );
-        const offset = searchHeader ? searchHeader.offsetHeight + 10 : 0;
-        scroller.scrollTo({ top: offset, behavior: "instant" });
+        const targetTop = contentEl ? contentEl.offsetTop : 0;
+        scroller.scrollTo({ top: targetTop, behavior: "instant" });
       }
       btn.classList.remove("v2-visible");
     };

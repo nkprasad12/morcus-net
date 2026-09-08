@@ -122,9 +122,12 @@ export function renderReaderContentHtml(
               })}
             </header>
 
-            <output id="v2-reader-dict-results" class="v2-reader-dict-output" aria-live="polite">
-              ${dictResultsHtml}
-            </output>
+            <!-- Stable content wrapper for robust, delta-free scroll alignment -->
+            <div class="v2-reader-dict-content">
+              <output id="v2-reader-dict-results" class="v2-reader-dict-output" aria-live="polite">
+                ${dictResultsHtml}
+              </output>
+            </div>
           </div>
         </aside>
       </div>
