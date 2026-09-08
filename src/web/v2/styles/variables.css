@@ -1,12 +1,25 @@
-/* Single source of truth for UI V2 Design Tokens & Themes */
+/**
+ * UI V2 COMPONENT DESIGN TOKENS & THEMES
+ *
+ * NOTE ON CRITICAL TOKENS:
+ * Core above-the-fold design tokens (body background/text, system font, and app-bar
+ * colors for light/dark themes) are defined in `./critical_variables.css` and
+ * imported below.
+ *
+ * WHY SEPARATE?
+ * `critical_variables.css` is inlined into a <style> tag in the HTML <head> on
+ * every page response via `v2-critical.css` to prevent theme FOUC. Keeping it
+ * separate ensures we do not bloat every SSR response with all 40+ component tokens.
+ *
+ * Any new design tokens that are NOT needed for initial above-the-fold paint
+ * (e.g. dictionary highlights, reader colors, cards, toasts, borders) should be
+ * added to THIS file.
+ */
+@import "./critical_variables.css";
 
 :root {
-  --v2-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
-    Roboto, Helvetica, Arial, sans-serif;
   --v2-font-serif: "Times New Roman", Times, Georgia, "DejaVu Serif", serif;
-  --v2-bg: #f2f3f2;
   --v2-card-bg: #f2f3f2;
-  --v2-text: #212529;
   --v2-text-muted: #6c757d;
   --v2-primary: #0066cc;
   --v2-primary-hover: #0052a3;
@@ -39,10 +52,6 @@
   );
   --v2-target-highlight: rgba(0, 102, 204, 0.08);
   --v2-bullet-bg: rgba(0, 0, 0, 0.08);
-  --v2-app-bar-bg: #bfdecf;
-  --v2-app-bar-border: #a8cebe;
-  --v2-app-bar-text: #1d3b33;
-  --v2-app-bar-nav-text: #305449;
   --v2-app-bar-nav-hover-bg: rgba(0, 0, 0, 0.07);
   --v2-app-bar-nav-active-bg: rgba(0, 0, 0, 0.12);
   --v2-app-bar-toggle-border: #99c2b0;
@@ -57,9 +66,7 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --v2-bg: #191b1d;
     --v2-card-bg: #191b1d;
-    --v2-text: #e1e3e6;
     --v2-text-muted: #9a9ea4;
     --v2-primary: #8ab4f8;
     --v2-primary-hover: #aecbfa;
@@ -90,10 +97,6 @@
     );
     --v2-target-highlight: rgba(138, 180, 248, 0.13);
     --v2-bullet-bg: rgba(255, 255, 255, 0.12);
-    --v2-app-bar-bg: #8fae9f;
-    --v2-app-bar-border: #7c9b8c;
-    --v2-app-bar-text: #10261e;
-    --v2-app-bar-nav-text: #1d3b33;
     --v2-app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
     --v2-app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
     --v2-app-bar-nav-active-text: #061912;
@@ -110,9 +113,7 @@
 
 :root[data-theme="dark"],
 [data-theme="dark"] {
-  --v2-bg: #191b1d;
   --v2-card-bg: #191b1d;
-  --v2-text: #e1e3e6;
   --v2-text-muted: #9a9ea4;
   --v2-primary: #8ab4f8;
   --v2-primary-hover: #aecbfa;
@@ -143,10 +144,6 @@
   );
   --v2-target-highlight: rgba(138, 180, 248, 0.13);
   --v2-bullet-bg: rgba(255, 255, 255, 0.12);
-  --v2-app-bar-bg: #8fae9f;
-  --v2-app-bar-border: #7c9b8c;
-  --v2-app-bar-text: #10261e;
-  --v2-app-bar-nav-text: #1d3b33;
   --v2-app-bar-nav-hover-bg: rgba(0, 0, 0, 0.08);
   --v2-app-bar-nav-active-bg: rgba(0, 0, 0, 0.15);
   --v2-app-bar-nav-active-text: #061912;
@@ -162,9 +159,7 @@
 
 :root[data-theme="light"],
 [data-theme="light"] {
-  --v2-bg: #f2f3f2;
   --v2-card-bg: #f2f3f2;
-  --v2-text: #212529;
   --v2-text-muted: #6c757d;
   --v2-primary: #0066cc;
   --v2-primary-hover: #0052a3;
@@ -195,10 +190,6 @@
   );
   --v2-target-highlight: rgba(0, 102, 204, 0.08);
   --v2-bullet-bg: rgba(0, 0, 0, 0.08);
-  --v2-app-bar-bg: #bfdecf;
-  --v2-app-bar-border: #a8cebe;
-  --v2-app-bar-text: #1d3b33;
-  --v2-app-bar-nav-text: #305449;
   --v2-app-bar-nav-hover-bg: rgba(0, 0, 0, 0.07);
   --v2-app-bar-nav-active-bg: rgba(0, 0, 0, 0.12);
   --v2-app-bar-nav-active-text: #0d2820;

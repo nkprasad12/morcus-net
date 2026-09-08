@@ -27,8 +27,8 @@ function v2ManifestPlugin(outDir: string): RsbuildPlugin {
 
           // Clean up 0-byte dummy js files produced by webpack/rspack for pure-CSS entries
           if (
-            (file.startsWith("critical.") || file.startsWith("v2.")) &&
-            file.endsWith(".js")
+            file.startsWith("v2.") &&
+            (file.endsWith(".js") || file.endsWith(".js.map"))
           ) {
             fs.unlinkSync(path.join(outDir, file));
           }
@@ -51,7 +51,7 @@ export function getV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
       entry: {
         v2_bundle: "./src/web/v2/client/v2_bundle.ts",
         v2: "./src/web/v2/v2.css",
-        critical: "./src/web/v2/v2-critical.css",
+        critical: "./src/web/v2/client/critical.ts",
       },
     },
     output: {
@@ -61,7 +61,11 @@ export function getV2RsbuildConfig(minify: boolean = false): RsbuildConfig {
         css: "",
       },
       filename: {
-        js: "[name].[contenthash].js",
+        js: (pathData) => {
+          return pathData.chunk && pathData.chunk.name === "critical"
+            ? "critical.js"
+            : "[name].[contenthash].js";
+        },
         css: (pathData) => {
           return pathData.chunk && pathData.chunk.name === "critical"
             ? "critical.css"

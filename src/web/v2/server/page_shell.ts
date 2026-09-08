@@ -2,6 +2,7 @@ import * as he from "he";
 import {
   getV2AssetHref,
   getV2CriticalCss,
+  getV2CriticalJs,
 } from "@/web/v2/server/asset_manifest";
 import { renderReportIssueDialog } from "@/web/v2/server/dialog";
 
@@ -133,22 +134,7 @@ export function renderPageShell(options: PageShellOptions): string {
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>${titleEncoded}</title>
   <style>${getV2CriticalCss()}</style>
-  <script>
-    (function() {
-      try {
-        var s = localStorage.getItem('GlobalSettings');
-        if (s) {
-          var p = JSON.parse(s);
-          if (typeof p.darkMode === 'boolean') {
-            document.documentElement.setAttribute('data-theme', p.darkMode ? 'dark' : 'light');
-          }
-          if (typeof p.highlightStrength === 'number') {
-            document.documentElement.style.setProperty('--v2-highlight-scale', (p.highlightStrength / 50));
-          }
-        }
-      } catch (e) {}
-    })();
-  </script>
+  <script>${getV2CriticalJs()}</script>
   <link rel="stylesheet" href="${getV2AssetHref("v2.css")}">
 </head>
 <body${bodyClass}>
