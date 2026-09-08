@@ -512,7 +512,9 @@ a.v2-reader-sheet-close:active {
     padding-bottom: 74px !important;
   }
 
-  .v2-reader-layout-active .v2-reader-dict-panel.v2-drawer-minimized .v2-reader-dict-sticky {
+  .v2-reader-layout-active
+    .v2-reader-dict-panel.v2-drawer-minimized
+    .v2-reader-dict-sticky {
     display: none;
   }
 
@@ -642,7 +644,8 @@ a.v2-reader-sheet-close:active {
     align-items: center;
     justify-content: center;
     opacity: 0.65;
-    transition: opacity 0.15s ease, border-color 0.15s ease, background-color 0.15s ease;
+    transition: opacity 0.15s ease, border-color 0.15s ease,
+      background-color 0.15s ease;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
   }
 
