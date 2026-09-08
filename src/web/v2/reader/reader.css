@@ -389,7 +389,7 @@ a.v2-reader-sheet-close:active {
   }
 
   .v2-reader-dict-sticky {
-    position: static;
+    position: relative;
     flex: 1 1 auto;
     min-height: 0;
     overflow-y: auto;
@@ -400,6 +400,11 @@ a.v2-reader-sheet-close:active {
     padding: 0.85rem 1rem 1.5rem;
     box-shadow: none;
     border: none;
+  }
+
+  .v2-reader-dict-content {
+    display: block;
+    width: 100%;
   }
 
   /* Mobile Drawer Top Bar & Handle */
