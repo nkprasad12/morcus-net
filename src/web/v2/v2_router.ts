@@ -6,6 +6,7 @@ import {
   renderDictResultsHtml,
 } from "@/web/v2/server/dict_ssr";
 import { renderAboutPageHtml } from "@/web/v2/server/about_ssr";
+import { renderReaderPageHtml } from "@/web/v2/server/reader_ssr";
 import { GitHub } from "@/web/utils/github";
 import type { ReportApiRequest } from "@/web/api_routes";
 import * as path from "path";
@@ -160,6 +161,31 @@ export function createV2Router(
         return;
       }
       res.status(500).send(renderDictPageHtml({ query: id, isIdSearch: true }));
+    }
+  });
+
+  // Reader prototype route: demonstrates two-panel reader with embedded dictionary
+  router.get("/reader", async (req: Request, res: Response) => {
+    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+
+    if (!query) {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(renderReaderPageHtml());
+      return;
+    }
+
+    try {
+      const results = await fusedDict.getEntry({
+        query,
+        dicts: ALL_LATIN_DICTS,
+        mode: 1, // Search by keys and inflected forms
+      });
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(renderReaderPageHtml({ query, results }));
+    } catch (err) {
+      console.error("Error retrieving reader dictionary entry:", err);
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(renderReaderPageHtml({ query }));
     }
   });
 

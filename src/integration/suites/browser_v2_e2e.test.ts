@@ -508,4 +508,28 @@ test.describe("UI V2 dictionary", () => {
     await expect(popover).not.toBeVisible();
   });
 
+  test("supports reader sidebar search and highlight settings", async ({
+    page,
+  }) => {
+    await page.goto("/v2/reader");
+
+    // Verify "Embedded Dictionary" header text is removed
+    await expect(page.locator(".v2-reader-dict-title")).toHaveCount(0);
+
+    // Verify search form and settings button exist in reader sidebar
+    const readerSearch = page.locator(".v2-reader-search-form");
+    await expect(readerSearch).toBeVisible();
+    await expect(readerSearch.locator(".v2-settings-btn")).toBeVisible();
+
+    // Search for a word via reader search bar
+    const readerInput = page.locator(".v2-reader-input");
+    await readerInput.fill("Gallia");
+    await readerSearch.locator('button[type="submit"]').click();
+
+    // Verify dictionary results render in the sidebar
+    await expect(
+      page.locator(".v2-reader-dict-output .v2-dict-card").first()
+    ).toBeVisible();
+    await expect(page.locator(".v2-reader-external-link")).toBeVisible();
+  });
 });

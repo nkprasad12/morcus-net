@@ -124,6 +124,34 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("morcus-dict-search");
   });
 
+  describe("GET /v2/reader", () => {
+    test("returns 200 with reader prototype layout and empty dictionary state when no q", async () => {
+      const res = await request(app).get("/v2/reader");
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).toContain("<!DOCTYPE html>");
+      expect(res.text).toContain("morcus-reader-view");
+      expect(res.text).toContain("C. Iulius Caesar");
+      expect(res.text).toContain("v2-reader-empty-state");
+      expect(mockFusedDict.getEntry).not.toHaveBeenCalled();
+    });
+
+    test("returns 200 and queries dictionary when q is supplied in query string", async () => {
+      const res = await request(app).get("/v2/reader?q=Gallia");
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).toContain("morcus-reader-view");
+      expect(res.text).toContain("v2-dict-card");
+      expect(res.text).toContain("Lewis");
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({
+          query: "Gallia",
+          mode: 1,
+        })
+      );
+    });
+  });
+
   describe("POST /v2/api/report", () => {
     test("submits issue report successfully and returns 200 with JSON", async () => {
       const mockReportHandler = jest.fn().mockResolvedValue(undefined);
