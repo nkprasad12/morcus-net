@@ -1,0 +1,55 @@
+/**
+ * CRITICAL DESIGN TOKENS (INLINED IN <head> VIA v2-critical.css)
+ *
+ * IMPORTANT CONSTRAINTS:
+ * 1. Purpose: Defines the absolute minimum CSS custom properties needed for
+ *    the initial above-the-fold paint and theme rendering (light/dark mode).
+ * 2. Performance Budget: This file is inlined into every single SSR page response
+ *    via v2-critical.css. Keep this list strictly limited to tokens referenced
+ *    by v2-critical.css (body background, text color, system font, app-bar chrome).
+ * 3. Non-Critical Tokens: Do NOT add page-, component-, or feature-specific tokens
+ *    here (e.g., dictionary accents, reader words, modals, cards, toasts).
+ *    Those belong in variables.css.
+ */
+
+:root {
+  --v2-font-sans: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI",
+    Roboto, Helvetica, Arial, sans-serif;
+  --v2-bg: #f2f3f2;
+  --v2-text: #212529;
+  --v2-app-bar-bg: #bfdecf;
+  --v2-app-bar-border: #a8cebe;
+  --v2-app-bar-text: #1d3b33;
+  --v2-app-bar-nav-text: #305449;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --v2-bg: #191b1d;
+    --v2-text: #e1e3e6;
+    --v2-app-bar-bg: #8fae9f;
+    --v2-app-bar-border: #7c9b8c;
+    --v2-app-bar-text: #10261e;
+    --v2-app-bar-nav-text: #1d3b33;
+  }
+}
+
+:root[data-theme="dark"],
+[data-theme="dark"] {
+  --v2-bg: #191b1d;
+  --v2-text: #e1e3e6;
+  --v2-app-bar-bg: #8fae9f;
+  --v2-app-bar-border: #7c9b8c;
+  --v2-app-bar-text: #10261e;
+  --v2-app-bar-nav-text: #1d3b33;
+}
+
+:root[data-theme="light"],
+[data-theme="light"] {
+  --v2-bg: #f2f3f2;
+  --v2-text: #212529;
+  --v2-app-bar-bg: #bfdecf;
+  --v2-app-bar-border: #a8cebe;
+  --v2-app-bar-text: #1d3b33;
+  --v2-app-bar-nav-text: #305449;
+}

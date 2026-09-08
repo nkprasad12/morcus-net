@@ -7,6 +7,7 @@ import { XmlNode } from "@/common/xml/xml_node";
 jest.mock("@/web/v2/server/asset_manifest", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
+  getV2CriticalJs: () => "/* critical js */",
 }));
 
 describe("reader_ssr", () => {

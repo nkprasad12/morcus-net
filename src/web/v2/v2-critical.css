@@ -1,4 +1,22 @@
-@import "./styles/variables.css";
+/**
+ * CRITICAL CSS (INLINED IN <head>)
+ *
+ * IMPORTANT CONSTRAINTS:
+ * 1. Purpose: This file is inlined directly into a <style> tag in the HTML <head>
+ *    of every SSR page response to provide instant first paint and prevent
+ *    Flash of Unstyled Content (FOUC) or layout shifts (CLS).
+ * 2. Performance Budget: Keep this file minimal (< 2-3 KB). Do NOT import
+ *    full component stylesheets or non-critical styling here.
+ * 3. Scope: Strictly reserve for above-the-fold layout skeletons:
+ *    - Core box-sizing and body background/text/font resets.
+ *    - Header/App Bar persistent navigation bar layout (desktop + mobile).
+ *    - Content container max-width alignment to prevent horizontal layout snap.
+ *    - Custom elements (:not(:defined)) hide rules before hydration.
+ *
+ * All other component styles must go in individual stylesheets imported via v2.css.
+ */
+
+@import "./styles/critical_variables.css";
 
 *,
 *::before,
@@ -52,6 +70,12 @@ body {
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.v2-nav-link {
+  text-decoration: none;
+  color: var(--v2-app-bar-nav-text);
+  padding: 6px 14px;
 }
 
 @media (max-width: 640px) {

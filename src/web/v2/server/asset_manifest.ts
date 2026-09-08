@@ -6,6 +6,7 @@ export type V2AssetManifest = Partial<Record<V2AssetName, string>>;
 
 let cachedManifest: V2AssetManifest | undefined;
 let cachedCriticalCss: string | undefined;
+let cachedCriticalJs: string | undefined;
 
 function loadManifest(): V2AssetManifest {
   if (cachedManifest !== undefined) {
@@ -46,4 +47,12 @@ export function getV2CriticalCss(): string {
     cachedCriticalCss = fs.readFileSync(criticalCssPath, "utf8");
   }
   return cachedCriticalCss;
+}
+
+export function getV2CriticalJs(): string {
+  if (cachedCriticalJs === undefined) {
+    const criticalJsPath = path.resolve(process.cwd(), "build/v2/critical.js");
+    cachedCriticalJs = fs.readFileSync(criticalJsPath, "utf8");
+  }
+  return cachedCriticalJs;
 }
