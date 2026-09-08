@@ -34,7 +34,8 @@
   border-radius: 4px;
 }
 
-.v2-jump-pill {
+.v2-jump-pill,
+.v2-jump-pill:visited {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -56,6 +57,18 @@
   border-color: var(--v2-primary);
   color: var(--v2-primary);
   transform: translateY(-1px);
+}
+
+.v2-jump-pill:focus:not(:focus-visible) {
+  outline: none;
+  background-color: var(--v2-tag-bg);
+  border-color: var(--v2-border);
+  color: var(--v2-text);
+}
+
+.v2-jump-pill:focus:not(:focus-visible) .v2-jump-pill-count {
+  border-color: var(--v2-border);
+  color: var(--v2-text-muted);
 }
 
 .v2-jump-pill:focus-visible {
@@ -759,7 +772,8 @@ html.v2-has-js .lsHover:focus::after {
   line-height: 1.45;
 }
 
-.v2-toc-link {
+.v2-toc-link,
+.v2-toc-link:visited {
   color: var(--v2-text);
   text-decoration: none;
 }
@@ -767,6 +781,12 @@ html.v2-has-js .lsHover:focus::after {
 .v2-toc-link:hover {
   color: var(--v2-primary);
   text-decoration: underline;
+}
+
+.v2-toc-link:focus:not(:focus-visible) {
+  color: var(--v2-text);
+  text-decoration: none;
+  outline: none;
 }
 
 .v2-toc-ordinal {
