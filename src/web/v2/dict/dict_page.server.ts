@@ -185,7 +185,9 @@ export function renderDictResultsHtml(
                 <summary class="v2-dict-summary">
                   <span class="v2-dict-toggle-icon" aria-hidden="true"></span>
                   <span class="v2-dict-title">${he.encode(dictName)}</span>
-                  <span class="v2-dict-collapsed-badge">${totalEntries} ${totalEntries === 1 ? "entry" : "entries"}</span>
+                  <span class="v2-dict-collapsed-badge">${totalEntries} ${
+        totalEntries === 1 ? "entry" : "entries"
+      }</span>
                 </summary>
               </details>
               ${attrHtml}

@@ -27,9 +27,7 @@ describe("reader_ssr", () => {
     expect(html).toContain("Select a word to view definitions");
 
     // Contains sample Latin words as clickable hyperlinks
-    expect(html).toContain(
-      'href="/v2/reader?q=Gallia"'
-    );
+    expect(html).toContain('href="/v2/reader?q=Gallia"');
     expect(html).toContain('class="v2-lat-word"');
     expect(html).toContain("Gallia");
     expect(html).toContain("Belgae");
