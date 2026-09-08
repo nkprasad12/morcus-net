@@ -98,21 +98,28 @@ npx jest src/web/v2/about/about.test.ts
 
 ## 4. Verification Checklist for Agents
 
-Before submitting changes affecting `src/web/v2/`:
+> [!IMPORTANT] > **Rapid Iteration vs. Final Verification**:
+> When iterating on small changes (especially styling/CSS adjustments or minor visual tweaks), **just make the fix and restart the server immediately**. Do NOT wait for or run linting, typechecking, or tests during rapid iteration so the user can inspect changes visually without delay.
+>
+> Only run the full verification checklist below when finalizing the task or before committing:
 
-1. **TypeScript check**:
+1. **Linting check**:
+   ```bash
+   npx eslint src/web/v2
+   ```
+2. **TypeScript check**:
    ```bash
    npx tsc --noEmit
    ```
-2. **Unit tests**:
+3. **Unit tests**:
    ```bash
    npx jest src/web/v2
    ```
-3. **E2E tests**:
+4. **E2E tests**:
    ```bash
    REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e
    ```
-4. **Code formatting**:
+5. **Code formatting**:
    ```bash
-   npm run format-check
+   npx prettier src/web/v2 --check
    ```
