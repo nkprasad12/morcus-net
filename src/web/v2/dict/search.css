@@ -18,12 +18,13 @@
   width: 100%;
   padding: 10px 42px 10px 14px;
   font-size: 1.05rem;
-  border: 1px solid var(--v2-border);
+  border: 1px solid var(--v2-input-border, var(--v2-border));
   border-radius: 6px;
-  background-color: var(--v2-card-bg);
+  background-color: var(--v2-input-bg, #ffffff);
   color: var(--v2-text);
+  box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
   outline: none;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
 .v2-input:focus {
@@ -74,8 +75,8 @@
   left: 0;
   right: 0;
   margin-top: 4px;
-  background: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
+  background: var(--v2-input-bg, #ffffff);
+  border: 1px solid var(--v2-input-border, var(--v2-border));
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
   z-index: 100;
