@@ -28,6 +28,7 @@
   --v2-border-focus: #80bdff;
   --v2-tag-bg: #e9ecef;
   --v2-card-header-bg: #e4e7e4;
+  --v2-dict-title: #1d3b33;
   --v2-pill-height: 2.125rem;
   --v2-highlight-scale: 1;
   --v2-rgb-orth: 220, 53, 69;
@@ -76,6 +77,7 @@
     --v2-border-focus: #8ab4f8;
     --v2-tag-bg: #26292e;
     --v2-card-header-bg: #26292d;
+    --v2-dict-title: #cad5cf;
     --v2-rgb-orth: 240, 90, 100;
     --v2-rgb-grammar: 255, 145, 50;
     --v2-rgb-quote: 70, 140, 255;
@@ -125,6 +127,7 @@
   --v2-border-focus: #8ab4f8;
   --v2-tag-bg: #26292e;
   --v2-card-header-bg: #26292d;
+  --v2-dict-title: #cad5cf;
   --v2-rgb-orth: 240, 90, 100;
   --v2-rgb-grammar: 255, 145, 50;
   --v2-rgb-quote: 70, 140, 255;
@@ -173,6 +176,7 @@
   --v2-border-focus: #80bdff;
   --v2-tag-bg: #e9ecef;
   --v2-card-header-bg: #e4e7e4;
+  --v2-dict-title: #1d3b33;
   --v2-rgb-orth: 220, 53, 69;
   --v2-rgb-grammar: 253, 126, 20;
   --v2-rgb-quote: 13, 110, 253;
