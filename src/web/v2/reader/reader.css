@@ -484,6 +484,7 @@ a.v2-reader-sheet-close:active {
   /* Empty state: Collapsed Bottom Drawer (~54px drawer handle bar, full height for text) */
   .v2-reader-layout-empty .v2-reader-text-panel {
     flex: 1 1 auto;
+    padding-bottom: 74px;
   }
 
   .v2-reader-layout-empty .v2-reader-dict-panel {
@@ -502,6 +503,10 @@ a.v2-reader-sheet-close:active {
     overflow: hidden;
   }
 
+  .v2-reader-layout-active:has(.v2-drawer-minimized) .v2-reader-text-panel {
+    padding-bottom: 74px !important;
+  }
+
   .v2-reader-layout-active .v2-reader-dict-panel.v2-drawer-minimized .v2-reader-dict-sticky {
     display: none;
   }
@@ -509,6 +514,12 @@ a.v2-reader-sheet-close:active {
   /* Active state: Dynamic height drawer with arbitrary % dvh */
   .v2-reader-layout-active .v2-reader-text-panel {
     flex: 1 1 auto;
+    padding-bottom: calc(var(--v2-drawer-height, 48dvh) + 36px);
+    transition: padding-bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .v2-reader-split-layout:has(.v2-is-dragging) .v2-reader-text-panel {
+    transition: none !important;
   }
 
   .v2-reader-layout-active .v2-reader-dict-panel {

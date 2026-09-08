@@ -25,7 +25,7 @@ export function renderReaderContentHtml(
   const results = options.results;
 
   const urlBuilder = (cleanWord: string) =>
-    `/v2/reader?q=${encodeURIComponent(cleanWord)}#v2-reader-dict`;
+    `/v2/reader?q=${encodeURIComponent(cleanWord)}`;
 
   const paragraphsHtml = SAMPLE_LATIN_PARAGRAPHS.map((p) => {
     const linkified = linkifyText(p, urlBuilder, query);
