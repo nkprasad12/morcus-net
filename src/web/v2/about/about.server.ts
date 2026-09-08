@@ -1,5 +1,5 @@
 import * as he from "he";
-import { renderPageShell } from "@/web/v2/server/page_shell";
+import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 
 export interface AboutPageOptions {
   commitId?: string;

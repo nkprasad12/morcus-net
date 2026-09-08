@@ -1,10 +1,10 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
-import { renderPageShell } from "@/web/v2/server/page_shell";
+import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import {
+  linkifyText,
   renderDictResultsHtml,
   renderDictSearchBar,
-} from "@/web/v2/server/dict_ssr";
-import { linkifyText } from "@/web/v2/server/dict/linkify";
+} from "@/web/v2/dict/dict.server";
 import * as he from "he";
 
 export interface ReaderPageOptions {

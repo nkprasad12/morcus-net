@@ -4,12 +4,12 @@ import {
   renderDictResultsHtml,
   renderDictPageHtml,
   formatInflectionForm,
-} from "@/web/v2/server/dict_ssr";
+} from "@/web/v2/dict/dict.server";
 import { XmlNode } from "@/common/xml/xml_node";
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import he from "he";
 
-jest.mock("@/web/v2/server/asset_manifest", () => ({
+jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
   getV2CriticalJs: () => "/* critical js */",

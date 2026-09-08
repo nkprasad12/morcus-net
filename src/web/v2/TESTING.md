@@ -9,8 +9,12 @@ This document provides instructions for developers and AI agents on running unit
 - **E2E Tests (Playwright)**: `src/integration/suites/browser_v2_e2e.test.ts`
 - **Unit Tests (Jest)**:
   - `src/web/v2/v2_router.test.ts` (Express router, HTTP routes, SSR responses, JSON completions)
-  - `src/web/v2/server/dict_ssr.test.ts` (Dictionary SSR renderer, tabs, tool panes, HTML escaping)
-  - `src/web/v2/server/about_ssr.test.ts` (About page SSR renderer)
+  - `src/web/v2/dict/dict.test.ts` (Dictionary SSR renderer, tabs, tool panes, HTML escaping)
+  - `src/web/v2/dict/search_bar.test.ts` (Search bar HTML generation)
+  - `src/web/v2/dict/dict_settings.test.ts` (Highlight settings Web Component)
+  - `src/web/v2/reader/reader.test.ts` (Reader page SSR renderer)
+  - `src/web/v2/dialog/dialog.test.ts` (Accessible modal dialog markup)
+  - `src/web/v2/about/about.test.ts` (About page SSR renderer)
 
 ---
 
@@ -86,8 +90,8 @@ npx jest src/web/v2
 
 # Run a specific unit test file
 npx jest src/web/v2/v2_router.test.ts
-npx jest src/web/v2/server/dict_ssr.test.ts
-npx jest src/web/v2/server/about_ssr.test.ts
+npx jest src/web/v2/dict/dict.test.ts
+npx jest src/web/v2/about/about.test.ts
 ```
 
 ---

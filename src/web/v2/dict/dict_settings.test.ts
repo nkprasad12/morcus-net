@@ -1,7 +1,7 @@
 /**
  * @jest-environment jsdom
  */
-import "@/web/v2/client/morcus_dict_settings";
+import "@/web/v2/dict/dict_settings.client";
 
 describe("MorcusDictSettings", () => {
   beforeEach(() => {

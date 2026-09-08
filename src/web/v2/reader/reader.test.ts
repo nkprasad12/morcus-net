@@ -1,10 +1,10 @@
 import {
   renderReaderContentHtml,
   renderReaderPageHtml,
-} from "@/web/v2/server/reader_ssr";
+} from "@/web/v2/reader/reader.server";
 import { XmlNode } from "@/common/xml/xml_node";
 
-jest.mock("@/web/v2/server/asset_manifest", () => ({
+jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
   getV2CriticalCss: () => "body{background-color:var(--v2-bg)}",
   getV2CriticalJs: () => "/* critical js */",

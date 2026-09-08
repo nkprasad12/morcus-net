@@ -106,13 +106,17 @@ export class MorcusDictSettings extends HTMLElement {
     this.buttonEl?.addEventListener("click", this.toggleSettingsPopover);
 
     this.sliderEl?.addEventListener("input", (e: Event) => {
-      const val = Number((e.target as HTMLInputElement).value);
-      this.updateStrength(val, false);
+      if (e.target instanceof HTMLInputElement) {
+        const val = Number(e.target.value);
+        this.updateStrength(val, false);
+      }
     });
 
     this.sliderEl?.addEventListener("change", (e: Event) => {
-      const val = Number((e.target as HTMLInputElement).value);
-      this.updateStrength(val, true);
+      if (e.target instanceof HTMLInputElement) {
+        const val = Number(e.target.value);
+        this.updateStrength(val, true);
+      }
     });
   }
 

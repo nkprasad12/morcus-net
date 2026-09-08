@@ -3,8 +3,8 @@ import {
   getV2AssetHref,
   getV2CriticalCss,
   getV2CriticalJs,
-} from "@/web/v2/server/asset_manifest";
-import { renderReportIssueDialog } from "@/web/v2/server/dialog";
+} from "@/web/v2/shell/asset_manifest.server";
+import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
 
 export type V2ActivePage = "dicts" | "about" | "reader";
 

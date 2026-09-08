@@ -1,4 +1,7 @@
-import { renderDialog, renderReportIssueDialog } from "@/web/v2/server/dialog";
+import {
+  renderDialog,
+  renderReportIssueDialog,
+} from "@/web/v2/dialog/dialog.server";
 
 describe("dialog server utilities", () => {
   describe("renderDialog", () => {

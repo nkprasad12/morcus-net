@@ -1,10 +1,10 @@
 // Register native custom elements for the UI V2 progressive enhancement
-import "@/web/v2/client/morcus_dict_suggestions";
-import "@/web/v2/client/morcus_dict_search";
-import "@/web/v2/client/morcus_dict_settings";
-import "@/web/v2/client/morcus_theme_toggle";
-import "@/web/v2/client/morcus_report_dialog";
-import "@/web/v2/client/morcus_reader_view";
+import "@/web/v2/dict/dict_suggestions.client";
+import "@/web/v2/dict/dict_search.client";
+import "@/web/v2/dict/dict_settings.client";
+import "@/web/v2/shell/theme_toggle.client";
+import "@/web/v2/dialog/report_dialog.client";
+import "@/web/v2/reader/reader_view.client";
 
 // Mark document as JS-enhanced to disable static No-JS CSS fallbacks
 document.documentElement.classList.add("v2-has-js");
@@ -44,7 +44,8 @@ function expandAncestorDisclosures(targetEl: HTMLElement) {
       parent.open = true;
     }
     if (parent.classList?.contains("v2-dict-card")) {
-      const toggle = parent.querySelector<HTMLDetailsElement>(".v2-dict-toggle");
+      const toggle =
+        parent.querySelector<HTMLDetailsElement>(".v2-dict-toggle");
       if (toggle && !toggle.open) {
         toggle.open = true;
       }

@@ -1,4 +1,4 @@
-import type { MorcusDictSuggestions } from "@/web/v2/client/morcus_dict_suggestions";
+import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.

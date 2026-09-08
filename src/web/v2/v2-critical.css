@@ -16,7 +16,7 @@
  * All other component styles must go in individual stylesheets imported via v2.css.
  */
 
-@import "./styles/critical_variables.css";
+@import "./shell/critical_variables.css";
 
 *,
 *::before,

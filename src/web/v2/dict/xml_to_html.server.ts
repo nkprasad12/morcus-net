@@ -1,5 +1,5 @@
 import { XmlChild } from "@/common/xml/xml_node";
-import { linkifyText } from "@/web/v2/server/dict/linkify";
+import { linkifyText } from "@/web/v2/dict/linkify.server";
 import * as he from "he";
 
 export interface XmlNodeToHtmlOptions {
