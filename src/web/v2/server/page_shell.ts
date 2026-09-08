@@ -121,6 +121,9 @@ export function renderPageShell(options: PageShellOptions): string {
           if (typeof p.darkMode === 'boolean') {
             document.documentElement.setAttribute('data-theme', p.darkMode ? 'dark' : 'light');
           }
+          if (typeof p.highlightStrength === 'number') {
+            document.documentElement.style.setProperty('--v2-highlight-scale', (p.highlightStrength / 50));
+          }
         }
       } catch (e) {}
     })();

@@ -244,6 +244,7 @@ describe("dict_ssr", () => {
       '<form class="v2-search-form" action="/v2/dicts" method="GET">'
     );
     expect(pageHtml).toContain("<morcus-dict-search>");
+    expect(pageHtml).toContain("<morcus-dict-settings>");
     expect(pageHtml).toContain('<div id="top"></div>');
     expect(pageHtml).toContain('class="v2-back-to-top"');
     expect(pageHtml).toContain('href="#top"');
