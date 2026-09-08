@@ -13,57 +13,33 @@ The UI V2 prototype explores a server-rendered Multi-Page Application (MPA) mode
 
 ---
 
-## Architecture & Directory Layout
+## Architecture & Layout Philosophy
+
+UI V2 is structured by **topic (domain vertical slices)** rather than technical file types:
 
 ```
 src/web/v2/
-├── shell/                                # Document skeleton, app bar, theme & design tokens
-│   ├── page_shell.server.ts              # Document skeleton (<head>, <body>, inline scripts/styles)
-│   ├── app_bar.server.ts                 # Persistent accessible navigation bar markup
-│   ├── asset_manifest.server.ts          # Content-hashed asset mapping for SSR
-│   ├── theme_toggle.client.ts            # Light/dark mode Web Component (<morcus-theme-toggle>)
-│   ├── critical_theme.client.ts          # Inlined anti-flash theme script (runs in <head>)
-│   ├── app_bar.css                       # Header & navigation bar layout
-│   ├── variables.css                     # Theme design tokens & CSS custom properties
-│   └── critical_variables.css            # Above-the-fold critical variables
-├── dict/                                 # Dictionary lookup, search, inflections & settings
-│   ├── dict_page.server.ts               # Full dictionary SSR page generator
-│   ├── dict.server.ts                    # Clean facade re-exporting dict SSR functions
-│   ├── entry_view.server.ts              # Lexicon cards, entry headers & inflections SSR
-│   ├── search_bar.server.ts              # Search form & settings button HTML generator
-│   ├── xml_to_html.server.ts             # TEI XML AST to HTML string transformer
-│   ├── linkify.server.ts                 # Latin word tokenization & linkification utility
-│   ├── dict_search.client.ts             # Form hijack, keyboard nav & history sync (<form is="morcus-dict-search">)
-│   ├── dict_settings.client.ts           # Highlight settings popover & slider (<morcus-dict-settings>)
-│   ├── dict_suggestions.client.ts        # Autocomplete dropdown component (<morcus-dict-suggestions>)
-│   ├── dictionary.css                    # Lexicon entries, citations & word definitions styling
-│   ├── search.css                        # Search bar, input, and suggestions dropdown styling
-│   ├── dict_settings.css                 # Settings button, slider, and popover styling
-│   ├── dict.test.ts                      # SSR & entry rendering unit tests
-│   ├── search_bar.test.ts                # Search bar form generation unit tests
-│   └── dict_settings.test.ts             # Client settings component unit tests
-├── reader/                               # Parallel two-column reader
-│   ├── reader.server.ts                  # Reader page SSR template
-│   ├── reader_view.client.ts             # Fragment swapping & scroll sync Web Component (<morcus-reader-view>)
-│   ├── reader.css                        # Two-column layout, line numbers & typography
-│   └── reader.test.ts                    # Reader SSR unit tests
-├── dialog/                               # Accessible modal dialogs & feedback reporting
-│   ├── dialog.server.ts                  # Native <dialog> HTML markup generator
-│   ├── report_dialog.client.ts           # Client AJAX feedback modal Web Component (<morcus-report-dialog>)
-│   ├── dialog.css                        # Native <dialog> backdrop & modal styling
-│   └── dialog.test.ts                    # Dialog markup unit tests
-├── about/                                # Static documentation & project info
-│   ├── about.server.ts                   # About page SSR template
-│   ├── about.css                         # About page typography & section styles
-│   └── about.test.ts                     # About page unit tests
-├── v2_router.ts                          # Express router orchestrator mounted at /v2 (public API)
-├── v2_router.test.ts                     # Router endpoint integration tests
-├── v2_bundle.ts                          # Rsbuild client entry point (aggregates all *.client.ts)
-├── v2.css                                # Global CSS entry point (aggregates topic stylesheets)
-├── v2-critical.css                       # Above-the-fold critical CSS (inlined in <head>)
-├── README.md                             # Architectural overview & design rules
-└── TESTING.md                            # Testing guide (Jest & Playwright E2E)
+├── shell/       # Document skeleton, app bar, theme & global design tokens
+├── dict/        # Dictionary search, entry rendering, inflections & settings
+├── reader/      # Parallel two-column reader
+├── dialog/      # Accessible modal dialogs & issue reporting
+├── about/       # Project information & metadata
+├── v2_router.ts # Express router orchestrator mounted at /v2 (public integration)
+├── v2_bundle.ts # Client bundle manifest (imports *.client.ts)
+├── v2.css       # Global stylesheet manifest (imports topic *.css)
+└── v2-critical.css # Inlined above-the-fold critical CSS
 ```
+
+### Core Design Rules
+
+1. **Colocated Vertical Slices**: Each topic folder contains everything required for that domain: SSR HTML templates, Light DOM Web Components, stylesheets, and unit tests. Deleting or refactoring a feature is isolated to its topic folder.
+2. **Target Suffix Convention**:
+   - `*.server.ts`: Executes in Node.js (Express SSR renderers, XML parsers, server-side utilities). **Never** bundled to browser assets; **no** browser DOM globals (`window`, `document`, `HTMLElement`).
+   - `*.client.ts`: Executes in the Browser (Light DOM Web Components, client event delegation). Bundled via Rsbuild into `build/v2/v2.js`.
+   - `*.test.ts`: Colocated unit tests targeting adjacent modules.
+   - `*.css`: Feature-scoped styles imported by the root `v2.css`.
+3. **Flat Topic Directories**: Topics remain flat by default (avoiding micro-directories for 1–2 files). Filename prefixes (e.g. `dict_search.*`, `dict_settings.*`) keep related files automatically clustered alphabetically. Subdirectories are introduced only when a subcomponent exceeds 4+ dedicated files.
+4. **Root Integration Hubs**: Top-level entry points (`v2_router.ts`, `v2_bundle.ts`, `v2.css`) aggregate exports across topics so external consumers have a single, stable contract.
 
 ### Build Pipeline
 
@@ -73,36 +49,15 @@ src/web/v2/
 
 ---
 
-## Data Flow & Request Lifecycle
+## Data Flow & Progressive Enhancement
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor User as Browser / User
-    participant Router as Express (/v2/dicts)
-    participant Fused as FusedDictionary (Server)
-    participant Lit as Lit Web Components (Client)
+UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
-    alt Initial Load / No-JS Form Submit
-        User->>Router: GET /v2/dicts?q=habeo
-        Router->>Fused: getEntry({ query: "habeo", mode: 1 })
-        Fused-->>Router: DictsFusedResponse
-        Router-->>User: 200 OK (Full SSR HTML document with <details>, app bar)
-    else With JS: Live Autocomplete
-        User->>Lit: Type "hab" into <input name="q">
-        Lit->>Router: GET /v2/api/completions?q=hab
-        Router->>Fused: getCompletions("hab")
-        Fused-->>Router: string[]
-        Router-->>Lit: JSON string[]
-        Lit-->>User: Declarative <morcus-dict-suggestions> dropdown
-    else With JS: Form Hijack (AJAX Swap)
-        User->>Lit: Submit form / select suggestion
-        Lit->>Router: GET /v2/dicts?q=habeo&format=partial (X-Requested-With: fetch)
-        Router->>Fused: getEntry({ query: "habeo", mode: 1 })
-        Router-->>Lit: HTML fragment (<details class="v2-dict-card">...)
-        Lit->>User: replaceChildren(fragment) & history.pushState()
-    end
-```
+1. **Zero-JS Initial Paint**: The user issues a standard HTTP `GET` (e.g. `/v2/dicts?q=habeo` or `/v2/reader`). Express renders a complete semantic HTML document with native `<form>`, `<details>`, and `<a>` elements.
+2. **Non-Blocking Enhancement**: The browser downloads the lightweight `<15 KB` client bundle (`v2.js`) and defines native custom elements (`customElements.define`).
+3. **Client Form Hijack & Partial Swapping**: When JavaScript is active, Web Components intercept user actions, fetch partial HTML fragments (`format=partial`) or autocomplete JSON from the router, and swap DOM nodes instantaneously via `replaceChildren()` while syncing URL state with `history.pushState()`.
+
+> **Topic-Specific Data Flows**: Detailed request lifecycle sequence diagrams and component breakdowns live in each topic's documentation (e.g., see [dict/README.md](dict/README.md)).
 
 ---
 
@@ -114,10 +69,22 @@ sequenceDiagram
 
 ---
 
-## Testing & Verification
+## Rapid Iteration Workflow (Instruction for AI Agents)
 
-Comprehensive instructions for running unit tests and Playwright E2E tests are detailed in [TESTING.md](TESTING.md).
+> [!IMPORTANT] > **Fast Visual Feedback**: When iterating on small changes (especially styling/CSS adjustments, visual polish, or minor UI tweaks):
+>
+> - **Make the fix and restart the server immediately** so the user can see it visually right away.
+> - **Do NOT** wait for or run linting (`eslint`), formatting (`prettier`), type checking (`tsc`), or test suites during rapid iteration.
+> - Save full verification (lint, types, tests) for when the user is satisfied with the visual outcome or explicitly asks to finalize/commit.
 
-- **E2E Tests**: `REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e`
-- **Unit Tests**: `npx jest src/web/v2`
+---
+
+## Testing & Quality Verification (Pre-Commit / Finalization)
+
+Comprehensive instructions for running unit tests and Playwright E2E tests are detailed in [TESTING.md](TESTING.md). Run these when finalizing features or before committing:
+
+- **Linting & Import Rules**: `npx eslint src/web/v2`
+- **Code Style**: `npx prettier src/web/v2 --check`
 - **Type Checking**: `npx tsc --noEmit`
+- **Unit Tests**: `npx jest src/web/v2`
+- **E2E Tests**: `REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e`
