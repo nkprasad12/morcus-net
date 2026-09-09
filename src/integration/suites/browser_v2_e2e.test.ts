@@ -253,32 +253,30 @@ test.describe("UI V2 dictionary", () => {
     expect(page.url()).toContain("#");
   });
 
-  test("click-to-lookup linkifies Latin words and navigates on click (No-JS)", async ({
+  test("renders clean text without word links in No-JS mode (accessible fallback)", async ({
     browser,
   }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
     await page.goto("/v2/dicts?q=habeo");
-    const wordLink = page.locator('.v2-lat-word:has-text("habere")').first();
-    await expect(wordLink).toBeVisible();
-
-    // Clicking the word navigates natively to /v2/dicts?q=habere
-    await wordLink.click();
-    await expect(page).toHaveURL(/\/v2\/dicts\?q=habere/);
-    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
+    // Ensure no word link elements exist in No-JS mode
+    const wordLinks = page.locator(".v2-lat-word");
+    await expect(wordLinks).toHaveCount(0);
+    // Ensure content is still rendered as readable text
+    await expect(page.locator(".v2-entry-content").first()).toContainText("habere");
 
     await context.close();
   });
 
-  test("click-to-lookup linkifies Latin words and navigates on click (JS enabled)", async ({
+  test("click-to-lookup progressively enhances Latin words and navigates on click (JS enabled)", async ({
     page,
   }) => {
     await page.goto("/v2/dicts?q=habeo");
     const wordLink = page.locator('.v2-lat-word:has-text("habere")').first();
     await expect(wordLink).toBeVisible();
 
-    // Clicking the word follows standard browser navigation
+    // Clicking the word triggers client-side lookup
     await wordLink.click();
     await expect(page).toHaveURL(/\/v2\/dicts\?q=habere/);
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();

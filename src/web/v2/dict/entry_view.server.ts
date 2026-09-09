@@ -149,7 +149,6 @@ export function renderEntryResult(
 
   const topBarHtml = hasTools ? toolsHtml : headerHtml;
   const entryHtml = xmlNodeToHtml(result.entry, {
-    allowLinkify: true,
     omitRootId: true,
   });
 

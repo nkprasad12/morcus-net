@@ -760,6 +760,7 @@ html.v2-has-js .lsHover:focus::after {
   color: inherit;
   text-decoration: none;
   border-radius: 2px;
+  cursor: pointer;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
