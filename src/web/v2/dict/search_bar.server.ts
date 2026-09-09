@@ -7,6 +7,7 @@ export interface SearchBarOptions {
   formClass?: string;
   inputClass?: string;
   includeSettings?: boolean;
+  extraHiddenInputs?: Record<string, string>;
 }
 
 /**
@@ -31,10 +32,20 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     ? "<morcus-dict-settings></morcus-dict-settings>"
     : "";
 
+  const hiddenInputsHtml = options.extraHiddenInputs
+    ? Object.entries(options.extraHiddenInputs)
+        .map(
+          ([k, v]) =>
+            `<input type="hidden" name="${he.escape(k)}" value="${he.escape(v)}">`
+        )
+        .join("\n")
+    : "";
+
   return `
     <form class="${formClasses}" action="${he.escape(
     options.action
   )}" method="GET">
+      ${hiddenInputsHtml}
       <div class="v2-input-wrapper">
         <input
           type="text"

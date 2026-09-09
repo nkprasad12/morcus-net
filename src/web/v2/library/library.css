@@ -1,0 +1,315 @@
+/* Classical Library Catalog Styling (UI V2) */
+
+.v2-library-view {
+  display: block;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 1.5rem 1rem 4rem;
+}
+
+.v2-library-header {
+  margin-bottom: 2.5rem;
+}
+
+.v2-library-title-group {
+  margin-bottom: 1.5rem;
+}
+
+.v2-library-title {
+  font-family: var(--v2-font-serif);
+  font-size: 2.25rem;
+  font-weight: 700;
+  color: var(--v2-text);
+  margin: 0 0 0.5rem;
+  letter-spacing: -0.02em;
+}
+
+.v2-library-subtitle {
+  font-size: 1.05rem;
+  color: var(--v2-text-muted);
+  line-height: 1.6;
+  margin: 0;
+  max-width: 720px;
+}
+
+/* Search Box & Filter Pills */
+.v2-library-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  background: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 12px;
+  padding: 1.25rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.v2-library-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.v2-library-search-glyph {
+  position: absolute;
+  left: 14px;
+  font-size: 1.1rem;
+  color: var(--v2-text-muted);
+  pointer-events: none;
+}
+
+.v2-library-search-input {
+  width: 100%;
+  padding: 10px 100px 10px 42px;
+  font-size: 1rem;
+  font-family: inherit;
+  color: var(--v2-text);
+  background-color: var(--v2-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.v2-library-search-input:focus {
+  outline: none;
+  border-color: var(--v2-primary);
+  box-shadow: 0 0 0 3px rgba(185, 28, 28, 0.12);
+}
+
+.v2-library-count-badge {
+  position: absolute;
+  right: 12px;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+  background: var(--v2-border);
+  padding: 3px 8px;
+  border-radius: 9999px;
+  pointer-events: none;
+}
+
+.v2-library-filter-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  align-items: center;
+}
+
+.v2-filter-pill {
+  font-size: 0.825rem;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-radius: 9999px;
+  border: 1px solid var(--v2-border);
+  background-color: var(--v2-bg);
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.v2-filter-pill:hover {
+  border-color: var(--v2-border-strong);
+  color: var(--v2-text);
+}
+
+.v2-filter-pill.active {
+  background-color: var(--v2-primary);
+  border-color: var(--v2-primary);
+  color: #fff;
+  font-weight: 600;
+}
+
+/* Empty State */
+.v2-library-empty-state {
+  text-align: center;
+  padding: 3.5rem 1.5rem;
+  background: var(--v2-card-bg);
+  border: 1px dashed var(--v2-border);
+  border-radius: 12px;
+  margin: 2rem 0;
+}
+
+.v2-library-empty-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  margin: 0 0 0.5rem;
+}
+
+.v2-library-empty-desc {
+  font-size: 0.95rem;
+  color: var(--v2-text-muted);
+  margin: 0 0 1.25rem;
+}
+
+/* Author Section & Grid */
+.v2-library-author-section {
+  margin-bottom: 2.75rem;
+}
+
+.v2-library-author-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  border-bottom: 2px solid var(--v2-border);
+  padding-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
+}
+
+.v2-library-author-name {
+  font-family: var(--v2-font-serif);
+  font-size: 1.45rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  margin: 0;
+}
+
+.v2-library-author-count {
+  font-size: 0.85rem;
+  color: var(--v2-text-muted);
+  font-weight: 500;
+}
+
+.v2-library-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.25rem;
+}
+
+/* Work Card */
+.v2-work-card {
+  background: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 10px;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+}
+
+.v2-work-card[hidden],
+.v2-library-author-section[hidden] {
+  display: none !important;
+}
+
+.v2-work-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--v2-border-strong);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.07);
+}
+
+.v2-work-card-content {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.v2-work-card-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.v2-badge {
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  padding: 2px 7px;
+  border-radius: 4px;
+}
+
+.v2-badge-macra {
+  background: rgba(16, 185, 129, 0.12);
+  color: #059669;
+  border: 1px solid rgba(16, 185, 129, 0.28);
+}
+
+.v2-badge-trans {
+  background: rgba(99, 102, 241, 0.12);
+  color: #4f46e5;
+  border: 1px solid rgba(99, 102, 241, 0.28);
+}
+
+.v2-badge-perseus {
+  background: rgba(14, 165, 233, 0.12);
+  color: #0284c7;
+  border: 1px solid rgba(14, 165, 233, 0.28);
+}
+
+.v2-badge-phi {
+  background: rgba(245, 158, 11, 0.12);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+}
+
+.v2-work-card-title {
+  font-family: var(--v2-font-serif);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.35;
+  margin: 0;
+}
+
+.v2-work-card-title a {
+  color: var(--v2-text);
+  text-decoration: none;
+}
+
+.v2-work-card-title a:hover {
+  color: var(--v2-primary);
+  text-decoration: underline;
+}
+
+.v2-work-card-meta {
+  font-size: 0.8125rem;
+  color: var(--v2-text-muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.v2-work-card-action {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--v2-border);
+}
+
+.v2-work-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--v2-primary);
+  text-decoration: none;
+  padding: 4px 10px;
+  border-radius: 6px;
+  background: rgba(185, 28, 28, 0.06);
+  transition: background-color 0.15s ease;
+}
+
+.v2-work-card-btn:hover {
+  background: rgba(185, 28, 28, 0.12);
+  text-decoration: none;
+}
+
+@media (max-width: 640px) {
+  .v2-library-view {
+    padding: 1rem 0.75rem 3rem;
+  }
+  .v2-library-title {
+    font-size: 1.75rem;
+  }
+  .v2-library-grid {
+    grid-template-columns: 1fr;
+  }
+  .v2-library-controls {
+    padding: 1rem;
+  }
+}

@@ -1,7 +1,5 @@
 import {
   BaseElement,
-  fetchAndSwapPartial,
-  LatestTask,
   type QueryParamSync,
   registerElement,
   trackPointerDrag,
@@ -11,25 +9,22 @@ import {
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
  *
  * Without JS:
- * - Each Latin word is an HTML <a> link pointing to /v2/reader?q=word#v2-reader-dict.
- * - Clicking a word triggers a native standard HTTP GET request.
- * - The server re-renders the reader page with the chosen word's dictionary entry in the sidebar.
+ * - Clean semantic HTML prose/verse rendered without word anchor bloat.
+ * - Dictionary panel embeds a self-contained iframe (/v2/dicts?embedded=1).
+ * - Searching words in the iframe maintains the reader's scroll position 100% stationary.
  *
  * With JS:
- * - Intercepts word clicks via event delegation.
- * - Fetches partial HTML fragments from /v2/dicts?q=word&format=partial.
- * - Swaps the dictionary panel contents instantaneously with replaceChildren(fragment).
- * - Synchronizes the active word visual indicator, browser URL bar, and history state.
+ * - Tokenizes text nodes into clickable <span class="v2-lat-word" role="button"> on mount (< 2ms).
+ * - Clicking or pressing Enter on a word updates the dictionary iframe src and history state.
+ * - Manages mobile bottom sheet expansion and desktop resizable panels.
  */
 export class MorcusReaderView extends BaseElement {
-  private resultsElement: HTMLElement | null = null;
   private currentQuery: string = "";
-  private readonly task = new LatestTask();
   private preferredDrawerDvh: number = 48;
   private router: QueryParamSync | null = null;
 
   protected override onConnect() {
-    this.resultsElement = this.$<HTMLElement>("#v2-reader-dict-results");
+    this.enhancePassage();
 
     this.router = this.syncQueryParam("q", {
       onChange: (q) => {
@@ -37,7 +32,7 @@ export class MorcusReaderView extends BaseElement {
           this.closeDictionary(false);
           return;
         }
-        this.lookupWord(q, this.findAnchorForWord(q), false);
+        this.lookupWord(q, this.findWordElement(q), false);
       },
       title: (q) =>
         q
@@ -46,14 +41,12 @@ export class MorcusReaderView extends BaseElement {
     });
 
     this.currentQuery = this.router.get();
+    if (this.currentQuery) {
+      const el = this.findWordElement(this.currentQuery);
+      if (el) el.classList.add("v2-word-active");
+    }
 
     this.listen(this, "click", this.handleClick);
-
-    this.hijackForm(".v2-reader-search-form", ({ q }) => {
-      if (q) {
-        this.lookupWord(q, undefined, true);
-      }
-    });
 
     this.initDesktopSplitter();
     this.initMobileDrawer();
@@ -67,20 +60,7 @@ export class MorcusReaderView extends BaseElement {
   }
 
   protected override onDisconnect() {
-    this.task.cancel();
-  }
-
-  private findAnchorForWord(word: string): HTMLElement | undefined {
-    const allAnchors = this.$$<HTMLAnchorElement>(
-      ".v2-reader-text-panel a.v2-lat-word"
-    );
-    for (const a of allAnchors) {
-      const aHref = a.getAttribute("href") || "";
-      if (aHref.includes(`q=${encodeURIComponent(word)}`)) {
-        return a;
-      }
-    }
-    return undefined;
+    // cleanup
   }
 
   private readonly handleClick = (e: MouseEvent) => {
@@ -110,7 +90,7 @@ export class MorcusReaderView extends BaseElement {
       }
       const secEl = document.getElementById(`sec-${secId}`);
       if (secEl) {
-        secEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        secEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
         secEl.classList.add("target-highlight");
         setTimeout(() => secEl.classList.remove("target-highlight"), 3000);
       }
@@ -118,22 +98,17 @@ export class MorcusReaderView extends BaseElement {
       return;
     }
 
-    const wordAnchor = e.target.closest<HTMLAnchorElement>("a.v2-lat-word");
-    if (!wordAnchor) return;
+    const wordEl = e.target.closest<HTMLElement>(".v2-lat-word");
+    if (!wordEl) return;
 
     e.preventDefault();
-    const href = wordAnchor.getAttribute("href") || "";
-    const urlMatch = href.match(/[?&]q=([^&#]+)/);
-    const word = urlMatch
-      ? decodeURIComponent(urlMatch[1])
-      : wordAnchor.textContent?.trim() || "";
+    const word =
+      wordEl.dataset.word ||
+      wordEl.textContent?.trim() ||
+      "";
     if (!word) return;
 
-    // Distinguish clicks in the reading passage from clicks within dictionary entries
-    const textPanel = this.querySelector(".v2-reader-text-panel");
-    const isTextPanel = Boolean(textPanel && textPanel.contains(wordAnchor));
-
-    this.lookupWord(word, isTextPanel ? wordAnchor : undefined, true);
+    this.lookupWord(word, wordEl, true);
   };
 
   private closeDictionary(updateHistory: boolean = true) {
@@ -189,19 +164,17 @@ export class MorcusReaderView extends BaseElement {
 
   private dismissDictionary(updateHistory: boolean = true) {
     this.currentQuery = "";
-    this.task.cancel();
 
     // Remove active highlights
-    const allWords = this.querySelectorAll<HTMLAnchorElement>(
-      ".v2-reader-text-panel a.v2-lat-word"
+    const allWords = this.querySelectorAll<HTMLElement>(
+      ".v2-reader-text-panel .v2-lat-word"
     );
     allWords.forEach((el) => el.classList.remove("v2-word-active"));
 
-    // Clear search input
-    const readerInput =
-      this.querySelector<HTMLInputElement>(".v2-reader-input");
-    if (readerInput) {
-      readerInput.value = "";
+    // Reset iframe to default embedded state
+    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    if (iframe) {
+      iframe.src = "/v2/dicts?embedded=1";
     }
 
     // Update split layout class to empty
@@ -231,27 +204,6 @@ export class MorcusReaderView extends BaseElement {
       sheetLabel.textContent = "Tap any word to view definitions";
     }
 
-    // Remove close button from teaser if present
-    const teaserClose = this.querySelector<HTMLElement>(
-      ".v2-reader-sheet-teaser .v2-reader-sheet-close"
-    );
-    if (teaserClose) {
-      teaserClose.remove();
-    }
-
-    // Show empty state in results
-    if (this.resultsElement) {
-      this.resultsElement.innerHTML = `
-        <div class="v2-reader-empty-state">
-          <p class="v2-reader-empty-title">Select a word to view definitions</p>
-          <p class="v2-reader-empty-desc">
-            Click or tap any word in the text on the left to inspect its lexical entries,
-            inflections, and translations.
-          </p>
-        </div>
-      `;
-    }
-
     if (updateHistory) {
       this.router?.replace("");
     }
@@ -265,40 +217,35 @@ export class MorcusReaderView extends BaseElement {
     if (!word) return;
 
     const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
-    // If tapping the already loaded word while drawer is minimized, restore instantly with 0 fetch
     if (
       word === this.currentQuery &&
       dictPanel?.classList.contains("v2-drawer-minimized")
     ) {
       this.restoreDrawer();
-      this.resetDictScroll();
       return;
     }
 
     this.currentQuery = word;
 
     // Update active highlight in the text
-    const allWords = this.querySelectorAll<HTMLAnchorElement>(
-      ".v2-reader-text-panel a.v2-lat-word"
+    const allWords = this.querySelectorAll<HTMLElement>(
+      ".v2-reader-text-panel .v2-lat-word"
     );
     allWords.forEach((el) => el.classList.remove("v2-word-active"));
     if (activeAnchor) {
       activeAnchor.classList.add("v2-word-active");
     } else {
-      for (const a of allWords) {
-        const aHref = a.getAttribute("href") || "";
-        if (aHref.includes(`q=${encodeURIComponent(word)}`)) {
-          a.classList.add("v2-word-active");
-          break;
-        }
-      }
+      const match = this.findWordElement(word);
+      if (match) match.classList.add("v2-word-active");
     }
 
-    // Update reader search input value
-    const readerInput =
-      this.querySelector<HTMLInputElement>(".v2-reader-input");
-    if (readerInput && readerInput.value !== word) {
-      readerInput.value = word;
+    // Update dictionary iframe
+    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    if (iframe) {
+      const targetSrc = `/v2/dicts?q=${encodeURIComponent(word)}&embedded=1`;
+      if (iframe.getAttribute("src") !== targetSrc) {
+        iframe.src = targetSrc;
+      }
     }
 
     // Update split layout class to active (expands mobile sheet)
@@ -315,66 +262,137 @@ export class MorcusReaderView extends BaseElement {
 
     // Mobile scroll guard: Ensure tapped word is not occluded by the newly opened/restored drawer
     if (window.innerWidth <= 640) {
-      const targetEl =
-        activeAnchor ||
-        this.querySelector<HTMLElement>(
-          ".v2-reader-text-panel a.v2-word-active"
-        );
+      const targetEl = activeAnchor || this.findWordElement(word);
       if (targetEl) {
         requestAnimationFrame(() => {
           const rect = targetEl.getBoundingClientRect();
           const drawerTop =
             dictPanel?.getBoundingClientRect().top ??
             window.innerHeight * (1 - (this.preferredDrawerDvh ?? 48) / 100);
-          // If word is occluded or within 24px of drawer header
           if (rect.bottom > drawerTop - 24) {
-            targetEl.scrollIntoView({
+            const scrollNeeded = rect.bottom - (drawerTop - 24);
+            window.scrollBy({
+              top: scrollNeeded,
+              left: 0,
               behavior: "smooth",
-              block: "center",
             });
           }
         });
       }
     }
 
-    // Update mobile teaser bar label and ensure close button is present
+    // Update mobile teaser bar label
     const sheetLabel = this.querySelector<HTMLElement>(
       ".v2-reader-sheet-label"
     );
     if (sheetLabel) {
       sheetLabel.innerHTML = `Definitions for <strong>${word}</strong>`;
     }
-    const sheetTeaser = this.querySelector<HTMLElement>(
-      ".v2-reader-sheet-teaser"
-    );
-    if (sheetTeaser && !sheetTeaser.querySelector(".v2-reader-sheet-close")) {
-      const closeBtn = document.createElement("a");
-      closeBtn.href = "/v2/reader";
-      closeBtn.className = "v2-reader-sheet-close";
-      closeBtn.setAttribute("aria-label", "Close dictionary panel");
-      closeBtn.title = "Close";
-      closeBtn.textContent = "✕";
-      sheetTeaser.appendChild(closeBtn);
-    }
 
     // Synchronize browser history and page title
     if (updateHistory) {
       this.router?.push(word);
     }
+  }
 
-    if (!this.resultsElement) return;
+  private enhancePassage() {
+    const passage = this.querySelector<HTMLElement>("#v2-reader-passage");
+    if (!passage) return;
+    if (passage.dataset.enhanced === "true") return;
+    passage.dataset.enhanced = "true";
 
-    const signal = this.task.start();
-    const url = `/v2/dicts?q=${encodeURIComponent(word)}&format=partial`;
-    const ok = await fetchAndSwapPartial(this.resultsElement, url, {
-      signal,
-      loadingOpacity: 0.45,
-      errorMessage: `Error loading dictionary entry for "${word}".`,
-    });
+    const targetBlocks = passage.querySelectorAll<HTMLElement>(
+      ".v2-reader-section:not(.v2-section-parallel) p.v2-reader-paragraph, " +
+      ".v2-reader-section:not(.v2-section-parallel) .v2-reader-line, " +
+      ".v2-passage-latin p.v2-reader-paragraph, " +
+      ".v2-passage-latin .v2-reader-line"
+    );
 
-    if (ok) {
-      this.resetDictScroll();
+    for (const block of targetBlocks) {
+      this.tokenizeElement(block);
     }
+
+    this.listen(passage, "keydown", (e: KeyboardEvent) => {
+      if (e.key === "Enter" || e.key === " ") {
+        if (
+          e.target instanceof HTMLElement &&
+          e.target.classList.contains("v2-lat-word")
+        ) {
+          e.preventDefault();
+          const word =
+            e.target.dataset.word || e.target.textContent?.trim() || "";
+          if (word) {
+            this.lookupWord(word, e.target, true);
+          }
+        }
+      }
+    });
+  }
+
+  private tokenizeElement(element: HTMLElement) {
+    const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
+    const textNodes: Text[] = [];
+    let current: Node | null = walker.nextNode();
+    while (current) {
+      if (
+        current instanceof Text &&
+        current.nodeValue &&
+        /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(current.nodeValue)
+      ) {
+        textNodes.push(current);
+      }
+      current = walker.nextNode();
+    }
+
+    const wordRegex = /([a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]+)/g;
+
+    for (const node of textNodes) {
+      const text = node.nodeValue || "";
+      const fragment = document.createDocumentFragment();
+      let lastIdx = 0;
+      let match: RegExpExecArray | null;
+
+      while ((match = wordRegex.exec(text)) !== null) {
+        const matchIdx = match.index;
+        const word = match[0];
+
+        if (matchIdx > lastIdx) {
+          fragment.appendChild(
+            document.createTextNode(text.slice(lastIdx, matchIdx))
+          );
+        }
+
+        const span = document.createElement("span");
+        span.className = "v2-lat-word";
+        span.setAttribute("role", "button");
+        span.setAttribute("tabindex", "0");
+        span.setAttribute("data-word", word);
+        span.textContent = word;
+        fragment.appendChild(span);
+
+        lastIdx = matchIdx + word.length;
+      }
+
+      if (lastIdx < text.length) {
+        fragment.appendChild(document.createTextNode(text.slice(lastIdx)));
+      }
+
+      node.parentNode?.replaceChild(fragment, node);
+    }
+  }
+
+  private findWordElement(word: string): HTMLElement | undefined {
+    const cleanWord = word.trim().toLowerCase();
+    const allWords = this.querySelectorAll<HTMLElement>(
+      ".v2-reader-text-panel .v2-lat-word"
+    );
+    for (const w of allWords) {
+      const val = (w.dataset.word || w.textContent || "").trim().toLowerCase();
+      if (val === cleanWord) {
+        return w;
+      }
+    }
+    return undefined;
   }
 
   private resetDictScroll() {
@@ -1031,7 +1049,7 @@ export class MorcusReaderView extends BaseElement {
 
       if (targetEl) {
         e.preventDefault();
-        targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        targetEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
         targetEl.classList.add("target-highlight");
         setTimeout(() => targetEl?.classList.remove("target-highlight"), 3000);
         this.showToast(`Jumped to § ${targetSecId}`);

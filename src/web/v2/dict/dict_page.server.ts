@@ -209,6 +209,7 @@ export interface DictPageOptions {
   query: string;
   results?: DictsFusedResponse;
   isIdSearch?: boolean;
+  embedded?: boolean;
 }
 
 /**
@@ -219,12 +220,14 @@ export function renderDictPageHtml(options: DictPageOptions): string {
   const resultsHtml = renderDictResultsHtml(options.query, options.results);
 
   const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
+  const isEmbedded = options.embedded ?? false;
 
   const contentHtml = `
     <morcus-dict-search>
       ${renderDictSearchBar({
         query: options.isIdSearch ? "" : options.query,
         action: "/v2/dicts",
+        extraHiddenInputs: isEmbedded ? { embedded: "1" } : undefined,
       })}
 
       <output id="dict-results" class="v2-results">
@@ -239,5 +242,6 @@ export function renderDictPageHtml(options: DictPageOptions): string {
       : "Morcus Dictionary (UI V2)",
     activePage: "dicts",
     contentHtml,
+    hideAppBar: isEmbedded,
   });
 }

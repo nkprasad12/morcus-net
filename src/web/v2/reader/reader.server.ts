@@ -1,25 +1,18 @@
 import { DictsFusedResponse } from "@/common/dictionaries/dictionaries";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import {
-  linkifyText,
-  renderDictResultsHtml,
-  renderDictSearchBar,
-} from "@/web/v2/dict/dict.server";
-import * as he from "he";
+  V2PreprocessedPage,
+  V2PreprocessedWork,
+} from "@/common/library/v2/v2_types";
+import {
+  getV2Work,
+  resolvePageInWork,
+} from "@/web/v2/reader/reader_loader.server";
 import {
   CitationId,
-  ReaderPage,
-  ReaderWork,
   citationToString,
-  getSectionLocalId,
-  getSectionPrefix,
-  parseCitationString,
 } from "@/web/v2/reader/reader_types";
-import {
-  READER_WORKS,
-  getAllReaderWorks,
-  getReaderWork,
-} from "@/web/v2/reader/reader_data";
+import * as he from "he";
 
 export interface ReaderPageOptions {
   workId?: string;
@@ -27,150 +20,78 @@ export interface ReaderPageOptions {
   query?: string;
   results?: DictsFusedResponse;
   view?: "single" | "parallel";
+  work?: V2PreprocessedWork;
 }
 
-export function renderReaderContentHtml(
+export async function renderReaderContentHtml(
   options: ReaderPageOptions = {}
-): string {
+): Promise<string> {
   const query = options.query?.trim() ?? "";
-  const results = options.results;
   const viewMode = options.view === "parallel" ? "parallel" : "single";
-  const work = getReaderWork(options.workId || "dbg");
+  const requestedId = options.workId || "caesar_de_bello_gallico";
 
-  // Determine active page
-  let activePageIndex = 0;
-  if (options.pageId) {
-    const pageTokens = Array.isArray(options.pageId)
-      ? options.pageId
-      : parseCitationString(options.pageId);
-    const foundIdx = work.pages.findIndex(
-      (p) =>
-        p.id.length === pageTokens.length &&
-        p.id.every((tok, i) => tok === pageTokens[i])
-    );
-    if (foundIdx !== -1) {
-      activePageIndex = foundIdx;
-    }
+  const work: V2PreprocessedWork | null =
+    options.work ||
+    (await getV2Work(requestedId)) ||
+    (await getV2Work("caesar_de_bello_gallico")) ||
+    (await getV2Work("phi0448.phi001.perseus-lat2"));
+
+  if (!work) {
+    throw new Error(`Classical work not found: ${requestedId}`);
   }
 
-  const activePage = work.pages[activePageIndex] || work.pages[0];
-  const pageDotId = citationToString(activePage.id);
+  // Resolve active page
+  const pageIdStr = options.pageId
+    ? Array.isArray(options.pageId)
+      ? citationToString(options.pageId)
+      : String(options.pageId)
+    : undefined;
+
+  const { page: activePage, index: activePageIndex } = resolvePageInWork(
+    work,
+    pageIdStr
+  );
+  const pageDotId = activePage.id;
   const prevPage = activePageIndex > 0 ? work.pages[activePageIndex - 1] : null;
   const nextPage =
     activePageIndex < work.pages.length - 1
       ? work.pages[activePageIndex + 1]
       : null;
 
-  const urlBuilder = (cleanWord: string) => {
-    const params = new URLSearchParams();
-    if (work.id !== "dbg") params.set("work", work.id);
-    if (pageDotId !== "1.1") params.set("id", pageDotId);
-    if (viewMode === "parallel") params.set("view", "parallel");
-    params.set("q", cleanWord);
-    return `/v2/reader?${params.toString()}`;
-  };
-
-  // Build Reading Sections HTML
-  const sectionsHtml = activePage.sections
-    .map((sec) => {
-      const dotId = citationToString(sec.id);
-      const localId = getSectionLocalId(sec.id, activePage.id);
-      const prefix = getSectionPrefix(sec.id, activePage.id);
-      const linkifiedLatin = linkifyText(sec.latin, urlBuilder, query);
-
-      const gutterHtml = `
-        <div class="v2-reader-gutter">
-          <a href="#sec-${dotId}"
-             class="v2-section-anchor"
-             title="Citation § ${dotId} (Click to copy permalink)"
-             aria-label="Section ${dotId}">
-            <span class="v2-cite-prefix">${he.encode(
-              prefix
-            )}</span><span class="v2-cite-local">${he.encode(localId)}</span>
-          </a>
-        </div>
-      `;
-
-      if (viewMode === "parallel" && sec.english) {
-        return `
-          <div class="v2-reader-section v2-section-parallel" id="sec-${dotId}">
-            ${gutterHtml}
-            <div class="v2-reader-parallel-content">
-              <div class="v2-reader-passage-col v2-passage-latin">
-                <p class="v2-reader-paragraph">${linkifiedLatin}</p>
-              </div>
-              <div class="v2-reader-passage-col v2-passage-english">
-                <span class="v2-reader-trans-author">${he.encode(
-                  (work.translator || "Translation").split("(")[0].trim()
-                )}:</span>
-                <p class="v2-reader-trans-text">${he.encode(sec.english)}</p>
-              </div>
-            </div>
-          </div>
-        `;
-      }
-
-      return `
-        <div class="v2-reader-section" id="sec-${dotId}">
-          ${gutterHtml}
-          <div class="v2-reader-passage">
-            <p class="v2-reader-paragraph">${linkifiedLatin}</p>
-          </div>
-        </div>
-      `;
-    })
-    .join("\n");
-
-  // Dictionary Output
-  const dictResultsHtml = query
-    ? renderDictResultsHtml(query, results)
-    : `
-      <div class="v2-reader-empty-state">
-        <p class="v2-reader-empty-title">Select a word to view definitions</p>
-        <p class="v2-reader-empty-desc">
-          Click or tap any word in the text on the left to inspect its lexical entries,
-          inflections, and translations.
-        </p>
-      </div>
-    `;
-
-  const layoutStateClass = query
-    ? "v2-reader-layout-active"
-    : "v2-reader-layout-empty";
-
-  // Navigation Links URLs
-  const makePageUrl = (page: ReaderPage | null) => {
+  // Build canonical URLs
+  const makePageUrl = (page: V2PreprocessedPage | null) => {
     if (!page) return "#";
     const params = new URLSearchParams();
-    if (work.id !== "dbg") params.set("work", work.id);
-    params.set("id", citationToString(page.id));
     if (viewMode === "parallel") params.set("view", "parallel");
     if (query) params.set("q", query);
-    return `/v2/reader?${params.toString()}`;
+    const qStr = params.toString() ? `?${params.toString()}` : "";
+    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${page.id}${qStr}`;
   };
 
   const singleViewUrl = (() => {
     const params = new URLSearchParams();
-    if (work.id !== "dbg") params.set("work", work.id);
-    if (pageDotId !== "1.1") params.set("id", pageDotId);
     if (query) params.set("q", query);
-    return `/v2/reader?${params.toString()}`;
+    const qStr = params.toString() ? `?${params.toString()}` : "";
+    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${activePage.id}${qStr}`;
   })();
 
   const parallelViewUrl = (() => {
     const params = new URLSearchParams();
-    if (work.id !== "dbg") params.set("work", work.id);
-    if (pageDotId !== "1.1") params.set("id", pageDotId);
     params.set("view", "parallel");
     if (query) params.set("q", query);
-    return `/v2/reader?${params.toString()}`;
+    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${activePage.id}?${params.toString()}`;
   })();
 
-  // TOC Entries
+  // Select passage HTML (single or parallel)
+  const passageHtml =
+    viewMode === "parallel" && activePage.parallelHtml
+      ? activePage.parallelHtml
+      : activePage.singleHtml;
+
+  // TOC entries
   const tocItemsHtml = work.pages
     .map((p, idx) => {
       const isCurrent = idx === activePageIndex;
-      const dot = citationToString(p.id);
       const pageUrl = makePageUrl(p);
       return `
         <a href="${pageUrl}"
@@ -179,23 +100,20 @@ export function renderReaderContentHtml(
           <div class="v2-reader-toc-item-text">
             <span class="v2-reader-toc-item-title">${he.encode(p.title)}</span>
           </div>
-          <span class="v2-reader-toc-item-id">§ ${he.encode(dot)}</span>
+          <span class="v2-reader-toc-item-id">§ ${he.encode(String(p.id))}</span>
         </a>
       `;
     })
     .join("\n");
 
-  const works = getAllReaderWorks();
-  const workOptionsHtml = works
-    .map(
-      (w) =>
-        `<option value="${w.id}" ${
-          w.id === work.id ? "selected" : ""
-        }>${he.encode(w.author.split(" ").slice(-1)[0])}: ${he.encode(
-          w.title
-        )} (${w.textParts.length} levels)</option>`
-    )
-    .join("\n");
+  // Dictionary iframe src
+  const dictIframeSrc = query
+    ? `/v2/dicts?q=${encodeURIComponent(query)}&embedded=1`
+    : `/v2/dicts?embedded=1`;
+
+  const layoutStateClass = query
+    ? "v2-reader-layout-active"
+    : "v2-reader-layout-empty";
 
   return `
     <morcus-reader-view class="v2-reader-view ${
@@ -203,7 +121,9 @@ export function renderReaderContentHtml(
     }"
       data-work="${work.id}"
       data-page="${pageDotId}"
-      data-view="${viewMode}">
+      data-view="${viewMode}"
+      data-author="${work.urlAuthor}"
+      data-name="${work.urlName}">
 
       <!-- Sticky Quick Navigation Bar (Essentials Default with Expandable Tools) -->
       <header class="v2-reader-sticky-bar" role="toolbar" aria-label="Reader Quick Navigation">
@@ -222,8 +142,7 @@ export function renderReaderContentHtml(
           </a>
 
           <!-- Center: Work/Chapter Title + Section Symbol (§) + Pre-populated Jump Input -->
-          <form action="/v2/reader" method="GET" class="v2-reader-sticky-form" id="v2-reader-jump-form">
-            <input type="hidden" name="work" value="${work.id}">
+          <form action="/v2/reader/${work.urlAuthor}/${work.urlName}" method="GET" class="v2-reader-sticky-form" id="v2-reader-jump-form">
             <input type="hidden" name="curr_page" value="${pageDotId}">
             ${
               viewMode === "parallel"
@@ -367,9 +286,9 @@ export function renderReaderContentHtml(
               )}</h1>
             </header>
 
-            <!-- Reader Passage Rows Container -->
+            <!-- Reader Passage Container -->
             <article class="v2-reader-passage" id="v2-reader-passage">
-              ${sectionsHtml}
+              ${passageHtml}
             </article>
 
             <!-- Bottom Paging Continuation Actions & Prototype Switcher -->
@@ -411,26 +330,9 @@ export function renderReaderContentHtml(
                   }
                 </span>
 
-                <!-- Prototype Text Switcher (Moved to bottom of page for evaluation) -->
-                <div class="v2-reader-prototype-switcher">
-                  <div class="v2-prototype-switcher-desc">
-                    <span class="v2-prototype-switcher-label">Prototype Text Switcher:</span>
-                    <span class="v2-prototype-switcher-sub">(Testing aid &mdash; long term accessed via Library)</span>
-                  </div>
-                  <form action="/v2/reader" method="GET" class="v2-reader-work-form">
-                    ${
-                      viewMode === "parallel"
-                        ? '<input type="hidden" name="view" value="parallel">'
-                        : ""
-                    }
-                    <select name="work"
-                            class="v2-reader-work-select"
-                            id="v2-reader-work-select"
-                            aria-label="Select prototype classical text"
-                            onchange="this.form.submit()">
-                      ${workOptionsHtml}
-                    </select>
-                  </form>
+                <!-- Return to Library Link -->
+                <div class="v2-reader-library-nav">
+                  <a href="/v2/library" class="v2-reader-library-link">&larr; Return to Library Catalog</a>
                 </div>
               </div>
             </footer>
@@ -480,23 +382,14 @@ export function renderReaderContentHtml(
             </div>
           </div>
 
-          <div class="v2-reader-dict-sticky">
-            <header class="v2-reader-dict-header">
-              ${renderDictSearchBar({
-                query,
-                action: "/v2/reader",
-                formClass: "v2-reader-search-form",
-                inputClass: "v2-reader-input",
-                placeholder: "Lookup word...",
-              })}
-            </header>
-
-            <!-- Stable content wrapper for robust, delta-free scroll alignment -->
-            <div class="v2-reader-dict-content">
-              <output id="v2-reader-dict-results" class="v2-reader-dict-output" aria-live="polite">
-                ${dictResultsHtml}
-              </output>
-            </div>
+          <!-- Dictionary Iframe Container -->
+          <div class="v2-dict-iframe-container">
+            <iframe id="v2-dict-frame"
+                    name="v2-dict-frame"
+                    src="${he.encode(dictIframeSrc, { useNamedReferences: true })}"
+                    class="v2-dict-iframe"
+                    title="Dictionary Search and Definitions"
+                    loading="lazy"></iframe>
           </div>
         </aside>
 
@@ -704,16 +597,31 @@ export function renderReaderContentHtml(
   `;
 }
 
-export function renderReaderPageHtml(options: ReaderPageOptions = {}): string {
+export async function renderReaderPageHtml(
+  options: ReaderPageOptions = {}
+): Promise<string> {
   const query = options.query?.trim() ?? "";
-  const work = getReaderWork(options.workId || "dbg");
+  const requestedId = options.workId || "caesar_de_bello_gallico";
+  const work =
+    options.work ||
+    (await getV2Work(requestedId)) ||
+    (await getV2Work("caesar_de_bello_gallico")) ||
+    (await getV2Work("phi0448.phi001.perseus-lat2"));
+
+  if (!work) {
+    throw new Error(`Classical work not found: ${requestedId}`);
+  }
+
   const title = query
     ? `${query} - Latin Reader - Morcus Latin Tools`
     : `${work.title} - Latin Reader - Morcus Latin Tools`;
 
+  const contentHtml = await renderReaderContentHtml({ ...options, work });
+
   return renderPageShell({
     title,
-    activePage: "reader",
-    contentHtml: renderReaderContentHtml(options),
+    activePage: "library",
+    isReader: true,
+    contentHtml,
   });
 }

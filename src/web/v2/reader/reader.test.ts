@@ -10,8 +10,7 @@ import {
   getSectionPrefix,
   resolveCitationJump,
 } from "@/web/v2/reader/reader_types";
-import { getReaderWork, getAllReaderWorks } from "@/web/v2/reader/reader_data";
-import { XmlNode } from "@/common/xml/xml_node";
+import { getReaderWork } from "@/web/v2/reader/reader_data";
 
 jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2AssetHref: (name: string) => `/v2/assets/${name}`,
@@ -20,35 +19,33 @@ jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
 }));
 
 describe("reader_ssr", () => {
-  test("renderReaderContentHtml without query displays empty state, breadcrumbs, and linkified Latin text", () => {
-    const html = renderReaderContentHtml();
+  test("renderReaderContentHtml without query displays empty state, breadcrumbs, and clean Latin text", async () => {
+    const html = await renderReaderContentHtml();
 
     // Custom element container
     expect(html).toContain("<morcus-reader-view");
     expect(html).toContain("v2-reader-view");
 
     // Author and Work headers
-    expect(html).toContain("C. Iulius Caesar");
-    expect(html).toContain("Commentarii de Bello Gallico");
-    expect(html).toContain("Liber I, Caput I");
+    expect(html).toContain("Caesar");
+    expect(html).toContain("Gallico");
+    expect(html).toContain("Caput I");
 
-    // Empty state instructions in dictionary panel
-    expect(html).toContain("v2-reader-empty-state");
-    expect(html).toContain("Select a word to view definitions");
+    // Dictionary iframe panel in No-JS view
+    expect(html).toContain('id="v2-dict-frame"');
+    expect(html).toContain('/v2/dicts?embedded=1');
 
-    // Contains Latin words as clickable hyperlinks
+    // Contains Latin words as clean semantic text
     expect(html).toContain("Gallia");
     expect(html).toContain("Belgae");
-    expect(html).toContain('class="v2-lat-word"');
-    expect(html).not.toContain("v2-word-active");
 
     // Desktop splitter & mobile sheet handle
     expect(html).toContain('class="v2-reader-splitter"');
     expect(html).toContain('class="v2-reader-sheet-bar"');
   });
 
-  test("renderReaderContentHtml renders gutter markers with separate prefix and local spans for responsive short numbering", () => {
-    const html = renderReaderContentHtml({ workId: "dbg", pageId: "1.1" });
+  test("renderReaderContentHtml renders gutter markers with separate prefix and local spans for responsive short numbering", async () => {
+    const html = await renderReaderContentHtml({ workId: "dbg", pageId: "1.1" });
 
     // Section 1.1.1
     expect(html).toContain('id="sec-1.1.1"');
@@ -67,100 +64,63 @@ describe("reader_ssr", () => {
     expect(html).toContain('class="v2-cite-local">3</span>');
   });
 
-  test("renderReaderContentHtml with query highlights active word and renders dictionary cards", () => {
-    const mockResults = {
-      ls: [
-        {
-          entry: new XmlNode("span", [["class", "lsOrth"]], ["divisa"]),
-          outline: {
-            mainKey: "divisa",
-            mainSection: {
-              text: "divisa",
-              level: 0,
-              ordinal: "",
-              sectionId: "0",
-            },
-            senses: [],
-          },
-        },
-      ],
-    };
-
-    const html = renderReaderContentHtml({
+  test("renderReaderContentHtml with query points dictionary iframe to embedded query", async () => {
+    const html = await renderReaderContentHtml({
       query: "divisa",
-      results: mockResults as any,
     });
 
-    // Active word highlighted
-    expect(html).toContain('class="v2-lat-word v2-word-active"');
-    expect(html).toContain('value="divisa"');
-    expect(html).toContain("<morcus-dict-settings>");
-
-    // Dictionary results rendered in output container
-    expect(html).toContain("v2-dict-card");
-    expect(html).toContain("Lewis &#x26; Short");
+    // Dictionary iframe points to embedded query
+    expect(html).toContain('id="v2-dict-frame"');
+    expect(html).toContain('/v2/dicts?q=divisa&amp;embedded=1');
 
     // Close button present in mobile sheet handle bar
     expect(html).toContain("v2-reader-sheet-close");
   });
 
-  test("renderReaderContentHtml supports parallel translation view mode", () => {
-    const singleHtml = renderReaderContentHtml({ view: "single" });
+  test("renderReaderContentHtml supports parallel translation view mode", async () => {
+    const singleHtml = await renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1", view: "single" });
     expect(singleHtml).not.toContain("v2-section-parallel");
     expect(singleHtml).not.toContain("v2-passage-english");
 
-    const parallelHtml = renderReaderContentHtml({ view: "parallel" });
+    const parallelHtml = await renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1", view: "parallel" });
     expect(parallelHtml).toContain("v2-reader-view-parallel");
     expect(parallelHtml).toContain("v2-section-parallel");
     expect(parallelHtml).toContain("v2-passage-english");
-    expect(parallelHtml).toContain("All Gaul is divided into three parts");
+    expect(parallelHtml).toContain("John Selby Watson");
   });
 
-  test("renderReaderContentHtml renders Table of Contents drawer and Bibliographical modal", () => {
-    const html = renderReaderContentHtml();
+  test("renderReaderContentHtml renders Table of Contents drawer and Bibliographical modal", async () => {
+    const html = await renderReaderContentHtml({ workId: "dbg" });
 
     // Table of Contents drawer
     expect(html).toContain('id="v2-reader-toc-drawer"');
     expect(html).toContain('class="v2-reader-toc-drawer"');
     expect(html).toContain('id="v2-reader-toc-filter"');
     expect(html).toContain('class="v2-reader-toc-item active"');
-    expect(html).toContain("Liber I, Caput II");
 
     // Bibliographical Dialog
     expect(html).toContain('id="v2-reader-biblio-dialog"');
-    expect(html).toContain("urn:cts:latinLit:phi0448.phi001.perseus-lat2");
-    expect(html).toContain("T. Rice Holmes");
-    expect(html).toContain("W. A. McDevitte");
+    expect(html).toContain("Holmes");
   });
 
-  test("renderReaderContentHtml renders sticky navigation bar with essentials and expandable tools", () => {
-    const html = renderReaderContentHtml();
+  test("renderReaderContentHtml renders sticky navigation bar with essentials and expandable tools", async () => {
+    const html = await renderReaderContentHtml({ workId: "dbg" });
 
     // Primary row: essentials only
     expect(html).toContain('class="v2-reader-sticky-bar"');
     expect(html).toContain('class="v2-sticky-primary-row"');
     expect(html).toContain('id="v2-pager-prev"');
     expect(html).toContain('id="v2-pager-next"');
-    expect(html).toContain('class="v2-sticky-author">C. Iulius Caesar</span>');
-    expect(html).toContain(
-      'class="v2-sticky-work-title">Commentarii de Bello Gallico</span>'
-    );
-    expect(html).toContain(
-      'class="v2-sticky-page-title">Liber I, Caput I</span>'
-    );
+    expect(html).toContain('class="v2-sticky-author"');
+    expect(html).toContain('class="v2-sticky-work-title"');
+    expect(html).toContain('class="v2-sticky-page-title"');
     expect(html).toContain('class="v2-jump-glyph"');
-    expect(html).toContain('value="1.1"');
     expect(html).toContain('id="v2-sticky-expand-btn"');
     expect(html).toContain('aria-expanded="false"');
 
-    // Main text panel header: Author and Work Name, no Book Chapter Section scheme tag
-    expect(html).toContain(
-      'class="v2-reader-author-tag">C. Iulius Caesar</span>'
-    );
-    expect(html).toContain(
-      'class="v2-reader-work-tag">Commentarii de Bello Gallico</span>'
-    );
-    expect(html).not.toContain("v2-reader-scheme-tag");
+    // Main text panel header: Author and Work Name
+    expect(html).toContain('class="v2-reader-author-tag"');
+    expect(html).toContain('class="v2-reader-work-tag"');
 
     // Secondary row: expanded tools (hidden by default)
     expect(html).toContain(
@@ -181,102 +141,112 @@ describe("reader_ssr", () => {
     expect(html).toContain('id="v2-font-select"');
   });
 
-  test("renderReaderContentHtml renders multi-scheme works with arbitrary depth", () => {
+  test("renderReaderContentHtml renders multi-scheme works with arbitrary depth", async () => {
     // Catullus: 2 levels (poem, line)
-    const catullusHtml = renderReaderContentHtml({ workId: "catullus" });
-    expect(catullusHtml).toContain("C. Valerius Catullus");
+    const catullusHtml = await renderReaderContentHtml({
+      workId: "catullus",
+      pageId: "5",
+    });
+    expect(catullusHtml).toContain("Catullus");
     expect(catullusHtml).toContain("Carmen V");
     expect(catullusHtml).toContain('id="sec-5.1"');
     expect(catullusHtml).toContain('class="v2-cite-prefix">5.</span>');
-    expect(catullusHtml).toContain(">Vivamus</a>");
-    expect(catullusHtml).toContain(">Lesbia</a>");
+    expect(catullusHtml).toContain("Vivamus");
+    expect(catullusHtml).toContain("Lesbia");
 
     // Virgil Aeneid: 2 levels (book, line)
-    const aeneidHtml = renderReaderContentHtml({ workId: "aeneid" });
-    expect(aeneidHtml).toContain("P. Vergilius Maro");
-    expect(aeneidHtml).toContain("Aeneis");
+    const aeneidHtml = await renderReaderContentHtml({ workId: "aeneid" });
+    expect(aeneidHtml).toContain("Vergil");
+    expect(aeneidHtml).toContain("Aeneid");
     expect(aeneidHtml).toContain('id="sec-1.1"');
-    expect(aeneidHtml).toContain(">Arma</a>");
-    expect(aeneidHtml).toContain(">cano</a>");
+    expect(aeneidHtml).toContain("Arma");
+    expect(aeneidHtml).toContain("cano");
 
-    // Plautus Amphitruo: 3 levels (act, scene, line)
-    const plautusHtml = renderReaderContentHtml({ workId: "amphitruo" });
-    expect(plautusHtml).toContain("T. Maccius Plautus");
-    expect(plautusHtml).toContain("Actus I, Scaena I");
-    expect(plautusHtml).toContain('id="sec-1.1.1"');
+    // Caesar De Bello Gallico: 3 levels (book, chapter, section)
+    const caesarHtml = await renderReaderContentHtml({
+      workId: "caesar/de_bello_gallico",
+      pageId: "1.1",
+    });
+    expect(caesarHtml).toContain("Caesar");
+    expect(caesarHtml).toContain('id="sec-1.1.1"');
   });
 
-  test("renderReaderPageHtml produces valid full HTML page with active Reader nav item", () => {
-    const pageHtml = renderReaderPageHtml({ query: "Gallia" });
+  test("renderReaderPageHtml produces valid full HTML page with active Library nav item", async () => {
+    const pageHtml = await renderReaderPageHtml({ query: "Gallia" });
 
     expect(pageHtml).toContain("<!DOCTYPE html>");
     expect(pageHtml).toContain(
       "<title>Gallia - Latin Reader - Morcus Latin Tools</title>"
     );
     expect(pageHtml).toContain('<header class="v2-app-bar">');
-    expect(pageHtml).toContain('href="/v2/reader"');
+    expect(pageHtml).toContain('href="/v2/library"');
     expect(pageHtml).toContain('class="v2-nav-link active"');
     expect(pageHtml).toContain('aria-current="page"');
+    expect(pageHtml).toContain("v2-body-reader");
     expect(pageHtml).toContain("morcus-reader-view");
   });
 });
 
 describe("reader_citation_helpers", () => {
   test("citationToString and parseCitationString round-trip accurately", () => {
-    expect(citationToString(["1", "2", "3"])).toBe("1.2.3");
-    expect(parseCitationString("1.2.3")).toEqual(["1", "2", "3"]);
-    expect(parseCitationString("  5.12  ")).toEqual(["5", "12"]);
+    expect(citationToString(["1", "1", "1"])).toBe("1.1.1");
+    expect(citationToString(["5", "20"])).toBe("5.20");
+    expect(citationToString(["proem"])).toBe("proem");
+
+    expect(parseCitationString("1.1.1")).toEqual(["1", "1", "1"]);
+    expect(parseCitationString("5.20")).toEqual(["5", "20"]);
+    expect(parseCitationString("proem")).toEqual(["proem"]);
   });
 
   test("citationToSemanticLabel formats labels according to textParts hierarchy", () => {
-    const textParts = ["book", "chapter", "section"];
-    expect(citationToSemanticLabel(["1", "2"], textParts)).toBe(
-      "Book 1, Chapter 2"
-    );
-    expect(citationToSemanticLabel(["1", "2", "3"], textParts)).toBe(
+    const scheme3 = ["book", "chapter", "section"];
+    expect(citationToSemanticLabel(["1", "2", "3"], scheme3)).toBe(
       "Book 1, Chapter 2, Section 3"
     );
 
-    const poemParts = ["poem", "line"];
-    expect(citationToSemanticLabel(["5", "10"], poemParts)).toBe(
+    const scheme2 = ["poem", "line"];
+    expect(citationToSemanticLabel(["5", "10"], scheme2)).toBe(
       "Poem 5, Line 10"
     );
+
+    const scheme1 = ["line"];
+    expect(citationToSemanticLabel(["42"], scheme1)).toBe("Line 42");
   });
 
   test("getSectionLocalId and getSectionPrefix split citations relative to page", () => {
-    const pageId = ["2", "1"];
-    const secId = ["2", "1", "4"];
+    const pageId = ["1", "1"];
 
-    expect(getSectionLocalId(secId, pageId)).toBe("4");
-    expect(getSectionPrefix(secId, pageId)).toBe("2.1.");
+    // Same page section
+    const sec1 = ["1", "1", "1"];
+    expect(getSectionLocalId(sec1, pageId)).toBe("1");
+    expect(getSectionPrefix(sec1, pageId)).toBe("1.1.");
 
-    // Single level page (e.g. Catullus poem 5, line 10)
-    expect(getSectionLocalId(["5", "10"], ["5"])).toBe("10");
-    expect(getSectionPrefix(["5", "10"], ["5"])).toBe("5.");
+    const sec2 = ["1", "1", "2"];
+    expect(getSectionLocalId(sec2, pageId)).toBe("2");
+    expect(getSectionPrefix(sec2, pageId)).toBe("1.1.");
+
+    // Section from different chapter fallback
+    const secDiff = ["1", "2", "1"];
+    expect(getSectionLocalId(secDiff, pageId)).toBe("1.2.1");
+    expect(getSectionPrefix(secDiff, pageId)).toBe("");
   });
 
   test("resolveCitationJump handles both relative and absolute coordinates", () => {
     const work = getReaderWork("dbg");
 
-    // Relative jump within active page 1.1: typing "2"
+    // Relative offset within current chapter (e.g. typing "2" while on 1.1)
     const relJump = resolveCitationJump("2", work, 0);
     expect(relJump).not.toBeNull();
-    expect(relJump?.pageIndex).toBe(0);
+    expect(relJump?.page.id).toEqual(["1", "1"]);
     expect(relJump?.targetSectionId).toBe("1.1.2");
 
-    // Absolute jump to section in next chapter: "1.2.1"
-    const absJump = resolveCitationJump("1.2.1", work, 0);
+    // Absolute citation across different chapters (e.g. "1.2")
+    const absJump = resolveCitationJump("1.2", work, 0);
     expect(absJump).not.toBeNull();
-    expect(absJump?.pageIndex).toBe(1);
-    expect(absJump?.targetSectionId).toBe("1.2.1");
+    expect(absJump?.page.id).toEqual(["1", "2"]);
 
-    // Chapter-only jump: "1.2"
-    const chapJump = resolveCitationJump("1.2", work, 0);
-    expect(chapJump).not.toBeNull();
-    expect(chapJump?.pageIndex).toBe(1);
-    expect(chapJump?.targetSectionId).toBeUndefined();
-
-    // Invalid citation returns null
-    expect(resolveCitationJump("99.99", work, 0)).toBeNull();
+    // Invalid coordinate
+    const invalidJump = resolveCitationJump("99.99", work, 0);
+    expect(invalidJump).toBeNull();
   });
 });

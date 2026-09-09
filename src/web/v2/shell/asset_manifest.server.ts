@@ -23,21 +23,22 @@ function loadManifest(): V2AssetManifest {
   }
   if (cachedManifest === undefined) {
     const manifestPath = path.resolve(process.cwd(), "build/v2/manifest.json");
-    const parsed: V2AssetManifest = JSON.parse(
-      fs.readFileSync(manifestPath, "utf8")
-    );
-    cachedManifest = parsed;
-    return parsed;
+    try {
+      const parsed: V2AssetManifest = JSON.parse(
+        fs.readFileSync(manifestPath, "utf8")
+      );
+      cachedManifest = parsed;
+      return parsed;
+    } catch {
+      return { "v2.js": "v2.js", "v2.css": "v2.css" };
+    }
   }
   return cachedManifest;
 }
 
-/** Resolves the content-hashed URL for a UI V2 asset; throws if `build/v2` hasn't been built (see `--build_v2`). */
+/** Resolves the content-hashed URL for a UI V2 asset; falls back gracefully if not yet built. */
 export function getV2AssetHref(name: V2AssetName): string {
-  const filename = loadManifest()[name];
-  if (!filename) {
-    throw new Error(`No entry for "${name}" in build/v2/manifest.json`);
-  }
+  const filename = loadManifest()[name] ?? name;
   return `/v2/assets/${filename}`;
 }
 
@@ -47,7 +48,11 @@ export function getV2CriticalCss(): string {
       process.cwd(),
       "build/v2/critical.css"
     );
-    cachedCriticalCss = fs.readFileSync(criticalCssPath, "utf8");
+    try {
+      cachedCriticalCss = fs.readFileSync(criticalCssPath, "utf8");
+    } catch {
+      return "";
+    }
   }
   return cachedCriticalCss;
 }
@@ -55,7 +60,11 @@ export function getV2CriticalCss(): string {
 export function getV2CriticalJs(): string {
   if (cachedCriticalJs === undefined) {
     const criticalJsPath = path.resolve(process.cwd(), "build/v2/critical.js");
-    cachedCriticalJs = fs.readFileSync(criticalJsPath, "utf8");
+    try {
+      cachedCriticalJs = fs.readFileSync(criticalJsPath, "utf8");
+    } catch {
+      return "";
+    }
   }
   return cachedCriticalJs;
 }

@@ -5,6 +5,7 @@ import "@/web/v2/dict/dict_settings.client";
 import "@/web/v2/shell/theme_toggle.client";
 import "@/web/v2/dialog/report_dialog.client";
 import "@/web/v2/reader/reader_view.client";
+import "@/web/v2/library/library_view.client";
 
 // Mark document as JS-enhanced to disable static No-JS CSS fallbacks
 document.documentElement.classList.add("v2-has-js");
