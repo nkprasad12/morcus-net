@@ -1,3 +1,12 @@
+import {
+  BaseElement,
+  fetchAndSwapPartial,
+  LatestTask,
+  type QueryParamSync,
+  registerElement,
+  trackPointerDrag,
+} from "@/web/v2/core/index.client";
+
 /**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
  *
@@ -12,63 +21,61 @@
  * - Swaps the dictionary panel contents instantaneously with replaceChildren(fragment).
  * - Synchronizes the active word visual indicator, browser URL bar, and history state.
  */
-export class MorcusReaderView extends HTMLElement {
+export class MorcusReaderView extends BaseElement {
   private resultsElement: HTMLElement | null = null;
   private currentQuery: string = "";
-  private abortController: AbortController | null = null;
-  private desktopCleanups: (() => void)[] = [];
-  private mobileCleanups: (() => void)[] = [];
-  private generalCleanups: (() => void)[] = [];
+  private readonly task = new LatestTask();
   private preferredDrawerDvh: number = 48;
+  private router: QueryParamSync | null = null;
 
-  connectedCallback() {
-    this.resultsElement = this.querySelector<HTMLElement>(
-      "#v2-reader-dict-results"
-    );
+  protected override onConnect() {
+    this.resultsElement = this.$<HTMLElement>("#v2-reader-dict-results");
 
-    const initialParams = new URLSearchParams(window.location.search);
-    this.currentQuery = initialParams.get("q") ?? "";
+    this.router = this.syncQueryParam("q", {
+      onChange: (q) => {
+        if (!q) {
+          this.closeDictionary(false);
+          return;
+        }
+        this.lookupWord(q, this.findAnchorForWord(q), false);
+      },
+      title: (q) =>
+        q
+          ? `${q} - Latin Reader - Morcus Latin Tools`
+          : "Latin Reader - Morcus Latin Tools",
+    });
 
-    this.addEventListener("click", this.handleClick);
-    window.addEventListener("popstate", this.handlePopState);
+    this.currentQuery = this.router.get();
 
-    const form = this.querySelector<HTMLFormElement>(".v2-reader-search-form");
-    form?.addEventListener("submit", this.handleSearchSubmit);
+    this.listen(this, "click", this.handleClick);
+
+    this.hijackForm(".v2-reader-search-form", ({ q }) => {
+      if (q) {
+        this.lookupWord(q, undefined, true);
+      }
+    });
 
     this.initDesktopSplitter();
     this.initMobileDrawer();
     this.initBackToTop();
   }
 
-  disconnectedCallback() {
-    this.removeEventListener("click", this.handleClick);
-    window.removeEventListener("popstate", this.handlePopState);
-
-    const form = this.querySelector<HTMLFormElement>(".v2-reader-search-form");
-    form?.removeEventListener("submit", this.handleSearchSubmit);
-
-    this.generalCleanups.forEach((fn) => fn());
-    this.generalCleanups = [];
-
-    this.desktopCleanups.forEach((fn) => fn());
-    this.desktopCleanups = [];
-
-    this.mobileCleanups.forEach((fn) => fn());
-    this.mobileCleanups = [];
-
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
-    }
+  protected override onDisconnect() {
+    this.task.cancel();
   }
 
-  private readonly handleSearchSubmit = (e: SubmitEvent) => {
-    e.preventDefault();
-    const input = this.querySelector<HTMLInputElement>(".v2-reader-input");
-    const query = input?.value.trim() || "";
-    if (!query) return;
-    this.lookupWord(query, undefined, true);
-  };
+  private findAnchorForWord(word: string): HTMLElement | undefined {
+    const allAnchors = this.$$<HTMLAnchorElement>(
+      ".v2-reader-text-panel a.v2-lat-word"
+    );
+    for (const a of allAnchors) {
+      const aHref = a.getAttribute("href") || "";
+      if (aHref.includes(`q=${encodeURIComponent(word)}`)) {
+        return a;
+      }
+    }
+    return undefined;
+  }
 
   private readonly handleClick = (e: MouseEvent) => {
     if (!(e.target instanceof Element)) return;
@@ -99,31 +106,6 @@ export class MorcusReaderView extends HTMLElement {
     const isTextPanel = Boolean(textPanel && textPanel.contains(wordAnchor));
 
     this.lookupWord(word, isTextPanel ? wordAnchor : undefined, true);
-  };
-
-  private readonly handlePopState = () => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const q = urlParams.get("q") ?? "";
-    if (q === this.currentQuery) return;
-
-    if (!q) {
-      this.closeDictionary(false);
-      return;
-    }
-
-    this.currentQuery = q;
-    let matchingAnchor: HTMLElement | undefined;
-    const allAnchors = this.querySelectorAll<HTMLAnchorElement>(
-      ".v2-reader-text-panel a.v2-lat-word"
-    );
-    for (const a of allAnchors) {
-      const aHref = a.getAttribute("href") || "";
-      if (aHref.includes(`q=${encodeURIComponent(q)}`)) {
-        matchingAnchor = a;
-        break;
-      }
-    }
-    this.lookupWord(q, matchingAnchor, false);
   };
 
   private closeDictionary(updateHistory: boolean = true) {
@@ -179,10 +161,7 @@ export class MorcusReaderView extends HTMLElement {
 
   private dismissDictionary(updateHistory: boolean = true) {
     this.currentQuery = "";
-    if (this.abortController) {
-      this.abortController.abort();
-      this.abortController = null;
-    }
+    this.task.cancel();
 
     // Remove active highlights
     const allWords = this.querySelectorAll<HTMLAnchorElement>(
@@ -246,8 +225,7 @@ export class MorcusReaderView extends HTMLElement {
     }
 
     if (updateHistory) {
-      window.history.pushState({}, "", "/v2/reader");
-      document.title = "Latin Reader - Morcus Latin Tools";
+      this.router?.replace("");
     }
   }
 
@@ -353,62 +331,21 @@ export class MorcusReaderView extends HTMLElement {
 
     // Synchronize browser history and page title
     if (updateHistory) {
-      const newUrl = `/v2/reader?q=${encodeURIComponent(word)}`;
-      window.history.pushState({ q: word }, "", newUrl);
-      document.title = `${word} - Latin Reader - Morcus Latin Tools`;
+      this.router?.push(word);
     }
 
     if (!this.resultsElement) return;
 
-    // Cancel in-flight requests
-    if (this.abortController) {
-      this.abortController.abort();
-    }
-    const controller = new AbortController();
-    this.abortController = controller;
+    const signal = this.task.start();
+    const url = `/v2/dicts?q=${encodeURIComponent(word)}&format=partial`;
+    const ok = await fetchAndSwapPartial(this.resultsElement, url, {
+      signal,
+      loadingOpacity: 0.45,
+      errorMessage: `Error loading dictionary entry for "${word}".`,
+    });
 
-    this.resultsElement.style.opacity = "0.45";
-
-    try {
-      const url = `/v2/dicts?q=${encodeURIComponent(word)}&format=partial`;
-      const res = await fetch(url, {
-        headers: { "X-Requested-With": "fetch" },
-        signal: controller.signal,
-      });
-
-      if (res.ok) {
-        const partialHtml = await res.text();
-        const range = document.createRange();
-        range.selectNodeContents(this.resultsElement);
-        const fragment = range.createContextualFragment(partialHtml);
-        this.resultsElement.replaceChildren(fragment);
-
-        this.resetDictScroll();
-      } else {
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "v2-no-results";
-        const p = document.createElement("p");
-        p.textContent = `Error loading dictionary entry for "${word}".`;
-        errorDiv.appendChild(p);
-        this.resultsElement.replaceChildren(errorDiv);
-      }
-    } catch (e: unknown) {
-      if (e instanceof Error && e.name !== "AbortError") {
-        console.error("Failed to load reader dictionary entry:", e);
-        const errorDiv = document.createElement("div");
-        errorDiv.className = "v2-no-results";
-        const p = document.createElement("p");
-        p.textContent = "Network error loading dictionary results.";
-        errorDiv.appendChild(p);
-        this.resultsElement?.replaceChildren(errorDiv);
-      }
-    } finally {
-      if (this.resultsElement) {
-        this.resultsElement.style.opacity = "1";
-      }
-      if (this.abortController === controller) {
-        this.abortController = null;
-      }
+    if (ok) {
+      this.resetDictScroll();
     }
   }
 
@@ -459,52 +396,44 @@ export class MorcusReaderView extends HTMLElement {
       // localStorage may be disabled
     }
 
-    let isDragging = false;
-    let startX = 0;
     let startWidth = 0;
 
-    const onPointerDown = (e: PointerEvent) => {
-      if (e.button !== 0) return; // Only primary mouse button / touch
-      isDragging = true;
-      startX = e.clientX;
-      startWidth = dictPanel.getBoundingClientRect().width;
-
-      splitter.setPointerCapture(e.pointerId);
-      splitter.classList.add("v2-is-resizing");
-      document.body.classList.add("v2-resizing-panels");
-    };
-
-    const onPointerMove = (e: PointerEvent) => {
-      if (!isDragging) return;
-      const dx = startX - e.clientX;
-      const containerWidth = splitLayout.getBoundingClientRect().width;
-      const minWidth = 300;
-      const maxWidth = Math.max(minWidth, Math.min(800, containerWidth - 320));
-      const newWidth = Math.round(
-        Math.max(minWidth, Math.min(maxWidth, startWidth + dx))
-      );
-
-      splitLayout.style.setProperty("--v2-dict-width", `${newWidth}px`);
-      splitter.setAttribute("aria-valuenow", String(newWidth));
-    };
-
-    const onPointerUp = (e: PointerEvent) => {
-      if (!isDragging) return;
-      isDragging = false;
-      splitter.releasePointerCapture(e.pointerId);
-      splitter.classList.remove("v2-is-resizing");
-      document.body.classList.remove("v2-resizing-panels");
-
-      const finalWidth = parseInt(
-        splitter.getAttribute("aria-valuenow") || "420",
-        10
-      );
-      try {
-        localStorage.setItem("morcus_v2_reader_dict_width", String(finalWidth));
-      } catch {
-        // ignore
-      }
-    };
+    this.addDisposable(
+      trackPointerDrag(splitter, {
+        handleActiveClass: "v2-is-resizing",
+        bodyActiveClass: "v2-resizing-panels",
+        onStart: () => {
+          startWidth = dictPanel.getBoundingClientRect().width;
+        },
+        onMove: ({ dx }) => {
+          const containerWidth = splitLayout.getBoundingClientRect().width;
+          const minWidth = 300;
+          const maxWidth = Math.max(
+            minWidth,
+            Math.min(800, containerWidth - 320)
+          );
+          const newWidth = Math.round(
+            Math.max(minWidth, Math.min(maxWidth, startWidth - dx))
+          );
+          splitLayout.style.setProperty("--v2-dict-width", `${newWidth}px`);
+          splitter.setAttribute("aria-valuenow", String(newWidth));
+        },
+        onEnd: () => {
+          const finalWidth = parseInt(
+            splitter.getAttribute("aria-valuenow") || "420",
+            10
+          );
+          try {
+            localStorage.setItem(
+              "morcus_v2_reader_dict_width",
+              String(finalWidth)
+            );
+          } catch {
+            // ignore
+          }
+        },
+      })
+    );
 
     const onDblClick = () => {
       splitLayout.style.removeProperty("--v2-dict-width");
@@ -554,121 +483,89 @@ export class MorcusReaderView extends HTMLElement {
       }
     };
 
-    splitter.addEventListener("pointerdown", onPointerDown);
-    splitter.addEventListener("pointermove", onPointerMove);
-    splitter.addEventListener("pointerup", onPointerUp);
-    splitter.addEventListener("pointercancel", onPointerUp);
-    splitter.addEventListener("dblclick", onDblClick);
-    splitter.addEventListener("keydown", onKeyDown);
-
-    this.desktopCleanups.push(() => {
-      splitter.removeEventListener("pointerdown", onPointerDown);
-      splitter.removeEventListener("pointermove", onPointerMove);
-      splitter.removeEventListener("pointerup", onPointerUp);
-      splitter.removeEventListener("pointercancel", onPointerUp);
-      splitter.removeEventListener("dblclick", onDblClick);
-      splitter.removeEventListener("keydown", onKeyDown);
-    });
+    this.listen(splitter, "dblclick", onDblClick);
+    this.listen(splitter, "keydown", onKeyDown);
   }
 
   // --- Mobile Bottom Drawer Resizer ---
   private initMobileDrawer() {
     const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
     const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
-    if (!sheetBar || !dictPanel) return;
-
-    let isDragging = false;
-    let wasMinimized = false;
-    let startY = 0;
-    let startHeight = 0;
-    let startTime = 0;
-
-    const onPointerDown = (e: PointerEvent) => {
-      if (e.button !== 0) return;
-      if (
-        e.target instanceof Element &&
-        e.target.closest("a.v2-reader-sheet-close")
-      ) {
-        return; // Don't drag when tapping close button
-      }
-      isDragging = true;
-      wasMinimized = dictPanel.classList.contains("v2-drawer-minimized");
-      startY = e.clientY;
-      startHeight = dictPanel.getBoundingClientRect().height;
-      startTime = performance.now();
-
-      sheetBar.setPointerCapture(e.pointerId);
-      sheetBar.classList.add("v2-is-dragging");
-      dictPanel.classList.add("v2-is-dragging");
-      document.body.classList.add("v2-resizing-drawer");
-
-      if (wasMinimized) {
-        dictPanel.classList.remove("v2-drawer-minimized");
-      }
-    };
-
     const splitLayout = this.querySelector<HTMLElement>(
       ".v2-reader-split-layout"
     );
+    if (!sheetBar || !dictPanel) return;
 
-    const onPointerMove = (e: PointerEvent) => {
-      if (!isDragging) return;
-      const dy = startY - e.clientY; // Upward drag increases drawer height
-      const minHeight = 54;
-      const maxHeight = Math.round(window.innerHeight * 0.88);
-      const newHeight = Math.max(
-        minHeight,
-        Math.min(maxHeight, startHeight + dy)
-      );
+    let wasMinimized = false;
+    let startHeight = 0;
 
-      dictPanel.style.setProperty("--v2-drawer-height", `${newHeight}px`);
-      splitLayout?.style.setProperty("--v2-drawer-height", `${newHeight}px`);
-      const percent = Math.round((newHeight / window.innerHeight) * 100);
-      sheetBar.setAttribute("aria-valuenow", String(percent));
-    };
+    this.addDisposable(
+      trackPointerDrag(sheetBar, {
+        handleActiveClass: "v2-is-dragging",
+        bodyActiveClass: "v2-resizing-drawer",
+        filter: (e) => {
+          if (
+            e.target instanceof Element &&
+            e.target.closest("a.v2-reader-sheet-close")
+          ) {
+            return false;
+          }
+          return true;
+        },
+        onStart: () => {
+          wasMinimized = dictPanel.classList.contains("v2-drawer-minimized");
+          startHeight = dictPanel.getBoundingClientRect().height;
+          if (wasMinimized) {
+            dictPanel.classList.remove("v2-drawer-minimized");
+          }
+        },
+        onMove: ({ dy }) => {
+          const minHeight = 54;
+          const maxHeight = Math.round(window.innerHeight * 0.88);
+          const newHeight = Math.max(
+            minHeight,
+            Math.min(maxHeight, startHeight - dy)
+          );
+          dictPanel.style.setProperty("--v2-drawer-height", `${newHeight}px`);
+          splitLayout?.style.setProperty(
+            "--v2-drawer-height",
+            `${newHeight}px`
+          );
+          const percent = Math.round((newHeight / window.innerHeight) * 100);
+          sheetBar.setAttribute("aria-valuenow", String(percent));
+        },
+        onEnd: ({ dy, elapsedMs, velocityY }) => {
+          const currentHeight = dictPanel.getBoundingClientRect().height;
+          const currentDvh = Math.round(
+            (currentHeight / window.innerHeight) * 100
+          );
 
-    const onPointerUp = (e: PointerEvent) => {
-      if (!isDragging) return;
-      isDragging = false;
-      sheetBar.releasePointerCapture(e.pointerId);
-      sheetBar.classList.remove("v2-is-dragging");
-      dictPanel.classList.remove("v2-is-dragging");
-      document.body.classList.remove("v2-resizing-drawer");
+          // Handle simple tap (minimal movement)
+          if (Math.abs(dy) < 6 && elapsedMs < 350) {
+            if (wasMinimized) {
+              this.restoreDrawer();
+            }
+            return;
+          }
 
-      const totalDy = e.clientY - startY; // Positive = dragged down, Negative = dragged up
-      const elapsed = Math.max(1, performance.now() - startTime);
-      const velocityPxPerMs = totalDy / elapsed; // px/ms
-      const currentHeight = dictPanel.getBoundingClientRect().height;
-      const currentDvh = Math.round((currentHeight / window.innerHeight) * 100);
+          // Fast flick down detection:
+          const vhPerSec = (dy / window.innerHeight) * (1000 / elapsedMs);
+          const isFastFlickDown =
+            dy > 35 && (velocityY > 0.75 || vhPerSec > 1.1);
 
-      // Handle simple tap (minimal movement)
-      if (Math.abs(totalDy) < 6 && elapsed < 350) {
-        if (wasMinimized) {
-          this.restoreDrawer();
-        }
-        return;
-      }
+          // Dragged into the floor threshold (< 18dvh or < 110px)
+          const isDraggedToFloor = currentDvh < 18 || currentHeight < 110;
 
-      // Fast flick down detection:
-      // 1. Requires deliberate downward displacement (totalDy > 35px)
-      // 2. High velocity (> 0.75 px/ms or > 1.1 viewport-heights per second)
-      const vhPerSec = (totalDy / window.innerHeight) * (1000 / elapsed);
-      const isFastFlickDown =
-        totalDy > 35 && (velocityPxPerMs > 0.75 || vhPerSec > 1.1);
+          if (isFastFlickDown || isDraggedToFloor) {
+            this.minimizeDrawer();
+            return;
+          }
 
-      // Dragged into the floor threshold (< 18dvh or < 110px)
-      const isDraggedToFloor = currentDvh < 18 || currentHeight < 110;
-
-      if (isFastFlickDown || isDraggedToFloor) {
-        this.minimizeDrawer();
-        return;
-      }
-
-      // For all other releases (deliberate drag down or any upward movement):
-      // No snap-to-full; always commit the exact release position as % of dvh.
-      const clampedDvh = Math.min(88, Math.max(18, currentDvh));
-      this.restoreDrawer(clampedDvh);
-    };
+          const clampedDvh = Math.min(88, Math.max(18, currentDvh));
+          this.restoreDrawer(clampedDvh);
+        },
+      })
+    );
 
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === "ArrowUp") {
@@ -692,19 +589,7 @@ export class MorcusReaderView extends HTMLElement {
       }
     };
 
-    sheetBar.addEventListener("pointerdown", onPointerDown);
-    sheetBar.addEventListener("pointermove", onPointerMove);
-    sheetBar.addEventListener("pointerup", onPointerUp);
-    sheetBar.addEventListener("pointercancel", onPointerUp);
-    sheetBar.addEventListener("keydown", onKeyDown);
-
-    this.mobileCleanups.push(() => {
-      sheetBar.removeEventListener("pointerdown", onPointerDown);
-      sheetBar.removeEventListener("pointermove", onPointerMove);
-      sheetBar.removeEventListener("pointerup", onPointerUp);
-      sheetBar.removeEventListener("pointercancel", onPointerUp);
-      sheetBar.removeEventListener("keydown", onKeyDown);
-    });
+    this.listen(sheetBar, "keydown", onKeyDown);
   }
 
   // --- Embedded Dictionary "Jump to top" Button ---
@@ -774,7 +659,7 @@ export class MorcusReaderView extends HTMLElement {
 
     btn.addEventListener("click", onClick);
 
-    this.generalCleanups.push(() => {
+    this.addDisposable(() => {
       dictPanel.removeEventListener("scroll", onScroll);
       mobileSticky?.removeEventListener("scroll", onScroll);
       btn.removeEventListener("click", onClick);
@@ -783,9 +668,7 @@ export class MorcusReaderView extends HTMLElement {
   }
 }
 
-if (!customElements.get("morcus-reader-view")) {
-  customElements.define("morcus-reader-view", MorcusReaderView);
-}
+registerElement("morcus-reader-view", MorcusReaderView);
 
 declare global {
   interface HTMLElementTagNameMap {
