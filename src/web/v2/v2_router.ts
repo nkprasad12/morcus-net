@@ -6,7 +6,15 @@ import {
   renderDictResultsHtml,
 } from "@/web/v2/dict/dict.server";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
-import { renderReaderPageHtml } from "@/web/v2/reader/reader.server";
+import {
+  renderReaderPageHtml,
+  renderReaderContentHtml,
+} from "@/web/v2/reader/reader.server";
+import { getReaderWork } from "@/web/v2/reader/reader_data";
+import {
+  resolveCitationJump,
+  citationToString,
+} from "@/web/v2/reader/reader_types";
 import { GitHub } from "@/web/utils/github";
 import type { ReportApiRequest } from "@/web/api_routes";
 import * as path from "path";
@@ -164,13 +172,57 @@ export function createV2Router(
     }
   });
 
-  // Reader prototype route: demonstrates two-panel reader with embedded dictionary
+  // Reader route: multi-level hierarchical classical text reader with embedded dictionary
   router.get("/reader", async (req: Request, res: Response) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const workId =
+      typeof req.query.work === "string" ? req.query.work.trim() : "dbg";
+    const pageId =
+      typeof req.query.id === "string" ? req.query.id.trim() : undefined;
+    const jump =
+      typeof req.query.jump === "string" ? req.query.jump.trim() : "";
+    const currPage =
+      typeof req.query.curr_page === "string" ? req.query.curr_page.trim() : "";
+    const view = req.query.view === "parallel" ? "parallel" : "single";
+    const isPartial =
+      req.query.format === "partial" ||
+      req.headers["x-requested-with"] === "fetch";
+
+    // Handle No-JS quick jump submission
+    if (jump) {
+      const work = getReaderWork(workId);
+      let activeIdx = 0;
+      if (currPage || pageId) {
+        const needle = (currPage || pageId)!.split(".");
+        const found = work.pages.findIndex(
+          (p) =>
+            p.id.length === needle.length &&
+            p.id.every((tok, i) => tok === needle[i])
+        );
+        if (found !== -1) activeIdx = found;
+      }
+      const resolved = resolveCitationJump(jump, work, activeIdx);
+      if (resolved) {
+        const params = new URLSearchParams();
+        if (work.id !== "dbg") params.set("work", work.id);
+        params.set("id", citationToString(resolved.page.id));
+        if (view === "parallel") params.set("view", "parallel");
+        if (query) params.set("q", query);
+        const hash = resolved.targetSectionId
+          ? `#sec-${resolved.targetSectionId}`
+          : "";
+        res.redirect(`/v2/reader?${params.toString()}${hash}`);
+        return;
+      }
+    }
 
     if (!query) {
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(renderReaderPageHtml());
+      if (isPartial) {
+        res.send(renderReaderContentHtml({ workId, pageId, view }));
+      } else {
+        res.send(renderReaderPageHtml({ workId, pageId, view }));
+      }
       return;
     }
 
@@ -181,11 +233,23 @@ export function createV2Router(
         mode: 1, // Search by keys and inflected forms
       });
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(renderReaderPageHtml({ query, results }));
+      if (isPartial) {
+        res.send(
+          renderReaderContentHtml({ workId, pageId, query, results, view })
+        );
+      } else {
+        res.send(
+          renderReaderPageHtml({ workId, pageId, query, results, view })
+        );
+      }
     } catch (err) {
       console.error("Error retrieving reader dictionary entry:", err);
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(renderReaderPageHtml({ query }));
+      if (isPartial) {
+        res.send(renderReaderContentHtml({ workId, pageId, query, view }));
+      } else {
+        res.send(renderReaderPageHtml({ workId, pageId, query, view }));
+      }
     }
   });
 
