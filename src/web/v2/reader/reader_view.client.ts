@@ -4,6 +4,7 @@ import {
   registerElement,
   trackPointerDrag,
 } from "@/web/v2/core/index.client";
+import { processTokens, removeDiacritics } from "@/common/text_cleaning";
 
 /**
  * Progressively enhanced Reader View with embedded dictionary lookup using Light DOM.
@@ -329,52 +330,46 @@ export class MorcusReaderView extends BaseElement {
     });
   }
 
+  private stripMacrons(str: string): string {
+    return str
+      .normalize("NFD")
+      .replace(/[\u0304\u0305]/g, "")
+      .normalize("NFC");
+  }
+
   private tokenizeElement(element: HTMLElement) {
     const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT);
     const textNodes: Text[] = [];
     let current: Node | null = walker.nextNode();
     while (current) {
-      if (
-        current instanceof Text &&
-        current.nodeValue &&
-        /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(current.nodeValue)
-      ) {
+      if (current instanceof Text && current.nodeValue) {
         textNodes.push(current);
       }
       current = walker.nextNode();
     }
 
-    const wordRegex = /([a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]+)/g;
-
     for (const node of textNodes) {
       const text = node.nodeValue || "";
       const fragment = document.createDocumentFragment();
-      let lastIdx = 0;
-      let match: RegExpExecArray | null;
 
-      while ((match = wordRegex.exec(text)) !== null) {
-        const matchIdx = match.index;
-        const word = match[0];
+      for (const [token, isWord] of processTokens(text)) {
+        const cleanWord = removeDiacritics(token).replaceAll("-", "").trim();
+        const isLatinWord =
+          isWord &&
+          !/\d/.test(token) &&
+          /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(cleanWord);
 
-        if (matchIdx > lastIdx) {
-          fragment.appendChild(
-            document.createTextNode(text.slice(lastIdx, matchIdx))
-          );
+        if (isLatinWord) {
+          const span = document.createElement("span");
+          span.className = "v2-lat-word";
+          span.setAttribute("role", "button");
+          span.setAttribute("tabindex", "0");
+          span.setAttribute("data-word", token);
+          span.textContent = token;
+          fragment.appendChild(span);
+        } else {
+          fragment.appendChild(document.createTextNode(token));
         }
-
-        const span = document.createElement("span");
-        span.className = "v2-lat-word";
-        span.setAttribute("role", "button");
-        span.setAttribute("tabindex", "0");
-        span.setAttribute("data-word", word);
-        span.textContent = word;
-        fragment.appendChild(span);
-
-        lastIdx = matchIdx + word.length;
-      }
-
-      if (lastIdx < text.length) {
-        fragment.appendChild(document.createTextNode(text.slice(lastIdx)));
       }
 
       node.parentNode?.replaceChild(fragment, node);
@@ -382,16 +377,29 @@ export class MorcusReaderView extends BaseElement {
   }
 
   private findWordElement(word: string): HTMLElement | undefined {
-    const cleanWord = word.trim().toLowerCase();
+    const rawWord = word.trim().toLowerCase();
+    const nfcWord = rawWord.normalize("NFC");
+    const strippedWord = this.stripMacrons(rawWord);
     const allWords = this.querySelectorAll<HTMLElement>(
       ".v2-reader-text-panel .v2-lat-word"
     );
+
+    // 1. Exact or NFC-normalized match (e.g. Mūsa NFC matching Mūsa NFD)
     for (const w of allWords) {
       const val = (w.dataset.word || w.textContent || "").trim().toLowerCase();
-      if (val === cleanWord) {
+      if (val === rawWord || val.normalize("NFC") === nfcWord) {
         return w;
       }
     }
+
+    // 2. Diacritic-stripped fallback (e.g. searching "musa" matches "Mūsa")
+    for (const w of allWords) {
+      const val = (w.dataset.word || w.textContent || "").trim().toLowerCase();
+      if (this.stripMacrons(val) === strippedWord) {
+        return w;
+      }
+    }
+
     return undefined;
   }
 
@@ -401,7 +409,11 @@ export class MorcusReaderView extends BaseElement {
       const dictPanel = this.querySelector<HTMLElement>(
         ".v2-reader-dict-panel"
       );
-      dictPanel?.scrollTo({ top: 0, behavior: "instant" });
+      if (typeof dictPanel?.scrollTo === "function") {
+        dictPanel.scrollTo({ top: 0, behavior: "instant" });
+      } else if (dictPanel) {
+        dictPanel.scrollTop = 0;
+      }
     } else {
       // Mobile: Instant scroll to the semantic content wrapper
       const scrollContainer = this.querySelector<HTMLElement>(
@@ -411,10 +423,14 @@ export class MorcusReaderView extends BaseElement {
         ".v2-reader-dict-content"
       );
       if (scrollContainer && contentEl) {
-        scrollContainer.scrollTo({
-          top: contentEl.offsetTop,
-          behavior: "instant",
-        });
+        if (typeof scrollContainer.scrollTo === "function") {
+          scrollContainer.scrollTo({
+            top: contentEl.offsetTop,
+            behavior: "instant",
+          });
+        } else {
+          scrollContainer.scrollTop = contentEl.offsetTop;
+        }
       }
     }
   }
@@ -864,22 +880,16 @@ export class MorcusReaderView extends BaseElement {
       // Ignore storage errors
     }
 
-    const stripMacrons = (str: string) =>
-      str
-        .normalize("NFD")
-        .replace(/[\u0304\u0305]/g, "")
-        .normalize("NFC");
-
     const applyMacra = (show: boolean) => {
-      const words = this.$$<HTMLAnchorElement>(
-        ".v2-reader-passage a.v2-lat-word"
+      const words = this.$$<HTMLElement>(
+        ".v2-reader-passage .v2-lat-word"
       );
       for (const w of words) {
         if (!w.hasAttribute("data-original-text")) {
           w.setAttribute("data-original-text", w.textContent || "");
         }
         const orig = w.getAttribute("data-original-text") || "";
-        w.textContent = show ? orig : stripMacrons(orig);
+        w.textContent = show ? orig : this.stripMacrons(orig);
       }
     };
 
