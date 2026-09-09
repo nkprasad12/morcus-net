@@ -1,9 +1,11 @@
 import {
   BaseElement,
   bindDismissable,
+  dictSettingsStore,
   registerElement,
   settingsStore,
 } from "@/web/v2/core/index.client";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 
 const DEFAULT_STRENGTH = 50;
 
@@ -14,25 +16,28 @@ const TUNE_PATH =
 export class MorcusDictSettings extends BaseElement {
   private isOpen: boolean = false;
   private strength: number = DEFAULT_STRENGTH;
+  private activeDictKeys: Set<string> = new Set();
 
-  private buttonEl: HTMLButtonElement | null = null;
+  private detailsEl: HTMLDetailsElement | null = null;
+  private summaryEl: HTMLElement | null = null;
   private popoverEl: HTMLElement | null = null;
   private sliderEl: HTMLInputElement | null = null;
   private valueDisplayEl: HTMLElement | null = null;
 
   protected override onConnect() {
     this.strength = this.computeInitialStrength();
-    this.render();
+    this.initActiveDicts();
+    this.enhanceMarkup();
     this.applyScale(this.strength);
 
     this.addDisposable(
       bindDismissable({
         container: () => this.popoverEl,
-        isOpen: () => this.isOpen,
+        isOpen: () => (this.detailsEl ? this.detailsEl.open : this.isOpen),
         onDismiss: () => this.closeSettingsPopover(),
-        triggerEl: () => this.buttonEl,
+        triggerEl: () => this.summaryEl,
         listenPointerDown: true,
-        ignore: (target) => Boolean(this.buttonEl?.contains(target)),
+        ignore: (target) => Boolean(this.summaryEl?.contains(target)),
       })
     );
   }
@@ -45,22 +50,109 @@ export class MorcusDictSettings extends BaseElement {
     return DEFAULT_STRENGTH;
   }
 
-  private render() {
-    this.innerHTML = `
-      <button
-        type="button"
-        class="v2-settings-btn"
-        aria-label="Highlight settings"
-        title="Highlight settings"
-        aria-haspopup="true"
-        aria-expanded="false"
-      >
-        <svg viewBox="0 0 24 24" aria-hidden="true">
-          <path d="${TUNE_PATH}"></path>
-        </svg>
-      </button>
+  private initActiveDicts() {
+    // 1. Synchronize cookie with localStorage if cookie was missing
+    dictSettingsStore.syncWithCookie();
 
-      <div class="v2-settings-popover" hidden>
+    // 2. Check if URL has explicit dictionary override
+    const searchParams = new URLSearchParams(window.location.search);
+    const inParam = searchParams.get("in") || searchParams.get("dict");
+    if (inParam) {
+      const keys = inParam.split(inParam.includes(",") ? "," : "-");
+      const normalized = keys.map((k) => k.replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2"));
+      this.activeDictKeys = new Set(
+        LatinDict.AVAILABLE.filter(
+          (d) =>
+            normalized.some(
+              (n) =>
+                n.toLowerCase() === d.key.toLowerCase() ||
+                (n.toLowerCase() === "ls" && d.key === "L&S") ||
+                (n.toLowerCase() === "sh" && d.key === "S&H")
+            )
+        ).map((d) => d.key)
+      );
+      return;
+    }
+
+    // 3. Fallback to localStorage
+    const stored = dictSettingsStore.get();
+    if (stored && stored.length > 0) {
+      this.activeDictKeys = new Set(stored);
+      return;
+    }
+
+    // 4. Fallback to default (all Latin dicts except Pozo)
+    this.activeDictKeys = new Set(
+      LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo).map((d) => d.key)
+    );
+  }
+
+  private enhanceMarkup() {
+    this.detailsEl = this.$<HTMLDetailsElement>(".v2-dict-settings-details");
+    this.summaryEl = this.$<HTMLElement>(".v2-settings-btn");
+    this.popoverEl = this.$<HTMLElement>(".v2-settings-popover");
+
+    // If SSR details element doesn't exist (e.g. standalone test), build full structure
+    if (!this.detailsEl || !this.popoverEl) {
+      const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
+        const isChecked = this.activeDictKeys.has(d.key);
+        const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
+        return `
+          <label class="v2-dict-item" title="${d.displayName} (${langText})">
+            <input
+              type="checkbox"
+              name="dict"
+              value="${d.key}"
+              class="v2-dict-checkbox"
+              data-key="${d.key}"
+              ${isChecked ? "checked" : ""}
+            />
+            <span class="v2-dict-name">${d.displayName}</span>
+            <span class="v2-dict-lang">${langText}</span>
+          </label>
+        `;
+      }).join("");
+
+      this.innerHTML = `
+        <details class="v2-dict-settings-details">
+          <summary
+            class="v2-settings-btn"
+            aria-label="Dictionary and highlight settings"
+            title="Dictionary and highlight settings"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="${TUNE_PATH}"></path>
+            </svg>
+          </summary>
+
+          <div class="v2-settings-popover">
+            <div class="v2-settings-section-title">Enabled Dictionaries</div>
+            <div class="v2-dict-list">
+              ${dictItemsHtml}
+            </div>
+          </div>
+        </details>
+      `;
+
+      this.detailsEl = this.$<HTMLDetailsElement>(".v2-dict-settings-details");
+      this.summaryEl = this.$<HTMLElement>(".v2-settings-btn");
+      this.popoverEl = this.$<HTMLElement>(".v2-settings-popover");
+    }
+
+    // Sync SSR checkboxes with activeDictKeys
+    const checkboxes = this.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
+    checkboxes.forEach((cb) => {
+      const key = cb.dataset.key || cb.value;
+      if (key) {
+        cb.checked = this.activeDictKeys.has(key);
+      }
+    });
+
+    // Progressively inject highlight slider if not present
+    if (this.popoverEl && !this.$(".v2-settings-slider")) {
+      const sliderControls = document.createElement("div");
+      sliderControls.className = "v2-settings-slider-section";
+      sliderControls.innerHTML = `
         <div class="v2-settings-header">
           <span class="v2-settings-title">Highlight Strength</span>
           <span class="v2-settings-value">${this.strength}%</span>
@@ -84,16 +176,30 @@ export class MorcusDictSettings extends BaseElement {
           <span class="lsBibl">Gall. 1.1</span>
           <span class="lsQuote">omnia</span>
         </div>
-      </div>
-    `;
 
-    this.buttonEl = this.$<HTMLButtonElement>(".v2-settings-btn");
-    this.popoverEl = this.$(".v2-settings-popover");
+        <div class="v2-settings-divider" role="separator"></div>
+      `;
+      this.popoverEl.prepend(sliderControls);
+    }
+
     this.sliderEl = this.$<HTMLInputElement>(".v2-settings-slider");
     this.valueDisplayEl = this.$(".v2-settings-value");
 
-    if (this.buttonEl) {
-      this.listen(this.buttonEl, "click", this.toggleSettingsPopover);
+    if (this.summaryEl) {
+      this.listen(this.summaryEl, "click", (e: MouseEvent) => {
+        if (this.detailsEl) {
+          // JSDOM does not natively toggle details.open on summary click
+          this.detailsEl.open = !this.detailsEl.open;
+          this.isOpen = this.detailsEl.open;
+          e.preventDefault();
+        }
+      });
+    }
+
+    if (this.detailsEl) {
+      this.listen(this.detailsEl, "toggle", () => {
+        this.isOpen = Boolean(this.detailsEl?.open);
+      });
     }
 
     if (this.sliderEl) {
@@ -108,6 +214,33 @@ export class MorcusDictSettings extends BaseElement {
         }
       });
     }
+
+    // Checkbox listener
+    this.listen(this, "change", (e: Event) => {
+      const target = e.target;
+      if (target instanceof HTMLInputElement && target.classList.contains("v2-dict-checkbox")) {
+        const key = target.dataset.key || target.value;
+        if (!key) return;
+        if (target.checked) {
+          this.activeDictKeys.add(key);
+        } else {
+          this.activeDictKeys.delete(key);
+        }
+        this.saveDictSelection();
+      }
+    });
+  }
+
+  private saveDictSelection() {
+    const keys = Array.from(this.activeDictKeys);
+    dictSettingsStore.set(keys);
+    this.dispatchEvent(
+      new CustomEvent("dict-selection-change", {
+        bubbles: true,
+        composed: true,
+        detail: { dictKeys: keys },
+      })
+    );
   }
 
   private readonly toggleSettingsPopover = (e?: Event) => {
@@ -116,10 +249,13 @@ export class MorcusDictSettings extends BaseElement {
       e.preventDefault();
     }
     this.isOpen = !this.isOpen;
-    if (this.buttonEl) {
-      this.buttonEl.setAttribute("aria-expanded", String(this.isOpen));
+    if (this.detailsEl) {
+      this.detailsEl.open = this.isOpen;
     }
-    if (this.popoverEl) {
+    if (this.summaryEl) {
+      this.summaryEl.setAttribute("aria-expanded", String(this.isOpen));
+    }
+    if (this.popoverEl && !this.detailsEl) {
       this.popoverEl.hidden = !this.isOpen;
     }
   };
@@ -127,10 +263,13 @@ export class MorcusDictSettings extends BaseElement {
   private closeSettingsPopover() {
     if (!this.isOpen) return;
     this.isOpen = false;
-    if (this.buttonEl) {
-      this.buttonEl.setAttribute("aria-expanded", "false");
+    if (this.detailsEl) {
+      this.detailsEl.open = false;
     }
-    if (this.popoverEl) {
+    if (this.summaryEl) {
+      this.summaryEl.setAttribute("aria-expanded", "false");
+    }
+    if (this.popoverEl && !this.detailsEl) {
       this.popoverEl.hidden = true;
     }
   }

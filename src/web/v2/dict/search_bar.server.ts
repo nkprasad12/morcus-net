@@ -1,4 +1,10 @@
 import * as he from "he";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
+
+// Material Design "tune" / sliders SVG icon
+const TUNE_PATH =
+  "M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z";
 
 export interface SearchBarOptions {
   query?: string;
@@ -7,6 +13,7 @@ export interface SearchBarOptions {
   formClass?: string;
   inputClass?: string;
   includeSettings?: boolean;
+  activeDicts?: string[];
   extraHiddenInputs?: Record<string, string>;
 }
 
@@ -28,8 +35,55 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     .join(" ");
   const includeSettings = options.includeSettings ?? true;
 
+  const activeDictKeys = new Set(options.activeDicts ?? DEFAULT_DICT_KEYS);
+
+  const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
+    const isChecked = activeDictKeys.has(d.key);
+    const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
+    return `
+      <label class="v2-dict-item" title="${he.encode(d.displayName)} (${langText})">
+        <input
+          type="checkbox"
+          name="dict"
+          value="${he.encode(d.key)}"
+          class="v2-dict-checkbox"
+          data-key="${he.encode(d.key)}"
+          ${isChecked ? "checked" : ""}
+        />
+        <span class="v2-dict-name">${he.encode(d.displayName)}</span>
+        <span class="v2-dict-lang">${langText}</span>
+      </label>
+    `;
+  }).join("\n");
+
   const settingsHtml = includeSettings
-    ? "<morcus-dict-settings></morcus-dict-settings>"
+    ? `
+      <morcus-dict-settings>
+        <details class="v2-dict-settings-details">
+          <summary
+            class="v2-settings-btn"
+            aria-label="Dictionary and highlight settings"
+            title="Dictionary and highlight settings"
+          >
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="${TUNE_PATH}"></path>
+            </svg>
+          </summary>
+
+          <div class="v2-settings-popover">
+            <div class="v2-settings-section-title">Enabled Dictionaries</div>
+            <div class="v2-dict-list">
+              ${dictItemsHtml}
+            </div>
+            <noscript>
+              <div class="v2-settings-noscript-actions">
+                <button type="submit" class="v2-btn v2-btn-secondary v2-settings-apply-btn">Apply Selection</button>
+              </div>
+            </noscript>
+          </div>
+        </details>
+      </morcus-dict-settings>
+    `.trim()
     : "";
 
   const hiddenInputsHtml = options.extraHiddenInputs

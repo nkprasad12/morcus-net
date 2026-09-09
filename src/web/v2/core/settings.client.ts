@@ -48,3 +48,56 @@ export const settingsStore = {
     }
   },
 };
+
+/**
+ * Key used in localStorage to store active dictionary keys (compatible with V1).
+ */
+export const SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY";
+export const DICT_COOKIE_NAME = "morcus_dicts";
+
+export const dictSettingsStore = {
+  get(): string[] | null {
+    try {
+      const stored = localStorage.getItem(SEARCH_SETTINGS_KEY);
+      if (!stored) return null;
+      const keys = stored
+        .split(";")
+        .map((k) => k.trim())
+        .filter(Boolean);
+      return keys.length > 0 ? keys : null;
+    } catch {
+      return null;
+    }
+  },
+
+  set(dictKeys: string[]): void {
+    try {
+      localStorage.setItem(SEARCH_SETTINGS_KEY, dictKeys.join(";"));
+      // Also update the functional UI cookie so future SSR calls reflect this choice
+      const cookieVal = encodeURIComponent(dictKeys.join(";"));
+      document.cookie = `${DICT_COOKIE_NAME}=${cookieVal}; Path=/; Max-Age=31536000; SameSite=Lax`;
+    } catch (e) {
+      console.warn("Could not persist dict settings", e);
+    }
+  },
+
+  /**
+   * Synchronizes localStorage and cookie: if cookie is absent but localStorage exists,
+   * writes cookie so subsequent SSR navigations remain in sync.
+   */
+  syncWithCookie(): void {
+    try {
+      const stored = dictSettingsStore.get();
+      if (!stored || stored.length === 0) return;
+
+      const hasCookie = document.cookie
+        .split(";")
+        .some((c) => c.trim().startsWith(`${DICT_COOKIE_NAME}=`));
+
+      if (!hasCookie) {
+        dictSettingsStore.set(stored);
+      }
+    } catch {}
+  },
+};
+

@@ -69,9 +69,9 @@ describe("reader_ssr", () => {
       query: "divisa",
     });
 
-    // Dictionary iframe points to embedded query
+    // Dictionary iframe points to embedded query with Latin filter
     expect(html).toContain('id="v2-dict-frame"');
-    expect(html).toContain('/v2/dicts?q=divisa&amp;embedded=1');
+    expect(html).toContain('/v2/dicts?q=divisa&amp;lang=La&amp;embedded=1');
 
     // Close button present in mobile sheet handle bar
     expect(html).toContain("v2-reader-sheet-close");

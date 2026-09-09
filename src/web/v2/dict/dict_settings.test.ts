@@ -18,13 +18,13 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const btn = el.querySelector<HTMLButtonElement>(".v2-settings-btn");
-    const popover = el.querySelector<HTMLElement>(".v2-settings-popover");
+    const btn = el.querySelector<HTMLElement>(".v2-settings-btn");
+    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details");
     const slider = el.querySelector<HTMLInputElement>(".v2-settings-slider");
     const valueDisplay = el.querySelector<HTMLElement>(".v2-settings-value");
 
     expect(btn).not.toBeNull();
-    expect(popover?.hidden).toBe(true);
+    expect(details?.open).toBe(false);
     expect(slider?.value).toBe("50");
     expect(valueDisplay?.textContent).toBe("50%");
     expect(
@@ -55,19 +55,16 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const btn = el.querySelector<HTMLButtonElement>(".v2-settings-btn")!;
-    const popover = el.querySelector<HTMLElement>(".v2-settings-popover")!;
+    const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
+    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details")!;
 
-    expect(popover.hidden).toBe(true);
-    expect(btn.getAttribute("aria-expanded")).toBe("false");
-
-    btn.click();
-    expect(popover.hidden).toBe(false);
-    expect(btn.getAttribute("aria-expanded")).toBe("true");
+    expect(details.open).toBe(false);
 
     btn.click();
-    expect(popover.hidden).toBe(true);
-    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    expect(details.open).toBe(true);
+
+    btn.click();
+    expect(details.open).toBe(false);
   });
 
   test("updates highlight scale on slider input and persists on change", () => {
@@ -99,15 +96,14 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const btn = el.querySelector<HTMLButtonElement>(".v2-settings-btn")!;
-    const popover = el.querySelector<HTMLElement>(".v2-settings-popover")!;
+    const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
+    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details")!;
 
     btn.click();
-    expect(popover.hidden).toBe(false);
+    expect(details.open).toBe(true);
 
     document.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
-    expect(popover.hidden).toBe(true);
-    expect(btn.getAttribute("aria-expanded")).toBe("false");
+    expect(details.open).toBe(false);
   });
 
   test("closes popover on outside pointerdown", () => {
@@ -117,13 +113,47 @@ describe("MorcusDictSettings", () => {
     const outside = document.createElement("div");
     document.body.appendChild(outside);
 
-    const btn = el.querySelector<HTMLButtonElement>(".v2-settings-btn")!;
-    const popover = el.querySelector<HTMLElement>(".v2-settings-popover")!;
+    const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
+    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details")!;
 
     btn.click();
-    expect(popover.hidden).toBe(false);
+    expect(details.open).toBe(true);
 
     outside.dispatchEvent(new MouseEvent("mousedown", { bubbles: true }));
-    expect(popover.hidden).toBe(true);
+    expect(details.open).toBe(false);
+  });
+
+  test("renders dictionary checkboxes with defaults and handles toggle", () => {
+    const el = document.createElement("morcus-dict-settings");
+    document.body.appendChild(el);
+
+    const checkboxes = el.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
+    expect(checkboxes.length).toBeGreaterThan(0);
+
+    // L&S should be checked by default
+    const lsCheckbox = Array.from(checkboxes).find(
+      (cb) => cb.dataset.key === "L&S"
+    )!;
+    expect(lsCheckbox.checked).toBe(true);
+
+    // Pozo (EGL) should NOT be checked by default
+    const pozoCheckbox = Array.from(checkboxes).find(
+      (cb) => cb.dataset.key === "EGL"
+    )!;
+    expect(pozoCheckbox.checked).toBe(false);
+
+    // Toggle off L&S
+    let eventDetail: any = null;
+    el.addEventListener("dict-selection-change", (e: any) => {
+      eventDetail = e.detail;
+    });
+
+    lsCheckbox.checked = false;
+    lsCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(eventDetail).not.toBeNull();
+    expect(eventDetail.dictKeys).not.toContain("L&S");
+    expect(localStorage.getItem("SEARCH_SETTINGS_KEY")).not.toContain("L&S");
+    expect(document.cookie).toContain("morcus_dicts=");
   });
 });

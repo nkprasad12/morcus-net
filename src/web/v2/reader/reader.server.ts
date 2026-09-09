@@ -109,8 +109,9 @@ export async function renderReaderContentHtml(
     .join("\n");
 
   // Dictionary iframe src
+  // When a word is looked up from the Latin reader, restrict initial query to Latin lexica (lang=La)
   const dictIframeSrc = query
-    ? `/v2/dicts?q=${encodeURIComponent(query)}&embedded=1`
+    ? `/v2/dicts?q=${encodeURIComponent(query)}&lang=La&embedded=1`
     : `/v2/dicts?embedded=1`;
 
   const layoutStateClass = query

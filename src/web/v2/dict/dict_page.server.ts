@@ -54,7 +54,8 @@ export const DICT_SHORT_NAMES: Record<string, string> = {
  */
 export function renderDictResultsHtml(
   query: string,
-  results?: DictsFusedResponse
+  results?: DictsFusedResponse,
+  queriedDicts?: string[]
 ): string {
   if (!query.trim()) {
     return `
@@ -72,28 +73,49 @@ export function renderDictResultsHtml(
     `;
   }
 
-  const dictKeys = Object.keys(results).filter(
+  // Determine all dictionaries to represent in the jump bar / transparency status
+  const hitKeys = Object.keys(results).filter(
     (key) => results[key] && results[key].length > 0
   );
 
-  if (dictKeys.length === 0) {
+  // If queriedDicts was provided, use that to preserve order and show 0-hit dictionaries;
+  // otherwise fallback to hitKeys.
+  const allQueriedKeys = queriedDicts && queriedDicts.length > 0
+    ? queriedDicts
+    : hitKeys;
+
+  if (hitKeys.length === 0) {
+    const queriedNames = allQueriedKeys
+      .map(
+        (k) =>
+          DICT_SHORT_NAMES[k] ??
+          DICT_NAMES[k] ??
+          LatinDict.BY_KEY.get(k)?.displayName ??
+          k
+      )
+      .join(", ");
     return `
       <div class="v2-no-results">
         <p>No dictionary entries found for "<strong>${he.escape(
           query
         )}</strong>".</p>
+        ${
+          queriedNames
+            ? `<p class="v2-no-results-sub">Searched: ${he.encode(queriedNames)}</p>`
+            : ""
+        }
       </div>
     `;
   }
 
-  const totalCount = dictKeys.reduce(
+  const totalCount = hitKeys.reduce(
     (acc, key) => acc + (results[key]?.length || 0),
     0
   );
 
-  const pillsHtml = dictKeys
+  const pillsHtml = allQueriedKeys
     .map((dictKey) => {
-      const entries = results[dictKey];
+      const entries = results[dictKey] || [];
       const shortName =
         DICT_SHORT_NAMES[dictKey] ??
         DICT_NAMES[dictKey] ??
@@ -101,9 +123,17 @@ export function renderDictResultsHtml(
         dictKey.toUpperCase();
       const count = entries.length;
       const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
-      return `<a href="#${cardId}" class="v2-jump-pill"><span class="v2-jump-pill-name">${he.encode(
-        shortName
-      )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
+      if (count > 0) {
+        return `<a href="#${cardId}" class="v2-jump-pill"><span class="v2-jump-pill-name">${he.encode(
+          shortName
+        )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
+      } else {
+        return `<span class="v2-jump-pill v2-jump-pill-zero" title="No entries found in ${he.encode(
+          shortName
+        )}"><span class="v2-jump-pill-name">${he.encode(
+          shortName
+        )}</span><span class="v2-jump-pill-count">0</span></span>`;
+      }
     })
     .join("");
 
@@ -118,7 +148,7 @@ export function renderDictResultsHtml(
     </nav>
   `;
 
-  const cardsHtml = dictKeys
+  const cardsHtml = hitKeys
     .map((dictKey) => {
       const entries = results[dictKey];
       const dictName =
@@ -208,6 +238,7 @@ export function renderDictResultsHtml(
 export interface DictPageOptions {
   query: string;
   results?: DictsFusedResponse;
+  queriedDicts?: string[];
   isIdSearch?: boolean;
   embedded?: boolean;
 }
@@ -217,7 +248,11 @@ export interface DictPageOptions {
  */
 export function renderDictPageHtml(options: DictPageOptions): string {
   const query = options.query || "";
-  const resultsHtml = renderDictResultsHtml(options.query, options.results);
+  const resultsHtml = renderDictResultsHtml(
+    options.query,
+    options.results,
+    options.queriedDicts
+  );
 
   const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
   const isEmbedded = options.embedded ?? false;
@@ -227,6 +262,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
       ${renderDictSearchBar({
         query: options.isIdSearch ? "" : options.query,
         action: "/v2/dicts",
+        activeDicts: options.queriedDicts,
         extraHiddenInputs: isEmbedded ? { embedded: "1" } : undefined,
       })}
 

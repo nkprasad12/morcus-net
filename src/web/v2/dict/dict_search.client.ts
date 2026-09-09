@@ -150,6 +150,14 @@ export class MorcusDictSearch extends BaseElement {
       })
     );
 
+    // Listen for dictionary selection changes to re-fetch or update active search
+    this.listen(this, "dict-selection-change", () => {
+      const currentQuery = this.inputElement?.value.trim() ?? "";
+      if (currentQuery) {
+        this.fetchResults(currentQuery);
+      }
+    });
+
     if (this.inputElement && document.activeElement === document.body) {
       this.inputElement.focus();
     }
@@ -226,10 +234,19 @@ export class MorcusDictSearch extends BaseElement {
 
   private async fetchResults(query: string) {
     if (!this.resultsElement) return;
-    const isEmbedded =
-      new URLSearchParams(window.location.search).get("embedded") === "1";
-    const embeddedParam = isEmbedded ? "&embedded=1" : "";
-    const url = `/v2/dicts?q=${encodeURIComponent(query)}&format=partial${embeddedParam}`;
+    const currentParams = new URLSearchParams(window.location.search);
+    const isEmbedded = currentParams.get("embedded") === "1";
+    const langParam = currentParams.get("lang");
+    const inParam = currentParams.get("in") || currentParams.get("dict");
+
+    const fetchParams = new URLSearchParams();
+    fetchParams.set("q", query);
+    fetchParams.set("format", "partial");
+    if (isEmbedded) fetchParams.set("embedded", "1");
+    if (langParam) fetchParams.set("lang", langParam);
+    if (inParam) fetchParams.set("dict", inParam);
+
+    const url = `/v2/dicts?${fetchParams.toString()}`;
     const success = await fetchAndSwapPartial(this.resultsElement, url, {
       errorMessage: "Error loading results.",
       loadingOpacity: 0.5,

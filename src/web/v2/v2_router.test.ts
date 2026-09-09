@@ -61,6 +61,44 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("amo");
   });
 
+  test("GET /v2/dicts filters by query param 'dict' and sets cookie on form submit", async () => {
+    const res = await request(app).get("/v2/dicts?q=amo&dict=ls,gaffiot");
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "amo",
+        dicts: ["L&S", "GAF"],
+      })
+    );
+    expect(res.header["set-cookie"]).toBeDefined();
+    expect(res.header["set-cookie"][0]).toContain("morcus_dicts=L%26S%3BGAF");
+  });
+
+  test("GET /v2/dicts uses cookie when no dict param is passed", async () => {
+    const res = await request(app)
+      .get("/v2/dicts?q=amo")
+      .set("Cookie", "morcus_dicts=GAF%3BGRG");
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "amo",
+        dicts: ["GAF", "GRG"],
+      })
+    );
+  });
+
+  test("GET /v2/dicts filters by lang=La (Latin source only)", async () => {
+    const res = await request(app).get("/v2/dicts?q=amo&dict=ls,sh,gaffiot&lang=La");
+    expect(res.status).toBe(200);
+    // L&S and GAF are Latin-source, S&H is English-to-Latin so excluded
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "amo",
+        dicts: ["L&S", "GAF"],
+      })
+    );
+  });
+
   test("GET /v2/dicts/id/:id returns entry looked up by ID", async () => {
     const res = await request(app).get("/v2/dicts/id/n20077");
     expect(res.status).toBe(200);
@@ -143,7 +181,7 @@ describe("v2_router integration", () => {
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain('id="v2-dict-frame"');
-      expect(res.text).toContain('/v2/dicts?q=Gallia&amp;embedded=1');
+      expect(res.text).toContain('/v2/dicts?q=Gallia&amp;lang=La&amp;embedded=1');
     });
 
     test("GET /v2/reader/:author/:name/:page? renders reader URL", async () => {

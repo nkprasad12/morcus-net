@@ -1,13 +1,24 @@
-/* Highlight Settings Web Component & Dropdown Styling */
-
-morcus-dict-settings:not(:defined) {
-  display: none;
-}
+/* Highlight & Dictionary Settings Web Component & Dropdown Styling */
 
 morcus-dict-settings {
   position: relative;
   display: inline-flex;
   align-items: center;
+}
+
+/* Native <details> wrapper for No-JS baseline and progressive enhancement */
+.v2-dict-settings-details {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+}
+
+.v2-dict-settings-details > summary.v2-settings-btn {
+  list-style: none;
+}
+
+.v2-dict-settings-details > summary.v2-settings-btn::-webkit-details-marker {
+  display: none;
 }
 
 .v2-settings-btn {
@@ -23,6 +34,7 @@ morcus-dict-settings {
   border-radius: 6px;
   color: var(--v2-text-muted);
   cursor: pointer;
+  user-select: none;
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out,
     border-color 0.15s ease-in-out;
 }
@@ -38,6 +50,7 @@ morcus-dict-settings {
   outline-offset: 1px;
 }
 
+.v2-dict-settings-details[open] > .v2-settings-btn,
 .v2-settings-btn[aria-expanded="true"] {
   color: var(--v2-primary);
   border-color: var(--v2-primary);
@@ -108,3 +121,71 @@ morcus-dict-settings {
   border-radius: 4px;
   font-size: 0.78rem;
 }
+
+/* Dictionary Selection Section */
+.v2-settings-divider {
+  height: 1px;
+  background: var(--v2-border);
+  margin: 14px 0 12px;
+}
+
+.v2-settings-section-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--v2-text);
+  margin-bottom: 8px;
+}
+
+.v2-dict-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 240px;
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.v2-dict-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.78rem;
+  color: var(--v2-text);
+  cursor: pointer;
+  user-select: none;
+}
+
+.v2-dict-checkbox {
+  accent-color: var(--v2-primary);
+  cursor: pointer;
+  margin: 0;
+  width: 14px;
+  height: 14px;
+}
+
+.v2-dict-name {
+  font-weight: 500;
+  flex: 1;
+}
+
+.v2-dict-lang {
+  font-size: 0.7rem;
+  color: var(--v2-text-muted);
+}
+
+.v2-settings-noscript-actions {
+  margin-top: 12px;
+  padding-top: 8px;
+  border-top: 1px solid var(--v2-border);
+  display: flex;
+  justify-content: flex-end;
+}
+
+.v2-settings-apply-btn {
+  font-size: 0.78rem;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+
