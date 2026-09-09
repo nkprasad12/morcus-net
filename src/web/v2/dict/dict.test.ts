@@ -590,4 +590,33 @@ describe("dict_ssr", () => {
       '<div id="v2-abbr-popover" popover="auto" class="v2-abbr-popover"></div>'
     );
   });
+
+  test("renderDictResultsHtml renders zero-hit pill when dictionary in queriedDicts has no results", () => {
+    const results = {
+      "L&S": [
+        {
+          entry: new XmlNode("span", [["class", "lsOrth"]], ["habeo"]),
+          outline: {
+            mainKey: "habeo",
+            mainSection: {
+              text: "habeo",
+              level: 0,
+              ordinal: "",
+              sectionId: "n0",
+            },
+            senses: [],
+          },
+        },
+      ],
+    };
+
+    const html = renderDictResultsHtml("habeo", results, ["L&S", "GAF"]);
+    // L&S has 1 hit -> normal link pill
+    expect(html).toContain('href="#dict-L-S" class="v2-jump-pill"');
+    expect(html).toContain('<span class="v2-jump-pill-count">1</span>');
+    // GAF has 0 hits -> zero-hit pill
+    expect(html).toContain('class="v2-jump-pill v2-jump-pill-zero"');
+    expect(html).toContain("No entries found in Gaffiot");
+    expect(html).toContain('<span class="v2-jump-pill-count">0</span>');
+  });
 });

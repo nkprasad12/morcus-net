@@ -4,6 +4,8 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   renderDictPageHtml,
   renderDictResultsHtml,
+  resolveActiveDicts,
+  formatDictsCookie,
 } from "@/web/v2/dict/dict.server";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
@@ -97,33 +99,72 @@ export function createV2Router(
       req.headers["sec-fetch-dest"] === "iframe" ||
       req.headers.referer?.includes("embedded=1") === true;
 
+    // Resolve dictionary selection based on precedence:
+    // URL param ('in' or 'dict') > Cookie ('morcus_dicts') > Default (All Latin except Pozo)
+    const dictParam =
+      (typeof req.query.dict === "string" || Array.isArray(req.query.dict))
+        ? (req.query.dict as string | string[])
+        : (typeof req.query.in === "string" || Array.isArray(req.query.in))
+        ? (req.query.in as string | string[])
+        : undefined;
+
+    const langParam =
+      typeof req.query.lang === "string" || Array.isArray(req.query.lang)
+        ? (req.query.lang as string | string[])
+        : undefined;
+
+    const cookieHeader = req.headers.cookie;
+
+    const { dictKeys, source } = resolveActiveDicts({
+      urlParam: dictParam,
+      cookieHeader,
+      lang: langParam,
+    });
+
+    // If explicit dictionary choice came via full page form submission, update the cookie
+    // so No-JS users have their choice persisted across sessions without cookie consent overhead.
+    if (!isPartial && source === "url" && dictKeys.length > 0 && !langParam) {
+      res.setHeader("Set-Cookie", formatDictsCookie(dictKeys));
+    }
+
     if (!query) {
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml(""));
+        res.send(renderDictResultsHtml("", undefined, dictKeys));
         return;
       }
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(renderDictPageHtml({ query: "", embedded: isEmbedded }));
+      res.send(
+        renderDictPageHtml({
+          query: "",
+          embedded: isEmbedded,
+          queriedDicts: dictKeys,
+        })
+      );
       return;
     }
 
     try {
       const results = await fusedDict.getEntry({
         query,
-        dicts: ALL_LATIN_DICTS,
+        dicts: dictKeys,
         mode: 1, // Search by keys and inflected forms
       });
 
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml(query, results));
+        res.send(renderDictResultsHtml(query, results, dictKeys));
         return;
       }
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       res.send(
-        renderDictPageHtml({ query, results, embedded: isEmbedded })
+        renderDictPageHtml({
+          query,
+          results,
+          embedded: isEmbedded,
+          queriedDicts: dictKeys,
+        })
       );
     } catch (err) {
       console.error("Error retrieving dictionary entry:", err);
@@ -135,7 +176,13 @@ export function createV2Router(
           );
         return;
       }
-      res.status(500).send(renderDictPageHtml({ query, embedded: isEmbedded }));
+      res.status(500).send(
+        renderDictPageHtml({
+          query,
+          embedded: isEmbedded,
+          queriedDicts: dictKeys,
+        })
+      );
     }
   });
 
