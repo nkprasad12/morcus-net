@@ -547,6 +547,7 @@ function artifactConfig(args: any): StepConfig[] {
     if (args.build_corpus === true) {
       childEnv.BUILD_CORPUS = "1";
     }
+    childEnv.BUILD_V2 = "1";
     const command = baseCommand.concat(["src/scripts/process_lat_lib.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),

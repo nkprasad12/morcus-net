@@ -99,10 +99,14 @@ export function getSectionLocalId(
   secId: CitationId,
   pageId: CitationId
 ): string {
-  const localTokens = secId.slice(pageId.length);
-  return localTokens.length > 0
-    ? localTokens.join(".")
-    : secId[secId.length - 1] ?? "";
+  const isPrefix = pageId.every((tok, idx) => secId[idx] === tok);
+  if (isPrefix && secId.length >= pageId.length) {
+    const localTokens = secId.slice(pageId.length);
+    return localTokens.length > 0
+      ? localTokens.join(".")
+      : secId[secId.length - 1] ?? "";
+  }
+  return secId.join(".");
 }
 
 /**

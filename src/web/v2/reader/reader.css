@@ -132,7 +132,8 @@
 
 /* Latin clickable words in reading text */
 .v2-reader-passage a,
-a.v2-lat-word {
+a.v2-lat-word,
+span.v2-lat-word {
   color: inherit;
   text-decoration: none !important;
   cursor: pointer;
@@ -142,6 +143,7 @@ a.v2-lat-word {
   border-radius: 3px;
   font-weight: inherit;
   transition: background-color 0.12s ease;
+  display: inline;
 }
 
 .v2-reader-passage a:visited,
@@ -150,15 +152,19 @@ a.v2-lat-word:visited {
 }
 
 .v2-reader-passage a:hover,
-a.v2-lat-word:hover {
+a.v2-lat-word:hover,
+span.v2-lat-word:hover,
+span.v2-lat-word:focus-visible {
   background-color: var(--v2-word-hover-bg);
   color: inherit;
   font-weight: inherit;
   text-decoration: none !important;
+  outline: none;
 }
 
 .v2-reader-passage a.v2-word-active,
-a.v2-lat-word.v2-word-active {
+a.v2-lat-word.v2-word-active,
+span.v2-lat-word.v2-word-active {
   background-color: var(--v2-word-active-bg);
   color: inherit;
   font-weight: inherit;
@@ -170,6 +176,35 @@ a.v2-lat-word.v2-word-active {
 /* Right Column: Embedded Dictionary Sidebar */
 .v2-reader-dict-panel {
   min-width: 0;
+}
+
+.v2-dict-iframe-container {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  overflow: hidden;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.v2-dict-iframe {
+  width: 100%;
+  height: 100%;
+  flex: 1 1 auto;
+  min-height: 0;
+  border: none;
+  background: transparent;
+  display: block;
+}
+
+body.v2-resizing-panels .v2-dict-iframe,
+.v2-reader-dict-panel.v2-is-dragging .v2-dict-iframe {
+  pointer-events: none;
 }
 
 .v2-reader-dict-sticky {
@@ -369,10 +404,12 @@ a.v2-reader-sheet-close:active {
 
 /* Mobile & Responsive Breakpoint: Adaptive Bottom Drawer with Natural Page & Text Scrolling */
 @media (max-width: 640px) {
+  html,
   body.v2-body-reader {
     height: auto;
     min-height: 100vh;
-    overflow-x: hidden;
+    max-width: 100vw;
+    overflow-x: clip;
     overflow-y: auto;
     -webkit-overflow-scrolling: touch;
   }
@@ -380,33 +417,45 @@ a.v2-reader-sheet-close:active {
   .v2-container.v2-container-reader {
     height: auto;
     min-height: 100%;
+    max-width: 100vw;
+    box-sizing: border-box;
     padding: 0 0 70px;
     display: block;
-    overflow: visible;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .v2-main-reader {
     min-height: auto;
+    max-width: 100%;
     display: block;
-    overflow: visible;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   .v2-reader-view {
     display: block;
-    overflow: visible;
+    max-width: 100%;
+    overflow-x: clip;
+    overflow-y: visible;
     margin-top: 0;
   }
 
   .v2-reader-split-layout {
     display: block;
-    overflow: visible;
+    max-width: 100%;
+    overflow-x: clip;
+    overflow-y: visible;
   }
 
   /* Top Column: Latin Reading Passage (Flows naturally down the page) */
   .v2-reader-text-panel {
     width: 100%;
-    overflow: visible;
-    padding: 8px 16px 20px;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: clip;
+    overflow-y: visible;
+    padding: 8px 12px 20px;
   }
 
   .v2-reader-text-card {
@@ -1348,17 +1397,45 @@ a.v2-reader-sheet-close:active {
 /* Mobile <= 640px: Gutter shrinks to 1.35rem, hiding redundant prefix */
 @media (max-width: 640px) {
   .v2-reader-sticky-bar {
+    max-width: 100%;
     margin-bottom: 0.75rem;
+    box-sizing: border-box;
+    overflow-x: clip;
   }
 
   .v2-sticky-primary-row {
-    padding: 0.35rem 0.5rem;
-    gap: 0.35rem;
+    padding: 0.35rem 0.4rem;
+    gap: 0.25rem;
+    min-width: 0;
+    max-width: 100%;
+    box-sizing: border-box;
+  }
+
+  .v2-reader-sticky-form {
+    min-width: 0;
+    flex: 1 1 auto;
+    gap: 0.25rem;
+  }
+
+  .v2-sticky-title-wrapper {
+    min-width: 0;
+    flex: 1 1 auto;
+    overflow: hidden;
+    gap: 0.2rem;
   }
 
   .v2-sticky-expanded-row {
     padding: 0.35rem 0.5rem;
     gap: 0.4rem;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    box-sizing: border-box;
+  }
+
+  .v2-expanded-left,
+  .v2-expanded-right {
+    flex-wrap: wrap;
+    gap: 0.35rem;
   }
 
   .v2-expand-label {
@@ -1376,9 +1453,11 @@ a.v2-reader-sheet-close:active {
   .v2-sticky-author {
     font-size: 0.8125rem;
     font-weight: 600;
-    max-width: 85px;
+    max-width: 75px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
   }
 
   .v2-sticky-work-title,
@@ -1390,24 +1469,32 @@ a.v2-reader-sheet-close:active {
     font-size: 0.8125rem;
     font-weight: 500;
     color: var(--v2-text-muted);
-    max-width: 105px;
+    max-width: 75px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+
+  .v2-sticky-jump-box {
+    flex-shrink: 0;
+    gap: 0.15rem;
   }
 
   .v2-sticky-jump-input {
-    width: 3.25rem;
-    padding: 0.2rem 0.25rem;
+    width: 2.75rem;
+    padding: 0.2rem 0.2rem;
+    font-size: 0.75rem;
   }
 
   .v2-reader-nav-arrow {
-    padding: 0.2rem 0.4rem;
-    min-width: 1.75rem;
+    padding: 0.2rem 0.35rem;
+    min-width: 1.6rem;
   }
 
   .v2-jump-input {
-    width: 3.75rem;
-    padding: 0.2rem 0.35rem;
+    width: 2.75rem;
+    padding: 0.2rem 0.25rem;
   }
 
   .v2-reader-section {

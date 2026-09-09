@@ -125,30 +125,63 @@ describe("v2_router integration", () => {
   });
 
   describe("GET /v2/reader", () => {
-    test("returns 200 with reader prototype layout and empty dictionary state when no q", async () => {
+    test("returns 200 with reader layout and dictionary iframe placeholder when no q", async () => {
       const res = await request(app).get("/v2/reader");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("<!DOCTYPE html>");
       expect(res.text).toContain("morcus-reader-view");
-      expect(res.text).toContain("C. Iulius Caesar");
-      expect(res.text).toContain("v2-reader-empty-state");
-      expect(mockFusedDict.getEntry).not.toHaveBeenCalled();
+      expect(res.text).toContain("Julius Caesar");
+      expect(res.text).toContain('id="v2-dict-frame"');
+      expect(res.text).toContain('/v2/dicts?embedded=1');
+      expect(res.text).toContain("Tap any word to view definitions");
     });
 
-    test("returns 200 and queries dictionary when q is supplied in query string", async () => {
+    test("returns 200 and points dictionary iframe to embedded query when q is supplied", async () => {
       const res = await request(app).get("/v2/reader?q=Gallia");
       expect(res.status).toBe(200);
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-reader-view");
+      expect(res.text).toContain('id="v2-dict-frame"');
+      expect(res.text).toContain('/v2/dicts?q=Gallia&amp;embedded=1');
+    });
+
+    test("GET /v2/reader/:author/:name/:page? renders reader URL", async () => {
+      const res = await request(app).get(
+        "/v2/reader/caesar/de_bello_gallico/1.1"
+      );
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).toContain("morcus-reader-view");
+      expect(res.text).toContain("De bello Gallico");
+      expect(res.text).toContain("Gallia est omnis divisa in partes tres");
+    });
+  });
+
+  describe("GET /v2/dicts with embedded mode", () => {
+    test("renders minimal dictionary panel suitable for iframe and queries dictionary", async () => {
+      const res = await request(app).get("/v2/dicts?q=Gallia&embedded=1");
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("v2-dict-card");
-      expect(res.text).toContain("Lewis");
+      expect(res.text).toContain("v2-body-embedded");
       expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
         expect.objectContaining({
           query: "Gallia",
           mode: 1,
         })
       );
+    });
+  });
+
+  describe("GET /v2/library", () => {
+    test("returns 200 with catalog and author groupings", async () => {
+      const res = await request(app).get("/v2/library");
+      expect(res.status).toBe(200);
+      expect(res.header["content-type"]).toContain("text/html");
+      expect(res.text).toContain("morcus-library-view");
+      expect(res.text).toContain("Classical Latin Library");
+      expect(res.text).toContain("Julius Caesar");
     });
   });
 

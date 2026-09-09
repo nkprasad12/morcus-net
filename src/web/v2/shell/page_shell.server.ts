@@ -6,12 +6,14 @@ import {
 } from "@/web/v2/shell/asset_manifest.server";
 import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
 
-export type V2ActivePage = "dicts" | "about" | "reader";
+export type V2ActivePage = "dicts" | "about" | "library";
 
 export interface PageShellOptions {
   title: string;
   activePage: V2ActivePage;
   contentHtml: string;
+  hideAppBar?: boolean;
+  isReader?: boolean;
 }
 
 /**
@@ -20,7 +22,7 @@ export interface PageShellOptions {
  */
 export function renderAppBar(activePage: V2ActivePage): string {
   const isDictsActive = activePage === "dicts";
-  const isReaderActive = activePage === "reader";
+  const isLibraryActive = activePage === "library";
   const isAboutActive = activePage === "about";
 
   return `
@@ -41,11 +43,11 @@ export function renderAppBar(activePage: V2ActivePage): string {
               Dictionary
             </a>
             <a
-              href="/v2/reader"
-              class="v2-nav-link ${isReaderActive ? "active" : ""}"
-              ${isReaderActive ? 'aria-current="page"' : ""}
+              href="/v2/library"
+              class="v2-nav-link ${isLibraryActive ? "active" : ""}"
+              ${isLibraryActive ? 'aria-current="page"' : ""}
             >
-              Reader
+              Library
             </a>
             <a
               href="/v2/about"
@@ -94,11 +96,11 @@ export function renderAppBar(activePage: V2ActivePage): string {
                 Dictionary
               </a>
               <a
-                href="/v2/reader"
-                class="v2-nav-link ${isReaderActive ? "active" : ""}"
-                ${isReaderActive ? 'aria-current="page"' : ""}
+                href="/v2/library"
+                class="v2-nav-link ${isLibraryActive ? "active" : ""}"
+                ${isLibraryActive ? 'aria-current="page"' : ""}
               >
-                Reader
+                Library
               </a>
               <a
                 href="/v2/about"
@@ -119,13 +121,24 @@ export function renderAppBar(activePage: V2ActivePage): string {
  */
 export function renderPageShell(options: PageShellOptions): string {
   const titleEncoded = he.escape(options.title);
-  const appBarHtml = renderAppBar(options.activePage);
-  const isReader = options.activePage === "reader";
-  const bodyClass = isReader ? ' class="v2-body-reader"' : "";
-  const containerClass = isReader
-    ? "v2-container v2-container-reader"
-    : "v2-container";
-  const mainClass = isReader ? ' class="v2-main-reader"' : "";
+  const appBarHtml = options.hideAppBar ? "" : renderAppBar(options.activePage);
+  const isReader = options.isReader ?? false;
+  const isEmbedded = options.hideAppBar ?? false;
+
+  const bodyClasses: string[] = [];
+  if (isReader) bodyClasses.push("v2-body-reader");
+  if (isEmbedded) bodyClasses.push("v2-body-embedded");
+  const bodyClass = bodyClasses.length > 0 ? ` class="${bodyClasses.join(" ")}"` : "";
+
+  const containerClasses: string[] = ["v2-container"];
+  if (isReader) containerClasses.push("v2-container-reader");
+  if (isEmbedded) containerClasses.push("v2-container-embedded");
+  const containerClass = containerClasses.join(" ");
+
+  const mainClasses: string[] = [];
+  if (isReader) mainClasses.push("v2-main-reader");
+  if (isEmbedded) mainClasses.push("v2-main-embedded");
+  const mainClass = mainClasses.length > 0 ? ` class="${mainClasses.join(" ")}"` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">

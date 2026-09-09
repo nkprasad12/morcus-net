@@ -6,18 +6,20 @@ import {
   renderDictResultsHtml,
 } from "@/web/v2/dict/dict.server";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
+import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
 import {
   renderReaderPageHtml,
   renderReaderContentHtml,
 } from "@/web/v2/reader/reader.server";
-import { getReaderWork } from "@/web/v2/reader/reader_data";
 import {
-  resolveCitationJump,
-  citationToString,
-} from "@/web/v2/reader/reader_types";
+  getV2Work,
+  resolvePageInWork,
+} from "@/web/v2/reader/reader_loader.server";
+import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { GitHub } from "@/web/utils/github";
 import type { ReportApiRequest } from "@/web/api_routes";
 import * as path from "path";
+import * as he from "he";
 
 const ALL_LATIN_DICTS = LatinDict.AVAILABLE.map((d) => d.key);
 
@@ -90,6 +92,10 @@ export function createV2Router(
     const isPartial =
       req.query.format === "partial" ||
       req.headers["x-requested-with"] === "fetch";
+    const isEmbedded =
+      req.query.embedded === "1" ||
+      req.headers["sec-fetch-dest"] === "iframe" ||
+      req.headers.referer?.includes("embedded=1") === true;
 
     if (!query) {
       if (isPartial) {
@@ -98,7 +104,7 @@ export function createV2Router(
         return;
       }
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(renderDictPageHtml({ query: "" }));
+      res.send(renderDictPageHtml({ query: "", embedded: isEmbedded }));
       return;
     }
 
@@ -116,7 +122,9 @@ export function createV2Router(
       }
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(renderDictPageHtml({ query, results }));
+      res.send(
+        renderDictPageHtml({ query, results, embedded: isEmbedded })
+      );
     } catch (err) {
       console.error("Error retrieving dictionary entry:", err);
       if (isPartial) {
@@ -127,7 +135,7 @@ export function createV2Router(
           );
         return;
       }
-      res.status(500).send(renderDictPageHtml({ query }));
+      res.status(500).send(renderDictPageHtml({ query, embedded: isEmbedded }));
     }
   });
 
@@ -137,6 +145,10 @@ export function createV2Router(
     const isPartial =
       req.query.format === "partial" ||
       req.headers["x-requested-with"] === "fetch";
+    const isEmbedded =
+      req.query.embedded === "1" ||
+      req.headers["sec-fetch-dest"] === "iframe" ||
+      req.headers.referer?.includes("embedded=1") === true;
 
     if (!id) {
       res.redirect("/v2/dicts");
@@ -157,7 +169,14 @@ export function createV2Router(
       }
 
       res.setHeader("Content-Type", "text/html; charset=utf-8");
-      res.send(renderDictPageHtml({ query: id, results, isIdSearch: true }));
+      res.send(
+        renderDictPageHtml({
+          query: id,
+          results,
+          isIdSearch: true,
+          embedded: isEmbedded,
+        })
+      );
     } catch (err) {
       console.error("Error retrieving dictionary entry by ID:", err);
       if (isPartial) {
@@ -168,88 +187,176 @@ export function createV2Router(
           );
         return;
       }
-      res.status(500).send(renderDictPageHtml({ query: id, isIdSearch: true }));
+      res
+        .status(500)
+        .send(
+          renderDictPageHtml({
+            query: id,
+            isIdSearch: true,
+            embedded: isEmbedded,
+          })
+        );
     }
   });
 
-  // Reader route: multi-level hierarchical classical text reader with embedded dictionary
+  // Library Catalog route
+  router.get("/library", async (_req: Request, res: Response) => {
+    try {
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      const html = await renderLibraryPageHtml();
+      res.send(html);
+    } catch (err) {
+      console.error("Error rendering library catalog:", err);
+      res.status(500).send("Error rendering library catalog");
+    }
+  });
+
+  // Human-readable reader route: /v2/reader/:author/:name/:page?
+  router.get(
+    "/reader/:author/:name/:page?",
+    async (req: Request, res: Response) => {
+      const author = req.params.author;
+      const name = req.params.name;
+      const pageId = req.params.page;
+      const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+      const view = req.query.view === "parallel" ? "parallel" : "single";
+      const jump =
+        typeof req.query.jump === "string" ? req.query.jump.trim() : "";
+      const isPartial =
+        req.query.format === "partial" ||
+        req.headers["x-requested-with"] === "fetch";
+
+      const work =
+        (await getV2Work(`${author}/${name}`)) ||
+        (await getV2Work(`${author}_${name}`));
+
+      if (!work) {
+        res.status(404).send(
+          renderPageShell({
+            title: "Work Not Found - Morcus Latin Tools",
+            activePage: "library",
+            contentHtml: `
+            <div class="v2-library-empty-state" style="margin: 4rem auto; max-width: 600px;">
+              <h2 class="v2-library-empty-title">Classical Work Not Found</h2>
+              <p class="v2-library-empty-desc">Could not locate classical work <em>${he.encode(
+                `${author}/${name}`
+              )}</em> in the library catalog.</p>
+              <a href="/v2/library" class="v2-btn v2-btn-primary">Browse Full Library</a>
+            </div>
+          `,
+          })
+        );
+        return;
+      }
+
+      if (jump) {
+        const resolved = resolvePageInWork(work, jump);
+        const params = new URLSearchParams();
+        if (view === "parallel") params.set("view", "parallel");
+        if (query) params.set("q", query);
+        const qStr = params.toString() ? `?${params.toString()}` : "";
+        res.redirect(
+          302,
+          `/v2/reader/${work.urlAuthor}/${work.urlName}/${resolved.page.id}${qStr}`
+        );
+        return;
+      }
+
+      try {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        if (isPartial) {
+          res.send(
+            await renderReaderContentHtml({
+              work,
+              pageId,
+              query,
+              view,
+            })
+          );
+        } else {
+          res.send(
+            await renderReaderPageHtml({
+              work,
+              pageId,
+              query,
+              view,
+            })
+          );
+        }
+      } catch (err) {
+        console.error("Error rendering reader work:", err);
+        res.status(500).send("Error rendering reader passage");
+      }
+    }
+  );
+
+  // General reader route: handles jumps, legacy query parameters, and default work
   router.get("/reader", async (req: Request, res: Response) => {
     const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
     const workId =
-      typeof req.query.work === "string" ? req.query.work.trim() : "dbg";
+      typeof req.query.work === "string"
+        ? req.query.work.trim()
+        : "caesar_de_bello_gallico";
     const pageId =
-      typeof req.query.id === "string" ? req.query.id.trim() : undefined;
+      typeof req.query.id === "string"
+        ? req.query.id.trim()
+        : typeof req.query.pg === "string"
+        ? req.query.pg.trim()
+        : undefined;
     const jump =
       typeof req.query.jump === "string" ? req.query.jump.trim() : "";
-    const currPage =
-      typeof req.query.curr_page === "string" ? req.query.curr_page.trim() : "";
     const view = req.query.view === "parallel" ? "parallel" : "single";
     const isPartial =
       req.query.format === "partial" ||
       req.headers["x-requested-with"] === "fetch";
 
-    // Handle No-JS quick jump submission
-    if (jump) {
-      const work = getReaderWork(workId);
-      let activeIdx = 0;
-      if (currPage || pageId) {
-        const needle = (currPage || pageId)!.split(".");
-        const found = work.pages.findIndex(
-          (p) =>
-            p.id.length === needle.length &&
-            p.id.every((tok, i) => tok === needle[i])
-        );
-        if (found !== -1) activeIdx = found;
-      }
-      const resolved = resolveCitationJump(jump, work, activeIdx);
-      if (resolved) {
-        const params = new URLSearchParams();
-        if (work.id !== "dbg") params.set("work", work.id);
-        params.set("id", citationToString(resolved.page.id));
-        if (view === "parallel") params.set("view", "parallel");
-        if (query) params.set("q", query);
-        const hash = resolved.targetSectionId
-          ? `#sec-${resolved.targetSectionId}`
-          : "";
-        res.redirect(`/v2/reader?${params.toString()}${hash}`);
-        return;
-      }
+    const work =
+      (await getV2Work(workId)) ||
+      (await getV2Work("caesar_de_bello_gallico")) ||
+      (await getV2Work("phi0448.phi001.perseus-lat2"));
+
+    if (!work) {
+      res.redirect(302, "/v2/library");
+      return;
     }
 
-    if (!query) {
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      if (isPartial) {
-        res.send(renderReaderContentHtml({ workId, pageId, view }));
-      } else {
-        res.send(renderReaderPageHtml({ workId, pageId, view }));
-      }
+    if (jump) {
+      const resolved = resolvePageInWork(work, jump);
+      const params = new URLSearchParams();
+      if (view === "parallel") params.set("view", "parallel");
+      if (query) params.set("q", query);
+      const qStr = params.toString() ? `?${params.toString()}` : "";
+      res.redirect(
+        302,
+        `/v2/reader/${work.urlAuthor}/${work.urlName}/${resolved.page.id}${qStr}`
+      );
       return;
     }
 
     try {
-      const results = await fusedDict.getEntry({
-        query,
-        dicts: ALL_LATIN_DICTS,
-        mode: 1, // Search by keys and inflected forms
-      });
       res.setHeader("Content-Type", "text/html; charset=utf-8");
       if (isPartial) {
         res.send(
-          renderReaderContentHtml({ workId, pageId, query, results, view })
+          await renderReaderContentHtml({
+            work,
+            pageId,
+            query,
+            view,
+          })
         );
       } else {
         res.send(
-          renderReaderPageHtml({ workId, pageId, query, results, view })
+          await renderReaderPageHtml({
+            work,
+            pageId,
+            query,
+            view,
+          })
         );
       }
     } catch (err) {
-      console.error("Error retrieving reader dictionary entry:", err);
-      res.setHeader("Content-Type", "text/html; charset=utf-8");
-      if (isPartial) {
-        res.send(renderReaderContentHtml({ workId, pageId, query, view }));
-      } else {
-        res.send(renderReaderPageHtml({ workId, pageId, query, view }));
-      }
+      console.error("Error rendering reader view:", err);
+      res.status(500).send("Error rendering reader view");
     }
   });
 
