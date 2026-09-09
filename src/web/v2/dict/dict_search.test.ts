@@ -158,4 +158,119 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect.anything()
     );
   });
+
+  test("generates anchor element with href preserving query params for middle-click / open in new tab", () => {
+    // Simulate active dict and embedded params in window.location.search
+    window.history.replaceState({}, "", "/v2/dicts?q=habeo&dict=L%26S&embedded=1");
+
+    const resultsHtml = `
+      <article class="v2-entry">
+        <div class="v2-entry-content">
+          <p><span class="lsQuote">Gallia est</span></p>
+        </div>
+      </article>
+    `;
+
+    const el = createDictSearch(resultsHtml);
+    const galliaLink = el.querySelector<HTMLAnchorElement>(
+      '.v2-lat-word[data-word="Gallia"]'
+    )!;
+
+    expect(galliaLink).not.toBeNull();
+    expect(galliaLink.tagName.toLowerCase()).toBe("a");
+    expect(galliaLink.getAttribute("href")).toBe(
+      "/v2/dicts?q=Gallia&dict=L%26S&embedded=1"
+    );
+
+    // Clean up history state
+    window.history.replaceState({}, "", "/v2/dicts");
+  });
+
+  test("allows native new-tab opening on middle click or modifier clicks (Ctrl, Cmd, Shift, Alt)", () => {
+    const resultsHtml = `
+      <article class="v2-entry">
+        <div class="v2-entry-content">
+          <p>
+            <span class="lsQuote">Gallia est</span>
+            <a class="dLink" to="facio" href="/v2/dicts?q=facio">facio</a>
+          </p>
+        </div>
+      </article>
+    `;
+
+    const el = createDictSearch(resultsHtml);
+    const galliaLink = el.querySelector<HTMLAnchorElement>(
+      '.v2-lat-word[data-word="Gallia"]'
+    )!;
+    const dLink = el.querySelector<HTMLAnchorElement>(".dLink")!;
+
+    // Normal left-click should be prevented for AJAX swap
+    const normalClick = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+    });
+    galliaLink.dispatchEvent(normalClick);
+    expect(normalClick.defaultPrevented).toBe(true);
+
+    // Middle click (button 1) should NOT be prevented
+    const middleClick = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      button: 1,
+    });
+    galliaLink.dispatchEvent(middleClick);
+    expect(middleClick.defaultPrevented).toBe(false);
+
+    // Ctrl+click should NOT be prevented
+    const ctrlClick = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      ctrlKey: true,
+    });
+    galliaLink.dispatchEvent(ctrlClick);
+    expect(ctrlClick.defaultPrevented).toBe(false);
+
+    // Cmd/Meta+click should NOT be prevented
+    const metaClick = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      metaKey: true,
+    });
+    galliaLink.dispatchEvent(metaClick);
+    expect(metaClick.defaultPrevented).toBe(false);
+
+    // Modifier click on dLink should also NOT be prevented
+    const dLinkCtrlClick = new MouseEvent("click", {
+      bubbles: true,
+      cancelable: true,
+      button: 0,
+      ctrlKey: true,
+    });
+    dLink.dispatchEvent(dLinkCtrlClick);
+    expect(dLinkCtrlClick.defaultPrevented).toBe(false);
+  });
+
+  test("sanitizes query by trimming quotes, punctuation, and whitespace on form submission", () => {
+    const el = createDictSearch();
+    const form = el.querySelector<HTMLFormElement>("form.v2-search-form")!;
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+
+    input.value = '  "habeo,"  ';
+    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+
+    // Input value should be sanitized
+    expect(input.value).toBe("habeo");
+    // Fetch should be called with sanitized query
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("q=habeo"),
+      expect.anything()
+    );
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("q=%22habeo"),
+      expect.anything()
+    );
+  });
 });

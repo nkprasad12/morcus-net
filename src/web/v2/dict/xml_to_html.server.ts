@@ -118,6 +118,20 @@ export function xmlNodeToHtml(
     }
   }
 
+  // Transform Forcellini external links (<a class="forcNewTab" href="..." target="_blank">word</a>)
+  // into an explicit action button with external link icon
+  if (rawClass.includes("forcNewTab")) {
+    tagName = "a";
+    attrsMap.set(
+      "class",
+      `${attrsMap.get("class") ?? rawClass} v2-action-btn v2-forc-action-btn`.trim()
+    );
+    attrsMap.set("target", "_blank");
+    attrsMap.set("rel", "noopener noreferrer");
+    attrsMap.set("role", "button");
+    attrsMap.set("title", "Open full entry on lexica.linguax.com in new tab");
+  }
+
   // Rewrite relative internal links to dictionary searches
   const currentHref = attrsMap.get("href");
   if (
@@ -149,6 +163,8 @@ export function xmlNodeToHtml(
     currentClass.includes("lsHover") ||
     currentClass.includes("lsSenseBullet") ||
     currentClass.includes("dLink") ||
+    currentClass.includes("forcNewTab") ||
+    currentClass.includes("v2-action-btn") ||
     currentClass.includes("v2-section-anchor") ||
     currentClass.includes("v2-toc");
   const isForeign = sourceTagName === "foreign";
@@ -161,6 +177,14 @@ export function xmlNodeToHtml(
   let childrenHtml = node.children
     .map((c) => xmlNodeToHtml(c, { allowLinkify: nextAllowLinkify }))
     .join("");
+
+  // In Forcellini, render an explicit action button label with external link icon
+  if (rawClass.includes("forcNewTab")) {
+    const linkText = childrenHtml.trim();
+    childrenHtml = `<span class="v2-action-btn-icon" aria-hidden="true">&#x2197;</span><span class="v2-action-btn-text">Open in new tab${
+      linkText ? ` (${linkText})` : ""
+    }</span>`;
+  }
 
   // In Smith & Hall, dLink nodes may have empty children and store the display text in attrs.text
   if (
@@ -189,6 +213,8 @@ export function xmlNodeToHtml(
   const targetVal = attrsMap.get("target");
   const targetAttr = targetVal ? ` target="${he.encode(targetVal)}"` : "";
   const relAttr = targetVal === "_blank" ? ' rel="noopener noreferrer"' : "";
+  const roleVal = attrsMap.get("role");
+  const roleAttr = roleVal ? ` role="${he.encode(roleVal)}"` : "";
   const langVal = attrsMap.get("lang");
   const langAttr = langVal ? ` lang="${he.encode(langVal)}"` : "";
   const dirVal = attrsMap.get("dir");
@@ -200,5 +226,5 @@ export function xmlNodeToHtml(
       ? ` style="margin-left: ${indentLevel * 0.5}em;"`
       : "";
 
-  return `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+  return `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${roleAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
 }

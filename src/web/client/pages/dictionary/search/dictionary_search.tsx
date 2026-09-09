@@ -3,6 +3,7 @@ import {
   LatinDict,
   type LatinDictInfo,
 } from "@/common/dictionaries/latin_dicts";
+import { trimRawQuery } from "@/common/text_cleaning";
 import { autocompleteOptions } from "@/web/client/pages/dictionary/search/autocomplete_options";
 import { useState, useContext, useCallback } from "react";
 import { DictChip } from "@/web/client/pages/dictionary/dict_chips";
@@ -235,15 +236,6 @@ function AutocompleteOption(props: { option: [DictLang, string] }) {
 
 function spacing(level: number): string {
   return `${level * 8}px`;
-}
-
-function trimRawQuery(query: string): string {
-  // Remove any leading or trailing clusters that contain punctuation or whitespace.
-  // Also remove adjacent combining marks so we don't leave dangling diacritics.
-  // Uses Unicode property escapes; keep the 'u' flag and global to handle both ends.
-  const LEAD_TRIM_RE = /^(?:[\p{P}\p{Z}\s]+[\p{M}]*)/u;
-  const TRAIL_TRIM_RE = /(?:[\p{M}]*[\p{P}\p{Z}\s]+)$/u;
-  return query.replace(LEAD_TRIM_RE, "").replace(TRAIL_TRIM_RE, "");
 }
 
 export function DictionarySearch(props: {

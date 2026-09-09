@@ -7,7 +7,11 @@ import {
   type QueryParamSync,
   registerElement,
 } from "@/web/v2/core/index.client";
-import { processTokens, removeDiacritics } from "@/common/text_cleaning";
+import {
+  processTokens,
+  removeDiacritics,
+  trimRawQuery,
+} from "@/common/text_cleaning";
 import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
 
 /**
@@ -77,7 +81,10 @@ export class MorcusDictSearch extends BaseElement {
 
     this.hijackForm("form.v2-search-form", ({ q }) => {
       this.clearSuggestions();
-      this.searchQuery(q || "");
+      const cleaned = trimRawQuery(q || "");
+      if (cleaned) {
+        this.searchQuery(cleaned);
+      }
     });
 
     if (this.inputElement) {
@@ -91,6 +98,12 @@ export class MorcusDictSearch extends BaseElement {
 
       this.listen(this.resultsElement, "click", (e: MouseEvent) => {
         if (!(e.target instanceof Element)) return;
+
+        // Allow middle-click (e.button !== 0) or modifier clicks (Ctrl, Cmd, Shift, Alt)
+        // to follow standard browser navigation (e.g. open in a new tab / new window)
+        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+          return;
+        }
 
         const wordEl = e.target.closest<HTMLElement>(".v2-lat-word");
         if (wordEl) {
@@ -179,7 +192,8 @@ export class MorcusDictSearch extends BaseElement {
   }
 
   private readonly handleInput = () => {
-    const query = this.inputElement?.value.trim() ?? "";
+    const raw = this.inputElement?.value ?? "";
+    const query = trimRawQuery(raw);
     if (query.length < 2) {
       this.clearSuggestions();
       return;
@@ -217,19 +231,23 @@ export class MorcusDictSearch extends BaseElement {
   };
 
   private chooseSuggestion(suggestion: string) {
+    const clean = trimRawQuery(suggestion);
     if (this.inputElement) {
-      this.inputElement.value = suggestion;
+      this.inputElement.value = clean;
     }
     this.clearSuggestions();
-    this.searchQuery(suggestion);
+    this.searchQuery(clean);
   }
 
   private async searchQuery(query: string) {
+    const cleanQuery = trimRawQuery(query);
+    if (!cleanQuery) return;
     if (this.inputElement) {
+      this.inputElement.value = cleanQuery;
       this.inputElement.blur();
     }
-    this.router?.push(query);
-    await this.fetchResults(query);
+    this.router?.push(cleanQuery);
+    await this.fetchResults(cleanQuery);
   }
 
   private async fetchResults(query: string) {
@@ -329,11 +347,12 @@ export class MorcusDictSearch extends BaseElement {
 
           if (isLatinWord) {
             hasWords = true;
-            const span = document.createElement("span");
-            span.className = "v2-lat-word";
-            span.dataset.word = cleanWord;
-            span.textContent = token;
-            fragment.appendChild(span);
+            const a = document.createElement("a");
+            a.className = "v2-lat-word";
+            a.href = this.buildWordHref(cleanWord);
+            a.dataset.word = cleanWord;
+            a.textContent = token;
+            fragment.appendChild(a);
           } else {
             fragment.appendChild(document.createTextNode(token));
           }
@@ -344,6 +363,25 @@ export class MorcusDictSearch extends BaseElement {
         }
       }
     }
+  }
+
+  private buildWordHref(cleanWord: string): string {
+    const searchParams = new URLSearchParams(window.location.search);
+    const params = new URLSearchParams();
+    params.set("q", cleanWord);
+    const inParam = searchParams.get("in") || searchParams.get("dict");
+    if (inParam) {
+      params.set("dict", inParam);
+    }
+    const langParam = searchParams.get("lang");
+    if (langParam) {
+      params.set("lang", langParam);
+    }
+    const embeddedParam = searchParams.get("embedded");
+    if (embeddedParam) {
+      params.set("embedded", embeddedParam);
+    }
+    return `/v2/dicts?${params.toString()}`;
   }
 }
 
