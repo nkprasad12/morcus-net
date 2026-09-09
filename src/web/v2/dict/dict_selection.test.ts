@@ -5,7 +5,7 @@ import {
   formatDictsParam,
   resolveActiveDicts,
   DEFAULT_DICT_KEYS,
-} from "./dict_selection.server";
+} from "@/web/v2/dict/dict_selection.server";
 
 describe("dict_selection.server", () => {
   describe("parseDictKeys", () => {

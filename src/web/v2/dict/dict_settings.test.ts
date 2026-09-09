@@ -19,7 +19,9 @@ describe("MorcusDictSettings", () => {
     document.body.appendChild(el);
 
     const btn = el.querySelector<HTMLElement>(".v2-settings-btn");
-    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details");
+    const details = el.querySelector<HTMLDetailsElement>(
+      ".v2-dict-settings-details"
+    );
     const slider = el.querySelector<HTMLInputElement>(".v2-settings-slider");
     const valueDisplay = el.querySelector<HTMLElement>(".v2-settings-value");
 
@@ -56,7 +58,9 @@ describe("MorcusDictSettings", () => {
     document.body.appendChild(el);
 
     const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
-    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details")!;
+    const details = el.querySelector<HTMLDetailsElement>(
+      ".v2-dict-settings-details"
+    )!;
 
     expect(details.open).toBe(false);
 
@@ -97,7 +101,9 @@ describe("MorcusDictSettings", () => {
     document.body.appendChild(el);
 
     const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
-    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details")!;
+    const details = el.querySelector<HTMLDetailsElement>(
+      ".v2-dict-settings-details"
+    )!;
 
     btn.click();
     expect(details.open).toBe(true);
@@ -114,7 +120,9 @@ describe("MorcusDictSettings", () => {
     document.body.appendChild(outside);
 
     const btn = el.querySelector<HTMLElement>(".v2-settings-btn")!;
-    const details = el.querySelector<HTMLDetailsElement>(".v2-dict-settings-details")!;
+    const details = el.querySelector<HTMLDetailsElement>(
+      ".v2-dict-settings-details"
+    )!;
 
     btn.click();
     expect(details.open).toBe(true);
@@ -127,7 +135,8 @@ describe("MorcusDictSettings", () => {
     const el = document.createElement("morcus-dict-settings");
     document.body.appendChild(el);
 
-    const checkboxes = el.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
+    const checkboxes =
+      el.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
     expect(checkboxes.length).toBeGreaterThan(0);
 
     // L&S should be checked by default

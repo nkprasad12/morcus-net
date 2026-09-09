@@ -80,9 +80,8 @@ export function renderDictResultsHtml(
 
   // If queriedDicts was provided, use that to preserve order and show 0-hit dictionaries;
   // otherwise fallback to hitKeys.
-  const allQueriedKeys = queriedDicts && queriedDicts.length > 0
-    ? queriedDicts
-    : hitKeys;
+  const allQueriedKeys =
+    queriedDicts && queriedDicts.length > 0 ? queriedDicts : hitKeys;
 
   if (hitKeys.length === 0) {
     const queriedNames = allQueriedKeys
@@ -101,7 +100,9 @@ export function renderDictResultsHtml(
         )}</strong>".</p>
         ${
           queriedNames
-            ? `<p class="v2-no-results-sub">Searched: ${he.encode(queriedNames)}</p>`
+            ? `<p class="v2-no-results-sub">Searched: ${he.encode(
+                queriedNames
+              )}</p>`
             : ""
         }
       </div>

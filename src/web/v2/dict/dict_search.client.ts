@@ -109,15 +109,20 @@ export class MorcusDictSearch extends BaseElement {
 
         // Allow middle-click (e.button !== 0) or modifier clicks (Ctrl, Cmd, Shift, Alt)
         // to follow standard browser navigation (e.g. open in a new tab / new window)
-        if (e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) {
+        if (
+          e.button !== 0 ||
+          e.metaKey ||
+          e.ctrlKey ||
+          e.shiftKey ||
+          e.altKey
+        ) {
           return;
         }
 
         const wordEl = e.target.closest<HTMLElement>(".v2-lat-word");
         if (wordEl) {
           e.preventDefault();
-          const word =
-            wordEl.dataset.word || wordEl.textContent?.trim() || "";
+          const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
           if (word) {
             this.chooseSuggestion(word);
           }
@@ -285,7 +290,8 @@ export class MorcusDictSearch extends BaseElement {
   public enhanceWords(container: HTMLElement | null) {
     if (!container) return;
 
-    const entries = container.querySelectorAll<HTMLElement>(".v2-entry-content");
+    const entries =
+      container.querySelectorAll<HTMLElement>(".v2-entry-content");
     if (entries.length === 0) return;
 
     for (const entry of entries) {

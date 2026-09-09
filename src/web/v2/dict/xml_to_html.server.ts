@@ -124,7 +124,9 @@ export function xmlNodeToHtml(
     tagName = "a";
     attrsMap.set(
       "class",
-      `${attrsMap.get("class") ?? rawClass} v2-action-btn v2-forc-action-btn`.trim()
+      `${
+        attrsMap.get("class") ?? rawClass
+      } v2-action-btn v2-forc-action-btn`.trim()
     );
     attrsMap.set("target", "_blank");
     attrsMap.set("rel", "noopener noreferrer");

@@ -35,6 +35,14 @@ export interface V2RouterOptions {
   githubToken?: string;
 }
 
+function toStringOrArray(val: unknown): string | string[] | undefined {
+  if (typeof val === "string") return val;
+  if (Array.isArray(val) && val.every((item) => typeof item === "string")) {
+    return val;
+  }
+  return undefined;
+}
+
 export function createV2Router(
   fusedDict: FusedDictionary,
   options?: V2RouterOptions
@@ -72,16 +80,8 @@ export function createV2Router(
     }
 
     const dictParam =
-      typeof req.query.dict === "string" || Array.isArray(req.query.dict)
-        ? (req.query.dict as string | string[])
-        : typeof req.query.in === "string" || Array.isArray(req.query.in)
-        ? (req.query.in as string | string[])
-        : undefined;
-
-    const langParam =
-      typeof req.query.lang === "string" || Array.isArray(req.query.lang)
-        ? (req.query.lang as string | string[])
-        : undefined;
+      toStringOrArray(req.query.dict) ?? toStringOrArray(req.query.in);
+    const langParam = toStringOrArray(req.query.lang);
 
     const { dictKeys } = resolveActiveDicts({
       urlParam: dictParam,
@@ -125,16 +125,8 @@ export function createV2Router(
     // Resolve dictionary selection based on precedence:
     // URL param ('in' or 'dict') > Cookie ('morcus_dicts') > Default (All Latin except Pozo)
     const dictParam =
-      (typeof req.query.dict === "string" || Array.isArray(req.query.dict))
-        ? (req.query.dict as string | string[])
-        : (typeof req.query.in === "string" || Array.isArray(req.query.in))
-        ? (req.query.in as string | string[])
-        : undefined;
-
-    const langParam =
-      typeof req.query.lang === "string" || Array.isArray(req.query.lang)
-        ? (req.query.lang as string | string[])
-        : undefined;
+      toStringOrArray(req.query.dict) ?? toStringOrArray(req.query.in);
+    const langParam = toStringOrArray(req.query.lang);
 
     const cookieHeader = req.headers.cookie;
 
@@ -257,15 +249,13 @@ export function createV2Router(
           );
         return;
       }
-      res
-        .status(500)
-        .send(
-          renderDictPageHtml({
-            query: id,
-            isIdSearch: true,
-            embedded: isEmbedded,
-          })
-        );
+      res.status(500).send(
+        renderDictPageHtml({
+          query: id,
+          isIdSearch: true,
+          embedded: isEmbedded,
+        })
+      );
     }
   });
 

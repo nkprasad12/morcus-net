@@ -91,7 +91,11 @@ export class MorcusReaderView extends BaseElement {
       }
       const secEl = document.getElementById(`sec-${secId}`);
       if (secEl) {
-        secEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        secEl.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
         secEl.classList.add("target-highlight");
         setTimeout(() => secEl.classList.remove("target-highlight"), 3000);
       }
@@ -103,10 +107,7 @@ export class MorcusReaderView extends BaseElement {
     if (!wordEl) return;
 
     e.preventDefault();
-    const word =
-      wordEl.dataset.word ||
-      wordEl.textContent?.trim() ||
-      "";
+    const word = wordEl.dataset.word || wordEl.textContent?.trim() || "";
     if (!word) return;
 
     this.lookupWord(word, wordEl, true);
@@ -243,7 +244,9 @@ export class MorcusReaderView extends BaseElement {
     // Update dictionary iframe (filtering by lang=La for Latin text word lookups)
     const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
     if (iframe) {
-      const targetSrc = `/v2/dicts?q=${encodeURIComponent(word)}&lang=La&embedded=1`;
+      const targetSrc = `/v2/dicts?q=${encodeURIComponent(
+        word
+      )}&lang=La&embedded=1`;
       if (iframe.getAttribute("src") !== targetSrc) {
         iframe.src = targetSrc;
       }
@@ -304,9 +307,9 @@ export class MorcusReaderView extends BaseElement {
 
     const targetBlocks = passage.querySelectorAll<HTMLElement>(
       ".v2-reader-section:not(.v2-section-parallel) p.v2-reader-paragraph, " +
-      ".v2-reader-section:not(.v2-section-parallel) .v2-reader-line, " +
-      ".v2-passage-latin p.v2-reader-paragraph, " +
-      ".v2-passage-latin .v2-reader-line"
+        ".v2-reader-section:not(.v2-section-parallel) .v2-reader-line, " +
+        ".v2-passage-latin p.v2-reader-paragraph, " +
+        ".v2-passage-latin .v2-reader-line"
     );
 
     for (const block of targetBlocks) {
@@ -881,9 +884,7 @@ export class MorcusReaderView extends BaseElement {
     }
 
     const applyMacra = (show: boolean) => {
-      const words = this.$$<HTMLElement>(
-        ".v2-reader-passage .v2-lat-word"
-      );
+      const words = this.$$<HTMLElement>(".v2-reader-passage .v2-lat-word");
       for (const w of words) {
         if (!w.hasAttribute("data-original-text")) {
           w.setAttribute("data-original-text", w.textContent || "");
@@ -1059,7 +1060,11 @@ export class MorcusReaderView extends BaseElement {
 
       if (targetEl) {
         e.preventDefault();
-        targetEl.scrollIntoView({ behavior: "smooth", block: "center", inline: "nearest" });
+        targetEl.scrollIntoView({
+          behavior: "smooth",
+          block: "center",
+          inline: "nearest",
+        });
         targetEl.classList.add("target-highlight");
         setTimeout(() => targetEl?.classList.remove("target-highlight"), 3000);
         this.showToast(`Jumped to § ${targetSecId}`);

@@ -632,13 +632,21 @@ describe("dict_ssr", () => {
     );
 
     const html = xmlNodeToHtml(node);
-    expect(html).toContain('class="forcNewTab v2-action-btn v2-forc-action-btn"');
+    expect(html).toContain(
+      'class="forcNewTab v2-action-btn v2-forc-action-btn"'
+    );
     expect(html).toContain('target="_blank"');
     expect(html).toContain('rel="noopener noreferrer"');
     expect(html).toContain('role="button"');
-    expect(html).toContain('title="Open full entry on lexica.linguax.com in new tab"');
-    expect(html).toContain('<span class="v2-action-btn-icon" aria-hidden="true">&#x2197;</span>');
-    expect(html).toContain('<span class="v2-action-btn-text">Open in new tab (habeo)</span>');
+    expect(html).toContain(
+      'title="Open full entry on lexica.linguax.com in new tab"'
+    );
+    expect(html).toContain(
+      '<span class="v2-action-btn-icon" aria-hidden="true">&#x2197;</span>'
+    );
+    expect(html).toContain(
+      '<span class="v2-action-btn-text">Open in new tab (habeo)</span>'
+    );
   });
 
   test("xmlNodeToHtml renders Mateo plate link with toggleable inline iframe embed", () => {
@@ -660,8 +668,10 @@ describe("dict_ssr", () => {
     expect(html).toContain('title="View plate on mateo.uni-mannheim.de"');
     expect(html).toContain('class="v2-mateo-embed-pane"');
     expect(html).toContain('class="v2-action-btn v2-mateo-toggle-btn"');
-    expect(html).toContain('Plate Embed');
-    expect(html).toContain('iframe src="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html"');
+    expect(html).toContain("Plate Embed");
+    expect(html).toContain(
+      'iframe src="https://mateo.uni-mannheim.de/camenaref/gesner/gesner1/v1/jpg/s0665.html"'
+    );
     expect(html).toContain('class="v2-mateo-frame"');
     expect(html).toContain('loading="lazy"');
   });

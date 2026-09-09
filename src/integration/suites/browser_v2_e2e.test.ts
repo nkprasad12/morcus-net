@@ -264,7 +264,9 @@ test.describe("UI V2 dictionary", () => {
     const wordLinks = page.locator(".v2-lat-word");
     await expect(wordLinks).toHaveCount(0);
     // Ensure content is still rendered as readable text
-    await expect(page.locator(".v2-entry-content").first()).toContainText("habere");
+    await expect(page.locator(".v2-entry-content").first()).toContainText(
+      "habere"
+    );
 
     await context.close();
   });

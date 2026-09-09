@@ -1,4 +1,7 @@
-import type { DocumentAttribution, NavTreeNode } from "@/common/library/library_types";
+import type {
+  DocumentAttribution,
+  NavTreeNode,
+} from "@/common/library/library_types";
 
 export interface V2PreprocessedSection {
   /** Hierarchical coordinate ID (e.g. ["1", "1", "1"]) */
@@ -55,6 +58,12 @@ export interface V2PreprocessedWork {
   translator?: string;
   /** Critical editor if recorded in TEI */
   editor?: string;
+  /** Canonical Text Services URN */
+  ctsUrn?: string;
+  /** License details */
+  license?: string;
+  /** Source repository URL */
+  sourceRepo?: string;
   /** Structural level names, e.g. ["book", "chapter", "section"] or ["book", "line"] */
   textParts: string[];
   /** Depth at which text is paginated, e.g. 2 for chapter, 1 for book/poem */
