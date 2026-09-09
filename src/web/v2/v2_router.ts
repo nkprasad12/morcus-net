@@ -19,6 +19,7 @@ import {
 } from "@/web/v2/reader/reader_loader.server";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { GitHub } from "@/web/utils/github";
+import { trimRawQuery } from "@/common/text_cleaning";
 import type { ReportApiRequest } from "@/web/api_routes";
 import * as path from "path";
 import * as he from "he";
@@ -63,7 +64,8 @@ export function createV2Router(
 
   // Autocomplete endpoint for live search suggestions
   router.get("/api/completions", async (req: Request, res: Response) => {
-    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const query =
+      typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
     if (!query) {
       res.json([]);
       return;
@@ -90,7 +92,8 @@ export function createV2Router(
 
   // Main dictionary route: handles both full SSR (HTML page) and AJAX partials
   router.get("/dicts", async (req: Request, res: Response) => {
-    const query = typeof req.query.q === "string" ? req.query.q.trim() : "";
+    const query =
+      typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
     const isPartial =
       req.query.format === "partial" ||
       req.headers["x-requested-with"] === "fetch";

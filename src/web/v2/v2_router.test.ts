@@ -114,11 +114,31 @@ describe("v2_router integration", () => {
     );
   });
 
+  test("GET /v2/dicts sanitizes query parameter before fetching entries", async () => {
+    const res = await request(app).get('/v2/dicts?q="amo,"');
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "amo",
+      })
+    );
+  });
+
   test("GET /v2/api/completions returns JSON suggestions", async () => {
     const res = await request(app).get("/v2/api/completions?q=am");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("application/json");
     expect(res.body).toEqual(["amo", "amor", "amicitia"]);
+  });
+
+  test("GET /v2/api/completions sanitizes query parameter", async () => {
+    const res = await request(app).get('/v2/api/completions?q="am,"');
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "am",
+      })
+    );
   });
 
   test("GET /v2/assets/v2.css serves the built, hashed stylesheet", async () => {

@@ -779,7 +779,8 @@ html.v2-has-js .lsHover:focus::after {
 }
 
 /* Latin word click-to-lookup link */
-.v2-lat-word {
+.v2-lat-word,
+.v2-lat-word:visited {
   color: inherit;
   text-decoration: none;
   border-radius: 2px;
@@ -787,12 +788,18 @@ html.v2-has-js .lsHover:focus::after {
   transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
 }
 
-.v2-lat-word:hover {
+.v2-lat-word:hover,
+.v2-lat-word:visited:hover {
   color: var(--v2-primary);
   text-decoration: underline;
   text-decoration-style: solid;
   text-underline-offset: 2px;
   background-color: var(--v2-tag-bg);
+}
+
+.v2-lat-word:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 1px;
 }
 
 /* Section anchor bullets */
@@ -1034,6 +1041,52 @@ html.v2-has-js .lsHover:focus::after {
   color: var(--v2-text-muted);
   font-style: italic;
   font-size: 0.9em;
+}
+
+/* Action buttons inside entry content (e.g. Forcellini external new-tab action) */
+.v2-action-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin: 4px 0 4px 6px;
+  padding: 3px 10px;
+  font-family: var(--v2-font-sans);
+  font-size: 0.8rem;
+  font-weight: 500;
+  line-height: 1.3;
+  color: var(--v2-primary);
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  vertical-align: middle;
+  transition: all 0.15s ease-in-out;
+}
+
+.v2-action-btn:hover {
+  color: var(--v2-primary);
+  background-color: var(--v2-border);
+  border-color: var(--v2-border-strong);
+  text-decoration: none;
+}
+
+.v2-action-btn:focus:not(:focus-visible) {
+  outline: none;
+}
+
+.v2-action-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 1px;
+}
+
+.v2-action-btn-icon {
+  font-size: 0.9em;
+  line-height: 1;
+}
+
+.v2-action-btn-text {
+  font-weight: 500;
 }
 
 @media (max-width: 600px) {

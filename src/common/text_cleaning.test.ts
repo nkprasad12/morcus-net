@@ -2,6 +2,7 @@ import {
   processWords,
   removeDiacritics,
   stripDiacritics,
+  trimRawQuery,
 } from "@/common/text_cleaning";
 
 describe("stripDiacritics", () => {
@@ -136,5 +137,39 @@ describe("processWords", () => {
       " ",
       "darkness",
     ]);
+  });
+});
+
+describe("trimRawQuery", () => {
+  it("trims surrounding quotes and brackets", () => {
+    expect(trimRawQuery('"habeo"')).toBe("habeo");
+    expect(trimRawQuery("'habeo'")).toBe("habeo");
+    expect(trimRawQuery("«habeo»")).toBe("habeo");
+    expect(trimRawQuery("„habeo“")).toBe("habeo");
+    expect(trimRawQuery("[habeo]")).toBe("habeo");
+    expect(trimRawQuery("(habeo)")).toBe("habeo");
+  });
+
+  it("trims trailing punctuation and whitespace", () => {
+    expect(trimRawQuery("habeo,")).toBe("habeo");
+    expect(trimRawQuery("habeo.")).toBe("habeo");
+    expect(trimRawQuery("habeo;")).toBe("habeo");
+    expect(trimRawQuery("habeo! ")).toBe("habeo");
+    expect(trimRawQuery("  habeo  ")).toBe("habeo");
+    expect(trimRawQuery("...habeo???")).toBe("habeo");
+  });
+
+  it("preserves valid macrons and breves within the word", () => {
+    expect(trimRawQuery("hăbēna")).toBe("hăbēna");
+    expect(trimRawQuery(' "hăbēna," ')).toBe("hăbēna");
+    expect(trimRawQuery("causa\u0304s")).toBe("causa\u0304s");
+  });
+
+  it("returns empty string when input consists only of punctuation", () => {
+    expect(trimRawQuery("")).toBe("");
+    expect(trimRawQuery("   ")).toBe("");
+    expect(trimRawQuery("...")).toBe("");
+    expect(trimRawQuery('"""')).toBe("");
+    expect(trimRawQuery("?!,;:()")).toBe("");
   });
 });

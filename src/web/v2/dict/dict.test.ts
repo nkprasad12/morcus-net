@@ -619,4 +619,25 @@ describe("dict_ssr", () => {
     expect(html).toContain("No entries found in Gaffiot");
     expect(html).toContain('<span class="v2-jump-pill-count">0</span>');
   });
+
+  test("xmlNodeToHtml renders forcNewTab as an action button with external icon", () => {
+    const node = new XmlNode(
+      "a",
+      [
+        ["class", "forcNewTab"],
+        ["href", "http://lexica.linguax.com/forc2.php?searchedLG=habeo"],
+        ["target", "_blank"],
+      ],
+      ["habeo"]
+    );
+
+    const html = xmlNodeToHtml(node);
+    expect(html).toContain('class="forcNewTab v2-action-btn v2-forc-action-btn"');
+    expect(html).toContain('target="_blank"');
+    expect(html).toContain('rel="noopener noreferrer"');
+    expect(html).toContain('role="button"');
+    expect(html).toContain('title="Open full entry on lexica.linguax.com in new tab"');
+    expect(html).toContain('<span class="v2-action-btn-icon" aria-hidden="true">&#x2197;</span>');
+    expect(html).toContain('<span class="v2-action-btn-text">Open in new tab (habeo)</span>');
+  });
 });
