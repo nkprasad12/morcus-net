@@ -81,12 +81,26 @@ describe("reader_ssr", () => {
     const singleHtml = await renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1", view: "single" });
     expect(singleHtml).not.toContain("v2-section-parallel");
     expect(singleHtml).not.toContain("v2-passage-english");
+    // Translated work renders the Single | Parallel view toggle
+    expect(singleHtml).toContain('id="v2-mode-single"');
+    expect(singleHtml).toContain('id="v2-mode-parallel"');
+    expect(singleHtml).toContain('class="v2-reader-view-toggle"');
 
     const parallelHtml = await renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1", view: "parallel" });
     expect(parallelHtml).toContain("v2-reader-view-parallel");
     expect(parallelHtml).toContain("v2-section-parallel");
     expect(parallelHtml).toContain("v2-passage-english");
     expect(parallelHtml).toContain("John Selby Watson");
+    expect(parallelHtml).toContain('id="v2-mode-single"');
+    expect(parallelHtml).toContain('id="v2-mode-parallel"');
+
+    // Untranslated work requested with view=parallel cleanly falls back to single
+    const untranslatedParallelHtml = await renderReaderContentHtml({ workId: "dbg", pageId: "1.1", view: "parallel" });
+    expect(untranslatedParallelHtml).not.toContain("v2-reader-view-parallel");
+    expect(untranslatedParallelHtml).not.toContain("v2-section-parallel");
+    expect(untranslatedParallelHtml).not.toContain('class="v2-reader-view-toggle"');
+    expect(untranslatedParallelHtml).not.toContain('id="v2-mode-parallel"');
+    expect(untranslatedParallelHtml).toContain('data-view="single"');
   });
 
   test("renderReaderContentHtml renders Table of Contents drawer and Bibliographical modal", async () => {
@@ -127,8 +141,10 @@ describe("reader_ssr", () => {
       'class="v2-sticky-expanded-row" id="v2-sticky-expanded-row" hidden'
     );
     expect(html).toContain('id="v2-reader-toc-btn"');
-    expect(html).toContain('id="v2-mode-single"');
-    expect(html).toContain('id="v2-mode-parallel"');
+    // Untranslated work (dbg) should omit the Single | Parallel view toggle
+    expect(html).not.toContain('id="v2-mode-single"');
+    expect(html).not.toContain('id="v2-mode-parallel"');
+    expect(html).not.toContain('class="v2-reader-view-toggle"');
     expect(html).toContain('id="v2-reader-settings-btn"');
     expect(html).toContain('id="v2-reader-info-btn"');
 

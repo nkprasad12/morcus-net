@@ -27,7 +27,6 @@ export async function renderReaderContentHtml(
   options: ReaderPageOptions = {}
 ): Promise<string> {
   const query = options.query?.trim() ?? "";
-  const viewMode = options.view === "parallel" ? "parallel" : "single";
   const requestedId = options.workId || "caesar_de_bello_gallico";
 
   const work: V2PreprocessedWork | null =
@@ -51,6 +50,9 @@ export async function renderReaderContentHtml(
     work,
     pageIdStr
   );
+  const hasParallel = Boolean(work.hasTranslation && activePage.parallelHtml);
+  const viewMode =
+    hasParallel && options.view === "parallel" ? "parallel" : "single";
   const pageDotId = activePage.id;
   const prevPage = activePageIndex > 0 ? work.pages[activePageIndex - 1] : null;
   const nextPage =
@@ -226,7 +228,9 @@ export async function renderReaderContentHtml(
 
           <!-- Right: View Mode Toggle + Settings + Scholarly Info -->
           <div class="v2-expanded-right">
-            <div class="v2-reader-view-toggle" role="group" aria-label="Reading View Mode">
+            ${
+              hasParallel
+                ? `<div class="v2-reader-view-toggle" role="group" aria-label="Reading View Mode">
               <a href="${singleViewUrl}"
                  class="v2-toggle-option ${
                    viewMode === "single" ? "active" : ""
@@ -239,7 +243,9 @@ export async function renderReaderContentHtml(
                  }"
                  id="v2-mode-parallel"
                  title="Dual Column Parallel Translation">Parallel</a>
-            </div>
+            </div>`
+                : ""
+            }
 
             <button type="button"
                     class="v2-reader-btn v2-reader-settings-btn"
