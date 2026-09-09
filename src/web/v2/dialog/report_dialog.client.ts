@@ -1,3 +1,5 @@
+import { BaseElement, registerElement } from "@/web/v2/core/index.client";
+
 /**
  * Progressively enhanced issue and feedback report dialog component (Light DOM mode).
  *
@@ -6,7 +8,7 @@
  * - When defined: Coordinates the native <dialog> via `showModal()`, focus management,
  *   backdrop clicking, and AJAX form submission.
  */
-export class MorcusReportDialog extends HTMLElement {
+export class MorcusReportDialog extends BaseElement {
   private triggerBtn: HTMLButtonElement | null = null;
   private dialogEl: HTMLDialogElement | null = null;
   private formEl: HTMLFormElement | null = null;
@@ -14,71 +16,42 @@ export class MorcusReportDialog extends HTMLElement {
   private reporterInputEl: HTMLInputElement | null = null;
   private statusEl: HTMLElement | null = null;
   private submitBtn: HTMLButtonElement | null = null;
-  private closeButtons: NodeListOf<HTMLElement> | null = null;
 
-  connectedCallback() {
+  protected override onConnect() {
     this.enhanceMarkup();
   }
 
-  disconnectedCallback() {
-    this.removeEventListeners();
-  }
-
   private enhanceMarkup() {
-    this.triggerBtn = this.querySelector<HTMLButtonElement>(".v2-report-btn");
-    this.dialogEl = this.querySelector<HTMLDialogElement>(
-      "dialog.v2-report-dialog"
-    );
-    this.formEl = this.querySelector<HTMLFormElement>("form.v2-report-form");
-    this.textareaEl = this.querySelector<HTMLTextAreaElement>(
+    this.triggerBtn = this.$<HTMLButtonElement>(".v2-report-btn");
+    this.dialogEl = this.$<HTMLDialogElement>("dialog.v2-report-dialog");
+    this.formEl = this.$<HTMLFormElement>("form.v2-report-form");
+    this.textareaEl = this.$<HTMLTextAreaElement>(
       "textarea.v2-report-textarea"
     );
-    this.reporterInputEl = this.querySelector<HTMLInputElement>(
-      "input.v2-report-reporter"
-    );
-    this.statusEl = this.querySelector<HTMLElement>(".v2-report-status");
-    this.submitBtn = this.querySelector<HTMLButtonElement>(
-      ".v2-report-submit-btn"
-    );
-    this.closeButtons = this.querySelectorAll<HTMLElement>(
-      "[data-dialog-close]"
-    );
+    this.reporterInputEl = this.$<HTMLInputElement>("input.v2-report-reporter");
+    this.statusEl = this.$(".v2-report-status");
+    this.submitBtn = this.$<HTMLButtonElement>(".v2-report-submit-btn");
 
     if (this.triggerBtn) {
-      // Enable the button now that client JS is ready
       this.triggerBtn.removeAttribute("disabled");
-      this.triggerBtn.addEventListener("click", this.handleTriggerClick);
+      this.listen(this.triggerBtn, "click", this.handleTriggerClick);
     }
 
     if (this.dialogEl) {
-      this.dialogEl.addEventListener("click", this.handleBackdropClick);
-      this.dialogEl.addEventListener("cancel", this.handleCancel);
+      this.listen(this.dialogEl, "click", this.handleBackdropClick);
+      this.listen(this.dialogEl, "cancel", this.handleCancel);
     }
 
-    this.closeButtons?.forEach((btn) => {
-      btn.addEventListener("click", this.handleCloseClick);
+    this.$$("[data-dialog-close]").forEach((btn) => {
+      this.listen(btn, "click", this.handleCloseClick);
+    });
+
+    this.hijackForm("form.v2-report-form", (data) => {
+      this.submitReport(data.reportText || "", data.reporter || "");
     });
 
     if (this.formEl) {
-      this.formEl.addEventListener("submit", this.handleSubmit);
-      this.formEl.addEventListener("keydown", this.handleFormKeyDown);
-    }
-  }
-
-  private removeEventListeners() {
-    if (this.triggerBtn) {
-      this.triggerBtn.removeEventListener("click", this.handleTriggerClick);
-    }
-    if (this.dialogEl) {
-      this.dialogEl.removeEventListener("click", this.handleBackdropClick);
-      this.dialogEl.removeEventListener("cancel", this.handleCancel);
-    }
-    this.closeButtons?.forEach((btn) => {
-      btn.removeEventListener("click", this.handleCloseClick);
-    });
-    if (this.formEl) {
-      this.formEl.removeEventListener("submit", this.handleSubmit);
-      this.formEl.removeEventListener("keydown", this.handleFormKeyDown);
+      this.listen(this.formEl, "keydown", this.handleFormKeyDown);
     }
   }
 
@@ -93,7 +66,6 @@ export class MorcusReportDialog extends HTMLElement {
   };
 
   private readonly handleBackdropClick = (e: MouseEvent) => {
-    // When clicking the backdrop outside the dialog bounding box, target is the dialog element itself
     if (e.target === this.dialogEl) {
       this.closeDialog();
     }
@@ -137,7 +109,6 @@ export class MorcusReportDialog extends HTMLElement {
       this.dialogEl.setAttribute("open", "");
     }
     this.clearStatus();
-    // Auto-focus feedback textarea on open
     setTimeout(() => {
       this.textareaEl?.focus();
     }, 50);
@@ -153,17 +124,16 @@ export class MorcusReportDialog extends HTMLElement {
     this.triggerBtn?.focus();
   }
 
-  private readonly handleSubmit = async (e: Event) => {
-    e.preventDefault();
-    const text = this.textareaEl?.value.trim() ?? "";
-    if (!text) return;
+  private readonly submitReport = async (text: string, reporter?: string) => {
+    const trimmedText = text.trim();
+    if (!trimmedText) return;
 
-    const reporter = this.reporterInputEl?.value.trim();
-    let reportText = text;
-    if (reporter) {
-      reportText = `${text}\n\nReporter: ${reporter}`;
-    } else if (!/Reporter:\s*.+/i.test(text)) {
-      reportText = `${text}\n\nReporter: Anonymous`;
+    let reportText = trimmedText;
+    const trimmedReporter = reporter?.trim();
+    if (trimmedReporter) {
+      reportText = `${trimmedText}\n\nReporter: ${trimmedReporter}`;
+    } else if (!/Reporter:\s*.+/i.test(trimmedText)) {
+      reportText = `${trimmedText}\n\nReporter: Anonymous`;
     }
 
     if (this.submitBtn) {
@@ -216,9 +186,7 @@ export class MorcusReportDialog extends HTMLElement {
   };
 }
 
-if (!customElements.get("morcus-report-dialog")) {
-  customElements.define("morcus-report-dialog", MorcusReportDialog);
-}
+registerElement("morcus-report-dialog", MorcusReportDialog);
 
 declare global {
   interface HTMLElementTagNameMap {

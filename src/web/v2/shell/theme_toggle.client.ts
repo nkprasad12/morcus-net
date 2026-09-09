@@ -1,4 +1,8 @@
-const GLOBAL_SETTINGS_KEY = "GlobalSettings";
+import {
+  BaseElement,
+  registerElement,
+  settingsStore,
+} from "@/web/v2/core/index.client";
 
 // Material Design SVG icon paths matching existing SPA
 const MOON_PATH =
@@ -6,35 +10,14 @@ const MOON_PATH =
 const SUN_PATH =
   "M12 7c-2.76 0-5 2.24-5 5s2.24 5 5 5 5-2.24 5-5-2.24-5-5-5zM2 13h2c.55 0 1-.45 1-1s-.45-1-1-1H2c-.55 0-1 .45-1 1s.45 1 1 1zm18 0h2c.55 0 1-.45 1-1s-.45-1-1-1h-2c-.55 0-1 .45-1 1s.45 1 1 1zM11 2v2c0 .55.45 1 1 1s1-.45 1-1V2c0-.55-.45-1-1-1s-1 .45-1 1zm0 18v2c0 .55.45 1 1 1s1-.45 1-1v-2c0-.55-.45-1-1-1s-1 .45-1 1zM5.99 4.58c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0s.39-1.03 0-1.41L5.99 4.58zm12.37 12.37c-.39-.39-1.03-.39-1.41 0-.39.39-.39 1.03 0 1.41l1.06 1.06c.39.39 1.03.39 1.41 0 .39-.39.39-1.03 0-1.41l-1.06-1.06zm1.06-10.96c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06zM7.05 18.36c.39-.39.39-1.03 0-1.41-.39-.39-1.03-.39-1.41 0l-1.06 1.06c-.39.39-.39 1.03 0 1.41s1.03.39 1.41 0l1.06-1.06z";
 
-interface SettingsPayload {
-  darkMode?: boolean;
-}
-
-function parseSettings(raw: string | null): SettingsPayload | null {
-  if (!raw) return null;
-  try {
-    const val = JSON.parse(raw);
-    if (val && typeof val === "object") {
-      return val;
-    }
-  } catch {}
-  return null;
-}
-
-export class MorcusThemeToggle extends HTMLElement {
+export class MorcusThemeToggle extends BaseElement {
   private isDark: boolean = false;
   private buttonEl: HTMLButtonElement | null = null;
   private pathEl: SVGPathElement | null = null;
 
-  connectedCallback() {
+  protected override onConnect() {
     this.isDark = this.computeIsDark();
     this.render();
-  }
-
-  disconnectedCallback() {
-    if (this.buttonEl) {
-      this.buttonEl.removeEventListener("click", this.toggleTheme);
-    }
   }
 
   private computeIsDark(): boolean {
@@ -42,13 +25,11 @@ export class MorcusThemeToggle extends HTMLElement {
     if (currentAttr === "dark") return true;
     if (currentAttr === "light") return false;
 
-    // Check localStorage (GlobalSettings)
-    try {
-      const parsed = parseSettings(localStorage.getItem(GLOBAL_SETTINGS_KEY));
-      if (parsed && typeof parsed.darkMode === "boolean") {
-        return parsed.darkMode;
-      }
-    } catch {}
+    // Check localStorage settings
+    const settings = settingsStore.get();
+    if (typeof settings.darkMode === "boolean") {
+      return settings.darkMode;
+    }
 
     // Fall back to system preference
     return window.matchMedia("(prefers-color-scheme: dark)").matches;
@@ -64,16 +45,7 @@ export class MorcusThemeToggle extends HTMLElement {
     const themeName = nextDark ? "dark" : "light";
 
     document.documentElement.setAttribute("data-theme", themeName);
-
-    try {
-      const parsed =
-        parseSettings(localStorage.getItem(GLOBAL_SETTINGS_KEY)) ?? {};
-      parsed.darkMode = nextDark;
-      localStorage.setItem(GLOBAL_SETTINGS_KEY, JSON.stringify(parsed));
-    } catch (e) {
-      console.warn("Could not persist theme to localStorage", e);
-    }
-
+    settingsStore.update({ darkMode: nextDark });
     this.updateView();
   };
 
@@ -106,17 +78,15 @@ export class MorcusThemeToggle extends HTMLElement {
       </button>
     `;
 
-    this.buttonEl = this.querySelector<HTMLButtonElement>("button");
+    this.buttonEl = this.$<HTMLButtonElement>("button");
     this.pathEl = this.querySelector<SVGPathElement>("path");
     if (this.buttonEl) {
-      this.buttonEl.addEventListener("click", this.toggleTheme);
+      this.listen(this.buttonEl, "click", this.toggleTheme);
     }
   }
 }
 
-if (!customElements.get("morcus-theme-toggle")) {
-  customElements.define("morcus-theme-toggle", MorcusThemeToggle);
-}
+registerElement("morcus-theme-toggle", MorcusThemeToggle);
 
 declare global {
   interface HTMLElementTagNameMap {
