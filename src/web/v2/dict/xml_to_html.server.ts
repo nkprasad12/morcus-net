@@ -47,7 +47,7 @@ export function xmlNodeToHtml(
   options?: XmlNodeToHtmlOptions
 ): string {
   if (typeof node === "string") {
-    if (options?.allowLinkify !== false) {
+    if (options?.allowLinkify) {
       return linkifyText(node);
     }
     return he.encode(node);
@@ -153,7 +153,7 @@ export function xmlNodeToHtml(
     currentClass.includes("v2-toc");
   const isForeign = sourceTagName === "foreign";
   const nextAllowLinkify =
-    (options?.allowLinkify ?? true) &&
+    Boolean(options?.allowLinkify) &&
     !isAlreadyLink &&
     !isDisallowedClass &&
     !isForeign;

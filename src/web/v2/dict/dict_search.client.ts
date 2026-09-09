@@ -7,6 +7,7 @@ import {
   type QueryParamSync,
   registerElement,
 } from "@/web/v2/core/index.client";
+import { processTokens, removeDiacritics } from "@/common/text_cleaning";
 import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
 
 /**
@@ -83,6 +84,42 @@ export class MorcusDictSearch extends BaseElement {
       this.listen(this.inputElement, "input", this.handleInput);
       this.listen(this.inputElement, "keydown", this.handleKeyDown);
       this.listen(this.inputElement, "blur", this.handleBlur);
+    }
+
+    if (this.resultsElement) {
+      this.enhanceWords(this.resultsElement);
+
+      this.listen(this.resultsElement, "click", (e: MouseEvent) => {
+        if (!(e.target instanceof Element)) return;
+
+        const wordEl = e.target.closest<HTMLElement>(".v2-lat-word");
+        if (wordEl) {
+          e.preventDefault();
+          const word =
+            wordEl.dataset.word || wordEl.textContent?.trim() || "";
+          if (word) {
+            this.chooseSuggestion(word);
+          }
+          return;
+        }
+
+        const dLinkEl = e.target.closest<HTMLElement>(".dLink");
+        if (dLinkEl) {
+          e.preventDefault();
+          const toWord =
+            dLinkEl.getAttribute("to") ||
+            dLinkEl.dataset.to ||
+            (dLinkEl instanceof HTMLAnchorElement &&
+              new URL(dLinkEl.href, window.location.origin).searchParams.get(
+                "q"
+              )) ||
+            dLinkEl.textContent?.trim() ||
+            "";
+          if (toWord) {
+            this.chooseSuggestion(toWord);
+          }
+        }
+      });
     }
 
     // Create and attach child component for suggestions
@@ -189,11 +226,107 @@ export class MorcusDictSearch extends BaseElement {
 
   private async fetchResults(query: string) {
     if (!this.resultsElement) return;
-    const url = `/v2/dicts?q=${encodeURIComponent(query)}&format=partial`;
-    await fetchAndSwapPartial(this.resultsElement, url, {
+    const isEmbedded =
+      new URLSearchParams(window.location.search).get("embedded") === "1";
+    const embeddedParam = isEmbedded ? "&embedded=1" : "";
+    const url = `/v2/dicts?q=${encodeURIComponent(query)}&format=partial${embeddedParam}`;
+    const success = await fetchAndSwapPartial(this.resultsElement, url, {
       errorMessage: "Error loading results.",
       loadingOpacity: 0.5,
     });
+    if (success) {
+      this.enhanceWords(this.resultsElement);
+    }
+  }
+
+  public enhanceWords(container: HTMLElement | null) {
+    if (!container) return;
+
+    const entries = container.querySelectorAll<HTMLElement>(".v2-entry-content");
+    if (entries.length === 0) return;
+
+    for (const entry of entries) {
+      if (entry.dataset.wordsEnhanced === "true") continue;
+      entry.dataset.wordsEnhanced = "true";
+
+      const walker = document.createTreeWalker(
+        entry,
+        NodeFilter.SHOW_ELEMENT | NodeFilter.SHOW_TEXT,
+        {
+          acceptNode(node: Node) {
+            if (node instanceof HTMLElement) {
+              const tag = node.tagName.toLowerCase();
+              const cls = node.className || "";
+              if (
+                tag === "a" ||
+                tag === "button" ||
+                tag === "script" ||
+                tag === "style" ||
+                node.getAttribute("lang") === "el" ||
+                node.hasAttribute("data-no-linkify") ||
+                (typeof cls === "string" &&
+                  (cls.includes("lsOrth") ||
+                    cls.includes("lsEmph") ||
+                    cls.includes("lsHover") ||
+                    cls.includes("lsSenseBullet") ||
+                    cls.includes("v2-section-anchor") ||
+                    cls.includes("v2-toc") ||
+                    cls.includes("dLink")))
+              ) {
+                return NodeFilter.FILTER_REJECT;
+              }
+              return NodeFilter.FILTER_SKIP;
+            }
+            if (node instanceof Text) {
+              return NodeFilter.FILTER_ACCEPT;
+            }
+            return NodeFilter.FILTER_SKIP;
+          },
+        }
+      );
+
+      const textNodes: Text[] = [];
+      let curr: Node | null = walker.nextNode();
+      while (curr) {
+        if (curr instanceof Text && curr.nodeValue) {
+          textNodes.push(curr);
+        }
+        curr = walker.nextNode();
+      }
+
+      for (const textNode of textNodes) {
+        const text = textNode.nodeValue || "";
+        if (!/[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(text)) {
+          continue;
+        }
+
+        const fragment = document.createDocumentFragment();
+        let hasWords = false;
+
+        for (const [token, isWord] of processTokens(text)) {
+          const cleanWord = removeDiacritics(token).replaceAll("-", "").trim();
+          const isLatinWord =
+            isWord &&
+            !/\d/.test(token) &&
+            /[a-zA-Z\u00C0-\u024F\u1E00-\u1EFF]/.test(cleanWord);
+
+          if (isLatinWord) {
+            hasWords = true;
+            const span = document.createElement("span");
+            span.className = "v2-lat-word";
+            span.dataset.word = cleanWord;
+            span.textContent = token;
+            fragment.appendChild(span);
+          } else {
+            fragment.appendChild(document.createTextNode(token));
+          }
+        }
+
+        if (hasWords) {
+          textNode.parentNode?.replaceChild(fragment, textNode);
+        }
+      }
+    }
   }
 }
 

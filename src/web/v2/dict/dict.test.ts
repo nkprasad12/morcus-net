@@ -251,13 +251,25 @@ describe("dict_ssr", () => {
     expect(pageHtml).toContain('href="#top"');
   });
 
-  test("xmlNodeToHtml linkifies Latin words in regular content", () => {
+  test("xmlNodeToHtml renders text without word links in default No-JS/SSR mode", () => {
     const node = new XmlNode(
       "span",
       [["class", "lsQuote"]],
       ["Gallia est omnis"]
     );
     const html = xmlNodeToHtml(node);
+    expect(html).not.toContain('href="/v2/dicts?q=Gallia"');
+    expect(html).not.toContain('class="v2-lat-word"');
+    expect(html).toContain("Gallia est omnis");
+  });
+
+  test("xmlNodeToHtml supports explicit allowLinkify option", () => {
+    const node = new XmlNode(
+      "span",
+      [["class", "lsQuote"]],
+      ["Gallia est omnis"]
+    );
+    const html = xmlNodeToHtml(node, { allowLinkify: true });
     expect(html).toContain('href="/v2/dicts?q=Gallia"');
     expect(html).toContain('href="/v2/dicts?q=est"');
     expect(html).toContain('href="/v2/dicts?q=omnis"');
@@ -387,18 +399,13 @@ describe("dict_ssr", () => {
     expect(html).toContain('<span lang="el">');
     expect(he.decode(html)).toContain('<span lang="el">ἵππος ἐργάτης</span>');
 
-    // Hi with rend="italic" becomes <i> with linkified Latin words
-    expect(html).toContain(
-      '<i><a href="/v2/dicts?q=Equus" class="v2-lat-word">Equus</a>,</i>'
-    );
-    expect(html).toContain(
-      '<i><a href="/v2/dicts?q=si" class="v2-lat-word">si</a> <a href="/v2/dicts?q=credimus" class="v2-lat-word">credimus</a></i>'
-    );
+    // Hi with rend="italic" becomes <i> without word links in default SSR
+    expect(html).toContain("<i>Equus,</i>");
+    expect(html).toContain("<i>si credimus</i>");
 
-    // Latin words in regular text flow are linkified
-    expect(html).toContain('href="/v2/dicts?q=cauando"');
-    expect(html).toContain('href="/v2/dicts?q=dictus"');
-    expect(html).toContain('href="/v2/dicts?q=Isidoro"');
+    // Latin words in regular text flow are clean text without word links
+    expect(html).not.toContain('href="/v2/dicts?q=cauando"');
+    expect(html).toContain("a cauando dictus");
 
     // Verify no inner divs inside the <def> element (only the root div and def div exist)
     const divCount = (html.match(/<div\b/g) || []).length;
