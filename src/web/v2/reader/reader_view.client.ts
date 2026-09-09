@@ -58,6 +58,12 @@ export class MorcusReaderView extends BaseElement {
     this.initDesktopSplitter();
     this.initMobileDrawer();
     this.initBackToTop();
+    this.initTOC();
+    this.initBiblioModal();
+    this.initSettings();
+    this.initStickyExpand();
+    this.initQuickJump();
+    this.initKeyboardShortcuts();
   }
 
   protected override onDisconnect() {
@@ -87,6 +93,28 @@ export class MorcusReaderView extends BaseElement {
     if (closeBtn) {
       e.preventDefault();
       this.closeDictionary(true);
+      return;
+    }
+
+    // Handle section anchor click (copies canonical permalink with toast confirmation)
+    const secAnchor = e.target.closest<HTMLAnchorElement>(
+      "a.v2-section-anchor"
+    );
+    if (secAnchor) {
+      e.preventDefault();
+      const href = secAnchor.getAttribute("href") || "";
+      const secId = href.replace(/^#sec-/, "");
+      const fullUrl = `${window.location.origin}${window.location.pathname}${window.location.search}#sec-${secId}`;
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(fullUrl).catch(() => {});
+      }
+      const secEl = document.getElementById(`sec-${secId}`);
+      if (secEl) {
+        secEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        secEl.classList.add("target-highlight");
+        setTimeout(() => secEl.classList.remove("target-highlight"), 3000);
+      }
+      this.showToast(`Copied permalink: § ${secId}`);
       return;
     }
 
@@ -286,7 +314,7 @@ export class MorcusReaderView extends BaseElement {
     this.restoreDrawer();
 
     // Mobile scroll guard: Ensure tapped word is not occluded by the newly opened/restored drawer
-    if (window.innerWidth <= 960) {
+    if (window.innerWidth <= 640) {
       const targetEl =
         activeAnchor ||
         this.querySelector<HTMLElement>(
@@ -350,7 +378,7 @@ export class MorcusReaderView extends BaseElement {
   }
 
   private resetDictScroll() {
-    if (window.innerWidth > 960) {
+    if (window.innerWidth > 640) {
       // Desktop: Reset outer dict panel to top
       const dictPanel = this.querySelector<HTMLElement>(
         ".v2-reader-dict-panel"
@@ -611,7 +639,7 @@ export class MorcusReaderView extends BaseElement {
     dictPanel.appendChild(btn);
 
     const getScroller = () => {
-      if (window.innerWidth > 960) {
+      if (window.innerWidth > 640) {
         return dictPanel;
       }
       return this.querySelector<HTMLElement>(".v2-reader-dict-sticky");
@@ -645,7 +673,7 @@ export class MorcusReaderView extends BaseElement {
       const scroller = getScroller();
       if (!scroller) return;
 
-      if (window.innerWidth > 960) {
+      if (window.innerWidth > 640) {
         scroller.scrollTo({ top: 0, behavior: "instant" });
       } else {
         const contentEl = this.querySelector<HTMLElement>(
@@ -664,6 +692,427 @@ export class MorcusReaderView extends BaseElement {
       mobileSticky?.removeEventListener("scroll", onScroll);
       btn.removeEventListener("click", onClick);
       btn.remove();
+    });
+  }
+
+  // --- Reader Confirmation Toast ---
+  private showToast(msg: string) {
+    const toast = this.$<HTMLElement>("#v2-reader-toast");
+    if (!toast) return;
+    toast.textContent = msg;
+    toast.classList.add("visible");
+    setTimeout(() => {
+      toast.classList.remove("visible");
+    }, 2200);
+  }
+
+  // --- Table of Contents (TOC) Modal/Drawer ---
+  private initTOC() {
+    const tocDrawer = this.$<HTMLElement>("#v2-reader-toc-drawer");
+    const tocBtn = this.$<HTMLButtonElement>("#v2-reader-toc-btn");
+    const breadcrumbBtn = this.$<HTMLButtonElement>(
+      "#v2-reader-breadcrumb-btn"
+    );
+    const closeBtn = this.$<HTMLButtonElement>("#v2-reader-toc-close-btn");
+    const backBtn = this.$<HTMLButtonElement>("#v2-reader-toc-back-btn");
+    const filterInput = this.$<HTMLInputElement>("#v2-reader-toc-filter");
+    if (!tocDrawer) return;
+
+    const openTOC = () => {
+      tocDrawer.removeAttribute("hidden");
+      tocBtn?.setAttribute("aria-expanded", "true");
+      filterInput?.focus();
+    };
+
+    const closeTOC = () => {
+      tocDrawer.setAttribute("hidden", "");
+      tocBtn?.setAttribute("aria-expanded", "false");
+    };
+
+    if (tocBtn) this.listen(tocBtn, "click", openTOC);
+    if (breadcrumbBtn) this.listen(breadcrumbBtn, "click", openTOC);
+    if (closeBtn) this.listen(closeBtn, "click", closeTOC);
+    if (backBtn) this.listen(backBtn, "click", closeTOC);
+
+    // Filter items in TOC list
+    if (filterInput) {
+      this.listen(filterInput, "input", () => {
+        const term = filterInput.value.trim().toLowerCase();
+        const items = this.$$<HTMLElement>(".v2-reader-toc-item");
+        for (const item of items) {
+          const text = item.textContent?.toLowerCase() || "";
+          item.style.display = term && !text.includes(term) ? "none" : "";
+        }
+      });
+    }
+
+    // Dismiss on outside click
+    this.listen(document, "click", (e) => {
+      if (!tocDrawer.hasAttribute("hidden") && e.target instanceof Node) {
+        if (
+          !tocDrawer.contains(e.target) &&
+          !tocBtn?.contains(e.target) &&
+          !breadcrumbBtn?.contains(e.target)
+        ) {
+          closeTOC();
+        }
+      }
+    });
+  }
+
+  // --- Bibliographical Metadata Modal Dialog ---
+  private initBiblioModal() {
+    const dialog = this.$<HTMLDialogElement>("#v2-reader-biblio-dialog");
+    const infoBtn = this.$<HTMLButtonElement>("#v2-reader-info-btn");
+    const closeBtn = this.$<HTMLButtonElement>("#v2-reader-biblio-close-btn");
+    const okBtn = this.$<HTMLButtonElement>("#v2-reader-biblio-ok-btn");
+    if (!dialog) return;
+
+    if (infoBtn) {
+      this.listen(infoBtn, "click", () => {
+        dialog.showModal();
+      });
+    }
+
+    const closeDialog = () => dialog.close();
+    if (closeBtn) this.listen(closeBtn, "click", closeDialog);
+    if (okBtn) this.listen(okBtn, "click", closeDialog);
+
+    // Dismiss on backdrop click
+    this.listen(dialog, "click", (e) => {
+      const rect = dialog.getBoundingClientRect();
+      const inDialog =
+        rect.top <= e.clientY &&
+        e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX &&
+        e.clientX <= rect.left + rect.width;
+      if (!inDialog) {
+        dialog.close();
+      }
+    });
+  }
+
+  // --- Reader Settings & Appearance Modal ---
+  private initSettings() {
+    const dialog = this.$<HTMLDialogElement>("#v2-reader-settings-dialog");
+    const settingsBtn = this.$<HTMLButtonElement>("#v2-reader-settings-btn");
+    const closeBtn = this.$<HTMLButtonElement>("#v2-reader-settings-close-btn");
+    const doneBtn = this.$<HTMLButtonElement>("#v2-reader-settings-done-btn");
+    const resetBtn = this.$<HTMLButtonElement>("#v2-reader-settings-reset-btn");
+
+    const readerSizeDec = this.$<HTMLButtonElement>("#v2-reader-size-dec");
+    const readerSizeInc = this.$<HTMLButtonElement>("#v2-reader-size-inc");
+    const readerSizeLabel = this.$<HTMLElement>("#v2-reader-size-label");
+
+    const dictSizeDec = this.$<HTMLButtonElement>("#v2-dict-size-dec");
+    const dictSizeInc = this.$<HTMLButtonElement>("#v2-dict-size-inc");
+    const dictSizeLabel = this.$<HTMLElement>("#v2-dict-size-label");
+
+    const toggleMacra = this.$<HTMLInputElement>("#v2-toggle-macra");
+    const toggleGutter = this.$<HTMLInputElement>("#v2-toggle-gutter");
+    const fontSelect = this.$<HTMLSelectElement>("#v2-font-select");
+    const lineHeightSelect = this.$<HTMLSelectElement>(
+      "#v2-line-height-select"
+    );
+
+    if (!dialog) return;
+
+    interface ReaderPreferences {
+      readerScale: number;
+      dictScale: number;
+      showMacra: boolean;
+      showGutter: boolean;
+      fontFamily: "serif" | "sans";
+      lineHeight: "compact" | "normal" | "relaxed";
+    }
+
+    const DEFAULT_PREFS: ReaderPreferences = {
+      readerScale: 100,
+      dictScale: 100,
+      showMacra: true,
+      showGutter: true,
+      fontFamily: "serif",
+      lineHeight: "normal",
+    };
+
+    let currentPrefs: ReaderPreferences = { ...DEFAULT_PREFS };
+
+    try {
+      const stored = localStorage.getItem("morcus_reader_settings");
+      if (stored) {
+        currentPrefs = { ...DEFAULT_PREFS, ...JSON.parse(stored) };
+      }
+    } catch {
+      // Ignore storage errors
+    }
+
+    const stripMacrons = (str: string) =>
+      str
+        .normalize("NFD")
+        .replace(/[\u0304\u0305]/g, "")
+        .normalize("NFC");
+
+    const applyMacra = (show: boolean) => {
+      const words = this.$$<HTMLAnchorElement>(
+        ".v2-reader-passage a.v2-lat-word"
+      );
+      for (const w of words) {
+        if (!w.hasAttribute("data-original-text")) {
+          w.setAttribute("data-original-text", w.textContent || "");
+        }
+        const orig = w.getAttribute("data-original-text") || "";
+        w.textContent = show ? orig : stripMacrons(orig);
+      }
+    };
+
+    const applyPreferences = (prefs: ReaderPreferences) => {
+      // Font sizes
+      const readerRem = `${((1.25 * prefs.readerScale) / 100).toFixed(3)}rem`;
+      this.style.setProperty("--v2-reader-font-size", readerRem);
+      if (readerSizeLabel)
+        readerSizeLabel.textContent = `${prefs.readerScale}%`;
+
+      const dictRem = `${((0.9375 * prefs.dictScale) / 100).toFixed(3)}rem`;
+      this.style.setProperty("--v2-dict-font-size", dictRem);
+      if (dictSizeLabel) dictSizeLabel.textContent = `${prefs.dictScale}%`;
+
+      // Line height
+      const lhVal =
+        prefs.lineHeight === "compact"
+          ? "1.6"
+          : prefs.lineHeight === "relaxed"
+          ? "2.3"
+          : "1.95";
+      this.style.setProperty("--v2-reader-line-height", lhVal);
+      if (lineHeightSelect) lineHeightSelect.value = prefs.lineHeight;
+
+      // Font family
+      const fontVal =
+        prefs.fontFamily === "sans"
+          ? "var(--v2-font-sans)"
+          : "var(--v2-font-serif)";
+      this.style.setProperty("--v2-reader-font", fontVal);
+      if (fontSelect) fontSelect.value = prefs.fontFamily;
+
+      // Section gutter
+      this.classList.toggle("v2-hide-gutter", !prefs.showGutter);
+      if (toggleGutter) toggleGutter.checked = prefs.showGutter;
+
+      // Macra
+      applyMacra(prefs.showMacra);
+      if (toggleMacra) toggleMacra.checked = prefs.showMacra;
+
+      try {
+        localStorage.setItem("morcus_reader_settings", JSON.stringify(prefs));
+      } catch {
+        // Ignore storage errors
+      }
+    };
+
+    // Apply on load
+    applyPreferences(currentPrefs);
+
+    if (settingsBtn) {
+      this.listen(settingsBtn, "click", () => {
+        dialog.showModal();
+        settingsBtn.setAttribute("aria-expanded", "true");
+      });
+    }
+
+    const closeDialog = () => {
+      dialog.close();
+      settingsBtn?.setAttribute("aria-expanded", "false");
+    };
+
+    if (closeBtn) this.listen(closeBtn, "click", closeDialog);
+    if (doneBtn) this.listen(doneBtn, "click", closeDialog);
+
+    this.listen(dialog, "click", (e) => {
+      const rect = dialog.getBoundingClientRect();
+      const inDialog =
+        rect.top <= e.clientY &&
+        e.clientY <= rect.top + rect.height &&
+        rect.left <= e.clientX &&
+        e.clientX <= rect.left + rect.width;
+      if (!inDialog) {
+        closeDialog();
+      }
+    });
+
+    // Steppers
+    if (readerSizeDec) {
+      this.listen(readerSizeDec, "click", () => {
+        currentPrefs.readerScale = Math.max(70, currentPrefs.readerScale - 10);
+        applyPreferences(currentPrefs);
+      });
+    }
+    if (readerSizeInc) {
+      this.listen(readerSizeInc, "click", () => {
+        currentPrefs.readerScale = Math.min(160, currentPrefs.readerScale + 10);
+        applyPreferences(currentPrefs);
+      });
+    }
+
+    if (dictSizeDec) {
+      this.listen(dictSizeDec, "click", () => {
+        currentPrefs.dictScale = Math.max(70, currentPrefs.dictScale - 10);
+        applyPreferences(currentPrefs);
+      });
+    }
+    if (dictSizeInc) {
+      this.listen(dictSizeInc, "click", () => {
+        currentPrefs.dictScale = Math.min(140, currentPrefs.dictScale + 10);
+        applyPreferences(currentPrefs);
+      });
+    }
+
+    // Toggles
+    if (toggleMacra) {
+      this.listen(toggleMacra, "change", () => {
+        currentPrefs.showMacra = toggleMacra.checked;
+        applyPreferences(currentPrefs);
+      });
+    }
+    if (toggleGutter) {
+      this.listen(toggleGutter, "change", () => {
+        currentPrefs.showGutter = toggleGutter.checked;
+        applyPreferences(currentPrefs);
+      });
+    }
+    if (fontSelect) {
+      this.listen(fontSelect, "change", () => {
+        currentPrefs.fontFamily =
+          fontSelect.value === "sans" ? "sans" : "serif";
+        applyPreferences(currentPrefs);
+      });
+    }
+    if (lineHeightSelect) {
+      this.listen(lineHeightSelect, "change", () => {
+        const val = lineHeightSelect.value;
+        currentPrefs.lineHeight =
+          val === "compact" || val === "relaxed" ? val : "normal";
+        applyPreferences(currentPrefs);
+      });
+    }
+
+    if (resetBtn) {
+      this.listen(resetBtn, "click", () => {
+        currentPrefs = { ...DEFAULT_PREFS };
+        applyPreferences(currentPrefs);
+      });
+    }
+  }
+
+  // --- Quick Jump In-Page Smooth Scroll ---
+  private initQuickJump() {
+    const form = this.$<HTMLFormElement>("#v2-reader-jump-form");
+    const input = this.$<HTMLInputElement>("#v2-jump-input");
+    if (!form || !input) return;
+
+    this.listen(input, "focus", () => input.select());
+    this.listen(input, "click", () => input.select());
+
+    this.listen(form, "submit", (e) => {
+      const val = input.value.trim();
+      if (!val) {
+        e.preventDefault();
+        return;
+      }
+
+      const currentPage = this.getAttribute("data-page") || "1.1";
+
+      // Check full match (e.g. "1.1.2") or relative match (e.g. "2")
+      let targetSecId = val;
+      let targetEl = document.getElementById(`sec-${targetSecId}`);
+      if (!targetEl && /^\d+$/.test(val)) {
+        targetSecId = `${currentPage}.${val}`;
+        targetEl = document.getElementById(`sec-${targetSecId}`);
+      }
+
+      if (targetEl) {
+        e.preventDefault();
+        targetEl.scrollIntoView({ behavior: "smooth", block: "center" });
+        targetEl.classList.add("target-highlight");
+        setTimeout(() => targetEl?.classList.remove("target-highlight"), 3000);
+        this.showToast(`Jumped to § ${targetSecId}`);
+        input.value = targetSecId;
+      }
+      // If not on current page, standard form submission will navigate
+    });
+  }
+
+  // --- Keyboard Shortcuts ([ Prev, ] Next, T TOC) ---
+  private initKeyboardShortcuts() {
+    this.listen(window, "keydown", (e: KeyboardEvent) => {
+      if (e.target instanceof HTMLElement) {
+        const tag = e.target.tagName.toLowerCase();
+        if (tag === "input" || tag === "textarea" || tag === "select") return;
+      }
+
+      if (e.key === "[") {
+        const prevBtn = this.$<HTMLAnchorElement>("#v2-pager-prev");
+        if (prevBtn && !prevBtn.classList.contains("disabled")) {
+          e.preventDefault();
+          prevBtn.click();
+        }
+      } else if (e.key === "]") {
+        const nextBtn = this.$<HTMLAnchorElement>("#v2-pager-next");
+        if (nextBtn && !nextBtn.classList.contains("disabled")) {
+          e.preventDefault();
+          nextBtn.click();
+        }
+      } else if (e.key === "t" || e.key === "T") {
+        const tocDrawer = this.$<HTMLElement>("#v2-reader-toc-drawer");
+        if (tocDrawer) {
+          e.preventDefault();
+          if (tocDrawer.hasAttribute("hidden")) {
+            this.$<HTMLButtonElement>("#v2-reader-toc-btn")?.click();
+          } else {
+            this.$<HTMLButtonElement>("#v2-reader-toc-close-btn")?.click();
+          }
+        }
+      } else if (e.key === "m" || e.key === "M") {
+        const expandBtn = this.$<HTMLButtonElement>("#v2-sticky-expand-btn");
+        if (expandBtn) {
+          e.preventDefault();
+          expandBtn.click();
+        }
+      }
+    });
+  }
+
+  // --- Sticky Navigation Bar Expand / Collapse ---
+  private initStickyExpand() {
+    const expandBtn = this.$<HTMLButtonElement>("#v2-sticky-expand-btn");
+    const expandedRow = this.$<HTMLElement>("#v2-sticky-expanded-row");
+    if (!expandBtn || !expandedRow) return;
+
+    const chevron = expandBtn.querySelector(".v2-expand-chevron");
+
+    const setExpanded = (expanded: boolean) => {
+      expandBtn.setAttribute("aria-expanded", String(expanded));
+      expandedRow.hidden = !expanded;
+      if (chevron) chevron.innerHTML = expanded ? "&utrif;" : "&dtrif;";
+      try {
+        localStorage.setItem("morcus_sticky_expanded", String(expanded));
+      } catch {
+        // Ignore storage errors
+      }
+    };
+
+    // Restore preference if saved
+    try {
+      const saved = localStorage.getItem("morcus_sticky_expanded");
+      if (saved === "true") {
+        setExpanded(true);
+      }
+    } catch {
+      // Ignore storage errors
+    }
+
+    this.listen(expandBtn, "click", () => {
+      const isExpanded = expandBtn.getAttribute("aria-expanded") === "true";
+      setExpanded(!isExpanded);
     });
   }
 }
