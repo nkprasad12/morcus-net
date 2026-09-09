@@ -33,7 +33,7 @@ describe("reader_ssr", () => {
 
     // Dictionary iframe panel in No-JS view
     expect(html).toContain('id="v2-dict-frame"');
-    expect(html).toContain('/v2/dicts?embedded=1');
+    expect(html).toContain("/v2/dicts?embedded=1");
 
     // Contains Latin words as clean semantic text
     expect(html).toContain("Gallia");
@@ -45,7 +45,10 @@ describe("reader_ssr", () => {
   });
 
   test("renderReaderContentHtml renders gutter markers with separate prefix and local spans for responsive short numbering", async () => {
-    const html = await renderReaderContentHtml({ workId: "dbg", pageId: "1.1" });
+    const html = await renderReaderContentHtml({
+      workId: "dbg",
+      pageId: "1.1",
+    });
 
     // Section 1.1.1
     expect(html).toContain('id="sec-1.1.1"');
@@ -71,14 +74,18 @@ describe("reader_ssr", () => {
 
     // Dictionary iframe points to embedded query with Latin filter
     expect(html).toContain('id="v2-dict-frame"');
-    expect(html).toContain('/v2/dicts?q=divisa&amp;lang=La&amp;embedded=1');
+    expect(html).toContain("/v2/dicts?q=divisa&amp;lang=La&amp;embedded=1");
 
     // Close button present in mobile sheet handle bar
     expect(html).toContain("v2-reader-sheet-close");
   });
 
   test("renderReaderContentHtml supports parallel translation view mode", async () => {
-    const singleHtml = await renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1", view: "single" });
+    const singleHtml = await renderReaderContentHtml({
+      workId: "sallust/catalina1",
+      pageId: "1",
+      view: "single",
+    });
     expect(singleHtml).not.toContain("v2-section-parallel");
     expect(singleHtml).not.toContain("v2-passage-english");
     // Translated work renders the Single | Parallel view toggle
@@ -86,7 +93,11 @@ describe("reader_ssr", () => {
     expect(singleHtml).toContain('id="v2-mode-parallel"');
     expect(singleHtml).toContain('class="v2-reader-view-toggle"');
 
-    const parallelHtml = await renderReaderContentHtml({ workId: "sallust/catalina1", pageId: "1", view: "parallel" });
+    const parallelHtml = await renderReaderContentHtml({
+      workId: "sallust/catalina1",
+      pageId: "1",
+      view: "parallel",
+    });
     expect(parallelHtml).toContain("v2-reader-view-parallel");
     expect(parallelHtml).toContain("v2-section-parallel");
     expect(parallelHtml).toContain("v2-passage-english");
@@ -95,10 +106,16 @@ describe("reader_ssr", () => {
     expect(parallelHtml).toContain('id="v2-mode-parallel"');
 
     // Untranslated work requested with view=parallel cleanly falls back to single
-    const untranslatedParallelHtml = await renderReaderContentHtml({ workId: "dbg", pageId: "1.1", view: "parallel" });
+    const untranslatedParallelHtml = await renderReaderContentHtml({
+      workId: "dbg",
+      pageId: "1.1",
+      view: "parallel",
+    });
     expect(untranslatedParallelHtml).not.toContain("v2-reader-view-parallel");
     expect(untranslatedParallelHtml).not.toContain("v2-section-parallel");
-    expect(untranslatedParallelHtml).not.toContain('class="v2-reader-view-toggle"');
+    expect(untranslatedParallelHtml).not.toContain(
+      'class="v2-reader-view-toggle"'
+    );
     expect(untranslatedParallelHtml).not.toContain('id="v2-mode-parallel"');
     expect(untranslatedParallelHtml).toContain('data-view="single"');
   });

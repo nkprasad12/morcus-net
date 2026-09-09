@@ -60,16 +60,19 @@ The active dictionary selection follows a strict source-of-truth priority:
 $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus\_dicts)} \succ \text{Default Preset (All Latin except Pozo)}$$
 
 ### 1. URL Parameter (`dict=` or `in=`)
+
 - Highest precedence. Allows bookmarks, reader deep-links, and shared URLs to function deterministically.
 - Supports comma- or hyphen-delimited keys (e.g. `?dict=L&S,GAF` or `?in=LnS-GAF`).
 
 ### 2. Cookie (`morcus_dicts`) vs `localStorage` (`SEARCH_SETTINGS_KEY`)
+
 - **No-JS Baseline**: The server inspects the `morcus_dicts` cookie on SSR. When a user submits a form with a new dictionary selection, the server returns a `Set-Cookie` header with `SameSite=Lax; Path=/; Max-Age=1 year`.
 - **Client (JS Enhanced)**: The client reads and writes the existing V1 key `SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY"` in `localStorage`. When the user toggles a dictionary checkbox or preset in `<morcus-dict-settings>`, JS updates **both** `localStorage` and `document.cookie`.
 - **Hydration Sync**: On initial client boot, if `localStorage` has saved preferences but the cookie is missing, client JS writes the cookie so subsequent direct SSR loads remain in sync.
 - **Privacy & Compliance**: The cookie stores only functional UI preferences (e.g. `morcus_dicts=L%26S%3BGAF`). Under GDPR/ePrivacy and CCPA, it qualifies as an exempt **strictly necessary / user preference** cookie and requires no consent banner.
 
 ### 3. Query Language Constraints (`lang=La`) vs Layout (`embedded=1`)
+
 - **`lang=La`** is strictly a search constraint: filters dictionaries down to those whose source language is Latin (`languages.from === "La" || "*"`).
   - Used automatically when words are clicked in the Latin Reader.
 - **`embedded=1`** is strictly a presentation/layout constraint: hides the site app bar and footer when rendered inside an iframe or reader drawer.
@@ -78,8 +81,8 @@ $$\text{URL Query Parameter (dict= / in=)} \succ \text{Functional Cookie (morcus
 ---
 
 ## Transparency & Zero-Hit Status
+
 - The search result navigation bar displays pills for **all** queried dictionaries.
 - Dictionaries with matches display active anchor jump links with their count: `<a href="#dict-L-S" class="v2-jump-pill">...</a>`.
 - Dictionaries that returned 0 matches are transparently displayed as dashed pills: `<span class="v2-jump-pill v2-jump-pill-zero">...<span class="v2-jump-pill-count">0</span></span>`.
 - If no dictionaries had matches, a summary line shows exactly which lexica were queried (e.g. `Searched: Lewis & Short, Gaffiot`).
-

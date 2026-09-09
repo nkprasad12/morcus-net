@@ -88,7 +88,9 @@ describe("v2_router integration", () => {
   });
 
   test("GET /v2/dicts filters by lang=La (Latin source only)", async () => {
-    const res = await request(app).get("/v2/dicts?q=amo&dict=ls,sh,gaffiot&lang=La");
+    const res = await request(app).get(
+      "/v2/dicts?q=amo&dict=ls,sh,gaffiot&lang=La"
+    );
     expect(res.status).toBe(200);
     // L&S and GAF are Latin-source, S&H is English-to-Latin so excluded
     expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
@@ -142,7 +144,9 @@ describe("v2_router integration", () => {
   });
 
   test("GET /v2/api/completions scopes completions to requested dicts", async () => {
-    const res = await request(app).get("/v2/api/completions?q=am&dict=ls,gaffiot");
+    const res = await request(app).get(
+      "/v2/api/completions?q=am&dict=ls,gaffiot"
+    );
     expect(res.status).toBe(200);
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -215,7 +219,7 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain("Julius Caesar");
       expect(res.text).toContain('id="v2-dict-frame"');
-      expect(res.text).toContain('/v2/dicts?embedded=1');
+      expect(res.text).toContain("/v2/dicts?embedded=1");
       expect(res.text).toContain("Tap any word to view definitions");
     });
 
@@ -225,7 +229,9 @@ describe("v2_router integration", () => {
       expect(res.header["content-type"]).toContain("text/html");
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain('id="v2-dict-frame"');
-      expect(res.text).toContain('/v2/dicts?q=Gallia&amp;lang=La&amp;embedded=1');
+      expect(res.text).toContain(
+        "/v2/dicts?q=Gallia&amp;lang=La&amp;embedded=1"
+      );
     });
 
     test("GET /v2/reader/:author/:name/:page? renders reader URL", async () => {

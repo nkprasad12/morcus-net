@@ -8,10 +8,7 @@ import {
   getV2Work,
   resolvePageInWork,
 } from "@/web/v2/reader/reader_loader.server";
-import {
-  CitationId,
-  citationToString,
-} from "@/web/v2/reader/reader_types";
+import { CitationId, citationToString } from "@/web/v2/reader/reader_types";
 import * as he from "he";
 
 export interface ReaderPageOptions {
@@ -81,7 +78,9 @@ export async function renderReaderContentHtml(
     const params = new URLSearchParams();
     params.set("view", "parallel");
     if (query) params.set("q", query);
-    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${activePage.id}?${params.toString()}`;
+    return `/v2/reader/${work.urlAuthor}/${work.urlName}/${
+      activePage.id
+    }?${params.toString()}`;
   })();
 
   // Select passage HTML (single or parallel)
@@ -102,7 +101,9 @@ export async function renderReaderContentHtml(
           <div class="v2-reader-toc-item-text">
             <span class="v2-reader-toc-item-title">${he.encode(p.title)}</span>
           </div>
-          <span class="v2-reader-toc-item-id">§ ${he.encode(String(p.id))}</span>
+          <span class="v2-reader-toc-item-id">§ ${he.encode(
+            String(p.id)
+          )}</span>
         </a>
       `;
     })
@@ -145,7 +146,9 @@ export async function renderReaderContentHtml(
           </a>
 
           <!-- Center: Work/Chapter Title + Section Symbol (§) + Pre-populated Jump Input -->
-          <form action="/v2/reader/${work.urlAuthor}/${work.urlName}" method="GET" class="v2-reader-sticky-form" id="v2-reader-jump-form">
+          <form action="/v2/reader/${work.urlAuthor}/${
+    work.urlName
+  }" method="GET" class="v2-reader-sticky-form" id="v2-reader-jump-form">
             <input type="hidden" name="curr_page" value="${pageDotId}">
             ${
               viewMode === "parallel"
@@ -393,7 +396,9 @@ export async function renderReaderContentHtml(
           <div class="v2-dict-iframe-container">
             <iframe id="v2-dict-frame"
                     name="v2-dict-frame"
-                    src="${he.encode(dictIframeSrc, { useNamedReferences: true })}"
+                    src="${he.encode(dictIframeSrc, {
+                      useNamedReferences: true,
+                    })}"
                     class="v2-dict-iframe"
                     title="Dictionary Search and Definitions"
                     loading="lazy"></iframe>

@@ -41,7 +41,9 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     const isChecked = activeDictKeys.has(d.key);
     const langText = `${d.languages.from} \u2192 ${d.languages.to}`;
     return `
-      <label class="v2-dict-item" title="${he.encode(d.displayName)} (${langText})">
+      <label class="v2-dict-item" title="${he.encode(
+        d.displayName
+      )} (${langText})">
         <input
           type="checkbox"
           name="dict"
@@ -90,7 +92,9 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     ? Object.entries(options.extraHiddenInputs)
         .map(
           ([k, v]) =>
-            `<input type="hidden" name="${he.escape(k)}" value="${he.escape(v)}">`
+            `<input type="hidden" name="${he.escape(k)}" value="${he.escape(
+              v
+            )}">`
         )
         .join("\n")
     : "";

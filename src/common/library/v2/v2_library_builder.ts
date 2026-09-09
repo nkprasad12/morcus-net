@@ -38,8 +38,11 @@ export interface V2WorkSummary {
 
 function decodeProcessedWork(rawBuffer: Buffer): ProcessedWork2 {
   // Check if buffer is gzipped (starts with 0x1f, 0x8b)
-  const isGzip = rawBuffer.length > 2 && rawBuffer[0] === 0x1f && rawBuffer[1] === 0x8b;
-  const decoded = (isGzip ? zlib.gunzipSync(rawBuffer) : rawBuffer).toString("utf8");
+  const isGzip =
+    rawBuffer.length > 2 && rawBuffer[0] === 0x1f && rawBuffer[1] === 0x8b;
+  const decoded = (isGzip ? zlib.gunzipSync(rawBuffer) : rawBuffer).toString(
+    "utf8"
+  );
   return decodeMessage(
     decoded,
     ServerMessage.validator(ProcessedWork2.isMatch),
@@ -52,12 +55,12 @@ export async function buildV2Library(
 ): Promise<V2WorkSummary[]> {
   const indexPath = path.join(outputDir, LIBRARY_INDEX);
   if (!fs.existsSync(indexPath)) {
-    throw new Error(`Library index not found at ${indexPath}. Run processLibrary first.`);
+    throw new Error(
+      `Library index not found at ${indexPath}. Run processLibrary first.`
+    );
   }
 
-  const rawIndex: LibraryIndex = JSON.parse(
-    fs.readFileSync(indexPath, "utf8")
-  );
+  const rawIndex: LibraryIndex = JSON.parse(fs.readFileSync(indexPath, "utf8"));
   const worksMap = new Map<string, [string, LibraryWorkMetadata]>(
     Object.entries(rawIndex)
   );
@@ -76,7 +79,7 @@ export async function buildV2Library(
 
   const summaries: V2WorkSummary[] = [];
 
-  for (const [workId, [workPath, metadata]] of worksMap.entries()) {
+  for (const [workId, [, metadata]] of worksMap.entries()) {
     // Skip standalone English translations from being treated as primary Latin works
     if (metadata.isTranslation) {
       continue;
@@ -103,7 +106,12 @@ export async function buildV2Library(
       const compressed = zlib.gzipSync(serialized, { level: 9 });
       fs.writeFileSync(v2ArtifactPath, compressed);
 
-      const firstPageId = v2Work.pages[0]?.id ?? [];
+      const rawFirstPageId = v2Work.pages[0]?.id ?? [];
+      const firstPageId = Array.isArray(rawFirstPageId)
+        ? rawFirstPageId
+        : rawFirstPageId
+        ? rawFirstPageId.split(".")
+        : [];
       summaries.push({
         id: v2Work.id,
         title: v2Work.title,

@@ -53,17 +53,14 @@ function formatPartCoordinate(partName: string, value: string): string {
   const num = Number.parseInt(value, 10);
   const latinName =
     LATIN_PART_NAMES.get(partName.toLowerCase()) ??
-    (partName.charAt(0).toUpperCase() + partName.slice(1));
+    partName.charAt(0).toUpperCase() + partName.slice(1);
   if (!Number.isNaN(num) && String(num) === value.trim()) {
     return `${latinName} ${toRoman(num)}`;
   }
   return `${latinName} ${value}`;
 }
 
-export function formatPageTitle(
-  pageId: string[],
-  textParts: string[]
-): string {
+export function formatPageTitle(pageId: string[], textParts: string[]): string {
   if (pageId.length === 0) return "Praefatio";
   const parts: string[] = [];
   for (let i = 0; i < pageId.length; i++) {
@@ -138,7 +135,8 @@ function renderXmlNodeCleanHtml(
   if (rend === "bold") classes.push("v2-bold");
   if (rend === "blockquote") classes.push("v2-blockquote");
   if (rend === "sup" || rend === "superscript") classes.push("v2-superscript");
-  if (rend === "uppercase" || rend === "smallcaps") classes.push("v2-smallcaps");
+  if (rend === "uppercase" || rend === "smallcaps")
+    classes.push("v2-smallcaps");
   if (rend === "indent") classes.push("v2-indent");
 
   const classAttr = classes.length > 0 ? ` class="${classes.join(" ")}"` : "";
@@ -166,9 +164,9 @@ function renderPassageContent(
   const rendered = renderXmlNodeCleanHtml(node);
   if (isVerseWork) {
     if (
-      rendered.startsWith("<span class=\"v2-reader-line\"") ||
+      rendered.startsWith('<span class="v2-reader-line"') ||
       rendered.startsWith("<h") ||
-      rendered.startsWith("<span class=\"v2-line-space\"")
+      rendered.startsWith('<span class="v2-line-space"')
     ) {
       return rendered;
     }
@@ -236,7 +234,9 @@ export function preprocessWorkToV2(
              class="v2-section-anchor"
              title="Citation § ${dotId} (Click to copy anchor)"
              aria-label="Section ${dotId}">
-            <span class="v2-cite-prefix">${he.encode(prefix)}</span><span class="v2-cite-local">${he.encode(localId)}</span>
+            <span class="v2-cite-prefix">${he.encode(
+              prefix
+            )}</span><span class="v2-cite-local">${he.encode(localId)}</span>
           </a>
         </div>
       `.trim();
@@ -245,14 +245,16 @@ export function preprocessWorkToV2(
         ? "v2-reader-section v2-section-verse"
         : "v2-reader-section";
 
-      singleSectionsHtml.push(`
+      singleSectionsHtml.push(
+        `
         <div class="${sectionClass}" id="sec-${dotId}">
           ${gutterHtml}
           <div class="v2-reader-passage">
             ${latinHtml}
           </div>
         </div>
-      `.trim());
+      `.trim()
+      );
 
       // Check for matching translation
       if (translationWork) {
@@ -260,10 +262,10 @@ export function preprocessWorkToV2(
         const transHtml = transNode
           ? renderPassageContent(transNode, isVerseWork)
           : "";
-        const translator =
-          translationWork.info.translator ?? "Translation";
+        const translator = translationWork.info.translator ?? "Translation";
 
-        parallelSectionsHtml.push(`
+        parallelSectionsHtml.push(
+          `
           <div class="${sectionClass} v2-section-parallel" id="sec-${dotId}">
             ${gutterHtml}
             <div class="v2-reader-parallel-content">
@@ -271,12 +273,15 @@ export function preprocessWorkToV2(
                 <div class="v2-reader-passage">${latinHtml}</div>
               </div>
               <div class="v2-reader-passage-col v2-passage-english">
-                <span class="v2-reader-trans-author">${he.encode(translator)}:</span>
+                <span class="v2-reader-trans-author">${he.encode(
+                  translator
+                )}:</span>
                 <div class="v2-reader-passage">${transHtml}</div>
               </div>
             </div>
           </div>
-        `.trim());
+        `.trim()
+        );
       }
     }
 
@@ -310,6 +315,16 @@ export function preprocessWorkToV2(
     hasTranslation: translationWork !== undefined,
     translator: translationWork?.info.translator,
     editor: work.info.editor,
+    ctsUrn: work.info.workId.startsWith("urn:cts:")
+      ? work.info.workId
+      : undefined,
+    license:
+      work.info.attribution === "perseus"
+        ? "Creative Commons Attribution-ShareAlike 3.0"
+        : work.info.attribution === "hypotactic"
+        ? "Hypotactic Latin Metron (Public / Educational)"
+        : "Public Domain",
+    sourceRepo: work.info.sourceRef?.[0],
     textParts,
     paginationDepth,
     navTree: work.navTree,

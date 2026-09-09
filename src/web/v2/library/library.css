@@ -188,7 +188,8 @@
   flex-direction: column;
   justify-content: space-between;
   gap: 1rem;
-  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s ease;
+  transition: transform 0.15s ease, box-shadow 0.15s ease,
+    border-color 0.15s ease;
 }
 
 .v2-work-card[hidden],

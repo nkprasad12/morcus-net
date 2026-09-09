@@ -1,7 +1,7 @@
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import {
   getV2LibrarySummaries,
-  V2LibraryWorkSummary,
+  V2WorkSummary,
 } from "@/web/v2/reader/reader_loader.server";
 import * as he from "he";
 
@@ -10,11 +10,15 @@ export async function renderLibraryPageHtml(): Promise<string> {
 
   const macraCount = summaries.filter((w) => w.hasMacra).length;
   const transCount = summaries.filter((w) => w.hasTranslation).length;
-  const perseusCount = summaries.filter((w) => w.attribution === "perseus").length;
-  const phiCount = summaries.filter((w) => w.attribution === "phi").length;
+  const perseusCount = summaries.filter(
+    (w) => w.attribution === "perseus"
+  ).length;
+  const phiCount = summaries.filter(
+    (w) => w.attribution === "publicDomain"
+  ).length;
 
   // Group by author
-  const byAuthor = new Map<string, V2LibraryWorkSummary[]>();
+  const byAuthor = new Map<string, V2WorkSummary[]>();
   for (const s of summaries) {
     const author = s.author || "Unknown";
     if (!byAuthor.has(author)) byAuthor.set(author, []);
@@ -54,7 +58,7 @@ export async function renderLibraryPageHtml(): Promise<string> {
             badges.push(
               '<span class="v2-badge v2-badge-perseus" title="Perseus Digital Library critical edition">Perseus</span>'
             );
-          } else if (w.attribution === "phi") {
+          } else if (w.attribution === "publicDomain") {
             tags.push("phi");
             badges.push(
               '<span class="v2-badge v2-badge-phi" title="Packard Humanities Institute Public Domain Latin">Public Domain</span>'

@@ -128,7 +128,8 @@ export function renderPageShell(options: PageShellOptions): string {
   const bodyClasses: string[] = [];
   if (isReader) bodyClasses.push("v2-body-reader");
   if (isEmbedded) bodyClasses.push("v2-body-embedded");
-  const bodyClass = bodyClasses.length > 0 ? ` class="${bodyClasses.join(" ")}"` : "";
+  const bodyClass =
+    bodyClasses.length > 0 ? ` class="${bodyClasses.join(" ")}"` : "";
 
   const containerClasses: string[] = ["v2-container"];
   if (isReader) containerClasses.push("v2-container-reader");
@@ -138,7 +139,8 @@ export function renderPageShell(options: PageShellOptions): string {
   const mainClasses: string[] = [];
   if (isReader) mainClasses.push("v2-main-reader");
   if (isEmbedded) mainClasses.push("v2-main-embedded");
-  const mainClass = mainClasses.length > 0 ? ` class="${mainClasses.join(" ")}"` : "";
+  const mainClass =
+    mainClasses.length > 0 ? ` class="${mainClasses.join(" ")}"` : "";
 
   return `<!DOCTYPE html>
 <html lang="en">

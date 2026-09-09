@@ -59,16 +59,17 @@ export class MorcusDictSettings extends BaseElement {
     const inParam = searchParams.get("in") || searchParams.get("dict");
     if (inParam) {
       const keys = inParam.split(inParam.includes(",") ? "," : "-");
-      const normalized = keys.map((k) => k.replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2"));
+      const normalized = keys.map((k) =>
+        k.replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2")
+      );
       this.activeDictKeys = new Set(
-        LatinDict.AVAILABLE.filter(
-          (d) =>
-            normalized.some(
-              (n) =>
-                n.toLowerCase() === d.key.toLowerCase() ||
-                (n.toLowerCase() === "ls" && d.key === "L&S") ||
-                (n.toLowerCase() === "sh" && d.key === "S&H")
-            )
+        LatinDict.AVAILABLE.filter((d) =>
+          normalized.some(
+            (n) =>
+              n.toLowerCase() === d.key.toLowerCase() ||
+              (n.toLowerCase() === "ls" && d.key === "L&S") ||
+              (n.toLowerCase() === "sh" && d.key === "S&H")
+          )
         ).map((d) => d.key)
       );
       return;
@@ -140,7 +141,8 @@ export class MorcusDictSettings extends BaseElement {
     }
 
     // Sync SSR checkboxes with activeDictKeys
-    const checkboxes = this.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
+    const checkboxes =
+      this.querySelectorAll<HTMLInputElement>(".v2-dict-checkbox");
     checkboxes.forEach((cb) => {
       const key = cb.dataset.key || cb.value;
       if (key) {
@@ -218,7 +220,10 @@ export class MorcusDictSettings extends BaseElement {
     // Checkbox listener
     this.listen(this, "change", (e: Event) => {
       const target = e.target;
-      if (target instanceof HTMLInputElement && target.classList.contains("v2-dict-checkbox")) {
+      if (
+        target instanceof HTMLInputElement &&
+        target.classList.contains("v2-dict-checkbox")
+      ) {
         const key = target.dataset.key || target.value;
         if (!key) return;
         if (target.checked) {
@@ -242,23 +247,6 @@ export class MorcusDictSettings extends BaseElement {
       })
     );
   }
-
-  private readonly toggleSettingsPopover = (e?: Event) => {
-    if (e) {
-      e.stopPropagation();
-      e.preventDefault();
-    }
-    this.isOpen = !this.isOpen;
-    if (this.detailsEl) {
-      this.detailsEl.open = this.isOpen;
-    }
-    if (this.summaryEl) {
-      this.summaryEl.setAttribute("aria-expanded", String(this.isOpen));
-    }
-    if (this.popoverEl && !this.detailsEl) {
-      this.popoverEl.hidden = !this.isOpen;
-    }
-  };
 
   private closeSettingsPopover() {
     if (!this.isOpen) return;

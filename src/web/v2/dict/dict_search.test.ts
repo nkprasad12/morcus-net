@@ -11,7 +11,8 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     global.fetch = jest.fn().mockImplementation(() =>
       Promise.resolve({
         ok: true,
-        text: () => Promise.resolve('<div class="new-results">New Results</div>'),
+        text: () =>
+          Promise.resolve('<div class="new-results">New Results</div>'),
         json: () => Promise.resolve([]),
       } as unknown as Response)
     );
@@ -124,7 +125,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     const el = createDictSearch(resultsHtml);
 
-    const galliaSpan = el.querySelector<HTMLElement>('.v2-lat-word[data-word="Gallia"]')!;
+    const galliaSpan = el.querySelector<HTMLElement>(
+      '.v2-lat-word[data-word="Gallia"]'
+    )!;
     expect(galliaSpan).not.toBeNull();
 
     galliaSpan.click();
@@ -161,7 +164,11 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("generates anchor element with href preserving query params for middle-click / open in new tab", () => {
     // Simulate active dict and embedded params in window.location.search
-    window.history.replaceState({}, "", "/v2/dicts?q=habeo&dict=L%26S&embedded=1");
+    window.history.replaceState(
+      {},
+      "",
+      "/v2/dicts?q=habeo&dict=L%26S&embedded=1"
+    );
 
     const resultsHtml = `
       <article class="v2-entry">
@@ -259,7 +266,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
 
     input.value = '  "habeo,"  ';
-    form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+    form.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
 
     // Fetch should be called with sanitized query
     expect(global.fetch).toHaveBeenCalledWith(
@@ -274,7 +283,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
   test("forwards active dict and lang parameters when fetching autocomplete suggestions", () => {
     delete (window as any).location;
-    (window as any).location = new URL("http://localhost/v2/dicts?dict=ls,gaffiot&lang=La");
+    (window as any).location = new URL(
+      "http://localhost/v2/dicts?dict=ls,gaffiot&lang=La"
+    );
 
     jest.useFakeTimers();
     const el = createDictSearch();
@@ -286,7 +297,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     jest.advanceTimersByTime(200);
 
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/api/completions?q=amo&dict=ls%2Cgaffiot&lang=La"),
+      expect.stringContaining(
+        "/v2/api/completions?q=amo&dict=ls%2Cgaffiot&lang=La"
+      ),
       expect.anything()
     );
     jest.useRealTimers();

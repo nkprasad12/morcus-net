@@ -7,6 +7,7 @@ import {
   V2_LIBRARY_INDEX,
   V2WorkSummary,
 } from "@/common/library/v2/v2_library_builder";
+export type { V2WorkSummary };
 import fs from "fs";
 import path from "path";
 import zlib from "zlib";
