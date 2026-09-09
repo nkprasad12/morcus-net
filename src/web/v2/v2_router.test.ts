@@ -141,6 +141,30 @@ describe("v2_router integration", () => {
     );
   });
 
+  test("GET /v2/api/completions scopes completions to requested dicts", async () => {
+    const res = await request(app).get("/v2/api/completions?q=am&dict=ls,gaffiot");
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "am",
+        dicts: ["L&S", "GAF"],
+      })
+    );
+  });
+
+  test("GET /v2/api/completions scopes completions to cookie dicts when no query param", async () => {
+    const res = await request(app)
+      .get("/v2/api/completions?q=am")
+      .set("Cookie", "morcus_dicts=GAF%3BGRG");
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "am",
+        dicts: ["GAF", "GRG"],
+      })
+    );
+  });
+
   test("GET /v2/assets/v2.css serves the built, hashed stylesheet", async () => {
     const res = await request(app).get(getV2AssetHref("v2.css"));
     expect(res.status).toBe(200);

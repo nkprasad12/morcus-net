@@ -132,8 +132,18 @@ export function xmlNodeToHtml(
     attrsMap.set("title", "Open full entry on lexica.linguax.com in new tab");
   }
 
-  // Rewrite relative internal links to dictionary searches
+  // Transform Mateo (Univ. of Mannheim) plate links into external links
   const currentHref = attrsMap.get("href");
+  const isMateoLink =
+    tagName === "a" &&
+    Boolean(currentHref?.startsWith("https://mateo.uni-mannheim.de"));
+  if (isMateoLink) {
+    attrsMap.set("target", "_blank");
+    attrsMap.set("rel", "noopener noreferrer");
+    attrsMap.set("title", "View plate on mateo.uni-mannheim.de");
+  }
+
+  // Rewrite relative internal links to dictionary searches
   if (
     currentHref &&
     !currentHref.includes("://") &&
@@ -226,5 +236,25 @@ export function xmlNodeToHtml(
       ? ` style="margin-left: ${indentLevel * 0.5}em;"`
       : "";
 
-  return `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${roleAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+  const baseHtml = `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${roleAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+
+  if (isMateoLink && currentHref) {
+    const encodedHref = he.encode(currentHref);
+    return `
+      <span class="v2-mateo-wrapper">
+        ${baseHtml}
+        <details class="v2-mateo-embed-pane">
+          <summary class="v2-action-btn v2-mateo-toggle-btn" role="button" title="Toggle embedded facsimile viewer">
+            <span class="v2-action-btn-icon" aria-hidden="true">&#x1F5C1;</span>
+            <span class="v2-action-btn-text">Plate Embed</span>
+          </summary>
+          <span class="v2-mateo-frame-wrapper">
+            <iframe src="${encodedHref}" class="v2-mateo-frame" loading="lazy" title="Facsimile plate from mateo.uni-mannheim.de"></iframe>
+          </span>
+        </details>
+      </span>
+    `.trim();
+  }
+
+  return baseHtml;
 }

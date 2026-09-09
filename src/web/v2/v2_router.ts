@@ -71,10 +71,30 @@ export function createV2Router(
       return;
     }
 
+    const dictParam =
+      typeof req.query.dict === "string" || Array.isArray(req.query.dict)
+        ? (req.query.dict as string | string[])
+        : typeof req.query.in === "string" || Array.isArray(req.query.in)
+        ? (req.query.in as string | string[])
+        : undefined;
+
+    const langParam =
+      typeof req.query.lang === "string" || Array.isArray(req.query.lang)
+        ? (req.query.lang as string | string[])
+        : undefined;
+
+    const { dictKeys } = resolveActiveDicts({
+      urlParam: dictParam,
+      cookieHeader: req.headers.cookie,
+      lang: langParam,
+    });
+
+    const activeDicts = dictKeys.length > 0 ? dictKeys : ALL_LATIN_DICTS;
+
     try {
       const completionsResult = await fusedDict.getCompletions({
         query,
-        dicts: ALL_LATIN_DICTS,
+        dicts: activeDicts,
       });
       // Deduplicate and flatten suggestions across dictionaries
       const set = new Set<string>();
