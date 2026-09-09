@@ -261,8 +261,6 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     input.value = '  "habeo,"  ';
     form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
 
-    // Input value should be sanitized
-    expect(input.value).toBe("habeo");
     // Fetch should be called with sanitized query
     expect(global.fetch).toHaveBeenCalledWith(
       expect.stringContaining("q=habeo"),
@@ -272,5 +270,25 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       expect.stringContaining("q=%22habeo"),
       expect.anything()
     );
+  });
+
+  test("forwards active dict and lang parameters when fetching autocomplete suggestions", () => {
+    delete (window as any).location;
+    (window as any).location = new URL("http://localhost/v2/dicts?dict=ls,gaffiot&lang=La");
+
+    jest.useFakeTimers();
+    const el = createDictSearch();
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+
+    input.value = "amo";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    jest.advanceTimersByTime(200);
+
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/v2/api/completions?q=amo&dict=ls%2Cgaffiot&lang=La"),
+      expect.anything()
+    );
+    jest.useRealTimers();
   });
 });

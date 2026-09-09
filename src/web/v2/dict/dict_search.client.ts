@@ -40,7 +40,15 @@ export class MorcusDictSearch extends BaseElement {
 
   private readonly debouncedFetchCompletions = debounce((query: string) => {
     const signal = this.completionTask.start();
-    fetch(`/v2/api/completions?q=${encodeURIComponent(query)}`, { signal })
+    const currentParams = new URLSearchParams(window.location.search);
+    const fetchParams = new URLSearchParams();
+    fetchParams.set("q", query);
+    const inParam = currentParams.get("in") || currentParams.get("dict");
+    if (inParam) fetchParams.set("dict", inParam);
+    const langParam = currentParams.get("lang");
+    if (langParam) fetchParams.set("lang", langParam);
+
+    fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
       .then((res) => (res.ok ? res.json() : []))
       .then((data: string[]) => {
         if (document.activeElement !== this.inputElement) return;
