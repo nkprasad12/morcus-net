@@ -32,7 +32,9 @@ export class MorcusThemeToggle extends BaseElement {
     }
 
     // Fall back to system preference
-    return window.matchMedia("(prefers-color-scheme: dark)").matches;
+    return typeof window.matchMedia === "function"
+      ? window.matchMedia("(prefers-color-scheme: dark)").matches
+      : false;
   }
 
   private readonly toggleTheme = (e?: Event) => {
@@ -47,7 +49,24 @@ export class MorcusThemeToggle extends BaseElement {
     document.documentElement.setAttribute("data-theme", themeName);
     settingsStore.update({ darkMode: nextDark });
     this.updateView();
+    this.syncIframesTheme(themeName);
   };
+
+  private syncIframesTheme(themeName: string) {
+    const iframes = document.querySelectorAll<HTMLIFrameElement>("iframe");
+    for (const iframe of iframes) {
+      try {
+        if (iframe.contentDocument?.documentElement) {
+          iframe.contentDocument.documentElement.setAttribute(
+            "data-theme",
+            themeName
+          );
+        }
+      } catch {
+        // Cross-origin security barrier; safely ignored
+      }
+    }
+  }
 
   private updateView() {
     const label = this.isDark ? "Switch to light mode" : "Switch to dark mode";
