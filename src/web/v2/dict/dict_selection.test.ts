@@ -31,6 +31,21 @@ describe("dict_selection.server", () => {
       expect(parseDictKeys(["ls", "gaffiot"])).toEqual(["L&S", "GAF"]);
     });
 
+    it("parses Base36 bitmask strings", () => {
+      expect(parseDictKeys("3")).toEqual(["L&S", "GAF"]);
+      expect(parseDictKeys("e7")).toEqual([
+        "L&S",
+        "GAF",
+        "GES",
+        "FOR",
+        "S&H",
+        "R&A",
+        "GRG",
+        "EGL",
+        "NUM",
+      ]);
+    });
+
     it("returns null for empty or invalid input", () => {
       expect(parseDictKeys("")).toBeNull();
       expect(parseDictKeys(undefined)).toBeNull();
@@ -94,6 +109,25 @@ describe("dict_selection.server", () => {
       });
       // L&S (La->En), GAF (La->Fr), NUM (*->*) match. S&H (En->La) is filtered out.
       expect(res.dictKeys).toEqual(["L&S", "GAF", "NUM"]);
+    });
+
+    it("applies lang=La to default dictionaries, retaining only Latin-source lexica", () => {
+      const res = resolveActiveDicts({ lang: "La" });
+      expect(res.source).toBe("default");
+      // Default 8 enabled: L&S, GAF, GES, FOR, S&H, R&A, GRG, NUM.
+      // Filtered with lang=La removes reverse dicts (S&H, R&A, GRG):
+      expect(res.dictKeys).toEqual(["L&S", "GAF", "GES", "FOR", "NUM"]);
+    });
+
+    it("applies lang=La while respecting user's custom cookie preferences", () => {
+      // User has explicitly enabled only L&S, GES, S&H, and GRG in cookies (Gaffiot disabled)
+      const res = resolveActiveDicts({
+        cookieHeader: "morcus_dicts=L%26S%3BGES%3BS%26H%3BGRG",
+        lang: "La",
+      });
+      expect(res.source).toBe("cookie");
+      // Only L&S and GES match from="La"; S&H and GRG dropped; GAF not present in cookie
+      expect(res.dictKeys).toEqual(["L&S", "GES"]);
     });
   });
 });

@@ -1,6 +1,7 @@
 import * as he from "he";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
+import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 
 // Material Design "tune" / sliders SVG icon
 const TUNE_PATH =
@@ -14,6 +15,7 @@ export interface SearchBarOptions {
   inputClass?: string;
   includeSettings?: boolean;
   activeDicts?: string[];
+  isInflected?: boolean;
   extraHiddenInputs?: Record<string, string>;
 }
 
@@ -34,8 +36,11 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     .filter(Boolean)
     .join(" ");
   const includeSettings = options.includeSettings ?? true;
+  const isInflected = options.isInflected !== false; // default true
 
-  const activeDictKeys = new Set(options.activeDicts ?? DEFAULT_DICT_KEYS);
+  const activeDictList = options.activeDicts ?? DEFAULT_DICT_KEYS;
+  const activeDictKeys = new Set(activeDictList);
+  const dictBitmask = encodeDictBitmask(activeDictList);
 
   const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
     const isChecked = activeDictKeys.has(d.key);
@@ -73,6 +78,25 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           </summary>
 
           <div class="v2-settings-popover">
+            <div class="v2-settings-inflected-section">
+              <div class="v2-settings-section-title">Search Scope</div>
+              <input type="hidden" name="o" value="0" />
+              <label class="v2-dict-item" title="Search conjugated verbs and declined nouns/adjectives">
+                <input
+                  type="checkbox"
+                  name="o"
+                  value="1"
+                  id="v2-toggle-inflected"
+                  class="v2-inflected-checkbox"
+                  ${isInflected ? "checked" : ""}
+                />
+                <span class="v2-dict-name">Latin inflected forms</span>
+              </label>
+              <p class="v2-settings-caption">Match conjugated verbs and declined nouns/adjectives.</p>
+            </div>
+
+            <div class="v2-settings-divider" role="separator"></div>
+
             <div class="v2-settings-section-title">Enabled Dictionaries</div>
             <div class="v2-dict-list">
               ${dictItemsHtml}
@@ -103,6 +127,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     <form class="${formClasses}" action="${he.escape(
     options.action
   )}" method="GET">
+      <input type="hidden" name="d" value="${he.escape(dictBitmask)}" />
       ${hiddenInputsHtml}
       <div class="v2-input-wrapper">
         <input

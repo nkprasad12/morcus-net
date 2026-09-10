@@ -81,7 +81,9 @@ export function createV2Router(
     }
 
     const dictParam =
-      toStringOrArray(req.query.dict) ?? toStringOrArray(req.query.in);
+      toStringOrArray(req.query.d) ??
+      toStringOrArray(req.query.dict) ??
+      toStringOrArray(req.query.in);
     const langParam = toStringOrArray(req.query.lang);
 
     const { dictKeys } = resolveActiveDicts({
@@ -124,12 +126,25 @@ export function createV2Router(
       req.headers.referer?.includes("embedded=1") === true;
 
     // Resolve dictionary selection based on precedence:
-    // URL param ('in' or 'dict') > Cookie ('morcus_dicts') > Default (All Latin except Pozo)
+    // URL param ('d' [base36 bitmask], 'dict', or 'in') > Cookie ('morcus_dicts') > Default (All Latin except Pozo)
     const dictParam =
-      toStringOrArray(req.query.dict) ?? toStringOrArray(req.query.in);
+      toStringOrArray(req.query.d) ??
+      toStringOrArray(req.query.dict) ??
+      toStringOrArray(req.query.in);
     const langParam = toStringOrArray(req.query.lang);
 
+    // Resolve inflection mode: o=0 (exact headwords, mode: 0) vs o=1 (inflected forms, mode: 1, default)
+    const oParam = toStringOrArray(req.query.o);
     const cookieHeader = req.headers.cookie;
+
+    let isInflected = true;
+    if (oParam === "0") {
+      isInflected = false;
+    } else if (oParam === "1") {
+      isInflected = true;
+    } else if (cookieHeader?.includes("morcus_inflected=0")) {
+      isInflected = false;
+    }
 
     const { dictKeys, source } = resolveActiveDicts({
       urlParam: dictParam,
@@ -140,13 +155,18 @@ export function createV2Router(
     // If explicit dictionary choice came via full page form submission, update the cookie
     // so No-JS users have their choice persisted across sessions without cookie consent overhead.
     if (!isPartial && source === "url" && dictKeys.length > 0 && !langParam) {
-      res.setHeader("Set-Cookie", formatDictsCookie(dictKeys));
+      res.setHeader("Set-Cookie", [
+        formatDictsCookie(dictKeys),
+        `morcus_inflected=${
+          isInflected ? "1" : "0"
+        }; Path=/; Max-Age=31536000; SameSite=Lax`,
+      ]);
     }
 
     if (!query) {
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml("", undefined, dictKeys));
+        res.send(renderDictResultsHtml("", undefined, dictKeys, isInflected));
         return;
       }
       res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -155,6 +175,7 @@ export function createV2Router(
           query: "",
           embedded: isEmbedded,
           queriedDicts: dictKeys,
+          isInflected,
         })
       );
       return;
@@ -163,7 +184,9 @@ export function createV2Router(
     if (hasGreek(query)) {
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml(query, undefined, dictKeys));
+        res.send(
+          renderDictResultsHtml(query, undefined, dictKeys, isInflected)
+        );
         return;
       }
       res.setHeader("Content-Type", "text/html; charset=utf-8");
@@ -172,6 +195,7 @@ export function createV2Router(
           query,
           embedded: isEmbedded,
           queriedDicts: dictKeys,
+          isInflected,
         })
       );
       return;
@@ -181,12 +205,12 @@ export function createV2Router(
       const results = await fusedDict.getEntry({
         query,
         dicts: dictKeys,
-        mode: 1, // Search by keys and inflected forms
+        mode: isInflected ? 1 : 0, // 1: inflected forms, 0: exact headwords
       });
 
       if (isPartial) {
         res.setHeader("Content-Type", "text/html; charset=utf-8");
-        res.send(renderDictResultsHtml(query, results, dictKeys));
+        res.send(renderDictResultsHtml(query, results, dictKeys, isInflected));
         return;
       }
 
@@ -197,6 +221,7 @@ export function createV2Router(
           results,
           embedded: isEmbedded,
           queriedDicts: dictKeys,
+          isInflected,
         })
       );
     } catch (err) {

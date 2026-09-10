@@ -162,7 +162,43 @@ describe("MorcusDictSettings", () => {
 
     expect(eventDetail).not.toBeNull();
     expect(eventDetail.dictKeys).not.toContain("L&S");
+    expect(eventDetail.bitmask).toBeDefined();
     expect(localStorage.getItem("SEARCH_SETTINGS_KEY")).not.toContain("L&S");
     expect(document.cookie).toContain("morcus_dicts=");
+  });
+
+  test("handles inflection toggle and dispatches dict-inflected-change", () => {
+    // Setup with SSR-like markup including inflection checkbox
+    document.body.innerHTML = `
+      <morcus-dict-settings>
+        <details class="v2-dict-settings-details">
+          <summary class="v2-settings-btn"></summary>
+          <div class="v2-settings-popover">
+            <input type="checkbox" id="v2-toggle-inflected" class="v2-inflected-checkbox" checked />
+            <input type="checkbox" class="v2-dict-checkbox" data-key="L&S" checked />
+          </div>
+        </details>
+      </morcus-dict-settings>
+    `;
+
+    const el = document.querySelector<HTMLElement>("morcus-dict-settings")!;
+    const inflectedCheckbox = el.querySelector<HTMLInputElement>(
+      "#v2-toggle-inflected"
+    )!;
+    expect(inflectedCheckbox.checked).toBe(true);
+
+    let inflectedDetail: any = null;
+    el.addEventListener("dict-inflected-change", (e: any) => {
+      inflectedDetail = e.detail;
+    });
+
+    inflectedCheckbox.checked = false;
+    inflectedCheckbox.dispatchEvent(new Event("change", { bubbles: true }));
+
+    expect(inflectedDetail).toEqual({ isInflected: false });
+    expect(localStorage.getItem("GlobalSettings")).toContain(
+      '"inflectedSearch":false'
+    );
+    expect(document.cookie).toContain("morcus_inflected=0");
   });
 });

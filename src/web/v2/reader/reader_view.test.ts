@@ -109,9 +109,11 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Word receives active highlight class
     expect(musaWord.classList.contains("v2-word-active")).toBe(true);
 
-    // Dictionary iframe source is updated with Latin filter
+    // Dictionary iframe source is updated with Latin filter and forced inflections (o=1)
     const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
-    expect(iframe.src).toContain("/v2/dicts?q=Mu%CC%84sa&lang=La&embedded=1");
+    expect(iframe.src).toContain(
+      "/v2/dicts?q=Mu%CC%84sa&lang=La&o=1&embedded=1"
+    );
 
     // Sheet label updated
     const sheetLabel = el.querySelector<HTMLElement>(".v2-reader-sheet-label")!;

@@ -11,22 +11,21 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 ## 1. Parity Matrix
 
-| Feature Area                             | V1 UI (SPA)                                                               | V2 UI (SSR + Progressive Enhancement)          | Parity Status         |
-| :--------------------------------------- | :------------------------------------------------------------------------ | :--------------------------------------------- | :-------------------- |
-| **Inflected Search Toggle**              | Explicit UI control (`Latin inflected forms`) & status badge              | Server hardcodes `mode: 1`; no UI toggle       | ❌ **Missing in V2**  |
-| **Search Bar Status Badges**             | Shows active source languages (`In La En`) & inflection status (`On/Off`) | Replaced with plain settings icon button       | ❌ **Missing in V2**  |
-| **Suffix Autocomplete**                  | Supported queries starting with `-` (e.g. `-arum`, `-ibus`)               | Treated as literal prefix lookup               | ❌ **Missing in V2**  |
-| **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`                       | Verbatim prefix matching only                  | ❌ **Missing in V2**  |
-| **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)           | Plain string array without language metadata   | ❌ **Missing in V2**  |
-| **Vowel Length Merging & Deduplication** | Merges compatible macrons using Gaffiot as leader                         | Set-based exact string deduplication           | ❌ **Missing in V2**  |
-| **Subsection Match Notes**               | Explicit compound/inflection subsection banner with jump arrows           | Ignored; subsections not rendered              | ❌ **Missing in V2**  |
-| **Global Multi-Lexicon Entry Summary**   | Top-level summary listing all matched entries across dictionaries         | Jump links only inside local card headers      | ❌ **Missing in V2**  |
-| **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                              | Segmented per-entry tab pill dropdown          | ❌ **Missing in V2**  |
-| **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)                       | Inline segmented tab pills                     | ❌ **Missing in V2**  |
-| **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column             | Fixed single-column layout only                | ❌ **Missing in V2**  |
-| **Article & Section Permalinks**         | Direct `/dicts/id/:id` link, copy permalink tooltip                       | Local `#hash` anchor jump only; no copy action                                    | ⚠️ **Degraded in V2** |
+| Feature Area                             | V1 UI (SPA)                                                               | V2 UI (SSR + Progressive Enhancement)                                            | Parity Status         |
+| :--------------------------------------- | :------------------------------------------------------------------------ | :------------------------------------------------------------------------------- | :-------------------- |
+| **Search Bar Status Badges**             | Shows active source languages (`In La En`) & inflection status (`On/Off`) | Replaced with plain settings icon button                                         | ❌ **Missing in V2**  |
+| **Suffix Autocomplete**                  | Supported queries starting with `-` (e.g. `-arum`, `-ibus`)               | Treated as literal prefix lookup                                                 | ❌ **Missing in V2**  |
+| **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`                       | Verbatim prefix matching only                                                    | ❌ **Missing in V2**  |
+| **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)           | Plain string array without language metadata                                     | ❌ **Missing in V2**  |
+| **Vowel Length Merging & Deduplication** | Merges compatible macrons using Gaffiot as leader                         | Set-based exact string deduplication                                             | ❌ **Missing in V2**  |
+| **Subsection Match Notes**               | Explicit compound/inflection subsection banner with jump arrows           | Ignored; subsections not rendered                                                | ❌ **Missing in V2**  |
+| **Global Multi-Lexicon Entry Summary**   | Top-level summary listing all matched entries across dictionaries         | Jump links only inside local card headers                                        | ❌ **Missing in V2**  |
+| **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                              | Segmented per-entry tab pill dropdown                                            | ❌ **Missing in V2**  |
+| **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)                       | Inline segmented tab pills                                                       | ❌ **Missing in V2**  |
+| **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column             | Fixed single-column layout only                                                  | ❌ **Missing in V2**  |
+| **Article & Section Permalinks**         | Direct `/dicts/id/:id` link, copy permalink tooltip                       | Local `#hash` anchor jump only; no copy action                                   | ⚠️ **Degraded in V2** |
 | **Greek Query Interception**             | Greek detection, Logeion embed & auto-open setting                        | Detected server-side; direct Logeion link, toggleable embed, & auto-open setting | ✅ **Feature Parity** |
-| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings          | Only hides app bar (`embedded=1`)                                                 | ⚠️ **Partial in V2**  |
+| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings          | Only hides app bar (`embedded=1`)                                                | ⚠️ **Partial in V2**  |
 
 ---
 
@@ -34,12 +33,7 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 ### 2.1. Search Bar, Query Parsing, & Settings
 
-1. **Inflected Search Toggle (`Latin inflected forms`)**:
-
-   - **V1 (`dictionary_search.tsx:L92-113`)**: Users could toggle inflection searching on or off in the settings dialog. URL routing supported `o=1` for inflected searches and `o=undefined` for exact headword matches.
-   - **V2 (`v2_router.ts:L151`, `search_bar.server.ts`, `dict_settings.client.ts`)**: The Express backend hardcodes `mode: 1` (`fusedDict.getEntry({ query, dicts: dictKeys, mode: 1 })`). There is no checkbox in the settings popover, no hidden form input, and no URL parameter allowing headword-only lookups.
-
-2. **Search Bar Preview Badges**:
+1. **Search Bar Preview Badges**:
    - **V1 (`dictionary_search.tsx:L317-370`)**: The search input displayed clickable badges directly inline showing active search languages (`In [La] [En]...`) and inflection mode (`Inflection [On] / [Off]`), giving immediate visibility into search behavior.
    - **V2 (`search_bar.server.ts`)**: Replaced by a single Material Design tune/sliders icon button.
 
@@ -150,19 +144,16 @@ To bring the V2 Dictionary to full functional parity with V1, prioritize the fol
 
 ### High Priority
 
-1. **Inflection Search Toggle**:
-   - Add an inflection checkbox to `<morcus-dict-settings>` and the SSR `<form>`.
-   - Pass `inflected=0|1` to `/v2/dicts` and configure `fusedDict.getEntry({ mode: inflected ? 1 : 0 })`.
-2. **Subsection Match Notes**:
+1. **Subsection Match Notes**:
    - Port `SubsectionNote` into `entry_view.server.ts` so inflected and compound searches surface which subsections matched inside long entries.
 
 ### Medium Priority
 
-3. **Autocomplete Refinements**:
+2. **Autocomplete Refinements**:
    - Add language origin chips (`LangChip`) to suggestions in `dict_suggestions.client.ts`.
    - Restore suffix lookup (`-`) and `u`/`v` / `i`/`j` prefix expansion.
-4. **Search Bar Preview Badges**:
+3. **Search Bar Preview Badges**:
    - Render active language and inflection state pills alongside the settings button in `search_bar.server.ts`.
-5. **Direct Article Permalinks & Link Copying**:
+4. **Direct Article Permalinks & Link Copying**:
    - Update `entry_view.server.ts` to link headwords to `/v2/dicts/id/:id` (matching V1's `DICT_BY_ID` behavior).
    - Add client-side copy-to-clipboard button/tooltip for article permalinks and sense section URLs.

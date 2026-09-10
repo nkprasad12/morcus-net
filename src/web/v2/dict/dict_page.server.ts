@@ -58,10 +58,11 @@ export const DICT_SHORT_NAMES: Record<string, string> = {
 export function renderDictResultsHtml(
   query: string,
   results?: DictsFusedResponse,
-  queriedDicts?: string[]
+  queriedDicts?: string[],
+  isInflected: boolean = true
 ): string {
   if (!query.trim()) {
-    return renderDictLandingHtml(queriedDicts);
+    return renderDictLandingHtml(queriedDicts, isInflected);
   }
 
   if (hasGreek(query)) {
@@ -101,6 +102,16 @@ export function renderDictResultsHtml(
         <p>No dictionary entries found for "<strong>${he.escape(
           query
         )}</strong>".</p>
+        ${
+          !isInflected
+            ? `<p class="v2-no-results-sub v2-inflected-hint">
+                Exact headword search is active.
+                <a href="/v2/dicts?q=${encodeURIComponent(
+                  query
+                )}&o=1" class="v2-link">Enable inflected search</a> to find conjugated verbs and declined nouns.
+              </p>`
+            : ""
+        }
         ${
           queriedNames
             ? `<p class="v2-no-results-sub">Searched: ${he.encode(
@@ -257,6 +268,7 @@ export interface DictPageOptions {
   query: string;
   results?: DictsFusedResponse;
   queriedDicts?: string[];
+  isInflected?: boolean;
   isIdSearch?: boolean;
   embedded?: boolean;
 }
@@ -266,10 +278,12 @@ export interface DictPageOptions {
  */
 export function renderDictPageHtml(options: DictPageOptions): string {
   const query = options.query || "";
+  const isInflected = options.isInflected !== false;
   const resultsHtml = renderDictResultsHtml(
     options.query,
     options.results,
-    options.queriedDicts
+    options.queriedDicts,
+    isInflected
   );
 
   const titlePrefix = options.isIdSearch ? `ID ${query}` : query;
@@ -281,6 +295,7 @@ export function renderDictPageHtml(options: DictPageOptions): string {
         query: options.isIdSearch ? "" : options.query,
         action: "/v2/dicts",
         activeDicts: options.queriedDicts,
+        isInflected: isInflected,
         extraHiddenInputs: isEmbedded ? { embedded: "1" } : undefined,
       })}
 

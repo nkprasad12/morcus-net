@@ -130,6 +130,66 @@ describe("v2_router integration", () => {
     );
   });
 
+  test("GET /v2/dicts decodes Base36 d bitmask parameter", async () => {
+    // 3 = (L&S [1] | GAF [2])
+    const res = await request(app).get("/v2/dicts?q=amo&d=3");
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "amo",
+        dicts: ["L&S", "GAF"],
+        mode: 1,
+      })
+    );
+  });
+
+  test("GET /v2/dicts supports o=0 for exact headword matching and o=1 for inflections", async () => {
+    const resExact = await request(app).get("/v2/dicts?q=amavi&o=0");
+    expect(resExact.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "amavi",
+        mode: 0,
+      })
+    );
+
+    const resInflected = await request(app).get("/v2/dicts?q=amavi&o=1");
+    expect(resInflected.status).toBe(200);
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "amavi",
+        mode: 1,
+      })
+    );
+  });
+
+  test("GET /v2/dicts with reader query (embedded=1, o=1, lang=La) forces inflected search, filters to Latin lexica, and does not pollute cookies", async () => {
+    (mockFusedDict.getEntry as jest.Mock).mockClear();
+
+    // User has existing cookies: inflected disabled (morcus_inflected=0) and custom dicts
+    const res = await request(app)
+      .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
+      .set(
+        "Cookie",
+        "morcus_dicts=L%26S%3BS%26H%3BGRG; morcus_inflected=0"
+      );
+
+    expect(res.status).toBe(200);
+
+    // 1. Inflected search is forced on (mode: 1) despite cookie morcus_inflected=0
+    // 2. Only Latin-source dictionary from user's cookie (L&S) is queried; reverse dicts (S&H, GRG) are excluded
+    expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "arma",
+        dicts: ["L&S"],
+        mode: 1,
+      })
+    );
+
+    // 3. Does not set or overwrite cookies for transient reader lookups
+    expect(res.header["set-cookie"]).toBeUndefined();
+  });
+
   test("GET /v2/dicts with Greek query renders Logeion fallback and skips Latin dict lookup", async () => {
     (mockFusedDict.getEntry as jest.Mock).mockClear();
     const res = await request(app).get(
@@ -270,7 +330,7 @@ describe("v2_router integration", () => {
       expect(res.text).toContain("morcus-reader-view");
       expect(res.text).toContain('id="v2-dict-frame"');
       expect(res.text).toContain(
-        "/v2/dicts?q=Gallia&amp;lang=La&amp;embedded=1"
+        "/v2/dicts?q=Gallia&amp;lang=La&amp;o=1&amp;embedded=1"
       );
     });
 

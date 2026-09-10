@@ -185,8 +185,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     expect(galliaLink).not.toBeNull();
     expect(galliaLink.tagName.toLowerCase()).toBe("a");
+    // L&S bit is 1, o default is 1
     expect(galliaLink.getAttribute("href")).toBe(
-      "/v2/dicts?q=Gallia&dict=L%26S&embedded=1"
+      "/v2/dicts?q=Gallia&d=1&o=1&embedded=1"
     );
 
     // Clean up history state
@@ -296,10 +297,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     jest.advanceTimersByTime(200);
 
+    // L&S (1) + GAF (2) = 3 -> d=3
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining(
-        "/v2/api/completions?q=amo&dict=ls%2Cgaffiot&lang=La"
-      ),
+      expect.stringContaining("/v2/api/completions?q=amo&d=3&lang=La"),
       expect.anything()
     );
     jest.useRealTimers();
@@ -350,5 +350,111 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
     );
     expect(grgItem.classList.contains("v2-dict-enabled")).toBe(true);
+  });
+
+  test("synchronizes d and o query parameters on dict-selection-change and dict-inflected-change", () => {
+    delete (window as any).location;
+    (window as any).location = new URL("http://localhost/v2/dicts?q=habeo");
+    const replaceStateSpy = jest.spyOn(window.history, "replaceState");
+
+    const el = createDictSearch();
+
+    // Toggle dict selection
+    el.dispatchEvent(
+      new CustomEvent("dict-selection-change", {
+        detail: { dictKeys: ["L&S", "GAF"], bitmask: "3" },
+        bubbles: true,
+      })
+    );
+
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      null,
+      "",
+      expect.stringContaining("d=3")
+    );
+
+    // Toggle inflection
+    el.dispatchEvent(
+      new CustomEvent("dict-inflected-change", {
+        detail: { isInflected: false },
+        bubbles: true,
+      })
+    );
+
+    expect(replaceStateSpy).toHaveBeenCalledWith(
+      null,
+      "",
+      expect.stringContaining("o=0")
+    );
+
+    replaceStateSpy.mockRestore();
+  });
+
+  test("search execution explicitly syncs q, d, and o parameters in history and document title", async () => {
+    delete (window as any).location;
+    (window as any).location = new URL("http://localhost/v2/dicts");
+    const pushStateSpy = jest.spyOn(window.history, "pushState");
+
+    const el = createDictSearch();
+    const form = el.querySelector<HTMLFormElement>("form.v2-search-form")!;
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+
+    input.value = "equus";
+    form.dispatchEvent(
+      new Event("submit", { bubbles: true, cancelable: true })
+    );
+
+    expect(pushStateSpy).toHaveBeenCalledWith(
+      { q: "equus" },
+      "",
+      expect.stringContaining("q=equus")
+    );
+    expect(pushStateSpy).toHaveBeenCalledWith(
+      { q: "equus" },
+      "",
+      expect.stringContaining("d=an")
+    );
+    expect(pushStateSpy).toHaveBeenCalledWith(
+      { q: "equus" },
+      "",
+      expect.stringContaining("o=1")
+    );
+    expect(document.title).toBe("equus - Morcus Dictionary");
+
+    pushStateSpy.mockRestore();
+  });
+
+  test("landing welcome message reacts live to dict-inflected-change", () => {
+    const landingHtml = `
+      <div id="v2-landing-welcome">Initial Welcome</div>
+    `;
+
+    const el = createDictSearch(landingHtml);
+    const welcomeEl = el.querySelector<HTMLElement>("#v2-landing-welcome")!;
+
+    // Initial state with default dicts: Latin headwords and inflected forms
+    el.dispatchEvent(
+      new CustomEvent("dict-inflected-change", {
+        detail: { isInflected: false },
+        bubbles: true,
+      })
+    );
+
+    expect(welcomeEl.textContent).toBe(
+      "Welcome to the dictionary. You can search Latin headwords, and words in English and German."
+    );
+    expect(welcomeEl.textContent).not.toContain("inflected forms");
+
+    // Toggle back to inflected on
+    el.dispatchEvent(
+      new CustomEvent("dict-inflected-change", {
+        detail: { isInflected: true },
+        bubbles: true,
+      })
+    );
+
+    expect(welcomeEl.textContent).toBe(
+      "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
+    );
   });
 });

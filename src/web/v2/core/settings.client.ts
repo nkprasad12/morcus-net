@@ -6,6 +6,7 @@ export interface GlobalSettings {
   darkMode?: boolean;
   highlightStrength?: number;
   autoOpenLogeion?: boolean;
+  inflectedSearch?: boolean;
 }
 
 export const GLOBAL_SETTINGS_KEY = "GlobalSettings";
@@ -24,6 +25,9 @@ export function parseSettings(raw: string | null): GlobalSettings {
       }
       if (typeof val.autoOpenLogeion === "boolean") {
         settings.autoOpenLogeion = val.autoOpenLogeion;
+      }
+      if (typeof val.inflectedSearch === "boolean") {
+        settings.inflectedSearch = val.inflectedSearch;
       }
       return settings;
     }
@@ -58,6 +62,7 @@ export const settingsStore = {
  */
 export const SEARCH_SETTINGS_KEY = "SEARCH_SETTINGS_KEY";
 export const DICT_COOKIE_NAME = "morcus_dicts";
+export const INFLECTED_COOKIE_NAME = "morcus_inflected";
 
 export const dictSettingsStore = {
   get(): string[] | null {
@@ -100,6 +105,40 @@ export const dictSettingsStore = {
 
       if (!hasCookie) {
         dictSettingsStore.set(stored);
+      }
+    } catch {}
+  },
+};
+
+export const inflectedSettingsStore = {
+  get(): boolean | null {
+    const settings = settingsStore.get();
+    if (typeof settings.inflectedSearch === "boolean") {
+      return settings.inflectedSearch;
+    }
+    return null;
+  },
+
+  set(isInflected: boolean): void {
+    settingsStore.update({ inflectedSearch: isInflected });
+    try {
+      document.cookie = `${INFLECTED_COOKIE_NAME}=${
+        isInflected ? "1" : "0"
+      }; Path=/; Max-Age=31536000; SameSite=Lax`;
+    } catch {}
+  },
+
+  syncWithCookie(): void {
+    try {
+      const stored = inflectedSettingsStore.get();
+      if (stored === null) return;
+
+      const hasCookie = document.cookie
+        .split(";")
+        .some((c) => c.trim().startsWith(`${INFLECTED_COOKIE_NAME}=`));
+
+      if (!hasCookie) {
+        inflectedSettingsStore.set(stored);
       }
     } catch {}
   },

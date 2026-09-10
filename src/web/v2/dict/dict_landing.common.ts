@@ -33,14 +33,19 @@ export function fullLangName(code: string): string {
 }
 
 /**
- * Generates the contextual welcome sentence based on active dictionary keys.
- * Handles all combinations of Latin-source and reverse-source dictionaries:
- * - Latin + Modern: "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
- * - Latin only: "Welcome to the dictionary. You can search Latin headwords and inflected forms."
+ * Generates the contextual welcome sentence based on active dictionary keys and inflection state.
+ * Handles all combinations of Latin-source, inflection state, and reverse-source dictionaries:
+ * - Inflected on + Latin + Modern: "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
+ * - Inflected off + Latin + Modern: "Welcome to the dictionary. You can search Latin headwords, and words in English and German."
+ * - Inflected on + Latin only: "Welcome to the dictionary. You can search Latin headwords and inflected forms."
+ * - Inflected off + Latin only: "Welcome to the dictionary. You can search Latin headwords."
  * - Modern only: "Welcome to the dictionary. You can search words in English."
  * - None: "Welcome to the dictionary. Please enable at least one dictionary in settings."
  */
-export function buildWelcomeMessage(activeDictKeys: Iterable<string>): string {
+export function buildWelcomeMessage(
+  activeDictKeys: Iterable<string>,
+  isInflected: boolean = true
+): string {
   const activeKeysSet = new Set(
     Array.from(activeDictKeys).map((k) => k.toUpperCase())
   );
@@ -65,14 +70,18 @@ export function buildWelcomeMessage(activeDictKeys: Iterable<string>): string {
     return "Welcome to the dictionary. Please enable at least one dictionary in settings.";
   }
 
+  const latinScope = isInflected
+    ? "Latin headwords and inflected forms"
+    : "Latin headwords";
+
   if (hasLatinSource && reverseLanguages.length > 0) {
-    return `Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in ${formatLanguageList(
+    return `Welcome to the dictionary. You can search ${latinScope}, and words in ${formatLanguageList(
       reverseLanguages
     )}.`;
   }
 
   if (hasLatinSource) {
-    return "Welcome to the dictionary. You can search Latin headwords and inflected forms.";
+    return `Welcome to the dictionary. You can search ${latinScope}.`;
   }
 
   return `Welcome to the dictionary. You can search words in ${formatLanguageList(
