@@ -32,7 +32,7 @@ processLibrary({
   shouldBuildCorpus: buildCorpus,
 })
   .then(async () => {
-    if (process.env.BUILD_V2 === "1" || process.argv.includes("--v2")) {
+    if (process.env.BUILD_V2 !== "0") {
       console.log("Pre-processing V2 library artifacts...");
       await buildV2Library(LIB_DEFAULT_DIR);
     }
