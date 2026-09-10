@@ -13,6 +13,7 @@ import {
   trimRawQuery,
 } from "@/common/text_cleaning";
 import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
+import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -177,10 +178,37 @@ export class MorcusDictSearch extends BaseElement {
     );
 
     // Listen for dictionary selection changes to re-fetch or update active search
-    this.listen(this, "dict-selection-change", () => {
+    this.listen(this, "dict-selection-change", (evt: Event) => {
+      const e = evt as CustomEvent<{ dictKeys: string[] }>;
       const currentQuery = this.inputElement?.value.trim() ?? "";
       if (currentQuery) {
         this.fetchResults(currentQuery);
+      }
+
+      const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
+      if (welcomeEl && e.detail?.dictKeys) {
+        welcomeEl.textContent = buildWelcomeMessage(e.detail.dictKeys);
+      }
+
+      // Update dictionary list badges live on the landing page
+      if (e.detail?.dictKeys) {
+        const activeSet = new Set(
+          e.detail.dictKeys.map((k) => k.toUpperCase())
+        );
+        const items = this.$$<HTMLElement>(".v2-dict-list-item");
+        for (const item of items) {
+          const key = item.dataset.dictKey?.toUpperCase();
+          if (!key) continue;
+          const isEnabled = activeSet.has(key);
+          item.classList.toggle("v2-dict-enabled", isEnabled);
+          item.classList.toggle("v2-dict-disabled", !isEnabled);
+
+          const badge = item.querySelector(".v2-lexicon-badge");
+          if (badge) {
+            badge.classList.toggle("v2-dict-enabled", isEnabled);
+            badge.classList.toggle("v2-dict-disabled", !isEnabled);
+          }
+        }
       }
     });
 

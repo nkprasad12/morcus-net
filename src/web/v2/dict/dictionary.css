@@ -41,23 +41,23 @@
 .v2-jump-pill:visited {
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  padding: 4px 12px;
-  border-radius: 9999px;
+  gap: 5px;
+  padding: 3px 8px;
+  border-radius: 4px;
   background-color: var(--v2-tag-bg);
   border: 1px solid var(--v2-border);
-  color: var(--v2-text);
+  color: var(--v2-dict-title);
   text-decoration: none;
-  font-size: 0.82rem;
-  font-weight: 500;
+  font-size: 0.78rem;
+  font-weight: 600;
   white-space: nowrap;
   user-select: none;
   transition: all 0.15s ease-in-out;
 }
 
 .v2-jump-pill:hover {
-  background-color: var(--v2-accent-quote);
-  border-color: var(--v2-primary);
+  background-color: var(--v2-card-bg);
+  border-color: var(--v2-border-strong);
   color: var(--v2-primary);
   transform: translateY(-1px);
 }
@@ -66,7 +66,7 @@
   outline: none;
   background-color: var(--v2-tag-bg);
   border-color: var(--v2-border);
-  color: var(--v2-text);
+  color: var(--v2-dict-title);
 }
 
 .v2-jump-pill:focus:not(:focus-visible) .v2-jump-pill-count {
@@ -80,19 +80,21 @@
 }
 
 .v2-jump-pill-name {
-  font-weight: 500;
+  font-family: monospace;
+  font-size: 0.76rem;
+  letter-spacing: 0.02em;
 }
 
 .v2-jump-pill-count {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  min-width: 18px;
-  height: 18px;
-  padding: 0 5px;
-  font-size: 0.72rem;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  font-size: 0.7rem;
   font-weight: 700;
-  border-radius: 9999px;
+  border-radius: 3px;
   background-color: var(--v2-card-bg);
   border: 1px solid var(--v2-border);
   color: var(--v2-text-muted);
@@ -653,6 +655,12 @@
   font-weight: 600;
 }
 
+a.lsSenseBullet,
+a.lsSenseBullet:visited {
+  color: var(--v2-text);
+  text-decoration: none;
+}
+
 .lsHover {
   text-decoration: underline dotted var(--v2-border-strong);
   text-underline-offset: 3px;
@@ -803,16 +811,18 @@ html.v2-has-js .lsHover:focus::after {
 }
 
 /* Section anchor bullets */
-.v2-section-anchor {
+.v2-section-anchor,
+.v2-section-anchor:visited {
   text-decoration: none;
-  color: inherit;
+  color: var(--v2-text);
   cursor: pointer;
   transition: background-color 0.15s ease-in-out, color 0.15s ease-in-out;
 }
 
-.v2-section-anchor:hover {
+.v2-section-anchor:hover,
+.v2-section-anchor:focus-visible {
   background-color: var(--v2-primary);
-  color: #ffffff;
+  color: #ffffff !important;
 }
 
 /* Anchored target animation effect (one-shot subtle flash & fade) */
@@ -1145,5 +1155,322 @@ html.v2-has-js .lsHover:focus::after {
     width: 100%;
     order: 10;
     margin-top: 6px;
+  }
+}
+
+/* ==========================================================================
+   Dictionary Landing State (Contextual Empty View)
+   ========================================================================== */
+
+.v2-landing-container {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  margin-top: 0.5rem;
+  width: 100%;
+}
+
+.v2-landing-welcome {
+  margin: 0;
+  padding: 0 0.25rem;
+  font-size: 0.92rem;
+  color: var(--v2-text-muted);
+  line-height: 1.5;
+}
+
+.v2-landing-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+  gap: 2rem;
+  align-items: start;
+}
+
+.v2-landing-card {
+  display: flex;
+  flex-direction: column;
+  background: transparent;
+  border: none;
+  padding: 0;
+  box-shadow: none;
+}
+
+.v2-landing-card-header {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.65rem;
+  padding-bottom: 0.4rem;
+  border-bottom: 1px solid var(--v2-border);
+}
+
+.v2-landing-card-title {
+  margin: 0;
+  font-size: 1.05rem;
+  font-weight: 400;
+  font-style: italic;
+  letter-spacing: 0.02em;
+  color: var(--v2-text);
+  font-family: var(--v2-font-sans);
+}
+
+.v2-landing-card-desc {
+  margin: 0 0 0.45rem 0;
+  font-size: 0.88rem;
+  color: var(--v2-text-muted);
+  line-height: 1.45;
+}
+
+/* Sample Entry Mock */
+.v2-sample-entry {
+  background-color: var(--v2-bg);
+  border: 1px solid var(--v2-border);
+  padding: 0.55rem 0.85rem;
+  border-radius: 6px;
+  margin-bottom: 0.65rem;
+  font-family: var(--v2-font-serif);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.v2-sample-entry-line {
+  margin-bottom: 0.35rem;
+}
+
+.v2-sample-entry-sense {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
+/* Expandable Legend details */
+.v2-legend-details {
+  margin-top: 0.15rem;
+  padding-top: 0.1rem;
+}
+
+.v2-legend-summary {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  cursor: pointer;
+  user-select: none;
+  list-style: none;
+  padding: 0.15rem 0.35rem;
+  border-radius: 4px;
+  background-color: transparent;
+  border: none;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--v2-text-muted);
+  transition: color 0.15s ease-in-out;
+}
+
+.v2-legend-summary::-webkit-details-marker {
+  display: none;
+}
+
+.v2-legend-summary:hover {
+  color: var(--v2-primary);
+}
+
+.v2-legend-summary-arrow {
+  font-size: 0.65rem;
+  opacity: 0.7;
+  transition: transform 0.2s ease-in-out;
+}
+
+.v2-legend-details[open] .v2-legend-summary-arrow {
+  transform: rotate(180deg);
+}
+
+.v2-legend-body {
+  margin-top: 0.5rem;
+  padding: 0.25rem 0.25rem 0;
+}
+
+/* Legend list */
+.v2-legend-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65rem;
+}
+
+.v2-legend-list li {
+  display: grid;
+  grid-template-columns: 100px 1fr;
+  align-items: center;
+  gap: 0.75rem;
+  font-size: 0.85rem;
+}
+
+.v2-legend-sample {
+  font-family: var(--v2-font-serif);
+  font-size: 0.9rem;
+}
+
+.v2-legend-explain {
+  color: var(--v2-text-muted);
+  line-height: 1.35;
+}
+
+.v2-legend-settings-tip {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--v2-border);
+  font-size: 0.8rem;
+  color: var(--v2-text-muted);
+  line-height: 1.4;
+}
+
+/* Lexica Directional Sections */
+.v2-dict-sections {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.v2-dict-section-title {
+  margin: 0 0 0.35rem 0;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--v2-primary);
+  font-weight: 700;
+}
+
+.v2-lexicon-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+
+.v2-lexicon-list li {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  font-size: 0.85rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-lexicon-badge {
+  display: inline-block;
+  min-width: 2.2rem;
+  padding: 1px 5px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-align: center;
+  border-radius: 4px;
+  font-family: monospace;
+  flex-shrink: 0;
+  letter-spacing: 0.02em;
+  transition: all 0.15s ease-in-out;
+}
+
+/* Enabled dictionary status: themed with --v2-dict-title and a refined tag border */
+.v2-lexicon-badge.v2-dict-enabled {
+  background-color: var(--v2-tag-bg);
+  color: var(--v2-dict-title);
+  border: 1px solid var(--v2-border);
+}
+
+/* Disabled dictionary status: muted dashed outline and dimmed row */
+.v2-dict-list-item.v2-dict-disabled {
+  opacity: 0.55;
+}
+
+.v2-lexicon-badge.v2-dict-disabled {
+  background-color: transparent;
+  color: var(--v2-text-muted);
+  border: 1px dashed var(--v2-border);
+}
+
+.v2-lexicon-name {
+  color: var(--v2-text);
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.v2-lexicon-lang {
+  color: var(--v2-text-muted);
+  font-size: 0.78rem;
+  flex-shrink: 0;
+}
+
+/* Card settings note */
+.v2-card-settings-note {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin-top: 1rem;
+  padding-top: 0.5rem;
+  border-top: 1px dashed var(--v2-border);
+  font-size: 0.8rem;
+  color: var(--v2-text-muted);
+  line-height: 1.4;
+}
+
+.v2-landing-tune-icon {
+  width: 1rem;
+  height: 1rem;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
+/* Hide JS-only features when JavaScript is disabled */
+html:not(.v2-has-js) .v2-js-only {
+  display: none !important;
+}
+
+@media (max-width: 600px) {
+  .v2-landing-container {
+    gap: 1rem;
+  }
+  .v2-landing-grid {
+    grid-template-columns: 1fr;
+    gap: 1.25rem;
+  }
+  .v2-landing-card-header {
+    margin-bottom: 0.45rem;
+    padding-bottom: 0.3rem;
+  }
+  .v2-dict-sections {
+    gap: 0.5rem;
+  }
+  .v2-dict-section-title {
+    font-size: 0.75rem;
+    margin-bottom: 0.25rem;
+  }
+  .v2-lexicon-list {
+    gap: 0.25rem;
+  }
+  .v2-lexicon-list li {
+    font-size: 0.8rem;
+  }
+  .v2-sample-entry {
+    padding: 0.45rem 0.65rem;
+    margin-bottom: 0.45rem;
+    font-size: 0.88rem;
+  }
+  .v2-card-settings-note,
+  .v2-legend-settings-tip {
+    margin-top: 0.65rem;
+    padding-top: 0.5rem;
+  }
+  .v2-legend-list li {
+    grid-template-columns: 80px 1fr;
+    gap: 0.5rem;
+    font-size: 0.8rem;
   }
 }
