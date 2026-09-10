@@ -1427,7 +1427,8 @@ html.v2-has-js .lsHover:focus::after {
   line-height: 1.35;
 }
 
-.v2-legend-settings-tip {
+.v2-legend-settings-tip,
+.v2-card-settings-note {
   display: flex;
   align-items: center;
   gap: 0.45rem;
@@ -1518,18 +1519,6 @@ html.v2-has-js .lsHover:focus::after {
   flex-shrink: 0;
 }
 
-/* Card settings note */
-.v2-card-settings-note {
-  display: flex;
-  align-items: center;
-  gap: 0.45rem;
-  margin-top: 1rem;
-  padding-top: 0.5rem;
-  border-top: 1px dashed var(--v2-border);
-  font-size: 0.8rem;
-  color: var(--v2-text-muted);
-  line-height: 1.4;
-}
 
 .v2-landing-tune-icon {
   width: 1rem;

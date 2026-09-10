@@ -184,47 +184,6 @@ body.v2-resizing-panels .v2-dict-iframe,
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-/* Results Navigation & Quick-Jump Pills in Reader */
-.v2-reader-dict-panel .v2-results-pills,
-.v2-results-pills {
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
-  transition: scrollbar-color 0.25s ease;
-}
-
-.v2-reader-dict-panel .v2-results-pills:hover,
-.v2-results-pills:hover {
-  scrollbar-color: var(--v2-scrollbar-thumb) transparent;
-}
-
-.v2-reader-dict-panel .v2-results-pills::-webkit-scrollbar,
-.v2-results-pills::-webkit-scrollbar {
-  height: 4px;
-}
-
-.v2-reader-dict-panel .v2-results-pills::-webkit-scrollbar-track,
-.v2-results-pills::-webkit-scrollbar-track {
-  background: transparent;
-}
-
-.v2-reader-dict-panel .v2-results-pills::-webkit-scrollbar-thumb,
-.v2-results-pills::-webkit-scrollbar-thumb {
-  background-color: transparent;
-  border-radius: 4px;
-  transition: background-color 0.25s ease;
-}
-
-.v2-reader-dict-panel .v2-results-pills:hover::-webkit-scrollbar-thumb,
-.v2-results-pills:hover::-webkit-scrollbar-thumb {
-  background-color: var(--v2-scrollbar-thumb);
-}
-
-.v2-reader-dict-panel .v2-results-pills::-webkit-scrollbar-thumb:hover,
-.v2-results-pills::-webkit-scrollbar-thumb:hover {
-  background-color: var(--v2-scrollbar-thumb-hover);
-}
 
 /* Ghost Scrollbars: completely hidden at rest, sleek floating pill on hover */
 .v2-reader-text-panel,
@@ -765,61 +724,6 @@ a.v2-reader-sheet-close:active {
   }
 }
 
-/* Embedded Dictionary "Jump to top" Button */
-.v2-reader-dict-back-to-top {
-  position: fixed;
-  bottom: calc(16px + env(safe-area-inset-bottom, 0px));
-  right: 16px;
-  width: 40px;
-  height: 40px;
-  border-radius: 50%;
-  background-color: var(--v2-card-bg);
-  border: 1px solid var(--v2-border);
-  color: var(--v2-text-muted);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.16);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 120;
-  cursor: pointer;
-  opacity: 0;
-  pointer-events: none;
-  transform: translateY(10px);
-  transition: opacity 0.2s ease, transform 0.2s ease,
-    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
-    box-shadow 0.15s ease;
-  -webkit-tap-highlight-color: transparent;
-  padding: 0;
-}
-
-.v2-reader-dict-back-to-top svg {
-  width: 22px;
-  height: 22px;
-  fill: currentColor;
-  transition: transform 0.15s ease;
-}
-
-.v2-reader-dict-back-to-top:hover {
-  color: var(--v2-primary);
-  border-color: var(--v2-primary);
-  transform: translateY(-2px);
-  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.22);
-}
-
-.v2-reader-dict-back-to-top:hover svg {
-  transform: translateY(-1px);
-}
-
-.v2-reader-dict-back-to-top:focus-visible {
-  outline: 2px solid var(--v2-primary);
-  outline-offset: 2px;
-}
-
-.v2-reader-dict-back-to-top.v2-visible {
-  opacity: 1;
-  pointer-events: auto;
-  transform: translateY(0);
-}
 
 /* Desktop: Position button inside the dictionary right column */
 @media (min-width: 641px) {
@@ -955,18 +859,8 @@ a.v2-reader-sheet-close:active {
 
 /* More / Expand Toggle Button */
 .v2-sticky-expand-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.35rem;
   padding: 0.25rem 0.55rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
   color: var(--v2-text-muted);
-  background: var(--v2-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all 0.15s ease;
 }
 
 .v2-sticky-expand-btn:hover {
@@ -1024,12 +918,7 @@ a.v2-reader-sheet-close:active {
   }
 }
 
-.v2-expanded-left {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
+.v2-expanded-left,
 .v2-expanded-right {
   display: flex;
   align-items: center;

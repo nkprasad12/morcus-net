@@ -67,7 +67,8 @@ morcus-report-dialog:not(:defined) {
 }
 
 /* Theme toggle icon button */
-.v2-theme-toggle-btn {
+.v2-theme-toggle-btn,
+.v2-mobile-menu-btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -77,19 +78,23 @@ morcus-report-dialog:not(:defined) {
   border-radius: 6px;
   padding: 6px;
   cursor: pointer;
+  user-select: none;
   transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
 }
 
-.v2-theme-toggle-btn:hover {
+.v2-theme-toggle-btn:hover,
+.v2-mobile-menu-btn:hover {
   background-color: var(--v2-app-bar-nav-hover-bg);
 }
 
-.v2-theme-toggle-btn:focus-visible {
+.v2-theme-toggle-btn:focus-visible,
+.v2-mobile-menu-btn:focus-visible {
   outline: 2px solid var(--v2-primary);
   outline-offset: 2px;
 }
 
-.v2-theme-toggle-btn svg {
+.v2-theme-toggle-btn svg,
+.v2-mobile-menu-btn svg {
   width: 20px;
   height: 20px;
   fill: currentColor;
@@ -110,35 +115,6 @@ morcus-report-dialog:not(:defined) {
   display: none;
 }
 
-.v2-mobile-menu-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: transparent;
-  border: 1px solid var(--v2-app-bar-toggle-border);
-  color: var(--v2-app-bar-text);
-  border-radius: 6px;
-  padding: 6px;
-  cursor: pointer;
-  user-select: none;
-  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
-}
-
-.v2-mobile-menu-btn:hover {
-  background-color: var(--v2-app-bar-nav-hover-bg);
-}
-
-.v2-mobile-menu-btn:focus-visible {
-  outline: 2px solid var(--v2-primary);
-  outline-offset: 2px;
-}
-
-.v2-mobile-menu-btn svg {
-  width: 20px;
-  height: 20px;
-  fill: currentColor;
-  display: block;
-}
 
 .v2-mobile-menu .v2-icon-close {
   display: none;
@@ -223,7 +199,8 @@ morcus-report-dialog:not(:defined) {
 }
 
 /* Floating "Jump to top" button (Progressive Enhancement) */
-.v2-back-to-top {
+.v2-back-to-top,
+.v2-reader-dict-back-to-top {
   position: fixed;
   bottom: calc(20px + env(safe-area-inset-bottom, 0px));
   right: 20px;
@@ -247,36 +224,43 @@ morcus-report-dialog:not(:defined) {
     background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
     box-shadow 0.15s ease;
   -webkit-tap-highlight-color: transparent;
+  padding: 0;
 }
 
-.v2-back-to-top svg {
+.v2-back-to-top svg,
+.v2-reader-dict-back-to-top svg {
   width: 24px;
   height: 24px;
   fill: currentColor;
   transition: transform 0.15s ease;
 }
 
-.v2-back-to-top:hover {
+.v2-back-to-top:hover,
+.v2-reader-dict-back-to-top:hover {
   color: var(--v2-primary);
   border-color: var(--v2-primary);
   transform: translateY(-2px);
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
 }
 
-.v2-back-to-top:hover svg {
+.v2-back-to-top:hover svg,
+.v2-reader-dict-back-to-top:hover svg {
   transform: translateY(-1px);
 }
 
-.v2-back-to-top:active {
+.v2-back-to-top:active,
+.v2-reader-dict-back-to-top:active {
   transform: translateY(0);
 }
 
-.v2-back-to-top:focus-visible {
+.v2-back-to-top:focus-visible,
+.v2-reader-dict-back-to-top:focus-visible {
   outline: 2px solid var(--v2-primary);
   outline-offset: 2px;
 }
 
-.v2-back-to-top.v2-visible {
+.v2-back-to-top.v2-visible,
+.v2-reader-dict-back-to-top.v2-visible {
   opacity: 1;
   pointer-events: auto;
   transform: translateY(0);
