@@ -25,6 +25,7 @@ import { processPozo } from "@/common/dictionaries/pozo/process_pozo";
 import { processGesner } from "@/common/dictionaries/gesner/process_gesner";
 import { processForcellini } from "@/common/dictionaries/forcellini/process_forcellini";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
+import { buildV2Library } from "@/common/library/v2/v2_library_builder";
 
 const RAW_LAT_LIB_DIR = "latin_works_raw";
 const OFFLINE_DATA_DIR = envVar("OFFLINE_DATA_DIR");
@@ -161,6 +162,12 @@ const WRITE_COMMIT_ID: StepConfig = {
   operation: writeCommitId,
   label: "Writing commit hash",
 };
+const MAKE_V2_LIBRARY: StepConfig = {
+  operation: async () => {
+    await buildV2Library(LIB_DEFAULT_DIR);
+  },
+  label: "Building V2 library",
+};
 const ALL_STEPS = [
   SETUP_DIRS,
   WRITE_COMMIT_ID,
@@ -176,6 +183,7 @@ const ALL_STEPS = [
   MAKE_GESNER,
   MAKE_FORCELLINI,
   PROCESS_LAT_LIB,
+  MAKE_V2_LIBRARY,
 ];
 
 export async function prodBuildSteps(): Promise<boolean> {
