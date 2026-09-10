@@ -81,3 +81,13 @@ export function stripDiacritics(word: string): DiacriticStripped {
 
   return result;
 }
+
+/**
+ * Removes leading and trailing clusters of punctuation, whitespace, and
+ * dangling combining diacritic marks from a search query.
+ */
+export function trimRawQuery(query: string): string {
+  const LEAD_TRIM_RE = /^(?:[\p{P}\p{Z}\s]+[\p{M}]*)/u;
+  const TRAIL_TRIM_RE = /(?:[\p{M}]*[\p{P}\p{Z}\s]+)$/u;
+  return query.replace(LEAD_TRIM_RE, "").replace(TRAIL_TRIM_RE, "");
+}

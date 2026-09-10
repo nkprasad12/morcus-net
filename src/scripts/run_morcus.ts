@@ -153,6 +153,10 @@ function parseArguments() {
     help: "Builds Morceus tables and saves to disk.",
     action: "store_true",
   });
+  build.add_argument("-b_v2", "--build_v2", {
+    help: "Builds the UI V2 assets (now enabled by default).",
+    action: "store_true",
+  });
   addArguments(build, COMMON_BUILD_ARGS);
 
   const bundle = subparsers.add_parser(BUNDLE, {
@@ -188,6 +192,10 @@ function parseArguments() {
   });
   web.add_argument("-mot", "--morceus_tables", {
     help: "Builds Morceus tables and saves to disk.",
+    action: "store_true",
+  });
+  web.add_argument("-b_v2", "--build_v2", {
+    help: "Builds the experimental UI V2 assets.",
     action: "store_true",
   });
   addArguments(web, COMMON_BUILD_ARGS);
@@ -414,6 +422,19 @@ function bundleConfig(args: any, priority?: number): StepConfig {
   };
 }
 
+function v2BundleConfig(args: any, priority?: number): StepConfig {
+  const executor = args.bun ? ["bun"] : TS_NODE;
+  const buildCommand = executor.concat(["src/bundler/v2.rsbuild.ts"]);
+  if (args.minify) {
+    buildCommand.push("--minify");
+  }
+  return {
+    operation: () => shellStep(buildCommand.join(" ")),
+    label: "Building UI V2 assets",
+    priority,
+  };
+}
+
 function artifactConfig(args: any): StepConfig[] {
   const setupSteps: StepConfig[] = [];
   const childEnv = { ...process.env };
@@ -521,10 +542,12 @@ function artifactConfig(args: any): StepConfig[] {
       priority: 2,
     });
   }
+  setupSteps.push(v2BundleConfig(args, 2));
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {
       childEnv.BUILD_CORPUS = "1";
     }
+    childEnv.BUILD_V2 = "1";
     const command = baseCommand.concat(["src/scripts/process_lat_lib.ts"]);
     setupSteps.push({
       operation: () => shellStep(command.join(" "), childEnv),
@@ -549,6 +572,7 @@ async function setupAndStartWebServer(args: any) {
       setupSteps.push(bundleConfig(args, 1));
     }
   }
+  setupSteps.push(v2BundleConfig(args, 1));
   setupSteps.push(...artifactConfig(args));
   const setupSuccess = await runPipeline(setupSteps, { parallel: true });
   if (!setupSuccess) {

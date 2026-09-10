@@ -1,0 +1,299 @@
+/* Progressive enhancement: hide until custom elements are defined by JS */
+morcus-theme-toggle:not(:defined),
+morcus-report-dialog:not(:defined) {
+  display: none;
+}
+
+/* App Bar Navigation */
+.v2-app-bar {
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08), 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.v2-brand-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.v2-brand-logo-link {
+  display: flex;
+  align-items: center;
+  text-decoration: none;
+  border-radius: 2px;
+}
+
+.v2-brand-logo-link:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-brand-logo {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  display: block;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+.v2-actions-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.v2-nav-link,
+.v2-nav-link:visited {
+  text-decoration: none;
+  color: var(--v2-app-bar-nav-text);
+  font-weight: 500;
+  font-size: 0.95rem;
+  padding: 6px 14px;
+  border-radius: 6px;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.v2-nav-link:hover,
+.v2-nav-link:visited:hover {
+  color: var(--v2-app-bar-text);
+  background-color: var(--v2-app-bar-nav-hover-bg);
+}
+
+.v2-nav-link.active,
+.v2-nav-link.active:visited {
+  color: var(--v2-app-bar-nav-active-text);
+  background-color: var(--v2-app-bar-nav-active-bg);
+  font-weight: 600;
+}
+
+/* Theme toggle icon button */
+.v2-theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--v2-app-bar-toggle-border);
+  color: var(--v2-app-bar-text);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.v2-theme-toggle-btn:hover {
+  background-color: var(--v2-app-bar-nav-hover-bg);
+}
+
+.v2-theme-toggle-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-theme-toggle-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
+}
+
+/* Mobile Menu (<details>) & Responsive Navigation */
+.v2-mobile-menu {
+  position: relative;
+  display: none;
+}
+
+.v2-mobile-menu summary {
+  list-style: none;
+}
+
+.v2-mobile-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.v2-mobile-menu-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--v2-app-bar-toggle-border);
+  color: var(--v2-app-bar-text);
+  border-radius: 6px;
+  padding: 6px;
+  cursor: pointer;
+  user-select: none;
+  transition: background-color 0.15s ease-in-out, border-color 0.15s ease-in-out;
+}
+
+.v2-mobile-menu-btn:hover {
+  background-color: var(--v2-app-bar-nav-hover-bg);
+}
+
+.v2-mobile-menu-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-mobile-menu-btn svg {
+  width: 20px;
+  height: 20px;
+  fill: currentColor;
+  display: block;
+}
+
+.v2-mobile-menu .v2-icon-close {
+  display: none;
+}
+
+.v2-mobile-menu[open] .v2-icon-menu {
+  display: none;
+}
+
+.v2-mobile-menu[open] .v2-icon-close {
+  display: block;
+}
+
+.v2-mobile-menu-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 170px;
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  border-radius: 8px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.06);
+  padding: 6px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 4px;
+  z-index: 300;
+}
+
+.v2-mobile-menu-dropdown .v2-nav-link {
+  display: block;
+  padding: 8px 12px;
+  color: var(--v2-text);
+  font-size: 0.95rem;
+}
+
+.v2-mobile-menu-dropdown .v2-nav-link:hover {
+  background-color: var(--v2-tag-bg);
+  color: var(--v2-text);
+}
+
+.v2-mobile-menu-dropdown .v2-nav-link.active {
+  background-color: var(--v2-accent-quote);
+  color: var(--v2-primary);
+  font-weight: 600;
+}
+
+@media (max-width: 640px) {
+  .v2-app-bar-inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+
+  .v2-actions-group {
+    order: 1;
+    justify-self: start;
+    gap: 8px;
+  }
+
+  .v2-brand-group {
+    order: 2;
+    justify-self: center;
+    gap: 0;
+  }
+
+  .v2-nav-desktop {
+    display: none;
+  }
+
+  .v2-mobile-menu {
+    order: 3;
+    justify-self: end;
+    display: block;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Floating "Jump to top" button (Progressive Enhancement) */
+.v2-back-to-top {
+  position: fixed;
+  bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+  right: 20px;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text-muted);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 90;
+  text-decoration: none;
+  cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(12px);
+  transition: opacity 0.2s ease, transform 0.2s ease,
+    background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    box-shadow 0.15s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.v2-back-to-top svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  transition: transform 0.15s ease;
+}
+
+.v2-back-to-top:hover {
+  color: var(--v2-primary);
+  border-color: var(--v2-primary);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.18);
+}
+
+.v2-back-to-top:hover svg {
+  transform: translateY(-1px);
+}
+
+.v2-back-to-top:active {
+  transform: translateY(0);
+}
+
+.v2-back-to-top:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+.v2-back-to-top.v2-visible {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+
+@media (max-width: 640px) {
+  .v2-back-to-top {
+    bottom: calc(16px + env(safe-area-inset-bottom, 0px));
+    right: 16px;
+  }
+}
+
+/* No-JS fallback: keep button visible if scripting is disabled */
+@media (scripting: none) {
+  .v2-back-to-top {
+    opacity: 0.9;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+}

@@ -1,0 +1,100 @@
+/* Search Form & Input Styles */
+
+.v2-search-form {
+  position: relative;
+  display: flex;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.v2-input-wrapper {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+}
+
+.v2-input {
+  width: 100%;
+  padding: 10px 42px 10px 14px;
+  font-size: 1.05rem;
+  border: 1px solid var(--v2-input-border, var(--v2-border));
+  border-radius: 6px;
+  background-color: var(--v2-input-bg, #ffffff);
+  color: var(--v2-text);
+  box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  outline: none;
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out,
+    background-color 0.15s ease-in-out;
+}
+
+.v2-input:focus {
+  border-color: var(--v2-border-focus);
+  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.25);
+}
+
+.v2-search-btn {
+  position: absolute;
+  right: 6px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 6px;
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  color: var(--v2-text-muted);
+  cursor: pointer;
+  transition: color 0.15s ease-in-out, background-color 0.15s ease-in-out;
+}
+
+.v2-search-btn:hover {
+  color: var(--v2-primary);
+  background-color: var(--v2-tag-bg);
+}
+
+.v2-search-btn:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 1px;
+}
+
+.v2-search-btn svg {
+  width: 18px;
+  height: 18px;
+  fill: currentColor;
+  display: block;
+}
+
+/* Autocomplete suggestion container (populated by Lit component) */
+.v2-suggestions {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  margin-top: 4px;
+  background: var(--v2-input-bg, #ffffff);
+  border: 1px solid var(--v2-input-border, var(--v2-border));
+  border-radius: 6px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
+  z-index: 100;
+  list-style: none;
+  padding: 4px 0;
+  max-height: 240px;
+  overflow-y: auto;
+}
+
+.v2-suggestion-item {
+  padding: 8px 16px;
+  cursor: pointer;
+  font-size: 1rem;
+}
+
+.v2-suggestion-item:hover,
+.v2-suggestion-item.active {
+  background-color: var(--v2-tag-bg);
+  color: var(--v2-primary);
+}

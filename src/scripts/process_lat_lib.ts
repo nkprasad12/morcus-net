@@ -24,11 +24,20 @@ const worksList =
 const buildCorpus = process.env.BUILD_CORPUS === "1";
 process.env.COMMIT_ID = readFileSync("build/morcusnet.commit.txt").toString();
 
+import { buildV2Library } from "@/common/library/v2/v2_library_builder";
+
 processLibrary({
   outputDir: LIB_DEFAULT_DIR,
   works: worksList,
   shouldBuildCorpus: buildCorpus,
-}).then(() => {
-  const runTime = Math.round(performance.now() - startTime);
-  console.log(`Latin library processing runtime: ${runTime} ms.`);
-});
+})
+  .then(async () => {
+    if (process.env.BUILD_V2 === "1" || process.argv.includes("--v2")) {
+      console.log("Pre-processing V2 library artifacts...");
+      await buildV2Library(LIB_DEFAULT_DIR);
+    }
+  })
+  .then(() => {
+    const runTime = Math.round(performance.now() - startTime);
+    console.log(`Latin library processing runtime: ${runTime} ms.`);
+  });
