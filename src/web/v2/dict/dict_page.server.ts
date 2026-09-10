@@ -5,6 +5,8 @@ import { renderEntryResult } from "@/web/v2/dict/entry_view.server";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 import { DICT_ATTRIBUTIONS } from "@/web/v2/dict/dict_attribution";
 import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
+import { hasGreek } from "@/web/v2/dict/dict_greek.common";
+import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
 import * as he from "he";
 
 export const DICT_NAMES: Record<string, string> = {
@@ -60,6 +62,10 @@ export function renderDictResultsHtml(
 ): string {
   if (!query.trim()) {
     return renderDictLandingHtml(queriedDicts);
+  }
+
+  if (hasGreek(query)) {
+    return renderGreekFallbackHtml(query);
   }
 
   if (!results) {

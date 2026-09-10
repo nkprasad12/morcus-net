@@ -24,9 +24,9 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 | **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                              | Segmented per-entry tab pill dropdown          | ❌ **Missing in V2**  |
 | **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)                       | Inline segmented tab pills                     | ❌ **Missing in V2**  |
 | **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column             | Fixed single-column layout only                | ❌ **Missing in V2**  |
-| **Article & Section Permalinks**         | Direct `/dicts/id/:id` link, copy permalink tooltip                       | Local `#hash` anchor jump only; no copy action | ⚠️ **Degraded in V2** |
-| **Greek Query Interception**             | Greek detection, Logeion embed & auto-open setting                        | Treated as 0-result Latin search               | ❌ **Missing in V2**  |
-| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings          | Only hides app bar (`embedded=1`)              | ⚠️ **Partial in V2**  |
+| **Article & Section Permalinks**         | Direct `/dicts/id/:id` link, copy permalink tooltip                       | Local `#hash` anchor jump only; no copy action                                    | ⚠️ **Degraded in V2** |
+| **Greek Query Interception**             | Greek detection, Logeion embed & auto-open setting                        | Detected server-side; direct Logeion link, toggleable embed, & auto-open setting | ✅ **Feature Parity** |
+| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings          | Only hides app bar (`embedded=1`)                                                 | ⚠️ **Partial in V2**  |
 
 ---
 
@@ -128,7 +128,7 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
      - Direct link to `https://logeion.uchicago.edu/<word>`.
      - Toggleable inline `70vh` iframe embed.
      - Persisted user setting: _"Automatically open embedded Logeion searches"_.
-   - **V2**: Greek words pass through to Latin lexica, returning a generic _"No dictionary entries found"_ with no Logeion banner or embed option.
+   - **V2 (`dict_greek.common.ts`, `dict_greek.server.ts`, `dict_greek.client.ts`, `v2_router.ts`)**: Parity achieved. Server intercepts Greek queries before Latin dict lookup, renders semantic SSR fallback with badge and direct Logeion link, and progressively enhances with `<morcus-greek-embed>` providing toggleable iframe viewer and persisted auto-open preference. Autocomplete endpoint returns empty array for Greek queries without wasting Latin database lookups.
 
 ---
 
@@ -155,16 +155,14 @@ To bring the V2 Dictionary to full functional parity with V1, prioritize the fol
    - Pass `inflected=0|1` to `/v2/dicts` and configure `fusedDict.getEntry({ mode: inflected ? 1 : 0 })`.
 2. **Subsection Match Notes**:
    - Port `SubsectionNote` into `entry_view.server.ts` so inflected and compound searches surface which subsections matched inside long entries.
-3. **Greek Query Fallback**:
-   - Re-introduce `hasGreek()` query inspection on the server and render the Logeion fallback banner and embed.
 
 ### Medium Priority
 
-4. **Autocomplete Refinements**:
+3. **Autocomplete Refinements**:
    - Add language origin chips (`LangChip`) to suggestions in `dict_suggestions.client.ts`.
    - Restore suffix lookup (`-`) and `u`/`v` / `i`/`j` prefix expansion.
-5. **Search Bar Preview Badges**:
+4. **Search Bar Preview Badges**:
    - Render active language and inflection state pills alongside the settings button in `search_bar.server.ts`.
-6. **Direct Article Permalinks & Link Copying**:
+5. **Direct Article Permalinks & Link Copying**:
    - Update `entry_view.server.ts` to link headwords to `/v2/dicts/id/:id` (matching V1's `DICT_BY_ID` behavior).
    - Add client-side copy-to-clipboard button/tooltip for article permalinks and sense section URLs.

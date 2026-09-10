@@ -9,6 +9,9 @@ let cachedCriticalCss: string | undefined;
 let cachedCriticalJs: string | undefined;
 
 function loadManifest(): V2AssetManifest {
+  if (process.env.NODE_ENV === "test") {
+    cachedManifest = undefined;
+  }
   if (cachedManifest !== undefined) {
     const jsFilename = cachedManifest["v2.js"];
     const cssFilename = cachedManifest["v2.css"];

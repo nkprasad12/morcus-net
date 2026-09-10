@@ -6,6 +6,7 @@ import {
   renderDictResultsHtml,
   resolveActiveDicts,
   formatDictsCookie,
+  hasGreek,
 } from "@/web/v2/dict/dict.server";
 import { renderAboutPageHtml } from "@/web/v2/about/about.server";
 import { renderLibraryPageHtml } from "@/web/v2/library/library.server";
@@ -74,7 +75,7 @@ export function createV2Router(
   router.get("/api/completions", async (req: Request, res: Response) => {
     const query =
       typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
-    if (!query) {
+    if (!query || hasGreek(query)) {
       res.json([]);
       return;
     }
@@ -152,6 +153,23 @@ export function createV2Router(
       res.send(
         renderDictPageHtml({
           query: "",
+          embedded: isEmbedded,
+          queriedDicts: dictKeys,
+        })
+      );
+      return;
+    }
+
+    if (hasGreek(query)) {
+      if (isPartial) {
+        res.setHeader("Content-Type", "text/html; charset=utf-8");
+        res.send(renderDictResultsHtml(query, undefined, dictKeys));
+        return;
+      }
+      res.setHeader("Content-Type", "text/html; charset=utf-8");
+      res.send(
+        renderDictPageHtml({
+          query,
           embedded: isEmbedded,
           queriedDicts: dictKeys,
         })
