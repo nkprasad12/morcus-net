@@ -1446,20 +1446,6 @@ a.v2-reader-sheet-close:active {
 /* ==========================================================================
    Bibliographical Metadata Modal Dialog & Toast
    ========================================================================== */
-.v2-reader-biblio-dialog {
-  max-width: 540px;
-  width: 90vw;
-  border-radius: 12px;
-  padding: 0;
-  border: 1px solid var(--v2-border);
-  background: var(--v2-card-bg);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-}
-
-.v2-reader-biblio-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
-}
 
 .v2-reader-meta-list {
   display: flex;
@@ -1583,17 +1569,6 @@ a.v2-reader-sheet-close:active {
    ========================================================================== */
 .v2-reader-settings-dialog {
   max-width: 440px;
-  width: 90vw;
-  border-radius: 12px;
-  padding: 0;
-  border: 1px solid var(--v2-border);
-  background: var(--v2-card-bg);
-  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.25);
-}
-
-.v2-reader-settings-dialog::backdrop {
-  background: rgba(0, 0, 0, 0.5);
-  backdrop-filter: blur(2px);
 }
 
 .v2-settings-card {

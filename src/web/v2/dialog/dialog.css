@@ -60,6 +60,16 @@
   color: var(--v2-text);
 }
 
+.v2-dialog-subtitle {
+  font-size: 0.8125rem;
+  color: var(--v2-text-muted);
+  margin: 0.15rem 0 0;
+}
+
+.v2-dialog-sm {
+  max-width: 440px;
+}
+
 .v2-dialog-close-btn {
   display: inline-flex;
   align-items: center;

@@ -1,4 +1,8 @@
-import { BaseElement, registerElement } from "@/web/v2/core/index.client";
+import {
+  BaseElement,
+  registerElement,
+  setupModalDialog,
+} from "@/web/v2/core/index.client";
 
 /**
  * Progressively enhanced issue and feedback report dialog component (Light DOM mode).
@@ -32,19 +36,21 @@ export class MorcusReportDialog extends BaseElement {
     this.statusEl = this.$(".v2-report-status");
     this.submitBtn = this.$<HTMLButtonElement>(".v2-report-submit-btn");
 
-    if (this.triggerBtn) {
-      this.triggerBtn.removeAttribute("disabled");
-      this.listen(this.triggerBtn, "click", this.handleTriggerClick);
-    }
-
     if (this.dialogEl) {
-      this.listen(this.dialogEl, "click", this.handleBackdropClick);
-      this.listen(this.dialogEl, "cancel", this.handleCancel);
+      this.addDisposable(
+        setupModalDialog(this.dialogEl, {
+          trigger: this.triggerBtn,
+          onOpen: () => {
+            this.clearStatus();
+            setTimeout(() => this.textareaEl?.focus(), 50);
+          },
+          onClose: () => {
+            this.clearStatus();
+            this.triggerBtn?.focus();
+          },
+        })
+      );
     }
-
-    this.$$("[data-dialog-close]").forEach((btn) => {
-      this.listen(btn, "click", this.handleCloseClick);
-    });
 
     this.hijackForm("form.v2-report-form", (data) => {
       this.submitReport(data.reportText || "", data.reporter || "");
@@ -54,26 +60,6 @@ export class MorcusReportDialog extends BaseElement {
       this.listen(this.formEl, "keydown", this.handleFormKeyDown);
     }
   }
-
-  private readonly handleTriggerClick = (e: MouseEvent) => {
-    e.preventDefault();
-    this.openDialog();
-  };
-
-  private readonly handleCloseClick = (e: MouseEvent) => {
-    e.preventDefault();
-    this.closeDialog();
-  };
-
-  private readonly handleBackdropClick = (e: MouseEvent) => {
-    if (e.target === this.dialogEl) {
-      this.closeDialog();
-    }
-  };
-
-  private readonly handleCancel = () => {
-    this.clearStatus();
-  };
 
   private readonly handleFormKeyDown = (e: KeyboardEvent) => {
     if ((e.metaKey || e.ctrlKey) && e.key === "Enter") {
