@@ -2,9 +2,10 @@ import {
   BaseElement,
   bindDismissable,
   debounce,
+  dictSettingsStore,
+  inflectedSettingsStore,
   fetchAndSwapPartial,
   LatestTask,
-  type QueryParamSync,
   registerElement,
 } from "@/web/v2/core/index.client";
 import {
@@ -14,6 +15,12 @@ import {
 } from "@/common/text_cleaning";
 import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
+import {
+  encodeDictBitmask,
+  decodeDictBitmask,
+  DEFAULT_DICT_BITMASK,
+  DEFAULT_DICT_KEYS,
+} from "@/web/v2/dict/dict_bitmask.common";
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -33,19 +40,22 @@ export class MorcusDictSearch extends BaseElement {
   private suggestions: string[] = [];
   private selectedSuggestionIndex: number = -1;
   private readonly completionTask = new LatestTask();
-  private router: QueryParamSync | null = null;
 
   private inputElement: HTMLInputElement | null = null;
   private resultsElement: HTMLElement | null = null;
   private suggestionsEl: MorcusDictSuggestions | null = null;
+
+  private activeDictBitmask: string = DEFAULT_DICT_BITMASK;
+  private activeDictKeys: string[] = [...DEFAULT_DICT_KEYS];
+  private isInflected: boolean = true;
 
   private readonly debouncedFetchCompletions = debounce((query: string) => {
     const signal = this.completionTask.start();
     const currentParams = new URLSearchParams(window.location.search);
     const fetchParams = new URLSearchParams();
     fetchParams.set("q", query);
-    const inParam = currentParams.get("in") || currentParams.get("dict");
-    if (inParam) fetchParams.set("dict", inParam);
+    fetchParams.set("d", this.activeDictBitmask);
+
     const langParam = currentParams.get("lang");
     if (langParam) fetchParams.set("lang", langParam);
 
@@ -65,7 +75,9 @@ export class MorcusDictSearch extends BaseElement {
   }, 180);
 
   protected override onConnect() {
-    this.router = this.syncQueryParam("q", {
+    this.initActiveSettings();
+
+    this.syncQueryParam("q", {
       onChange: (q) => {
         if (this.inputElement) {
           this.inputElement.value = q;
@@ -77,6 +89,59 @@ export class MorcusDictSearch extends BaseElement {
     });
 
     this.enhanceExistingMarkup();
+  }
+
+  private initActiveSettings() {
+    const params = new URLSearchParams(window.location.search);
+
+    // Resolve inflection state: URL 'o' > stored setting > default (true)
+    const oParam = params.get("o");
+    if (oParam === "0") {
+      this.isInflected = false;
+    } else if (oParam === "1") {
+      this.isInflected = true;
+    } else {
+      const storedInflected = inflectedSettingsStore.get();
+      if (typeof storedInflected === "boolean") {
+        this.isInflected = storedInflected;
+      } else {
+        this.isInflected = true;
+      }
+    }
+
+    // Resolve dict bitmask: URL 'd' > stored setting > default ("an")
+    const dParam = params.get("d");
+    if (dParam) {
+      const decoded = decodeDictBitmask(dParam);
+      if (decoded && decoded.length > 0) {
+        this.activeDictBitmask = dParam;
+        this.activeDictKeys = decoded;
+        return;
+      }
+    }
+
+    const inParam = params.get("in") || params.get("dict");
+    if (inParam) {
+      const keys = inParam
+        .split(inParam.includes(",") ? "," : "-")
+        .map((k) => k.replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2"));
+      const mask = encodeDictBitmask(keys);
+      const decoded = decodeDictBitmask(mask);
+      if (decoded && decoded.length > 0) {
+        this.activeDictBitmask = mask;
+        this.activeDictKeys = decoded;
+        return;
+      }
+    }
+
+    const storedDicts = dictSettingsStore.get();
+    if (storedDicts && storedDicts.length > 0) {
+      this.activeDictKeys = storedDicts;
+      this.activeDictBitmask = encodeDictBitmask(storedDicts);
+    } else {
+      this.activeDictKeys = [...DEFAULT_DICT_KEYS];
+      this.activeDictBitmask = DEFAULT_DICT_BITMASK;
+    }
   }
 
   protected override onDisconnect() {
@@ -179,15 +244,38 @@ export class MorcusDictSearch extends BaseElement {
 
     // Listen for dictionary selection changes to re-fetch or update active search
     this.listen(this, "dict-selection-change", (evt: Event) => {
-      const e = evt as CustomEvent<{ dictKeys: string[] }>;
+      const e = evt as CustomEvent<{ dictKeys: string[]; bitmask?: string }>;
+      const bitmask =
+        e.detail?.bitmask ||
+        (e.detail?.dictKeys ? encodeDictBitmask(e.detail.dictKeys) : "");
+
+      if (bitmask) {
+        this.activeDictBitmask = bitmask;
+      }
+      if (e.detail?.dictKeys) {
+        this.activeDictKeys = e.detail.dictKeys;
+      }
+
+      // Update hidden input in form if present
+      const hiddenD = this.$<HTMLInputElement>('input[name="d"]');
+      if (hiddenD && bitmask) {
+        hiddenD.value = bitmask;
+      }
+
+      // Update URL query parameter
+      this.syncUrlParams({ d: bitmask });
+
       const currentQuery = this.inputElement?.value.trim() ?? "";
       if (currentQuery) {
         this.fetchResults(currentQuery);
       }
 
       const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
-      if (welcomeEl && e.detail?.dictKeys) {
-        welcomeEl.textContent = buildWelcomeMessage(e.detail.dictKeys);
+      if (welcomeEl && this.activeDictKeys) {
+        welcomeEl.textContent = buildWelcomeMessage(
+          this.activeDictKeys,
+          this.isInflected
+        );
       }
 
       // Update dictionary list badges live on the landing page
@@ -212,9 +300,47 @@ export class MorcusDictSearch extends BaseElement {
       }
     });
 
+    // Listen for inflection mode toggle changes
+    this.listen(this, "dict-inflected-change", (evt: Event) => {
+      const e = evt as CustomEvent<{ isInflected: boolean }>;
+      this.isInflected = e.detail?.isInflected !== false;
+
+      this.syncUrlParams({ o: this.isInflected ? "1" : "0" });
+
+      const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
+      if (welcomeEl && this.activeDictKeys) {
+        welcomeEl.textContent = buildWelcomeMessage(
+          this.activeDictKeys,
+          this.isInflected
+        );
+      }
+
+      const currentQuery = this.inputElement?.value.trim() ?? "";
+      if (currentQuery) {
+        this.fetchResults(currentQuery);
+      }
+    });
+
     if (this.inputElement && document.activeElement === document.body) {
       this.inputElement.focus();
     }
+  }
+
+  private syncUrlParams(updates: { d?: string; o?: string }) {
+    const url = new URL(window.location.href);
+    if (updates.d !== undefined) {
+      if (updates.d) {
+        url.searchParams.set("d", updates.d);
+        url.searchParams.delete("dict");
+        url.searchParams.delete("in");
+      } else {
+        url.searchParams.delete("d");
+      }
+    }
+    if (updates.o !== undefined) {
+      url.searchParams.set("o", updates.o);
+    }
+    window.history.replaceState(null, "", url.pathname + url.search);
   }
 
   private clearSuggestions() {
@@ -287,7 +413,18 @@ export class MorcusDictSearch extends BaseElement {
       this.inputElement.value = cleanQuery;
       this.inputElement.blur();
     }
-    this.router?.push(cleanQuery);
+
+    const url = new URL(window.location.href);
+    url.searchParams.set("q", cleanQuery);
+    url.searchParams.set("d", this.activeDictBitmask);
+    url.searchParams.set("o", this.isInflected ? "1" : "0");
+    url.searchParams.delete("dict");
+    url.searchParams.delete("in");
+
+    const newSearchPath = url.pathname + url.search;
+    window.history.pushState({ q: cleanQuery }, "", newSearchPath);
+    document.title = `${cleanQuery} - Morcus Dictionary`;
+
     await this.fetchResults(cleanQuery);
   }
 
@@ -296,14 +433,14 @@ export class MorcusDictSearch extends BaseElement {
     const currentParams = new URLSearchParams(window.location.search);
     const isEmbedded = currentParams.get("embedded") === "1";
     const langParam = currentParams.get("lang");
-    const inParam = currentParams.get("in") || currentParams.get("dict");
 
     const fetchParams = new URLSearchParams();
     fetchParams.set("q", query);
     fetchParams.set("format", "partial");
     if (isEmbedded) fetchParams.set("embedded", "1");
     if (langParam) fetchParams.set("lang", langParam);
-    if (inParam) fetchParams.set("dict", inParam);
+    fetchParams.set("d", this.activeDictBitmask);
+    fetchParams.set("o", this.isInflected ? "1" : "0");
 
     const url = `/v2/dicts?${fetchParams.toString()}`;
     const success = await fetchAndSwapPartial(this.resultsElement, url, {
@@ -411,10 +548,9 @@ export class MorcusDictSearch extends BaseElement {
     const searchParams = new URLSearchParams(window.location.search);
     const params = new URLSearchParams();
     params.set("q", cleanWord);
-    const inParam = searchParams.get("in") || searchParams.get("dict");
-    if (inParam) {
-      params.set("dict", inParam);
-    }
+    params.set("d", this.activeDictBitmask);
+    params.set("o", this.isInflected ? "1" : "0");
+
     const langParam = searchParams.get("lang");
     if (langParam) {
       params.set("lang", langParam);

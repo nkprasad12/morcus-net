@@ -53,4 +53,34 @@ describe("renderDictSearchBar", () => {
     expect(html).not.toContain("<script>");
     expect(html).toContain("&lt;script&gt;");
   });
+
+  test("renders hidden d bitmask input and inflection toggle", () => {
+    const html = renderDictSearchBar({
+      query: "amare",
+      action: "/v2/dicts",
+      activeDicts: ["L&S", "GAF"],
+      isInflected: true,
+    });
+
+    // L&S (1) + GAF (2) = 3
+    expect(html).toContain('<input type="hidden" name="d" value="3" />');
+    expect(html).toContain('<input type="hidden" name="o" value="0" />');
+    expect(html).toContain('id="v2-toggle-inflected"');
+    expect(html).toContain('class="v2-inflected-checkbox"');
+    expect(html).toContain("checked");
+  });
+
+  test("renders unchecked inflection toggle when isInflected is false", () => {
+    const html = renderDictSearchBar({
+      query: "amare",
+      action: "/v2/dicts",
+      isInflected: false,
+    });
+
+    expect(html).toContain('<input type="hidden" name="o" value="0" />');
+    expect(html).toContain('id="v2-toggle-inflected"');
+    // Checkbox itself does not have checked attribute
+    expect(html).toMatch(/id="v2-toggle-inflected"[^>]*\/>/);
+    expect(html).not.toMatch(/id="v2-toggle-inflected"[^>]*checked/);
+  });
 });

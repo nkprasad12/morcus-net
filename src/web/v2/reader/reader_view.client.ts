@@ -267,12 +267,12 @@ export class MorcusReaderView extends BaseElement {
       if (match) match.classList.add("v2-word-active");
     }
 
-    // Update dictionary iframe (filtering by lang=La for Latin text word lookups)
+    // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
     const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
     if (iframe) {
       const targetSrc = `/v2/dicts?q=${encodeURIComponent(
         word
-      )}&lang=La&embedded=1`;
+      )}&lang=La&o=1&embedded=1`;
       if (iframe.getAttribute("src") !== targetSrc) {
         iframe.src = targetSrc;
       }

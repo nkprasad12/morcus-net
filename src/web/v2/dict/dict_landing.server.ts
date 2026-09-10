@@ -59,11 +59,14 @@ function getDirectionalDicts(): {
 /**
  * Renders the rich landing state for empty dictionary searches in V2.
  */
-export function renderDictLandingHtml(activeDicts?: string[]): string {
+export function renderDictLandingHtml(
+  activeDicts?: string[],
+  isInflected: boolean = true
+): string {
   const { fromLatin, toLatin } = getDirectionalDicts();
   const dictKeys =
     activeDicts && activeDicts.length > 0 ? activeDicts : DEFAULT_DICT_KEYS;
-  const welcomeText = buildWelcomeMessage(dictKeys);
+  const welcomeText = buildWelcomeMessage(dictKeys, isInflected);
 
   const activeKeysSet = new Set(dictKeys.map((k) => k.toUpperCase()));
 

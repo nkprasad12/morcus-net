@@ -227,11 +227,26 @@ describe("dict_ssr", () => {
       "Welcome to the dictionary. You can search words in English."
     );
     expect(englishOnlyHtml).not.toContain("Latin headwords");
+
+    // Inflection disabled landing page: Latin headwords only without inflected forms
+    const nonInflectedHtml = renderDictResultsHtml("", undefined, undefined, false);
+    expect(nonInflectedHtml).toContain(
+      "Welcome to the dictionary. You can search Latin headwords, and words in English and German."
+    );
+    expect(nonInflectedHtml).not.toContain("inflected forms");
   });
 
   test("renderDictResultsHtml handles no results", () => {
     const html = renderDictResultsHtml("nonexistent", {});
     expect(html).toContain("No dictionary entries found for");
+  });
+
+  test("renderDictResultsHtml renders inflected search guidance when isInflected is false and no results found", () => {
+    const html = renderDictResultsHtml("amavi", {}, ["L&S"], false);
+    expect(html).toContain("No dictionary entries found for");
+    expect(html).toContain("Exact headword search is active.");
+    expect(html).toContain("Enable inflected search");
+    expect(html).toContain('/v2/dicts?q=amavi&o=1"');
   });
 
   test("renderDictResultsHtml renders dictionary cards", () => {

@@ -155,12 +155,25 @@ morcus-dict-settings {
   user-select: none;
 }
 
-.v2-dict-checkbox {
+.v2-dict-checkbox,
+.v2-inflected-checkbox {
   accent-color: var(--v2-primary);
   cursor: pointer;
   margin: 0;
   width: 14px;
   height: 14px;
+}
+
+.v2-settings-inflected-section {
+  display: flex;
+  flex-direction: column;
+}
+
+.v2-settings-caption {
+  margin: 4px 0 0 22px;
+  font-size: 0.72rem;
+  color: var(--v2-text-muted);
+  line-height: 1.35;
 }
 
 .v2-dict-name {

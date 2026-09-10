@@ -1,4 +1,5 @@
 import { LatinDict, LatinDictInfo } from "@/common/dictionaries/latin_dicts";
+import { decodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 
 export const DICT_COOKIE_NAME = "morcus_dicts";
 
@@ -12,6 +13,7 @@ export const DEFAULT_DICT_KEYS: string[] = DEFAULT_DICTS.map((d) => d.key);
 /**
  * Normalizes URL dictionary parameter into canonical LatinDict keys.
  * Supports:
+ * - Base36 bitmask string (e.g. "e7", "an", "1")
  * - Hyphen, semicolon, or comma separated strings: "ls-gaffiot", "L&S,GAF", "L&S;GAF"
  * - Array of strings (e.g. from repeated `dict=ls&dict=gaffiot` query params)
  * - Safe mapping of 'n' <-> '&' (e.g. "LnS" <-> "L&S", "SnH" <-> "S&H")
@@ -20,6 +22,17 @@ export function parseDictKeys(
   raw: string | string[] | undefined | null
 ): string[] | null {
   if (!raw) return null;
+
+  // 1. Try decoding as Base36 bitmask if it's a single alphanumeric token <= 6 chars without delimiters
+  if (typeof raw === "string") {
+    const trimmed = raw.trim();
+    if (/^[0-9a-zA-Z]+$/.test(trimmed) && trimmed.length <= 6) {
+      const fromBitmask = decodeDictBitmask(trimmed);
+      if (fromBitmask && fromBitmask.length > 0) {
+        return fromBitmask;
+      }
+    }
+  }
 
   const rawList: string[] = Array.isArray(raw)
     ? raw

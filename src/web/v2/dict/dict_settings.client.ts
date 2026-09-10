@@ -2,10 +2,15 @@ import {
   BaseElement,
   bindDismissable,
   dictSettingsStore,
+  inflectedSettingsStore,
   registerElement,
   settingsStore,
 } from "@/web/v2/core/index.client";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import {
+  encodeDictBitmask,
+  decodeDictBitmask,
+} from "@/web/v2/dict/dict_bitmask.common";
 
 const DEFAULT_STRENGTH = 50;
 
@@ -17,16 +22,19 @@ export class MorcusDictSettings extends BaseElement {
   private isOpen: boolean = false;
   private strength: number = DEFAULT_STRENGTH;
   private activeDictKeys: Set<string> = new Set();
+  private isInflected: boolean = true;
 
   private detailsEl: HTMLDetailsElement | null = null;
   private summaryEl: HTMLElement | null = null;
   private popoverEl: HTMLElement | null = null;
   private sliderEl: HTMLInputElement | null = null;
   private valueDisplayEl: HTMLElement | null = null;
+  private inflectedCheckboxEl: HTMLInputElement | null = null;
 
   protected override onConnect() {
     this.strength = this.computeInitialStrength();
     this.initActiveDicts();
+    this.initInflectedState();
     this.enhanceMarkup();
     this.applyScale(this.strength);
 
@@ -54,8 +62,17 @@ export class MorcusDictSettings extends BaseElement {
     // 1. Synchronize cookie with localStorage if cookie was missing
     dictSettingsStore.syncWithCookie();
 
-    // 2. Check if URL has explicit dictionary override
+    // 2. Check if URL has explicit dictionary override (d bitmask, in, or dict)
     const searchParams = new URLSearchParams(window.location.search);
+    const dParam = searchParams.get("d");
+    if (dParam) {
+      const fromBitmask = decodeDictBitmask(dParam);
+      if (fromBitmask && fromBitmask.length > 0) {
+        this.activeDictKeys = new Set(fromBitmask);
+        return;
+      }
+    }
+
     const inParam = searchParams.get("in") || searchParams.get("dict");
     if (inParam) {
       const keys = inParam.split(inParam.includes(",") ? "," : "-");
@@ -86,6 +103,28 @@ export class MorcusDictSettings extends BaseElement {
     this.activeDictKeys = new Set(
       LatinDict.AVAILABLE.filter((d) => d !== LatinDict.Pozo).map((d) => d.key)
     );
+  }
+
+  private initInflectedState() {
+    inflectedSettingsStore.syncWithCookie();
+    const searchParams = new URLSearchParams(window.location.search);
+    const oParam = searchParams.get("o");
+    if (oParam === "0") {
+      this.isInflected = false;
+      return;
+    }
+    if (oParam === "1") {
+      this.isInflected = true;
+      return;
+    }
+
+    const stored = inflectedSettingsStore.get();
+    if (typeof stored === "boolean") {
+      this.isInflected = stored;
+      return;
+    }
+
+    this.isInflected = true; // default
   }
 
   private enhanceMarkup() {
@@ -149,6 +188,12 @@ export class MorcusDictSettings extends BaseElement {
         cb.checked = this.activeDictKeys.has(key);
       }
     });
+
+    // Sync inflection checkbox
+    this.inflectedCheckboxEl = this.$<HTMLInputElement>("#v2-toggle-inflected");
+    if (this.inflectedCheckboxEl) {
+      this.inflectedCheckboxEl.checked = this.isInflected;
+    }
 
     // Progressively inject highlight slider if not present
     if (this.popoverEl && !this.$(".v2-settings-slider")) {
@@ -217,7 +262,7 @@ export class MorcusDictSettings extends BaseElement {
       });
     }
 
-    // Checkbox listener
+    // Checkbox listener for both dict selection and inflection toggle
     this.listen(this, "change", (e: Event) => {
       const target = e.target;
       if (
@@ -232,6 +277,20 @@ export class MorcusDictSettings extends BaseElement {
           this.activeDictKeys.delete(key);
         }
         this.saveDictSelection();
+      } else if (
+        target instanceof HTMLInputElement &&
+        (target.id === "v2-toggle-inflected" ||
+          target.classList.contains("v2-inflected-checkbox"))
+      ) {
+        this.isInflected = target.checked;
+        inflectedSettingsStore.set(this.isInflected);
+        this.dispatchEvent(
+          new CustomEvent("dict-inflected-change", {
+            bubbles: true,
+            composed: true,
+            detail: { isInflected: this.isInflected },
+          })
+        );
       }
     });
   }
@@ -239,11 +298,12 @@ export class MorcusDictSettings extends BaseElement {
   private saveDictSelection() {
     const keys = Array.from(this.activeDictKeys);
     dictSettingsStore.set(keys);
+    const bitmask = encodeDictBitmask(keys);
     this.dispatchEvent(
       new CustomEvent("dict-selection-change", {
         bubbles: true,
         composed: true,
-        detail: { dictKeys: keys },
+        detail: { dictKeys: keys, bitmask },
       })
     );
   }
