@@ -1,12 +1,6 @@
 /* Highlight & Dictionary Settings Web Component & Dropdown Styling */
 
-morcus-dict-settings {
-  position: relative;
-  display: inline-flex;
-  align-items: center;
-}
-
-/* Native <details> wrapper for No-JS baseline and progressive enhancement */
+morcus-dict-settings,
 .v2-dict-settings-details {
   position: relative;
   display: inline-flex;
