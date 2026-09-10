@@ -2,6 +2,7 @@ import {
   BaseElement,
   type QueryParamSync,
   registerElement,
+  settingsStore,
   trackPointerDrag,
 } from "@/web/v2/core/index.client";
 import { processTokens, removeDiacritics } from "@/common/text_cleaning";
@@ -58,6 +59,31 @@ export class MorcusReaderView extends BaseElement {
     this.initStickyExpand();
     this.initQuickJump();
     this.initKeyboardShortcuts();
+    this.initIframeThemeSync();
+  }
+
+  private initIframeThemeSync() {
+    const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
+    if (!iframe) return;
+
+    const syncTheme = () => {
+      const currentTheme =
+        document.documentElement.getAttribute("data-theme") ||
+        (settingsStore.get().darkMode ? "dark" : "light");
+      try {
+        if (iframe.contentDocument?.documentElement) {
+          iframe.contentDocument.documentElement.setAttribute(
+            "data-theme",
+            currentTheme
+          );
+        }
+      } catch {
+        // Cross-origin fallback
+      }
+    };
+
+    this.listen(iframe, "load", syncTheme);
+    syncTheme();
   }
 
   protected override onDisconnect() {

@@ -175,4 +175,31 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     expect(words[0].textContent).toBe("Mu\u0304sa");
     expect(words[2].textContent).toBe("causa\u0304s");
   });
+
+  test("synchronizes reader data-theme to dictionary iframe on connect and on iframe load", () => {
+    document.documentElement.setAttribute("data-theme", "dark");
+
+    const passageHtml = `
+      <div class="v2-reader-section" id="sec-1.1">
+        <span class="v2-reader-line">Arma virumque cano.</span>
+      </div>
+    `;
+
+    const el = createReaderView(passageHtml);
+    const iframe = el.querySelector<HTMLIFrameElement>("#v2-dict-frame")!;
+
+    // Populate iframe contentDocument with a basic HTML document
+    iframe.contentDocument!.write("<html><head></head><body></body></html>");
+    iframe.contentDocument!.close();
+
+    // Trigger iframe load event to simulate navigation/reload
+    iframe.dispatchEvent(new Event("load"));
+
+    expect(
+      iframe.contentDocument!.documentElement.getAttribute("data-theme")
+    ).toBe("dark");
+
+    // Clean up
+    document.documentElement.removeAttribute("data-theme");
+  });
 });
