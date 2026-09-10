@@ -194,9 +194,39 @@ describe("dict_ssr", () => {
     );
   });
 
-  test("renderDictResultsHtml handles empty query", () => {
+  test("renderDictResultsHtml handles empty query with landing view", () => {
     const html = renderDictResultsHtml("");
-    expect(html).toContain("Type a word");
+    expect(html).toContain("v2-landing-container");
+    expect(html).toContain("Understanding the Markup");
+    expect(html).toContain("All Dictionaries");
+    expect(html).toContain(
+      "Entries highlight grammar, citations, and sections"
+    );
+    expect(html).toContain("Enable or disable dictionaries in the settings");
+    expect(html).toContain(
+      "You can change highlight intensity in the settings"
+    );
+    expect(html).toContain(
+      "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
+    );
+    // In default configuration, L&S is enabled and EGL (Pozo) is disabled
+    expect(html).toContain('data-dict-key="L&S"');
+    expect(html).toContain('class="v2-lexicon-badge v2-dict-enabled">L&S<');
+    expect(html).toContain('class="v2-lexicon-badge v2-dict-disabled">EGL<');
+
+    // Custom dictionaries: Latin only
+    const latinOnlyHtml = renderDictResultsHtml("", undefined, ["L&S", "GAF"]);
+    expect(latinOnlyHtml).toContain(
+      "Welcome to the dictionary. You can search Latin headwords and inflected forms."
+    );
+    expect(latinOnlyHtml).not.toContain("words in");
+
+    // Custom dictionaries: English reverse only
+    const englishOnlyHtml = renderDictResultsHtml("", undefined, ["S&H"]);
+    expect(englishOnlyHtml).toContain(
+      "Welcome to the dictionary. You can search words in English."
+    );
+    expect(englishOnlyHtml).not.toContain("Latin headwords");
   });
 
   test("renderDictResultsHtml handles no results", () => {
@@ -610,13 +640,17 @@ describe("dict_ssr", () => {
       ],
     };
 
-    const html = renderDictResultsHtml("habeo", results, ["L&S", "GAF"]);
-    // L&S has 1 hit -> normal link pill
-    expect(html).toContain('href="#dict-L-S" class="v2-jump-pill"');
+    // Pass queriedDicts with GAF (0 hits) before L&S (1 hit)
+    const html = renderDictResultsHtml("habeo", results, ["GAF", "L&S"]);
+    // L&S has 1 hit -> prioritized before GAF
+    const lAndSIndex = html.indexOf('href="#dict-L-S"');
+    const gafIndex = html.indexOf("No entries found in Gaffiot");
+    expect(lAndSIndex).toBeGreaterThan(-1);
+    expect(gafIndex).toBeGreaterThan(-1);
+    expect(lAndSIndex).toBeLessThan(gafIndex);
+
     expect(html).toContain('<span class="v2-jump-pill-count">1</span>');
-    // GAF has 0 hits -> zero-hit pill
     expect(html).toContain('class="v2-jump-pill v2-jump-pill-zero"');
-    expect(html).toContain("No entries found in Gaffiot");
     expect(html).toContain('<span class="v2-jump-pill-count">0</span>');
   });
 

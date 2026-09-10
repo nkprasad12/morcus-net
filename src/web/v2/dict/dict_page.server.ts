@@ -4,6 +4,7 @@ import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { renderEntryResult } from "@/web/v2/dict/entry_view.server";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 import { DICT_ATTRIBUTIONS } from "@/web/v2/dict/dict_attribution";
+import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import * as he from "he";
 
 export const DICT_NAMES: Record<string, string> = {
@@ -58,11 +59,7 @@ export function renderDictResultsHtml(
   queriedDicts?: string[]
 ): string {
   if (!query.trim()) {
-    return `
-      <div class="v2-no-results">
-        <p>Type a word (e.g. <em>equōrum</em>, <em>equus</em>, <em>horse</em>, <em>cheval</em>, <em>Pferd</em>) to search all lexica.</p>
-      </div>
-    `;
+    return renderDictLandingHtml(queriedDicts);
   }
 
   if (!results) {
@@ -114,7 +111,16 @@ export function renderDictResultsHtml(
     0
   );
 
-  const pillsHtml = allQueriedKeys
+  // Sort jump pills so dictionaries with results come first, followed by zero-hit dictionaries
+  const sortedPillKeys = [...allQueriedKeys].sort((a, b) => {
+    const countA = results[a]?.length || 0;
+    const countB = results[b]?.length || 0;
+    if (countA > 0 && countB === 0) return -1;
+    if (countA === 0 && countB > 0) return 1;
+    return 0; // maintain relative queried order
+  });
+
+  const pillsHtml = sortedPillKeys
     .map((dictKey) => {
       const entries = results[dictKey] || [];
       const shortName =
@@ -122,17 +128,22 @@ export function renderDictResultsHtml(
         DICT_NAMES[dictKey] ??
         LatinDict.BY_KEY.get(dictKey)?.displayName ??
         dictKey.toUpperCase();
+      const dictAcronym = dictKey.toUpperCase();
       const count = entries.length;
       const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
       if (count > 0) {
-        return `<a href="#${cardId}" class="v2-jump-pill"><span class="v2-jump-pill-name">${he.encode(
+        return `<a href="#${cardId}" class="v2-jump-pill" title="Jump to ${he.encode(
           shortName
+        )} (${count} ${
+          count === 1 ? "entry" : "entries"
+        })"><span class="v2-jump-pill-name">${he.encode(
+          dictAcronym
         )}</span><span class="v2-jump-pill-count">${count}</span></a>`;
       } else {
         return `<span class="v2-jump-pill v2-jump-pill-zero" title="No entries found in ${he.encode(
           shortName
         )}"><span class="v2-jump-pill-name">${he.encode(
-          shortName
+          dictAcronym
         )}</span><span class="v2-jump-pill-count">0</span></span>`;
       }
     })

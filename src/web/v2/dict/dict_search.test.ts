@@ -304,4 +304,51 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
     jest.useRealTimers();
   });
+
+  test("updates landing welcome message and badges on dict-selection-change when query is empty", () => {
+    const landingHtml = `
+      <div id="v2-landing-welcome">Initial Welcome</div>
+      <div class="v2-dict-list-item v2-dict-enabled" data-dict-key="GRG">
+        <span class="v2-lexicon-badge v2-dict-enabled">GRG</span>
+      </div>
+      <div class="v2-dict-list-item v2-dict-disabled" data-dict-key="EGL">
+        <span class="v2-lexicon-badge v2-dict-disabled">EGL</span>
+      </div>
+    `;
+
+    const el = createDictSearch(landingHtml);
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    input.value = ""; // Empty search query (landing state)
+
+    // Fire dict-selection-change with only L&S and S&H (disabling Georges)
+    el.dispatchEvent(
+      new CustomEvent("dict-selection-change", {
+        detail: { dictKeys: ["L&S", "S&H"] },
+        bubbles: true,
+      })
+    );
+
+    const welcomeEl = el.querySelector<HTMLElement>("#v2-landing-welcome")!;
+    expect(welcomeEl.textContent).toBe(
+      "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English."
+    );
+
+    const grgItem = el.querySelector<HTMLElement>(
+      '.v2-dict-list-item[data-dict-key="GRG"]'
+    )!;
+    expect(grgItem.classList.contains("v2-dict-disabled")).toBe(true);
+    expect(grgItem.classList.contains("v2-dict-enabled")).toBe(false);
+
+    // Re-enable Georges
+    el.dispatchEvent(
+      new CustomEvent("dict-selection-change", {
+        detail: { dictKeys: ["L&S", "S&H", "GRG"] },
+        bubbles: true,
+      })
+    );
+    expect(welcomeEl.textContent).toBe(
+      "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
+    );
+    expect(grgItem.classList.contains("v2-dict-enabled")).toBe(true);
+  });
 });
