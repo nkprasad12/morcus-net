@@ -18,6 +18,10 @@ jest.mock("@/web/v2/shell/asset_manifest.server", () => ({
   getV2CriticalJs: () => "/* critical js */",
 }));
 
+jest.mock("@/web/v2/reader/reader_loader.server", () =>
+  jest.requireActual("@/web/v2/testing/mock_reader_loader")
+);
+
 describe("reader_ssr", () => {
   test("renderReaderContentHtml without query displays empty state, breadcrumbs, and clean Latin text", async () => {
     const html = await renderReaderContentHtml();
