@@ -5,6 +5,7 @@
 export interface GlobalSettings {
   darkMode?: boolean;
   highlightStrength?: number;
+  autoOpenLogeion?: boolean;
 }
 
 export const GLOBAL_SETTINGS_KEY = "GlobalSettings";
@@ -20,6 +21,9 @@ export function parseSettings(raw: string | null): GlobalSettings {
       }
       if (typeof val.highlightStrength === "number") {
         settings.highlightStrength = val.highlightStrength;
+      }
+      if (typeof val.autoOpenLogeion === "boolean") {
+        settings.autoOpenLogeion = val.autoOpenLogeion;
       }
       return settings;
     }

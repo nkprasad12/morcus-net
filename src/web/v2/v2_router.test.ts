@@ -130,6 +130,42 @@ describe("v2_router integration", () => {
     );
   });
 
+  test("GET /v2/dicts with Greek query renders Logeion fallback and skips Latin dict lookup", async () => {
+    (mockFusedDict.getEntry as jest.Mock).mockClear();
+    const res = await request(app).get(
+      `/v2/dicts?q=${encodeURIComponent("λόγος")}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.text).toContain("<!DOCTYPE html>");
+    expect(res.text).toContain('class="v2-greek-fallback"');
+    expect(res.text).toContain("This site does not (yet) support Greek.");
+    expect(res.text).toContain(
+      "https://logeion.uchicago.edu/%CE%BB%CF%8C%CE%B3%CE%BF%CF%82"
+    );
+    expect(res.text).toContain("<morcus-greek-embed");
+    expect(mockFusedDict.getEntry).not.toHaveBeenCalled();
+  });
+
+  test("GET /v2/dicts with Greek query and format=partial returns only fallback fragment", async () => {
+    const res = await request(app).get(
+      `/v2/dicts?q=${encodeURIComponent("λόγος")}&format=partial`
+    );
+    expect(res.status).toBe(200);
+    expect(res.text).not.toContain("<!DOCTYPE html>");
+    expect(res.text).toContain('class="v2-greek-fallback"');
+    expect(res.text).toContain("This site does not (yet) support Greek.");
+  });
+
+  test("GET /v2/api/completions returns empty array for Greek query without dictionary lookup", async () => {
+    (mockFusedDict.getCompletions as jest.Mock).mockClear();
+    const res = await request(app).get(
+      `/v2/api/completions?q=${encodeURIComponent("λόγος")}`
+    );
+    expect(res.status).toBe(200);
+    expect(res.body).toEqual([]);
+    expect(mockFusedDict.getCompletions).not.toHaveBeenCalled();
+  });
+
   test("GET /v2/api/completions returns JSON suggestions", async () => {
     const res = await request(app).get("/v2/api/completions?q=am");
     expect(res.status).toBe(200);
