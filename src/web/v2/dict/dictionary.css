@@ -560,13 +560,6 @@
   color: var(--v2-primary);
 }
 
-.v2-entry-num-prefix {
-  font-size: 0.85rem;
-  font-family: var(--v2-font-sans);
-  font-weight: 700;
-  color: var(--v2-primary);
-}
-
 .v2-entry-content ol,
 .v2-entry-content ul {
   margin: 0;
