@@ -99,37 +99,6 @@
   line-height: 1.5;
 }
 
-/* Prototype text switcher at bottom of passage footer */
-.v2-reader-prototype-switcher {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  background: var(--v2-bg);
-  border: 1px dashed var(--v2-border);
-  border-radius: 6px;
-  margin-top: 0.25rem;
-}
-
-.v2-prototype-switcher-desc {
-  display: flex;
-  flex-direction: column;
-  gap: 0.15rem;
-}
-
-.v2-prototype-switcher-label {
-  font-weight: 600;
-  color: var(--v2-text);
-  font-size: 0.8125rem;
-}
-
-.v2-prototype-switcher-sub {
-  font-size: 0.75rem;
-  color: var(--v2-text-muted);
-}
-
 /* Latin clickable words in reading text */
 .v2-reader-passage a,
 a.v2-lat-word,
@@ -297,16 +266,6 @@ body.v2-resizing-panels .v2-dict-iframe,
 .v2-reader-dict-panel::-webkit-scrollbar-thumb:hover {
   background-color: var(--v2-scrollbar-thumb-hover);
 }
-
-.v2-reader-dict-header {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  border-bottom: 1px solid var(--v2-border);
-  padding-bottom: 0.85rem;
-  margin-bottom: 1rem;
-}
-
 .v2-reader-search-form {
   width: 100%;
   margin-bottom: 0;
@@ -325,26 +284,6 @@ body.v2-resizing-panels .v2-dict-iframe,
 .v2-reader-dict-output {
   display: block;
   transition: opacity 0.15s ease;
-}
-
-/* Empty State */
-.v2-reader-empty-state {
-  text-align: center;
-  padding: 3rem 1.5rem;
-  color: var(--v2-text-muted);
-}
-
-.v2-reader-empty-title {
-  font-size: 1.05rem;
-  font-weight: 600;
-  color: var(--v2-text);
-  margin: 0 0 0.5rem;
-}
-
-.v2-reader-empty-desc {
-  font-size: 0.9rem;
-  line-height: 1.5;
-  margin: 0;
 }
 
 /* Splitter Bar: hidden on mobile, interactive gutter on desktop */
@@ -824,15 +763,6 @@ a.v2-reader-sheet-close:active {
     max-height: none;
     overflow-y: visible;
   }
-
-  .v2-reader-dict-header {
-    position: sticky;
-    top: 0;
-    background-color: var(--v2-bg);
-    z-index: 5;
-    padding-top: 0.25rem;
-    margin-bottom: 1.25rem;
-  }
 }
 
 /* Embedded Dictionary "Jump to top" Button */
@@ -1160,95 +1090,9 @@ a.v2-reader-sheet-close:active {
   border-color: var(--v2-border-strong);
   color: var(--v2-primary);
 }
-
-.v2-reader-breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 0.35rem;
-  font-size: 0.875rem;
-  color: var(--v2-text-muted);
-}
-
-.v2-breadcrumb-author {
-  font-weight: 500;
-}
-
-.v2-breadcrumb-work {
-  font-weight: 600;
-  color: var(--v2-text);
-}
-
-.v2-breadcrumb-sep {
-  opacity: 0.5;
-}
-
-.v2-breadcrumb-page-btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.25rem;
-  background: none;
-  border: none;
-  padding: 0.15rem 0.35rem;
-  border-radius: 4px;
-  color: var(--v2-primary);
-  font-weight: 600;
-  cursor: pointer;
-  font-size: inherit;
-}
-
-.v2-breadcrumb-page-btn:hover {
-  background: var(--v2-primary-light);
-}
-
-/* Pagination */
-.v2-reader-pager {
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-  background: var(--v2-bg);
-  padding: 0.2rem 0.4rem;
-  border-radius: 6px;
-  border: 1px solid var(--v2-border);
-}
-
-.v2-reader-pager-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.3rem;
-  padding: 0.2rem 0.5rem;
-  font-size: 0.8125rem;
-  font-weight: 500;
-  color: var(--v2-text);
-  text-decoration: none;
-  border-radius: 4px;
-  transition: all 0.15s ease;
-}
-
 .v2-pager-arrow {
   font-size: 0.95rem;
   line-height: 1;
-}
-
-.v2-pager-label {
-  display: inline;
-}
-
-.v2-reader-pager-btn:hover:not(.disabled) {
-  background: var(--v2-card-bg);
-  color: var(--v2-primary);
-}
-
-.v2-reader-pager-btn.disabled {
-  opacity: 0.35;
-  pointer-events: none;
-}
-
-.v2-reader-pager-indicator {
-  font-family: var(--v2-font-mono);
-  font-size: 0.75rem;
-  color: var(--v2-text-muted);
-  padding: 0 0.35rem;
 }
 
 /* Quick Jump Form */
@@ -1294,17 +1138,6 @@ a.v2-reader-sheet-close:active {
 
 .v2-jump-submit:hover {
   background: var(--v2-border);
-}
-
-/* Work Select */
-.v2-reader-work-select {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.8125rem;
-  background: var(--v2-bg);
-  border: 1px solid var(--v2-border);
-  border-radius: 6px;
-  color: var(--v2-text);
-  max-width: 170px;
 }
 
 /* View Mode Switcher */
@@ -1446,10 +1279,6 @@ a.v2-reader-sheet-close:active {
     display: none;
   }
 
-  .v2-toc-btn-label {
-    display: none;
-  }
-
   .v2-sticky-author {
     font-size: 0.8125rem;
     font-weight: 600;
@@ -1546,10 +1375,6 @@ a.v2-reader-sheet-close:active {
   color: var(--v2-text-muted);
   font-style: normal;
   margin-bottom: 0.25rem;
-}
-
-.v2-reader-trans-text {
-  margin: 0;
 }
 
 @media (max-width: 640px) {
@@ -1713,11 +1538,6 @@ a.v2-reader-sheet-close:active {
   font-weight: 600;
 }
 
-.v2-reader-toc-item-summary {
-  font-size: 0.6875rem;
-  color: var(--v2-text-muted);
-}
-
 .v2-reader-toc-item-id {
   font-family: var(--v2-font-mono);
   font-size: 0.6875rem;
@@ -1841,12 +1661,6 @@ a.v2-reader-sheet-close:active {
   font-weight: 700;
   color: var(--v2-text);
   font-family: var(--v2-font-serif);
-}
-
-.v2-reader-passage-summary {
-  margin: 0;
-  font-size: 0.875rem;
-  color: var(--v2-text-muted);
 }
 
 .v2-reader-continuation-actions {
