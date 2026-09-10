@@ -6,6 +6,10 @@ import { XmlNode } from "@/common/xml/xml_node";
 import { buildV2Bundle } from "@/bundler/v2.rsbuild";
 import { getV2AssetHref } from "@/web/v2/shell/asset_manifest.server";
 
+jest.mock("@/web/v2/reader/reader_loader.server", () =>
+  jest.requireActual("@/web/v2/testing/mock_reader_loader")
+);
+
 describe("v2_router integration", () => {
   let app: express.Express;
   let mockFusedDict: Partial<FusedDictionary>;
