@@ -460,7 +460,7 @@ export async function renderReaderContentHtml(
               <h2 class="v2-dialog-title">${he.encode(work.title)}</h2>
               <p class="v2-dialog-subtitle">Scholarly editions &amp; CTS citation</p>
             </div>
-            <button type="button" class="v2-dialog-close-btn" id="v2-reader-biblio-close-btn">&times;</button>
+            <button type="button" class="v2-dialog-close-btn" id="v2-reader-biblio-close-btn" data-dialog-close>&times;</button>
           </div>
 
           <dl class="v2-reader-meta-list">
@@ -521,7 +521,7 @@ export async function renderReaderContentHtml(
           </dl>
 
           <div class="v2-dialog-actions">
-            <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-biblio-ok-btn">Close</button>
+            <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-biblio-ok-btn" data-dialog-close>Close</button>
           </div>
         </div>
       </dialog>
@@ -534,7 +534,7 @@ export async function renderReaderContentHtml(
               <h2 class="v2-dialog-title">Reader Settings</h2>
               <p class="v2-dialog-subtitle">Typography &amp; display preferences</p>
             </div>
-            <button type="button" class="v2-dialog-close-btn" id="v2-reader-settings-close-btn" aria-label="Close settings">&times;</button>
+            <button type="button" class="v2-dialog-close-btn" id="v2-reader-settings-close-btn" aria-label="Close settings" data-dialog-close>&times;</button>
           </div>
 
           <div class="v2-settings-body">
@@ -600,7 +600,7 @@ export async function renderReaderContentHtml(
 
           <div class="v2-dialog-actions v2-settings-actions">
             <button type="button" class="v2-btn v2-btn-secondary" id="v2-reader-settings-reset-btn">Reset Defaults</button>
-            <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-settings-done-btn">Done</button>
+            <button type="button" class="v2-btn v2-btn-primary" id="v2-reader-settings-done-btn" data-dialog-close>Done</button>
           </div>
         </div>
       </dialog>

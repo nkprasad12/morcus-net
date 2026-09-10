@@ -3,6 +3,7 @@ import {
   type QueryParamSync,
   registerElement,
   settingsStore,
+  setupModalDialog,
   trackPointerDrag,
 } from "@/web/v2/core/index.client";
 import { processTokens, removeDiacritics } from "@/common/text_cleaning";
@@ -827,32 +828,13 @@ export class MorcusReaderView extends BaseElement {
   private initBiblioModal() {
     const dialog = this.$<HTMLDialogElement>("#v2-reader-biblio-dialog");
     const infoBtn = this.$<HTMLButtonElement>("#v2-reader-info-btn");
-    const closeBtn = this.$<HTMLButtonElement>("#v2-reader-biblio-close-btn");
-    const okBtn = this.$<HTMLButtonElement>("#v2-reader-biblio-ok-btn");
     if (!dialog) return;
 
-    if (infoBtn) {
-      this.listen(infoBtn, "click", () => {
-        dialog.showModal();
-      });
-    }
-
-    const closeDialog = () => dialog.close();
-    if (closeBtn) this.listen(closeBtn, "click", closeDialog);
-    if (okBtn) this.listen(okBtn, "click", closeDialog);
-
-    // Dismiss on backdrop click
-    this.listen(dialog, "click", (e) => {
-      const rect = dialog.getBoundingClientRect();
-      const inDialog =
-        rect.top <= e.clientY &&
-        e.clientY <= rect.top + rect.height &&
-        rect.left <= e.clientX &&
-        e.clientX <= rect.left + rect.width;
-      if (!inDialog) {
-        dialog.close();
-      }
-    });
+    this.addDisposable(
+      setupModalDialog(dialog, {
+        trigger: infoBtn,
+      })
+    );
   }
 
   // --- Reader Settings & Appearance Modal ---
@@ -967,32 +949,11 @@ export class MorcusReaderView extends BaseElement {
     // Apply on load
     applyPreferences(currentPrefs);
 
-    if (settingsBtn) {
-      this.listen(settingsBtn, "click", () => {
-        dialog.showModal();
-        settingsBtn.setAttribute("aria-expanded", "true");
-      });
-    }
-
-    const closeDialog = () => {
-      dialog.close();
-      settingsBtn?.setAttribute("aria-expanded", "false");
-    };
-
-    if (closeBtn) this.listen(closeBtn, "click", closeDialog);
-    if (doneBtn) this.listen(doneBtn, "click", closeDialog);
-
-    this.listen(dialog, "click", (e) => {
-      const rect = dialog.getBoundingClientRect();
-      const inDialog =
-        rect.top <= e.clientY &&
-        e.clientY <= rect.top + rect.height &&
-        rect.left <= e.clientX &&
-        e.clientX <= rect.left + rect.width;
-      if (!inDialog) {
-        closeDialog();
-      }
-    });
+    this.addDisposable(
+      setupModalDialog(dialog, {
+        trigger: settingsBtn,
+      })
+    );
 
     // Steppers
     if (readerSizeDec) {
