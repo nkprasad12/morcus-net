@@ -1,6 +1,7 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
+import { ICON_PATHS } from "@/web/v2/core/icons";
 
 function fullLang(code: string): string {
   switch (code) {
@@ -115,7 +116,7 @@ export function renderDictLandingHtml(
 
             <div class="v2-card-settings-note">
               <svg class="v2-landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"></path>
+                <path d="${ICON_PATHS.tune}"></path>
               </svg>
               <span>Enable or disable dictionaries in the settings</span>
             </div>
@@ -186,7 +187,7 @@ export function renderDictLandingHtml(
             <!-- Only displayed when JS is active since the slider is client-injected -->
             <div class="v2-legend-settings-tip v2-js-only">
               <svg class="v2-landing-tune-icon" viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z"></path>
+                <path d="${ICON_PATHS.tune}"></path>
               </svg>
               <span>You can change highlight intensity in the settings</span>
             </div>
