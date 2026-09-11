@@ -13,12 +13,17 @@ test.describe("UI V2 dictionary", () => {
 
     // Type query and submit native HTML form
     await page.locator('input[name="q"]').fill("habeo");
-    await page.locator('form.v2-search-form button[type="submit"]').click();
+    // Note: the search form also contains the dictionary-selection pane's
+    // "Apply Selection" submit button when JS is disabled, so target the
+    // search button by its own class rather than by [type="submit"].
+    await page.locator("form.v2-search-form .v2-search-btn").click();
 
-    // Verify native HTTP GET navigation and SSR response
-    await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
+    // Verify native HTTP GET navigation and SSR response. The native submission
+    // also serializes the settings pane's inputs, so `q` is not necessarily
+    // the first query parameter.
+    await expect(page).toHaveURL(/\/v2\/dicts\?.*\bq=habeo\b/);
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
-    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
     await expect(
       page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
@@ -36,7 +41,7 @@ test.describe("UI V2 dictionary", () => {
 
     await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
-    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
     await expect(
       page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
@@ -50,7 +55,7 @@ test.describe("UI V2 dictionary", () => {
 
     await page.goto("/v2/dicts?q=habuit");
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
-    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
     await expect(
       page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
@@ -78,7 +83,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Verify results updated for the clicked word
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
-    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
   });
 
   test("allows navigating between Dictionary and About via app bar without JavaScript", async ({
@@ -214,7 +219,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(page).toHaveURL(/\/v2\/dicts\?q=habeo/);
     await expect(page.locator('input[name="q"]')).toHaveValue("habeo");
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
-    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
   });
 
   test("loads entries by ID directly via /v2/dicts/id/:id", async ({
@@ -223,7 +228,7 @@ test.describe("UI V2 dictionary", () => {
     await page.goto("/v2/dicts/id/n20077");
     await expect(page).toHaveTitle(/ID n20077/);
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
-    await expect(page.getByText("Lewis").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
     await expect(
       page.locator(".v2-dict-card .v2-entry-content").getByText("hold").first()
     ).toBeVisible();
@@ -461,12 +466,44 @@ test.describe("UI V2 dictionary", () => {
     await expect(popover).not.toBeVisible();
   });
 
-  test("hides highlight settings without JavaScript", async ({ browser }) => {
+  test("exposes usable dictionary settings without JavaScript", async ({
+    browser,
+  }) => {
     const context = await browser.newContext({ javaScriptEnabled: false });
     const page = await context.newPage();
 
-    await page.goto("/v2/dicts");
-    await expect(page.locator("morcus-dict-settings")).not.toBeVisible();
+    await page.goto("/v2/dicts?q=habeo");
+
+    // The settings pane is server-rendered and reachable without JS: the
+    // trigger is a <details> summary, so it toggles natively.
+    const settings = page.locator("morcus-dict-settings");
+    await expect(settings).toBeVisible();
+
+    const popover = settings.locator(".v2-settings-popover");
+    await expect(popover).not.toBeVisible();
+    await settings.locator(".v2-settings-btn").click();
+    await expect(popover).toBeVisible();
+
+    // Without JS the pane offers an explicit submit button to apply changes.
+    const applyBtn = popover.locator(".v2-settings-apply-btn");
+    await expect(applyBtn).toBeVisible();
+
+    // Narrow the selection to Lewis and Short and apply it via a native GET.
+    const checkboxes = popover.locator(".v2-dict-checkbox");
+    const count = await checkboxes.count();
+    for (let i = 0; i < count; i++) {
+      const box = checkboxes.nth(i);
+      if ((await box.getAttribute("value")) !== "L&S") {
+        await box.uncheck();
+      }
+    }
+    await applyBtn.click();
+
+    // The selection round-trips through the URL and results still render.
+    await expect(page).toHaveURL(/q=habeo/);
+    await expect(page).toHaveURL(/dict=L%26S/);
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
+    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
 
     await context.close();
   });
@@ -511,7 +548,7 @@ test.describe("UI V2 dictionary", () => {
     await expect(popover).not.toBeVisible();
   });
 
-  test("supports reader sidebar search and highlight settings", async ({
+  test("supports reader sidebar dictionary search in the embedded frame", async ({
     page,
   }) => {
     await page.goto("/v2/reader");
@@ -519,20 +556,29 @@ test.describe("UI V2 dictionary", () => {
     // Verify "Embedded Dictionary" header text is removed
     await expect(page.locator(".v2-reader-dict-title")).toHaveCount(0);
 
-    // Verify search form and settings button exist in reader sidebar
-    const readerSearch = page.locator(".v2-reader-search-form");
-    await expect(readerSearch).toBeVisible();
-    await expect(readerSearch.locator(".v2-settings-btn")).toBeVisible();
+    // The sidebar dictionary is hosted in an iframe pointing at /v2/dicts?embedded=1.
+    await expect(page.locator("aside.v2-reader-dict-panel")).toBeAttached();
+    const frame = page.frameLocator("#v2-dict-frame");
 
-    // Search for a word via reader search bar
-    const readerInput = page.locator(".v2-reader-input");
-    await readerInput.fill("Gallia");
-    await readerSearch.locator('button[type="submit"]').click();
+    // Verify search form and settings button exist inside the embedded dictionary
+    const dictSearch = frame.locator("form.v2-search-form");
+    await expect(dictSearch).toBeVisible();
+    await expect(dictSearch.locator(".v2-settings-btn")).toBeVisible();
 
-    // Verify dictionary results render in the sidebar
-    await expect(
-      page.locator(".v2-reader-dict-output .v2-dict-card").first()
-    ).toBeVisible();
-    await expect(page.locator(".v2-reader-external-link")).toBeVisible();
+    // The embedded page hides the app bar so it does not duplicate the reader's.
+    await expect(frame.locator("header.v2-app-bar")).toHaveCount(0);
+
+    // Search for a word via the embedded search bar. Submit with Enter rather
+    // than clicking: on mobile the dictionary panel is a partially-collapsed
+    // bottom sheet whose drag handle overlays the top of the iframe.
+    const dictInput = dictSearch.locator('input[name="q"]');
+    await dictInput.fill("Gallia");
+    await dictInput.press("Enter");
+
+    // Verify dictionary results render inside the frame
+    await expect(frame.locator(".v2-dict-card").first()).toBeVisible();
+    await expect(frame.locator(".v2-dict-title").first()).toContainText(
+      "Lewis"
+    );
   });
 });
