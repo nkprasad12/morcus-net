@@ -1,6 +1,6 @@
 # V1 SPA vs V2 Progressively Enhanced SSR: Dictionary Feature Parity
 
-This document outlines feature parity between the **V1 UI (SPA)** (`src/web/client/pages/dictionary/`) and the **V2 UI (Progressively Enhanced SSR)** (`src/web/v2/dict/`), with a particular focus on capabilities previously present in V1 that are missing or degraded in V2.
+This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`src/web/client/pages/dictionary/`) and the **V2 UI (Progressively Enhanced SSR)** (`src/web/v2/dict/`), focusing on capabilities previously present in V1 that are still missing or degraded in V2.
 
 > **Note on Intentional Architecture Decisions**:
 >
@@ -9,37 +9,26 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 ---
 
-## 1. Parity Matrix
+## 1. Remaining Gaps Matrix
 
-| Feature Area                             | V1 UI (SPA)                                                               | V2 UI (SSR + Progressive Enhancement)                                            | Parity Status         |
-| :--------------------------------------- | :------------------------------------------------------------------------ | :------------------------------------------------------------------------------- | :-------------------- |
-| **Search Bar Status Badges**             | Shows active source languages (`In La En`) & inflection status (`On/Off`) | Integrated two-tier compound card with active language chips & inflection badge  | ✅ **Feature Parity** |
-| **Suffix Autocomplete**                  | Supported queries starting with `-` (e.g. `-arum`, `-ibus`)               | Treated as literal prefix lookup                                                 | ❌ **Missing in V2**  |
-| **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`                       | Verbatim prefix matching only                                                    | ❌ **Missing in V2**  |
-| **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)           | Plain string array without language metadata                                     | ❌ **Missing in V2**  |
-| **Vowel Length Merging & Deduplication** | Merges compatible macrons using Gaffiot as leader                         | Set-based exact string deduplication                                             | ❌ **Missing in V2**  |
-| **Subsection Match Notes**               | Explicit compound/inflection subsection banner with jump arrows           | Always-visible banner with numbered jump chips + in-body match markers           | ✅ **Done in V2**     |
-| **Global Multi-Lexicon Entry Summary**   | Top-level summary listing all matched entries across dictionaries         | Jump links only inside local card headers                                        | ❌ **Missing in V2**  |
-| **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                              | Segmented per-entry tab pill dropdown                                            | ❌ **Missing in V2**  |
-| **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)                       | Inline segmented tab pills                                                       | ❌ **Missing in V2**  |
-| **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column             | Fixed single-column layout only                                                  | ❌ **Missing in V2**  |
-| **Article & Section Permalinks**         | Direct `/dicts/id/:id` link, copy permalink tooltip                       | "Copy link" pill per entry + click-to-copy sense bullets, both no-JS capable     | ✅ **Parity**         |
-| **Greek Query Interception**             | Greek detection, Logeion embed & auto-open setting                        | Detected server-side; direct Logeion link, toggleable embed, & auto-open setting | ✅ **Feature Parity** |
-| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings          | Only hides app bar (`embedded=1`)                                                | ⚠️ **Partial in V2**  |
+| Feature Area                             | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                         | Parity Status        |
+| :--------------------------------------- | :---------------------------------------------------------------- | :------------------------------------------------------------ | :------------------- |
+| **Suffix Autocomplete**                  | Supported queries starting with `-` (e.g. `-arum`, `-ibus`)       | Treated as literal prefix lookup                              | ❌ **Missing in V2** |
+| **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`               | Verbatim prefix matching only                                 | ❌ **Missing in V2** |
+| **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)   | Plain string array without language metadata                  | ❌ **Missing in V2** |
+| **Vowel Length Merging & Deduplication** | Merges compatible macrons using Gaffiot as leader                 | Set-based exact string deduplication                          | ❌ **Missing in V2** |
+| **Suggestion Limit & In-Memory Caching** | Cached up to 200–300 suggestions on client with prefix tree       | Hardcoded to 10 suggestions (`slice(0, 10)`), no client cache | ❌ **Missing in V2** |
+| **Global Multi-Lexicon Entry Summary**   | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers                     | ❌ **Missing in V2** |
+| **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                      | Segmented per-entry tab pill dropdown                         | ❌ **Missing in V2** |
+| **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)               | Inline segmented tab pills                                    | ❌ **Missing in V2** |
+| **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column     | Fixed single-column layout only                               | ❌ **Missing in V2** |
+| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)                             | ⚠️ **Partial in V2** |
 
 ---
 
 ## 2. Detailed Gap Analysis
 
-### 2.1. Search Bar, Query Parsing, & Settings
-
-1. **Search Bar Preview Badges**:
-   - **V1 (`dictionary_search.tsx:L317-370`)**: The search input displayed badges directly inline showing active search languages (`In [La] [En]...`) and inflection mode (`Inflection [On] / [Off]`), giving immediate visibility into search behavior.
-   - **V2 (`search_bar.server.ts`, `search_bar.common.ts`, `search.css`, `dict_search.client.ts`)**: Parity achieved. Search bar rendered as an integrated two-tier compound card. Tier 1 houses full-width input with app-bar sage green focus ring (`:focus-within`), while Tier 2 status tray renders active language chips (`[La]`, `[En]`, `[De]`, `[Es]`), an inflection badge (`[On]` / `[Off]`), and the settings popover button (`⚙️`). Works natively in No-JS mode via server-side rendering, and progressively enhances live in JS mode on `dict-selection-change` and `dict-inflected-change` events.
-
----
-
-### 2.2. Autocomplete & Suggestions (Client JS Mode)
+### 2.1. Autocomplete & Suggestions (Client JS Mode)
 
 1. **Suffix Autocomplete (`-suffix`)**:
 
@@ -62,35 +51,22 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
    - **V2 (`v2_router.ts:L78-83`)**: Deduplicates suggestions via a plain JavaScript `Set<string>`, leading to potential duplication across dictionaries with differing macron conventions.
 
 5. **Suggestion Limit & In-Memory Caching**:
+
    - **V1 (`autocomplete_options.ts:L85`, `fused_autocomplete_fetcher.ts`)**: Supported up to 200–300 suggestions with client-side prefix caching.
    - **V2 (`v2_router.ts:L84`)**: Hardcoded to 10 suggestions (`slice(0, 10)`), with no client-side caching.
 
 ---
 
-### 2.3. Entry Results, Morphological Subsections, & Navigation
+### 2.2. Entry Results & Navigation
 
-1. **Subsection Match Notes (`SubsectionNote`)** — ✅ **implemented in V2**:
+1. **Top-Level Consolidated Entry Summary**:
 
-   - **V1 (`dictionary_v2.tsx:L601-663`)**: When a query matched an inflected form or subsection of a compound/larger article (`DictSubsectionResult`), V1 rendered an explicit callout:
-     > _"Found matches for [word] [#1, #2], which is part of a larger entry."_
-     - Included downward jump arrows to scroll directly to the matched subsection.
-     - Provided a collapsible `<details>` section: _"Inflections of [word]"_ with morphological analysis for that specific matched subsection.
-   - **V2 (`subsection_note.server.ts`, wired in `entry_view.server.ts`)**: Renders an always-visible `<aside class="v2-subsection-note">` immediately below the entry header (and above the entry body, even for entries with no tools bar):
-     - Reads `result.subsections` as-is — no backend, RPC, or router changes were needed.
-     - Matches are deduplicated by id and then grouped by subsection name. A group whose name equals the entry's `mainKey` renders its headword inline (no redundant chip); other groups render numbered jump chips.
-     - Chips are plain `<a href="#id">`, so the **no-JS baseline gets native anchor navigation for free**. With JS, the existing delegated handler in `v2_bundle.ts` adds smooth scrolling, ancestor `<details>` expansion, and the `v2-target-active` flash — zero new client code.
-     - A `chevronUp` / `chevronDown` icon indicates whether the target is above or below the banner.
-     - Subsection-specific inflections render as an inline one-liner for a single analysis, or a collapsible `<details>` table for multiple.
-     - The matched elements in the body are tagged with `v2-subsection-hit` + `aria-current="location"`. The visual marker is an **absolutely positioned `::before` bar**, so it introduces **zero horizontal layout shift** — sibling senses at the same nesting level stay aligned (with a `left: 0` guard for top-level elements that have no left gutter).
-   - **Dead-anchor handling**: L&S merges the first sense into the opening blurb when an entry has a single level-1 sense (`ls_display.ts` `displayEntryFree`), so the recorded `senseId` of `{entryId}.0` is never emitted as an element. `resolveSubsectionAnchor` falls back to `{entryId}.blurb`, then to the entry root. This resolved 100% of measured cases (~21% of subsection anchors were otherwise dead links — a bug V1 still has).
-
-2. **Top-Level Consolidated Entry Summary**:
    - **V1 (`dictionary_v2.tsx:L472-518`)**: `SummarySection` provided a global list of all matched headwords across all lexica at the top of the page, with `ToEntryButton` chips.
    - **V2 (`dict_page.server.ts:L161-185`)**: Quick-jump links exist only within individual dictionary cards (`.v2-entry-nav`). There is no cross-lexicon summary list at the top.
 
 ---
 
-### 2.4. Table of Contents & Responsive Layout
+### 2.3. Table of Contents & Responsive Layout
 
 1. **Desktop Sidebar Table of Contents**:
 
@@ -103,41 +79,16 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
    - **V2**: Bottom drawer eliminated; mobile relies on inline `<details>` dropdowns.
 
 3. **Mobile Layout Preferences**:
+
    - **V1 (`dictionary_search.tsx:L123-151`)**: Provided a setting allowing mobile users to choose between "Drawer" mode and "Classic" single-column mode.
    - **V2**: No layout preference setting.
 
 ---
 
-### 2.5. Article Permalinks, Word Interactivity & Rich Markup
-
-1. **Direct Article Permalinks (`/dicts/id/:id`)**: ✅ **Parity reached.**
-
-   - **V1 (`dictionary_v2.tsx:L520-550,688`, `tooltips.tsx:L298-322`, `dictionary_routing.ts:L92-101`)**: Clicking or copying the permalink icon on an entry header generated a direct URL to that specific article (`/dicts/id/:id`, e.g. `/dicts/id/n20077`). This executed an ID lookup (`mode: 2`), retrieving and displaying strictly that single article rather than a broad search query matching multiple homographs across dictionaries.
-   - **V2 (`entry_view.server.ts`, `dict_permalink.client.ts`)**: Every entry header carries a "Copy link" pill rendered as a real `<a href="/v2/dicts/id/${outline.mainSection.sectionId}">`. With JS the click is intercepted and the absolute URL is copied with a toast; the page does not navigate, because the article is already rendered on screen. Modifier and middle clicks fall through to native behaviour, so opening the standalone article in a new tab stays available.
-   - **Beyond V1 in two respects**: (a) the permalink is a genuine anchor, so it works with JS disabled (right-click → copy link address, or plain navigation), which V1's popover-only control did not; (b) the header is rendered for _every_ entry with a headword. It was previously gated on `isMultiEntry || (hasTools && headword)`, which meant Riddle & Arnold and Numerals entries — neither of which populates `outline.senses` — had no header and therefore no permalink at all.
-
-2. **Section Link Copy-to-Clipboard**: ✅ **Parity reached.**
-   - **V1 (`dictionary_utils.tsx:L268-284`, `tooltips.tsx:L307-312`)**: `SectionLinkTooltip` on sense bullets and section headers provided an interactive popover with a copy-to-clipboard action that generated a fully qualified URL to `/dicts/id/:articleId#:sectionId`.
-   - **V2 (`xml_to_html.server.ts`, `dict_permalink.client.ts`)**: Clicking a sense bullet copies `${origin}/v2/dicts/id/${articleId}#${senseId}` and flashes the section in place. The article id is recovered from the enclosing `.v2-entry` element rather than by splitting the sense id, which is more robust than V1's `senseId.split(".")[0]` because sense-id conventions differ per lexicon. **Copying deliberately does not scroll or rewrite the address bar** — the viewport should not move in response to a copy action. Genuine inbound navigation (outline links, jump pills, hash page loads) still scrolls as before.
-   - **Prerequisite fixed along the way**: `xmlNodeToHtml` only ever emitted an `id` derived from a source `id` attribute, so a sense bullet's `#senseid` link resolved only when some ancestor happened to carry that id. Lewis & Short got this for free from its wrapping `<li>`; Riddle & Arnold did not, so **all five** of its section links pointed at nonexistent targets. Bullets now self-anchor when nothing else in the entry claims the id (guarded against emitting duplicates).
-
----
-
-### 2.6. Greek Terms & External Lexica
-
-1. **Greek Word Interception & Logeion Integration**:
-   - **V1 (`dictionary_v2.tsx:L97-153`)**: `hasGreek()` intercepted Greek queries:
-     - Displayed notice: _"This site does not (yet) support Greek."_
-     - Direct link to `https://logeion.uchicago.edu/<word>`.
-     - Toggleable inline `70vh` iframe embed.
-     - Persisted user setting: _"Automatically open embedded Logeion searches"_.
-   - **V2 (`dict_greek.common.ts`, `dict_greek.server.ts`, `dict_greek.client.ts`, `v2_router.ts`)**: Parity achieved. Server intercepts Greek queries before Latin dict lookup, renders semantic SSR fallback with badge and direct Logeion link, and progressively enhances with `<morcus-greek-embed>` providing toggleable iframe viewer and persisted auto-open preference. Autocomplete endpoint returns empty array for Greek queries without wasting Latin database lookups.
-
----
-
-### 2.7. Embedded Reader Controls
+### 2.4. Embedded Reader Controls
 
 1. **Embedded Reader Mode Options**:
+
    - **V1 (`dict_context.tsx`)**: Supported options for embedded contexts (e.g. reader drawers and popovers):
      - `hideSearch`: Suppressed search bar when space was constrained.
      - `textScale`: Scaled font sizes across definitions and icons.
@@ -149,19 +100,25 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 ## 3. Recommended Remediation Roadmap
 
-To bring the V2 Dictionary to full functional parity with V1, prioritize the following enhancements:
+Prioritized enhancements for remaining gaps:
 
-### Completed
+### High Priority
 
-1. ~~**Subsection Match Notes**~~ — shipped. See §2.3.1. Implemented in `subsection_note.server.ts` + `inflection_table.server.ts`, wired through `entry_view.server.ts` and `xml_to_html.server.ts`.
-2. ~~**Search Bar Preview Badges**~~ — shipped. See §2.1.1. Implemented two-tier compound search card in `search_bar.server.ts` + `search_bar.common.ts` + `search.css` with active language chips and inflection status tray, with live client synchronization in `dict_search.client.ts`.
+1. **Global Multi-Lexicon Entry Summary** (§2.2.1):
+   - Render a top-of-page summary with quick jump buttons across all matched dictionaries (mirroring V1's `SummarySection`), speeding up navigation when queries match multiple lexica.
+2. **Embedded Reader Mode Controls** (§2.4.1):
+   - Support `hideSearch`, `textScale`, `skipJumpToResult`, and isolated search parameters for embedded reader contexts.
 
 ### Medium Priority
 
-3. **Autocomplete Refinements**:
+3. **Per-Entry Collapse** _(new V2 ergonomic enhancement)_:
+   - Make individual entry headers/headwords collapsible via the decoupled `<details class="v2-entry-toggle">` pattern, mirroring dictionary card collapse.
+   - Add a `.v2-entry` case to `expandAncestorDisclosures` in `v2_bundle.ts` so anchor deep-links automatically expand collapsed entries.
+4. **Autocomplete Refinements** (§2.1):
    - Add language origin chips (`LangChip`) to suggestions in `dict_suggestions.client.ts`.
-   - Restore suffix lookup (`-`) and `u`/`v` / `i`/`j` prefix expansion.
-4. **Per-Entry Collapse** _(new; not a V1 parity item)_:
-   - Now that the headword is inert text, make it collapse/expand its own entry, mirroring how the dictionary card title collapses its card.
-   - Reuse the card's decoupled pattern: an empty-bodied `<details class="v2-entry-toggle">` plus `.v2-entry:not(:has(.v2-entry-toggle[open])) .v2-entry-content { display: none }`. This sidesteps the `<summary>` content model, which forbids nesting the Outline/Inflections `<details>` inside it.
-   - Must add a `.v2-entry` case to `expandAncestorDisclosures` in `v2_bundle.ts`, alongside the existing `.v2-dict-card` special case — otherwise an inbound section permalink into a collapsed entry scrolls to nothing.
+   - Restore suffix lookup (`-`), orthographic prefix expansion (`u`/`v`, `i`/`j`), macron compatibility merging, and client-side prefix caching.
+
+### Open Design Decisions
+
+5. **Table of Contents & Responsive Layout** (§2.3):
+   - Decide whether a dedicated two-column desktop sidebar is needed or if V2's semantic inline tab pills (`<details class="v2-tool-pane">`) intentionally supersede the V1 sidebar and mobile bottom drawer.
