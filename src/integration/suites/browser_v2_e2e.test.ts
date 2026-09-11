@@ -258,6 +258,78 @@ test.describe("UI V2 dictionary", () => {
     expect(page.url()).toContain("#");
   });
 
+  test("renders subsection match banner with working jump chips (No-JS baseline)", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+
+    await page.goto("/v2/dicts?q=proximus");
+
+    const note = page.locator(".v2-subsection-note").first();
+    await expect(note).toBeVisible();
+    await expect(note).toContainText("Matched");
+
+    const chips = note.locator(".v2-subsection-chip");
+    await expect(chips).toHaveCount(3);
+
+    // Every chip must point at an element that actually exists in the entry.
+    const count = await chips.count();
+    for (let i = 0; i < count; i++) {
+      const href = await chips.nth(i).getAttribute("href");
+      expect(href).toMatch(/^#n38913/);
+      await expect(page.locator(`[id="${href!.slice(1)}"]`)).toHaveCount(1);
+    }
+
+    // Native anchor navigation works with no JavaScript at all.
+    await chips.nth(1).click();
+    expect(page.url()).toContain("#n38913.14");
+
+    await context.close();
+  });
+
+  test("jump chip scrolls to and highlights the matched subsection (JS enabled)", async ({
+    page,
+  }) => {
+    await page.goto("/v2/dicts?q=proximus");
+
+    const chips = page.locator(".v2-subsection-note .v2-subsection-chip");
+    await expect(chips).toHaveCount(3);
+
+    await chips.nth(2).click();
+
+    const target = page.locator('[id="n38913.16"]');
+    await expect(target).toHaveClass(/v2-target-active/);
+    await expect(target).toBeInViewport();
+  });
+
+  test("marks matched subsections in the entry body", async ({ page }) => {
+    await page.goto("/v2/dicts?q=proximus");
+
+    const hits = page.locator(".v2-entry-content .v2-subsection-hit");
+    await expect(hits).toHaveCount(3);
+    await expect(hits.first()).toHaveAttribute("aria-current", "location");
+  });
+
+  test("resolves subsection anchors that were merged into the entry blurb", async ({
+    page,
+  }) => {
+    // `abbatissa` records a subsection id of `n36.0`, but L&S merges that first
+    // sense into the opening blurb so no such element is ever emitted. The
+    // anchor must fall back to `n36.blurb` rather than becoming a dead link.
+    await page.goto("/v2/dicts?q=abbatissa");
+
+    const link = page.locator(".v2-subsection-note .v2-subsection-namelink");
+    await expect(link).toHaveAttribute("href", "#n36.blurb");
+    await expect(page.locator('[id="n36.0"]')).toHaveCount(0);
+    await expect(page.locator('[id="n36.blurb"]')).toHaveClass(
+      /v2-subsection-hit/
+    );
+
+    await link.click();
+    await expect(page.locator('[id="n36.blurb"]')).toBeInViewport();
+  });
+
   test("renders clean text without word links in No-JS mode (accessible fallback)", async ({
     browser,
   }) => {

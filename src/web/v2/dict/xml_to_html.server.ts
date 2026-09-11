@@ -5,6 +5,11 @@ import * as he from "he";
 export interface XmlNodeToHtmlOptions {
   allowLinkify?: boolean;
   omitRootId?: boolean;
+  /**
+   * Ids of elements that a subsection query matched. These are marked so the
+   * reader can spot the match while scrolling, without having to click.
+   */
+  matchedSubsectionIds?: Set<string>;
 }
 
 const ALLOWED_TAGS = new Set([
@@ -163,6 +168,19 @@ export function xmlNodeToHtml(
     attrsMap.set("tabindex", "0");
   }
 
+  // Flag the element a subsection query matched so it stands out in the body.
+  const nodeId = attrsMap.get("id");
+  if (
+    nodeId !== undefined &&
+    options?.matchedSubsectionIds?.has(nodeId) === true
+  ) {
+    attrsMap.set(
+      "class",
+      `${attrsMap.get("class") ?? ""} v2-subsection-hit`.trim()
+    );
+    attrsMap.set("aria-current", "location");
+  }
+
   if (VOID_TAGS.has(tagName)) {
     return `<${tagName}>`;
   }
@@ -187,7 +205,12 @@ export function xmlNodeToHtml(
     !isForeign;
 
   let childrenHtml = node.children
-    .map((c) => xmlNodeToHtml(c, { allowLinkify: nextAllowLinkify }))
+    .map((c) =>
+      xmlNodeToHtml(c, {
+        allowLinkify: nextAllowLinkify,
+        matchedSubsectionIds: options?.matchedSubsectionIds,
+      })
+    )
     .join("");
 
   // In Forcellini, render an explicit action button label with external link icon
@@ -231,6 +254,10 @@ export function xmlNodeToHtml(
   const langAttr = langVal ? ` lang="${he.encode(langVal)}"` : "";
   const dirVal = attrsMap.get("dir");
   const dirAttr = dirVal ? ` dir="${he.encode(dirVal)}"` : "";
+  const ariaCurrentVal = attrsMap.get("aria-current");
+  const ariaCurrentAttr = ariaCurrentVal
+    ? ` aria-current="${he.encode(ariaCurrentVal)}"`
+    : "";
 
   const indentLevel = Number.parseInt(attrsMap.get("indentlevel") ?? "", 10);
   const styleAttr =
@@ -238,7 +265,7 @@ export function xmlNodeToHtml(
       ? ` style="margin-left: ${indentLevel * 0.5}em;"`
       : "";
 
-  const baseHtml = `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${roleAttr}${langAttr}${dirAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
+  const baseHtml = `<${tagName}${idAttr}${classNames}${titleAttr}${tabindexAttr}${hrefAttr}${targetAttr}${relAttr}${roleAttr}${langAttr}${dirAttr}${ariaCurrentAttr}${styleAttr}>${childrenHtml}</${tagName}>`;
 
   if (isMateoLink && currentHref) {
     const encodedHref = he.encode(currentHref);

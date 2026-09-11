@@ -1,18 +1,19 @@
 import { EntryResult } from "@/common/dictionaries/dict_result";
 import { xmlNodeToHtml } from "@/web/v2/dict/xml_to_html.server";
+import {
+  dedupeInflections,
+  formatInflectionForm,
+  renderInflectionTable,
+} from "@/web/v2/dict/inflection_table.server";
+import {
+  collectXmlIds,
+  dedupeSubsections,
+  matchedAnchorIds,
+  renderSubsectionNote,
+} from "@/web/v2/dict/subsection_note.server";
 import * as he from "he";
 
-/**
- * Decodes Morpheus diacritic markings (^ for breve, _ for macron, + for diaeresis)
- * into standard Unicode characters with canonical NFC normalization.
- */
-export function formatInflectionForm(rawForm: string): string {
-  return rawForm
-    .replaceAll("^", "\u0306")
-    .replaceAll("_", "\u0304")
-    .replaceAll("+", "\u0308")
-    .normalize("NFC");
-}
+export { formatInflectionForm };
 
 /**
  * Formats an EntryResult into semantic HTML with top tools bar / desktop side-rail.
@@ -36,6 +37,21 @@ export function renderEntryResult(
   );
   const hasTools = hasOutline || hasInflections;
   const isMultiEntry = Boolean(totalEntries && totalEntries > 1);
+
+  // Resolve which parts of this entry the query actually matched. Anchors are
+  // resolved against the ids present in the entry, since not every subsection
+  // id survives into the rendered markup.
+  const subsectionGroups =
+    result.subsections && result.subsections.length > 0
+      ? dedupeSubsections(
+          result.subsections,
+          entryAnchorId,
+          collectXmlIds(result.entry)
+        )
+      : [];
+  const subsectionNoteHtml = renderSubsectionNote(subsectionGroups, {
+    mainKey: result.outline?.mainKey,
+  });
 
   const headword =
     result.outline?.mainLabel?.trim() ||
@@ -90,38 +106,13 @@ export function renderEntryResult(
       `
       : "";
 
-    const inflectionsRows = hasInflections
-      ? result
-          .inflections!.map((inf) => {
-            const formFormatted = formatInflectionForm(inf.form);
-            const noteHtml = inf.usageNote
-              ? ` <span class="v2-usage-note">(${he.encode(
-                  inf.usageNote
-                )})</span>`
-              : "";
-            return `
-            <tr>
-              <td>${he.escape(formFormatted)}</td>
-              <td>${he.encode(inf.data)}${noteHtml}</td>
-            </tr>`;
-          })
-          .join("")
-      : "";
-
     const inflectionsPanelHtml = hasInflections
       ? `
         <details class="v2-tool-pane" name="${groupName}">
           <summary class="v2-tab-pill">Inflections</summary>
-          <div class="v2-tool-body v2-inflections-body">
-            <div class="v2-table-scroller">
-              <table class="v2-inflection-table">
-                <thead>
-                  <tr><th>Form</th><th>Analysis</th></tr>
-                </thead>
-                <tbody>${inflectionsRows}</tbody>
-              </table>
-            </div>
-          </div>
+          <div class="v2-tool-body v2-inflections-body">${renderInflectionTable(
+            dedupeInflections(result.inflections!)
+          )}</div>
         </details>
       `
       : "";
@@ -150,13 +141,14 @@ export function renderEntryResult(
   const topBarHtml = hasTools ? toolsHtml : headerHtml;
   const entryHtml = xmlNodeToHtml(result.entry, {
     omitRootId: true,
+    matchedSubsectionIds: matchedAnchorIds(subsectionGroups),
   });
 
   return `
     <article class="v2-entry ${
       hasTools ? "has-tools" : ""
     }" id="${entryAnchorId}">
-      ${topBarHtml}
+      ${topBarHtml}${subsectionNoteHtml}
       <div class="v2-entry-content">
         ${entryHtml}
       </div>

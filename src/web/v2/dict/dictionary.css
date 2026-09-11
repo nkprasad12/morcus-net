@@ -1571,3 +1571,170 @@ html:not(.v2-has-js) .v2-js-only {
     font-size: 0.8rem;
   }
 }
+
+/* ==========================================================================
+   Subsection Match Note
+   Shown when a query matched inside an entry rather than at its headword.
+   ========================================================================== */
+
+/* No left accent bar here on purpose: the primary-coloured bar is reserved as
+   the "a match is here" marker in the entry body. The banner is identified by
+   its tint and sans-serif face instead, so the two never stack into what looks
+   like one interrupted rule. */
+.v2-subsection-note {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0 0 14px;
+  padding: 9px 14px;
+  border-radius: 6px;
+  background-color: var(--v2-tag-bg);
+  font-family: var(--v2-font-sans);
+}
+
+.v2-subsection-note-lead {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.85rem;
+  line-height: 1.6;
+  color: var(--v2-text-muted);
+}
+
+/* The matched headword reads as prose, in the dictionary's serif face. */
+.v2-subsection-name {
+  font-family: var(--v2-font-serif);
+  font-size: 0.98rem;
+  font-weight: 700;
+  color: var(--v2-text);
+}
+
+/* Entry markup carries its own orth highlight, which would read as a
+   pill-inside-a-pill here. */
+.v2-subsection-note .lsOrth {
+  background: none;
+  padding: 0;
+}
+
+.v2-subsection-chip,
+.v2-subsection-chip:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 1.55rem;
+  margin-left: 4px;
+  padding: 1px 9px 1px 6px;
+  box-sizing: border-box;
+  border-radius: 9999px;
+  background-color: var(--v2-card-bg);
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text);
+  text-decoration: none;
+  font-size: 0.78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+  transition: all 0.15s ease-in-out;
+}
+
+.v2-subsection-chip:hover {
+  border-color: var(--v2-primary);
+  color: var(--v2-primary);
+}
+
+.v2-subsection-chip:focus-visible,
+.v2-subsection-namelink:focus-visible {
+  outline: 2px solid var(--v2-primary);
+  outline-offset: 2px;
+}
+
+/* Retained for anchors we could not resolve, so the match is still reported. */
+.v2-subsection-chip-dead {
+  color: var(--v2-text-muted);
+  cursor: default;
+}
+
+.v2-subsection-chip-icon {
+  width: 13px;
+  height: 13px;
+  fill: currentColor;
+  opacity: 0.7;
+}
+
+/* With a single match the headword itself is the link. */
+.v2-subsection-namelink,
+.v2-subsection-namelink:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  text-decoration: none;
+  color: var(--v2-text);
+  border-bottom: 1px dotted var(--v2-border-strong);
+}
+
+.v2-subsection-namelink:hover {
+  color: var(--v2-primary);
+  border-bottom-color: var(--v2-primary);
+}
+
+/* A lone analysis is shown inline: a table costs far more vertical space than
+   one fact justifies, which matters most in the narrow reader panel. */
+.v2-subsection-inline-inf {
+  margin: 0;
+  font-size: 0.8rem;
+  line-height: 1.5;
+  color: var(--v2-text-muted);
+}
+
+.v2-subsection-inline-inf b {
+  color: var(--v2-text);
+  font-weight: 600;
+}
+
+.v2-subsection-details {
+  margin: 0;
+}
+
+.v2-subsection-note .v2-tool-body {
+  margin-top: 6px;
+  max-height: 220px;
+}
+
+/* Persistent marker on the matched element within the entry body.
+   The bar is drawn with an absolutely positioned pseudo-element rather than a
+   border plus padding: in-flow properties would indent this element relative
+   to its unmarked siblings and break the alignment of sibling sense ordinals. */
+.v2-subsection-hit {
+  position: relative;
+  background-color: var(--v2-tag-bg);
+  border-radius: 4px;
+}
+
+.v2-subsection-hit::before {
+  content: "";
+  position: absolute;
+  /* Always offset into the margin so the bar never abuts the text. For nested
+     senses this is the list gutter (1.5em desktop / 0.85em mobile). Top level
+     elements have no gutter of their own, but every ancestor up to
+     .v2-container is overflow-visible with zero horizontal padding, so the bar
+     simply sits in the container's 16px padding. 0.5em is ~9px, which clears
+     the 3px bar comfortably; much more than that would reach the card edge. */
+  left: -0.5em;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  border-radius: 2px;
+  background-color: var(--v2-primary);
+}
+
+@media (max-width: 600px) {
+  .v2-subsection-note {
+    padding: 8px 11px;
+  }
+
+  .v2-subsection-note-tail {
+    display: none;
+  }
+}
