@@ -11,6 +11,7 @@ import {
   matchedAnchorIds,
   renderSubsectionNote,
 } from "@/web/v2/dict/subsection_note.server";
+import { renderIconSvg } from "@/web/v2/core/icons";
 import * as he from "he";
 
 export { formatInflectionForm };
@@ -38,16 +39,17 @@ export function renderEntryResult(
   const hasTools = hasOutline || hasInflections;
   const isMultiEntry = Boolean(totalEntries && totalEntries > 1);
 
+  // Every `id` defined anywhere in this entry's XML. Used both to resolve
+  // subsection anchors and to decide whether a sense bullet needs to carry its
+  // own id so its `#senseid` link has something to land on.
+  const existingIds = collectXmlIds(result.entry);
+
   // Resolve which parts of this entry the query actually matched. Anchors are
   // resolved against the ids present in the entry, since not every subsection
   // id survives into the rendered markup.
   const subsectionGroups =
     result.subsections && result.subsections.length > 0
-      ? dedupeSubsections(
-          result.subsections,
-          entryAnchorId,
-          collectXmlIds(result.entry)
-        )
+      ? dedupeSubsections(result.subsections, entryAnchorId, existingIds)
       : [];
   const subsectionNoteHtml = renderSubsectionNote(subsectionGroups, {
     mainKey: result.outline?.mainKey,
@@ -59,89 +61,105 @@ export function renderEntryResult(
     result.outline?.mainSection?.text?.trim() ||
     (isMultiEntry ? `Entry ${entryNumber ?? 1}` : "");
 
-  let headwordBtnHtml = "";
-  if (isMultiEntry || (hasTools && headword)) {
-    headwordBtnHtml = `
-      <a href="#${entryAnchorId}" class="v2-entry-headword" title="Permanent link to this entry">
+  // The headword itself is inert text. The permalink lives in its own pill so
+  // that every entry gets an identical header composition, whether or not it
+  // has Outline / Inflections panes beside it.
+  const headwordHtml = headword
+    ? `
+      <span class="v2-entry-headword">
         <span class="v2-entry-headword-text">${he.encode(headword)}</span>
-        <span class="v2-entry-headword-anchor" aria-hidden="true">#</span>
+      </span>
+    `
+    : "";
+
+  // A real anchor, so the permalink exists without JS (right-click -> copy link,
+  // or plain navigation). With JS the click is intercepted and copied instead.
+  const copyPillHtml = headword
+    ? `
+      <a href="/v2/dicts/id/${encodeURIComponent(entryAnchorId)}"
+         class="v2-tab-pill v2-copy-pill"
+         title="Copy link to this article">
+        <span class="v2-copy-pill-icon" aria-hidden="true">${renderIconSvg(
+          "link",
+          { className: "v2-copy-pill-glyph v2-copy-pill-link" }
+        )}${renderIconSvg("check", {
+        className: "v2-copy-pill-glyph v2-copy-pill-check",
+      })}</span>
+        <span class="v2-copy-pill-long">Copy link</span>
+        <span class="v2-copy-pill-short">Link</span>
       </a>
-    `;
-  }
+    `
+    : "";
 
-  let toolsHtml = "";
-  if (hasTools) {
-    const groupName = `entry-tools-${safeId}`;
-    const outlineItems = hasOutline
-      ? result
-          .outline!.senses!.map((sense) => {
-            const indentLevel = Math.max(0, sense.level - 1);
-            const indentStyle =
-              indentLevel > 0
-                ? ` style="margin-left: ${indentLevel * 0.75}rem;"`
-                : "";
-            const ordinalHtml = sense.ordinal
-              ? `<strong class="v2-toc-ordinal">${he.encode(
-                  sense.ordinal
-                )}</strong> `
+  const groupName = `entry-tools-${safeId}`;
+  const outlineItems = hasOutline
+    ? result
+        .outline!.senses!.map((sense) => {
+          const indentLevel = Math.max(0, sense.level - 1);
+          const indentStyle =
+            indentLevel > 0
+              ? ` style="margin-left: ${indentLevel * 0.75}rem;"`
               : "";
-            const textHtml = he.encode(sense.text.trim());
-            return `<li${indentStyle}><a href="#${he.encode(
-              sense.sectionId
-            )}" class="v2-toc-link">${ordinalHtml}${textHtml}</a></li>`;
-          })
-          .join("")
-      : "";
+          const ordinalHtml = sense.ordinal
+            ? `<strong class="v2-toc-ordinal">${he.encode(
+                sense.ordinal
+              )}</strong> `
+            : "";
+          const textHtml = he.encode(sense.text.trim());
+          return `<li${indentStyle}><a href="#${he.encode(
+            sense.sectionId
+          )}" class="v2-toc-link">${ordinalHtml}${textHtml}</a></li>`;
+        })
+        .join("")
+    : "";
 
-    const outlinePanelHtml = hasOutline
-      ? `
-        <details class="v2-tool-pane" name="${groupName}">
-          <summary class="v2-tab-pill">Outline</summary>
-          <div class="v2-tool-body">
-            <ul class="v2-toc-list">
-              ${outlineItems}
-            </ul>
-          </div>
-        </details>
-      `
-      : "";
+  const outlinePanelHtml = hasOutline
+    ? `
+      <details class="v2-tool-pane" name="${groupName}">
+        <summary class="v2-tab-pill">Outline</summary>
+        <div class="v2-tool-body">
+          <ul class="v2-toc-list">
+            ${outlineItems}
+          </ul>
+        </div>
+      </details>
+    `
+    : "";
 
-    const inflectionsPanelHtml = hasInflections
-      ? `
-        <details class="v2-tool-pane" name="${groupName}">
-          <summary class="v2-tab-pill">Inflections</summary>
-          <div class="v2-tool-body v2-inflections-body">${renderInflectionTable(
-            dedupeInflections(result.inflections!)
-          )}</div>
-        </details>
-      `
-      : "";
+  const inflectionsPanelHtml = hasInflections
+    ? `
+      <details class="v2-tool-pane" name="${groupName}">
+        <summary class="v2-tab-pill">Inflections</summary>
+        <div class="v2-tool-body v2-inflections-body">${renderInflectionTable(
+          dedupeInflections(result.inflections!)
+        )}</div>
+      </details>
+    `
+    : "";
 
-    toolsHtml = `
+  // Rendered for every entry that has a headword, so short entries in lexica
+  // without outlines (Riddle & Arnold, Numerals) still get a permalink. The
+  // empty-string guard leaves a malformed outline degrading to no header at all
+  // rather than to an empty one.
+  const topBarHtml = headword
+    ? `
       <header class="v2-entry-header has-tools">
         <div class="v2-entry-tools">
           <div class="v2-segmented-bar">
-            ${headwordBtnHtml}
+            ${headwordHtml}
+            ${copyPillHtml}
             ${outlinePanelHtml}
             ${inflectionsPanelHtml}
           </div>
         </div>
       </header>
-    `;
-  }
-
-  const headerHtml = isMultiEntry
-    ? `
-      <header class="v2-entry-header">
-        ${headwordBtnHtml}
-      </header>
     `
     : "";
 
-  const topBarHtml = hasTools ? toolsHtml : headerHtml;
   const entryHtml = xmlNodeToHtml(result.entry, {
     omitRootId: true,
     matchedSubsectionIds: matchedAnchorIds(subsectionGroups),
+    existingIds,
   });
 
   return `

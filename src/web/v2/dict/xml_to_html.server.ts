@@ -10,6 +10,13 @@ export interface XmlNodeToHtmlOptions {
    * reader can spot the match while scrolling, without having to click.
    */
   matchedSubsectionIds?: Set<string>;
+  /**
+   * Every `id` already defined somewhere in the entry's XML. Sense bullets link
+   * to `#senseid`, but only a node with an explicit `id` attribute ever emits
+   * one, so a bullet whose id is not in this set has to carry the anchor itself
+   * or its link dangles.
+   */
+  existingIds?: Set<string>;
 }
 
 const ALLOWED_TAGS = new Set([
@@ -111,7 +118,16 @@ export function xmlNodeToHtml(
       "class",
       `${attrsMap.get("class") ?? rawClass} v2-section-anchor`.trim()
     );
-    attrsMap.set("title", "Direct link to this section");
+    attrsMap.set("title", "Copy link to this section");
+    // Nothing else in the entry defines this id, so the bullet becomes its own
+    // anchor target. Guarded on `existingIds` to avoid emitting a duplicate id
+    // when an ancestor (e.g. the enclosing <li> in Lewis & Short) already has it.
+    if (
+      options?.existingIds !== undefined &&
+      !options.existingIds.has(senseId)
+    ) {
+      attrsMap.set("id", senseId);
+    }
   }
 
   // Transform Smith & Hall cross-reference links (<span class="dLink" to="..." text="...">)
@@ -209,6 +225,7 @@ export function xmlNodeToHtml(
       xmlNodeToHtml(c, {
         allowLinkify: nextAllowLinkify,
         matchedSubsectionIds: options?.matchedSubsectionIds,
+        existingIds: options?.existingIds,
       })
     )
     .join("");

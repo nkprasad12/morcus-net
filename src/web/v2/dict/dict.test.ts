@@ -339,9 +339,44 @@ describe("dict_ssr", () => {
     expect(html).toContain("<a");
     expect(html).toContain('href="#n20077.1"');
     expect(html).toContain('class="lsSenseBullet v2-section-anchor"');
-    expect(html).toContain('title="Direct link to this section"');
+    expect(html).toContain('title="Copy link to this section"');
     expect(html).toContain("&#x2022;");
     expect(html).toContain("</a>");
+  });
+
+  test("xmlNodeToHtml gives a sense bullet its own id when nothing else claims it", () => {
+    const node = new XmlNode(
+      "span",
+      [
+        ["class", "lsSenseBullet"],
+        ["senseid", "ra_dog.1"],
+      ],
+      [" • "]
+    );
+    const html = xmlNodeToHtml(node, { existingIds: new Set() });
+    // Without this the href="#ra_dog.1" would point at nothing at all, which is
+    // how every Riddle & Arnold section link used to behave.
+    expect(html).toContain('id="ra_dog.1"');
+    expect(html).toContain('href="#ra_dog.1"');
+  });
+
+  test("xmlNodeToHtml does not duplicate an id an ancestor already carries", () => {
+    const node = new XmlNode(
+      "li",
+      [["id", "n20077.1"]],
+      [
+        new XmlNode(
+          "span",
+          [
+            ["class", "lsSenseBullet"],
+            ["senseid", "n20077.1"],
+          ],
+          [" • "]
+        ),
+      ]
+    );
+    const html = xmlNodeToHtml(node, { existingIds: new Set(["n20077.1"]) });
+    expect((html.match(/id="n20077\.1"/g) || []).length).toBe(1);
   });
 
   test("renderEntryResult includes entry outline when senses exist", () => {
@@ -549,14 +584,17 @@ describe("dict_ssr", () => {
     // Entry headers and anchors
     expect(html).toContain('id="n1"');
     expect(html).toContain('id="n2"');
-    expect(html).toContain('class="v2-entry-header"');
+    expect(html).toContain('class="v2-entry-header has-tools"');
     expect(html).toContain('class="v2-entry-headword"');
     expect(html).toContain('href="#n1"');
     expect(html).toContain('href="#n2"');
+    // Each entry carries a shareable article permalink.
+    expect(html).toContain('href="/v2/dicts/id/n1"');
+    expect(html).toContain('href="/v2/dicts/id/n2"');
     expect(html).not.toContain("Entry 1 of 2");
   });
 
-  test("renderDictResultsHtml omits quick-jump nav and entry headers when only 1 entry exists without tools", () => {
+  test("renderDictResultsHtml omits quick-jump nav but still gives a lone tool-less entry a permalink header", () => {
     const results = {
       "L&S": [
         {
@@ -578,10 +616,15 @@ describe("dict_ssr", () => {
     const html = renderDictResultsHtml("habeo", results);
 
     expect(html).not.toContain('class="v2-entry-nav"');
-    expect(html).not.toContain('class="v2-entry-header"');
     expect(html).not.toContain("Entry 1 of 1");
     // Article still has anchor id from sectionId
     expect(html).toContain('id="n0"');
+    // Entries with no outline and no inflections (Riddle & Arnold, Numerals)
+    // used to render no header, and so had no permalink at all.
+    expect(html).toContain('class="v2-entry-header has-tools"');
+    expect(html).toContain('href="/v2/dicts/id/n0"');
+    expect(html).not.toContain("Outline");
+    expect(html).not.toContain("Inflections");
   });
 
   test("renderEntryResult renders prominent headword heading and avoids duplicate root id", () => {
@@ -606,7 +649,9 @@ describe("dict_ssr", () => {
     };
     const rendered = renderEntryResult(entryResult);
     expect(rendered).toContain('class="v2-entry-headword"');
-    expect(rendered).toContain('href="#n20077"');
+    // The headword is inert text now; the permalink lives in the copy pill.
+    expect(rendered).not.toContain('href="#n20077"');
+    expect(rendered).toContain('href="/v2/dicts/id/n20077"');
     expect(rendered).toContain(
       '<article class="v2-entry has-tools" id="n20077">'
     );

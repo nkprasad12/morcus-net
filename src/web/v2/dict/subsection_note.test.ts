@@ -329,15 +329,17 @@ describe("renderEntryResult with subsections", () => {
     expect(html).toContain('id="n1.blurb" class="v2-subsection-hit"');
   });
 
-  it("renders the note for entries that have no tools bar", () => {
+  it("renders the note for entries that have no tool pills", () => {
     const result = entryResult(
       "n1",
       ["n1.1"],
       [{ id: "n1.1", name: "abbatissa" }]
     );
     const html = renderEntryResult(result);
-    // No outline senses and no main inflections, so there is no segmented bar.
-    expect(html).not.toContain("v2-segmented-bar");
+    // The segmented bar is always present now, because it hosts the permalink
+    // pill, but with no outline senses and no inflections it holds no tools.
+    expect(html).toContain("v2-segmented-bar");
+    expect(html).not.toContain("v2-tool-pane");
     expect(html).toContain("v2-subsection-note");
   });
 

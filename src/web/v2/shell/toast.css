@@ -1,0 +1,39 @@
+/* Shared transient confirmation toast.
+   Generalised from the reader's .v2-reader-toast, which required an element to
+   be pre-rendered into the page markup. This one is created on demand by
+   core/toast.client.ts, so any view can use it without SSR changes. */
+
+.v2-toast {
+  position: fixed;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: var(--v2-text);
+  color: var(--v2-bg);
+  padding: 0.5rem 1rem;
+  border-radius: 9999px;
+  font-family: var(--v2-font-sans);
+  font-size: 0.8125rem;
+  font-weight: 500;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
+  z-index: 200;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.v2-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .v2-toast {
+    transition: opacity 0.2s ease;
+    transform: translateX(-50%);
+  }
+
+  .v2-toast.visible {
+    transform: translateX(-50%);
+  }
+}

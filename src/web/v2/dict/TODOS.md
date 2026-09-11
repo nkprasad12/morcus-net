@@ -120,3 +120,77 @@ emits the corresponding `<li id="nXXXX.0">` — but `derivedOrths`
 
 The fix V2 uses: fall back to `{entryId}.blurb`, then to the entry root. That resolved
 every measured case (`.0` bucket: 8 direct + 32 via blurb + 0 unresolved).
+
+---
+
+## 3. Sanitize or render markup in Smith & Hall `mainLabel`
+
+**Status:** not started.
+
+### Bug Description
+
+In Smith & Hall entries such as `sh7671` (_dog_, reachable at `/v2/dicts/id/sh7671`), the entry header title renders with escaped, literal HTML tags:
+
+```
+dog (<i>subs.</i>)
+```
+
+The browser displays raw text `dog (<i>subs.</i>)` rather than italicized text `dog (`_subs._`)` or plain text `dog (subs.)`.
+
+### Cause
+
+1. `findShLabelText` in [`src/common/smith_and_hall/sh_outline.ts`](../../../common/smith_and_hall/sh_outline.ts) extracts text from `entry.blurb` starting after `<b>${key}</b>` up to `)`:
+   ```ts
+   return `${key} ${blurb.substring(i, j + 1)}`;
+   ```
+   The source blurb contains raw HTML fragments like `(<i>subs.</i>)`.
+2. `renderEntryResult` in [`entry_view.server.ts`](entry_view.server.ts) selects `result.outline.mainLabel` as `headword`, and runs `he.encode(headword)`:
+   ```html
+   <span class="v2-entry-headword-text">${he.encode(headword)}</span>
+   ```
+   This converts `<` and `>` into `&#x3C;` and `&#x3E;`, causing the browser to render the raw HTML tag text on screen.
+
+### Proposed Solutions
+
+- **Option A (Strip tags)**: Strip HTML tags from `mainLabel` either during preprocessing in `findShLabelText` or before rendering in `entry_view.server.ts` (e.g. `headword.replace(/<[^>]+>/g, "")` -> `dog (subs.)`).
+- **Option B (Support phrasing tags)**: If POS annotations like `(subs.)` should remain styled, sanitize `headword` to allow safe inline phrasing tags (`<i>`, `<em>`, `small`) rather than a blunt `he.encode()`, or render using a subset of `xmlNodeToHtml`.
+
+---
+
+## 4. Riddle & Arnold headword casing mismatch (`dog` vs `DOG`)
+
+**Status:** not started.
+
+### Bug Description
+
+In Riddle & Arnold entries such as `ra_dog` (reachable at `/v2/dicts/id/ra_dog`), the header renders in lowercase `dog` while the entry body immediately underneath begins with uppercase `DOG`:
+
+```
+dog   [🔗 Copy link]
+• DOG
+1. s. canis...
+```
+
+### Cause
+
+1. `process_riddle_arnold.ts` ([`src/common/dictionaries/riddle_arnold/process_riddle_arnold.ts`](../../../common/dictionaries/riddle_arnold/process_riddle_arnold.ts)) formats R&A entries from tab-separated lines where `header` is uppercase (`"DOG"`). When creating the outline:
+   ```ts
+   const outline: EntryOutline = {
+     mainKey: keys[0], // keys = header.split(",").map(k => k.trim().toLowerCase()) -> "dog"
+     mainSection: { text: header, level: 0, ordinal: "0", sectionId: id }, // "DOG"
+   };
+   ```
+2. In `renderEntryResult` ([`entry_view.server.ts`](entry_view.server.ts)), the headword resolution hierarchy is:
+   ```ts
+   const headword =
+     result.outline?.mainLabel?.trim() ||
+     result.outline?.mainKey?.trim() ||
+     result.outline?.mainSection?.text?.trim() ||
+     ...
+   ```
+   Since `mainKey` (`"dog"`) is checked before `mainSection.text` (`"DOG"`), the lowercase search key wins and is displayed as the editorial headword.
+
+### Proposed Solutions
+
+- **Option A (Outline generation)**: Store the formatted display title in `outline.mainLabel` (e.g. `mainLabel: header`) during R&A processing, matching dictionaries like Forcellini.
+- **Option B (Headword resolution)**: Prefer `mainSection.text` when it represents an explicit title, or adjust the precedence in `entry_view.server.ts` when `mainKey` is merely a normalized lowercase index key.
