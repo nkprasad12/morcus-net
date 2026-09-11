@@ -169,10 +169,7 @@ describe("v2_router integration", () => {
     // User has existing cookies: inflected disabled (morcus_inflected=0) and custom dicts
     const res = await request(app)
       .get("/v2/dicts?q=arma&embedded=1&o=1&lang=La")
-      .set(
-        "Cookie",
-        "morcus_dicts=L%26S%3BS%26H%3BGRG; morcus_inflected=0"
-      );
+      .set("Cookie", "morcus_dicts=L%26S%3BS%26H%3BGRG; morcus_inflected=0");
 
     expect(res.status).toBe(200);
 

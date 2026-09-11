@@ -243,83 +243,89 @@ export class MorcusDictSearch extends BaseElement {
     );
 
     // Listen for dictionary selection changes to re-fetch or update active search
-    this.listen(this, "dict-selection-change", (evt: Event) => {
-      const e = evt as CustomEvent<{ dictKeys: string[]; bitmask?: string }>;
-      const bitmask =
-        e.detail?.bitmask ||
-        (e.detail?.dictKeys ? encodeDictBitmask(e.detail.dictKeys) : "");
+    this.listen<{ dictKeys: string[]; bitmask?: string }>(
+      this,
+      "dict-selection-change",
+      (e) => {
+        const bitmask =
+          e.detail?.bitmask ||
+          (e.detail?.dictKeys ? encodeDictBitmask(e.detail.dictKeys) : "");
 
-      if (bitmask) {
-        this.activeDictBitmask = bitmask;
-      }
-      if (e.detail?.dictKeys) {
-        this.activeDictKeys = e.detail.dictKeys;
-      }
+        if (bitmask) {
+          this.activeDictBitmask = bitmask;
+        }
+        if (e.detail?.dictKeys) {
+          this.activeDictKeys = e.detail.dictKeys;
+        }
 
-      // Update hidden input in form if present
-      const hiddenD = this.$<HTMLInputElement>('input[name="d"]');
-      if (hiddenD && bitmask) {
-        hiddenD.value = bitmask;
-      }
+        // Update hidden input in form if present
+        const hiddenD = this.$<HTMLInputElement>('input[name="d"]');
+        if (hiddenD && bitmask) {
+          hiddenD.value = bitmask;
+        }
 
-      // Update URL query parameter
-      this.syncUrlParams({ d: bitmask });
+        // Update URL query parameter
+        this.syncUrlParams({ d: bitmask });
 
-      const currentQuery = this.inputElement?.value.trim() ?? "";
-      if (currentQuery) {
-        this.fetchResults(currentQuery);
-      }
+        const currentQuery = this.inputElement?.value.trim() ?? "";
+        if (currentQuery) {
+          this.fetchResults(currentQuery);
+        }
 
-      const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
-      if (welcomeEl && this.activeDictKeys) {
-        welcomeEl.textContent = buildWelcomeMessage(
-          this.activeDictKeys,
-          this.isInflected
-        );
-      }
+        const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
+        if (welcomeEl && this.activeDictKeys) {
+          welcomeEl.textContent = buildWelcomeMessage(
+            this.activeDictKeys,
+            this.isInflected
+          );
+        }
 
-      // Update dictionary list badges live on the landing page
-      if (e.detail?.dictKeys) {
-        const activeSet = new Set(
-          e.detail.dictKeys.map((k) => k.toUpperCase())
-        );
-        const items = this.$$<HTMLElement>(".v2-dict-list-item");
-        for (const item of items) {
-          const key = item.dataset.dictKey?.toUpperCase();
-          if (!key) continue;
-          const isEnabled = activeSet.has(key);
-          item.classList.toggle("v2-dict-enabled", isEnabled);
-          item.classList.toggle("v2-dict-disabled", !isEnabled);
+        // Update dictionary list badges live on the landing page
+        if (e.detail?.dictKeys) {
+          const activeSet = new Set(
+            e.detail.dictKeys.map((k) => k.toUpperCase())
+          );
+          const items = this.$$<HTMLElement>(".v2-dict-list-item");
+          for (const item of items) {
+            const key = item.dataset.dictKey?.toUpperCase();
+            if (!key) continue;
+            const isEnabled = activeSet.has(key);
+            item.classList.toggle("v2-dict-enabled", isEnabled);
+            item.classList.toggle("v2-dict-disabled", !isEnabled);
 
-          const badge = item.querySelector(".v2-lexicon-badge");
-          if (badge) {
-            badge.classList.toggle("v2-dict-enabled", isEnabled);
-            badge.classList.toggle("v2-dict-disabled", !isEnabled);
+            const badge = item.querySelector(".v2-lexicon-badge");
+            if (badge) {
+              badge.classList.toggle("v2-dict-enabled", isEnabled);
+              badge.classList.toggle("v2-dict-disabled", !isEnabled);
+            }
           }
         }
       }
-    });
+    );
 
     // Listen for inflection mode toggle changes
-    this.listen(this, "dict-inflected-change", (evt: Event) => {
-      const e = evt as CustomEvent<{ isInflected: boolean }>;
-      this.isInflected = e.detail?.isInflected !== false;
+    this.listen<{ isInflected: boolean }>(
+      this,
+      "dict-inflected-change",
+      (e) => {
+        this.isInflected = e.detail?.isInflected !== false;
 
-      this.syncUrlParams({ o: this.isInflected ? "1" : "0" });
+        this.syncUrlParams({ o: this.isInflected ? "1" : "0" });
 
-      const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
-      if (welcomeEl && this.activeDictKeys) {
-        welcomeEl.textContent = buildWelcomeMessage(
-          this.activeDictKeys,
-          this.isInflected
-        );
+        const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
+        if (welcomeEl && this.activeDictKeys) {
+          welcomeEl.textContent = buildWelcomeMessage(
+            this.activeDictKeys,
+            this.isInflected
+          );
+        }
+
+        const currentQuery = this.inputElement?.value.trim() ?? "";
+        if (currentQuery) {
+          this.fetchResults(currentQuery);
+        }
       }
-
-      const currentQuery = this.inputElement?.value.trim() ?? "";
-      if (currentQuery) {
-        this.fetchResults(currentQuery);
-      }
-    });
+    );
 
     if (this.inputElement && document.activeElement === document.body) {
       this.inputElement.focus();

@@ -45,6 +45,12 @@ export abstract class BaseElement extends HTMLElement {
     listener: (e: HTMLElementEventMap[K]) => void,
     options?: boolean | AddEventListenerOptions
   ): void;
+  protected listen<T = unknown>(
+    target: EventTarget,
+    type: string,
+    listener: (e: CustomEvent<T>) => void,
+    options?: boolean | AddEventListenerOptions
+  ): void;
   protected listen(
     target: EventTarget,
     type: string,

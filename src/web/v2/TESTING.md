@@ -68,40 +68,47 @@ REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e --headed
 REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e --debug
 ```
 
-### Option E: Running Full Integration Suite (Matches CI)
+### Option E: Running via `run_morcus` (`morcus.sh`) (Recommended)
 
-To run all integration test suites (both V1 and V2):
+To run the functional V2 tests without touching legacy V1 tests or unsupported WebKit:
 
 ```bash
-npm run integration-tests
-# or with an existing server:
-REUSE_DEV_SERVER=true PORT=1337 npm run integration-tests
+# Fast run (Chromium + Mobile Chrome):
+./morcus.sh e2e --v2
+
+# Full matrix (Chromium + Mobile Chrome + Firefox + Firefox Small Screen):
+./morcus.sh e2e --v2 --all
 ```
+
+> [!WARNING] > **Do NOT run `npm run integration-tests` when working on UI V2.** > `npm run integration-tests` runs legacy V1 tests and attempts to launch WebKit/Safari, which is unsupported on this Linux setup and will fail or cause the test runner to hang.
 
 ---
 
 ## 3. Running Unit Tests
 
-For fast unit test verification of router and SSR rendering logic:
+For fast unit test verification of router, SSR rendering, and client components:
 
 ```bash
 # Run all V2 unit tests
-npx jest src/web/v2
+npm run ts-tests:v2
 
 # Run a specific unit test file
 npx jest src/web/v2/v2_router.test.ts
 npx jest src/web/v2/dict/dict.test.ts
-npx jest src/web/v2/about/about.test.ts
+npx jest src/web/v2/core/dialog.test.ts
 ```
 
 ---
 
-## 4. Verification Checklist for Agents
+## 4. Verification Checklists for Agents
 
-> [!IMPORTANT] > **Rapid Iteration vs. Final Verification**:
-> When iterating on small changes (especially styling/CSS adjustments or minor visual tweaks), **just make the fix and restart the server immediately**. Do NOT wait for or run linting, typechecking, or tests during rapid iteration so the user can inspect changes visually without delay.
+> [!IMPORTANT] > **Rapid Iteration vs. Commit vs. Push**:
 >
-> Only run the full verification checklist below when finalizing the task or before committing:
+> - **During rapid iteration**: Make the fix and restart the dev server immediately. Do NOT run tests or linter after every minor tweak.
+> - **Pre-Commit**: Run fast checks (TypeScript, unit tests, code formatting).
+> - **Pre-Push**: Run the full E2E matrix and visual regression tests across browsers.
+
+### A. Pre-Commit Checklist (Fast)
 
 1. **Linting check**:
    ```bash
@@ -111,15 +118,30 @@ npx jest src/web/v2/about/about.test.ts
    ```bash
    npx tsc --noEmit
    ```
-3. **Unit tests**:
+3. **Bundle check**:
    ```bash
-   npx jest src/web/v2
+   npm run tsnp src/bundler/v2.rsbuild.ts -- --minify
    ```
-4. **E2E tests**:
+4. **Unit tests**:
    ```bash
-   REUSE_DEV_SERVER=true PORT=1337 npx playwright test browser_v2_e2e
+   npm run ts-tests:v2
    ```
 5. **Code formatting**:
    ```bash
    npx prettier src/web/v2 --check
    ```
+
+### B. Pre-Push Checklist (Full Verification)
+
+1.  **Start dev server** (if not already running):
+    ```bash
+    PORT=5757 ./morcus.sh web -w
+    ```
+2.  **Functional E2E tests (all browsers)**:
+    ```bash
+    ./morcus.sh e2e --v2 --all
+    ```
+3.  **Visual regression tests (all browsers)**:
+    ```bash
+    ./morcus.sh e2e --visual --all
+    ```

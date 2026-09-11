@@ -7,6 +7,9 @@
     "node": "22.x"
   },
   "scripts": {
+    "//": "General convention: use ./morcus.sh or npm run morcus -- <command> (src/scripts/run_morcus.ts) for builds, dev server, workers, and pipelines. See AGENTS.md.",
+    "morcus": "./morcus.sh",
+    "run-morcus": "npm run tsnp src/scripts/run_morcus.ts --",
     "build": "npm run setup-rust && MAIN=build npm run tsnp src/scripts/prod_build_steps.ts && npm run tsnp src/bundler/server.esbuild.ts && mv node_modules/better-sqlite3/build/Release/better_sqlite3.node ./build/",
     "start": "node build/server.js",
     "setup-rust": "npm run install-rust && . \"$HOME/.cargo/env\" && npm run setup-node-bindgen",
@@ -18,11 +21,8 @@
     "test": "npm run ts-tests && npm run py-tests",
     "ts-tests__comments": "Experimentally, it is faster to limit the number of workers.",
     "ts-tests": "npx jest --maxWorkers=8 --testPathIgnorePatterns src/integration/*",
+    "ts-tests:v2": "npx jest src/web/v2",
     "integration-tests": "npx playwright test src/integration/suites/",
-    "test:visual": "REUSE_DEV_SERVER=1 PORT=5757 CI=1 npx playwright test src/integration/screenshot/browser_v2_screenshot.test.ts --project=chromium --project=MobileChrome",
-    "test:visual:firefox": "REUSE_DEV_SERVER=1 PORT=5757 CI=1 npx playwright test src/integration/screenshot/browser_v2_screenshot.test.ts --project=firefox --project=FirefoxSmallScreen",
-    "test:visual:all": "REUSE_DEV_SERVER=1 PORT=5757 CI=1 npx playwright test src/integration/screenshot/browser_v2_screenshot.test.ts --project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen",
-    "test:visual:update": "REUSE_DEV_SERVER=1 PORT=5757 CI=1 npx playwright test src/integration/screenshot/browser_v2_screenshot.test.ts --project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen --update-snapshots",
     "rs-tests": "cargo test --package corpus",
     "py-tests": "python -m unittest discover",
     "py-coverage": "python -m coverage run -m unittest discover && coverage xml --omit **/test_*.py -o coverage/coverage.xml",

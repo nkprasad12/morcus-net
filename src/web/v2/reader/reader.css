@@ -184,7 +184,6 @@ body.v2-resizing-panels .v2-dict-iframe,
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
 }
 
-
 /* Ghost Scrollbars: completely hidden at rest, sleek floating pill on hover */
 .v2-reader-text-panel,
 .v2-reader-dict-panel {
@@ -723,7 +722,6 @@ a.v2-reader-sheet-close:active {
     overflow-y: visible;
   }
 }
-
 
 /* Desktop: Position button inside the dictionary right column */
 @media (min-width: 641px) {

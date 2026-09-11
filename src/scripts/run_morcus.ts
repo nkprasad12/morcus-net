@@ -275,6 +275,30 @@ function parseArguments() {
     help: "The grep pattern to use to limit tests by name.",
     default: "",
   });
+  e2e.add_argument("-b_v2", "--v2", {
+    help: "Runs UI V2 E2E tests (src/integration/suites/browser_v2_e2e.test.ts).",
+    action: "store_true",
+  });
+  e2e.add_argument("-vs", "--visual", {
+    help: "Runs UI V2 visual regression tests (src/integration/screenshot/browser_v2_screenshot.test.ts).",
+    action: "store_true",
+  });
+  e2e.add_argument("-a", "--all", {
+    help: "Runs across all supported browser engines (chromium, MobileChrome, firefox, FirefoxSmallScreen).",
+    action: "store_true",
+  });
+  e2e.add_argument("-u", "--update", {
+    help: "Updates screenshot baselines when running visual tests.",
+    action: "store_true",
+  });
+  e2e.add_argument("-pt", "--port", {
+    help: "The port of the running dev server (defaults to 5757 for V2/visual, or 1337).",
+    default: "",
+  });
+  e2e.add_argument("--headed", {
+    help: "Runs Playwright tests in headed browser mode.",
+    action: "store_true",
+  });
 
   const corpus = subparsers.add_parser(CORPUS, {
     help: "Convenience commands for the corpus.",
@@ -621,6 +645,56 @@ async function startLsEditor() {
 async function runE2eTests(args: any) {
   const childEnv = { ...process.env };
   const steps: StepConfig[] = [];
+
+  const isV2 = Boolean(args.v2);
+  const isVisual = Boolean(args.visual);
+
+  // V2 functional tests or visual regression tests
+  if (isV2 || isVisual) {
+    childEnv.REUSE_DEV_SERVER = "1";
+    childEnv.PORT = args.port || process.env.PORT || "5757";
+    childEnv.CI = "1";
+
+    const testPath = isVisual
+      ? "src/integration/screenshot/browser_v2_screenshot.test.ts"
+      : "src/integration/suites/browser_v2_e2e.test.ts";
+
+    const command = ["npx playwright test", testPath];
+
+    if (args.project) {
+      for (const proj of args.project.split(",")) {
+        if (proj.trim()) {
+          command.push(`--project=${proj.trim()}`);
+        }
+      }
+    } else if (args.all) {
+      command.push(
+        "--project=chromium --project=MobileChrome --project=firefox --project=FirefoxSmallScreen"
+      );
+    } else {
+      command.push("--project=chromium --project=MobileChrome");
+    }
+
+    if (args.grep) {
+      command.push(`--grep "${args.grep}"`);
+    }
+    if (args.update) {
+      command.push("--update-snapshots");
+    }
+    if (args.headed) {
+      command.push("--headed");
+    }
+
+    steps.push({
+      operation: () => shellStep(command.join(" "), childEnv),
+      label: isVisual
+        ? "Running V2 visual regression tests"
+        : "Running V2 E2E tests",
+    });
+    return runPipeline(steps);
+  }
+
+  // Default / legacy V1 E2E tests
   if (args.rerun && args.dev_server) {
     throw new Error("--rerun is incompatible with --dev-server");
   }
@@ -637,6 +711,9 @@ async function runE2eTests(args: any) {
       throw new Error("--tag is incompatible with --dev-server");
     }
     childEnv.REUSE_DEV_SERVER = "1";
+    if (args.port) {
+      childEnv.PORT = args.port;
+    }
   } else {
     childEnv.IMAGE_TAG = tag;
   }
@@ -646,6 +723,9 @@ async function runE2eTests(args: any) {
   }
   if (args.grep) {
     command.push(`--grep "${args.grep}"`);
+  }
+  if (args.headed) {
+    command.push("--headed");
   }
   steps.push({
     operation: () => shellStep(command.join(" "), childEnv),

@@ -229,7 +229,12 @@ describe("dict_ssr", () => {
     expect(englishOnlyHtml).not.toContain("Latin headwords");
 
     // Inflection disabled landing page: Latin headwords only without inflected forms
-    const nonInflectedHtml = renderDictResultsHtml("", undefined, undefined, false);
+    const nonInflectedHtml = renderDictResultsHtml(
+      "",
+      undefined,
+      undefined,
+      false
+    );
     expect(nonInflectedHtml).toContain(
       "Welcome to the dictionary. You can search Latin headwords, and words in English and German."
     );
