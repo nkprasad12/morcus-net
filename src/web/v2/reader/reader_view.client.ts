@@ -1,6 +1,7 @@
 import {
   BaseElement,
   type QueryParamSync,
+  ICON_PATHS,
   registerElement,
   settingsStore,
   setupModalDialog,
@@ -698,7 +699,7 @@ export class MorcusReaderView extends BaseElement {
     btn.className = "v2-reader-dict-back-to-top";
     btn.setAttribute("aria-label", "Scroll dictionary to top");
     btn.title = "Jump to top";
-    btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path></svg>`;
+    btn.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true"><path d="${ICON_PATHS.chevronUp}"></path></svg>`;
 
     dictPanel.appendChild(btn);
 

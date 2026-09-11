@@ -5,6 +5,7 @@ import {
   getV2CriticalJs,
 } from "@/web/v2/shell/asset_manifest.server";
 import { renderReportIssueDialog } from "@/web/v2/dialog/dialog.server";
+import { ICON_PATHS } from "@/web/v2/core/icons";
 
 export type V2ActivePage = "dicts" | "about" | "library";
 
@@ -70,7 +71,7 @@ export function renderAppBar(activePage: V2ActivePage): string {
               title="Report an issue"
             >
               <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M14.4 6 14 4H5v17h2v-7h5.6l.4 2h7V6z"></path>
+                <path d="${ICON_PATHS.flag}"></path>
               </svg>
             </button>
             ${renderReportIssueDialog()}
@@ -81,10 +82,10 @@ export function renderAppBar(activePage: V2ActivePage): string {
         <details class="v2-mobile-menu">
             <summary class="v2-mobile-menu-btn" aria-label="Open navigation menu">
               <svg viewBox="0 0 24 24" aria-hidden="true" class="v2-icon-menu">
-                <path d="M3 18h18v-2H3v2zm0-5h18v-2H3v2zm0-7v2h18V6H3z"></path>
+                <path d="${ICON_PATHS.menu}"></path>
               </svg>
               <svg viewBox="0 0 24 24" aria-hidden="true" class="v2-icon-close">
-                <path d="M19 6.41L17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"></path>
+                <path d="${ICON_PATHS.close}"></path>
               </svg>
             </summary>
             <nav class="v2-nav v2-mobile-menu-dropdown" aria-label="Mobile Navigation">
@@ -168,7 +169,7 @@ export function renderPageShell(options: PageShellOptions): string {
     title="Jump to top"
   >
     <svg viewBox="0 0 24 24" aria-hidden="true">
-      <path d="M7.41 15.41L12 10.83l4.59 4.58L18 14l-6-6-6 6z"></path>
+      <path d="${ICON_PATHS.chevronUp}"></path>
     </svg>
   </a>
 

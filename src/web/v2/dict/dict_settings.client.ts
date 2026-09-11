@@ -11,12 +11,11 @@ import {
   encodeDictBitmask,
   decodeDictBitmask,
 } from "@/web/v2/dict/dict_bitmask.common";
+import { ICON_PATHS } from "@/web/v2/core/icons";
 
 const DEFAULT_STRENGTH = 50;
 
-// Material Design "tune" / sliders SVG icon
-const TUNE_PATH =
-  "M3 17v2h6v-2H3zM3 5v2h10V5H3zm10 16v-2h8v-2h-8v-2h-2v6h2zM7 9v2H3v2h4v2h2V9H7zm14 4v-2H11v2h10zm-6-4h2V7h4V5h-4V3h-2v6z";
+const TUNE_PATH = ICON_PATHS.tune;
 
 export class MorcusDictSettings extends BaseElement {
   private isOpen: boolean = false;

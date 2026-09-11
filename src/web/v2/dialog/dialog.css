@@ -225,12 +225,7 @@
 .v2-report-textarea:focus-visible {
   outline: none;
   border-color: var(--v2-primary);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.2);
-}
-
-:root[data-theme="dark"] .v2-report-reporter:focus-visible,
-:root[data-theme="dark"] .v2-report-textarea:focus-visible {
-  box-shadow: 0 0 0 3px rgba(77, 163, 255, 0.25);
+  box-shadow: var(--v2-focus-ring);
 }
 
 .v2-report-textarea {
