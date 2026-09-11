@@ -842,8 +842,6 @@ export class MorcusReaderView extends BaseElement {
   private initSettings() {
     const dialog = this.$<HTMLDialogElement>("#v2-reader-settings-dialog");
     const settingsBtn = this.$<HTMLButtonElement>("#v2-reader-settings-btn");
-    const closeBtn = this.$<HTMLButtonElement>("#v2-reader-settings-close-btn");
-    const doneBtn = this.$<HTMLButtonElement>("#v2-reader-settings-done-btn");
     const resetBtn = this.$<HTMLButtonElement>("#v2-reader-settings-reset-btn");
 
     const readerSizeDec = this.$<HTMLButtonElement>("#v2-reader-size-dec");
