@@ -4,6 +4,12 @@ import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
 import { ICON_PATHS } from "@/web/v2/core/icons";
 
+import {
+  computeActiveLanguages,
+  renderLangChipsHtml,
+  renderInflectChipHtml,
+} from "@/web/v2/dict/search_bar.common";
+
 const TUNE_PATH = ICON_PATHS.tune;
 const SEARCH_PATH = ICON_PATHS.search;
 
@@ -18,21 +24,24 @@ export interface SearchBarOptions {
 }
 
 /**
- * Shared search bar component rendering the search form, text input,
- * submit button with magnifying glass SVG, and settings web component.
+ * Shared search bar component rendering the two-tier compound search card,
+ * text input, submit button with magnifying glass SVG, status badges tray,
+ * and dictionary settings popover.
  */
 export function renderDictSearchBar(options: SearchBarOptions): string {
   const query = options.query?.trim() ?? "";
   const queryEscaped = query ? he.escape(query) : "";
-  const placeholder =
-    options.placeholder ??
-    "Search for a word (e.g. equōrum, equus, horse, cheval, Pferd)...";
+  const placeholder = options.placeholder ?? "Search for a word";
   const includeSettings = options.includeSettings ?? true;
   const isInflected = options.isInflected !== false; // default true
 
   const activeDictList = options.activeDicts ?? DEFAULT_DICT_KEYS;
   const activeDictKeys = new Set(activeDictList);
   const dictBitmask = encodeDictBitmask(activeDictList);
+
+  const activeLangs = computeActiveLanguages(activeDictKeys);
+  const langChipsHtml = renderLangChipsHtml(activeLangs);
+  const inflectChipHtml = renderInflectChipHtml(isInflected);
 
   const dictItemsHtml = LatinDict.AVAILABLE.map((d) => {
     const isChecked = activeDictKeys.has(d.key);
@@ -104,6 +113,25 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     `.trim()
     : "";
 
+  const trayHtml = includeSettings
+    ? `
+      <div class="v2-search-tray">
+        <div class="v2-search-tray-left">
+          <span class="v2-tray-label">In</span>
+          <div class="v2-lang-chips">
+            ${langChipsHtml}
+          </div>
+          <span class="v2-tray-dot" aria-hidden="true">•</span>
+          <span class="v2-tray-label">Inflection</span>
+          ${inflectChipHtml}
+        </div>
+        <div class="v2-search-tray-right">
+          ${settingsHtml}
+        </div>
+      </div>
+    `.trim()
+    : "";
+
   const hiddenInputsHtml = options.extraHiddenInputs
     ? Object.entries(options.extraHiddenInputs)
         .map(
@@ -142,7 +170,7 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
           </svg>
         </button>
       </div>
-      ${settingsHtml}
+      ${trayHtml}
     </form>
   `.trim();
 }

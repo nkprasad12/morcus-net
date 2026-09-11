@@ -3,13 +3,23 @@
 .v2-search-form {
   position: relative;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
   margin-bottom: 12px;
+  background-color: var(--v2-input-bg, #fafafa);
+  border: 1px solid var(--v2-input-border, var(--v2-border));
+  border-radius: 8px;
+  box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out;
+}
+
+.v2-search-form:focus-within {
+  border-color: var(--v2-app-bar-toggle-border, #99c2b0);
+  box-shadow: 0 0 0 3px rgba(153, 194, 176, 0.35);
 }
 
 .v2-input-wrapper {
   position: relative;
-  flex: 1;
+  width: 100%;
   display: flex;
   align-items: center;
 }
@@ -18,19 +28,16 @@
   width: 100%;
   padding: 10px 42px 10px 14px;
   font-size: 1.05rem;
-  border: 1px solid var(--v2-input-border, var(--v2-border));
-  border-radius: 6px;
-  background-color: var(--v2-input-bg, #ffffff);
+  border: none;
+  border-radius: 8px 8px 0 0;
+  background-color: transparent;
   color: var(--v2-text);
-  box-shadow: var(--v2-input-shadow, 0 1px 2px rgba(0, 0, 0, 0.04));
+  box-shadow: none;
   outline: none;
-  transition: border-color 0.15s ease-in-out, box-shadow 0.15s ease-in-out,
-    background-color 0.15s ease-in-out;
 }
 
-.v2-input:focus {
-  border-color: var(--v2-border-focus);
-  box-shadow: 0 0 0 3px rgba(0, 102, 204, 0.25);
+.v2-search-form:not(:has(.v2-search-tray)) .v2-input {
+  border-radius: 8px;
 }
 
 .v2-search-btn {
@@ -53,12 +60,12 @@
 }
 
 .v2-search-btn:hover {
-  color: var(--v2-primary);
+  color: var(--v2-app-bar-nav-text, var(--v2-primary));
   background-color: var(--v2-tag-bg);
 }
 
 .v2-search-btn:focus-visible {
-  outline: 2px solid var(--v2-primary);
+  outline: 2px solid var(--v2-app-bar-toggle-border, var(--v2-primary));
   outline-offset: 1px;
 }
 
@@ -76,7 +83,7 @@
   left: 0;
   right: 0;
   margin-top: 4px;
-  background: var(--v2-input-bg, #ffffff);
+  background: var(--v2-input-bg, #fafafa);
   border: 1px solid var(--v2-input-border, var(--v2-border));
   border-radius: 6px;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.12);
@@ -97,4 +104,136 @@
 .v2-suggestion-item.active {
   background-color: var(--v2-tag-bg);
   color: var(--v2-primary);
+}
+
+/* Search Status Tray */
+.v2-search-tray {
+  border-top: 1px solid var(--v2-border);
+  background-color: var(--v2-tag-bg);
+  padding: 5px 12px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-radius: 0 0 7px 7px;
+  font-size: 0.75rem;
+  user-select: none;
+}
+
+.v2-search-tray-left {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.v2-tray-label {
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--v2-text-muted);
+}
+
+.v2-tray-dot {
+  color: var(--v2-text-muted);
+  opacity: 0.6;
+}
+
+.v2-lang-chips {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.v2-lang-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  font-family: var(--v2-font-mono, monospace);
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 5px;
+  border-radius: 3px;
+  letter-spacing: -0.02em;
+}
+
+.v2-lang-chip-la {
+  background-color: var(--v2-chip-la-bg);
+  color: var(--v2-chip-la-text);
+}
+
+.v2-lang-chip-en {
+  background-color: var(--v2-chip-en-bg);
+  color: var(--v2-chip-en-text);
+}
+
+.v2-lang-chip-de {
+  background-color: var(--v2-chip-de-bg);
+  color: var(--v2-chip-de-text);
+}
+
+.v2-lang-chip-es {
+  background-color: var(--v2-chip-es-bg);
+  color: var(--v2-chip-es-text);
+}
+
+.v2-lang-chip-none {
+  color: var(--v2-text-muted);
+  font-style: italic;
+}
+
+/* Inflection Status Badge */
+.v2-inflect-chip {
+  display: inline-flex;
+  align-items: center;
+  font-size: 0.72rem;
+  font-family: var(--v2-font-mono, monospace);
+  font-weight: 700;
+  line-height: 1;
+  padding: 2px 6px;
+  border-radius: 4px;
+}
+
+.v2-inflect-chip.is-on {
+  background-color: var(--v2-app-bar-bg);
+  color: var(--v2-app-bar-text);
+}
+
+.v2-inflect-chip.is-off {
+  background-color: transparent;
+  border: 1px solid var(--v2-border);
+  color: var(--v2-text-muted);
+}
+
+/* Settings trigger in status tray */
+.v2-search-tray-right {
+  display: flex;
+  align-items: center;
+}
+
+.v2-search-tray-right .v2-settings-btn {
+  height: 26px;
+  width: 26px;
+  padding: 4px;
+  border: none;
+  background: transparent;
+  box-shadow: none;
+  border-radius: 4px;
+  color: var(--v2-text-muted);
+}
+
+.v2-search-tray-right .v2-settings-btn:hover {
+  color: var(--v2-app-bar-text);
+  background-color: var(--v2-card-header-bg, rgba(0, 0, 0, 0.06));
+}
+
+.v2-search-tray-right .v2-settings-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.v2-search-tray-right .v2-dict-settings-details[open] > .v2-settings-btn,
+.v2-search-tray-right .v2-settings-btn[aria-expanded="true"] {
+  color: var(--v2-app-bar-text);
+  background-color: var(--v2-app-bar-bg);
+  border-color: transparent;
 }

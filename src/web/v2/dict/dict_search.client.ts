@@ -22,6 +22,11 @@ import {
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_bitmask.common";
 import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
+import {
+  computeActiveLanguages,
+  renderLangChipsHtml,
+  renderInflectChipHtml,
+} from "@/web/v2/dict/search_bar.common";
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -305,6 +310,13 @@ export class MorcusDictSearch extends BaseElement {
             }
           }
         }
+
+        // Update language chips in the search bar tray live
+        const langChipsContainer = this.$<HTMLElement>(".v2-lang-chips");
+        if (langChipsContainer && this.activeDictKeys) {
+          const activeLangs = computeActiveLanguages(this.activeDictKeys);
+          langChipsContainer.innerHTML = renderLangChipsHtml(activeLangs);
+        }
       }
     );
 
@@ -316,6 +328,12 @@ export class MorcusDictSearch extends BaseElement {
         this.isInflected = e.detail?.isInflected !== false;
 
         this.syncUrlParams({ o: this.isInflected ? "1" : "0" });
+
+        // Update inflection badge in the search bar tray live
+        const inflectChip = this.$<HTMLElement>(".v2-inflect-chip");
+        if (inflectChip) {
+          inflectChip.outerHTML = renderInflectChipHtml(this.isInflected);
+        }
 
         const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
         if (welcomeEl && this.activeDictKeys) {
