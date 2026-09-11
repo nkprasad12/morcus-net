@@ -16,18 +16,14 @@ describe("renderDictSearchBar", () => {
     expect(html).toContain("<svg");
   });
 
-  test("renders custom reader search bar with custom classes", () => {
+  test("honors a custom action and placeholder", () => {
     const html = renderDictSearchBar({
       query: "Caesar",
       action: "/v2/reader",
-      formClass: "v2-reader-search-form",
-      inputClass: "v2-reader-input",
       placeholder: "Lookup word in text...",
     });
 
-    expect(html).toContain('class="v2-search-form v2-reader-search-form"');
     expect(html).toContain('action="/v2/reader"');
-    expect(html).toContain('class="v2-input v2-reader-input"');
     expect(html).toContain('placeholder="Lookup word in text..."');
     expect(html).toContain('value="Caesar"');
     expect(html).toContain("<morcus-dict-settings>");

@@ -11,8 +11,6 @@ export interface SearchBarOptions {
   query?: string;
   action: string;
   placeholder?: string;
-  formClass?: string;
-  inputClass?: string;
   includeSettings?: boolean;
   activeDicts?: string[];
   isInflected?: boolean;
@@ -29,12 +27,6 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
   const placeholder =
     options.placeholder ??
     "Search for a word (e.g. equōrum, equus, horse, cheval, Pferd)...";
-  const formClasses = ["v2-search-form", options.formClass]
-    .filter(Boolean)
-    .join(" ");
-  const inputClasses = ["v2-input", options.inputClass]
-    .filter(Boolean)
-    .join(" ");
   const includeSettings = options.includeSettings ?? true;
   const isInflected = options.isInflected !== false; // default true
 
@@ -124,16 +116,16 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
     : "";
 
   return `
-    <form class="${formClasses}" action="${he.escape(
-    options.action
-  )}" method="GET">
+    <form class="v2-search-form" action="${he.escape(
+      options.action
+    )}" method="GET">
       <input type="hidden" name="d" value="${he.escape(dictBitmask)}" />
       ${hiddenInputsHtml}
       <div class="v2-input-wrapper">
         <input
           type="text"
           name="q"
-          class="${inputClasses}"
+          class="v2-input"
           value="${queryEscaped}"
           placeholder="${he.escape(placeholder)}"
           autocomplete="off"

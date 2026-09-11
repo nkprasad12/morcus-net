@@ -3,8 +3,7 @@
   flex-direction: column;
 }
 
-.v2-results > .v2-dict-card + .v2-dict-card,
-.v2-reader-dict-output > .v2-dict-card + .v2-dict-card {
+.v2-results > .v2-dict-card + .v2-dict-card {
   margin-top: 28px;
 }
 
