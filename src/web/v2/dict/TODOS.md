@@ -1,0 +1,122 @@
+# Dictionary TODOs (`src/web/v2/dict/`)
+
+Known follow-up work for this topic. See [`README.md`](README.md) for how the
+directory is organised and [`FEATURE_PARITY.md`](FEATURE_PARITY.md) for the V1 → V2
+gap analysis.
+
+---
+
+## 1. Cache rendered entry bodies
+
+**Status:** not started. Analysed and benchmarked; the design below is ready to build.
+
+### Motivation
+
+`xmlNodeToHtml` is the expensive part of serving a dictionary result, and it re-runs
+from scratch on every request for the same entry. Measured over 200 iterations against
+real L&S entries:
+
+| Entry                  | HTML size | Full `xmlNodeToHtml` |
+| :--------------------- | --------: | -------------------: |
+| `n38913` (_proximus_)  |   60.6 KB |         **7.637 ms** |
+| `n30954` (_nihilum_)   |   48.1 KB |             5.318 ms |
+| `n19246` (_gallus_)    |   15.4 KB |             1.597 ms |
+| `n33435` (_palatinus_) |   12.3 KB |             1.093 ms |
+| `n36` (_abbas_)        |    1.4 KB |             0.154 ms |
+
+Popular long entries cost several milliseconds of pure CPU per request, every request.
+
+### What is and isn't cacheable
+
+`renderEntryResult` in [`entry_view.server.ts`](entry_view.server.ts) emits three fragments:
+
+| Fragment                                   | Depends on                              | Cacheable per entry?                                             |
+| :----------------------------------------- | :-------------------------------------- | :--------------------------------------------------------------- |
+| Tools bar (headword, Outline, Inflections) | `result.outline`, `result.inflections`  | ❌ `result.inflections` is the morphology of the _searched form_ |
+| Subsection banner                          | which subsections matched               | ❌ inherently per-query                                          |
+| **Entry body** (`xmlNodeToHtml`)           | `result.entry` + `matchedSubsectionIds` | ✅ **this is the one worth caching**                             |
+
+> [!NOTE]
+> The tools bar was never cacheable per-entry, so any pre-render scheme was always
+> going to be fragment-level rather than whole-entry-level. The body has exactly one
+> query-dependent input — `matchedSubsectionIds` — and its entire effect is adding
+> `class="v2-subsection-hit"` and `aria-current="location"` to a handful of elements.
+>
+> `allowLinkify`, the other option on `XmlNodeToHtmlOptions`, is never passed by any
+> caller; it is only set internally during recursion. So `result.entry` really is the
+> sole content input.
+
+### Shape
+
+Cache the body keyed on entry id, then splice the per-query markers in:
+
+```ts
+// Cached per entry id — independent of the query.
+const body =
+  cache.get(id) ?? cache.set(id, xmlNodeToHtml(entry, { omitRootId: true }));
+
+// Per request: a handful of ids, resolved by resolveSubsectionAnchor().
+const marked = markSubsectionHits(body, matchedAnchorIds(groups));
+```
+
+Splicing is far cheaper than re-rendering — **0.26 ms vs 15.80 ms** across the five
+entries above, a 62× saving. The marker step costs roughly 1.3% of the render it
+replaces, so it does not undermine the win.
+
+### Blocked on: always emit a `class` attribute alongside `id`
+
+> [!WARNING]
+> A naive splice is silently broken. The generator template at
+> [`xml_to_html.server.ts:L268`](xml_to_html.server.ts) is
+> `` `<${tagName}${idAttr}${classNames}…>` ``, so `class` always immediately follows
+> `id`. Inserting ` class="v2-subsection-hit"` after `id="X"` on an element that
+> **already has a class** produces a duplicate `class` attribute. Browsers keep the
+> first one, so the marker never appears — with no error anywhere.
+
+Fix before building the cache: make the generator always emit a `class` attribute when
+an `id` is present, even if empty. Today `classNames` is omitted entirely when the node
+has no class:
+
+```ts
+// xml_to_html.server.ts, ~L233
+const finalClass = attrsMap.get("class");
+const classNames = finalClass ? ` class="${he.encode(finalClass)}"` : "";
+```
+
+With that guaranteed, the splice becomes one unconditional
+`indexOf('id="X" class="')` plus an insert — no branching, no regex over the HTML.
+
+### Rejected alternatives
+
+| Approach                                              | Why not                                                                                                                             |
+| :---------------------------------------------------- | :---------------------------------------------------------------------------------------------------------------------------------- |
+| Per-page `<style>` block targeting `#n38913\.14` etc. | Leaves the body 100% cacheable, but cannot set `aria-current`, so it is an a11y regression. Also adds inline CSS to every response. |
+| Render placeholder tokens, then string-replace        | Same cost as splicing, but bloats every cached entry with tokens for ids that are almost never matched.                             |
+| Mark matched subsections client-side                  | Breaks the zero-JS baseline. Non-starter — see [`../README.md`](../README.md).                                                      |
+
+### Sizing caveat
+
+The cache holds rendered HTML, which is larger than the source XML — _proximus_ alone
+is 60.6 KB. L&S has ~51k entries, so an exhaustive build-time pre-render is on the
+order of hundreds of MB. An LRU over hot entries is probably the right call; that
+sizing exercise is still open.
+
+---
+
+## 2. Fix the dead-anchor bug in V1
+
+**Status:** not started. Low priority — only worth doing while V1 is still user-facing.
+
+V2 works around this in `resolveSubsectionAnchor`
+([`subsection_note.server.ts`](subsection_note.server.ts)), but V1's `SubsectionNote` in
+`src/web/client/pages/dictionary/dictionary_v2.tsx` has the same latent bug and no
+workaround.
+
+When an L&S entry has a single level-1 sense, `displayEntryFree`
+(`src/common/lewis_and_short/ls_display.ts`) merges it into the opening blurb and never
+emits the corresponding `<li id="nXXXX.0">` — but `derivedOrths`
+(`src/common/lewis_and_short/ls_orths.ts`) still records `senseId = nXXXX.0`. Roughly
+30% of sampled subsection anchors pointed at nothing.
+
+The fix V2 uses: fall back to `{entryId}.blurb`, then to the entry root. That resolved
+every measured case (`.0` bucket: 8 direct + 32 via blurb + 0 unresolved).

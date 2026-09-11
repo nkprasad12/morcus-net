@@ -4,6 +4,8 @@
 
 This directory encapsulates all server-side rendering and client-side web components for dictionary lookups, search bar interactions, morphological entry cards, XML AST transformation, and highlight settings.
 
+Companion docs: [`FEATURE_PARITY.md`](FEATURE_PARITY.md) tracks the V1 → V2 gap, and [`TODOS.md`](TODOS.md) records known follow-up work.
+
 ---
 
 ## Data Flow & Request Lifecycle
