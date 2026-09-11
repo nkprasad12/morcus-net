@@ -457,4 +457,50 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       "Welcome to the dictionary. You can search Latin headwords and inflected forms, and words in English and German."
     );
   });
+
+  test("status tray updates language chips and inflection badge on settings change events", () => {
+    const searchBarHtml = `
+      <div class="v2-search-tray">
+        <div class="v2-lang-chips">
+          <span class="v2-lang-chip v2-lang-chip-la">La</span>
+        </div>
+        <span class="v2-inflect-chip is-on">On</span>
+      </div>
+    `;
+
+    const el = createDictSearch(searchBarHtml);
+    const chipsContainer = el.querySelector<HTMLElement>(".v2-lang-chips")!;
+    const inflectChip = el.querySelector<HTMLElement>(".v2-inflect-chip")!;
+    expect(inflectChip.classList.contains("is-on")).toBe(true);
+
+    // 1. Dispatch dict-selection-change with only German (GRG)
+    el.dispatchEvent(
+      new CustomEvent("dict-selection-change", {
+        detail: { dictKeys: ["GRG"] },
+        bubbles: true,
+      })
+    );
+
+    expect(chipsContainer.innerHTML).toContain(
+      'class="v2-lang-chip v2-lang-chip-de"'
+    );
+    expect(chipsContainer.innerHTML).not.toContain(
+      'class="v2-lang-chip v2-lang-chip-la"'
+    );
+    expect(chipsContainer.textContent).toContain("De");
+
+    // 2. Dispatch dict-inflected-change to false
+    el.dispatchEvent(
+      new CustomEvent("dict-inflected-change", {
+        detail: { isInflected: false },
+        bubbles: true,
+      })
+    );
+
+    const updatedInflectChip =
+      el.querySelector<HTMLElement>(".v2-inflect-chip")!;
+    expect(updatedInflectChip.classList.contains("is-off")).toBe(true);
+    expect(updatedInflectChip.classList.contains("is-on")).toBe(false);
+    expect(updatedInflectChip.textContent).toContain("Off");
+  });
 });

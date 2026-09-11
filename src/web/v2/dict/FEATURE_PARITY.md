@@ -13,7 +13,7 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 | Feature Area                             | V1 UI (SPA)                                                               | V2 UI (SSR + Progressive Enhancement)                                            | Parity Status         |
 | :--------------------------------------- | :------------------------------------------------------------------------ | :------------------------------------------------------------------------------- | :-------------------- |
-| **Search Bar Status Badges**             | Shows active source languages (`In La En`) & inflection status (`On/Off`) | Replaced with plain settings icon button                                         | ❌ **Missing in V2**  |
+| **Search Bar Status Badges**             | Shows active source languages (`In La En`) & inflection status (`On/Off`) | Integrated two-tier compound card with active language chips & inflection badge  | ✅ **Feature Parity** |
 | **Suffix Autocomplete**                  | Supported queries starting with `-` (e.g. `-arum`, `-ibus`)               | Treated as literal prefix lookup                                                 | ❌ **Missing in V2**  |
 | **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`                       | Verbatim prefix matching only                                                    | ❌ **Missing in V2**  |
 | **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)           | Plain string array without language metadata                                     | ❌ **Missing in V2**  |
@@ -34,8 +34,8 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 ### 2.1. Search Bar, Query Parsing, & Settings
 
 1. **Search Bar Preview Badges**:
-   - **V1 (`dictionary_search.tsx:L317-370`)**: The search input displayed clickable badges directly inline showing active search languages (`In [La] [En]...`) and inflection mode (`Inflection [On] / [Off]`), giving immediate visibility into search behavior.
-   - **V2 (`search_bar.server.ts`)**: Replaced by a single Material Design tune/sliders icon button.
+   - **V1 (`dictionary_search.tsx:L317-370`)**: The search input displayed badges directly inline showing active search languages (`In [La] [En]...`) and inflection mode (`Inflection [On] / [Off]`), giving immediate visibility into search behavior.
+   - **V2 (`search_bar.server.ts`, `search_bar.common.ts`, `search.css`, `dict_search.client.ts`)**: Parity achieved. Search bar rendered as an integrated two-tier compound card. Tier 1 houses full-width input with app-bar sage green focus ring (`:focus-within`), while Tier 2 status tray renders active language chips (`[La]`, `[En]`, `[De]`, `[Es]`), an inflection badge (`[On]` / `[Off]`), and the settings popover button (`⚙️`). Works natively in No-JS mode via server-side rendering, and progressively enhances live in JS mode on `dict-selection-change` and `dict-inflected-change` events.
 
 ---
 
@@ -154,14 +154,13 @@ To bring the V2 Dictionary to full functional parity with V1, prioritize the fol
 ### Completed
 
 1. ~~**Subsection Match Notes**~~ — shipped. See §2.3.1. Implemented in `subsection_note.server.ts` + `inflection_table.server.ts`, wired through `entry_view.server.ts` and `xml_to_html.server.ts`.
+2. ~~**Search Bar Preview Badges**~~ — shipped. See §2.1.1. Implemented two-tier compound search card in `search_bar.server.ts` + `search_bar.common.ts` + `search.css` with active language chips and inflection status tray, with live client synchronization in `dict_search.client.ts`.
 
 ### Medium Priority
 
-2. **Autocomplete Refinements**:
+3. **Autocomplete Refinements**:
    - Add language origin chips (`LangChip`) to suggestions in `dict_suggestions.client.ts`.
    - Restore suffix lookup (`-`) and `u`/`v` / `i`/`j` prefix expansion.
-3. **Search Bar Preview Badges**:
-   - Render active language and inflection state pills alongside the settings button in `search_bar.server.ts`.
 4. **Per-Entry Collapse** _(new; not a V1 parity item)_:
    - Now that the headword is inert text, make it collapse/expand its own entry, mirroring how the dictionary card title collapses its card.
    - Reuse the card's decoupled pattern: an empty-bodied `<details class="v2-entry-toggle">` plus `.v2-entry:not(:has(.v2-entry-toggle[open])) .v2-entry-content { display: none }`. This sidesteps the `<summary>` content model, which forbids nesting the Outline/Inflections `<details>` inside it.

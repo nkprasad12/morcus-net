@@ -12,6 +12,7 @@ describe("renderDictSearchBar", () => {
     expect(html).toContain('value="habeo"');
     expect(html).toContain("<morcus-dict-settings>");
     expect(html).toContain('class="v2-input"');
+    expect(html).toContain('placeholder="Search for a word"');
     expect(html).toContain('class="v2-search-btn"');
     expect(html).toContain("<svg");
   });
@@ -78,5 +79,46 @@ describe("renderDictSearchBar", () => {
     // Checkbox itself does not have checked attribute
     expect(html).toMatch(/id="v2-toggle-inflected"[^>]*\/>/);
     expect(html).not.toMatch(/id="v2-toggle-inflected"[^>]*checked/);
+  });
+
+  test("renders status tray with active language chips and inflection badge", () => {
+    const html = renderDictSearchBar({
+      query: "facio",
+      action: "/v2/dicts",
+      activeDicts: ["L&S", "S&H", "GRG"],
+      isInflected: true,
+    });
+
+    expect(html).toContain('class="v2-search-tray"');
+    expect(html).toContain('class="v2-lang-chip v2-lang-chip-la"');
+    expect(html).toContain('class="v2-lang-chip v2-lang-chip-en"');
+    expect(html).toContain('class="v2-lang-chip v2-lang-chip-de"');
+    expect(html).toContain('class="v2-inflect-chip is-on"');
+    expect(html).toContain("On");
+  });
+
+  test("renders status tray with inflection off badge when isInflected is false", () => {
+    const html = renderDictSearchBar({
+      query: "facio",
+      action: "/v2/dicts",
+      activeDicts: ["L&S"],
+      isInflected: false,
+    });
+
+    expect(html).toContain('class="v2-search-tray"');
+    expect(html).toContain('class="v2-lang-chip v2-lang-chip-la"');
+    expect(html).not.toContain('class="v2-lang-chip v2-lang-chip-en"');
+    expect(html).toContain('class="v2-inflect-chip is-off"');
+    expect(html).toContain("Off");
+  });
+
+  test("omits status tray when includeSettings is false", () => {
+    const html = renderDictSearchBar({
+      query: "facio",
+      action: "/v2/dicts",
+      includeSettings: false,
+    });
+
+    expect(html).not.toContain('class="v2-search-tray"');
   });
 });
