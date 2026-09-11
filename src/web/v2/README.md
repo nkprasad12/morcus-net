@@ -7,7 +7,7 @@ The UI V2 prototype explores a server-rendered Multi-Page Application (MPA) mode
 ### Core Principles
 
 1. **Zero-JS Baseline**: All primary user flows (dictionary lookup, inflected search, site navigation, and readability) function 100% without client-side JavaScript using standard HTML semantics (`<form method="GET">`, native `<details>`/`<summary>`, and semantic `<a>` links).
-2. **Light DOM Custom Elements (Zero Framework Overhead)**: Web Components extend native `HTMLElement` to wrap server-rendered markup without shadow root barriers or form association issues, keeping client bundle size minimal (<15 KB).
+2. **Light DOM Custom Elements (Zero Framework Overhead)**: Web Components extend native `HTMLElement` to wrap server-rendered markup without shadow root barriers or form association issues, keeping client bundle size minimal (<20 KB gzipped).
 3. **Safe DOM Manipulation**: Components use safe DOM APIs (`textContent`, `replaceChildren`, and `createContextualFragment`) with event delegation for performant, robust updates and automated XSS protection.
 4. **Coexistence**: Mounted under `/v2/*`, leaving the existing React/Preact SPA, RPC endpoints, and build pipelines completely unaffected.
 
@@ -54,7 +54,7 @@ src/web/v2/
 UI V2 follows a universal progressive enhancement lifecycle across all pages:
 
 1. **Zero-JS Initial Paint**: The user issues a standard HTTP `GET` (e.g. `/v2/dicts?q=habeo` or `/v2/reader`). Express renders a complete semantic HTML document with native `<form>`, `<details>`, and `<a>` elements.
-2. **Non-Blocking Enhancement**: The browser downloads the lightweight `<15 KB` client bundle (`v2.js`) and defines native custom elements (`customElements.define`).
+2. **Non-Blocking Enhancement**: The browser downloads the lightweight `<20 KB` client bundle (`v2.js`) and defines native custom elements (`customElements.define`).
 3. **Client Form Hijack & Partial Swapping**: When JavaScript is active, Web Components intercept user actions, fetch partial HTML fragments (`format=partial`) or autocomplete JSON from the router, and swap DOM nodes instantaneously via `replaceChildren()` while syncing URL state with `history.pushState()`.
 
 > **Topic-Specific Data Flows**: Detailed request lifecycle sequence diagrams and component breakdowns live in each topic's documentation (e.g., see [dict/README.md](dict/README.md)).

@@ -21,6 +21,7 @@ import {
   DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_bitmask.common";
+import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
 
 /**
  * Progressively enhanced dictionary search component using Light DOM.
@@ -182,6 +183,10 @@ export class MorcusDictSearch extends BaseElement {
           e.shiftKey ||
           e.altKey
         ) {
+          return;
+        }
+
+        if (handleDictPermalinkClick(e, e.target)) {
           return;
         }
 
@@ -421,6 +426,12 @@ export class MorcusDictSearch extends BaseElement {
     }
 
     const url = new URL(window.location.href);
+    // A search replaces whatever was on screen, so it must not stay under
+    // /v2/dicts/id/:id. That path renders the right results now, but on reload
+    // or when shared it re-runs the ID lookup and drops ?q entirely.
+    if (url.pathname.startsWith("/v2/dicts/id/")) {
+      url.pathname = "/v2/dicts";
+    }
     url.searchParams.set("q", cleanQuery);
     url.searchParams.set("d", this.activeDictBitmask);
     url.searchParams.set("o", this.isInflected ? "1" : "0");

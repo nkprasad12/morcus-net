@@ -518,17 +518,14 @@
   margin-bottom: 0;
 }
 
-/* Prominent editorial headword title linking to the whole entry's anchor */
+/* Prominent editorial headword title. Inert text: the permalink lives in the
+   adjacent copy pill, so the headword stays freely selectable. */
 .v2-entry-headword {
   grid-row: 1;
   display: inline-flex;
   align-items: baseline;
   gap: 6px;
-  text-decoration: none;
-  cursor: pointer;
-  user-select: none;
   color: var(--v2-text);
-  transition: color 0.15s ease-in-out;
 }
 
 .v2-entry-headword-text {
@@ -538,25 +535,6 @@
   line-height: 1.25;
   color: var(--v2-text);
   letter-spacing: -0.01em;
-  transition: color 0.15s ease-in-out;
-}
-
-.v2-entry-headword-anchor {
-  font-family: var(--v2-font-sans);
-  font-size: 0.95rem;
-  font-weight: 600;
-  color: var(--v2-text-muted);
-  opacity: 0.4;
-  transition: opacity 0.15s ease-in-out, color 0.15s ease-in-out;
-}
-
-.v2-entry-headword:hover .v2-entry-headword-text {
-  color: var(--v2-primary);
-}
-
-.v2-entry-headword:hover .v2-entry-headword-anchor {
-  opacity: 1;
-  color: var(--v2-primary);
 }
 
 .v2-entry-content ol,
@@ -866,7 +844,8 @@ html.v2-has-js .lsHover:focus::after {
 
 .v2-segmented-bar {
   display: grid;
-  grid-template-columns: auto auto auto 1fr;
+  /* headword | copy pill | Outline | Inflections | filler */
+  grid-template-columns: auto auto auto auto 1fr;
   align-items: center;
   gap: 8px 10px;
   width: 100%;
@@ -962,6 +941,70 @@ html.v2-has-js .lsHover:focus::after {
 .v2-tab-pill:focus-visible {
   outline: 2px solid var(--v2-primary);
   outline-offset: 2px;
+}
+
+/* ---- Copy-link pill --------------------------------------------------- */
+/* Shares .v2-tab-pill so every entry header has the same composition, but it
+   is an action rather than a disclosure. */
+.v2-copy-pill {
+  text-decoration: none;
+}
+
+.v2-copy-pill::after {
+  /* No disclosure caret: this pill does not expand anything. */
+  content: none;
+}
+
+/* Beats the global `a:visited` rule (0,1,1), which would otherwise tint the
+   pill primary-blue once the no-JS path has been followed even once. */
+.v2-copy-pill,
+.v2-copy-pill:visited {
+  color: var(--v2-text);
+}
+
+.v2-copy-pill:hover,
+.v2-copy-pill:hover:visited {
+  color: var(--v2-primary);
+}
+
+.v2-copy-pill-icon {
+  display: inline-flex;
+  align-items: center;
+}
+
+.v2-copy-pill-glyph {
+  width: 0.92em;
+  height: 0.92em;
+  fill: currentColor;
+  opacity: 0.6;
+  transition: opacity 0.15s ease-in-out;
+}
+
+.v2-copy-pill:hover .v2-copy-pill-glyph {
+  opacity: 1;
+}
+
+/* Exactly one glyph is visible at a time. These selectors are deliberately
+   more specific than `.v2-copy-pill-glyph` above; a bare `.v2-copy-pill-check`
+   would lose to it and both glyphs would render. */
+.v2-copy-pill .v2-copy-pill-check,
+.v2-copy-pill.is-copied .v2-copy-pill-link {
+  display: none;
+}
+
+.v2-copy-pill.is-copied .v2-copy-pill-check {
+  display: inline;
+  opacity: 1;
+}
+
+.v2-copy-pill.is-copied {
+  border-color: var(--v2-primary);
+  color: var(--v2-primary);
+}
+
+/* Long label by default; the 600px block below swaps in the short one. */
+.v2-copy-pill-short {
+  display: none;
 }
 
 .v2-tool-body {
@@ -1249,6 +1292,9 @@ html.v2-has-js .lsHover:focus::after {
 @media (max-width: 600px) {
   .v2-segmented-bar {
     display: flex;
+    /* Clear the desktop track definition; it still applies to a grid container
+       and would otherwise fight the flex fallback. */
+    grid-template-columns: none;
     flex-wrap: wrap;
     align-items: center;
     gap: 10px 8px;
@@ -1259,6 +1305,14 @@ html.v2-has-js .lsHover:focus::after {
   }
   .v2-tab-pill {
     flex: 0 0 auto;
+  }
+  /* Shorten "Copy link" to "Link" so all three pills still fit beside the
+     headword on a narrow screen. */
+  .v2-copy-pill-long {
+    display: none;
+  }
+  .v2-copy-pill-short {
+    display: inline;
   }
   .v2-tool-body {
     width: 100%;

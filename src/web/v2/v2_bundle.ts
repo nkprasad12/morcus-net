@@ -66,6 +66,10 @@ if (window.location.hash) {
 
 // Smooth scroll, auto-expand parent cards, and animate highlight on in-page anchor links
 document.addEventListener("click", (e: MouseEvent) => {
+  // A feature handler bound closer to the target (e.g. dictionary permalink
+  // copying) may have already consumed this click. Without this guard the
+  // default-suppressed anchor would still be scrolled to.
+  if (e.defaultPrevented) return;
   if (!(e.target instanceof Element)) return;
   const anchor = e.target.closest<HTMLAnchorElement>("a[href^='#']");
   if (!anchor) return;

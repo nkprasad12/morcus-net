@@ -23,7 +23,7 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 | **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                              | Segmented per-entry tab pill dropdown                                            | ❌ **Missing in V2**  |
 | **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)                       | Inline segmented tab pills                                                       | ❌ **Missing in V2**  |
 | **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column             | Fixed single-column layout only                                                  | ❌ **Missing in V2**  |
-| **Article & Section Permalinks**         | Direct `/dicts/id/:id` link, copy permalink tooltip                       | Local `#hash` anchor jump only; no copy action                                   | ⚠️ **Degraded in V2** |
+| **Article & Section Permalinks**         | Direct `/dicts/id/:id` link, copy permalink tooltip                       | "Copy link" pill per entry + click-to-copy sense bullets, both no-JS capable     | ✅ **Parity**         |
 | **Greek Query Interception**             | Greek detection, Logeion embed & auto-open setting                        | Detected server-side; direct Logeion link, toggleable embed, & auto-open setting | ✅ **Feature Parity** |
 | **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings          | Only hides app bar (`embedded=1`)                                                | ⚠️ **Partial in V2**  |
 
@@ -110,14 +110,16 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 ### 2.5. Article Permalinks, Word Interactivity & Rich Markup
 
-1. **Direct Article Permalinks (`/dicts/id/:id`)**:
+1. **Direct Article Permalinks (`/dicts/id/:id`)**: ✅ **Parity reached.**
 
    - **V1 (`dictionary_v2.tsx:L520-550,688`, `tooltips.tsx:L298-322`, `dictionary_routing.ts:L92-101`)**: Clicking or copying the permalink icon on an entry header generated a direct URL to that specific article (`/dicts/id/:id`, e.g. `/dicts/id/n20077`). This executed an ID lookup (`mode: 2`), retrieving and displaying strictly that single article rather than a broad search query matching multiple homographs across dictionaries.
-   - **V2 (`entry_view.server.ts:L48-53`, `v2_router.ts:L221`)**: Although the backend route `GET /v2/dicts/id/:id` exists and supports `mode: 2`, the UI in `entry_view.server.ts` renders headword permalinks as in-page local hash jumps (`<a href="#${entryAnchorId}" class="v2-entry-headword">`). There is no UI link pointing to `/v2/dicts/id/${result.key}` and no easy way to copy or open the direct single-article URL.
+   - **V2 (`entry_view.server.ts`, `dict_permalink.client.ts`)**: Every entry header carries a "Copy link" pill rendered as a real `<a href="/v2/dicts/id/${outline.mainSection.sectionId}">`. With JS the click is intercepted and the absolute URL is copied with a toast; the page does not navigate, because the article is already rendered on screen. Modifier and middle clicks fall through to native behaviour, so opening the standalone article in a new tab stays available.
+   - **Beyond V1 in two respects**: (a) the permalink is a genuine anchor, so it works with JS disabled (right-click → copy link address, or plain navigation), which V1's popover-only control did not; (b) the header is rendered for _every_ entry with a headword. It was previously gated on `isMultiEntry || (hasTools && headword)`, which meant Riddle & Arnold and Numerals entries — neither of which populates `outline.senses` — had no header and therefore no permalink at all.
 
-2. **Section Link Copy-to-Clipboard**:
+2. **Section Link Copy-to-Clipboard**: ✅ **Parity reached.**
    - **V1 (`dictionary_utils.tsx:L268-284`, `tooltips.tsx:L307-312`)**: `SectionLinkTooltip` on sense bullets and section headers provided an interactive popover with a copy-to-clipboard action that generated a fully qualified URL to `/dicts/id/:articleId#:sectionId`.
-   - **V2 (`xml_to_html.server.ts:L101-110`)**: Sense bullets are rendered as plain `<a href="#senseId" class="v2-section-anchor">`. Clicking jumps and highlights the target via CSS `:target`, but does not copy the permalink or include the article ID base.
+   - **V2 (`xml_to_html.server.ts`, `dict_permalink.client.ts`)**: Clicking a sense bullet copies `${origin}/v2/dicts/id/${articleId}#${senseId}` and flashes the section in place. The article id is recovered from the enclosing `.v2-entry` element rather than by splitting the sense id, which is more robust than V1's `senseId.split(".")[0]` because sense-id conventions differ per lexicon. **Copying deliberately does not scroll or rewrite the address bar** — the viewport should not move in response to a copy action. Genuine inbound navigation (outline links, jump pills, hash page loads) still scrolls as before.
+   - **Prerequisite fixed along the way**: `xmlNodeToHtml` only ever emitted an `id` derived from a source `id` attribute, so a sense bullet's `#senseid` link resolved only when some ancestor happened to carry that id. Lewis & Short got this for free from its wrapping `<li>`; Riddle & Arnold did not, so **all five** of its section links pointed at nonexistent targets. Bullets now self-anchor when nothing else in the entry claims the id (guarded against emitting duplicates).
 
 ---
 
@@ -160,6 +162,7 @@ To bring the V2 Dictionary to full functional parity with V1, prioritize the fol
    - Restore suffix lookup (`-`) and `u`/`v` / `i`/`j` prefix expansion.
 3. **Search Bar Preview Badges**:
    - Render active language and inflection state pills alongside the settings button in `search_bar.server.ts`.
-4. **Direct Article Permalinks & Link Copying**:
-   - Update `entry_view.server.ts` to link headwords to `/v2/dicts/id/:id` (matching V1's `DICT_BY_ID` behavior).
-   - Add client-side copy-to-clipboard button/tooltip for article permalinks and sense section URLs.
+4. **Per-Entry Collapse** _(new; not a V1 parity item)_:
+   - Now that the headword is inert text, make it collapse/expand its own entry, mirroring how the dictionary card title collapses its card.
+   - Reuse the card's decoupled pattern: an empty-bodied `<details class="v2-entry-toggle">` plus `.v2-entry:not(:has(.v2-entry-toggle[open])) .v2-entry-content { display: none }`. This sidesteps the `<summary>` content model, which forbids nesting the Outline/Inflections `<details>` inside it.
+   - Must add a `.v2-entry` case to `expandAncestorDisclosures` in `v2_bundle.ts`, alongside the existing `.v2-dict-card` special case — otherwise an inbound section permalink into a collapsed entry scrolls to nothing.

@@ -236,7 +236,12 @@ test.describe("UI V2 dictionary", () => {
 
   test("renders collapsible outline and section anchor permalinks", async ({
     page,
+    context,
+    browserName,
   }) => {
+    if (browserName === "chromium") {
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    }
     await page.goto("/v2/dicts?q=habeo");
     const outlineSummary = page
       .locator('.v2-tool-pane summary:has-text("Outline")')
@@ -253,9 +258,24 @@ test.describe("UI V2 dictionary", () => {
     const href = await anchor.getAttribute("href");
     expect(href).toMatch(/^#n20077/);
 
-    // Clicking anchor sets window location hash
+    // Playwright's click() scrolls the target into view first, so the scroll
+    // position has to be settled BEFORE it is measured or this assertion would
+    // pass vacuously.
+    await anchor.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(300);
+    const urlBefore = page.url();
+    const scrollBefore = await page.evaluate(() => window.scrollY);
     await anchor.click();
-    expect(page.url()).toContain("#");
+
+    // Clicking copies an article-qualified permalink rather than jumping. The
+    // fragment alone would be useless to a recipient: it names a sense but not
+    // the article it lives in.
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toMatch(/\/v2\/dicts\/id\/n20077#n20077/);
+
+    // Copying must not move the viewport or rewrite the address bar.
+    expect(page.url()).toBe(urlBefore);
+    expect(await page.evaluate(() => window.scrollY)).toBe(scrollBefore);
   });
 
   test("renders subsection match banner with working jump chips (No-JS baseline)", async ({
@@ -460,15 +480,60 @@ test.describe("UI V2 dictionary", () => {
     await expect(nav).toBeVisible();
     await expect(nav.getByText("Jump to")).toBeVisible();
 
-    // Verify individual entry headword button exists and links to anchor
-    const headwordBtn = page.locator(".v2-entry-headword").first();
-    await expect(headwordBtn).toBeVisible();
-    await expect(headwordBtn).toHaveAttribute("href", /^#[a-zA-Z0-9_-]+/);
+    // The headword is inert text; the permalink lives in its own pill.
+    const headword = page.locator(".v2-entry-headword").first();
+    await expect(headword).toBeVisible();
+    await expect(headword).not.toHaveAttribute("href", /./);
+
+    const copyPill = page.locator(".v2-copy-pill").first();
+    await expect(copyPill).toBeVisible();
+    await expect(copyPill).toHaveAttribute("href", /^\/v2\/dicts\/id\/.+/);
 
     // Verify jump link navigates to anchor
     const jumpLink = nav.locator(".v2-entry-nav-link").nth(1);
     await jumpLink.click();
     expect(page.url()).toMatch(/#[a-zA-Z0-9_-]+/);
+  });
+
+  test("copies the article permalink without navigating", async ({
+    page,
+    context,
+    browserName,
+  }) => {
+    if (browserName === "chromium") {
+      await context.grantPermissions(["clipboard-read", "clipboard-write"]);
+    }
+    await page.goto("/v2/dicts?q=habeo");
+
+    const copyPill = page.locator(".v2-copy-pill").first();
+    await expect(copyPill).toBeVisible();
+    const urlBefore = page.url();
+    await copyPill.click();
+
+    const copied = await page.evaluate(() => navigator.clipboard.readText());
+    expect(copied).toMatch(/^https?:\/\/.+\/v2\/dicts\/id\/n20077$/);
+    // The article is already on screen, so copying must not spend a server
+    // render navigating to it.
+    expect(page.url()).toBe(urlBefore);
+    await expect(page.locator("#v2-toast")).toBeVisible();
+  });
+
+  test("article permalink is a working link without JavaScript", async ({
+    browser,
+  }) => {
+    const context = await browser.newContext({ javaScriptEnabled: false });
+    const page = await context.newPage();
+    await page.goto("/v2/dicts?q=habeo");
+
+    const copyPill = page.locator(".v2-copy-pill").first();
+    await expect(copyPill).toBeVisible();
+    // No JS means no clipboard interception, so the anchor must still be a
+    // genuinely navigable permalink rather than a decorative control.
+    await copyPill.click();
+    await expect(page).toHaveURL(/\/v2\/dicts\/id\/n20077$/);
+    await expect(page.locator(".v2-dict-card").first()).toBeVisible();
+
+    await context.close();
   });
 
   test("renders abbreviation with tabindex and title in No-JS baseline", async ({

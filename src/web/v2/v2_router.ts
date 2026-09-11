@@ -260,6 +260,14 @@ export function createV2Router(
       return;
     }
 
+    // A query on an article path means the user searched from that page before
+    // the client normalised the URL. Honour the search, not the stale id.
+    const searchQuery = typeof req.query.q === "string" ? req.query.q : "";
+    if (searchQuery && !isPartial) {
+      res.redirect(`/v2/dicts?${new URLSearchParams({ q: searchQuery })}`);
+      return;
+    }
+
     try {
       const results = await fusedDict.getEntry({
         query: id,
