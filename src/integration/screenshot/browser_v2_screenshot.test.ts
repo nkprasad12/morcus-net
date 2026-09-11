@@ -44,4 +44,11 @@ test.describe("UI V2 Visual Regression Suite", () => {
     waitFor: ".v2-about-article",
     mask: ["#debugging"],
   });
+
+  // 8. Subsection Match Note (abbatissa: single match resolved to the entry
+  // blurb, short entry with no tools bar, plus a subsection inflection table)
+  v2VisualScenario("v2-dicts-subsection-note", {
+    path: "/v2/dicts?q=abbatissa",
+    waitFor: ".v2-subsection-note",
+  });
 });

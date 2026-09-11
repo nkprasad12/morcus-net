@@ -16,6 +16,22 @@ export {
 } from "@/web/v2/dict/entry_view.server";
 
 export {
+  dedupeInflections,
+  renderInflectionInline,
+  renderInflectionTable,
+} from "@/web/v2/dict/inflection_table.server";
+
+export {
+  SubsectionGroup,
+  SubsectionTarget,
+  collectXmlIds,
+  dedupeSubsections,
+  matchedAnchorIds,
+  renderSubsectionNote,
+  resolveSubsectionAnchor,
+} from "@/web/v2/dict/subsection_note.server";
+
+export {
   DICT_NAMES,
   DictPageOptions,
   renderDictResultsHtml,

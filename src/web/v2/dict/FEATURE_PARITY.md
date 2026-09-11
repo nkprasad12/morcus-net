@@ -18,7 +18,7 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 | **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`                       | Verbatim prefix matching only                                                    | ❌ **Missing in V2**  |
 | **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)           | Plain string array without language metadata                                     | ❌ **Missing in V2**  |
 | **Vowel Length Merging & Deduplication** | Merges compatible macrons using Gaffiot as leader                         | Set-based exact string deduplication                                             | ❌ **Missing in V2**  |
-| **Subsection Match Notes**               | Explicit compound/inflection subsection banner with jump arrows           | Ignored; subsections not rendered                                                | ❌ **Missing in V2**  |
+| **Subsection Match Notes**               | Explicit compound/inflection subsection banner with jump arrows           | Always-visible banner with numbered jump chips + in-body match markers           | ✅ **Done in V2**     |
 | **Global Multi-Lexicon Entry Summary**   | Top-level summary listing all matched entries across dictionaries         | Jump links only inside local card headers                                        | ❌ **Missing in V2**  |
 | **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                              | Segmented per-entry tab pill dropdown                                            | ❌ **Missing in V2**  |
 | **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)                       | Inline segmented tab pills                                                       | ❌ **Missing in V2**  |
@@ -69,13 +69,20 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 ### 2.3. Entry Results, Morphological Subsections, & Navigation
 
-1. **Subsection Match Notes (`SubsectionNote`)**:
+1. **Subsection Match Notes (`SubsectionNote`)** — ✅ **implemented in V2**:
 
    - **V1 (`dictionary_v2.tsx:L601-663`)**: When a query matched an inflected form or subsection of a compound/larger article (`DictSubsectionResult`), V1 rendered an explicit callout:
      > _"Found matches for [word] [#1, #2], which is part of a larger entry."_
      - Included downward jump arrows to scroll directly to the matched subsection.
      - Provided a collapsible `<details>` section: _"Inflections of [word]"_ with morphological analysis for that specific matched subsection.
-   - **V2 (`entry_view.server.ts`)**: Ignores `result.subsections`. Users searching inflected forms are dropped at the head of large multi-page articles without guidance on where the match occurred.
+   - **V2 (`subsection_note.server.ts`, wired in `entry_view.server.ts`)**: Renders an always-visible `<aside class="v2-subsection-note">` immediately below the entry header (and above the entry body, even for entries with no tools bar):
+     - Reads `result.subsections` as-is — no backend, RPC, or router changes were needed.
+     - Matches are deduplicated by id and then grouped by subsection name. A group whose name equals the entry's `mainKey` renders its headword inline (no redundant chip); other groups render numbered jump chips.
+     - Chips are plain `<a href="#id">`, so the **no-JS baseline gets native anchor navigation for free**. With JS, the existing delegated handler in `v2_bundle.ts` adds smooth scrolling, ancestor `<details>` expansion, and the `v2-target-active` flash — zero new client code.
+     - A `chevronUp` / `chevronDown` icon indicates whether the target is above or below the banner.
+     - Subsection-specific inflections render as an inline one-liner for a single analysis, or a collapsible `<details>` table for multiple.
+     - The matched elements in the body are tagged with `v2-subsection-hit` + `aria-current="location"`. The visual marker is an **absolutely positioned `::before` bar**, so it introduces **zero horizontal layout shift** — sibling senses at the same nesting level stay aligned (with a `left: 0` guard for top-level elements that have no left gutter).
+   - **Dead-anchor handling**: L&S merges the first sense into the opening blurb when an entry has a single level-1 sense (`ls_display.ts` `displayEntryFree`), so the recorded `senseId` of `{entryId}.0` is never emitted as an element. `resolveSubsectionAnchor` falls back to `{entryId}.blurb`, then to the entry root. This resolved 100% of measured cases (~21% of subsection anchors were otherwise dead links — a bug V1 still has).
 
 2. **Top-Level Consolidated Entry Summary**:
    - **V1 (`dictionary_v2.tsx:L472-518`)**: `SummarySection` provided a global list of all matched headwords across all lexica at the top of the page, with `ToEntryButton` chips.
@@ -142,10 +149,9 @@ This document outlines feature parity between the **V1 UI (SPA)** (`src/web/clie
 
 To bring the V2 Dictionary to full functional parity with V1, prioritize the following enhancements:
 
-### High Priority
+### Completed
 
-1. **Subsection Match Notes**:
-   - Port `SubsectionNote` into `entry_view.server.ts` so inflected and compound searches surface which subsections matched inside long entries.
+1. ~~**Subsection Match Notes**~~ — shipped. See §2.3.1. Implemented in `subsection_note.server.ts` + `inflection_table.server.ts`, wired through `entry_view.server.ts` and `xml_to_html.server.ts`.
 
 ### Medium Priority
 
