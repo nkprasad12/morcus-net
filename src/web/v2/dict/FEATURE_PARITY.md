@@ -11,13 +11,13 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 1. Remaining Gaps Matrix
 
-| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)     | Parity Status        |
-| :------------------------------------- | :---------------------------------------------------------------- | :---------------------------------------- | :------------------- |
-| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers | ❌ **Missing in V2** |
-| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)         | ⚠️ **Partial in V2** |
-| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Segmented per-entry tab pill dropdown     | ❌ **Missing in V2** |
-| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Inline segmented tab pills                | ❌ **Missing in V2** |
-| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Fixed single-column layout only           | ❌ **Missing in V2** |
+| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                                       | Parity Status                 |
+| :------------------------------------- | :---------------------------------------------------------------- | :-------------------------------------------------------------------------- | :---------------------------- |
+| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers                                   | ❌ **Missing in V2**          |
+| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)                                           | ⚠️ **Partial in V2**          |
+| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Semantic, sticky two-column rail sidebar (`morcus-dict-toc`) flush at top   | ✅ **Completed in V2**        |
+| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Draggable, resizable bottom drawer (`morcus-dict-toc` + `DrawerController`) | ✅ **Completed in V2**        |
+| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Unified responsive layout (drawer on mobile, rail on desktop)               | ℹ️ **Intentional Streamline** |
 
 ---
 
@@ -50,17 +50,17 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 1. **Desktop Sidebar Table of Contents**:
 
    - **V1 (`dictionary_v2.tsx:L444-470`, `table_of_contents_v2.tsx`)**: Two-column layout on desktop with a dedicated `.tocSidebar`. Users could navigate hierarchical sections (ordinals, sense summaries) while reading definitions side-by-side.
-   - **V2 (`entry_view.server.ts`, `dictionary.css`)**: Single-column layout. Outlines are collapsed inside per-entry `<details class="v2-tool-pane"><summary class="v2-tab-pill">Outline</summary></details>` tabs within each entry card.
+   - **V2 (`dict_toc.server.ts`, `dict_toc.css`)**: ✅ **Completed in V2**. Renders a semantic, No-JS accessible Table of Contents rail. On wide viewports (>= 1080px), `.v2-results-layout.has-toc` displays a 240px sticky left rail sidebar alongside the primary reading column, sticking flush to the top edge of the viewport when scrolled down.
 
 2. **Mobile Draggable Drawer (`BottomDrawer`)**:
 
-   - **V1 (`dictionary_v2.tsx:L409-442`)**: On narrow viewports, ancillary content (outlines/inflections) was housed in a draggable, height-adjustable bottom sheet.
-   - **V2**: Bottom drawer eliminated; mobile relies on inline `<details>` dropdowns.
+   - **V1 (`dictionary_v2.tsx:L409-442`)**: On narrow viewports, ancillary outline content was housed in a draggable, height-adjustable bottom sheet.
+   - **V2 (`dict_toc.server.ts`, `dict_toc.client.ts`, `dict_toc.css`)**: ✅ **Completed in V2**. Renders as a bottom sheet drawer docked at the viewport bottom, with native `<details>` Zero-JS baseline disclosure and progressive touch drag enhancement (`MorcusDictToc` + `DrawerController`) supporting snap points (54px peek, 48dvh default, 88dvh expanded) and keyboard accessibility.
 
 3. **Mobile Layout Preferences**:
 
    - **V1 (`dictionary_search.tsx:L123-151`)**: Provided a setting allowing mobile users to choose between "Drawer" mode and "Classic" single-column mode.
-   - **V2**: No layout preference setting.
+   - **V2**: ℹ️ **Intentional Streamline**. Mobile unifies into the bottom-docked drawer pattern with a 54px peek handle, avoiding unnecessary setting complexity while preserving single-column content flow.
 
 ---
 
@@ -75,7 +75,7 @@ Prioritized enhancements for remaining gaps:
 2. **Embedded Reader Mode Controls** (§2.2):
    - Support `hideSearch`, `textScale`, `skipJumpToResult`, and isolated search parameters for embedded reader contexts.
 
-### Open Design Decisions
+### Medium Priority (Enhancements)
 
-3. **Table of Contents & Responsive Layout** (§2.3):
-   - Decide whether a dedicated two-column desktop sidebar is needed or if V2's semantic inline tab pills (`<details class="v2-tool-pane">`) intentionally supersede the V1 sidebar and mobile bottom drawer.
+3. **Table of Contents Scroll Tracking (Scroll-Spy)**:
+   - Implement `IntersectionObserver` in `MorcusDictToc` to dynamically highlight the active sense/section in the TOC outline as the user scrolls the dictionary page, keeping the active item in view within the TOC scroll body. See `TODOS.md §7`.
