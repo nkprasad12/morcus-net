@@ -238,3 +238,28 @@ Make individual entry headers/headwords collapsible via the decoupled `<details 
 
 - Add a `.v2-entry` case to `expandAncestorDisclosures` in `v2_bundle.ts` so anchor deep-links automatically expand collapsed entries.
 - Improves scanability on results with multiple long entries inside the same lexicon.
+
+---
+
+## 7. Table of Contents scroll tracking (Scroll-Spy)
+
+**Status:** not started. Natural follow-up to the Table of Contents layout and drawer enhancements.
+
+### Motivation
+
+When browsing long, multi-sense dictionary entries alongside the sticky desktop TOC rail or mobile drawer, the Table of Contents currently acts as a static jump navigation menu. Users reading through extensive sense hierarchies (e.g. 67+ senses in _habeo_) must manually scroll the TOC to cross-reference their current position.
+
+Scroll tracking provides live visual feedback indicating which sense, subsection, or lexicon entry is currently active in the reading viewport.
+
+### Proposed Architecture
+
+1. **IntersectionObserver Observation**:
+   - In `MorcusDictToc` (`dict_toc.client.ts`), initialize an `IntersectionObserver` observing all sense target elements (`[id]` targets referenced by `.v2-toc-link`) and dictionary cards (`.v2-dict-card`).
+   - Configure observer margins (e.g., `rootMargin: "-10% 0px -70% 0px"`) so the section occupying the top third of the viewport triggers the active state.
+2. **Visual State**:
+   - Apply an `.active` class (or `aria-current="true"`) to the corresponding `.v2-toc-item`.
+   - Style with an accent left border, bold ordinal, and subtle background tint in `dict_toc.css`.
+3. **Synchronized Auto-Scroll**:
+   - Automatically scroll `.v2-toc-body` using `scrollIntoView({ block: "nearest", behavior: "smooth" })` to ensure the active sense item remains visible within the desktop rail or mobile drawer as the user reads.
+4. **Link Click Decoupling**:
+   - When a user clicks a TOC link (`a.v2-toc-link`), temporarily suppress observer updates until the programmatic smooth-scroll animation settles, avoiding visual jitter or fighting between user clicks and observer callbacks.
