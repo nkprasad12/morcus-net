@@ -11,18 +11,18 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ## 1. Remaining Gaps Matrix
 
-| Feature Area                             | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                         | Parity Status        |
-| :--------------------------------------- | :---------------------------------------------------------------- | :------------------------------------------------------------ | :------------------- |
-| **Suffix Autocomplete**                  | Supported queries starting with `-` (e.g. `-arum`, `-ibus`)       | Leading `-` preserved and dispatched to backend suffix search | ✅ **Done in V2**    |
-| **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`               | Language-aware multi-branch prefix expansion on server        | ✅ **Done in V2**    |
-| **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)   | Server returns `CompletionItem` with `lang`; UI chips pending | ⚠️ **Partial in V2** |
-| **Vowel Length Merging & Deduplication** | Merges compatible macrons using Gaffiot as leader                 | Vowel-length clustering with Gaffiot canonical leader         | ✅ **Done in V2**    |
-| **Suggestion Limit & In-Memory Caching** | Cached up to 200–300 suggestions on client with prefix tree       | Default cap raised to 25 (configurable); client cache pending | ⚠️ **Partial in V2** |
-| **Global Multi-Lexicon Entry Summary**   | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers                     | ❌ **Missing in V2** |
-| **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                      | Segmented per-entry tab pill dropdown                         | ❌ **Missing in V2** |
-| **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)               | Inline segmented tab pills                                    | ❌ **Missing in V2** |
-| **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column     | Fixed single-column layout only                               | ❌ **Missing in V2** |
-| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)                             | ⚠️ **Partial in V2** |
+| Feature Area                             | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                           | Parity Status        |
+| :--------------------------------------- | :---------------------------------------------------------------- | :-------------------------------------------------------------- | :------------------- |
+| **Suffix Autocomplete**                  | Supported queries starting with `-` (e.g. `-arum`, `-ibus`)       | Leading `-` preserved and dispatched to backend suffix search   | ✅ **Done in V2**    |
+| **Orthographic Prefix Expansion**        | Expands Latin `u`/`v`, `i`/`j`, and German `ß`/`ss`               | Language-aware multi-branch prefix expansion on server          | ✅ **Done in V2**    |
+| **Autocomplete Language Chips**          | Suggestions show language tags (`[La]`, `[En]`, `[De]`, `[Es]`)   | Colored language origin badges rendered in suggestions dropdown | ✅ **Done in V2**    |
+| **Vowel Length Merging & Deduplication** | Merges compatible macrons using Gaffiot as leader                 | Vowel-length clustering with Gaffiot canonical leader           | ✅ **Done in V2**    |
+| **Suggestion Limit & In-Memory Caching** | Cached up to 200–300 suggestions on client with prefix tree       | 2-letter chunk caching + 0 ms local filtering & re-clustering   | ✅ **Done in V2**    |
+| **Global Multi-Lexicon Entry Summary**   | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers                       | ❌ **Missing in V2** |
+| **Desktop Table of Contents**            | Dedicated two-column sidebar (`.tocSidebar`)                      | Segmented per-entry tab pill dropdown                           | ❌ **Missing in V2** |
+| **Mobile Drawer Layout**                 | Draggable, resizable bottom drawer (`BottomDrawer`)               | Inline segmented tab pills                                      | ❌ **Missing in V2** |
+| **Mobile Layout Preference**             | Setting toggling between "Drawer" and "Classic" single column     | Fixed single-column layout only                                 | ❌ **Missing in V2** |
+| **Embedded Reader View Options**         | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)                               | ⚠️ **Partial in V2** |
 
 ---
 
@@ -38,22 +38,22 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 2. **Orthographic Equivalence & Multi-Character Expansion**: ✅ **Parity reached.**
 
    - **V1 (`autocomplete_options.ts:L16-35`)**: Handled standard Latin orthographic alternates (`u` <-> `v`, `i` <-> `j`) via `EXTRA_KEY_LOOKUP` and German `ß` <-> `ss`, expanding query branches up to depth 25.
-   - **V2 (`dict_completions.server.ts`)**: Parity achieved. Queries are partitioned by dictionary language; Latin queries expand `u`/`v` and `i`/`j` concurrently, and German queries expand `ß`/`ss`. Searching `ivst` properly returns completions for both `justus` and `iustus`.
+   - **V2 (`dict_completions.server.ts`, `dict_clustering.common.ts`)**: Parity achieved. Queries are partitioned by dictionary language; Latin queries expand `u`/`v` and `i`/`j` concurrently, and German queries expand `ß`/`ss`. Searching `ivst` properly returns completions for both `justus` and `iustus`.
 
-3. **Language Origin Chips**: ⚠️ **Server parity achieved, client UI pending (Phase 2).**
+3. **Language Origin Chips**: ✅ **Parity reached.**
 
    - **V1 (`dictionary_search.tsx:L209-235`)**: Every autocomplete suggestion was tagged with its source language (`[DictLang, string]`) and rendered with a distinct colored `LangChip` (`La`, `En`, `De`, `Es`), preventing ambiguity between homographs across languages.
-   - **V2 (`dict_completions.common.ts`, `dict_completions.server.ts`, `v2_router.ts`)**: Server returns `CompletionItem[]` (`{ lang: DictLang, word: string }`). Client components (`MorcusDictSearch`, `MorcusDictSuggestions`) consume `CompletionItem[]`. Visual colored chip rendering in `<morcus-dict-suggestions>` is scheduled for Phase 2.
+   - **V2 (`dict_suggestions.client.ts`, `search.css`)**: Parity achieved. `<morcus-dict-suggestions>` renders a colored `<span class="v2-lang-chip v2-lang-chip-{lang}">` badge alongside each suggestion word, visually disambiguating homographs across lexica in both light and dark themes.
 
 4. **Macron Compatibility & Vowel Length Grouping**: ✅ **Parity reached.**
 
    - **V1 (`autocomplete_options.ts:L131-160`)**: Grouped suggestions with `Vowels.haveCompatibleLength()`, selecting Gaffiot as canonical leader to eliminate duplicate vowel-length variations.
-   - **V2 (`dict_completions.server.ts`)**: Parity achieved. `clusterAndDeduplicate` groups candidates by language and clean base form, clusters compatible vowel lengths via `Vowels.haveCompatibleLength`, and selects Gaffiot (`GAF`) as canonical macron leader for Latin.
+   - **V2 (`dict_clustering.common.ts`)**: Parity achieved. `clusterAndDeduplicate` groups candidates by language and clean base form, clusters compatible vowel lengths via `Vowels.haveCompatibleLength`, and selects Gaffiot (`GAF`) as canonical macron leader for Latin.
 
-5. **Suggestion Limit & In-Memory Caching**: ⚠️ **Limit raised; client cache pending (Phase 2).**
+5. **Suggestion Limit & In-Memory Caching**: ✅ **Parity reached.**
 
    - **V1 (`autocomplete_options.ts:L85`, `fused_autocomplete_fetcher.ts`)**: Supported up to 200–300 suggestions with client-side prefix caching.
-   - **V2 (`dict_completions.server.ts`, `v2_router.ts`)**: Server default limit elevated from 10 to 25 (customizable up to 100 via `limit` param). Client-side in-memory cache scheduled for Phase 2.
+   - **V2 (`dict_chunk_cache.client.ts`, `dict_search.client.ts`, `v2_router.ts`)**: Parity achieved. Overhauled `/v2/api/completions` to return combined 2-letter dictionary chunk payloads with public HTTP caching. Client caches chunks in-memory (`DictChunkCache`) with in-flight request deduplication, filtering and clustering matching suggestions instantly (0 ms) on typing and re-clustering with 0 network calls when toggling dictionaries.
 
 ---
 
