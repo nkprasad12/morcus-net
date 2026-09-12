@@ -17,6 +17,8 @@ import {
   cleanCompletionQuery,
   type CompletionItem,
 } from "@/web/v2/dict/dict_completions.common";
+import { filterAndClusterDictionaryChunks } from "@/web/v2/dict/dict_clustering.common";
+import { DictChunkCache } from "@/web/v2/dict/dict_chunk_cache.client";
 import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import {
@@ -47,6 +49,7 @@ import {
  * - Performs smooth AJAX partial swaps via fetchAndSwapPartial without full page reloads.
  */
 export class MorcusDictSearch extends BaseElement {
+  public readonly chunkCache: DictChunkCache = new DictChunkCache();
   private suggestions: CompletionItem[] = [];
   private selectedSuggestionIndex: number = -1;
   private readonly completionTask = new LatestTask();
@@ -59,30 +62,74 @@ export class MorcusDictSearch extends BaseElement {
   private activeDictKeys: string[] = [...DEFAULT_DICT_KEYS];
   private isInflected: boolean = true;
 
-  private readonly debouncedFetchCompletions = debounce((query: string) => {
-    const signal = this.completionTask.start();
-    const currentParams = new URLSearchParams(window.location.search);
-    const fetchParams = new URLSearchParams();
-    fetchParams.set("q", query);
-    fetchParams.set("d", this.activeDictBitmask);
+  private renderCachedCompletions(prefix: string, query: string) {
+    const chunks = this.chunkCache.getChunks(prefix);
+    if (!chunks) {
+      this.clearSuggestions();
+      return;
+    }
+    const items = filterAndClusterDictionaryChunks(
+      chunks,
+      this.activeDictKeys,
+      query,
+      25
+    );
+    this.suggestions = items;
+    this.selectedSuggestionIndex = -1;
+    this.updateSuggestionsView();
+  }
 
-    const langParam = currentParams.get("lang");
-    if (langParam) fetchParams.set("lang", langParam);
+  private readonly debouncedFetchPrefixChunk = debounce(
+    (prefix: string, query: string) => {
+      const signal = this.completionTask.start();
+      this.chunkCache
+        .loadPrefix(prefix)
+        .then((chunks) => {
+          if (signal.aborted) return;
+          if (document.activeElement !== this.inputElement) return;
+          const currentRaw = this.inputElement?.value ?? "";
+          const currentClean = cleanCompletionQuery(currentRaw).query;
+          if (!currentClean.toLowerCase().startsWith(prefix)) return;
 
-    fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
-      .then((res) => (res.ok ? res.json() : []))
-      .then((data: CompletionItem[]) => {
-        if (document.activeElement !== this.inputElement) return;
-        this.suggestions = Array.isArray(data) ? data : [];
-        this.selectedSuggestionIndex = -1;
-        this.updateSuggestionsView();
-      })
-      .catch((e) => {
-        if (e.name !== "AbortError") {
-          console.error("Failed to fetch suggestions", e);
-        }
-      });
-  }, 180);
+          this.renderCachedCompletions(prefix, currentClean);
+        })
+        .catch((e) => {
+          if (e.name !== "AbortError") {
+            console.error("Failed to load completions chunk", e);
+          }
+        });
+    },
+    180
+  );
+
+  private readonly debouncedFetchSuffixCompletions = debounce(
+    (query: string) => {
+      const signal = this.completionTask.start();
+      const currentParams = new URLSearchParams(window.location.search);
+      const fetchParams = new URLSearchParams();
+      fetchParams.set("q", query);
+      fetchParams.set("d", this.activeDictBitmask);
+
+      const langParam = currentParams.get("lang");
+      if (langParam) fetchParams.set("lang", langParam);
+
+      fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
+        .then((res) => (res.ok ? res.json() : []))
+        .then((data: CompletionItem[]) => {
+          if (signal.aborted) return;
+          if (document.activeElement !== this.inputElement) return;
+          this.suggestions = Array.isArray(data) ? data : [];
+          this.selectedSuggestionIndex = -1;
+          this.updateSuggestionsView();
+        })
+        .catch((e) => {
+          if (e.name !== "AbortError") {
+            console.error("Failed to fetch suffix suggestions", e);
+          }
+        });
+    },
+    180
+  );
 
   protected override onConnect() {
     this.initActiveSettings();
@@ -156,7 +203,8 @@ export class MorcusDictSearch extends BaseElement {
 
   protected override onDisconnect() {
     this.completionTask.cancel();
-    this.debouncedFetchCompletions.cancel();
+    this.debouncedFetchPrefixChunk.cancel();
+    this.debouncedFetchSuffixCompletions.cancel();
   }
 
   private enhanceExistingMarkup() {
@@ -286,6 +334,18 @@ export class MorcusDictSearch extends BaseElement {
           this.fetchResults(currentQuery);
         }
 
+        // Re-cluster suggestions immediately if active prefix is in chunk cache
+        if (this.suggestions.length > 0 && currentQuery) {
+          const { query: activeQ, isSuffix: activeSuffix } =
+            cleanCompletionQuery(currentQuery);
+          if (!activeSuffix && activeQ.length >= 2) {
+            const prefix = activeQ.slice(0, 2).toLowerCase();
+            if (this.chunkCache.hasPrefix(prefix)) {
+              this.renderCachedCompletions(prefix, activeQ);
+            }
+          }
+        }
+
         const welcomeEl = this.$<HTMLElement>("#v2-landing-welcome");
         if (welcomeEl && this.activeDictKeys) {
           welcomeEl.textContent = buildWelcomeMessage(
@@ -377,7 +437,8 @@ export class MorcusDictSearch extends BaseElement {
   }
 
   private clearSuggestions() {
-    this.debouncedFetchCompletions.cancel();
+    this.debouncedFetchPrefixChunk.cancel();
+    this.debouncedFetchSuffixCompletions.cancel();
     this.completionTask.cancel();
     this.suggestions = [];
     this.selectedSuggestionIndex = -1;
@@ -393,12 +454,26 @@ export class MorcusDictSearch extends BaseElement {
 
   private readonly handleInput = () => {
     const raw = this.inputElement?.value ?? "";
-    const { query } = cleanCompletionQuery(raw);
+    const { query, isSuffix } = cleanCompletionQuery(raw);
     if (query.length < 2) {
       this.clearSuggestions();
       return;
     }
-    this.debouncedFetchCompletions(query);
+
+    if (isSuffix) {
+      this.debouncedFetchPrefixChunk.cancel();
+      this.debouncedFetchSuffixCompletions(query);
+      return;
+    }
+
+    this.debouncedFetchSuffixCompletions.cancel();
+    const prefix = query.slice(0, 2).toLowerCase();
+    if (this.chunkCache.hasPrefix(prefix)) {
+      this.debouncedFetchPrefixChunk.cancel();
+      this.renderCachedCompletions(prefix, query);
+    } else {
+      this.debouncedFetchPrefixChunk(prefix, query);
+    }
   };
 
   private readonly handleKeyDown = (e: KeyboardEvent) => {

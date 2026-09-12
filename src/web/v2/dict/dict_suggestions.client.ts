@@ -58,7 +58,11 @@ export class MorcusDictSuggestions extends BaseElement {
     for (let i = 0; i < children.length; i++) {
       const item = children[i];
       if (item instanceof HTMLElement) {
-        item.classList.toggle("active", i === this._activeIndex);
+        const isActive = i === this._activeIndex;
+        item.classList.toggle("active", isActive);
+        if (isActive) {
+          item.scrollIntoView({ block: "nearest" });
+        }
       }
     }
   }

@@ -282,11 +282,9 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     );
   });
 
-  test("forwards active dict and lang parameters when fetching autocomplete suggestions", () => {
+  test("fetches 2-letter chunk when prefix is not cached", () => {
     delete (window as any).location;
-    (window as any).location = new URL(
-      "http://localhost/v2/dicts?dict=ls,gaffiot&lang=La"
-    );
+    (window as any).location = new URL("http://localhost/v2/dicts");
 
     jest.useFakeTimers();
     const el = createDictSearch();
@@ -297,12 +295,97 @@ describe("MorcusDictSearch client progressive enhancement", () => {
 
     jest.advanceTimersByTime(200);
 
-    // L&S (1) + GAF (2) = 3 -> d=3
+    // Queries 2-letter prefix "am"
     expect(global.fetch).toHaveBeenCalledWith(
-      expect.stringContaining("/v2/api/completions?q=amo&d=3&lang=La"),
+      expect.stringContaining("/v2/api/completions?prefix=am")
+    );
+    jest.useRealTimers();
+  });
+
+  test("forwards active dict and lang parameters for suffix queries", () => {
+    delete (window as any).location;
+    (window as any).location = new URL(
+      "http://localhost/v2/dicts?dict=ls,gaffiot&lang=La"
+    );
+
+    jest.useFakeTimers();
+    const el = createDictSearch();
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+
+    input.value = "-arum";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    jest.advanceTimersByTime(200);
+
+    // Suffix query uses dynamic endpoint with d=3 (L&S + GAF)
+    expect(global.fetch).toHaveBeenCalledWith(
+      expect.stringContaining("/v2/api/completions?q=-arum&d=3&lang=La"),
       expect.anything()
     );
     jest.useRealTimers();
+  });
+
+  test("renders suggestions instantly from chunkCache without network fetch when cached", () => {
+    const el = createDictSearch();
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+
+    // Pre-populate chunk cache for "am"
+    el.chunkCache.setChunks("am", {
+      "L&S": ["amabilis", "amator", "amo", "amor"],
+      GAF: ["ămābĭlis", "ămātŏr", "ămō", "ămŏr"],
+    });
+
+    (global.fetch as jest.Mock).mockClear();
+
+    input.value = "amo";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    // Instant synchronous hit: 0 network calls!
+    expect(global.fetch).not.toHaveBeenCalled();
+
+    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
+    expect(suggestionsEl).not.toBeNull();
+    expect(suggestionsEl.items).toEqual([
+      { lang: "La", word: "ămō" },
+      { lang: "La", word: "ămŏr" },
+    ]);
+  });
+
+  test("re-clusters suggestions on dict-selection-change from cache with 0 network calls", () => {
+    const el = createDictSearch();
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+
+    // Pre-populate chunk cache with items from both default active dicts (L&S and GAF)
+    el.chunkCache.setChunks("am", {
+      "L&S": ["amabilis"],
+      GAF: ["ămīcĭtĭa"],
+    });
+
+    input.value = "am";
+    input.dispatchEvent(new Event("input", { bubbles: true }));
+
+    const suggestionsEl = el.querySelector("morcus-dict-suggestions") as any;
+    expect(suggestionsEl.items.map((i: any) => i.word)).toEqual([
+      "amabilis",
+      "ămīcĭtĭa",
+    ]);
+
+    (global.fetch as jest.Mock).mockClear();
+
+    // Fire dict-selection-change to only include GAF
+    el.dispatchEvent(
+      new CustomEvent("dict-selection-change", {
+        bubbles: true,
+        detail: { dictKeys: ["GAF"], bitmask: "2" },
+      })
+    );
+
+    // Suggestions immediately update with only GAF words
+    expect(suggestionsEl.items.map((i: any) => i.word)).toEqual(["ămīcĭtĭa"]);
+    // Zero completion network calls made for suggestions
+    expect(global.fetch).not.toHaveBeenCalledWith(
+      expect.stringContaining("/v2/api/completions")
+    );
   });
 
   test("updates landing welcome message and badges on dict-selection-change when query is empty", () => {

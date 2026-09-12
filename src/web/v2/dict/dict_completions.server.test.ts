@@ -3,6 +3,7 @@ import {
   getExpandedPrefixes,
   clusterAndDeduplicate,
   getV2Completions,
+  getV2DictChunks,
   findDictInfo,
   type CompletionsProvider,
 } from "@/web/v2/dict/dict_completions.server";
@@ -228,6 +229,83 @@ describe("dict_completions.server", () => {
       });
 
       expect(results).toContainEqual({ lang: "De", word: "nuß" });
+    });
+  });
+
+  describe("getV2DictChunks", () => {
+    test("returns empty object for Greek query or empty prefix", async () => {
+      const mockProvider: CompletionsProvider = {
+        getCompletions: jest.fn(),
+      };
+      const resGreek = await getV2DictChunks(mockProvider, {
+        rawPrefix: "λόγος",
+      });
+      expect(resGreek).toEqual({});
+
+      const resEmpty = await getV2DictChunks(mockProvider, {
+        rawPrefix: "  ",
+      });
+      expect(resEmpty).toEqual({});
+      expect(mockProvider.getCompletions).not.toHaveBeenCalled();
+    });
+
+    test("returns empty object for suffix queries", async () => {
+      const mockProvider: CompletionsProvider = {
+        getCompletions: jest.fn(),
+      };
+      const res = await getV2DictChunks(mockProvider, {
+        rawPrefix: "-arum",
+      });
+      expect(res).toEqual({});
+      expect(mockProvider.getCompletions).not.toHaveBeenCalled();
+    });
+
+    test("returns dictionary map of sorted words and expands prefixes", async () => {
+      const mockProvider: CompletionsProvider = {
+        getCompletions: jest.fn().mockImplementation(async (req) => {
+          if (req.query === "am") {
+            return {
+              "L&S": ["amor", "amabilis", "amator"],
+              GAF: ["ămō", "ămātŏr"],
+            };
+          }
+          return {};
+        }),
+      };
+
+      const res = await getV2DictChunks(mockProvider, {
+        rawPrefix: "am",
+        activeDictKeys: ["L&S", "GAF"],
+      });
+
+      expect(res).toEqual({
+        "L&S": ["amabilis", "amator", "amor"],
+        GAF: ["ămātŏr", "ămō"],
+      });
+    });
+
+    test("expands orthographic variants across dictionaries", async () => {
+      const mockProvider: CompletionsProvider = {
+        getCompletions: jest.fn().mockImplementation(async (req) => {
+          if (req.query === "iust") {
+            return { GAF: ["iūstus"] };
+          }
+          if (req.query === "just") {
+            return { "L&S": ["justus"] };
+          }
+          return {};
+        }),
+      };
+
+      const res = await getV2DictChunks(mockProvider, {
+        rawPrefix: "ivst",
+        activeDictKeys: ["L&S", "GAF"],
+      });
+
+      expect(res).toEqual({
+        GAF: ["iūstus"],
+        "L&S": ["justus"],
+      });
     });
   });
 });

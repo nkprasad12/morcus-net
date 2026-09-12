@@ -1,21 +1,34 @@
-import {
-  LatinDict,
-  type LatinDictInfo,
-} from "@/common/dictionaries/latin_dicts";
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import {
   type DictLang,
   type CompletionsFusedRequest,
   type CompletionsFusedResponse,
 } from "@/common/dictionaries/dictionaries";
-import { Vowels } from "@/common/character_utils";
 import { removeDiacritics } from "@/common/text_cleaning";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
 import {
   cleanCompletionQuery,
   type CompletionItem,
+  type DictChunksResponse,
 } from "@/web/v2/dict/dict_completions.common";
+import {
+  Candidate,
+  clusterAndDeduplicate,
+  findDictInfo,
+  getDictSourceLang,
+  getExpandedPrefixes,
+} from "@/web/v2/dict/dict_clustering.common";
 
-export { cleanCompletionQuery, type CompletionItem };
+export {
+  cleanCompletionQuery,
+  type CompletionItem,
+  type DictChunksResponse,
+  Candidate,
+  clusterAndDeduplicate,
+  findDictInfo,
+  getDictSourceLang,
+  getExpandedPrefixes,
+};
 
 export interface CompletionsProvider {
   getCompletions(
@@ -23,148 +36,114 @@ export interface CompletionsProvider {
   ): Promise<CompletionsFusedResponse>;
 }
 
+export interface V2CompletionsTiming {
+  dbTimeMs: number;
+  collateTimeMs: number;
+  clusterTimeMs: number;
+  candidateCount: number;
+}
+
 export interface V2CompletionsOptions {
   rawQuery: string;
   activeDictKeys: string[];
   limit?: number;
+  onTiming?: (timing: V2CompletionsTiming) => void;
 }
 
-interface Candidate {
-  dictKey: string;
-  lang: DictLang;
-  word: string;
-}
-
-const EXTRA_KEY_LOOKUP = new Map<string, string>([
-  ["u", "v"],
-  ["v", "u"],
-  ["i", "j"],
-  ["j", "i"],
-]);
-
-/**
- * Resolves a dictionary key to its LatinDictInfo, handling aliases and case-insensitivity.
- */
-export function findDictInfo(key: string): LatinDictInfo | undefined {
-  const direct = LatinDict.BY_KEY.get(key);
-  if (direct) return direct;
-  const lower = key.toLowerCase();
-  return LatinDict.AVAILABLE.find(
-    (d) =>
-      d.key.toLowerCase() === lower ||
-      d.displayName.toLowerCase() === lower ||
-      (lower === "ls" && d.key === "L&S") ||
-      (lower === "sh" && d.key === "S&H") ||
-      (lower === "ra" && d.key === "R&A") ||
-      (lower === "gaffiot" && d.key === "GAF") ||
-      (lower === "georges" && d.key === "GRG") ||
-      (lower === "pozo" && d.key === "EGL") ||
-      (lower === "gesner" && d.key === "GES") ||
-      (lower === "forcellini" && d.key === "FOR") ||
-      (lower === "numeral" && d.key === "NUM")
-  );
+export interface V2DictChunksOptions {
+  rawPrefix: string;
+  activeDictKeys?: string[];
 }
 
 /**
- * Expands query prefixes for orthographic equivalents (u/v, i/j in Latin; ß/ss in German).
+ * Returns a dictionary-keyed map of string arrays for a 2-letter prefix chunk.
  */
-export function getExpandedPrefixes(prefix: string, lang: DictLang): string[] {
-  if (lang === "La") {
-    const maxDepth = Math.min(25, prefix.length);
-    let prefixes: string[] = [""];
-    for (let i = 0; i < maxDepth; i++) {
-      const nextChar = prefix.charAt(i);
-      const altChar = EXTRA_KEY_LOOKUP.get(nextChar);
-      const nextChars =
-        altChar === undefined ? [nextChar] : [nextChar, altChar];
-      prefixes = prefixes.flatMap((p) => nextChars.map((n) => p + n));
-    }
-    if (prefix.length > maxDepth) {
-      const remainder = prefix.slice(maxDepth);
-      prefixes = prefixes.map((p) => p + remainder);
-    }
-    return prefixes;
-  }
-  if (lang === "De") {
-    const s1 = prefix.replaceAll("ß", "ss");
-    const s2 = prefix.replaceAll("ss", "ß");
-    return Array.from(new Set([prefix, s1, s2]));
-  }
-  return [prefix];
-}
+export async function getV2DictChunks(
+  provider: CompletionsProvider,
+  options: V2DictChunksOptions
+): Promise<DictChunksResponse> {
+  const { rawPrefix, activeDictKeys } = options;
 
-/**
- * Deduplicates candidates, clusters vowel-length variants via Vowels.haveCompatibleLength,
- * selects Gaffiot as canonical macron leader for Latin, and sorts results.
- */
-export function clusterAndDeduplicate(
-  candidates: Candidate[],
-  limit: number = 25
-): CompletionItem[] {
-  // Group by source language and diacritic-stripped clean form
-  const groupsByLang = new Map<DictLang, Map<string, Candidate[]>>();
-  for (const c of candidates) {
-    if (!c.word) continue;
-    let langMap = groupsByLang.get(c.lang);
-    if (!langMap) {
-      langMap = new Map<string, Candidate[]>();
-      groupsByLang.set(c.lang, langMap);
-    }
-    const cleanForm = removeDiacritics(c.word).toLowerCase();
-    let list = langMap.get(cleanForm);
-    if (!list) {
-      list = [];
-      langMap.set(cleanForm, list);
-    }
-    list.push(c);
+  if (!rawPrefix || hasGreek(rawPrefix)) {
+    return {};
   }
 
-  const results: CompletionItem[] = [];
+  const { query, isSuffix } = cleanCompletionQuery(rawPrefix);
+  if (!query || isSuffix) {
+    return {};
+  }
 
-  // In each (lang, cleanForm) group, cluster compatible vowel lengths
-  for (const [lang, formMap] of groupsByLang.entries()) {
-    for (const [_, options] of formMap.entries()) {
-      const formGroups: Candidate[][] = [];
-      for (const option of options) {
-        let foundGroup = false;
-        for (const group of formGroups) {
-          const compatible = group.every((member) =>
-            Vowels.haveCompatibleLength(member.word, option.word)
-          );
-          if (compatible) {
-            group.push(option);
-            foundGroup = true;
-            break;
-          }
+  const prefix = query.toLowerCase();
+  const dictKeys =
+    activeDictKeys && activeDictKeys.length > 0
+      ? activeDictKeys
+      : LatinDict.AVAILABLE.map((d) => d.key);
+
+  // Partition active dictionaries by source language
+  const partitions = new Map<DictLang, string[]>();
+  for (const dictKey of dictKeys) {
+    const lang = getDictSourceLang(dictKey);
+    let group = partitions.get(lang);
+    if (!group) {
+      group = [];
+      partitions.set(lang, group);
+    }
+    group.push(dictKey);
+  }
+
+  const tasks: Promise<{
+    lang: DictLang;
+    res: CompletionsFusedResponse;
+  }>[] = [];
+
+  for (const [lang, groupDicts] of partitions.entries()) {
+    const prefixes = getExpandedPrefixes(prefix, lang);
+    for (const p of prefixes) {
+      tasks.push(
+        provider
+          .getCompletions({ query: p, dicts: groupDicts })
+          .then((res) => ({ lang, res }))
+          .catch((err) => {
+            console.error(`Error in completions chunk for prefix "${p}":`, err);
+            return { lang, res: {} };
+          })
+      );
+    }
+  }
+
+  try {
+    const resolved = await Promise.all(tasks);
+    const dictWordsMap = new Map<string, Set<string>>();
+
+    for (const { res } of resolved) {
+      for (const [dictKey, words] of Object.entries(res)) {
+        let set = dictWordsMap.get(dictKey);
+        if (!set) {
+          set = new Set<string>();
+          dictWordsMap.set(dictKey, set);
         }
-        if (!foundGroup) {
-          formGroups.push([option]);
+        for (const word of words || []) {
+          if (word) set.add(word);
         }
       }
-
-      // Canonical leader selection: prefer Gaffiot for Latin macrons
-      for (const group of formGroups) {
-        const leader =
-          group.find(
-            (m) =>
-              m.dictKey === LatinDict.Gaffiot.key ||
-              m.dictKey.toUpperCase() === "GAF" ||
-              m.dictKey.toLowerCase() === "gaffiot"
-          ) ?? group[0];
-        results.push({ lang, word: leader.word });
-      }
     }
+
+    const result: DictChunksResponse = {};
+    for (const [dictKey, wordSet] of dictWordsMap.entries()) {
+      const sortedWords = Array.from(wordSet).sort((a, b) => {
+        const comp = removeDiacritics(a)
+          .toLowerCase()
+          .localeCompare(removeDiacritics(b).toLowerCase());
+        return comp !== 0 ? comp : a.localeCompare(b);
+      });
+      result[dictKey] = sortedWords;
+    }
+
+    return result;
+  } catch (err) {
+    console.error("Error in getV2DictChunks:", err);
+    return {};
   }
-
-  // Sort alphabetically by diacritic-stripped lower-case, then raw word
-  results.sort((a, b) => {
-    const comp = removeDiacritics(a.word)
-      .toLowerCase()
-      .localeCompare(removeDiacritics(b.word).toLowerCase());
-    return comp !== 0 ? comp : a.word.localeCompare(b.word);
-  });
-
-  return results.slice(0, limit);
 }
 
 /**
@@ -253,7 +232,11 @@ export async function getV2Completions(
   }
 
   try {
+    const t0_db = performance.now();
     const resolved = await Promise.all(tasks);
+    const dbTimeMs = Number((performance.now() - t0_db).toFixed(3));
+
+    const t0_collate = performance.now();
     const candidates: Candidate[] = [];
     for (const { lang: partitionLang, res } of resolved) {
       for (const [dictKey, words] of Object.entries(res)) {
@@ -267,7 +250,22 @@ export async function getV2Completions(
         }
       }
     }
-    return clusterAndDeduplicate(candidates, limit);
+    const collateTimeMs = Number((performance.now() - t0_collate).toFixed(3));
+
+    const t0_cluster = performance.now();
+    const results = clusterAndDeduplicate(candidates, limit);
+    const clusterTimeMs = Number((performance.now() - t0_cluster).toFixed(3));
+
+    if (options.onTiming) {
+      options.onTiming({
+        dbTimeMs,
+        collateTimeMs,
+        clusterTimeMs,
+        candidateCount: candidates.length,
+      });
+    }
+
+    return results;
   } catch (err) {
     console.error("Error in prefix completions:", err);
     return [];

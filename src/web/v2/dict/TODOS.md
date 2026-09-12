@@ -194,3 +194,34 @@ dog   [🔗 Copy link]
 
 - **Option A (Outline generation)**: Store the formatted display title in `outline.mainLabel` (e.g. `mainLabel: header`) during R&A processing, matching dictionaries like Forcellini.
 - **Option B (Headword resolution)**: Prefer `mainSection.text` when it represents an explicit title, or adjust the precedence in `entry_view.server.ts` when `mainKey` is merely a normalized lowercase index key.
+
+---
+
+## 5. Pre-compute and statically serve 2-letter autocomplete chunks
+
+**Status:** not started. Benchmarked and designed; see `completion_chunk_cache_implementation_plan.md`.
+
+### Motivation
+
+Currently, `/v2/api/completions?prefix=am` queries the SQLite databases dynamically per request. While fast (~5–10 ms), Latin headword data is completely static and only changes when rebuilding the corpus.
+
+Benchmarking across the entire corpus reveals:
+
+- Exactly **371 non-empty 2-letter combinations** exist across all active dictionaries.
+- When stored as a dictionary map (`{ "L&S": string[], "GAF": string[], ... }`), the **total compressed size for all 371 files across the entire website is only ~550 KB** (median file is ~1.2 KB Brotli).
+- Grouping all dictionaries into a single payload yields **45% better compression** than separate per-dictionary files because Brotli deduplicates shared Latin stems across lexicons.
+
+### Proposed Architecture
+
+1. **Build Step (`./morcus.sh build`)**:
+   - Query all dictionary SQLite tables once at build time.
+   - For each 2-letter prefix, write `build/completions/:commitId/:prefix.json`.
+   - Pre-compress each file to `.json.br` (q=11) and `.json.gz` (level 9).
+2. **Server Serving**:
+   - Serve directly from disk via static middleware (`sendfile` / `express.static`) with:
+     ```http
+     Cache-Control: public, max-age=31536000, immutable
+     ```
+   - Zero SQLite queries, zero Node event-loop blocking, zero CPU compression overhead.
+3. **Client**:
+   - Consumes the pre-computed static files directly without code changes, since the client already expects `Record<string, string[]>`.
