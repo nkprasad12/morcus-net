@@ -238,4 +238,3 @@ Make individual entry headers/headwords collapsible via the decoupled `<details 
 
 - Add a `.v2-entry` case to `expandAncestorDisclosures` in `v2_bundle.ts` so anchor deep-links automatically expand collapsed entries.
 - Improves scanability on results with multiple long entries inside the same lexicon.
-

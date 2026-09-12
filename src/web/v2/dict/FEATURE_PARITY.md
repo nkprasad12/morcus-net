@@ -11,13 +11,13 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 ### 1. Remaining Gaps Matrix
 
-| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                           | Parity Status        |
-| :------------------------------------- | :---------------------------------------------------------------- | :-------------------------------------------------------------- | :------------------- |
-| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers                       | ❌ **Missing in V2** |
-| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)                               | ⚠️ **Partial in V2** |
-| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Segmented per-entry tab pill dropdown                           | ❌ **Missing in V2** |
-| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Inline segmented tab pills                                      | ❌ **Missing in V2** |
-| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Fixed single-column layout only                                 | ❌ **Missing in V2** |
+| Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)     | Parity Status        |
+| :------------------------------------- | :---------------------------------------------------------------- | :---------------------------------------- | :------------------- |
+| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers | ❌ **Missing in V2** |
+| **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)         | ⚠️ **Partial in V2** |
+| **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Segmented per-entry tab pill dropdown     | ❌ **Missing in V2** |
+| **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Inline segmented tab pills                | ❌ **Missing in V2** |
+| **Mobile Layout Preference**           | Setting toggling between "Drawer" and "Classic" single column     | Fixed single-column layout only           | ❌ **Missing in V2** |
 
 ---
 

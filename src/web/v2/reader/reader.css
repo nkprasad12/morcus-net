@@ -265,7 +265,6 @@ a.v2-reader-sheet-close:active {
 
 /* Mobile & Responsive Breakpoint: Adaptive Bottom Drawer with Natural Page & Text Scrolling */
 @media (max-width: 640px) {
-  html,
   body.v2-body-reader {
     height: auto;
     min-height: 100vh;
