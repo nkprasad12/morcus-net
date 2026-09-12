@@ -76,3 +76,46 @@ DICT_ATTRIBUTIONS["forcellini"] = DICT_ATTRIBUTIONS["FOR"];
 DICT_ATTRIBUTIONS["pozo"] = DICT_ATTRIBUTIONS["EGL"];
 DICT_ATTRIBUTIONS["riddle_arnold"] = DICT_ATTRIBUTIONS["R&A"];
 DICT_ATTRIBUTIONS["numeral"] = DICT_ATTRIBUTIONS["NUM"];
+
+export const DICT_NAMES: Record<string, string> = {
+  "L&S": "Lewis & Short",
+  "S&H": "Smith & Hall",
+  GAF: "Gaffiot",
+  GRG: "Georges",
+  EGL: "Pozo",
+  GES: "Gesner",
+  FOR: "Forcellini",
+  "R&A": "Riddle & Arnold",
+  NUM: "Latin Numerals",
+  // Legacy or lowercase keys fallback
+  ls: "Lewis & Short",
+  sh: "Smith & Hall",
+  gaffiot: "Gaffiot",
+  georges: "Georges",
+  pozo: "Pozo",
+  gesner: "Gesner",
+  forcellini: "Forcellini",
+  riddle_arnold: "Riddle & Arnold",
+  numeral: "Latin Numerals",
+};
+
+export const DICT_ACRONYMS: Record<string, string> = {
+  "L&S": "L&S",
+  "S&H": "S&H",
+  GAF: "GAF",
+  GRG: "GRG",
+  EGL: "EGL",
+  GES: "GES",
+  FOR: "FOR",
+  "R&A": "R&A",
+  NUM: "NUM",
+  ls: "L&S",
+  sh: "S&H",
+  gaffiot: "GAF",
+  georges: "GRG",
+  pozo: "EGL",
+  gesner: "GES",
+  forcellini: "FOR",
+  riddle_arnold: "R&A",
+  numeral: "NUM",
+};

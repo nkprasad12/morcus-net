@@ -3,54 +3,17 @@ import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { renderEntryResult } from "@/web/v2/dict/entry_view.server";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
-import { DICT_ATTRIBUTIONS } from "@/web/v2/dict/dict_attribution";
+import {
+  DICT_ATTRIBUTIONS,
+  DICT_NAMES,
+  DICT_ACRONYMS,
+} from "@/web/v2/dict/dict_attribution";
 import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
 import * as he from "he";
 
-export const DICT_NAMES: Record<string, string> = {
-  "L&S": "Lewis & Short",
-  "S&H": "Smith & Hall",
-  GAF: "Gaffiot",
-  GRG: "Georges",
-  EGL: "Pozo",
-  GES: "Gesner",
-  FOR: "Forcellini",
-  "R&A": "Riddle & Arnold",
-  NUM: "Latin Numerals",
-  // Legacy or lowercase keys fallback
-  ls: "Lewis & Short",
-  sh: "Smith & Hall",
-  gaffiot: "Gaffiot",
-  georges: "Georges",
-  pozo: "Pozo",
-  gesner: "Gesner",
-  forcellini: "Forcellini",
-  riddle_arnold: "Riddle & Arnold",
-  numeral: "Latin Numerals",
-};
-
-export const DICT_SHORT_NAMES: Record<string, string> = {
-  "L&S": "Lewis & Short",
-  "S&H": "Smith & Hall",
-  GAF: "Gaffiot",
-  GRG: "Georges",
-  EGL: "Pozo",
-  GES: "Gesner",
-  FOR: "Forcellini",
-  "R&A": "Riddle & Arnold",
-  NUM: "Numerals",
-  ls: "Lewis & Short",
-  sh: "Smith & Hall",
-  gaffiot: "Gaffiot",
-  georges: "Georges",
-  pozo: "Pozo",
-  gesner: "Gesner",
-  forcellini: "Forcellini",
-  riddle_arnold: "Riddle & Arnold",
-  numeral: "Numerals",
-};
+export { DICT_NAMES, DICT_ACRONYMS };
 
 /**
  * Renders only the results container inner HTML (used for partial AJAX swaps and full SSR).
@@ -89,13 +52,7 @@ export function renderDictResultsHtml(
 
   if (hitKeys.length === 0) {
     const queriedNames = allQueriedKeys
-      .map(
-        (k) =>
-          DICT_SHORT_NAMES[k] ??
-          DICT_NAMES[k] ??
-          LatinDict.BY_KEY.get(k)?.displayName ??
-          k
-      )
+      .map((k) => DICT_NAMES[k] ?? LatinDict.BY_KEY.get(k)?.displayName ?? k)
       .join(", ");
     return `
       <div class="v2-no-results">
@@ -141,11 +98,13 @@ export function renderDictResultsHtml(
     .map((dictKey) => {
       const entries = results[dictKey] || [];
       const shortName =
-        DICT_SHORT_NAMES[dictKey] ??
         DICT_NAMES[dictKey] ??
         LatinDict.BY_KEY.get(dictKey)?.displayName ??
         dictKey.toUpperCase();
-      const dictAcronym = dictKey.toUpperCase();
+      const dictAcronym =
+        DICT_ACRONYMS[dictKey] ??
+        DICT_ACRONYMS[dictKey.toLowerCase()] ??
+        dictKey.toUpperCase();
       const count = entries.length;
       const cardId = `dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
       if (count > 0) {
