@@ -1,10 +1,11 @@
 import { BaseElement, registerElement } from "@/web/v2/core/index.client";
+import type { CompletionItem } from "@/web/v2/dict/dict_completions.common";
 
 /**
  * Lightweight native Web Component for rendering dictionary autocomplete suggestions.
  */
 export class MorcusDictSuggestions extends BaseElement {
-  private _items: string[] = [];
+  private _items: CompletionItem[] = [];
   private _activeIndex: number = -1;
   private readonly listEl: HTMLUListElement;
 
@@ -34,11 +35,11 @@ export class MorcusDictSuggestions extends BaseElement {
     this.render();
   }
 
-  get items(): string[] {
+  get items(): CompletionItem[] {
     return this._items;
   }
 
-  set items(val: string[]) {
+  set items(val: CompletionItem[]) {
     this._items = Array.isArray(val) ? val : [];
     this.render();
   }
@@ -76,8 +77,8 @@ export class MorcusDictSuggestions extends BaseElement {
       li.className = `v2-suggestion-item${
         idx === this._activeIndex ? " active" : ""
       }`;
-      li.dataset.word = item;
-      li.textContent = item;
+      li.dataset.word = item.word;
+      li.textContent = item.word;
       fragment.appendChild(li);
     });
 
