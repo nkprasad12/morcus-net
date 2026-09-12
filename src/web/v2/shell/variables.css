@@ -70,6 +70,8 @@
   --v2-scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
   --v2-drawer-shadow: 0 -6px 20px rgba(0, 0, 0, 0.09),
     0 -1px 4px rgba(0, 0, 0, 0.04);
+  --v2-dict-toc-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --v2-dict-toc-rail-border: var(--v2-border);
   --v2-chip-la-bg: rgba(122, 171, 53, 0.16);
   --v2-chip-la-text: #4e731b;
   --v2-chip-en-bg: rgba(18, 52, 216, 0.13);
@@ -130,6 +132,8 @@
     --v2-scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
     --v2-drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
       0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
+    --v2-dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+    --v2-dict-toc-rail-border: var(--v2-border);
     --v2-chip-la-bg: rgba(158, 208, 76, 0.2);
     --v2-chip-la-text: #b2e664;
     --v2-chip-en-bg: rgba(138, 180, 248, 0.2);
@@ -191,6 +195,8 @@
   --v2-scrollbar-thumb-hover: rgba(255, 255, 255, 0.5);
   --v2-drawer-shadow: 0 -10px 28px rgba(0, 0, 0, 0.65),
     0 -2px 8px rgba(0, 0, 0, 0.4), 0 -1px 0 rgba(255, 255, 255, 0.09);
+  --v2-dict-toc-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+  --v2-dict-toc-rail-border: var(--v2-border);
   --v2-chip-la-bg: rgba(158, 208, 76, 0.2);
   --v2-chip-la-text: #b2e664;
   --v2-chip-en-bg: rgba(138, 180, 248, 0.2);
@@ -251,6 +257,8 @@
   --v2-scrollbar-thumb-hover: rgba(0, 0, 0, 0.45);
   --v2-drawer-shadow: 0 -6px 20px rgba(0, 0, 0, 0.09),
     0 -1px 4px rgba(0, 0, 0, 0.04);
+  --v2-dict-toc-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  --v2-dict-toc-rail-border: var(--v2-border);
   --v2-chip-la-bg: rgba(122, 171, 53, 0.16);
   --v2-chip-la-text: #4e731b;
   --v2-chip-en-bg: rgba(18, 52, 216, 0.13);

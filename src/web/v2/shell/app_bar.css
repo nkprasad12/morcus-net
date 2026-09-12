@@ -213,7 +213,7 @@ morcus-report-dialog:not(:defined) {
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 90;
+  z-index: 105;
   text-decoration: none;
   cursor: pointer;
   opacity: 0;
@@ -269,6 +269,26 @@ morcus-report-dialog:not(:defined) {
   .v2-back-to-top {
     bottom: calc(16px + env(safe-area-inset-bottom, 0px));
     right: 16px;
+  }
+}
+
+/* Float above bottom-docked drawers on mobile & tablet */
+@media (max-width: 1079.98px) {
+  body:has(.v2-drawer) .v2-back-to-top {
+    bottom: calc(
+      var(--v2-drawer-height, 48dvh) + env(safe-area-inset-bottom, 0px) + 16px
+    );
+    transition: bottom 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease,
+      transform 0.2s ease, background-color 0.15s ease, border-color 0.15s ease,
+      color 0.15s ease, box-shadow 0.15s ease;
+  }
+
+  body:has(.v2-drawer.v2-drawer-minimized) .v2-back-to-top,
+  body:has(.v2-toc-details:not([open])) .v2-back-to-top {
+    bottom: calc(
+      var(--v2-drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) +
+        16px
+    );
   }
 }
 
