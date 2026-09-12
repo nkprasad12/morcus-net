@@ -225,3 +225,17 @@ Benchmarking across the entire corpus reveals:
    - Zero SQLite queries, zero Node event-loop blocking, zero CPU compression overhead.
 3. **Client**:
    - Consumes the pre-computed static files directly without code changes, since the client already expects `Record<string, string[]>`.
+
+---
+
+## 6. Per-entry collapsible headers
+
+**Status:** not started. Ergonomic enhancement (not a V1 parity issue).
+
+### Motivation & Design
+
+Make individual entry headers/headwords collapsible via the decoupled `<details class="v2-entry-toggle">` pattern, mirroring dictionary card collapse.
+
+- Add a `.v2-entry` case to `expandAncestorDisclosures` in `v2_bundle.ts` so anchor deep-links automatically expand collapsed entries.
+- Improves scanability on results with multiple long entries inside the same lexicon.
+
