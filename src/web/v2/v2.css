@@ -3,6 +3,7 @@
 @import "./shell/variables.css";
 @import "./shell/app_bar.css";
 @import "./shell/toast.css";
+@import "./core/drawer.css";
 @import "./dict/search.css";
 @import "./dict/dict_settings.css";
 @import "./dict/dictionary.css";

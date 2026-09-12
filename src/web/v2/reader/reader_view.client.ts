@@ -1,6 +1,7 @@
 import {
   BaseElement,
   type QueryParamSync,
+  DrawerController,
   ICON_PATHS,
   registerElement,
   settingsStore,
@@ -25,6 +26,7 @@ import { processTokens, removeDiacritics } from "@/common/text_cleaning";
 export class MorcusReaderView extends BaseElement {
   private currentQuery: string = "";
   private preferredDrawerDvh: number = 48;
+  private drawerController?: DrawerController;
   private router: QueryParamSync | null = null;
 
   protected override onConnect() {
@@ -145,51 +147,63 @@ export class MorcusReaderView extends BaseElement {
     this.dismissDictionary(updateHistory);
   }
 
-  private minimizeDrawer() {
-    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
-    const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
-    const splitLayout = this.querySelector<HTMLElement>(
-      ".v2-reader-split-layout"
-    );
-    if (dictPanel) {
-      dictPanel.classList.add("v2-drawer-minimized");
-      dictPanel.style.setProperty("--v2-drawer-height", "54px");
-      sheetBar?.setAttribute("aria-valuenow", "0");
-    }
-    splitLayout?.style.setProperty("--v2-drawer-height", "54px");
-    const sheetLabel = this.querySelector<HTMLElement>(
-      ".v2-reader-sheet-label"
-    );
-    if (sheetLabel && this.currentQuery) {
-      sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong> &middot; <span style="opacity:0.8;font-weight:400">tap to expand</span>`;
+  public minimizeDrawer(): void {
+    if (this.drawerController) {
+      this.drawerController.minimize();
+    } else {
+      const dictPanel = this.querySelector<HTMLElement>(
+        ".v2-reader-dict-panel"
+      );
+      const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
+      const splitLayout = this.querySelector<HTMLElement>(
+        ".v2-reader-split-layout"
+      );
+      if (dictPanel) {
+        dictPanel.classList.add("v2-drawer-minimized");
+        dictPanel.style.setProperty("--v2-drawer-height", "54px");
+        sheetBar?.setAttribute("aria-valuenow", "0");
+      }
+      splitLayout?.style.setProperty("--v2-drawer-height", "54px");
+      const sheetLabel = this.querySelector<HTMLElement>(
+        ".v2-reader-sheet-label"
+      );
+      if (sheetLabel && this.currentQuery) {
+        sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong> &middot; <span style="opacity:0.8;font-weight:400">tap to expand</span>`;
+      }
     }
   }
 
-  private restoreDrawer(targetDvh?: number) {
-    const dictPanel = this.querySelector<HTMLElement>(".v2-reader-dict-panel");
-    const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
-    const splitLayout = this.querySelector<HTMLElement>(
-      ".v2-reader-split-layout"
-    );
-    const dvh = Math.min(
-      88,
-      Math.max(18, targetDvh ?? this.preferredDrawerDvh ?? 48)
-    );
-    this.preferredDrawerDvh = dvh;
+  public restoreDrawer(targetDvh?: number): void {
+    if (this.drawerController) {
+      this.drawerController.restore(targetDvh);
+    } else {
+      const dictPanel = this.querySelector<HTMLElement>(
+        ".v2-reader-dict-panel"
+      );
+      const sheetBar = this.querySelector<HTMLElement>(".v2-reader-sheet-bar");
+      const splitLayout = this.querySelector<HTMLElement>(
+        ".v2-reader-split-layout"
+      );
+      const dvh = Math.min(
+        88,
+        Math.max(18, targetDvh ?? this.preferredDrawerDvh ?? 48)
+      );
+      this.preferredDrawerDvh = dvh;
 
-    if (dictPanel) {
-      dictPanel.classList.remove("v2-drawer-minimized");
-      dictPanel.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
-      sheetBar?.setAttribute("aria-valuenow", String(dvh));
+      if (dictPanel) {
+        dictPanel.classList.remove("v2-drawer-minimized");
+        dictPanel.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
+        sheetBar?.setAttribute("aria-valuenow", String(dvh));
+      }
+      splitLayout?.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
+      const sheetLabel = this.querySelector<HTMLElement>(
+        ".v2-reader-sheet-label"
+      );
+      if (sheetLabel && this.currentQuery) {
+        sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong>`;
+      }
+      this.resetDictScroll();
     }
-    splitLayout?.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
-    const sheetLabel = this.querySelector<HTMLElement>(
-      ".v2-reader-sheet-label"
-    );
-    if (sheetLabel && this.currentQuery) {
-      sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong>`;
-    }
-    this.resetDictScroll();
   }
 
   private dismissDictionary(updateHistory: boolean = true) {
@@ -589,100 +603,51 @@ export class MorcusReaderView extends BaseElement {
     );
     if (!sheetBar || !dictPanel) return;
 
-    let wasMinimized = false;
-    let startHeight = 0;
-
-    this.addDisposable(
-      trackPointerDrag(sheetBar, {
-        handleActiveClass: "v2-is-dragging",
-        bodyActiveClass: "v2-resizing-drawer",
-        filter: (e) => {
-          if (
-            e.target instanceof Element &&
-            e.target.closest("a.v2-reader-sheet-close")
-          ) {
-            return false;
-          }
-          return true;
-        },
-        onStart: () => {
-          wasMinimized = dictPanel.classList.contains("v2-drawer-minimized");
-          startHeight = dictPanel.getBoundingClientRect().height;
-          if (wasMinimized) {
-            dictPanel.classList.remove("v2-drawer-minimized");
-          }
-        },
-        onMove: ({ dy }) => {
-          const minHeight = 54;
-          const maxHeight = Math.round(window.innerHeight * 0.88);
-          const newHeight = Math.max(
-            minHeight,
-            Math.min(maxHeight, startHeight - dy)
-          );
-          dictPanel.style.setProperty("--v2-drawer-height", `${newHeight}px`);
-          splitLayout?.style.setProperty(
-            "--v2-drawer-height",
-            `${newHeight}px`
-          );
-          const percent = Math.round((newHeight / window.innerHeight) * 100);
-          sheetBar.setAttribute("aria-valuenow", String(percent));
-        },
-        onEnd: ({ dy, elapsedMs, velocityY }) => {
-          const currentHeight = dictPanel.getBoundingClientRect().height;
-          const currentDvh = Math.round(
-            (currentHeight / window.innerHeight) * 100
-          );
-
-          // Handle simple tap (minimal movement)
-          if (Math.abs(dy) < 6 && elapsedMs < 350) {
-            if (wasMinimized) {
-              this.restoreDrawer();
-            }
-            return;
-          }
-
-          // Fast flick down detection:
-          const vhPerSec = (dy / window.innerHeight) * (1000 / elapsedMs);
-          const isFastFlickDown =
-            dy > 35 && (velocityY > 0.75 || vhPerSec > 1.1);
-
-          // Dragged into the floor threshold (< 18dvh or < 110px)
-          const isDraggedToFloor = currentDvh < 18 || currentHeight < 110;
-
-          if (isFastFlickDown || isDraggedToFloor) {
-            this.minimizeDrawer();
-            return;
-          }
-
-          const clampedDvh = Math.min(88, Math.max(18, currentDvh));
-          this.restoreDrawer(clampedDvh);
-        },
-      })
-    );
-
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "ArrowUp") {
-        e.preventDefault();
-        if (dictPanel.classList.contains("v2-drawer-minimized")) {
-          this.restoreDrawer(48);
-        } else {
-          this.restoreDrawer(88);
+    this.drawerController = new DrawerController({
+      drawer: dictPanel,
+      handle: sheetBar,
+      layoutElement: splitLayout,
+      minHeight: 54,
+      defaultDvh: 48,
+      floorDvh: 18,
+      expandedDvh: 88,
+      preferredDvh: this.preferredDrawerDvh,
+      filter: (e) => {
+        if (
+          e.target instanceof Element &&
+          e.target.closest("a.v2-reader-sheet-close, a.v2-drawer-close")
+        ) {
+          return false;
         }
-      } else if (e.key === "ArrowDown") {
-        e.preventDefault();
-        const currentHeight = dictPanel.getBoundingClientRect().height;
-        if (currentHeight > window.innerHeight * 0.6) {
-          this.restoreDrawer(48);
-        } else {
-          this.minimizeDrawer();
+        return true;
+      },
+      onMinimize: () => {
+        const sheetLabel = this.querySelector<HTMLElement>(
+          ".v2-reader-sheet-label"
+        );
+        if (sheetLabel && this.currentQuery) {
+          sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong> &middot; <span style="opacity:0.8;font-weight:400">tap to expand</span>`;
         }
-      } else if (e.key === "Escape") {
-        e.preventDefault();
+      },
+      onRestore: (dvh) => {
+        this.preferredDrawerDvh = dvh;
+        const sheetLabel = this.querySelector<HTMLElement>(
+          ".v2-reader-sheet-label"
+        );
+        if (sheetLabel && this.currentQuery) {
+          sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong>`;
+        }
+        this.resetDictScroll();
+      },
+      onEscape: () => {
         this.dismissDictionary(true);
-      }
-    };
+      },
+    });
 
-    this.listen(sheetBar, "keydown", onKeyDown);
+    this.addDisposable(() => {
+      this.drawerController?.destroy();
+      this.drawerController = undefined;
+    });
   }
 
   // --- Embedded Dictionary "Jump to top" Button ---
