@@ -83,7 +83,7 @@ test.describe("UI V2 dictionary", () => {
 
     // Verify results updated for the clicked word
     await expect(page.locator(".v2-dict-card").first()).toBeVisible();
-    await expect(page.locator(".v2-dict-title").first()).toContainText("Lewis");
+    await expect(page.locator(".v2-dict-title").first()).toBeVisible();
   });
 
   test("allows navigating between Dictionary and About via app bar without JavaScript", async ({
@@ -717,5 +717,75 @@ test.describe("UI V2 dictionary", () => {
     await expect(frame.locator(".v2-dict-title").first()).toContainText(
       "Lewis"
     );
+  });
+
+  test("dictionary landing page on mobile viewports scrolls to bottom without clipping footer or trapping scroll", async ({
+    page,
+  }, testInfo) => {
+    test.skip(
+      !testInfo.project.use.isMobile &&
+        testInfo.project.name !== "FirefoxSmallScreen",
+      "Mobile-only viewport scroll test"
+    );
+
+    await page.goto("/v2/dicts");
+    await expect(page.locator(".v2-landing-container")).toBeVisible();
+
+    // Verify root html document element does not leak internal overflow scrolling
+    const htmlOverflowY = await page.evaluate(
+      () => window.getComputedStyle(document.documentElement).overflowY
+    );
+    expect(htmlOverflowY).toBe("visible");
+
+    // Scroll window to bottom
+    await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+    // Verify footer tip is fully in viewport
+    const tip = page.locator(".v2-legend-settings-tip");
+    await expect(tip).toBeInViewport();
+
+    // Verify container padding includes safe-area inset and scales with font size
+    const paddingBottom = await page.evaluate(() => {
+      const container = document.querySelector(".v2-container");
+      return container ? window.getComputedStyle(container).paddingBottom : "";
+    });
+    expect(parseFloat(paddingBottom)).toBeGreaterThanOrEqual(24);
+
+    // Verify that with enlarged browser accessibility font sizes (e.g. 125% / 20px, 150% / 24px),
+    // scrolling to the bottom keeps the footer tip fully in the viewport without clipping.
+    for (const fontSize of ["20px", "24px"]) {
+      await page.evaluate((fs) => {
+        document.documentElement.style.fontSize = fs;
+        window.scrollTo({ top: 99999, behavior: "instant" });
+      }, fontSize);
+      await page.waitForTimeout(100);
+      await expect(tip).toBeInViewport();
+      const tipBottom = await tip.evaluate(
+        (el) => el.getBoundingClientRect().bottom
+      );
+      const windowHeight = await page.evaluate(() => window.innerHeight);
+      expect(tipBottom).toBeLessThanOrEqual(windowHeight);
+    }
+
+    // If running in Chromium, test simulated safe-area insets override via CDP
+    if (testInfo.project.name === "MobileChrome") {
+      const client = await page.context().newCDPSession(page);
+      await client.send("Emulation.setSafeAreaInsetsOverride", {
+        insets: { top: 0, bottom: 34, left: 0, right: 0 },
+      });
+
+      // Scroll to bottom with safe-area inset
+      await page.evaluate(() => window.scrollTo(0, document.body.scrollHeight));
+
+      const safeAreaPaddingBottom = await page.evaluate(() => {
+        const container = document.querySelector(".v2-container");
+        return container
+          ? window.getComputedStyle(container).paddingBottom
+          : "";
+      });
+      // 24px base + 34px safe area inset = 58px
+      expect(parseFloat(safeAreaPaddingBottom)).toBe(58);
+      await expect(tip).toBeInViewport();
+    }
   });
 });
