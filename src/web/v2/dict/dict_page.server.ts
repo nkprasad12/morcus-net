@@ -11,6 +11,7 @@ import {
 import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";
+import { renderDictTocHtml } from "@/web/v2/dict/dict_toc.server";
 import * as he from "he";
 
 export { DICT_NAMES, DICT_ACRONYMS };
@@ -220,7 +221,20 @@ export function renderDictResultsHtml(
     })
     .join("\n");
 
-  return `${jumpBarHtml}\n${cardsHtml}`;
+  const tocHtml = results
+    ? renderDictTocHtml({ results, hitKeys, maxLevel: 3 })
+    : "";
+  const hasToc = Boolean(tocHtml);
+
+  return `
+    <div class="v2-results-layout${hasToc ? " has-toc" : ""}">
+      ${tocHtml}
+      <div class="v2-results-main">
+        ${jumpBarHtml}
+        ${cardsHtml}
+      </div>
+    </div>
+  `;
 }
 
 export interface DictPageOptions {

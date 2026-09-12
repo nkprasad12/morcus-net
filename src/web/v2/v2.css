@@ -7,6 +7,7 @@
 @import "./dict/search.css";
 @import "./dict/dict_settings.css";
 @import "./dict/dictionary.css";
+@import "./dict/dict_toc.css";
 @import "./reader/reader.css";
 @import "./dialog/dialog.css";
 @import "./about/about.css";

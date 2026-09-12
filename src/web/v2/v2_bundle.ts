@@ -3,6 +3,7 @@ import "@/web/v2/dict/dict_suggestions.client";
 import "@/web/v2/dict/dict_search.client";
 import "@/web/v2/dict/dict_settings.client";
 import "@/web/v2/dict/dict_greek.client";
+import "@/web/v2/dict/dict_toc.client";
 import "@/web/v2/shell/theme_toggle.client";
 import "@/web/v2/dialog/report_dialog.client";
 import "@/web/v2/reader/reader_view.client";

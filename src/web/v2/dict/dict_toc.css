@@ -1,0 +1,296 @@
+/**
+ * UI V2 Dictionary Table of Contents (TOC) & Results Layout
+ *
+ * Implements the responsive results layout:
+ * - Wide screens (>= 1080px): Sticky left rail sidebar (240px) alongside
+ *   the primary reading content column (860px max width).
+ * - Mobile / narrow screens (< 1080px): Bottom-docked sheet drawer.
+ */
+
+/* Results Layout Container: Single column baseline */
+.v2-results-layout {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+}
+
+.v2-results-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.v2-results-main > .v2-dict-card + .v2-dict-card {
+  margin-top: 28px;
+}
+
+/* TOC Internal Tree & Typography */
+.v2-toc-details {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  min-height: 0;
+}
+
+.v2-toc-details::details-content {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.v2-toc-details[open] {
+  overflow: hidden;
+}
+
+.v2-toc-details:not([open]) .v2-toc-body {
+  display: none !important;
+}
+
+.v2-toc-body {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding: 8px 14px 16px;
+  font-family: var(--v2-font-sans);
+  font-size: 0.88rem;
+  line-height: 1.45;
+}
+
+.v2-toc-nav {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.v2-toc-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.v2-toc-group + .v2-toc-group {
+  padding-top: 10px;
+  border-top: 1px dashed var(--v2-border);
+}
+
+.v2-toc-dict-header {
+  display: flex;
+  align-items: center;
+}
+
+.v2-toc-dict-link,
+.v2-toc-dict-link:visited {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  text-decoration: none;
+  color: var(--v2-dict-title);
+  font-weight: 700;
+  font-size: 0.82rem;
+  transition: color 0.15s ease;
+}
+
+.v2-toc-dict-link:hover {
+  color: var(--v2-primary);
+  text-decoration: underline;
+}
+
+.v2-toc-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 5px;
+  border-radius: 3px;
+  background-color: var(--v2-tag-bg);
+  border: 1px solid var(--v2-border);
+  font-family: monospace;
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--v2-text-muted);
+}
+
+.v2-toc-entry {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.v2-toc-entry + .v2-toc-entry {
+  margin-top: 6px;
+}
+
+.v2-toc-entry-header {
+  font-weight: 600;
+  font-size: 0.85rem;
+}
+
+.v2-toc-entry-link,
+.v2-toc-entry-link:visited {
+  color: var(--v2-text);
+  text-decoration: none;
+}
+
+.v2-toc-entry-link:hover {
+  color: var(--v2-primary);
+  text-decoration: underline;
+}
+
+.v2-toc-item {
+  display: block;
+  margin-bottom: 5px;
+}
+
+.v2-toc-link,
+.v2-toc-link:visited {
+  display: inline;
+  color: var(--v2-text);
+  text-decoration: none;
+  word-break: break-word;
+}
+
+.v2-toc-link:hover {
+  color: var(--v2-primary);
+  text-decoration: underline;
+}
+
+.v2-toc-ordinal {
+  font-weight: 700;
+  color: var(--v2-primary);
+  margin-right: 4px;
+}
+
+.v2-toc-count {
+  font-weight: 400;
+  font-size: 0.8rem;
+  opacity: 0.85;
+}
+
+/* --------------------------------------------------------------------------
+   Mobile & Tablet (< 1080px): Bottom Drawer Mode
+   -------------------------------------------------------------------------- */
+@media (max-width: 1079.98px) {
+  /* Add bottom padding to results when TOC bottom drawer is present so
+     the lowest content isn't obscured by the minimized drawer teaser handle */
+  .v2-results-layout.has-toc {
+    padding-bottom: calc(
+      var(--v2-drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) +
+        16px
+    );
+  }
+
+  .v2-drawer-toc {
+    height: var(--v2-drawer-height, 48dvh);
+    max-height: 88dvh;
+    border-top: 2px solid var(--v2-border-strong);
+    border-top-left-radius: 16px;
+    border-top-right-radius: 16px;
+  }
+
+  .v2-drawer-toc.v2-drawer-minimized {
+    height: var(--v2-drawer-min-height, 54px) !important;
+  }
+
+  .v2-drawer-toc:not(:has(.v2-toc-details[open])) {
+    height: var(--v2-drawer-min-height, 54px) !important;
+  }
+
+  .v2-drawer-toc .v2-toc-bar {
+    padding: 8px 14px 8px;
+    border-bottom: 1px solid var(--v2-border);
+    cursor: grab;
+  }
+
+  .v2-drawer-toc .v2-toc-body {
+    max-height: calc(
+      var(--v2-drawer-height, 48dvh) - var(--v2-drawer-min-height, 54px)
+    );
+    overflow-y: auto;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Desktop (>= 1080px): Left Rail Sidebar Mode
+   -------------------------------------------------------------------------- */
+@media (min-width: 1080px) {
+  /* Expand container width to accommodate TOC rail while preserving 860px reading column */
+  .v2-container:has(.v2-results-layout.has-toc) {
+    max-width: 1180px;
+    transition: max-width 0.2s ease-in-out;
+  }
+
+  /* Two-column grid: 240px TOC | Content column (up to 860px) */
+  .v2-results-layout.has-toc {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 860px);
+    column-gap: 36px;
+    align-items: start;
+    padding-bottom: 0;
+  }
+
+  /* Sticky Desktop Left Rail: Starts directly from the top when scrolled */
+  .v2-drawer-toc {
+    position: sticky !important;
+    top: 0 !important;
+    bottom: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: 240px !important;
+    max-width: 240px !important;
+    height: auto !important;
+    max-height: 100dvh !important;
+    border: 1px solid var(--v2-dict-toc-rail-border);
+    border-radius: 8px !important;
+    background-color: var(--v2-card-bg);
+    box-shadow: var(--v2-dict-toc-shadow) !important;
+    z-index: 10 !important;
+    padding-bottom: 0 !important;
+    margin: 0 !important;
+  }
+
+  /* Hide drag pill handle on desktop */
+  .v2-drawer-toc .v2-drawer-handle {
+    display: none !important;
+  }
+
+  /* Header in Desktop Left Rail */
+  .v2-drawer-toc .v2-toc-bar {
+    cursor: default !important;
+    pointer-events: none; /* Desktop TOC rail is permanently open */
+    padding: 10px 14px 8px !important;
+    border-bottom: 1px solid var(--v2-border);
+    border-top-left-radius: 7px;
+    border-top-right-radius: 7px;
+    background-color: var(--v2-card-header-bg);
+  }
+
+  .v2-drawer-toc .v2-toc-bar::-webkit-details-marker {
+    display: none !important;
+  }
+
+  .v2-drawer-toc .v2-drawer-teaser {
+    justify-content: flex-start !important;
+  }
+
+  .v2-drawer-toc .v2-toc-teaser-label {
+    padding: 0 !important;
+    text-align: left !important;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--v2-dict-title);
+  }
+
+  /* Desktop scrollable body */
+  .v2-drawer-toc .v2-toc-body {
+    max-height: calc(100dvh - 44px);
+    overflow-y: auto;
+    padding: 10px 12px 14px;
+    font-size: 0.82rem;
+    scrollbar-width: thin;
+  }
+}

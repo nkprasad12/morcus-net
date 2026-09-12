@@ -774,4 +774,76 @@ describe("dict_ssr", () => {
     expect(html).toContain('class="v2-mateo-frame"');
     expect(html).toContain('loading="lazy"');
   });
+
+  test("renderDictResultsHtml wraps results in v2-results-layout with TOC when senses exceed threshold", () => {
+    const results = {
+      ls: [
+        {
+          entry: new XmlNode("entry", [["id", "n100"]], ["habeo"]),
+          outline: {
+            mainKey: "habeo",
+            mainSection: {
+              text: "habeo",
+              level: 0,
+              ordinal: "",
+              sectionId: "n100",
+            },
+            senses: [
+              {
+                level: 1,
+                ordinal: "I.",
+                text: "To have, hold",
+                sectionId: "n100.1",
+              },
+              {
+                level: 1,
+                ordinal: "II.",
+                text: "In partic.",
+                sectionId: "n100.2",
+              },
+              {
+                level: 2,
+                ordinal: "A.",
+                text: "With physical object",
+                sectionId: "n100.3",
+              },
+            ],
+          },
+        },
+      ],
+    };
+
+    const html = renderDictResultsHtml("habeo", results);
+    expect(html).toContain('class="v2-results-layout has-toc"');
+    expect(html).toContain("<morcus-dict-toc");
+    expect(html).toContain('class="v2-results-main"');
+  });
+
+  test("renderDictResultsHtml wraps results in v2-results-layout without has-toc when below threshold", () => {
+    const results = {
+      ls: [
+        {
+          entry: new XmlNode("entry", [["id", "n200"]], ["abbas"]),
+          outline: {
+            mainKey: "abbas",
+            mainSection: {
+              text: "abbas",
+              level: 0,
+              ordinal: "",
+              sectionId: "n200",
+            },
+            senses: [
+              { level: 1, ordinal: "I.", text: "Abbot", sectionId: "n200.1" },
+            ],
+          },
+        },
+      ],
+    };
+
+    const html = renderDictResultsHtml("abbas", results);
+    expect(html).toContain('class="v2-results-layout"');
+    expect(html).not.toContain("has-toc");
+    expect(html).not.toContain("<morcus-dict-toc");
+    expect(html).toContain('class="v2-results-main"');
+  });
 });
