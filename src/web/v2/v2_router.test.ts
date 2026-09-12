@@ -227,7 +227,11 @@ describe("v2_router integration", () => {
     const res = await request(app).get("/v2/api/completions?q=am");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("application/json");
-    expect(res.body).toEqual(["amo", "amor", "amicitia"]);
+    expect(res.body).toEqual([
+      { lang: "La", word: "amicitia" },
+      { lang: "La", word: "amo" },
+      { lang: "La", word: "amor" },
+    ]);
   });
 
   test("GET /v2/api/completions sanitizes query parameter", async () => {
@@ -236,6 +240,16 @@ describe("v2_router integration", () => {
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
         query: "am",
+      })
+    );
+  });
+
+  test("GET /v2/api/completions preserves suffix search query with leading hyphen", async () => {
+    const res = await request(app).get("/v2/api/completions?q=-arum");
+    expect(res.status).toBe(200);
+    expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "-arum",
       })
     );
   });
@@ -258,10 +272,17 @@ describe("v2_router integration", () => {
       .get("/v2/api/completions?q=am")
       .set("Cookie", "morcus_dicts=GAF%3BGRG");
     expect(res.status).toBe(200);
+    // Language-aware partitioning sends Latin dicts and German dicts separately
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
         query: "am",
-        dicts: ["GAF", "GRG"],
+        dicts: ["GAF"],
+      })
+    );
+    expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
+      expect.objectContaining({
+        query: "am",
+        dicts: ["GRG"],
       })
     );
   });

@@ -13,6 +13,10 @@ import {
   removeDiacritics,
   trimRawQuery,
 } from "@/common/text_cleaning";
+import {
+  cleanCompletionQuery,
+  type CompletionItem,
+} from "@/web/v2/dict/dict_completions.common";
 import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.client";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import {
@@ -43,7 +47,7 @@ import {
  * - Performs smooth AJAX partial swaps via fetchAndSwapPartial without full page reloads.
  */
 export class MorcusDictSearch extends BaseElement {
-  private suggestions: string[] = [];
+  private suggestions: CompletionItem[] = [];
   private selectedSuggestionIndex: number = -1;
   private readonly completionTask = new LatestTask();
 
@@ -67,9 +71,9 @@ export class MorcusDictSearch extends BaseElement {
 
     fetch(`/v2/api/completions?${fetchParams.toString()}`, { signal })
       .then((res) => (res.ok ? res.json() : []))
-      .then((data: string[]) => {
+      .then((data: CompletionItem[]) => {
         if (document.activeElement !== this.inputElement) return;
-        this.suggestions = data;
+        this.suggestions = Array.isArray(data) ? data : [];
         this.selectedSuggestionIndex = -1;
         this.updateSuggestionsView();
       })
@@ -389,7 +393,7 @@ export class MorcusDictSearch extends BaseElement {
 
   private readonly handleInput = () => {
     const raw = this.inputElement?.value ?? "";
-    const query = trimRawQuery(raw);
+    const { query } = cleanCompletionQuery(raw);
     if (query.length < 2) {
       this.clearSuggestions();
       return;
@@ -413,7 +417,9 @@ export class MorcusDictSearch extends BaseElement {
       this.updateSuggestionsView();
     } else if (e.key === "Enter" && this.selectedSuggestionIndex >= 0) {
       e.preventDefault();
-      this.chooseSuggestion(this.suggestions[this.selectedSuggestionIndex]);
+      this.chooseSuggestion(
+        this.suggestions[this.selectedSuggestionIndex].word
+      );
     } else if (e.key === "Escape") {
       this.clearSuggestions();
     }

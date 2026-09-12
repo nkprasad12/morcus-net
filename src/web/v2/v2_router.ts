@@ -21,6 +21,7 @@ import {
 import { renderPageShell } from "@/web/v2/shell/page_shell.server";
 import { GitHub } from "@/web/utils/github";
 import { trimRawQuery } from "@/common/text_cleaning";
+import { getV2Completions } from "@/web/v2/dict/dict_completions.server";
 import type { ReportApiRequest } from "@/web/api_routes";
 import * as path from "path";
 import * as he from "he";
@@ -73,18 +74,19 @@ export function createV2Router(
 
   // Autocomplete endpoint for live search suggestions
   router.get("/api/completions", async (req: Request, res: Response) => {
-    const query =
-      typeof req.query.q === "string" ? trimRawQuery(req.query.q) : "";
-    if (!query || hasGreek(query)) {
-      res.json([]);
-      return;
-    }
-
+    const rawQuery = typeof req.query.q === "string" ? req.query.q : "";
     const dictParam =
       toStringOrArray(req.query.d) ??
       toStringOrArray(req.query.dict) ??
       toStringOrArray(req.query.in);
     const langParam = toStringOrArray(req.query.lang);
+    const rawLimit =
+      typeof req.query.limit === "string" ? req.query.limit : undefined;
+    const limitParam = rawLimit ? parseInt(rawLimit, 10) : NaN;
+    const limit =
+      Number.isFinite(limitParam) && limitParam > 0
+        ? Math.min(limitParam, 100)
+        : 25;
 
     const { dictKeys } = resolveActiveDicts({
       urlParam: dictParam,
@@ -95,18 +97,12 @@ export function createV2Router(
     const activeDicts = dictKeys.length > 0 ? dictKeys : ALL_LATIN_DICTS;
 
     try {
-      const completionsResult = await fusedDict.getCompletions({
-        query,
-        dicts: activeDicts,
+      const items = await getV2Completions(fusedDict, {
+        rawQuery,
+        activeDictKeys: activeDicts,
+        limit,
       });
-      // Deduplicate and flatten suggestions across dictionaries
-      const set = new Set<string>();
-      for (const key of Object.keys(completionsResult)) {
-        for (const item of completionsResult[key] || []) {
-          set.add(item);
-        }
-      }
-      res.json(Array.from(set).slice(0, 10));
+      res.json(items);
     } catch (err) {
       console.error("Error in completions:", err);
       res.json([]);
