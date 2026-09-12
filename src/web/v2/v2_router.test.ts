@@ -213,29 +213,28 @@ describe("v2_router integration", () => {
     expect(res.text).toContain("This site does not (yet) support Greek.");
   });
 
-  test("GET /v2/api/completions returns empty array for Greek query without dictionary lookup", async () => {
+  test("GET /v2/api/completions returns empty object for Greek query without dictionary lookup", async () => {
     (mockFusedDict.getCompletions as jest.Mock).mockClear();
     const res = await request(app).get(
-      `/v2/api/completions?q=${encodeURIComponent("λόγος")}`
+      `/v2/api/completions?prefix=${encodeURIComponent("λόγος")}`
     );
     expect(res.status).toBe(200);
-    expect(res.body).toEqual([]);
+    expect(res.body).toEqual({});
     expect(mockFusedDict.getCompletions).not.toHaveBeenCalled();
   });
 
-  test("GET /v2/api/completions returns JSON suggestions", async () => {
-    const res = await request(app).get("/v2/api/completions?q=am");
+  test("GET /v2/api/completions returns dictionary chunk map with Cache-Control header for prefix", async () => {
+    const res = await request(app).get("/v2/api/completions?prefix=am");
     expect(res.status).toBe(200);
     expect(res.header["content-type"]).toContain("application/json");
-    expect(res.body).toEqual([
-      { lang: "La", word: "amicitia" },
-      { lang: "La", word: "amo" },
-      { lang: "La", word: "amor" },
-    ]);
+    expect(res.header["cache-control"]).toContain("public, max-age=86400");
+    expect(res.body).toEqual({
+      ls: ["amicitia", "amo", "amor"],
+    });
   });
 
   test("GET /v2/api/completions sanitizes query parameter", async () => {
-    const res = await request(app).get('/v2/api/completions?q="am,"');
+    const res = await request(app).get('/v2/api/completions?prefix="am,"');
     expect(res.status).toBe(200);
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -252,11 +251,12 @@ describe("v2_router integration", () => {
         query: "-arum",
       })
     );
+    expect(Array.isArray(res.body)).toBe(true);
   });
 
   test("GET /v2/api/completions scopes completions to requested dicts", async () => {
     const res = await request(app).get(
-      "/v2/api/completions?q=am&dict=ls,gaffiot"
+      "/v2/api/completions?prefix=am&dict=ls,gaffiot"
     );
     expect(res.status).toBe(200);
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(
@@ -267,10 +267,10 @@ describe("v2_router integration", () => {
     );
   });
 
-  test("GET /v2/api/completions scopes completions to cookie dicts when no query param", async () => {
-    const res = await request(app)
-      .get("/v2/api/completions?q=am")
-      .set("Cookie", "morcus_dicts=GAF%3BGRG");
+  test("GET /v2/api/completions partitions by language when dicts are specified", async () => {
+    const res = await request(app).get(
+      "/v2/api/completions?prefix=am&dict=gaffiot,georges"
+    );
     expect(res.status).toBe(200);
     // Language-aware partitioning sends Latin dicts and German dicts separately
     expect(mockFusedDict.getCompletions).toHaveBeenCalledWith(

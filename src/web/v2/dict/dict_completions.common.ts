@@ -6,6 +6,8 @@ export interface CompletionItem {
   word: string;
 }
 
+export type DictChunksResponse = Record<string, string[]>;
+
 export interface CleanedCompletionQuery {
   query: string;
   isSuffix: boolean;
