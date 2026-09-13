@@ -77,4 +77,39 @@ describe("SmithAndHall dict", () => {
 
     expect(await dict.getCompletions("H")).toEqual(["Hello", "Hi"]);
   });
+
+  test("reviveRaw strips HTML tags from outline fields", async () => {
+    const rawEntry = {
+      id: "sh0",
+      keys: ["dog"],
+      entry: JSON.stringify({
+        entry: new XmlNode("div", [["id", "sh0"]], ["dog content"]).toString(),
+        outline: {
+          mainKey: "dog",
+          mainLabel: "dog (<i>subs.</i>)",
+          mainSection: {
+            level: 0,
+            ordinal: "0",
+            text: " <b>dog</b> (<i>subs.</i>)",
+            sectionId: "sh0",
+          },
+          senses: [
+            {
+              level: 2,
+              ordinal: "I.",
+              text: " <i>The animal</i>",
+              sectionId: "sh0.0",
+            },
+          ],
+        },
+      }),
+    };
+    SqliteDict.save([rawEntry], TEMP_FILE);
+    const dict = new SmithAndHall(sqliteBacking(TEMP_FILE));
+    const result = await dict.getEntryById("sh0");
+    expect(result).toBeDefined();
+    expect(result!.outline.mainLabel).toBe("dog (subs.)");
+    expect(result!.outline.mainSection.text).toBe("dog (subs.)");
+    expect(result!.outline.senses![0].text).toBe("The animal");
+  });
 });

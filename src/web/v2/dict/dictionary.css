@@ -1,6 +1,7 @@
 .v2-results {
   display: flex;
   flex-direction: column;
+  scroll-margin-top: 8px;
 }
 
 .v2-results > .v2-dict-card + .v2-dict-card {

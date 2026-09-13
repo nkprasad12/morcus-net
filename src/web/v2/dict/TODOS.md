@@ -125,7 +125,7 @@ every measured case (`.0` bucket: 8 direct + 32 via blurb + 0 unresolved).
 
 ## 3. Sanitize or render markup in Smith & Hall `mainLabel`
 
-**Status:** not started.
+**Status:** resolved (runtime sanitization complete; build-time extraction pending).
 
 ### Bug Description
 
@@ -150,10 +150,16 @@ The browser displays raw text `dog (<i>subs.</i>)` rather than italicized text `
    ```
    This converts `<` and `>` into `&#x3C;` and `&#x3E;`, causing the browser to render the raw HTML tag text on screen.
 
-### Proposed Solutions
+### Fix Implemented (Runtime Tier)
 
-- **Option A (Strip tags)**: Strip HTML tags from `mainLabel` either during preprocessing in `findShLabelText` or before rendering in `entry_view.server.ts` (e.g. `headword.replace(/<[^>]+>/g, "")` -> `dog (subs.)`).
-- **Option B (Support phrasing tags)**: If POS annotations like `(subs.)` should remain styled, sanitize `headword` to allow safe inline phrasing tags (`<i>`, `<em>`, `small`) rather than a blunt `he.encode()`, or render using a subset of `xmlNodeToHtml`.
+- **Runtime Revival Sanitization (`src/common/smith_and_hall/sh_dict.ts`)**:
+  Sanitizes `outline.mainLabel`, `outline.mainSection.text`, and `outline.senses[].text` upon JSON deserialization in `reviveRaw`, stripping inline HTML tags before handing entries to callers. This guarantees backwards compatibility with existing `sh.db` databases without forcing an immediate artifact rebuild.
+- **Defensive Rendering Sanitization (`src/web/v2/dict/entry_view.server.ts` & `dict_page.server.ts`)**:
+  Strips HTML tags from `headword` before `he.encode()` defensively across entry headers and multi-entry quick-jump bars.
+
+### Pending TODO (Build-Time / Extraction Tier)
+
+- [ ] **Build-time / Extraction tier**: Fix `src/common/smith_and_hall/sh_outline.ts` (`getOutline`, `findShLabelText`, and `chooseOutlineText`) so future database builds (`./morcus.sh build -b_sh`) generate pure plaintext `mainLabel` and outline text directly at the source (stripping inline HTML tags like `<i>...</i>`) without relying on runtime sanitization in `sh_dict.ts`.
 
 ---
 

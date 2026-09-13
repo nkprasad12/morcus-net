@@ -151,11 +151,12 @@ export function renderDictResultsHtml(
       if (totalEntries > 1) {
         const jumpLinks = entries
           .map((entry, idx) => {
-            const headword =
+            const rawHeadword =
               entry.outline?.mainLabel?.trim() ||
               entry.outline?.mainKey?.trim() ||
               entry.outline?.mainSection?.text?.trim() ||
               `Entry ${idx + 1}`;
+            const headword = rawHeadword.replace(/<[^>]+>/g, "").trim();
             const entryAnchor = entry.outline.mainSection.sectionId;
             return `<li><a href="#${entryAnchor}" class="v2-entry-nav-link"><span class="v2-entry-nav-word">${he.encode(
               headword

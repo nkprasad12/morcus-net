@@ -566,7 +566,6 @@ function artifactConfig(args: any): StepConfig[] {
       priority: 2,
     });
   }
-  setupSteps.push(v2BundleConfig(args, 2));
   if (args.build_latin_library === true) {
     if (args.build_corpus === true) {
       childEnv.BUILD_CORPUS = "1";
@@ -585,7 +584,9 @@ function artifactConfig(args: any): StepConfig[] {
 }
 
 function buildArtifacts(args: any): Promise<boolean> {
-  return runPipeline(artifactConfig(args), { parallel: true });
+  return runPipeline([v2BundleConfig(args, 1), ...artifactConfig(args)], {
+    parallel: true,
+  });
 }
 
 async function setupAndStartWebServer(args: any) {
