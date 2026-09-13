@@ -142,7 +142,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
         if (this.inputElement) {
           this.inputElement.value = q;
         }
-        this.fetchResults(q);
+        void this.fetchResults(q);
       },
       title: (q) =>
         q ? `${q} - Morcus Dictionary` : "Morcus Dictionary (UI V2)",
@@ -189,7 +189,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       this.clearSuggestions();
       const cleaned = trimRawQuery(q || "");
       if (cleaned) {
-        this.searchQuery(cleaned);
+        void this.searchQuery(cleaned);
       }
     });
 
@@ -305,7 +305,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
         const currentQuery = this.inputElement?.value.trim() ?? "";
         if (currentQuery) {
-          this.fetchResults(currentQuery);
+          void this.fetchResults(currentQuery);
         }
 
         // Re-cluster suggestions immediately if active prefix is in chunk cache
@@ -383,7 +383,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
 
         const currentQuery = this.inputElement?.value.trim() ?? "";
         if (currentQuery) {
-          this.fetchResults(currentQuery);
+          void this.fetchResults(currentQuery);
         }
       }
     );
@@ -510,7 +510,7 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
       this.inputElement.value = clean;
     }
     this.clearSuggestions();
-    this.searchQuery(clean);
+    void this.searchQuery(clean);
   }
 
   private async searchQuery(query: string) {
@@ -543,6 +543,13 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
     });
   }
 
+  /**
+   * Fetches and swaps in results for `query`.
+   *
+   * Does not reject: `fetchAndSwapPartial` reports failure by return value rather than
+   * by throwing. Callers in sync event handlers can therefore `void` this safely — if
+   * that ever stops being true, they need real rejection handling instead.
+   */
   private async fetchResults(query: string) {
     if (!this.resultsElement) return;
     const currentParams = new URLSearchParams(window.location.search);

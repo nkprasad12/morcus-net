@@ -255,6 +255,51 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       we are on 8.38), which reuses the incremental program the editor already maintains, rather
       than giving up type-aware rules.
 
+      **Partly done** — the two async rules above are now enabled for all of `src/web/v2/**/*.ts`
+      (a fourth V2 block at the bottom of `eslint.config.mjs`); the rest of the preset is still
+      open and is what remains of this item.
+
+      The counts held: **7** `no-misused-promises`, all in `v2_router.server.ts`, and **9**
+      `no-floating-promises`. Tests had **zero** violations, so no test exemption was needed and
+      the block covers `.test.ts` too. Repo-wide there are **93** violations outside V2
+      (`src/web/client` 44, `run_morcus.ts` 9, `benchmark_configs.ts` 6, `start_server.ts` 6,
+      `lewis_and_short` 5, …), which is why the block is scoped to V2 rather than global.
+
+      Only **two** of the seven async handlers were live crash paths: `/reader` and
+      `/reader/:author/:name/:page?` both `await getV2Work(...)` before entering any `try`. The
+      other five have all their awaits inside one. The non-obvious part is that marking a handler
+      `async` also converts its *synchronous* throws into rejections, so it forfeits the sync-throw
+      handling Express 4 does provide — the risk is invisible at the throw site. There is no
+      error-handling middleware anywhere in the app, so the fix routes rejections to Express's
+      default handler (500 + stack) via a local `asyncHandler` wrapper that does `.catch(next)`.
+
+      `asyncHandler` was kept local to `v2_router.server.ts` rather than extracted to `core/`:
+      there is one consumer, `core/` contains no `.server.ts` at all today, and the Phase 4 router
+      split can hoist it once there are several. Handlers are registered through local `getAsync` /
+      `postAsync` helpers rather than wrapping inline. That is not cosmetic: with
+      `router.get("/x", asyncHandler(async (req, res) => {`, the last argument is a call
+      expression, so prettier stops hugging the callback and re-indents every handler body —
+      ~450 lines of noise in a 577-line file. With the registrars, each handler is a one-line diff.
+
+      On the client side all 9 floating promises were genuinely fire-and-forget: `searchQuery` and
+      `fetchResults` bottom out in `fetchAndSwapPartial`, whose entire body is a `try`/`catch`
+      returning a boolean, so they cannot reject; `submitReport` likewise. Those got `void`.
+      `reader_view.client.ts`'s `lookupWord` was different — it was `async` with **no `await` in
+      its body** and no caller awaiting it, so dropping `async` removed three of the nine sites
+      outright rather than papering over them.
+
+      Guardrail probes confirmed all five bans fire (relative import, `he` in a `.client.ts`,
+      `.client` import from a `.server.ts`, floating promise, async Express handler). Re-probing
+      `no-restricted-imports` mattered specifically because flat config *replaces* rule options:
+      the new block deliberately configures neither. Lint cost is ~1 s on an 11 s run (single
+      sample), as predicted — the `Program` was already being built.
+
+- [ ] 🟡 **Fix the ~7 async-safety violations in `start_server.ts` / `web_server.ts`.** Filed off
+      the back of the item above. Those two files are outside `src/web/v2`, so the new block does
+      not cover them, but they are the process entry points: an unhandled rejection there takes
+      down the whole server, V2 included. Small enough to do as a one-off without taking on the
+      other ~86 legacy violations.
+
 - [ ] 🟡 **Add `eslint-plugin-no-unsanitized`, configured to trust the `html` helper.** There are
       **13** `innerHTML` / `outerHTML` / `insertAdjacentHTML` / `createContextualFragment` sites in
       non-test V2 code, across `core/partial.client.ts`, `dict_greek.client.ts`,

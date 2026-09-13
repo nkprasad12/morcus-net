@@ -290,7 +290,7 @@ export class MorcusReaderView extends BaseElement {
     }
   }
 
-  private async lookupWord(
+  private lookupWord(
     word: string,
     activeAnchor?: HTMLElement,
     updateHistory: boolean = true
