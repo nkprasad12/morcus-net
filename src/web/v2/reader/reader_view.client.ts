@@ -227,14 +227,30 @@ export class MorcusReaderView extends BaseElement {
     }
   }
 
+  /**
+   * Makes `el` the only highlighted word in the passage, or clears the highlight
+   * entirely when given nothing.
+   *
+   * Queries the active word rather than every word: the highlight is on at most one
+   * element, but a chapter holds thousands, and this runs synchronously in the click
+   * handler before the new highlight is painted.
+   *
+   * The `.v2-reader-text-panel` scope is load-bearing. `linkifyText` also emits
+   * `v2-word-active` on dictionary-entry markup, which must not be cleared from here.
+   */
+  private setActiveWord(el?: HTMLElement | null) {
+    const active = this.querySelectorAll<HTMLElement>(
+      ".v2-reader-text-panel .v2-word-active"
+    );
+    active.forEach((word) => word.classList.remove("v2-word-active"));
+    el?.classList.add("v2-word-active");
+  }
+
   private dismissDictionary(updateHistory: boolean = true) {
     this.currentQuery = "";
 
     // Remove active highlights
-    const allWords = this.querySelectorAll<HTMLElement>(
-      ".v2-reader-text-panel .v2-lat-word"
-    );
-    allWords.forEach((el) => el.classList.remove("v2-word-active"));
+    this.setActiveWord(null);
 
     // Reset iframe to default embedded state
     const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
@@ -293,16 +309,7 @@ export class MorcusReaderView extends BaseElement {
     this.currentQuery = word;
 
     // Update active highlight in the text
-    const allWords = this.querySelectorAll<HTMLElement>(
-      ".v2-reader-text-panel .v2-lat-word"
-    );
-    allWords.forEach((el) => el.classList.remove("v2-word-active"));
-    if (activeAnchor) {
-      activeAnchor.classList.add("v2-word-active");
-    } else {
-      const match = this.findWordElement(word);
-      if (match) match.classList.add("v2-word-active");
-    }
+    this.setActiveWord(activeAnchor ?? this.findWordElement(word));
 
     // Update dictionary iframe (filtering by lang=La and forcing inflected search o=1 for Latin text word lookups)
     const iframe = this.querySelector<HTMLIFrameElement>("#v2-dict-frame");
