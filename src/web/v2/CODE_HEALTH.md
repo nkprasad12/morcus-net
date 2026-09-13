@@ -140,10 +140,11 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       blanket ban. Deliberately **not** covered: `*.test.ts` (colocated tests legitimately exercise
       both tiers, and `foo.client.test.ts` ends in `.test.ts` so it falls outside the globs), and
       the four unsuffixed modules in the next item, which no glob can match until they are renamed.
-- [ ] 🟢 **Add a client bundle size budget** to `src/bundler/v2.rsbuild.ts`. [README.md](README.md)
-      claims "< 20 KB gzipped"; the minified bundle currently measures **21.0 KB gzipped**
-      (74.5 KB raw). Either fix the claim or enforce it — right now nothing checks, so it will
-      drift further. (CSS is a further 15.4 KB gzipped / 91.8 KB raw.)
+- [x] 🟢 **Fix stale bundle size claims in [README.md](README.md).** [README.md](README.md) claimed
+      "< 20 KB gzipped", but the minified bundle measures **21.0 KB gzipped** (74.6 KB raw) and
+      active feature prototyping is ongoing.
+      **Done**: removed the stale "< 20 KB" claims from [README.md](README.md) §Core Principles and
+      §Data Flow. Automated budget enforcement is deferred until the prototype feature set stabilizes.
 - [x] 🟢 **Give the four unsuffixed modules a tier**: `core/icons.ts`, `dict/dict_attribution.ts`,
       `reader/reader_types.ts`, `reader/reader_data.ts`. Renaming makes the convention total rather
       than mostly-true, which matters more than tidiness: a file with no target suffix matches no
