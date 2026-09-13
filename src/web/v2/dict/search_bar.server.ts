@@ -2,7 +2,7 @@ import * as he from "he";
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
 import { encodeDictBitmask } from "@/web/v2/dict/dict_bitmask.common";
-import { ICON_PATHS } from "@/web/v2/core/icons";
+import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 import {
   computeActiveLanguages,

@@ -11,7 +11,7 @@ import {
   matchedAnchorIds,
   renderSubsectionNote,
 } from "@/web/v2/dict/subsection_note.server";
-import { renderIconSvg } from "@/web/v2/core/icons";
+import { renderIconSvg } from "@/web/v2/core/icons.common";
 import * as he from "he";
 
 export { formatInflectionForm };

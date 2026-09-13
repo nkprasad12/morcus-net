@@ -1,7 +1,7 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import { DEFAULT_DICT_KEYS } from "@/web/v2/dict/dict_selection.server";
-import { ICON_PATHS } from "@/web/v2/core/icons";
+import { ICON_PATHS } from "@/web/v2/core/icons.common";
 
 function fullLang(code: string): string {
   switch (code) {

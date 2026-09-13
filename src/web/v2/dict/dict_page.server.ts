@@ -7,7 +7,7 @@ import {
   DICT_ATTRIBUTIONS,
   DICT_NAMES,
   DICT_ACRONYMS,
-} from "@/web/v2/dict/dict_attribution";
+} from "@/web/v2/dict/dict_attribution.server";
 import { renderDictLandingHtml } from "@/web/v2/dict/dict_landing.server";
 import { hasGreek } from "@/web/v2/dict/dict_greek.common";
 import { renderGreekFallbackHtml } from "@/web/v2/dict/dict_greek.server";

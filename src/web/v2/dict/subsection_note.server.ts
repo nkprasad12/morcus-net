@@ -8,7 +8,7 @@ import {
   renderInflectionInline,
   renderInflectionTable,
 } from "@/web/v2/dict/inflection_table.server";
-import { renderIconSvg } from "@/web/v2/core/icons";
+import { renderIconSvg } from "@/web/v2/core/icons.common";
 import * as he from "he";
 
 /** A subsection anchor that resolves to an element in the rendered entry. */
