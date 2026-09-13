@@ -13,6 +13,12 @@ export class MorcusDictSuggestions extends BaseElement {
     super();
     this.listEl = document.createElement("ul");
     this.listEl.className = "v2-suggestions";
+  }
+
+  protected override onConnect() {
+    if (!this.contains(this.listEl)) {
+      this.appendChild(this.listEl);
+    }
 
     // Event delegation on container: avoids creating closure listeners for each item
     this.delegate<HTMLElement>(
@@ -26,12 +32,7 @@ export class MorcusDictSuggestions extends BaseElement {
         }
       }
     );
-  }
 
-  protected override onConnect() {
-    if (!this.contains(this.listEl)) {
-      this.appendChild(this.listEl);
-    }
     this.render();
   }
 

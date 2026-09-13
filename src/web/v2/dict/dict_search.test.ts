@@ -637,6 +637,36 @@ describe("MorcusDictSearch client progressive enhancement", () => {
       done();
     });
   });
+
+  test("still reacts to suggestion-select after the element is re-attached", () => {
+    const el = createDictSearch();
+    const suggestions = el.querySelector("morcus-dict-suggestions");
+    expect(suggestions).not.toBeNull();
+    const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+    const selectHabeo = () =>
+      suggestions!.dispatchEvent(
+        new CustomEvent("suggestion-select", {
+          detail: { word: "habeo" },
+          bubbles: true,
+        })
+      );
+
+    // Establish that the handler runs at all on the first attach.
+    input.value = "";
+    selectHabeo();
+    expect(input.value).toBe("habeo");
+
+    // Moving an element in the DOM disconnects and reconnects it, which runs
+    // BaseElement's dispose(). The child is created once and cached, so the
+    // listener has to be re-registered outside that one-time creation.
+    el.remove();
+    document.body.appendChild(el);
+
+    input.value = "";
+    selectHabeo();
+    expect(input.value).toBe("habeo");
+  });
+
   describe("stale response handling", () => {
     /**
      * Replaces fetch with one that never settles on its own, so tests can
