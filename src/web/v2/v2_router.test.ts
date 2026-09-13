@@ -163,6 +163,93 @@ describe("v2_router integration", () => {
     );
   });
 
+  describe("No-JS form submissions", () => {
+    test("honours a single selected dictionary and persists it", async () => {
+      const res = await request(app).get("/v2/dicts?q=amo&dict=GAF");
+      expect(res.status).toBe(200);
+      // Regression: "GAF" used to be read as base36 21111, enabling six dictionaries.
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ query: "amo", dicts: ["GAF"] })
+      );
+      expect(res.header["set-cookie"][0]).toContain("morcus_dicts=GAF");
+    });
+
+    test("honours repeated dict checkboxes", async () => {
+      const res = await request(app).get("/v2/dicts?q=amo&dict=L%26S&dict=GRG");
+      expect(res.status).toBe(200);
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ dicts: ["L&S", "GRG"] })
+      );
+    });
+
+    test("prefers the checkboxes over the bitmask rendered into the same form", async () => {
+      // The hidden `d` is gone now, but a stale bitmask may still sit in the page URL that the
+      // form submits from.
+      const res = await request(app).get("/v2/dicts?q=amo&d=an&dict=GAF");
+      expect(res.status).toBe(200);
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ dicts: ["GAF"] })
+      );
+    });
+
+    test("re-enables inflection from the hidden-0 plus checked-1 pair", async () => {
+      const res = await request(app)
+        .get("/v2/dicts?q=amavi&o=0&o=1&dict=GAF")
+        .set("Cookie", "morcus_dicts=GAF; morcus_inflected=0");
+
+      expect(res.status).toBe(200);
+      // Regression: ["0", "1"] matched neither branch, so the stale cookie kept inflection off.
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ query: "amavi", mode: 1 })
+      );
+      expect(res.header["set-cookie"].join(";")).toContain(
+        "morcus_inflected=1"
+      );
+    });
+
+    test("disables inflection from the hidden 0 alone", async () => {
+      const res = await request(app).get("/v2/dicts?q=amavi&o=0&dict=GAF");
+      expect(res.status).toBe(200);
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ mode: 0 })
+      );
+      expect(res.header["set-cookie"].join(";")).toContain(
+        "morcus_inflected=0"
+      );
+    });
+
+    test("persists an inflection change even when dictionaries come from the cookie", async () => {
+      const res = await request(app)
+        .get("/v2/dicts?q=amavi&o=0")
+        .set("Cookie", "morcus_dicts=GAF");
+
+      expect(res.status).toBe(200);
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ dicts: ["GAF"], mode: 0 })
+      );
+      expect(res.header["set-cookie"].join(";")).toContain(
+        "morcus_inflected=0"
+      );
+    });
+
+    test("resolves a single-dictionary cookie exactly", async () => {
+      const res = await request(app)
+        .get("/v2/dicts?q=amo")
+        .set("Cookie", "morcus_dicts=GAF");
+      expect(res.status).toBe(200);
+      expect(mockFusedDict.getEntry).toHaveBeenCalledWith(
+        expect.objectContaining({ dicts: ["GAF"] })
+      );
+    });
+
+    test("does not render a hidden bitmask input alongside the checkboxes", async () => {
+      const res = await request(app).get("/v2/dicts?q=amo");
+      expect(res.status).toBe(200);
+      expect(res.text).not.toContain('name="d"');
+      expect(res.text).toContain('name="dict"');
+    });
+  });
+
   test("GET /v2/dicts with reader query (embedded=1, o=1, lang=La) forces inflected search, filters to Latin lexica, and does not pollute cookies", async () => {
     (mockFusedDict.getEntry as jest.Mock).mockClear();
 

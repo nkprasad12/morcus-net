@@ -28,19 +28,35 @@ describe("dict_selection.common", () => {
       expect(parseDictKeys(["ls", "gaffiot"])).toEqual(["L&S", "GAF"]);
     });
 
-    it("parses Base36 bitmask strings", () => {
-      expect(parseDictKeys("3")).toEqual(["L&S", "GAF"]);
-      expect(parseDictKeys("e7")).toEqual([
-        "L&S",
-        "GAF",
-        "GES",
-        "FOR",
-        "S&H",
-        "R&A",
-        "GRG",
-        "EGL",
-        "NUM",
-      ]);
+    it("splits delimited lists inside array entries", () => {
+      // URLSearchParams.getAll("dict") yields ["ls,gaffiot"] for ?dict=ls,gaffiot
+      expect(parseDictKeys(["ls,gaffiot"])).toEqual(["L&S", "GAF"]);
+      expect(parseDictKeys(["LnS-SnH", "GAF"])).toEqual(["L&S", "S&H", "GAF"]);
+    });
+
+    it.each([
+      ["GAF", "GAF"],
+      ["GRG", "GRG"],
+      ["FOR", "FOR"],
+      ["GES", "GES"],
+      ["NUM", "NUM"],
+      ["EGL", "EGL"],
+      ["L&S", "L&S"],
+      ["S&H", "S&H"],
+      ["R&A", "R&A"],
+      ["ls", "L&S"],
+      ["sh", "S&H"],
+      ["LnS", "L&S"],
+      ["gaffiot", "GAF"],
+      ["pozo", "EGL"],
+    ])("resolves the single key %s without base36 corruption", (raw, key) => {
+      expect(parseDictKeys(raw)).toEqual([key]);
+    });
+
+    it("does not interpret base36 bitmasks", () => {
+      // "3" would decode to ["L&S", "GAF"] as a bitmask; only ?d= may mean that.
+      expect(parseDictKeys("3")).toBeNull();
+      expect(parseDictKeys("e7")).toBeNull();
     });
 
     it("returns null for empty or invalid input", () => {

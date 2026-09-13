@@ -143,11 +143,19 @@ export function renderDictSearchBar(options: SearchBarOptions): string {
         .join("\n")
     : "";
 
+  // The settings popover renders live `dict` checkboxes, which are the real form controls.
+  // A static bitmask submitted alongside them can only ever be stale in No-JS mode, where nothing
+  // updates it. When the popover is omitted the form has no other carrier of dictionary state,
+  // so the hidden field is kept there.
+  const dictStateInputHtml = includeSettings
+    ? ""
+    : `<input type="hidden" name="d" value="${he.escape(dictBitmask)}" />`;
+
   return `
     <form class="v2-search-form" action="${he.escape(
       options.action
     )}" method="GET">
-      <input type="hidden" name="d" value="${he.escape(dictBitmask)}" />
+      ${dictStateInputHtml}
       ${hiddenInputsHtml}
       <div class="v2-input-wrapper">
         <input

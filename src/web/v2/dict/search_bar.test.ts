@@ -1,3 +1,4 @@
+import { LatinDict } from "@/common/dictionaries/latin_dicts";
 import { renderDictSearchBar } from "@/web/v2/dict/search_bar.server";
 
 describe("renderDictSearchBar", () => {
@@ -51,7 +52,7 @@ describe("renderDictSearchBar", () => {
     expect(html).toContain("&lt;script&gt;");
   });
 
-  test("renders hidden d bitmask input and inflection toggle", () => {
+  test("renders dict checkboxes instead of a stale bitmask, plus the inflection toggle", () => {
     const html = renderDictSearchBar({
       query: "amare",
       action: "/v2/dicts",
@@ -59,12 +60,29 @@ describe("renderDictSearchBar", () => {
       isInflected: true,
     });
 
-    // L&S (1) + GAF (2) = 3
-    expect(html).toContain('<input type="hidden" name="d" value="3" />');
+    // The checkboxes are the live controls; a hidden bitmask beside them would be frozen to this
+    // render and would override the user's No-JS changes on submit.
+    expect(html).not.toContain('name="d"');
+    expect(html.match(/name="dict"/g)).toHaveLength(LatinDict.AVAILABLE.length);
+    expect(html.match(/checked/g)).toHaveLength(3); // L&S, GAF, and the inflection toggle
     expect(html).toContain('<input type="hidden" name="o" value="0" />');
     expect(html).toContain('id="v2-toggle-inflected"');
     expect(html).toContain('class="v2-inflected-checkbox"');
     expect(html).toContain("checked");
+  });
+
+  test("keeps the hidden d bitmask when the settings popover is omitted", () => {
+    const html = renderDictSearchBar({
+      query: "amare",
+      action: "/v2/dicts",
+      activeDicts: ["L&S", "GAF"],
+      includeSettings: false,
+    });
+
+    // No checkboxes are rendered here, so the hidden field is the form's only dictionary state.
+    // L&S (1) + GAF (2) = 3
+    expect(html).toContain('<input type="hidden" name="d" value="3" />');
+    expect(html).not.toContain('name="dict"');
   });
 
   test("renders unchecked inflection toggle when isInflected is false", () => {

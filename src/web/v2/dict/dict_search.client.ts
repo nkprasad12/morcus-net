@@ -22,10 +22,13 @@ import type { MorcusDictSuggestions } from "@/web/v2/dict/dict_suggestions.clien
 import { buildWelcomeMessage } from "@/web/v2/dict/dict_landing.common";
 import {
   encodeDictBitmask,
-  decodeDictBitmask,
   DEFAULT_DICT_BITMASK,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_bitmask.common";
+import {
+  parseInflectionParam,
+  resolveDictParams,
+} from "@/web/v2/dict/dict_selection.common";
 import { handleDictPermalinkClick } from "@/web/v2/dict/dict_permalink.client";
 import {
   computeActiveLanguages,
@@ -151,54 +154,25 @@ export class MorcusDictSearch extends BaseElement<"completions" | "results"> {
   private initActiveSettings() {
     const params = new URLSearchParams(window.location.search);
 
-    // Resolve inflection state: URL 'o' > stored setting > default (true)
-    const oParam = params.get("o");
-    if (oParam === "0") {
-      this.isInflected = false;
-    } else if (oParam === "1") {
-      this.isInflected = true;
-    } else {
-      const storedInflected = inflectedSettingsStore.get();
-      if (typeof storedInflected === "boolean") {
-        this.isInflected = storedInflected;
-      } else {
-        this.isInflected = true;
-      }
-    }
+    // Resolve inflection state: URL 'o' > stored setting > default (true).
+    // getAll, not get: a No-JS form submits the hidden "0" and the checked box's "1" together.
+    this.isInflected =
+      parseInflectionParam(params.getAll("o")) ??
+      inflectedSettingsStore.get() ??
+      true;
 
-    // Resolve dict bitmask: URL 'd' > stored setting > default ("an")
-    const dParam = params.get("d");
-    if (dParam) {
-      const decoded = decodeDictBitmask(dParam);
-      if (decoded && decoded.length > 0) {
-        this.activeDictBitmask = dParam;
-        this.activeDictKeys = decoded;
-        return;
-      }
-    }
-
-    const inParam = params.get("in") || params.get("dict");
-    if (inParam) {
-      const keys = inParam
-        .split(inParam.includes(",") ? "," : "-")
-        .map((k) => k.replace(/([a-zA-Z])n([a-zA-Z])/g, "$1&$2"));
-      const mask = encodeDictBitmask(keys);
-      const decoded = decodeDictBitmask(mask);
-      if (decoded && decoded.length > 0) {
-        this.activeDictBitmask = mask;
-        this.activeDictKeys = decoded;
-        return;
-      }
-    }
-
-    const storedDicts = dictSettingsStore.get();
-    if (storedDicts && storedDicts.length > 0) {
-      this.activeDictKeys = storedDicts;
-      this.activeDictBitmask = encodeDictBitmask(storedDicts);
-    } else {
-      this.activeDictKeys = [...DEFAULT_DICT_KEYS];
-      this.activeDictBitmask = DEFAULT_DICT_BITMASK;
-    }
+    // Resolve dictionaries: URL ('dict' > 'd' > 'in') > stored setting > default.
+    const keysFromQuery = resolveDictParams({
+      dictParam: params.getAll("dict"),
+      bitmaskParam: params.get("d"),
+      inParam: params.getAll("in"),
+    });
+    const keys = keysFromQuery ??
+      dictSettingsStore.get() ?? [...DEFAULT_DICT_KEYS];
+    this.activeDictKeys = keys;
+    // The bitmask is what we send to the server and write back to the URL, so it must never drift
+    // from activeDictKeys.
+    this.activeDictBitmask = encodeDictBitmask(keys);
   }
 
   protected override onDisconnect() {
