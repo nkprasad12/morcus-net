@@ -297,4 +297,119 @@ describe("DrawerController", () => {
     handle.dispatchEvent(new KeyboardEvent("keydown", { key: "Escape" }));
     expect(onEscape).not.toHaveBeenCalled();
   });
+
+  describe("drag state classes", () => {
+    const pointerDown = (target: Element) =>
+      target.dispatchEvent(
+        new PointerEvent("pointerdown", {
+          button: 0,
+          bubbles: true,
+          clientX: 100,
+          clientY: 300,
+          pointerId: 1,
+        })
+      );
+
+    const pointerEvent = (target: Element, type: string) =>
+      target.dispatchEvent(
+        new PointerEvent(type, {
+          bubbles: true,
+          clientX: 100,
+          clientY: 250,
+          pointerId: 1,
+        })
+      );
+
+    /**
+     * The drawer's `transition: height 0.25s` is suppressed mid-drag by
+     * `.v2-drawer.v2-is-dragging` (core/drawer.css) and, for the reader,
+     * `.v2-reader-dict-panel.v2-is-dragging` (reader/reader.css). Both select the
+     * *panel*, but the handle is a child of it, so marking only the handle leaves
+     * both rules dead and the drawer eases toward the pointer for the whole drag.
+     */
+    test("marks the drawer itself, not only the handle, while dragging", () => {
+      const controller = new DrawerController({ drawer, handle });
+
+      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
+
+      pointerDown(handle);
+
+      expect(drawer.classList.contains("v2-is-dragging")).toBe(true);
+      expect(handle.classList.contains("v2-is-dragging")).toBe(true);
+
+      controller.destroy();
+    });
+
+    test("clears the drawer marker on pointerup", () => {
+      const controller = new DrawerController({ drawer, handle });
+
+      pointerDown(handle);
+      pointerEvent(handle, "pointerup");
+
+      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
+      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+
+      controller.destroy();
+    });
+
+    test("clears the drawer marker on pointercancel", () => {
+      const controller = new DrawerController({ drawer, handle });
+
+      pointerDown(handle);
+      pointerEvent(handle, "pointercancel");
+
+      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
+      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+
+      controller.destroy();
+    });
+
+    // Without this, a drawer torn down mid-drag keeps `transition: none` forever.
+    test("clears the drawer marker when destroyed mid-drag", () => {
+      const controller = new DrawerController({ drawer, handle });
+
+      pointerDown(handle);
+      expect(drawer.classList.contains("v2-is-dragging")).toBe(true);
+
+      controller.destroy();
+
+      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
+      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+      expect(document.body.classList.contains("v2-resizing-drawer")).toBe(
+        false
+      );
+    });
+
+    test("does not mark the drawer when the drag is filtered out", () => {
+      const controller = new DrawerController({
+        drawer,
+        handle,
+        filter: (e) =>
+          !(
+            e.target instanceof Element && e.target.closest(".v2-drawer-close")
+          ),
+      });
+
+      pointerDown(drawer.querySelector(".v2-drawer-close")!);
+
+      expect(drawer.classList.contains("v2-is-dragging")).toBe(false);
+      expect(handle.classList.contains("v2-is-dragging")).toBe(false);
+
+      controller.destroy();
+    });
+
+    test("toggles the body resizing class across the drag", () => {
+      const controller = new DrawerController({ drawer, handle });
+
+      pointerDown(handle);
+      expect(document.body.classList.contains("v2-resizing-drawer")).toBe(true);
+
+      pointerEvent(handle, "pointerup");
+      expect(document.body.classList.contains("v2-resizing-drawer")).toBe(
+        false
+      );
+
+      controller.destroy();
+    });
+  });
 });
