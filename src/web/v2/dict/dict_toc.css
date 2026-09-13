@@ -179,12 +179,13 @@
      the lowest content isn't obscured by the minimized drawer teaser handle */
   .v2-results-layout.has-toc {
     padding-bottom: calc(
-      var(--v2-drawer-min-height, 54px) + env(safe-area-inset-bottom, 0px) +
-        16px
+      var(--v2-drawer-min-height, 28px) + env(safe-area-inset-bottom, 0px) +
+        12px
     );
   }
 
   .v2-drawer-toc {
+    --v2-drawer-min-height: 28px;
     height: var(--v2-drawer-height, 48dvh);
     max-height: 88dvh;
     border-top: 2px solid var(--v2-border-strong);
@@ -193,22 +194,33 @@
   }
 
   .v2-drawer-toc.v2-drawer-minimized {
-    height: var(--v2-drawer-min-height, 54px) !important;
+    height: var(--v2-drawer-min-height, 28px) !important;
   }
 
   .v2-drawer-toc:not(:has(.v2-toc-details[open])) {
-    height: var(--v2-drawer-min-height, 54px) !important;
+    height: var(--v2-drawer-min-height, 28px) !important;
+  }
+
+  .v2-drawer-toc .v2-drawer-teaser {
+    display: none !important;
+  }
+
+  .v2-drawer-toc .v2-drawer-handle {
+    margin-bottom: 0 !important;
   }
 
   .v2-drawer-toc .v2-toc-bar {
-    padding: 8px 14px 8px;
+    padding: 10px 14px;
+    min-height: var(--v2-drawer-min-height, 28px);
+    display: flex;
+    justify-content: center;
     border-bottom: 1px solid var(--v2-border);
     cursor: grab;
   }
 
   .v2-drawer-toc .v2-toc-body {
     max-height: calc(
-      var(--v2-drawer-height, 48dvh) - var(--v2-drawer-min-height, 54px)
+      var(--v2-drawer-height, 48dvh) - var(--v2-drawer-min-height, 28px)
     );
     overflow-y: auto;
   }

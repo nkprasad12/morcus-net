@@ -586,4 +586,55 @@ describe("MorcusDictSearch client progressive enhancement", () => {
     expect(updatedInflectChip.classList.contains("is-on")).toBe(false);
     expect(updatedInflectChip.textContent).toContain("Off");
   });
+
+  test("scrolls past search bar to results when loading with a search query and no hash", (done) => {
+    const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
+    el.innerHTML = `
+      <form class="v2-search-form" action="/v2/dicts" method="GET">
+        <div class="v2-input-wrapper">
+          <input type="text" name="q" class="v2-input" value="habeo" />
+        </div>
+      </form>
+      <output id="dict-results" class="v2-results">
+        <div>Results for habeo</div>
+      </output>
+    `;
+    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
+    const scrollMock = jest.fn();
+    resultsEl.scrollIntoView = scrollMock;
+
+    document.body.appendChild(el);
+
+    requestAnimationFrame(() => {
+      expect(scrollMock).toHaveBeenCalledWith({
+        behavior: "instant",
+        block: "start",
+      });
+      done();
+    });
+  });
+
+  test("focuses search input and does not auto-scroll on empty query landing page", (done) => {
+    const el = document.createElement("morcus-dict-search") as MorcusDictSearch;
+    el.innerHTML = `
+      <form class="v2-search-form" action="/v2/dicts" method="GET">
+        <div class="v2-input-wrapper">
+          <input type="text" name="q" class="v2-input" value="" />
+        </div>
+      </form>
+      <output id="dict-results" class="v2-results"></output>
+    `;
+    const resultsEl = el.querySelector<HTMLElement>("#dict-results")!;
+    const scrollMock = jest.fn();
+    resultsEl.scrollIntoView = scrollMock;
+
+    document.body.appendChild(el);
+
+    requestAnimationFrame(() => {
+      expect(scrollMock).not.toHaveBeenCalled();
+      const input = el.querySelector<HTMLInputElement>("input.v2-input")!;
+      expect(document.activeElement).toBe(input);
+      done();
+    });
+  });
 });

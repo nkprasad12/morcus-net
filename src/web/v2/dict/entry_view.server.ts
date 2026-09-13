@@ -55,11 +55,12 @@ export function renderEntryResult(
     mainKey: result.outline?.mainKey,
   });
 
-  const headword =
+  const rawHeadword =
     result.outline?.mainLabel?.trim() ||
     result.outline?.mainKey?.trim() ||
     result.outline?.mainSection?.text?.trim() ||
     (isMultiEntry ? `Entry ${entryNumber ?? 1}` : "");
+  const headword = rawHeadword.replace(/<[^>]+>/g, "").trim();
 
   // The headword itself is inert text. The permalink lives in its own pill so
   // that every entry gets an identical header composition, whether or not it

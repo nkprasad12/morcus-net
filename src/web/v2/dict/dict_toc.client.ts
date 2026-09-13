@@ -57,7 +57,7 @@ export class MorcusDictToc extends BaseElement {
             handle,
             layoutElement: document.documentElement,
             detailsElement: details,
-            minHeight: 54,
+            minHeight: 28,
             defaultDvh: 48,
             floorDvh: 18,
             expandedDvh: 88,

@@ -661,6 +661,28 @@ describe("dict_ssr", () => {
     expect(rendered).toContain("habeo");
   });
 
+  test("renderEntryResult defensively strips HTML tags from headword", () => {
+    const entryResult: EntryResult = {
+      entry: new XmlNode("div", [["id", "sh7671"]], ["dog content"]),
+      outline: {
+        mainKey: "dog",
+        mainLabel: "dog (<i>subs.</i>)",
+        mainSection: {
+          text: " <b>dog</b> (<i>subs.</i>)",
+          level: 0,
+          ordinal: "0",
+          sectionId: "sh7671",
+        },
+      },
+    };
+    const rendered = renderEntryResult(entryResult);
+    expect(rendered).toContain(
+      '<span class="v2-entry-headword-text">dog (subs.)</span>'
+    );
+    expect(rendered).not.toContain("&lt;i&gt;");
+    expect(rendered).not.toContain("&#x3C;i&#x3E;");
+  });
+
   test("xmlNodeToHtml adds tabindex=0 and preserves title on expandable abbreviations", () => {
     const abbrNode = new XmlNode(
       "span",

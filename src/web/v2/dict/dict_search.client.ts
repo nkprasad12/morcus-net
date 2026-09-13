@@ -414,8 +414,30 @@ export class MorcusDictSearch extends BaseElement {
       }
     );
 
-    if (this.inputElement && document.activeElement === document.body) {
+    const currentQuery = this.inputElement?.value.trim() ?? "";
+    const hasHash = Boolean(window.location.hash);
+    const navEntry = performance.getEntriesByType?.("navigation")?.[0] as
+      | PerformanceNavigationTiming
+      | undefined;
+    const isBackForward = navEntry?.type === "back_forward";
+
+    if (currentQuery && !hasHash && !isBackForward && this.resultsElement) {
+      requestAnimationFrame(() => {
+        this.scrollToResults("instant");
+      });
+    } else if (
+      !currentQuery &&
+      this.inputElement &&
+      document.activeElement === document.body
+    ) {
       this.inputElement.focus();
+    }
+  }
+
+  private scrollToResults(behavior: ScrollBehavior = "instant") {
+    if (!this.resultsElement) return;
+    if (typeof this.resultsElement.scrollIntoView === "function") {
+      this.resultsElement.scrollIntoView({ behavior, block: "start" });
     }
   }
 
@@ -540,8 +562,10 @@ export class MorcusDictSearch extends BaseElement {
     const newSearchPath = url.pathname + url.search;
     window.history.pushState({ q: cleanQuery }, "", newSearchPath);
     document.title = `${cleanQuery} - Morcus Dictionary`;
-
     await this.fetchResults(cleanQuery);
+    requestAnimationFrame(() => {
+      this.scrollToResults("smooth");
+    });
   }
 
   private async fetchResults(query: string) {
