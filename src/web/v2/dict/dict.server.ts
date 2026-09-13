@@ -34,6 +34,7 @@ export {
 export {
   DICT_NAMES,
   DictPageOptions,
+  renderDictErrorHtml,
   renderDictResultsHtml,
   renderDictPageHtml,
 } from "@/web/v2/dict/dict_page.server";

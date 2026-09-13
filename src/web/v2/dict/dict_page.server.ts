@@ -17,6 +17,24 @@ import * as he from "he";
 export { DICT_NAMES, DICT_ACRONYMS };
 
 /**
+ * Renders the error partial shown when a dictionary lookup fails.
+ *
+ * `term` is user-controlled (a raw search query or entry id), so it is escaped.
+ * Kept here beside the other `.v2-no-results` renderers so the router never
+ * hand-builds this markup — an earlier inline copy in the router dropped the
+ * escaping and reflected the query straight back into the response.
+ */
+export function renderDictErrorHtml(
+  term: string,
+  isIdSearch: boolean = false
+): string {
+  const action = isIdSearch ? "retrieving ID" : "searching for";
+  return `<div class="v2-no-results"><p>An error occurred ${action} "${he.escape(
+    term
+  )}".</p></div>`;
+}
+
+/**
  * Renders only the results container inner HTML (used for partial AJAX swaps and full SSR).
  */
 export function renderDictResultsHtml(
