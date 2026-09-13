@@ -53,7 +53,7 @@ export class MorcusReportDialog extends BaseElement {
     }
 
     this.hijackForm("form.v2-report-form", (data) => {
-      this.submitReport(data.reportText || "", data.reporter || "");
+      void this.submitReport(data.reportText || "", data.reporter || "");
     });
 
     if (this.formEl) {

@@ -236,4 +236,23 @@ export default [
       ],
     },
   },
+  // V2 is new code and can hold a higher async-safety bar than the legacy tree, which
+  // has 93 violations of these two rules.
+  //
+  // `no-misused-promises` is the load-bearing one: Express 4 ignores a handler's return
+  // value, so an async handler that rejects produces an unhandled rejection, which Node
+  // exits over. Two reader routes were doing exactly that. `no-floating-promises` makes
+  // fire-and-forget calls state themselves as `void`.
+  //
+  // NOTE: this block must not configure `no-restricted-imports`. Flat config replaces a
+  // rule's options rather than merging them, so naming it here would disable the
+  // target-suffix bans in the three blocks above. Tests are included: there were no
+  // violations in them, so there is nothing to exempt.
+  {
+    files: ["src/web/v2/**/*.ts"],
+    rules: {
+      "@typescript-eslint/no-floating-promises": "error",
+      "@typescript-eslint/no-misused-promises": "error",
+    },
+  },
 ];
