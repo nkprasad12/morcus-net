@@ -276,4 +276,80 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
       }
     });
   });
+
+  describe("active word highlight", () => {
+    const PASSAGE = `
+      <div class="v2-reader-section" id="sec-1.8">
+        <span class="v2-reader-line">Mu\u0304sa, mihi\u0304 causa\u0304s memora\u0304.</span>
+      </div>
+    `;
+
+    const textPanelWords = (el: MorcusReaderView) =>
+      Array.from(
+        el.querySelectorAll<HTMLElement>(".v2-reader-text-panel .v2-lat-word")
+      );
+
+    test("moves the highlight so exactly one word is ever active", () => {
+      const el = createReaderView(PASSAGE);
+      const words = textPanelWords(el);
+
+      words[0].click();
+      expect(el.querySelectorAll(".v2-word-active")).toHaveLength(1);
+      expect(words[0].classList.contains("v2-word-active")).toBe(true);
+
+      words[2].click();
+      expect(el.querySelectorAll(".v2-word-active")).toHaveLength(1);
+      expect(words[2].classList.contains("v2-word-active")).toBe(true);
+      expect(words[0].classList.contains("v2-word-active")).toBe(false);
+    });
+
+    test("dismissing the dictionary clears the highlight", () => {
+      const el = createReaderView(PASSAGE);
+      const word = textPanelWords(el)[0];
+
+      word.click();
+      expect(word.classList.contains("v2-word-active")).toBe(true);
+
+      // @ts-expect-error accessing private method for test verification
+      el.dismissDictionary(false);
+
+      expect(el.querySelectorAll(".v2-word-active")).toHaveLength(0);
+    });
+
+    /**
+     * `linkifyText` also emits `v2-word-active`, on dictionary entry markup. Clearing
+     * the passage highlight must not reach into the dictionary panel, which is why the
+     * query stays scoped to `.v2-reader-text-panel`.
+     */
+    test("leaves an active word outside the text panel alone", () => {
+      const el = createReaderView(PASSAGE);
+      const entryWord = document.createElement("a");
+      entryWord.className = "v2-lat-word v2-word-active";
+      el.querySelector(".v2-reader-dict-panel")!.appendChild(entryWord);
+
+      textPanelWords(el)[0].click();
+      expect(entryWord.classList.contains("v2-word-active")).toBe(true);
+
+      // @ts-expect-error accessing private method for test verification
+      el.dismissDictionary(false);
+      expect(entryWord.classList.contains("v2-word-active")).toBe(true);
+    });
+
+    // Clicking supplies the anchor directly, so nothing needs to look at the rest of
+    // the chapter; the highlight to clear is found by querying for the highlight.
+    test("does not enumerate every word in the chapter on click", () => {
+      const el = createReaderView(PASSAGE);
+      const word = textPanelWords(el)[0];
+      const querySelectorAll = jest.spyOn(el, "querySelectorAll");
+
+      word.click();
+
+      const wordScans = querySelectorAll.mock.calls
+        .map(([selector]) => selector)
+        .filter((selector) => selector.includes("v2-lat-word"));
+      expect(wordScans).toEqual([]);
+
+      querySelectorAll.mockRestore();
+    });
+  });
 });

@@ -645,16 +645,39 @@ Verified counts as of the audit.
       a drag. Reachable only by dragging a handle while the pointer is captured, so it is accepted
       rather than worked around — but it is a behaviour delta, not a pure no-op.
 
-- [ ] 🟢 **Stop scanning every word to clear one class.** `reader_view.client.ts` L234-237
+- [x] 🟢 **Stop scanning every word to clear one class.** `reader_view.client.ts` L234-237
       (`dismissDictionary`) and L296-299 (`lookupWord`) run
       `querySelectorAll(".v2-reader-text-panel .v2-lat-word")` over thousands of nodes on _every_
-      word click, to remove a class present on exactly one element. Query `.v2-word-active` instead.
+      word click, to remove a class present on exactly one element.
       This runs synchronously in the click handler **before** the new highlight is applied, so it is
       pure added latency between tapping a word and seeing it selected — the reader's primary
       interaction. Not the dominant cost (the dictionary fetch is), but it delays the immediate
       feedback specifically.
-      Note the third scan in the same file, `findWordElement` L444-446, is **not** this bug: it is a
-      genuine text search that needs every word. Leave it, or index it separately.
+      **Done**, but **not** by querying `.v2-word-active` as written here — that drops the
+      `.v2-reader-text-panel` scope, and the scope is load-bearing. `linkifyText`
+      (`dict/linkify.server.ts` L26) also emits `v2-word-active`, on dictionary-entry markup, so an
+      unscoped clear would reach into the dictionary panel. The landed query is
+      `.v2-reader-text-panel .v2-word-active`: a strict subset of the old one, so it cannot miss an
+      element the old code cleared. Both sites now share one `setActiveWord(el?)`, making
+      "at most one word is highlighted" a single enforced invariant rather than a convention spelled
+      out twice; `dismissDictionary` passes `null` and `lookupWord` passes
+      `activeAnchor ?? findWordElement(word)`.
+      The unscoped version would have passed every test we have, because the trap is currently
+      inert: `linkifyText`'s `activeWord` parameter is **dead**, as its only caller
+      (`xml_to_html.server.ts` L63) never passes it. So nothing emits `v2-word-active` server-side
+      today, and the bug would have waited for whoever revived that parameter. A test now pins the
+      scope. (Worth deciding separately whether to use or delete that parameter.)
+      Left alone as the item says: `findWordElement` L444-446 is a genuine text search. Worth
+      recording which path actually got faster — clicking passes the anchor, so the click path no
+      longer touches it at all; only the URL-restore path still scans, unavoidably.
+      Magnitude remains **unprofiled**. Browsers short-circuit removing an absent class token, so
+      the saving is materializing an N-element NodeList and iterating it, not N style
+      invalidations — real, but likely small. The durable argument is that the cost scaled with
+      chapter length for work that is inherently O(1).
+      Verified by reverting `reader_view.client.ts` to pre-fix HEAD with the new tests in place: the
+      mechanism test fails against old code, while the three behaviour tests — single active word,
+      cleared on dismiss, dictionary-panel highlight untouched — pass against **both**.
+
 - [ ] 🟡 **Don't tokenize the whole chapter synchronously on mount.** `reader_view.client.ts`
       L366-374 walks every target block calling `tokenizeElement` (L401) inside `onConnect` — one
       long task that delays first interaction. Batch via `requestIdleCallback`.
