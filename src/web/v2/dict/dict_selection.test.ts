@@ -1,55 +1,28 @@
 import {
-  parseDictKeys,
   parseDictsFromCookie,
   formatDictsCookie,
   formatDictsParam,
+  readCookie,
   resolveActiveDicts,
   DEFAULT_DICT_KEYS,
 } from "@/web/v2/dict/dict_selection.server";
 
 describe("dict_selection.server", () => {
-  describe("parseDictKeys", () => {
-    it("parses comma-separated keys", () => {
-      expect(parseDictKeys("L&S,GAF,NUM")).toEqual(["L&S", "GAF", "NUM"]);
+  describe("readCookie", () => {
+    it("reads and decodes a named cookie", () => {
+      expect(
+        readCookie("foo=bar; morcus_inflected=0", "morcus_inflected")
+      ).toBe("0");
+      expect(readCookie("morcus_dicts=L%26S%3BGAF", "morcus_dicts")).toBe(
+        "L&S;GAF"
+      );
     });
 
-    it("parses hyphen-separated keys with unaliasing LnS -> L&S", () => {
-      expect(parseDictKeys("LnS-SnH-GAF")).toEqual(["L&S", "S&H", "GAF"]);
-    });
-
-    it("parses lowercase aliases", () => {
-      expect(parseDictKeys("ls,sh,gaffiot,georges,pozo")).toEqual([
-        "L&S",
-        "S&H",
-        "GAF",
-        "GRG",
-        "EGL",
-      ]);
-    });
-
-    it("parses array of strings from repeated query parameters", () => {
-      expect(parseDictKeys(["ls", "gaffiot"])).toEqual(["L&S", "GAF"]);
-    });
-
-    it("parses Base36 bitmask strings", () => {
-      expect(parseDictKeys("3")).toEqual(["L&S", "GAF"]);
-      expect(parseDictKeys("e7")).toEqual([
-        "L&S",
-        "GAF",
-        "GES",
-        "FOR",
-        "S&H",
-        "R&A",
-        "GRG",
-        "EGL",
-        "NUM",
-      ]);
-    });
-
-    it("returns null for empty or invalid input", () => {
-      expect(parseDictKeys("")).toBeNull();
-      expect(parseDictKeys(undefined)).toBeNull();
-      expect(parseDictKeys("unknown,invalid")).toBeNull();
+    it("does not match a name embedded in another cookie's value", () => {
+      expect(
+        readCookie("other=morcus_inflected=0", "morcus_inflected")
+      ).toBeNull();
+      expect(readCookie(undefined, "morcus_inflected")).toBeNull();
     });
   });
 
