@@ -204,4 +204,76 @@ describe("MorcusReaderView client tokenization & macra handling", () => {
     // Clean up
     document.documentElement.removeAttribute("data-theme");
   });
+
+  describe("sheet label rendering", () => {
+    const passageHtml = `
+      <div class="v2-reader-section" id="sec-1.1">
+        <span class="v2-reader-line">Arma virumque cano.</span>
+      </div>
+    `;
+
+    function sheetLabelOf(el: MorcusReaderView): HTMLElement {
+      return el.querySelector<HTMLElement>(".v2-reader-sheet-label")!;
+    }
+
+    test("renders the query inside a <strong> that CSS targets", () => {
+      const el = createReaderView(passageHtml);
+      el.querySelector<HTMLElement>(".v2-lat-word")!.click();
+
+      const label = sheetLabelOf(el);
+      // `.v2-reader-sheet-label strong` in core/drawer.css styles this element,
+      // so the wrapper must remain a real <strong>, not plain text.
+      const strong = label.querySelector("strong");
+      expect(strong).not.toBeNull();
+      expect(strong!.textContent).toBe("Arma");
+      expect(label.textContent).toBe("Definitions for Arma");
+    });
+
+    test("appends the 'tap to expand' hint only when minimized", () => {
+      const el = createReaderView(passageHtml);
+      el.querySelector<HTMLElement>(".v2-lat-word")!.click();
+
+      // Restored state: no hint.
+      expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
+
+      el.minimizeDrawer();
+
+      const label = sheetLabelOf(el);
+      expect(label.textContent).toBe(
+        "Definitions for Arma \u00b7 tap to expand"
+      );
+      const hint = label.querySelector<HTMLElement>("span");
+      expect(hint!.textContent).toBe("tap to expand");
+      expect(hint!.style.opacity).toBe("0.8");
+      expect(hint!.style.fontWeight).toBe("400");
+
+      el.restoreDrawer();
+      expect(sheetLabelOf(el).textContent).toBe("Definitions for Arma");
+    });
+
+    test("does not execute markup supplied via the ?q= parameter", () => {
+      const payload = '<img src=x onerror="globalThis.__xss = true">';
+      history.replaceState(
+        null,
+        "",
+        `/v2/reader?q=${encodeURIComponent(payload)}`
+      );
+
+      try {
+        const el = createReaderView(passageHtml);
+        // Force the label to render the attacker-controlled query.
+        el.restoreDrawer();
+        el.minimizeDrawer();
+
+        const label = sheetLabelOf(el);
+        expect(label.querySelector("img")).toBeNull();
+        // The payload survives as literal text, not as markup.
+        expect(label.textContent).toContain(payload);
+        expect((globalThis as Record<string, unknown>).__xss).toBeUndefined();
+      } finally {
+        history.replaceState(null, "", "/");
+        delete (globalThis as Record<string, unknown>).__xss;
+      }
+    });
+  });
 });

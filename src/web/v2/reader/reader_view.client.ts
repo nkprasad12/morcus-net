@@ -147,6 +147,37 @@ export class MorcusReaderView extends BaseElement {
     this.dismissDictionary(updateHistory);
   }
 
+  /**
+   * Renders the mobile drawer teaser label ("Definitions for <strong>word</strong>").
+   *
+   * The query originates from user-controlled input (the `?q=` URL parameter and word
+   * text content), so it is bound via `textContent` rather than interpolated into an
+   * HTML string. The `<strong>` wrapper is load-bearing: `.v2-reader-sheet-label strong`
+   * in core/drawer.css supplies its color and weight.
+   *
+   * Mirrors the server-rendered markup in reader.server.ts.
+   */
+  private setSheetLabel(query: string, showExpandHint: boolean = false): void {
+    const sheetLabel = this.querySelector<HTMLElement>(
+      ".v2-reader-sheet-label"
+    );
+    if (!sheetLabel || !query) return;
+
+    const strong = document.createElement("strong");
+    strong.textContent = query;
+
+    const nodes: (Node | string)[] = ["Definitions for ", strong];
+    if (showExpandHint) {
+      const hint = document.createElement("span");
+      hint.style.opacity = "0.8";
+      hint.style.fontWeight = "400";
+      hint.textContent = "tap to expand";
+      nodes.push(" \u00b7 ", hint);
+    }
+
+    sheetLabel.replaceChildren(...nodes);
+  }
+
   public minimizeDrawer(): void {
     if (this.drawerController) {
       this.drawerController.minimize();
@@ -164,12 +195,7 @@ export class MorcusReaderView extends BaseElement {
         sheetBar?.setAttribute("aria-valuenow", "0");
       }
       splitLayout?.style.setProperty("--v2-drawer-height", "54px");
-      const sheetLabel = this.querySelector<HTMLElement>(
-        ".v2-reader-sheet-label"
-      );
-      if (sheetLabel && this.currentQuery) {
-        sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong> &middot; <span style="opacity:0.8;font-weight:400">tap to expand</span>`;
-      }
+      this.setSheetLabel(this.currentQuery, true);
     }
   }
 
@@ -196,12 +222,7 @@ export class MorcusReaderView extends BaseElement {
         sheetBar?.setAttribute("aria-valuenow", String(dvh));
       }
       splitLayout?.style.setProperty("--v2-drawer-height", `${dvh}dvh`);
-      const sheetLabel = this.querySelector<HTMLElement>(
-        ".v2-reader-sheet-label"
-      );
-      if (sheetLabel && this.currentQuery) {
-        sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong>`;
-      }
+      this.setSheetLabel(this.currentQuery);
       this.resetDictScroll();
     }
   }
@@ -328,12 +349,7 @@ export class MorcusReaderView extends BaseElement {
     }
 
     // Update mobile teaser bar label
-    const sheetLabel = this.querySelector<HTMLElement>(
-      ".v2-reader-sheet-label"
-    );
-    if (sheetLabel) {
-      sheetLabel.innerHTML = `Definitions for <strong>${word}</strong>`;
-    }
+    this.setSheetLabel(word);
 
     // Synchronize browser history and page title
     if (updateHistory) {
@@ -622,21 +638,11 @@ export class MorcusReaderView extends BaseElement {
         return true;
       },
       onMinimize: () => {
-        const sheetLabel = this.querySelector<HTMLElement>(
-          ".v2-reader-sheet-label"
-        );
-        if (sheetLabel && this.currentQuery) {
-          sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong> &middot; <span style="opacity:0.8;font-weight:400">tap to expand</span>`;
-        }
+        this.setSheetLabel(this.currentQuery, true);
       },
       onRestore: (dvh) => {
         this.preferredDrawerDvh = dvh;
-        const sheetLabel = this.querySelector<HTMLElement>(
-          ".v2-reader-sheet-label"
-        );
-        if (sheetLabel && this.currentQuery) {
-          sheetLabel.innerHTML = `Definitions for <strong>${this.currentQuery}</strong>`;
-        }
+        this.setSheetLabel(this.currentQuery);
         this.resetDictScroll();
       },
       onEscape: () => {
