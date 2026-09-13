@@ -73,9 +73,28 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
       Still open: the 3-concurrent-fetch storm when toggling dictionary checkboxes
       (`dict_settings.client.ts` L273 → `dict_search.client.ts` L332) is now harmless rather than
       corrupting, but it should still be coalesced.
-- [ ] 🟢 **Validate `localStorage` reads.** `reader_view.client.ts` L849 does
-      `{ ...DEFAULT_PREFS, ...JSON.parse(stored) }` — malformed stored prefs bypass the type system.
-      Reuse `matchesObject` / `typeOf` from `src/web/utils/rpc/parsing.ts`.
+- [ ] 🟢 **Validate both `localStorage` reads with the repo's combinators.** Merged with Phase 3's
+      "reuse the validator combinators in `core/settings.client.ts`", which was the same problem
+      seen from the other end; that entry is now a pointer here. Doing them together is what makes
+      the shared helper worth extracting rather than hand-writing a second validator.
+      The correctness half is `reader_view.client.ts` L863-866:
+      `currentPrefs = { ...DEFAULT_PREFS, ...JSON.parse(stored) }` performs **no** validation, so
+      anything in storage lands straight in a `ReaderPreferences` the type system believes. The
+      cleanup half is `core/settings.client.ts` L14-36, which _does_ validate correctly — there is
+      no bug there — but as four hand-written `typeof` blocks that grow by one per setting.
+      `src/web/utils/rpc/parsing.ts` exports `matchesObject`, `typeOf`, `maybeUndefined`,
+      `isOneOf`, `isArray` and friends, and has **zero imports**, so it is browser-safe and
+      tree-shakeable.
+      Two things to settle before writing code. First, `ReaderPreferences` and `DEFAULT_PREFS` are
+      declared _inside_ `initSettingsDialog` (L842-858) — that is why they were never validated,
+      there is no module-level declaration to hang a validator on. Lifting them out is part of the
+      work. Second, `parsing.ts` has no literal-union combinator, and two of the six fields are
+      unions (`fontFamily: "serif" | "sans"`, `lineHeight: "compact" | "normal" | "relaxed"`);
+      `isOneOf` composes two _validators_, not literals, so this needs either small local
+      `(x): x is "serif" => x === "serif"` guards or a new `isLiteral` in `parsing.ts`.
+      Decide the failure mode deliberately: `matchesObject` rejects the whole object, so one
+      corrupt field would reset every preference. Per-field fallback to the default is almost
+      certainly what a user wants from a settings blob.
 
 ---
 
@@ -372,18 +391,36 @@ The recurring problem is that **the good abstractions in `core/` are only half-a
 
 Every item here is a feature reimplementing something `core/` already provides.
 
-- [ ] 🟢 **Delete `stripMacrons()`** (`reader_view.client.ts` L378). The same file already imports
-      `removeDiacritics` from `@/common/text_cleaning` (L11) and uses it 23 lines later at L401.
-      Two normalization functions racing to disagree.
+- [ ] 🟢 **Move `stripMacrons()` into `@/common/text_cleaning` as `removeMacrons`**
+      (`reader_view.client.ts` L401). This item previously read "delete `stripMacrons()`, the file
+      already imports `removeDiacritics`" — that is wrong, and acting on it would ship a visible
+      regression. They are not two functions racing to disagree; they do different jobs.
+      `stripMacrons` removes only `U+0304`/`U+0305` and re-normalizes to NFC, whereas
+      `removeDiacritics` strips the entire `U+0300–U+036F` range plus `U+1DC0–1DFF` and
+      `U+20D0–20FF`, and leaves the result decomposed. The decisive call site is L878, the
+      **Show Macra** toggle: `w.textContent = show ? orig : this.stripMacrons(orig)`. Swapping in
+      `removeDiacritics` there would also strip breves, diaereses and Greek accents from displayed
+      text. The real smell is only that a text-normalization primitive lives as a private method on
+      a DOM element, so move it next to its siblings and give it a test — do not delete it.
 - [ ] 🟢 **Move `this.delegate(...)` out of the constructor** in `dict_suggestions.client.ts`
       L18-28. `BaseElement` clears disposables on disconnect, so if the element is ever moved or
       re-attached its delegation is silently gone forever. Move to `onConnect()`.
 - [ ] 🟢 **Use `onConnect()` / `this.listen()` in `dict_toc.client.ts`** L21-25, which overrides
       `connectedCallback` directly and hand-manages `matchMedia` listeners, bypassing the
       `BaseElement` cleanup guarantee.
-- [ ] 🟢 **Guard `BaseElement` against re-connection.** `connectedCallback` has no re-entry guard,
-      so an element moved within the DOM runs `onConnect()` twice and double-registers listeners.
-      Add `private hasConnected = false`, or document that `onConnect` must be idempotent.
+- [ ] 🟢 **Decide whether `BaseElement` needs a re-connection guard — verify before implementing.**
+      `connectedCallback` (L36-43) has no re-entry guard, and this item used to assert that an
+      element moved within the DOM therefore "runs `onConnect()` twice and double-registers
+      listeners". That does not hold for anything registered through `this.listen()` /
+      `this.delegate()`: a move fires `disconnectedCallback` first, which calls `dispose()` and
+      drops every disposable, and `connectedCallback` already replaces the aborted lifetime
+      `AbortController`. So the second `onConnect()` re-registers from a clean slate, which is the
+      intended behaviour rather than a leak. The genuine exposure is narrower — an `onConnect()`
+      body doing something non-idempotent that is _not_ funnelled through the disposables, e.g.
+      mutating the DOM or incrementing state. Establish whether any subclass does that (note the
+      two items above are exactly the subclasses that bypass the machinery). If none does, the
+      resolution is a doc comment stating that `onConnect` must be idempotent, not a
+      `hasConnected` flag — a flag would actively break the legitimate move-and-reconnect path.
 - [ ] 🟢 **Delete the empty `initSummaryCapture()`** (`drawer.client.ts` L291-293) — a no-op method
       whose body is a comment saying the work happens elsewhere.
 - [ ] 🟡 **Extract `core/disposable.client.ts`.** `DrawerController` hand-rolls four parallel
@@ -395,9 +432,10 @@ Every item here is a feature reimplementing something `core/` already provides.
       (`dict_selection.server.ts` L102, `v2_router.server.ts` L269, `settings.client.ts` L87 and L125),
       and `DICT_COOKIE_NAME` is declared twice (`dict_selection.server.ts` L4 **and**
       `settings.client.ts` L64) — a client/server contract with two sources of truth.
-- [ ] 🟢 **Reuse the repo's validator combinators** in `settings.client.ts` L14-36, which hand-writes
-      a four-branch `typeof` validator that grows one block per setting.
-      `src/web/utils/rpc/parsing.ts` already exports `matchesObject` and `typeOf`.
+- _Reusing the repo's validator combinators in `core/settings.client.ts` L14-36 has moved into the
+  Phase 1 item "Validate both `localStorage` reads with the repo's combinators" — it is the same
+  change as validating the reader preferences, and splitting them would mean writing the helper
+  twice._
 - [ ] 🔴 **Extract `core/tokenize.client.ts`.** `dict_search.client.ts` L596-685 and
       `reader_view.client.ts` L385-422 independently implement
       `createTreeWalker(SHOW_TEXT)` → `processTokens` → fragment-swap-with-clickable-spans,
