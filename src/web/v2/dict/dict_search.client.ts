@@ -416,10 +416,11 @@ export class MorcusDictSearch extends BaseElement {
 
     const currentQuery = this.inputElement?.value.trim() ?? "";
     const hasHash = Boolean(window.location.hash);
-    const navEntry = performance.getEntriesByType?.("navigation")?.[0] as
-      | PerformanceNavigationTiming
-      | undefined;
-    const isBackForward = navEntry?.type === "back_forward";
+    const navEntry = performance.getEntriesByType?.("navigation")?.[0];
+    const isBackForward =
+      typeof PerformanceNavigationTiming !== "undefined" &&
+      navEntry instanceof PerformanceNavigationTiming &&
+      navEntry.type === "back_forward";
 
     if (currentQuery && !hasHash && !isBackForward && this.resultsElement) {
       requestAnimationFrame(() => {
