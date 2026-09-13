@@ -1,4 +1,6 @@
 import { LatinDict } from "@/common/dictionaries/latin_dicts";
+import { html, joinHtml } from "@/web/v2/core/html.common";
+import type { SafeHtml } from "@/web/v2/core/html.common";
 
 /**
  * Computes unique source languages ('from') from a collection of active LatinDict keys.
@@ -23,34 +25,26 @@ export function computeActiveLanguages(
 /**
  * Generates HTML for active language chips.
  */
-export function renderLangChipsHtml(languages: string[]): string {
+export function renderLangChipsHtml(languages: string[]): SafeHtml {
   if (languages.length === 0) {
-    return '<span class="v2-lang-chip v2-lang-chip-none">None</span>';
+    return html`<span class="v2-lang-chip v2-lang-chip-none">None</span>`;
   }
-  return languages
-    .map(
-      (lang) =>
-        `<span class="v2-lang-chip v2-lang-chip-${escapeHtml(
-          lang.toLowerCase()
-        )}" title="${escapeHtml(lang)}">${escapeHtml(lang)}</span>`
-    )
-    .join("");
+  const chips = languages.map(
+    (lang) =>
+      html`<span
+        class="v2-lang-chip v2-lang-chip-${lang.toLowerCase()}"
+        title="${lang}"
+        >${lang}</span
+      >`
+  );
+  return html`${joinHtml(chips)}`;
 }
 
 /**
  * Generates HTML for the inflection status badge.
  */
-export function renderInflectChipHtml(isInflected: boolean): string {
-  return `<span class="v2-inflect-chip ${isInflected ? "is-on" : "is-off"}">${
-    isInflected ? "On" : "Off"
-  }</span>`;
-}
-
-function escapeHtml(str: string): string {
-  return str
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+export function renderInflectChipHtml(isInflected: boolean): SafeHtml {
+  return html`<span class="v2-inflect-chip ${isInflected ? "is-on" : "is-off"}"
+    >${isInflected ? "On" : "Off"}</span
+  >`;
 }
