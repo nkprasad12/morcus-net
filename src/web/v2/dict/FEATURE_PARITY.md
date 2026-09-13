@@ -13,7 +13,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 
 | Feature Area                           | V1 UI (SPA)                                                       | V2 UI (SSR + Progressive Enhancement)                                       | Parity Status                 |
 | :------------------------------------- | :---------------------------------------------------------------- | :-------------------------------------------------------------------------- | :---------------------------- |
-| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Jump links only inside local card headers                                   | ❌ **Missing in V2**          |
+| **Global Multi-Lexicon Entry Summary** | Top-level summary listing all matched entries across dictionaries | Pinned entry summary in TOC rail (desktop) and drawer (mobile) with chips   | ✅ **Completed in V2**        |
 | **Embedded Reader View Options**       | `hideSearch`, `textScale`, `skipJumpToResult`, isolated settings  | Only hides app bar (`embedded=1`)                                           | ⚠️ **Partial in V2**          |
 | **Desktop Table of Contents**          | Dedicated two-column sidebar (`.tocSidebar`)                      | Semantic, sticky two-column rail sidebar (`morcus-dict-toc`) flush at top   | ✅ **Completed in V2**        |
 | **Mobile Drawer Layout**               | Draggable, resizable bottom drawer (`BottomDrawer`)               | Draggable, resizable bottom drawer (`morcus-dict-toc` + `DrawerController`) | ✅ **Completed in V2**        |
@@ -28,7 +28,7 @@ This document outlines the remaining feature gaps between the **V1 UI (SPA)** (`
 1. **Top-Level Consolidated Entry Summary**:
 
    - **V1 (`dictionary_v2.tsx:L472-518`)**: `SummarySection` provided a global list of all matched headwords across all lexica at the top of the page, with `ToEntryButton` chips.
-   - **V2 (`dict_page.server.ts:L161-185`)**: Quick-jump links exist only within individual dictionary cards (`.v2-entry-nav`). There is no cross-lexicon summary list at the top.
+   - **V2 (`dict_toc.server.ts`, `dict_toc.css`)**: ✅ **Completed in V2**. Rather than consuming vertical space above the fold in the main reading column, multi-lexicon entry navigation is pinned at the top of the Table of Contents rail on desktop (`.v2-toc-entries-summary`) and the draggable bottom drawer on mobile. When `totalEntries > 1`, `hasDictToc` gates the TOC layout and renders compact entry chips (`.v2-toc-entry-chip`) displaying dictionary acronym badges and headwords with direct jump anchors (`#${entryAnchorId}`). On desktop this sticky rail remains accessible alongside definitions as the user scrolls; on mobile the chips wrap responsively inside the drawer. Local card header quick-jump links (`.v2-entry-nav`) continue to provide in-card navigation.
 
 ---
 
@@ -70,12 +70,10 @@ Prioritized enhancements for remaining gaps:
 
 ### High Priority
 
-1. **Global Multi-Lexicon Entry Summary** (§2.1):
-   - Render a top-of-page summary with quick jump buttons across all matched dictionaries (mirroring V1's `SummarySection`), speeding up navigation when queries match multiple lexica.
-2. **Embedded Reader Mode Controls** (§2.2):
+1. **Embedded Reader Mode Controls** (§2.2):
    - Support `hideSearch`, `textScale`, `skipJumpToResult`, and isolated search parameters for embedded reader contexts.
 
 ### Medium Priority (Enhancements)
 
-3. **Table of Contents Scroll Tracking (Scroll-Spy)**:
+2. **Table of Contents Scroll Tracking (Scroll-Spy)**:
    - Implement `IntersectionObserver` in `MorcusDictToc` to dynamically highlight the active sense/section in the TOC outline as the user scrolls the dictionary page, keeping the active item in view within the TOC scroll body. See `TODOS.md §7`.

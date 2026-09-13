@@ -39,21 +39,24 @@ export function truncateSenseText(
 }
 
 /**
- * Counts total outline senses and finds the maximum sense count in a single entry.
+ * Counts total outline senses, maximum sense count in a single entry,
+ * and total entries across hit keys.
  */
 export function countTotalSenses(
   results: DictsFusedResponse,
   hitKeys?: string[]
-): { totalSenses: number; maxSingleEntrySenses: number } {
+): { totalSenses: number; maxSingleEntrySenses: number; totalEntries: number } {
   const keys =
     hitKeys ??
     Object.keys(results).filter((k) => results[k] && results[k].length > 0);
 
   let totalSenses = 0;
   let maxSingleEntrySenses = 0;
+  let totalEntries = 0;
 
   for (const key of keys) {
     const entries = results[key] || [];
+    totalEntries += entries.length;
     for (const entry of entries) {
       const senses = entry.outline?.senses || [];
       totalSenses += senses.length;
@@ -63,23 +66,24 @@ export function countTotalSenses(
     }
   }
 
-  return { totalSenses, maxSingleEntrySenses };
+  return { totalSenses, maxSingleEntrySenses, totalEntries };
 }
 
 /**
  * Returns true if the search results meet the gating threshold for displaying a TOC:
  * - At least 4 senses across all matched entries, OR
- * - At least 3 senses in any single entry.
+ * - At least 3 senses in any single entry, OR
+ * - More than 1 total entry across matched lexica (for multi-entry / cross-lexicon navigation).
  */
 export function hasDictToc(
   results: DictsFusedResponse,
   hitKeys?: string[]
 ): boolean {
-  const { totalSenses, maxSingleEntrySenses } = countTotalSenses(
+  const { totalSenses, maxSingleEntrySenses, totalEntries } = countTotalSenses(
     results,
     hitKeys
   );
-  return totalSenses >= 4 || maxSingleEntrySenses >= 3;
+  return totalSenses >= 4 || maxSingleEntrySenses >= 3 || totalEntries > 1;
 }
 
 /**
@@ -92,13 +96,13 @@ export function renderDictTocHtml(options: DictTocOptions): string {
     options.hitKeys ??
     Object.keys(results).filter((k) => results[k] && results[k].length > 0);
 
-  const { totalSenses, maxSingleEntrySenses } = countTotalSenses(
+  const { totalSenses, maxSingleEntrySenses, totalEntries } = countTotalSenses(
     results,
     hitKeys
   );
 
   // Gating check
-  if (totalSenses < 4 && maxSingleEntrySenses < 3) {
+  if (totalSenses < 4 && maxSingleEntrySenses < 3 && totalEntries <= 1) {
     return "";
   }
 
@@ -179,13 +183,14 @@ export function renderDictTocHtml(options: DictTocOptions): string {
             `;
           }
 
-          if (entries.length > 1) {
+          if (entries.length > 1 || totalEntries > 1) {
             return `
               <div class="v2-toc-entry">
                 <div class="v2-toc-entry-header">
                   <a href="#${he.encode(
                     entryAnchorId
                   )}" class="v2-toc-link v2-toc-entry-link">
+                    <span class="v2-toc-badge">${he.encode(dictAcronym)}</span>
                     <span class="v2-toc-entry-word">${he.encode(
                       headword
                     )}</span>
@@ -204,7 +209,6 @@ export function renderDictTocHtml(options: DictTocOptions): string {
         <div class="v2-toc-group">
           <div class="v2-toc-dict-header">
             <a href="#${cardId}" class="v2-toc-dict-link">
-              <span class="v2-toc-badge">${he.encode(dictAcronym)}</span>
               <span class="v2-toc-dict-name">${he.encode(dictName)}</span>
             </a>
           </div>
@@ -215,20 +219,97 @@ export function renderDictTocHtml(options: DictTocOptions): string {
     .filter(Boolean)
     .join("\n");
 
+  let entriesSummaryHtml = "";
+  if (totalEntries > 1) {
+    const groupItems = hitKeys
+      .map((dictKey) => {
+        const entries = results[dictKey] || [];
+        if (entries.length === 0) return "";
+
+        const dictAcronym =
+          DICT_ACRONYMS[dictKey] ??
+          DICT_ACRONYMS[dictKey.toLowerCase()] ??
+          dictKey.toUpperCase();
+
+        const chipsHtml = entries
+          .map((entry, idx) => {
+            const entryAnchorId = entry.outline?.mainSection?.sectionId ?? "";
+            const rawHeadword =
+              entry.outline?.mainLabel?.trim() ||
+              entry.outline?.mainKey?.trim() ||
+              entry.outline?.mainSection?.text?.trim() ||
+              `Entry ${idx + 1}`;
+            const headword = rawHeadword.replace(/<[^>]+>/g, "").trim();
+            const anchor = entryAnchorId
+              ? `#${entryAnchorId}`
+              : `#dict-${dictKey.replace(/[^a-zA-Z0-9_-]/g, "-")}`;
+
+            return `<li class="v2-toc-entry-chip-item"><a href="${he.encode(
+              anchor
+            )}" class="v2-toc-entry-chip" title="Jump to ${he.encode(
+              headword
+            )} (${he.encode(
+              dictAcronym
+            )})"><span class="v2-toc-chip-text">${he.encode(
+              headword
+            )}</span></a></li>`;
+          })
+          .join("\n");
+
+        return `
+          <div class="v2-toc-entries-group">
+            <span class="v2-toc-badge">${he.encode(dictAcronym)}</span>
+            <ul class="v2-toc-entries-sublist">
+              ${chipsHtml}
+            </ul>
+          </div>
+        `;
+      })
+      .filter(Boolean);
+
+    const dividerHtml = `<span class="v2-toc-entries-divider" aria-hidden="true">|</span>`;
+
+    entriesSummaryHtml = `
+      <div class="v2-toc-section v2-toc-entries-summary">
+        <div class="v2-toc-entries-groups">
+          ${groupItems.join(`\n${dividerHtml}\n`)}
+        </div>
+      </div>
+    `;
+  }
+
+  const outlineSectionHtml = groupsHtml.trim()
+    ? `
+      <div class="v2-toc-section v2-toc-outline">
+        ${groupsHtml}
+      </div>
+    `
+    : "";
+
+  let teaserCount = "";
+  if (totalEntries > 1 && totalSenses > 0) {
+    teaserCount = `(${totalEntries} entries · ${totalSenses} ${
+      totalSenses === 1 ? "sense" : "senses"
+    })`;
+  } else if (totalEntries > 1) {
+    teaserCount = `(${totalEntries} entries)`;
+  } else {
+    teaserCount = `(${totalSenses} ${totalSenses === 1 ? "sense" : "senses"})`;
+  }
+
   return `
     <morcus-dict-toc class="v2-drawer v2-drawer-toc">
       <details class="v2-toc-details" open>
         <summary class="v2-drawer-bar v2-toc-bar" role="button" aria-label="Table of Contents">
           <div class="v2-drawer-handle" aria-hidden="true"></div>
           <div class="v2-drawer-teaser">
-            <span class="v2-drawer-label v2-toc-teaser-label">Contents <span class="v2-toc-count">(${totalSenses} ${
-    totalSenses === 1 ? "sense" : "senses"
-  })</span></span>
+            <span class="v2-drawer-label v2-toc-teaser-label">Contents <span class="v2-toc-count">${teaserCount}</span></span>
           </div>
         </summary>
         <div class="v2-toc-body">
           <nav class="v2-toc-nav" aria-label="Table of Contents Outline">
-            ${groupsHtml}
+            ${entriesSummaryHtml}
+            ${outlineSectionHtml}
           </nav>
         </div>
       </details>
